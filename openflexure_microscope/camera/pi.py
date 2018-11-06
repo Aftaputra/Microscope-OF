@@ -96,6 +96,23 @@ class StreamingCamera(BaseCamera):
     def initialisation(self):
         """Run any initialisation code when the frame iterator starts."""
         pass
+    
+    # HANDLE CONTEXT MANAGER AND FILE CLOSING
+    
+    def close(self):
+        # Close all StreamObjects
+        for capture_list in [self.images, self.videos]:
+            for stream_object in capture_list:
+                stream_object.close()
+
+    def __enter__(self):
+        log("Entering context for {}.\
+            Stored files will be cleaned up automatically.".format(self))
+        return self
+
+    def __exit__(self, *args):
+        log("Cleaning up {}".format(self))
+        self.close()
 
     # RETURNING CAPTURES
 

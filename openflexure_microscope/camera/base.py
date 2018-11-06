@@ -55,6 +55,9 @@ class StreamObject(object):
         # Keep on disk after close by default
         self.keep_on_disk = True
 
+        # Log if created by context manager
+        self.context_manager = False
+
         # Object lock
         self.locked = False  # Is the StreamObject locked for writing? (Handled by StreamingCamera)
 
@@ -62,6 +65,7 @@ class StreamObject(object):
         log("Entering context for {}.\
             Stored files will be cleaned up automatically.".format(self.id))
         self.keep_on_disk = False  # Flag file to be removed on close.
+        self.context_manager = True  # Used in metadata
         return self
 
     def __exit__(self, *args):
@@ -71,7 +75,7 @@ class StreamObject(object):
     def build_file_path(self, filename: str, folder: str, fmt: str, iterator: int=0) -> str:
         """
         Construct a full file path, based on filename, folder, and file format. 
-        
+
         Defaults to datestamp. Iterator adds a numeric increment to the file name.
         """
         if filename:
@@ -128,6 +132,7 @@ class StreamObject(object):
             'locked': self.locked,
             'keep_on_disk': self.keep_on_disk,
             'path': self.file,
+            'context_manager': self.context_manager,
         }
 
         # Get file path
@@ -211,7 +216,6 @@ class StreamObject(object):
             os.remove(self.file)
             return True
         else:
-            log("File not found {}".format(self.file))
             return False
 
     def shunt(self):
