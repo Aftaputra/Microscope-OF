@@ -305,13 +305,14 @@ if __name__ == '__main__':
 
         result = unittest.TextTestRunner(verbosity=2).run(alltests)
 
+        print("Objects created during tests:")
+        # Show us what was captured
+        for im in camera.images:
+            pprint(im.metadata)
+        for im in camera.videos:
+            pprint(im.metadata)
+
         if result.wasSuccessful():
             print(success_string)
-    
-    # Show us what was captured
-    for im in camera.images:
-        pprint(im.metadata)
-    for im in camera.videos:
-        pprint(im.metadata)
 
     camera.close()
