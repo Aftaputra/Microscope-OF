@@ -303,7 +303,6 @@ class BaseCamera(object):
             while self.get_frame() is None:
                 if time.time() > timeout_time:
                     raise TimeoutError("Timeout waiting for frames.")
-                    break
                 else:
                     time.sleep(0)
         return True
@@ -316,7 +315,6 @@ class BaseCamera(object):
         while self.thread:
             if time.time() > timeout_time:
                 raise TimeoutError("Timeout waiting for worker thread to close.")
-                break
             else:
                 time.sleep(0)
         return True
