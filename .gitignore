@@ -61,6 +61,4 @@ record/
 #IDE files
 .vscode/
 .idea/
-
-#Dev files
 activate
