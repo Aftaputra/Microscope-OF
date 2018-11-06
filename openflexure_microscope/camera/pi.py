@@ -53,52 +53,88 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_CONFIG = os.path.join(HERE, 'config_picamera.yaml')
 
 
+def last_entry(object_list: list):
+    if object_list:  # If any images have been captured
+        return object_list[-1]  # Return the latest captured image
+    else:
+        return None
+
+def entry_by_id(id: str, object_list: list):
+    found = None
+    for o in object_list:
+        if o.id == id:
+            found = o
+    return found
+
 class StreamingCamera(BaseCamera):
     """Raspberry Pi camera implementation of StreamingCamera."""
     def __init__(self):
+        # Run BaseCamera init to start thread
+        BaseCamera.__init__(self)
+
         # Capture data
-        self.image = None
-        self.video = None
+        self.images = []
+        self.videos = []
 
         # Camera settings
-        self.settings = {
+        self.settings.update({
             'video_resolution': (832, 624),
             'image_resolution': (2592, 1944),
             'numpy_resolution': (1312, 976),
             'jpeg_quality': 75,
-        }
+        })
 
         # Store state of StreamingCamera
-        self.state = {
-            'video_recent': None,
-            'image_recent': None,
+        self.state.update({
             'stream_active': False,
             'record_active': False,
             'preview_active': False,
-        }
+        })
 
-        # Finally, run BaseCamera init to start thread
-        BaseCamera.__init__(self)
+        self.start_worker()
 
     def initialisation(self):
         """Run any initialisation code when the frame iterator starts."""
         pass
 
-    def start_preview(self) -> bool:
-        """Start the onboard GPU camera preview."""
-        self.start_worker()
+    # RETURNING CAPTURES
 
-        self.camera.start_preview()
-        self.state['preview_active'] = True
-        return True
+    @property
+    def image(self):
+        """Return the latest captured image"""
+        return last_entry(self.images)
 
-    def stop_preview(self) -> bool:
-        """Stop the onboard GPU camera preview."""
-        self.start_worker()
+    @property
+    def video(self):
+        """Return the latest recorded video"""
+        return last_entry(self.videos)
 
-        self.camera.stop_preview()
-        self.state['preview_active'] = False
-        return True
+    def image_from_id(self, id):
+        """Returns an image StreamObject with a matching ID"""
+        return entry_by_id(id, self.images)
+
+    def video_from_id(self, id):
+        """Returns a video StreamObject with a matching ID"""
+        return entry_by_id(id, self.videos)
+
+    # CREATING NEW CAPTURES
+    def new_stream_object(self, stream_object, target_list: list, shunt_others: bool=True):
+        """Add a new capture to a list of captures, and shunt all others"""
+        if shunt_others:  # If shunting all older captures
+            for obj in target_list:  # For each older capture
+                obj.shunt()  # Shunt capture from memory to storage
+        target_list.append(stream_object)
+        return stream_object
+
+    def new_image(self, stream_object, shunt_others=True):
+        """Add a new capture to the image list, and shunt all others"""
+        return self.new_stream_object(stream_object, self.images, shunt_others=shunt_others)
+
+    def new_video(self, stream_object, shunt_others=True):
+        """Add a new capture to the video list, and shunt all others"""
+        return self.new_stream_object(stream_object, self.videos, shunt_others=shunt_others)
+
+    # HANDLING SETTINGS
 
     # TODO: Handle exceptions
     # TODO: Have this take a dictionary (not a config file)
@@ -154,10 +190,10 @@ class StreamingCamera(BaseCamera):
         if 'digital_gain' in config:
             set_digital_gain(self.camera, config['digital_gain'])
 
-    # TODO: Rewrite this bit?
-    # https://picamera.readthedocs.io/en/release-1.13/api_camera.html
     def change_zoom(self, zoom_value: int=1) -> None:
         """Change the camera zoom, handling recentering and scaling."""
+        self.start_worker()
+
         zoom_value = float(zoom_value)
         if zoom_value < 1:
             zoom_value = 1
@@ -175,26 +211,22 @@ class StreamingCamera(BaseCamera):
         new_fov = (centre[0] - size/2, centre[1] - size/2, size, size)
         self.camera.zoom = new_fov
 
-    def stop_recording(self, target=None) -> bool:
-        """Stop the last started video recording on splitter port 2.
+    # LAUNCH ACTIONS   
 
-        target (str/BytesIO): Target object to write data bytes to.
-        """
-        if not target:  # If no target is defined
-            target_obj = self.video  # Assume StreamingCamera as target
-            target_obj.unlock()  # Unlock the StreamObject
-        else:
-            target_obj = target
+    def start_preview(self) -> bool:
+        """Start the onboard GPU camera preview."""
+        self.start_worker()
 
-        # Stop the camera video recording on port 2
-        log("Stopping recording")
-        self.camera.stop_recording(splitter_port=2)
-        log("Recording stopped")
+        self.camera.start_preview()
+        self.state['preview_active'] = True
+        return True
 
-        # Update state dictionary
-        self.state['record_active'] = False
-        self.state['video_recent'] = str(target_obj)
+    def stop_preview(self) -> bool:
+        """Stop the onboard GPU camera preview."""
+        self.start_worker()
 
+        self.camera.stop_preview()
+        self.state['preview_active'] = False
         return True
 
     def start_recording(
@@ -217,47 +249,56 @@ class StreamingCamera(BaseCamera):
         fmt (str): Format of the capture.
             (default 'h264')
         """
-        self.start_worker()
 
-        # If no target is specified, store to StreamingCamera
-        if not target:
-            # If target is not locked
-            if (self.video is None) or (not self.video.locked):
+        # Start recording method only if a current recording is not running
+        if not self.state['record_active']:
+            self.start_worker()
 
-                self.video = StreamObject(
+            # If no target is specified, store to StreamingCamera
+            if not target:
+                # Create a new video and add to the video list
+                target_obj = self.new_video(StreamObject(
                     write_to_file=write_to_file,
                     filename=filename,
                     folder=folder,
-                    fmt=fmt)  # Reset/create StreamObject
+                    fmt=fmt))
 
-                # Store to the StreamObject BytesIO
-                target = self.video.target
-                # Note the target StreamObject, used for function return
-                target_obj = self.video
-
-                target_obj.lock()  # Lock the StreamObject while recording
+                # Lock the StreamObject while recording
+                target_obj.lock() 
+                # Store to the StreamObject target
+                target = target_obj.target
 
             else:
-                print("Cannot start recording a new video \
-                    until the current recording has been stopped. \
-                    Returning None.")
-                return None
+                target_obj = target
+
+            # Start the camera video recording on port 2
+            log("Starting record at {}".format(self.settings['video_resolution']))
+            self.camera.start_recording(
+                target,
+                format=fmt,
+                splitter_port=2,
+                resize=self.settings['video_resolution'],
+                quality=quality)
+        
+            # Update state dictionary
+            self.state['record_active'] = True
+
+            return target_obj
+
         else:
-            target_obj = target
+            print("Cannot start a new recording until the current recording has stopped.")
+            return None
 
-        # Start the camera video recording on port 2
-        log("Starting record at {}".format(self.settings['video_resolution']))
-        self.camera.start_recording(
-            target,
-            format=fmt,
-            splitter_port=2,
-            resize=self.settings['video_resolution'],
-            quality=quality)
-       
+    def stop_recording(self) -> bool:
+        """Stop the last started video recording on splitter port 2."""
+
+        # Stop the camera video recording on port 2
+        log("Stopping recording")
+        self.camera.stop_recording(splitter_port=2)
+        log("Recording stopped")
+
         # Update state dictionary
-        self.state['record_active'] = True
-
-        return target_obj
+        self.state['record_active'] = False
 
     def pause_stream_for_capture(self, splitter_port: int=1, resolution: Tuple[int, int]=None) -> None:
         """
@@ -331,10 +372,9 @@ class StreamingCamera(BaseCamera):
 
         # If no target is specified, store to StreamingCamera
         if not target:
-            self.image = StreamObject(write_to_file=write_to_file, filename=filename, folder=folder, fmt=fmt)  # Reset StreamObject
-
-            target = self.image.target  # Store to the StreamObject BytesIO
-            target_obj = self.image  # Note the target StreamObject, used for function return
+            # Create a new image and add to the image list
+            target_obj = self.new_image(StreamObject(write_to_file=write_to_file, filename=filename, folder=folder, fmt=fmt))
+            target = target_obj.target  # Store to the StreamObject BytesIO
 
         else:
             target_obj = target
@@ -411,6 +451,8 @@ class StreamingCamera(BaseCamera):
                 return output.rgb_array
             else:
                 return output.array
+
+    # HANDLE STREAM FRAMES
 
     def frames(self):
         """

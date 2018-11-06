@@ -10,6 +10,7 @@ import uuid
 from PIL import Image
 
 import unittest
+from pprint import pprint
 
 success_string = """
             /O
@@ -40,13 +41,6 @@ class TestCaptureMethods(unittest.TestCase):
 
         for use_video_port in [True, False]:
             for resize in [None, (640, 480)]:
-                # Create unique ID
-                id = uuid.uuid4().hex
-
-                log("Resize: {}, V_Port: {}, ID: {}".format(
-                    resize,
-                    use_video_port,
-                    id))
 
                 # Wait for camera
                 wait_for_cam(camera)
@@ -55,11 +49,10 @@ class TestCaptureMethods(unittest.TestCase):
                 with camera.capture(
                         write_to_file=False,
                         use_video_port=use_video_port,
-                        filename=id,
                         resize=resize) as stream:
 
                     # Ensure file deletion fails and returns False
-                    self.assertFalse(stream.delete())
+                    self.assertFalse(stream.delete_file())
                     # Ensure capture not stored to file
                     self.assertFalse(os.path.isfile(stream.file))
 
@@ -75,12 +68,12 @@ class TestCaptureMethods(unittest.TestCase):
                         ))
 
                     # Save capture to file
-                    stream.save()
+                    stream.save_file()
                     # Check file got saved
                     self.assertTrue(os.path.isfile(stream.file))
 
                     # Delete file
-                    stream.delete()
+                    stream.delete_file()
                     # Check file got deleted
                     self.assertFalse(os.path.isfile(stream.file))
 
@@ -117,9 +110,6 @@ class TestCaptureMethods(unittest.TestCase):
 
         for use_video_port in [True, False]:
             for resize in [None, (640, 480)]:
-                # Create unique ID
-                id = uuid.uuid4().hex
-
                 # Wait for camera
                 wait_for_cam(camera)
 
@@ -127,7 +117,6 @@ class TestCaptureMethods(unittest.TestCase):
                 stream = camera.capture(
                     write_to_file=True,
                     use_video_port=use_video_port,
-                    filename=id,
                     resize=resize)
 
                 # Check file got saved
@@ -141,7 +130,7 @@ class TestCaptureMethods(unittest.TestCase):
                 self.assertTrue(isinstance(stream.binary, (bytes, bytearray)))
 
                 # Ensure file deletion completes and returns True
-                self.assertTrue(stream.delete())
+                self.assertTrue(stream.delete_file())
 
                 # Check file got deleted
                 self.assertFalse(os.path.isfile(stream.file))
@@ -155,8 +144,6 @@ class TestUnencodedMethods(unittest.TestCase):
 
         for use_video_port in [True, False]:
             for resize in [None, (640, 480)]:
-                # Create unique ID
-                id = uuid.uuid4().hex
 
                 print("{}, {}, {}".format(id, resize, use_video_port))
 
@@ -189,8 +176,6 @@ class TestUnencodedMethods(unittest.TestCase):
 
         for use_video_port in [True, False]:
             for resize in [None, (640, 480)]:
-                # Create unique ID
-                id = uuid.uuid4().hex
 
                 print("{}, {}, {}".format(id, resize, use_video_port))
 
@@ -227,16 +212,12 @@ class TestRecordMethods(unittest.TestCase):
 
         for write_to_file in [True, False, None]:
 
-            # Create unique ID
-            id = uuid.uuid4().hex
-
             # Wait for camera
             wait_for_cam(camera)
 
             # Start recording
             with camera.start_recording(
-                    write_to_file=write_to_file,
-                    filename=id) as stream:
+                    write_to_file=write_to_file) as stream:
 
                 # Record for 2 seconds
                 time.sleep(2)
@@ -264,14 +245,11 @@ class TestRecordMethods(unittest.TestCase):
         """Tests recording videos to file on disk, without context manager."""
         global camera
 
-        # Create unique ID
-        id = uuid.uuid4().hex
-
         # Wait for camera
         wait_for_cam(camera)
 
         # Start recording
-        stream = camera.start_recording(filename=id)
+        stream = camera.start_recording()
         # Record for 2 seconds
         time.sleep(2)
         # Stop recording
@@ -282,7 +260,7 @@ class TestRecordMethods(unittest.TestCase):
         self.assertTrue(statinfo.st_size > 0)
 
         # Ensure file deletion completes and returns True
-        self.assertTrue(stream.delete())
+        self.assertTrue(stream.delete_file())
 
         # Check file got deleted
         self.assertFalse(os.path.isfile(stream.file))
@@ -292,9 +270,6 @@ class TestThreadStarting(unittest.TestCase):
     def test_capture_restarting_stream(self):
         """Tests that a capture call restarts the camera worker thread."""
         global camera
-
-        # Create unique ID
-        id = uuid.uuid4().hex
 
         # Wait for camera
         wait_for_cam(camera)
@@ -307,8 +282,7 @@ class TestThreadStarting(unittest.TestCase):
 
         # Restart worker thread by initialising a capture
         with camera.capture(
-                use_video_port=True,
-                filename=id) as stream:
+                use_video_port=True) as stream:
 
             # Ensure StreamObject 'stream' has
             # a valid BytesIO object and byte string
@@ -333,5 +307,11 @@ if __name__ == '__main__':
 
         if result.wasSuccessful():
             print(success_string)
+    
+    # Show us what was captured
+    for im in camera.images:
+        pprint(im.metadata)
+    for im in camera.videos:
+        pprint(im.metadata)
 
     camera.close()
