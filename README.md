@@ -14,6 +14,7 @@ This module is currently in very early development, and is perhaps best installe
 ## Running the web API in Gunicorn (port 5000)
 - Ensure Gunicorn is installed to the current environment (`pip install gunicorn`)
 - Run `gunicorn --threads 5 --workers 1 --bind 0.0.0.0:5000 openflexure_microscope.api.app:app`
+    - Alternatively, run `source start_interface` from the openflexure-microscope-software directory.
 
 ## Running tests through the PTVSD remote debugger (port 3000)
 - From the openflexure-microscope-software directory, run `python3 -m ptvsd --host 0.0.0.0 --port 3000 --wait tests/test_camera.py`
