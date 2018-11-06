@@ -17,6 +17,7 @@ except ImportError:
 # Slightly crappy debugger logging
 DEBUG = True
 
+
 def log(s):
     if DEBUG:
         print('DEBUG: {}'.format(s))
@@ -71,13 +72,13 @@ class StreamObject(object):
             file_path = os.path.join(folder, file_name)
         else:
             file_path = file_name
-        
+
         return file_path
-    
+
     def lock(self):
         """Set locked flag to True"""
         self.locked = True
-    
+
     def unlock(self):
         """Set locked flag to False"""
         self.locked = False
@@ -110,6 +111,11 @@ class StreamObject(object):
             log("Writing stream to file {}".format(self.file))
             f.seek(0, 0)  # Seek to the start of the file
             f.write(self.binary)  # Write data bytes to file
+
+    def clear_stream(self):
+        """Clears the BytesIO stream of the StreamObject."""
+        self.stream = io.BytesIO()
+        return True
 
     def delete(self) -> bool:
         """

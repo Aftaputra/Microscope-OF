@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 """
 Raspberry Pi camera implementation of the StreamingCamera class.
 
@@ -14,7 +15,7 @@ Video port:
 StreamingCamera streams at video_resolution
 Camera capture resolution set to video_resolution in frames()
 Video port uses that resolution for everything. If a different resolution
-is specified for video capture, this is handled by the resizer. 
+is specified for video capture, this is handled by the resizer.
 
 Still capture (if use_video_port == False) uses pause_stream_for_capture
 to temporarily increase the capture resolution.
@@ -51,8 +52,9 @@ from .config import load_config
 HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_CONFIG = os.path.join(HERE, 'config_picamera.yaml')
 
-class StreamingCamera(BaseCamera):
 
+class StreamingCamera(BaseCamera):
+    """Raspberry Pi camera implementation of StreamingCamera."""
     def __init__(self):
         # Capture data
         self.image = None
@@ -79,10 +81,11 @@ class StreamingCamera(BaseCamera):
         BaseCamera.__init__(self)
 
     def initialisation(self):
+        """Run any initialisation code when the frame iterator starts."""
         pass
 
     def start_preview(self) -> bool:
-        """Function to start the onboard GPU camera preview."""
+        """Start the onboard GPU camera preview."""
         self.start_worker()
 
         self.camera.start_preview()
@@ -90,7 +93,7 @@ class StreamingCamera(BaseCamera):
         return True
 
     def stop_preview(self) -> bool:
-        """Function to start the onboard GPU camera preview."""
+        """Stop the onboard GPU camera preview."""
         self.start_worker()
 
         self.camera.stop_preview()
@@ -98,13 +101,14 @@ class StreamingCamera(BaseCamera):
         return True
 
     # TODO: Handle exceptions
+    # TODO: Have this take a dictionary (not a config file)
+    # TODO: Web API entry point to send settings as JSON to this method
+    # TODO: Separate method to store current settings back to YAML file
+    # TODO: API entry point to get settings to JSON
     def update_settings(self, config_path: str=None) -> None:
-        """
-        Opens config_picamera.yaml file and writes valid settings
-        to the camera hardware object
-        """
+        """Open config_picamera.yaml file and write to camera."""
         global DEFAULT_CONFIG
-        
+
         self.start_worker()
 
         if not config_path:
@@ -162,7 +166,7 @@ class StreamingCamera(BaseCamera):
         centre = np.array([fov[0] + fov[2]/2.0, fov[1] + fov[3]/2.0])
         size = 1.0/zoom_value
         # If the new zoom value would be invalid, move the centre to
-        # keep it within the camera's sensor (this is only relevant 
+        # keep it within the camera's sensor (this is only relevant
         # when zooming out, if the FoV is not centred on (0.5, 0.5)
         for i in range(2):
             if np.abs(centre[i] - 0.5) + size/2 > 0.5:
@@ -203,27 +207,40 @@ class StreamingCamera(BaseCamera):
             quality: int=15):
         """Start a new video recording, writing to a target object.
 
-        target (str/BytesIO): Target object to write bytes to (default StreamObject)
-        write_to_file (bool/NoneType): Should the StreamObject write to a file? (default True for video capture)
-        filename (str): Name of the stored file (defaults to timestamp)
+        target (str/BytesIO): Target object to write bytes to.
+            (default StreamObject)
+        write_to_file (bool/NoneType): Should the StreamObject write to a file?
+            (default True for video capture)
+        filename (str): Name of the stored file.
+            (defaults to timestamp)
         folder (str): Relative directory to store data file in.
-        fmt (str): Format of the capture (default 'h264')
+        fmt (str): Format of the capture.
+            (default 'h264')
         """
         self.start_worker()
 
         # If no target is specified, store to StreamingCamera
         if not target:
-            if (self.video is None) or (not self.video.locked):  # If target is not locked
+            # If target is not locked
+            if (self.video is None) or (not self.video.locked):
 
-                self.video = StreamObject(write_to_file=write_to_file, filename=filename, folder=folder, fmt=fmt)  # Reset/create StreamObject
+                self.video = StreamObject(
+                    write_to_file=write_to_file,
+                    filename=filename,
+                    folder=folder,
+                    fmt=fmt)  # Reset/create StreamObject
 
-                target = self.video.target  # Store to the StreamObject BytesIO
-                target_obj = self.video  # Note the target StreamObject, used for function return
+                # Store to the StreamObject BytesIO
+                target = self.video.target
+                # Note the target StreamObject, used for function return
+                target_obj = self.video
 
                 target_obj.lock()  # Lock the StreamObject while recording
 
             else:
-                print("Cannot start recording a new video until the current recording has been stopped. Returning None.")
+                print("Cannot start recording a new video \
+                    until the current recording has been stopped. \
+                    Returning None.")
                 return None
         else:
             target_obj = target
@@ -247,7 +264,8 @@ class StreamingCamera(BaseCamera):
         Pause capture on a splitter port.
 
         splitter_port (int): Splitter port to stop recording on
-        resolution ((int, int)): Resolution to set the camera to, after stopping recording.
+        resolution ((int, int)): Resolution to set the camera to, 
+            after stopping recording.
         """
         log("Pausing stream")
         # If no resolution is specified, default to image_resolution
@@ -262,10 +280,11 @@ class StreamingCamera(BaseCamera):
 
     def resume_stream_for_capture(self, splitter_port: int=1, resolution: Tuple[int, int]=None) -> None:
         """
-        Resume capture on a splitter port
+        Resume capture on a splitter port.
 
         splitter_port (int): Splitter port to start recording on
-        resolution ((int, int)): Resolution to set the camera to, before starting recording.
+        resolution ((int, int)): Resolution to set the camera to, 
+            before starting recording.
         """
         log("Unpausing stream")
         if not resolution:
@@ -291,17 +310,21 @@ class StreamingCamera(BaseCamera):
             fmt: str='jpeg',
             resize: Tuple[int, int]=None):
         """
-        Captures a still image to a StreamObject.
+        Capture a still image to a StreamObject.
 
         Defaults to JPEG format.
         Target object can be overridden for development purposes.
 
-        target (str/BytesIO): Target object to write data bytes to
-        write_to_file (bool): Should the StreamObject write to a file, instead of BytesIO stream?
-        use_video_port (bool): Capture from the video port used for streaming (lower resolution, faster)
-        filename (str): Name of the stored file (defaults to timestamp)
+        target (str/BytesIO): Target object to write data bytes to.
+        write_to_file (bool): Should the StreamObject write to a file,
+            instead of BytesIO stream?
+        use_video_port (bool): Capture from the video port used for streaming.
+            (lower resolution, faster)
+        filename (str): Name of the stored file.
+            (defaults to timestamp)
         folder (str): Relative directory to store data file in.
-        fmt (str): Format of the capture (default 'h264')
+        fmt (str): Format of the capture.
+            (default 'h264')
         resize ((int, int)): Resize the captured image.
         """
         self.start_worker()
@@ -348,7 +371,7 @@ class StreamingCamera(BaseCamera):
         return target_obj
 
     def array(self, rgb=False, use_video_port: bool=True, resize: Tuple[int, int]=None) -> np.ndarray:
-        """Captures an uncompressed still YUV image to a Numpy array.
+        """Capture an uncompressed still YUV image to a Numpy array.
 
         use_video_port (bool): Capture from the video port used for streaming (lower resolution, faster)
         resize ((int, int)): Resize the captured image.

@@ -16,22 +16,19 @@ TYPES = {
     'digital_gain': float,
 }
 
+
 def convert_config(config):
-    """Convert datatype of config based on type dictionary"""
+    """Convert datatype of config based on type dictionary."""
     global TYPES
 
     for key in config:
         if key in TYPES:
             config[key] = TYPES[key](config[key])  
-    
+
     return config
 
+
 def load_config(yaml_path):
+    """Load YAML file, pass through dictionary conversion, and return."""
     with open(yaml_path) as config_file:
         return convert_config(yaml.load(config_file))
-
-if __name__ == "__main__":
-    from pprint import pprint
-
-    config = load_config('config_picamera.yaml')
-    pprint(config)
