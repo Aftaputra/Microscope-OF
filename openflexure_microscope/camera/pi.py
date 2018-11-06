@@ -100,20 +100,12 @@ class StreamingCamera(BaseCamera):
     # HANDLE CONTEXT MANAGER AND FILE CLOSING
 
     def close(self):
+        """Close method called by BaseCamera __exit__"""
         # Close all StreamObjects
-        #TODO: Figure out why this is so slow.
         for capture_list in [self.images, self.videos]:
             for stream_object in capture_list:
                 stream_object.close()
-
-    def __enter__(self):
-        log("Entering context for {}.\
-            Stored files will be cleaned up automatically.".format(self))
-        return self
-
-    def __exit__(self, *args):
-        log("Cleaning up {}".format(self))
-        self.close()
+        self.stop_worker()
 
     # RETURNING CAPTURES
 

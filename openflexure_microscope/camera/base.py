@@ -226,6 +226,7 @@ class StreamObject(object):
 
     def close(self):
         """Both clear the stream, and delete any associated on-disk data"""
+        log("Closing {}".format(self.id))
         self.delete_stream()
         if not self.keep_on_disk:
             self.delete_file()
