@@ -98,9 +98,10 @@ class StreamingCamera(BaseCamera):
         pass
     
     # HANDLE CONTEXT MANAGER AND FILE CLOSING
-    
+
     def close(self):
         # Close all StreamObjects
+        #TODO: Figure out why this is so slow.
         for capture_list in [self.images, self.videos]:
             for stream_object in capture_list:
                 stream_object.close()
