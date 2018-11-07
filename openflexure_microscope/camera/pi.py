@@ -106,8 +106,6 @@ class StreamingCamera(BaseCamera):
 
         if not self.state['record_active']:  # If not recording a video
 
-            #self.start_worker()
-
             if self.state['stream_active']:  # If stream is active
                 logging.info("Pausing stream to update settings.")
                 self.pause_stream_for_capture()  # Pause stream
@@ -164,8 +162,6 @@ class StreamingCamera(BaseCamera):
 
     def change_zoom(self, zoom_value: int=1) -> None:
         """Change the camera zoom, handling recentering and scaling."""
-        #self.start_worker()
-
         zoom_value = float(zoom_value)
         if zoom_value < 1:
             zoom_value = 1
@@ -187,16 +183,12 @@ class StreamingCamera(BaseCamera):
 
     def start_preview(self) -> bool:
         """Start the onboard GPU camera preview."""
-        #self.start_worker()
-
         self.camera.start_preview()
         self.state['preview_active'] = True
         return True
 
     def stop_preview(self) -> bool:
         """Stop the onboard GPU camera preview."""
-        #self.start_worker()
-
         self.camera.stop_preview()
         self.state['preview_active'] = False
         return True
@@ -224,7 +216,6 @@ class StreamingCamera(BaseCamera):
 
         # Start recording method only if a current recording is not running
         if not self.state['record_active']:
-            #self.start_worker()
 
             # If no target is specified, store to StreamingCamera
             if not target:
@@ -341,7 +332,6 @@ class StreamingCamera(BaseCamera):
             (default 'h264')
         resize ((int, int)): Resize the captured image.
         """
-        #self.start_worker()
 
         # If no target is specified, store to StreamingCamera
         if not target:
@@ -389,7 +379,6 @@ class StreamingCamera(BaseCamera):
         use_video_port (bool): Capture from the video port used for streaming (lower resolution, faster)
         resize ((int, int)): Resize the captured image.
         """
-        #self.start_worker()
 
         if use_video_port:
             resolution = self.settings['video_resolution']
