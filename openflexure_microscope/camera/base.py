@@ -100,7 +100,7 @@ class BaseCamera(object):
         self.close()
 
     def close(self):
-        """Handles closing the StreamingCamera"""
+        """Close the BaseCamera and all attached StreamObjects"""
         # Close all StreamObjects
         for capture_list in [self.images, self.videos]:
             for stream_object in capture_list:

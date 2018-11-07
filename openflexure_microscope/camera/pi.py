@@ -81,6 +81,9 @@ class StreamingCamera(BaseCamera):
         """Run any initialisation code when the frame iterator starts."""
         pass
 
+    def close(self):
+        """Close the Raspberry Pi StreamingCamera"""
+        BaseCamera.close(self)  # Run BaseCamera close method
 
     # HANDLE SETTINGS
 
