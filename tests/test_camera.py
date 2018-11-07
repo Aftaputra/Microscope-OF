@@ -26,16 +26,6 @@ success_string = """
     """
 
 
-def wait_for_cam(camera, timeout=5):
-    """Wait for camera object in global namespace, with 5 second timeout."""
-    timeout_time = time.time() + timeout
-    while not camera:
-        if time.time() > timeout_time:
-            raise TimeoutError("Timeout waiting for camera")
-        else:
-            pass
-
-
 class TestCaptureMethods(unittest.TestCase):
 
     def test_still_capture(self):
@@ -46,7 +36,7 @@ class TestCaptureMethods(unittest.TestCase):
             for resize in [None, (640, 480)]:
 
                 # Wait for camera
-                wait_for_cam(camera)
+                camera.wait_for_camera()
 
                 # Capture to a context (auto-deletes files when done)
                 with camera.capture(
@@ -114,7 +104,7 @@ class TestCaptureMethods(unittest.TestCase):
         for use_video_port in [True, False]:
             for resize in [None, (640, 480)]:
                 # Wait for camera
-                wait_for_cam(camera)
+                camera.wait_for_camera()
 
                 # Capture
                 stream = camera.capture(
@@ -151,7 +141,7 @@ class TestUnencodedMethods(unittest.TestCase):
                 print("{}, {}, {}".format(id, resize, use_video_port))
 
                 # Wait for camera
-                wait_for_cam(camera)
+                camera.wait_for_camera()
 
                 # Capture RGB array
                 yuv = camera.array(
@@ -183,7 +173,7 @@ class TestUnencodedMethods(unittest.TestCase):
                 print("{}, {}, {}".format(id, resize, use_video_port))
 
                 # Wait for camera
-                wait_for_cam(camera)
+                camera.wait_for_camera()
 
                 # Capture RGB array
                 rgb = camera.array(
@@ -216,7 +206,7 @@ class TestRecordMethods(unittest.TestCase):
         for write_to_file in [True, False, None]:
 
             # Wait for camera
-            wait_for_cam(camera)
+            camera.wait_for_camera()
 
             # Start recording
             with camera.start_recording(
@@ -249,7 +239,7 @@ class TestRecordMethods(unittest.TestCase):
         global camera
 
         # Wait for camera
-        wait_for_cam(camera)
+        camera.wait_for_camera()
 
         # Start recording
         stream = camera.start_recording()
@@ -270,52 +260,50 @@ class TestRecordMethods(unittest.TestCase):
 
 
 class TestThreadStarting(unittest.TestCase):
-    def test_capture_restarting_stream(self):
+    def test_restarting_stream(self):
         """Tests that a capture call restarts the camera worker thread."""
         global camera
 
         # Wait for camera
-        wait_for_cam(camera)
+        camera.wait_for_camera()
 
         # Force-stop the camera worker thread (should return True)
         self.assertTrue(camera.stop_worker())
 
         # Check Pi camera has been disconnected
-        self.assertFalse(camera.camera)
+        self.assertTrue(camera.camera)
+        self.assertFalse(camera.thread)
 
-        # Restart worker thread by initialising a capture
-        with camera.capture(
-                use_video_port=True) as stream:
+        # Restart worker thread
+        self.assertTrue(camera.start_worker())
 
-            # Ensure StreamObject 'stream' has
-            # a valid BytesIO object and byte string
-            self.assertTrue(isinstance(stream.data, io.IOBase))
-            self.assertTrue(isinstance(stream.binary, (bytes, bytearray)))
+        self.assertTrue(camera.camera)
+        self.assertTrue(camera.thread)
+        self.assertIsInstance(camera.stream, io.IOBase)
 
 
 if __name__ == '__main__':
-    camera = None
-    with StreamingCamera() as camera:
+    camera = StreamingCamera()
 
-        suites = [
-            unittest.TestLoader().loadTestsFromTestCase(TestCaptureMethods),
-            unittest.TestLoader().loadTestsFromTestCase(TestUnencodedMethods),
-            unittest.TestLoader().loadTestsFromTestCase(TestThreadStarting),
-            unittest.TestLoader().loadTestsFromTestCase(TestRecordMethods),
-        ]
+    suites = [
+        unittest.TestLoader().loadTestsFromTestCase(TestCaptureMethods),
+        unittest.TestLoader().loadTestsFromTestCase(TestUnencodedMethods),
+        unittest.TestLoader().loadTestsFromTestCase(TestThreadStarting),
+        unittest.TestLoader().loadTestsFromTestCase(TestRecordMethods),
+    ]
 
-        alltests = unittest.TestSuite(suites)
+    alltests = unittest.TestSuite(suites)
 
-        result = unittest.TextTestRunner(verbosity=2).run(alltests)
+    result = unittest.TextTestRunner(verbosity=2).run(alltests)
 
-        print("Objects created during tests:")
-        # Show us what was captured
-        for im in camera.images:
-            pprint(im.metadata)
-        for im in camera.videos:
-            pprint(im.metadata)
+    print("Objects created during tests:")
+    # Show us what was captured
+    for im in camera.images:
+        pprint(im.metadata)
+    for im in camera.videos:
+        pprint(im.metadata)
 
-        if result.wasSuccessful():
-            print(success_string)
+    if result.wasSuccessful():
+        print(success_string)
 
     camera.close()

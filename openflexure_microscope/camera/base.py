@@ -106,6 +106,15 @@ class BaseCamera(object):
         # Stop worker thread
         self.stop_worker()
 
+    def wait_for_camera(self, timeout=5):
+        """Wait for camera object, with 5 second timeout."""
+        timeout_time = time.time() + timeout
+        while not self.camera:
+            if time.time() > timeout_time:
+                raise TimeoutError("Timeout waiting for camera")
+            else:
+                pass
+
     # START AND STOP WORKER THREAD
 
     def start_worker(self, timeout: int=5) -> bool:
@@ -131,6 +140,7 @@ class BaseCamera(object):
 
     def stop_worker(self, timeout: int=5) -> bool:
         """Flags worker thread for stop. Waits for thread to close, or times out."""
+        logging.debug("Stopping worker thread")
         timeout_time = time.time() + timeout
 
         self.stop = True
@@ -200,9 +210,7 @@ class BaseCamera(object):
     def _thread(self):
         """Camera background thread."""
         self.frames_iterator = self.frames()
-
-        # Update state
-        self.state['stream_active'] = True
+        logging.debug("Entering worker thread.")
 
         for frame in self.frames_iterator:
             self.frame = frame
@@ -217,15 +225,13 @@ class BaseCamera(object):
 
             try:
                 if self.stop is True:
+                    logging.debug("Worker thread flagged for stop.")
                     self.frames_iterator.close()
                     break
 
             except AttributeError:
                 pass
 
+        logging.debug("BaseCamera worker thread exiting...")
         # Reset thread
         self.thread = None
-        # Destroy any stored camera object (used especially for handling Pi cameras)
-        self.camera = None
-        # Update state
-        self.state['stream_active'] = False

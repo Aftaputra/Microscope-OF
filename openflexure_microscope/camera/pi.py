@@ -59,6 +59,8 @@ class StreamingCamera(BaseCamera):
         """Raspberry Pi camera implementation of StreamingCamera."""
         # Run BaseCamera init
         BaseCamera.__init__(self)
+        # Attach to Pi camera
+        self.camera = picamera.PiCamera()
 
         # Camera settings
         self.settings.update({
@@ -83,7 +85,11 @@ class StreamingCamera(BaseCamera):
 
     def close(self):
         """Close the Raspberry Pi StreamingCamera"""
-        BaseCamera.close(self)  # Run BaseCamera close method
+        # Run BaseCamera close method
+        BaseCamera.close(self)
+        # Detatch Pi camera
+        if self.camera:
+            self.camera.close()
 
     # HANDLE SETTINGS
 
@@ -96,53 +102,69 @@ class StreamingCamera(BaseCamera):
         """Open config_picamera.yaml file and write to camera."""
         global DEFAULT_CONFIG
 
-        self.start_worker()
+        paused_stream = False
 
-        if not config_path:
-            config = load_config(DEFAULT_CONFIG)
+        if not self.state['record_active']:  # If not recording a video
+
+            #self.start_worker()
+
+            if self.state['stream_active']:  # If stream is active
+                logging.info("Pausing stream to update settings.")
+                self.pause_stream_for_capture()  # Pause stream
+                paused_stream = True  # Remember to unpause stream when done
+
+            if not config_path:
+                config = load_config(DEFAULT_CONFIG)
+            else:
+                config = load_config(config_path)
+
+            logging.debug(config)
+
+            # StreamingCamera settings
+            if 'video_resolution' in config:
+                self.settings['video_resolution'] = config['video_resolution']
+            if 'image_resolution' in config:
+                self.settings['image_resolution'] = config['image_resolution']
+            if 'numpy_resolution' in config:
+                self.settings['numpy_resolution'] = config['numpy_resolution']
+
+            if 'jpeg_quality' in config:
+                self.settings['jpeg_quality'] = config['jpeg_quality']
+            if 'framerate' in config:
+                self.settings['framerate'] = config['framerate']
+
+            # Camera AWB
+            if 'awb_mode' in config:
+                self.camera.awb_mode = config['awb_mode']
+            if 'red_gain' in config and 'blue_gain' in config:
+                self.camera.awb_gains = (config['red_gain'], config['blue_gain'])
+
+            # Camera framerate
+            if 'framerate' in config:
+                self.camera.framerate = config['framerate']
+            # Camera exposure
+            if 'shutter_speed' in config:
+                self.camera.shutter_speed = config['shutter_speed']
+            if 'saturation' in config:
+                self.camera.saturation = config['saturation']
+            # Camera misc.
+            self.camera.led = False
+            # Richard's library to set analog and digital gains
+            if 'analog_gain' in config:
+                set_analog_gain(self.camera, config['analog_gain'])
+            if 'digital_gain' in config:
+                set_digital_gain(self.camera, config['digital_gain'])
+            
+            if paused_stream:  # If stream was paused to update settings
+                logging.info("Resuming stream.")
+                self.resume_stream_for_capture()
+
         else:
-            config = load_config(config_path)
-
-        logging.debug(config)
-
-        # StreamingCamera settings
-        if 'video_resolution' in config:
-            self.settings['video_resolution'] = config['video_resolution']
-        if 'image_resolution' in config:
-            self.settings['image_resolution'] = config['image_resolution']
-        if 'numpy_resolution' in config:
-            self.settings['numpy_resolution'] = config['numpy_resolution']
-
-        if 'jpeg_quality' in config:
-            self.settings['jpeg_quality'] = config['jpeg_quality']
-        if 'framerate' in config:
-            self.settings['framerate'] = config['framerate']
-
-        # Camera AWB
-        if 'awb_mode' in config:
-            self.camera.awb_mode = config['awb_mode']
-        if 'red_gain' in config and 'blue_gain' in config:
-            self.camera.awb_gains = (config['red_gain'], config['blue_gain'])
-
-        # Camera framerate
-        if 'framerate' in config:
-            self.camera.framerate = config['framerate']
-        # Camera exposure
-        if 'shutter_speed' in config:
-            self.camera.shutter_speed = config['shutter_speed']
-        if 'saturation' in config:
-            self.camera.saturation = config['saturation']
-        # Camera misc.
-        self.camera.led = False
-        # Richard's library to set analog and digital gains
-        if 'analog_gain' in config:
-            set_analog_gain(self.camera, config['analog_gain'])
-        if 'digital_gain' in config:
-            set_digital_gain(self.camera, config['digital_gain'])
+            raise Exception("Cannot update camera settings while recording is active.")
 
     def change_zoom(self, zoom_value: int=1) -> None:
         """Change the camera zoom, handling recentering and scaling."""
-        self.start_worker()
+        #self.start_worker()
 
         zoom_value = float(zoom_value)
         if zoom_value < 1:
@@ -165,7 +187,7 @@ class StreamingCamera(BaseCamera):
 
     def start_preview(self) -> bool:
         """Start the onboard GPU camera preview."""
-        self.start_worker()
+        #self.start_worker()
 
         self.camera.start_preview()
         self.state['preview_active'] = True
@@ -173,7 +195,7 @@ class StreamingCamera(BaseCamera):
 
     def stop_preview(self) -> bool:
         """Stop the onboard GPU camera preview."""
-        self.start_worker()
+        #self.start_worker()
 
         self.camera.stop_preview()
         self.state['preview_active'] = False
@@ -202,7 +224,7 @@ class StreamingCamera(BaseCamera):
 
         # Start recording method only if a current recording is not running
         if not self.state['record_active']:
-            self.start_worker()
+            #self.start_worker()
 
             # If no target is specified, store to StreamingCamera
             if not target:
@@ -319,7 +341,7 @@ class StreamingCamera(BaseCamera):
             (default 'h264')
         resize ((int, int)): Resize the captured image.
         """
-        self.start_worker()
+        #self.start_worker()
 
         # If no target is specified, store to StreamingCamera
         if not target:
@@ -367,7 +389,7 @@ class StreamingCamera(BaseCamera):
         use_video_port (bool): Capture from the video port used for streaming (lower resolution, faster)
         resize ((int, int)): Resize the captured image.
         """
-        self.start_worker()
+        #self.start_worker()
 
         if use_video_port:
             resolution = self.settings['video_resolution']
@@ -415,24 +437,28 @@ class StreamingCamera(BaseCamera):
         # Run this initialisation method
         self.initialisation()
 
-        with picamera.PiCamera() as self.camera:
-            # Let camera warm up
-            time.sleep(0.1)
-            # Settings config
-            self.update_settings()
-            # Set stream resolution
-            self.camera.resolution = self.settings['video_resolution']
+        self.wait_for_camera()
 
-            # streaming
-            self.stream = io.BytesIO()
+        # Settings config
+        self.update_settings()
+        # Set stream resolution
+        self.camera.resolution = self.settings['video_resolution']
 
-            # start recording on video splitter port 1
-            self.camera.start_recording(
-                self.stream,
-                format='mjpeg',
-                quality=self.settings['jpeg_quality'],
-                splitter_port=1)
+        # Create stream
+        self.stream = io.BytesIO()
 
+        # Start recording on video splitter port 1
+        self.camera.start_recording(
+            self.stream,
+            format='mjpeg',
+            quality=self.settings['jpeg_quality'],
+            splitter_port=1)
+
+        # Update state
+        logging.debug("STREAM ACTIVE")
+        self.state['stream_active'] = True
+
+        try:  # While the iterator is not closed
             while True:
                 # reset stream for next frame
                 self.stream.seek(0)
@@ -441,8 +467,14 @@ class StreamingCamera(BaseCamera):
                 time.sleep(1/self.settings['framerate']*0.1)
                 # yield the result to be read
                 frame = self.stream.getvalue()
+
                 # ensure the size of package is right
                 if len(frame) == 0:
                     pass
                 else:
                     yield frame
+        finally:  # When GeneratorExit or StopIteration raised, run cleanup code
+            logging.debug("Stopping stream recording on port 1")
+            self.camera.stop_recording(splitter_port=1)
+            self.state['stream_active'] = False
+            logging.debug("FRAME ITERATOR END")
