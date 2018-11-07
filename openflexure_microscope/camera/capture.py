@@ -5,8 +5,15 @@ import datetime
 import copy
 import logging
 
+
 class StreamObject(object):
-    def __init__(self, write_to_file: bool=None, filename: str=None, folder: str=None, fmt: str='file') -> None:
+    def __init__(
+            self,
+            write_to_file: bool=None,
+            filename: str=None,
+            folder: str=None,
+            fmt: str='file') -> None:
+        """Create a new StreamObject, to manage capture data."""
         # Store a nice ID
         self.id = uuid.uuid4().hex
         logging.info("Created {}".format(self.id))
@@ -17,7 +24,11 @@ class StreamObject(object):
 
         while os.path.isfile(f_name):  # While file already exists
             iterator += 1  # Add a file name iterator
-            f_name = self.build_file_path(filename, folder, fmt, iterator=iterator)  # Rebuild file name
+            f_name = self.build_file_path(
+                filename, 
+                folder, 
+                fmt, 
+                iterator=iterator)  # Rebuild file name
 
         self.file = f_name
 
@@ -27,10 +38,10 @@ class StreamObject(object):
         # Set default write target
         self.write_to_file = write_to_file
         if self.write_to_file is False:
-            logging.debug("Default target for {} set to 'stream'".format(self.id))
+            logging.debug("Target for {} set to 'stream'".format(self.id))
             self.target = self.stream
         else:
-            logging.debug("Default target for {} set to 'file'".format(self.id))
+            logging.debug("Target for {} set to 'file'".format(self.id))
             self.target = self.file
 
         # Keep on disk after close by default
@@ -40,9 +51,10 @@ class StreamObject(object):
         self.context_manager = False
 
         # Object lock
-        self.locked = False  # Is the StreamObject locked for writing? (Handled by StreamingCamera)
+        self.locked = False
 
     def __enter__(self):
+        """Create StreamObject in context, to auto-clean disk data."""
         logging.debug("Entering context for {}.\
             Stored files will be cleaned up automatically.".format(self.id))
         self.keep_on_disk = False  # Flag file to be removed on close.
@@ -50,14 +62,21 @@ class StreamObject(object):
         return self
 
     def __exit__(self, *args):
+        """Exit StreamObject, and auto-clean disk data."""
         logging.info("Cleaning up {}".format(self.id))
         self.close()
 
-    def build_file_path(self, filename: str, folder: str, fmt: str, iterator: int=0) -> str:
+    def build_file_path(
+            self,
+            filename: str,
+            folder: str,
+            fmt: str,
+            iterator: int=0) -> str:
         """
-        Construct a full file path, based on filename, folder, and file format. 
+        Construct a full file path, based on filename, folder, and file format.
 
-        Defaults to datestamp. Iterator adds a numeric increment to the file name.
+        Defaults to datestamp. 
+        Iterator adds a numeric increment to the file name.
         """
         if filename:
             file_name = "{}.{}".format(filename, fmt)
@@ -67,7 +86,7 @@ class StreamObject(object):
                 file_name_base = "{}_{}".format(file_name_base, iterator)
             file_name = "{}.{}".format(file_name_base, fmt)
 
-        # Create folder and file 
+        # Create folder and file
         if folder:
             if not os.path.exists(folder):
                 os.mkdir(folder)
@@ -88,7 +107,7 @@ class StreamObject(object):
 
     @property
     def stream_exists(self, auto_rewind=True) -> bool:
-        """Check if BytesIO stream is empty"""
+        """Check if BytesIO stream is empty."""
         if auto_rewind:
             self.stream.seek(0)  # Rewind the data bytes for reading
         if self.stream.getvalue():  # If data stream contains data
@@ -100,7 +119,7 @@ class StreamObject(object):
 
     @property
     def file_exists(self) -> bool:
-        """Check if corresponding file exists"""
+        """Check if corresponding file exists."""
         if os.path.isfile(self.file):
             return True
         else:
@@ -108,6 +127,7 @@ class StreamObject(object):
 
     @property
     def metadata(self) -> dict:
+        """Return dictionary of StreamObject properties."""
         d = {
             'id': self.id,
             'locked': self.locked,
@@ -140,16 +160,18 @@ class StreamObject(object):
         self.stream.seek(0)  # Rewind the data bytes for reading
 
         if self.stream_exists:  # If data stream contains data
-            data = io.BytesIO(self.stream.getbuffer())  # Create a copy of the stream bytes
+            # Create a copy of the stream bytes
+            data = io.BytesIO(self.stream.getbuffer())
 
         else:  # If data stream is empty
             if self.file_exists:  # If data file exists
                 # TODO: Streamline this bit
-                logging.info("No stream data. Opening from file {}".format(self.file))
+                logging.info("Opening from file {}".format(self.file))
                 with open(self.file, 'rb') as f:
-                    d = io.BytesIO(f.read())  # Load bytes from file in disk
+                    d = io.BytesIO(f.read())  # Load bytes from file
                 d.seek(0)  # Rewind loaded stream
-                data = io.BytesIO(d.getbuffer())  # Create a copy of the stream bytes
+                # Create a copy of the stream bytes
+                data = io.BytesIO(d.getbuffer())
             else:
                 data = None
 
@@ -165,16 +187,14 @@ class StreamObject(object):
         if self.file_exists:  # If data file exists
             # TODO: Streamline this bit
             with open(self.file, 'rb') as f:
-                self.stream = io.BytesIO(f.read())  # Load bytes from file in disk
+                self.stream = io.BytesIO(f.read())  # Load bytes from file
             self.stream.seek(0)  # Rewind data bytes again
             return True
         else:
             return False
 
     def save_file(self) -> bool:
-        """
-        Write the StreamObjects stream to a file.
-        """
+        """Write the StreamObjects stream to a file."""
         if self.stream_exists:  # If there's a stream to save
             with open(self.file, 'ab') as f:  # Load file as bytes
                 logging.debug("Writing stream to file {}".format(self.file))
@@ -185,13 +205,11 @@ class StreamObject(object):
             return False
 
     def delete_stream(self):
-        """Clears the BytesIO stream of the StreamObject."""
+        """Clear the BytesIO stream of the StreamObject."""
         self.stream = io.BytesIO()
 
     def delete_file(self) -> bool:
-        """
-        If the StreamObject has been saved to disk, deletes the file and returns True.
-        """
+        """If the StreamObject has been saved, delete the file."""
         if os.path.isfile(self.file):
             logging.info("Deleting file {}".format(self.file))
             os.remove(self.file)
@@ -206,7 +224,7 @@ class StreamObject(object):
         self.delete_stream()  # Delete the stream from memory
 
     def close(self):
-        """Both clear the stream, and delete any associated on-disk data"""
+        """Both clear the stream, and delete any associated on-disk data."""
         logging.info("Closing {}".format(self.id))
         self.delete_stream()
         if not self.keep_on_disk:

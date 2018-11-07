@@ -16,6 +16,7 @@ from .capture import StreamObject
 
 
 def last_entry(object_list: list):
+    """Return the last entry of a list, if the list contains items."""
     if object_list:  # If any images have been captured
         return object_list[-1]  # Return the latest captured image
     else:
@@ -23,6 +24,7 @@ def last_entry(object_list: list):
 
 
 def entry_by_id(id: str, object_list: list):
+    """Return an object from a list, if <object>.id matches id argument."""
     found = None
     for o in object_list:
         if o.id == id:
@@ -31,14 +33,17 @@ def entry_by_id(id: str, object_list: list):
 
 
 class CameraEvent(object):
-    """An Event-like class that signals all active clients when a new frame is
-    available.
-    """
     def __init__(self):
+        """
+        Create a frame-signaller object for StreamingCamera.
+
+        An event-like class that signals all active clients
+        when a new frame is available.
+        """
         self.events = {}
 
     def wait(self, timeout: int=5):
-        """Invoked from each client's thread to wait for the next frame."""
+        """Wait for the next frame (invoked from each client's thread)."""
         ident = get_ident()
         if ident not in self.events:
             # this is a new client
@@ -48,7 +53,7 @@ class CameraEvent(object):
         return self.events[ident][0].wait(timeout)
 
     def set(self):
-        """Invoked by the camera thread when a new frame is available."""
+        """Signal that a new frame is available."""
         now = time.time()
         remove = None
         for ident, event in self.events.items():
@@ -68,7 +73,7 @@ class CameraEvent(object):
             del self.events[remove]
 
     def clear(self):
-        """Invoked from each client's thread after a frame was processed."""
+        """Clear frame event, once processed."""
         self.events[get_ident()][0].clear()
 
 
@@ -98,7 +103,7 @@ class BaseCamera(object):
         self.close()
 
     def close(self):
-        """Close the BaseCamera and all attached StreamObjects"""
+        """Close the BaseCamera and all attached StreamObjects."""
         # Close all StreamObjects
         for capture_list in [self.images, self.videos]:
             for stream_object in capture_list:
@@ -139,14 +144,14 @@ class BaseCamera(object):
         return True
 
     def stop_worker(self, timeout: int=5) -> bool:
-        """Flags worker thread for stop. Waits for thread to close, or times out."""
+        """Flag worker thread for stop. Waits for thread close or timeout."""
         logging.debug("Stopping worker thread")
         timeout_time = time.time() + timeout
 
         self.stop = True
         while self.thread:
             if time.time() > timeout_time:
-                raise TimeoutError("Timeout waiting for worker thread to close.")
+                raise TimeoutError("Timeout waiting for worker thread close.")
             else:
                 time.sleep(0)
         return True
@@ -164,33 +169,37 @@ class BaseCamera(object):
         return self.frame
 
     def frames(self):
-        """Generator that returns frames from the camera."""
+        """Create generator that returns frames from the camera."""
         raise RuntimeError('Must be implemented by subclasses.')
 
     # RETURNING CAPTURES
 
     @property
     def image(self):
-        """Return the latest captured image"""
+        """Return the latest captured image."""
         return last_entry(self.images)
 
     @property
     def video(self):
-        """Return the latest recorded video"""
+        """Return the latest recorded video."""
         return last_entry(self.videos)
 
     def image_from_id(self, id):
-        """Returns an image StreamObject with a matching ID"""
+        """Return an image StreamObject with a matching ID."""
         return entry_by_id(id, self.images)
 
     def video_from_id(self, id):
-        """Returns a video StreamObject with a matching ID"""
+        """Return a video StreamObject with a matching ID."""
         return entry_by_id(id, self.videos)
 
     # CREATING NEW CAPTURES
 
-    def new_stream_object(self, stream_object, target_list: list, shunt_others: bool=True):
-        """Add a new capture to a list of captures, and shunt all others"""
+    def new_stream_object(
+            self,
+            stream_object,
+            target_list: list,
+            shunt_others: bool=True):
+        """Add a new capture to a list of captures, and shunt all others."""
         if shunt_others:  # If shunting all older captures
             for obj in target_list:  # For each older capture
                 obj.shunt()  # Shunt capture from memory to storage
@@ -198,12 +207,18 @@ class BaseCamera(object):
         return stream_object
 
     def new_image(self, stream_object, shunt_others=True):
-        """Add a new capture to the image list, and shunt all others"""
-        return self.new_stream_object(stream_object, self.images, shunt_others=shunt_others)
+        """Add a new capture to the image list, and shunt all others."""
+        return self.new_stream_object(
+            stream_object,
+            self.images,
+            shunt_others=shunt_others)
 
     def new_video(self, stream_object, shunt_others=True):
-        """Add a new capture to the video list, and shunt all others"""
-        return self.new_stream_object(stream_object, self.videos, shunt_others=shunt_others)
+        """Add a new capture to the video list, and shunt all others."""
+        return self.new_stream_object(
+            stream_object,
+            self.videos,
+            shunt_others=shunt_others)
 
     # WORKER THREAD
 

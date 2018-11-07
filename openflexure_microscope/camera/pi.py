@@ -84,7 +84,7 @@ class StreamingCamera(BaseCamera):
         pass
 
     def close(self):
-        """Close the Raspberry Pi StreamingCamera"""
+        """Close the Raspberry Pi StreamingCamera."""
         # Run BaseCamera close method
         BaseCamera.close(self)
         # Detatch Pi camera
@@ -135,7 +135,9 @@ class StreamingCamera(BaseCamera):
             if 'awb_mode' in config:
                 self.camera.awb_mode = config['awb_mode']
             if 'red_gain' in config and 'blue_gain' in config:
-                self.camera.awb_gains = (config['red_gain'], config['blue_gain'])
+                self.camera.awb_gains = (
+                    config['red_gain'],
+                    config['blue_gain'])
 
             # Camera framerate
             if 'framerate' in config:
@@ -152,13 +154,14 @@ class StreamingCamera(BaseCamera):
                 set_analog_gain(self.camera, config['analog_gain'])
             if 'digital_gain' in config:
                 set_digital_gain(self.camera, config['digital_gain'])
-            
+
             if paused_stream:  # If stream was paused to update settings
                 logging.info("Resuming stream.")
                 self.resume_stream_for_capture()
 
         else:
-            raise Exception("Cannot update camera settings while recording is active.")
+            raise Exception(
+                "Cannot update camera settings while recording is active.")
 
     def change_zoom(self, zoom_value: int=1) -> None:
         """Change the camera zoom, handling recentering and scaling."""
@@ -213,7 +216,6 @@ class StreamingCamera(BaseCamera):
         fmt (str): Format of the capture.
             (default 'h264')
         """
-
         # Start recording method only if a current recording is not running
         if not self.state['record_active']:
 
@@ -227,7 +229,7 @@ class StreamingCamera(BaseCamera):
                     fmt=fmt))
 
                 # Lock the StreamObject while recording
-                target_obj.lock() 
+                target_obj.lock()
                 # Store to the StreamObject target
                 target = target_obj.target
 
@@ -235,14 +237,14 @@ class StreamingCamera(BaseCamera):
                 target_obj = target
 
             # Start the camera video recording on port 2
-            logging.info("Starting record at {}".format(self.settings['video_resolution']))
+            logging.info("Recording to {}".format(target))
+
             self.camera.start_recording(
                 target,
                 format=fmt,
                 splitter_port=2,
                 resize=self.settings['video_resolution'],
                 quality=quality)
-            logging.debug("Recording started successfully.")
 
             # Update state dictionary
             self.state['record_active'] = True
@@ -250,12 +252,13 @@ class StreamingCamera(BaseCamera):
             return target_obj
 
         else:
-            print("Cannot start a new recording until the current recording has stopped.")
+            print(
+                "Cannot start a new recording\
+                until the current recording has stopped.")
             return None
 
     def stop_recording(self) -> bool:
         """Stop the last started video recording on splitter port 2."""
-
         # Stop the camera video recording on port 2
         logging.info("Stopping recording")
         self.camera.stop_recording(splitter_port=2)
@@ -264,12 +267,15 @@ class StreamingCamera(BaseCamera):
         # Update state dictionary
         self.state['record_active'] = False
 
-    def pause_stream_for_capture(self, splitter_port: int=1, resolution: Tuple[int, int]=None) -> None:
+    def pause_stream_for_capture(
+            self,
+            splitter_port: int=1,
+            resolution: Tuple[int, int]=None) -> None:
         """
         Pause capture on a splitter port.
 
         splitter_port (int): Splitter port to stop recording on
-        resolution ((int, int)): Resolution to set the camera to, 
+        resolution ((int, int)): Resolution to set the camera to,
             after stopping recording.
         """
         logging.debug("Pausing stream")
@@ -283,12 +289,15 @@ class StreamingCamera(BaseCamera):
         # Increase the resolution for taking an image
         self.camera.resolution = resolution
 
-    def resume_stream_for_capture(self, splitter_port: int=1, resolution: Tuple[int, int]=None) -> None:
+    def resume_stream_for_capture(
+            self,
+            splitter_port: int=1,
+            resolution: Tuple[int, int]=None) -> None:
         """
         Resume capture on a splitter port.
 
         splitter_port (int): Splitter port to start recording on
-        resolution ((int, int)): Resolution to set the camera to, 
+        resolution ((int, int)): Resolution to set the camera to,
             before starting recording.
         """
         logging.debug("Unpausing stream")
@@ -332,11 +341,14 @@ class StreamingCamera(BaseCamera):
             (default 'h264')
         resize ((int, int)): Resize the captured image.
         """
-
         # If no target is specified, store to StreamingCamera
         if not target:
             # Create a new image and add to the image list
-            target_obj = self.new_image(StreamObject(write_to_file=write_to_file, filename=filename, folder=folder, fmt=fmt))
+            target_obj = self.new_image(StreamObject(
+                write_to_file=write_to_file,
+                filename=filename,
+                folder=folder,
+                fmt=fmt))
             target = target_obj.target  # Store to the StreamObject BytesIO
 
         else:
@@ -373,13 +385,17 @@ class StreamingCamera(BaseCamera):
 
         return target_obj
 
-    def array(self, rgb=False, use_video_port: bool=True, resize: Tuple[int, int]=None) -> np.ndarray:
+    def array(
+            self,
+            rgb=False,
+            use_video_port: bool=True,
+            resize: Tuple[int, int]=None) -> np.ndarray:
         """Capture an uncompressed still YUV image to a Numpy array.
 
-        use_video_port (bool): Capture from the video port used for streaming (lower resolution, faster)
+        use_video_port (bool): Capture from the video port used for streaming.
+            (lower resolution, faster)
         resize ((int, int)): Resize the captured image.
         """
-
         if use_video_port:
             resolution = self.settings['video_resolution']
         else:
@@ -395,15 +411,14 @@ class StreamingCamera(BaseCamera):
 
         logging.debug("Creating PiYUVArray")
         with picamera.array.PiYUVArray(self.camera, size=size) as output:
-            logging.debug("Capturing to PiYUVArray from {}".format(self.camera))
+
+            logging.info("Capturing to {}".format(output))
 
             self.camera.capture(
                 output,
                 resize=size,
                 format='yuv',
                 use_video_port=use_video_port)
-
-            logging.debug("Capturing complete")
 
             if not use_video_port:
                 self.resume_stream_for_capture()
@@ -418,10 +433,10 @@ class StreamingCamera(BaseCamera):
 
     def frames(self):
         """
-        Create iterator used by worker thread to generate stream frames.
+        Create generator that returns frames from the camera.
 
-        Holds a Pi camera in context, records video from port 1 to a 
-        byte stream, and iterates sequential frames.
+        Records video from port 1 to a byte stream,
+        and iterates sequential frames.
         """
         # Run this initialisation method
         self.initialisation()
@@ -447,7 +462,8 @@ class StreamingCamera(BaseCamera):
         logging.debug("STREAM ACTIVE")
         self.state['stream_active'] = True
 
-        try:  # While the iterator is not closed
+        # While the iterator is not closed
+        try:
             while True:
                 # reset stream for next frame
                 self.stream.seek(0)
@@ -462,7 +478,8 @@ class StreamingCamera(BaseCamera):
                     pass
                 else:
                     yield frame
-        finally:  # When GeneratorExit or StopIteration raised, run cleanup code
+        # When GeneratorExit or StopIteration raised, run cleanup code
+        finally:
             logging.debug("Stopping stream recording on port 1")
             self.camera.stop_recording(splitter_port=1)
             self.state['stream_active'] = False
