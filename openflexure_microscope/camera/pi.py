@@ -32,6 +32,7 @@ import yaml
 import copy
 import numpy as np
 from PIL import Image
+import logging
 
 # Pi camera
 import picamera
@@ -43,7 +44,7 @@ from typing import Tuple
 # Threading
 import threading
 
-from .base import BaseCamera, StreamObject, log
+from .base import BaseCamera, StreamObject
 # Richard's fix gain
 from .set_picamera_gain import set_analog_gain, set_digital_gain
 # Manage config
@@ -53,28 +54,11 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_CONFIG = os.path.join(HERE, 'config_picamera.yaml')
 
 
-def last_entry(object_list: list):
-    if object_list:  # If any images have been captured
-        return object_list[-1]  # Return the latest captured image
-    else:
-        return None
-
-def entry_by_id(id: str, object_list: list):
-    found = None
-    for o in object_list:
-        if o.id == id:
-            found = o
-    return found
-
 class StreamingCamera(BaseCamera):
-    """Raspberry Pi camera implementation of StreamingCamera."""
     def __init__(self):
-        # Run BaseCamera init to start thread
+        """Raspberry Pi camera implementation of StreamingCamera."""
+        # Run BaseCamera init
         BaseCamera.__init__(self)
-
-        # Capture data
-        self.images = []
-        self.videos = []
 
         # Camera settings
         self.settings.update({
@@ -96,55 +80,9 @@ class StreamingCamera(BaseCamera):
     def initialisation(self):
         """Run any initialisation code when the frame iterator starts."""
         pass
-    
-    # HANDLE CONTEXT MANAGER AND FILE CLOSING
 
-    def close(self):
-        """Close method called by BaseCamera __exit__"""
-        # Close all StreamObjects
-        for capture_list in [self.images, self.videos]:
-            for stream_object in capture_list:
-                stream_object.close()
-        self.stop_worker()
 
-    # RETURNING CAPTURES
-
-    @property
-    def image(self):
-        """Return the latest captured image"""
-        return last_entry(self.images)
-
-    @property
-    def video(self):
-        """Return the latest recorded video"""
-        return last_entry(self.videos)
-
-    def image_from_id(self, id):
-        """Returns an image StreamObject with a matching ID"""
-        return entry_by_id(id, self.images)
-
-    def video_from_id(self, id):
-        """Returns a video StreamObject with a matching ID"""
-        return entry_by_id(id, self.videos)
-
-    # CREATING NEW CAPTURES
-    def new_stream_object(self, stream_object, target_list: list, shunt_others: bool=True):
-        """Add a new capture to a list of captures, and shunt all others"""
-        if shunt_others:  # If shunting all older captures
-            for obj in target_list:  # For each older capture
-                obj.shunt()  # Shunt capture from memory to storage
-        target_list.append(stream_object)
-        return stream_object
-
-    def new_image(self, stream_object, shunt_others=True):
-        """Add a new capture to the image list, and shunt all others"""
-        return self.new_stream_object(stream_object, self.images, shunt_others=shunt_others)
-
-    def new_video(self, stream_object, shunt_others=True):
-        """Add a new capture to the video list, and shunt all others"""
-        return self.new_stream_object(stream_object, self.videos, shunt_others=shunt_others)
-
-    # HANDLING SETTINGS
+    # HANDLE SETTINGS
 
     # TODO: Handle exceptions
     # TODO: Have this take a dictionary (not a config file)
@@ -162,8 +100,7 @@ class StreamingCamera(BaseCamera):
         else:
             config = load_config(config_path)
 
-        log("Applying config:")
-        log(config)
+        logging.debug(config)
 
         # StreamingCamera settings
         if 'video_resolution' in config:
@@ -221,7 +158,7 @@ class StreamingCamera(BaseCamera):
         new_fov = (centre[0] - size/2, centre[1] - size/2, size, size)
         self.camera.zoom = new_fov
 
-    # LAUNCH ACTIONS   
+    # LAUNCH ACTIONS
 
     def start_preview(self) -> bool:
         """Start the onboard GPU camera preview."""
@@ -282,14 +219,15 @@ class StreamingCamera(BaseCamera):
                 target_obj = target
 
             # Start the camera video recording on port 2
-            log("Starting record at {}".format(self.settings['video_resolution']))
+            logging.info("Starting record at {}".format(self.settings['video_resolution']))
             self.camera.start_recording(
                 target,
                 format=fmt,
                 splitter_port=2,
                 resize=self.settings['video_resolution'],
                 quality=quality)
-        
+            logging.debug("Recording started successfully.")
+
             # Update state dictionary
             self.state['record_active'] = True
 
@@ -303,9 +241,9 @@ class StreamingCamera(BaseCamera):
         """Stop the last started video recording on splitter port 2."""
 
         # Stop the camera video recording on port 2
-        log("Stopping recording")
+        logging.info("Stopping recording")
         self.camera.stop_recording(splitter_port=2)
-        log("Recording stopped")
+        logging.info("Recording stopped")
 
         # Update state dictionary
         self.state['record_active'] = False
@@ -318,7 +256,7 @@ class StreamingCamera(BaseCamera):
         resolution ((int, int)): Resolution to set the camera to, 
             after stopping recording.
         """
-        log("Pausing stream")
+        logging.debug("Pausing stream")
         # If no resolution is specified, default to image_resolution
         if not resolution:
             resolution = self.settings['image_resolution']
@@ -337,7 +275,7 @@ class StreamingCamera(BaseCamera):
         resolution ((int, int)): Resolution to set the camera to, 
             before starting recording.
         """
-        log("Unpausing stream")
+        logging.debug("Unpausing stream")
         if not resolution:
             resolution = self.settings['video_resolution']
 
@@ -389,7 +327,7 @@ class StreamingCamera(BaseCamera):
         else:
             target_obj = target
 
-        log("Capturing to {}".format(target))
+        logging.info("Capturing to {}".format(target))
 
         if not use_video_port:
 
@@ -432,7 +370,7 @@ class StreamingCamera(BaseCamera):
             resolution = self.settings['video_resolution']
         else:
             resolution = self.settings['numpy_resolution']
-        
+
         if resize:
             size = resize
         else:
@@ -440,10 +378,10 @@ class StreamingCamera(BaseCamera):
 
         if not use_video_port:
             self.pause_stream_for_capture(resolution=resolution)
-        
-        log("Creating PiYUVArray")
+
+        logging.debug("Creating PiYUVArray")
         with picamera.array.PiYUVArray(self.camera, size=size) as output:
-            log("Capturing to PiYUVArray from {}".format(self.camera))
+            logging.debug("Capturing to PiYUVArray from {}".format(self.camera))
 
             self.camera.capture(
                 output,
@@ -451,13 +389,13 @@ class StreamingCamera(BaseCamera):
                 format='yuv',
                 use_video_port=use_video_port)
 
-            log("Capturing complete")
+            logging.debug("Capturing complete")
 
             if not use_video_port:
                 self.resume_stream_for_capture()
 
             if rgb:
-                log("Converting to RGB")
+                logging.debug("Converting to RGB")
                 return output.rgb_array
             else:
                 return output.array
@@ -473,7 +411,6 @@ class StreamingCamera(BaseCamera):
         """
         # Run this initialisation method
         self.initialisation()
-        self.stream_method = 'PiCamera'
 
         with picamera.PiCamera() as self.camera:
             # Let camera warm up
@@ -492,7 +429,7 @@ class StreamingCamera(BaseCamera):
                 format='mjpeg',
                 quality=self.settings['jpeg_quality'],
                 splitter_port=1)
-            
+
             while True:
                 # reset stream for next frame
                 self.stream.seek(0)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from openflexure_microscope.camera.pi import StreamingCamera, StreamObject, log
+from openflexure_microscope.camera.pi import StreamingCamera, StreamObject
 import os
 import io
 import sys
@@ -11,6 +11,9 @@ from PIL import Image
 
 import unittest
 from pprint import pprint
+
+import logging, sys
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 success_string = """
             /O
