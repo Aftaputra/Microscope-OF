@@ -73,17 +73,15 @@ class CameraEvent(object):
 
 
 class BaseCamera(object):
-    thread = None  # Background thread that reads frames from camera
-    camera = None  # Camera object, for direct access to camera
-
-    frame = None  # Current frame is stored here by background thread
-    last_access = 0  # Time of last client access to the camera
-    event = CameraEvent()
-
-    # CONTEXT MANAGER AND OBJECT CLEANUP
-
     def __init__(self):
         """Base implementation of StreamingCamera."""
+        self.thread = None  # Background thread that reads frames from camera
+        self.camera = None  # Camera object, for direct access to camera
+
+        self.frame = None  # Current frame is stored here by background thread
+        self.last_access = 0  # Time of last client access to the camera
+        self.event = CameraEvent()
+
         self.state = {}  # Create dict for capture state
         self.settings = {}  # Create dict to store settings
 
