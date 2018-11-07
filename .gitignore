@@ -62,3 +62,7 @@ record/
 .vscode/
 .idea/
 activate
+
+# UML diagrams
+classes.png
+packages.png
