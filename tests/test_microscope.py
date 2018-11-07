@@ -38,7 +38,7 @@ class TestMicroscope(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    with StreamingCamera() as camera, OpenFlexureStage(None) as stage:
+    with StreamingCamera() as camera, OpenFlexureStage("/dev/ttyUSB0") as stage:
 
         microscope = Microscope(camera, stage)
 
@@ -52,4 +52,3 @@ if __name__ == '__main__':
 
         if result.wasSuccessful():
             print(success_string)
-
