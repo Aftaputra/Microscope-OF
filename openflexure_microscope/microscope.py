@@ -33,7 +33,6 @@ class Microscope(object):
         # Add stage position
         position = self.stage.position
         state['position'] = {
-            'absolute': True,
             'x': position[0],
             'y': position[1],
             'z': position[2],
