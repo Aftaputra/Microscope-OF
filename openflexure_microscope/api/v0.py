@@ -11,34 +11,19 @@ from flask import (
 
 import numpy as np
 
+from openflexure_microscope.api.utilities import parse_payload, gen
 from openflexure_microscope.camera.pi import StreamingCamera
 
 app = Flask(__name__)
 cam = StreamingCamera()
 
 
-def parse_payload(request):
-    """Convert request to JSON. Will eventually handle error-checking."""
-    # TODO: Handle invalid JSON payloads
-    state = request.get_json()
-    return state
-
-
-def gen(camera):
-    """Video streaming generator function."""
-    while True:
-        # the obtained frame is a jpeg
-        frame = camera.get_frame()
-
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
 
 @app.route('/')
 def index():
     """Video streaming home page."""
     cam.start_worker()  # Start the stream
-    return render_template('index.html')
+    return render_template('index_v0.html')
 
 
 @app.route('/stream')

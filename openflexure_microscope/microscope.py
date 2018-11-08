@@ -24,3 +24,22 @@ class Microscope(object):
         """Shut down the microscope hardware."""
         self.camera.close()
         self.stage.close()
+
+    # Create unified state
+    @property
+    def state(self):
+        state = {}
+
+        # Add stage position
+        position = self.stage.position
+        state['position'] = {
+            'absolute': True,
+            'x': position[0],
+            'y': position[1],
+            'z': position[2],
+        }
+
+        # Add camera state
+        state.update(self.camera.state)
+
+        return state
