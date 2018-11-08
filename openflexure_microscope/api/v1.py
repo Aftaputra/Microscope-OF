@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 """
-TODO: Implement stage control methods
 TODO: Reimplement capture methods
 TODO: Implement API route to cleanly shut down server
 TODO: Implement microscope function API routes (autofocus etc)
@@ -15,6 +14,7 @@ from flask import (
     Flask, render_template, Response,
     redirect, request, jsonify, send_file)
 
+
 import numpy as np
 
 from openflexure_microscope.api.utilities import parse_payload, gen
@@ -24,7 +24,7 @@ from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_stage import OpenFlexureStage
 
 import logging, sys
-logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 
 # Create the microscope object globally (common to all spawned server threads)
@@ -73,11 +73,44 @@ def state():
 
 @app.route(uri('/position'), methods=['GET', 'POST', 'PUT'])
 def position():
-    """Return JSONified microscope state"""
+    """Set and get the microscope stage position"""
     global microscope
 
     if request.method == 'POST' or request.method == 'PUT':
-        logging.debug("TODO: Move stage.")
+        # Get payload
+        state = parse_payload(request)
+        logging.debug(state)
+
+        # Construct position array
+        position = [0, 0, 0]
+
+        # Handle absolute positioning
+        if 'absolute' in state and state['absolute'] is True:
+            # Get coordinates from payload
+            for axis, key in enumerate(['x', 'y', 'z']):
+                if key in state:
+                    position[axis] = int(state[key]-microscope.stage.position[axis])
+
+        else:
+            # Get coordinates from payload
+            for axis, key in enumerate(['x', 'y', 'z']):
+                if key in state:
+                    position[axis] = int(state[key])
+
+        logging.debug(position)
+
+        # Safeguard to prevent moving to an absolute position beyond a fixed limit
+        if not 'force' in state or state['force'] is False:  # Allow for override
+            # TODO: Make travel_limit a property of the stage or microscope
+            # TODO: Make travel_limit a 3-axis list
+            travel_limit = 2000 
+            for axis, pos in enumerate(position):
+                if abs(pos) > travel_limit:
+                    # Respond with 400 Bad Request
+                    response = {'error': 'Cannot move to absolute position beyond the safeguard limit.'}
+                    return jsonify(response), 400
+
+        microscope.stage.move_rel(position)
 
     return jsonify(microscope.state['position'])
 
