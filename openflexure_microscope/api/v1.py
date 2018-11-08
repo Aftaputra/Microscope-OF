@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """
+TODO: Bind to port 80
 TODO: Reimplement capture methods
 TODO: Implement API route to cleanly shut down server
 TODO: Implement microscope function API routes (autofocus etc)
