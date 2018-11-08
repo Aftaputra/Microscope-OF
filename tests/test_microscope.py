@@ -16,7 +16,7 @@ import unittest
 from pprint import pprint
 
 import logging, sys
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 success_string = """
             /O
@@ -31,10 +31,24 @@ success_string = """
 
 class TestMicroscope(unittest.TestCase):
 
-    def test_startup(self):
-        """Tests capturing still images to a BytesIO stream."""
-        global microscope
-        pass
+    def test_movement(self):
+        move_distance = 500
+        for axis in range(3):
+            for direction in [1, -1]:
+                pos_i = microscope.stage.position
+                logging.debug(pos_i)
+
+                logging.info("Moving axis {} by {}".format(axis, move_distance*direction))
+                move = [0, 0, 0]
+                move[axis] = move_distance*direction
+
+                microscope.stage.move_rel(move)
+
+                pos_f = microscope.stage.position
+                diff = np.subtract(pos_f, pos_i)
+                logging.debug("{} > {}".format(pos_i, pos_f))
+
+                self.assertTrue(np.array_equal(diff, move))
 
 
 if __name__ == '__main__':
@@ -52,3 +66,5 @@ if __name__ == '__main__':
 
         if result.wasSuccessful():
             print(success_string)
+
+    microscope.close()
