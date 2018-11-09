@@ -129,33 +129,37 @@ addEventListener("keydown", function (e) {
     keysDown[e.keyCode] = true; //Add key to array
     console.log(keysDown)
 
-    // If stage movement keys are pressed
-    if ((leftKeyID in keysDown) || (rightKeyID in keysDown) || (upKeyID in keysDown) || (downKeyID in keysDown) || (pgupKeyID in keysDown) || (pgdnKeyID in keysDown)) {
-        // Calculate movement array
-        x_rel = 0;
-        y_rel = 0;
-        z_rel = 0;
-        if (leftKeyID in keysDown) {
-        x_rel = x_rel + stageVelocity;
-        }
-        if (rightKeyID in keysDown) {
-        x_rel = x_rel - stageVelocity;
-        }
-        if (upKeyID in keysDown) {
-        y_rel = y_rel + stageVelocity;
-        }
-        if (downKeyID in keysDown) {
-        y_rel = y_rel - stageVelocity;
-        }
-        if (pgupKeyID in keysDown) {
-        z_rel = z_rel - focusVelocity;
-        }
-        if (pgdnKeyID in keysDown) {
-        z_rel = z_rel + focusVelocity;
-        }
+    // If not currently in an input box
+    if (!(e.target instanceof HTMLInputElement)) {
 
-        // Make a position request
-        moveStagePositions(x_rel, y_rel, z_rel)
+        // If stage movement keys are pressed
+        if ((leftKeyID in keysDown) || (rightKeyID in keysDown) || (upKeyID in keysDown) || (downKeyID in keysDown) || (pgupKeyID in keysDown) || (pgdnKeyID in keysDown)) {
+            // Calculate movement array
+            x_rel = 0;
+            y_rel = 0;
+            z_rel = 0;
+            if (leftKeyID in keysDown) {
+            x_rel = x_rel + stageVelocity;
+            }
+            if (rightKeyID in keysDown) {
+            x_rel = x_rel - stageVelocity;
+            }
+            if (upKeyID in keysDown) {
+            y_rel = y_rel + stageVelocity;
+            }
+            if (downKeyID in keysDown) {
+            y_rel = y_rel - stageVelocity;
+            }
+            if (pgupKeyID in keysDown) {
+            z_rel = z_rel - focusVelocity;
+            }
+            if (pgdnKeyID in keysDown) {
+            z_rel = z_rel + focusVelocity;
+            }
+
+            // Make a position request
+            moveStagePositions(x_rel, y_rel, z_rel)
+        }
     }
 
 }, false);
