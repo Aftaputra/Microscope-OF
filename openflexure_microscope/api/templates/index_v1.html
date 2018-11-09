@@ -5,5 +5,120 @@
   <body>
     <h1>Video Streaming Demonstration</h1>
     <img src="{{ url_for('stream') }}">
+    <br>
+
+    x: <input type="number" id="x_abs">
+    y: <input type="number" id="y_abs">
+    z: <input type="number" id="z_abs">
+    <br>
+
+    <label for="stageVelocityInput">x-y stage velocity:</label>
+    <br>
+    <input type="range" name="stageVelocityInput" min="50" max="200" value="100" oninput="updateStageVelocity(this.value);">
+    <input type="text" id="stageVelocityText" value="100" disabled>
+
   </body>
+
+  <script>
+    // TODO: Auto-update position input boxes on-load using position GET request
+    // TODO: Use position input boxes to set absolute position
+    // TODO: Mouse wheel to focus?
+
+    // Key IDs
+    var pgupKeyID = 33;
+    var pgdnKeyID = 34;
+
+    var leftKeyID = 37;
+    var upKeyID = 38;
+    var rightKeyID = 39;
+    var downKeyID = 40;
+
+    var enterKeyID = 13;
+    var escKeyID = 27;
+
+    var keysDown = {}; //Array of keys down
+
+    var stageVelocity = 50;
+    var focusVelocity = 20;
+
+    var requestLock = false;
+
+    function updateStageVelocity(val) {
+          document.getElementById('stageVelocityText').value = val; 
+          stageVelocity = val;
+    }
+
+    addEventListener("keydown", function (e) {
+        keysDown[e.keyCode] = true; //Add key to array
+        console.log(keysDown)
+
+        // If stage movement keys are pressed
+        if ((leftKeyID in keysDown) || (rightKeyID in keysDown) || (upKeyID in keysDown) || (downKeyID in keysDown) || (pgupKeyID in keysDown) || (pgdnKeyID in keysDown)) {
+          // Calculate movement array
+          x_rel = 0;
+          y_rel = 0;
+          z_rel = 0;
+          if (leftKeyID in keysDown) {
+            x_rel = x_rel + stageVelocity;
+          }
+          if (rightKeyID in keysDown) {
+            x_rel = x_rel - stageVelocity;
+          }
+          if (upKeyID in keysDown) {
+            y_rel = y_rel + stageVelocity;
+          }
+          if (downKeyID in keysDown) {
+            y_rel = y_rel - stageVelocity;
+          }
+          if (pgupKeyID in keysDown) {
+            z_rel = z_rel - focusVelocity;
+          }
+          if (pgdnKeyID in keysDown) {
+            z_rel = z_rel + focusVelocity;
+          }
+
+          // Make a position request
+          function keyMoveCallback(response) {
+            console.log(response);
+            document.getElementById('x_abs').value = response["x"];
+            document.getElementById('y_abs').value = response["y"];
+            document.getElementById('z_abs').value = response["z"];
+          }
+          safePost("{{ url_for('position') }}", { "absolute": false, "x": x_rel, "y": y_rel, "z": z_rel}, keyMoveCallback)
+        }
+
+    }, false);
+
+    addEventListener("keyup", function (e) {
+        delete keysDown[e.keyCode]; //Remove key from array
+    }, false);
+  
+    
+    function safePost(url, payload, callback) {
+      if (requestLock == false) {
+          var xhr = new XMLHttpRequest();   // new HttpRequest instance 
+          xhr.open("POST", url);
+          requestLock = true;
+
+          xhr.onload = function (e) {
+            if (xhr.readyState === 4) {
+              if (xhr.status === 200) {
+                callback(JSON.parse(xhr.responseText));
+              } else {
+                console.error(xhr.statusText);
+              }
+            }
+            requestLock = false;
+          };
+
+          xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+          xhr.send(JSON.stringify(payload));
+        }
+        else {
+          console.log("Cannot start new request while previous requets is pending...")
+        }
+    }
+
+  </script>
+
 </html>
