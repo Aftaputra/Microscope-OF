@@ -14,10 +14,12 @@
     <button type="button" onclick="getStagePositions();">Update</button>
     <br>
 
-    <label for="stageVelocityInput">x-y stage velocity:</label>
+    Velocity:
     <br>
-    <input type="range" name="stageVelocityInput" min="50" max="200" value="100" oninput="updateStageVelocity(this.value);">
-    <input type="text" id="stageVelocityText" value="100" disabled>
+    x-y: <input type="range" name="stageVelocityInput" min="50" max="200" value="100" oninput="updateStageVelocity(this.value);">
+    <input type="text" id="stageVelocityText" value="100" size="3" disabled>
+    z: <input type="range" name="focusVelocityInput" min="10" max="100" value="20" oninput="updateFocusVelocity(this.value);">
+    <input type="text" id="focusVelocityText" value="20" size="3" disabled>
     <br>
 
     Scroll focus: <input type="checkbox" id="scrollFocusCheck" checked>
@@ -56,6 +58,11 @@
     function updateStageVelocity(val) {
       document.getElementById('stageVelocityText').value = val; 
       stageVelocity = val;
+    }
+
+    function updateFocusVelocity(val) {
+      document.getElementById('focusVelocityText').value = val; 
+      focusVelocity = val;
     }
 
     function updateStagePositions(response) {
