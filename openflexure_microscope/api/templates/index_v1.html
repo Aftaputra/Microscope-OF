@@ -10,6 +10,8 @@
     x: <input type="number" id="x_abs">
     y: <input type="number" id="y_abs">
     z: <input type="number" id="z_abs">
+    <button type="button" onclick="setStagePositionsFromInput();">GO</button>
+    <button type="button" onclick="getStagePositions();">Update</button>
     <br>
 
     <label for="stageVelocityInput">x-y stage velocity:</label>
@@ -20,9 +22,9 @@
   </body>
 
   <script>
-    // TODO: Auto-update position input boxes on-load using position GET request
     // TODO: Use position input boxes to set absolute position
     // TODO: Mouse wheel to focus?
+    // TODO: Remember a position and restore that position
 
     // Key IDs
     var pgupKeyID = 33;
@@ -43,11 +45,50 @@
 
     var requestLock = false;
 
-    function updateStageVelocity(val) {
-          document.getElementById('stageVelocityText').value = val; 
-          stageVelocity = val;
+    window.onload = function() {
+      getStagePositions()
     }
 
+    // Methods for updating page content
+    function updateStageVelocity(val) {
+      document.getElementById('stageVelocityText').value = val; 
+      stageVelocity = val;
+    }
+
+    function updateStagePositions(response) {
+      document.getElementById('x_abs').value = response["x"];
+      document.getElementById('y_abs').value = response["y"];
+      document.getElementById('z_abs').value = response["z"];
+    }
+
+    function getStagePositions() {
+      function updatePositionCallback(response, status) {
+        console.log(status, response);
+        updateStagePositions(response);
+      }
+      safeRequest("GET", "{{ url_for('position') }}", null, updatePositionCallback)
+    }
+
+    function setStagePositions(x_abs, y_abs, z_abs) {
+      // Make a position request
+      function absMoveCallback(response, status) {
+        if (status == 400) {
+          alert("Stage cannot be moved further than the safe range.");
+        }
+        console.log(status, response);
+        updateStagePositions(response);
+      }
+      safeRequest("POST", "{{ url_for('position') }}", { "absolute": true, "x": x_abs, "y": y_abs, "z": z_abs}, absMoveCallback)
+    }
+
+    function setStagePositionsFromInput() {
+      x_abs = Number(document.getElementById('x_abs').value);
+      y_abs = Number(document.getElementById('y_abs').value);
+      z_abs = Number(document.getElementById('z_abs').value);
+      setStagePositions(x_abs, y_abs, z_abs)
+    }
+
+    // Methods for input events
     addEventListener("keydown", function (e) {
         keysDown[e.keyCode] = true; //Add key to array
         console.log(keysDown)
@@ -78,13 +119,11 @@
           }
 
           // Make a position request
-          function keyMoveCallback(response) {
-            console.log(response);
-            document.getElementById('x_abs').value = response["x"];
-            document.getElementById('y_abs').value = response["y"];
-            document.getElementById('z_abs').value = response["z"];
+          function keyMoveCallback(response, status) {
+            console.log(status, response);
+            updateStagePositions(response);
           }
-          safePost("{{ url_for('position') }}", { "absolute": false, "x": x_rel, "y": y_rel, "z": z_rel}, keyMoveCallback)
+          safeRequest("POST", "{{ url_for('position') }}", { "absolute": false, "x": x_rel, "y": y_rel, "z": z_rel}, keyMoveCallback)
         }
 
     }, false);
@@ -93,26 +132,29 @@
         delete keysDown[e.keyCode]; //Remove key from array
     }, false);
   
-    
-    function safePost(url, payload, callback) {
+    // Methods for making requests
+    function safeRequest(method, url, payload, callback) {
       if (requestLock == false) {
           var xhr = new XMLHttpRequest();   // new HttpRequest instance 
-          xhr.open("POST", url);
+          xhr.open(method, url);
           requestLock = true;
 
           xhr.onload = function (e) {
             if (xhr.readyState === 4) {
-              if (xhr.status === 200) {
-                callback(JSON.parse(xhr.responseText));
-              } else {
+              if (xhr.status !== 200) {
                 console.error(xhr.statusText);
-              }
+              } 
+              callback(JSON.parse(xhr.responseText), xhr.status);
             }
             requestLock = false;
           };
 
-          xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+          if (method == "POST" || method == "PUT") {
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+          }
+
           xhr.send(JSON.stringify(payload));
+
         }
         else {
           console.log("Cannot start new request while previous requets is pending...")
