@@ -35,6 +35,7 @@
 
   <script>
     // TODO: Remember a position and restore that position
+    // TODO: Right click to auto-focus, centered on that region
 
     // Key IDs
     var pgupKeyID = 33;
@@ -50,7 +51,7 @@
 
     var keysDown = {}; //Array of keys down
 
-    var stageVelocity = 50;
+    var stageVelocity = 50;  
     var focusVelocity = 20;
 
     var requestLock = false;
@@ -117,18 +118,32 @@
 
     // Methods for input events
 
+    // Click-to-move
     function clickHotspotImage(event) {
-      xCoordinate = event.offsetX;
-      yCoordinate = event.offsetY;
-      console.log(xCoordinate, yCoordinate)
-      xRelative = (0.5*event.target.offsetWidth - xCoordinate)/event.target.offsetWidth;
-      yRelative = (0.5*event.target.offsetHeight - yCoordinate)/event.target.offsetHeight;
-      console.log(xRelative, yRelative)
-      xSteps = xRelative * fovX;
-      ySteps = yRelative * fovY;
-      console.log(xSteps, ySteps, 0)
-      moveStagePositions(xSteps, ySteps, 0)
+      if (document.getElementById("clickPositionCheck").checked == true) {
+        xCoordinate = event.offsetX;
+        yCoordinate = event.offsetY;
+        console.log(xCoordinate, yCoordinate)
+        xRelative = (0.5*event.target.offsetWidth - xCoordinate)/event.target.offsetWidth;
+        yRelative = (0.5*event.target.offsetHeight - yCoordinate)/event.target.offsetHeight;
+        console.log(xRelative, yRelative)
+        xSteps = xRelative * fovX;
+        ySteps = yRelative * fovY;
+        console.log(xSteps, ySteps, 0)
+        moveStagePositions(xSteps, ySteps, 0)
+      }
     }
+
+    // Scroll-to-focus
+    window.addEventListener('wheel', function(e) {
+      multiplier = 1/100;
+      z_delta = e.deltaY * multiplier * focusVelocity;
+      console.log(z_delta);
+      if (document.getElementById("scrollFocusCheck").checked == true) {
+        // Make a position request
+        safeRequest("POST", "{{ url_for('position') }}", { "absolute": false, "z": z_delta}, keyMoveCallback)
+      }
+    });
 
     addEventListener("keydown", function (e) {
         keysDown[e.keyCode] = true; //Add key to array
@@ -168,16 +183,6 @@
     addEventListener("keyup", function (e) {
         delete keysDown[e.keyCode]; //Remove key from array
     }, false);
-
-    window.addEventListener('wheel', function(e) {
-      multiplier = 1/100;
-      z_delta = e.deltaY * multiplier * focusVelocity;
-      console.log(z_delta);
-      if (document.getElementById("scrollFocusCheck").checked == true) {
-        // Make a position request
-        safeRequest("POST", "{{ url_for('position') }}", { "absolute": false, "z": z_delta}, keyMoveCallback)
-      }
-    });
   
     // Methods for making requests
     function safeRequest(method, url, payload, callback) {
