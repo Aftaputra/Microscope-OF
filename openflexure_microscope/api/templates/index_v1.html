@@ -4,7 +4,7 @@
   </head>
   <body>
     <h1>OpenFlexure Microscope API Demo</h1>
-    <img src="{{ url_for('stream') }}">
+    <img src="{{ url_for('stream') }}" ondblclick="clickHotspotImage(event)";>
     <br>
 
     x: <input type="number" id="x_abs">
@@ -16,19 +16,24 @@
 
     Velocity:
     <br>
-    x-y: <input type="range" name="stageVelocityInput" min="50" max="200" value="100" oninput="updateStageVelocity(this.value);">
+    x-y: <input type="range" name="stageVelocityInput" min="50" max="200" value="100" oninput="stageVelocity = Number(this.value);">
     <input type="text" id="stageVelocityText" value="100" size="3" disabled>
-    z: <input type="range" name="focusVelocityInput" min="10" max="100" value="20" oninput="updateFocusVelocity(this.value);">
+    z: <input type="range" name="focusVelocityInput" min="10" max="100" value="20" oninput="focusVelocity = Number(this.value);">
     <input type="text" id="focusVelocityText" value="20" size="3" disabled>
     <br>
 
     Scroll focus: <input type="checkbox" id="scrollFocusCheck" checked>
+    <br>
+
+    Click position: <input type="checkbox" id="clickPositionCheck" checked>
+    x FOV: <input type="text" id="fovXText" value="4100" size="4" onchange="fovX = Number(this.value);">
+    y FOV: <input type="text" id="fovYText" value="3146" size="4" onchange="fovY = Number(this.value);">
+
 
 
   </body>
 
   <script>
-    // TODO: Mouse wheel to focus?
     // TODO: Remember a position and restore that position
 
     // Key IDs
@@ -50,19 +55,13 @@
 
     var requestLock = false;
 
+    // Microscope client-side callibration
+    //TODO: Move to serverside microscope property
+    var fovX =  4100;
+    var fovY = 3146;
+
     window.onload = function() {
       getStagePositions()
-    }
-
-    // Methods for updating page content
-    function updateStageVelocity(val) {
-      document.getElementById('stageVelocityText').value = val; 
-      stageVelocity = val;
-    }
-
-    function updateFocusVelocity(val) {
-      document.getElementById('focusVelocityText').value = val; 
-      focusVelocity = val;
     }
 
     function updateStagePositions(response) {
@@ -91,6 +90,18 @@
       safeRequest("POST", "{{ url_for('position') }}", { "absolute": true, "x": x_abs, "y": y_abs, "z": z_abs}, absMoveCallback)
     }
 
+    function moveStagePositions(x_rel, y_rel, z_rel) {
+      // Make a position request
+      function relMoveCallback(response, status) {
+        if (status == 400) {
+          alert("Stage cannot be moved further than the safe range.");
+        }
+        console.log(status, response);
+        updateStagePositions(response);
+      }
+      safeRequest("POST", "{{ url_for('position') }}", { "absolute": false, "x": x_rel, "y": y_rel, "z": z_rel}, relMoveCallback)
+    }
+
     function setStagePositionsFromInput() {
       x_abs = Number(document.getElementById('x_abs').value);
       y_abs = Number(document.getElementById('y_abs').value);
@@ -105,6 +116,20 @@
     }
 
     // Methods for input events
+
+    function clickHotspotImage(event) {
+      xCoordinate = event.offsetX;
+      yCoordinate = event.offsetY;
+      console.log(xCoordinate, yCoordinate)
+      xRelative = (0.5*event.target.offsetWidth - xCoordinate)/event.target.offsetWidth;
+      yRelative = (0.5*event.target.offsetHeight - yCoordinate)/event.target.offsetHeight;
+      console.log(xRelative, yRelative)
+      xSteps = xRelative * fovX;
+      ySteps = yRelative * fovY;
+      console.log(xSteps, ySteps, 0)
+      moveStagePositions(xSteps, ySteps, 0)
+    }
+
     addEventListener("keydown", function (e) {
         keysDown[e.keyCode] = true; //Add key to array
         console.log(keysDown)
@@ -135,7 +160,7 @@
           }
 
           // Make a position request
-          safeRequest("POST", "{{ url_for('position') }}", { "absolute": false, "x": x_rel, "y": y_rel, "z": z_rel}, keyMoveCallback)
+          moveStagePositions(x_rel, y_rel, z_rel)
         }
 
     }, false);
