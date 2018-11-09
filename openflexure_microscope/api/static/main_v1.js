@@ -29,11 +29,14 @@ var fovY = 3146;
 
 window.onload = function() {
     getStagePositions()
+    updateTextBoxes()
 }
 
 function updateTextBoxes() {
     document.getElementById('stageVelocityText').value = stageVelocity;
+    document.getElementById('stageVelocityInput').value = stageVelocity;
     document.getElementById('focusVelocityText').value = focusVelocity;
+    document.getElementById('focusVelocityInput').value = focusVelocity;
 
     document.getElementById('fovXText').value = fovX;
     document.getElementById('fovYText').value = fovY;
