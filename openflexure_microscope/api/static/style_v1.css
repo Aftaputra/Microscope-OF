@@ -24,6 +24,7 @@ img {
 
 .left, .right {
   background-color: #f4f4f4;
+  overflow-y: scroll;
 }
 
 .left{

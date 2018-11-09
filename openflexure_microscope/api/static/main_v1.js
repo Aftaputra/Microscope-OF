@@ -98,17 +98,17 @@ function keyMoveCallback(response, status) {
 // Click-to-move
 function clickHotspotImage(event) {
     if (document.getElementById("clickPositionCheck").checked == true) {
-    xCoordinate = event.offsetX;
-    yCoordinate = event.offsetY;
-    console.log(xCoordinate, yCoordinate)
-    xRelative = (0.5*event.target.offsetWidth - xCoordinate)/event.target.offsetWidth;
-    yRelative = (0.5*event.target.offsetHeight - yCoordinate)/event.target.offsetHeight;
-    console.log(xRelative, yRelative)
-    xSteps = xRelative * fovX;
-    ySteps = yRelative * fovY;
-    console.log(xSteps, ySteps, 0)
-    // Make a position request
-    moveStagePositions(xSteps, ySteps, 0)
+        xCoordinate = event.offsetX;
+        yCoordinate = event.offsetY;
+        console.log(xCoordinate, yCoordinate)
+        xRelative = (0.5*event.target.offsetWidth - xCoordinate)/event.target.offsetWidth;
+        yRelative = (0.5*event.target.offsetHeight - yCoordinate)/event.target.offsetHeight;
+        console.log(xRelative, yRelative)
+        xSteps = xRelative * fovX;
+        ySteps = yRelative * fovY;
+        console.log(xSteps, ySteps, 0)
+        // Make a position request
+        moveStagePositions(xSteps, ySteps, 0)
     }
 }
 
@@ -116,10 +116,11 @@ function clickHotspotImage(event) {
 window.addEventListener('wheel', function(e) {
     multiplier = 1/100;
     z_delta = e.deltaY * multiplier * focusVelocity;
-    if (document.getElementById("scrollFocusCheck").checked == true) {
-    console.log(z_delta);
-    // Make a position request
-    safeRequest("POST", baseURI+"/position", { "absolute": false, "z": z_delta}, keyMoveCallback)
+    if ((document.getElementById("scrollFocusCheck").checked == true) && (e.target.parentNode.classList["value"] == "column middle")) {
+        console.log(z_delta);
+        console.log(e.target.parentNode.classList["value"]);
+        // Make a position request
+        safeRequest("POST", baseURI+"/position", { "absolute": false, "z": z_delta}, keyMoveCallback)
     }
 });
 
