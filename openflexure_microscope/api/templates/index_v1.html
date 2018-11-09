@@ -1,9 +1,9 @@
 <html>
   <head>
-    <title>Video Streaming Demonstration</title>
+    <title>OpenFlexure Microscope API Demo</title>
   </head>
   <body>
-    <h1>Video Streaming Demonstration</h1>
+    <h1>OpenFlexure Microscope API Demo</h1>
     <img src="{{ url_for('stream') }}">
     <br>
 
@@ -18,6 +18,10 @@
     <br>
     <input type="range" name="stageVelocityInput" min="50" max="200" value="100" oninput="updateStageVelocity(this.value);">
     <input type="text" id="stageVelocityText" value="100" disabled>
+    <br>
+
+    Scroll focus: <input type="checkbox" id="scrollFocusCheck" checked>
+
 
   </body>
 
@@ -87,6 +91,12 @@
       setStagePositions(x_abs, y_abs, z_abs)
     }
 
+    // Standard callback for user-controller movement
+    function keyMoveCallback(response, status) {
+      console.log(status, response);
+      updateStagePositions(response);
+    }
+
     // Methods for input events
     addEventListener("keydown", function (e) {
         keysDown[e.keyCode] = true; //Add key to array
@@ -118,10 +128,6 @@
           }
 
           // Make a position request
-          function keyMoveCallback(response, status) {
-            console.log(status, response);
-            updateStagePositions(response);
-          }
           safeRequest("POST", "{{ url_for('position') }}", { "absolute": false, "x": x_rel, "y": y_rel, "z": z_rel}, keyMoveCallback)
         }
 
@@ -130,6 +136,16 @@
     addEventListener("keyup", function (e) {
         delete keysDown[e.keyCode]; //Remove key from array
     }, false);
+
+    window.addEventListener('wheel', function(e) {
+      multiplier = 1/100;
+      z_delta = e.deltaY * multiplier * focusVelocity;
+      console.log(z_delta);
+      if (document.getElementById("scrollFocusCheck").checked == true) {
+        // Make a position request
+        safeRequest("POST", "{{ url_for('position') }}", { "absolute": false, "z": z_delta}, keyMoveCallback)
+      }
+    });
   
     // Methods for making requests
     function safeRequest(method, url, payload, callback) {
