@@ -1,5 +1,4 @@
 /*
-TODO: New capture panel
 TODO: Make delete button work
 
 TODO: Recordings list
