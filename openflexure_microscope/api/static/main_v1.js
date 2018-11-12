@@ -30,6 +30,19 @@ var fovY = 3146;
 window.onload = function() {
     getStagePositions()
     updateTextBoxes()
+    getCaptures()
+}
+
+function getCaptures() {
+    function updateCapturesCallback(response, status) {
+        console.log(status);
+        updateCaptures(response);
+    }
+    safeRequest("GET", baseURI+"/capture", null, updateCapturesCallback, false)
+}
+
+function updateCaptures(response) {
+    console.log(response)
 }
 
 function updateTextBoxes() {
@@ -50,20 +63,20 @@ function updateStagePositions(response) {
 
 function getStagePositions() {
     function updatePositionCallback(response, status) {
-    console.log(status, response);
-    updateStagePositions(response);
+        console.log(status, response);
+        updateStagePositions(response);
     }
-    safeRequest("GET", baseURI+"/position", null, updatePositionCallback)
+    safeRequest("GET", baseURI+"/position", null, updatePositionCallback, false)
 }
 
 function setStagePositions(x_abs, y_abs, z_abs) {
     // Make a position request
     function absMoveCallback(response, status) {
-    if (status == 400) {
-        alert("Stage cannot be moved further than the safe range.");
-    }
-    console.log(status, response);
-    updateStagePositions(response);
+        if (status == 400) {
+            alert("Stage cannot be moved further than the safe range.");
+        }
+        console.log(status, response);
+        updateStagePositions(response);
     }
     safeRequest("POST", baseURI+"/position", { "absolute": true, "x": x_abs, "y": y_abs, "z": z_abs}, absMoveCallback)
 }
@@ -71,11 +84,11 @@ function setStagePositions(x_abs, y_abs, z_abs) {
 function moveStagePositions(x_rel, y_rel, z_rel) {
     // Make a position request
     function relMoveCallback(response, status) {
-    if (status == 400) {
-        alert("Stage cannot be moved further than the safe range.");
-    }
-    console.log(status, response);
-    updateStagePositions(response);
+        if (status == 400) {
+            alert("Stage cannot be moved further than the safe range.");
+        }
+        console.log(status, response);
+        updateStagePositions(response);
     }
     safeRequest("POST", baseURI+"/position", { "absolute": false, "x": x_rel, "y": y_rel, "z": z_rel}, relMoveCallback)
 }
@@ -169,20 +182,32 @@ addEventListener("keyup", function (e) {
 }, false);
 
 // Methods for making requests
-function safeRequest(method, url, payload, callback) {
-    if (requestLock == false) {
+function safeRequest(method, url, payload, callback, lock=true, force=false) {
+    if (force == true) {
+        allowRequest = true;
+    }
+    else {
+        allowRequest = !(requestLock);
+    }
+    if (allowRequest == true) {
         var xhr = new XMLHttpRequest();   // new HttpRequest instance 
         xhr.open(method, url);
-        requestLock = true;
+
+        if (lock == true) {
+            requestLock = true;
+        }
 
         xhr.onload = function (e) {
-        if (xhr.readyState === 4) {
-            if (xhr.status !== 200) {
-            console.error(xhr.statusText);
-            } 
-            callback(JSON.parse(xhr.responseText), xhr.status);
-        }
-        requestLock = false;
+            if (xhr.readyState === 4) {
+                if (xhr.status !== 200) {
+                console.error(xhr.statusText);
+                } 
+                callback(JSON.parse(xhr.responseText), xhr.status);
+            }
+
+            if (lock == true) {
+                requestLock = false;
+            }
         };
 
         if (method == "POST" || method == "PUT") {

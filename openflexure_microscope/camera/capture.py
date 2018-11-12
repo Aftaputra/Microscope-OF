@@ -10,6 +10,7 @@ class StreamObject(object):
     def __init__(
             self,
             write_to_file: bool=None,
+            keep_on_disk: bool=True,
             filename: str=None,
             folder: str=None,
             fmt: str='file') -> None:
@@ -20,17 +21,18 @@ class StreamObject(object):
 
         # Create file name
         iterator = 0
-        f_name = self.build_file_path(filename, folder, fmt)
+        f_path, f_name = self.build_file_path(filename, folder, fmt)
 
         while os.path.isfile(f_name):  # While file already exists
             iterator += 1  # Add a file name iterator
-            f_name = self.build_file_path(
-                filename, 
-                folder, 
-                fmt, 
+            f_path, f_name = self.build_file_path(
+                filename,
+                folder,
+                fmt,
                 iterator=iterator)  # Rebuild file name
 
-        self.file = f_name
+        self.file = f_path
+        self.filename = f_name
 
         # Byte stream properties
         self.stream = io.BytesIO()  # Byte stream that data will be written to
@@ -45,7 +47,7 @@ class StreamObject(object):
             self.target = self.file
 
         # Keep on disk after close by default
-        self.keep_on_disk = True
+        self.keep_on_disk = keep_on_disk
 
         # Log if created by context manager
         self.context_manager = False
@@ -95,7 +97,7 @@ class StreamObject(object):
         else:
             file_path = file_name
 
-        return file_path
+        return (file_path, file_name)
 
     def lock(self):
         """Set locked flag to True."""
@@ -138,7 +140,7 @@ class StreamObject(object):
 
         # Get file path
         if self.file_exists:
-            d['file'] = self.file
+            d['file'] = self.filename
         else:
             d['file'] = None
 
@@ -147,6 +149,12 @@ class StreamObject(object):
             d['stream'] = True
         else:
             d['stream'] = False
+
+        # Combined availability of data
+        if self.stream_exists or self.file_exists:
+            d['available'] = True
+        else:
+            d['available'] = False
 
         # Check if file was manually deleted
         if self.keep_on_disk and not self.file_exists:

@@ -13,3 +13,14 @@ def gen(camera):
 
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+
+def get_bool(get_arg):
+    """Convert GET request argument string to a Python bool"""
+    if (
+        get_arg == 'true' or
+        get_arg == 'True' or
+        get_arg == '1'):
+        return True
+    else:
+        return False

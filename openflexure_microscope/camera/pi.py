@@ -318,6 +318,7 @@ class StreamingCamera(BaseCamera):
             self,
             target=None,
             write_to_file: bool=False,
+            keep_on_disk: bool=True,
             use_video_port: bool=False,
             filename: str=None,
             folder: str='capture',
@@ -346,6 +347,7 @@ class StreamingCamera(BaseCamera):
             # Create a new image and add to the image list
             target_obj = self.new_image(StreamObject(
                 write_to_file=write_to_file,
+                keep_on_disk=keep_on_disk,
                 filename=filename,
                 folder=folder,
                 fmt=fmt))

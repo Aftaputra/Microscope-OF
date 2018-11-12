@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """
+TODO: Add proper docstrings
 TODO: Bind to port 80
 TODO: Reimplement capture methods
 TODO: Implement API route to cleanly shut down server
@@ -18,7 +19,7 @@ from flask import (
 
 import numpy as np
 
-from openflexure_microscope.api.utilities import parse_payload, gen
+from openflexure_microscope.api.utilities import parse_payload, gen, get_bool
 
 from openflexure_microscope import Microscope
 from openflexure_microscope.camera.pi import StreamingCamera
@@ -58,6 +59,9 @@ def index():
 def stream():
     """Video streaming route. Put this in the src attribute of an img tag."""
     global microscope
+
+    # Restart stream worker thread
+    microscope.camera.start_worker()
 
     return Response(
         gen(microscope.camera),
@@ -114,6 +118,60 @@ def position():
         microscope.stage.move_rel(position)
 
     return jsonify(microscope.state['position'])
+
+# Capture routes
+@app.route(uri('/capture'), methods=['GET', 'POST', 'PUT'])
+def capture():
+    """Return JSONified microscope state"""
+    global microscope
+
+    if request.method == 'POST' or request.method == 'PUT':
+        state = parse_payload(request)
+        print(state)
+
+        if 'filename' in state:
+            filename = state['filename']
+        else:
+            filename = None
+
+        if 'keep_on_disk' in state:
+            keep_on_disk = bool(state['keep_on_disk'])
+        else:
+            keep_on_disk = True
+
+        if 'use_video_port' in state:
+            use_video_port = bool(state['use_video_port'])
+        else:
+            use_video_port = False
+
+        if 'size' in state:
+            if 'width' in state['size'] and 'height' in state['size']:
+                resize = (state['size']['width'], state['size']['height'])
+            else:
+                raise Exception("Invalid resize parameters passed. Ensure both width and height are specified.")
+        else:
+            resize = None
+
+        capture_obj = microscope.camera.capture(
+            write_to_file=True,  # Always write data to disk when using API
+            keep_on_disk=keep_on_disk,
+            use_video_port=use_video_port,
+            filename=filename,
+            resize=resize)
+
+        return jsonify(capture_obj.metadata)
+
+    else:  # GET requests
+        include_unavailable = get_bool(request.args.get('include_unavailable'))
+
+        if include_unavailable:
+            captures = [image for image in microscope.camera.images if image.metadata['available']]
+        else:
+            captures = microscope.camera.images
+
+        metadata_array = [capture.metadata for capture in captures]
+
+        return jsonify(metadata_array)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', threaded=True, debug=True, use_reloader=False)

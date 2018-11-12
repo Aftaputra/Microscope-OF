@@ -64,3 +64,12 @@ img {
     display: table;
 }
 
+/* Data divs */
+
+#captures {
+    font-size:12px;
+}
+
+.capture {
+    background-color: #d3d3d3;
+}
