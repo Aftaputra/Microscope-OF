@@ -14,7 +14,7 @@ import datetime
 
 from flask import (
     Flask, render_template, Response,
-    redirect, request, jsonify, send_file)
+    redirect, request, jsonify, send_file, abort)
 
 
 import numpy as np
@@ -119,8 +119,10 @@ def position():
 
     return jsonify(microscope.state['position'])
 
+
 # Capture routes
-@app.route(uri('/capture'), methods=['GET', 'POST', 'PUT'])
+
+@app.route(uri('/capture/'), methods=['GET', 'POST', 'PUT'])
 def capture():
     """Return JSONified microscope state"""
     global microscope
@@ -172,6 +174,74 @@ def capture():
         metadata_array = [capture.metadata for capture in captures]
 
         return jsonify(metadata_array)
+
+
+@app.route(uri('/capture/<capture_uuid>/'), methods=['GET', 'DELETE'])
+def get_capture(capture_uuid):
+    """Return JSONified capture by UUID"""
+    global microscope
+
+    print(capture_uuid)
+    capture_obj = microscope.camera.image_from_id(capture_uuid)
+
+    if not capture_obj:
+        return abort(404)  # 404 Not Found
+
+    # Get capture metadata
+    capture_metadata = capture_obj.metadata
+
+    # Add API routes to returned metadata
+    uri_dict = {
+        'uri': {'metadata': uri('/capture/{}/'.format(capture_uuid))}
+    }
+
+    # If available, also add download link
+    if capture_metadata['available']:
+        uri_dict['uri']['download'] = uri('/capture/{}/download'.format(capture_uuid))
+
+    capture_metadata.update(uri_dict)
+
+    if request.method == 'DELETE':
+        print("DELETE NOT YET IMPLEMENETED")
+        return jsonify(capture_metadata)
+
+    else:  # GET requests
+        return jsonify(capture_metadata)
+
+
+@app.route(uri('/capture/<capture_uuid>/download'), methods=['GET'])
+def download_capture(capture_uuid):
+    """Return capture file by UUID"""
+    global microscope
+
+    print(capture_uuid)
+    capture_obj = microscope.camera.image_from_id(capture_uuid)
+
+    if not capture_obj:
+        return abort(404)  # 404 Not Found
+
+    as_attachment = get_bool(request.args.get('as_attachment'))
+
+    return send_file(
+        capture_obj.data,
+        mimetype='image/jpeg',
+        as_attachment=as_attachment,
+        attachment_filename=capture_obj.filename)
+
+@app.route(uri('/capture/<capture_uuid>/thumbnail'), methods=['GET'])
+def thumb_capture(capture_uuid):
+    """Return capture thumbnail by UUID"""
+    global microscope
+
+    print(capture_uuid)
+    capture_obj = microscope.camera.image_from_id(capture_uuid)
+
+    if not capture_obj:
+        return abort(404)  # 404 Not Found
+
+    return send_file(
+        capture_obj.thumbnail,
+        mimetype='image/jpeg')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', threaded=True, debug=True, use_reloader=False)

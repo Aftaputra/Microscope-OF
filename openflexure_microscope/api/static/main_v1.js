@@ -1,5 +1,17 @@
-// TODO: Remember a position and restore that position
-// TODO: Right click to auto-focus, centered on that region
+/*
+TODO: New capture panel
+TODO: Make delete button work
+
+TODO: Recordings list
+TODO: New recording panel
+TODO: Somehow have Python make funky thumbnails for videos?
+
+TODO: Remember a position and restore that position
+TODO: Right click to auto-focus, centered on that region
+
+TODO: Box to specify device IP
+TODO: Dynamically add stream image src from JS (allows streaming from an external IP)
+*/
 
 var baseURI = "/api/v1"
 
@@ -42,7 +54,36 @@ function getCaptures() {
 }
 
 function updateCaptures(response) {
-    console.log(response)
+    // Clear captures list
+    var capturesNode = document.getElementById("captures");
+    while (capturesNode.firstChild) {
+        capturesNode.removeChild(capturesNode.firstChild);
+    }
+
+    // For each capture in the response array
+    response.forEach(function(element) {
+        // Store the capture object URI
+        element_uri = `${baseURI}/capture/${element.id}`
+
+        // Generate inner HTML from capture object
+        html = `
+        <div class="clearfix">
+            <div class="left-col"><img src="${element_uri}/thumbnail"></div>
+            <div class="right-col"> 
+                <b>${element.file}</b><br>
+                <a href="${element_uri}/download" target="_blank">View</a> <a href="${element_uri}/download?as_attachment=true">Download</a> Delete <a href="${element_uri}/" target="_blank">JSON</a>
+                <br>
+            </div>
+        </div>
+        `
+
+        // Create a new capture div, and append HTML
+        var div = document.createElement("div");
+        div.className = "capture";
+        div.innerHTML = html;
+        capturesNode.appendChild(div);
+    });
+
 }
 
 function updateTextBoxes() {
@@ -56,9 +97,9 @@ function updateTextBoxes() {
 }
 
 function updateStagePositions(response) {
-    document.getElementById('x_abs').value = response["x"];
-    document.getElementById('y_abs').value = response["y"];
-    document.getElementById('z_abs').value = response["z"];
+    document.getElementById('x_abs').value = response.x;
+    document.getElementById('y_abs').value = response.y;
+    document.getElementById('z_abs').value = response.z;
 }
 
 function getStagePositions() {
@@ -69,13 +110,79 @@ function getStagePositions() {
     safeRequest("GET", baseURI+"/position", null, updatePositionCallback, false)
 }
 
+// Capture methods
+function newCapture(filename, keep_on_disk, use_video_port, resizeWidth=null, resizeHeight=null) {
+    // Make a position request
+    function newCaptureCallback(response, status) {
+        if (status != 200) {
+            alert("Capture failed.");
+        }
+        console.log(status, response);
+        getCaptures();  // Update full list of captures when done
+    }
+
+    payload = {
+        "filename": filename,
+        "keep_on_disk": keep_on_disk,
+        "use_video_port": use_video_port
+    }
+
+    if ((resizeWidth) && (resizeHeight)) {
+        payload.size = {
+            "width": resizeWidth,
+            "height": resizeHeight
+        }
+    }
+
+    console.log(payload);
+    safeRequest("POST", baseURI+"/capture/", payload, newCaptureCallback);
+}
+
+function newCaptureFromInput() {
+    captureFilenameInput = document.getElementById('captureFilenameInput');
+    captureKeepOnDiskCheck = document.getElementById('captureKeepOnDiskCheck');
+    captureFullResolutionCheck = document.getElementById('captureFullResolutionCheck');
+    captureResizeCheck = document.getElementById('captureResizeCheck');
+    captureWidthInput = document.getElementById('captureWidthInput')
+    captureHeightInput = document.getElementById('captureHeightInput')
+
+    // Get filename if one is given
+    if (captureFilenameInput.value === "") {
+        filename = null;
+    }
+    else {
+        filename = captureFilenameInput.value;
+    }
+
+    if (captureResizeCheck.checked) {
+        resizeWidth = Number(captureWidthInput.value);
+        resizeHeight = Number(captureHeightInput.value);
+    }
+    else {
+        resizeWidth = null;
+        resizeHeight = null;
+    }
+
+    newCapture(filename, captureKeepOnDiskCheck.checked, !(captureFullResolutionCheck.checked), resizeWidth, resizeHeight);
+
+}
+
+function newCaptureResizeToggle(checkbox) {
+    captureWidthInput = document.getElementById('captureWidthInput')
+    captureHeightInput = document.getElementById('captureHeightInput')
+
+    captureWidthInput.disabled = !(checkbox.checked)
+    captureHeightInput.disabled = !(checkbox.checked)
+}
+
+// Move stage methods
 // TODO: Combine setStagePositions and moveStagePositions, with bool argument for 'absolute'
 
 function setStagePositions(x_abs, y_abs, z_abs) {
     // Make a position request
     function absMoveCallback(response, status) {
-        if (status == 400) {
-            alert("Stage cannot be moved further than the safe range.");
+        if (status != 200) {
+            alert("Error moving stage.");
         }
         console.log(status, response);
         updateStagePositions(response);
@@ -86,8 +193,8 @@ function setStagePositions(x_abs, y_abs, z_abs) {
 function moveStagePositions(x_rel, y_rel, z_rel) {
     // Make a position request
     function relMoveCallback(response, status) {
-        if (status == 400) {
-            alert("Stage cannot be moved further than the safe range.");
+        if (status != 200) {
+            alert("Error moving stage.");
         }
         console.log(status, response);
         updateStagePositions(response);
@@ -131,9 +238,9 @@ function clickHotspotImage(event) {
 window.addEventListener('wheel', function(e) {
     multiplier = 1/100;
     z_delta = e.deltaY * multiplier * focusVelocity;
-    if ((document.getElementById("scrollFocusCheck").checked == true) && (e.target.parentNode.classList["value"] == "column middle")) {
+    if ((document.getElementById("scrollFocusCheck").checked == true) && (e.target.parentNode.classList.value == "column middle")) {
         console.log(z_delta);
-        console.log(e.target.parentNode.classList["value"]);
+        console.log(e.target.parentNode.classList.value);
         // Make a position request
         safeRequest("POST", baseURI+"/position", { "absolute": false, "z": z_delta}, keyMoveCallback)
     }
@@ -196,20 +303,20 @@ function safeRequest(method, url, payload, callback, lock=true, force=false) {
         var xhr = new XMLHttpRequest();   // new HttpRequest instance 
         xhr.open(method, url);
 
-        if (lock == true) {
-            requestLock = true;
+        if (lock == true) {  // If request is using the lock
+            requestLock = true;  // Hold the lock
         }
 
         xhr.onload = function (e) {
             if (xhr.readyState === 4) {
+                if (lock == true) {  // If request is using the lock
+                    requestLock = false;  // Release the lock
+                }
+
                 if (xhr.status !== 200) {
-                console.error(xhr.statusText);
+                    console.error(xhr.statusText);
                 } 
                 callback(JSON.parse(xhr.responseText), xhr.status);
-            }
-
-            if (lock == true) {
-                requestLock = false;
             }
         };
 
@@ -221,6 +328,7 @@ function safeRequest(method, url, payload, callback, lock=true, force=false) {
 
     }
     else {
-        console.log("Cannot start new request while previous requets is pending...")
+        console.log("Cannot start the following request while the previous requets is pending:")
+        console.log(method, url, payload)
     }
 }

@@ -4,6 +4,10 @@ import os
 import datetime
 import copy
 import logging
+from PIL import Image
+
+pil_formats = ['JPG', 'JPEG', 'PNG', 'TIF', 'TIFF']
+thumbnail_size = (60, 60)
 
 
 class StreamObject(object):
@@ -18,6 +22,9 @@ class StreamObject(object):
         # Store a nice ID
         self.id = uuid.uuid4().hex
         logging.info("Created {}".format(self.id))
+
+        # Store file format
+        self.format = fmt
 
         # Create file name
         iterator = 0
@@ -54,6 +61,9 @@ class StreamObject(object):
 
         # Object lock
         self.locked = False
+
+        # Thumbnail (populated only for JPEG captures)
+        self.thumb_bytes = None
 
     def __enter__(self):
         """Create StreamObject in context, to auto-clean disk data."""
@@ -189,6 +199,25 @@ class StreamObject(object):
     def binary(self) -> bytes:
         """Return a byte string of the capture data."""
         return self.data.getvalue()
+
+    @property
+    def thumbnail(self) -> io.BytesIO:
+        # If no thumbnail exists, try and make one
+        if not self.thumb_bytes:
+            print("Building thumbnail")
+            if self.format.upper() in pil_formats:
+                im = Image.open(self.data)
+                im.thumbnail(thumbnail_size)
+
+                self.thumb_bytes = io.BytesIO()
+                im.save(self.thumb_bytes, self.format)
+                self.thumb_bytes.seek(0)
+        else:
+            self.thumb_bytes.seek(0)
+
+        # Copy the buffer, to avoid closing the file
+        data = io.BytesIO(self.thumb_bytes.getbuffer())
+        return data
 
     def load_file(self) -> bool:
         """Load data stored on disk to the in-memory stream."""
