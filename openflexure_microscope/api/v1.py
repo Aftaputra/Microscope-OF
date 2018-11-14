@@ -14,7 +14,8 @@ import datetime
 
 from flask import (
     Flask, render_template, Response,
-    redirect, request, jsonify, send_file, abort)
+    redirect, request, jsonify, send_file, abort,
+    make_response)
 
 
 import numpy as np
@@ -28,6 +29,11 @@ from openflexure_stage import OpenFlexureStage
 import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
+
+# Make errors more API friendly
+@app.errorhandler(404)
+def not_found(error):
+    return make_response(jsonify({'error': 'Not found'}), 404)
 
 # Create the microscope object globally (common to all spawned server threads)
 microscope = Microscope(
