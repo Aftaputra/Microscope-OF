@@ -27,10 +27,15 @@ API Documentation
 Summary
 -------
 .. qrefflask:: openflexure_microscope.api.v1:app
+   :undoc-endpoints: index
    :undoc-static:
+   :endpoints:
 
 API Details
 -----------
 
 .. autoflask:: openflexure_microscope.api.v1:app
-  :undoc-static:
+   :undoc-endpoints: index
+   :undoc-static:
+   :endpoints:
+   :order: path

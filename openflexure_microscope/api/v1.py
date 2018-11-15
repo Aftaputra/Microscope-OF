@@ -7,7 +7,7 @@ TODO: Implement API route to cleanly shut down server
 TODO: Implement microscope function API routes (autofocus etc)
 """
 
-from pprint import pprint
+import numpy as np
 from importlib import import_module
 import time
 import datetime
@@ -19,8 +19,6 @@ from flask import (
 
 from flask.views import MethodView
 
-import numpy as np
-
 from openflexure_microscope.api.utilities import parse_payload, gen, get_bool
 
 from openflexure_microscope import Microscope
@@ -28,39 +26,43 @@ from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_stage import OpenFlexureStage
 
 import logging, sys
+
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
-logging.info("Creating StreamingCamera")
-cam = StreamingCamera()
-logging.info("Creating stage")
-stage = OpenFlexureStage("/dev/ttyUSB0")
-
 # Create the microscope object globally (common to all spawned server threads)
-logging.info("Creating microscope")
-microscope = Microscope(
-    cam, 
-    stage
+api_microscope = Microscope(
+    StreamingCamera(), 
+    OpenFlexureStage("/dev/ttyUSB0")
 )
 
-logging.info("Creating app")
 # Create flask app
 app = Flask(__name__)
 
+# Make errors more API friendly
+@app.errorhandler(404)
+def not_found(error):
+    return make_response(jsonify({'error': 'Not found'}), 404)
+
 # Some useful functions
+# TODO: Maybe auto-generate API URI base from module name
 def uri(suffix, base='/api/v1'):
     return base + suffix
 
-# Define front-end routes
+
+##### WEBAPP ROUTES ######
 
 @app.route('/')
 def index():
-    """Video streaming home page."""
+    """
+    API demo app
+    """
     return render_template(
         'index_v1.html'
     )
 
+##### API ROUTES ######
 
-##### Basic microscope view ######
+# Basic microscope view
 class MicroscopeView(MethodView):
 
     def __init__(self, microscope):
@@ -69,31 +71,14 @@ class MicroscopeView(MethodView):
         microscope object passed as an argument.
         """
         self.microscope = microscope
+
         MethodView.__init__(self)
 
-# Test method
-class TestAPI(MicroscopeView):
 
-    def get(self):
-        """
-        Get method for my cool new MethodView
-        """
-        return jsonify(self.microscope.state)
-
-    def post(self):
-        """
-        Post method for my cool new MethodView
-        """
-        return jsonify(request.get_json())
-
-app.add_url_rule('/test', view_func=TestAPI.as_view('test', microscope=microscope))
-
-# Define API routes
-
-# Basic views
-
+# State endpoints
 
 class StreamAPI(MicroscopeView):
+
     def get(self):
         """
         Video streaming route. Put this in the src attribute of an img tag.
@@ -105,20 +90,25 @@ class StreamAPI(MicroscopeView):
             gen(self.microscope.camera),
             mimetype='multipart/x-mixed-replace; boundary=frame')
 
-app.add_url_rule(uri('/stream'), view_func=StreamAPI.as_view('stream', microscope=microscope))
+app.add_url_rule(
+    uri('/stream/'), 
+    view_func=StreamAPI.as_view('stream', microscope=api_microscope))
 
 
 class StateAPI(MicroscopeView):
+
     def get(self):
         """
         Return JSONified microscope state.
         """
         return jsonify(self.microscope.state)
 
-app.add_url_rule(uri('/state'), view_func=StateAPI.as_view('state', microscope=microscope))
+app.add_url_rule(
+    uri('/state/'), 
+    view_func=StateAPI.as_view('state', microscope=api_microscope))
 
 
-# Positioning routes
+# Positioning endpoints
 
 class PositionAPI(MicroscopeView):
 
@@ -169,49 +159,33 @@ class PositionAPI(MicroscopeView):
 
         return jsonify(self.microscope.state['position'])
 
-app.add_url_rule(uri('/position'), view_func=PositionAPI.as_view('position', microscope=microscope))
+app.add_url_rule(
+    uri('/position/'), 
+    view_func=PositionAPI.as_view('position', microscope=api_microscope))
 
 
-# Capture routes
+# Capture endpoints
+
 class CaptureAPI(MicroscopeView):
 
-    def get(self, capture_id):
+    def get(self):
         """
         Get list of image captures
         """
-        if not capture_id:
-            include_unavailable = get_bool(request.args.get('include_unavailable'))
+        include_unavailable = get_bool(request.args.get('include_unavailable'))
 
-            if include_unavailable:
-                captures = [image.metadata for image in self.microscope.camera.images if image.metadata['available']]
-            else:
-                captures = [image.metadata for image in self.microscope.camera.images]
-
-            return jsonify(captures)
+        if include_unavailable:
+            captures = [image.metadata for image in self.microscope.camera.images if image.metadata['available']]
         else:
-            print(capture_id)
-            capture_obj = microscope.camera.image_from_id(capture_id)
+            captures = [image.metadata for image in self.microscope.camera.images]
 
-            if not capture_obj:
-                return abort(404)  # 404 Not Found
+        return jsonify(captures)
 
-            # Get capture metadata
-            capture_metadata = capture_obj.metadata
 
-            # Add API routes to returned metadata
-            uri_dict = {
-                'uri': {'metadata': uri('/capture/{}/'.format(capture_id))}
-            }
-
-            # If available, also add download link
-            if capture_metadata['available']:
-                uri_dict['uri']['download'] = uri('/capture/{}/download'.format(capture_id))
-
-            capture_metadata.update(uri_dict)
-
-            return jsonify(capture_metadata)
-
-    def delete(self, capture_id):
+    def delete(self):
+        """
+        Delete all captures
+        """
         return jsonify({"error": "not yet implemented"})
 
     def post(self):
@@ -252,20 +226,62 @@ class CaptureAPI(MicroscopeView):
 
         return jsonify(capture_obj.metadata)
 
-capture_view = CaptureAPI.as_view('capture', microscope=microscope)
-app.add_url_rule(uri('/capture/'), defaults={'capture_id': None}, view_func=capture_view, methods=['GET',])
-app.add_url_rule(uri('/capture/<capture_id>/'), view_func=capture_view, methods=['GET', 'DELETE'])
-app.add_url_rule(uri('/capture/'), view_func=capture_view, methods=['POST',])
+app.add_url_rule(
+    uri('/capture/'), 
+    view_func=CaptureAPI.as_view('capture', microscope=api_microscope))
 
 
-# Capture download routes
-class CaptureDlAPI(MicroscopeView):
+class CaptureIdAPI(MicroscopeView):
+
+    def get(self, capture_id):
+        """
+        Get JSON representation of a capture
+        """
+        capture_obj = self.microscope.camera.image_from_id(capture_id)
+
+        if not capture_obj:
+            return abort(404)  # 404 Not Found
+
+        # Get capture metadata
+        capture_metadata = capture_obj.metadata
+
+        # Add API routes to returned metadata
+        uri_dict = {
+            'uri': {'metadata': uri('/capture/{}/'.format(capture_id))}
+        }
+
+        # If available, also add download link
+        if capture_metadata['available']:
+            uri_dict['uri']['download'] = uri('/capture/{}/download'.format(capture_id))
+
+        capture_metadata.update(uri_dict)
+
+        return jsonify(capture_metadata)
+
+    def delete(self, capture_id):
+        """
+        Delete a capture
+        """
+        return jsonify({"return": capture_id})
+
+    def put(self, capture_id):
+        """
+        Modify the metadata of a capture
+        """
+        return jsonify({"return": capture_id})
+
+app.add_url_rule(
+    uri('/capture/<capture_id>/'), 
+    view_func=CaptureIdAPI.as_view('capture_id', microscope=api_microscope))
+
+
+class CaptureDownloadAPI(MicroscopeView):
     def get(self, capture_id):
         """
         Return image data for a capture.
         """
         print(capture_id)
-        capture_obj = microscope.camera.image_from_id(capture_id)
+        capture_obj = self.microscope.camera.image_from_id(capture_id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -284,7 +300,9 @@ class CaptureDlAPI(MicroscopeView):
             as_attachment=as_attachment,
             attachment_filename=capture_obj.filename)
 
-app.add_url_rule(uri('/capture/<capture_id>/download/'), view_func=CaptureDlAPI.as_view('capture_download', microscope=microscope))
+app.add_url_rule(
+    uri('/capture/<capture_id>/download/'), 
+    view_func=CaptureDownloadAPI.as_view('capture_download', microscope=api_microscope))
 
 
 if __name__ == "__main__":
