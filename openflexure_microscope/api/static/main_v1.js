@@ -67,7 +67,7 @@ function updateCaptures(response) {
         // Generate inner HTML from capture object
         html = `
         <div class="clearfix">
-            <div class="left-col"><img src="${element_uri}/thumbnail"></div>
+            <div class="left-col"><img src="${element_uri}/download?thumbnail=true"></div>
             <div class="right-col"> 
                 <b>${element.file}</b><br>
                 <a href="${element_uri}/download" target="_blank">View</a> <a href="${element_uri}/download?as_attachment=true">Download</a> Delete <a href="${element_uri}/" target="_blank">JSON</a>

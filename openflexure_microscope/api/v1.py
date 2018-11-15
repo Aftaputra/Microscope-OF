@@ -69,10 +69,29 @@ class MicroscopeView(MethodView):
         microscope object passed as an argument.
         """
         self.microscope = microscope
+        MethodView.__init__(self)
+
+# Test method
+class TestAPI(MicroscopeView):
+
+    def get(self):
+        """
+        Get method for my cool new MethodView
+        """
+        return jsonify(self.microscope.state)
+
+    def post(self):
+        """
+        Post method for my cool new MethodView
+        """
+        return jsonify(request.get_json())
+
+app.add_url_rule('/test', view_func=TestAPI.as_view('test', microscope=microscope))
 
 # Define API routes
 
 # Basic views
+
 
 class StreamAPI(MicroscopeView):
     def get(self):
@@ -80,7 +99,7 @@ class StreamAPI(MicroscopeView):
         Video streaming route. Put this in the src attribute of an img tag.
         """
         # Restart stream worker thread
-        microscope.camera.start_worker()
+        self.microscope.camera.start_worker()
 
         return Response(
             gen(self.microscope.camera),
@@ -89,23 +108,30 @@ class StreamAPI(MicroscopeView):
 app.add_url_rule(uri('/stream'), view_func=StreamAPI.as_view('stream', microscope=microscope))
 
 
-@app.route(uri('/state'))
-def state():
-    """Return JSONified microscope state"""
-    global microscope
+class StateAPI(MicroscopeView):
+    def get(self):
+        """
+        Return JSONified microscope state.
+        """
+        return jsonify(self.microscope.state)
 
-    return jsonify(microscope.state)
+app.add_url_rule(uri('/state'), view_func=StateAPI.as_view('state', microscope=microscope))
+
 
 # Positioning routes
 
-@app.route(uri('/position'), methods=['GET', 'POST', 'PUT'])
-def position():
-    """
-    Set and get the microscope stage position
-    """
-    global microscope
+class PositionAPI(MicroscopeView):
 
-    if request.method == 'POST' or request.method == 'PUT':
+    def get(self):
+        """
+        Get current position
+        """
+        return jsonify(self.microscope.state['position'])
+
+    def post(self):
+        """
+        Update current position
+        """
         # Get payload
         state = parse_payload(request)
         logging.debug(state)
@@ -118,7 +144,7 @@ def position():
             # Get coordinates from payload
             for axis, key in enumerate(['x', 'y', 'z']):
                 if key in state:
-                    position[axis] = int(state[key]-microscope.stage.position[axis])
+                    position[axis] = int(state[key]-self.microscope.stage.position[axis])
 
         else:
             # Get coordinates from payload
@@ -139,21 +165,60 @@ def position():
                     response = {'error': 'Cannot move to absolute position beyond the safeguard limit.'}
                     return jsonify(response), 400
 
-        microscope.stage.move_rel(position)
+        self.microscope.stage.move_rel(position)
 
-    return jsonify(microscope.state['position'])
+        return jsonify(self.microscope.state['position'])
+
+app.add_url_rule(uri('/position'), view_func=PositionAPI.as_view('position', microscope=microscope))
 
 
 # Capture routes
+class CaptureAPI(MicroscopeView):
 
-@app.route(uri('/capture/'), methods=['GET', 'POST', 'PUT'])
-def capture():
-    """Return JSONified microscope state"""
-    global microscope
+    def get(self, capture_id):
+        """
+        Get list of image captures
+        """
+        if not capture_id:
+            include_unavailable = get_bool(request.args.get('include_unavailable'))
 
-    if request.method == 'POST' or request.method == 'PUT':
+            if include_unavailable:
+                captures = [image.metadata for image in self.microscope.camera.images if image.metadata['available']]
+            else:
+                captures = [image.metadata for image in self.microscope.camera.images]
+
+            return jsonify(captures)
+        else:
+            print(capture_id)
+            capture_obj = microscope.camera.image_from_id(capture_id)
+
+            if not capture_obj:
+                return abort(404)  # 404 Not Found
+
+            # Get capture metadata
+            capture_metadata = capture_obj.metadata
+
+            # Add API routes to returned metadata
+            uri_dict = {
+                'uri': {'metadata': uri('/capture/{}/'.format(capture_id))}
+            }
+
+            # If available, also add download link
+            if capture_metadata['available']:
+                uri_dict['uri']['download'] = uri('/capture/{}/download'.format(capture_id))
+
+            capture_metadata.update(uri_dict)
+
+            return jsonify(capture_metadata)
+
+    def delete(self, capture_id):
+        return jsonify({"error": "not yet implemented"})
+
+    def post(self):
+        """
+        Create a new image capture
+        """
         state = parse_payload(request)
-        print(state)
 
         if 'filename' in state:
             filename = state['filename']
@@ -178,7 +243,7 @@ def capture():
         else:
             resize = None
 
-        capture_obj = microscope.camera.capture(
+        capture_obj = self.microscope.camera.capture(
             write_to_file=True,  # Always write data to disk when using API
             keep_on_disk=keep_on_disk,
             use_video_port=use_video_port,
@@ -187,85 +252,40 @@ def capture():
 
         return jsonify(capture_obj.metadata)
 
-    else:  # GET requests
-        include_unavailable = get_bool(request.args.get('include_unavailable'))
+capture_view = CaptureAPI.as_view('capture', microscope=microscope)
+app.add_url_rule(uri('/capture/'), defaults={'capture_id': None}, view_func=capture_view, methods=['GET',])
+app.add_url_rule(uri('/capture/<capture_id>/'), view_func=capture_view, methods=['GET', 'DELETE'])
+app.add_url_rule(uri('/capture/'), view_func=capture_view, methods=['POST',])
 
-        if include_unavailable:
-            captures = [image for image in microscope.camera.images if image.metadata['available']]
+
+# Capture download routes
+class CaptureDlAPI(MicroscopeView):
+    def get(self, capture_id):
+        """
+        Return image data for a capture.
+        """
+        print(capture_id)
+        capture_obj = microscope.camera.image_from_id(capture_id)
+
+        if not capture_obj:
+            return abort(404)  # 404 Not Found
+
+        as_attachment = get_bool(request.args.get('as_attachment'))
+        thumbnail = get_bool(request.args.get('thumbnail'))
+
+        if thumbnail:
+            img = capture_obj.thumbnail
         else:
-            captures = microscope.camera.images
+            img = capture_obj.data
 
-        metadata_array = [capture.metadata for capture in captures]
+        return send_file(
+            img,
+            mimetype='image/jpeg',
+            as_attachment=as_attachment,
+            attachment_filename=capture_obj.filename)
 
-        return jsonify(metadata_array)
+app.add_url_rule(uri('/capture/<capture_id>/download/'), view_func=CaptureDlAPI.as_view('capture_download', microscope=microscope))
 
-
-@app.route(uri('/capture/<capture_uuid>/'), methods=['GET', 'DELETE'])
-def get_capture(capture_uuid):
-    """Return JSONified capture by UUID"""
-    global microscope
-
-    print(capture_uuid)
-    capture_obj = microscope.camera.image_from_id(capture_uuid)
-
-    if not capture_obj:
-        return abort(404)  # 404 Not Found
-
-    # Get capture metadata
-    capture_metadata = capture_obj.metadata
-
-    # Add API routes to returned metadata
-    uri_dict = {
-        'uri': {'metadata': uri('/capture/{}/'.format(capture_uuid))}
-    }
-
-    # If available, also add download link
-    if capture_metadata['available']:
-        uri_dict['uri']['download'] = uri('/capture/{}/download'.format(capture_uuid))
-
-    capture_metadata.update(uri_dict)
-
-    if request.method == 'DELETE':
-        print("DELETE NOT YET IMPLEMENETED")
-        return jsonify(capture_metadata)
-
-    else:  # GET requests
-        return jsonify(capture_metadata)
-
-
-@app.route(uri('/capture/<capture_uuid>/download'), methods=['GET'])
-def download_capture(capture_uuid):
-    """Return capture file by UUID"""
-    global microscope
-
-    print(capture_uuid)
-    capture_obj = microscope.camera.image_from_id(capture_uuid)
-
-    if not capture_obj:
-        return abort(404)  # 404 Not Found
-
-    as_attachment = get_bool(request.args.get('as_attachment'))
-
-    return send_file(
-        capture_obj.data,
-        mimetype='image/jpeg',
-        as_attachment=as_attachment,
-        attachment_filename=capture_obj.filename)
-
-@app.route(uri('/capture/<capture_uuid>/thumbnail'), methods=['GET'])
-def thumb_capture(capture_uuid):
-    """Return capture thumbnail by UUID"""
-    global microscope
-
-    print(capture_uuid)
-    capture_obj = microscope.camera.image_from_id(capture_uuid)
-
-    if not capture_obj:
-        return abort(404)  # 404 Not Found
-
-    return send_file(
-        capture_obj.thumbnail,
-        mimetype='image/jpeg')
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port="5000", threaded=True, debug=True, use_reloader=False)
