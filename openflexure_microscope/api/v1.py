@@ -30,11 +30,6 @@ import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 
-# Make errors more API friendly
-@app.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify({'error': 'Not found'}), 404)
-
 # Create the microscope object globally (common to all spawned server threads)
 microscope = Microscope(
     StreamingCamera(), 
@@ -43,6 +38,11 @@ microscope = Microscope(
 
 # Create flask app
 app = Flask(__name__)
+
+# Make errors more API friendly
+@app.errorhandler(404)
+def not_found(error):
+    return make_response(jsonify({'error': 'Not found'}), 404)
 
 # Some useful functions
 def uri(suffix, base='/api/v1'):
