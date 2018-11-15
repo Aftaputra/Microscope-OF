@@ -60,44 +60,34 @@ def index():
     )
 
 
-##### TESTING CLASS STUFFS ######
+##### Basic microscope view ######
 class MicroscopeView(MethodView):
 
-    def __init__(self, microscope_obj):
-        self.microscope_obj = microscope_obj
-
-
-class TestAPI(MicroscopeView):
-
-    def get(self):
+    def __init__(self, microscope):
         """
-        Get method for my cool new MethodView
+        Create a generic MethodView with a globally available
+        microscope object passed as an argument.
         """
-        return jsonify(self.microscope_obj.state)
-
-    def post(self):
-        """
-        Post method for my cool new MethodView
-        """
-        return jsonify(request.get_json())
-
-app.add_url_rule('/test', view_func=TestAPI.as_view('test', microscope_obj=microscope))
+        self.microscope = microscope
 
 # Define API routes
 
-# Basic routes
+# Basic views
 
-@app.route(uri('/stream'))
-def stream():
-    """Video streaming route. Put this in the src attribute of an img tag."""
-    global microscope
+class StreamAPI(MicroscopeView):
+    def get(self):
+        """
+        Video streaming route. Put this in the src attribute of an img tag.
+        """
+        # Restart stream worker thread
+        microscope.camera.start_worker()
 
-    # Restart stream worker thread
-    microscope.camera.start_worker()
+        return Response(
+            gen(self.microscope.camera),
+            mimetype='multipart/x-mixed-replace; boundary=frame')
 
-    return Response(
-        gen(microscope.camera),
-        mimetype='multipart/x-mixed-replace; boundary=frame')
+app.add_url_rule(uri('/stream'), view_func=StreamAPI.as_view('stream', microscope=microscope))
+
 
 @app.route(uri('/state'))
 def state():
