@@ -114,13 +114,25 @@ class PositionAPI(MicroscopeView):
 
     def get(self):
         """
-        Get current position
+        Return current x, y and z positions of the stage.
+        
+        .. :quickref: Position; Get current position
         """
         return jsonify(self.microscope.state['position'])
 
     def post(self):
         """
-        Update current position
+        Set x, y and z positions of the stage.
+        
+        .. :quickref: Position; Update current position
+        
+        :reqheader Accept: application/json
+        :<json boolean absolute: (true) move to absolute position, (false) move by relative amount
+        :<json boolean force: allow moving by more than programmed limit
+        :<json int x: x steps
+        :<json int y: y steps
+        :<json int z: z steps
+
         """
         # Get payload
         state = parse_payload(request)
@@ -170,7 +182,9 @@ class CaptureAPI(MicroscopeView):
 
     def get(self):
         """
-        Get list of image captures
+        Get list of image captures.
+        
+        .. :quickref: Capture collection; Get collection of captures
         """
         include_unavailable = get_bool(request.args.get('include_unavailable'))
 
@@ -181,16 +195,27 @@ class CaptureAPI(MicroscopeView):
 
         return jsonify(captures)
 
-
     def delete(self):
         """
-        Delete all captures
+        Delete all captures.
+        
+        .. :quickref: Capture collection; Delete all captures
         """
         return jsonify({"error": "not yet implemented"})
 
     def post(self):
         """
-        Create a new image capture
+        Create a new image capture.
+        
+        .. :quickref: Capture collection; New capture
+        
+        :reqheader Accept: application/json
+        :<json string filename: filename of stored capture
+        :<json boolean keep_on_disk: keep the capture file on microscope after closing
+        :<json boolean use_video_port: capture still image from the video port (lower resolution)
+        
+        :<json json size:   - **x** *(int)*: x-axis resize
+                            - **y** *(int)*: y-axis resize
         """
         state = parse_payload(request)
 
@@ -236,6 +261,8 @@ class CaptureIdAPI(MicroscopeView):
     def get(self, capture_id):
         """
         Get JSON representation of a capture
+        
+        .. :quickref: Capture; Get capture
         """
         capture_obj = self.microscope.camera.image_from_id(capture_id)
 
@@ -261,12 +288,16 @@ class CaptureIdAPI(MicroscopeView):
     def delete(self, capture_id):
         """
         Delete a capture
+        
+        .. :quickref: Capture; Delete capture
         """
         return jsonify({"return": capture_id})
 
     def put(self, capture_id):
         """
         Modify the metadata of a capture
+        
+        .. :quickref: Capture; Update capture metadata
         """
         return jsonify({"return": capture_id})
 
@@ -279,6 +310,8 @@ class CaptureDownloadAPI(MicroscopeView):
     def get(self, capture_id):
         """
         Return image data for a capture.
+        
+        .. :quickref: Capture; Download capture file
         """
         print(capture_id)
         capture_obj = self.microscope.camera.image_from_id(capture_id)
