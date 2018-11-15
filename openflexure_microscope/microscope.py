@@ -8,7 +8,9 @@ from .camera.pi import StreamingCamera
 class Microscope(object):
     def __init__(self, camera: StreamingCamera, stage: OpenFlexureStage):
         """Create the microscope object.  The camera and stage should already be initialised."""
+        print("Assigning camera")
         self.camera = camera
+        print("Assigning stage")
         self.stage = stage
         self.stage.backlash = np.zeros(3, dtype=np.int)
 

@@ -17,6 +17,7 @@ from flask import (
     redirect, request, jsonify, send_file, abort,
     make_response)
 
+from flask.views import MethodView
 
 import numpy as np
 
@@ -29,20 +30,21 @@ from openflexure_stage import OpenFlexureStage
 import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
+logging.info("Creating StreamingCamera")
+cam = StreamingCamera()
+logging.info("Creating stage")
+stage = OpenFlexureStage("/dev/ttyUSB0")
 
 # Create the microscope object globally (common to all spawned server threads)
+logging.info("Creating microscope")
 microscope = Microscope(
-    StreamingCamera(), 
-    OpenFlexureStage("/dev/ttyUSB0")
+    cam, 
+    stage
 )
 
+logging.info("Creating app")
 # Create flask app
 app = Flask(__name__)
-
-# Make errors more API friendly
-@app.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify({'error': 'Not found'}), 404)
 
 # Some useful functions
 def uri(suffix, base='/api/v1'):
@@ -56,6 +58,30 @@ def index():
     return render_template(
         'index_v1.html'
     )
+
+
+##### TESTING CLASS STUFFS ######
+class MicroscopeView(MethodView):
+
+    def __init__(self, microscope_obj):
+        self.microscope_obj = microscope_obj
+
+
+class TestAPI(MicroscopeView):
+
+    def get(self):
+        """
+        Get method for my cool new MethodView
+        """
+        return jsonify(self.microscope_obj.state)
+
+    def post(self):
+        """
+        Post method for my cool new MethodView
+        """
+        return jsonify(request.get_json())
+
+app.add_url_rule('/test', view_func=TestAPI.as_view('test', microscope_obj=microscope))
 
 # Define API routes
 
@@ -84,7 +110,9 @@ def state():
 
 @app.route(uri('/position'), methods=['GET', 'POST', 'PUT'])
 def position():
-    """Set and get the microscope stage position"""
+    """
+    Set and get the microscope stage position
+    """
     global microscope
 
     if request.method == 'POST' or request.method == 'PUT':
@@ -249,5 +277,5 @@ def thumb_capture(capture_uuid):
         capture_obj.thumbnail,
         mimetype='image/jpeg')
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', threaded=True, debug=True, use_reloader=False)
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port="5000", threaded=True, debug=True, use_reloader=False)
