@@ -382,9 +382,6 @@ class StreamingCamera(BaseCamera):
                 bayer=False,
                 use_video_port=True)
 
-        # Update state dictionary
-        self.state['image_recent'] = str(target_obj)
-
         return target_obj
 
     def array(
