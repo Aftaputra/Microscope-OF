@@ -144,15 +144,9 @@ class StreamObject(object):
             'id': self.id,
             'locked': self.locked,
             'keep_on_disk': self.keep_on_disk,
+            'filename': self.filename,
             'path': self.file,
-            'context_manager': self.context_manager,
         }
-
-        # Get file path
-        if self.file_exists:
-            d['file'] = self.filename
-        else:
-            d['file'] = None
 
         # Check stream
         if self.stream_exists:
