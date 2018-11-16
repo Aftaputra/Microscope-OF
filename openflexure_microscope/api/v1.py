@@ -81,7 +81,13 @@ class StreamAPI(MicroscopeView):
 
     def get(self):
         """
-        Video streaming route. Put this in the src attribute of an img tag.
+        Real-time MJPEG stream from the microscope camera
+
+        .. :quickref: State; Camera stream
+
+        :>header Accept: image/jpeg
+        :>header Content-Type: image/jpeg
+        :status 200: stream active
         """
         # Restart stream worker thread
         self.microscope.camera.start_worker()
@@ -99,7 +105,39 @@ class StateAPI(MicroscopeView):
 
     def get(self):
         """
-        Return JSONified microscope state.
+        JSON representation of the microscope object.
+
+        .. :quickref: State; Microscope state
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          GET /state/ HTTP/1.1
+          Accept: application/json
+
+        **Example response**:
+
+        .. sourcecode:: http
+
+          HTTP/1.1 200 OK
+          Vary: Accept
+          Content-Type: application/json
+
+          {
+            "position": {
+                "x": 0, 
+                "y": 0, 
+                "z": 0
+            }, 
+            "preview_active": false, 
+            "record_active": false, 
+            "stream_active": true
+          }
+
+        :>header Accept: application/json
+        :>header Content-Type: application/json
+        :status 200: state available
         """
         return jsonify(self.microscope.state)
 
@@ -115,17 +153,42 @@ class PositionAPI(MicroscopeView):
     def get(self):
         """
         Return current x, y and z positions of the stage.
-        
+
         .. :quickref: Position; Get current position
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          GET /position/ HTTP/1.1
+          Accept: application/json
+
+        **Example response**:
+
+        .. sourcecode:: http
+
+          HTTP/1.1 200 OK
+          Vary: Accept
+          Content-Type: application/json
+
+          {
+            "x": 0, 
+            "y": 0, 
+            "z": 0
+          }
+
+        :>json int x: x steps
+        :>json int y: y steps
+        :>json int z: z steps
         """
         return jsonify(self.microscope.state['position'])
 
     def post(self):
         """
         Set x, y and z positions of the stage.
-        
+
         .. :quickref: Position; Update current position
-        
+
         :reqheader Accept: application/json
         :<json boolean absolute: (true) move to absolute position, (false) move by relative amount
         :<json boolean force: allow moving by more than programmed limit
@@ -183,8 +246,25 @@ class CaptureListAPI(MicroscopeView):
     def get(self):
         """
         Get list of image captures.
-        
+
         .. :quickref: Capture collection; Get collection of captures
+
+        :>header Accept: application/json
+        :query include_unavailable: return json representations of captures that have been completely deleted
+
+        :>jsonarr boolean available: availability of capture data
+        :>jsonarr string filename: filename of capture
+        :>jsonarr string id: unique id of the capture object
+        :>jsonarr boolean keep_on_disk: keep the capture file on microscope after closing
+        :>jsonarr boolean locked: file locked for modifications (mostly used for video recording)
+        :>jsonarr string path: path on pi storage to the capture file, if available
+        :>jsonarr boolean stream: capture stored in-memory as a BytesIO stream
+        :>jsonarr json uri: - **download** *(string)*: api uri to the capture file download
+                            - **metadata** *(string)*: api uri to the capture json representation
+
+        :>header Content-Type: application/json
+        :status 200: capture found
+        :status 404: no capture found with that id
         """
         include_unavailable = get_bool(request.args.get('include_unavailable'))
 
@@ -197,8 +277,8 @@ class CaptureListAPI(MicroscopeView):
 
     def delete(self):
         """
-        Delete all captures.
-        
+        Delete all captures (not yet implemented)
+
         .. :quickref: Capture collection; Delete all captures
         """
         return jsonify({"error": "not yet implemented"})
@@ -206,16 +286,47 @@ class CaptureListAPI(MicroscopeView):
     def post(self):
         """
         Create a new image capture.
-        
+
         .. :quickref: Capture collection; New capture
-        
-        :reqheader Accept: application/json
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          POST /position/ HTTP/1.1
+          Accept: application/json
+
+          {
+            "filename": "myfirstcapture", 
+            "keep_on_disk": true, 
+            "use_video_port": true,
+            "size": {
+                "x": 640,
+                "y": 480
+            }
+          }
+
+        :>header Accept: application/json
+
         :<json string filename: filename of stored capture
         :<json boolean keep_on_disk: keep the capture file on microscope after closing
-        :<json boolean use_video_port: capture still image from the video port (lower resolution)
-        
+        :<json boolean use_video_port: capture still image from the video port
         :<json json size:   - **x** *(int)*: x-axis resize
                             - **y** *(int)*: y-axis resize
+
+        :>json boolean available: availability of capture data
+        :>json string filename: filename of capture
+        :>json string id: unique id of the capture object
+        :>json boolean keep_on_disk: keep the capture file on microscope after closing
+        :>json boolean locked: file locked for modifications (mostly used for video recording)
+        :>json string path: path on pi storage to the capture file, if available
+        :>json boolean stream: capture stored in-memory as a BytesIO stream
+        :>json json uri: - **download** *(string)*: api uri to the capture file download
+                         - **metadata** *(string)*: api uri to the capture json representation
+
+        :<header Content-Type: application/json
+        :status 200: capture created
+        :status 422: invalid parameters
         """
         state = parse_payload(request)
 
@@ -263,8 +374,48 @@ class CaptureAPI(MicroscopeView):
     def get(self, capture_id):
         """
         Get JSON representation of a capture
-        
+
         .. :quickref: Capture; Get capture
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          GET /capture/d0b2067abbb946f19351e075c5e7cd5b/ HTTP/1.1
+          Accept: application/json
+
+        **Example response**:
+
+        .. sourcecode:: http
+
+          HTTP/1.1 200 OK
+          Vary: Accept
+          Content-Type: application/json
+
+          {
+              "available": true, 
+              "filename": "2018-11-16_10-21-53.jpeg", 
+              "id": "d0b2067abbb946f19351e075c5e7cd5b", 
+              "keep_on_disk": false, 
+              "locked": false, 
+              "path": "capture/2018-11-16_10-21-53.jpeg", 
+              "stream": false, 
+              "uri": {
+                  "download": "/api/v1/capture/d0b2067abbb946f19351e075c5e7cd5b/download", 
+                  "metadata": "/api/v1/capture/d0b2067abbb946f19351e075c5e7cd5b/"
+              }
+          }
+
+        :>json boolean available: availability of capture data
+        :>json string filename: filename of capture
+        :>json string id: unique id of the capture object
+        :>json boolean keep_on_disk: keep the capture file on microscope after closing
+        :>json boolean locked: file locked for modifications (mostly used for video recording)
+        :>json string path: path on pi storage to the capture file, if available
+        :>json boolean stream: capture stored in-memory as a BytesIO stream
+        :>json json uri: - **download** *(string)*: api uri to the capture file download
+                         - **metadata** *(string)*: api uri to the capture json representation
+
         """
         capture_obj = self.microscope.camera.image_from_id(capture_id)
 
@@ -290,7 +441,7 @@ class CaptureAPI(MicroscopeView):
 
     def delete(self, capture_id):
         """
-        Delete a capture
+        Delete a capture (not yet implemented)
         
         .. :quickref: Capture; Delete capture
         """
@@ -298,7 +449,7 @@ class CaptureAPI(MicroscopeView):
 
     def put(self, capture_id):
         """
-        Modify the metadata of a capture
+        Modify the metadata of a capture (not yet implemented)
         
         .. :quickref: Capture; Update capture metadata
         """
@@ -315,6 +466,20 @@ class CaptureDownloadAPI(MicroscopeView):
         Return image data for a capture.
         
         .. :quickref: Capture; Download capture file
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          GET /capture/d0b2067abbb946f19351e075c5e7cd5b/download?thumbnail=true HTTP/1.1
+          Accept: image/jpeg
+
+        :>header Accept: image/jpeg
+        :query thumbnail: return an image thumbnail e.g. ?thumbnail=true
+
+        :>header Content-Type: image/jpeg
+        :status 200: capture data found
+        :status 404: no capture found with that id
         """
         print(capture_id)
         capture_obj = self.microscope.camera.image_from_id(capture_id)

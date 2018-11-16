@@ -34,13 +34,12 @@ def entry_by_id(id: str, object_list: list):
 
 
 class CameraEvent(object):
-    def __init__(self):
-        """
-        Create a frame-signaller object for StreamingCamera.
+    """
+    A frame-signaller object used by any instances or subclasses of BaseCamera.
 
-        An event-like class that signals all active clients
-        when a new frame is available.
-        """
+    An event-like class that signals all active clients when a new frame is available.
+    """
+    def __init__(self):
         self.events = {}
 
     def wait(self, timeout: int=5):
@@ -79,21 +78,23 @@ class CameraEvent(object):
 
 
 class BaseCamera(object):
+    """
+    Base implementation of StreamingCamera.
+    """
     def __init__(self):
-        """Base implementation of StreamingCamera."""
-        self.thread = None  # Background thread that reads frames from camera
-        self.camera = None  # Camera object, for direct access to camera
+        self.thread = None  #: Background thread reading frames from camera
+        self.camera = None  #: Camera object
 
-        self.frame = None  # Current frame is stored here by background thread
-        self.last_access = 0  # Time of last client access to the camera
+        self.frame = None  #: bytes: Current frame is stored here by background thread
+        self.last_access = 0  #: time: Time of last client access to the camera
         self.event = CameraEvent()
 
-        self.state = {}  # Create dict for capture state
-        self.settings = {}  # Create dict to store settings
+        self.state = {}  #: dict: Dictionary for capture state
+        self.settings = {}  #: dict: Dictionary of camera settings
 
         # Capture data
-        self.images = []
-        self.videos = []
+        self.images = []  #: list: List of image capture objects
+        self.videos = []  #: list: List of video recording objects
 
     def __enter__(self):
         """Create camera on context enter."""

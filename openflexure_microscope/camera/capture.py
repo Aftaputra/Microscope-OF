@@ -11,6 +11,9 @@ thumbnail_size = (60, 60)
 
 
 class StreamObject(object):
+    """
+    StreamObject used to store and process capture data, and metadata.
+    """
     def __init__(
             self,
             write_to_file: bool=None,
