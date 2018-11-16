@@ -274,6 +274,7 @@ class CaptureAPI(MicroscopeView):
         # Get capture metadata
         capture_metadata = capture_obj.metadata
 
+        # TODO: Tidy up adding URI to metadata
         # Add API routes to returned metadata
         uri_dict = {
             'uri': {'metadata': uri('/capture/{}/'.format(capture_id))}
