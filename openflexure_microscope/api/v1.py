@@ -178,7 +178,7 @@ app.add_url_rule(
 
 # Capture endpoints
 
-class CaptureAPI(MicroscopeView):
+class CaptureListAPI(MicroscopeView):
 
     def get(self):
         """
@@ -253,10 +253,10 @@ class CaptureAPI(MicroscopeView):
 
 app.add_url_rule(
     uri('/capture/'), 
-    view_func=CaptureAPI.as_view('capture', microscope=api_microscope))
+    view_func=CaptureListAPI.as_view('capture_list', microscope=api_microscope))
 
 
-class CaptureIdAPI(MicroscopeView):
+class CaptureAPI(MicroscopeView):
 
     def get(self, capture_id):
         """
@@ -303,7 +303,7 @@ class CaptureIdAPI(MicroscopeView):
 
 app.add_url_rule(
     uri('/capture/<capture_id>/'), 
-    view_func=CaptureIdAPI.as_view('capture_id', microscope=api_microscope))
+    view_func=CaptureAPI.as_view('capture', microscope=api_microscope))
 
 
 class CaptureDownloadAPI(MicroscopeView):
