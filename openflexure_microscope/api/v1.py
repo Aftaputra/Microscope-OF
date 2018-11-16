@@ -219,6 +219,7 @@ class CaptureListAPI(MicroscopeView):
         """
         state = parse_payload(request)
 
+        # TODO: Roll all of these ugly if statements into a method for getting payload elements
         if 'filename' in state:
             filename = state['filename']
         else:
@@ -238,6 +239,7 @@ class CaptureListAPI(MicroscopeView):
             if 'width' in state['size'] and 'height' in state['size']:
                 resize = (state['size']['width'], state['size']['height'])
             else:
+                # TODO: Return error 4XX instead of exception
                 raise Exception("Invalid resize parameters passed. Ensure both width and height are specified.")
         else:
             resize = None
