@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """
 TODO: Add proper docstrings
-TODO: Bind to port 80
-TODO: Reimplement capture methods
 TODO: Implement API route to cleanly shut down server
 TODO: Implement microscope function API routes (autofocus etc)
 """
@@ -30,6 +28,18 @@ import logging, sys
 
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
+# Create a dummy microscope object, with no hardware attachments
+api_microscope = Microscope(None, None)
+logging.debug("Created an empty microscope in global.")
+
+# Generate API URI based on version from filename
+def uri(suffix, base=None):
+    if not base:
+        api_ver = os.path.splitext(os.path.basename(__file__))[0]
+        base = "/api/{}".format(api_ver)
+    uri = base + suffix
+    logging.debug("Created app route: {}".format(uri))
+    return uri
 
 # Create flask app
 app = Flask(__name__)
@@ -39,19 +49,6 @@ app = Flask(__name__)
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
 
-# Some useful functions
-# TODO: Maybe auto-generate API URI base from module name
-def uri(suffix, base=None):
-    if not base:
-        api_ver = os.path.splitext(os.path.basename(__file__))[0]
-        base = "/api/{}".format(api_ver)
-    uri = base + suffix
-    logging.debug("Created app route: {}".format(uri))
-    return uri
-
-# Create a dummy microscope object, with no hardware attachments
-api_microscope = Microscope(None, None)
-logging.debug("Created an empty microscope in global.")
 
 # After app starts, but before first request, attach hardware to global microscope
 @app.before_first_request
