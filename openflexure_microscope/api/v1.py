@@ -11,6 +11,7 @@ import numpy as np
 from importlib import import_module
 import time
 import datetime
+import os
 
 from flask import (
     Flask, render_template, Response,
@@ -29,11 +30,6 @@ import logging, sys
 
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
-# Create the microscope object globally (common to all spawned server threads)
-api_microscope = Microscope(
-    StreamingCamera(), 
-    OpenFlexureStage("/dev/ttyUSB0")
-)
 
 # Create flask app
 app = Flask(__name__)
@@ -45,9 +41,29 @@ def not_found(error):
 
 # Some useful functions
 # TODO: Maybe auto-generate API URI base from module name
-def uri(suffix, base='/api/v1'):
-    return base + suffix
+def uri(suffix, base=None):
+    if not base:
+        api_ver = os.path.splitext(os.path.basename(__file__))[0]
+        base = "/api/{}".format(api_ver)
+    uri = base + suffix
+    logging.debug("Created app route: {}".format(uri))
+    return uri
 
+# Create a dummy microscope object, with no hardware attachments
+api_microscope = Microscope(None, None)
+logging.debug("Created an empty microscope in global.")
+
+# After app starts, but before first request, attach hardware to global microscope
+@app.before_first_request
+def attach_microscope():
+    # Create the microscope object globally (common to all spawned server threads)
+    global api_microscope
+    logging.debug("First request made. Populating microscope with hardware...")
+    api_microscope.attach(
+        StreamingCamera(),
+        OpenFlexureStage("/dev/ttyUSB0")
+    )
+    logging.debug("Microscope successfully attached!")
 
 ##### WEBAPP ROUTES ######
 
