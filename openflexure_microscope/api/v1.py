@@ -487,18 +487,42 @@ app.add_url_rule(
     view_func=CaptureAPI.as_view('capture', microscope=api_microscope))
 
 
+class CaptureDownloadRedirectAPI(MicroscopeView):
+    def get(self, capture_id, filename):
+        """
+        Redirect to download the capture under it's currently set filename. 
+        I.e., `/(capture_id)/download` will 
+        redirect to `/(capture_id)/download/(filename)`.
+
+        Note: This route may be deprecated in the future. Where at all
+        possible, please include a filename to download as.
+
+        .. :quickref: Capture; Redirect to download
+        """
+        capture_obj = self.microscope.camera.image_from_id(capture_id)
+
+        if not capture_obj or not capture_obj.metadata['available']:
+            return abort(404)  # 404 Not Found
+
+        as_attachment = get_bool(request.args.get('as_attachment'))
+        thumbnail = get_bool(request.args.get('thumbnail'))
+
+        return redirect(url_for('capture_download', capture_id=capture_id, filename=capture_obj.filename, as_attachment=as_attachment, thumbnail=thumbnail), code=307)
+
+# Route for shortcut where no filename is specified
+app.add_url_rule(
+    uri('/capture/<capture_id>/download/'),
+    view_func=CaptureDownloadRedirectAPI.as_view('capture_download_redirect', microscope=api_microscope))
+
+
 class CaptureDownloadAPI(MicroscopeView):
     def get(self, capture_id, filename):
         """
         Return image data for a capture.
 
-        If no (filename) is specified, the request will redirect to download the capture 
-        under it's currently set filename. I.e., `/(capture_id)/download` will 
-        redirect to `/(capture_id)/download/(filename)`.
-
-        If (filename) is specified, the capture data will be returned as an image 
-        file with the requested filename. I.e., `/(capture_id)/download/foo.jpeg` will
-        download the image as `foo.jpeg`, regardless of the capture's initially set filename.
+        Return capture data as an image file with the requested filename. 
+        I.e., `/(capture_id)/download/foo.jpeg` will download the image as 
+        `foo.jpeg`, regardless of the capture's initially set filename.
 
         .. :quickref: Capture; Download capture file
 
@@ -541,19 +565,9 @@ class CaptureDownloadAPI(MicroscopeView):
             as_attachment=as_attachment,
             attachment_filename=filename)
 
-# General download view
-download_view = CaptureDownloadAPI.as_view('capture_download', microscope=api_microscope)
-
-# Full route, including filename
 app.add_url_rule(
     uri('/capture/<capture_id>/download/<filename>'),
-    view_func=download_view)
-
-# Route for shortcut where no filename is specified
-app.add_url_rule(
-    uri('/capture/<capture_id>/download/'),
-    defaults={'filename': None},
-    view_func=download_view)
+    view_func=CaptureDownloadAPI.as_view('capture_download', microscope=api_microscope))
 
 
 if __name__ == "__main__":
