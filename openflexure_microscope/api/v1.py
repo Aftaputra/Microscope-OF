@@ -17,6 +17,7 @@ from flask import (
     make_response)
 
 from flask.views import MethodView
+from werkzeug.exceptions import default_exceptions
 
 from openflexure_microscope.api.utilities import parse_payload, gen, get_bool
 
@@ -45,10 +46,18 @@ def uri(suffix, base=None):
 app = Flask(__name__)
 
 # Make errors more API friendly
-@app.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify({'error': 'Not found'}), 404)
 
+def _handle_http_exception(e):
+    return make_response(
+        jsonify({
+            'status_code': e.code,
+            'error': e.name,
+            'details': e.description
+        }),
+        e.code)
+
+for code in default_exceptions:
+    app.errorhandler(code)(_handle_http_exception)
 
 # After app starts, but before first request, attach hardware to global microscope
 @app.before_first_request
@@ -339,7 +348,6 @@ class CaptureListAPI(MicroscopeView):
 
         :<header Content-Type: application/json
         :status 200: capture created
-        :status 422: invalid parameters
         """
         state = parse_payload(request)
 
