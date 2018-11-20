@@ -29,20 +29,10 @@ class StreamObject(object):
         # Store file format
         self.format = fmt
 
-        # Create file name
-        iterator = 0
-        f_path, f_name = self.build_file_path(filename, folder, fmt)
-
-        while os.path.isfile(f_name):  # While file already exists
-            iterator += 1  # Add a file name iterator
-            f_path, f_name = self.build_file_path(
-                filename,
-                folder,
-                fmt,
-                iterator=iterator)  # Rebuild file name
-
-        self.file = f_path
-        self.filename = f_name
+        # Create file name. Default to UUID
+        if not filename:
+            filename = self.id
+        self.build_file_path(filename, folder, fmt)
 
         # Byte stream properties
         self.stream = io.BytesIO()  # Byte stream that data will be written to
@@ -85,21 +75,13 @@ class StreamObject(object):
             self,
             filename: str,
             folder: str,
-            fmt: str,
-            iterator: int=0) -> str:
+            fmt: str):
         """
         Construct a full file path, based on filename, folder, and file format.
 
-        Defaults to datestamp. 
-        Iterator adds a numeric increment to the file name.
+        Defaults to datestamp.
         """
-        if filename:
-            file_name = "{}.{}".format(filename, fmt)
-        else:
-            file_name_base = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            if iterator:
-                file_name_base = "{}_{}".format(file_name_base, iterator)
-            file_name = "{}.{}".format(file_name_base, fmt)
+        file_name = "{}.{}".format(filename, fmt)
 
         # Create folder and file
         if folder:
@@ -110,7 +92,9 @@ class StreamObject(object):
         else:
             file_path = file_name
 
-        return (file_path, file_name)
+        self.basename = filename
+        self.file = file_path
+        self.filename = file_name
 
     def lock(self):
         """Set locked flag to True."""

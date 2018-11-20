@@ -238,11 +238,13 @@ class StreamingCamera(BaseCamera):
             # If no target is specified, store to StreamingCamera
             if not target:
                 # Create a new video and add to the video list
-                target_obj = self.new_video(StreamObject(
-                    write_to_file=write_to_file,
-                    filename=filename,
-                    folder=folder,
-                    fmt=fmt))
+                target_obj = self.new_video(
+                    StreamObject(
+                        write_to_file=write_to_file,
+                        filename=filename,
+                        folder=folder,
+                        fmt=fmt)
+                    )
 
                 # Lock the StreamObject while recording
                 target_obj.lock()
@@ -355,16 +357,24 @@ class StreamingCamera(BaseCamera):
             fmt (str): Format of the capture.
             resize ((int, int)): Resize the captured image.
         """
+        # If no filename is specified, build a non-clashing one
+        if not filename:
+            filename = self.generate_basename(self.images)
+            logging.debug(filename)
+
         # If no target is specified, store to StreamingCamera
         if not target:
+            # TODO: Handle clashing file names here instead of in capture method.
             # Create a new image and add to the image list
-            target_obj = self.new_image(StreamObject(
-                write_to_file=write_to_file,
-                keep_on_disk=keep_on_disk,
-                filename=filename,
-                folder=folder,
-                fmt=fmt))
-            target = target_obj.target  # Store to the StreamObject BytesIO
+            target_obj = self.new_image(
+                StreamObject(
+                    write_to_file=write_to_file,
+                    keep_on_disk=keep_on_disk,
+                    filename=filename,
+                    folder=folder,
+                    fmt=fmt)
+                )
+            target = target_obj.target  # Store to the StreamObject BytesIO  
 
         else:
             target_obj = target

@@ -3,6 +3,7 @@ import time
 import io
 import threading
 from PIL import Image
+import datetime
 import logging
 
 try:
@@ -31,6 +32,11 @@ def entry_by_id(id: str, object_list: list):
         if o.id == id:
             found = o
     return found
+
+
+def generate_basename():
+    """Return a default filename based on the capture datetime"""
+    return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
 class CameraEvent(object):
@@ -221,6 +227,18 @@ class BaseCamera(object):
             stream_object,
             self.videos,
             shunt_others=shunt_others)
+
+    # INTELLIGENTLY GENERATE FILENAMES
+    def generate_basename(self, obj_list: list) -> str:
+        initial_basename = generate_basename()
+        basename = initial_basename
+        # Handle clashing
+        iterator = 1
+        while basename in [obj.basename for obj in obj_list]:
+            basename = initial_basename + "_{}".format(iterator)
+            iterator += 1
+
+        return basename
 
     # WORKER THREAD
 
