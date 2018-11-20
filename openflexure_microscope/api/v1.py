@@ -12,7 +12,7 @@ import datetime
 import os
 
 from flask import (
-    Flask, render_template, Response,
+    Flask, render_template, Response, url_for,
     redirect, request, jsonify, send_file, abort,
     make_response)
 
@@ -455,7 +455,7 @@ class CaptureAPI(MicroscopeView):
 
         # If available, also add download link
         if capture_metadata['available']:
-            uri_dict['uri']['download'] = uri('/capture/{}/download'.format(capture_id))
+            uri_dict['uri']['download'] = uri('/capture/{}/download/{}'.format(capture_obj.id, capture_obj.filename))
 
         capture_metadata.update(uri_dict)
 
@@ -485,14 +485,20 @@ class CaptureAPI(MicroscopeView):
         return jsonify({"return": capture_id})
 
 app.add_url_rule(
-    uri('/capture/<capture_id>/'), 
+    uri('/capture/<capture_id>/'),
     view_func=CaptureAPI.as_view('capture', microscope=api_microscope))
 
 
 class CaptureDownloadAPI(MicroscopeView):
-    def get(self, capture_id):
+    def get(self, capture_id, filename):
         """
         Return image data for a capture.
+
+        If no (filename) is specified, the request will redirect to download the capture 
+        under it's currently set filename.
+
+        If (filename) is specified, the capture data will be returned as an image 
+        file with the requested filename.
 
         .. :quickref: Capture; Download capture file
 
@@ -500,11 +506,12 @@ class CaptureDownloadAPI(MicroscopeView):
 
         .. sourcecode:: http
 
-          GET /capture/d0b2067abbb946f19351e075c5e7cd5b/download?thumbnail=true HTTP/1.1
+          GET /capture/d0b2067abbb946f19351e075c5e7cd5b/download/2018-11-20_16-04-17.jpeg HTTP/1.1
           Accept: image/jpeg
 
         :>header Accept: image/jpeg
         :query thumbnail: return an image thumbnail e.g. ?thumbnail=true
+        :query as_attachment: return the image as an attachment download e.g. ?as_attachment=true
 
         :>header Content-Type: image/jpeg
         :status 200: capture data found
@@ -519,6 +526,11 @@ class CaptureDownloadAPI(MicroscopeView):
         as_attachment = get_bool(request.args.get('as_attachment'))
         thumbnail = get_bool(request.args.get('thumbnail'))
 
+        # If no filename is specified, redirect to the capture's currently set filename
+        if not filename:
+            return redirect(url_for('capture_download', capture_id=capture_id, filename=capture_obj.filename, as_attachment=as_attachment, thumbnail=thumbnail), code=307)
+
+        # Download the image data using the requested filename
         if thumbnail:
             img = capture_obj.thumbnail
         else:
@@ -528,11 +540,21 @@ class CaptureDownloadAPI(MicroscopeView):
             img,
             mimetype='image/jpeg',
             as_attachment=as_attachment,
-            attachment_filename=capture_obj.filename)
+            attachment_filename=filename)
 
+# General download view
+download_view = CaptureDownloadAPI.as_view('capture_download', microscope=api_microscope)
+
+# Full route, including filename
 app.add_url_rule(
-    uri('/capture/<capture_id>/download/'), 
-    view_func=CaptureDownloadAPI.as_view('capture_download', microscope=api_microscope))
+    uri('/capture/<capture_id>/download/<filename>'),
+    view_func=download_view)
+
+# Route for shortcut where no filename is specified
+app.add_url_rule(
+    uri('/capture/<capture_id>/download/'),
+    defaults={'filename': None},
+    view_func=download_view)
 
 
 if __name__ == "__main__":
