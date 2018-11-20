@@ -64,6 +64,14 @@ body {
     display: table;
 }
 
+.flexbox {
+    display: flex;
+    margin-bottom: 5px;
+}
+.flexgrow {
+    flex-grow: 1;
+}
+
 /* Data divs */
 
 #captures {
@@ -74,6 +82,18 @@ body {
 .capture {
     background-color: #d3d3d3;
     margin-bottom: 5px;
+    display: flex;
+}
+
+.capture-thumb {
+    width: 80px;
+}
+
+.capture-actions {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-left: 5px;
 }
 
 .capture img {
