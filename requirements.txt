@@ -1,3 +1,5 @@
+-e git://github.com/rwb27/openflexure_nano_motor_controller.git#egg=openflexure_stage
+
 click==6.7
 flask >= 0.12.3
 Jinja2
@@ -5,7 +7,7 @@ itsdangerous==0.24
 MarkupSafe==1.0
 picamera==1.13
 pyyaml==3.13
-numpy==1.10.1
+numpy
 Pillow
 RPi.GPIO
 
