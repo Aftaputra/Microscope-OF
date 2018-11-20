@@ -79,13 +79,13 @@ function updateCaptureList(response) {
         html = `
         <div class="capture-thumb"><img src="${element_uri}/download?thumbnail=true"></div>
         <div class="capture-actions"> 
-            <b>${element.filename}</b>
+            <div class='capture-heading'>${element.filename}</div>
             <br>
-            <button type="button" onclick="window.open('${element_uri}/download', '_blank');">View</button>
-            <button type="button" onclick="window.open('${element_uri}/download?as_attachment=true');">Download</button>
+            <button type="button" class="capture-button" onclick="window.open('${element_uri}/download', '_blank');">View</button>
+            <button type="button" class="capture-button" onclick="window.open('${element_uri}/download?as_attachment=true');">Download</button>
             <br>
-            <button type="button" onclick="window.open('${element_uri}/', '_blank');">JSON</button>
-            <button type="button" onclick="deleteCapture('${element.id}');">Delete</button>
+            <button type="button" class="capture-button" onclick="window.open('${element_uri}/', '_blank');">JSON</button>
+            <button type="button" class="capture-button" onclick="deleteCapture('${element.id}');">Delete</button>
             <br>
         </div>
         `
