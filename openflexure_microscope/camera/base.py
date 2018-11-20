@@ -3,6 +3,7 @@ import time
 import io
 import threading
 from PIL import Image
+import datetime
 import logging
 
 try:
@@ -33,14 +34,18 @@ def entry_by_id(id: str, object_list: list):
     return found
 
 
-class CameraEvent(object):
-    def __init__(self):
-        """
-        Create a frame-signaller object for StreamingCamera.
+def generate_basename():
+    """Return a default filename based on the capture datetime"""
+    return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-        An event-like class that signals all active clients
-        when a new frame is available.
-        """
+
+class CameraEvent(object):
+    """
+    A frame-signaller object used by any instances or subclasses of BaseCamera.
+
+    An event-like class that signals all active clients when a new frame is available.
+    """
+    def __init__(self):
         self.events = {}
 
     def wait(self, timeout: int=5):
@@ -79,21 +84,23 @@ class CameraEvent(object):
 
 
 class BaseCamera(object):
+    """
+    Base implementation of StreamingCamera.
+    """
     def __init__(self):
-        """Base implementation of StreamingCamera."""
-        self.thread = None  # Background thread that reads frames from camera
-        self.camera = None  # Camera object, for direct access to camera
+        self.thread = None  #: Background thread reading frames from camera
+        self.camera = None  #: Camera object
 
-        self.frame = None  # Current frame is stored here by background thread
-        self.last_access = 0  # Time of last client access to the camera
+        self.frame = None  #: bytes: Current frame is stored here by background thread
+        self.last_access = 0  #: time: Time of last client access to the camera
         self.event = CameraEvent()
 
-        self.state = {}  # Create dict for capture state
-        self.settings = {}  # Create dict to store settings
+        self.state = {}  #: dict: Dictionary for capture state
+        self.settings = {}  #: dict: Dictionary of camera settings
 
         # Capture data
-        self.images = []
-        self.videos = []
+        self.images = []  #: list: List of image capture objects
+        self.videos = []  #: list: List of video recording objects
 
     def __enter__(self):
         """Create camera on context enter."""
@@ -220,6 +227,18 @@ class BaseCamera(object):
             stream_object,
             self.videos,
             shunt_others=shunt_others)
+
+    # INTELLIGENTLY GENERATE FILENAMES
+    def generate_basename(self, obj_list: list) -> str:
+        initial_basename = generate_basename()
+        basename = initial_basename
+        # Handle clashing
+        iterator = 1
+        while basename in [obj.basename for obj in obj_list]:
+            basename = initial_basename + "_{}".format(iterator)
+            iterator += 1
+
+        return basename
 
     # WORKER THREAD
 

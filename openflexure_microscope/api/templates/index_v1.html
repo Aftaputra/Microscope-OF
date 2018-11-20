@@ -25,16 +25,16 @@
 
         <p>
           Doubleclick to position: <input type="checkbox" id="clickPositionCheck" checked><br>
-          <div class="clearfix">
-              <div class="left-col">FOV width:</div> 
-              <div class="right-col"> 
+          <div class="flexbox">
+              <div class="flexgrow">FOV width:</div> 
+              <div> 
                 <input type="number" id="fovXText" onchange="fovX = Number(this.value); updateTextBoxes();" style="width: 7em" >
               </div> 
           </div>
 
-          <div class="clearfix">
-              <div class="left-col">FOV height:</div> 
-              <div class="right-col"> 
+          <div class="flexbox">
+              <div class="flexgrow">FOV height:</div> 
+              <div> 
                   <input type="number" id="fovYText" onchange="fovY = Number(this.value); updateTextBoxes();" style="width: 7em" >
               </div> 
           </div>
@@ -51,16 +51,16 @@
         </p>
 
         <h4>Velocity:</h4>
-        <div class="clearfix">
-          <div class="left-col">x-y:</div>
-          <div class="right-col"> 
+        <div class="flexbox">
+          <div class="flexgrow">x-y:</div>
+          <div> 
             <input type="range" id="stageVelocityInput" min="50" max="200" oninput="stageVelocity = Number(this.value); updateTextBoxes();">
             <input type="text" id="stageVelocityText" size="3" disabled>
           </div>
         </div>
-        <div class="clearfix">
-          <div class="left-col">z:</div>
-          <div class="right-col"> 
+        <div class="flexbox">
+          <div class="flexgrow">z:</div>
+          <div> 
             <input type="range" id="focusVelocityInput" min="10" max="100" oninput="focusVelocity = Number(this.value); updateTextBoxes();">
             <input type="text" id="focusVelocityText" size="3" disabled>
           </div>

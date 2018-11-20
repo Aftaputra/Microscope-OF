@@ -11,9 +11,12 @@ thumbnail_size = (60, 60)
 
 
 class StreamObject(object):
+    """
+    StreamObject used to store and process capture data, and metadata.
+    """
     def __init__(
             self,
-            write_to_file: bool=None,
+            write_to_file: bool=False,
             keep_on_disk: bool=True,
             filename: str=None,
             folder: str=None,
@@ -21,25 +24,15 @@ class StreamObject(object):
         """Create a new StreamObject, to manage capture data."""
         # Store a nice ID
         self.id = uuid.uuid4().hex
-        logging.info("Created {}".format(self.id))
+        logging.info("Created StreamObject {}".format(self.id))
 
         # Store file format
         self.format = fmt
 
-        # Create file name
-        iterator = 0
-        f_path, f_name = self.build_file_path(filename, folder, fmt)
-
-        while os.path.isfile(f_name):  # While file already exists
-            iterator += 1  # Add a file name iterator
-            f_path, f_name = self.build_file_path(
-                filename,
-                folder,
-                fmt,
-                iterator=iterator)  # Rebuild file name
-
-        self.file = f_path
-        self.filename = f_name
+        # Create file name. Default to UUID
+        if not filename:
+            filename = self.id
+        self.build_file_path(filename, folder, self.format)
 
         # Byte stream properties
         self.stream = io.BytesIO()  # Byte stream that data will be written to
@@ -62,7 +55,7 @@ class StreamObject(object):
         # Object lock
         self.locked = False
 
-        # Thumbnail (populated only for JPEG captures)
+        # Thumbnail (populated only for PIL captures)
         self.thumb_bytes = None
 
     def __enter__(self):
@@ -82,21 +75,17 @@ class StreamObject(object):
             self,
             filename: str,
             folder: str,
-            fmt: str,
-            iterator: int=0) -> str:
+            fmt: str):
         """
         Construct a full file path, based on filename, folder, and file format.
 
-        Defaults to datestamp. 
-        Iterator adds a numeric increment to the file name.
+        Defaults to datestamp.
         """
-        if filename:
-            file_name = "{}.{}".format(filename, fmt)
-        else:
-            file_name_base = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            if iterator:
-                file_name_base = "{}_{}".format(file_name_base, iterator)
-            file_name = "{}.{}".format(file_name_base, fmt)
+        appendix = ""
+        if not self.keep_on_disk:
+            appendix += ".tmp"
+
+        file_name = "{}.{}".format(filename, fmt)
 
         # Create folder and file
         if folder:
@@ -107,7 +96,9 @@ class StreamObject(object):
         else:
             file_path = file_name
 
-        return (file_path, file_name)
+        self.basename = filename
+        self.file = file_path
+        self.filename = file_name
 
     def lock(self):
         """Set locked flag to True."""
@@ -144,15 +135,9 @@ class StreamObject(object):
             'id': self.id,
             'locked': self.locked,
             'keep_on_disk': self.keep_on_disk,
+            'filename': self.filename,
             'path': self.file,
-            'context_manager': self.context_manager,
         }
-
-        # Get file path
-        if self.file_exists:
-            d['file'] = self.filename
-        else:
-            d['file'] = None
 
         # Check stream
         if self.stream_exists:
@@ -183,7 +168,6 @@ class StreamObject(object):
 
         else:  # If data stream is empty
             if self.file_exists:  # If data file exists
-                # TODO: Streamline this bit
                 logging.info("Opening from file {}".format(self.file))
                 with open(self.file, 'rb') as f:
                     d = io.BytesIO(f.read())  # Load bytes from file
@@ -204,7 +188,7 @@ class StreamObject(object):
     def thumbnail(self) -> io.BytesIO:
         # If no thumbnail exists, try and make one
         if not self.thumb_bytes:
-            print("Building thumbnail")
+            logging.info("Building thumbnail")
             if self.format.upper() in pil_formats:
                 im = Image.open(self.data)
                 im.thumbnail(thumbnail_size)
@@ -222,7 +206,6 @@ class StreamObject(object):
     def load_file(self) -> bool:
         """Load data stored on disk to the in-memory stream."""
         if self.file_exists:  # If data file exists
-            # TODO: Streamline this bit
             with open(self.file, 'rb') as f:
                 self.stream = io.BytesIO(f.read())  # Load bytes from file
             self.stream.seek(0)  # Rewind data bytes again
@@ -253,6 +236,12 @@ class StreamObject(object):
             return True
         else:
             return False
+
+    def delete(self):
+        """Entirely delete all capture data."""
+        logging.info("Deleting {}".format(self.id))
+        self.delete_stream()
+        self.delete_file()
 
     def shunt(self):
         """Demote the StreamObject from being stored in memory."""

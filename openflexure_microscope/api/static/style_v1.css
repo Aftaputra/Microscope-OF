@@ -28,18 +28,18 @@ body {
 }
 
 .left{
-    width: 250px;
+    width: 220px;
     float: left;
 }
 
 .Right{
-    width: 250px;
+    width: 280px;
     float: right;
 }
 
 .middle {
-  margin-left: 250px;
-  margin-right: 250px;
+  margin-left: 220px;
+  margin-right: 280px;
   background-color: #d3d3d3;
 }
 
@@ -50,18 +50,14 @@ body {
     clear: both;
 }
 
-/* Columns within panels */
+/* Flexboxes */
+.flexbox {
+    display: flex;
+    margin-bottom: 5px;
+}
 
-.left-col {
-    float:left;
-}
-.right-col {
-    float:right;
-}
-.clearfix::after {
-    content: "";
-    clear: both;
-    display: table;
+.flexgrow {
+    flex-grow: 1;
 }
 
 /* Data divs */
@@ -72,10 +68,39 @@ body {
 }
 
 .capture {
-    background-color: #d3d3d3;
+    height: 75px;
+    width: 260px;
     margin-bottom: 5px;
+    background-color: #d3d3d3;
+    display: flex;
+}
+
+.capture-thumb {
+    width: 80px;
+    height: 75px;
+}
+
+.capture-heading {
+    font-weight: bold;
+    margin: 5px 0 5px 0;
+    display: inline-block;
+}
+
+.capture-actions {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-left: 5px;
 }
 
 .capture img {
-    width: 60px;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.capture-button {
+    width: 75px;
+    margin-bottom: 3px;
+    height: 22px;
 }
