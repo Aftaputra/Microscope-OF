@@ -495,10 +495,12 @@ class CaptureDownloadAPI(MicroscopeView):
         Return image data for a capture.
 
         If no (filename) is specified, the request will redirect to download the capture 
-        under it's currently set filename.
+        under it's currently set filename. I.e., `/(capture_id)/download` will 
+        redirect to `/(capture_id)/download/(filename)`.
 
         If (filename) is specified, the capture data will be returned as an image 
-        file with the requested filename.
+        file with the requested filename. I.e., `/(capture_id)/download/foo.jpeg` will
+        download the image as `foo.jpeg`, regardless of the capture's initially set filename.
 
         .. :quickref: Capture; Download capture file
 
