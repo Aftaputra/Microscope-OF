@@ -251,6 +251,12 @@ class StreamObject(object):
         else:
             return False
 
+    def delete(self):
+        """Entirely delete all capture data."""
+        logging.info("Deleting {}".format(self.id))
+        self.delete_stream()
+        self.delete_file()
+
     def shunt(self):
         """Demote the StreamObject from being stored in memory."""
         if not self.file_exists:  # If file doesn't already exist

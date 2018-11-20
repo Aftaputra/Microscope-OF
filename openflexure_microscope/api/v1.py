@@ -44,6 +44,7 @@ def uri(suffix, base=None):
 
 # Create flask app
 app = Flask(__name__)
+app.url_map.strict_slashes = False
 
 # Make errors more API friendly
 
@@ -291,9 +292,9 @@ class CaptureListAPI(MicroscopeView):
         include_unavailable = get_bool(request.args.get('include_unavailable'))
 
         if include_unavailable:
-            captures = [image.metadata for image in self.microscope.camera.images if image.metadata['available']]
-        else:
             captures = [image.metadata for image in self.microscope.camera.images]
+        else:
+            captures = [image.metadata for image in self.microscope.camera.images if image.metadata['available']]
 
         return jsonify(captures)
 
@@ -462,16 +463,23 @@ class CaptureAPI(MicroscopeView):
 
     def delete(self, capture_id):
         """
-        Delete a capture (not yet implemented)
-        
-        .. :quickref: Capture; Delete capture
+        Delete all capture data from the Pi, even if `keep_on_disk=true;`.
+
+        .. :quickref: Capture; Delete capture.
         """
+        capture_obj = self.microscope.camera.image_from_id(capture_id)
+
+        if not capture_obj:
+            return abort(404)  # 404 Not Found
+
+        capture_obj.delete()
+
         return jsonify({"return": capture_id})
 
     def put(self, capture_id):
         """
         Modify the metadata of a capture (not yet implemented)
-        
+
         .. :quickref: Capture; Update capture metadata
         """
         return jsonify({"return": capture_id})
@@ -485,7 +493,7 @@ class CaptureDownloadAPI(MicroscopeView):
     def get(self, capture_id):
         """
         Return image data for a capture.
-        
+
         .. :quickref: Capture; Download capture file
 
         **Example request**:
@@ -505,7 +513,7 @@ class CaptureDownloadAPI(MicroscopeView):
         print(capture_id)
         capture_obj = self.microscope.camera.image_from_id(capture_id)
 
-        if not capture_obj:
+        if not capture_obj or not capture_obj.metadata['available']:
             return abort(404)  # 404 Not Found
 
         as_attachment = get_bool(request.args.get('as_attachment'))

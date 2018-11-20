@@ -44,15 +44,26 @@ window.onload = function() {
     getCaptures()
 }
 
+function deleteCapture(capture_id) {
+    function deleteCaptureCallback(response, status) {
+        console.log(status);
+        getCaptures();
+    }
+    var r = confirm("Warning! This will delete all copies of this capture from the Raspberry Pi. Click OK to proceed.");
+    if (r == true) {
+        safeRequest("DELETE", baseURI+"/capture/"+capture_id+"/", null, deleteCaptureCallback, false)
+    }
+}
+
 function getCaptures() {
     function updateCapturesCallback(response, status) {
         console.log(status);
-        updateCaptures(response);
+        updateCaptureList(response);
     }
     safeRequest("GET", baseURI+"/capture", null, updateCapturesCallback, false)
 }
 
-function updateCaptures(response) {
+function updateCaptureList(response) {
     // Clear captures list
     var capturesNode = document.getElementById("captures");
     while (capturesNode.firstChild) {
@@ -69,8 +80,13 @@ function updateCaptures(response) {
         <div class="clearfix">
             <div class="left-col"><img src="${element_uri}/download?thumbnail=true"></div>
             <div class="right-col"> 
-                <b>${element.filename}</b><br>
-                <a href="${element_uri}/download" target="_blank">View</a> <a href="${element_uri}/download?as_attachment=true">Download</a> Delete <a href="${element_uri}/" target="_blank">JSON</a>
+                <b>${element.filename}</b>
+                <br>
+                <button type="button" onclick="window.open('${element_uri}/download', '_blank');">View</button>
+                <button type="button" onclick="window.open('${element_uri}/download?as_attachment=true');">Download</button>
+                <br>
+                <button type="button" onclick="window.open('${element_uri}/', '_blank');">JSON</button>
+                <button type="button" onclick="deleteCapture('${element.id}');">Delete</button>
                 <br>
             </div>
         </div>
