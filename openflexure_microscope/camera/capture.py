@@ -24,7 +24,7 @@ class StreamObject(object):
         """Create a new StreamObject, to manage capture data."""
         # Store a nice ID
         self.id = uuid.uuid4().hex
-        logging.info("Created {}".format(self.id))
+        logging.info("Created StreamObject {}".format(self.id))
 
         # Store file format
         self.format = fmt
@@ -32,7 +32,7 @@ class StreamObject(object):
         # Create file name. Default to UUID
         if not filename:
             filename = self.id
-        self.build_file_path(filename, folder, fmt)
+        self.build_file_path(filename, folder, self.format)
 
         # Byte stream properties
         self.stream = io.BytesIO()  # Byte stream that data will be written to
@@ -55,7 +55,7 @@ class StreamObject(object):
         # Object lock
         self.locked = False
 
-        # Thumbnail (populated only for JPEG captures)
+        # Thumbnail (populated only for PIL captures)
         self.thumb_bytes = None
 
     def __enter__(self):
@@ -168,7 +168,6 @@ class StreamObject(object):
 
         else:  # If data stream is empty
             if self.file_exists:  # If data file exists
-                # TODO: Streamline this bit
                 logging.info("Opening from file {}".format(self.file))
                 with open(self.file, 'rb') as f:
                     d = io.BytesIO(f.read())  # Load bytes from file
@@ -189,7 +188,7 @@ class StreamObject(object):
     def thumbnail(self) -> io.BytesIO:
         # If no thumbnail exists, try and make one
         if not self.thumb_bytes:
-            print("Building thumbnail")
+            logging.info("Building thumbnail")
             if self.format.upper() in pil_formats:
                 im = Image.open(self.data)
                 im.thumbnail(thumbnail_size)
@@ -207,7 +206,6 @@ class StreamObject(object):
     def load_file(self) -> bool:
         """Load data stored on disk to the in-memory stream."""
         if self.file_exists:  # If data file exists
-            # TODO: Streamline this bit
             with open(self.file, 'rb') as f:
                 self.stream = io.BytesIO(f.read())  # Load bytes from file
             self.stream.seek(0)  # Rewind data bytes again
