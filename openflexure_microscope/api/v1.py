@@ -46,6 +46,7 @@ def uri(suffix, base=None):
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
+
 # Make errors more API friendly
 
 def _handle_http_exception(e):
@@ -60,6 +61,7 @@ def _handle_http_exception(e):
 for code in default_exceptions:
     app.errorhandler(code)(_handle_http_exception)
 
+
 # After app starts, but before first request, attach hardware to global microscope
 @app.before_first_request
 def attach_microscope():
@@ -71,6 +73,7 @@ def attach_microscope():
         OpenFlexureStage("/dev/ttyUSB0")
     )
     logging.debug("Microscope successfully attached!")
+
 
 ##### WEBAPP ROUTES ######
 
@@ -85,7 +88,9 @@ def index():
 
 ##### API ROUTES ######
 
+
 # Basic microscope view
+
 class MicroscopeView(MethodView):
 
     def __init__(self, microscope):
@@ -97,8 +102,6 @@ class MicroscopeView(MethodView):
 
         MethodView.__init__(self)
 
-
-# State endpoints
 
 class StreamAPI(MicroscopeView):
 
@@ -168,8 +171,6 @@ app.add_url_rule(
     uri('/state/'), 
     view_func=StateAPI.as_view('state', microscope=api_microscope))
 
-
-# Positioning endpoints
 
 class PositionAPI(MicroscopeView):
 
@@ -243,7 +244,7 @@ class PositionAPI(MicroscopeView):
         logging.debug(position)
 
         # Safeguard to prevent moving to an absolute position beyond a fixed limit
-        if not 'force' in state or state['force'] is False:  # Allow for override
+        if 'force' not in state or state['force'] is False:  # Allow for override
             # TODO: Make travel_limit a property of the stage or microscope
             # TODO: Make travel_limit a 3-axis list
             travel_limit = 20000 
@@ -261,8 +262,6 @@ app.add_url_rule(
     uri('/position/'), 
     view_func=PositionAPI.as_view('position', microscope=api_microscope))
 
-
-# Capture endpoints
 
 class CaptureListAPI(MicroscopeView):
 
@@ -372,8 +371,7 @@ class CaptureListAPI(MicroscopeView):
             if 'width' in state['size'] and 'height' in state['size']:
                 resize = (state['size']['width'], state['size']['height'])
             else:
-                # TODO: Return error 4XX instead of exception
-                raise Exception("Invalid resize parameters passed. Ensure both width and height are specified.")
+                abort(400)
         else:
             resize = None
 
@@ -519,7 +517,6 @@ class CaptureDownloadAPI(MicroscopeView):
         :status 200: capture data found
         :status 404: no capture found with that id
         """
-        print(capture_id)
         capture_obj = self.microscope.camera.image_from_id(capture_id)
 
         if not capture_obj or not capture_obj.metadata['available']:
