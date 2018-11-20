@@ -1,12 +1,5 @@
 REST API
-======================================================
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-API Documentation
-=================
+========
 
 Summary
 -------
