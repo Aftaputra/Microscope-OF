@@ -16,7 +16,7 @@ class StreamObject(object):
     """
     def __init__(
             self,
-            write_to_file: bool=None,
+            write_to_file: bool=False,
             keep_on_disk: bool=True,
             filename: str=None,
             folder: str=None,
@@ -81,6 +81,10 @@ class StreamObject(object):
 
         Defaults to datestamp.
         """
+        appendix = ""
+        if not self.keep_on_disk:
+            appendix += ".tmp"
+
         file_name = "{}.{}".format(filename, fmt)
 
         # Create folder and file
