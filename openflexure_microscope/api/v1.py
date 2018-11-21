@@ -19,7 +19,7 @@ from flask import (
 from flask.views import MethodView
 from werkzeug.exceptions import default_exceptions
 
-from openflexure_microscope.api.utilities import parse_payload, gen, get_bool
+from openflexure_microscope.api.utilities import parse_payload, get_from_payload, gen, get_bool
 
 from openflexure_microscope import Microscope
 from openflexure_microscope.camera.pi import StreamingCamera
@@ -353,29 +353,15 @@ class CaptureListAPI(MicroscopeView):
         state = parse_payload(request)
         logging.info(state)
 
-        # TODO: Roll all of these ugly if statements into a method for getting payload elements
-        if 'filename' in state:
-            filename = state['filename']
-        else:
-            filename = None
+        filename = str(get_from_payload(state, 'filename', default=None))
+        keep_on_disk = bool(get_from_payload(state, 'keep_on_disk', default=True))
+        use_video_port = bool(get_from_payload(state, 'use_video_port', default=False))
 
-        if 'keep_on_disk' in state:
-            keep_on_disk = bool(state['keep_on_disk'])
+        size_arg = get_from_payload(state, 'size', default=None)
+        if 'width' in size_arg and 'height' in size_arg:
+            resize = (int(size_arg['width']), int(size_arg['height']))
         else:
-            keep_on_disk = True
-
-        if 'use_video_port' in state:
-            use_video_port = bool(state['use_video_port'])
-        else:
-            use_video_port = False
-
-        if 'size' in state:
-            if 'width' in state['size'] and 'height' in state['size']:
-                resize = (state['size']['width'], state['size']['height'])
-            else:
-                abort(400)
-        else:
-            resize = None
+            abort(400)
 
         capture_obj = self.microscope.camera.capture(
             write_to_file=True,  # Always write data to disk when using API

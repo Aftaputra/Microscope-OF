@@ -5,6 +5,14 @@ def parse_payload(request):
     return state
 
 
+def get_from_payload(payload, key, default=None):
+    """Check if a key exists in a JSON/dictionary payload, and returns it."""
+    if key in payload:
+        return payload[key]
+    else:
+        return default
+
+
 def gen(camera):
     """Video streaming generator function."""
     while True:
