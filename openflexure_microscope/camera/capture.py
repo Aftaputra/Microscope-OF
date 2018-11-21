@@ -24,7 +24,8 @@ class StreamObject(object):
         """Create a new StreamObject, to manage capture data."""
         # Store a nice ID
         self.id = uuid.uuid4().hex
-        logging.info("Created StreamObject {}. keep_on_disk: {}, write_to_file: {}".format(self.id, keep_on_disk, write_to_file))
+        logging.info("Created StreamObject {}".format(self.id))
+        self.timestring = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         # Store file format
         self.format = fmt
@@ -143,6 +144,7 @@ class StreamObject(object):
             'keep_on_disk': self.keep_on_disk,
             'filename': self.filename,
             'path': self.file,
+            'time': self.timestring
         }
 
         # Check stream
