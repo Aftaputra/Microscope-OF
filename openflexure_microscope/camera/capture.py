@@ -24,7 +24,7 @@ class StreamObject(object):
         """Create a new StreamObject, to manage capture data."""
         # Store a nice ID
         self.id = uuid.uuid4().hex
-        logging.info("Created StreamObject {}".format(self.id))
+        logging.info("Created StreamObject {}. keep_on_disk: {}, write_to_file: {}".format(self.id, keep_on_disk, write_to_file))
 
         # Store file format
         self.format = fmt
@@ -81,11 +81,9 @@ class StreamObject(object):
 
         Defaults to datestamp.
         """
-        appendix = ""
-        if not self.keep_on_disk:
-            appendix += ".tmp"
 
-        file_name = "{}.{}".format(filename, fmt)
+        base_name = filename
+        file_name = "{}.{}".format(base_name, fmt)
 
         # Create folder and file
         if folder:
@@ -96,9 +94,17 @@ class StreamObject(object):
         else:
             file_path = file_name
 
-        self.basename = filename
+        # Handle path appendix
+        appendix = ""
+        if not self.keep_on_disk:
+            appendix += ".tmp"
+
+        file_path = file_path + appendix
+
+        #self.basename = filename
         self.file = file_path
         self.filename = file_name
+        self.basename = base_name
 
     def lock(self):
         """Set locked flag to True."""

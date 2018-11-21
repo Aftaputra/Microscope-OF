@@ -357,6 +357,7 @@ class StreamingCamera(BaseCamera):
             fmt (str): Format of the capture.
             resize ((int, int)): Resize the captured image.
         """
+        
         # If no filename is specified, build a non-clashing one
         if not filename:
             filename = self.generate_basename(self.images)

@@ -25,6 +25,7 @@ from openflexure_microscope import Microscope
 from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_stage import OpenFlexureStage
 
+import atexit
 import logging, sys
 
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
@@ -350,6 +351,7 @@ class CaptureListAPI(MicroscopeView):
         :status 200: capture created
         """
         state = parse_payload(request)
+        logging.info(state)
 
         # TODO: Roll all of these ugly if statements into a method for getting payload elements
         if 'filename' in state:
@@ -569,6 +571,12 @@ app.add_url_rule(
     uri('/capture/<capture_id>/download/<filename>'),
     view_func=CaptureDownloadAPI.as_view('capture_download', microscope=api_microscope))
 
+# Automatically clean up microscope at exit
+def cleanup():
+    global api_microscope
+    api_microscope.close()
+
+atexit.register(cleanup)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port="5000", threaded=True, debug=True, use_reloader=False)
