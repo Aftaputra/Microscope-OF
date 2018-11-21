@@ -29,6 +29,9 @@ class StreamObject(object):
         # Store file format
         self.format = fmt
 
+        # Keep on disk after close by default
+        self.keep_on_disk = keep_on_disk
+
         # Create file name. Default to UUID
         if not filename:
             filename = self.id
@@ -45,9 +48,6 @@ class StreamObject(object):
         else:
             logging.debug("Target for {} set to 'file'".format(self.id))
             self.target = self.file
-
-        # Keep on disk after close by default
-        self.keep_on_disk = keep_on_disk
 
         # Log if created by context manager
         self.context_manager = False

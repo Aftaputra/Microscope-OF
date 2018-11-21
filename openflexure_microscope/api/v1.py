@@ -488,7 +488,7 @@ app.add_url_rule(
 
 
 class CaptureDownloadRedirectAPI(MicroscopeView):
-    def get(self, capture_id, filename):
+    def get(self, capture_id):
         """
         Redirect to download the capture under it's currently set filename. 
         I.e., `/(capture_id)/download` will 
@@ -511,7 +511,7 @@ class CaptureDownloadRedirectAPI(MicroscopeView):
 
 # Route for shortcut where no filename is specified
 app.add_url_rule(
-    uri('/capture/<capture_id>/download/'),
+    uri('/capture/<capture_id>/download'),
     view_func=CaptureDownloadRedirectAPI.as_view('capture_download_redirect', microscope=api_microscope))
 
 
