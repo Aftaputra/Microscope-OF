@@ -173,6 +173,7 @@ app.add_url_rule(
     view_func=StateAPI.as_view('state', microscope=api_microscope))
 
 
+#TODO: Wrap in some kind of requires_stage decorator. Do same for camera.
 class PositionAPI(MicroscopeView):
 
     def get(self):
@@ -557,6 +558,7 @@ class CaptureDownloadAPI(MicroscopeView):
 app.add_url_rule(
     uri('/capture/<capture_id>/download/<filename>'),
     view_func=CaptureDownloadAPI.as_view('capture_download', microscope=api_microscope))
+
 
 # Automatically clean up microscope at exit
 def cleanup():
