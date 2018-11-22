@@ -9,18 +9,22 @@ from PIL import Image
 pil_formats = ['JPG', 'JPEG', 'PNG', 'TIF', 'TIFF']
 thumbnail_size = (60, 60)
 
+BASE_CAPTURE_PATH = os.path.join(os.path.expanduser('~'), 'micrographs')
+TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, 'tmp')
 
 class StreamObject(object):
     """
     StreamObject used to store and process capture data, and metadata.
+
+    Note: Captures cannot be stored in a lower-level directory than BASE_CAPTURE_PATH.
     """
     def __init__(
             self,
             write_to_file: bool=False,
             keep_on_disk: bool=True,
-            filename: str=None,
-            folder: str=None,
-            fmt: str='file') -> None:
+            filename: str='',
+            folder: str='',
+            fmt: str='') -> None:
         """Create a new StreamObject, to manage capture data."""
         # Store a nice ID
         self.id = uuid.uuid4().hex
@@ -80,32 +84,35 @@ class StreamObject(object):
         """
         Construct a full file path, based on filename, folder, and file format.
 
-        Defaults to datestamp.
+        Defaults to UUID.
         """
+        global TEMP_CAPTURE_PATH
 
-        base_name = filename
-        file_name = "{}.{}".format(base_name, fmt)
+        file_given_name = "{}.{}".format(filename, fmt)  # Given file name. May include a relative path
+
+        self.file = os.path.join(folder, file_given_name)  # Full file name by joining given folder to given name
+
+        self.split_file_path(self.file)  # Split file path into folder, filename, and basename
+
+        # Check directory is a subdirectory of BASE_CAPTURE_PATH
+        if not os.path.commonprefix([self.file, BASE_CAPTURE_PATH]) == BASE_CAPTURE_PATH:
+            raise Exception("Captures cannot be stored in a lower-level directory than {}.".format(BASE_CAPTURE_PATH))
+
+        # Move to tmp directory if not being kept
+        if not self.keep_on_disk:
+            # TODO: Empty tmp folder on module load and atexit
+            self.file_notmp = self.file  # Store originally defined folder
+            self.filefolder = TEMP_CAPTURE_PATH
+            self.file = os.path.join(self.filefolder, self.filename)
 
         # Create folder and file
-        if folder:
-            if not os.path.exists(folder):
-                os.mkdir(folder)
+        if not os.path.exists(self.filefolder):
+            os.mkdir(self.filefolder)
 
-            file_path = os.path.join(folder, file_name)
-        else:
-            file_path = file_name
-
-        # Handle path appendix
-        appendix = ""
-        if not self.keep_on_disk:
-            appendix += ".tmp"
-
-        file_path = file_path + appendix
-
-        #self.basename = filename
-        self.file = file_path
-        self.filename = file_name
-        self.basename = base_name
+    def split_file_path(self, filepath):
+        """Takes a full file path, and splits it into separated class properties."""
+        self.filefolder, self.filename = os.path.split(filepath)  # Split the full file path into a folder and a filename
+        self.basename = os.path.splitext(self.filename)[0]  # Split the filename out from it's file extension
 
     def lock(self):
         """Set locked flag to True."""
@@ -223,6 +230,13 @@ class StreamObject(object):
 
     def save_file(self) -> bool:
         """Write the StreamObjects stream to a file."""
+        if not self.keep_on_disk:  # If capture is currently temporary
+            self.load_file()  # Load data from tmp file into stream, if tmp file exists
+            self.keep_on_disk = True  # Flag as kept on disk
+            self.file = self.file_notmp  # Reset file path to non-temporary path
+            self.split_file_path(self.file)  # Set split properties based on new path
+            logging.info("Moved temporary file out to {}".format(self.file))
+
         if self.stream_exists:  # If there's a stream to save
             with open(self.file, 'ab') as f:  # Load file as bytes
                 logging.debug("Writing stream to file {}".format(self.file))

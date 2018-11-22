@@ -214,7 +214,6 @@ class StreamingCamera(BaseCamera):
             target=None,
             write_to_file: bool=True,
             filename: str=None,
-            folder: str='record',
             fmt: str='h264',
             quality: int=15):
         """Start recording.
@@ -225,7 +224,6 @@ class StreamingCamera(BaseCamera):
             target (str/BytesIO): Target object to write bytes to.
             write_to_file (bool/NoneType): Should the StreamObject write to a file?
             filename (str): Name of the stored file.  Defaults to timestamp.
-            folder (str): Relative directory to store data file in.
             fmt (str): Format of the capture.
 
         Returns:
@@ -242,7 +240,7 @@ class StreamingCamera(BaseCamera):
                     StreamObject(
                         write_to_file=write_to_file,
                         filename=filename,
-                        folder=folder,
+                        folder=self.paths['video'],
                         fmt=fmt)
                     )
 
@@ -339,7 +337,6 @@ class StreamingCamera(BaseCamera):
             keep_on_disk: bool=True,
             use_video_port: bool=False,
             filename: str=None,
-            folder: str='capture',
             fmt: str='jpeg',
             resize: Tuple[int, int]=None):
         """
@@ -353,7 +350,6 @@ class StreamingCamera(BaseCamera):
             write_to_file (bool): Should the StreamObject write to a file, instead of BytesIO stream?
             use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
             filename (str): Name of the stored file. Defaults to timestamp.
-            folder (str): Relative directory to store data file in.
             fmt (str): Format of the capture.
             resize ((int, int)): Resize the captured image.
         """
@@ -372,7 +368,7 @@ class StreamingCamera(BaseCamera):
                     write_to_file=write_to_file,
                     keep_on_disk=keep_on_disk,
                     filename=filename,
-                    folder=folder,
+                    folder=self.paths['image'],
                     fmt=fmt)
                 )
             target = target_obj.target  # Store to the StreamObject BytesIO  

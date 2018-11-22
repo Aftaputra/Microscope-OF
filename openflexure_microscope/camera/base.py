@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import time
 import io
+import os
 import threading
 from PIL import Image
 import datetime
@@ -14,7 +15,7 @@ except ImportError:
     except ImportError:
         from _thread import get_ident
 
-from .capture import StreamObject
+from .capture import StreamObject, BASE_CAPTURE_PATH
 
 
 def last_entry(object_list: list):
@@ -97,6 +98,10 @@ class BaseCamera(object):
 
         self.state = {}  #: dict: Dictionary for capture state
         self.settings = {}  #: dict: Dictionary of camera settings
+        self.paths = {
+            'image': BASE_CAPTURE_PATH,
+            'video': BASE_CAPTURE_PATH,
+        }  #: dict: Dictionary of capture paths
 
         # Capture data
         self.images = []  #: list: List of image capture objects
