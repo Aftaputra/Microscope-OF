@@ -25,7 +25,7 @@ class Microscope(object):
         self.attach(camera, stage)
 
         # Create plugin mountpoint
-        self.plugin = PluginMount(self)
+        self.plugin = PluginMount(self)  #: :py:class:`openflexure_microscope.plugins.PluginMount`: Mounting point for all microscope plugins
 
     def __enter__(self):
         """Create microscope on context enter."""

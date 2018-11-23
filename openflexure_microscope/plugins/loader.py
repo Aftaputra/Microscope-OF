@@ -85,6 +85,12 @@ class PluginMount(object):
         print("Creating plugin mount")
 
     def attach(self, plugin_module):
+        """
+        Attach a MicroscopePlugin instance to the plugin mount.
+
+        Args:
+            plugin_module: A loaded module to be attached. Module can be loaded using :py:meth:`openflexure_microscope.plugins.load_plugin`
+        """
         if not hasattr(plugin_module, 'PLUGINS') or not isinstance(plugin_module.PLUGINS, dict):
             raise Exception("No falid PLUGINS dictionary found in {}".format(plugin_module))
 
