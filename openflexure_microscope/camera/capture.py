@@ -107,7 +107,7 @@ class StreamObject(object):
 
         # Create folder and file
         if not os.path.exists(self.filefolder):
-            os.mkdir(self.filefolder)
+            os.makedirs(self.filefolder)
 
     def split_file_path(self, filepath):
         """Takes a full file path, and splits it into separated class properties."""
