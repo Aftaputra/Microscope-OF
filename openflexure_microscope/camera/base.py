@@ -97,7 +97,7 @@ class BaseCamera(object):
         self.event = CameraEvent()
 
         self.state = {}  #: dict: Dictionary for capture state
-        self.settings = {}  #: dict: Dictionary of camera settings
+        self.config = {}  #: dict: Dictionary of camera settings
         self.paths = {
             'image': BASE_CAPTURE_PATH,
             'video': BASE_CAPTURE_PATH,

@@ -48,7 +48,7 @@ from .base import BaseCamera, StreamObject
 # Richard's fix gain
 from .set_picamera_gain import set_analog_gain, set_digital_gain
 # Manage config
-from .config import load_config
+from .config import load_config, save_config, convert_config
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_CONFIG = os.path.join(HERE, 'config_picamera.yaml')
@@ -62,8 +62,8 @@ class StreamingCamera(BaseCamera):
         # Attach to Pi camera
         self.camera = picamera.PiCamera()  #: :py:class:`picamera.PiCamera`: Picamera object
 
-        # Camera settings
-        self.settings.update({
+        # Default camera config
+        self.config.update({
             'video_resolution': (832, 624),
             'image_resolution': (2592, 1944),
             'numpy_resolution': (1312, 976),
@@ -92,52 +92,54 @@ class StreamingCamera(BaseCamera):
             self.camera.close()
 
     # HANDLE SETTINGS
-
-    def update_settings(self, config_path: str=None) -> None:
+    def load_config(self, config_path: str=None):
         """
         Open config_picamera.yaml file and write to camera.
 
-        Todo:
-            TODO: Handle exceptions
-
-            TODO: Have this take a dictionary (not a config file)
-
-            TODO: Web API entry point to send settings as JSON to this method
-
-            TODO: Separate method to store current settings back to YAML file
-
-            TODO: API entry point to get settings to JSON
+        Args:
+            config_path (str): Path to the config YAML file.
         """
         global DEFAULT_CONFIG
+        if not config_path:
+            config_data = load_config(DEFAULT_CONFIG)
+        else:
+            config_data = load_config(config_path)
+
+        self.update_settings(config_data)
+
+    def save_config(self, config_path: str=None):
+        """
+        Open config_picamera.yaml file and write to camera.
+
+        Args:
+            config_path (str): Path to the config YAML file.
+        """
+        global DEFAULT_CONFIG
+        if not config_path:
+            config_path = DEFAULT_CONFIG
+
+        save_config(self.config, config_path)
+
+    def update_settings(self, config: dict) -> None:
+        """
+        Write a config dictionary to the StreamingCamera config.
+
+        Args:
+            config (dict): Dictionary of config parameters.
+        """
+
+        self.config = convert_config(config)  # Convert loaded dictionary to valid config dictionary
+        logging.debug(self.config)
 
         paused_stream = False
 
+        # Apply valid config params to Picamera object
         if not self.state['record_active']:  # If not recording a video
 
             if self.state['stream_active']:  # If stream is active
-                logging.info("Pausing stream to update settings.")
+                logging.info("Pausing stream to update config.")
                 self.pause_stream_for_capture()  # Pause stream
                 paused_stream = True  # Remember to unpause stream when done
-
-            if not config_path:
-                config = load_config(DEFAULT_CONFIG)
-            else:
-                config = load_config(config_path)
-
-            logging.debug(config)
-
-            # StreamingCamera settings
-            if 'video_resolution' in config:
-                self.settings['video_resolution'] = config['video_resolution']
-            if 'image_resolution' in config:
-                self.settings['image_resolution'] = config['image_resolution']
-            if 'numpy_resolution' in config:
-                self.settings['numpy_resolution'] = config['numpy_resolution']
-
-            if 'jpeg_quality' in config:
-                self.settings['jpeg_quality'] = config['jpeg_quality']
-            if 'framerate' in config:
-                self.settings['framerate'] = config['framerate']
 
             # Camera AWB
             if 'awb_mode' in config:
@@ -163,17 +165,17 @@ class StreamingCamera(BaseCamera):
             if 'digital_gain' in config:
                 set_digital_gain(self.camera, config['digital_gain'])
 
-            if paused_stream:  # If stream was paused to update settings
+            if paused_stream:  # If stream was paused to update config
                 logging.info("Resuming stream.")
                 self.resume_stream_for_capture()
 
         else:
             raise Exception(
-                "Cannot update camera settings while recording is active.")
+                "Cannot update camera config while recording is active.")
 
     def change_zoom(self, zoom_value: int=1) -> None:
         """Change the camera zoom, handling recentering and scaling.
-        
+
         Todo:
             TODO: Needs to be re-implemented
 
@@ -259,7 +261,7 @@ class StreamingCamera(BaseCamera):
                 target,
                 format=fmt,
                 splitter_port=2,
-                resize=self.settings['video_resolution'],
+                resize=self.config['video_resolution'],
                 quality=quality)
 
             # Update state dictionary
@@ -297,7 +299,7 @@ class StreamingCamera(BaseCamera):
         logging.debug("Pausing stream")
         # If no resolution is specified, default to image_resolution
         if not resolution:
-            resolution = self.settings['image_resolution']
+            resolution = self.config['image_resolution']
 
         # Stop the camera video recording on port 1
         self.camera.stop_recording(splitter_port=splitter_port)
@@ -318,7 +320,7 @@ class StreamingCamera(BaseCamera):
         """
         logging.debug("Unpausing stream")
         if not resolution:
-            resolution = self.settings['video_resolution']
+            resolution = self.config['video_resolution']
 
         # Reduce the resolution for video streaming
         self.camera.resolution = resolution
@@ -327,7 +329,7 @@ class StreamingCamera(BaseCamera):
         self.camera.start_recording(
             self.stream,
             format='mjpeg',
-            quality=self.settings['jpeg_quality'],
+            quality=self.config['jpeg_quality'],
             splitter_port=splitter_port)
 
     def capture(
@@ -416,9 +418,9 @@ class StreamingCamera(BaseCamera):
             resize ((int, int)): Resize the captured image.
         """
         if use_video_port:
-            resolution = self.settings['video_resolution']
+            resolution = self.config['video_resolution']
         else:
-            resolution = self.settings['numpy_resolution']
+            resolution = self.config['numpy_resolution']
 
         if resize:
             size = resize
@@ -462,10 +464,10 @@ class StreamingCamera(BaseCamera):
 
         self.wait_for_camera()
 
-        # Settings config
-        self.update_settings()
+        # Load config file
+        self.load_config()
         # Set stream resolution
-        self.camera.resolution = self.settings['video_resolution']
+        self.camera.resolution = self.config['video_resolution']
 
         # Create stream
         self.stream = io.BytesIO()
@@ -474,7 +476,7 @@ class StreamingCamera(BaseCamera):
         self.camera.start_recording(
             self.stream,
             format='mjpeg',
-            quality=self.settings['jpeg_quality'],
+            quality=self.config['jpeg_quality'],
             splitter_port=1)
 
         # Update state
@@ -488,7 +490,7 @@ class StreamingCamera(BaseCamera):
                 self.stream.seek(0)
                 self.stream.truncate()
                 # to stream, read the new frame
-                time.sleep(1/self.settings['framerate']*0.1)
+                time.sleep(1/self.config['framerate']*0.1)
                 # yield the result to be read
                 frame = self.stream.getvalue()
 

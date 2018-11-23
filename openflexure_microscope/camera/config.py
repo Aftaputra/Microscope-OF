@@ -17,18 +17,23 @@ TYPES = {
 }
 
 
-def convert_config(config):
+def convert_config(config: dict) -> dict:
     """Convert datatype of config based on type dictionary."""
     global TYPES
 
     for key in config:
         if key in TYPES:
-            config[key] = TYPES[key](config[key])  
+            config[key] = TYPES[key](config[key])
 
     return config
 
 
-def load_config(yaml_path):
+def load_config(yaml_path: str) -> dict:
     """Load YAML file, pass through dictionary conversion, and return."""
     with open(yaml_path) as config_file:
-        return convert_config(yaml.load(config_file))
+        return yaml.load(config_file)
+
+
+def save_config(config: dict, yaml_path: str):
+    with open('yaml_path', 'w') as outfile:
+        yaml.dump(config, outfile)
