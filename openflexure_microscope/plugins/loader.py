@@ -8,23 +8,23 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_PLUGIN_PATH = os.path.join(HERE, 'default')
 
 
-def search_plugin_dirs(plugin_dirs, include_default=True):
+def search_plugin_dirs(plugin_paths, include_default=True):
     """
     Search through, and load from, a list of plugin directories.
 
     Args:
-        plugin_dirs (list): List of strings of plugin directories.
+        plugin_paths (list): List of strings of plugin directories.
         include_default (bool): Also load plugins from the module default directory (DEFAULT_PLUGIN_PATH)
     """
     global DEFAULT_PLUGIN_PATH
 
     if include_default:  # If including default plugins
-        plugin_dirs.append(DEFAULT_PLUGIN_PATH)  # Add default directory to the search paths
+        plugin_paths.append(DEFAULT_PLUGIN_PATH)  # Add default directory to the search paths
 
-    logging.debug(plugin_dirs)
+    logging.debug(plugin_paths)
 
     plugins = []  # List of loaded plugins
-    for plugin_dir in plugin_dirs:  # For each plugin directory
+    for plugin_dir in plugin_paths:  # For each plugin directory
         logging.debug("Searching {}".format(plugin_dir))
         plugins.extend(find_plugins(plugin_dir))  # Find plugin folders, and load into list
 

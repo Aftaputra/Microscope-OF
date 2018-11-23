@@ -8,7 +8,7 @@ import numpy as np
 from openflexure_stage import OpenFlexureStage
 from .camera.pi import StreamingCamera
 
-from .plugins import PluginMount
+from .plugins import PluginMount, load_plugin, search_plugin_paths
 
 
 class Microscope(object):
@@ -39,7 +39,7 @@ class Microscope(object):
         """Shut down the microscope hardware."""
         self.camera.close()
         self.stage.close()
-    
+
     def attach(self, camera: StreamingCamera, stage: OpenFlexureStage):
         """
         Retroactively attaches a camera and stage to the microscope object.
@@ -60,6 +60,20 @@ class Microscope(object):
         if isinstance(self.stage, OpenFlexureStage):  # If a stage object has been attached
             logging.info("Attached stage {}".format(stage))
             self.stage.backlash = np.zeros(3, dtype=np.int)
+
+    def find_plugins(self, plugin_paths=[], include_default=True):
+        """
+        Automatically search for plugins, and attach to self.
+
+        Args:
+            plugin_paths (list): List of strings of plugin directories.
+            include_default (bool): Also load plugins from the module default directory (DEFAULT_PLUGIN_PATH)
+        """
+        plugins_list = search_plugin_paths(plugin_paths, include_default=include_default)
+
+        for i in plugins_list:
+            module = load_plugin(i)
+            self.plugin.attach(module)
 
     # Create unified state
     @property
