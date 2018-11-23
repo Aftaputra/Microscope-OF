@@ -51,7 +51,7 @@ from .set_picamera_gain import set_analog_gain, set_digital_gain
 from .config import load_config, save_config, convert_config
 
 HERE = os.path.abspath(os.path.dirname(__file__))
-DEFAULT_CONFIG = os.path.join(HERE, 'config_picamera.yaml')
+DEFAULT_CONFIG_PATH = os.path.join(HERE, 'config_picamera.yaml')
 
 
 class StreamingCamera(BaseCamera):
@@ -97,11 +97,11 @@ class StreamingCamera(BaseCamera):
         Open config_picamera.yaml file and write to camera.
 
         Args:
-            config_path (str): Path to the config YAML file.
+            config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
         """
-        global DEFAULT_CONFIG
+        global DEFAULT_CONFIG_PATH
         if not config_path:
-            config_data = load_config(DEFAULT_CONFIG)
+            config_data = load_config(DEFAULT_CONFIG_PATH)
         else:
             config_data = load_config(config_path)
 
@@ -109,14 +109,14 @@ class StreamingCamera(BaseCamera):
 
     def save_config(self, config_path: str=None):
         """
-        Open config_picamera.yaml file and write to camera.
+        Save current config dictionary to a YAML file.
 
         Args:
-            config_path (str): Path to the config YAML file.
+            config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
         """
-        global DEFAULT_CONFIG
+        global DEFAULT_CONFIG_PATH
         if not config_path:
-            config_path = DEFAULT_CONFIG
+            config_path = DEFAULT_CONFIG_PATH
 
         save_config(self.config, config_path)
 
