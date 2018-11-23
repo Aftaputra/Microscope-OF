@@ -8,6 +8,8 @@ import numpy as np
 from openflexure_stage import OpenFlexureStage
 from .camera.pi import StreamingCamera
 
+from .plugins import PluginMount
+
 
 class Microscope(object):
     """
@@ -21,6 +23,9 @@ class Microscope(object):
     """
     def __init__(self, camera: StreamingCamera, stage: OpenFlexureStage):
         self.attach(camera, stage)
+
+        # Create plugin mountpoint
+        self.plugin = PluginMount(self)
 
     def __enter__(self):
         """Create microscope on context enter."""
