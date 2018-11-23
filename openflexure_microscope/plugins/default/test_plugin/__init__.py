@@ -21,6 +21,9 @@ class OtherPlugin(MicroscopePlugin):
     An example of a second Microscope plugin, loaded from the same plugin file.
     """
     def run(self):
+        """
+        Demonstrate access to Microscope.camera, and Microscope.stage
+        """
         print("Stage plugin parent stage:")
         print(self.stage)
 

@@ -5,5 +5,5 @@ Microscope class
    :maxdepth: 2
    :caption: Contents:
 
-.. automodule:: openflexure_microscope.microscope
+.. automodule:: openflexure_microscope
     :members:
