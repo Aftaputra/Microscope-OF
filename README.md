@@ -4,8 +4,9 @@ OpenFlexure Microscope Software
 # Installation
 This module is currently in very early development, and is perhaps best installed in developer mode.
 - (Recommended) create a virtual environment
-    - In the openflexure-microscope-software directory, create a venv with `python3 venv env`
+    - In the openflexure-microscope-software directory, create a venv with `python3 -m venv env`
     - Activate with `source env/bin/activate`
+    - Install dependencies with `sudo apt-get install libatlas-base-dev libjasper-dev libjpeg-dev`
     - Install requirements with `pip install -r requirements.txt`
 - Install module in developer mode by running `python3 setup.py develop`
     - Installing in developer mode allows the module to be modified by editing files directly in the openflexure-microscope-software directory.
