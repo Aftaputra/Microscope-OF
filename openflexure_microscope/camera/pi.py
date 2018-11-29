@@ -34,6 +34,9 @@ import numpy as np
 from PIL import Image
 import logging
 
+# Used for conversion only
+from fractions import Fraction
+
 # Pi camera
 import picamera
 import picamera.array
@@ -54,14 +57,29 @@ PICAMERA_KEYS = [
     'awb_gains',
     'framerate',
     'shutter_speed',
-    'saturation',
-    'led', ]
+    'saturation', ]
 
 CONFIG_KEYS = [
     'video_resolution',
     'image_resolution',
     'numpy_resolution',
-    'jpeg_quality', ]
+    'jpeg_quality',
+    'analog_gain',
+    'digital_gain',
+    'shading_table_path']
+
+
+def fractions_to_floats(value):
+    """Deal with horrible, horrible PiCamera fractions"""
+    result = value
+    if type(value) is list or type(value) is tuple:
+        result = [float(v) if isinstance(v, Fraction) else v for v in value]
+        if type(value) is tuple:
+            result = tuple(result)
+    else:
+        if isinstance(value, Fraction):
+            result = float(value)
+    return result
 
 
 class StreamingCamera(BaseCamera):
@@ -124,7 +142,7 @@ class StreamingCamera(BaseCamera):
         """
         return hasattr(self.camera, "lens_shading_table")
 
-    def update_lens_shading(self, shading_array: np.ndarray):
+    def apply_shading_table(self):
         if not self.supports_lens_shading:
             logging.error("the currently-installed picamera library does not support all "
             "the features of the openflexure microscope software.  These features "
@@ -132,8 +150,12 @@ class StreamingCamera(BaseCamera):
             "\n"
             "See the installation instructions for how to fix this:\n"
             "https://github.com/rwb27/openflexure_microscope_software")
+        elif 'shading_table_path' not in self.config:
+            logging.warning("No shading table path given in config.")
         else:
-            logging.debug("Lens shading is supported! HOORAY!")
+            logging.debug("Applying shading table from {}".format(self.config['shading_table_path']))
+            npy = np.load(self.config['shading_table_path'])
+            self.camera.lens_shading_table = npy
 
     @property
     def config(self):
@@ -149,13 +171,16 @@ class StreamingCamera(BaseCamera):
         # PiCamera parameters (obtained directly from PiCamera object)
         for key in PICAMERA_KEYS:
             try:
-                conf_dict['picamera_params'][key] = getattr(self.camera, key)
+                value = getattr(self.camera, key)
+                value = fractions_to_floats(value)
+                conf_dict['picamera_params'][key] = value
             except AttributeError:
                 logging.warning("Unable to read PiCamera attribute {}".format(key))
 
-        # StreamingCamera parameters (obtained from StreamingCamera __config)
+        # StreamingCamera parameters (obtained from StreamingCamera _config)
         for key in CONFIG_KEYS:
-            conf_dict[key] = self._config[key]
+            if key in self._config:
+                conf_dict[key] = self._config[key]
 
         return conf_dict
 
@@ -186,9 +211,6 @@ class StreamingCamera(BaseCamera):
                 self.pause_stream_for_capture()  # Pause stream
                 paused_stream = True  # Remember to unpause stream when done
 
-            # Handle lens shading
-            self.update_lens_shading([])
-
             # PiCamera parameters (applied directly to PiCamera object)
             if 'picamera_params' in config:
                 for key in PICAMERA_KEYS:
@@ -208,7 +230,12 @@ class StreamingCamera(BaseCamera):
             if 'digital_gain' in config:
                 set_digital_gain(self.camera, config['digital_gain'])
 
-            if paused_stream:  # If stream was paused to update config
+            # Handle lens shading, if a new one is given
+            if 'shading_table_path' in config:
+                self.apply_shading_table()
+
+            # If stream was paused to update config, unpause
+            if paused_stream:
                 logging.info("Resuming stream.")
                 self.resume_stream_for_capture()
 

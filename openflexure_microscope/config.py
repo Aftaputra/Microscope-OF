@@ -55,7 +55,7 @@ def load_config(config_path: str=None) -> dict:
     return convert_config(config_data)
 
 
-def save_config(self, config_dict: dict, config_path: str=None):
+def save_config(config_dict: dict, config_path: str=None, safe: bool=False):
     """
     Save current config dictionary to a YAML file.
 
@@ -68,4 +68,31 @@ def save_config(self, config_dict: dict, config_path: str=None):
         config_path = USER_CONFIG_PATH
 
     with open(config_path, 'w') as outfile:
-        yaml.dump(config_dict, outfile)
+        if not safe:
+            yaml.dump(config_dict, outfile)
+        else:
+            yaml.safe_dump(config_dict, outfile)
+
+
+def merge_config(config_dict: dict, config_path: str=None, safe: bool=False, backup: bool=True):
+    """
+    merge current config dictionary with an existing YAML file.
+
+    Args:
+        config_dict (dict): Dictionary of config data to save.
+        config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
+    """
+    global USER_CONFIG_PATH
+    if not config_path:
+        config_path = USER_CONFIG_PATH
+
+    config_data = load_config(config_path=config_path)
+
+    for key, value in config_dict.items():
+        config_data[key] = value
+
+    if backup:
+        if os.path.isfile(config_path):
+            shutil.copyfile(config_path, config_path+".bk")
+
+    save_config(config_data, config_path=config_path, safe=safe)
