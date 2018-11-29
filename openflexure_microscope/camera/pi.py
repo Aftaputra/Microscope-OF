@@ -48,6 +48,21 @@ from .base import BaseCamera, StreamObject
 # Richard's fix gain
 from .set_picamera_gain import set_analog_gain, set_digital_gain
 
+PICAMERA_KEYS = [
+    'exposure_mode',
+    'awb_mode',
+    'awb_gains',
+    'framerate',
+    'shutter_speed',
+    'saturation',
+    'led', ]
+
+CONFIG_KEYS = [
+    'video_resolution',
+    'image_resolution',
+    'numpy_resolution',
+    'jpeg_quality', ]
+
 
 class StreamingCamera(BaseCamera):
     """Raspberry Pi camera implementation of StreamingCamera.
@@ -69,7 +84,7 @@ class StreamingCamera(BaseCamera):
         })
 
         # Default camera config
-        self.config.update({
+        self._config.update({
             'video_resolution': (832, 624),
             'image_resolution': (2592, 1944),
             'numpy_resolution': (1312, 976),
@@ -78,7 +93,7 @@ class StreamingCamera(BaseCamera):
 
         # Load config dictionary if passed
         if config:
-            self.update_settings(config)
+            self.config = config
 
         # Start streaming
         self.start_worker()
@@ -94,7 +109,6 @@ class StreamingCamera(BaseCamera):
         # Detatch Pi camera
         if self.camera:
             self.camera.close()
-
 
     # HANDLE SETTINGS
     @property
@@ -118,8 +132,35 @@ class StreamingCamera(BaseCamera):
             "\n"
             "See the installation instructions for how to fix this:\n"
             "https://github.com/rwb27/openflexure_microscope_software")
+        else:
+            logging.debug("Lens shading is supported! HOORAY!")
 
-    def update_settings(self, config: dict) -> None:
+    @property
+    def config(self):
+        """
+        Return config dictionary of the StreamingCamera.
+        """
+        global PICAMERA_KEYS, CONFIG_KEYS
+
+        conf_dict = {
+            'picamera_params': {},
+        }
+
+        # PiCamera parameters (obtained directly from PiCamera object)
+        for key in PICAMERA_KEYS:
+            try:
+                conf_dict['picamera_params'][key] = getattr(self.camera, key)
+            except AttributeError:
+                logging.warning("Unable to read PiCamera attribute {}".format(key))
+
+        # StreamingCamera parameters (obtained from StreamingCamera __config)
+        for key in CONFIG_KEYS:
+            conf_dict[key] = self._config[key]
+
+        return conf_dict
+
+    @config.setter
+    def config(self, config: dict) -> None:
         """
         Write a config dictionary to the StreamingCamera config.
 
@@ -129,6 +170,8 @@ class StreamingCamera(BaseCamera):
         Args:
             config (dict): Dictionary of config parameters.
         """
+        global PICAMERA_KEYS, CONFIG_KEYS
+
         paused_stream = False
 
         # Apply valid config params to Picamera object
@@ -143,33 +186,21 @@ class StreamingCamera(BaseCamera):
                 self.pause_stream_for_capture()  # Pause stream
                 paused_stream = True  # Remember to unpause stream when done
 
+            # Handle lens shading
+            self.update_lens_shading([])
+
             # PiCamera parameters (applied directly to PiCamera object)
-            picamera_keys = [
-                'exposure_mode',
-                'awb_mode',
-                'awb_gains',
-                'framerate',
-                'shutter_speed',
-                'saturation',
-                'led'
-            ]
             if 'picamera_params' in config:
-                for key in picamera_keys:
+                for key in PICAMERA_KEYS:
                     if key in config['picamera_params']:
                         logging.debug("Setting parameter {}: {}".format(key, config['picamera_params'][key]))
                         setattr(self.camera, key, config['picamera_params'][key])
 
             # StreamingCamera parameters (applied via StreamingCamera config)
-            config_keys = [
-                'video_resolution',
-                'image_resolution',
-                'numpy_resolution',
-                'jpeg_quality', ]
-
-            for key in config_keys:
+            for key in CONFIG_KEYS:
                 if key in config:
                     logging.debug("Setting parameter {}: {}".format(key, config[key]))
-                    self.config[key] = config[key]
+                    self._config[key] = config[key]
 
             # Richard's library to set analog and digital gains
             if 'analog_gain' in config:
@@ -418,7 +449,7 @@ class StreamingCamera(BaseCamera):
 
         return target_obj
 
-    def array(
+    def yuv(
             self,
             rgb=False,
             use_video_port: bool=True,
@@ -461,6 +492,55 @@ class StreamingCamera(BaseCamera):
                 return output.rgb_array
             else:
                 return output.array
+
+    def array(
+            self,
+            use_video_port: bool=True,
+            resize: Tuple[int, int]=None,
+            stop_worker: bool=True) -> np.ndarray:
+        """Capture an uncompressed still RGB image to a Numpy array.
+
+        Args:
+            use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
+            resize ((int, int)): Resize the captured image.
+            stop_worker (bool): Auto-stop worker, to avoid GPU memory issues
+        """
+        restart_worker = False
+        if stop_worker is True and self.stop is False:
+            self.stop_worker()
+            restart_worker = True
+
+        if use_video_port:
+            resolution = self.config['video_resolution']
+        else:
+            resolution = self.config['numpy_resolution']
+
+        if resize:
+            size = resize
+        else:
+            size = resolution
+
+        if not use_video_port:
+            self.pause_stream_for_capture(resolution=resolution)
+
+        logging.debug("Creating PiRGBArray")
+        with picamera.array.PiRGBArray(self.camera, size=size) as output:
+
+            logging.info("Capturing to {}".format(output))
+
+            self.camera.capture(
+                output,
+                resize=size,
+                format='rgb',
+                use_video_port=use_video_port)
+
+            if not use_video_port:
+                self.resume_stream_for_capture()
+            
+            if restart_worker:
+                self.start_worker()
+
+            return output.array
 
     # HANDLE STREAM FRAMES
 
