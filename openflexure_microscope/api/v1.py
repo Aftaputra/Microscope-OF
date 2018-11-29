@@ -21,7 +21,7 @@ from werkzeug.exceptions import default_exceptions
 
 from openflexure_microscope.api.utilities import parse_payload, get_from_payload, gen, get_bool
 
-from openflexure_microscope import Microscope
+from openflexure_microscope import Microscope, config
 from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_stage import OpenFlexureStage
 
@@ -69,8 +69,10 @@ def attach_microscope():
     # Create the microscope object globally (common to all spawned server threads)
     global api_microscope
     logging.debug("First request made. Populating microscope with hardware...")
+    openflexurerc = config.load_config()  # Load default user config
+
     api_microscope.attach(
-        StreamingCamera(),
+        StreamingCamera(config=openflexurerc),
         OpenFlexureStage("/dev/ttyUSB0")
     )
     logging.debug("Microscope successfully attached!")
