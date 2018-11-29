@@ -10,7 +10,7 @@ logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 if __name__ == '__main__':
     openflexurerc = config.load_config()
 
-    microscope = Microscope(StreamingCamera(openflexurerc), OpenFlexureStage("/dev/ttyUSB0"))
+    microscope = Microscope(StreamingCamera(config=openflexurerc), OpenFlexureStage("/dev/ttyUSB0"))
 
     microscope.find_plugins()  # Automatically find microscope plugins
 
