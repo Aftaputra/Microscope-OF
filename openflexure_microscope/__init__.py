@@ -1,4 +1,5 @@
-__all__ = ['Microscope']
+__all__ = ['Microscope', 'config']
 __version__ = "0.1.0"
 
 from .microscope import Microscope
+from . import config

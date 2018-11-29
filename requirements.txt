@@ -1,7 +1,7 @@
 -e git://github.com/rwb27/openflexure_nano_motor_controller.git#egg=openflexure_stage
+-e git://github.com/rwb27/picamera.git#egg=picamera
 
 flask >= 0.12.3
-picamera==1.13
 pyyaml==3.13
 numpy
 Pillow

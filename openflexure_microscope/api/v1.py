@@ -261,7 +261,7 @@ class PositionAPI(MicroscopeView):
         return jsonify(self.microscope.state['position'])
 
 app.add_url_rule(
-    uri('/position/'), 
+    uri('/position/'),
     view_func=PositionAPI.as_view('position', microscope=api_microscope))
 
 

@@ -47,20 +47,26 @@ import threading
 from .base import BaseCamera, StreamObject
 # Richard's fix gain
 from .set_picamera_gain import set_analog_gain, set_digital_gain
-# Manage config
-from .config import load_config, save_config, convert_config
-
-HERE = os.path.abspath(os.path.dirname(__file__))
-DEFAULT_CONFIG_PATH = os.path.join(HERE, 'config_picamera.yaml')
 
 
 class StreamingCamera(BaseCamera):
-    """Raspberry Pi camera implementation of StreamingCamera."""
-    def __init__(self):
+    """Raspberry Pi camera implementation of StreamingCamera.
+
+    Args:
+        config (dict): Dictionary of config parameters to apply on init. If None, will default to basic config.
+    """
+    def __init__(self, config: dict=None):
         # Run BaseCamera init
         BaseCamera.__init__(self)
         # Attach to Pi camera
         self.camera = picamera.PiCamera()  #: :py:class:`picamera.PiCamera`: Picamera object
+
+        # Store state of StreamingCamera
+        self.state.update({
+            'stream_active': False,
+            'record_active': False,
+            'preview_active': False,
+        })
 
         # Default camera config
         self.config.update({
@@ -70,13 +76,11 @@ class StreamingCamera(BaseCamera):
             'jpeg_quality': 75,
         })
 
-        # Store state of StreamingCamera
-        self.state.update({
-            'stream_active': False,
-            'record_active': False,
-            'preview_active': False,
-        })
+        # Load config dictionary if passed
+        if config:
+            self.update_settings(config)
 
+        # Start streaming
         self.start_worker()
 
     def initialisation(self):
@@ -91,74 +95,82 @@ class StreamingCamera(BaseCamera):
         if self.camera:
             self.camera.close()
 
+
     # HANDLE SETTINGS
-    def load_config(self, config_path: str=None):
+    @property
+    def supports_lens_shading(self):
+        """Determine whether the picamera module supports lens shading.
+
+        As of March 2018, picamera did not wrap the necessary MMAL commands to
+        set the lens shading table, or to write the value of analog or digital
+        gain.  I have a forked version of the library that does support these.
+        For ease of use by people who don't want those features, this library
+        does not have a hard dependency on lens shading.  However, we need to
+        check in some places whether it's available.
         """
-        Open config_picamera.yaml file and write to camera.
+        return hasattr(self.camera, "lens_shading_table")
 
-        Args:
-            config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
-        """
-        global DEFAULT_CONFIG_PATH
-        if not config_path:
-            config_data = load_config(DEFAULT_CONFIG_PATH)
-        else:
-            config_data = load_config(config_path)
-
-        self.update_settings(config_data)
-
-    def save_config(self, config_path: str=None):
-        """
-        Save current config dictionary to a YAML file.
-
-        Args:
-            config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
-        """
-        global DEFAULT_CONFIG_PATH
-        if not config_path:
-            config_path = DEFAULT_CONFIG_PATH
-
-        save_config(self.config, config_path)
+    def update_lens_shading(self, shading_array: np.ndarray):
+        if not self.supports_lens_shading:
+            logging.error("the currently-installed picamera library does not support all "
+            "the features of the openflexure microscope software.  These features "
+            "include lens shading control and setting the analog/digital gain.\n"
+            "\n"
+            "See the installation instructions for how to fix this:\n"
+            "https://github.com/rwb27/openflexure_microscope_software")
 
     def update_settings(self, config: dict) -> None:
         """
         Write a config dictionary to the StreamingCamera config.
 
+        The passed dictionary may contain other parameters not relevant to
+        camera config. Eg. Passing a general config file will work fine.
+
         Args:
             config (dict): Dictionary of config parameters.
         """
-
-        self.config = convert_config(config)  # Convert loaded dictionary to valid config dictionary
-        logging.debug(self.config)
-
         paused_stream = False
 
         # Apply valid config params to Picamera object
         if not self.state['record_active']:  # If not recording a video
 
+            logging.debug("Applying config:")
+            logging.debug(config)
+
+            # Pause stream while changing settings
             if self.state['stream_active']:  # If stream is active
                 logging.info("Pausing stream to update config.")
                 self.pause_stream_for_capture()  # Pause stream
                 paused_stream = True  # Remember to unpause stream when done
 
-            # Camera AWB
-            if 'awb_mode' in config:
-                self.camera.awb_mode = config['awb_mode']
-            if 'red_gain' in config and 'blue_gain' in config:
-                self.camera.awb_gains = (
-                    config['red_gain'],
-                    config['blue_gain'])
+            # PiCamera parameters (applied directly to PiCamera object)
+            picamera_keys = [
+                'exposure_mode',
+                'awb_mode',
+                'awb_gains',
+                'framerate',
+                'shutter_speed',
+                'saturation',
+                'led'
+            ]
+            if 'picamera_params' in config:
+                for key in picamera_keys:
+                    if key in config['picamera_params']:
+                        logging.debug("Setting parameter {}: {}".format(key, config['picamera_params'][key]))
+                        setattr(self.camera, key, config['picamera_params'][key])
 
-            # Camera framerate
-            if 'framerate' in config:
-                self.camera.framerate = config['framerate']
-            # Camera exposure
-            if 'shutter_speed' in config:
-                self.camera.shutter_speed = config['shutter_speed']
-            if 'saturation' in config:
-                self.camera.saturation = config['saturation']
-            # Camera misc.
-            self.camera.led = False
+            # StreamingCamera parameters (applied via StreamingCamera config)
+            config_keys = [
+                'video_resolution',
+                'image_resolution',
+                'numpy_resolution',
+                'jpeg_quality', ]
+
+            for key in config_keys:
+                if key in config:
+                    logging.debug("Setting parameter {}: {}".format(key, config[key]))
+                    self.config[key] = config[key]
+
             # Richard's library to set analog and digital gains
             if 'analog_gain' in config:
                 set_analog_gain(self.camera, config['analog_gain'])
@@ -464,8 +476,6 @@ class StreamingCamera(BaseCamera):
 
         self.wait_for_camera()
 
-        # Load config file
-        self.load_config()
         # Set stream resolution
         self.camera.resolution = self.config['video_resolution']
 
@@ -490,7 +500,7 @@ class StreamingCamera(BaseCamera):
                 self.stream.seek(0)
                 self.stream.truncate()
                 # to stream, read the new frame
-                time.sleep(1/self.config['framerate']*0.1)
+                time.sleep(1/self.camera.framerate*0.1)
                 # yield the result to be read
                 frame = self.stream.getvalue()
 

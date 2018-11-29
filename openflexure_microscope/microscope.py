@@ -3,12 +3,14 @@
 Defines a microscope object, binding a camera and stage with basic functionality.
 """
 import logging
+import os
 import numpy as np
 
 from openflexure_stage import OpenFlexureStage
 from .camera.pi import StreamingCamera
 
-from .plugins import PluginMount, load_plugin, search_plugin_paths
+from .plugins import PluginMount, load_plugin, search_plugin_dirs
+from .config import load_config, save_config, convert_config
 
 
 class Microscope(object):
@@ -20,8 +22,11 @@ class Microscope(object):
     Args:
         camera (:py:class:`openflexure_microscope.camera.pi.StreamingCamera`): camera object
         microscope (:py:class:`openflexure_stage.stage.OpenFlexureStage`): stage object
+        load_config (bool): Should a config file be automatically loaded on init?
+        config_path (str): Path to the config YAML file to be loaded. If None, defaults to USER_CONFIG_PATH.
     """
     def __init__(self, camera: StreamingCamera, stage: OpenFlexureStage):
+
         self.attach(camera, stage)
 
         # Create plugin mountpoint
@@ -40,7 +45,7 @@ class Microscope(object):
         self.camera.close()
         self.stage.close()
 
-    def attach(self, camera: StreamingCamera, stage: OpenFlexureStage):
+    def attach(self, camera: StreamingCamera, stage: OpenFlexureStage, apply_config: bool=True):
         """
         Retroactively attaches a camera and stage to the microscope object.
 
@@ -50,6 +55,7 @@ class Microscope(object):
         Args:
             camera (:py:class:`openflexure_microscope.camera.pi.StreamingCamera`): camera object
             microscope (:py:class:`openflexure_stage.stage.OpenFlexureStage`): stage object
+            apply_config (bool): Should the microscope config dictionary be applied to the attached hardware?
         """
 
         self.camera = camera  #: :py:class:`openflexure_microscope.camera.pi.StreamingCamera`: Picamera object
@@ -69,7 +75,8 @@ class Microscope(object):
             plugin_paths (list): List of strings of plugin directories.
             include_default (bool): Also load plugins from the module default directory (DEFAULT_PLUGIN_PATH)
         """
-        plugins_list = search_plugin_paths(plugin_paths, include_default=include_default)
+        # TODO: Get paths from rc file
+        plugins_list = search_plugin_dirs(plugin_paths, include_default=include_default)
 
         for i in plugins_list:
             module = load_plugin(i)

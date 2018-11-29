@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_stage import OpenFlexureStage
-from openflexure_microscope import Microscope
-from openflexure_microscope.plugins import PluginMount, load_plugin, search_plugin_paths
+from openflexure_microscope import Microscope, config
 
 import atexit
 import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 if __name__ == '__main__':
-    microscope = Microscope(StreamingCamera(), OpenFlexureStage("/dev/ttyUSB0"))
+    openflexurerc = config.load_config()
+
+    microscope = Microscope(StreamingCamera(openflexurerc), OpenFlexureStage("/dev/ttyUSB0"))
 
     microscope.find_plugins()  # Automatically find microscope plugins
 
