@@ -104,7 +104,6 @@ def generate_lens_shading_table_closed_loop(output_fname="shadingtable.npy",
     # Open the microscope and start with flat (i.e. no) lens shading correction.
         cam.start_preview()
         logging.info("Stopping worker thread during calibration, to avoid GPU memory issues")
-        cam.stop_worker()
 
         def get_rgb_image(): # shorthand for taking an RGB image
             return cam.array(use_video_port=True, resize=(max_res[0]//2, max_res[1]//2))
@@ -125,8 +124,11 @@ def generate_lens_shading_table_closed_loop(output_fname="shadingtable.npy",
             rgb_image = np.mean(images, axis=0, dtype=np.float)
             incremental_gains = lens_shading_correction_from_rgb(rgb_image, 64//2)
             gains *= incremental_gains
+
             # Apply this change (actually apply a bit less than the change)
+            cam.pause_stream()
             cam.camera.lens_shading_table = gains_to_lst(gains*32)
+            cam.resume_stream()
             time.sleep(2)
 
         # Fix the AWB gains so the image is neutral
@@ -157,6 +159,8 @@ def generate_lens_shading_table_closed_loop(output_fname="shadingtable.npy",
 
         logging.debug("Merging config...")
         config.merge_config(settings, safe=True, backup=True)
+
+        #cam.resume_stream_for_capture()
 
 
 if __name__ == '__main__':

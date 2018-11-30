@@ -96,6 +96,9 @@ class BaseCamera(object):
         self.last_access = 0  #: time: Time of last client access to the camera
         self.event = CameraEvent()
 
+        self.stream_timeout = 20  #: int: Number of inactive seconds before timing out the stream
+        self.stream_timeout_enabled = True  #: bool: Enable or disable timing out the stream
+
         self.state = {}  #: dict: Dictionary for capture state
         self._config = {}  #: dict: Dictionary of base camera settings
         self.paths = {
@@ -257,9 +260,12 @@ class BaseCamera(object):
             self.event.set()  # send signal to clients
             time.sleep(0)
 
-            # if there hasn't been any clients asking for frames in
-            # the last 10 seconds then stop the thread
-            if time.time() - self.last_access > 20:
+            # Handle timeout
+            if (
+                self.stream_timeout_enabled and  # If using timeout
+                (time.time() - self.last_access > self.stream_timeout) and  # And timeout time
+                not self.state['preview_active']  # And GPU preview is not active
+            ):
                 self.frames_iterator.close()
                 break
 

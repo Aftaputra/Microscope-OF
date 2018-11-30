@@ -17,7 +17,7 @@ Camera capture resolution set to video_resolution in frames()
 Video port uses that resolution for everything. If a different resolution
 is specified for video capture, this is handled by the resizer.
 
-Still capture (if use_video_port == False) uses pause_stream_for_capture
+Still capture (if use_video_port == False) uses pause_stream
 to temporarily increase the capture resolution.
 """
 
@@ -208,7 +208,7 @@ class StreamingCamera(BaseCamera):
             # Pause stream while changing settings
             if self.state['stream_active']:  # If stream is active
                 logging.info("Pausing stream to update config.")
-                self.pause_stream_for_capture()  # Pause stream
+                self.pause_stream()  # Pause stream
                 paused_stream = True  # Remember to unpause stream when done
 
             # PiCamera parameters (applied directly to PiCamera object)
@@ -237,7 +237,7 @@ class StreamingCamera(BaseCamera):
             # If stream was paused to update config, unpause
             if paused_stream:
                 logging.info("Resuming stream.")
-                self.resume_stream_for_capture()
+                self.resume_stream()
 
         else:
             raise Exception(
@@ -355,7 +355,7 @@ class StreamingCamera(BaseCamera):
         # Update state dictionary
         self.state['record_active'] = False
 
-    def pause_stream_for_capture(
+    def pause_stream(
             self,
             splitter_port: int=1,
             resolution: Tuple[int, int]=None) -> None:
@@ -377,7 +377,7 @@ class StreamingCamera(BaseCamera):
         # Increase the resolution for taking an image
         self.camera.resolution = resolution
 
-    def resume_stream_for_capture(
+    def resume_stream(
             self,
             splitter_port: int=1,
             resolution: Tuple[int, int]=None) -> None:
@@ -388,7 +388,7 @@ class StreamingCamera(BaseCamera):
             splitter_port (int): Splitter port to start recording on
             resolution ((int, int)): Resolution to set the camera to, before starting recording.
         """
-        logging.debug("Unpausing stream")
+        logging.debug("Resuming stream")
         if not resolution:
             resolution = self.config['video_resolution']
 
@@ -425,7 +425,7 @@ class StreamingCamera(BaseCamera):
             fmt (str): Format of the capture.
             resize ((int, int)): Resize the captured image.
         """
-        
+
         # If no filename is specified, build a non-clashing one
         if not filename:
             filename = self.generate_basename(self.images)
@@ -453,7 +453,7 @@ class StreamingCamera(BaseCamera):
         if not use_video_port:
 
             # Pause video splitter port 1
-            self.pause_stream_for_capture()
+            self.pause_stream()
 
             self.camera.capture(
                 target,
@@ -463,7 +463,7 @@ class StreamingCamera(BaseCamera):
                 bayer=True)
 
             # Resume video splitter port 1
-            self.resume_stream_for_capture()
+            self.resume_stream()
 
         else:
             self.camera.capture(
@@ -498,7 +498,7 @@ class StreamingCamera(BaseCamera):
             size = resolution
 
         if not use_video_port:
-            self.pause_stream_for_capture(resolution=resolution)
+            self.pause_stream(resolution=resolution)
 
         logging.debug("Creating PiYUVArray")
         with picamera.array.PiYUVArray(self.camera, size=size) as output:
@@ -512,7 +512,7 @@ class StreamingCamera(BaseCamera):
                 use_video_port=use_video_port)
 
             if not use_video_port:
-                self.resume_stream_for_capture()
+                self.resume_stream()
 
             if rgb:
                 logging.debug("Converting to RGB")
@@ -523,19 +523,13 @@ class StreamingCamera(BaseCamera):
     def array(
             self,
             use_video_port: bool=True,
-            resize: Tuple[int, int]=None,
-            stop_worker: bool=True) -> np.ndarray:
+            resize: Tuple[int, int]=None) -> np.ndarray:
         """Capture an uncompressed still RGB image to a Numpy array.
 
         Args:
             use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
             resize ((int, int)): Resize the captured image.
-            stop_worker (bool): Auto-stop worker, to avoid GPU memory issues
         """
-        restart_worker = False
-        if stop_worker is True and self.stop is False:
-            self.stop_worker()
-            restart_worker = True
 
         if use_video_port:
             resolution = self.config['video_resolution']
@@ -547,8 +541,8 @@ class StreamingCamera(BaseCamera):
         else:
             size = resolution
 
-        if not use_video_port:
-            self.pause_stream_for_capture(resolution=resolution)
+        # Always pause stream, to prevent resizer memory issues
+        self.pause_stream(resolution=resolution)
 
         logging.debug("Creating PiRGBArray")
         with picamera.array.PiRGBArray(self.camera, size=size) as output:
@@ -561,11 +555,8 @@ class StreamingCamera(BaseCamera):
                 format='rgb',
                 use_video_port=use_video_port)
 
-            if not use_video_port:
-                self.resume_stream_for_capture()
-            
-            if restart_worker:
-                self.start_worker()
+            # Resume stream
+            self.resume_stream()
 
             return output.array
 
