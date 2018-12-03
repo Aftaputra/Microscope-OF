@@ -55,6 +55,17 @@ function deleteCapture(capture_id) {
     }
 }
 
+function deleteAllCaptures() {
+    function deleteAllCapturesCallback(response, status) {
+        console.log(status);
+        getCaptures();
+    }
+    var r = confirm("Warning! This will delete all copies of all captures from the Raspberry Pi. Click OK to proceed.");
+    if (r == true) {
+        safeRequest("DELETE", baseURI+"/capture/", null, deleteAllCapturesCallback, false)
+    }
+}
+
 function getCaptures() {
     function updateCapturesCallback(response, status) {
         console.log(status);

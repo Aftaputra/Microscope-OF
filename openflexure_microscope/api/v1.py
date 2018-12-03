@@ -307,7 +307,12 @@ class CaptureListAPI(MicroscopeView):
 
         .. :quickref: Capture collection; Delete all captures
         """
-        return jsonify({"error": "not yet implemented"})
+        for image in self.microscope.camera.images:
+            image.delete()
+
+        captures = [image.metadata for image in self.microscope.camera.images]
+
+        return jsonify(captures)
 
     def post(self):
         """
