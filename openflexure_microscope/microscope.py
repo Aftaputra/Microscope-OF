@@ -90,17 +90,28 @@ class Microscope(object):
         Return:
             dict: Dictionary containing position data, and :py:attr:`openflexure_microscope.camera.base.BaseCamera.state`
         """
-        state = {}
+        state = {
+            'camera': {},
+            'stage': {},
+            'plugin': {}
+        }
 
         # Add stage position
         position = self.stage.position
-        state['position'] = {
+        state['stage']['position'] = {
             'x': position[0],
             'y': position[1],
             'z': position[2],
         }
 
+        backlash = self.stage.backlash.tolist()
+        state['stage']['backlash'] = {
+            'x': backlash[0],
+            'y': backlash[1],
+            'z': backlash[2],
+        }
+
         # Add camera state
-        state.update(self.camera.state)
+        state['camera'] = self.camera.state
 
         return state

@@ -51,7 +51,7 @@ function deleteCapture(capture_id) {
     }
     var r = confirm("Warning! This will delete all copies of this capture from the Raspberry Pi. Click OK to proceed.");
     if (r == true) {
-        safeRequest("DELETE", baseURI+"/capture/"+capture_id+"/", null, deleteCaptureCallback, false)
+        safeRequest("DELETE", baseURI+"/camera/capture/"+capture_id+"/", null, deleteCaptureCallback, false)
     }
 }
 
@@ -62,7 +62,7 @@ function deleteAllCaptures() {
     }
     var r = confirm("Warning! This will delete all copies of all captures from the Raspberry Pi. Click OK to proceed.");
     if (r == true) {
-        safeRequest("DELETE", baseURI+"/capture/", null, deleteAllCapturesCallback, false)
+        safeRequest("DELETE", baseURI+"/camera/capture/", null, deleteAllCapturesCallback, false)
     }
 }
 
@@ -71,7 +71,7 @@ function getCaptures() {
         console.log(status);
         updateCaptureList(response);
     }
-    safeRequest("GET", baseURI+"/capture", null, updateCapturesCallback, false)
+    safeRequest("GET", baseURI+"/camera/capture", null, updateCapturesCallback, false)
 }
 
 function updateCaptureList(response) {
@@ -84,7 +84,7 @@ function updateCaptureList(response) {
     // For each capture in the response array
     response.forEach(function(element) {
         // Store the capture object URI
-        element_uri = `${baseURI}/capture/${element.id}`
+        element_uri = `${baseURI}/camera/capture/${element.id}`
 
         // Generate inner HTML from capture object
         html = `
@@ -131,7 +131,7 @@ function getStagePositions() {
         console.log(status, response);
         updateStagePositions(response);
     }
-    safeRequest("GET", baseURI+"/position", null, updatePositionCallback, false)
+    safeRequest("GET", baseURI+"/stage/position", null, updatePositionCallback, false)
 }
 
 // Capture methods
@@ -159,7 +159,7 @@ function newCapture(filename, keep_on_disk, use_video_port, resizeWidth=null, re
     }
 
     console.log(payload);
-    safeRequest("POST", baseURI+"/capture/", payload, newCaptureCallback);
+    safeRequest("POST", baseURI+"/camera/capture/", payload, newCaptureCallback);
 }
 
 function newCaptureFromInput() {
@@ -211,7 +211,7 @@ function setStagePositions(x_abs, y_abs, z_abs) {
         console.log(status, response);
         updateStagePositions(response);
     }
-    safeRequest("POST", baseURI+"/position", { "absolute": true, "x": x_abs, "y": y_abs, "z": z_abs}, absMoveCallback)
+    safeRequest("POST", baseURI+"/stage/position", { "absolute": true, "x": x_abs, "y": y_abs, "z": z_abs}, absMoveCallback)
 }
 
 function moveStagePositions(x_rel, y_rel, z_rel) {
@@ -223,7 +223,7 @@ function moveStagePositions(x_rel, y_rel, z_rel) {
         console.log(status, response);
         updateStagePositions(response);
     }
-    safeRequest("POST", baseURI+"/position", { "absolute": false, "x": x_rel, "y": y_rel, "z": z_rel}, relMoveCallback)
+    safeRequest("POST", baseURI+"/stage/position", { "absolute": false, "x": x_rel, "y": y_rel, "z": z_rel}, relMoveCallback)
 }
 
 function setStagePositionsFromInput() {
@@ -266,7 +266,7 @@ window.addEventListener('wheel', function(e) {
         console.log(z_delta);
         console.log(e.target.parentNode.classList.value);
         // Make a position request
-        safeRequest("POST", baseURI+"/position", { "absolute": false, "z": z_delta}, keyMoveCallback)
+        safeRequest("POST", baseURI+"/stage/position", { "absolute": false, "z": z_delta}, keyMoveCallback)
     }
 });
 
