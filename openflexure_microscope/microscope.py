@@ -42,8 +42,10 @@ class Microscope(object):
 
     def close(self):
         """Shut down the microscope hardware."""
-        self.camera.close()
-        self.stage.close()
+        if self.camera:
+            self.camera.close()
+        if self.stage:
+            self.stage.close()
 
     def attach(self, camera: StreamingCamera, stage: OpenFlexureStage, apply_config: bool=True):
         """
