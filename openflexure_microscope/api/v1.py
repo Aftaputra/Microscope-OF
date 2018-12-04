@@ -75,6 +75,7 @@ def attach_microscope():
         StreamingCamera(config=openflexurerc),
         OpenFlexureStage("/dev/ttyUSB0")
     )
+
     logging.debug("Microscope successfully attached!")
 
 
@@ -154,14 +155,24 @@ class StateAPI(MicroscopeView):
           Content-Type: application/json
 
           {
-            "position": {
-                "x": 0, 
-                "y": 0, 
-                "z": 0
+            "camera": {
+                "preview_active": false, 
+                "record_active": false, 
+                "stream_active": true
             }, 
-            "preview_active": false, 
-            "record_active": false, 
-            "stream_active": true
+            "plugin": {}, 
+            "stage": {
+                "backlash": {
+                    "x": 128, 
+                    "y": 128, 
+                    "z": 128
+                }, 
+                "position": {
+                    "x": -8080, 
+                    "y": 5665, 
+                    "z": -12600
+                }
+            }
           }
 
         :>header Accept: application/json
@@ -171,11 +182,10 @@ class StateAPI(MicroscopeView):
         return jsonify(self.microscope.state)
 
 app.add_url_rule(
-    uri('/state/'), 
+    uri('/state/'),
     view_func=StateAPI.as_view('state', microscope=api_microscope))
 
 
-#TODO: Wrap in some kind of requires_stage decorator. Do same for camera.
 class PositionAPI(MicroscopeView):
 
     def get(self):
@@ -188,7 +198,7 @@ class PositionAPI(MicroscopeView):
 
         .. sourcecode:: http
 
-          GET /position/ HTTP/1.1
+          GET /stage/position/ HTTP/1.1
           Accept: application/json
 
         **Example response**:
@@ -209,7 +219,7 @@ class PositionAPI(MicroscopeView):
         :>json int y: y steps
         :>json int z: z steps
         """
-        return jsonify(self.microscope.state['position'])
+        return jsonify(self.microscope.state['stage']['position'])
 
     def post(self):
         """
@@ -260,11 +270,82 @@ class PositionAPI(MicroscopeView):
 
         self.microscope.stage.move_rel(position)
 
-        return jsonify(self.microscope.state['position'])
+        return jsonify(self.microscope.state['stage']['position'])
 
 app.add_url_rule(
-    uri('/position/'),
+    uri('/stage/position/'),
     view_func=PositionAPI.as_view('position', microscope=api_microscope))
+
+
+class StageParamsAPI(MicroscopeView):
+
+    def get(self):
+        """
+        Return current parameters of the stage.
+
+        .. :quickref: Stage params; Get current stage parameters
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          GET /stage/params HTTP/1.1
+          Accept: application/json
+
+        **Example response**:
+
+        .. sourcecode:: http
+
+          HTTP/1.1 200 OK
+          Vary: Accept
+          Content-Type: application/json
+
+          {
+            "backlash": {
+                "x": 0, 
+                "y": 0, 
+                "z": 128
+            }, 
+          }
+
+        """
+
+        return jsonify(self.microscope.state['stage'])
+
+    def post(self):
+        """
+        Set parameters of the stage.
+
+        .. :quickref: Stage params; Set current stage parameters
+
+        :reqheader Accept: application/json
+        :<json json backlash:   - **x** *(int)*: x-axis backlash in steps
+                                - **y** *(int)*: y-axis backlash in steps
+                                - **z** *(int)*: x-axis backlash in steps
+
+        """
+        # Get payload
+        state = parse_payload(request)
+        logging.debug(state)
+
+        # BACKLASH
+        if 'backlash' in state:
+            # Construct backlash array
+            backlash = [0, 0, 0]
+
+            # Get backlash coordinates from payload
+            for axis, key in enumerate(['x', 'y', 'z']):
+                if key in state['backlash']:
+                    backlash[axis] = int(state['backlash'][key])
+
+            # Apply backlash
+            self.microscope.stage.backlash = backlash
+
+        return jsonify(self.microscope.state['stage'])
+
+app.add_url_rule(
+    uri('/stage/params/'),
+    view_func=StageParamsAPI.as_view('stage_params', microscope=api_microscope))
 
 
 class CaptureListAPI(MicroscopeView):
@@ -324,7 +405,7 @@ class CaptureListAPI(MicroscopeView):
 
         .. sourcecode:: http
 
-          POST /position/ HTTP/1.1
+          POST /camera/capture HTTP/1.1
           Accept: application/json
 
           {
@@ -382,7 +463,7 @@ class CaptureListAPI(MicroscopeView):
         return jsonify(capture_obj.metadata)
 
 app.add_url_rule(
-    uri('/capture/'), 
+    uri('/camera/capture/'), 
     view_func=CaptureListAPI.as_view('capture_list', microscope=api_microscope))
 
 
@@ -398,7 +479,7 @@ class CaptureAPI(MicroscopeView):
 
         .. sourcecode:: http
 
-          GET /capture/d0b2067abbb946f19351e075c5e7cd5b/ HTTP/1.1
+          GET /camera/capture/d0b2067abbb946f19351e075c5e7cd5b/ HTTP/1.1
           Accept: application/json
 
         **Example response**:
@@ -480,7 +561,7 @@ class CaptureAPI(MicroscopeView):
         return jsonify({"return": capture_id})
 
 app.add_url_rule(
-    uri('/capture/<capture_id>/'),
+    uri('/camera/capture/<capture_id>/'),
     view_func=CaptureAPI.as_view('capture', microscope=api_microscope))
 
 
@@ -508,7 +589,7 @@ class CaptureDownloadRedirectAPI(MicroscopeView):
 
 # Route for shortcut where no filename is specified
 app.add_url_rule(
-    uri('/capture/<capture_id>/download'),
+    uri('/camera/capture/<capture_id>/download'),
     view_func=CaptureDownloadRedirectAPI.as_view('capture_download_redirect', microscope=api_microscope))
 
 
@@ -527,7 +608,7 @@ class CaptureDownloadAPI(MicroscopeView):
 
         .. sourcecode:: http
 
-          GET /capture/d0b2067abbb946f19351e075c5e7cd5b/download/2018-11-20_16-04-17.jpeg HTTP/1.1
+          GET /camera/capture/d0b2067abbb946f19351e075c5e7cd5b/download/2018-11-20_16-04-17.jpeg HTTP/1.1
           Accept: image/jpeg
 
         :>header Accept: image/jpeg
@@ -563,9 +644,26 @@ class CaptureDownloadAPI(MicroscopeView):
             attachment_filename=filename)
 
 app.add_url_rule(
-    uri('/capture/<capture_id>/download/<filename>'),
+    uri('/camera/capture/<capture_id>/download/<filename>'),
     view_func=CaptureDownloadAPI.as_view('capture_download', microscope=api_microscope))
 
+
+# Preview
+class GPUPreviewAPI(MicroscopeView):
+
+    def post(self, operation):
+        """
+        TODO: Documentation
+        """
+        if operation == "start":
+            self.microscope.camera.start_preview()
+        elif operation == "stop":
+            self.microscope.camera.stop_preview()
+        return jsonify(self.microscope.state)
+
+app.add_url_rule(
+    uri('/camera/preview/<string:operation>'), 
+    view_func=GPUPreviewAPI.as_view('gpu_preview', microscope=api_microscope))
 
 # Automatically clean up microscope at exit
 def cleanup():
