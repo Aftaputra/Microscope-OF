@@ -653,7 +653,28 @@ class GPUPreviewAPI(MicroscopeView):
 
     def post(self, operation):
         """
-        TODO: Documentation
+        Create a new image capture.
+
+        .. :quickref: GPU Preview; Start/stop preview
+
+        **Example requests**:
+
+        .. sourcecode:: http
+
+          POST /camera/preview/start HTTP/1.1
+          Accept: application/json
+
+        :>header Accept: application/json
+
+        .. sourcecode:: http
+
+          POST /camera/preview/stop HTTP/1.1
+          Accept: application/json
+
+        :>header Accept: application/json
+
+        :<header Content-Type: application/json
+        :status 200: preview started/stopped
         """
         if operation == "start":
             self.microscope.camera.start_preview()
