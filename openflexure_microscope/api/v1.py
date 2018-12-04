@@ -664,8 +664,6 @@ class GPUPreviewAPI(MicroscopeView):
           POST /camera/preview/start HTTP/1.1
           Accept: application/json
 
-        :>header Accept: application/json
-
         .. sourcecode:: http
 
           POST /camera/preview/stop HTTP/1.1
