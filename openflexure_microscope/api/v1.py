@@ -97,14 +97,14 @@ def index():
 
 class MicroscopeView(MethodView):
 
-    def __init__(self, microscope):
+    def __init__(self, microscope, **kwargs):
         """
         Create a generic MethodView with a globally available
         microscope object passed as an argument.
         """
         self.microscope = microscope
 
-        MethodView.__init__(self)
+        MethodView.__init__(self, **kwargs)
 
 
 class StreamAPI(MicroscopeView):
