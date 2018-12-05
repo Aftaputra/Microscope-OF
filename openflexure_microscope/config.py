@@ -4,8 +4,10 @@ import logging
 import shutil
 
 HERE = os.path.abspath(os.path.dirname(__file__))
-DEFAULT_CONFIG_PATH = os.path.join(HERE, 'openflexurerc.default.yaml')
-USER_CONFIG_PATH = os.path.join(os.path.expanduser("~"), "openflexurerc.yaml")
+DEFAULT_CONFIG_PATH = os.path.join(HERE, 'microscoperc.default.yaml')
+
+USER_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".openflexure")
+USER_CONFIG_FILE = os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")
 
 TYPES = {
     'stream_resolution': tuple,
@@ -36,17 +38,20 @@ def load_config(config_path: str=None) -> dict:
     Args:
         config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
     """
-    global DEFAULT_CONFIG_PATH, USER_CONFIG_PATH
+    global DEFAULT_CONFIG_PATH, USER_CONFIG_FILE
 
     if not config_path:
-        if os.path.exists(USER_CONFIG_PATH):  # If user config file already exists
-            config_path = USER_CONFIG_PATH  # Load it
+        if os.path.exists(USER_CONFIG_FILE):  # If user config file already exists
+            config_path = USER_CONFIG_FILE  # Load it
         else:  # If user config file doesn't yet exist
             logging.warning("No user config found. Loading system defaults...")
+            if not os.path.exists(USER_CONFIG_DIR):
+                logging.info("Making user config directory...")
+                os.makedirs(USER_CONFIG_DIR)
             logging.info("Copying default config to user config...")
-            shutil.copyfile(DEFAULT_CONFIG_PATH, USER_CONFIG_PATH)
+            shutil.copyfile(DEFAULT_CONFIG_PATH, USER_CONFIG_FILE)
             logging.info("Loading user config...")
-            config_path = USER_CONFIG_PATH  # Load defaults in
+            config_path = USER_CONFIG_FILE  # Load defaults in
 
     with open(config_path) as config_file:
         config_data = yaml.load(config_file)
@@ -63,9 +68,9 @@ def save_config(config_dict: dict, config_path: str=None, safe: bool=False):
         config_dict (dict): Dictionary of config data to save.
         config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
     """
-    global USER_CONFIG_PATH
+    global USER_CONFIG_FILE
     if not config_path:
-        config_path = USER_CONFIG_PATH
+        config_path = USER_CONFIG_FILE
 
     with open(config_path, 'w') as outfile:
         if not safe:
@@ -82,9 +87,9 @@ def merge_config(config_dict: dict, config_path: str=None, safe: bool=False, bac
         config_dict (dict): Dictionary of config data to save.
         config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
     """
-    global USER_CONFIG_PATH
+    global USER_CONFIG_FILE
     if not config_path:
-        config_path = USER_CONFIG_PATH
+        config_path = USER_CONFIG_FILE
 
     config_data = load_config(config_path=config_path)
 

@@ -12,6 +12,7 @@ import os
 import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
+
 def lens_shading_correction_from_rgb(rgb_array, binsize=64):
     """Calculate a correction to a lens shading table from an RGB image.
 
@@ -66,13 +67,15 @@ def lens_shading_correction_from_rgb(rgb_array, binsize=64):
     gains = 1.0/lens_shading  # 32 is unity gain
     return gains
 
+
 def gains_to_lst(gains):
     """Given a lens shading gains table (where no gain=1.0), convert to 8-bit."""
     lst = gains / np.min(gains)*32 # minimum gain is 32 (= unity gain)
     lst[lst > 255] = 255 # clip at 255
     return lst.astype(np.uint8)
-    
-def generate_lens_shading_table_closed_loop(output_fname="shadingtable.npy", 
+
+
+def generate_lens_shading_table_closed_loop(output_fname="microscopelst.npy",
                                             n_iterations=5,
                                             images_to_average=5):
     """Reset the camera's parameters, and recalibrate the lens shading to get unifrom images.
@@ -103,9 +106,8 @@ def generate_lens_shading_table_closed_loop(output_fname="shadingtable.npy",
 
     # Open the microscope and start with flat (i.e. no) lens shading correction.
         cam.start_preview()
-        logging.info("Stopping worker thread during calibration, to avoid GPU memory issues")
 
-        def get_rgb_image(): # shorthand for taking an RGB image
+        def get_rgb_image():  # shorthand for taking an RGB image
             return cam.array(use_video_port=True, resize=(max_res[0]//2, max_res[1]//2))
 
         # Adjust the shutter speed until the brightest pixels are giving a set value (say 220)
@@ -146,7 +148,7 @@ def generate_lens_shading_table_closed_loop(output_fname="shadingtable.npy",
         lens_shading_table = cam.camera.lens_shading_table
 
         # Saving shading table to disk
-        output_path = os.path.join(os.path.expanduser("~"), output_fname)
+        output_path = os.path.join(config.USER_CONFIG_DIR, output_fname)
         np.save(output_path, lens_shading_table)
         print("Lens shading table written to {}".format(output_path))
 
@@ -159,8 +161,6 @@ def generate_lens_shading_table_closed_loop(output_fname="shadingtable.npy",
 
         logging.debug("Merging config...")
         config.merge_config(settings, safe=True, backup=True)
-
-        #cam.resume_stream_for_capture()
 
 
 if __name__ == '__main__':
