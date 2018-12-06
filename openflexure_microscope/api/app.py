@@ -107,6 +107,7 @@ app.register_blueprint(camera_blueprint, url_prefix=uri('/camera', 'v1'))
 # List all routes
 list_routes(app)
 
+
 # Automatically clean up microscope at exit
 def cleanup():
     global api_microscope
