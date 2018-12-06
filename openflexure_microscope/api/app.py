@@ -1,187 +1,118 @@
 #!/usr/bin/env python
+"""
+TODO: Implement API route to cleanly shut down server
+TODO: Implement plugin API routes somehow
+"""
 
-from pprint import pprint
+import numpy as np
 from importlib import import_module
 import time
 import datetime
+import os
 
 from flask import (
-    Flask, render_template, Response,
-    redirect, request, jsonify, send_file)
+    Flask, render_template, Response, url_for,
+    redirect, request, jsonify, send_file, abort,
+    make_response)
 
-import numpy as np
+from flask.views import MethodView
+from werkzeug.exceptions import default_exceptions
 
+from openflexure_microscope.api.utilities import parse_payload, get_from_payload, gen, get_bool, list_routes
+
+from openflexure_microscope import Microscope, config
 from openflexure_microscope.camera.pi import StreamingCamera
+from openflexure_stage import OpenFlexureStage
 
+import atexit
+import logging, sys
+
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+
+# Create a dummy microscope object, with no hardware attachments
+api_microscope = Microscope(None, None)
+logging.debug("Created an empty microscope in global.")
+
+
+# Generate API URI based on version from filename
+def uri(suffix, api_version, base=None):
+    if not base:
+        base = "/api/{}".format(api_version)
+    uri = base + suffix
+    logging.debug("Created app route: {}".format(uri))
+    return uri
+
+# Create flask app
 app = Flask(__name__)
-cam = StreamingCamera()
+app.url_map.strict_slashes = False
 
 
-def parse_payload(request):
-    """Convert request to JSON. Will eventually handle error-checking."""
-    # TODO: Handle invalid JSON payloads
-    state = request.get_json()
-    return state
+# Make errors more API friendly
+
+def _handle_http_exception(e):
+    return make_response(
+        jsonify({
+            'status_code': e.code,
+            'error': e.name,
+            'details': e.description
+        }),
+        e.code)
+
+for code in default_exceptions:
+    app.errorhandler(code)(_handle_http_exception)
 
 
-def gen(camera):
-    """Video streaming generator function."""
-    while True:
-        # the obtained frame is a jpeg
-        frame = camera.get_frame()
+# After app starts, but before first request, attach hardware to global microscope
+@app.before_first_request
+def attach_microscope():
+    # Create the microscope object globally (common to all spawned server threads)
+    global api_microscope
+    logging.debug("First request made. Populating microscope with hardware...")
+    openflexurerc = config.load_config()  # Load default user config
 
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    api_microscope.attach(
+        StreamingCamera(config=openflexurerc),
+        OpenFlexureStage("/dev/ttyUSB0")
+    )
 
+    logging.debug("Microscope successfully attached!")
+
+
+##### WEBAPP ROUTES ######
 
 @app.route('/')
 def index():
-    """Video streaming home page."""
-    cam.start_worker()  # Start the stream
-    return render_template('index.html')
-
-
-@app.route('/stream')
-def stream():
-    """Video streaming route. Put this in the src attribute of an img tag."""
-    return Response(
-        gen(cam),
-        mimetype='multipart/x-mixed-replace; boundary=frame')
-
-
-# TODO: Be able to change the image resolution with an option
-@app.route('/capture/', methods=['GET', 'POST', 'PUT'])
-def capture():
     """
-    POST/PUT: Capture a single image.
-    GET: Return capture status, or download latest capture.
+    API demo app
     """
-    if request.method == 'POST' or request.method == 'PUT':
-        state = parse_payload(request)
-        print(state)
+    return render_template(
+        'index_v1.html'
+    )
 
-        # Handle filename argument
-        if 'filename' in state:
-            filename = state['filename']
-        else:
-            filename = None
+##### API ROUTES ######
+from openflexure_microscope.api.v1 import blueprints
 
-        if 'write_to_file' in state:
-            write_to_file = bool(state['write_to_file'])
-        else:
-            write_to_file = False
+# Base routes
+base_blueprint = blueprints.base.construct_blueprint(api_microscope)
+app.register_blueprint(base_blueprint, url_prefix=uri('', 'v1'))
 
-        if 'use_video_port' in state:
-            use_video_port = bool(state['use_video_port'])
-        else:
-            use_video_port = False
+# Stage routes
+stage_blueprint = blueprints.stage.construct_blueprint(api_microscope)
+app.register_blueprint(stage_blueprint, url_prefix=uri('/stage', 'v1'))
 
-        if 'resize' in state:
-            resize_h = int(state['resize'])
-            resize_w = int(resize_h*(4/3))
-            resize = (resize_w, resize_h)
-        else:
-            resize = None
+# Camera routes
+camera_blueprint = blueprints.camera.construct_blueprint(api_microscope)
+app.register_blueprint(camera_blueprint, url_prefix=uri('/camera', 'v1'))
 
-        response = cam.capture(
-            write_to_file=write_to_file,
-            use_video_port=use_video_port,
-            filename=filename,
-            resize=resize)
+# List all routes
+list_routes(app)
 
-        return str(response) + "\n"
+# Automatically clean up microscope at exit
+def cleanup():
+    global api_microscope
+    api_microscope.close()
 
-    else:  # If GET request
+atexit.register(cleanup)
 
-        download = request.args.get('download')
-
-        state = cam.state
-
-        if ((
-                download == 'true' or
-                download == 'True' or
-                download == '1') and
-                cam.image is not None):
-
-            return send_file(cam.image.data, mimetype='image/jpeg')
-        else:
-            return jsonify(state)
-
-
-@app.route('/record/', methods=['GET', 'POST', 'PUT'])
-def record():
-    """
-    POST/PUT: Start or stop a video recording.
-    GET: Return recording status, or download latest recording
-    """
-    if request.method == 'POST' or request.method == 'PUT':
-        state = request.get_json()
-        print(state)
-
-        # Handle filename argument
-        if 'filename' in state:
-            filename = state['filename']
-        else:
-            filename = None
-
-        # Handle status argument
-        if 'status' in state:
-            status = bool(state['status'])
-
-        # synchronise the arduino_time
-        if status is True:
-            response = cam.start_recording(filename=filename)
-            return str(response)
-
-        elif status is False:
-            response = cam.stop_recording()
-            return str(response)
-
-    else:
-        download = request.args.get('download')
-
-        state = cam.state
-
-        if ((
-                download == 'true' or
-                download == 'True' or
-                download == '1') and
-                cam.state['recent_video'] is not None):
-
-            return send_file(
-                cam.state['recent_video'],
-                mimetype='video/H264',
-                as_attachment=True)
-        else:
-            return jsonify(state)
-
-
-@app.route('/preview/', methods=['GET', 'POST', 'PUT'])
-def preview():
-    """
-    POST/PUT: Start or stop the direct-to-GPU camera preview on the Pi.
-
-    GET: Return preview status
-    """
-    if request.method == 'POST' or request.method == 'PUT':
-        state = request.get_json()
-        print(state)
-
-        if 'status' in state:
-            status = bool(state['status'])
-
-        if status is False:
-            response = cam.stop_preview()
-        else:
-            response = cam.start_preview()
-
-        return str(response)
-
-    else:
-        # Get args passed via URL (not useful here. Just for reference.)
-        state = cam.state
-        return jsonify(state)
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', threaded=True, debug=True, use_reloader=False)
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port="5000", threaded=True, debug=True, use_reloader=False)

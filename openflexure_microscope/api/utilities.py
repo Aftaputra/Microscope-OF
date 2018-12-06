@@ -1,3 +1,5 @@
+import pprint
+
 def parse_payload(request):
     """Convert request to JSON. Will eventually handle error-checking."""
     # TODO: Handle invalid JSON payloads
@@ -32,3 +34,8 @@ def get_bool(get_arg):
         return True
     else:
         return False
+
+
+def list_routes(app):
+    """Print available functions."""
+    pprint.pprint(list(map(lambda x: repr(x), app.url_map.iter_rules())))
