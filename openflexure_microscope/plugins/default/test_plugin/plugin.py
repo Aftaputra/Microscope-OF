@@ -9,23 +9,20 @@ class FirstPlugin(MicroscopePlugin):
         """
         Demonstrate access to Microscope.camera, and Microscope.stage
         """
-        print("Parent camera:")
-        print(self.microscope.camera)
 
-        print("Parent stage:")
-        print(self.microscope.stage)
+        response = "My parent camera is {}, and my parent stage is {}.".format(self.microscope.camera, self.microscope.stage)
+        return response
 
 
 class OtherPlugin(MicroscopePlugin):
     """
     An example of a second Microscope plugin, loaded from the same plugin file.
     """
-    def run(self):
+    def do_something(self):
         """
         Demonstrate access to Microscope.camera, and Microscope.stage
         """
-        print("Stage plugin parent stage:")
-        print(self.microscope.stage)
+        return "Stage plugin parent stage: {}".format(self.microscope.stage)
 
 
 PLUGINS = {
