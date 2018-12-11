@@ -91,22 +91,23 @@ class PluginMount(object):
         Args:
             plugin_module: A loaded module to be attached. Module can be loaded using :py:meth:`openflexure_microscope.plugins.load_plugin`
         """
-        if not hasattr(plugin_module, 'PLUGINS') or not isinstance(plugin_module.PLUGINS, dict):
-            raise Exception("No falid PLUGINS dictionary found in {}".format(plugin_module))
+        if hasattr(plugin_module, 'PLUGINS') and isinstance(plugin_module.PLUGINS, dict):
 
-        for plugin_name, plugin_class in plugin_module.PLUGINS.items():
+            for plugin_name, plugin_class in plugin_module.PLUGINS.items():
 
-            plugin_object = plugin_class()
-            if hasattr(self, plugin_name):
-                warnings.warn("A plugin named {} has already been loaded. Skipping {}.".format(plugin_name, plugin_class))
-            else:
-                setattr(self, plugin_name, plugin_object)
+                plugin_object = plugin_class()
+                if hasattr(self, plugin_name):
+                    warnings.warn("A plugin named {} has already been loaded. Skipping {}.".format(plugin_name, plugin_class))
+                else:
+                    setattr(self, plugin_name, plugin_object)
 
-                # Grant plugin access to the hardware
-                assert(isinstance(plugin_object, MicroscopePlugin))
-                plugin_object.microscope = self.parent
+                    # Grant plugin access to the hardware
+                    assert(isinstance(plugin_object, MicroscopePlugin))
+                    plugin_object.microscope = self.parent
 
-                print("Adding plugin: {}".format(plugin_name))
+                    print("Adding plugin: {}".format(plugin_name))
+        else:
+            warnings.warn("No valid PLUGINS dictionary found in {}".format(plugin_module))
 
 
 class MicroscopePlugin():
