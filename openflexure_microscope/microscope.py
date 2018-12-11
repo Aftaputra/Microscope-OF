@@ -60,14 +60,20 @@ class Microscope(object):
             apply_config (bool): Should the microscope config dictionary be applied to the attached hardware?
         """
 
+        logging.debug("Attaching camera...")
         self.camera = camera  #: :py:class:`openflexure_microscope.camera.pi.StreamingCamera`: Picamera object
-        if isinstance(camera, StreamingCamera):
+        if isinstance(self.camera, StreamingCamera):
             logging.info("Attached camera {}".format(camera))
+        elif not self.camera:
+            logging.info("Attached dummy camera.")
 
+        logging.debug("Attaching stage...")
         self.stage = stage  #: :py:class:`openflexure_stage.stage.OpenFlexureStage`: OpenFlexure stage object
         if isinstance(self.stage, OpenFlexureStage):  # If a stage object has been attached
             logging.info("Attached stage {}".format(stage))
             self.stage.backlash = np.zeros(3, dtype=np.int)
+        elif not self.stage:
+            logging.info("Attached dummy stage.")
 
     def find_plugins(self, plugin_paths=[], include_default=True):
         """
@@ -77,12 +83,13 @@ class Microscope(object):
             plugin_paths (list): List of strings of plugin directories.
             include_default (bool): Also load plugins from the module default directory (DEFAULT_PLUGIN_PATH)
         """
-        # TODO: Get paths from rc file
+        logging.debug("Attaching plugins...")
         plugins_list = search_plugin_dirs(plugin_paths, include_default=include_default)
 
         for i in plugins_list:
             module = load_plugin(i)
             self.plugin.attach(module)
+        logging.debug("Plugins attached.")
 
     # Create unified state
     @property

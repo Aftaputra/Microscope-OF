@@ -104,8 +104,7 @@ class PluginMount(object):
 
                 # Grant plugin access to the hardware
                 assert(isinstance(plugin_object, MicroscopePlugin))
-                plugin_object.camera = self.parent.camera
-                plugin_object.stage = self.parent.stage
+                plugin_object.microscope = self.parent
 
                 print("Adding plugin: {}".format(plugin_name))
 
@@ -114,9 +113,8 @@ class MicroscopePlugin():
     """
     Parent class for all microscope plugins.
 
-    Initially only defines an empty object for camera and stage. All plugins
+    Initially only defines an empty object for microscope. All plugins
     must be an instance of this class to successfully attach to PluginMount.
     """
     def __init__(self):
-        self.camera = None  #: :py:class:`openflexure_microscope.camera.pi.StreamingCamera`: Picamera object
-        self.stage = None  #: :py:class:`openflexure_stage.stage.OpenFlexureStage`: OpenFlexure stage object
+        self.microscope = None  #: :py:class:`openflexure_microscope.microscope.Microscope`: Microscope object
