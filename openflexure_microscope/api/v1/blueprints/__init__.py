@@ -1,1 +1,1 @@
-from . import camera, stage, base
+from . import camera, stage, base, plugins
