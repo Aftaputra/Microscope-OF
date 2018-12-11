@@ -14,6 +14,8 @@ if __name__ == '__main__':
 
     microscope.find_plugins()  # Automatically find microscope plugins
 
+    print(dir(microscope.plugin))
+
     # Check that default tets plugins have loaded
     print("RUNNING PLUGIN METHODS:")
     microscope.plugin.test1.run()
