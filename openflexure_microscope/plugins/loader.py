@@ -3,9 +3,12 @@ import os
 import warnings
 import logging
 
+from openflexure_microscope.config import USER_CONFIG_DIR
+
 MAIN_MODULE = '__init__'
 HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_PLUGIN_PATH = os.path.join(HERE, 'default')
+USER_PLUGIN_DIR = os.path.join(USER_CONFIG_DIR, "plugins")
 
 
 def search_plugin_dirs(plugin_paths, include_default=True):
@@ -14,12 +17,16 @@ def search_plugin_dirs(plugin_paths, include_default=True):
 
     Args:
         plugin_paths (list): List of strings of plugin directories.
-        include_default (bool): Also load plugins from the module default directory (DEFAULT_PLUGIN_PATH)
+        include_default (bool): Also load plugins from the module default directory (DEFAULT_PLUGIN_PATH, USER_PLUGIN_DIR)
     """
-    global DEFAULT_PLUGIN_PATH
+    global DEFAULT_PLUGIN_PATH, USER_PLUGIN_DIR
+
+    if not os.path.exists(USER_PLUGIN_DIR):  # If user config file already exists
+        os.makedirs(USER_PLUGIN_DIR)
 
     if include_default:  # If including default plugins
         plugin_paths.append(DEFAULT_PLUGIN_PATH)  # Add default directory to the search paths
+        plugin_paths.append(USER_PLUGIN_DIR)  # Add user directory to the search paths
 
     logging.debug(plugin_paths)
 
@@ -28,6 +35,36 @@ def search_plugin_dirs(plugin_paths, include_default=True):
         logging.debug("Searching {}".format(plugin_dir))
         plugins.extend(find_plugins(plugin_dir))  # Find plugin folders, and load into list
 
+    return plugins
+
+
+def find_plugins_legacy(plugin_dir):
+    """
+    Find all plugins residing within a directory
+
+    Args:
+        plugin_dir (str): String of directory to be searched
+    """
+    plugins = []
+    plugins_folders = os.listdir(plugin_dir)
+
+    loader_details = (
+        importlib.machinery.SourceFileLoader,
+        importlib.machinery.SOURCE_SUFFIXES
+    )
+
+    for i in plugins_folders:
+        plugin_folder = os.path.join(plugin_dir, i)
+        logging.info(plugin_folder)
+
+        if not os.path.isdir(plugin_folder):  # If plugin folder doesn't exist
+            continue  # Skip this iteration
+        if not MAIN_MODULE + '.py' in os.listdir(plugin_folder):  # If no __init__ file in plugin folder
+            continue  # Skip this iteration
+
+        module_spec = importlib.machinery.FileFinder(plugin_folder, loader_details).find_spec(MAIN_MODULE)
+
+        plugins.append(module_spec)
     return plugins
 
 
@@ -50,10 +87,10 @@ def find_plugins(plugin_dir):
         plugin_folder = os.path.join(plugin_dir, i)
         logging.info(plugin_folder)
 
-        if not os.path.isdir(plugin_folder):
-            continue
-        if not MAIN_MODULE + '.py' in os.listdir(plugin_folder):
-            continue
+        if not os.path.isdir(plugin_folder):  # If plugin folder doesn't exist
+            continue  # Skip this iteration
+        if not MAIN_MODULE + '.py' in os.listdir(plugin_folder):  # If no __init__ file in plugin folder
+            continue  # Skip this iteration
 
         module_spec = importlib.machinery.FileFinder(plugin_folder, loader_details).find_spec(MAIN_MODULE)
 
@@ -73,6 +110,17 @@ def load_plugin(module_spec):
     return module
 
 
+def load_plugin_legacy(module_spec):
+    """
+    Load a source file from a given spec.
+
+    Args:
+        module_spec: Module spec of module to be returned
+    """
+    module = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(module)
+    return module
+
 class PluginMount(object):
     """
     A mount-point for all loaded plugins. Attaches to a Microscope object.
@@ -91,6 +139,8 @@ class PluginMount(object):
         Args:
             plugin_module: A loaded module to be attached. Module can be loaded using :py:meth:`openflexure_microscope.plugins.load_plugin`
         """
+        print("LOADING MODULE {}".format(plugin_module.__name__))
+
         if hasattr(plugin_module, 'PLUGINS') and isinstance(plugin_module.PLUGINS, dict):
 
             for plugin_name, plugin_class in plugin_module.PLUGINS.items():
@@ -108,6 +158,16 @@ class PluginMount(object):
                     print("Adding plugin: {}".format(plugin_name))
         else:
             warnings.warn("No valid PLUGINS dictionary found in {}".format(plugin_module))
+
+
+class PluginGroup():
+    """
+    A class used to group plugin methods within a PluginMount.
+
+    Currently useless aside from creating a namespace in which plugin methods will reside.
+    """
+    def __init__(self):
+        pass
 
 
 class MicroscopePlugin():
