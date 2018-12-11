@@ -1,2 +1,2 @@
-from .plugin import PLUGINS
-from .api import ENDPOINTS
+from openflexure_microscope.plugins.default.test_plugin.api import ENDPOINTS
+from openflexure_microscope.plugins.default.test_plugin.plugin import PLUGINS
