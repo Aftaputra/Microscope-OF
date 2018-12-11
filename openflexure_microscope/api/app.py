@@ -70,16 +70,19 @@ def attach_microscope():
     logging.debug("First request made. Populating microscope with hardware...")
     openflexurerc = config.load_config()  # Load default user config
 
-    logging.debug("Creating camera object.")
+    logging.debug("Creating camera object...")
     api_camera = StreamingCamera(config=openflexurerc)
-    logging.debug("Creating stage object.")
+    logging.debug("Creating stage object...")
     api_stage = OpenFlexureStage("/dev/ttyUSB0")
 
-    logging.debug("Attaching to microscope.")
+    logging.debug("Attaching devices to microscope...")
     api_microscope.attach(
         api_camera,
         api_stage
     )
+
+    logging.debug("Attaching plugins to microscope...")
+    api_microscope.find_plugins()  # Automatically find microscope plugins
 
     logging.debug("Microscope successfully attached!")
 
@@ -110,6 +113,10 @@ app.register_blueprint(stage_blueprint, url_prefix=uri('/stage', 'v1'))
 # Camera routes
 camera_blueprint = blueprints.camera.construct_blueprint(api_microscope)
 app.register_blueprint(camera_blueprint, url_prefix=uri('/camera', 'v1'))
+
+# Pluginroutes
+plugin_blueprint = blueprints.plugins.construct_blueprint(api_microscope)
+app.register_blueprint(plugin_blueprint, url_prefix=uri('/plugin', 'v1'))
 
 # List all routes
 list_routes(app)
