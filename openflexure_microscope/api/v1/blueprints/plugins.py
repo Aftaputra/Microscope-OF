@@ -1,50 +1,44 @@
 from openflexure_microscope.api.utilities import parse_payload, get_from_payload, gen, get_bool
-from openflexure_microscope.api.v1.views import MicroscopeView
-
-from openflexure_microscope.plugins import load_plugin, search_plugin_dirs
+from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
 
 from flask import Response, Blueprint, jsonify
 
 import logging, warnings
 
 
-def add_endpoints(plugin_module, endpoint_dict):
-    """
-    Fetch valid endpoints from a plugin_module
-
-    Args:
-        plugin_module: A loaded module to be attached. Module can be loaded using :py:meth:`openflexure_microscope.plugins.load_plugin`
-    """
-    if hasattr(plugin_module, 'ENDPOINTS') and isinstance(plugin_module.ENDPOINTS, dict):  # If plugin contains valid endpoints
-
-        for endpoint_name, endpoint_class in plugin_module.ENDPOINTS.items():  # For each defined endpoint
-
-            if endpoint_name in endpoint_dict:  # Check if endpoint name clashes
-                warnings.warn("An endpoint /{} has already been loaded. Skipping {}.".format(endpoint_name, endpoint_class))
-            else:
-                endpoint_dict[endpoint_name] = endpoint_class  # Add endpoint to main endpoint dictionary
-    else:
-        warnings.warn("No valid ENDPOINTS dictionary found in {}".format(plugin_module))
-
-
 def construct_blueprint(microscope_obj, plugin_paths=[], include_default=True):
 
     blueprint = Blueprint('plugin_blueprint', __name__)
 
-    logging.debug("Attaching plugins...")
-    plugins_list = search_plugin_dirs(plugin_paths, include_default=include_default)
+    all_routes = []
 
-    endpoint_dict = {}  # Store all endpoints
+    # For each plugin attached to the microscope object
+    for plugin_name, plugin_obj in microscope_obj.plugin.plugins:
 
-    for plugin_file in plugins_list:
-        plugin_module = load_plugin(plugin_file)
-        add_endpoints(plugin_module, endpoint_dict)
+        if hasattr(plugin_obj, 'api_views') and isinstance(plugin_obj.api_views, dict):  # If plugin contains valid endpoints
 
-    for endpoint_name, endpoint_class in endpoint_dict.items():  # For each valid endpoint
+            for view_route, view_class in plugin_obj.api_views.items():  # For each defined endpoint
 
-        blueprint.add_url_rule(
-            '/{}'.format(endpoint_name),
-            view_func=endpoint_class.as_view('plugin_{}'.format(endpoint_name), microscope=microscope_obj)
-        )
+                # Remove all leading slashes from view route
+                while view_route[0] == '/':
+                    view_route = view_route[1:]
+
+                # Construct a full view route from the plugin name
+                full_view_route = "/{}/{}".format(plugin_name, view_route)
+
+                if full_view_route not in all_routes and issubclass(view_class, MicroscopeViewPlugin):  # Check if endpoint name clashes
+                    all_routes.append(full_view_route)  # Add route to main route dictionary
+
+                    # Add route to the plugins blueprint
+                    blueprint.add_url_rule(
+                        full_view_route,
+                        view_func=view_class.as_view('plugin_{}'.format(view_route).replace('/', '_'), microscope=microscope_obj, plugin=plugin_obj)
+                    )
+
+                else:
+                    warnings.warn("An endpoint /{} has already been loaded. Skipping {}.".format(full_view_route, view_class))
+
+        else:
+            warnings.warn("No valid 'api_views' dictionary found in {}".format(plugin_obj))
 
     return(blueprint)
