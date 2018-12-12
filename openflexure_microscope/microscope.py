@@ -9,7 +9,7 @@ import numpy as np
 from openflexure_stage import OpenFlexureStage
 from .camera.pi import StreamingCamera
 
-from .plugins import PluginMount, load_plugin, search_plugin_dirs
+from .plugins import PluginMount
 from .config import load_config, save_config, convert_config
 
 
@@ -22,15 +22,23 @@ class Microscope(object):
     Args:
         camera (:py:class:`openflexure_microscope.camera.pi.StreamingCamera`): camera object
         microscope (:py:class:`openflexure_stage.stage.OpenFlexureStage`): stage object
-        load_config (bool): Should a config file be automatically loaded on init?
-        config_path (str): Path to the config YAML file to be loaded. If None, defaults to USER_CONFIG_PATH.
+        config (dict): Dictionary of the runtime config to apply to the microscope. Does not automatically apply to camera and stage.
+        attach_plugins (bool): Should the microscope attach plugins listen in 'config' immediately.
     """
-    def __init__(self, camera: StreamingCamera, stage: OpenFlexureStage):
+    def __init__(self, camera: StreamingCamera, stage: OpenFlexureStage, config: dict={}, attach_plugins: bool=True):
 
+        # Attach initial hardware (may be NoneTypes)
         self.attach(camera, stage)
+
+        # Store entire runtime-config
+        self.config = config
 
         # Create plugin mountpoint
         self.plugin = PluginMount(self)  #: :py:class:`openflexure_microscope.plugins.PluginMount`: Mounting point for all microscope plugins
+
+        # Attach plugins
+        if attach_plugins:
+            self.attach_plugins()
 
     def __enter__(self):
         """Create microscope on context enter."""
@@ -75,21 +83,36 @@ class Microscope(object):
         elif not self.stage:
             logging.info("Attached dummy stage.")
 
-    def find_plugins(self, plugin_paths=[], include_default=True):
+    def attach_plugin_maps(self, plugin_maps):
         """
-        Automatically search for plugins, and attach to self.
+        Attach plugins from a list of plugin map strings
 
         Args:
-            plugin_paths (list): List of strings of plugin directories.
-            include_default (bool): Also load plugins from the module default directory (DEFAULT_PLUGIN_PATH)
+            plugin_maps (list): List of strings of plugin maps.
         """
         logging.debug("Attaching plugins...")
-        plugins_list = search_plugin_dirs(plugin_paths, include_default=include_default)
 
-        for i in plugins_list:
-            module = load_plugin(i)
-            self.plugin.attach(module)
+        for plugin_map in plugin_maps:
+            self.plugin.attach(plugin_map)
         logging.debug("Plugins attached.")
+
+    def attach_plugins(self):
+        """
+        Automatically search for plugin maps in self.config, and attach.
+        """
+        if 'plugins' in self.config:
+            self.attach_plugin_maps(self.config['plugins'])
+        else:
+            logging.warning("No plugins specified in microscoperc.yaml. Skipping.")
+
+    def reload_plugins(self):
+        """
+        Empty the plugin mount and re-attach from self.config.
+        """
+        logging.info("Tearing down existing PluginMount...")
+        self.plugin = PluginMount(self)
+        logging.info("Repopulating PluginMount...")
+        self.attach_plugins()
 
     # Create unified state
     @property
