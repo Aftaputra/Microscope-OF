@@ -12,8 +12,3 @@ class FirstPlugin(MicroscopePlugin):
 
         response = "My parent camera is {}, and my parent stage is {}.".format(self.microscope.camera, self.microscope.stage)
         return response
-
-
-PLUGINS = {
-    'test1': FirstPlugin,
-}  #: dict: Dictionary describing the plugins. Keys are the names of the plugin's namescape, with a value corresponding to the class of that plugin.
