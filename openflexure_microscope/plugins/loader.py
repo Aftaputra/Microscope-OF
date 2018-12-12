@@ -1,125 +1,82 @@
 import importlib
 import os
-import warnings
+import inspect
 import logging
 
-from openflexure_microscope.config import USER_CONFIG_DIR
 
-MAIN_MODULE = '__init__'
-HERE = os.path.abspath(os.path.dirname(__file__))
-DEFAULT_PLUGIN_PATH = os.path.join(HERE, 'default')
-USER_PLUGIN_DIR = os.path.join(USER_CONFIG_DIR, "plugins")
-
-
-def search_plugin_dirs(plugin_paths, include_default=True):
-    """
-    Search through, and load from, a list of plugin directories.
-
-    Args:
-        plugin_paths (list): List of strings of plugin directories.
-        include_default (bool): Also load plugins from the module default directory (DEFAULT_PLUGIN_PATH, USER_PLUGIN_DIR)
-    """
-    global DEFAULT_PLUGIN_PATH, USER_PLUGIN_DIR
-
-    if not os.path.exists(USER_PLUGIN_DIR):  # If user config file already exists
-        os.makedirs(USER_PLUGIN_DIR)
-
-    if include_default:  # If including default plugins
-        plugin_paths.append(DEFAULT_PLUGIN_PATH)  # Add default directory to the search paths
-        plugin_paths.append(USER_PLUGIN_DIR)  # Add user directory to the search paths
-
-    logging.debug(plugin_paths)
-
-    plugins = []  # List of loaded plugins
-    for plugin_dir in plugin_paths:  # For each plugin directory
-        logging.debug("Searching {}".format(plugin_dir))
-        plugins.extend(find_plugins(plugin_dir))  # Find plugin folders, and load into list
-
-    return plugins
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 
-def find_plugins_legacy(plugin_dir):
-    """
-    Find all plugins residing within a directory
+def module_from_file(plugin_path):
+    # Expand environment variables in path string
+    plugin_path = os.path.expandvars(plugin_path)
+    # Expand user directory in path string
+    plugin_path = os.path.expanduser(plugin_path)
 
-    Args:
-        plugin_dir (str): String of directory to be searched
-    """
-    plugins = []
-    plugins_folders = os.listdir(plugin_dir)
+    # Check if the path is to a file
+    if not os.path.isfile(plugin_path):
+        logging.warning(bcolors.FAIL + "No valid plugin found at {}.".format(plugin_path) + bcolors.ENDC)
+        return None, None, None
 
-    loader_details = (
-        importlib.machinery.SourceFileLoader,
-        importlib.machinery.SOURCE_SUFFIXES
-    )
+    else:
+        # Get name of plugin from the file
+        plugin_name = os.path.splitext(os.path.basename(plugin_path))[0]
 
-    for i in plugins_folders:
-        plugin_folder = os.path.join(plugin_dir, i)
-        logging.info(plugin_folder)
+        plugin_spec = importlib.util.spec_from_file_location(plugin_name, plugin_path)
+        plugin_module = importlib.util.module_from_spec(plugin_spec)
 
-        if not os.path.isdir(plugin_folder):  # If plugin folder doesn't exist
-            continue  # Skip this iteration
-        if not MAIN_MODULE + '.py' in os.listdir(plugin_folder):  # If no __init__ file in plugin folder
-            continue  # Skip this iteration
-
-        module_spec = importlib.machinery.FileFinder(plugin_folder, loader_details).find_spec(MAIN_MODULE)
-
-        plugins.append(module_spec)
-    return plugins
+        return plugin_spec, plugin_module, plugin_name
 
 
-def find_plugins(plugin_dir):
-    """
-    Find all plugins residing within a directory
+def load_plugin_module(plugin_path):
+    # First, try importing from standard modules
+    try:
+        plugin_module = importlib.import_module(plugin_path)
+    except ModuleNotFoundError:
+        plugin_spec, plugin_module, plugin_name = module_from_file(plugin_path)
 
-    Args:
-        plugin_dir (str): String of directory to be searched
-    """
-    plugins = []
-    plugins_folders = os.listdir(plugin_dir)
+        # If a valid plugin was found
+        if plugin_spec and plugin_module:
+            # Execute the module, so we have access to it
+            plugin_spec.loader.exec_module(plugin_module)
+    else:
+        plugin_name = plugin_path.split('.')[-1]
 
-    loader_details = (
-        importlib.machinery.SourceFileLoader,
-        importlib.machinery.SOURCE_SUFFIXES
-    )
-
-    for i in plugins_folders:
-        plugin_folder = os.path.join(plugin_dir, i)
-        logging.info(plugin_folder)
-
-        if not os.path.isdir(plugin_folder):  # If plugin folder doesn't exist
-            continue  # Skip this iteration
-        if not MAIN_MODULE + '.py' in os.listdir(plugin_folder):  # If no __init__ file in plugin folder
-            continue  # Skip this iteration
-
-        module_spec = importlib.machinery.FileFinder(plugin_folder, loader_details).find_spec(MAIN_MODULE)
-
-        plugins.append(module_spec)
-    return plugins
+    return plugin_module, plugin_name
 
 
-def load_plugin(module_spec):
-    """
-    Load a source file from a given spec.
+def load_plugin_class(plugin_path, plugin_class_name):
+    plugin_module, plugin_name = load_plugin_module(plugin_path)
+    if plugin_module:
+        # Now try to extract the class
+        try:
+            plugin_class = getattr(plugin_module, plugin_class_name)
+        except AttributeError:
+            logging.warning(bcolors.FAIL + "Class {} does not exist in plugin {}. Skipping.".format(plugin_class_name, plugin_path) + bcolors.ENDC)
+            return None, None
+        else:
+            return plugin_class, plugin_name
+    else:
+        return None, None
 
-    Args:
-        module_spec: Module spec of module to be returned
-    """
-    module = importlib.util.module_from_spec(module_spec)
-    module_spec.loader.exec_module(module)
-    return module
 
+def class_from_map(plugin_map):
+    plugin_arr = plugin_map.split(':')
 
-def load_plugin_legacy(module_spec):
-    """
-    Load a source file from a given spec.
+    if not len(plugin_arr) == 2:
+        logging.warning(bcolors.WARNING + "Malformed plugin map {}. Skipping.".format(plugin_map) + bcolors.ENDC)
+        return None, None
+    else:
+        return load_plugin_class(*plugin_arr)
 
-    Args:
-        module_spec: Module spec of module to be returned
-    """
-    module = importlib.util.module_from_spec(module_spec)
-    module_spec.loader.exec_module(module)
-    return module
 
 class PluginMount(object):
     """
@@ -130,44 +87,45 @@ class PluginMount(object):
     """
     def __init__(self, parent):
         self.parent = parent
+        self.plugins = []
         print("Creating plugin mount")
 
-    def attach(self, plugin_module):
+    @property
+    def members(self):
+        plugin_array = []
+        for obj_name in dir(self):
+            if not obj_name == "plugins" and not obj_name[:2] == '__':
+                obj = getattr(self, obj_name)
+                if isinstance(obj, MicroscopePlugin):
+                    plugin_members = [member for member in inspect.getmembers(obj) if not member[0][:2] == '__']
+                    plugin_info = (obj_name, plugin_members)
+                    plugin_array.append(plugin_info)
+        return plugin_array
+
+    def attach(self, plugin_map):
         """
         Attach a MicroscopePlugin instance to the plugin mount.
 
         Args:
-            plugin_module: A loaded module to be attached. Module can be loaded using :py:meth:`openflexure_microscope.plugins.load_plugin`
+            plugin_map (str): A plugin map describing the file or module to load a MicroscopePlugin child from. Maps should be in the format 'module.to.load:ClassName' or '/path/to/file:ClassName'.
         """
-        print("LOADING MODULE {}".format(plugin_module.__name__))
+        plugin_class, plugin_name = class_from_map(plugin_map)
 
-        if hasattr(plugin_module, 'PLUGINS') and isinstance(plugin_module.PLUGINS, dict):
+        if plugin_class and plugin_name:
+            plugin_object = plugin_class()
 
-            for plugin_name, plugin_class in plugin_module.PLUGINS.items():
+            if hasattr(self, plugin_name):  # If a plugin with the same name is already attached.
+                logging.warning(bcolors.WARNING + "A plugin named {} has already been loaded. Skipping {}.".format(plugin_name, plugin_map) + bcolors.ENDC)
 
-                plugin_object = plugin_class()
-                if hasattr(self, plugin_name):
-                    warnings.warn("A plugin named {} has already been loaded. Skipping {}.".format(plugin_name, plugin_class))
-                else:
-                    setattr(self, plugin_name, plugin_object)
+            elif isinstance(plugin_object, MicroscopePlugin):  # If plugin_object is an instance of MicroscopePlugin
+                # Attach plugin_object to the plugin mount
+                setattr(self, plugin_name, plugin_object)
+                self.plugins.append((plugin_name, plugin_object))
 
-                    # Grant plugin access to the hardware
-                    assert(isinstance(plugin_object, MicroscopePlugin))
-                    plugin_object.microscope = self.parent
+                # Grant plugin access to the hardware
+                plugin_object.microscope = self.parent
 
-                    print("Adding plugin: {}".format(plugin_name))
-        else:
-            warnings.warn("No valid PLUGINS dictionary found in {}".format(plugin_module))
-
-
-class PluginGroup():
-    """
-    A class used to group plugin methods within a PluginMount.
-
-    Currently useless aside from creating a namespace in which plugin methods will reside.
-    """
-    def __init__(self):
-        pass
+                logging.info(bcolors.OKGREEN + "Plugin {} loaded as {}.".format(plugin_map, plugin_name) + bcolors.ENDC)
 
 
 class MicroscopePlugin():
@@ -177,5 +135,8 @@ class MicroscopePlugin():
     Initially only defines an empty object for microscope. All plugins
     must be an instance of this class to successfully attach to PluginMount.
     """
+
+    api_views = {}  # Initially empty dictionary of API views associated with the plugin
+
     def __init__(self):
         self.microscope = None  #: :py:class:`openflexure_microscope.microscope.Microscope`: Microscope object
