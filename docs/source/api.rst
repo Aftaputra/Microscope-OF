@@ -3,14 +3,14 @@ REST API
 
 Summary
 -------
-.. qrefflask:: openflexure_microscope.api.v1:app
+.. qrefflask:: openflexure_microscope.api.app:app
    :undoc-endpoints: index
    :undoc-static:
    :endpoints:
 
 Details
 -----------
-.. autoflask:: openflexure_microscope.api.v1:app
+.. autoflask:: openflexure_microscope.api.app:app
    :undoc-endpoints: index
    :undoc-static:
    :endpoints:

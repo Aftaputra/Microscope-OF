@@ -10,6 +10,7 @@ numpy_resolution: [1312, 976]
 # Capture quality
 jpeg_quality: 75
 
+# Parameters specific to PiCamera objects
 picamera_params:
   exposure_mode: 'off'
   awb_mode: 'off'
@@ -18,3 +19,8 @@ picamera_params:
   shutter_speed: 30000
   saturation: 0
   led: false
+
+# Default plugins
+plugins:
+  - openflexure_microscope.plugins.default:Plugin
+  - openflexure_microscope.plugins.test_plugin:FirstPlugin
