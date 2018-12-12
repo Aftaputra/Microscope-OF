@@ -30,7 +30,8 @@ import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 # Create a dummy microscope object, with no hardware attachments
-api_microscope = Microscope(None, None)
+openflexurerc = config.load_config()  # Load default user config
+api_microscope = Microscope(None, None, config=openflexurerc)
 logging.debug("Created an empty microscope in global.")
 
 
@@ -66,9 +67,8 @@ for code in default_exceptions:
 @app.before_first_request
 def attach_microscope():
     # Create the microscope object globally (common to all spawned server threads)
-    global api_microscope
+    global api_microscope, openflexurerc
     logging.debug("First request made. Populating microscope with hardware...")
-    openflexurerc = config.load_config()  # Load default user config
 
     logging.debug("Creating camera object...")
     api_camera = StreamingCamera(config=openflexurerc)
@@ -80,9 +80,6 @@ def attach_microscope():
         api_camera,
         api_stage
     )
-
-    logging.debug("Attaching plugins to microscope...")
-    api_microscope.find_plugins()  # Automatically find microscope plugins
 
     logging.debug("Microscope successfully attached!")
 
