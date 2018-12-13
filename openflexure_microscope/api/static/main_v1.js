@@ -44,6 +44,14 @@ window.onload = function() {
     getCaptures()
 }
 
+
+// Cosmetic methods
+function toggleClassToDiv(div_id, class_name) {
+    document.getElementById(div_id).classList.toggle(class_name)
+}
+
+// Microscope methods
+
 function deleteCapture(capture_id) {
     function deleteCaptureCallback(response, status) {
         console.log(status);

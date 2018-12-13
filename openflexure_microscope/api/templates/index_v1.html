@@ -5,11 +5,13 @@
     <link rel= "stylesheet" type= "text/css" href="{{url_for('static', filename='style_v1.css')}}">
     <script type="text/javascript" src="{{url_for('static', filename='main_v1.js')}}"></script>
 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimal-ui">
+
   </head>
   <body>
 
     <div class="row">
-      <div class="column left">
+      <div class="column left" id="left-sb">
         <h2>Settings</h2>
 
         <h3>Position</h3>
@@ -71,7 +73,21 @@
 
       </div>
 
-      <div class="column right">
+      <div class="column middle">
+        <div id="left-sb-btn" class="sb-btn">
+          <button type="button" onclick="toggleClassToDiv('left-sb', 'hidden');">
+              <img src="{{url_for('static', filename='icons/baseline-settings-20px.svg')}}">
+          </button>
+        </div>
+        <div id="right-sb-btn" class="sb-btn">
+            <button type="button" onclick="toggleClassToDiv('right-sb', 'hidden');">
+                <img src="{{url_for('static', filename='icons/baseline-camera_alt-24px.svg')}}">
+            </button>
+        </div>
+        <img src="/api/v1/stream" ondblclick="clickHotspotImage(event);">
+      </div>
+
+      <div class="column right" id="right-sb">
         <h2>Capture</h2>
         Filename: <br>
         <input type="text" id="captureFilenameInput" placeholder="Leave blank for default"><br>
@@ -88,10 +104,6 @@
         <button type="button" onclick="deleteAllCaptures();">Delete all</button>
         <div id="captures"></div>
         
-      </div>
-
-      <div class="column middle">
-        <img src="/api/v1/stream" ondblclick="clickHotspotImage(event);">
       </div>
 
     </div>
