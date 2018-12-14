@@ -7,4 +7,5 @@ numpy
 Pillow
 RPi.GPIO
 
+gunicorn
 sphinxcontrib-httpdomain
