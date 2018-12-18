@@ -180,12 +180,12 @@ class CaptureAPI(MicroscopeView):
         # TODO: Tidy up adding URI to metadata
         # Add API routes to returned metadata
         uri_dict = {
-            'uri': {'metadata': '{}/{}'.format(url_for(self), capture_id)}
+            'uri': {'metadata': '{}'.format(url_for('.capture', capture_id=capture_obj.id))}
         }
 
         # If available, also add download link
         if capture_metadata['available']:
-            uri_dict['uri']['download'] = '{}/{}/download/{}'.format(url_for(self), capture_obj.id, capture_obj.filename)
+            uri_dict['uri']['download'] = '{}download/{}'.format(url_for('.capture', capture_id=capture_obj.id), capture_obj.filename)
 
         capture_metadata.update(uri_dict)
 
