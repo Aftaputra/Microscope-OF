@@ -6,8 +6,8 @@ import shutil
 HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_CONFIG_PATH = os.path.join(HERE, 'microscoperc.default.yaml')
 
-USER_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".openflexure")  #: str: Default path of the user-config directory, containing runtime-config and calibration files.
-USER_CONFIG_FILE = os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")  #: str: Default path of the user microscoperc.yaml runtime-config file.
+USER_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".openflexure")  #: str: Default path of the user-config directory, containing runtime-config and calibration files. Obtained from ``os.path.join(os.path.expanduser("~"), ".openflexure")``.
+USER_CONFIG_FILE = os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")  #: str: Default path of the user microscoperc.yaml runtime-config file. Obtained from ``os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")``
 
 TYPES = {
     'stream_resolution': tuple,
