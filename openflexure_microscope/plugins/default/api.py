@@ -12,19 +12,9 @@ class IdentifyAPI(MicroscopeViewPlugin):
     """
     def get(self):
         """
-        Method to call when an HTTP GET request is made.
+        Default plugin to return a plaintext representation of the camera and stage objects.
+
+        .. :quickref: Default plugin; Show representation of camera and stage objects.
         """
         data = self.microscope.plugin.default.identify()  # Call a method from our plugin, using the full route
         return Response(escape(data))
-
-
-class HelloWorldAPI(MicroscopeViewPlugin):
-    """
-    An even simpler example API plugin, which just returns static data without using the microscope.
-    """
-    def get(self):
-        """
-        Method to call when an HTTP GET request is made.
-        """
-        data = self.plugin.hello_world()  # Call a method from our plugin, using the MicroscopeViewPlugin.plugin shortcut
-        return Response(data)

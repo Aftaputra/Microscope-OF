@@ -40,7 +40,7 @@ def load_plugin_module(plugin_path):
     # First, try importing from standard modules
     try:
         plugin_module = importlib.import_module(plugin_path)
-    except ModuleNotFoundError:
+    except ImportError:
         plugin_spec, plugin_module, plugin_name = module_from_file(plugin_path)
 
         # If a valid plugin was found
