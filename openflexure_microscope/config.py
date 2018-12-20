@@ -6,8 +6,8 @@ import shutil
 HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_CONFIG_PATH = os.path.join(HERE, 'microscoperc.default.yaml')
 
-USER_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".openflexure")
-USER_CONFIG_FILE = os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")
+USER_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".openflexure")  #: str: Default path of the user-config directory, containing runtime-config and calibration files.
+USER_CONFIG_FILE = os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")  #: str: Default path of the user microscoperc.yaml runtime-config file.
 
 TYPES = {
     'stream_resolution': tuple,
@@ -17,11 +17,16 @@ TYPES = {
     'jpeg_quality': int,
     'analog_gain': float,
     'digital_gain': float,
-}
+}  #: dict: Dictionary of expected types for common config parameters. Used by ``convert_config()``.
 
 
 def convert_config(config: dict) -> dict:
-    """Convert datatype of config based on type dictionary."""
+    """
+    Convert datatype of top-level config parameters based on the global TYPES dictionary.
+    
+    Args:
+        config (dict): Dictionary representation of a loaded runtime-config.
+    """
     global TYPES
 
     for key in config:
@@ -33,7 +38,7 @@ def convert_config(config: dict) -> dict:
 
 def load_config(config_path: str=None) -> dict:
     """
-    Open openflexurerc.yaml file and write to the microscope devices.
+    Open openflexurerc.yaml runtime-config file and write to the microscope devices.
 
     Args:
         config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
