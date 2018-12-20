@@ -1,6 +1,9 @@
-Plugin mounts
-===============
-.. automodule:: openflexure_microscope.plugins
+Plugin classes
+========================
+.. autoclass:: openflexure_microscope.plugins.MicroscopePlugin
+    :members:
+
+.. autoclass:: openflexure_microscope.api.v1.views.MicroscopeViewPlugin
     :members:
 
 Default plugins

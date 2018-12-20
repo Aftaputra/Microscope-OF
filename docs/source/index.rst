@@ -5,6 +5,8 @@ Welcome to OpenFlexure Microscope Software's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   quickstart.rst
+   config.rst
    microscope.rst
    camera.rst
    plugins.rst
