@@ -1,11 +1,27 @@
-Plugin System
-=============
+Plugins
+=======================================================
 
-.. automodule:: openflexure_microscope.plugins
-    :members:
+Introduction
+------------
 
-Example Plugin
---------------
+Single-file plugins
++++++++++++++++++++
 
-.. automodule:: openflexure_microscope.plugins.default.test_plugin
-    :members:
+Package plugins
++++++++++++++++
+
+Loading plugins with microscoperc.yaml
+++++++++++++++++++++++++++++++++++++++
+
+Microscope plugin structure
+---------------------------
+
+Adding web API routes
+---------------------
+
+Mounting and built-ins
+----------------------
+.. toctree::
+   :maxdepth: 2
+
+   pluginmounts.rst
