@@ -14,17 +14,19 @@ This module is currently in very early development, and is perhaps best installe
 # Developer usage examples
 ## Running the web API in Gunicorn (port 5000)
 - Ensure Gunicorn is installed to the current environment (`pip install gunicorn`)
-- Run `gunicorn --threads 5 --workers 1 --bind 0.0.0.0:5000 openflexure_microscope.api.v1:app`
+- Run `gunicorn --threads 5 --workers 1 --bind 0.0.0.0:5000 openflexure_microscope.api.app:app`
     - Alternatively, run `source start_interface` from the openflexure-microscope-software directory.
 
 ## Running tests through the PTVSD remote debugger (port 3000)
 - From the openflexure-microscope-software directory, run `python3 -m ptvsd --host 0.0.0.0 --port 3000 --wait tests/test_camera.py`
 
-## Example API request (through CURL) (Deprecated. Needs to be updated to API v1.)
-- Capture a still image from the video port
-    - `curl --header "Content-Type: application/json" --request POST --data '{"use_video_port": true}' raspberrypi.local:5000/capture`
-- Get the image for download from a browser
-    - `http://raspberrypi.local:5000/capture?download=true`
+# REST(ish) API
+The Flask app serves a (reasonably) RESTful web API. For most user-facing functionality, this is the preferred interface. 
+API documentation, with example requests, is available [here](https://openflexure-microscope-software.readthedocs.io/en/latest/api.html).
+
+# Microscope plugins
+The Microscope module, and Flask app, both support plugins for extending lower-level functionality not well suited to web API calls. 
+This plugin system is still in fairly early development, and is not yet properly documented. The current documentation can be found [here](https://openflexure-microscope-software.readthedocs.io/en/latest/plugins.html).
 
 # Credits
 ## Video streaming
