@@ -1,0 +1,23 @@
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+
+[tool.poetry]
+name = "openflexure-microscope-software"
+version = "1.0.0"
+description = "Python module, and Flask-based web API, to run the OpenFlexure Microscope."
+authors = ["Joel Collins <j.collins@bath.ac.uk>"]
+license = "GPL-3.0"
+
+[tool.poetry.dependencies]
+python = "^3.5"
+Flask = "^1.0"
+pyyaml = "^3.13"
+numpy = "^1.15"
+Pillow = "^5.4"
+# RPi.GPIO = "^0.6.5"  # To be added on pi (poetry add RPi.GPIO)
+# picamera = "^1.13"  # To be added on pi (poetry add picamera). Need to check lens shading compatibility.
+# openflexure-stage = ">0.1.1"  # Can't resolve until updated on PyPI
+
+[tool.poetry.dev-dependencies]
+sphinxcontrib-httpdomain = "^1.7"
