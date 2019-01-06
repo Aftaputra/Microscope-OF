@@ -16,7 +16,7 @@ pyyaml = "^3.13"
 numpy = "^1.15"
 Pillow = "^5.4"
 # RPi.GPIO = "^0.6.5"  # To be added on pi (poetry add RPi.GPIO)
-# picamera = "^1.13"  # To be added on pi (poetry add picamera). Need to check lens shading compatibility.
+# picamera = "^1.13"  # To be added on pi (poetry add picamera). Lens shading only available from >=1.14
 # openflexure-stage = ">0.1.1"  # Can't resolve until updated on PyPI
 
 [tool.poetry.dev-dependencies]
