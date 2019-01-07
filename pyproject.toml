@@ -10,7 +10,7 @@ description = "Python module, and Flask-based web API, to run the OpenFlexure Mi
 authors = [
     "Joel Collins <j.collins@bath.ac.uk>",
     "Richard Bowman <r.w.bowman@bath.ac.uk",
-    "Julian Stirling <js3214@bath.ac.uk>"
+    "Julian Stirling <j.stirling@bath.ac.uk>"
 ]
 
 readme = 'README.md'
