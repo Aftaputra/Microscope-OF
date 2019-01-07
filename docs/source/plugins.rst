@@ -59,8 +59,11 @@ For example, a simple plugin file named `myplugin.py`, may look like:
             Demonstrate access to Microscope.camera, and Microscope.stage
             """
 
-            response = "My parent camera is {}, and my parent stage is {}.".format(self.microscope.camera, 
-                                                                                   self.microscope.stage)
+            parent_camera = self.microscope.camera
+            parent_stage = self.microscope.stage
+
+            response = "My parent camera is {}, and my parent stage is {}.".format(parent_camera, 
+                                                                                   parent_stage)
             return response
 
         def hello_world(self):
