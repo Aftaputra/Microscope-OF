@@ -1,3 +1,5 @@
+openflexure-microscope==1.0.0b0
+
 alabaster==0.7.12
 Babel==2.6.0
 certifi==2018.11.29
