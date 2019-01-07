@@ -3,10 +3,23 @@ requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry]
-name = "openflexure-microscope-software"
-version = "1.0.0"
+name = "openflexure_microscope"
+version = "1.0.0-beta"
 description = "Python module, and Flask-based web API, to run the OpenFlexure Microscope."
-authors = ["Joel Collins <j.collins@bath.ac.uk>"]
+
+authors = [
+    "Joel Collins <j.collins@bath.ac.uk>",
+    "Richard Bowman <r.w.bowman@bath.ac.uk",
+    "Julian Stirling <js3214@bath.ac.uk>"
+]
+
+readme = 'README.md'
+
+repository = "https://gitlab.com/openflexure/openflexure-microscope-software"
+homepage = "https://www.openflexure.org"
+
+keywords = ['raspberry pi', 'arduino', 'microscope']
+
 license = "GPL-3.0"
 
 [tool.poetry.dependencies]
@@ -15,9 +28,9 @@ Flask = "^1.0"
 pyyaml = "^3.13"
 numpy = "^1.15"
 Pillow = "^5.4"
-# RPi.GPIO = "^0.6.5"  # To be added on pi (poetry add RPi.GPIO)
-# picamera = "^1.13"  # To be added on pi (poetry add picamera). Lens shading only available from >=1.14
-# openflexure-stage = ">0.1.1"  # Can't resolve until updated on PyPI
+"RPi.GPIO" = "^0.6.5"
+picamera = "^1.13"  # Lens shading requires >1.14 or RWB fork, lens-shading branch.
+openflexure-stage = "^0.2.1"
 
 [tool.poetry.dev-dependencies]
 sphinxcontrib-httpdomain = "^1.7"
