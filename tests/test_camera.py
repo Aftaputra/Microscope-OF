@@ -144,7 +144,7 @@ class TestUnencodedMethods(unittest.TestCase):
                 camera.wait_for_camera()
 
                 # Capture RGB array
-                yuv = camera.array(
+                yuv = camera.yuv(
                     use_video_port=use_video_port,
                     resize=resize)
 
@@ -156,9 +156,9 @@ class TestUnencodedMethods(unittest.TestCase):
                     dims = resize
                 else:
                     if use_video_port:
-                        dims = camera.settings['video_resolution']
+                        dims = camera.config['video_resolution']
                     else:
-                        dims = camera.settings['numpy_resolution']
+                        dims = camera.config['numpy_resolution']
 
                 # Ensure array shape matches expected dimensions
                 self.assertTrue(yuv.shape == (dims[1], dims[0], 3))
@@ -177,7 +177,6 @@ class TestUnencodedMethods(unittest.TestCase):
 
                 # Capture RGB array
                 rgb = camera.array(
-                    rgb=True,
                     use_video_port=use_video_port,
                     resize=resize)
 
@@ -189,9 +188,9 @@ class TestUnencodedMethods(unittest.TestCase):
                     dims = resize
                 else:
                     if use_video_port:
-                        dims = camera.settings['video_resolution']
+                        dims = camera.config['video_resolution']
                     else:
-                        dims = camera.settings['numpy_resolution']
+                        dims = camera.config['numpy_resolution']
 
                 # Ensure array shape matches expected dimensions
                 self.assertTrue(rgb.shape == (dims[1], dims[0], 3))
@@ -286,8 +285,8 @@ if __name__ == '__main__':
     camera = StreamingCamera()
 
     suites = [
-        unittest.TestLoader().loadTestsFromTestCase(TestCaptureMethods),
-        #unittest.TestLoader().loadTestsFromTestCase(TestUnencodedMethods),
+        #unittest.TestLoader().loadTestsFromTestCase(TestCaptureMethods),
+        unittest.TestLoader().loadTestsFromTestCase(TestUnencodedMethods),
         #unittest.TestLoader().loadTestsFromTestCase(TestThreadStarting),
         #unittest.TestLoader().loadTestsFromTestCase(TestRecordMethods),
     ]
