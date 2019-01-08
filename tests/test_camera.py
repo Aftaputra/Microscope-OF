@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from openflexure_microscope.camera.pi import StreamingCamera, CaptureObject
+
 import os
 import io
 import sys
@@ -14,16 +15,6 @@ from pprint import pprint
 
 import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-
-success_string = """
-            /O
-           | |
-      _____) \\
-     (__0)    \\______
-    (____0)
-    (____0)        EVERYTHING IS OK!
-     (__o)___________
-    """
 
 
 class TestCaptureMethods(unittest.TestCase):
@@ -291,27 +282,15 @@ class TestThreadStarting(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    camera = StreamingCamera()
+    with StreamingCamera() as camera:
 
-    suites = [
-        unittest.TestLoader().loadTestsFromTestCase(TestCaptureMethods),
-        unittest.TestLoader().loadTestsFromTestCase(TestUnencodedMethods),
-        unittest.TestLoader().loadTestsFromTestCase(TestThreadStarting),
-        unittest.TestLoader().loadTestsFromTestCase(TestRecordMethods),
-    ]
+        suites = [
+            unittest.TestLoader().loadTestsFromTestCase(TestCaptureMethods),
+            unittest.TestLoader().loadTestsFromTestCase(TestUnencodedMethods),
+            unittest.TestLoader().loadTestsFromTestCase(TestThreadStarting),
+            unittest.TestLoader().loadTestsFromTestCase(TestRecordMethods),
+        ]
 
-    alltests = unittest.TestSuite(suites)
+        alltests = unittest.TestSuite(suites)
 
-    result = unittest.TextTestRunner(verbosity=2).run(alltests)
-
-    print("Objects created during tests:")
-    # Show us what was captured
-    for im in camera.images:
-        pprint(im.metadata)
-    for im in camera.videos:
-        pprint(im.metadata)
-
-    if result.wasSuccessful():
-        print(success_string)
-
-    camera.close()
+        result = unittest.TextTestRunner(verbosity=2).run(alltests)

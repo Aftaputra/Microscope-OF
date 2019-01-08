@@ -10,15 +10,12 @@ import unittest
 import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
-success_string = """
-            /O
-           | |
-      _____) \\
-     (__0)    \\______
-    (____0)
-    (____0)        EVERYTHING IS OK!
-     (__o)___________
-    """
+OPENFLEXURERC = {
+    'plugins': [
+        'openflexure_microscope.plugins.testing:Plugin'
+    ]
+}
+
 
 class TestPluginMethods(unittest.TestCase):
 
@@ -40,25 +37,13 @@ class TestPluginMethods(unittest.TestCase):
 
 if __name__ == '__main__':
 
-    openflexurerc = {
-        'plugins': [
-            'openflexure_microscope.plugins.testing:Plugin'
-        ]
-    }
+        with Microscope(StreamingCamera(), OpenFlexureStage("/dev/ttyUSB0"), OPENFLEXURERC) as microscope:
 
-    with StreamingCamera() as camera, OpenFlexureStage("/dev/ttyUSB0") as stage:
+            suites = [
+                unittest.TestLoader().loadTestsFromTestCase(TestPluginMethods),
+            ]
 
-        microscope = Microscope(camera, stage, openflexurerc)
+            alltests = unittest.TestSuite(suites)
 
-        suites = [
-            unittest.TestLoader().loadTestsFromTestCase(TestPluginMethods),
-        ]
+            result = unittest.TextTestRunner(verbosity=2).run(alltests)
 
-        alltests = unittest.TestSuite(suites)
-
-        result = unittest.TextTestRunner(verbosity=2).run(alltests)
-
-        if result.wasSuccessful():
-            print(success_string)
-
-    microscope.close()

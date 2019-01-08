@@ -263,7 +263,7 @@ class StreamingCamera(BaseCamera):
         for i in range(2):
             if np.abs(centre[i] - 0.5) + size/2 > 0.5:
                 centre[i] = 0.5 + (1.0 - size)/2 * np.sign(centre[i]-0.5)
-        print("setting zoom, centre {}, size {}".format(centre, size))
+        logging.info("setting zoom, centre {}, size {}".format(centre, size))
         new_fov = (centre[0] - size/2, centre[1] - size/2, size, size)
         self.camera.zoom = new_fov
 
@@ -328,7 +328,7 @@ class StreamingCamera(BaseCamera):
             return output
 
         else:
-            print(
+            logging.error(
                 "Cannot start a new recording\
                 until the current recording has stopped.")
             return None

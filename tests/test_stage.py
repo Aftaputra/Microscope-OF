@@ -18,16 +18,6 @@ from pprint import pprint
 import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
-success_string = """
-            /O
-           | |
-      _____) \\
-     (__0)    \\______
-    (____0)
-    (____0)        EVERYTHING IS OK!
-     (__o)___________
-    """
-
 
 class TestMicroscope(unittest.TestCase):
 
@@ -35,16 +25,16 @@ class TestMicroscope(unittest.TestCase):
         move_distance = 500
         for axis in range(3):
             for direction in [1, -1]:
-                pos_i = microscope.stage.position
+                pos_i = stage.position
                 logging.debug(pos_i)
 
                 logging.info("Moving axis {} by {}".format(axis, move_distance*direction))
                 move = [0, 0, 0]
                 move[axis] = move_distance*direction
 
-                microscope.stage.move_rel(move)
+                stage.move_rel(move)
 
-                pos_f = microscope.stage.position
+                pos_f = stage.position
                 diff = np.subtract(pos_f, pos_i)
                 logging.debug("{} > {}".format(pos_i, pos_f))
 
@@ -52,9 +42,7 @@ class TestMicroscope(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    with StreamingCamera() as camera, OpenFlexureStage("/dev/ttyUSB0") as stage:
-
-        microscope = Microscope(camera, stage)
+    with OpenFlexureStage("/dev/ttyUSB0") as stage:
 
         suites = [
             unittest.TestLoader().loadTestsFromTestCase(TestMicroscope),
@@ -63,8 +51,3 @@ if __name__ == '__main__':
         alltests = unittest.TestSuite(suites)
 
         result = unittest.TextTestRunner(verbosity=2).run(alltests)
-
-        if result.wasSuccessful():
-            print(success_string)
-
-    microscope.close()
