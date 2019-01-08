@@ -40,14 +40,16 @@ class StreamObject(object):
         # Create file name. Default to UUID
         if not filename:
             filename = self.id
-        self.build_file_path(filename, folder, self.format)
+        self.filename = filename
+        self.folder = folder
+        self.build_file_path(self.filename, self.folder, self.format)
 
         # Byte stream properties
         self.stream = io.BytesIO()  # Byte stream that data will be written to
 
         # Set default write target
         self.write_to_file = write_to_file
-        if self.write_to_file is False:
+        if not self.write_to_file:
             logging.debug("Target for {} set to 'stream'".format(self.id))
             self.target = self.stream
         else:
@@ -69,6 +71,11 @@ class StreamObject(object):
             Stored files will be cleaned up automatically.".format(self.id))
         self.keep_on_disk = False  # Flag file to be removed on close.
         self.context_manager = True  # Used in metadata
+
+        # Re-generate file name for temp file
+        logging.info("Re-generating file name for temp file")
+        self.build_file_path(self.filename, self.folder, self.format)
+
         return self
 
     def __exit__(self, *args):

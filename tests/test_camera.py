@@ -89,9 +89,9 @@ class TestCaptureMethods(unittest.TestCase):
                         dims = resize
                     else:
                         if use_video_port:
-                            dims = camera.settings['video_resolution']
+                            dims = camera.config['video_resolution']
                         else:
-                            dims = camera.settings['image_resolution']
+                            dims = camera.config['image_resolution']
 
                     # Ensure PIL image size matches expected size
                     print(image.size, dims)
@@ -287,9 +287,9 @@ if __name__ == '__main__':
 
     suites = [
         unittest.TestLoader().loadTestsFromTestCase(TestCaptureMethods),
-        unittest.TestLoader().loadTestsFromTestCase(TestUnencodedMethods),
-        unittest.TestLoader().loadTestsFromTestCase(TestThreadStarting),
-        unittest.TestLoader().loadTestsFromTestCase(TestRecordMethods),
+        #unittest.TestLoader().loadTestsFromTestCase(TestUnencodedMethods),
+        #unittest.TestLoader().loadTestsFromTestCase(TestThreadStarting),
+        #unittest.TestLoader().loadTestsFromTestCase(TestRecordMethods),
     ]
 
     alltests = unittest.TestSuite(suites)
