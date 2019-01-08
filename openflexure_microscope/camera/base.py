@@ -15,7 +15,7 @@ except ImportError:
     except ImportError:
         from _thread import get_ident
 
-from .capture import StreamObject, BASE_CAPTURE_PATH
+from .capture import CaptureObject, BASE_CAPTURE_PATH
 
 
 def last_entry(object_list: list):
@@ -222,19 +222,62 @@ class BaseCamera(object):
         target_list.append(stream_object)
         return stream_object
 
-    def new_image(self, stream_object, shunt_others=True):
-        """Add a new capture to the image list, and shunt all others."""
-        return self.new_stream_object(
-            stream_object,
-            self.images,
-            shunt_others=shunt_others)
+    def shunt_captures(self, target_list: list):
+        for obj in target_list:  # For each older capture
+            obj.shunt()  # Shunt capture from memory to storage
 
-    def new_video(self, stream_object, shunt_others=True):
+    def new_image(
+            self,
+            write_to_file: bool=False,
+            keep_on_disk: bool=True,
+            filename: str=None,
+            fmt: str='jpeg',
+            shunt_others: bool=True):
+
+        """Add a new capture to the image list, and shunt all others."""
+
+        if not filename:
+            filename = self.generate_basename(self.images)
+            logging.debug(filename)
+
+        output = CaptureObject(
+            write_to_file=write_to_file,
+            keep_on_disk=keep_on_disk,
+            filename=filename,
+            folder=self.paths['image'],
+            fmt=fmt)
+
+        self.shunt_captures(self.images)
+        self.images.append(output)
+
+        return output
+
+    def new_video(
+            self,
+            write_to_file: bool=True,
+            keep_on_disk: bool=True,
+            filename: str=None,
+            fmt: str='h264',
+            quality: int=15,
+            shunt_others: bool=True):
+
         """Add a new capture to the video list, and shunt all others."""
-        return self.new_stream_object(
-            stream_object,
-            self.videos,
-            shunt_others=shunt_others)
+
+        if not filename:
+            filename = self.generate_basename(self.videos)
+            logging.debug(filename)
+
+        output = CaptureObject(
+            write_to_file=write_to_file,
+            keep_on_disk=keep_on_disk,
+            filename=filename,
+            folder=self.paths['video'],
+            fmt=fmt)
+
+        self.shunt_captures(self.videos)
+        self.videos.append(output)
+
+        return output
 
     # INTELLIGENTLY GENERATE FILENAMES
     def generate_basename(self, obj_list: list) -> str:

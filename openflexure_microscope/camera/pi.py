@@ -47,7 +47,7 @@ from typing import Tuple
 # Threading
 import threading
 
-from .base import BaseCamera, StreamObject
+from .base import BaseCamera, CaptureObject
 # Richard's fix gain
 from .set_picamera_gain import set_analog_gain, set_digital_gain
 
@@ -283,52 +283,40 @@ class StreamingCamera(BaseCamera):
 
     def start_recording(
             self,
-            target=None,
-            write_to_file: bool=True,
-            filename: str=None,
+            output,
             fmt: str='h264',
             quality: int=15):
         """Start recording.
 
-        Start a new video recording, writing to a target object.
+        Start a new video recording, writing to a output object.
 
         Args:
-            target (str/BytesIO): Target object to write bytes to.
+            output (CaptureObject): Output object to write data bytes to.
             write_to_file (bool/NoneType): Should the StreamObject write to a file?
             filename (str): Name of the stored file.  Defaults to timestamp.
             fmt (str): Format of the capture.
 
         Returns:
-            target_object (str/BytesIO): Target object.
+            output_object (str/BytesIO): Target object.
 
         """
         # Start recording method only if a current recording is not running
         if not self.state['record_active']:
 
-            # If no target is specified, store to StreamingCamera
-            if not target:
-                # Create a new video and add to the video list
-                target_obj = self.new_video(
-                    StreamObject(
-                        write_to_file=write_to_file,
-                        filename=filename,
-                        folder=self.paths['video'],
-                        fmt=fmt)
-                    )
-
+            # If output is a StreamObject
+            if isinstance(output, CaptureObject):
                 # Lock the StreamObject while recording
-                target_obj.lock()
-                # Store to the StreamObject target
-                target = target_obj.target
-
+                output.lock()
+                # Set target to capture stream
+                output_stream = output.stream
             else:
-                target_obj = target
+                output_stream = output
 
             # Start the camera video recording on port 2
-            logging.info("Recording to {}".format(target))
+            logging.info("Recording to {}".format(output))
 
             self.camera.start_recording(
-                target,
+                output_stream,
                 format=fmt,
                 splitter_port=2,
                 resize=self.config['video_resolution'],
@@ -337,7 +325,7 @@ class StreamingCamera(BaseCamera):
             # Update state dictionary
             self.state['record_active'] = True
 
-            return target_obj
+            return output
 
         else:
             print(
@@ -404,7 +392,7 @@ class StreamingCamera(BaseCamera):
 
     def capture(
             self,
-            target=None,
+            output,
             write_to_file: bool=False,
             keep_on_disk: bool=True,
             use_video_port: bool=False,
@@ -418,7 +406,7 @@ class StreamingCamera(BaseCamera):
         Target object can be overridden for development purposes.
 
         Args:
-            target (str/BytesIO): Target object to write data bytes to.
+            output (CaptureObject/str): Output object to write data bytes to.
             write_to_file (bool): Should the StreamObject write to a file, instead of BytesIO stream?
             use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
             filename (str): Name of the stored file. Defaults to timestamp.
@@ -426,29 +414,14 @@ class StreamingCamera(BaseCamera):
             resize ((int, int)): Resize the captured image.
         """
 
-        # If no filename is specified, build a non-clashing one
-        if not filename:
-            filename = self.generate_basename(self.images)
-            logging.debug(filename)
-
-        # If no target is specified, store to StreamingCamera
-        if not target:
-            # TODO: Handle clashing file names here instead of in capture method.
-            # Create a new image and add to the image list
-            target_obj = self.new_image(
-                StreamObject(
-                    write_to_file=write_to_file,
-                    keep_on_disk=keep_on_disk,
-                    filename=filename,
-                    folder=self.paths['image'],
-                    fmt=fmt)
-                )
-            target = target_obj.target  # Store to the StreamObject BytesIO  
-
+        # If output is a StreamObject
+        if isinstance(output, CaptureObject):
+            # Set target to capture stream
+            output_stream = output.stream
         else:
-            target_obj = target
+            output_stream = output
 
-        logging.info("Capturing to {}".format(target))
+        logging.info("Capturing to {}".format(output))
 
         if not use_video_port:
 
@@ -456,7 +429,7 @@ class StreamingCamera(BaseCamera):
             self.pause_stream()
 
             self.camera.capture(
-                target,
+                output_stream,
                 format=fmt,
                 quality=100,
                 resize=resize,
@@ -467,14 +440,14 @@ class StreamingCamera(BaseCamera):
 
         else:
             self.camera.capture(
-                target,
+                output_stream,
                 format=fmt,
                 quality=100,
                 resize=resize,
                 bayer=False,
                 use_video_port=True)
 
-        return target_obj
+        return output
 
     def yuv(
             self,

@@ -12,7 +12,7 @@ thumbnail_size = (60, 60)
 BASE_CAPTURE_PATH = os.path.join(os.path.expanduser('~'), 'micrographs')
 TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, 'tmp')
 
-class StreamObject(object):
+class CaptureObject(object):
     """
     StreamObject used to store and process capture data, and metadata.
 
@@ -26,6 +26,7 @@ class StreamObject(object):
             folder: str='',
             fmt: str='') -> None:
         """Create a new StreamObject, to manage capture data."""
+        
         # Store a nice ID
         self.id = uuid.uuid4().hex
         logging.info("Created StreamObject {}".format(self.id))
@@ -37,24 +38,18 @@ class StreamObject(object):
         # Keep on disk after close by default
         self.keep_on_disk = keep_on_disk
 
+        # Explicitally state if capture should be written to a file, not a bytestream
+        self.write_to_file = write_to_file
+
         # Create file name. Default to UUID
         if not filename:
             filename = self.id
-        self.filename = filename
+
+        self.filename = "{}.{}".format(filename, fmt)
         self.folder = folder
-        self.build_file_path(self.filename, self.folder, self.format)
 
-        # Byte stream properties
-        self.stream = io.BytesIO()  # Byte stream that data will be written to
-
-        # Set default write target
-        self.write_to_file = write_to_file
-        if not self.write_to_file:
-            logging.debug("Target for {} set to 'stream'".format(self.id))
-            self.target = self.stream
-        else:
-            logging.debug("Target for {} set to 'file'".format(self.id))
-            self.target = self.file
+        # Initialise the capture stream
+        self.initialise_capture()
 
         # Log if created by context manager
         self.context_manager = False
@@ -67,14 +62,12 @@ class StreamObject(object):
 
     def __enter__(self):
         """Create StreamObject in context, to auto-clean disk data."""
-        logging.debug("Entering context for {}.\
-            Stored files will be cleaned up automatically.".format(self.id))
+        logging.debug("Entering context for {}. Stored files will be cleaned up automatically regardless of location.".format(self.id))
         self.keep_on_disk = False  # Flag file to be removed on close.
         self.context_manager = True  # Used in metadata
 
-        # Re-generate file name for temp file
-        logging.info("Re-generating file name for temp file")
-        self.build_file_path(self.filename, self.folder, self.format)
+        logging.info("Rebuilding as a temporary capture...")
+        self.initialise_capture()
 
         return self
 
@@ -83,11 +76,24 @@ class StreamObject(object):
         logging.info("Cleaning up {}".format(self.id))
         self.close()
 
+    def initialise_capture(self):
+        self.build_file_path(self.filename, self.folder)
+
+        # Byte bytestream properties
+        self.bytestream = io.BytesIO()  # Byte bytestream that data will be written to
+
+        # Set default write target
+        if not self.write_to_file:
+            logging.debug("Target for {} set to 'bytestream'".format(self.id))
+            self.stream = self.bytestream
+        else:
+            logging.debug("Target for {} set to 'file'".format(self.id))
+            self.stream = self.file
+
     def build_file_path(
             self,
             filename: str,
-            folder: str,
-            fmt: str):
+            folder: str):
         """
         Construct a full file path, based on filename, folder, and file format.
 
@@ -95,9 +101,7 @@ class StreamObject(object):
         """
         global TEMP_CAPTURE_PATH
 
-        file_given_name = "{}.{}".format(filename, fmt)  # Given file name. May include a relative path
-
-        self.file = os.path.join(folder, file_given_name)  # Full file name by joining given folder to given name
+        self.file = os.path.join(folder, filename)  # Full file name by joining given folder to given name
 
         self.split_file_path(self.file)  # Split file path into folder, filename, and basename
 
@@ -116,6 +120,11 @@ class StreamObject(object):
         if not os.path.exists(self.filefolder):
             os.makedirs(self.filefolder)
 
+        logging.debug(self.file)
+        logging.debug(self.filename)
+        logging.debug(self.basename)
+        logging.debug(self.filefolder)
+
     def split_file_path(self, filepath):
         """Takes a full file path, and splits it into separated class properties."""
         self.filefolder, self.filename = os.path.split(filepath)  # Split the full file path into a folder and a filename
@@ -131,14 +140,14 @@ class StreamObject(object):
 
     @property
     def stream_exists(self, auto_rewind=True) -> bool:
-        """Check if BytesIO stream is empty."""
+        """Check if BytesIO bytestream is empty."""
         if auto_rewind:
-            self.stream.seek(0)  # Rewind the data bytes for reading
-        if self.stream.getvalue():  # If data stream contains data
-            self.stream.seek(0)  # Rewind the data bytes for reading
+            self.bytestream.seek(0)  # Rewind the data bytes for reading
+        if self.bytestream.getvalue():  # If data bytestream contains data
+            self.bytestream.seek(0)  # Rewind the data bytes for reading
             return True
         else:
-            self.stream.seek(0)  # Rewind the data bytes for reading
+            self.bytestream.seek(0)  # Rewind the data bytes for reading
             return False
 
     @property
@@ -161,11 +170,11 @@ class StreamObject(object):
             'time': self.timestring
         }
 
-        # Check stream
+        # Check bytestream
         if self.stream_exists:
-            d['stream'] = True
+            d['bytestream'] = True
         else:
-            d['stream'] = False
+            d['bytestream'] = False
 
         # Combined availability of data
         if self.stream_exists or self.file_exists:
@@ -182,19 +191,19 @@ class StreamObject(object):
     @property
     def data(self) -> io.BytesIO:
         """Return a byte string of the capture data."""
-        self.stream.seek(0)  # Rewind the data bytes for reading
+        self.bytestream.seek(0)  # Rewind the data bytes for reading
 
-        if self.stream_exists:  # If data stream contains data
-            # Create a copy of the stream bytes
-            data = io.BytesIO(self.stream.getbuffer())
+        if self.stream_exists:  # If data bytestream contains data
+            # Create a copy of the bytestream bytes
+            data = io.BytesIO(self.bytestream.getbuffer())
 
-        else:  # If data stream is empty
+        else:  # If data bytestream is empty
             if self.file_exists:  # If data file exists
                 logging.info("Opening from file {}".format(self.file))
                 with open(self.file, 'rb') as f:
                     d = io.BytesIO(f.read())  # Load bytes from file
-                d.seek(0)  # Rewind loaded stream
-                # Create a copy of the stream bytes
+                d.seek(0)  # Rewind loaded bytestream
+                # Create a copy of the bytestream bytes
                 data = io.BytesIO(d.getbuffer())
             else:
                 data = None
@@ -226,27 +235,27 @@ class StreamObject(object):
         return data
 
     def load_file(self) -> bool:
-        """Load data stored on disk to the in-memory stream."""
+        """Load data stored on disk to the in-memory bytestream."""
         if self.file_exists:  # If data file exists
             with open(self.file, 'rb') as f:
-                self.stream = io.BytesIO(f.read())  # Load bytes from file
-            self.stream.seek(0)  # Rewind data bytes again
+                self.bytestream = io.BytesIO(f.read())  # Load bytes from file
+            self.bytestream.seek(0)  # Rewind data bytes again
             return True
         else:
             return False
 
     def save_file(self) -> bool:
-        """Write the StreamObjects stream to a file."""
+        """Write the StreamObjects bytestream to a file."""
         if not self.keep_on_disk:  # If capture is currently temporary
-            self.load_file()  # Load data from tmp file into stream, if tmp file exists
+            self.load_file()  # Load data from tmp file into bytestream, if tmp file exists
             self.keep_on_disk = True  # Flag as kept on disk
             self.file = self.file_notmp  # Reset file path to non-temporary path
             self.split_file_path(self.file)  # Set split properties based on new path
             logging.info("Moved temporary file out to {}".format(self.file))
 
-        if self.stream_exists:  # If there's a stream to save
+        if self.stream_exists:  # If there's a bytestream to save
             with open(self.file, 'ab') as f:  # Load file as bytes
-                logging.debug("Writing stream to file {}".format(self.file))
+                logging.debug("Writing bytestream to file {}".format(self.file))
                 f.seek(0, 0)  # Seek to the start of the file
                 f.write(self.binary)  # Write data bytes to file
             return True
@@ -254,8 +263,8 @@ class StreamObject(object):
             return False
 
     def delete_stream(self):
-        """Clear the BytesIO stream of the StreamObject."""
-        self.stream = io.BytesIO()
+        """Clear the BytesIO bytestream of the StreamObject."""
+        self.bytestream = io.BytesIO()
 
     def delete_file(self) -> bool:
         """If the StreamObject has been saved, delete the file."""
@@ -275,11 +284,11 @@ class StreamObject(object):
     def shunt(self):
         """Demote the StreamObject from being stored in memory."""
         if not self.file_exists:  # If file doesn't already exist
-            self.save_file()  # Save stream to disk, if it exists
-        self.delete_stream()  # Delete the stream from memory
+            self.save_file()  # Save bytestream to disk, if it exists
+        self.delete_stream()  # Delete the bytestream from memory
 
     def close(self):
-        """Both clear the stream, and delete any associated on-disk data."""
+        """Both clear the bytestream, and delete any associated on-disk data."""
         logging.info("Closing {}".format(self.id))
         self.delete_stream()
         if not self.keep_on_disk:

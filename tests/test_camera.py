@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from openflexure_microscope.camera.pi import StreamingCamera, StreamObject
+from openflexure_microscope.camera.pi import StreamingCamera, CaptureObject
 import os
 import io
 import sys
@@ -39,47 +39,50 @@ class TestCaptureMethods(unittest.TestCase):
                 camera.wait_for_camera()
 
                 # Capture to a context (auto-deletes files when done)
-                with camera.capture(
-                        write_to_file=False,
-                        use_video_port=use_video_port,
-                        resize=resize) as stream:
+                with camera.new_image(write_to_file=False) as output:
+
+                    camera.capture(
+                        output, 
+                        use_video_port=use_video_port, 
+                        resize=resize
+                    ) 
 
                     # Ensure file deletion fails and returns False
-                    self.assertFalse(stream.delete_file())
+                    self.assertFalse(output.delete_file())
                     # Ensure capture not stored to file
-                    self.assertFalse(os.path.isfile(stream.file))
+                    self.assertFalse(os.path.isfile(output.file))
 
                     # BEFORE DELETE: Ensure StreamObject 'stream' has
                     # a valid BytesIO object and byte string
                     self.assertTrue(isinstance(
-                        stream.data,
+                        output.data,
                         io.IOBase
                         ))
                     self.assertTrue(isinstance(
-                        stream.binary,
+                        output.binary,
                         (bytes, bytearray)
                         ))
 
                     # Save capture to file
-                    stream.save_file()
+                    output.save_file()
                     # Check file got saved
-                    self.assertTrue(os.path.isfile(stream.file))
+                    self.assertTrue(os.path.isfile(output.file))
 
                     # Delete file
-                    stream.delete_file()
+                    output.delete_file()
                     # Check file got deleted
-                    self.assertFalse(os.path.isfile(stream.file))
+                    self.assertFalse(os.path.isfile(output.file))
 
                     # AFTER DELETE: Ensure StreamObject 'stream' has
                     # a valid BytesIO object and byte string
-                    self.assertTrue(isinstance(stream.data, io.IOBase))
+                    self.assertTrue(isinstance(output.data, io.IOBase))
                     self.assertTrue(isinstance(
-                        stream.binary,
+                        output.binary,
                         (bytes, bytearray)
                         ))
 
                     # Create a PIL image from stream
-                    image = Image.open(stream.data)
+                    image = Image.open(output.data)
 
                     # Ensure a valid PIL image was created
                     self.assertTrue(isinstance(image, Image.Image))
@@ -107,26 +110,26 @@ class TestCaptureMethods(unittest.TestCase):
                 camera.wait_for_camera()
 
                 # Capture
-                stream = camera.capture(
-                    write_to_file=True,
+                output = camera.capture(
+                    camera.new_image(write_to_file=True),
                     use_video_port=use_video_port,
                     resize=resize)
 
                 # Check file got saved
-                self.assertTrue(os.path.isfile(stream.file))
-                statinfo = os.stat(stream.file)
+                self.assertTrue(os.path.isfile(output.file))
+                statinfo = os.stat(output.file)
                 self.assertTrue(statinfo.st_size > 0)
 
                 # Ensure StreamObject 'stream' has
                 # a valid BytesIO object and byte string
-                self.assertTrue(isinstance(stream.data, io.IOBase))
-                self.assertTrue(isinstance(stream.binary, (bytes, bytearray)))
+                self.assertTrue(isinstance(output.data, io.IOBase))
+                self.assertTrue(isinstance(output.binary, (bytes, bytearray)))
 
                 # Ensure file deletion completes and returns True
-                self.assertTrue(stream.delete_file())
+                self.assertTrue(output.delete_file())
 
                 # Check file got deleted
-                self.assertFalse(os.path.isfile(stream.file))
+                self.assertFalse(os.path.isfile(output.file))
 
 
 class TestUnencodedMethods(unittest.TestCase):
@@ -204,12 +207,17 @@ class TestRecordMethods(unittest.TestCase):
 
         for write_to_file in [True, False, None]:
 
+            logging.debug("\nWRITE TO FILE: {}".format(write_to_file))
+
             # Wait for camera
             camera.wait_for_camera()
 
-            # Start recording
-            with camera.start_recording(
-                    write_to_file=write_to_file) as stream:
+            with camera.new_video(
+                write_to_file=write_to_file
+            ) as output:
+
+                # Start recording
+                camera.start_recording(output)
 
                 # Record for 2 seconds
                 time.sleep(2)
@@ -217,16 +225,16 @@ class TestRecordMethods(unittest.TestCase):
                 camera.stop_recording()
 
                 # Check stream
-                self.assertTrue(isinstance(stream.data, io.IOBase))
-                self.assertTrue(isinstance(stream.binary, (bytes, bytearray)))
+                self.assertTrue(isinstance(output.data, io.IOBase))
+                self.assertTrue(isinstance(output.binary, (bytes, bytearray)))
 
                 # Check file
                 if write_to_file:
-                    statinfo = os.stat(stream.file)
+                    statinfo = os.stat(output.file)
                     self.assertTrue(statinfo.st_size > 0)
 
                 # Log path
-                temp_path = stream.file
+                temp_path = output.file
 
             # Check file got deleted on __exit__
             self.assertFalse(os.path.isfile(temp_path))
@@ -241,21 +249,22 @@ class TestRecordMethods(unittest.TestCase):
         camera.wait_for_camera()
 
         # Start recording
-        stream = camera.start_recording()
+        output = camera.start_recording(camera.new_video())
+
         # Record for 2 seconds
         time.sleep(2)
         # Stop recording
         camera.stop_recording()
 
         # Check file
-        statinfo = os.stat(stream.file)
+        statinfo = os.stat(output.file)
         self.assertTrue(statinfo.st_size > 0)
 
         # Ensure file deletion completes and returns True
-        self.assertTrue(stream.delete_file())
+        self.assertTrue(output.delete_file())
 
         # Check file got deleted
-        self.assertFalse(os.path.isfile(stream.file))
+        self.assertFalse(os.path.isfile(output.file))
 
 
 class TestThreadStarting(unittest.TestCase):
@@ -285,10 +294,10 @@ if __name__ == '__main__':
     camera = StreamingCamera()
 
     suites = [
-        #unittest.TestLoader().loadTestsFromTestCase(TestCaptureMethods),
+        unittest.TestLoader().loadTestsFromTestCase(TestCaptureMethods),
         unittest.TestLoader().loadTestsFromTestCase(TestUnencodedMethods),
-        #unittest.TestLoader().loadTestsFromTestCase(TestThreadStarting),
-        #unittest.TestLoader().loadTestsFromTestCase(TestRecordMethods),
+        unittest.TestLoader().loadTestsFromTestCase(TestThreadStarting),
+        unittest.TestLoader().loadTestsFromTestCase(TestRecordMethods),
     ]
 
     alltests = unittest.TestSuite(suites)
