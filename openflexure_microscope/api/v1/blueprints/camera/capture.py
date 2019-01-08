@@ -111,14 +111,17 @@ class ListAPI(MicroscopeView):
             else:
                 abort(400)
 
-        capture_obj = self.microscope.camera.capture(
-            write_to_file=True,  # Always write data to disk when using API
-            keep_on_disk=keep_on_disk,
+        output = self.microscope.camera.new_image(
+            write_to_file=True, 
+            keep_on_disk=keep_on_disk, 
+            filename=filename)
+
+        self.microscope.camera.capture(
+            output,
             use_video_port=use_video_port,
-            filename=filename,
             resize=resize)
 
-        return jsonify(capture_obj.metadata)
+        return jsonify(output.metadata)
 
 
 class CaptureAPI(MicroscopeView):
