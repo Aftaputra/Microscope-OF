@@ -393,11 +393,8 @@ class StreamingCamera(BaseCamera):
     def capture(
             self,
             output,
-            write_to_file: bool=False,
-            keep_on_disk: bool=True,
-            use_video_port: bool=False,
-            filename: str=None,
             fmt: str='jpeg',
+            use_video_port: bool=False,
             resize: Tuple[int, int]=None):
         """
         Capture a still image to a StreamObject.
@@ -407,9 +404,7 @@ class StreamingCamera(BaseCamera):
 
         Args:
             output (CaptureObject/str): Output object to write data bytes to.
-            write_to_file (bool): Should the StreamObject write to a file, instead of BytesIO stream?
             use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
-            filename (str): Name of the stored file. Defaults to timestamp.
             fmt (str): Format of the capture.
             resize ((int, int)): Resize the captured image.
         """
