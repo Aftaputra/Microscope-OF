@@ -4,19 +4,61 @@ from openflexure_stage import OpenFlexureStage
 from openflexure_microscope import Microscope, config
 
 import atexit
+
+import unittest
+
 import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
+success_string = """
+            /O
+           | |
+      _____) \\
+     (__0)    \\______
+    (____0)
+    (____0)        EVERYTHING IS OK!
+     (__o)___________
+    """
+
+class TestPluginMethods(unittest.TestCase):
+
+    def test_testplugin_load(self):
+        plugin_arr = microscope.plugin.plugins
+
+        plugin_names = [plugin[0] for plugin in plugin_arr]
+
+        self.assertTrue('testing' in plugin_names)
+
+    def test_camera_access(self):
+        identify = microscope.plugin.testing.identify()
+        self.assertTrue(identify[0] is microscope.camera)
+
+    def test_stage_access(self):
+        identify = microscope.plugin.testing.identify()
+        self.assertTrue(identify[1] is microscope.stage)
+
+
 if __name__ == '__main__':
-    openflexurerc = config.load_config()
 
-    print(openflexurerc)
+    openflexurerc = {
+        'plugins': [
+            'openflexure_microscope.plugins.testing:Plugin'
+        ]
+    }
 
-    microscope = Microscope(StreamingCamera(config=openflexurerc), OpenFlexureStage("/dev/ttyUSB0"), config=openflexurerc)
+    with StreamingCamera() as camera, OpenFlexureStage("/dev/ttyUSB0") as stage:
 
-    print(microscope.plugin.plugins)
+        microscope = Microscope(camera, stage, openflexurerc)
 
-    # Check that default tets plugins have loaded
-    print(microscope.plugin.default.identify())
+        suites = [
+            unittest.TestLoader().loadTestsFromTestCase(TestPluginMethods),
+        ]
+
+        alltests = unittest.TestSuite(suites)
+
+        result = unittest.TextTestRunner(verbosity=2).run(alltests)
+
+        if result.wasSuccessful():
+            print(success_string)
 
     microscope.close()
