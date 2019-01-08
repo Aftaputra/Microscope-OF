@@ -291,7 +291,7 @@ class StreamingCamera(BaseCamera):
         Start a new video recording, writing to a output object.
 
         Args:
-            output (CaptureObject): Output object to write data bytes to.
+            output (CaptureObject/str): Output object to write data bytes to.
             write_to_file (bool/NoneType): Should the StreamObject write to a file?
             filename (str): Name of the stored file.  Defaults to timestamp.
             fmt (str): Format of the capture.
