@@ -418,6 +418,8 @@ class StreamingCamera(BaseCamera):
 
         logging.info("Capturing to {}".format(output))
 
+
+        # TODO: Do we really always want bayer data for full captures?
         if not use_video_port:
 
             # Pause video splitter port 1

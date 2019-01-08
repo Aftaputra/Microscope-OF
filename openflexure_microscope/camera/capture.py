@@ -26,7 +26,7 @@ class CaptureObject(object):
             folder: str='',
             fmt: str='') -> None:
         """Create a new StreamObject, to manage capture data."""
-        
+
         # Store a nice ID
         self.id = uuid.uuid4().hex
         logging.info("Created StreamObject {}".format(self.id))

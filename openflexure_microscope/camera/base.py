@@ -234,7 +234,15 @@ class BaseCamera(object):
             fmt: str='jpeg',
             shunt_others: bool=True):
 
-        """Add a new capture to the image list, and shunt all others."""
+        """
+        Create a new image capture object. Adds to the image list, and shunt all others.
+
+        Args:
+            write_to_file (bool): Should the StreamObject write to a file, or an in-memory byte stream.
+            keep_on_disk (bool): Should the data be kept on disk after session ends. Creating the capture with a content manager sets this to false.
+            filename (str): Name of the stored file. Defaults to timestamp.
+            fmt (str): Format of the capture.
+        """
 
         if not filename:
             filename = self.generate_basename(self.images)
@@ -258,10 +266,17 @@ class BaseCamera(object):
             keep_on_disk: bool=True,
             filename: str=None,
             fmt: str='h264',
-            quality: int=15,
             shunt_others: bool=True):
 
-        """Add a new capture to the video list, and shunt all others."""
+        """
+        Create a new video capture object. Adds to the image list, and shunt all others.
+
+        Args:
+            write_to_file (bool): Should the StreamObject write to a file, or an in-memory byte stream.
+            keep_on_disk (bool): Should the data be kept on disk after session ends. Creating the capture with a content manager sets this to false.
+            filename (str): Name of the stored file. Defaults to timestamp.
+            fmt (str): Format of the capture.
+        """
 
         if not filename:
             filename = self.generate_basename(self.videos)
