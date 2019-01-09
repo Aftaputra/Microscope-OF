@@ -47,21 +47,6 @@ def axes_to_array(coordinate_dictionary, axis_keys=['x', 'y', 'z'], base_array=N
     return base_array
 
 
-def parse_payload(request):
-    """Convert request to JSON. Will eventually handle error-checking."""
-    # TODO: Handle invalid JSON payloads
-    state = request.get_json()
-    return state
-
-
-def get_from_payload(payload, key, default=None):
-    """Check if a key exists in a JSON/dictionary payload, and returns it."""
-    if key in payload:
-        return payload[key]
-    else:
-        return default
-
-
 def gen(camera):
     """Video streaming generator function."""
     while True:
