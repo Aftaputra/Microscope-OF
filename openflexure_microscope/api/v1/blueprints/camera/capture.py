@@ -1,4 +1,4 @@
-from openflexure_microscope.api.utilities import parse_payload, get_from_payload, gen, get_bool
+from openflexure_microscope.api.utilities import gen, get_bool, JsonPayload
 from openflexure_microscope.api.v1.views import MicroscopeView
 
 from flask import Response, Blueprint, jsonify, request, abort, url_for, redirect, send_file
@@ -97,14 +97,13 @@ class ListAPI(MicroscopeView):
         :<header Content-Type: application/json
         :status 200: capture created
         """
-        state = parse_payload(request)
-        logging.info(state)
+        payload = JsonPayload(request)
 
-        filename = get_from_payload(state, 'filename', default=None)
-        keep_on_disk = bool(get_from_payload(state, 'keep_on_disk', default=True))
-        use_video_port = bool(get_from_payload(state, 'use_video_port', default=False))
+        filename = payload.param('filename')
+        keep_on_disk = payload.param('keep_on_disk', default=True, convert=bool)
+        use_video_port = payload.param('use_video_port', default=False, convert=bool)
 
-        resize = get_from_payload(state, 'size', default=None)
+        resize = payload.param('size', default=None)
         if resize:
             if ('width' in resize) and ('height' in resize):
                 resize = (int(resize['width']), int(resize['height']))  # Convert dict to tuple
@@ -112,8 +111,8 @@ class ListAPI(MicroscopeView):
                 abort(400)
 
         output = self.microscope.camera.new_image(
-            write_to_file=True, 
-            keep_on_disk=keep_on_disk, 
+            write_to_file=True,
+            keep_on_disk=keep_on_disk,
             filename=filename)
 
         self.microscope.camera.capture(

@@ -1,4 +1,4 @@
-from openflexure_microscope.api.utilities import gen, axes_to_array, JsonResponse
+from openflexure_microscope.api.utilities import gen, axes_to_array, JsonPayload
 from openflexure_microscope.api.v1.views import MicroscopeView
 
 from flask import Response, Blueprint, jsonify, request
@@ -56,22 +56,22 @@ class PositionAPI(MicroscopeView):
 
         """
         # Create response object
-        response = JsonResponse(request)
-        logging.debug(response.json)
+        payload = JsonPayload(request)
+        logging.debug(payload.json)
 
         # Construct position array
         position = [0, 0, 0]
 
         # Handle absolute positioning (calculate a relative move from current position and target)
-        if response.param('absolute') is True:
-            target_position = axes_to_array(response.json, ['x', 'y', 'z'])
+        if payload.param('absolute') is True:
+            target_position = axes_to_array(payload.json, ['x', 'y', 'z'])
             logging.debug("TARGET: {}".format(target_position))
             position = [target_position[i] - self.microscope.stage.position[i] for i in range(3)]
             logging.debug("DELTA: {}".format(position))
 
         else:
             # Get coordinates from payload
-            position = axes_to_array(response.json, ['x', 'y', 'z'], [0, 0, 0])
+            position = axes_to_array(payload.json, ['x', 'y', 'z'], [0, 0, 0])
 
         logging.debug(position)
 
@@ -128,13 +128,13 @@ class StageParamsAPI(MicroscopeView):
 
         """
         # Get payload
-        response = JsonResponse(request)
-        logging.debug(response.json)
+        payload = JsonPayload(request)
+        logging.debug(payload.json)
 
         # BACKLASH
-        if response.param('backlash'):
+        if payload.param('backlash'):
             # Construct backlash array
-            backlash = axes_to_array(response.param('backlash'), ['x', 'y', 'z'], [0, 0, 0])
+            backlash = axes_to_array(payload.param('backlash'), ['x', 'y', 'z'], [0, 0, 0])
             logging.debug("BACKLASH: {}".format(backlash))
 
             # Apply backlash

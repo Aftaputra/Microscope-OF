@@ -18,7 +18,7 @@ from flask import (
 from flask.views import MethodView
 from werkzeug.exceptions import default_exceptions
 
-from openflexure_microscope.api.utilities import parse_payload, get_from_payload, gen, get_bool, list_routes
+from openflexure_microscope.api.utilities import list_routes
 
 from openflexure_microscope import Microscope, config
 from openflexure_microscope.camera.pi import StreamingCamera
