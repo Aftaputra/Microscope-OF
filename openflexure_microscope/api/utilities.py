@@ -8,12 +8,19 @@ class JsonPayload:
         Object to wrap up simple functionality for parsing a JSON response.
         """
         # Try to load as json
-        self.json = request.get_json()
+        self.json = request.get_json()  #: dict: Dictionary representation of request JSON
         # Store raw response data
-        self.data = request.get_data()
+        self.data = request.get_data()  #: str: String representation of request data
 
     def param(self, key, default=None, convert=None):
-        """Check if a key exists in a JSON/dictionary payload, and returns it."""
+        """
+        Check if a key exists in a JSON/dictionary payload, and returns it.
+
+        Args:
+            key (str): JSON key to look for
+            default: Value to return if no matching key-value pair is found.
+            convert: Converter function. By passing a type, the value will be converted to that type. **Use with caution!**
+        """
         # If no JSON payload exists, return early
         if not self.json:
             return None
