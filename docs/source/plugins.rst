@@ -93,6 +93,28 @@ For example, your ``api_views`` dictionary may look like:
 
 Here, ``MyRouteAPI`` is a web API plugin class, subclassing :py:class:`openflexure_microscope.api.v1.views.MicroscopeViewPlugin`. If your plugin package were named ``mypluginpackage``, an API route would be automatically added at ``/api/v1/plugin/mypluginpackage/myplugin``.
 
+Parsing JSON from HTTP POST requests
+++++++++++++++++++++++++++++++++++++
+To ease obtaining values from a JSON payload attached to an HTTP POST request, you can use the :py:class:`openflexure_microscope.api.utilities.JsonPayload` class. This allows parameters to be extracted by their key, with a default value supplied to avoid errors associated with nonexistent keys. Additionally, a converter function may be passed, used in the following examples to convert the type of a value. In principle, however, you can pass any single-argument function and it will apply that function to the value, if it exists.
+
+.. code-block:: python
+
+    ...
+    class MyRouteAPI(MicroscopeViewPlugin):
+
+        def post(self):
+            # Get payload JSON from request
+            payload = JsonPayload(request)
+
+            # Try to find value associated with 'my_string' key.
+            # If that key doesn't exist in the payload, return '' instead.
+            # If a value does exist, convert it to a string, regardless of its original type.
+            new_plugin_string = payload.param('my_string', default='', convert=str)
+            ...
+
+For more details, see the documentation for :py:class:`openflexure_microscope.api.utilities.JsonPayload`.
+
+
 The MicroscopeViewPlugin class
 ++++++++++++++++++++++++++++++
 
@@ -113,8 +135,8 @@ Each HTTP method maps to a function with the same name, in lowercase. For exampl
 
         def post(self):
             # Get payload JSON, and extract a specific value
-            state = parse_payload(request)
-            my_payload_value = get_from_payload(state, 'my_payload_key')
+            payload = JsonPayload(request)
+            my_payload_value = payload.param('my_payload_key')
             ...
 
 Accessing the microscope
@@ -140,7 +162,7 @@ Example plugin
 
     from openflexure_microscope.plugins import MicroscopePlugin
     from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
-    from openflexure_microscope.api.utilities import parse_payload, get_from_payload
+    from openflexure_microscope.api.utilities import JsonPayload
     
     from flask import request, Response, escape
 
@@ -211,11 +233,11 @@ Example plugin
             Method to call when an HTTP POST request is made. 
             Assumes request will include a JSON payload.
             """
-            # Get payload JSON as a dictionary
-            state = parse_payload(request)
+            # Get payload JSON
+            payload = JsonPayload(request)
 
-            # Extract a value from the JSON key 'plugin_string'. If no value is given, default to None
-            new_plugin_string = get_from_payload(state, 'plugin_string', default=None)
+            # Extract a value from the JSON key 'plugin_string', and convert to a string. If no value is given, default to empty.
+            new_plugin_string = payload.param('plugin_string', default='', convert=str)
 
             if new_plugin_string:  # If not None or empty
                 # Set microscope attribute to the specified string
