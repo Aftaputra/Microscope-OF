@@ -1,4 +1,4 @@
-from openflexure_microscope.api.utilities import parse_payload, get_from_payload, gen, get_bool
+from openflexure_microscope.api.utilities import parse_payload, get_from_payload, gen, get_bool, axes_to_array, JsonResponse
 from openflexure_microscope.api.v1.views import MicroscopeView
 
 from flask import Response, Blueprint, jsonify, request
@@ -55,25 +55,23 @@ class PositionAPI(MicroscopeView):
         :<json int z: z steps
 
         """
-        # Get payload
-        state = parse_payload(request)
-        logging.debug(state)
+        # Create response object
+        response = JsonResponse(request)
+        logging.debug(response.json)
 
         # Construct position array
         position = [0, 0, 0]
 
-        # Handle absolute positioning
-        if 'absolute' in state and state['absolute'] is True:
-            # Get coordinates from payload
-            for axis, key in enumerate(['x', 'y', 'z']):
-                if key in state:
-                    position[axis] = int(state[key]-self.microscope.stage.position[axis])
+        # Handle absolute positioning (calculate a relative move from current position and target)
+        if response.param('absolute') is True:
+            target_position = axes_to_array(response.json, ['x', 'y', 'z'])
+            logging.debug("TARGET: {}".format(target_position))
+            position = [target_position[i] - self.microscope.stage.position[i] for i in range(3)]
+            logging.debug("DELTA: {}".format(position))
 
         else:
             # Get coordinates from payload
-            for axis, key in enumerate(['x', 'y', 'z']):
-                if key in state:
-                    position[axis] = int(state[key])
+            position = axes_to_array(response.json, ['x', 'y', 'z'], [0, 0, 0])
 
         logging.debug(position)
 
@@ -130,18 +128,14 @@ class StageParamsAPI(MicroscopeView):
 
         """
         # Get payload
-        state = parse_payload(request)
-        logging.debug(state)
+        response = JsonResponse(request)
+        logging.debug(response.json)
 
         # BACKLASH
-        if 'backlash' in state:
+        if response.param('backlash'):
             # Construct backlash array
-            backlash = [0, 0, 0]
-
-            # Get backlash coordinates from payload
-            for axis, key in enumerate(['x', 'y', 'z']):
-                if key in state['backlash']:
-                    backlash[axis] = int(state['backlash'][key])
+            backlash = axes_to_array(response.param('backlash'), ['x', 'y', 'z'], [0, 0, 0])
+            logging.debug("BACKLASH: {}".format(backlash))
 
             # Apply backlash
             self.microscope.stage.backlash = backlash
