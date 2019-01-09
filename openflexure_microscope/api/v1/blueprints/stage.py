@@ -77,17 +77,6 @@ class PositionAPI(MicroscopeView):
 
         logging.debug(position)
 
-        # Safeguard to prevent moving to an absolute position beyond a fixed limit
-        if 'force' not in state or state['force'] is False:  # Allow for override
-            # TODO: Make travel_limit a property of the stage or microscope
-            # TODO: Make travel_limit a 3-axis list
-            travel_limit = 20000 
-            for axis, pos in enumerate(position):
-                if abs(pos) > travel_limit:
-                    # Respond with 400 Bad Request
-                    response = {'error': 'Cannot move to absolute position beyond the safeguard limit.'}
-                    return jsonify(response), 400
-
         self.microscope.stage.move_rel(position)
 
         return jsonify(self.microscope.state['stage']['position'])
