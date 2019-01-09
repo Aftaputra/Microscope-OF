@@ -1,4 +1,46 @@
 import pprint
+import copy
+
+
+class JsonResponse:
+    def __init__(self, request):
+        """
+        Object to wrap up simple functionality for parsing a JSON response.
+        """
+        # Try to load as json
+        self.json = request.get_json()
+        # Store raw response data
+        self.data = request.get_data()
+
+    def param(self, key, default=None):
+        """Check if a key exists in a JSON/dictionary payload, and returns it."""
+        # If no JSON payload exists, return early
+        if not self.json:
+            return None
+
+        if key in self.json:
+            return self.json[key]
+        else:
+            return default
+
+
+def axes_to_array(coordinate_dictionary, axis_keys=['x', 'y', 'z'], base_array=None):
+    """Takes key-value pairs of a JSON value, and maps onto an array"""
+    # If no base array is given
+    if not base_array:
+        # Create an array of zeros
+        base_array = [0]*len(axis_keys)
+    else:
+        # Create a copy of the passed base_array
+        base_array = copy.copy(base_array)
+
+    # Do the mapping
+    for axis, key in enumerate(axis_keys):
+        if key in coordinate_dictionary:
+            base_array[axis] = coordinate_dictionary[key]
+
+    return base_array
+
 
 def parse_payload(request):
     """Convert request to JSON. Will eventually handle error-checking."""
