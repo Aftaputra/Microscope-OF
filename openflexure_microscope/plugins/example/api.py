@@ -1,4 +1,4 @@
-from openflexure_microscope.api.utilities import parse_payload, get_from_payload
+from openflexure_microscope.api.utilities import JsonPayload
 from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
 
 from flask import request, Response, escape
@@ -41,13 +41,13 @@ class HelloWorldAPI(MicroscopeViewPlugin):
         Assumes request will include a JSON payload.
         """
         # Get payload JSON as a dictionary
-        state = parse_payload(request)
+        payload = JsonPayload(request)
 
         # Extract a value from the JSON key 'plugin_string'. If no value is given, default to None
-        new_plugin_string = get_from_payload(state, 'plugin_string', default=None)
+        new_plugin_string = payload.param('plugin_string')
 
         if new_plugin_string:  # If not None or empty
             # Set microscope attribute to the specified string
-            self.microscope.plugin_string = new_plugin_string  
+            self.microscope.plugin_string = new_plugin_string
 
         return Response(self.microscope.plugin_string)
