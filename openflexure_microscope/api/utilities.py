@@ -2,7 +2,7 @@ import pprint
 import copy
 
 
-class JsonResponse:
+class JsonPayload:
     def __init__(self, request):
         """
         Object to wrap up simple functionality for parsing a JSON response.
@@ -12,16 +12,21 @@ class JsonResponse:
         # Store raw response data
         self.data = request.get_data()
 
-    def param(self, key, default=None):
+    def param(self, key, default=None, convert=None):
         """Check if a key exists in a JSON/dictionary payload, and returns it."""
         # If no JSON payload exists, return early
         if not self.json:
             return None
 
         if key in self.json:
-            return self.json[key]
+            val = self.json[key]
         else:
-            return default
+            val = default
+
+        if convert:
+            val = convert(val)
+
+        return val
 
 
 def axes_to_array(coordinate_dictionary, axis_keys=['x', 'y', 'z'], base_array=None):
