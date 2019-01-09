@@ -112,7 +112,8 @@ To ease obtaining values from a JSON payload attached to an HTTP POST request, y
             new_plugin_string = payload.param('my_string', default='', convert=str)
             ...
 
-For more details, see the documentation for :py:class:`openflexure_microscope.api.utilities.JsonPayload`.
+.. autoclass: openflexure_microscope.api.utilities.JsonPayload
+    :members:
 
 
 The MicroscopeViewPlugin class
