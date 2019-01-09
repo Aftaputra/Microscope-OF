@@ -15,9 +15,11 @@ def construct_blueprint(microscope_obj, plugin_paths=[], include_default=True):
     # For each plugin attached to the microscope object
     for plugin_name, plugin_obj in microscope_obj.plugin.plugins:
 
-        if hasattr(plugin_obj, 'api_views') and isinstance(plugin_obj.api_views, dict):  # If plugin contains valid endpoints
+        # If plugin contains valid endpoints
+        if hasattr(plugin_obj, 'api_views') and isinstance(plugin_obj.api_views, dict):
 
-            for view_route, view_class in plugin_obj.api_views.items():  # For each defined endpoint
+            # For each defined endpoint
+            for view_route, view_class in plugin_obj.api_views.items():
 
                 # Remove all leading slashes from view route
                 while view_route[0] == '/':
@@ -26,19 +28,32 @@ def construct_blueprint(microscope_obj, plugin_paths=[], include_default=True):
                 # Construct a full view route from the plugin name
                 full_view_route = "/{}/{}".format(plugin_name, view_route)
 
-                if full_view_route not in all_routes and issubclass(view_class, MicroscopeViewPlugin):  # Check if endpoint name clashes
-                    all_routes.append(full_view_route)  # Add route to main route dictionary
+                # Check if endpoint name clashes
+                if full_view_route not in all_routes and issubclass(view_class, MicroscopeViewPlugin):
+                    # Add route to main route dictionary
+                    all_routes.append(full_view_route)
 
                     # Add route to the plugins blueprint
                     blueprint.add_url_rule(
                         full_view_route,
-                        view_func=view_class.as_view('plugin_{}'.format(view_route).replace('/', '_'), microscope=microscope_obj, plugin=plugin_obj)
+                        view_func=view_class.as_view(
+                            'plugin_{}'.format(view_route).replace('/', '_'),
+                            microscope=microscope_obj,
+                            plugin=plugin_obj
+                        )
                     )
 
                 else:
-                    warnings.warn("An endpoint /{} has already been loaded. Skipping {}.".format(full_view_route, view_class))
+                    warnings.warn(
+                        "An endpoint /{} has already been loaded. Skipping {}.".format(
+                            full_view_route,
+                            view_class
+                        )
+                    )
 
         else:
-            warnings.warn("No valid 'api_views' dictionary found in {}".format(plugin_obj))
+            warnings.warn(
+                "No valid 'api_views' dictionary found in {}".format(plugin_obj)
+            )
 
     return(blueprint)
