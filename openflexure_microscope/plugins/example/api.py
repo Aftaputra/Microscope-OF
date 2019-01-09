@@ -40,11 +40,11 @@ class HelloWorldAPI(MicroscopeViewPlugin):
         Method to call when an HTTP POST request is made. 
         Assumes request will include a JSON payload.
         """
-        # Get payload JSON as a dictionary
+        # Get payload JSON
         payload = JsonPayload(request)
 
-        # Extract a value from the JSON key 'plugin_string'. If no value is given, default to None
-        new_plugin_string = payload.param('plugin_string')
+        # Extract a value from the JSON key 'plugin_string', and convert to a string. If no value is given, default to empty.
+        new_plugin_string = payload.param('plugin_string', default='', convert=str)
 
         if new_plugin_string:  # If not None or empty
             # Set microscope attribute to the specified string
