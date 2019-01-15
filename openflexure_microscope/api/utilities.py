@@ -9,8 +9,15 @@ class JsonPayload:
         """
         # Try to load as json
         self.json = request.get_json()  #: dict: Dictionary representation of request JSON
+
+        if self.json is None:
+            self.json = {}
+
         # Store raw response data
         self.data = request.get_data()  #: str: String representation of request data
+
+        if self.data is None:
+            self.data = ""
 
     def param(self, key, default=None, convert=None):
         """

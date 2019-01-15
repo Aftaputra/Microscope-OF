@@ -2,7 +2,7 @@ from openflexure_microscope.api.v1.views import MicroscopeView
 
 from flask import Blueprint
 
-from . import capture, record, preview
+from . import capture, record, preview, config
 
 
 def construct_blueprint(microscope_obj):
@@ -30,5 +30,10 @@ def construct_blueprint(microscope_obj):
     blueprint.add_url_rule(
         '/preview/<string:operation>', 
         view_func=preview.GPUPreviewAPI.as_view('gpu_preview', microscope=microscope_obj))
+
+    # Config routes
+    blueprint.add_url_rule(
+        '/config', 
+        view_func=config.ConfigAPI.as_view('camera_config', microscope=microscope_obj))
 
     return(blueprint)
