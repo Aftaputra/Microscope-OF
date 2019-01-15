@@ -1,5 +1,6 @@
-from openflexure_microscope.api.utilities import gen, axes_to_array, JsonPayload
+from openflexure_microscope.api.utilities import gen, JsonPayload
 from openflexure_microscope.api.v1.views import MicroscopeView
+from openflexure_microscope.utilities import axes_to_array
 
 from flask import Response, Blueprint, jsonify, request
 
@@ -80,69 +81,6 @@ class PositionAPI(MicroscopeView):
         return jsonify(self.microscope.state['stage']['position'])
 
 
-class StageParamsAPI(MicroscopeView):
-
-    def get(self):
-        """
-        Return current parameters of the stage.
-
-        .. :quickref: Stage params; Get current stage parameters
-
-        **Example request**:
-
-        .. sourcecode:: http
-
-          GET /stage/params HTTP/1.1
-          Accept: application/json
-
-        **Example response**:
-
-        .. sourcecode:: http
-
-          HTTP/1.1 200 OK
-          Vary: Accept
-          Content-Type: application/json
-
-          {
-            "backlash": {
-                "x": 0, 
-                "y": 0, 
-                "z": 128
-            }, 
-          }
-
-        """
-
-        return jsonify(self.microscope.state['stage'])
-
-    def post(self):
-        """
-        Set parameters of the stage.
-
-        .. :quickref: Stage params; Set current stage parameters
-
-        :reqheader Accept: application/json
-        :<json json backlash:   - **x** *(int)*: x-axis backlash in steps
-                                - **y** *(int)*: y-axis backlash in steps
-                                - **z** *(int)*: x-axis backlash in steps
-
-        """
-        # Get payload
-        payload = JsonPayload(request)
-        logging.debug(payload.json)
-
-        # BACKLASH
-        if payload.param('backlash'):
-            # Construct backlash array
-            backlash = axes_to_array(payload.param('backlash'), ['x', 'y', 'z'], [0, 0, 0])
-            logging.debug("BACKLASH: {}".format(backlash))
-
-            # Apply backlash
-            self.microscope.stage.backlash = backlash
-
-        return jsonify(self.microscope.state['stage'])
-
-
 def construct_blueprint(microscope_obj):
 
     blueprint = Blueprint('stage_blueprint', __name__)
@@ -150,11 +88,6 @@ def construct_blueprint(microscope_obj):
     blueprint.add_url_rule(
         '/position',
         view_func=PositionAPI.as_view('position', microscope=microscope_obj)
-    )
-
-    blueprint.add_url_rule(
-        '/params',
-        view_func=StageParamsAPI.as_view('stage_params', microscope=microscope_obj)
     )
 
     return(blueprint)

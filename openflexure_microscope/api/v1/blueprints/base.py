@@ -176,6 +176,7 @@ class ConfigAPI(MicroscopeView):
 
         return jsonify(self.microscope.config)
 
+
 def construct_blueprint(microscope_obj):
 
     blueprint = Blueprint('base_blueprint', __name__)

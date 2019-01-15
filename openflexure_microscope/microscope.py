@@ -12,6 +12,7 @@ from .camera.pi import StreamingCamera
 
 from .plugins import PluginMount
 from .config import load_config, save_config, convert_config
+from .utilities import axes_to_array
 
 
 class Microscope(object):
@@ -141,13 +142,6 @@ class Microscope(object):
             'z': position[2],
         }
 
-        backlash = self.stage.backlash.tolist()
-        state['stage']['backlash'] = {
-            'x': backlash[0],
-            'y': backlash[1],
-            'z': backlash[2],
-        }
-
         # Add camera state
         state['camera'] = self.camera.state
 
@@ -160,6 +154,14 @@ class Microscope(object):
             # Update camera config params from StreamingCamera object
             self._config.update(self.camera.config)
         
+        # If attached to a stage
+        backlash = self.stage.backlash.tolist()
+        self._config['backlash'] = {
+            'x': backlash[0],
+            'y': backlash[1],
+            'z': backlash[2],
+        }
+
         return self._config
 
     @config.setter
@@ -169,5 +171,12 @@ class Microscope(object):
             # Update camera config
             self.camera.config = config
         
+        # If attached to a stage
+        if self.stage:
+            if 'backlash' in config:
+                # Construct backlash array
+                backlash = axes_to_array(config['backlash'], ['x', 'y', 'z'], [0, 0, 0])
+                self.stage.backlash = backlash
+
         # Cache config
         self._config.update(config)
