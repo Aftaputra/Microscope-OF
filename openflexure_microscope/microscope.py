@@ -5,6 +5,7 @@ Defines a microscope object, binding a camera and stage with basic functionality
 import logging
 import os
 import numpy as np
+import uuid
 
 from openflexure_stage import OpenFlexureStage
 from .camera.pi import StreamingCamera
@@ -39,6 +40,10 @@ class Microscope(object):
         # Attach plugins
         if attach_plugins:
             self.attach_plugins()
+        
+        # Get name from config, or generate
+        if not 'name' in self.config:
+            self.config['name'] = uuid.uuid4().hex
 
     def __enter__(self):
         """Create microscope on context enter."""
