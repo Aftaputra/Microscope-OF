@@ -2,7 +2,7 @@ from openflexure_microscope.api.v1.views import MicroscopeView
 
 from flask import Blueprint
 
-from . import capture, record, preview, config
+from . import capture, record, preview, config, overlay
 
 
 def construct_blueprint(microscope_obj):
@@ -30,5 +30,10 @@ def construct_blueprint(microscope_obj):
     blueprint.add_url_rule(
         '/preview/<string:operation>', 
         view_func=preview.GPUPreviewAPI.as_view('gpu_preview', microscope=microscope_obj))
+
+    # Overlay routes
+    blueprint.add_url_rule(
+        '/overlay', 
+        view_func=overlay.OverlayAPI.as_view('overlay', microscope=microscope_obj))
 
     return(blueprint)
