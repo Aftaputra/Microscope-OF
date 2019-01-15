@@ -32,7 +32,7 @@ class Microscope(object):
         self.attach(camera, stage)
 
         # Store entire runtime-config
-        self.config = config
+        self._config = config
 
         # Create plugin mountpoint
         self.plugin = PluginMount(self)  #: :py:class:`openflexure_microscope.plugins.PluginMount`: Mounting point for all microscope plugins
@@ -42,8 +42,8 @@ class Microscope(object):
             self.attach_plugins()
         
         # Get name from config, or generate
-        if not 'name' in self.config:
-            self.config['name'] = uuid.uuid4().hex
+        if not 'name' in self._config:
+            self._config['name'] = uuid.uuid4().hex
 
     def __enter__(self):
         """Create microscope on context enter."""
@@ -105,8 +105,8 @@ class Microscope(object):
         """
         Automatically search for plugin maps in self.config, and attach.
         """
-        if 'plugins' in self.config:
-            self.attach_plugin_maps(self.config['plugins'])
+        if 'plugins' in self._config:
+            self.attach_plugin_maps(self._config['plugins'])
         else:
             logging.warning("No plugins specified in microscoperc.yaml. Skipping.")
 
@@ -152,3 +152,22 @@ class Microscope(object):
         state['camera'] = self.camera.state
 
         return state
+
+    @property
+    def config(self):
+        # If attached to a camera
+        if self.camera:
+            # Update camera config params from StreamingCamera object
+            self._config.update(self.camera.config)
+        
+        return self._config
+
+    @config.setter
+    def config(self, config: dict) -> None:
+        # If attached to a camera
+        if self.camera:
+            # Update camera config
+            self.camera.config = config
+        
+        # Cache config
+        self._config.update(config)

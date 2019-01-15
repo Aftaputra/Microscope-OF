@@ -1,7 +1,7 @@
-from openflexure_microscope.api.utilities import gen
+from openflexure_microscope.api.utilities import gen, JsonPayload
 from openflexure_microscope.api.v1.views import MicroscopeView
 
-from flask import Response, Blueprint, jsonify
+from flask import Response, Blueprint, jsonify, request
 
 
 class StreamAPI(MicroscopeView):
@@ -81,7 +81,7 @@ class ConfigAPI(MicroscopeView):
         """
         JSON representation of the microscope config.
 
-        .. :quickref: Config; Microscope config
+        .. :quickref: Config; Get microscope config
 
         **Example request**:
 
@@ -136,6 +136,44 @@ class ConfigAPI(MicroscopeView):
         :>header Content-Type: application/json
         :status 200: state available
         """
+        return jsonify(self.microscope.config)
+
+    def post(self):
+        """
+        Modify microscope configuration
+
+        .. :quickref: Config; Set microscope config
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          POST /config HTTP/1.1
+          Accept: application/json
+
+          {
+            "analog_gain": 1.0, 
+            "digital_gain": 1.0, 
+            "jpeg_quality": 75, 
+            "picamera_params": {
+                "framerate": 24.0, 
+                "saturation": 0, 
+                "shutter_speed": 5000
+            }
+          }
+
+        :>header Accept: application/json
+
+        :<header Content-Type: application/json
+        :status 200: capture created
+
+        """
+        payload = JsonPayload(request)
+
+        print(payload.json)
+
+        self.microscope.config = payload.json
+
         return jsonify(self.microscope.config)
 
 def construct_blueprint(microscope_obj):

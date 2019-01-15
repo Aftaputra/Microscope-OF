@@ -31,9 +31,4 @@ def construct_blueprint(microscope_obj):
         '/preview/<string:operation>', 
         view_func=preview.GPUPreviewAPI.as_view('gpu_preview', microscope=microscope_obj))
 
-    # Config routes
-    blueprint.add_url_rule(
-        '/config', 
-        view_func=config.ConfigAPI.as_view('camera_config', microscope=microscope_obj))
-
     return(blueprint)
