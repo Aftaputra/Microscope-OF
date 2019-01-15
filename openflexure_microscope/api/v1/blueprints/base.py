@@ -75,6 +75,69 @@ class StateAPI(MicroscopeView):
         return jsonify(self.microscope.state)
 
 
+class ConfigAPI(MicroscopeView):
+
+    def get(self):
+        """
+        JSON representation of the microscope config.
+
+        .. :quickref: Config; Microscope config
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          GET /config/ HTTP/1.1
+          Accept: application/json
+
+        **Example response**:
+
+        .. sourcecode:: http
+
+          HTTP/1.1 200 OK
+          Vary: Accept
+          Content-Type: application/json
+
+          {
+            "analog_gain": 1.0, 
+            "digital_gain": 1.0, 
+            "image_resolution": [
+                2592, 
+                1944
+            ], 
+            "jpeg_quality": 75, 
+            "name": "0e2c6fac5421429aac67c7903107bdd8", 
+            "numpy_resolution": [
+                1312, 
+                976
+            ], 
+            "picamera_params": {
+                "awb_gains": [
+                0.92578125, 
+                2.94921875
+                ], 
+                "awb_mode": "off", 
+                "exposure_mode": "off", 
+                "framerate": 24.0, 
+                "saturation": 0, 
+                "shutter_speed": 5378
+            }, 
+            "plugins": [
+                "openflexure_microscope.plugins.default:Plugin"
+            ], 
+            "shading_table_path": "/home/pi/.openflexure/microscopelst.npy", 
+            "video_resolution": [
+                832, 
+                624
+            ]
+          }
+
+        :>header Accept: application/json
+        :>header Content-Type: application/json
+        :status 200: state available
+        """
+        return jsonify(self.microscope.config)
+
 def construct_blueprint(microscope_obj):
 
     blueprint = Blueprint('base_blueprint', __name__)
@@ -87,6 +150,11 @@ def construct_blueprint(microscope_obj):
     blueprint.add_url_rule(
         '/state',
         view_func=StateAPI.as_view('state', microscope=microscope_obj)
+    )
+
+    blueprint.add_url_rule(
+        '/config',
+        view_func=ConfigAPI.as_view('config', microscope=microscope_obj)
     )
 
     return(blueprint)
