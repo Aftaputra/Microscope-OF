@@ -100,6 +100,8 @@ class StreamingCamera(BaseCamera):
             'record_active': False,
             'preview_active': False,
         })
+        # Reset variable states
+        self.set_zoom(1.0)
 
         # Default camera config
         self._config.update({
@@ -243,20 +245,17 @@ class StreamingCamera(BaseCamera):
             raise Exception(
                 "Cannot update camera config while recording is active.")
 
-    def change_zoom(self, zoom_value: int=1) -> None:
-        """Change the camera zoom, handling recentering and scaling.
-
-        Todo:
-            TODO: Needs to be re-implemented
-
+    def set_zoom(self, zoom_value: float=1.) -> None:
         """
-        zoom_value = float(zoom_value)
-        if zoom_value < 1:
-            zoom_value = 1
+        Change the camera zoom, handling recentering and scaling.
+        """
+        self.state['zoom_value'] = float(zoom_value)
+        if self.state['zoom_value'] < 1:
+            self.state['zoom_value'] = 1
         # Richard's code for zooming !
         fov = self.camera.zoom
         centre = np.array([fov[0] + fov[2]/2.0, fov[1] + fov[3]/2.0])
-        size = 1.0/zoom_value
+        size = 1.0/self.state['zoom_value']
         # If the new zoom value would be invalid, move the centre to
         # keep it within the camera's sensor (this is only relevant
         # when zooming out, if the FoV is not centred on (0.5, 0.5)
