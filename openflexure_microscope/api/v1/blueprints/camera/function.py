@@ -50,7 +50,7 @@ class ZoomAPI(MicroscopeView):
 
         self.microscope.camera.set_zoom(zoom_value)
 
-        return jsonify(self.microscope.state)
+        return jsonify(self.microscope.camera.state)
 
 
 class OverlayAPI(MicroscopeView):
