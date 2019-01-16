@@ -359,7 +359,10 @@ class StreamingCamera(BaseCamera):
             resolution = self.config['image_resolution']
 
         # Stop the camera video recording on port 1
-        self.camera.stop_recording(splitter_port=splitter_port)
+        try:
+            self.camera.stop_recording(splitter_port=splitter_port)
+        except picamera.exc.PiCameraNotRecording:
+            logging.info("Not recording on splitter_port {}".format(splitter_port))
 
         # Increase the resolution for taking an image
         self.camera.resolution = resolution
