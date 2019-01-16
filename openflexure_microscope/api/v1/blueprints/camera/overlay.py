@@ -5,6 +5,22 @@ from flask import Response, Blueprint, jsonify, request, abort, url_for, redirec
 
 class OverlayAPI(MicroscopeView):
 
+    def get(self):
+        """
+        Get overlay text
+
+        .. :quickref: Overlay; Get camera overlay text
+
+        :>header Accept: application/json
+
+        :<header Content-Type: application/json
+        :status 200: preview started/stopped
+        """
+        text = self.microscope.camera.camera.annotate_text
+        size = self.microscope.camera.camera.annotate_text_size
+
+        return jsonify({'text': text, 'size': size})
+
     def post(self):
         """
         Set overlay text
