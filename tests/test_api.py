@@ -92,7 +92,7 @@ class TestStage(unittest.TestCase):
         for key in expected_keys:
             self.assertTrue(key in state['stage'])
 
-    def test_movement(self):
+    def test_stage_movement(self):
         connection = APIconnection(host="localhost", port=5000, api_ver="v1")
 
         move_distance = 500
