@@ -70,6 +70,7 @@ class ListAPI(MicroscopeView):
             "filename": "myfirstcapture", 
             "keep_on_disk": true, 
             "use_video_port": true,
+            "bayer": true,
             "size": {
                 "x": 640,
                 "y": 480
@@ -81,6 +82,7 @@ class ListAPI(MicroscopeView):
         :<json string filename: filename of stored capture
         :<json boolean keep_on_disk: keep the capture file on microscope after closing
         :<json boolean use_video_port: capture still image from the video port
+        :<json boolean bayer: keep raw capture data in the image file
         :<json json size:   - **x** *(int)*: x-axis resize
                             - **y** *(int)*: y-axis resize
 
@@ -102,6 +104,7 @@ class ListAPI(MicroscopeView):
         filename = payload.param('filename')
         keep_on_disk = payload.param('keep_on_disk', default=True, convert=bool)
         use_video_port = payload.param('use_video_port', default=False, convert=bool)
+        bayer = payload.param('bayer', default=True, convert=bool)
 
         resize = payload.param('size', default=None)
         if resize:
@@ -118,7 +121,8 @@ class ListAPI(MicroscopeView):
         self.microscope.camera.capture(
             output,
             use_video_port=use_video_port,
-            resize=resize)
+            resize=resize,
+            bayer=bayer)
 
         return jsonify(output.metadata)
 

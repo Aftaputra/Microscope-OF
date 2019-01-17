@@ -397,7 +397,8 @@ class StreamingCamera(BaseCamera):
             output,
             fmt: str='jpeg',
             use_video_port: bool=False,
-            resize: Tuple[int, int]=None):
+            resize: Tuple[int, int]=None,
+            bayer: bool=True):
         """
         Capture a still image to a StreamObject.
 
@@ -432,7 +433,7 @@ class StreamingCamera(BaseCamera):
                 format=fmt,
                 quality=100,
                 resize=resize,
-                bayer=True)
+                bayer=bayer)
 
             # Resume video splitter port 1
             self.resume_stream()
@@ -444,7 +445,7 @@ class StreamingCamera(BaseCamera):
                 quality=100,
                 resize=resize,
                 bayer=False,
-                use_video_port=True)
+                use_video_port=bayer)
 
         return output
 
