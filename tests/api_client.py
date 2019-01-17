@@ -61,11 +61,15 @@ class APIconnection:
         }
         return self.post('/stage/position', json=json)
 
-    def new_capture(self, use_video_port=True, keep_on_disk=False):
+    def new_capture(self, use_video_port=True, keep_on_disk=False, resize=None):
         json = {
             "keep_on_disk": keep_on_disk,
             "use_video_port": use_video_port
         }
+
+        if resize:
+            json['size'] = {'width': resize[0], 'height': resize[1]}
+
         return self.post('/camera/capture', json=json)
 
     def get_capture(self, capture_id):
@@ -79,8 +83,8 @@ class APIconnection:
         uri_route = '/camera/capture/{}'.format(capture_id)
         return self.delete(uri_route)
 
-    def capture(self, use_video_port=True, keep_on_disk=False, delete_after_use=True):
-        p = self.new_capture(use_video_port=use_video_port, keep_on_disk=keep_on_disk)
+    def capture(self, use_video_port=True, keep_on_disk=False, delete_after_use=True, resize=None):
+        p = self.new_capture(use_video_port=use_video_port, keep_on_disk=keep_on_disk, resize=resize)
         capture_id = p['id']
         img_array = self.get_capture(capture_id)
 
