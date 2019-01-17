@@ -313,6 +313,8 @@ class BaseCamera(object):
         self.frames_iterator = self.frames()
         logging.debug("Entering worker thread.")
 
+        self.state['stream_active'] = True
+
         for frame in self.frames_iterator:
             self.frame = frame
             self.event.set()  # send signal to clients
@@ -337,5 +339,7 @@ class BaseCamera(object):
                 pass
 
         logging.debug("BaseCamera worker thread exiting...")
+        # Set stream_activate state
+        self.state['stream_active'] = False
         # Reset thread
         self.thread = None

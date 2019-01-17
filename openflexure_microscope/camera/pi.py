@@ -210,7 +210,7 @@ class StreamingCamera(BaseCamera):
             # Pause stream while changing settings
             if self.state['stream_active']:  # If stream is active
                 logging.info("Pausing stream to update config.")
-                self.pause_stream()  # Pause stream
+                self.stop_stream_recording()  # Pause stream
                 paused_stream = True  # Remember to unpause stream when done
 
             # PiCamera parameters (applied directly to PiCamera object)
@@ -239,7 +239,7 @@ class StreamingCamera(BaseCamera):
             # If stream was paused to update config, unpause
             if paused_stream:
                 logging.info("Resuming stream.")
-                self.resume_stream()
+                self.start_stream_recording()
 
         else:
             raise Exception(
@@ -342,18 +342,17 @@ class StreamingCamera(BaseCamera):
         # Update state dictionary
         self.state['record_active'] = False
 
-    def pause_stream(
+    def stop_stream_recording(
             self,
             splitter_port: int=1,
             resolution: Tuple[int, int]=None) -> None:
         """
-        Pause capture on a splitter port.
+        Sets the camera resolution to the still-image resolution, and stops recording if the stream is active.
 
         Args:
             splitter_port (int): Splitter port to stop recording on
             resolution ((int, int)): Resolution to set the camera to, after stopping recording.
         """
-        logging.debug("Pausing stream")
         # If no resolution is specified, default to image_resolution
         if not resolution:
             resolution = self.config['image_resolution']
@@ -361,36 +360,46 @@ class StreamingCamera(BaseCamera):
         # Stop the camera video recording on port 1
         try:
             self.camera.stop_recording(splitter_port=splitter_port)
+            logging.info("Stopped MJPEG stream on port {1}. Switching to {0}.".format(resolution, splitter_port))
         except picamera.exc.PiCameraNotRecording:
             logging.info("Not recording on splitter_port {}".format(splitter_port))
 
         # Increase the resolution for taking an image
         self.camera.resolution = resolution
 
-    def resume_stream(
+    def start_stream_recording(
             self,
             splitter_port: int=1,
             resolution: Tuple[int, int]=None) -> None:
         """
-        Resume capture on a splitter port.
+        Sets the camera resolution to the video/stream resolution, and starts recording if the stream should be active.
 
         Args:
             splitter_port (int): Splitter port to start recording on
-            resolution ((int, int)): Resolution to set the camera to, before starting recording.
+            resolution ((int, int)): Resolution to set the camera to, before starting recording. Defaults to `self.config['video_resolution']`.
         """
-        logging.debug("Resuming stream")
+
+        # If no stream object exists
+        if not hasattr(self, 'stream'):
+            self.stream = io.BytesIO() # Create a stream object
+
+        # If no explicit resolution is passed
         if not resolution:
-            resolution = self.config['video_resolution']
+            resolution = self.config['video_resolution']  # Default to video recording resolution
 
         # Reduce the resolution for video streaming
         self.camera.resolution = resolution
 
-        # Resume the video channel
-        self.camera.start_recording(
-            self.stream,
-            format='mjpeg',
-            quality=self.config['jpeg_quality'],
-            splitter_port=splitter_port)
+        # If the stream should be active
+        if self.state['stream_active']:
+            # Start recording on stream port
+            self.camera.start_recording(
+                self.stream,
+                format='mjpeg',
+                quality=self.config['jpeg_quality'],
+                splitter_port=splitter_port)
+            
+            logging.debug("Started MJPEG stream at {} on port {}".format(resolution, splitter_port))
 
     def capture(
             self,
@@ -421,31 +430,21 @@ class StreamingCamera(BaseCamera):
 
         logging.info("Capturing to {}".format(output))
 
-
-        # TODO: Do we really always want bayer data for full captures?
+        # Set resolution and stop stream recording if necesarry
         if not use_video_port:
+            self.stop_stream_recording()
 
-            # Pause video splitter port 1
-            self.pause_stream()
+        self.camera.capture(
+            output_stream,
+            format=fmt,
+            quality=100,
+            resize=resize,
+            bayer=(not use_video_port) and bayer,
+            use_video_port=use_video_port)
 
-            self.camera.capture(
-                output_stream,
-                format=fmt,
-                quality=100,
-                resize=resize,
-                bayer=bayer)
-
-            # Resume video splitter port 1
-            self.resume_stream()
-
-        else:
-            self.camera.capture(
-                output_stream,
-                format=fmt,
-                quality=100,
-                resize=resize,
-                bayer=False,
-                use_video_port=bayer)
+        # Set resolution and start stream recording if necesarry
+        if not use_video_port:
+            self.start_stream_recording()
 
         return output
 
@@ -471,7 +470,7 @@ class StreamingCamera(BaseCamera):
             size = resolution
 
         if not use_video_port:
-            self.pause_stream(resolution=resolution)
+            self.stop_stream_recording(resolution=resolution)
 
         logging.debug("Creating PiYUVArray")
         with picamera.array.PiYUVArray(self.camera, size=size) as output:
@@ -485,7 +484,7 @@ class StreamingCamera(BaseCamera):
                 use_video_port=use_video_port)
 
             if not use_video_port:
-                self.resume_stream()
+                self.start_stream_recording()
 
             if rgb:
                 logging.debug("Converting to RGB")
@@ -515,7 +514,7 @@ class StreamingCamera(BaseCamera):
             size = resolution
 
         # Always pause stream, to prevent resizer memory issues
-        self.pause_stream(resolution=resolution)
+        self.stop_stream_recording(resolution=resolution)
 
         logging.debug("Creating PiRGBArray")
         with picamera.array.PiRGBArray(self.camera, size=size) as output:
@@ -529,7 +528,7 @@ class StreamingCamera(BaseCamera):
                 use_video_port=use_video_port)
 
             # Resume stream
-            self.resume_stream()
+            self.start_stream_recording()
 
             return output.array
 
@@ -544,25 +543,14 @@ class StreamingCamera(BaseCamera):
         """
         # Run this initialisation method
         self.initialisation()
-
         self.wait_for_camera()
 
-        # Set stream resolution
-        self.camera.resolution = self.config['video_resolution']
-
-        # Create stream
-        self.stream = io.BytesIO()
-
-        # Start recording on video splitter port 1
-        self.camera.start_recording(
-            self.stream,
-            format='mjpeg',
-            quality=self.config['jpeg_quality'],
-            splitter_port=1)
+        # Start stream recording (and set resolution)
+        self.start_stream_recording()
 
         # Update state
         logging.debug("STREAM ACTIVE")
-        self.state['stream_active'] = True
+        #self.state['stream_active'] = True
 
         # While the iterator is not closed
         try:
@@ -582,7 +570,7 @@ class StreamingCamera(BaseCamera):
                     yield frame
         # When GeneratorExit or StopIteration raised, run cleanup code
         finally:
-            logging.debug("Stopping stream recording on port 1")
-            self.camera.stop_recording(splitter_port=1)
-            self.state['stream_active'] = False
+            # Stop stream recording (and set resolution)
+            self.stop_stream_recording()
+
             logging.debug("FRAME ITERATOR END")
