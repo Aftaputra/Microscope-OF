@@ -72,8 +72,8 @@ class ListAPI(MicroscopeView):
             "use_video_port": true,
             "bayer": true,
             "size": {
-                "x": 640,
-                "y": 480
+                "width": 640,
+                "height": 480
             }
           }
 
