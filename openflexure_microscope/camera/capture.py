@@ -1,16 +1,27 @@
 import uuid
 import io
 import os
+import glob
 import datetime
 import copy
 import logging
 from PIL import Image
+import atexit
 
 pil_formats = ['JPG', 'JPEG', 'PNG', 'TIF', 'TIFF']
 thumbnail_size = (60, 60)
 
 BASE_CAPTURE_PATH = os.path.join(os.path.expanduser('~'), 'micrographs')
 TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, 'tmp')
+
+def clear_tmp():
+    global TEMP_CAPTURE_PATH
+
+    logging.info("Clearing {}...".format(TEMP_CAPTURE_PATH))
+    files = glob.glob('{}/*'.format(TEMP_CAPTURE_PATH))
+    for f in files:
+        os.remove(f)
+        logging.debug("Removed {}".format(f))
 
 class CaptureObject(object):
     """
@@ -293,3 +304,5 @@ class CaptureObject(object):
         self.delete_stream()
         if not self.keep_on_disk:
             self.delete_file()
+
+atexit.register(clear_tmp)
