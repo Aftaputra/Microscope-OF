@@ -100,8 +100,8 @@ function updateCaptureList(response) {
         <div class="capture-actions"> 
             <div class='capture-heading'>${element.metadata.filename}</div>
             <br>
-            <button type="button" class="capture-button" onclick="window.open('${element_uri}/download', '_blank');">View</button>
-            <button type="button" class="capture-button" onclick="window.open('${element_uri}/download?as_attachment=true');">Download</button>
+            <button type="button" class="capture-button" onclick="window.open('${element_uri}/download');">Image</button>
+            <button type="button" class="capture-button" onclick="window.open('${element_uri}/metadata');">Metadata</button>
             <br>
             <button type="button" class="capture-button" onclick="window.open('${element_uri}/', '_blank');">JSON</button>
             <button type="button" class="capture-button" onclick="deleteCapture('${element.metadata.id}');">Delete</button>
