@@ -260,9 +260,6 @@ class DownloadRedirectAPI(MicroscopeView):
         I.e., `/(capture_id)/download` will 
         redirect to `/(capture_id)/download/(filename)`.
 
-        Note: This route may be deprecated in the future. Where at all
-        possible, please include a filename to download as.
-
         .. :quickref: Capture; Redirect to download
         """
         capture_obj = self.microscope.camera.image_from_id(capture_id)
@@ -325,3 +322,72 @@ class DownloadAPI(MicroscopeView):
             mimetype='image/jpeg',
             as_attachment=as_attachment,
             attachment_filename=filename)
+
+
+class MetadataRedirectAPI(MicroscopeView):
+    def get(self, capture_id):
+        """
+        Redirect to download the capture metadata under it's currently set filename. 
+        I.e., `/(capture_id)/download` will 
+        redirect to `/(capture_id)/download/(filename)`.
+
+        .. :quickref: Capture; Redirect to metadata
+        """
+        capture_obj = self.microscope.camera.image_from_id(capture_id)
+
+        if not capture_obj or not capture_obj.state['available']:
+            return abort(404)  # 404 Not Found
+
+        as_attachment = get_bool(request.args.get('as_attachment'))
+
+        return redirect(url_for('.metadata_download', capture_id=capture_id, filename=capture_obj.metadataname, as_attachment=as_attachment), code=307)
+
+
+class MetadataAPI(MicroscopeView):
+    def get(self, capture_id, filename):
+        """
+        Return metadatadata for a capture.
+
+        Return capture metadata as a YAML file with the requested filename. 
+        I.e., `/(capture_id)/download/bar.yaml` will download the file as 
+        `bar.yaml`, regardless of the capture's initially set filename.
+
+        .. :quickref: Capture; Download capture metadata
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          GET /camera/capture/d0b2067abbb946f19351e075c5e7cd5b/metadata/2018-11-20_16-04-17.yaml HTTP/1.1
+          Accept: text/yaml
+
+        :>header Accept: text/yaml
+        :query as_attachment: return the image as an attachment download e.g. ?as_attachment=true
+
+        :>header Content-Type: text/yaml
+        :status 200: capture data found
+        :status 404: no capture found with that id
+        """
+        capture_obj = self.microscope.camera.image_from_id(capture_id)
+
+        if not capture_obj or not capture_obj.state['available']:
+            return abort(404)  # 404 Not Found
+
+        as_attachment = get_bool(request.args.get('as_attachment'))
+
+        # If no filename is specified, redirect to the capture's currently set filename
+        if not filename:
+            return redirect(url_for('capture_download', capture_id=capture_id, filename=capture_obj.metadataname, as_attachment=as_attachment), code=307)
+
+        # Download the metadata using the requested filename
+        data = capture_obj.yaml
+
+        headers = {}
+
+        if as_attachment:
+            headers["Content-Disposition"] = "attachment;filename={}".format(filename)
+
+        return Response(
+            data,
+            mimetype="text/yaml",
+            headers=headers)

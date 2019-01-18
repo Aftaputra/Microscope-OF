@@ -146,6 +146,7 @@ class CaptureObject(object):
         """Takes a full file path, and splits it into separated class properties."""
         self.filefolder, self.filename = os.path.split(filepath)  # Split the full file path into a folder and a filename
         self.basename = os.path.splitext(self.filename)[0]  # Split the filename out from it's file extension
+        self.metadataname = "{}.yaml".format(self.basename)
 
     def lock(self):
         """Set locked flag to True."""
@@ -207,6 +208,10 @@ class CaptureObject(object):
         d.update(self._metadata)
 
         return d
+
+    @property
+    def yaml(self) -> str:
+        return yaml.dump(self.metadata, default_flow_style=False)
 
     @property
     def exists(self) -> bool:
