@@ -25,7 +25,7 @@ class ListAPI(MicroscopeView):
         :>jsonarr string path: path on pi storage to the capture file, if available
         :>jsonarr boolean stream: capture stored in-memory as a BytesIO stream
         :>jsonarr json uri: - **download** *(string)*: api uri to the capture file download
-                            - **metadata** *(string)*: api uri to the capture json representation
+                            - **state** *(string)*: api uri to the capture json representation
 
         :>header Content-Type: application/json
         :status 200: capture found
@@ -34,9 +34,9 @@ class ListAPI(MicroscopeView):
         include_unavailable = get_bool(request.args.get('include_unavailable'))
 
         if include_unavailable:
-            captures = [image.metadata for image in self.microscope.camera.images]
+            captures = [image.state for image in self.microscope.camera.images]
         else:
-            captures = [image.metadata for image in self.microscope.camera.images if image.metadata['available']]
+            captures = [image.state for image in self.microscope.camera.images if image.state['available']]
 
         return jsonify(captures)
 
@@ -49,7 +49,7 @@ class ListAPI(MicroscopeView):
         for image in self.microscope.camera.images:
             image.delete()
 
-        captures = [image.metadata for image in self.microscope.camera.images]
+        captures = [image.state for image in self.microscope.camera.images]
 
         return jsonify(captures)
 
@@ -94,7 +94,7 @@ class ListAPI(MicroscopeView):
         :>json string path: path on pi storage to the capture file, if available
         :>json boolean stream: capture stored in-memory as a BytesIO stream
         :>json json uri: - **download** *(string)*: api uri to the capture file download
-                         - **metadata** *(string)*: api uri to the capture json representation
+                         - **state** *(string)*: api uri to the capture json representation
 
         :<header Content-Type: application/json
         :status 200: capture created
@@ -124,7 +124,7 @@ class ListAPI(MicroscopeView):
             resize=resize,
             bayer=bayer)
 
-        return jsonify(output.metadata)
+        return jsonify(output.state)
 
 
 class CaptureAPI(MicroscopeView):
@@ -152,15 +152,18 @@ class CaptureAPI(MicroscopeView):
 
           {
               "available": true, 
-              "filename": "2018-11-16_10-21-53.jpeg", 
-              "id": "d0b2067abbb946f19351e075c5e7cd5b", 
+              "bytestream": false, 
               "keep_on_disk": false, 
               "locked": false, 
-              "path": "capture/2018-11-16_10-21-53.jpeg", 
-              "stream": false, 
+              "metadata": {
+                  "filename": "2018-11-16_10-21-53.jpeg", 
+                  "id": "d0b2067abbb946f19351e075c5e7cd5b", 
+                  "path": "capture/2018-11-16_10-21-53.jpeg", 
+                  "time": "2018-11-16_10-21-53"
+              }
               "uri": {
                   "download": "/api/v1/capture/d0b2067abbb946f19351e075c5e7cd5b/download", 
-                  "metadata": "/api/v1/capture/d0b2067abbb946f19351e075c5e7cd5b/"
+                  "state": "/api/v1/capture/d0b2067abbb946f19351e075c5e7cd5b/"
               }
           }
 
@@ -172,7 +175,7 @@ class CaptureAPI(MicroscopeView):
         :>json string path: path on pi storage to the capture file, if available
         :>json boolean stream: capture stored in-memory as a BytesIO stream
         :>json json uri: - **download** *(string)*: api uri to the capture file download
-                         - **metadata** *(string)*: api uri to the capture json representation
+                         - **state** *(string)*: api uri to the capture json representation
 
         """
         capture_obj = self.microscope.camera.image_from_id(capture_id)
@@ -180,13 +183,13 @@ class CaptureAPI(MicroscopeView):
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        # Get capture metadata
-        capture_metadata = capture_obj.metadata
+        # Get capture state
+        capture_metadata = capture_obj.state
 
-        # TODO: Tidy up adding URI to metadata
-        # Add API routes to returned metadata
+        # TODO: Tidy up adding URI to state
+        # Add API routes to returned state
         uri_dict = {
-            'uri': {'metadata': '{}'.format(url_for('.capture', capture_id=capture_obj.id))}
+            'uri': {'state': '{}'.format(url_for('.capture', capture_id=capture_obj.id))}
         }
 
         # If available, also add download link
@@ -214,11 +217,40 @@ class CaptureAPI(MicroscopeView):
 
     def put(self, capture_id):
         """
-        Modify the metadata of a capture (not yet implemented)
+        Add arbitrary metadata to the capture (stored in an accompanying capture `.yaml` file)
 
         .. :quickref: Capture; Update capture metadata
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          POST /camera/capture HTTP/1.1
+          Accept: application/json
+
+          {
+            "user_id": "ofm_1234", 
+            "patient_number": 1452, 
+          }
+
+        :>header Accept: application/json
+
+        :<header Content-Type: application/json
+        :status 200: metadata updated
         """
-        return jsonify({"return": capture_id})
+
+        capture_obj = self.microscope.camera.image_from_id(capture_id)
+
+        if not capture_obj:
+            return abort(404)  # 404 Not Found
+        
+        data_dict = JsonPayload(request).json
+
+        capture_obj.put_metadata(data_dict)
+
+        capture_metadata = capture_obj.state
+
+        return jsonify(capture_metadata)
 
 
 class DownloadRedirectAPI(MicroscopeView):
@@ -235,7 +267,7 @@ class DownloadRedirectAPI(MicroscopeView):
         """
         capture_obj = self.microscope.camera.image_from_id(capture_id)
 
-        if not capture_obj or not capture_obj.metadata['available']:
+        if not capture_obj or not capture_obj.state['available']:
             return abort(404)  # 404 Not Found
 
         as_attachment = get_bool(request.args.get('as_attachment'))
@@ -272,7 +304,7 @@ class DownloadAPI(MicroscopeView):
         """
         capture_obj = self.microscope.camera.image_from_id(capture_id)
 
-        if not capture_obj or not capture_obj.metadata['available']:
+        if not capture_obj or not capture_obj.state['available']:
             return abort(404)  # 404 Not Found
 
         as_attachment = get_bool(request.args.get('as_attachment'))
