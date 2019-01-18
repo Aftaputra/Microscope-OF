@@ -267,10 +267,9 @@ class DownloadRedirectAPI(MicroscopeView):
         if not capture_obj or not capture_obj.state['available']:
             return abort(404)  # 404 Not Found
 
-        as_attachment = get_bool(request.args.get('as_attachment'))
         thumbnail = get_bool(request.args.get('thumbnail'))
 
-        return redirect(url_for('.capture_download', capture_id=capture_id, filename=capture_obj.filename, as_attachment=as_attachment, thumbnail=thumbnail), code=307)
+        return redirect(url_for('.capture_download', capture_id=capture_id, filename=capture_obj.filename, thumbnail=thumbnail), code=307)
 
 
 class DownloadAPI(MicroscopeView):
@@ -293,7 +292,6 @@ class DownloadAPI(MicroscopeView):
 
         :>header Accept: image/jpeg
         :query thumbnail: return an image thumbnail e.g. ?thumbnail=true
-        :query as_attachment: return the image as an attachment download e.g. ?as_attachment=true
 
         :>header Content-Type: image/jpeg
         :status 200: capture data found
@@ -304,12 +302,11 @@ class DownloadAPI(MicroscopeView):
         if not capture_obj or not capture_obj.state['available']:
             return abort(404)  # 404 Not Found
 
-        as_attachment = get_bool(request.args.get('as_attachment'))
         thumbnail = get_bool(request.args.get('thumbnail'))
 
         # If no filename is specified, redirect to the capture's currently set filename
         if not filename:
-            return redirect(url_for('capture_download', capture_id=capture_id, filename=capture_obj.filename, as_attachment=as_attachment, thumbnail=thumbnail), code=307)
+            return redirect(url_for('capture_download', capture_id=capture_id, filename=capture_obj.filename, thumbnail=thumbnail), code=307)
 
         # Download the image data using the requested filename
         if thumbnail:
@@ -319,9 +316,7 @@ class DownloadAPI(MicroscopeView):
 
         return send_file(
             img,
-            mimetype='image/jpeg',
-            as_attachment=as_attachment,
-            attachment_filename=filename)
+            mimetype='image/jpeg')
 
 
 class MetadataRedirectAPI(MicroscopeView):
@@ -338,9 +333,7 @@ class MetadataRedirectAPI(MicroscopeView):
         if not capture_obj or not capture_obj.state['available']:
             return abort(404)  # 404 Not Found
 
-        as_attachment = get_bool(request.args.get('as_attachment'))
-
-        return redirect(url_for('.metadata_download', capture_id=capture_id, filename=capture_obj.metadataname, as_attachment=as_attachment), code=307)
+        return redirect(url_for('.metadata_download', capture_id=capture_id, filename=capture_obj.metadataname), code=307)
 
 
 class MetadataAPI(MicroscopeView):
@@ -373,8 +366,6 @@ class MetadataAPI(MicroscopeView):
         if not capture_obj or not capture_obj.state['available']:
             return abort(404)  # 404 Not Found
 
-        as_attachment = get_bool(request.args.get('as_attachment'))
-
         # If no filename is specified, redirect to the capture's currently set filename
         if not filename:
             return redirect(url_for('capture_download', capture_id=capture_id, filename=capture_obj.metadataname, as_attachment=as_attachment), code=307)
@@ -382,12 +373,6 @@ class MetadataAPI(MicroscopeView):
         # Download the metadata using the requested filename
         data = capture_obj.yaml
 
-        headers = {}
-
-        if as_attachment:
-            headers["Content-Disposition"] = "attachment;filename={}".format(filename)
-
         return Response(
             data,
-            mimetype="text/yaml",
-            headers=headers)
+            mimetype="text/yaml")
