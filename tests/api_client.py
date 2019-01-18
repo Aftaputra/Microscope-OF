@@ -85,7 +85,7 @@ class APIconnection:
 
     def capture(self, use_video_port=True, keep_on_disk=False, delete_after_use=True, resize=None):
         p = self.new_capture(use_video_port=use_video_port, keep_on_disk=keep_on_disk, resize=resize)
-        capture_id = p['id']
+        capture_id = p['metadata']['id']
         img_array = self.get_capture(capture_id)
 
         if delete_after_use:
