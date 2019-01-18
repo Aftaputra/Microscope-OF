@@ -18,6 +18,8 @@ from flask import (
 from flask.views import MethodView
 from werkzeug.exceptions import default_exceptions
 
+from flask_cors import CORS
+
 from openflexure_microscope.api.utilities import list_routes
 
 from openflexure_microscope import Microscope, config
@@ -46,6 +48,8 @@ def uri(suffix, api_version, base=None):
 # Create flask app
 app = Flask(__name__)
 app.url_map.strict_slashes = False
+
+CORS(app, resources=r'/api/*')
 
 
 # Make errors more API friendly
