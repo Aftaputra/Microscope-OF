@@ -4,6 +4,7 @@ import os
 import glob
 import datetime
 import copy
+import yaml
 import logging
 from PIL import Image
 import atexit
@@ -59,6 +60,9 @@ class CaptureObject(object):
         self.filename = "{}.{}".format(filename, fmt)
         self.folder = folder
 
+        # Dictionary for storing custom metadata
+        self._metadata = {}
+
         # Initialise the capture stream
         self.initialise_capture()
 
@@ -100,6 +104,9 @@ class CaptureObject(object):
         else:
             logging.debug("Target for {} set to 'file'".format(self.id))
             self.stream = self.file
+        
+        # Save initial metadata file
+        self.save_metadata()
 
     def build_file_path(
             self,
@@ -122,7 +129,6 @@ class CaptureObject(object):
 
         # Move to tmp directory if not being kept
         if not self.keep_on_disk:
-            # TODO: Empty tmp folder on module load and atexit
             self.file_notmp = self.file  # Store originally defined folder
             self.filefolder = TEMP_CAPTURE_PATH
             self.file = os.path.join(self.filefolder, self.filename)
@@ -170,16 +176,55 @@ class CaptureObject(object):
             return False
 
     @property
+    def metadata_file(self) -> str:
+        return "{}.yaml".format(os.path.splitext(self.file)[0])
+
+    def put_metadata(self, data: dict) -> None:
+        self._metadata.update(data)
+        self.save_metadata()
+
+    def save_metadata(self) -> None:
+        logging.debug("Writing metadata to file {}".format(self.metadata_file))
+        with open(self.metadata_file, 'w') as outfile:
+            yaml.dump(self.metadata, outfile, default_flow_style=False)
+
+    def delete_metadata(self) -> None:
+        if os.path.isfile(self.metadata_file):
+            logging.info("Deleting file {}".format(self.metadata_file))
+            os.remove(self.metadata_file)
+
+    @property
     def metadata(self) -> dict:
-        """Return dictionary of StreamObject properties."""
+        # Create basic metadata dictionary
         d = {
             'id': self.id,
-            'locked': self.locked,
-            'keep_on_disk': self.keep_on_disk,
             'filename': self.filename,
             'path': self.file,
             'time': self.timestring
         }
+
+        # Add custom metadata to dictionary
+        d.update(self._metadata)
+
+        return d
+
+    @property
+    def exists(self) -> bool:
+        return self.stream_exists or self.file_exists
+
+    @property
+    def state(self) -> dict:
+        """Return dictionary of StreamObject properties."""
+
+        # Create basic state dictionary
+        d = {
+            'locked': self.locked,
+            'keep_on_disk': self.keep_on_disk,
+        }
+
+        # Add metadata to state
+        d['metadata'] = self.metadata
+        d['metadata_path'] = self.metadata_file
 
         # Check bytestream
         if self.stream_exists:
@@ -188,14 +233,14 @@ class CaptureObject(object):
             d['bytestream'] = False
 
         # Combined availability of data
-        if self.stream_exists or self.file_exists:
+        if self.exists:
             d['available'] = True
         else:
             d['available'] = False
 
         # Check if file was manually deleted
         if self.keep_on_disk and not self.file_exists:
-            d['path'] = "{} (Deleted)".format(d['path'])
+            d['metadata']['path'] = "{} (Deleted)".format(d['metadata']['path'])
 
         return d
 
@@ -273,15 +318,29 @@ class CaptureObject(object):
         else:
             return False
 
+    def save(self) -> None:
+        """Write stream to file, and save/update metadata file"""
+        # Try to save the file (only succeeds if an unsaved stream exists)
+        self.save_file()
+
+        # If a stream OR file exists, save the metadata file
+        if self.exists:
+            self.save_metadata()
+
     def delete_stream(self):
         """Clear the BytesIO bytestream of the StreamObject."""
         self.bytestream = io.BytesIO()
 
     def delete_file(self) -> bool:
         """If the StreamObject has been saved, delete the file."""
+        if os.path.isfile(self.metadata_file):
+            logging.info("Deleting file {}".format(self.metadata_file))
+            os.remove(self.metadata_file)
+
         if os.path.isfile(self.file):
             logging.info("Deleting file {}".format(self.file))
             os.remove(self.file)
+
             return True
         else:
             return False
@@ -291,11 +350,12 @@ class CaptureObject(object):
         logging.info("Deleting {}".format(self.id))
         self.delete_stream()
         self.delete_file()
+        self.delete_metadata()
 
     def shunt(self):
         """Demote the StreamObject from being stored in memory."""
         if not self.file_exists:  # If file doesn't already exist
-            self.save_file()  # Save bytestream to disk, if it exists
+            self.save()  # Save bytestream to disk, if it exists
         self.delete_stream()  # Delete the bytestream from memory
 
     def close(self):
@@ -303,6 +363,6 @@ class CaptureObject(object):
         logging.info("Closing {}".format(self.id))
         self.delete_stream()
         if not self.keep_on_disk:
-            self.delete_file()
+            self.delete()
 
 atexit.register(clear_tmp)
