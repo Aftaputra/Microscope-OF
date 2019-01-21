@@ -15,7 +15,7 @@ authors = [
 
 readme = 'README.md'
 
-repository = "https://gitlab.com/openflexure/openflexure-microscope-software"
+repository = "https://gitlab.com/openflexure/openflexure-microscope-server"
 homepage = "https://www.openflexure.org"
 
 keywords = ['raspberry pi', 'arduino', 'microscope']
