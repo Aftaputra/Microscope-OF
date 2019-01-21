@@ -1,3 +1,2 @@
 openflexure-microscope==1.0.0b0
 sphinxcontrib.httpdomain
-flask_cors
