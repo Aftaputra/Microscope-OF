@@ -42,9 +42,12 @@ class Microscope(object):
         if attach_plugins:
             self.attach_plugins()
         
-        # Get name from config, or generate
+        # Set default parameters
         if not 'name' in self._config:
             self._config['name'] = uuid.uuid4().hex
+        
+        if not 'fov' in self._config:
+            self._config['fov'] = [0, 0]  # Assumes pi camera 2, and 40x objective
 
     def __enter__(self):
         """Create microscope on context enter."""

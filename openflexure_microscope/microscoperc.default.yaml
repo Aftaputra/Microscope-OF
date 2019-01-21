@@ -7,6 +7,9 @@ video_resolution: [832, 624]
 image_resolution: [2592, 1944]
 numpy_resolution: [1312, 976]
 
+# Field of view, in stage steps
+fov: [4100, 3146]
+
 # Capture quality
 jpeg_quality: 75
 
