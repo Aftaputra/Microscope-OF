@@ -1,6 +1,6 @@
 from openflexure_microscope.api.utilities import gen, JsonPayload
 from openflexure_microscope.api.v1.views import MicroscopeView
-from openflexure_microscope.utilities import axes_to_array
+from openflexure_microscope.utilities import axes_to_array, filter_dict
 
 from flask import Response, Blueprint, jsonify, request
 
@@ -11,7 +11,8 @@ class PositionAPI(MicroscopeView):
 
     def get(self):
         """
-        Return current x, y and z positions of the stage.
+        Return current x, y and z positions of the stage. 
+        The response is formatted as a sub-section of the general microscope state.
 
         .. :quickref: Position; Get current position
 
@@ -31,16 +32,18 @@ class PositionAPI(MicroscopeView):
           Content-Type: application/json
 
           {
-            "x": 0, 
-            "y": 0, 
-            "z": 0
+            "stage": {
+                "position": {
+                "x": -6629, 
+                "y": 7489, 
+                "z": -3844
+                }
+            }
           }
 
-        :>json int x: x steps
-        :>json int y: y steps
-        :>json int z: z steps
         """
-        return jsonify(self.microscope.state['stage']['position'])
+        out = filter_dict(self.microscope.state, ('stage', 'position'))
+        return jsonify(out)
 
     def post(self):
         """
@@ -78,7 +81,9 @@ class PositionAPI(MicroscopeView):
 
         self.microscope.stage.move_rel(position)
 
-        return jsonify(self.microscope.state['stage']['position'])
+        out = filter_dict(self.microscope.state, ('stage', 'position'))
+
+        return jsonify(out)
 
 
 def construct_blueprint(microscope_obj):
