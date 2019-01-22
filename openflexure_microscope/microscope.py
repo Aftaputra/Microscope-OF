@@ -138,7 +138,11 @@ class Microscope(object):
         }
 
         # Add stage position
-        position = self.stage.position
+        if self.stage:  # If stage exists, populate with real values
+            position = self.stage.position
+        else:  # Else, zero
+            position = [0, 0, 0]
+
         state['stage']['position'] = {
             'x': position[0],
             'y': position[1],
@@ -158,7 +162,11 @@ class Microscope(object):
             self._config.update(self.camera.config)
         
         # If attached to a stage
-        backlash = self.stage.backlash.tolist()
+        if self.stage:
+            backlash = self.stage.backlash.tolist()
+        else:
+            backlash = [0, 0, 0]
+
         self._config['backlash'] = {
             'x': backlash[0],
             'y': backlash[1],

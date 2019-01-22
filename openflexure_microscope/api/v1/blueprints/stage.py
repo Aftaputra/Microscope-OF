@@ -67,7 +67,7 @@ class PositionAPI(MicroscopeView):
         position = [0, 0, 0]
 
         # Handle absolute positioning (calculate a relative move from current position and target)
-        if payload.param('absolute') is True:
+        if (payload.param('absolute') is True) and (self.microscope.stage):  # Only if stage exists
             target_position = axes_to_array(payload.json, ['x', 'y', 'z'])
             logging.debug("TARGET: {}".format(target_position))
             position = [target_position[i] - self.microscope.stage.position[i] for i in range(3)]
@@ -79,7 +79,9 @@ class PositionAPI(MicroscopeView):
 
         logging.debug(position)
 
-        self.microscope.stage.move_rel(position)
+        # Move if stage exists
+        if self.microscope.stage:
+            self.microscope.stage.move_rel(position)
 
         out = filter_dict(self.microscope.state, ('stage', 'position'))
 
