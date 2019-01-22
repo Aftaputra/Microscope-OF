@@ -5,6 +5,7 @@ import os
 import threading
 from PIL import Image
 import datetime
+import yaml
 import logging
 
 try:
@@ -15,7 +16,8 @@ except ImportError:
     except ImportError:
         from _thread import get_ident
 
-from .capture import CaptureObject, BASE_CAPTURE_PATH
+from .capture import CaptureObject, capture_from_dict, BASE_CAPTURE_PATH
+from openflexure_microscope.config import USER_CONFIG_DIR
 
 
 def last_entry(object_list: list):
@@ -109,6 +111,14 @@ class BaseCamera(object):
         # Capture data
         self.images = []  #: list: List of image capture objects
         self.videos = []  #: list: List of video recording objects
+
+        # Capture data files
+        self.images_db = os.path.join(USER_CONFIG_DIR, "images_db.yaml")
+        self.videos_db = os.path.join(USER_CONFIG_DIR, "videos_db.yaml")
+
+        # Load captures from persistent db
+        self.images = self.load_capture_db(self.images_db)
+        self.videos = self.load_capture_db(self.videos_db)
 
     def __enter__(self):
         """Create camera on context enter."""
@@ -208,19 +218,51 @@ class BaseCamera(object):
         """Return a video StreamObject with a matching ID."""
         return entry_by_id(id, self.videos)
 
-    # CREATING NEW CAPTURES
+    # MANAGE CAPTURE DATABASE
 
-    def new_stream_object(
-            self,
-            stream_object,
-            target_list: list,
-            shunt_others: bool=True):
-        """Add a new capture to a list of captures, and shunt all others."""
-        if shunt_others:  # If shunting all older captures
-            for obj in target_list:  # For each older capture
-                obj.shunt()  # Shunt capture from memory to storage
-        target_list.append(stream_object)
-        return stream_object
+    def save_capture_db(self, capture_list, db_path):
+        capture_state = [capture.state for capture in capture_list]
+
+        with open(db_path, 'w') as outfile:
+            yaml.safe_dump(capture_state, outfile)
+
+    def validate_captures(self, capture_list):
+        # Purge captures with missing data files
+        valid_captures = []
+        for capture in capture_list:
+            if capture.file_exists:
+                valid_captures.append(capture)
+            else:
+                if os.path.isfile(capture.metadata_file):
+                    logging.warning("Capture data missing. Deleting metadata file {}.".format(capture.metadata_file))
+                    os.remove(capture.metadata_file)
+
+        # Validate and repair captures
+        for capture in valid_captures:
+            # If the captures metadata file is missing
+            if not os.path.isfile(capture.metadata_file):
+                # Recreate the metadata file
+                capture.save_metadata()
+        
+        return valid_captures
+
+    def load_capture_db(self, db_path):
+        if os.path.isfile(db_path):
+            # Load list of capture dictionary representations from db_path
+            with open(db_path, 'r') as infile:
+                capture_dict_list = yaml.load(infile)
+
+            # Create capture object list, and validate captures
+            capture_list = self.validate_captures(
+                [capture_from_dict(capture_dict) for capture_dict in capture_dict_list]
+            )
+
+            return capture_list
+
+        else:
+            return []
+
+    # CREATING NEW CAPTURES
 
     def shunt_captures(self, target_list: list):
         for obj in target_list:  # For each older capture
@@ -229,7 +271,7 @@ class BaseCamera(object):
     def new_image(
             self,
             write_to_file: bool=False,
-            keep_on_disk: bool=True,
+            temporary: bool=True,
             filename: str=None,
             fmt: str='jpeg',
             shunt_others: bool=True):
@@ -239,31 +281,37 @@ class BaseCamera(object):
 
         Args:
             write_to_file (bool): Should the StreamObject write to a file, or an in-memory byte stream.
-            keep_on_disk (bool): Should the data be kept on disk after session ends. Creating the capture with a content manager sets this to false.
+            keep_on_disk (bool): Should the data be deleted after session ends. Creating the capture with a content manager sets this to true.
             filename (str): Name of the stored file. Defaults to timestamp.
             fmt (str): Format of the capture.
         """
 
+        # Generate file name
         if not filename:
             filename = self.generate_basename(self.images)
             logging.debug(filename)
 
+        # Create capture object
         output = CaptureObject(
             write_to_file=write_to_file,
-            keep_on_disk=keep_on_disk,
+            temporary=temporary,
             filename=filename,
             folder=self.paths['image'],
             fmt=fmt)
 
+        # Update capture list
         self.shunt_captures(self.images)
         self.images.append(output)
+
+        # Update capture database
+        self.save_capture_db(self.images, self.images_db)
 
         return output
 
     def new_video(
             self,
             write_to_file: bool=True,
-            keep_on_disk: bool=True,
+            temporary: bool=False,
             filename: str=None,
             fmt: str='h264',
             shunt_others: bool=True):
@@ -273,28 +321,35 @@ class BaseCamera(object):
 
         Args:
             write_to_file (bool): Should the StreamObject write to a file, or an in-memory byte stream.
-            keep_on_disk (bool): Should the data be kept on disk after session ends. Creating the capture with a content manager sets this to false.
+            temporary (bool): Should the data be deleted after session ends. Creating the capture with a content manager sets this to true.
             filename (str): Name of the stored file. Defaults to timestamp.
             fmt (str): Format of the capture.
         """
 
+        # Generate file name
         if not filename:
             filename = self.generate_basename(self.videos)
             logging.debug(filename)
 
+        # Create capture object
         output = CaptureObject(
             write_to_file=write_to_file,
-            keep_on_disk=keep_on_disk,
+            temporary=temporary,
             filename=filename,
             folder=self.paths['video'],
             fmt=fmt)
 
+        # Update capture list
         self.shunt_captures(self.videos)
         self.videos.append(output)
+
+        # Update capture database
+        self.save_capture_db(self.videos, self.videos_db)
 
         return output
 
     # INTELLIGENTLY GENERATE FILENAMES
+
     def generate_basename(self, obj_list: list) -> str:
         initial_basename = generate_basename()
         basename = initial_basename

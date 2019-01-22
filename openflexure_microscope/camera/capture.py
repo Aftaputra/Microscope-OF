@@ -24,6 +24,24 @@ def clear_tmp():
         os.remove(f)
         logging.debug("Removed {}".format(f))
 
+def capture_from_dict(capture_dict):
+    capture = CaptureObject(create_metadata_file=False)  # Create a placeholder capture
+
+    # Populate capture parameters
+    capture.temporary = capture_dict['temporary']
+    capture.id = capture_dict['metadata']['id']
+    capture.timestring = capture_dict['metadata']['time']
+    capture.format = capture_dict['metadata']['format']
+
+    if 'custom' in capture_dict['metadata']:
+        capture._metadata = capture_dict['metadata']['custom']
+
+    capture.file = capture_dict['metadata']['path']
+    capture.split_file_path(capture.file)
+
+    return capture
+
+
 class CaptureObject(object):
     """
     StreamObject used to store and process capture data, and metadata.
@@ -33,10 +51,11 @@ class CaptureObject(object):
     def __init__(
             self,
             write_to_file: bool=False,
-            keep_on_disk: bool=True,
+            temporary: bool=False,
             filename: str='',
             folder: str='',
-            fmt: str='') -> None:
+            fmt: str='',
+            create_metadata_file: bool=True) -> None:
         """Create a new StreamObject, to manage capture data."""
 
         # Store a nice ID
@@ -48,7 +67,7 @@ class CaptureObject(object):
         self.format = fmt
 
         # Keep on disk after close by default
-        self.keep_on_disk = keep_on_disk
+        self.temporary = temporary
 
         # Explicitally state if capture should be written to a file, not a bytestream
         self.write_to_file = write_to_file
@@ -56,15 +75,18 @@ class CaptureObject(object):
         # Create file name. Default to UUID
         if not filename:
             filename = self.id
-
         self.filename = "{}.{}".format(filename, fmt)
+
+        # Create folder path. Default to BASE_CAPTURE_PATH
+        if not folder:
+            folder = BASE_CAPTURE_PATH
         self.folder = folder
 
         # Dictionary for storing custom metadata
         self._metadata = {}
 
         # Initialise the capture stream
-        self.initialise_capture()
+        self.initialise_capture(create_metadata_file=create_metadata_file)
 
         # Log if created by context manager
         self.context_manager = False
@@ -78,7 +100,7 @@ class CaptureObject(object):
     def __enter__(self):
         """Create StreamObject in context, to auto-clean disk data."""
         logging.debug("Entering context for {}. Stored files will be cleaned up automatically regardless of location.".format(self.id))
-        self.keep_on_disk = False  # Flag file to be removed on close.
+        self.temporary = True  # Flag file to be removed on close.
         self.context_manager = True  # Used in metadata
 
         logging.info("Rebuilding as a temporary capture...")
@@ -91,7 +113,7 @@ class CaptureObject(object):
         logging.info("Cleaning up {}".format(self.id))
         self.close()
 
-    def initialise_capture(self):
+    def initialise_capture(self, create_metadata_file=True):
         self.build_file_path(self.filename, self.folder)
 
         # Byte bytestream properties
@@ -106,7 +128,8 @@ class CaptureObject(object):
             self.stream = self.file
         
         # Save initial metadata file
-        self.save_metadata()
+        if create_metadata_file:
+            self.save_metadata()
 
     def build_file_path(
             self,
@@ -128,7 +151,7 @@ class CaptureObject(object):
             raise Exception("Captures cannot be stored in a lower-level directory than {}.".format(BASE_CAPTURE_PATH))
 
         # Move to tmp directory if not being kept
-        if not self.keep_on_disk:
+        if self.temporary:
             self.file_notmp = self.file  # Store originally defined folder
             self.filefolder = TEMP_CAPTURE_PATH
             self.file = os.path.join(self.filefolder, self.filename)
@@ -201,11 +224,12 @@ class CaptureObject(object):
             'id': self.id,
             'filename': self.filename,
             'path': self.file,
-            'time': self.timestring
+            'time': self.timestring,
+            'format': self.format
         }
 
         # Add custom metadata to dictionary
-        d.update(self._metadata)
+        d['custom'] = self._metadata
 
         return d
 
@@ -224,7 +248,7 @@ class CaptureObject(object):
         # Create basic state dictionary
         d = {
             'locked': self.locked,
-            'keep_on_disk': self.keep_on_disk,
+            'temporary': self.temporary,
         }
 
         # Add metadata to state
@@ -242,10 +266,6 @@ class CaptureObject(object):
             d['available'] = True
         else:
             d['available'] = False
-
-        # Check if file was manually deleted
-        if self.keep_on_disk and not self.file_exists:
-            d['metadata']['path'] = "{} (Deleted)".format(d['metadata']['path'])
 
         return d
 
@@ -281,11 +301,10 @@ class CaptureObject(object):
         # If no thumbnail exists, try and make one
         if not self.thumb_bytes:
             logging.info("Building thumbnail")
+            self.thumb_bytes = io.BytesIO()
             if self.format.upper() in pil_formats:
                 im = Image.open(self.data)
                 im.thumbnail(thumbnail_size)
-
-                self.thumb_bytes = io.BytesIO()
                 im.save(self.thumb_bytes, self.format)
                 self.thumb_bytes.seek(0)
         else:
@@ -307,9 +326,9 @@ class CaptureObject(object):
 
     def save_file(self) -> bool:
         """Write the StreamObjects bytestream to a file."""
-        if not self.keep_on_disk:  # If capture is currently temporary
+        if self.temporary:  # If capture is currently temporary
             self.load_file()  # Load data from tmp file into bytestream, if tmp file exists
-            self.keep_on_disk = True  # Flag as kept on disk
+            self.temporary = False  # Flag as kept on disk
             self.file = self.file_notmp  # Reset file path to non-temporary path
             self.split_file_path(self.file)  # Set split properties based on new path
             logging.info("Moved temporary file out to {}".format(self.file))
@@ -367,7 +386,7 @@ class CaptureObject(object):
         """Both clear the bytestream, and delete any associated on-disk data."""
         logging.info("Closing {}".format(self.id))
         self.delete_stream()
-        if not self.keep_on_disk:
+        if self.temporary:
             self.delete()
 
 atexit.register(clear_tmp)

@@ -68,7 +68,7 @@ class ListAPI(MicroscopeView):
 
           {
             "filename": "myfirstcapture", 
-            "keep_on_disk": true, 
+            "temporary": false, 
             "use_video_port": true,
             "bayer": true,
             "size": {
@@ -80,7 +80,7 @@ class ListAPI(MicroscopeView):
         :>header Accept: application/json
 
         :<json string filename: filename of stored capture
-        :<json boolean keep_on_disk: keep the capture file on microscope after closing
+        :<json boolean temporary: delete the capture file on microscope after closing
         :<json boolean use_video_port: capture still image from the video port
         :<json boolean bayer: keep raw capture data in the image file
         :<json json size:   - **x** *(int)*: x-axis resize
@@ -89,7 +89,7 @@ class ListAPI(MicroscopeView):
         :>json boolean available: availability of capture data
         :>json string filename: filename of capture
         :>json string id: unique id of the capture object
-        :>json boolean keep_on_disk: keep the capture file on microscope after closing
+        :>json boolean temporary: delete the capture file on microscope after closing
         :>json boolean locked: file locked for modifications (mostly used for video recording)
         :>json string path: path on pi storage to the capture file, if available
         :>json boolean stream: capture stored in-memory as a BytesIO stream
@@ -102,7 +102,7 @@ class ListAPI(MicroscopeView):
         payload = JsonPayload(request)
 
         filename = payload.param('filename')
-        keep_on_disk = payload.param('keep_on_disk', default=True, convert=bool)
+        temporary = payload.param('temporary', default=True, convert=bool)
         use_video_port = payload.param('use_video_port', default=False, convert=bool)
         bayer = payload.param('bayer', default=True, convert=bool)
 
@@ -115,7 +115,7 @@ class ListAPI(MicroscopeView):
 
         output = self.microscope.camera.new_image(
             write_to_file=True,
-            keep_on_disk=keep_on_disk,
+            temporary=temporary,
             filename=filename)
 
         self.microscope.camera.capture(

@@ -143,7 +143,7 @@ function getStagePositions() {
 }
 
 // Capture methods
-function newCapture(filename, keep_on_disk, use_video_port, bayer, resizeWidth=null, resizeHeight=null) {
+function newCapture(filename, temporary, use_video_port, bayer, resizeWidth=null, resizeHeight=null) {
     // Make a position request
     function newCaptureCallback(response, status) {
         if (status != 200) {
@@ -155,7 +155,7 @@ function newCapture(filename, keep_on_disk, use_video_port, bayer, resizeWidth=n
 
     payload = {
         "filename": filename,
-        "keep_on_disk": keep_on_disk,
+        "temporary": temporary,
         "use_video_port": use_video_port,
         "bayer": bayer
     }
@@ -173,7 +173,7 @@ function newCapture(filename, keep_on_disk, use_video_port, bayer, resizeWidth=n
 
 function newCaptureFromInput() {
     captureFilenameInput = document.getElementById('captureFilenameInput');
-    captureKeepOnDiskCheck = document.getElementById('captureKeepOnDiskCheck');
+    captureTemporaryCheck = document.getElementById('captureTemporaryCheck');
     captureFullResolutionCheck = document.getElementById('captureFullResolutionCheck');
     captureBayerCheck = document.getElementById('captureBayerCheck')
 
@@ -200,7 +200,7 @@ function newCaptureFromInput() {
 
     newCapture(
         filename, 
-        captureKeepOnDiskCheck.checked, 
+        captureTemporaryCheck.checked, 
         !(captureFullResolutionCheck.checked), 
         captureBayerCheck.checked, 
         resizeWidth, 
