@@ -1,19 +1,3 @@
-/*
-TODO: Make delete button work
-
-TODO: Recordings list
-TODO: New recording panel
-TODO: Somehow have Python make funky thumbnails for videos?
-
-TODO: Remember a position and restore that position
-TODO: Right click to auto-focus, centered on that region
-
-TODO: Box to specify device IP
-TODO: Dynamically add stream image src from JS (allows streaming from an external IP)
-*/
-
-var baseURI = "/api/v1"
-
 // Key IDs
 var pgupKeyID = 33;
 var pgdnKeyID = 34;
@@ -28,71 +12,250 @@ var escKeyID = 27;
 
 var keysDown = {}; //Array of keys down
 
-var stageVelocity = 50;  
-var focusVelocity = 20;
-
-var requestLock = false;
-
-// Microscope client-side callibration
-//TODO: Move to serverside microscope property
-var fovX =  4100;
-var fovY = 3146;
-
-window.onload = function() {
-    getStagePositions()
-    updateTextBoxes()
-    getCaptures()
+var clientStageParams = {
+    "velocityXY": 50,
+    "velocityZ": 20,
+    "fov": [0, 0]
 }
 
+// TODO: Blank out interface except connect menu onload.
+window.onload = function() {
+    // Populate with current URL
+    document.getElementById('microscopeHostInput').value = window.location.hostname
+    setHostFromInput()
+}
+
+// Microscope API connection class
+class apiConnection {
+    constructor(hostName, hostPort, apiVersion="v1") {
+        this.hostName = hostName;
+        this.hostPort = hostPort;
+        this.apiVersion = apiVersion;
+
+        this.baseURI = `http://${hostName}:${hostPort}/api/${apiVersion}`
+
+        this.requestLock = false;
+
+        // Used to access 'this' from innter functions
+        const self = this;
+    }
+
+    // Identify
+    identify(callback) {
+        function identifyCallback(response, status) {
+            if (status == null) {
+                console.log("No server found. Aborting.")
+            }
+            else {
+                callback(response, status)
+            }
+        }
+        this.getConfig(identifyCallback)
+    }
+
+    // Get microscope state
+    getState(callback) {
+        this.safeRequest("GET", this.baseURI+"/state", null, callback, false)
+    }
+    
+    // Get microscope configuration
+    getConfig(callback) {
+        this.safeRequest("GET", this.baseURI+"/config", null, callback, false)
+    }
+
+    // New capture
+    newCapture(filename, temporary, use_video_port, bayer, callback, resizeWidth=null, resizeHeight=null) {
+        var payload = {
+            "filename": filename,
+            "temporary": temporary,
+            "use_video_port": use_video_port,
+            "bayer": bayer
+        }
+    
+        if ((resizeWidth) && (resizeHeight)) {
+            payload.size = {
+                "width": resizeWidth,
+                "height": resizeHeight
+            }
+        }
+    
+        console.log(payload);
+        this.safeRequest("POST", this.baseURI+"/camera/capture/", payload, callback);
+    }
+
+    // Delete a capture
+    deleteCapture(capture_id, callback) {
+        var r = confirm("Warning! This will delete all copies of this capture from the Raspberry Pi. Click OK to proceed.");
+        if (r == true) {
+            this.safeRequest("DELETE", this.baseURI+"/camera/capture/"+capture_id+"/", null, callback, false)
+        }
+    }
+    
+    // Delete all captures in the session
+    deleteAllCaptures(callback) {
+        var r = confirm("Warning! This will delete all copies of all captures from the Raspberry Pi. Click OK to proceed.");
+        if (r == true) {
+            this.safeRequest("DELETE", this.baseURI+"/camera/capture/", null, callback, false)
+        }
+    }
+    
+    // Get the list of captures in the session
+    getCaptures(callback) {
+        this.safeRequest("GET", this.baseURI+"/camera/capture", null, callback, false)
+    }
+
+    // Move stage absolute
+    setStagePositions(x_abs, y_abs, z_abs, callback, absolute=false) {
+        // Make a position request
+        this.safeRequest("POST", this.baseURI+"/stage/position", { "absolute": absolute, "x": x_abs, "y": y_abs, "z": z_abs}, callback)
+    }
+
+    // Method for making requests
+    safeRequest(method, url, payload, callback, lock=true, force=false) {
+        var allowRequest;
+
+        if (force == true) {
+            allowRequest = true;
+        }
+        else {
+            allowRequest = !(self.requestLock)
+        }
+
+        if (allowRequest == true) {
+            var xhr = new XMLHttpRequest();   // new HttpRequest instance 
+            xhr.open(method, url);
+    
+            if (lock == true) {  // If request is using the lock
+                self.requestLock = true;  // Hold the lock
+            }
+    
+            xhr.onload = function(e) {
+                if (xhr.readyState === 4) {
+                    if (lock == true) {  // If request is using the lock
+                        self.requestLock = false;  // Release the lock
+                    }
+    
+                    if (xhr.status !== 200) {
+                        console.error(xhr.statusText);
+                    } 
+                    callback(JSON.parse(xhr.responseText), xhr.status);
+                }
+            };
+
+            xhr.onerror = function(e) {
+                callback("An error occurred during the transaction.", null);
+            }
+    
+            if (method == "POST" || method == "PUT") {
+                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            }
+    
+            xhr.send(JSON.stringify(payload));
+    
+        }
+        else {
+            console.log("Cannot start the following request while the previous requets is pending:")
+            console.log(method, url, payload)
+        }
+    }
+    
+}
+
+// Declare connection
+var api = null
+
+// Setup methods
+function setHostFromInput() {
+    hostName = document.getElementById('microscopeHostInput').value;
+    hostPort = document.getElementById('microscopePortInput').value;
+
+    api = new apiConnection(hostName, hostPort)
+    api.identify(loadInterfaceFromHost)
+}
+
+// Populate the UI from a connected host
+function loadInterfaceFromHost(response, status) {
+    if (status == 200) {
+        // Populate the preview panel
+        streamContent = `<img src="${api.baseURI}/stream" ondblclick="clickHotspotImage(event);">`
+        document.getElementById("streambox").innerHTML = streamContent;
+
+        // Update UI with client params
+        updateClientValues();
+
+        // Update UI with microscope state
+        api.getState(updateStateValues)
+
+        // Update UI with microscope config
+        api.getConfig(updateConfigValues)
+
+        // Update UI with captures
+        api.getCaptures(constructCaptureList)
+        
+    }
+}
+
+function updateClientValues() {
+    // Microscope velocity
+    document.getElementById('stageVelocityText').value = clientStageParams.velocityXY;
+    document.getElementById('stageVelocityInput').value = clientStageParams.velocityXY;
+    document.getElementById('focusVelocityText').value = clientStageParams.velocityZ;
+    document.getElementById('focusVelocityInput').value = clientStageParams.velocityZ;
+}
+
+function updateStateValues(response, status){
+    if (status == 200) {
+        updatePositionValues(response);
+    }
+}
+
+function updateConfigValues(response, status){
+    if (status == 200) {
+        updateFovValues(response);
+    }
+}
+
+function updatePositionValues(state) {
+    document.getElementById('x_abs').value = state.stage.position.x;
+    document.getElementById('y_abs').value = state.stage.position.y;
+    document.getElementById('z_abs').value = state.stage.position.z;
+}
+
+function updateFovValues(config) {
+    clientStageParams.fov = config.fov
+    console.log(clientStageParams.fov)
+}
 
 // Cosmetic methods
+
+// Adds/removes a class to a specified div
 function toggleClassToDiv(div_id, class_name) {
     document.getElementById(div_id).classList.toggle(class_name)
 }
 
-// Microscope methods
-
-function deleteCapture(capture_id) {
-    function deleteCaptureCallback(response, status) {
-        console.log(status);
-        getCaptures();
-    }
-    var r = confirm("Warning! This will delete all copies of this capture from the Raspberry Pi. Click OK to proceed.");
-    if (r == true) {
-        safeRequest("DELETE", baseURI+"/camera/capture/"+capture_id+"/", null, deleteCaptureCallback, false)
-    }
+function updateCaptures() {
+    api.getCaptures(constructCaptureList)
 }
 
 function deleteAllCaptures() {
-    function deleteAllCapturesCallback(response, status) {
-        console.log(status);
-        getCaptures();
-    }
-    var r = confirm("Warning! This will delete all copies of all captures from the Raspberry Pi. Click OK to proceed.");
-    if (r == true) {
-        safeRequest("DELETE", baseURI+"/camera/capture/", null, deleteAllCapturesCallback, false)
-    }
+    api.deleteAllCaptures(updateCaptures)
 }
 
-function getCaptures() {
-    function updateCapturesCallback(response, status) {
-        console.log(status);
-        updateCaptureList(response);
-    }
-    safeRequest("GET", baseURI+"/camera/capture", null, updateCapturesCallback, false)
-}
-
-function updateCaptureList(response) {
+function constructCaptureList(response) {
     // Clear captures list
     var capturesNode = document.getElementById("captures");
+
     while (capturesNode.firstChild) {
         capturesNode.removeChild(capturesNode.firstChild);
     }
 
+    // Reverse so newest capture appears first
+    response.reverse()
+
     // For each capture in the response array
     response.forEach(function(element) {
         // Store the capture object URI
-        element_uri = `${baseURI}/camera/capture/${element.metadata.id}`
+        element_uri = `${api.baseURI}/camera/capture/${element.metadata.id}`
 
         // Generate inner HTML from capture object
         html = `
@@ -104,7 +267,7 @@ function updateCaptureList(response) {
             <button type="button" class="capture-button" onclick="window.open('${element_uri}/metadata');">Metadata</button>
             <br>
             <button type="button" class="capture-button" onclick="window.open('${element_uri}/', '_blank');">JSON</button>
-            <button type="button" class="capture-button" onclick="deleteCapture('${element.metadata.id}');">Delete</button>
+            <button type="button" class="capture-button" onclick="api.deleteCapture('${element.metadata.id}', constructCaptureList);">Delete</button>
             <br>
         </div>
         `
@@ -116,59 +279,6 @@ function updateCaptureList(response) {
         capturesNode.appendChild(div);
     });
 
-}
-
-function updateTextBoxes() {
-    document.getElementById('stageVelocityText').value = stageVelocity;
-    document.getElementById('stageVelocityInput').value = stageVelocity;
-    document.getElementById('focusVelocityText').value = focusVelocity;
-    document.getElementById('focusVelocityInput').value = focusVelocity;
-
-    document.getElementById('fovXText').value = fovX;
-    document.getElementById('fovYText').value = fovY;
-}
-
-function updateStagePositions(response) {
-    document.getElementById('x_abs').value = response.x;
-    document.getElementById('y_abs').value = response.y;
-    document.getElementById('z_abs').value = response.z;
-}
-
-function getStagePositions() {
-    function updatePositionCallback(response, status) {
-        console.log(status, response);
-        updateStagePositions(response);
-    }
-    safeRequest("GET", baseURI+"/stage/position", null, updatePositionCallback, false)
-}
-
-// Capture methods
-function newCapture(filename, temporary, use_video_port, bayer, resizeWidth=null, resizeHeight=null) {
-    // Make a position request
-    function newCaptureCallback(response, status) {
-        if (status != 200) {
-            alert("Capture failed.");
-        }
-        console.log(status, response);
-        getCaptures();  // Update full list of captures when done
-    }
-
-    payload = {
-        "filename": filename,
-        "temporary": temporary,
-        "use_video_port": use_video_port,
-        "bayer": bayer
-    }
-
-    if ((resizeWidth) && (resizeHeight)) {
-        payload.size = {
-            "width": resizeWidth,
-            "height": resizeHeight
-        }
-    }
-
-    console.log(payload);
-    safeRequest("POST", baseURI+"/camera/capture/", payload, newCaptureCallback);
 }
 
 function newCaptureFromInput() {
@@ -198,13 +308,15 @@ function newCaptureFromInput() {
         resizeHeight = null;
     }
 
-    newCapture(
+    // Make a capture request
+    api.newCapture(
         filename, 
         captureTemporaryCheck.checked, 
         !(captureFullResolutionCheck.checked), 
         captureBayerCheck.checked, 
-        resizeWidth, 
-        resizeHeight
+        updateCaptures,
+        resizeWidth=resizeWidth, 
+        resizeHeight=resizeHeight
     );
 
 }
@@ -218,43 +330,14 @@ function newCaptureResizeToggle(checkbox) {
 }
 
 // Move stage methods
-// TODO: Combine setStagePositions and moveStagePositions, with bool argument for 'absolute'
-
-function setStagePositions(x_abs, y_abs, z_abs) {
-    // Make a position request
-    function absMoveCallback(response, status) {
-        if (status != 200) {
-            alert("Error moving stage.");
-        }
-        console.log(status, response);
-        updateStagePositions(response);
-    }
-    safeRequest("POST", baseURI+"/stage/position", { "absolute": true, "x": x_abs, "y": y_abs, "z": z_abs}, absMoveCallback)
-}
-
-function moveStagePositions(x_rel, y_rel, z_rel) {
-    // Make a position request
-    function relMoveCallback(response, status) {
-        if (status != 200) {
-            alert("Error moving stage.");
-        }
-        console.log(status, response);
-        updateStagePositions(response);
-    }
-    safeRequest("POST", baseURI+"/stage/position", { "absolute": false, "x": x_rel, "y": y_rel, "z": z_rel}, relMoveCallback)
-}
 
 function setStagePositionsFromInput() {
     x_abs = Number(document.getElementById('x_abs').value);
     y_abs = Number(document.getElementById('y_abs').value);
     z_abs = Number(document.getElementById('z_abs').value);
-    setStagePositions(x_abs, y_abs, z_abs)
-}
 
-// Standard callback for user-controller movement
-function keyMoveCallback(response, status) {
-    console.log(status, response);
-    updateStagePositions(response);
+    // Make a position request
+    api.setStagePositions(x_abs, y_abs, z_abs, updatePositionValues, absolute=true)
 }
 
 // Methods for input events
@@ -268,30 +351,31 @@ function clickHotspotImage(event) {
         xRelative = (0.5*event.target.offsetWidth - xCoordinate)/event.target.offsetWidth;
         yRelative = (0.5*event.target.offsetHeight - yCoordinate)/event.target.offsetHeight;
         console.log(xRelative, yRelative)
-        xSteps = xRelative * fovX;
-        ySteps = yRelative * fovY;
+        xSteps = xRelative * clientStageParams.fov[0];
+        ySteps = yRelative * clientStageParams.fov[1];
         console.log(xSteps, ySteps, 0)
+
         // Make a position request
-        moveStagePositions(xSteps, ySteps, 0)
+        api.setStagePositions(xSteps, ySteps, 0, updatePositionValues)
     }
 }
 
 // Scroll-to-focus
 window.addEventListener('wheel', function(e) {
     multiplier = 1/100;
-    z_delta = e.deltaY * multiplier * focusVelocity;
-    if ((document.getElementById("scrollFocusCheck").checked == true) && (e.target.parentNode.classList.value == "column middle")) {
+    z_delta = e.deltaY * multiplier * clientStageParams.velocityZ;
+    if ((document.getElementById("scrollFocusCheck").checked == true) && (e.target.parentNode.classList.value == "scrolltarget")) {
         console.log(z_delta);
         console.log(e.target.parentNode.classList.value);
+
         // Make a position request
-        safeRequest("POST", baseURI+"/stage/position", { "absolute": false, "z": z_delta}, keyMoveCallback)
+        api.setStagePositions(0, 0, z_delta, updatePositionValues)
     }
 });
 
 // Keyboard to move
 addEventListener("keydown", function (e) {
     keysDown[e.keyCode] = true; //Add key to array
-    console.log(keysDown)
 
     // If not currently in an input box
     if (!(e.target instanceof HTMLInputElement)) {
@@ -304,26 +388,26 @@ addEventListener("keydown", function (e) {
             y_rel = 0;
             z_rel = 0;
             if (leftKeyID in keysDown) {
-            x_rel = x_rel + stageVelocity;
+                x_rel = x_rel + clientStageParams.velocityXY;
             }
             if (rightKeyID in keysDown) {
-            x_rel = x_rel - stageVelocity;
+                x_rel = x_rel - clientStageParams.velocityXY;
             }
             if (upKeyID in keysDown) {
-            y_rel = y_rel + stageVelocity;
+                y_rel = y_rel + clientStageParams.velocityXY;
             }
             if (downKeyID in keysDown) {
-            y_rel = y_rel - stageVelocity;
+                y_rel = y_rel - clientStageParams.velocityXY;
             }
             if (pgupKeyID in keysDown) {
-            z_rel = z_rel - focusVelocity;
+                z_rel = z_rel - clientStageParams.velocityZ;
             }
             if (pgdnKeyID in keysDown) {
-            z_rel = z_rel + focusVelocity;
+                z_rel = z_rel + clientStageParams.velocityZ;
             }
 
             // Make a position request
-            moveStagePositions(x_rel, y_rel, z_rel)
+            api.setStagePositions(x_rel, y_rel, z_rel, updatePositionValues)
         }
     }
 
@@ -333,44 +417,4 @@ addEventListener("keyup", function (e) {
     delete keysDown[e.keyCode]; //Remove key from array
 }, false);
 
-// Methods for making requests
-function safeRequest(method, url, payload, callback, lock=true, force=false) {
-    if (force == true) {
-        allowRequest = true;
-    }
-    else {
-        allowRequest = !(requestLock);
-    }
-    if (allowRequest == true) {
-        var xhr = new XMLHttpRequest();   // new HttpRequest instance 
-        xhr.open(method, url);
 
-        if (lock == true) {  // If request is using the lock
-            requestLock = true;  // Hold the lock
-        }
-
-        xhr.onload = function (e) {
-            if (xhr.readyState === 4) {
-                if (lock == true) {  // If request is using the lock
-                    requestLock = false;  // Release the lock
-                }
-
-                if (xhr.status !== 200) {
-                    console.error(xhr.statusText);
-                } 
-                callback(JSON.parse(xhr.responseText), xhr.status);
-            }
-        };
-
-        if (method == "POST" || method == "PUT") {
-        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-        }
-
-        xhr.send(JSON.stringify(payload));
-
-    }
-    else {
-        console.log("Cannot start the following request while the previous requets is pending:")
-        console.log(method, url, payload)
-    }
-}

@@ -8,11 +8,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimal-ui, maximum-scale=1.0, user-scalable=0">
 
   </head>
+
   <body>
 
     <div class="row">
       <div class="column left" id="left-sb">
         <h2>Settings</h2>
+        Host: <input type="text" id="microscopeHostInput" value="localhost"><br>
+        Port: <input type="number" id="microscopePortInput" value=5000><br>
+        <button type="button" onclick="setHostFromInput();">Connect</button>
 
         <h3>Position</h3>
         <p>
@@ -27,19 +31,6 @@
 
         <p>
           Doubleclick to position: <input type="checkbox" id="clickPositionCheck" checked><br>
-          <div class="flexbox">
-              <div class="flexgrow">FOV width:</div> 
-              <div> 
-                <input type="number" id="fovXText" onchange="fovX = Number(this.value); updateTextBoxes();" style="width: 7em" >
-              </div> 
-          </div>
-
-          <div class="flexbox">
-              <div class="flexgrow">FOV height:</div> 
-              <div> 
-                  <input type="number" id="fovYText" onchange="fovY = Number(this.value); updateTextBoxes();" style="width: 7em" >
-              </div> 
-          </div>
         </p>
 
         
@@ -56,14 +47,14 @@
         <div class="flexbox">
           <div class="flexgrow">x-y:</div>
           <div> 
-            <input type="range" id="stageVelocityInput" min="50" max="200" oninput="stageVelocity = Number(this.value); updateTextBoxes();">
+            <input type="range" id="stageVelocityInput" min="50" max="200" oninput="clientStageParams.velocityXY = Number(this.value); updateClientValues();">
             <input type="text" id="stageVelocityText" size="3" disabled>
           </div>
         </div>
         <div class="flexbox">
           <div class="flexgrow">z:</div>
           <div> 
-            <input type="range" id="focusVelocityInput" min="10" max="100" oninput="focusVelocity = Number(this.value); updateTextBoxes();">
+            <input type="range" id="focusVelocityInput" min="10" max="100" oninput="clientStageParams.velocityZ = Number(this.value); updateClientValues();">
             <input type="text" id="focusVelocityText" size="3" disabled>
           </div>
         </div>
@@ -84,7 +75,7 @@
                 <img src="{{url_for('static', filename='icons/baseline-camera_alt-24px.svg')}}">
             </button>
         </div>
-        <img src="/api/v1/stream" ondblclick="clickHotspotImage(event);">
+        <div class="scrolltarget" id="streambox">No active stream</div>
       </div>
 
       <div class="column right" id="right-sb">
@@ -101,7 +92,7 @@
         <button type="button" onclick="newCaptureFromInput();">Capture</button>
 
         <h2>Captures</h2>
-        <button type="button" onclick="getCaptures();">Update</button>
+        <button type="button" onclick="updateCaptures();">Update</button>
         <button type="button" onclick="deleteAllCaptures();">Delete all</button>
         <div id="captures"></div>
         
