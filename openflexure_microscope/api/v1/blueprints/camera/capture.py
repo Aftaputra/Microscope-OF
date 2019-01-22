@@ -1,5 +1,6 @@
 from openflexure_microscope.api.utilities import gen, get_bool, JsonPayload
 from openflexure_microscope.api.v1.views import MicroscopeView
+from openflexure_microscope.utilities import filter_dict
 
 from flask import Response, Blueprint, jsonify, request, abort, url_for, redirect, send_file
 
@@ -224,7 +225,7 @@ class CaptureAPI(MicroscopeView):
 
         .. sourcecode:: http
 
-          POST /camera/capture HTTP/1.1
+          PUT /camera/capture/d0b2067abbb946f19351e075c5e7cd5b HTTP/1.1
           Accept: application/json
 
           {
@@ -375,3 +376,107 @@ class MetadataAPI(MicroscopeView):
         return Response(
             data,
             mimetype="text/yaml")
+
+class TagsAPI(MicroscopeView):
+    def get(self, capture_id):
+        """
+        Return tag list for a capture.
+
+        .. :quickref: Capture; Show capture tags
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          GET /camera/capture/d0b2067abbb946f19351e075c5e7cd5b/tags HTTP/1.1
+          Accept: text/yaml
+
+        :>header Accept: text/yaml
+
+        :>header Content-Type: text/yaml
+        :status 200: capture data found
+        :status 404: no capture found with that id
+        """
+        capture_obj = self.microscope.camera.image_from_id(capture_id)
+
+        if not capture_obj or not capture_obj.state['available']:
+            return abort(404)  # 404 Not Found
+
+        metadata_tags = filter_dict(capture_obj.state, ('metadata', 'tags'))
+
+        return jsonify(metadata_tags)
+    
+    def put(self, capture_id):
+        """
+        Add tags to the capture
+
+        .. :quickref: Capture; Update capture tags
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          PUT /camera/capture/d0b2067abbb946f19351e075c5e7cd5b/tags HTTP/1.1
+          Accept: application/json
+
+          ["tests", "mytag", "someothertag"]
+
+        :>header Accept: application/json
+
+        :<header Content-Type: application/json
+        :status 200: metadata updated
+        """
+
+        capture_obj = self.microscope.camera.image_from_id(capture_id)
+
+        if not capture_obj or not capture_obj.state['available']:
+            return abort(404)  # 404 Not Found
+        
+        data_dict = JsonPayload(request).json
+
+        if type(data_dict) != list:
+            return abort(400)
+
+        for tag in data_dict:
+            capture_obj.put_tag(str(tag))
+
+        metadata_tags = filter_dict(capture_obj.state, ('metadata', 'tags'))
+
+        return jsonify(metadata_tags)
+
+    def delete(self, capture_id):
+        """
+        Delete tags from the capture
+
+        .. :quickref: Capture; Delete tags.
+
+        **Example request**:
+
+        .. sourcecode:: http
+
+          DELETE /camera/capture/d0b2067abbb946f19351e075c5e7cd5b/tags HTTP/1.1
+          Accept: application/json
+
+          ["tests", "mytag"]
+
+        :>header Accept: application/json
+
+        :<header Content-Type: application/json
+        :status 200: metadata updated
+        """
+        capture_obj = self.microscope.camera.image_from_id(capture_id)
+
+        if not capture_obj:
+            return abort(404)  # 404 Not Found
+
+        data_dict = JsonPayload(request).json
+
+        if type(data_dict) != list:
+            return abort(400)
+
+        for tag in data_dict:
+            capture_obj.delete_tag(str(tag))
+
+        metadata_tags = filter_dict(capture_obj.state, ('metadata', 'tags'))
+
+        return jsonify(metadata_tags)

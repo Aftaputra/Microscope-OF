@@ -18,6 +18,11 @@ def construct_blueprint(microscope_obj):
         '/capture/<capture_id>/metadata',
         view_func=capture.MetadataRedirectAPI.as_view('metadata_download_redirect', microscope=microscope_obj))
 
+    # Tag routes
+    blueprint.add_url_rule(
+        '/capture/<capture_id>/tags',
+        view_func=capture.TagsAPI.as_view('capture_tags', microscope=microscope_obj))
+
     # Capture routes
     blueprint.add_url_rule(
         '/capture/<capture_id>/download/<filename>',

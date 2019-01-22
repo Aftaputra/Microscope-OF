@@ -83,9 +83,10 @@ class CaptureObject(object):
         self.folder = folder
 
         # Dictionary for storing custom metadata
-        self._metadata = {
-            'tags': []
-        }
+        self._metadata = {}
+
+        # List for storing tags
+        self.tags = []
 
         # Initialise the capture stream
         self.initialise_capture(create_metadata_file=create_metadata_file)
@@ -203,12 +204,12 @@ class CaptureObject(object):
 
     # HANDLE TAGS
     def put_tag(self, tag: str):
-        if not tag in self._metadata['tags']:
-            self._metadata['tags'].append(tag)
+        if not tag in self.tags:
+            self.tags.append(tag)
 
     def delete_tag(self, tag: str):
-        if tag in self._metadata['tags']:
-            self._metadata['tags'] = [new_tag for new_tag in self._metadata['tags'] if new_tag != tag]
+        if tag in self.tags:
+            self.tags = [new_tag for new_tag in self.tags if new_tag != tag]
 
     # HANDLE METADATA
 
@@ -238,7 +239,8 @@ class CaptureObject(object):
             'filename': self.filename,
             'path': self.file,
             'time': self.timestring,
-            'format': self.format
+            'format': self.format,
+            'tags': self.tags
         }
 
         # Add custom metadata to dictionary
