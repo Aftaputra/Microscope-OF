@@ -18,6 +18,7 @@ except ImportError:
 
 from .capture import CaptureObject, capture_from_dict, BASE_CAPTURE_PATH
 from openflexure_microscope.config import USER_CONFIG_DIR
+from openflexure_microscope.utilities import entry_by_id
 
 
 def last_entry(object_list: list):
@@ -27,14 +28,6 @@ def last_entry(object_list: list):
     else:
         return None
 
-
-def entry_by_id(id: str, object_list: list):
-    """Return an object from a list, if <object>.id matches id argument."""
-    found = None
-    for o in object_list:
-        if o.id == id:
-            found = o
-    return found
 
 
 def generate_basename():

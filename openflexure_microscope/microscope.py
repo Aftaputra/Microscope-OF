@@ -13,6 +13,7 @@ from .camera.pi import StreamingCamera
 from .plugins import PluginMount
 from .config import load_config, save_config, convert_config
 from .utilities import axes_to_array
+from .task import TaskOrchestrator
 
 
 class Microscope(object):
@@ -35,6 +36,9 @@ class Microscope(object):
         # Store entire runtime-config
         self._config = config
 
+        # Create a task orchestrator
+        self.task = TaskOrchestrator()
+
         # Create plugin mountpoint
         self.plugin = PluginMount(self)  #: :py:class:`openflexure_microscope.plugins.PluginMount`: Mounting point for all microscope plugins
 
@@ -48,6 +52,7 @@ class Microscope(object):
         
         if not 'fov' in self._config:
             self._config['fov'] = [0, 0]  # Assumes pi camera 2, and 40x objective
+
 
     def __enter__(self):
         """Create microscope on context enter."""

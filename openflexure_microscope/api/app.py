@@ -115,9 +115,13 @@ app.register_blueprint(stage_blueprint, url_prefix=uri('/stage', 'v1'))
 camera_blueprint = blueprints.camera.construct_blueprint(api_microscope)
 app.register_blueprint(camera_blueprint, url_prefix=uri('/camera', 'v1'))
 
-# Pluginroutes
+# Plugin routes
 plugin_blueprint = blueprints.plugins.construct_blueprint(api_microscope)
 app.register_blueprint(plugin_blueprint, url_prefix=uri('/plugin', 'v1'))
+
+# Task routes
+task_blueprint = blueprints.task.construct_blueprint(api_microscope)
+app.register_blueprint(task_blueprint, url_prefix=uri('/task', 'v1'))
 
 # List all routes
 list_routes(app)

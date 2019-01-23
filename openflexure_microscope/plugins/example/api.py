@@ -1,7 +1,8 @@
 from openflexure_microscope.api.utilities import JsonPayload
 from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
+from openflexure_microscope.exceptions import TaskDeniedException
 
-from flask import request, Response, escape
+from flask import request, Response, escape, jsonify, abort
 
 import logging
 
@@ -51,3 +52,24 @@ class HelloWorldAPI(MicroscopeViewPlugin):
             self.microscope.plugin_string = new_plugin_string
 
         return Response(self.microscope.plugin_string)
+
+class LongRunningAPI(MicroscopeViewPlugin):
+    """
+    An example API plugin that uses a long-running plugin method.
+    """
+    def post(self):
+        """
+        Method to call when an HTTP POST request is made.
+        """
+        # Get payload JSON
+        payload = JsonPayload(request)
+
+        # Extract a values from the JSON payload.
+        time_to_run = payload.param('time', default=10, convert=int)
+
+        try:
+            task = self.microscope.task.start(self.plugin.long_running, time_to_run)
+            return jsonify(task.state), 202
+
+        except TaskDeniedException:
+            return abort(409)

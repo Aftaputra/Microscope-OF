@@ -27,3 +27,11 @@ def filter_dict(dictionary: dict, keys: list):
 	out = reduce(lambda x, y: {y: x}, reversed(keys), val)
 	
 	return out
+
+def entry_by_id(id: str, object_list: list):
+    """Return an object from a list, if <object>.id matches id argument."""
+    found = None
+    for o in object_list:
+        if o.id == id:
+            found = o
+    return found

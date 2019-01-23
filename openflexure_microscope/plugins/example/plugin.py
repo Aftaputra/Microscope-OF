@@ -1,6 +1,8 @@
+import random
+import time
 from openflexure_microscope.plugins import MicroscopePlugin
 
-from .api import IdentifyAPI, HelloWorldAPI
+from .api import IdentifyAPI, HelloWorldAPI, LongRunningAPI
 
 
 class Plugin(MicroscopePlugin):
@@ -11,6 +13,7 @@ class Plugin(MicroscopePlugin):
     api_views = {
         '/identify': IdentifyAPI,
         '/hello': HelloWorldAPI,
+        '/long_running': LongRunningAPI,
     }
 
     def identify(self):
@@ -28,3 +31,18 @@ class Plugin(MicroscopePlugin):
         """
 
         return "Hello world!"
+
+    def long_running(self, t_run):
+        """
+        Demonstrate a long-running method that requires microscope hardware
+        """
+        print("Starting a long-running task...")
+        n_array = []
+
+        for _ in range(t_run):
+            n_array.append(random.random())
+            time.sleep(1)
+
+        print("Long-running task finished!")
+
+        return n_array
