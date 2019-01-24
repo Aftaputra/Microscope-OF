@@ -26,6 +26,7 @@ def construct_blueprint(microscope_obj, plugin_paths=[], include_default=True):
 
                 # Construct a full view route from the plugin name
                 full_view_route = "/{}/{}".format(plugin_name, view_route)
+                logging.debug(full_view_route)
 
                 # Check if endpoint name clashes
                 if full_view_route not in all_routes and issubclass(view_class, MicroscopeViewPlugin):
@@ -36,7 +37,7 @@ def construct_blueprint(microscope_obj, plugin_paths=[], include_default=True):
                     blueprint.add_url_rule(
                         full_view_route,
                         view_func=view_class.as_view(
-                            'plugin_{}'.format(view_route).replace('/', '_'),
+                            'plugin_{}'.format(full_view_route).replace('/', '_'),
                             microscope=microscope_obj,
                             plugin=plugin_obj
                         )
