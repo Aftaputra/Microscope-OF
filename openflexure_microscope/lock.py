@@ -4,10 +4,10 @@ from openflexure_microscope.exceptions import LockError
 
 
 class StrictLock(object):
+    """
+    Class that behaves like a Python RLock, but with stricter timeout conditions and custom exceptions.
+    """
     def __init__(self, timeout=1):
-        """
-        Class that behaves like a Python RLock, but with stricter timeout conditions and custom exceptions.
-        """
         self._lock = RLock()
         self.timeout = timeout
 
@@ -29,11 +29,11 @@ class StrictLock(object):
 
 
 class CompositeLock(object):
+    """
+    Class that behaves like a :py:class:`openflexure_microscope.lock.StrictLock`,
+    but allows multiple locks to be acquired and released.
+    """
     def __init__(self, locks, timeout=1):
-        """
-        Class that behaves like a :py:class:`openflexure_microscope.lock.StrictLock`,
-        but allows multiple locks to be acquired and released.
-        """
         self.locks = locks
         self.timeout = timeout
 

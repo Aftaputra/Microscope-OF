@@ -13,7 +13,7 @@ class ListAPI(MicroscopeView):
         """
         Get list of image captures.
 
-        .. :quickref: Capture collection; Get collection of captures
+        .. :quickref: Captures; Get collection of captures
 
         :>header Accept: application/json
         :query include_unavailable: return json representations of captures that have been completely deleted
@@ -45,7 +45,7 @@ class ListAPI(MicroscopeView):
         """
         Delete all captures (not yet implemented)
 
-        .. :quickref: Capture collection; Delete all captures
+        .. :quickref: Captures; Delete all captures
         """
         for image in self.microscope.camera.images:
             image.delete()
@@ -58,7 +58,7 @@ class ListAPI(MicroscopeView):
         """
         Create a new image capture.
 
-        .. :quickref: Capture collection; New capture
+        .. :quickref: Captures; New capture
 
         **Example request**:
 
@@ -258,32 +258,17 @@ class CaptureAPI(MicroscopeView):
 class DownloadRedirectAPI(MicroscopeView):
     def get(self, capture_id):
         """
-        Redirect to download the capture under it's currently set filename. 
-        I.e., `/(capture_id)/download` will 
-        redirect to `/(capture_id)/download/(filename)`.
-
-        .. :quickref: Capture; Redirect to download
-        """
-        capture_obj = self.microscope.camera.image_from_id(capture_id)
-
-        if not capture_obj or not capture_obj.state['available']:
-            return abort(404)  # 404 Not Found
-
-        thumbnail = get_bool(request.args.get('thumbnail'))
-
-        return redirect(url_for('.capture_download', capture_id=capture_id, filename=capture_obj.filename, thumbnail=thumbnail), code=307)
-
-
-class DownloadAPI(MicroscopeView):
-    def get(self, capture_id, filename):
-        """
         Return image data for a capture.
 
         Return capture data as an image file with the requested filename. 
         I.e., `/(capture_id)/download/foo.jpeg` will download the image as 
         `foo.jpeg`, regardless of the capture's initially set filename.
 
-        .. :quickref: Capture; Download capture file
+        Route automatically redirects to download the capture under it's currently set filename. 
+        I.e., `/(capture_id)/download` will 
+        redirect to `/(capture_id)/download/(filename)`.
+
+        .. :quickref: Capture; Download capture image
 
         **Example request**:
 
@@ -298,7 +283,21 @@ class DownloadAPI(MicroscopeView):
         :>header Content-Type: image/jpeg
         :status 200: capture data found
         :status 404: no capture found with that id
+
         """
+        capture_obj = self.microscope.camera.image_from_id(capture_id)
+
+        if not capture_obj or not capture_obj.state['available']:
+            return abort(404)  # 404 Not Found
+
+        thumbnail = get_bool(request.args.get('thumbnail'))
+
+        return redirect(url_for('.capture_download', capture_id=capture_id, filename=capture_obj.filename, thumbnail=thumbnail), code=307)
+
+
+class DownloadAPI(MicroscopeView):
+    def get(self, capture_id, filename):
+
         capture_obj = self.microscope.camera.image_from_id(capture_id)
 
         if not capture_obj or not capture_obj.state['available']:
@@ -324,28 +323,15 @@ class DownloadAPI(MicroscopeView):
 class MetadataRedirectAPI(MicroscopeView):
     def get(self, capture_id):
         """
-        Redirect to download the capture metadata under it's currently set filename. 
-        I.e., `/(capture_id)/download` will 
-        redirect to `/(capture_id)/download/(filename)`.
-
-        .. :quickref: Capture; Redirect to metadata
-        """
-        capture_obj = self.microscope.camera.image_from_id(capture_id)
-
-        if not capture_obj or not capture_obj.state['available']:
-            return abort(404)  # 404 Not Found
-
-        return redirect(url_for('.metadata_download', capture_id=capture_id, filename=capture_obj.metadataname), code=307)
-
-
-class MetadataAPI(MicroscopeView):
-    def get(self, capture_id, filename):
-        """
         Return metadatadata for a capture.
 
         Return capture metadata as a YAML file with the requested filename. 
         I.e., `/(capture_id)/download/bar.yaml` will download the file as 
         `bar.yaml`, regardless of the capture's initially set filename.
+
+        Route automatically redirects to download the capture metadata under it's currently set filename. 
+        I.e., `/(capture_id)/download` will 
+        redirect to `/(capture_id)/download/(filename)`.
 
         .. :quickref: Capture; Download capture metadata
 
@@ -362,7 +348,19 @@ class MetadataAPI(MicroscopeView):
         :>header Content-Type: text/yaml
         :status 200: capture data found
         :status 404: no capture found with that id
+
         """
+        capture_obj = self.microscope.camera.image_from_id(capture_id)
+
+        if not capture_obj or not capture_obj.state['available']:
+            return abort(404)  # 404 Not Found
+
+        return redirect(url_for('.metadata_download', capture_id=capture_id, filename=capture_obj.metadataname), code=307)
+
+
+class MetadataAPI(MicroscopeView):
+    def get(self, capture_id, filename):
+
         capture_obj = self.microscope.camera.image_from_id(capture_id)
 
         if not capture_obj or not capture_obj.state['available']:

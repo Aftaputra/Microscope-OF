@@ -8,11 +8,11 @@ from openflexure_microscope.exceptions import TaskDeniedException
 from openflexure_microscope.utilities import entry_by_id
 
 class TaskOrchestrator:
+    """
+    Class responsible for spawning threaded tasks, and storing their returns.
+    A microscope should contain exactly one instance of `TaskOrchestrator`.
+    """
     def __init__(self):
-        """
-        Class responsible for spawning threaded tasks, and storing their returns.
-        A microscope should contain exactly one instance of `TaskOrchestrator`.
-        """
         self.tasks = []  #: list: List of `Task` objects
 
     @property
@@ -79,11 +79,11 @@ class TaskOrchestrator:
 
 
 class Task:
+    """
+    Class responsible for running a task function in a thread, and handling return or errors.
+    Tasks should be created by an instance of :py:class:`openflexure_microscope.task.TaskOrchestrator`.
+    """
     def __init__(self, function, *args, **kwargs):
-        """
-        Class responsible for running a task function in a thread, and handling return or errors.
-        Tasks should be created by an instance of :py:class:`openflexure_microscope.task.TaskOrchestrator`.
-        """
         # The task long-running method
         self.task = function  #: function: Function to be called in the task thread.
         self.args = args  #: Positional arguments to be passed to the task function.

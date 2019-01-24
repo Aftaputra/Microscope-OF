@@ -13,7 +13,7 @@ class IdentifyAPI(MicroscopeViewPlugin):
         """
         Default plugin to return a plaintext representation of the camera and stage objects.
 
-        .. :quickref: Default plugin; Show representation of camera and stage objects.
+        .. :quickref: Default plugin; Identify hardware
         """
         data = self.microscope.plugin.default.identify()  # Call a method from our plugin, using the full route
         return Response(escape(data))

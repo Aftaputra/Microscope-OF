@@ -38,7 +38,7 @@ class Microscope(object):
         self._config = config
 
         # Create a task orchestrator
-        self.task = TaskOrchestrator()
+        self.task = TaskOrchestrator()  #: :py:class:`openflexure_microscope.task.TaskOrchestrator`: Threaded task orchestrator
 
         # Create plugin mountpoint
         self.plugin = PluginMount(self)  #: :py:class:`openflexure_microscope.plugins.PluginMount`: Mounting point for all microscope plugins
