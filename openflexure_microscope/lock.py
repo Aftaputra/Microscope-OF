@@ -1,24 +1,13 @@
-from threading import RLock, ThreadError
+from threading import RLock
 
-class LockError(ThreadError):
-    ERROR_CODES = {
-        'ACQUIRE_ERROR': "Unable to acquire. Lock in use by another thread.",
-        'IN_USE_ERROR': "Lock in use by another thread."
-    }
-
-    def __init__(self, code, lock):
-        self.code = code
-        if code in LockError.ERROR_CODES:
-            self.message = LockError.ERROR_CODES[code]
-        else:
-            self.message = "Unknown error."
-        print("{}: {}".format(self.code, self.message))
-
-        ThreadError.__init__(self)
+from openflexure_microscope.exceptions import LockError
 
 
 class StrictLock(object):
     def __init__(self, timeout=1):
+        """
+        Class that behaves like a Python RLock, but with stricter timeout conditions and custom exceptions.
+        """
         self._lock = RLock()
         self.timeout = timeout
 
@@ -41,14 +30,18 @@ class StrictLock(object):
 
 class CompositeLock(object):
     def __init__(self, locks, timeout=1):
+        """
+        Class that behaves like a :py:class:`openflexure_microscope.lock.StrictLock`,
+        but allows multiple locks to be acquired and released.
+        """
         self.locks = locks
         self.timeout = timeout
 
     def acquire(self, blocking=True):
-        return (lock.acquire(blocking=blocking, timeout=self.timeout) for lock in self.locks)
+        return (lock.acquire(blocking=blocking) for lock in self.locks)
 
     def __enter__(self):
-        result = (lock.acquire(blocking=True, timeout=self.timeout) for lock in self.locks)
+        result = (lock.acquire(blocking=True) for lock in self.locks)
         if all(result):
             return result
         else:
