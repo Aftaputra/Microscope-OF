@@ -81,7 +81,9 @@ class PositionAPI(MicroscopeView):
 
         # Move if stage exists
         if self.microscope.stage:
-            self.microscope.stage.move_rel(position)
+            # Explicitally acquire lock
+            with self.microscope.stage.lock:
+                self.microscope.stage.move_rel(position)
 
         out = filter_dict(self.microscope.state, ('stage', 'position'))
 
