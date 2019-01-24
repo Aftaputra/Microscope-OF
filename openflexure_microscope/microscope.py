@@ -14,6 +14,7 @@ from .plugins import PluginMount
 from .config import load_config, save_config, convert_config
 from .utilities import axes_to_array
 from .task import TaskOrchestrator
+from .lock import CompositeLock
 
 
 class Microscope(object):
@@ -52,6 +53,9 @@ class Microscope(object):
         
         if not 'fov' in self._config:
             self._config['fov'] = [0, 0]  # Assumes pi camera 2, and 40x objective
+        
+        # Initialise with an empty composite lock
+        self.lock = CompositeLock([])  #: :py:class:`openflexure_microscope.lock.CompositeLock`: Composite lock controlling thread access to multiple pieces of hardware
 
 
     def __enter__(self):
@@ -88,6 +92,11 @@ class Microscope(object):
             logging.info("Attached camera {}".format(camera))
         elif not self.camera:
             logging.info("Attached dummy camera.")
+        # If camera has a lock
+        if hasattr(self.camera, 'lock'):
+            logging.info("Attaching {} to composite lock.".format(self.camera.lock))
+            # Add the lock to the microscope composite lock
+            self.lock.locks.append(self.camera.lock)
 
         logging.debug("Attaching stage...")
         self.stage = stage  #: :py:class:`openflexure_stage.stage.OpenFlexureStage`: OpenFlexure stage object
@@ -96,6 +105,11 @@ class Microscope(object):
             self.stage.backlash = np.zeros(3, dtype=np.int)
         elif not self.stage:
             logging.info("Attached dummy stage.")
+        # If stage object has a lock
+        if hasattr(self.stage, 'lock'):
+            logging.info("Attaching {} to composite lock.".format(self.stage.lock))
+            # Add the lock to the microscope composite lock
+            self.lock.locks.append(self.stage.lock)
 
     def attach_plugin_maps(self, plugin_maps):
         """
