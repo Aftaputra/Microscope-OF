@@ -1,4 +1,3 @@
-from openflexure_microscope.api.utilities import parse_payload
 from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
 
 from flask import request, Response, escape
