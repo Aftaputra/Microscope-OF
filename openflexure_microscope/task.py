@@ -28,7 +28,7 @@ class TaskOrchestrator:
         """
         return entry_by_id(task_id, self.tasks)
 
-    def start(self, function: function, *args, **kwargs):
+    def start(self, function, *args, **kwargs):
         """
         Attach and start a new long-running task, if allowed by `start_condition()`.
         Returns an instance of :py:class:`openflexure_microscope.task.Task`, which can be used to check the state
@@ -79,13 +79,13 @@ class TaskOrchestrator:
 
 
 class Task:
-    def __init__(self, task, *args, **kwargs):
+    def __init__(self, function, *args, **kwargs):
         """
         Class responsible for running a task function in a thread, and handling return or errors.
         Tasks should be created by an instance of :py:class:`openflexure_microscope.task.TaskOrchestrator`.
         """
         # The task long-running method
-        self.task = task  #: function: Function to be called in the task thread.
+        self.task = function  #: function: Function to be called in the task thread.
         self.args = args  #: Positional arguments to be passed to the task function.
         self.kwargs = kwargs  #: Keyword arguments to be passed to the task function.
 
