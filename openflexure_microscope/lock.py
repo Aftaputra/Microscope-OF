@@ -52,9 +52,7 @@ class CompositeLock(object):
         if all(result):
             return result
         else:
-            msg = "Unable to acquire all locks {}.".format(self.locks)
-            logging.error(msg)
-            raise ThreadError(msg)
+            raise LockError('ACQUIRE_ERROR', self)
 
     def __exit__(self, *args):
         for lock in self.locks:
