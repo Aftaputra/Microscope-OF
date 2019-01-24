@@ -57,10 +57,10 @@ class TaskOrchestrator:
     def start_condition(self, task_obj):
         """
         Method returning bool describing if a particular task is allowed to run.
-        In the future, this will depend on the state of hardware locks?
-        Currently just allows a single task at a time.
+        Currently always allows tasks to start, as locks determine access to hardware.
         """
-        return not any([task._running for task in self.tasks])
+        #return not any([task._running for task in self.tasks])
+        return True
 
 
 class Task:

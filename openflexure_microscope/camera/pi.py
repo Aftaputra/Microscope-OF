@@ -201,70 +201,73 @@ class StreamingCamera(BaseCamera):
 
         paused_stream = False
 
-        # Apply valid config params to Picamera object
-        if not self.state['record_active']:  # If not recording a video
+        with self.lock:
 
-            logging.debug("Applying config:")
-            logging.debug(config)
+            # Apply valid config params to Picamera object
+            if not self.state['record_active']:  # If not recording a video
 
-            # Pause stream while changing settings
-            if self.state['stream_active']:  # If stream is active
-                logging.info("Pausing stream to update config.")
-                self.stop_stream_recording()  # Pause stream
-                paused_stream = True  # Remember to unpause stream when done
+                logging.debug("Applying config:")
+                logging.debug(config)
 
-            # PiCamera parameters (applied directly to PiCamera object)
-            if 'picamera_params' in config:
-                for key in PICAMERA_KEYS:
-                    if key in config['picamera_params']:
-                        logging.debug("Setting parameter {}: {}".format(key, config['picamera_params'][key]))
-                        setattr(self.camera, key, config['picamera_params'][key])
+                # Pause stream while changing settings
+                if self.state['stream_active']:  # If stream is active
+                    logging.info("Pausing stream to update config.")
+                    self.stop_stream_recording()  # Pause stream
+                    paused_stream = True  # Remember to unpause stream when done
 
-            # StreamingCamera parameters (applied via StreamingCamera config)
-            for key in CONFIG_KEYS:
-                if key in config:
-                    logging.debug("Setting parameter {}: {}".format(key, config[key]))
-                    self._config[key] = config[key]
+                # PiCamera parameters (applied directly to PiCamera object)
+                if 'picamera_params' in config:
+                    for key in PICAMERA_KEYS:
+                        if key in config['picamera_params']:
+                            logging.debug("Setting parameter {}: {}".format(key, config['picamera_params'][key]))
+                            setattr(self.camera, key, config['picamera_params'][key])
 
-            # Richard's library to set analog and digital gains
-            if 'analog_gain' in config:
-                set_analog_gain(self.camera, config['analog_gain'])
-            if 'digital_gain' in config:
-                set_digital_gain(self.camera, config['digital_gain'])
+                # StreamingCamera parameters (applied via StreamingCamera config)
+                for key in CONFIG_KEYS:
+                    if key in config:
+                        logging.debug("Setting parameter {}: {}".format(key, config[key]))
+                        self._config[key] = config[key]
 
-            # Handle lens shading, if a new one is given
-            if 'shading_table_path' in config:
-                self.apply_shading_table()
+                # Richard's library to set analog and digital gains
+                if 'analog_gain' in config:
+                    set_analog_gain(self.camera, config['analog_gain'])
+                if 'digital_gain' in config:
+                    set_digital_gain(self.camera, config['digital_gain'])
 
-            # If stream was paused to update config, unpause
-            if paused_stream:
-                logging.info("Resuming stream.")
-                self.start_stream_recording()
+                # Handle lens shading, if a new one is given
+                if 'shading_table_path' in config:
+                    self.apply_shading_table()
 
-        else:
-            raise Exception(
-                "Cannot update camera config while recording is active.")
+                # If stream was paused to update config, unpause
+                if paused_stream:
+                    logging.info("Resuming stream.")
+                    self.start_stream_recording()
+
+            else:
+                raise Exception(
+                    "Cannot update camera config while recording is active.")
 
     def set_zoom(self, zoom_value: float=1.) -> None:
         """
         Change the camera zoom, handling recentering and scaling.
         """
-        self.state['zoom_value'] = float(zoom_value)
-        if self.state['zoom_value'] < 1:
-            self.state['zoom_value'] = 1
-        # Richard's code for zooming !
-        fov = self.camera.zoom
-        centre = np.array([fov[0] + fov[2]/2.0, fov[1] + fov[3]/2.0])
-        size = 1.0/self.state['zoom_value']
-        # If the new zoom value would be invalid, move the centre to
-        # keep it within the camera's sensor (this is only relevant
-        # when zooming out, if the FoV is not centred on (0.5, 0.5)
-        for i in range(2):
-            if np.abs(centre[i] - 0.5) + size/2 > 0.5:
-                centre[i] = 0.5 + (1.0 - size)/2 * np.sign(centre[i]-0.5)
-        logging.info("setting zoom, centre {}, size {}".format(centre, size))
-        new_fov = (centre[0] - size/2, centre[1] - size/2, size, size)
-        self.camera.zoom = new_fov
+        with self.lock:
+            self.state['zoom_value'] = float(zoom_value)
+            if self.state['zoom_value'] < 1:
+                self.state['zoom_value'] = 1
+            # Richard's code for zooming !
+            fov = self.camera.zoom
+            centre = np.array([fov[0] + fov[2]/2.0, fov[1] + fov[3]/2.0])
+            size = 1.0/self.state['zoom_value']
+            # If the new zoom value would be invalid, move the centre to
+            # keep it within the camera's sensor (this is only relevant
+            # when zooming out, if the FoV is not centred on (0.5, 0.5)
+            for i in range(2):
+                if np.abs(centre[i] - 0.5) + size/2 > 0.5:
+                    centre[i] = 0.5 + (1.0 - size)/2 * np.sign(centre[i]-0.5)
+            logging.info("setting zoom, centre {}, size {}".format(centre, size))
+            new_fov = (centre[0] - size/2, centre[1] - size/2, size, size)
+            self.camera.zoom = new_fov
 
     # LAUNCH ACTIONS
 
@@ -299,48 +302,50 @@ class StreamingCamera(BaseCamera):
             output_object (str/BytesIO): Target object.
 
         """
-        # Start recording method only if a current recording is not running
-        if not self.state['record_active']:
+        with self.lock:
+            # Start recording method only if a current recording is not running
+            if not self.state['record_active']:
 
-            # If output is a StreamObject
-            if isinstance(output, CaptureObject):
-                # Lock the StreamObject while recording
-                output.lock()
-                # Set target to capture stream
-                output_stream = output.stream
+                # If output is a StreamObject
+                if isinstance(output, CaptureObject):
+                    # Lock the StreamObject while recording
+                    output.lock()
+                    # Set target to capture stream
+                    output_stream = output.stream
+                else:
+                    output_stream = output
+
+                # Start the camera video recording on port 2
+                logging.info("Recording to {}".format(output))
+
+                self.camera.start_recording(
+                    output_stream,
+                    format=fmt,
+                    splitter_port=2,
+                    resize=self.config['video_resolution'],
+                    quality=quality)
+
+                # Update state dictionary
+                self.state['record_active'] = True
+
+                return output
+
             else:
-                output_stream = output
-
-            # Start the camera video recording on port 2
-            logging.info("Recording to {}".format(output))
-
-            self.camera.start_recording(
-                output_stream,
-                format=fmt,
-                splitter_port=2,
-                resize=self.config['video_resolution'],
-                quality=quality)
-
-            # Update state dictionary
-            self.state['record_active'] = True
-
-            return output
-
-        else:
-            logging.error(
-                "Cannot start a new recording\
-                until the current recording has stopped.")
-            return None
+                logging.error(
+                    "Cannot start a new recording\
+                    until the current recording has stopped.")
+                return None
 
     def stop_recording(self) -> bool:
         """Stop the last started video recording on splitter port 2."""
-        # Stop the camera video recording on port 2
-        logging.info("Stopping recording")
-        self.camera.stop_recording(splitter_port=2)
-        logging.info("Recording stopped")
+        with self.lock:
+            # Stop the camera video recording on port 2
+            logging.info("Stopping recording")
+            self.camera.stop_recording(splitter_port=2)
+            logging.info("Recording stopped")
 
-        # Update state dictionary
-        self.state['record_active'] = False
+            # Update state dictionary
+            self.state['record_active'] = False
 
     def stop_stream_recording(
             self,
@@ -378,7 +383,6 @@ class StreamingCamera(BaseCamera):
             splitter_port (int): Splitter port to start recording on
             resolution ((int, int)): Resolution to set the camera to, before starting recording. Defaults to `self.config['video_resolution']`.
         """
-
         # If no stream object exists
         if not hasattr(self, 'stream'):
             self.stream = io.BytesIO() # Create a stream object
@@ -421,32 +425,33 @@ class StreamingCamera(BaseCamera):
             resize ((int, int)): Resize the captured image.
         """
 
-        # If output is a StreamObject
-        if isinstance(output, CaptureObject):
-            # Set target to capture stream
-            output_stream = output.stream
-        else:
-            output_stream = output
+        with self.lock:
+            # If output is a StreamObject
+            if isinstance(output, CaptureObject):
+                # Set target to capture stream
+                output_stream = output.stream
+            else:
+                output_stream = output
 
-        logging.info("Capturing to {}".format(output))
+            logging.info("Capturing to {}".format(output))
 
-        # Set resolution and stop stream recording if necesarry
-        if not use_video_port:
-            self.stop_stream_recording()
+            # Set resolution and stop stream recording if necesarry
+            if not use_video_port:
+                self.stop_stream_recording()
 
-        self.camera.capture(
-            output_stream,
-            format=fmt,
-            quality=100,
-            resize=resize,
-            bayer=(not use_video_port) and bayer,
-            use_video_port=use_video_port)
+            self.camera.capture(
+                output_stream,
+                format=fmt,
+                quality=100,
+                resize=resize,
+                bayer=(not use_video_port) and bayer,
+                use_video_port=use_video_port)
 
-        # Set resolution and start stream recording if necesarry
-        if not use_video_port:
-            self.start_stream_recording()
+            # Set resolution and start stream recording if necesarry
+            if not use_video_port:
+                self.start_stream_recording()
 
-        return output
+            return output
 
     def yuv(
             self,
@@ -459,38 +464,39 @@ class StreamingCamera(BaseCamera):
             use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
             resize ((int, int)): Resize the captured image.
         """
-        if use_video_port:
-            resolution = self.config['video_resolution']
-        else:
-            resolution = self.config['numpy_resolution']
+        with self.lock:
+            if use_video_port:
+                resolution = self.config['video_resolution']
+            else:
+                resolution = self.config['numpy_resolution']
 
-        if resize:
-            size = resize
-        else:
-            size = resolution
-
-        if not use_video_port:
-            self.stop_stream_recording(resolution=resolution)
-
-        logging.debug("Creating PiYUVArray")
-        with picamera.array.PiYUVArray(self.camera, size=size) as output:
-
-            logging.info("Capturing to {}".format(output))
-
-            self.camera.capture(
-                output,
-                resize=size,
-                format='yuv',
-                use_video_port=use_video_port)
+            if resize:
+                size = resize
+            else:
+                size = resolution
 
             if not use_video_port:
-                self.start_stream_recording()
+                self.stop_stream_recording(resolution=resolution)
 
-            if rgb:
-                logging.debug("Converting to RGB")
-                return output.rgb_array
-            else:
-                return output.array
+            logging.debug("Creating PiYUVArray")
+            with picamera.array.PiYUVArray(self.camera, size=size) as output:
+
+                logging.info("Capturing to {}".format(output))
+
+                self.camera.capture(
+                    output,
+                    resize=size,
+                    format='yuv',
+                    use_video_port=use_video_port)
+
+                if not use_video_port:
+                    self.start_stream_recording()
+
+                if rgb:
+                    logging.debug("Converting to RGB")
+                    return output.rgb_array
+                else:
+                    return output.array
 
     def array(
             self,
@@ -502,35 +508,35 @@ class StreamingCamera(BaseCamera):
             use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
             resize ((int, int)): Resize the captured image.
         """
+        with self.lock:
+            if use_video_port:
+                resolution = self.config['video_resolution']
+            else:
+                resolution = self.config['numpy_resolution']
 
-        if use_video_port:
-            resolution = self.config['video_resolution']
-        else:
-            resolution = self.config['numpy_resolution']
+            if resize:
+                size = resize
+            else:
+                size = resolution
 
-        if resize:
-            size = resize
-        else:
-            size = resolution
+            # Always pause stream, to prevent resizer memory issues
+            self.stop_stream_recording(resolution=resolution)
 
-        # Always pause stream, to prevent resizer memory issues
-        self.stop_stream_recording(resolution=resolution)
+            logging.debug("Creating PiRGBArray")
+            with picamera.array.PiRGBArray(self.camera, size=size) as output:
 
-        logging.debug("Creating PiRGBArray")
-        with picamera.array.PiRGBArray(self.camera, size=size) as output:
+                logging.info("Capturing to {}".format(output))
 
-            logging.info("Capturing to {}".format(output))
+                self.camera.capture(
+                    output,
+                    resize=size,
+                    format='rgb',
+                    use_video_port=use_video_port)
 
-            self.camera.capture(
-                output,
-                resize=size,
-                format='rgb',
-                use_video_port=use_video_port)
+                # Resume stream
+                self.start_stream_recording()
 
-            # Resume stream
-            self.start_stream_recording()
-
-            return output.array
+                return output.array
 
     # HANDLE STREAM FRAMES
 

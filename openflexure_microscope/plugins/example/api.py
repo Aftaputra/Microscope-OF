@@ -67,6 +67,7 @@ class LongRunningAPI(MicroscopeViewPlugin):
         # Extract a values from the JSON payload.
         time_to_run = payload.param('time', default=10, convert=int)
 
+        # Attach the long-running method as a microscope task
         try:
             task = self.microscope.task.start(self.plugin.long_running, time_to_run)
             return jsonify(task.state), 202

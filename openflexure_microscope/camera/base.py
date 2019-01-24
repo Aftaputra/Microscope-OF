@@ -19,6 +19,7 @@ except ImportError:
 from .capture import CaptureObject, capture_from_dict, BASE_CAPTURE_PATH
 from openflexure_microscope.config import USER_CONFIG_DIR
 from openflexure_microscope.utilities import entry_by_id
+from openflexure_microscope.lock import StrictLock
 
 
 def last_entry(object_list: list):
@@ -27,7 +28,6 @@ def last_entry(object_list: list):
         return object_list[-1]  # Return the latest captured image
     else:
         return None
-
 
 
 def generate_basename():
@@ -86,6 +86,8 @@ class BaseCamera(object):
     def __init__(self):
         self.thread = None  #: Background thread reading frames from camera
         self.camera = None  #: Camera object
+
+        self.lock = StrictLock(timeout=1)  #: Strict lock controlling thread access to camera hardware
 
         self.frame = None  #: bytes: Current frame is stored here by background thread
         self.last_access = 0  #: time: Time of last client access to the camera

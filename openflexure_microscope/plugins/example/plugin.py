@@ -39,10 +39,12 @@ class Plugin(MicroscopePlugin):
         print("Starting a long-running task...")
         n_array = []
 
-        for _ in range(t_run):
-            n_array.append(random.random())
-            time.sleep(1)
+        print("Acquiring camera lock...")
+        with self.microscope.camera.lock:
+            for _ in range(t_run):
+                n_array.append(random.random())
+                time.sleep(1)
 
-        print("Long-running task finished!")
+            print("Long-running task finished! Releasing lock.")
 
         return n_array

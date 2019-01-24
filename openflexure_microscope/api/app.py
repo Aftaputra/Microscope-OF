@@ -23,8 +23,9 @@ from flask_cors import CORS
 from openflexure_microscope.api.utilities import list_routes
 
 from openflexure_microscope import Microscope, config
+from openflexure_microscope.lock import LockError
 from openflexure_microscope.camera.pi import StreamingCamera
-from openflexure_stage import OpenFlexureStage
+from openflexure_microscope.stage.openflexure import Stage
 
 import atexit
 import logging, sys
@@ -66,6 +67,16 @@ def _handle_http_exception(e):
 for code in default_exceptions:
     app.errorhandler(code)(_handle_http_exception)
 
+def _handle_lock_exception(e):
+    return make_response(
+        jsonify({
+            'status_code': 423,
+            'error': e.code,
+            'details': e.message
+        }),
+        423)
+
+app.errorhandler(LockError)(_handle_lock_exception)
 
 # After app starts, but before first request, attach hardware to global microscope
 @app.before_first_request
@@ -77,7 +88,7 @@ def attach_microscope():
     logging.debug("Creating camera object...")
     api_camera = StreamingCamera(config=openflexurerc)
     logging.debug("Creating stage object...")
-    api_stage = OpenFlexureStage("/dev/ttyUSB0")
+    api_stage = Stage("/dev/ttyUSB0")
 
     logging.debug("Attaching devices to microscope...")
     api_microscope.attach(
