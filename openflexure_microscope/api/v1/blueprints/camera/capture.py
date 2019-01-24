@@ -114,16 +114,18 @@ class ListAPI(MicroscopeView):
             else:
                 abort(400)
 
-        output = self.microscope.camera.new_image(
-            write_to_file=True,
-            temporary=temporary,
-            filename=filename)
+        # Explicitally acquire lock (prevents empty files being created if lock is unavailable)
+        with self.microscope.camera.lock:
+            output = self.microscope.camera.new_image(
+                write_to_file=True,
+                temporary=temporary,
+                filename=filename)
 
-        self.microscope.camera.capture(
-            output,
-            use_video_port=use_video_port,
-            resize=resize,
-            bayer=bayer)
+            self.microscope.camera.capture(
+                output,
+                use_video_port=use_video_port,
+                resize=resize,
+                bayer=bayer)
 
         return jsonify(output.state)
 
