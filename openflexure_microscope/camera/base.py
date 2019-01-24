@@ -87,7 +87,7 @@ class BaseCamera(object):
         self.thread = None  #: Background thread reading frames from camera
         self.camera = None  #: Camera object
 
-        self.lock = StrictLock(timeout=1)  #: Strict lock controlling thread access to camera hardware
+        self.lock = StrictLock(timeout=1)  #: :py:class:`openflexure_microscope.lock.StrictLock`: Strict lock controlling thread access to camera hardware
 
         self.frame = None  #: bytes: Current frame is stored here by background thread
         self.last_access = 0  #: time: Time of last client access to the camera
