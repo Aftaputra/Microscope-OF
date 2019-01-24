@@ -1,4 +1,4 @@
-REST API
+HTTP API
 ========
 
 Summary

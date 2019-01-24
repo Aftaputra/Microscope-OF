@@ -1,4 +1,4 @@
-Camera Functionality
+Camera Class
 =======================================================
 
 .. toctree::
