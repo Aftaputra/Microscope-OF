@@ -23,7 +23,7 @@ from flask_cors import CORS
 from openflexure_microscope.api.utilities import list_routes
 
 from openflexure_microscope import Microscope, config
-from openflexure_microscope.lock import LockError
+from openflexure_microscope.exceptions import LockError
 from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_microscope.stage.openflexure import Stage
 
