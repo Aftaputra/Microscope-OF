@@ -2,7 +2,7 @@ import random
 import time
 from openflexure_microscope.plugins import MicroscopePlugin
 
-from .api import IdentifyAPI, HelloWorldAPI, LongRunningAPI
+from .api import IdentifyAPI, HelloWorldAPI, LongRunningAPI, SomeExceptionAPI
 
 
 class Plugin(MicroscopePlugin):
@@ -14,6 +14,7 @@ class Plugin(MicroscopePlugin):
         '/identify': IdentifyAPI,
         '/hello': HelloWorldAPI,
         '/long_running': LongRunningAPI,
+        '/some_exception': SomeExceptionAPI,
     }
 
     def identify(self):
@@ -31,6 +32,16 @@ class Plugin(MicroscopePlugin):
         """
 
         return "Hello world!"
+
+    def some_exception(self):
+        """
+        Demonstrate some broken plugin method that would be long running
+        """
+        with self.microscope.lock:
+            time.sleep(3)
+            result = 15./0
+
+        return result
 
     def long_running(self, t_run):
         """

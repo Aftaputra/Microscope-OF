@@ -74,3 +74,22 @@ class LongRunningAPI(MicroscopeViewPlugin):
 
         except TaskDeniedException:
             return abort(409)
+
+class SomeExceptionAPI(MicroscopeViewPlugin):
+    """
+    An example API plugin that uses a long-running but broken plugin method.
+    """
+    def post(self):
+        """
+        Method to call when an HTTP POST request is made.
+        """
+        # Get payload JSON
+        payload = JsonPayload(request)
+
+        # Attach the long-running method as a microscope task
+        try:
+            task = self.microscope.task.start(self.plugin.some_exception)
+            return jsonify(task.state), 202
+
+        except TaskDeniedException:
+            return abort(409)

@@ -1,6 +1,7 @@
 import pprint
+import logging
 import copy
-
+from werkzeug.exceptions import BadRequest
 
 class JsonPayload:
     def __init__(self, request):
@@ -8,7 +9,11 @@ class JsonPayload:
         Object to wrap up simple functionality for parsing a JSON response.
         """
         # Try to load as json
-        self.json = request.get_json()  #: dict: Dictionary representation of request JSON
+        try:
+            self.json = request.get_json()  #: dict: Dictionary representation of request JSON
+        except BadRequest as e:
+            logging.error(e)
+            self.json = {}
 
         if self.json is None:
             self.json = {}

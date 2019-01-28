@@ -1,6 +1,8 @@
 from threading import Thread
 from functools import wraps
 import datetime
+import logging
+import traceback
 import time
 import uuid
 
@@ -111,7 +113,9 @@ class Task:
                 r = f(*args, **kwargs)
                 s = 'success'
             except Exception as e:
-                r = e
+                logging.error(e)
+                logging.error(traceback.format_exc())
+                r = str(e)
                 s = 'error'
             self.state['return'] = r
             self.state['status'] = s

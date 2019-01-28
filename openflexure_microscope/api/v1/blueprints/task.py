@@ -43,6 +43,8 @@ class TaskListAPI(MicroscopeView):
         :>header Content-Type: application/json
         """
 
+        print(self.microscope.task.state)
+
         data = self.microscope.task.state
 
         return jsonify(data)
