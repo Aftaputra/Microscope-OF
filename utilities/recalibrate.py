@@ -128,9 +128,9 @@ def generate_lens_shading_table_closed_loop(output_fname="microscopelst.npy",
             gains *= incremental_gains
 
             # Apply this change (actually apply a bit less than the change)
-            cam.pause_stream()
+            cam.stop_stream_recording()
             cam.camera.lens_shading_table = gains_to_lst(gains*32)
-            cam.resume_stream()
+            cam.start_stream_recording()
             time.sleep(2)
 
         # Fix the AWB gains so the image is neutral
