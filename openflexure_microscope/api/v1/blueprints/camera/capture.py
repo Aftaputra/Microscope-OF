@@ -112,7 +112,7 @@ class ListAPI(MicroscopeView):
             if ('width' in resize) and ('height' in resize):
                 resize = (int(resize['width']), int(resize['height']))  # Convert dict to tuple
             else:
-                abort(400)
+                abort(404)
 
         # Explicitally acquire lock (prevents empty files being created if lock is unavailable)
         with self.microscope.camera.lock:
