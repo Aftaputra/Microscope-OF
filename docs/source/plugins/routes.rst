@@ -65,6 +65,20 @@ For example:
             this_object = object_dictionary[object_id]
             ...
 
+Calling plugin methods from routes
+++++++++++++++++++++++++++++++++++
+
+Instances of MicroscopeViewPlugin have direct access to their associated microscope plugin methods, without needing to know the plugin namespace in advance. As described earlier in this section, all plugins get attached to the microscope in their own namespace, based on the plugins name. This means there are two equivalent ways to access your plugin methods from a web API plugin:
+
+.. code-block:: python
+
+    ...
+    # Call a method from our plugin, using the MicroscopeViewPlugin.plugin shortcut
+    self.plugin.my_plugin_method()
+
+    # Call a method from our plugin, using the full route
+    self.microscope.my_plugin_name.my_plugin_method()
+    ...
 
 Building responses
 ++++++++++++++++++

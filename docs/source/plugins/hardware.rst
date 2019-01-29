@@ -9,18 +9,6 @@ Introduction
 ------------
 All instances of :py:class:`openflexure_microscope.api.v1.views.MicroscopeViewPlugin` must be attached via a microscope plugin. As a result of this, the ``MicroscopeViewPlugin`` class has a ``self.microscope`` attribute, allowing direct access to the :py:class:`openflexure_microscope.Microscope` object. This means that web API plugins can simply chain together basic microscope functions and expose new API routes. No additional microscope functionality is required. However, in most cases web API plugins will serve to provide API routes to new microscope functionality defined in a microscope plugin.
 
-Because of this, instances of MicroscopeViewPlugin have direct access to their associated microscope plugin methods, without needing to know the plugin namespace in advance. As described earlier in this section, all plugins get attached to the microscope in their own namespace, based on the plugins name. This means there are two equivalent ways to access your plugin methods from a web API plugin:
-
-.. code-block:: python
-
-    ...
-    # Call a method from our plugin, using the MicroscopeViewPlugin.plugin shortcut
-    self.plugin.my_plugin_method()
-
-    # Call a method from our plugin, using the full route
-    self.microscope.my_plugin_name.my_plugin_method()
-    ...
-
 
 Tasks and Locks
 ---------------
