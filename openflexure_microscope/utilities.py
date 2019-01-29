@@ -1,6 +1,28 @@
 import copy
 import operator
 from functools import reduce
+from contextlib import contextmanager
+
+@contextmanager
+def set_properties(obj, **kwargs):
+    """A context manager to set, then reset, certain properties of an object.
+    
+    The first argument is the object, subsequent keyword arguments are properties
+    of said object, which are set initially, then reset to their previous values.
+    """
+    saved_properties = {}
+    for k in kwargs.keys():
+        try:
+            saved_properties[k] = getattr(obj, k)
+        except AttributeError:
+            print("Warning: could not get {} on {}.  This property will not be restored!".format(k, obj))
+    for k, v in kwargs.items():
+        setattr(obj, k, v)
+    try:
+        yield
+    finally:
+        for k, v in saved_properties.items():
+            setattr(obj, k, v)
 
 def axes_to_array(coordinate_dictionary, axis_keys=['x', 'y', 'z'], base_array=None):
     """Takes key-value pairs of a JSON value, and maps onto an array"""
