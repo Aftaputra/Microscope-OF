@@ -11,6 +11,7 @@ class JsonPayload:
         # Try to load as json
         try:
             self.json = request.get_json()  #: dict: Dictionary representation of request JSON
+        # If malformed JSON is passed, make an empty dictionary
         except BadRequest as e:
             logging.error(e)
             self.json = {}
@@ -33,9 +34,9 @@ class JsonPayload:
             default: Value to return if no matching key-value pair is found.
             convert: Converter function. By passing a type, the value will be converted to that type. **Use with caution!**
         """
-        # If no JSON payload exists, return early
+        # If no JSON payload exists, make an empty dictionary
         if not self.json:
-            return None
+            self.json = {}
 
         if key in self.json:
             val = self.json[key]
@@ -44,7 +45,6 @@ class JsonPayload:
 
         if convert:
             val = convert(val)
-
         return val
 
 
