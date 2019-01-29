@@ -25,13 +25,13 @@ To prevent this, any function can be offloaded to a background task. This is don
 by calling ``<microscope>.task.start(<long_running_function>, *args, **kwargs)``. Internally, the ``task`` object stores a list
 of all requested tasks, which themselves contain a ``state`` dictionary. This dictionary stores the status of the task (if it
 is idle, running, error, or success), information about the start and end times, a unique task ID, and the return value of 
-the long-running function.
+the long-running function. 
 
 By using tasks, a function can be started in the background, and it's return value fetched at a later time once it has reported
-success.
-
-Additionally, API routes have been created to allow checking the state of all tasks, a particular task by ID, removing individual
-tasks, and pruning the task list of any no-longer-running tasks.
+success. If a long-running task is started by some client, it should note the ID returned in the task state JSON, and use this to
+periodically check on the status of that particular task. API routes have been created to allow checking the state of all tasks 
+(GET `/task`), a particular task by ID (GET `/task/<task_id>`), removing individual tasks (DELETE `/task/<task_id>`), and pruning 
+the task list of any no-longer-running tasks (DELETE `/task`).
 
 An example of a long running task may look like:
 
@@ -55,9 +55,9 @@ After some time, once the task has completed, it could be retreived using:
 .. code-block:: python
 
     ...
-        def get_result(self):
-            self.my_task.state['status'] == "success":
-                return self.my_task.state['return']
+    def get_result(self):
+        self.my_task.state['status'] == "success":
+            return self.my_task.state['return']
 
 Locks
 +++++
