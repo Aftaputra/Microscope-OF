@@ -35,20 +35,48 @@ def module_from_file(plugin_path):
 
         return plugin_spec, plugin_module, plugin_name
 
+def check_module(module_path):
+    """
+    Used to check if a module exists, without ever importing it.
+
+    This checks each nested level separately to avoid raising exceptions.
+    For example, checking "mymodule.submodule.subsubmodule" will first 
+    check if 'mymodule' exists, then if it does, it will check
+    'mymodule.submodule', and so on.
+    """
+    module_split = module_path.split(".")
+    spec_path = ""
+
+    for module_level in module_split:
+        spec_path += ".{}".format(module_level)
+        spec_path = spec_path.strip(".")
+
+        logging.debug("Checking {}".format(spec_path))
+
+        # Try to find a module loader for the plugin path
+        plugin_spec = importlib.util.find_spec(spec_path)
+
+        # If plugin spec doesn't exist, return False early
+        if plugin_spec is None:
+            return False
+
+    # If all checks pass, return True
+    return True
 
 def load_plugin_module(plugin_path):
-    # First, try importing from standard modules
-    try:
-        plugin_module = importlib.import_module(plugin_path)
-    except ImportError:
-        plugin_spec, plugin_module, plugin_name = module_from_file(plugin_path)
 
+    # If the loader was found (i.e. plugin probably exists)
+    if check_module(plugin_path):
+        plugin_module = importlib.import_module(plugin_path)
+        plugin_name = plugin_path.split('.')[-1]
+
+    # If no loader was found, try finding a file from path
+    else:
+        plugin_spec, plugin_module, plugin_name = module_from_file(plugin_path)
         # If a valid plugin was found
         if plugin_spec and plugin_module:
             # Execute the module, so we have access to it
             plugin_spec.loader.exec_module(plugin_module)
-    else:
-        plugin_name = plugin_path.split('.')[-1]
 
     return plugin_module, plugin_name
 
