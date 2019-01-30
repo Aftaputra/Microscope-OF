@@ -162,7 +162,7 @@ class StreamingCamera(BaseCamera):
                 value = fractions_to_floats(value)
                 conf_dict['picamera_settings'][key] = value
             except AttributeError:
-                logging.warning("Unable to read PiCamera attribute {}".format(key))
+                logging.debug("Unable to read PiCamera attribute {}".format(key))
 
         # StreamingCamera parameters (obtained from StreamingCamera _config)
         for key in CONFIG_KEYS:
@@ -204,7 +204,14 @@ class StreamingCamera(BaseCamera):
                     for key, value in config['picamera_settings'].items():  # For each given setting
                         self._config['picamera_settings'][key] = None  # Add the key to the list of returned settings
                         logging.debug("Setting parameter {}: {}".format(key, config['picamera_settings'][key]))
-                        setattr(self.camera, key, value)  # Write setting to camera
+
+                        # Handle special attributes:
+                        if key == 'digital_gain':
+                            set_digital_gain(self.camera, value)
+                        elif key == 'analog_gain':
+                            set_analog_gain(self.camera, value)
+                        else:
+                            setattr(self.camera, key, value)  # Write setting to camera
 
                 # StreamingCamera parameters (applied via StreamingCamera config)
                 for key, value in config.items():  # For each provided setting
