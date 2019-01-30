@@ -51,24 +51,28 @@ from .base import BaseCamera, CaptureObject
 # Richard's fix gain
 from .set_picamera_gain import set_analog_gain, set_digital_gain
 
-PICAMERA_KEYS = [
-    'exposure_mode',
-    'awb_mode',
-    'awb_gains',
-    'framerate',
-    'shutter_speed',
-    'saturation', ]
+# Handle config and picamera settings
+CONFIG_KEYS = {
+    'video_resolution': (832, 624),
+    'image_resolution': (2592, 1944),
+    'numpy_resolution': (1312, 976),
+    'jpeg_quality': 75,
+    'picamera_settings': {
+        'exposure_mode': None,
+        'awb_mode': None,
+        'awb_gains': None,
+        'framerate': None,
+        'shutter_speed': None,
+        'saturation': None,
+        'analog_gain': None,
+        'digital_gain': None,
+        'lens_shading_table': None,
+    },
+}
 
-CONFIG_KEYS = [
-    'video_resolution',
-    'image_resolution',
-    'numpy_resolution',
-    'jpeg_quality',
-    'analog_gain',
-    'digital_gain',
-    'shading_table_path']
+# Useful methods
 
-
+# TODO: Remove this
 def fractions_to_floats(value):
     """Deal with horrible, horrible PiCamera fractions"""
     result = value
@@ -81,6 +85,7 @@ def fractions_to_floats(value):
             result = float(value)
     return result
 
+# MAIN CLASS
 
 class StreamingCamera(BaseCamera):
     """Raspberry Pi camera implementation of StreamingCamera.
@@ -88,7 +93,9 @@ class StreamingCamera(BaseCamera):
     Args:
         config (dict): Dictionary of config parameters to apply on init. If None, will default to basic config.
     """
-    def __init__(self, config: dict=None):
+    def __init__(self, config: dict=None, picamera_settings: dict=None):
+        global CONFIG_KEYS
+
         # Run BaseCamera init
         BaseCamera.__init__(self)
         # Attach to Pi camera
@@ -103,13 +110,8 @@ class StreamingCamera(BaseCamera):
         # Reset variable states
         self.set_zoom(1.0)
 
-        # Default camera config
-        self._config.update({
-            'video_resolution': (832, 624),
-            'image_resolution': (2592, 1944),
-            'numpy_resolution': (1312, 976),
-            'jpeg_quality': 75,
-        })
+        # Populate config and settings with all available keys
+        self._config.update(CONFIG_KEYS)
 
         # Load config dictionary if passed
         if config:
@@ -144,44 +146,27 @@ class StreamingCamera(BaseCamera):
         """
         return hasattr(self.camera, "lens_shading_table")
 
-    def apply_shading_table(self):
-        if not self.supports_lens_shading:
-            logging.error("the currently-installed picamera library does not support all "
-            "the features of the openflexure microscope software.  These features "
-            "include lens shading control and setting the analog/digital gain.\n"
-            "\n"
-            "See the installation instructions for how to fix this:\n"
-            "https://github.com/rwb27/openflexure_microscope_software")
-        elif 'shading_table_path' not in self.config:
-            logging.warning("No shading table path given in config.")
-        else:
-            logging.debug("Applying shading table from {}".format(self.config['shading_table_path']))
-            npy = np.load(self.config['shading_table_path'])
-            self.camera.lens_shading_table = npy
-
     @property
     def config(self):
         """
         Return config dictionary of the StreamingCamera.
         """
-        global PICAMERA_KEYS, CONFIG_KEYS
-
         conf_dict = {
-            'picamera_params': {},
+            'picamera_settings': {},
         }
 
         # PiCamera parameters (obtained directly from PiCamera object)
-        for key in PICAMERA_KEYS:
+        for key, _ in self._config['picamera_settings'].items():
             try:
                 value = getattr(self.camera, key)
                 value = fractions_to_floats(value)
-                conf_dict['picamera_params'][key] = value
+                conf_dict['picamera_settings'][key] = value
             except AttributeError:
                 logging.warning("Unable to read PiCamera attribute {}".format(key))
 
         # StreamingCamera parameters (obtained from StreamingCamera _config)
         for key in CONFIG_KEYS:
-            if key in self._config:
+            if (key != 'picamera_settings') and (key in self._config):
                 conf_dict[key] = self._config[key]
 
         return conf_dict
@@ -197,8 +182,7 @@ class StreamingCamera(BaseCamera):
         Args:
             config (dict): Dictionary of config parameters.
         """
-        global PICAMERA_KEYS, CONFIG_KEYS
-
+        
         paused_stream = False
 
         with self.lock:
@@ -216,27 +200,17 @@ class StreamingCamera(BaseCamera):
                     paused_stream = True  # Remember to unpause stream when done
 
                 # PiCamera parameters (applied directly to PiCamera object)
-                if 'picamera_params' in config:
-                    for key in PICAMERA_KEYS:
-                        if key in config['picamera_params']:
-                            logging.debug("Setting parameter {}: {}".format(key, config['picamera_params'][key]))
-                            setattr(self.camera, key, config['picamera_params'][key])
+                if 'picamera_settings' in config:  # If new settings are given
+                    for key, value in config['picamera_settings'].items():  # For each given setting
+                        self._config['picamera_settings'][key] = None  # Add the key to the list of returned settings
+                        logging.debug("Setting parameter {}: {}".format(key, config['picamera_settings'][key]))
+                        setattr(self.camera, key, value)  # Write setting to camera
 
                 # StreamingCamera parameters (applied via StreamingCamera config)
-                for key in CONFIG_KEYS:
-                    if key in config:
-                        logging.debug("Setting parameter {}: {}".format(key, config[key]))
-                        self._config[key] = config[key]
-
-                # Richard's library to set analog and digital gains
-                if 'analog_gain' in config:
-                    set_analog_gain(self.camera, config['analog_gain'])
-                if 'digital_gain' in config:
-                    set_digital_gain(self.camera, config['digital_gain'])
-
-                # Handle lens shading, if a new one is given
-                if 'shading_table_path' in config:
-                    self.apply_shading_table()
+                for key, value in config.items():  # For each provided setting
+                    if key != 'picamera_settings':  # We already handled this
+                        logging.debug("Setting parameter {}: {}".format(key, value))
+                        self._config[key] = value
 
                 # If stream was paused to update config, unpause
                 if paused_stream:

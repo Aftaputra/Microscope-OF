@@ -97,7 +97,7 @@ class BaseCamera(object):
         self.stream_timeout_enabled = True  #: bool: Enable or disable timing out the stream
 
         self.state = {}  #: dict: Dictionary for capture state
-        self._config = {}  #: dict: Dictionary of base camera settings
+        self._config = {}  #: dict: Dictionary of base camera config
         self.paths = {
             'image': BASE_CAPTURE_PATH,
             'video': BASE_CAPTURE_PATH,

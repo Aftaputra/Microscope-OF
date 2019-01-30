@@ -11,10 +11,10 @@ from openflexure_stage import OpenFlexureStage
 from .camera.pi import StreamingCamera
 
 from .plugins import PluginMount
-from .config import load_config, save_config, convert_config
 from .utilities import axes_to_array
 from .task import TaskOrchestrator
 from .lock import CompositeLock
+from .config import OpenflexureConfig
 
 
 class Microscope(object):
@@ -29,13 +29,13 @@ class Microscope(object):
         config (dict): Dictionary of the runtime config to apply to the microscope. Does not automatically apply to camera and stage.
         attach_plugins (bool): Should the microscope attach plugins listen in 'config' immediately.
     """
-    def __init__(self, camera: StreamingCamera, stage: OpenFlexureStage, config: dict={}, attach_plugins: bool=True):
+    def __init__(self, camera: StreamingCamera, stage: OpenFlexureStage, config_path: str=None, attach_plugins: bool=True):
+
+        # Create RC object
+        self.rc = OpenflexureConfig(config_path=config_path, expand=True)
 
         # Attach initial hardware (may be NoneTypes)
         self.attach(camera, stage)
-
-        # Store entire runtime-config
-        self._config = config
 
         # Create a task orchestrator
         self.task = TaskOrchestrator()  #: :py:class:`openflexure_microscope.task.TaskOrchestrator`: Threaded task orchestrator
@@ -48,11 +48,11 @@ class Microscope(object):
             self.attach_plugins()
         
         # Set default parameters
-        if not 'name' in self._config:
-            self._config['name'] = uuid.uuid4().hex
+        if not 'name' in self.rc.config:
+            self.rc.config['name'] = uuid.uuid4().hex
         
-        if not 'fov' in self._config:
-            self._config['fov'] = [0, 0]  # Assumes pi camera 2, and 40x objective
+        if not 'fov' in self.rc.config:
+            self.rc.config['fov'] = [0, 0]
         
         # Initialise with an empty composite lock
         self.lock = CompositeLock([])  #: :py:class:`openflexure_microscope.lock.CompositeLock`: Composite lock controlling thread access to multiple pieces of hardware
@@ -73,7 +73,7 @@ class Microscope(object):
         if self.stage:
             self.stage.close()
 
-    def attach(self, camera: StreamingCamera, stage: OpenFlexureStage, apply_config: bool=True):
+    def attach(self, camera: StreamingCamera, stage: OpenFlexureStage):
         """
         Retroactively attaches a camera and stage to the microscope object.
 
@@ -128,8 +128,8 @@ class Microscope(object):
         """
         Automatically search for plugin maps in self.config, and attach.
         """
-        if 'plugins' in self._config:
-            self.attach_plugin_maps(self._config['plugins'])
+        if 'plugins' in self.rc.config:
+            self.attach_plugin_maps(self.rc.config['plugins'])
         else:
             logging.warning("No plugins specified in microscoperc.yaml. Skipping.")
 
@@ -178,7 +178,7 @@ class Microscope(object):
         # If attached to a camera
         if self.camera:
             # Update camera config params from StreamingCamera object
-            self._config.update(self.camera.config)
+            self.rc.update(self.camera.config)
         
         # If attached to a stage
         if self.stage:
@@ -186,13 +186,17 @@ class Microscope(object):
         else:
             backlash = [0, 0, 0]
 
-        self._config['backlash'] = {
-            'x': backlash[0],
-            'y': backlash[1],
-            'z': backlash[2],
+        backlash = {
+            'backlash': {
+                'x': backlash[0],
+                'y': backlash[1],
+                'z': backlash[2],
+            }
         }
 
-        return self._config
+        self.rc.update(backlash)
+
+        return self.rc.config
 
     @config.setter
     def config(self, config: dict) -> None:
@@ -209,4 +213,6 @@ class Microscope(object):
                 self.stage.backlash = backlash
 
         # Cache config
-        self._config.update(config)
+        self.rc.update(config)
+        # Save to disk
+        self.rc.save()

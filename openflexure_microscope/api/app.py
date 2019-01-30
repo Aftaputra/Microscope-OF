@@ -24,7 +24,7 @@ from flask_cors import CORS
 from openflexure_microscope.api.utilities import list_routes
 from openflexure_microscope.api.exceptions import JSONExceptionHandler
 
-from openflexure_microscope import Microscope, config
+from openflexure_microscope import Microscope
 from openflexure_microscope.exceptions import LockError
 from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_microscope.stage.openflexure import Stage
@@ -35,10 +35,7 @@ import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 # Create a dummy microscope object, with no hardware attachments
-openflexurerc = config.load_config()  # Load default user config
-api_microscope = Microscope(None, None, config=openflexurerc)
-logging.debug("Created an empty microscope in global.")
-
+api_microscope = Microscope(None, None)
 
 # Generate API URI based on version from filename
 def uri(suffix, api_version, base=None):
@@ -61,11 +58,11 @@ handler = JSONExceptionHandler(app)
 @app.before_first_request
 def attach_microscope():
     # Create the microscope object globally (common to all spawned server threads)
-    global api_microscope, openflexurerc
+    global api_microscope
     logging.debug("First request made. Populating microscope with hardware...")
 
     logging.debug("Creating camera object...")
-    api_camera = StreamingCamera(config=openflexurerc)
+    api_camera = StreamingCamera(config=api_microscope.rc.config)
     
     logging.debug("Creating stage object...")
     api_stage = Stage("/dev/ttyUSB0")
@@ -115,7 +112,7 @@ task_blueprint = blueprints.task.construct_blueprint(api_microscope)
 app.register_blueprint(task_blueprint, url_prefix=uri('/task', 'v1'))
 
 # List all routes
-list_routes(app)
+#list_routes(app)
 
 
 # Automatically clean up microscope at exit

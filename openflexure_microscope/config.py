@@ -1,7 +1,9 @@
 import yaml
 import os
+import errno
 import logging
 import shutil
+import copy
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_CONFIG_PATH = os.path.join(HERE, 'microscoperc.default.yaml')
@@ -9,100 +11,158 @@ DEFAULT_CONFIG_PATH = os.path.join(HERE, 'microscoperc.default.yaml')
 USER_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".openflexure")  #: str: Default path of the user-config directory, containing runtime-config and calibration files. Obtained from ``os.path.join(os.path.expanduser("~"), ".openflexure")``.
 USER_CONFIG_FILE = os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")  #: str: Default path of the user microscoperc.yaml runtime-config file. Obtained from ``os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")``
 
-TYPES = {
-    'stream_resolution': tuple,
-    'video_resolution': tuple,
-    'image_resolution': tuple,
-    'numpy_resolution': tuple,
-    'jpeg_quality': int,
-    'analog_gain': float,
-    'digital_gain': float,
-}  #: dict: Dictionary of expected types for common config parameters. Used by ``convert_config()``.
+with open(DEFAULT_CONFIG_PATH, 'r') as defaultrc:
+    DEFAULT_CONFIG = defaultrc.read()
 
 
-def convert_config(config: dict) -> dict:
-    """
-    Convert datatype of top-level config parameters based on the global TYPES dictionary.
+class OpenflexureConfig():
+    expandable_keys = [
+        'picamera_settings',
+        'openflexure_stage_settings',
+    ]  #: List of keys that can be passed as a file path string and expanded automatically
+
+    def __init__(self, config_path: str=None, expand: bool=True):
+        global DEFAULT_CONFIG, USER_CONFIG_FILE
+
+        # Set arguments
+        self.config_path = config_path or USER_CONFIG_FILE
+        self.expand = expand
+
+        # Create empty config dictionaries
+        self.raw_config = {}
+        # Expanded config dictionary (used by server)
+        self.config = copy.copy(self.raw_config)
+
+        # Initialise basic config file with defaults if it doesn't exist
+        self.initialise_file(self.config_path, populate=DEFAULT_CONFIG)
+
+        # Load the config in, setting self._config and self.config
+        self.load()
+
+
+    def update(self, update_dict: dict):
+        self.config.update(update_dict)
+
+
+    def overwrite(self, new_dict: dict):
+        self.config = new_dict
+
+
+    def load(self):
+        # Unexpanded config dictionary (used at load/save time)
+        self.raw_config = self.load_yaml_file(self.config_path)
+
+        # If the loaded config is in contracted format
+        if self.expand:
+            # Expand self.raw_config into self._config
+            self.expand_config()
+
+
+    def save(self, backup: bool=True):
+        # If the loaded config was in contracted format
+        if self.expand:
+            # Contract self._config into self.raw_config
+            self.contract_config()
     
-    Args:
-        config (dict): Dictionary representation of a loaded runtime-config.
-    """
-    global TYPES
+        if backup:
+            if os.path.isfile(self.config_path):
+                shutil.copyfile(self.config_path, self.config_path+".bk")
 
-    for key in config:
-        if key in TYPES:
-            config[key] = TYPES[key](config[key])
+        self.save_yaml_file(self.config_path, self.raw_config)
+        
 
-    return config
+    def expand_config(self):
+        # For each value in the raw loaded config
+        for key, value in self.raw_config.items():
+            # If it's a valid expandable parameter
+            if (key in OpenflexureConfig.expandable_keys and 
+                type(value) is str):
 
-
-def load_config(config_path: str=None) -> dict:
-    """
-    Open openflexurerc.yaml runtime-config file and write to the microscope devices.
-
-    Args:
-        config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
-    """
-    global DEFAULT_CONFIG_PATH, USER_CONFIG_FILE
-
-    if not config_path:
-        if os.path.exists(USER_CONFIG_FILE):  # If user config file already exists
-            config_path = USER_CONFIG_FILE  # Load it
-        else:  # If user config file doesn't yet exist
-            logging.warning("No user config found. Loading system defaults...")
-            if not os.path.exists(USER_CONFIG_DIR):
-                logging.info("Making user config directory...")
-                os.makedirs(USER_CONFIG_DIR)
-            logging.info("Copying default config to user config...")
-            shutil.copyfile(DEFAULT_CONFIG_PATH, USER_CONFIG_FILE)
-            logging.info("Loading user config...")
-            config_path = USER_CONFIG_FILE  # Load defaults in
-
-    with open(config_path) as config_file:
-        config_data = yaml.load(config_file)
-
-    # Store config dictionary to self
-    return convert_config(config_data)
+                logging.debug("Expanding {}".format(value))
+                # Initialise, load and expand
+                self.initialise_file(value)
+                self.config[key] = self.load_yaml_file(value) or {}
+            else:
+                self.config[key] = value
 
 
-def save_config(config_dict: dict, config_path: str=None, safe: bool=False):
-    """
-    Save current config dictionary to a YAML file.
+    def contract_config(self):
+        for key, value in self.config.items():
+            # If it's a valid expandable parameter
+            if (key in OpenflexureConfig.expandable_keys and 
+                type(value) is dict):
 
-    Args:
-        config_dict (dict): Dictionary of config data to save.
-        config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
-    """
-    global USER_CONFIG_FILE
-    if not config_path:
-        config_path = USER_CONFIG_FILE
-
-    with open(config_path, 'w') as outfile:
-        if not safe:
-            yaml.dump(config_dict, outfile)
-        else:
-            yaml.safe_dump(config_dict, outfile)
+                # Create the file if it doesn't exist
+                self.initialise_file(value)
+                self.save_yaml_file(self.raw_config[key], value)
+            else:
+                self.raw_config = value
 
 
-def merge_config(config_dict: dict, config_path: str=None, safe: bool=False, backup: bool=True):
-    """
-    merge current config dictionary with an existing YAML file.
+    def load_yaml_file(self, config_path) -> dict:
+        """
+        Open a .yaml config file
 
-    Args:
-        config_dict (dict): Dictionary of config data to save.
-        config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
-    """
-    global USER_CONFIG_FILE
-    if not config_path:
-        config_path = USER_CONFIG_FILE
+        Args:
+            config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
+        """
+        config_path = os.path.expanduser(config_path)
 
-    config_data = load_config(config_path=config_path)
+        logging.info("Loading {}...".format(config_path))
 
-    for key, value in config_dict.items():
-        config_data[key] = value
+        with open(config_path) as config_file:
+            config_data = yaml.load(config_file)
 
-    if backup:
-        if os.path.isfile(config_path):
-            shutil.copyfile(config_path, config_path+".bk")
+        # Return loaded config dictionary
+        return config_data
 
-    save_config(config_data, config_path=config_path, safe=safe)
+
+    def save_yaml_file(self, config_path: str, config_dict: dict, safe: bool=False):
+        """
+        Save a .yaml config file
+
+        Args:
+            config_dict (dict): Dictionary of config data to save.
+            config_path (str): Path to the config YAML file. 
+        """
+        config_path = os.path.expanduser(config_path)
+
+        logging.info("Saving {}...".format(config_path))
+
+        with open(config_path, 'w') as outfile:
+            if not safe:
+                yaml.dump(config_dict, outfile)
+            else:
+                yaml.safe_dump(config_dict, outfile)
+
+
+    def initialise_file(self, config_path, populate: str=""):
+        """
+        Check if a file exists, and if not, create it
+        and optionally populate it with content
+
+        Args:
+            config_path (str): Path to the file. 
+            populate (str): String to dump to the file, if it is being newly created
+        """
+        config_path = os.path.expanduser(config_path)
+
+        logging.debug("Initialising {}".format(config_path))
+        logging.debug("Exists: {}".format(os.path.exists(config_path)))
+
+        if not os.path.exists(config_path):  # If user config file doesn't exist
+            logging.warning("No config file found at {}. Creating...".format(config_path))
+            self.create_file(config_path)
+        
+            logging.info("Populating {}...".format(config_path))
+            with open(config_path, 'w') as outfile:
+                outfile.write(populate)
+
+
+    def create_file(self, config_path):
+        if not os.path.exists(os.path.dirname(config_path)):
+            try:
+                os.makedirs(os.path.dirname(config_path))
+            except OSError as exc: # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
