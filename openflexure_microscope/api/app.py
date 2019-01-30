@@ -118,6 +118,9 @@ app.register_blueprint(task_blueprint, url_prefix=uri('/task', 'v1'))
 # Automatically clean up microscope at exit
 def cleanup():
     global api_microscope
+    # Save config
+    api_microscope.rc.save(backup=True)
+    # Close down the microscope
     api_microscope.close()
 
 atexit.register(cleanup)
