@@ -63,12 +63,24 @@ def check_module(module_path):
     # If all checks pass, return True
     return True
 
+def name_from_module(plugin_path):
+    path_array = plugin_path.split('.')
+
+    print(path_array)
+
+    # Truncate namespace of default plugins
+    if path_array[0:2] == ['openflexure_microscope', 'plugins']:
+        path_array = path_array[2:]
+    
+    return '/'.join(path_array)
+
+
 def load_plugin_module(plugin_path):
 
     # If the loader was found (i.e. plugin probably exists)
     if check_module(plugin_path):
         plugin_module = importlib.import_module(plugin_path)
-        plugin_name = plugin_path.split('.')[-1]
+        plugin_name = name_from_module(plugin_path)
 
     # If no loader was found, try finding a file from path
     else:
