@@ -1,6 +1,9 @@
 from openflexure_stage import OpenFlexureStage
+from serial import SerialException
 
 from openflexure_microscope.lock import StrictLock
+
+import logging
 
 # TODO: Implement lock on movement
 class Stage(OpenFlexureStage):
@@ -10,8 +13,12 @@ class Stage(OpenFlexureStage):
         adding an instance of :py:class:`openflexure_microscope.lock.StrictLock` to regulate access.
         """
         self.lock = StrictLock(timeout=2)  #: :py:class:`openflexure_microscope.lock.StrictLock`: Strict lock controlling thread access to camera hardware
-
-        OpenFlexureStage.__init__(self, *args, **kwargs)
+        
+        try:
+            OpenFlexureStage.__init__(self, *args, **kwargs)
+        except SerialException as e:
+            logging.error("No stage found. Aborting stage.")
+            logging.warning("Stage lock can be acquired, but any stage methods will fail and raise exceptions.")
     
     def _move_rel_nobacklash(self, *args, **kwargs):
         """
