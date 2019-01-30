@@ -21,7 +21,9 @@ For example, your ``api_views`` dictionary may look like:
             '/myplugin': MyRouteAPI,
         }
 
-Here, ``MyRouteAPI`` is a web API plugin class, subclassing :py:class:`openflexure_microscope.api.v1.views.MicroscopeViewPlugin`. If your plugin package were named ``mypluginpackage``, an API route would be automatically added at ``/api/v1/plugin/mypluginpackage/myplugin``.
+Here, ``MyRouteAPI`` is a web API plugin class, subclassing :py:class:`openflexure_microscope.api.v1.views.MicroscopeViewPlugin`. If your plugin package were named ``myplugins.package``, an API route would be automatically added at ``/api/v1/plugin/myplugins/package/myplugin``.
+
+The full URL that your plugin will attach to is essentially identical to it's full module path. That is, if your plugin is loaded from ``my_microscope_plugins.mypluginpackage:MyPluginClass``, then your plugin routes will appear at ``<microscope_url>/plugin/my_microscope_plugins/mypluginpackage/<route>``. While this means that plugin routes can get long very quickly, they will generally only ever be accessed by client applications, and so this generally should not be a problem. 
 
 The MicroscopeViewPlugin class
 ------------------------------
