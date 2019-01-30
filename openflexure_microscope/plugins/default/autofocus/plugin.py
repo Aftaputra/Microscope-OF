@@ -5,27 +5,18 @@ from openflexure_microscope.plugins import MicroscopePlugin
 from openflexure_microscope.utilities import set_properties
 
 from .focus_utils import sharpness_sum_lap2
-from .api import IdentifyAPI, MeasureSharpnessAPI, AutofocusAPI
+from .api import MeasureSharpnessAPI, AutofocusAPI
 
 
-class Plugin(MicroscopePlugin):
+class AutofocusPlugin(MicroscopePlugin):
     """
-    A set of default plugins
+    Basic autofocus plugin
     """
 
     api_views = {
-        '/identify': IdentifyAPI,
         '/measure_sharpness': MeasureSharpnessAPI,
         '/autofocus': AutofocusAPI,
     }
-
-    def identify(self):
-        """
-        Demonstrate access to Microscope.camera, and Microscope.stage
-        """
-
-        response = "My parent camera is {}, and my parent stage is {}.".format(self.microscope.camera, self.microscope.stage)
-        return response
 
     def autofocus(self, dz, settle=0.5, metric_fn=sharpness_sum_lap2):
         """Perform a simple autofocus routine.
