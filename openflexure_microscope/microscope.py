@@ -107,7 +107,7 @@ class Microscope(object):
             logging.info("Attached dummy stage.")
         # If stage object has a lock
         if hasattr(self.stage, 'lock'):
-            logging.info("Attaching {} to composite lock.".format(self.stage.lock))
+            logging.info("Attaching lock {} to composite lock.".format(self.stage.lock))
             # Add the lock to the microscope composite lock
             self.lock.locks.append(self.stage.lock)
 
