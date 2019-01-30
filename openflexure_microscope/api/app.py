@@ -17,10 +17,12 @@ from flask import (
 
 from flask.views import MethodView
 from werkzeug.exceptions import default_exceptions
+from serial import SerialException
 
 from flask_cors import CORS
 
 from openflexure_microscope.api.utilities import list_routes
+from openflexure_microscope.api.exceptions import JSONExceptionHandler
 
 from openflexure_microscope import Microscope, config
 from openflexure_microscope.exceptions import LockError
@@ -52,31 +54,8 @@ app.url_map.strict_slashes = False
 
 CORS(app, resources=r'/api/*')
 
-
 # Make errors more API friendly
-
-def _handle_http_exception(e):
-    return make_response(
-        jsonify({
-            'status_code': e.code,
-            'error': e.name,
-            'details': e.description
-        }),
-        e.code)
-
-for code in default_exceptions:
-    app.errorhandler(code)(_handle_http_exception)
-
-def _handle_lock_exception(e):
-    return make_response(
-        jsonify({
-            'status_code': 423,
-            'error': e.code,
-            'details': e.message
-        }),
-        423)
-
-app.errorhandler(LockError)(_handle_lock_exception)
+handler = JSONExceptionHandler(app)
 
 # After app starts, but before first request, attach hardware to global microscope
 @app.before_first_request
@@ -87,6 +66,7 @@ def attach_microscope():
 
     logging.debug("Creating camera object...")
     api_camera = StreamingCamera(config=openflexurerc)
+    
     logging.debug("Creating stage object...")
     api_stage = Stage("/dev/ttyUSB0")
 
