@@ -25,4 +25,4 @@ picamera_params:
 
 # Default plugins
 plugins:
-  - openflexure_microscope.plugins.default:Plugin
+  - openflexure_microscope.plugins.default.autofocus:Plugin
