@@ -93,10 +93,10 @@ class OpenflexureConfig():
                 type(value) is dict):
 
                 # Create the file if it doesn't exist
-                self.initialise_file(value)
+                self.initialise_file(self.raw_config[key])
                 self.save_yaml_file(self.raw_config[key], value)
             else:
-                self.raw_config = value
+                self.raw_config[key] = value
 
 
     def load_yaml_file(self, config_path) -> dict:
