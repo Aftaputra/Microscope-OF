@@ -200,6 +200,10 @@ class Microscope(object):
 
     @config.setter
     def config(self, config: dict) -> None:
+        """
+        Technically doesn't SET the config, but rather updates it. Missing parameters
+        will be left untouched.
+        """
         # If attached to a camera
         if self.camera:
             # Update camera config
