@@ -79,6 +79,18 @@ class CameraEvent(object):
         self.events[get_ident()][0].clear()
 
 
+def generate_basename(obj_list: list) -> str:
+    initial_basename = generate_basename()
+    basename = initial_basename
+    # Handle clashing
+    iterator = 1
+    while basename in [obj.basename for obj in obj_list]:
+        basename = initial_basename + "_{}".format(iterator)
+        iterator += 1
+
+    return basename
+
+
 class BaseCamera(object):
     """
     Base implementation of StreamingCamera.
@@ -97,7 +109,7 @@ class BaseCamera(object):
         self.stream_timeout_enabled = True  #: bool: Enable or disable timing out the stream
 
         self.state = {}  #: dict: Dictionary for capture state
-        self._config = {}  #: dict: Dictionary of base camera config
+        self.config = {}  #: dict: Dictionary of base camera config
         self.paths = {
             'image': BASE_CAPTURE_PATH,
             'video': BASE_CAPTURE_PATH,
@@ -283,7 +295,7 @@ class BaseCamera(object):
 
         # Generate file name
         if not filename:
-            filename = self.generate_basename(self.images)
+            filename = generate_basename(self.images)
             logging.debug(filename)
 
         # Create capture object
@@ -323,7 +335,7 @@ class BaseCamera(object):
 
         # Generate file name
         if not filename:
-            filename = self.generate_basename(self.videos)
+            filename = generate_basename(self.videos)
             logging.debug(filename)
 
         # Create capture object
@@ -342,19 +354,6 @@ class BaseCamera(object):
         self.save_capture_db(self.videos, self.videos_db)
 
         return output
-
-    # INTELLIGENTLY GENERATE FILENAMES
-
-    def generate_basename(self, obj_list: list) -> str:
-        initial_basename = generate_basename()
-        basename = initial_basename
-        # Handle clashing
-        iterator = 1
-        while basename in [obj.basename for obj in obj_list]:
-            basename = initial_basename + "_{}".format(iterator)
-            iterator += 1
-
-        return basename
 
     # WORKER THREAD
 
