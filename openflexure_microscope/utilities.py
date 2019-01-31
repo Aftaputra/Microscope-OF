@@ -1,5 +1,6 @@
 import copy
 import operator
+from fractions import Fraction
 from functools import reduce
 from contextlib import contextmanager
 
