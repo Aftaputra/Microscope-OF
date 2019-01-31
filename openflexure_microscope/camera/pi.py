@@ -28,9 +28,6 @@ import time
 import numpy as np
 import logging
 
-# Used for conversion only
-from fractions import Fraction
-
 # Pi camera
 import picamera
 import picamera.array
@@ -60,21 +57,6 @@ CONFIG_KEYS = {
         'lens_shading_table': None,
     },
 }
-
-
-# Useful methods
-
-def fractions_to_floats(value):
-    """Deal with horrible, horrible PiCamera fractions"""
-    result = value
-    if type(value) is list or type(value) is tuple:
-        result = [float(v) if isinstance(v, Fraction) else v for v in value]
-        if type(value) is tuple:
-            result = tuple(result)
-    else:
-        if isinstance(value, Fraction):
-            result = float(value)
-    return result
 
 
 # MAIN CLASS
@@ -152,7 +134,6 @@ class StreamingCamera(BaseCamera):
         for key, _ in self.config['picamera_settings'].items():
             try:
                 value = getattr(self.camera, key)
-                value = fractions_to_floats(value)
                 conf_dict['picamera_settings'][key] = value
             except AttributeError:
                 logging.debug("Unable to read PiCamera attribute {}".format(key))
