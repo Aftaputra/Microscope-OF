@@ -10,4 +10,4 @@ class Plugin(MicroscopePlugin):
         """
         Tests for access to Microscope.camera, and Microscope.stage
         """
-        return (self.microscope.camera, self.microscope.stage)
+        return self.microscope.camera, self.microscope.stage

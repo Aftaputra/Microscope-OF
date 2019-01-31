@@ -46,4 +46,3 @@ if __name__ == '__main__':
             alltests = unittest.TestSuite(suites)
 
             result = unittest.TextTestRunner(verbosity=2).run(alltests)
-

@@ -2,7 +2,7 @@ from openflexure_microscope.api.utilities import gen, JsonPayload
 from openflexure_microscope.api.v1.views import MicroscopeView
 from openflexure_microscope.utilities import axes_to_array, filter_dict
 
-from flask import Response, Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request
 
 import logging
 
@@ -42,7 +42,7 @@ class PositionAPI(MicroscopeView):
           }
 
         """
-        out = filter_dict(self.microscope.state, ('stage', 'position'))
+        out = filter_dict(self.microscope.state, ['stage', 'position'])
         return jsonify(out)
 
     def post(self):
@@ -85,7 +85,7 @@ class PositionAPI(MicroscopeView):
             with self.microscope.stage.lock:
                 self.microscope.stage.move_rel(position)
 
-        out = filter_dict(self.microscope.state, ('stage', 'position'))
+        out = filter_dict(self.microscope.state, ['stage', 'position'])
 
         return jsonify(out)
 
@@ -99,4 +99,4 @@ def construct_blueprint(microscope_obj):
         view_func=PositionAPI.as_view('position', microscope=microscope_obj)
     )
 
-    return(blueprint)
+    return blueprint

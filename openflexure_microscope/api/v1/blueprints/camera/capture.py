@@ -2,9 +2,7 @@ from openflexure_microscope.api.utilities import gen, get_bool, JsonPayload
 from openflexure_microscope.api.v1.views import MicroscopeView
 from openflexure_microscope.utilities import filter_dict
 
-from flask import Response, Blueprint, jsonify, request, abort, url_for, redirect, send_file
-
-import logging
+from flask import Response, jsonify, request, abort, url_for, redirect, send_file
 
 
 class ListAPI(MicroscopeView):
@@ -368,7 +366,7 @@ class MetadataAPI(MicroscopeView):
 
         # If no filename is specified, redirect to the capture's currently set filename
         if not filename:
-            return redirect(url_for('capture_download', capture_id=capture_id, filename=capture_obj.metadataname, as_attachment=as_attachment), code=307)
+            return redirect(url_for('capture_download', capture_id=capture_id, filename=capture_obj.metadataname), code=307)
 
         # Download the metadata using the requested filename
         data = capture_obj.yaml
@@ -376,6 +374,7 @@ class MetadataAPI(MicroscopeView):
         return Response(
             data,
             mimetype="text/yaml")
+
 
 class TagsAPI(MicroscopeView):
     def get(self, capture_id):
@@ -402,7 +401,7 @@ class TagsAPI(MicroscopeView):
         if not capture_obj or not capture_obj.state['available']:
             return abort(404)  # 404 Not Found
 
-        metadata_tags = filter_dict(capture_obj.state, ('metadata', 'tags'))
+        metadata_tags = filter_dict(capture_obj.state, ['metadata', 'tags'])
 
         return jsonify(metadata_tags)
     
@@ -440,7 +439,7 @@ class TagsAPI(MicroscopeView):
         for tag in data_dict:
             capture_obj.put_tag(str(tag))
 
-        metadata_tags = filter_dict(capture_obj.state, ('metadata', 'tags'))
+        metadata_tags = filter_dict(capture_obj.state, ['metadata', 'tags'])
 
         return jsonify(metadata_tags)
 
@@ -477,6 +476,6 @@ class TagsAPI(MicroscopeView):
         for tag in data_dict:
             capture_obj.delete_tag(str(tag))
 
-        metadata_tags = filter_dict(capture_obj.state, ('metadata', 'tags'))
+        metadata_tags = filter_dict(capture_obj.state, ['metadata', 'tags'])
 
         return jsonify(metadata_tags)

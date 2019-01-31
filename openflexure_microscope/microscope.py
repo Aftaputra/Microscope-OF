@@ -3,7 +3,6 @@
 Defines a microscope object, binding a camera and stage with basic functionality.
 """
 import logging
-import os
 import numpy as np
 import uuid
 

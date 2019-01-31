@@ -1,8 +1,8 @@
 import copy
 import operator
-from fractions import Fraction
 from functools import reduce
 from contextlib import contextmanager
+
 
 @contextmanager
 def set_properties(obj, **kwargs):
@@ -25,7 +25,8 @@ def set_properties(obj, **kwargs):
         for k, v in saved_properties.items():
             setattr(obj, k, v)
 
-def axes_to_array(coordinate_dictionary, axis_keys=['x', 'y', 'z'], base_array=None):
+
+def axes_to_array(coordinate_dictionary, axis_keys=('x', 'y', 'z'), base_array=None):
     """Takes key-value pairs of a JSON value, and maps onto an array"""
     # If no base array is given
     if not base_array:
@@ -42,19 +43,21 @@ def axes_to_array(coordinate_dictionary, axis_keys=['x', 'y', 'z'], base_array=N
 
     return base_array
 
-def filter_dict(dictionary: dict, keys: list):
-	# Get value by recursively applying getitem
-	val = reduce(operator.getitem, keys, dictionary)
-	
-	# Create new dictionary by running reduce on key, val pairs
-	out = reduce(lambda x, y: {y: x}, reversed(keys), val)
-	
-	return out
 
-def entry_by_id(id: str, object_list: list):
+def filter_dict(dictionary: dict, keys: list):
+    # Get value by recursively applying getitem
+    val = reduce(operator.getitem, keys, dictionary)
+
+    # Create new dictionary by running reduce on key, val pairs
+    out = reduce(lambda x, y: {y: x}, reversed(keys), val)
+
+    return out
+
+
+def entry_by_id(entry_id: str, object_list: list):
     """Return an object from a list, if <object>.id matches id argument."""
     found = None
     for o in object_list:
-        if o.id == id:
+        if o.id == entry_id:
             found = o
     return found

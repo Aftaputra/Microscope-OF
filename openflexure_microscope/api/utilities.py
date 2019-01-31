@@ -1,7 +1,7 @@
 import pprint
 import logging
-import copy
 from werkzeug.exceptions import BadRequest
+
 
 class JsonPayload:
     def __init__(self, request):
@@ -60,10 +60,9 @@ def gen(camera):
 
 def get_bool(get_arg):
     """Convert GET request argument string to a Python bool"""
-    if (
-        get_arg == 'true' or
-        get_arg == 'True' or
-        get_arg == '1'):
+    if (get_arg == 'true' or
+            get_arg == 'True' or
+            get_arg == '1'):
         return True
     else:
         return False

@@ -1,13 +1,12 @@
 from threading import Thread
-from functools import wraps
 import datetime
 import logging
 import traceback
-import time
 import uuid
 
 from openflexure_microscope.exceptions import TaskDeniedException
 from openflexure_microscope.utilities import entry_by_id
+
 
 class TaskOrchestrator:
     """
@@ -76,7 +75,7 @@ class TaskOrchestrator:
         Method returning bool describing if a particular task is allowed to run.
         Currently always allows tasks to start, as locks determine access to hardware.
         """
-        #return not any([task._running for task in self.tasks])
+        # return not any([task._running for task in self.tasks])
         return True
 
 

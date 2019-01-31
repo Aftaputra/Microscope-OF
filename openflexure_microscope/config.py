@@ -36,7 +36,6 @@ def to_map(data, func):
     Args:
         data: Input iterable data
         func: Function to apply to all non-iterable values
-        excluded_keys: Any dictionary keys to exclude from the returned data
     """
     # If the object is a dictionary
     if isinstance(data, abc.Mapping):
@@ -58,7 +57,6 @@ def json_map(data, clean_keys=True):
     Args:
         data: Input dictionary
         clean_keys: Modify any keys unsuitable for JSON return
-
     """
 
     # Do not overwrite original data dictionary

@@ -1,6 +1,7 @@
 from openflexure_microscope.api.v1.views import MicroscopeView
 from flask import jsonify, abort, Blueprint
 
+
 class TaskListAPI(MicroscopeView):
 
     def get(self):
@@ -64,6 +65,7 @@ class TaskListAPI(MicroscopeView):
         data = self.microscope.task.state
 
         return jsonify(data)
+
 
 class TaskAPI(MicroscopeView):
 
@@ -135,6 +137,7 @@ class TaskAPI(MicroscopeView):
 
         return jsonify(data)
 
+
 def construct_blueprint(microscope_obj):
 
     blueprint = Blueprint('task_blueprint', __name__)
@@ -149,4 +152,4 @@ def construct_blueprint(microscope_obj):
         view_func=TaskAPI.as_view('task', microscope=microscope_obj)
     )
 
-    return(blueprint)
+    return blueprint

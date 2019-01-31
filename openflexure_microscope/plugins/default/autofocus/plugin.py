@@ -34,7 +34,7 @@ class AutofocusPlugin(MicroscopePlugin):
             positions = []
             camera.annotate_text = ""
 
-            for i in stage.scan_z(dz, return_to_start=False):
+            for _ in stage.scan_z(dz, return_to_start=False):
                 positions.append(stage.position[2])
                 time.sleep(settle)
                 sharpnesses.append(self.measure_sharpness(metric_fn))
@@ -46,4 +46,4 @@ class AutofocusPlugin(MicroscopePlugin):
 
     def measure_sharpness(self, metric_fn=sharpness_sum_lap2):
         """Measure the sharpness of the camera's current view."""
-        return metric_fn(self.microscope.camera.array(use_video_port=True, resize=(640,480)))
+        return metric_fn(self.microscope.camera.array(use_video_port=True, resize=(640, 480)))

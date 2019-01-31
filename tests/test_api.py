@@ -1,19 +1,11 @@
 #!/usr/bin/env python
 from api_client import APIconnection
 
-import os
-import io
-import sys
-import time
 import numpy as np
-import uuid
-
-from PIL import Image
-
 import unittest
-from pprint import pprint
 
-import logging, sys
+import logging
+import sys
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 
@@ -66,6 +58,7 @@ class TestCapture(unittest.TestCase):
 
             self.assertTrue(capture_array.shape == (resolution[1], resolution[0], 3))
 
+
 class TestStage(unittest.TestCase):
 
     def test_stage_config(self):
@@ -113,6 +106,7 @@ class TestStage(unittest.TestCase):
                 logging.debug("{} > {}".format(pos_i, pos_f))
 
                 self.assertTrue(np.array_equal(diff, move))
+
 
 if __name__ == '__main__':
 

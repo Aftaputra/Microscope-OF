@@ -1,11 +1,12 @@
 from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
 
-from flask import Response, Blueprint, jsonify
+from flask import Blueprint
 
-import logging, warnings
+import logging
+import warnings
 
 
-def construct_blueprint(microscope_obj, plugin_paths=[], include_default=True):
+def construct_blueprint(microscope_obj):
 
     blueprint = Blueprint('plugin_blueprint', __name__)
 
@@ -56,4 +57,4 @@ def construct_blueprint(microscope_obj, plugin_paths=[], include_default=True):
                 "No valid 'api_views' dictionary found in {}".format(plugin_obj)
             )
 
-    return(blueprint)
+    return blueprint

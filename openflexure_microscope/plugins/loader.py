@@ -4,7 +4,7 @@ import inspect
 import logging
 
 
-class bcolors:
+class ConColors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -23,7 +23,7 @@ def module_from_file(plugin_path):
 
     # Check if the path is to a file
     if not os.path.isfile(plugin_path):
-        logging.warning(bcolors.FAIL + "No valid plugin found at {}.".format(plugin_path) + bcolors.ENDC)
+        logging.warning(ConColors.FAIL + "No valid plugin found at {}.".format(plugin_path) + ConColors.ENDC)
         return None, None, None
 
     else:
@@ -63,6 +63,7 @@ def check_module(module_path):
     # If all checks pass, return True
     return True
 
+
 def name_from_module(plugin_path):
     path_array = plugin_path.split('.')
 
@@ -100,7 +101,7 @@ def load_plugin_class(plugin_path, plugin_class_name):
         try:
             plugin_class = getattr(plugin_module, plugin_class_name)
         except AttributeError:
-            logging.warning(bcolors.FAIL + "Class {} does not exist in plugin {}. Skipping.".format(plugin_class_name, plugin_path) + bcolors.ENDC)
+            logging.warning(ConColors.FAIL + "Class {} does not exist in plugin {}. Skipping.".format(plugin_class_name, plugin_path) + ConColors.ENDC)
             return None, None
         else:
             return plugin_class, plugin_name
@@ -112,7 +113,7 @@ def class_from_map(plugin_map):
     plugin_arr = plugin_map.split(':')
 
     if not len(plugin_arr) == 2:
-        logging.warning(bcolors.WARNING + "Malformed plugin map {}. Skipping.".format(plugin_map) + bcolors.ENDC)
+        logging.warning(ConColors.WARNING + "Malformed plugin map {}. Skipping.".format(plugin_map) + ConColors.ENDC)
         return None, None
     else:
         return load_plugin_class(*plugin_arr)
@@ -155,7 +156,7 @@ class PluginMount(object):
             plugin_object = plugin_class()
 
             if hasattr(self, plugin_name):  # If a plugin with the same name is already attached.
-                logging.warning(bcolors.WARNING + "A plugin named {} has already been loaded. Skipping {}.".format(plugin_name, plugin_map) + bcolors.ENDC)
+                logging.warning(ConColors.WARNING + "A plugin named {} has already been loaded. Skipping {}.".format(plugin_name, plugin_map) + ConColors.ENDC)
 
             elif isinstance(plugin_object, MicroscopePlugin):  # If plugin_object is an instance of MicroscopePlugin
                 # Attach plugin_object to the plugin mount
@@ -165,10 +166,10 @@ class PluginMount(object):
                 # Grant plugin access to the hardware
                 plugin_object.microscope = self.parent
 
-                logging.info(bcolors.OKGREEN + "Plugin {} loaded as {}.".format(plugin_map, plugin_name) + bcolors.ENDC)
+                logging.info(ConColors.OKGREEN + "Plugin {} loaded as {}.".format(plugin_map, plugin_name) + ConColors.ENDC)
 
 
-class MicroscopePlugin():
+class MicroscopePlugin:
     """
     Parent class for all microscope plugins.
 

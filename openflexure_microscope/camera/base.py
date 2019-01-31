@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import time
-import io
 import os
 import threading
-from PIL import Image
 import datetime
 import yaml
 import logging
@@ -33,6 +31,18 @@ def last_entry(object_list: list):
 def generate_basename():
     """Return a default filename based on the capture datetime"""
     return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def generate_numbered_basename(obj_list: list) -> str:
+    initial_basename = generate_basename()
+    basename = initial_basename
+    # Handle clashing
+    iterator = 1
+    while basename in [obj.basename for obj in obj_list]:
+        basename = initial_basename + "_{}".format(iterator)
+        iterator += 1
+
+    return basename
 
 
 class CameraEvent(object):
@@ -77,18 +87,6 @@ class CameraEvent(object):
     def clear(self):
         """Clear frame event, once processed."""
         self.events[get_ident()][0].clear()
-
-
-def generate_basename(obj_list: list) -> str:
-    initial_basename = generate_basename()
-    basename = initial_basename
-    # Handle clashing
-    iterator = 1
-    while basename in [obj.basename for obj in obj_list]:
-        basename = initial_basename + "_{}".format(iterator)
-        iterator += 1
-
-    return basename
 
 
 class BaseCamera(object):
@@ -155,7 +153,7 @@ class BaseCamera(object):
 
     # START AND STOP WORKER THREAD
 
-    def start_worker(self, timeout: int=5) -> bool:
+    def start_worker(self, timeout: int = 5) -> bool:
         """Start the background camera thread if it isn't running yet."""
         timeout_time = time.time() + timeout
 
@@ -176,7 +174,7 @@ class BaseCamera(object):
                     time.sleep(0)
         return True
 
-    def stop_worker(self, timeout: int=5) -> bool:
+    def stop_worker(self, timeout: int = 5) -> bool:
         """Flag worker thread for stop. Waits for thread close or timeout."""
         logging.debug("Stopping worker thread")
         timeout_time = time.time() + timeout
@@ -217,13 +215,13 @@ class BaseCamera(object):
         """Return the latest recorded video."""
         return last_entry(self.videos)
 
-    def image_from_id(self, id):
+    def image_from_id(self, image_id):
         """Return an image StreamObject with a matching ID."""
-        return entry_by_id(id, self.images)
+        return entry_by_id(image_id, self.images)
 
-    def video_from_id(self, id):
+    def video_from_id(self, video_id):
         """Return a video StreamObject with a matching ID."""
-        return entry_by_id(id, self.videos)
+        return entry_by_id(video_id, self.videos)
 
     # MANAGE CAPTURE DATABASE
 
@@ -277,25 +275,24 @@ class BaseCamera(object):
 
     def new_image(
             self,
-            write_to_file: bool=False,
-            temporary: bool=True,
-            filename: str=None,
-            fmt: str='jpeg',
-            shunt_others: bool=True):
+            write_to_file: bool = False,
+            temporary: bool = True,
+            filename: str = None,
+            fmt: str = 'jpeg'):
 
         """
         Create a new image capture object. Adds to the image list, and shunt all others.
 
         Args:
             write_to_file (bool): Should the StreamObject write to a file, or an in-memory byte stream.
-            keep_on_disk (bool): Should the data be deleted after session ends. Creating the capture with a content manager sets this to true.
+            temporary (bool): Should the data be deleted after session ends. Creating the capture with a content manager sets this to true.
             filename (str): Name of the stored file. Defaults to timestamp.
             fmt (str): Format of the capture.
         """
 
         # Generate file name
         if not filename:
-            filename = generate_basename(self.images)
+            filename = generate_numbered_basename(self.images)
             logging.debug(filename)
 
         # Create capture object
@@ -317,11 +314,10 @@ class BaseCamera(object):
 
     def new_video(
             self,
-            write_to_file: bool=True,
-            temporary: bool=False,
-            filename: str=None,
-            fmt: str='h264',
-            shunt_others: bool=True):
+            write_to_file: bool = True,
+            temporary: bool = False,
+            filename: str = None,
+            fmt: str = 'h264'):
 
         """
         Create a new video capture object. Adds to the image list, and shunt all others.
@@ -335,7 +331,7 @@ class BaseCamera(object):
 
         # Generate file name
         if not filename:
-            filename = generate_basename(self.videos)
+            filename = generate_numbered_basename(self.videos)
             logging.debug(filename)
 
         # Create capture object

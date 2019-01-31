@@ -15,6 +15,7 @@ thumbnail_size = (60, 60)
 BASE_CAPTURE_PATH = os.path.join(os.path.expanduser('~'), 'micrographs')
 TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, 'tmp')
 
+
 def clear_tmp():
     global TEMP_CAPTURE_PATH
 
@@ -23,6 +24,7 @@ def clear_tmp():
     for f in files:
         os.remove(f)
         logging.debug("Removed {}".format(f))
+
 
 def capture_from_dict(capture_dict):
     capture = CaptureObject(create_metadata_file=False)  # Create a placeholder capture
@@ -48,14 +50,15 @@ class CaptureObject(object):
 
     Note: Captures cannot be stored in a lower-level directory than BASE_CAPTURE_PATH.
     """
+
     def __init__(
             self,
-            write_to_file: bool=False,
-            temporary: bool=False,
-            filename: str='',
-            folder: str='',
-            fmt: str='',
-            create_metadata_file: bool=True) -> None:
+            write_to_file: bool = False,
+            temporary: bool = False,
+            filename: str = '',
+            folder: str = '',
+            fmt: str = '',
+            create_metadata_file: bool = True) -> None:
         """Create a new StreamObject, to manage capture data."""
 
         # Store a nice ID
@@ -102,7 +105,9 @@ class CaptureObject(object):
 
     def __enter__(self):
         """Create StreamObject in context, to auto-clean disk data."""
-        logging.debug("Entering context for {}. Stored files will be cleaned up automatically regardless of location.".format(self.id))
+        logging.debug(
+            "Entering context for {}. Stored files will be cleaned up automatically regardless of location.".format(
+                self.id))
         self.temporary = True  # Flag file to be removed on close.
         self.context_manager = True  # Used in metadata
 
@@ -129,7 +134,7 @@ class CaptureObject(object):
         else:
             logging.debug("Target for {} set to 'file'".format(self.id))
             self.stream = self.file
-        
+
         # Save initial metadata file
         if create_metadata_file:
             self.save_metadata()
@@ -170,7 +175,8 @@ class CaptureObject(object):
 
     def split_file_path(self, filepath):
         """Takes a full file path, and splits it into separated class properties."""
-        self.filefolder, self.filename = os.path.split(filepath)  # Split the full file path into a folder and a filename
+        self.filefolder, self.filename = os.path.split(
+            filepath)  # Split the full file path into a folder and a filename
         self.basename = os.path.splitext(self.filename)[0]  # Split the filename out from it's file extension
         self.metadataname = "{}.yaml".format(self.basename)
 
@@ -234,18 +240,10 @@ class CaptureObject(object):
     @property
     def metadata(self) -> dict:
         # Create basic metadata dictionary
-        d = {
-            'id': self.id,
-            'filename': self.filename,
-            'path': self.file,
-            'time': self.timestring,
-            'format': self.format,
-            'tags': self.tags
-        }
+        d = {'id': self.id, 'filename': self.filename, 'path': self.file, 'time': self.timestring,
+             'format': self.format, 'tags': self.tags, 'custom': self._metadata}
 
         # Add custom metadata to dictionary
-        d['custom'] = self._metadata
-
         return d
 
     @property
@@ -261,14 +259,10 @@ class CaptureObject(object):
         """Return dictionary of StreamObject properties."""
 
         # Create basic state dictionary
-        d = {
-            'locked': self.locked,
-            'temporary': self.temporary,
-        }
+        d = {'locked': self.locked, 'temporary': self.temporary, 'metadata': self.metadata,
+             'metadata_path': self.metadata_file}
 
         # Add metadata to state
-        d['metadata'] = self.metadata
-        d['metadata_path'] = self.metadata_file
 
         # Check bytestream
         if self.stream_exists:
@@ -403,5 +397,6 @@ class CaptureObject(object):
         self.delete_stream()
         if self.temporary:
             self.delete()
+
 
 atexit.register(clear_tmp)

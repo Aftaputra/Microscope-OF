@@ -4,8 +4,6 @@ from openflexure_microscope.exceptions import TaskDeniedException
 
 from flask import request, Response, escape, jsonify, abort
 
-import logging
-
 
 class IdentifyAPI(MicroscopeViewPlugin):
     """
@@ -53,6 +51,7 @@ class HelloWorldAPI(MicroscopeViewPlugin):
 
         return Response(self.microscope.plugin_string)
 
+
 class LongRunningAPI(MicroscopeViewPlugin):
     """
     An example API plugin that uses a long-running plugin method.
@@ -74,6 +73,7 @@ class LongRunningAPI(MicroscopeViewPlugin):
 
         except TaskDeniedException:
             return abort(409)
+
 
 class SomeExceptionAPI(MicroscopeViewPlugin):
     """

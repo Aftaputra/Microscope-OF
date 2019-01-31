@@ -5,6 +5,7 @@ from openflexure_microscope.lock import StrictLock
 
 import logging
 
+
 # TODO: Implement lock on movement
 class Stage(OpenFlexureStage):
     def __init__(self, *args, **kwargs):
@@ -16,7 +17,7 @@ class Stage(OpenFlexureStage):
         
         try:
             OpenFlexureStage.__init__(self, *args, **kwargs)
-        except SerialException as e:
+        except SerialException:
             logging.error("No stage found. Aborting stage.")
             logging.warning("Stage lock can be acquired, but any stage methods will fail and raise exceptions.")
     

@@ -1,8 +1,6 @@
 from openflexure_microscope.api.v1.views import MicroscopeView
 
-from flask import Response, Blueprint, jsonify, request, abort, url_for, redirect, send_file
-
-import logging
+from flask import jsonify
 
 
 class GPUPreviewAPI(MicroscopeView):

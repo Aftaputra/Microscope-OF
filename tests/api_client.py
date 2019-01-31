@@ -3,6 +3,7 @@ from PIL import Image
 from io import BytesIO
 import numpy as np
 
+
 class APIconnection:
     def __init__(self, host="localhost", port=5000, api_ver="v1"):
         self.base = self.build_base(host=host, port=port, api_ver=api_ver)

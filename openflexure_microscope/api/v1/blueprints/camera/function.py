@@ -1,9 +1,7 @@
 from openflexure_microscope.api.v1.views import MicroscopeView
 from openflexure_microscope.api.utilities import JsonPayload
 
-from flask import Response, Blueprint, jsonify, request, abort, url_for, redirect, send_file
-
-import logging
+from flask import jsonify, request
 
 
 class ZoomAPI(MicroscopeView):

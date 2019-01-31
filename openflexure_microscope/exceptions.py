@@ -1,7 +1,9 @@
 from threading import ThreadError
 
+
 class TaskDeniedException(Exception):
     pass
+
 
 class LockError(ThreadError):
     ERROR_CODES = {

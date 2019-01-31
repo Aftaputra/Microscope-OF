@@ -197,4 +197,4 @@ def construct_blueprint(microscope_obj):
         view_func=ConfigAPI.as_view('config', microscope=microscope_obj)
     )
 
-    return(blueprint)
+    return blueprint

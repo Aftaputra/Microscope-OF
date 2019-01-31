@@ -4,9 +4,7 @@ from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_microscope import config
 
 import numpy as np
-import sys
 import time
-import matplotlib.pyplot as plt
 import os
 
 import logging, sys

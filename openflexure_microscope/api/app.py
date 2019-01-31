@@ -1,31 +1,16 @@
 #!/usr/bin/env python
 """
 TODO: Implement API route to cleanly shut down server
-TODO: Implement plugin API routes somehow
 """
 
-import numpy as np
-from importlib import import_module
-import time
-import datetime
-import os
-
 from flask import (
-    Flask, render_template, Response, url_for,
-    redirect, request, jsonify, send_file, abort,
-    make_response)
-
-from flask.views import MethodView
-from werkzeug.exceptions import default_exceptions
-from serial import SerialException
+    Flask, render_template)
 
 from flask_cors import CORS
 
-from openflexure_microscope.api.utilities import list_routes
 from openflexure_microscope.api.exceptions import JSONExceptionHandler
 
 from openflexure_microscope import Microscope
-from openflexure_microscope.exceptions import LockError
 from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_microscope.stage.openflexure import Stage
 

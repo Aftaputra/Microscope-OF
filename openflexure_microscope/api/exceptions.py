@@ -2,6 +2,7 @@ from flask import jsonify
 from werkzeug.exceptions import default_exceptions
 from werkzeug.exceptions import HTTPException
 
+
 class JSONExceptionHandler(object):
 
     def __init__(self, app=None):
@@ -23,7 +24,6 @@ class JSONExceptionHandler(object):
             'message': message
         }
         return jsonify(response)
-
 
     def init_app(self, app):
         self.app = app

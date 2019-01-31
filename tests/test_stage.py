@@ -1,21 +1,13 @@
 #!/usr/bin/env python
-from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_stage import OpenFlexureStage
-from openflexure_microscope import Microscope
 
-import os
-import io
-import sys
-import time
 import numpy as np
-import uuid
-
-from PIL import Image
 
 import unittest
-from pprint import pprint
 
-import logging, sys
+import logging
+import sys
+
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 
