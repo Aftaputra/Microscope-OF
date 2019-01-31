@@ -15,3 +15,4 @@ picamera_settings: ~/.openflexure/picamera_settings.yaml
 # Default plugins
 plugins:
   - openflexure_microscope.plugins.default.autofocus:AutofocusPlugin
+  - openflexure_microscope.plugins.default.camera_calibration:Plugin
