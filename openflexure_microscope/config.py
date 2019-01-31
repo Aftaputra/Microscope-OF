@@ -109,16 +109,13 @@ class OpenflexureConfig:
 
     @property
     def config(self):
+        return self.read()
+
+    def read(self):
         return self._config
 
-    def asdict(self):
-        return self._config
-
-    def update(self, update_dict: dict):
+    def write(self, update_dict: dict):
         self._config.update(update_dict)
-
-    def overwrite(self, new_dict: dict):
-        self._config = new_dict
 
     def load(self):
         # Unexpanded config dictionary (used at load/save time)

@@ -65,7 +65,7 @@ def attach_microscope():
     logging.debug("First request made. Populating microscope with hardware...")
 
     logging.debug("Creating camera object...")
-    api_camera = StreamingCamera(config=api_microscope.rc.asdict())
+    api_camera = StreamingCamera(config=api_microscope.rc.read())
     
     logging.debug("Creating stage object...")
     api_stage = Stage("/dev/ttyUSB0")

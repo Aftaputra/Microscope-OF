@@ -172,7 +172,8 @@ class ConfigAPI(MicroscopeView):
 
         print(payload.json)
 
-        self.microscope.apply_config(payload.json)
+        self.microscope.write_config(payload.json)
+        self.microscope.save_config()
 
         return jsonify(self.microscope.config)
 

@@ -56,10 +56,10 @@ class Microscope(object):
         
         # Set default parameters
         if 'name' not in self.rc.config:
-            self.rc.update({'name': uuid.uuid4().hex})
+            self.rc.write({'name': uuid.uuid4().hex})
         
         if 'fov' not in self.rc.config:
-            self.rc.update({'fov': [0, 0]})
+            self.rc.write({'fov': [0, 0]})
         
         # Initialise with an empty composite lock
         self.lock = CompositeLock([])  #: :py:class:`openflexure_microscope.lock.CompositeLock`: Composite lock controlling thread access to multiple pieces of hardware
@@ -96,7 +96,7 @@ class Microscope(object):
         if isinstance(self.camera, StreamingCamera):
             logging.info("Attached camera {}".format(camera))
             logging.info("Updating camera settings")
-            self.apply_config(self.camera.read_config())
+            self.write_config(self.camera.read_config())
         elif not self.camera:
             logging.info("Attached dummy camera.")
         # If camera has a lock
@@ -180,9 +180,9 @@ class Microscope(object):
 
         return state
 
-    def apply_config(self, config: dict):
+    def write_config(self, config: dict):
         """
-        Updates  and applies a config dictionary. Missing parameters will be left untouched.
+        Writes  and applies a config dictionary. Missing parameters will be left untouched.
         """
         # If attached to a camera
         if self.camera:
@@ -198,9 +198,7 @@ class Microscope(object):
                 self.stage.backlash = backlash
 
         # Cache config
-        self.rc.update(config)
-        # Save to disk
-        self.rc.save()
+        self.rc.write(config)
 
     def read_config(self):
         """
@@ -209,7 +207,7 @@ class Microscope(object):
         # If attached to a camera
         if self.camera:
             # Update camera config params from StreamingCamera object
-            self.rc.update(self.camera.config)
+            self.rc.write(self.camera.config)
 
         # If attached to a stage
         if self.stage:
@@ -225,9 +223,18 @@ class Microscope(object):
             }
         }
 
-        self.rc.update(backlash)
+        self.rc.write(backlash)
 
-        return self.rc.asdict()
+        return self.rc.read()
+
+    def save_config(self):
+        """
+        Saves the current runtime-config back to disk
+        """
+        # Get any changed device settings
+        self.read_config()
+        # Save to disk
+        self.rc.save()
 
     @property
     def config(self) -> dict:
@@ -235,4 +242,4 @@ class Microscope(object):
 
     @config.setter
     def config(self, config: dict) -> None:
-        self.apply_config(config)
+        self.write_config(config)
