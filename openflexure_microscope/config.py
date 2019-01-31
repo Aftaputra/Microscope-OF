@@ -3,6 +3,9 @@ import os
 import errno
 import logging
 import shutil
+import copy
+from fractions import Fraction
+from collections import abc
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_CONFIG_PATH = os.path.join(HERE, 'microscoperc.default.yaml')
@@ -12,6 +15,64 @@ USER_CONFIG_FILE = os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")  #: str: D
 
 with open(DEFAULT_CONFIG_PATH, 'r') as default_rc:
     DEFAULT_CONFIG = default_rc.read()
+
+JSON_TYPE_TABLE = {
+
+}
+
+
+def json_convert(v):
+    """Make an individual attribute JSON-safe"""
+    if isinstance(v, Fraction):
+        return float(v)
+    else:
+        return v
+
+
+def to_map(data, func):
+    """
+    Recursively apply a function to a dictionary, list, array, or tuple
+
+    Args:
+        data: Input iterable data
+        func: Function to apply to all non-iterable values
+        excluded_keys: Any dictionary keys to exclude from the returned data
+    """
+    # If the object is a dictionary
+    if isinstance(data, abc.Mapping):
+        return {key: to_map(val, func) for key, val in data.items()}
+    # If the object is iterable but NOT a dictionary or a string
+    elif (isinstance(data, abc.Iterable) and
+          not isinstance(data, abc.Mapping) and
+          not isinstance(data, str)):
+        return [to_map(x, func) for x in data]
+    # if the object is neither a map nor iterable
+    else:
+        return func(data)
+
+
+def json_map(data, clean_keys=True):
+    """
+    Make a copy of an input dictionary that's safe for JSON return
+
+    Args:
+        data: Input dictionary
+        clean_keys: Modify any keys unsuitable for JSON return
+
+    """
+
+    # Do not overwrite original data dictionary
+    d = copy.copy(data)
+
+    # If we're cleaning up unsuitable keys
+    if clean_keys:
+        # Convert lens_shading_table to a bool
+        if 'picamera_settings' in d and 'lens_shading_table' in d['picamera_settings']:
+            logging.debug("Bool-ifying lens_shading_table")
+            if d['picamera_settings']['lens_shading_table'] is not None:
+                d['picamera_settings']['lens_shading_table'] = True
+
+    return to_map(d, json_convert)
 
 
 def load_yaml_file(config_path) -> dict:
@@ -111,8 +172,13 @@ class OpenflexureConfig:
     def config(self):
         return self.read()
 
-    def read(self):
-        return self._config
+    def read(self, json_safe=False):
+        if json_safe:
+            logging.info("Reading config as JSON-safe dictionary")
+            return json_map(self._config)
+        else:
+            logging.info("Reading config directly")
+            return self._config
 
     def write(self, update_dict: dict):
         self._config.update(update_dict)
@@ -170,8 +236,7 @@ class OpenflexureConfig:
                     self.expandable_keys[key] is not None and
                     type(value) is dict):
 
-                logging.debug("Saving to {}:".format(self.expandable_keys[key]))
-                logging.debug(value)
+                logging.debug("Saving to {}".format(self.expandable_keys[key]))
                 # Create the file if it doesn't exist
                 initialise_file(self.expandable_keys[key])
                 # Save the expanded config dictionary to the file
