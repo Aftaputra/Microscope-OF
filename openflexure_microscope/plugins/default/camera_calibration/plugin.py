@@ -52,7 +52,7 @@ class Plugin(MicroscopePlugin):
                 recalibrate_camera(scamera.camera)
             finally:
                 scamera.camera.resolution=old_resolution
-                self.
+                self.microscope.save_config()
                 if streaming:
                     logging.info("Restarting stream after recalibration")
                     scamera.start_stream_recording()
