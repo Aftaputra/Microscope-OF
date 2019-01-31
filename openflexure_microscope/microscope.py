@@ -200,14 +200,14 @@ class Microscope(object):
         # Cache config
         self.rc.write(config)
 
-    def read_config(self):
+    def read_config(self, json_safe=False):
         """
         Read an updated config including camera settings.
         """
         # If attached to a camera
         if self.camera:
             # Update camera config params from StreamingCamera object
-            self.rc.write(self.camera.config)
+            self.rc.write(self.camera.read_config())
 
         # If attached to a stage
         if self.stage:
@@ -225,7 +225,7 @@ class Microscope(object):
 
         self.rc.write(backlash)
 
-        return self.rc.read()
+        return self.rc.read(json_safe=json_safe)
 
     def save_config(self):
         """

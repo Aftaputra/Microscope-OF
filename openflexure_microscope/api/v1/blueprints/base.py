@@ -136,7 +136,7 @@ class ConfigAPI(MicroscopeView):
         :>header Content-Type: application/json
         :status 200: state available
         """
-        return jsonify(self.microscope.read_config())
+        return jsonify(self.microscope.read_config(json_safe=True))
 
     def post(self):
         """
@@ -175,7 +175,7 @@ class ConfigAPI(MicroscopeView):
         self.microscope.write_config(payload.json)
         self.microscope.save_config()
 
-        return jsonify(self.microscope.config)
+        return jsonify(self.microscope.read_config(json_safe=True))
 
 
 def construct_blueprint(microscope_obj):
