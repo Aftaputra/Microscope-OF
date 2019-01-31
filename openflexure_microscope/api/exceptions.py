@@ -2,8 +2,6 @@ from flask import jsonify
 from werkzeug.exceptions import default_exceptions
 from werkzeug.exceptions import HTTPException
 
-from pprint import pprint
-
 class JSONExceptionHandler(object):
 
     def __init__(self, app=None):
@@ -11,7 +9,13 @@ class JSONExceptionHandler(object):
             self.init_app(app)
 
     def std_handler(self, error):
-        message = error.description if isinstance(error, HTTPException) else error.message
+        if isinstance(error, HTTPException):
+            message = error.description
+        elif hasattr(error, 'message'):
+            message = error.message
+        else:
+            message = str(error)
+
         status_code = error.code if isinstance(error, HTTPException) else 500
 
         response = {
