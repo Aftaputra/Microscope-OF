@@ -25,22 +25,29 @@ class Microscope(object):
 
     Args:
         camera (:py:class:`openflexure_microscope.camera.pi.StreamingCamera`): camera object
-        microscope (:py:class:`openflexure_stage.stage.OpenFlexureStage`): stage object
-        config (dict): Dictionary of the runtime config to apply to the microscope. Does not automatically apply to camera and stage.
+        stage (:py:class:`openflexure_stage.stage.OpenFlexureStage`): stage object
+        config_path (str): Path to a microscoperc.yaml runtime-config file
         attach_plugins (bool): Should the microscope attach plugins listen in 'config' immediately.
     """
-    def __init__(self, camera: StreamingCamera, stage: OpenFlexureStage, config_path: str=None, attach_plugins: bool=True):
+    def __init__(
+            self,
+            camera: StreamingCamera,
+            stage: OpenFlexureStage,
+            config_path: str = None,
+            attach_plugins: bool = True):
 
         # Create RC object
         self.rc = OpenflexureConfig(config_path=config_path, expand=True)
 
         # Attach initial hardware (may be NoneTypes)
+        self.camera = None
+        self.stage = None
         self.attach(camera, stage)
 
         # Create a task orchestrator
         self.task = TaskOrchestrator()  #: :py:class:`openflexure_microscope.task.TaskOrchestrator`: Threaded task orchestrator
 
-        # Create plugin mountpoint
+        # Create plugin mount-point
         self.plugin = PluginMount(self)  #: :py:class:`openflexure_microscope.plugins.PluginMount`: Mounting point for all microscope plugins
 
         # Attach plugins
@@ -48,15 +55,14 @@ class Microscope(object):
             self.attach_plugins()
         
         # Set default parameters
-        if not 'name' in self.rc.config:
-            self.rc.config['name'] = uuid.uuid4().hex
+        if 'name' not in self.rc.config:
+            self.rc.update({'name': uuid.uuid4().hex})
         
-        if not 'fov' in self.rc.config:
-            self.rc.config['fov'] = [0, 0]
+        if 'fov' not in self.rc.config:
+            self.rc.update({'fov': [0, 0]})
         
         # Initialise with an empty composite lock
         self.lock = CompositeLock([])  #: :py:class:`openflexure_microscope.lock.CompositeLock`: Composite lock controlling thread access to multiple pieces of hardware
-
 
     def __enter__(self):
         """Create microscope on context enter."""
@@ -82,14 +88,15 @@ class Microscope(object):
 
         Args:
             camera (:py:class:`openflexure_microscope.camera.pi.StreamingCamera`): camera object
-            microscope (:py:class:`openflexure_stage.stage.OpenFlexureStage`): stage object
-            apply_config (bool): Should the microscope config dictionary be applied to the attached hardware?
+            stage (:py:class:`openflexure_stage.stage.OpenFlexureStage`): stage object
         """
 
         logging.debug("Attaching camera...")
         self.camera = camera  #: :py:class:`openflexure_microscope.camera.pi.StreamingCamera`: Picamera object
         if isinstance(self.camera, StreamingCamera):
             logging.info("Attached camera {}".format(camera))
+            logging.info("Updating camera settings")
+            self.apply_config(self.camera.read_config())
         elif not self.camera:
             logging.info("Attached dummy camera.")
         # If camera has a lock
@@ -173,13 +180,37 @@ class Microscope(object):
 
         return state
 
-    @property
-    def config(self):
+    def apply_config(self, config: dict):
+        """
+        Updates  and applies a config dictionary. Missing parameters will be left untouched.
+        """
+        # If attached to a camera
+        if self.camera:
+            # Update camera config
+            self.camera.config = config
+
+        # If attached to a stage
+        # TODO: Convert stage settings into a config expansion
+        if self.stage:
+            if 'backlash' in config:
+                # Construct backlash array
+                backlash = axes_to_array(config['backlash'], ['x', 'y', 'z'], [0, 0, 0])
+                self.stage.backlash = backlash
+
+        # Cache config
+        self.rc.update(config)
+        # Save to disk
+        self.rc.save()
+
+    def read_config(self):
+        """
+        Read an updated config including camera settings.
+        """
         # If attached to a camera
         if self.camera:
             # Update camera config params from StreamingCamera object
             self.rc.update(self.camera.config)
-        
+
         # If attached to a stage
         if self.stage:
             backlash = self.stage.backlash.tolist()
@@ -196,27 +227,12 @@ class Microscope(object):
 
         self.rc.update(backlash)
 
-        return self.rc.config
+        return self.rc.asdict()
+
+    @property
+    def config(self) -> dict:
+        return self.read_config()
 
     @config.setter
     def config(self, config: dict) -> None:
-        """
-        Technically doesn't SET the config, but rather updates it. Missing parameters
-        will be left untouched.
-        """
-        # If attached to a camera
-        if self.camera:
-            # Update camera config
-            self.camera.config = config
-        
-        # If attached to a stage
-        if self.stage:
-            if 'backlash' in config:
-                # Construct backlash array
-                backlash = axes_to_array(config['backlash'], ['x', 'y', 'z'], [0, 0, 0])
-                self.stage.backlash = backlash
-
-        # Cache config
-        self.rc.update(config)
-        # Save to disk
-        self.rc.save()
+        self.apply_config(config)

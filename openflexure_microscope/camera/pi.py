@@ -25,13 +25,7 @@ from __future__ import division
 
 import io
 import time
-import datetime
-import sys
-import os
-import yaml
-import copy
 import numpy as np
-from PIL import Image
 import logging
 
 # Used for conversion only
@@ -43,9 +37,6 @@ import picamera.array
 
 # Type hinting
 from typing import Tuple
-
-# Threading
-import threading
 
 from .base import BaseCamera, CaptureObject
 # Richard's fix gain
@@ -70,9 +61,9 @@ CONFIG_KEYS = {
     },
 }
 
+
 # Useful methods
 
-# TODO: Remove this
 def fractions_to_floats(value):
     """Deal with horrible, horrible PiCamera fractions"""
     result = value
@@ -85,15 +76,15 @@ def fractions_to_floats(value):
             result = float(value)
     return result
 
-# MAIN CLASS
 
+# MAIN CLASS
 class StreamingCamera(BaseCamera):
     """Raspberry Pi camera implementation of StreamingCamera.
 
     Args:
         config (dict): Dictionary of config parameters to apply on init. If None, will default to basic config.
     """
-    def __init__(self, config: dict=None, picamera_settings: dict=None):
+    def __init__(self, config: dict = None):
         global CONFIG_KEYS
 
         # Run BaseCamera init
@@ -111,11 +102,14 @@ class StreamingCamera(BaseCamera):
         self.set_zoom(1.0)
 
         # Populate config and settings with all available keys
-        self._config.update(CONFIG_KEYS)
+        self.config.update(CONFIG_KEYS)
 
         # Load config dictionary if passed
         if config:
-            self.config = config
+            self.apply_config(config)
+
+        # Create an empty stream
+        self.stream = io.BytesIO()
 
         # Start streaming
         self.start_worker()
@@ -128,7 +122,7 @@ class StreamingCamera(BaseCamera):
         """Close the Raspberry Pi StreamingCamera."""
         # Run BaseCamera close method
         BaseCamera.close(self)
-        # Detatch Pi camera
+        # Detach Pi camera
         if self.camera:
             self.camera.close()
 
@@ -146,8 +140,7 @@ class StreamingCamera(BaseCamera):
         """
         return hasattr(self.camera, "lens_shading_table")
 
-    @property
-    def config(self):
+    def read_config(self):
         """
         Return config dictionary of the StreamingCamera.
         """
@@ -156,7 +149,7 @@ class StreamingCamera(BaseCamera):
         }
 
         # PiCamera parameters (obtained directly from PiCamera object)
-        for key, _ in self._config['picamera_settings'].items():
+        for key, _ in self.config['picamera_settings'].items():
             try:
                 value = getattr(self.camera, key)
                 value = fractions_to_floats(value)
@@ -166,13 +159,12 @@ class StreamingCamera(BaseCamera):
 
         # StreamingCamera parameters (obtained from StreamingCamera _config)
         for key in CONFIG_KEYS:
-            if (key != 'picamera_settings') and (key in self._config):
-                conf_dict[key] = self._config[key]
+            if (key != 'picamera_settings') and (key in self.config):
+                conf_dict[key] = self.config[key]
 
         return conf_dict
 
-    @config.setter
-    def config(self, config: dict) -> None:
+    def apply_config(self, config: dict) -> None:
         """
         Write a config dictionary to the StreamingCamera config.
 
@@ -202,7 +194,7 @@ class StreamingCamera(BaseCamera):
                 # PiCamera parameters (applied directly to PiCamera object)
                 if 'picamera_settings' in config:  # If new settings are given
                     for key, value in config['picamera_settings'].items():  # For each given setting
-                        self._config['picamera_settings'][key] = None  # Add the key to the list of returned settings
+                        self.config['picamera_settings'][key] = None  # Add the key to the list of returned settings
                         logging.debug("Setting parameter {}: {}".format(key, config['picamera_settings'][key]))
 
                         # Handle special attributes:
@@ -217,7 +209,7 @@ class StreamingCamera(BaseCamera):
                 for key, value in config.items():  # For each provided setting
                     if key != 'picamera_settings':  # We already handled this
                         logging.debug("Setting parameter {}: {}".format(key, value))
-                        self._config[key] = value
+                        self.config[key] = value
 
                 # If stream was paused to update config, unpause
                 if paused_stream:
@@ -228,9 +220,9 @@ class StreamingCamera(BaseCamera):
                 raise Exception(
                     "Cannot update camera config while recording is active.")
 
-    def set_zoom(self, zoom_value: float=1.) -> None:
+    def set_zoom(self, zoom_value: float = 1.) -> None:
         """
-        Change the camera zoom, handling recentering and scaling.
+        Change the camera zoom, handling re-centering and scaling.
         """
         with self.lock:
             self.state['zoom_value'] = float(zoom_value)
@@ -253,13 +245,13 @@ class StreamingCamera(BaseCamera):
     # LAUNCH ACTIONS
 
     def start_preview(self) -> bool:
-        """Start the onboard GPU camera preview."""
+        """Start the on board GPU camera preview."""
         self.camera.start_preview()
         self.state['preview_active'] = True
         return True
 
     def stop_preview(self) -> bool:
-        """Stop the onboard GPU camera preview."""
+        """Stop the on board GPU camera preview."""
         self.camera.stop_preview()
         self.state['preview_active'] = False
         return True
@@ -267,17 +259,16 @@ class StreamingCamera(BaseCamera):
     def start_recording(
             self,
             output,
-            fmt: str='h264',
-            quality: int=15):
+            fmt: str = 'h264',
+            quality: int = 15):
         """Start recording.
 
         Start a new video recording, writing to a output object.
 
         Args:
             output (CaptureObject/str): Output object to write data bytes to.
-            write_to_file (bool/NoneType): Should the StreamObject write to a file?
-            filename (str): Name of the stored file.  Defaults to timestamp.
             fmt (str): Format of the capture.
+            quality (int): Video recording quality.
 
         Returns:
             output_object (str/BytesIO): Target object.
@@ -317,7 +308,7 @@ class StreamingCamera(BaseCamera):
                     until the current recording has stopped.")
                 return None
 
-    def stop_recording(self) -> bool:
+    def stop_recording(self):
         """Stop the last started video recording on splitter port 2."""
         with self.lock:
             # Stop the camera video recording on port 2
@@ -330,8 +321,8 @@ class StreamingCamera(BaseCamera):
 
     def stop_stream_recording(
             self,
-            splitter_port: int=1,
-            resolution: Tuple[int, int]=None) -> None:
+            splitter_port: int = 1,
+            resolution: Tuple[int, int] = None) -> None:
         """
         Sets the camera resolution to the still-image resolution, and stops recording if the stream is active.
 
@@ -355,8 +346,8 @@ class StreamingCamera(BaseCamera):
 
     def start_stream_recording(
             self,
-            splitter_port: int=1,
-            resolution: Tuple[int, int]=None) -> None:
+            splitter_port: int = 1,
+            resolution: Tuple[int, int] = None) -> None:
         """
         Sets the camera resolution to the video/stream resolution, and starts recording if the stream should be active.
 
@@ -364,9 +355,9 @@ class StreamingCamera(BaseCamera):
             splitter_port (int): Splitter port to start recording on
             resolution ((int, int)): Resolution to set the camera to, before starting recording. Defaults to `self.config['video_resolution']`.
         """
-        # If no stream object exists
+        # If stream object was destroyed
         if not hasattr(self, 'stream'):
-            self.stream = io.BytesIO() # Create a stream object
+            self.stream = io.BytesIO()  # Create a stream object
 
         # If no explicit resolution is passed
         if not resolution:
@@ -389,10 +380,10 @@ class StreamingCamera(BaseCamera):
     def capture(
             self,
             output,
-            fmt: str='jpeg',
-            use_video_port: bool=False,
-            resize: Tuple[int, int]=None,
-            bayer: bool=True):
+            fmt: str = 'jpeg',
+            use_video_port: bool = False,
+            resize: Tuple[int, int] = None,
+            bayer: bool = True):
         """
         Capture a still image to a StreamObject.
 
@@ -404,6 +395,7 @@ class StreamingCamera(BaseCamera):
             use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
             fmt (str): Format of the capture.
             resize ((int, int)): Resize the captured image.
+            bayer (bool): Store raw bayer data in capture
         """
 
         with self.lock:
@@ -416,7 +408,7 @@ class StreamingCamera(BaseCamera):
 
             logging.info("Capturing to {}".format(output))
 
-            # Set resolution and stop stream recording if necesarry
+            # Set resolution and stop stream recording if necessary
             if not use_video_port:
                 self.stop_stream_recording()
 
@@ -428,7 +420,7 @@ class StreamingCamera(BaseCamera):
                 bayer=(not use_video_port) and bayer,
                 use_video_port=use_video_port)
 
-            # Set resolution and start stream recording if necesarry
+            # Set resolution and start stream recording if necessary
             if not use_video_port:
                 self.start_stream_recording()
 
@@ -436,9 +428,8 @@ class StreamingCamera(BaseCamera):
 
     def yuv(
             self,
-            rgb=False,
-            use_video_port: bool=True,
-            resize: Tuple[int, int]=None) -> np.ndarray:
+            use_video_port: bool = True,
+            resize: Tuple[int, int] = None) -> np.ndarray:
         """Capture an uncompressed still YUV image to a Numpy array.
 
         Args:
@@ -473,16 +464,12 @@ class StreamingCamera(BaseCamera):
                 if not use_video_port:
                     self.start_stream_recording()
 
-                if rgb:
-                    logging.debug("Converting to RGB")
-                    return output.rgb_array
-                else:
-                    return output.array
+                return output.array
 
     def array(
             self,
-            use_video_port: bool=True,
-            resize: Tuple[int, int]=None) -> np.ndarray:
+            use_video_port: bool = True,
+            resize: Tuple[int, int] = None) -> np.ndarray:
         """Capture an uncompressed still RGB image to a Numpy array.
 
         Args:
@@ -537,7 +524,6 @@ class StreamingCamera(BaseCamera):
 
         # Update state
         logging.debug("STREAM ACTIVE")
-        #self.state['stream_active'] = True
 
         # While the iterator is not closed
         try:
