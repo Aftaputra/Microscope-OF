@@ -37,13 +37,15 @@ logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 # Create a dummy microscope object, with no hardware attachments
 api_microscope = Microscope(None, None)
 
+
 # Generate API URI based on version from filename
 def uri(suffix, api_version, base=None):
     if not base:
         base = "/api/{}".format(api_version)
-    uri = base + suffix
-    logging.debug("Created app route: {}".format(uri))
-    return uri
+    return_uri = base + suffix
+    logging.debug("Created app route: {}".format(return_uri))
+    return return_uri
+
 
 # Create flask app
 app = Flask(__name__)
@@ -54,6 +56,7 @@ CORS(app, resources=r'/api/*')
 # Make errors more API friendly
 handler = JSONExceptionHandler(app)
 
+
 # After app starts, but before first request, attach hardware to global microscope
 @app.before_first_request
 def attach_microscope():
@@ -62,7 +65,7 @@ def attach_microscope():
     logging.debug("First request made. Populating microscope with hardware...")
 
     logging.debug("Creating camera object...")
-    api_camera = StreamingCamera(config=api_microscope.rc.config)
+    api_camera = StreamingCamera(config=api_microscope.rc.asdict())
     
     logging.debug("Creating stage object...")
     api_stage = Stage("/dev/ttyUSB0")
@@ -111,9 +114,6 @@ app.register_blueprint(plugin_blueprint, url_prefix=uri('/plugin', 'v1'))
 task_blueprint = blueprints.task.construct_blueprint(api_microscope)
 app.register_blueprint(task_blueprint, url_prefix=uri('/task', 'v1'))
 
-# List all routes
-#list_routes(app)
-
 
 # Automatically clean up microscope at exit
 def cleanup():
@@ -122,6 +122,7 @@ def cleanup():
     api_microscope.rc.save(backup=True)
     # Close down the microscope
     api_microscope.close()
+
 
 atexit.register(cleanup)
 
