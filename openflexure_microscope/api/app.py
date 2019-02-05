@@ -99,17 +99,19 @@ app.register_blueprint(plugin_blueprint, url_prefix=uri('/plugin', 'v1'))
 task_blueprint = blueprints.task.construct_blueprint(api_microscope)
 app.register_blueprint(task_blueprint, url_prefix=uri('/task', 'v1'))
 
-
 # Automatically clean up microscope at exit
 def cleanup():
     global api_microscope
+    logging.debug("App teardown started...")
     # Save config
     api_microscope.rc.save(backup=True)
     # Close down the microscope
     api_microscope.close()
+    logging.debug("App teardown complete.")
 
 
 atexit.register(cleanup)
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port="5000", threaded=True, debug=True, use_reloader=False)

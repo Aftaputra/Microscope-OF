@@ -135,12 +135,14 @@ class BaseCamera(object):
 
     def close(self):
         """Close the BaseCamera and all attached StreamObjects."""
+        logging.info("Closing {}".format(self))
         # Close all StreamObjects
         for capture_list in [self.images, self.videos]:
             for stream_object in capture_list:
                 stream_object.close()
         # Stop worker thread
         self.stop_worker()
+        logging.info("Closed {}".format(self))
 
     def wait_for_camera(self, timeout=5):
         """Wait for camera object, with 5 second timeout."""
@@ -159,10 +161,12 @@ class BaseCamera(object):
 
         self.last_access = time.time()
         self.stop = False
-
-        if self.thread is None:
+        
+        #if self.thread is None:
+        if not self.state['stream_active']:
             # start background frame thread
             self.thread = threading.Thread(target=self._thread)
+            self.thread.daemon = True
             self.thread.start()
 
             # wait until frames are available
@@ -171,7 +175,7 @@ class BaseCamera(object):
                 if time.time() > timeout_time:
                     raise TimeoutError("Timeout waiting for frames.")
                 else:
-                    time.sleep(0)
+                    time.sleep(0.1)
         return True
 
     def stop_worker(self, timeout: int = 5) -> bool:
@@ -179,12 +183,19 @@ class BaseCamera(object):
         logging.debug("Stopping worker thread")
         timeout_time = time.time() + timeout
 
-        self.stop = True
-        while self.thread:
+        #if self.thread:
+        if self.state['stream_active']:
+            self.stop = True
+            self.thread.join()  # Wait for stream thread to exit
+            logging.debug("Waiting for stream thread to exit.")
+
+        #while self.thread:
+        while self.state['stream_active']:
             if time.time() > timeout_time:
+                logging.debug("Timeout waiting for worker thread close.")
                 raise TimeoutError("Timeout waiting for worker thread close.")
             else:
-                time.sleep(0)
+                time.sleep(0.1)
         return True
 
     # HANDLE STREAM FRAMES
@@ -387,4 +398,5 @@ class BaseCamera(object):
         # Set stream_activate state
         self.state['stream_active'] = False
         # Reset thread
-        self.thread = None
+        #self.thread = None
+        logging.debug("Stream thread is None")

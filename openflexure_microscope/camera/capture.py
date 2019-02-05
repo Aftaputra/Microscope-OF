@@ -24,6 +24,7 @@ def clear_tmp():
     for f in files:
         os.remove(f)
         logging.debug("Removed {}".format(f))
+    logging.debug("Cleared {}.".format(TEMP_CAPTURE_PATH))
 
 
 def capture_from_dict(capture_dict):
