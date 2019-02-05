@@ -38,6 +38,7 @@ def auto_expose_and_freeze_settings(camera):
     print("Allowing the camera to auto-expose")
     camera.awb_mode = "auto"
     camera.exposure_mode = "auto"
+    camera.iso = 0 # This is important, if it's on a fixed ISO, gain might not set properly.
     for i in range(6):
         print(".", end="")
         time.sleep(0.5)
