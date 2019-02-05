@@ -21,7 +21,7 @@ OpenFlexure Microscope Software
 # Usage
 ## Running the web API in Gunicorn (port 5000)
 - Ensure Gunicorn is installed to the current environment (`pip install gunicorn`)
-- Run `gunicorn --threads 5 --workers 1 --graceful-timeout 2 --bind 0.0.0.0:5000 --log-level=debug openflexure_microscope.api.app:app`
+- Run `gunicorn --threads 5 --workers 1 --graceful-timeout 3 --bind 0.0.0.0:5000 openflexure_microscope.api.app:app`
 
 # REST(ish) API
 The Flask app serves a (reasonably) RESTful web API. For most user-facing functionality, this is the preferred interface. 
