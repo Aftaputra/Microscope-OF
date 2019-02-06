@@ -12,11 +12,14 @@ import atexit
 pil_formats = ['JPG', 'JPEG', 'PNG', 'TIF', 'TIFF']
 thumbnail_size = (60, 60)
 
-BASE_CAPTURE_PATH = os.path.join(os.path.expanduser('~'), 'micrographs')
-TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, 'tmp')
+BASE_CAPTURE_PATH = os.path.join(os.path.expanduser('~'), 'micrographs')  #: str: Base path to store all captures
+TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, 'tmp')  #: str: Base path to store all temporary captures (automatically emptied)
 
 
 def clear_tmp():
+    """
+    Removes all files in the ``TEMP_CAPTURE_PATH`` directory
+    """
     global TEMP_CAPTURE_PATH
 
     logging.info("Clearing {}...".format(TEMP_CAPTURE_PATH))
@@ -28,6 +31,14 @@ def clear_tmp():
 
 
 def capture_from_dict(capture_dict):
+    """
+    Creates an instance of CaptureObject from a dictionary of capture information.
+    This is used when reloading the API server, to restore captures created in the 
+    previous session.
+
+    Args:
+        capture_dict (dict): Dictionary containing capture information
+    """
     capture = CaptureObject(create_metadata_file=False)  # Create a placeholder capture
 
     # Populate capture parameters
@@ -63,18 +74,18 @@ class CaptureObject(object):
         """Create a new StreamObject, to manage capture data."""
 
         # Store a nice ID
-        self.id = uuid.uuid4().hex
+        self.id = uuid.uuid4().hex  #: str: Unique capture ID
         logging.info("Created StreamObject {}".format(self.id))
-        self.timestring = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.timestring = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  #: str: Timestring of capture creation time
 
         # Store file format
-        self.format = fmt
+        self.format = fmt  #: str: Capture data format (e.g. jpeg, h264)
 
         # Keep on disk after close by default
-        self.temporary = temporary
+        self.temporary = temporary  #: bool: Mark the capture as temporary, to be deleted as the server closes, or as resources are required
 
         # Explicitally state if capture should be written to a file, not a bytestream
-        self.write_to_file = write_to_file
+        self.write_to_file = write_to_file  #: bool: Write capture data to disk immediately, rather than to memory initially (useful for video recordings)
 
         # Create file name. Default to UUID
         if not filename:
@@ -87,10 +98,10 @@ class CaptureObject(object):
         self.folder = folder
 
         # Dictionary for storing custom metadata
-        self._metadata = {}
+        self._metadata = {}  #: dict: Dictionary of custom metadata to be included in metadata file
 
         # List for storing tags
-        self.tags = []
+        self.tags = []  #: list: List of tags. Essentially just as extra custom metadata field, but useful for quick organisation
 
         # Initialise the capture stream
         self.initialise_capture(create_metadata_file=create_metadata_file)
@@ -123,6 +134,14 @@ class CaptureObject(object):
         self.close()
 
     def initialise_capture(self, create_metadata_file=True):
+        """
+        Initialise the capture object. Creates a file name and builds a file path,
+        creates an in-memory byte stream for capture data, and creates a metadata
+        file on disk.
+
+        Args:
+            create_metadata_file (bool): Skips creating a metadata file if False (useful for captures being processed but not stored)
+        """
         self.build_file_path(self.filename, self.folder)
 
         # Byte bytestream properties
@@ -146,8 +165,11 @@ class CaptureObject(object):
             folder: str):
         """
         Construct a full file path, based on filename, folder, and file format.
-
         Defaults to UUID.
+
+        Args:
+            filename (str): Filename of capture
+            folder (str): Directory on disk to store capture file
         """
         global TEMP_CAPTURE_PATH
 
@@ -175,7 +197,12 @@ class CaptureObject(object):
         logging.debug(self.filefolder)
 
     def split_file_path(self, filepath):
-        """Takes a full file path, and splits it into separated class properties."""
+        """
+        Take a full file path, and split it into separated class properties.
+        
+        Args:
+            filepath (str): String of the full file path, including file format extension
+        """
         self.filefolder, self.filename = os.path.split(
             filepath)  # Split the full file path into a folder and a filename
         self.basename = os.path.splitext(self.filename)[0]  # Split the filename out from it's file extension
@@ -191,7 +218,7 @@ class CaptureObject(object):
 
     @property
     def stream_exists(self, auto_rewind=True) -> bool:
-        """Check if BytesIO bytestream is empty."""
+        """Check if capture data BytesIO bytestream exists in memory."""
         if auto_rewind:
             self.bytestream.seek(0)  # Rewind the data bytes for reading
         if self.bytestream.getvalue():  # If data bytestream contains data
@@ -203,7 +230,7 @@ class CaptureObject(object):
 
     @property
     def file_exists(self) -> bool:
-        """Check if corresponding file exists."""
+        """Check if capture data file exists on disk."""
         if os.path.isfile(self.file):
             return True
         else:
@@ -211,10 +238,22 @@ class CaptureObject(object):
 
     # HANDLE TAGS
     def put_tag(self, tag: str):
+        """
+        Add a new tag to the ``tags`` list attribute.
+
+        Args:
+            tag (str): Tag to be added
+        """
         if not tag in self.tags:
             self.tags.append(tag)
 
     def delete_tag(self, tag: str):
+        """
+        Remove a tag from the ``tags`` list attribute, if it exists.
+
+        Args:
+            tag (str): Tag to be removed
+        """
         if tag in self.tags:
             self.tags = [new_tag for new_tag in self.tags if new_tag != tag]
 
@@ -222,25 +261,43 @@ class CaptureObject(object):
 
     @property
     def metadata_file(self) -> str:
+        """
+        Path to the associated on-disk metadata YAML file.
+        """
         return "{}.yaml".format(os.path.splitext(self.file)[0])
 
     def put_metadata(self, data: dict) -> None:
+        """
+        Merge metadata from a passed dictionary into the capture metadata, and saves.
+
+        Args:
+            data (dict): Dictionary of metadata to be added
+        """
         self._metadata.update(data)
         self.save_metadata()
 
     def save_metadata(self) -> None:
+        """
+        Save metadata to on-disk metadata YAML file
+        """
         logging.debug("Writing metadata to file {}".format(self.metadata_file))
         with open(self.metadata_file, 'w') as outfile:
             yaml.dump(self.metadata, outfile, default_flow_style=False)
 
     def delete_metadata(self) -> None:
+        """
+        Delete on-disk metadata YAML file, if it exists
+        """
         if os.path.isfile(self.metadata_file):
             logging.info("Deleting file {}".format(self.metadata_file))
             os.remove(self.metadata_file)
 
     @property
     def metadata(self) -> dict:
-        # Create basic metadata dictionary
+        """
+        Create basic metadata dictionary from basic capture data, 
+        and any added custom metadata and tags.
+        """
         d = {'id': self.id, 'filename': self.filename, 'path': self.file, 'time': self.timestring,
              'format': self.format, 'tags': self.tags, 'custom': self._metadata}
 
@@ -249,21 +306,29 @@ class CaptureObject(object):
 
     @property
     def yaml(self) -> str:
+        """
+        Return a string containing a YAML-formatted representation of the capture matadata
+        """
         return yaml.dump(self.metadata, default_flow_style=False)
 
     @property
     def exists(self) -> bool:
+        """
+        Check if either an in-memory byte stream or on-disk file of capture data exists.
+
+        If False, the capture data cannot be obtained.
+        """
         return self.stream_exists or self.file_exists
 
     @property
     def state(self) -> dict:
-        """Return dictionary of StreamObject properties."""
+        """
+        Return a dictionary of objects full state, including metadata.
+        """
 
         # Create basic state dictionary
         d = {'locked': self.locked, 'temporary': self.temporary, 'metadata': self.metadata,
              'metadata_path': self.metadata_file}
-
-        # Add metadata to state
 
         # Check bytestream
         if self.stream_exists:
@@ -281,7 +346,12 @@ class CaptureObject(object):
 
     @property
     def data(self) -> io.BytesIO:
-        """Return a byte string of the capture data."""
+        """
+        Return a byte string of the capture data.
+        
+        If the capture data exists in-memory, this will be loaded. If the data only exists
+        on disk, this will automatically fall back to loading from disk.
+        """
         self.bytestream.seek(0)  # Rewind the data bytes for reading
 
         if self.stream_exists:  # If data bytestream contains data
@@ -308,6 +378,9 @@ class CaptureObject(object):
 
     @property
     def thumbnail(self) -> io.BytesIO:
+        """
+        Returns a thumbnail of the capture data, for supported image formats.
+        """
         # If no thumbnail exists, try and make one
         if not self.thumb_bytes:
             logging.info("Building thumbnail")
