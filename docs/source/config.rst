@@ -42,6 +42,20 @@ Default microscoperc.yaml
 
 Example picamera_settings.yaml
 ++++++++++++++++++++++++++++++
+.. code-block:: yaml
+
+    analog_gain: !!python/object/apply:fractions.Fraction ['1']
+    awb_gains: !!python/tuple
+    - !!python/object/apply:fractions.Fraction [221/256]
+    - !!python/object/apply:fractions.Fraction [709/256]
+    awb_mode: auto
+    digital_gain: !!python/object/apply:fractions.Fraction [585/256]
+    exposure_mode: auto
+    framerate: !!python/object/apply:picamera.mmalobj.PiCameraFraction ['30']
+    lens_shading_table: ...
+    saturation: 0
+    shutter_speed: 0
+
 
 Loading the runtime-config
 +++++++
@@ -72,6 +86,7 @@ Alternatively, a config can be loaded prior to creating a microscope, allowing t
 hardware to be created and attached in a single line. For example:
 
 .. code-block:: python
+
     from openflexure_microscope.config import OpenflexureConfig
 
     from openflexure_microscope import Microscope
