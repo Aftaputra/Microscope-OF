@@ -18,7 +18,7 @@ Manual
     - ``python3 -m virtualenv ~/.openflexure/envmicroscope``
     - Activate with ``source /.openflexure/envmicroscope/bin/activate``
 - Install non-python dependencies with ``sudo apt-get install libatlas-base-dev libjasper-dev libjpeg-dev``
-- **Users:** Install module by running ``pip install openflexure-microscope==1.0.0b5``
+- **Users:** Install module by running ``pip install openflexure-microscope==1.0.0b6``
 - **Developers:** Install `Poetry <https://github.com/sdispater/poetry>`_, clone this repo, and ``poetry install`` from inside the repo.
 
 API Server
