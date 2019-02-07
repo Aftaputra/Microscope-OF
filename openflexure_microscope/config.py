@@ -144,7 +144,13 @@ def initialise_file(config_path, populate: str = ""):
 
 
 class OpenflexureConfig:
+    """
+    An object to handle expansion, conversion, and saving of the microscope configuration.
 
+    Args:
+        config_path (str): Path to the config YAML file (None falls back to default location)
+        expand (bool): Expand paths to valid auxillary config files.
+    """
     def __init__(self, config_path: str = None, expand: bool = True):
         global DEFAULT_CONFIG, USER_CONFIG_FILE
 
@@ -168,9 +174,18 @@ class OpenflexureConfig:
 
     @property
     def config(self):
+        """
+        Return a dictionary representation of the current config as a property.
+        """
         return self.read()
 
     def read(self, json_safe=False):
+        """
+        Read the current full config.
+
+        Args:
+            json_safe (bool): Converts invalid data types to JSON types, and removes any excessively large values (e.g. lens-shading tables).
+        """
         if json_safe:
             logging.info("Reading config as JSON-safe dictionary")
             return json_map(self._config)
@@ -179,9 +194,18 @@ class OpenflexureConfig:
             return self._config
 
     def write(self, update_dict: dict):
+        """
+        Write properties to the config. Merges dictionaries, rather than fully replacing.
+
+        Args:
+            update_dict (dict): Dictionary of config data to merge.
+        """
         self._config.update(update_dict)
 
     def load(self):
+        """
+        Loads config from a file on-disk, and expands auxillary config files if available.
+        """
         # Unexpanded config dictionary (used at load/save time)
         self._config = load_yaml_file(self.config_path)
 
@@ -191,6 +215,9 @@ class OpenflexureConfig:
             self._config = self.expand_config(self._config)
 
     def save(self, backup: bool = True):
+        """
+        Save config to a file on-disk, and splits into auxillary config files if available.
+        """
         # If the loaded config was in contracted format
         if self.expand:
             # Contract self._config into self.raw_config
@@ -205,6 +232,13 @@ class OpenflexureConfig:
         save_yaml_file(self.config_path, save_config)
 
     def expand_config(self, config_dict):
+        """
+        Search a config dictionary for paths to valid auxillary config files,
+        and expand into the config dictionary if available.
+
+        Args:
+            config_dict (dict): Dictionary of config data to expand
+        """
         return_config = {}
         # For each value in the raw loaded config
         for key, value in config_dict.items():
@@ -226,6 +260,12 @@ class OpenflexureConfig:
         return return_config
 
     def contract_config(self, config_dict):
+        """
+        Split a config dictionary into auxillary config files, if available.
+
+        Args:
+            config_dict (dict): Dictionary of config data to contract/split
+        """
         return_config = {}
         # For each value in the expanded config
         for key, value in config_dict.items():

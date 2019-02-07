@@ -25,18 +25,21 @@ class Microscope(object):
     Args:
         camera (:py:class:`openflexure_microscope.camera.pi.StreamingCamera`): camera object
         stage (:py:class:`openflexure_stage.stage.OpenFlexureStage`): stage object
-        config_path (str): Path to a microscoperc.yaml runtime-config file
+        config (:py:class:`openflexure_microscope.config.OpenflexureConfig`): Runtime-config object, automatically created if None.
         attach_plugins (bool): Should the microscope attach plugins listen in 'config' immediately.
     """
     def __init__(
             self,
             camera: StreamingCamera,
             stage: OpenFlexureStage,
-            config_path: str = None,
+            config = None,
             attach_plugins: bool = True):
 
         # Create RC object
-        self.rc = OpenflexureConfig(config_path=config_path, expand=True)
+        if config:
+            self.rc = config
+        else:
+            self.rc = OpenflexureConfig(expand=True)  # Load config from default path
 
         # Attach initial hardware (may be NoneTypes)
         self.camera = None
