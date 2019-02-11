@@ -9,9 +9,17 @@ Summary
    :endpoints:
 
 Details
------------
+-------
 .. autoflask:: openflexure_microscope.api.app:app
    :undoc-endpoints: index
    :undoc-static:
    :endpoints:
    :order: path
+
+Example Requests
+----------------
+
+.. toctree::
+   :maxdepth: 2
+
+   ./apirequests.rst
