@@ -231,14 +231,14 @@ class Microscope(object):
 
         return self.rc.read(json_safe=json_safe)
 
-    def save_config(self):
+    def save_config(self, backup: bool = True):
         """
         Saves the current runtime-config back to disk
         """
         # Get any changed device settings
-        self.read_config()
+        self.read_config(json_safe=False)
         # Save to disk
-        self.rc.save()
+        self.rc.save(backup=backup)
 
     @property
     def config(self) -> dict:

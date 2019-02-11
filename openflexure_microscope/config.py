@@ -60,7 +60,7 @@ def json_map(data, clean_keys=True):
     """
 
     # Do not overwrite original data dictionary
-    d = copy.copy(data)
+    d = copy.deepcopy(data)
 
     # If we're cleaning up unsuitable keys
     if clean_keys:
