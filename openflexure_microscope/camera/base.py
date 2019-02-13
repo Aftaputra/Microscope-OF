@@ -278,6 +278,18 @@ class BaseCamera(object):
         else:
             return []
 
+    def store_captures(self):
+        # Save metadata files
+        for image in self.images:
+            image.save_metadata()
+        for video in self.videos:
+            video.save_metadata()
+
+        # Update capture database
+        self.save_capture_db(self.images, self.images_db)
+        self.save_capture_db(self.videos, self.videos_db)
+
+
     # CREATING NEW CAPTURES
 
     def shunt_captures(self, target_list: list):

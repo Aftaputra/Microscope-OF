@@ -103,8 +103,15 @@ app.register_blueprint(task_blueprint, url_prefix=uri('/task', 'v1'))
 def cleanup():
     global api_microscope
     logging.debug("App teardown started...")
+
     # Save config
-    api_microscope.rc.save(backup=True)
+    if api_microscope.rc:
+        api_microscope.rc.save(backup=True)
+
+    # Update capture DB and metadata files before exiting
+    if api_microscope.camera:
+        api_microscope.camera.store_captures()
+
     # Close down the microscope
     api_microscope.close()
     logging.debug("App teardown complete.")

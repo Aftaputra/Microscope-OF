@@ -50,6 +50,9 @@ def capture_from_dict(capture_dict):
     if 'custom' in capture_dict['metadata']:
         capture._metadata = capture_dict['metadata']['custom']
 
+    if 'tags' in capture_dict['metadata']:
+        capture.tags = capture_dict['metadata']['tags']
+
     capture.file = capture_dict['metadata']['path']
     capture.split_file_path(capture.file)
 
@@ -246,6 +249,7 @@ class CaptureObject(object):
         """
         if not tag in self.tags:
             self.tags.append(tag)
+            self.save_metadata()
 
     def delete_tag(self, tag: str):
         """
