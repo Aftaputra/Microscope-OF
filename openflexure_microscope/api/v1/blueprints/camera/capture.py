@@ -104,6 +104,8 @@ class ListAPI(MicroscopeView):
         temporary = payload.param('temporary', default=True, convert=bool)
         use_video_port = payload.param('use_video_port', default=False, convert=bool)
         bayer = payload.param('bayer', default=True, convert=bool)
+        metadata = payload.param('metadata', default={}, convert=dict)
+        tags = payload.param('tags', default=[], convert=list)
 
         resize = payload.param('size', default=None)
         if resize:
@@ -124,6 +126,11 @@ class ListAPI(MicroscopeView):
                 use_video_port=use_video_port,
                 resize=resize,
                 bayer=bayer)
+
+            output.put_metadata(metadata)
+
+            for tag in tags:
+                output.put_tag(str(tag))
 
         return jsonify(output.state)
 
