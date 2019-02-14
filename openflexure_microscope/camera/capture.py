@@ -10,7 +10,7 @@ from PIL import Image
 import atexit
 
 pil_formats = ['JPG', 'JPEG', 'PNG', 'TIF', 'TIFF']
-thumbnail_size = (60, 60)
+thumbnail_size = (200, 150)
 
 BASE_CAPTURE_PATH = os.path.join(os.path.expanduser('~'), 'micrographs')  #: str: Base path to store all captures
 TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, 'tmp')  #: str: Base path to store all temporary captures (automatically emptied)
@@ -385,6 +385,7 @@ class CaptureObject(object):
         """
         Returns a thumbnail of the capture data, for supported image formats.
         """
+        global thumbnail_size
         # If no thumbnail exists, try and make one
         if not self.thumb_bytes:
             logging.info("Building thumbnail")
