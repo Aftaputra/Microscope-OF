@@ -128,9 +128,7 @@ class ListAPI(MicroscopeView):
                 bayer=bayer)
 
             output.put_metadata(metadata)
-
-            for tag in tags:
-                output.put_tag(str(tag))
+            output.put_tags(tags)
 
         return jsonify(output.state)
 

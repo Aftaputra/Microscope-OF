@@ -264,16 +264,18 @@ class CaptureObject(object):
             return False
 
     # HANDLE TAGS
-    def put_tag(self, tag: str):
+    def put_tags(self, tags: list):
         """
         Add a new tag to the ``tags`` list attribute.
 
         Args:
-            tag (str): Tag to be added
+            tag (list): List of tags to be added
         """
-        if not tag in self.tags:
-            self.tags.append(tag)
-            self.save_metadata()
+        for tag in tags:
+            if not tag in self.tags:
+                self.tags.append(tag)
+
+        self.save_metadata()
 
     def delete_tag(self, tag: str):
         """
