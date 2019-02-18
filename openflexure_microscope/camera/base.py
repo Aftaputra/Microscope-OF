@@ -248,17 +248,6 @@ class BaseCamera(object):
         for capture in capture_list:
             if capture.file_exists:
                 valid_captures.append(capture)
-            else:
-                if os.path.isfile(capture.metadata_file):
-                    logging.warning("Capture data missing. Deleting metadata file {}.".format(capture.metadata_file))
-                    os.remove(capture.metadata_file)
-
-        # Validate and repair captures
-        for capture in valid_captures:
-            # If the captures metadata file is missing
-            if not os.path.isfile(capture.metadata_file):
-                # Recreate the metadata file
-                capture.save_metadata()
         
         return valid_captures
 
