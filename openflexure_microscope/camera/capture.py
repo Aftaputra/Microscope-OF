@@ -11,8 +11,9 @@ import atexit
 
 import piexif
 
-pil_formats = ['JPG', 'JPEG', 'PNG', 'TIF', 'TIFF']
-thumbnail_size = (200, 150)
+PIL_FORMATS = ['JPG', 'JPEG', 'PNG', 'TIF', 'TIFF']
+EXIF_FORMATS = ['JPG', 'JPEG', 'TIF', 'TIFF']
+THUMBNAIL_SIZE = (200, 150)
 
 BASE_CAPTURE_PATH = os.path.join(os.path.expanduser('~'), 'micrographs')  #: str: Base path to store all captures
 TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, 'tmp')  #: str: Base path to store all temporary captures (automatically emptied)
@@ -65,6 +66,7 @@ def capture_from_dict(capture_dict):
     Args:
         capture_dict (dict): Dictionary containing capture information
     """
+    global EXIF_FORMATS
 
     capture = CaptureObject()  # Create a placeholder capture
 
@@ -73,7 +75,11 @@ def capture_from_dict(capture_dict):
     capture.split_file_path(capture.file)
     capture.temporary = capture_dict['temporary']
 
-    md_exif = pull_usercomment_dict(capture.file)
+    if capture.format in EXIF_FORMATS:
+        md_exif = pull_usercomment_dict(capture.file)
+    else:
+        md_exif = {}
+
     md_database = capture_dict['metadata']
 
     # Populate capture parameters
@@ -301,10 +307,11 @@ class CaptureObject(object):
 
     def save_metadata(self) -> None:
         """
-        Save metadata to exif
+        Save metadata to exif, if supported
         """
+        global EXIF_FORMATS
 
-        if self.file_exists:
+        if self.format in EXIF_FORMATS and self.file_exists:
             logging.debug("Writing exif data to capture file")
             # Extract current Exif data
             exif_dict = piexif.load(self.file)
@@ -405,14 +412,14 @@ class CaptureObject(object):
         """
         Returns a thumbnail of the capture data, for supported image formats.
         """
-        global thumbnail_size
+        global THUMBNAIL_SIZE
         # If no thumbnail exists, try and make one
         if not self.thumb_bytes:
             logging.info("Building thumbnail")
             self.thumb_bytes = io.BytesIO()
-            if self.format.upper() in pil_formats:
+            if self.format.upper() in PIL_FORMATS:
                 im = Image.open(self.data)
-                im.thumbnail(thumbnail_size)
+                im.thumbnail(THUMBNAIL_SIZE)
                 im.save(self.thumb_bytes, self.format)
                 self.thumb_bytes.seek(0)
         else:
