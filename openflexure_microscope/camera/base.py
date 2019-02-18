@@ -242,15 +242,6 @@ class BaseCamera(object):
         with open(db_path, 'w') as outfile:
             yaml.safe_dump(capture_state, outfile)
 
-    def validate_captures(self, capture_list):
-        # Purge captures with missing data files
-        valid_captures = []
-        for capture in capture_list:
-            if capture.file_exists:
-                valid_captures.append(capture)
-        
-        return valid_captures
-
     def load_capture_db(self, db_path):
         if os.path.isfile(db_path):
             # Load list of capture dictionary representations from db_path
@@ -258,9 +249,11 @@ class BaseCamera(object):
                 capture_dict_list = yaml.load(infile)
 
             # Create capture object list, and validate captures
-            capture_list = self.validate_captures(
-                [capture_from_dict(capture_dict) for capture_dict in capture_dict_list]
-            )
+            capture_list = []
+
+            for capture_dict in capture_dict_list:
+                if os.path.isfile(capture_dict['path']):
+                    capture_list.append(capture_from_dict(capture_dict))
 
             return capture_list
 
