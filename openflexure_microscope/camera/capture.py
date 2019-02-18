@@ -3,7 +3,6 @@ import io
 import os
 import glob
 import datetime
-import copy
 import yaml
 import logging
 from PIL import Image
@@ -47,6 +46,16 @@ def pull_usercomment_dict(filepath):
 
 
 def extract_with_priority(key, best_dict, backup_dict):
+    """
+    Extracts a value from one of two dictionaries, prioritising one over the other.
+    Second dictionary is used only if the key doesn't exist in the first.
+
+    Args:
+        key: Key to search for
+        best_dict: Ideal dictionary to use
+        backup_dict: Fallback dictionary
+
+    """
     if key in best_dict:
         return best_dict[key]
     elif key in backup_dict:
@@ -75,7 +84,7 @@ def capture_from_dict(capture_dict):
     capture.split_file_path(capture.file)
     capture.temporary = capture_dict['temporary']
 
-    if capture.format in EXIF_FORMATS:
+    if capture.format.upper() in EXIF_FORMATS:
         md_exif = pull_usercomment_dict(capture.file)
     else:
         md_exif = {}
@@ -236,10 +245,11 @@ class CaptureObject(object):
         Args:
             filepath (str): String of the full file path, including file format extension
         """
-        self.filefolder, self.filename = os.path.split(
-            filepath)  # Split the full file path into a folder and a filename
+        self.filefolder, self.filename = os.path.split(filepath)  # Split the full file path into a folder and a filename
         self.basename = os.path.splitext(self.filename)[0]  # Split the filename out from it's file extension
-        self.metadataname = "{}.yaml".format(self.basename)
+
+        if not self.format:
+            self.format = self.filename.split('.')[-1]
 
     def lock(self):
         """Set locked flag to True."""
@@ -275,10 +285,10 @@ class CaptureObject(object):
         Add a new tag to the ``tags`` list attribute.
 
         Args:
-            tag (list): List of tags to be added
+            tags (list): List of tags to be added
         """
         for tag in tags:
-            if not tag in self.tags:
+            if tag not in self.tags:
                 self.tags.append(tag)
 
         self.save_metadata()
@@ -292,6 +302,8 @@ class CaptureObject(object):
         """
         if tag in self.tags:
             self.tags = [new_tag for new_tag in self.tags if new_tag != tag]
+
+        self.save_metadata()
 
     # HANDLE METADATA
 
@@ -311,7 +323,10 @@ class CaptureObject(object):
         """
         global EXIF_FORMATS
 
-        if self.format in EXIF_FORMATS and self.file_exists:
+        print(self.format)
+        print(EXIF_FORMATS)
+
+        if self.format.upper() in EXIF_FORMATS and self.file_exists:
             logging.debug("Writing exif data to capture file")
             # Extract current Exif data
             exif_dict = piexif.load(self.file)
