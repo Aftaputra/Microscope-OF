@@ -269,7 +269,6 @@ class TestThreadStarting(unittest.TestCase):
 
         # Check Pi camera has been disconnected
         self.assertTrue(camera.camera)
-        self.assertFalse(camera.thread)
 
         # Restart worker thread
         self.assertTrue(camera.start_worker())

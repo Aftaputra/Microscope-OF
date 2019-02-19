@@ -10,16 +10,10 @@ import unittest
 import logging, sys
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
-OPENFLEXURERC = {
-    'plugins': [
-        'openflexure_microscope.plugins.testing:Plugin'
-    ]
-}
-
 
 class TestPluginMethods(unittest.TestCase):
 
-    def test_testplugin_load(self):
+    def test_plugin_load(self):
         plugin_arr = microscope.plugin.plugins
 
         plugin_names = [plugin[0] for plugin in plugin_arr]
@@ -37,7 +31,9 @@ class TestPluginMethods(unittest.TestCase):
 
 if __name__ == '__main__':
 
-        with Microscope(StreamingCamera(), OpenFlexureStage("/dev/ttyUSB0"), OPENFLEXURERC) as microscope:
+        with Microscope(StreamingCamera(), OpenFlexureStage("/dev/ttyUSB0")) as microscope:
+
+            microscope.plugin.attach("openflexure_microscope.plugins.testing:Plugin")
 
             suites = [
                 unittest.TestLoader().loadTestsFromTestCase(TestPluginMethods),
