@@ -323,9 +323,6 @@ class CaptureObject(object):
         """
         global EXIF_FORMATS
 
-        print(self.format)
-        print(EXIF_FORMATS)
-
         if self.format.upper() in EXIF_FORMATS and self.file_exists:
             logging.debug("Writing exif data to capture file")
             # Extract current Exif data
