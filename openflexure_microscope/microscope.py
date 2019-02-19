@@ -41,6 +41,9 @@ class Microscope(object):
         else:
             self.rc = OpenflexureConfig(expand=True)  # Load config from default path
 
+        # Initialise with an empty composite lock
+        self.lock = CompositeLock([])  #: :py:class:`openflexure_microscope.lock.CompositeLock`: Composite lock controlling thread access to multiple pieces of hardware
+
         # Attach initial hardware (may be NoneTypes)
         self.camera = None
         self.stage = None
@@ -63,9 +66,7 @@ class Microscope(object):
         if 'fov' not in self.rc.config:
             self.rc.write({'fov': [0, 0]})
         
-        # Initialise with an empty composite lock
-        self.lock = CompositeLock([])  #: :py:class:`openflexure_microscope.lock.CompositeLock`: Composite lock controlling thread access to multiple pieces of hardware
-
+        
     def __enter__(self):
         """Create microscope on context enter."""
         return self
