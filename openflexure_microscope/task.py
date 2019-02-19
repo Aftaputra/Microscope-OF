@@ -21,7 +21,12 @@ class TaskOrchestrator:
         """
         Returns a list of dictionary representations of all tasks in the session.
         """
-        return [task.state for task in self.tasks]
+        state = {}
+
+        for task in self.tasks:
+            state[task.id] = task.state
+
+        return state
 
     def task_from_id(self, task_id: str):
         """
