@@ -8,7 +8,7 @@ import logging
 from PIL import Image
 import atexit
 
-import piexif
+from openflexure_microscope.camera import piexif
 
 PIL_FORMATS = ['JPG', 'JPEG', 'PNG', 'TIF', 'TIFF']
 EXIF_FORMATS = ['JPG', 'JPEG', 'TIF', 'TIFF']
