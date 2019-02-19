@@ -42,5 +42,7 @@ This plugin system is still in fairly early development, and is not yet properly
 
 
 # Credits
+## Piexif
+The microscope server includes a forked copy of hMatoba's [Piexif](https://github.com/hMatoba/Piexif), licensed under the MIT License.
 ## Video streaming
 Based on supporting code for the article [video streaming with Flask](http://blog.miguelgrinberg.com/post/video-streaming-with-flask) and its follow-up [Flask Video Streaming Revisited](http://blog.miguelgrinberg.com/post/flask-video-streaming-revisited).
