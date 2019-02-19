@@ -4,7 +4,7 @@ import sys
 from ._common import *
 from ._exceptions import InvalidImageDataError
 from ._exif import *
-from piexif import _webp
+from . import _webp
 
 LITTLE_ENDIAN = b"\x49\x49"
 
