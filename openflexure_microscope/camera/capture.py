@@ -3,14 +3,16 @@ import io
 import os
 import glob
 import datetime
-import copy
 import yaml
 import logging
 from PIL import Image
 import atexit
 
-pil_formats = ['JPG', 'JPEG', 'PNG', 'TIF', 'TIFF']
-thumbnail_size = (200, 150)
+from openflexure_microscope.camera import piexif
+
+PIL_FORMATS = ['JPG', 'JPEG', 'PNG', 'TIF', 'TIFF']
+EXIF_FORMATS = ['JPG', 'JPEG', 'TIF', 'TIFF']
+THUMBNAIL_SIZE = (200, 150)
 
 BASE_CAPTURE_PATH = os.path.join(os.path.expanduser('~'), 'micrographs')  #: str: Base path to store all captures
 TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, 'tmp')  #: str: Base path to store all temporary captures (automatically emptied)
@@ -30,6 +32,40 @@ def clear_tmp():
     logging.debug("Cleared {}.".format(TEMP_CAPTURE_PATH))
 
 
+def pull_usercomment_dict(filepath):
+    """
+    Reads UserComment Exif data from a file, and returns the contained bytes as a dictionary.
+    Args:
+        filepath: Path to the Exif-containing file
+    """
+    exif_dict = piexif.load(filepath)
+    if 'Exif' in exif_dict and 37510 in exif_dict['Exif']:
+        return yaml.load(exif_dict['Exif'][37510].decode())
+    else:
+        return {}
+
+
+def extract_with_priority(key, best_dict, backup_dict):
+    """
+    Extracts a value from one of two dictionaries, prioritising one over the other.
+    Second dictionary is used only if the key doesn't exist in the first.
+
+    Args:
+        key: Key to search for
+        best_dict: Ideal dictionary to use
+        backup_dict: Fallback dictionary
+
+    """
+    if key in best_dict:
+        return best_dict[key]
+    elif key in backup_dict:
+        logging.warning("Key {} not found in primary dictionary. Falling back to backup.".format(key))
+        return backup_dict[key]
+    else:
+        logging.error("Key {} not found in either dictionary!".format(key))
+        return None
+
+
 def capture_from_dict(capture_dict):
     """
     Creates an instance of CaptureObject from a dictionary of capture information.
@@ -39,22 +75,29 @@ def capture_from_dict(capture_dict):
     Args:
         capture_dict (dict): Dictionary containing capture information
     """
-    capture = CaptureObject(create_metadata_file=False)  # Create a placeholder capture
+    global EXIF_FORMATS
+
+    capture = CaptureObject()  # Create a placeholder capture
+
+    # Get inherent capture information from database
+    capture.file = capture_dict['path']
+    capture.split_file_path(capture.file)
+    capture.temporary = capture_dict['temporary']
+
+    if capture.format.upper() in EXIF_FORMATS:
+        md_exif = pull_usercomment_dict(capture.file)
+    else:
+        md_exif = {}
+
+    md_database = capture_dict['metadata']
 
     # Populate capture parameters
-    capture.temporary = capture_dict['temporary']
-    capture.id = capture_dict['metadata']['id']
-    capture.timestring = capture_dict['metadata']['time']
-    capture.format = capture_dict['metadata']['format']
+    capture.id = extract_with_priority('id', md_exif, md_database)
+    capture.timestring = extract_with_priority('time', md_exif, md_database)
+    capture.format = extract_with_priority('format', md_exif, md_database)
 
-    if 'custom' in capture_dict['metadata']:
-        capture._metadata = capture_dict['metadata']['custom']
-
-    if 'tags' in capture_dict['metadata']:
-        capture.tags = capture_dict['metadata']['tags']
-
-    capture.file = capture_dict['metadata']['path']
-    capture.split_file_path(capture.file)
+    capture._metadata = extract_with_priority('custom', md_exif, md_database)
+    capture.tags = extract_with_priority('tags', md_exif, md_database)
 
     return capture
 
@@ -72,8 +115,7 @@ class CaptureObject(object):
             temporary: bool = False,
             filename: str = '',
             folder: str = '',
-            fmt: str = '',
-            create_metadata_file: bool = True) -> None:
+            fmt: str = '') -> None:
         """Create a new StreamObject, to manage capture data."""
 
         # Store a nice ID
@@ -107,7 +149,7 @@ class CaptureObject(object):
         self.tags = []  #: list: List of tags. Essentially just as extra custom metadata field, but useful for quick organisation
 
         # Initialise the capture stream
-        self.initialise_capture(create_metadata_file=create_metadata_file)
+        self.initialise_capture()
 
         # Log if created by context manager
         self.context_manager = False
@@ -136,14 +178,12 @@ class CaptureObject(object):
         logging.info("Cleaning up {}".format(self.id))
         self.close()
 
-    def initialise_capture(self, create_metadata_file=True):
+    def initialise_capture(self):
         """
         Initialise the capture object. Creates a file name and builds a file path,
         creates an in-memory byte stream for capture data, and creates a metadata
         file on disk.
 
-        Args:
-            create_metadata_file (bool): Skips creating a metadata file if False (useful for captures being processed but not stored)
         """
         self.build_file_path(self.filename, self.folder)
 
@@ -159,8 +199,7 @@ class CaptureObject(object):
             self.stream = self.file
 
         # Save initial metadata file
-        if create_metadata_file:
-            self.save_metadata()
+        self.save_metadata()
 
     def build_file_path(
             self,
@@ -206,10 +245,11 @@ class CaptureObject(object):
         Args:
             filepath (str): String of the full file path, including file format extension
         """
-        self.filefolder, self.filename = os.path.split(
-            filepath)  # Split the full file path into a folder and a filename
+        self.filefolder, self.filename = os.path.split(filepath)  # Split the full file path into a folder and a filename
         self.basename = os.path.splitext(self.filename)[0]  # Split the filename out from it's file extension
-        self.metadataname = "{}.yaml".format(self.basename)
+
+        if not self.format:
+            self.format = self.filename.split('.')[-1]
 
     def lock(self):
         """Set locked flag to True."""
@@ -240,16 +280,18 @@ class CaptureObject(object):
             return False
 
     # HANDLE TAGS
-    def put_tag(self, tag: str):
+    def put_tags(self, tags: list):
         """
         Add a new tag to the ``tags`` list attribute.
 
         Args:
-            tag (str): Tag to be added
+            tags (list): List of tags to be added
         """
-        if not tag in self.tags:
-            self.tags.append(tag)
-            self.save_metadata()
+        for tag in tags:
+            if tag not in self.tags:
+                self.tags.append(tag)
+
+        self.save_metadata()
 
     def delete_tag(self, tag: str):
         """
@@ -261,14 +303,9 @@ class CaptureObject(object):
         if tag in self.tags:
             self.tags = [new_tag for new_tag in self.tags if new_tag != tag]
 
-    # HANDLE METADATA
+        self.save_metadata()
 
-    @property
-    def metadata_file(self) -> str:
-        """
-        Path to the associated on-disk metadata YAML file.
-        """
-        return "{}.yaml".format(os.path.splitext(self.file)[0])
+    # HANDLE METADATA
 
     def put_metadata(self, data: dict) -> None:
         """
@@ -282,19 +319,25 @@ class CaptureObject(object):
 
     def save_metadata(self) -> None:
         """
-        Save metadata to on-disk metadata YAML file
+        Save metadata to exif, if supported
         """
-        logging.debug("Writing metadata to file {}".format(self.metadata_file))
-        with open(self.metadata_file, 'w') as outfile:
-            yaml.dump(self.metadata, outfile, default_flow_style=False)
+        global EXIF_FORMATS
 
-    def delete_metadata(self) -> None:
-        """
-        Delete on-disk metadata YAML file, if it exists
-        """
-        if os.path.isfile(self.metadata_file):
-            logging.info("Deleting file {}".format(self.metadata_file))
-            os.remove(self.metadata_file)
+        print(self.format)
+        print(EXIF_FORMATS)
+
+        if self.format.upper() in EXIF_FORMATS and self.file_exists:
+            logging.debug("Writing exif data to capture file")
+            # Extract current Exif data
+            exif_dict = piexif.load(self.file)
+            # Serialize metadata
+            metadata_string = yaml.safe_dump(self.metadata)
+            # Insert metadata into exif_dict
+            exif_dict['Exif'][piexif.ExifIFD.UserComment] = metadata_string.encode()
+            # Convert new exif dict to exif bytes
+            exif_bytes = piexif.dump(exif_dict)
+            # Insert exif into file
+            piexif.insert(exif_bytes, self.file)
 
     @property
     def metadata(self) -> dict:
@@ -331,8 +374,7 @@ class CaptureObject(object):
         """
 
         # Create basic state dictionary
-        d = {'locked': self.locked, 'temporary': self.temporary, 'metadata': self.metadata,
-             'metadata_path': self.metadata_file}
+        d = {'path': self.file, 'locked': self.locked, 'temporary': self.temporary, 'metadata': self.metadata}
 
         # Check bytestream
         if self.stream_exists:
@@ -385,14 +427,14 @@ class CaptureObject(object):
         """
         Returns a thumbnail of the capture data, for supported image formats.
         """
-        global thumbnail_size
+        global THUMBNAIL_SIZE
         # If no thumbnail exists, try and make one
         if not self.thumb_bytes:
             logging.info("Building thumbnail")
             self.thumb_bytes = io.BytesIO()
-            if self.format.upper() in pil_formats:
+            if self.format.upper() in PIL_FORMATS:
                 im = Image.open(self.data)
-                im.thumbnail(thumbnail_size)
+                im.thumbnail(THUMBNAIL_SIZE)
                 im.save(self.thumb_bytes, self.format)
                 self.thumb_bytes.seek(0)
         else:
@@ -445,9 +487,6 @@ class CaptureObject(object):
 
     def delete_file(self) -> bool:
         """If the StreamObject has been saved, delete the file."""
-        if os.path.isfile(self.metadata_file):
-            logging.info("Deleting file {}".format(self.metadata_file))
-            os.remove(self.metadata_file)
 
         if os.path.isfile(self.file):
             logging.info("Deleting file {}".format(self.file))
@@ -462,7 +501,6 @@ class CaptureObject(object):
         logging.info("Deleting {}".format(self.id))
         self.delete_stream()
         self.delete_file()
-        self.delete_metadata()
 
     def shunt(self):
         """Demote the StreamObject from being stored in memory."""

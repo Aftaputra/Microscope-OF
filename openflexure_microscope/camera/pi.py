@@ -225,9 +225,9 @@ class StreamingCamera(BaseCamera):
 
     # LAUNCH ACTIONS
 
-    def start_preview(self) -> bool:
+    def start_preview(self, fullscreen=True, window=None) -> bool:
         """Start the on board GPU camera preview."""
-        self.camera.start_preview()
+        self.camera.start_preview(fullscreen=fullscreen, window=window)
         self.state['preview_active'] = True
         return True
 

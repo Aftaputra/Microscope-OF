@@ -127,10 +127,10 @@ class ListAPI(MicroscopeView):
                 resize=resize,
                 bayer=bayer)
 
-            output.put_metadata(metadata)
+            metadata.update({'Position': self.microscope.state['stage']['position']})
 
-            for tag in tags:
-                output.put_tag(str(tag))
+            output.put_metadata(metadata)
+            output.put_tags(tags)
 
         return jsonify(output.state)
 
