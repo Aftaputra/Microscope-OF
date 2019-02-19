@@ -1,2 +1,2 @@
-openflexure-microscope==1.0.0b8
+openflexure-microscope==1.0.0b10
 sphinxcontrib.httpdomain
