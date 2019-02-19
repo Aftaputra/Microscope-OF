@@ -127,6 +127,8 @@ class ListAPI(MicroscopeView):
                 resize=resize,
                 bayer=bayer)
 
+            metadata.update({'Position': self.microscope.state['stage']['position']})
+
             output.put_metadata(metadata)
             output.put_tags(tags)
 
