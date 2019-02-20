@@ -23,7 +23,7 @@ class JSONExceptionHandler(object):
             'status_code': status_code,
             'message': message
         }
-        return jsonify(response)
+        return jsonify(response), status_code
 
     def init_app(self, app):
         self.app = app
