@@ -187,12 +187,12 @@ class Microscope(object):
 
     def write_config(self, config: dict):
         """
-        Writes  and applies a config dictionary. Missing parameters will be left untouched.
+        Writes and applies a config dictionary. Missing parameters will be left untouched.
         """
         # If attached to a camera
         if self.camera:
             # Update camera config
-            self.camera.config = config
+            self.camera.config.update(config)
 
         # If attached to a stage
         # TODO: Convert stage settings into a config expansion
