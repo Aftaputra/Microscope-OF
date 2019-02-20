@@ -443,8 +443,7 @@ class TagsAPI(MicroscopeView):
         if type(data_dict) != list:
             return abort(400)
 
-        for tag in data_dict:
-            capture_obj.put_tag(str(tag))
+        capture_obj.put_tags(data_dict)
 
         metadata_tags = filter_dict(capture_obj.state, ['metadata', 'tags'])
 
