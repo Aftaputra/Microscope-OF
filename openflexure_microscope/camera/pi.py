@@ -228,6 +228,7 @@ class StreamingCamera(BaseCamera):
 
     def start_preview(self, fullscreen=True, window=None) -> bool:
         """Start the on board GPU camera preview."""
+        self.start_stream_recording()
         self.camera.start_preview(fullscreen=fullscreen, window=window)
         self.state['preview_active'] = True
         return True
@@ -319,9 +320,10 @@ class StreamingCamera(BaseCamera):
         # Stop the camera video recording on port 1
         try:
             self.camera.stop_recording(splitter_port=splitter_port)
-            logging.info("Stopped MJPEG stream on port {1}. Switching to {0}.".format(resolution, splitter_port))
         except picamera.exc.PiCameraNotRecording:
             logging.info("Not recording on splitter_port {}".format(splitter_port))
+        else:
+            logging.info("Stopped MJPEG stream on port {1}. Switching to {0}.".format(resolution, splitter_port))
 
         # Increase the resolution for taking an image
         self.camera.resolution = resolution
@@ -346,18 +348,26 @@ class StreamingCamera(BaseCamera):
             resolution = self.config['video_resolution']  # Default to video recording resolution
 
         # Reduce the resolution for video streaming
-        self.camera.resolution = resolution
+        try:
+            self.camera._check_recording_stopped()
+        except picamera.exc.PiCameraRuntimeError:
+            logging.info("Error while changing resolution: Recording already running.")
+        else:
+            self.camera.resolution = resolution
 
         # If the stream should be active
         if self.state['stream_active']:
-            # Start recording on stream port
-            self.camera.start_recording(
-                self.stream,
-                format='mjpeg',
-                quality=self.config['jpeg_quality'],
-                splitter_port=splitter_port)
-            
-            logging.debug("Started MJPEG stream at {} on port {}".format(resolution, splitter_port))
+            try:
+                # Start recording on stream port
+                self.camera.start_recording(
+                    self.stream,
+                    format='mjpeg',
+                    quality=self.config['jpeg_quality'],
+                    splitter_port=splitter_port)
+            except picamera.exc.PiCameraAlreadyRecording:
+                logging.info("Error while starting preview: Recording already running.")
+            else:
+                logging.debug("Started MJPEG stream at {} on port {}".format(resolution, splitter_port))
 
     def capture(
             self,
