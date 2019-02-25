@@ -2,7 +2,7 @@ from openflexure_microscope.api.utilities import JsonPayload
 from openflexure_microscope.api.v1.views import MicroscopeView
 
 from flask import jsonify, request
-
+import logging
 
 class GPUPreviewAPI(MicroscopeView):
 
@@ -39,11 +39,14 @@ class GPUPreviewAPI(MicroscopeView):
             payload = JsonPayload(request)
 
             window = payload.param('window', default=[])
-            fullscreen = False
+            logging.debug(window)
 
-            if len(window) != 4 or not all(isinstance(n, int) for n in window):
+            if len(window) != 4:
                 fullscreen = True
                 window = None
+            else:
+              fullscreen = False
+              window = [int(w) for w in window]
 
             self.microscope.camera.start_preview(fullscreen=fullscreen, window=window)
         elif operation == "stop":
