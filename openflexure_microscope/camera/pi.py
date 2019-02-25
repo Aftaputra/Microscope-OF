@@ -175,16 +175,17 @@ class StreamingCamera(BaseCamera):
                 # PiCamera parameters (applied directly to PiCamera object)
                 if 'picamera_settings' in config:  # If new settings are given
                     for key, value in config['picamera_settings'].items():  # For each given setting
-                        self.config['picamera_settings'][key] = None  # Add the key to the list of returned settings
-                        logging.debug("Setting parameter {}: {}".format(key, config['picamera_settings'][key]))
+                        if hasattr(self.camera, key):
+                            self.config['picamera_settings'][key] = None  # Add the key to the list of returned settings
+                            logging.debug("Setting parameter {}: {}".format(key, config['picamera_settings'][key]))
 
-                        # Handle special attributes:
-                        if key == 'digital_gain':
-                            set_digital_gain(self.camera, value)
-                        elif key == 'analog_gain':
-                            set_analog_gain(self.camera, value)
-                        else:
-                            setattr(self.camera, key, value)  # Write setting to camera
+                            # Handle special attributes:
+                            if key == 'digital_gain':
+                                set_digital_gain(self.camera, value)
+                            elif key == 'analog_gain':
+                                set_analog_gain(self.camera, value)
+                            else:
+                                setattr(self.camera, key, value)  # Write setting to camera
 
                 # StreamingCamera parameters (applied via StreamingCamera config)
                 for key, value in config.items():  # For each provided setting
