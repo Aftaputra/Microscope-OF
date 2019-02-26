@@ -104,7 +104,7 @@ class BaseCamera(object):
         self.event = CameraEvent()
 
         self.stream_timeout = 20  #: int: Number of inactive seconds before timing out the stream
-        self.stream_timeout_enabled = True  #: bool: Enable or disable timing out the stream
+        self.stream_timeout_enabled = False  #: bool: Enable or disable timing out the stream
 
         self.state = {}  #: dict: Dictionary for capture state
         self.config = {}  #: dict: Dictionary of base camera config
