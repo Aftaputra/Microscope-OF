@@ -152,6 +152,8 @@ class PluginMount(object):
         """
         plugin_class, plugin_name = class_from_map(plugin_map)
 
+        pythonsafe_plugin_name = plugin_name.replace("/", "_")
+
         if plugin_class and plugin_name:
             plugin_object = plugin_class()
 
@@ -160,7 +162,7 @@ class PluginMount(object):
 
             elif isinstance(plugin_object, MicroscopePlugin):  # If plugin_object is an instance of MicroscopePlugin
                 # Attach plugin_object to the plugin mount
-                setattr(self, plugin_name, plugin_object)
+                setattr(self, pythonsafe_plugin_name, plugin_object)
                 self.plugins.append((plugin_name, plugin_object))
 
                 # Grant plugin access to the hardware
