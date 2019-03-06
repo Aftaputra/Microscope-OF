@@ -252,7 +252,7 @@ class BaseCamera(object):
             capture_list = []
 
             for capture_dict in capture_dict_list:
-                if os.path.isfile(capture_dict['path']):
+                if 'path' in capture_dict and os.path.isfile(capture_dict['path']):
                     capture_list.append(capture_from_dict(capture_dict))
 
             return capture_list
@@ -283,6 +283,7 @@ class BaseCamera(object):
             write_to_file: bool = False,
             temporary: bool = True,
             filename: str = None,
+            folder: str = None,
             fmt: str = 'jpeg'):
 
         """
@@ -300,12 +301,18 @@ class BaseCamera(object):
             filename = generate_numbered_basename(self.images)
             logging.debug(filename)
 
+        # Generate folder
+        if folder:
+            folder = os.path.join(self.paths['image'], folder)
+        else:
+            folder = self.paths['image']
+
         # Create capture object
         output = CaptureObject(
             write_to_file=write_to_file,
             temporary=temporary,
             filename=filename,
-            folder=self.paths['image'],
+            folder=folder,
             fmt=fmt)
 
         # Update capture list
@@ -322,6 +329,7 @@ class BaseCamera(object):
             write_to_file: bool = True,
             temporary: bool = False,
             filename: str = None,
+            folder: str = None,
             fmt: str = 'h264'):
 
         """
@@ -339,12 +347,18 @@ class BaseCamera(object):
             filename = generate_numbered_basename(self.videos)
             logging.debug(filename)
 
+        # Generate folder
+        if folder:
+            folder = os.path.join(self.paths['video'], folder)
+        else:
+            folder = self.paths['video']
+
         # Create capture object
         output = CaptureObject(
             write_to_file=write_to_file,
             temporary=temporary,
             filename=filename,
-            folder=self.paths['video'],
+            folder=folder,
             fmt=fmt)
 
         # Update capture list
