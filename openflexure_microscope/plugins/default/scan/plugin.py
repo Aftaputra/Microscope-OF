@@ -8,14 +8,14 @@ from openflexure_microscope.plugins import MicroscopePlugin
 from openflexure_microscope.utilities import set_properties
 
 
-class StackPlugin(MicroscopePlugin):
+class ScanPlugin(MicroscopePlugin):
     """
     Stack and tile plugin
     """
 
     api_views = {}
 
-    def do_capture(self,
+    def capture(self,
                    basename,
                    scan_id,
                    use_video_port: bool = False,
@@ -88,7 +88,7 @@ class StackPlugin(MicroscopePlugin):
                     if autofocus_enabled:
                         self.microscope.plugin.default_autofocus.autofocus(range(-2*autofocus_dz, 3*autofocus_dz, autofocus_dz))
 
-                    self.do_capture(
+                    self.capture(
                         basename,
                         scan_id,
                         use_video_port=use_video_port,
@@ -133,7 +133,7 @@ class StackPlugin(MicroscopePlugin):
 
             for i in range(steps):
 
-                self.do_capture(
+                self.capture(
                     basename,
                     scan_id,
                     use_video_port=use_video_port,
