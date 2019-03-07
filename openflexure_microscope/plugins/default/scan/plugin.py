@@ -16,11 +16,13 @@ class ScanPlugin(MicroscopePlugin):
     api_views = {}
 
     def capture(self,
-                   basename,
-                   scan_id,
-                   use_video_port: bool = False,
-                   resize: Tuple[int, int] = None,
-                   bayer: bool = False):
+                basename,
+                scan_id,
+                use_video_port: bool = False,
+                resize: Tuple[int, int] = None,
+                bayer: bool = False,
+                metadata: dict = {},
+                tags: list = []):
 
         # Construct a tile filename
         filename = "{}_{}_{}_{}".format(basename, *self.microscope.stage.position)
@@ -41,8 +43,8 @@ class ScanPlugin(MicroscopePlugin):
             bayer=bayer)
 
         # Affix metadata
-        metadata = {}
-        tags = ['stack']
+        if 'stack' not in tags:
+            tags.append('stack')
 
         metadata.update({
             'Position': self.microscope.state['stage']['position'],
@@ -60,7 +62,9 @@ class ScanPlugin(MicroscopePlugin):
             autofocus_dz: int = 20,
             use_video_port: bool = False,
             resize: Tuple[int, int] = None,
-            bayer: bool = False):
+            bayer: bool = False,
+            metadata: dict = {},
+            tags: list = []):
 
         # Generate a basename if none given
         if not basename:
@@ -93,7 +97,9 @@ class ScanPlugin(MicroscopePlugin):
                         scan_id,
                         use_video_port=use_video_port,
                         resize=resize,
-                        bayer=bayer
+                        bayer=bayer,
+                        metadata=metadata,
+                        tags=tags
                     )
 
                     if j != grid[0] - 1:
@@ -113,7 +119,9 @@ class ScanPlugin(MicroscopePlugin):
             center: bool = True,
             use_video_port: bool = False,
             resize: Tuple[int, int] = None,
-            bayer: bool = False):
+            bayer: bool = False,
+            metadata: dict = {},
+            tags: list = []):
 
         # Generate a basename if none given
         if not basename:
@@ -138,7 +146,9 @@ class ScanPlugin(MicroscopePlugin):
                     scan_id,
                     use_video_port=use_video_port,
                     resize=resize,
-                    bayer=bayer
+                    bayer=bayer,
+                    metadata=metadata,
+                    tags=tags
                 )
 
                 if i != steps - 1:
