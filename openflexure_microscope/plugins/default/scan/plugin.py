@@ -5,9 +5,9 @@ import uuid
 
 from openflexure_microscope.camera.base import generate_basename
 from openflexure_microscope.plugins import MicroscopePlugin
-from openflexure_microscope.utilities import set_properties
 
 from .api import TileScanAPI, ZStackAPI
+
 
 class ScanPlugin(MicroscopePlugin):
     """
@@ -18,7 +18,6 @@ class ScanPlugin(MicroscopePlugin):
         '/tile': TileScanAPI,
         '/stack': ZStackAPI,
     }
-
 
     def capture(self,
                 basename,
@@ -95,7 +94,8 @@ class ScanPlugin(MicroscopePlugin):
                 for j in range(grid[1]):
 
                     if autofocus_enabled:
-                        self.microscope.plugin.default_autofocus.autofocus(range(-2*autofocus_dz, 3*autofocus_dz, autofocus_dz))
+                        self.microscope.plugin.default_autofocus.autofocus(
+                            range(-2 * autofocus_dz, 3 * autofocus_dz, autofocus_dz))
 
                     self.capture(
                         basename,
@@ -108,11 +108,11 @@ class ScanPlugin(MicroscopePlugin):
                     )
 
                     if j != grid[0] - 1:
-                        self.microscope.stage.move_rel([step_size[0]*xdirection, 0, 0])
+                        self.microscope.stage.move_rel([step_size[0] * xdirection, 0, 0])
 
                 xdirection *= -1
                 if i != grid[1] - 1:
-                    self.microscope.stage.move_rel([256*xdirection, step_size[1], 0])
+                    self.microscope.stage.move_rel([256 * xdirection, step_size[1], 0])
 
             self.microscope.stage.move_abs(initial_position)
 
@@ -120,7 +120,7 @@ class ScanPlugin(MicroscopePlugin):
             self,
             basename: str = None,
             step_size: int = 100,
-            steps: list = 5,
+            steps: int = 5,
             center: bool = True,
             use_video_port: bool = False,
             resize: Tuple[int, int] = None,
@@ -140,7 +140,7 @@ class ScanPlugin(MicroscopePlugin):
 
         # Move to center scan
         if center:
-            self.microscope.stage.move_rel([0, 0, int((-step_size * steps)/2)])
+            self.microscope.stage.move_rel([0, 0, int((-step_size * steps) / 2)])
 
         with self.microscope.lock:
 

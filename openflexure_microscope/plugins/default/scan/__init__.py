@@ -1,1 +1,1 @@
-from .plugin import StackPlugin
+from .plugin import ScanPlugin
