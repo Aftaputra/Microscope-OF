@@ -7,13 +7,18 @@ from openflexure_microscope.camera.base import generate_basename
 from openflexure_microscope.plugins import MicroscopePlugin
 from openflexure_microscope.utilities import set_properties
 
+from .api import TileScanAPI, ZStackAPI
 
 class ScanPlugin(MicroscopePlugin):
     """
     Stack and tile plugin
     """
 
-    api_views = {}
+    api_views = {
+        '/tile': TileScanAPI,
+        '/stack': ZStackAPI,
+    }
+
 
     def capture(self,
                 basename,
