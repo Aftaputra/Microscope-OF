@@ -42,7 +42,7 @@ class TaskOrchestrator:
     
         Args:
             function (function): The target function to run in the background
-            *args, **kwargs: Arguments that will be passed to `function` at runtime.
+            args, kwargs: Arguments that will be passed to `function` at runtime.
         """
         # Create a task object
         task = Task(function, *args, **kwargs)
