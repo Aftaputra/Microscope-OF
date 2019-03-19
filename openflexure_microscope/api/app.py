@@ -6,6 +6,8 @@ TODO: Implement API route to cleanly shut down server
 from flask import (
     Flask, render_template)
 
+from flask.logging import default_handler
+
 from flask_cors import CORS
 
 from openflexure_microscope.api.exceptions import JSONExceptionHandler
@@ -15,13 +17,29 @@ from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_microscope.stage.openflexure import Stage
 
 import atexit
-import logging, sys
+import logging
+import sys, os
 
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+# Handle logging
+is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
+
+if (__name__ == "__main__") or (not is_gunicorn):
+    # If imported, but not by gunicorn
+    print("Letting sys handle logs")
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+else:
+    print("Letting gunicorn handle logs")
+    # If running in gunicorn, let gunicorn handle logging
+    root = logging.getLogger()
+    
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    for handler in gunicorn_logger.handlers:
+        root.addHandler(handler)
+    
+    root.setLevel(gunicorn_logger.level)
 
 # Create a dummy microscope object, with no hardware attachments
 api_microscope = Microscope(None, None)
-
 
 # Generate API URI based on version from filename
 def uri(suffix, api_version, base=None):
@@ -78,7 +96,6 @@ def index():
 ##### API ROUTES ######
 from openflexure_microscope.api.v1 import blueprints
 
-logging.debug("Registering blueprints...")
 # Base routes
 base_blueprint = blueprints.base.construct_blueprint(api_microscope)
 app.register_blueprint(base_blueprint, url_prefix=uri('', 'v1'))
