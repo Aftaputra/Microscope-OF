@@ -7,6 +7,7 @@ from flask import (
     Flask, render_template)
 
 from flask.logging import default_handler
+from serial import SerialException
 
 from flask_cors import CORS
 
@@ -71,15 +72,19 @@ def attach_microscope():
     api_camera = StreamingCamera(config=api_microscope.rc.read())
     
     logging.debug("Creating stage object...")
-    api_stage = Stage("/dev/ttyUSB0")
+    try:
+        api_stage = Stage("/dev/ttyUSB0")
+    except SerialException as e:
+        api_camera.close()
+        raise e
+    else:
+        logging.debug("Attaching devices to microscope...")
+        api_microscope.attach(
+            api_camera,
+            api_stage
+        )
 
-    logging.debug("Attaching devices to microscope...")
-    api_microscope.attach(
-        api_camera,
-        api_stage
-    )
-
-    logging.debug("Microscope successfully attached!")
+        logging.debug("Microscope successfully attached!")
 
 
 ##### WEBAPP ROUTES ######
