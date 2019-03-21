@@ -231,12 +231,14 @@ class StreamingCamera(BaseCamera):
         self.start_stream_recording()
         self.camera.start_preview(fullscreen=fullscreen, window=window)
         self.state['preview_active'] = True
+        time.sleep(0.2)
         return True
 
     def stop_preview(self) -> bool:
         """Stop the on board GPU camera preview."""
         self.camera.stop_preview()
         self.state['preview_active'] = False
+        time.sleep(0.2)
         return True
 
     def start_recording(
@@ -326,6 +328,7 @@ class StreamingCamera(BaseCamera):
             logging.info("Stopped MJPEG stream on port {1}. Switching to {0}.".format(resolution, splitter_port))
 
         # Increase the resolution for taking an image
+        time.sleep(0.2)  # Sprinkled a sleep to prevent camera getting confused by rapid commands
         self.camera.resolution = resolution
 
     def start_stream_recording(
