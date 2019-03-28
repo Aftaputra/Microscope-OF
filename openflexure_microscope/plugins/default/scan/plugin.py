@@ -79,12 +79,13 @@ class ScanPlugin(MicroscopePlugin):
             bayer=bayer)
 
         # Affix metadata
-        if 'stack' not in tags:
-            tags.append('stack')
+        if 'scan' not in tags:
+            tags.append('scan')
 
         metadata.update({
-            'Position': self.microscope.state['stage']['position'],
-            'Stack ID': scan_id
+            'position': self.microscope.state['stage']['position'],
+            'scan_id': scan_id,
+            'basename': basename,
         })
 
         output.put_metadata(metadata)
@@ -112,6 +113,10 @@ class ScanPlugin(MicroscopePlugin):
 
         # Store initial position
         initial_position = self.microscope.stage.position
+
+        # Add scan metadata
+        if not 'time' in metadata:
+            metadata['time'] = generate_basename()
 
         # Check if autofocus is enabled
         if autofocus_dz and hasattr(self.microscope.plugin, 'default_autofocus'):
@@ -198,6 +203,10 @@ class ScanPlugin(MicroscopePlugin):
         # Generate a stack ID
         if not scan_id:
             scan_id = uuid.uuid4().hex
+
+        # Add scan metadata
+        if not 'time' in metadata:
+            metadata['time'] = generate_basename()
 
         # Store initial position
         initial_position = self.microscope.stage.position
