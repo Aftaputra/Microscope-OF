@@ -7,6 +7,8 @@ import copy
 from fractions import Fraction
 from collections import abc
 
+# HANDLE THE DEFAULT CONFIGURATION FILE
+
 HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_CONFIG_PATH = os.path.join(HERE, 'microscoperc.default.yaml')
 
@@ -16,10 +18,27 @@ USER_CONFIG_FILE = os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")  #: str: D
 with open(DEFAULT_CONFIG_PATH, 'r') as default_rc:
     DEFAULT_CONFIG = default_rc.read()
 
-JSON_TYPE_TABLE = {
+# HANDLE CUSTOM YAML PARSING
 
-}
+def construct_yaml_bool(self, node):
+    """
+    Override PyYAML constructors handling of bools.
+    YAML otherwise caused grief for picamera properties where 'off' is a valid string value.
+    """
+    override_bool_values = {
+            'yes':      True,
+            'no':       False,
+            'true':     True,
+            'false':    False,
+            'on':       'on',
+            'off':      'off',
+    }
+    value = self.construct_scalar(node)
+    return override_bool_values[value.lower()]
 
+yaml.Loader.add_constructor(u'tag:yaml.org,2002:bool', construct_yaml_bool)
+
+# HANDLE CONVERTING ARBITRARY CONFIG TO JSON-SAFE JSON
 
 def json_convert(v):
     """Make an individual attribute JSON-safe"""
@@ -72,6 +91,7 @@ def json_map(data, clean_keys=True):
 
     return to_map(d, json_convert)
 
+# HANDLE BASIC LOADING AND SAVING OF YAML FILES
 
 def load_yaml_file(config_path) -> dict:
     """
@@ -142,6 +162,7 @@ def initialise_file(config_path, populate: str = ""):
         with open(config_path, 'w') as outfile:
             outfile.write(populate)
 
+# MAIN CONFIG CLASS
 
 class OpenflexureConfig:
     """
