@@ -251,9 +251,10 @@ class BaseCamera(object):
             # Create capture object list, and validate captures
             capture_list = []
 
-            for capture_dict in capture_dict_list:
-                if 'path' in capture_dict and os.path.isfile(capture_dict['path']):
-                    capture_list.append(capture_from_dict(capture_dict))
+            if capture_dict_list:
+                for capture_dict in capture_dict_list:
+                    if 'path' in capture_dict and os.path.isfile(capture_dict['path']):
+                        capture_list.append(capture_from_dict(capture_dict))
 
             return capture_list
 
