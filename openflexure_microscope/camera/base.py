@@ -263,10 +263,10 @@ class BaseCamera(object):
 
     def store_captures(self):
         # Save metadata files
-        for image in self.images:
-            image.save_metadata()
-        for video in self.videos:
-            video.save_metadata()
+        #for image in self.images:
+        #    image.save_metadata()
+        #for video in self.videos:
+        #    video.save_metadata()
 
         # Update capture database
         self.save_capture_db(self.images, self.images_db)
