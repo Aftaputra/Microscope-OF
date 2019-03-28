@@ -10,11 +10,12 @@ class TileScanAPI(MicroscopeViewPlugin):
 
         # Get params
         name = payload.param('name')
-        step_size = payload.param('step_size', default=[2000, 1500], convert=list)
-        grid = payload.param('grid', default=[3, 3], convert=list)
-        autofocus_dz = payload.param('autofocus_dz', default=20, convert=int)
+        step_size = payload.param('step_size', default=[2000, 1500, 100], convert=list)
+        grid = payload.param('grid', default=[3, 3, 5], convert=list)
+        style = payload.param('style', default='raster', convert=str)
+        autofocus_dz = payload.param('autofocus_dz', default=50, convert=int)
 
-        use_video_port = payload.param('use_video_port', default=False, convert=bool)
+        use_video_port = payload.param('use_video_port', default=True, convert=bool)
         resize = payload.param('size', default=None)
         if resize:
             if ('width' in resize) and ('height' in resize):
@@ -22,7 +23,7 @@ class TileScanAPI(MicroscopeViewPlugin):
             else:
                 abort(404)
 
-        bayer = payload.param('bayer', default=True, convert=bool)
+        bayer = payload.param('bayer', default=False, convert=bool)
         metadata = payload.param('metadata', default={}, convert=dict)
         tags = payload.param('tags', default=[], convert=list)
 
@@ -32,6 +33,7 @@ class TileScanAPI(MicroscopeViewPlugin):
             basename=name,
             step_size=step_size,
             grid=grid,
+            style=style,
             autofocus_dz=autofocus_dz,
             use_video_port=use_video_port,
             resize=resize,
