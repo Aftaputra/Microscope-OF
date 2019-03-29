@@ -219,6 +219,7 @@ class ScanPlugin(MicroscopePlugin):
         with self.microscope.lock:
 
             for i in range(steps):
+                time.sleep(0.1)
                 logging.debug("Capturing...")
                 self.capture(
                     basename,
