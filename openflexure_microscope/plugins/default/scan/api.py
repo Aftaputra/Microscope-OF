@@ -9,9 +9,14 @@ class TileScanAPI(MicroscopeViewPlugin):
         payload = JsonPayload(request)
 
         # Get params
-        name = payload.param('name')
+        filename = payload.param('filename')
+
         step_size = payload.param('step_size', default=[2000, 1500, 100], convert=list)
+        step_size = [int(i) for i in step_size]
+
         grid = payload.param('grid', default=[3, 3, 5], convert=list)
+        grid = [int(i) for i in grid]
+
         style = payload.param('style', default='raster', convert=str)
         autofocus_dz = payload.param('autofocus_dz', default=50, convert=int)
 
@@ -30,7 +35,7 @@ class TileScanAPI(MicroscopeViewPlugin):
         print("Running tile scan...")
         task = self.microscope.task.start(
             self.plugin.tile,
-            basename=name,
+            basename=filename,
             step_size=step_size,
             grid=grid,
             style=style,
