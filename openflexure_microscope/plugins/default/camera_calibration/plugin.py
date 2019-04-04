@@ -5,7 +5,7 @@ from openflexure_microscope.api.utilities import JsonPayload
 from flask import request, jsonify
 import logging
 
-from .recalibrate_utils import recalibrate_camera
+from .recalibrate_utils import recalibrate_camera, auto_expose_and_freeze_settings
 
 
 class RecalibrateAPIView(MicroscopeViewPlugin):
@@ -47,6 +47,7 @@ class Plugin(MicroscopePlugin):
             old_resolution = scamera.camera.resolution
             try:
                 scamera.camera.resolution = (640, 480)
+                auto_expose_and_freeze_settings(scamera.camera)
                 recalibrate_camera(scamera.camera)
             finally:
                 scamera.camera.resolution = old_resolution
