@@ -366,6 +366,7 @@ class StreamingCamera(BaseCamera):
                     self.stream,
                     format='mjpeg',
                     quality=self.config['jpeg_quality'],
+                    bitrate=-1, # RWB: disable bitrate control
                     splitter_port=splitter_port)
             except picamera.exc.PiCameraAlreadyRecording:
                 logging.info("Error while starting preview: Recording already running.")
