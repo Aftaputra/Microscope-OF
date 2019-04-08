@@ -261,6 +261,8 @@ class OpenflexureConfig:
             config_dict (dict): Dictionary of config data to expand
         """
         return_config = {}
+        if not config_dict:
+            config_dict = {}
         # For each value in the raw loaded config
         for key, value in config_dict.items():
             # If it's a valid expandable parameter
