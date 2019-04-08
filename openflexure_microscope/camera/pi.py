@@ -243,9 +243,10 @@ class StreamingCamera(BaseCamera):
 
     def stop_preview(self) -> bool:
         """Stop the on board GPU camera preview."""
-        self.camera.stop_preview()
-        self.state['preview_active'] = False
-        time.sleep(0.2)
+        with self.lock:
+            self.camera.stop_preview()
+            self.state['preview_active'] = False
+            time.sleep(0.2)
         return True
 
     def start_recording(
