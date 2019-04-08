@@ -125,11 +125,10 @@ class ScanPlugin(MicroscopePlugin):
         else:
             autofocus_enabled = False
 
-        if fast_autofocus and not hasattr(self.microscope.plugin, 'default_fast_autofocus'):
-            logging.error("Can't use fast autofocus in the scan - the plugin is missing or disabled.")
+        if fast_autofocus and not hasattr(self.microscope.plugin.default_autofocus, 'monitor_sharpness'):
+            logging.error("Can't use fast autofocus in the scan - the default plugin doesn't support monitor_sharpness; maybe it is too old?")
             fast_autofocus = False
         z_stack_dz = grid[2] * step_size[2] if grid[2] > 1 else 0 # shorthand for Z stack range
-        sweep_to_scan_offset = 50 #TODO: make this a parameter, or calibrate it better! too small isn't a big problem, too big causes issues.
 
         # Construct an x-y grid (worry about z later)
         x_y_grid = construct_grid(
@@ -161,34 +160,12 @@ class ScanPlugin(MicroscopePlugin):
                 # Refocus
                 if autofocus_enabled:
                     if fast_autofocus:
-                        # TODO: put this in the fast autofocus plugin!
-                        with self.microscope.plugin.default_fast_autofocus.monitor_sharpness() as m:
-                            df = autofocus_dz
-                            # move down
-                            i, z = m.focus_rel(-df)
-                            # now inspect where the sharpest point is, and estimate the sharpness
-                            # (JPEG size) that we should find at the start of the Z stack
-                            jt, jz, js = m.move_data(i)
-                            best_z = jz[np.argmax(js)]
-                            target_s = np.interp([best_z+z_stack_dz/2.0], jz[::-1], js[::-1]) #NB jz is decreasing
-
-                            # now move to the start of the z stack
-                            i, z = m.focus_rel(best_z - z + z_stack_dz/2.0 + sweep_to_scan_offset) # takes us to the start of the stack
-
-                            # We've deliberately undershot - figure out how much further we should move based on the curve
-                            current_js = m.jpeg_size()
-                            imax = np.argmax(js) # we want to crop out just the bit below the peak
-                            js = js[imax:] # NB z is in DECREASING order
-                            jz = jz[imax:]
-                            inow = np.argmax(js < current_js) # use the curve we recorded to estimate our position
-                            # TODO: fancy interpolation stuff
-
-                            # So, the Z position corresponding to our current sharpness value is zs[inow]
-                            # That means we should move forwards, by best_z - zs[inow]
-                            correction_move = best_z - jz[inow] - z_stack_dz/2.0
-                            logging.debug("Fast autofocus scan: correcting backlash by moving {} steps".format(correction_move))
-                            m.focus_rel(correction_move)
-
+                        self.microscope.plugin.default_autofocus.fast_up_down_up_autofocus(
+                                dz=autofocus_dz,
+                                target_z=-z_stack_dz/2.0, # Finish below the focus
+                                initial_move_up=False, # We're already at the top of the scan
+                                )
+                        #TODO: save the focus data for future reference? Use it for diagnostics?
                     else:
                         logging.debug("Running autofocus")
                         self.microscope.plugin.default_autofocus.autofocus(
