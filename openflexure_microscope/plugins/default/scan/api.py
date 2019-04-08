@@ -48,7 +48,7 @@ class TileScanAPI(MicroscopeViewPlugin):
         )
 
         # return a handle on the autofocus task
-        return jsonify(task.state, 202)
+        return jsonify(task.state), 202
 
 
 class ZStackAPI(MicroscopeViewPlugin):
@@ -88,4 +88,4 @@ class ZStackAPI(MicroscopeViewPlugin):
         )
 
         # return a handle on the autofocus task
-        return jsonify(task.state, 202)
+        return jsonify(task.state), 202

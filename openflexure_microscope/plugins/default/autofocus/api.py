@@ -23,4 +23,4 @@ class AutofocusAPI(MicroscopeViewPlugin):
         task = self.microscope.task.start(self.plugin.autofocus, dz)
 
         # return a handle on the autofocus task
-        return jsonify(task.state, 202)
+        return jsonify(task.state), 202
