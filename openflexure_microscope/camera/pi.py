@@ -228,10 +228,17 @@ class StreamingCamera(BaseCamera):
 
     def start_preview(self, fullscreen=True, window=None) -> bool:
         """Start the on board GPU camera preview."""
+        logging.info("Starting the GPU preview")
         self.start_stream_recording()
-        self.camera.start_preview(fullscreen=fullscreen, window=window)
-        self.state['preview_active'] = True
-        time.sleep(0.2)
+        try:
+            with self.lock:
+                self.camera.start_preview(fullscreen=fullscreen, window=window)
+                self.state['preview_active'] = True
+                time.sleep(0.2)
+        except picamera.exc.PiCameraMMALError as e:
+            logging.error("Suppressed a MMALError in start_preview. Exception: {}".format(e))
+        except picamera.exc.PiCameraValueError as e:
+            logging.error("Suppressed a ValueError exception in start_preview. Exception: {}".format(e))
         return True
 
     def stop_preview(self) -> bool:
@@ -366,7 +373,9 @@ class StreamingCamera(BaseCamera):
                     self.stream,
                     format='mjpeg',
                     quality=self.config['jpeg_quality'],
-                    bitrate=-1, # RWB: disable bitrate control
+                    bitrate=-1, # RWB: disable bitrate control 
+                    # (bitrate control makes JPEG size less good as a focus
+                    # metric)
                     splitter_port=splitter_port)
             except picamera.exc.PiCameraAlreadyRecording:
                 logging.info("Error while starting preview: Recording already running.")
