@@ -19,6 +19,7 @@ class TileScanAPI(MicroscopeViewPlugin):
 
         style = payload.param('style', default='raster', convert=str)
         autofocus_dz = payload.param('autofocus_dz', default=50, convert=int)
+        fast_autofocus = payload.param('fast_autofocus', default=False, convert=bool)
 
         use_video_port = payload.param('use_video_port', default=True, convert=bool)
         resize = payload.param('size', default=None)
@@ -43,6 +44,7 @@ class TileScanAPI(MicroscopeViewPlugin):
             use_video_port=use_video_port,
             resize=resize,
             bayer=bayer,
+            fast_autofocus=fast_autofocus,
             metadata=metadata,
             tags=tags
         )

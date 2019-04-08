@@ -101,6 +101,7 @@ class ScanPlugin(MicroscopePlugin):
             use_video_port: bool = False,
             resize: Tuple[int, int] = None,
             bayer: bool = False,
+            fast_autofocus = False,
             metadata: dict = {},
             tags: list = []):
 
@@ -124,6 +125,12 @@ class ScanPlugin(MicroscopePlugin):
         else:
             autofocus_enabled = False
 
+        if fast_autofocus and not hasattr(self.microscope.plugin, 'default_fast_autofocus'):
+            logging.error("Can't use fast autofocus in the scan - the plugin is missing or disabled.")
+            fast_autofocus = False
+        z_stack_dz = grid[2] * step_size[2] if grid[2] > 1 else 0 # shorthand for Z stack range
+        sweep_to_scan_offset = 50 #TODO: make this a parameter, or calibrate it better! too small isn't a big problem, too big causes issues.
+
         # Construct an x-y grid (worry about z later)
         x_y_grid = construct_grid(
             initial_position, 
@@ -132,27 +139,62 @@ class ScanPlugin(MicroscopePlugin):
             style=style
         )
 
+        # Keep the initial Z position the same as our current position
+        next_z = initial_position[2]
+        if fast_autofocus:           # If fast autofocus is enabled, make
+            next_z += autofocus_dz/2 # sure we start from the top of the range
+        initial_z = next_z # Save this value for use in raster scans
+
         # Now step through each point in the x-y coordinate array
         for line in x_y_grid:
             # If rastering, rather than snake (or eventually spiral)
+            # Return focus to initial position
             if style == 'raster':
-                # Return focus to initial position
+                next_z = initial_z
                 logging.debug("Returning to initial z position")
-                self.microscope.stage.move_abs([line[0][0], line[0][1], initial_position[2]])
+                self.microscope.stage.move_abs([line[0][0], line[0][1], next_z]) #RWB: I think this line is redundant
 
             for x_y in line:
-                current_position = self.microscope.stage.position
                 # Move to new grid position without changing z
-                logging.debug("Moving to step {}".format([x_y[0], x_y[1], current_position[2]]))
-                self.microscope.stage.move_abs([x_y[0], x_y[1], current_position[2]])
+                logging.debug("Moving to step {}".format([x_y[0], x_y[1], next_z]))
+                self.microscope.stage.move_abs([x_y[0], x_y[1], next_z])
                 # Refocus
                 if autofocus_enabled:
-                    # TODO: Better autofocus
-                    logging.debug("Running autofocus")
-                    self.microscope.plugin.default_autofocus.autofocus(
-                        range(-3 * autofocus_dz, 4 * autofocus_dz, autofocus_dz))
-                    logging.debug("Finished autofocus")
-                    time.sleep(1)  # TODO: Remove
+                    if fast_autofocus:
+                        # TODO: put this in the fast autofocus plugin!
+                        with self.microscope.plugin.default_fast_autofocus.monitor_sharpness() as m:
+                            df = autofocus_dz
+                            # move down
+                            i, z = m.focus_rel(-df)
+                            # now inspect where the sharpest point is, and estimate the sharpness
+                            # (JPEG size) that we should find at the start of the Z stack
+                            jt, jz, js = m.move_data(i)
+                            best_z = jz[np.argmax(js)]
+                            target_s = np.interp([best_z+z_stack_dz/2.0], jz[::-1], js[::-1]) #NB jz is decreasing
+
+                            # now move to the start of the z stack
+                            i, z = m.focus_rel(best_z - z + z_stack_dz/2.0 + sweep_to_scan_offset) # takes us to the start of the stack
+
+                            # We've deliberately undershot - figure out how much further we should move based on the curve
+                            current_js = m.jpeg_size()
+                            imax = np.argmax(js) # we want to crop out just the bit below the peak
+                            js = js[imax:] # NB z is in DECREASING order
+                            jz = jz[imax:]
+                            inow = np.argmax(js < current_js) # use the curve we recorded to estimate our position
+                            # TODO: fancy interpolation stuff
+
+                            # So, the Z position corresponding to our current sharpness value is zs[inow]
+                            # That means we should move forwards, by best_z - zs[inow]
+                            correction_move = best_z - jz[inow] - z_stack_dz/2.0
+                            logging.debug("Fast autofocus scan: correcting backlash by moving {} steps".format(correction_move))
+                            m.focus_rel(correction_move)
+
+                    else:
+                        logging.debug("Running autofocus")
+                        self.microscope.plugin.default_autofocus.autofocus(
+                            range(-3 * autofocus_dz, 4 * autofocus_dz, autofocus_dz))
+                        logging.debug("Finished autofocus")
+                        time.sleep(1)  # TODO: Remove
 
                 # If we're not doing a z-stack, just capture
                 if (grid[2] <= 1):
@@ -172,13 +214,20 @@ class ScanPlugin(MicroscopePlugin):
                         scan_id=scan_id,
                         step_size=step_size[2],
                         steps=grid[2],
-                        center=True,
+                        center=not fast_autofocus, # fast_autofocus does this for us!
+                        return_to_start=not fast_autofocus,
                         use_video_port=use_video_port,
                         resize=resize,
                         bayer=bayer,
                         metadata=metadata,
                         tags=tags
                     )
+                # Make sure we use our current best estimate of focus (i.e. the current position) next point
+                next_z = self.microscope.stage.position[2]
+                if fast_autofocus:
+                    next_z += autofocus_dz/2 # Fast autofocus requires us to start at the top of the range
+                    if grid[2] > 1:
+                        next_z -= int(grid[2]/2.0*step_size[2]) # Z stacking means we're higher up to start with
 
         logging.debug("Returning to {}".format(initial_position))
         self.microscope.stage.move_abs(initial_position)
@@ -190,6 +239,7 @@ class ScanPlugin(MicroscopePlugin):
             step_size: int = 100,
             steps: int = 5,
             center: bool = True,
+            return_to_start: bool = True,
             use_video_port: bool = False,
             resize: Tuple[int, int] = None,
             bayer: bool = False,
@@ -211,12 +261,12 @@ class ScanPlugin(MicroscopePlugin):
         # Store initial position
         initial_position = self.microscope.stage.position
 
-        # Move to center scan
-        if center:
-            logging.debug("Moving to starting position")
-            self.microscope.stage.move_rel([0, 0, int((-step_size * steps) / 2)])
 
         with self.microscope.lock:
+            # Move to center scan
+            if center:
+                logging.debug("Moving to starting position")
+                self.microscope.stage.move_rel([0, 0, int((-step_size * steps) / 2)])
 
             for i in range(steps):
                 time.sleep(0.1)
@@ -234,6 +284,6 @@ class ScanPlugin(MicroscopePlugin):
                 if i != steps - 1:
                     logging.debug("Moving z by {}".format(step_size))
                     self.microscope.stage.move_rel([0, 0, step_size])
-
-            logging.debug("Returning to {}".format(initial_position))
-            self.microscope.stage.move_abs(initial_position)
+            if return_to_start:
+                logging.debug("Returning to {}".format(initial_position))
+                self.microscope.stage.move_abs(initial_position)
