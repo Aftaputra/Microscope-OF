@@ -192,7 +192,7 @@ class Microscope(object):
         # If attached to a camera
         if self.camera:
             # Update camera config
-            self.camera.config.update(config)
+            self.camera.apply_config(config)
 
         # If attached to a stage
         # TODO: Convert stage settings into a config expansion

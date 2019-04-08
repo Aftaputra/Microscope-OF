@@ -125,6 +125,14 @@ class BaseCamera(object):
         self.images = self.load_capture_db(self.images_db)
         self.videos = self.load_capture_db(self.videos_db)
 
+    def apply_config(self, config):
+        """Update settings from a config dictionary"""
+        self.config.update(config)
+
+    def read_config(self, config):
+        """Return the current settings as a dictionary"""
+        return self.config
+
     def __enter__(self):
         """Create camera on context enter."""
         return self
