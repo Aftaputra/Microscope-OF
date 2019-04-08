@@ -24,3 +24,19 @@ class AutofocusAPI(MicroscopeViewPlugin):
 
         # return a handle on the autofocus task
         return jsonify(task.state), 202
+
+class FastAutofocusAPI(MicroscopeViewPlugin):
+    def post(self):
+        payload = JsonPayload(request)
+        
+        # Figure out the parameters to use
+        dz = payload.param("dz", default=2000, convert=int)
+        backlash = payload.param("backlash", default=None, convert=int)
+        if backlash < 0:
+            backlash = None
+
+        print("Running autofocus...")
+        task = self.microscope.task.start(self.plugin.fast_autofocus, dz, backlash=backlash)
+
+        # return a handle on the autofocus task
+        return jsonify(task.state), 202
