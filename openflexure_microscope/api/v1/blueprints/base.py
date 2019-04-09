@@ -2,6 +2,7 @@ from openflexure_microscope.api.utilities import gen, JsonPayload
 from openflexure_microscope.api.v1.views import MicroscopeView
 
 from flask import Response, Blueprint, jsonify, request
+import logging
 
 
 class StreamAPI(MicroscopeView):
@@ -99,8 +100,6 @@ class ConfigAPI(MicroscopeView):
           Content-Type: application/json
 
           {
-            "analog_gain": 1.0, 
-            "digital_gain": 1.0, 
             "image_resolution": [
                 2592, 
                 1944
@@ -111,7 +110,9 @@ class ConfigAPI(MicroscopeView):
                 1312, 
                 976
             ], 
-            "picamera_params": {
+            "picamera_settings": {
+                "analog_gain": 1.0, 
+                "digital_gain": 1.0, 
                 "awb_gains": [
                 0.92578125, 
                 2.94921875
@@ -125,7 +126,6 @@ class ConfigAPI(MicroscopeView):
             "plugins": [
                 "openflexure_microscope.plugins.default:Plugin"
             ], 
-            "shading_table_path": "/home/pi/.openflexure/microscopelst.npy", 
             "video_resolution": [
                 832, 
                 624
@@ -170,7 +170,7 @@ class ConfigAPI(MicroscopeView):
         """
         payload = JsonPayload(request)
 
-        print(payload.json)
+        logging.debug("Updating settings from POST request.")
 
         self.microscope.write_config(payload.json)
         self.microscope.save_config()
