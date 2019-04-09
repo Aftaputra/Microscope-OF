@@ -101,7 +101,7 @@ class ListAPI(MicroscopeView):
         payload = JsonPayload(request)
 
         filename = payload.param('filename')
-        temporary = payload.param('temporary', default=True, convert=bool)
+        temporary = payload.param('temporary', default=False, convert=bool)
         use_video_port = payload.param('use_video_port', default=False, convert=bool)
         bayer = payload.param('bayer', default=True, convert=bool)
         metadata = payload.param('metadata', default={}, convert=dict)
