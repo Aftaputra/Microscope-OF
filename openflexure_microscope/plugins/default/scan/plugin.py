@@ -7,7 +7,7 @@ import logging
 from openflexure_microscope.camera.base import generate_basename
 from openflexure_microscope.plugins import MicroscopePlugin
 
-from .api import TileScanAPI, ZStackAPI
+from .api import TileScanAPI
 
 def construct_grid(initial, step_sizes, n_steps, style='raster'):
     """
