@@ -233,11 +233,6 @@ class CaptureObject(object):
         if not os.path.exists(self.filefolder):
             os.makedirs(self.filefolder)
 
-        logging.debug(self.file)
-        logging.debug(self.filename)
-        logging.debug(self.basename)
-        logging.debug(self.filefolder)
-
     def split_file_path(self, filepath):
         """
         Take a full file path, and split it into separated class properties.
