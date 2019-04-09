@@ -215,6 +215,12 @@ class CaptureObject(object):
         """
         global TEMP_CAPTURE_PATH
 
+        if self.temporary:
+            # Store original file path
+            self.file_notmp = os.path.join(folder, filename) 
+            # Move user-specified folder to TEMP
+            self.folder = os.path.join(TEMP_CAPTURE_PATH, self.folder)
+
         self.file = os.path.join(folder, filename)  # Full file name by joining given folder to given name
 
         self.split_file_path(self.file)  # Split file path into folder, filename, and basename
@@ -222,12 +228,6 @@ class CaptureObject(object):
         # Check directory is a subdirectory of BASE_CAPTURE_PATH
         if not os.path.commonprefix([self.file, BASE_CAPTURE_PATH]) == BASE_CAPTURE_PATH:
             raise Exception("Captures cannot be stored in a lower-level directory than {}.".format(BASE_CAPTURE_PATH))
-
-        # Move to tmp directory if not being kept
-        if self.temporary:
-            self.file_notmp = self.file  # Store originally defined folder
-            self.filefolder = TEMP_CAPTURE_PATH
-            self.file = os.path.join(self.filefolder, self.filename)
 
         # Create folder and file
         if not os.path.exists(self.filefolder):
