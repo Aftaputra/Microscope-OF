@@ -185,14 +185,15 @@ class StreamingCamera(BaseCamera):
                             elif key == 'analog_gain':
                                 set_analog_gain(self.camera, value)
                             elif key == "shutter_speed":
+                                # TODO: use types from CONFIG_KEYS? @jtc42
                                 self.camera.shutter_speed = int(value)
                             else:
                                 setattr(self.camera, key, value)  # Write setting to camera
 
                 # StreamingCamera parameters (applied via StreamingCamera config)
                 for key, value in config.items():  # For each provided setting
-                    if key in self.config.keys():
-                        if key != 'picamera_settings':  # We already handled this
+                    if key != 'picamera_settings':  # We already handled this
+                        if key not in CONFIG_KEYS.keys():
                             logging.warn("{} is not in the streaming camera settings dictionary - adding it.")
                             #continue #TODO: filter settings somehow?
                         logging.debug("Setting parameter {}: {}".format(key, value))
