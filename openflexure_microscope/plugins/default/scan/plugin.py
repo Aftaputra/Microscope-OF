@@ -48,12 +48,12 @@ class ScanPlugin(MicroscopePlugin):
 
     api_views = {
         '/tile': TileScanAPI,
-        '/stack': ZStackAPI,
     }
 
     def capture(self,
                 basename,
                 scan_id,
+                temporary: bool = False,
                 use_video_port: bool = False,
                 resize: Tuple[int, int] = None,
                 bayer: bool = False,
@@ -67,7 +67,7 @@ class ScanPlugin(MicroscopePlugin):
         # Create output object
         output = self.microscope.camera.new_image(
             write_to_file=True,
-            temporary=False,
+            temporary=temporary,
             filename=filename,
             folder=foldername)
 
@@ -94,6 +94,7 @@ class ScanPlugin(MicroscopePlugin):
     def tile(
             self,
             basename: str = None,
+            temporary: bool = False,
             step_size: int = [2000, 1500, 100],
             grid: list = [3, 3, 5],
             style='raster',
@@ -159,6 +160,7 @@ class ScanPlugin(MicroscopePlugin):
                     self.capture(
                         basename,
                         scan_id,
+                        temporary=temporary,
                         use_video_port=use_video_port,
                         resize=resize,
                         bayer=bayer,
@@ -169,6 +171,7 @@ class ScanPlugin(MicroscopePlugin):
                     logging.debug("Entering z-stack")
                     self.stack(
                         basename=basename,
+                        temporary=temporary,
                         scan_id=scan_id,
                         step_size=step_size[2],
                         steps=grid[2],
@@ -186,6 +189,7 @@ class ScanPlugin(MicroscopePlugin):
     def stack(
             self,
             basename: str = None,
+            temporary: bool = False,
             scan_id: str = None,
             step_size: int = 100,
             steps: int = 5,
@@ -224,6 +228,7 @@ class ScanPlugin(MicroscopePlugin):
                 self.capture(
                     basename,
                     scan_id,
+                    temporary=temporary,
                     use_video_port=use_video_port,
                     resize=resize,
                     bayer=bayer,
