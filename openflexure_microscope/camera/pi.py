@@ -131,7 +131,7 @@ class StreamingCamera(BaseCamera):
         }
 
         # PiCamera parameters (obtained directly from PiCamera object)
-        for key, _ in self.config['picamera_settings'].items():
+        for key, _ in CONFIG_KEYS['picamera_settings'].items():
             try:
                 value = getattr(self.camera, key)
                 conf_dict['picamera_settings'][key] = value
