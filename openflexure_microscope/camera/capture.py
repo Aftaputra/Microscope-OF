@@ -81,8 +81,8 @@ def capture_from_dict(capture_dict):
 
     # Get inherent capture information from database
     capture.file = capture_dict['path']
-    capture.split_file_path(capture.file)
     capture.temporary = capture_dict['temporary']
+    capture.split_file_path(capture.file)
 
     if capture.format.upper() in EXIF_FORMATS:
         md_exif = pull_usercomment_dict(capture.file)
@@ -137,9 +137,7 @@ class CaptureObject(object):
             filename = self.id
         self.filename = "{}.{}".format(filename, fmt)
 
-        # Create folder path. Default to BASE_CAPTURE_PATH
-        if not folder:
-            folder = BASE_CAPTURE_PATH
+        # Create folder path
         self.folder = folder
 
         # Dictionary for storing custom metadata
@@ -185,7 +183,7 @@ class CaptureObject(object):
         file on disk.
 
         """
-        self.build_file_path(self.filename, self.folder)
+        self.build_file_path()
 
         # Byte bytestream properties
         self.bytestream = io.BytesIO()  # Byte bytestream that data will be written to
@@ -201,31 +199,23 @@ class CaptureObject(object):
         # Save initial metadata file
         self.save_metadata()
 
-    def build_file_path(
-            self,
-            filename: str,
-            folder: str):
+    def build_file_path(self):
         """
         Construct a full file path, based on filename, folder, and file format.
         Defaults to UUID.
-
-        Args:
-            filename (str): Filename of capture
-            folder (str): Directory on disk to store capture file
         """
         global TEMP_CAPTURE_PATH
+        # TODO: Combine this and split_file_path, and tidy. Let the device (camera) handle folders. This should be more basic.
+        # TODO: Even let the base camera manage moving captures to temp folder
+        # This module will clear out the temp folder, but won't MOVE anything there.
+        # In Base cameras new_image method, the full folder is constructed. Temp folder should be inserted there.
 
-        if self.temporary:
-            # Store original file path
-            self.file_notmp = os.path.join(folder, filename) 
-            # Move user-specified folder to TEMP
-            self.folder = os.path.join(TEMP_CAPTURE_PATH, self.folder)
-
-        self.file = os.path.join(folder, filename)  # Full file name by joining given folder to given name
+        self.file = os.path.join(self.folder, self.filename)  # Full file name by joining given folder to given name
 
         self.split_file_path(self.file)  # Split file path into folder, filename, and basename
 
         # Check directory is a subdirectory of BASE_CAPTURE_PATH
+        # TODO: Do we need this?
         if not os.path.commonprefix([self.file, BASE_CAPTURE_PATH]) == BASE_CAPTURE_PATH:
             raise Exception("Captures cannot be stored in a lower-level directory than {}.".format(BASE_CAPTURE_PATH))
 
@@ -448,13 +438,6 @@ class CaptureObject(object):
 
     def save_file(self) -> bool:
         """Write the StreamObjects bytestream to a file."""
-        if self.temporary:  # If capture is currently temporary
-            self.load_file()  # Load data from tmp file into bytestream, if tmp file exists
-            self.temporary = False  # Flag as kept on disk
-            self.file = self.file_notmp  # Reset file path to non-temporary path
-            self.split_file_path(self.file)  # Set split properties based on new path
-            logging.info("Moved temporary file out to {}".format(self.file))
-
         if self.stream_exists:  # If there's a bytestream to save
             with open(self.file, 'ab') as f:  # Load file as bytes
                 logging.debug("Writing bytestream to file {}".format(self.file))
@@ -504,6 +487,7 @@ class CaptureObject(object):
         """Both clear the bytestream, and delete any associated on-disk data."""
         logging.info("Closing {}".format(self.id))
         self.delete_stream()
+        # Delete the file from disk if temporary
         if self.temporary:
             self.delete()
 

@@ -62,14 +62,14 @@ class ScanPlugin(MicroscopePlugin):
 
         # Construct a tile filename
         filename = "{}_{}_{}_{}".format(basename, *self.microscope.stage.position)
-        foldername = "SCAN_{}".format(basename)
+        folder = "SCAN_{}".format(basename)
 
         # Create output object
         output = self.microscope.camera.new_image(
             write_to_file=True,
             temporary=temporary,
             filename=filename,
-            folder=foldername)
+            folder=folder)
 
         # Capture
         self.microscope.camera.capture(
