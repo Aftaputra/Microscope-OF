@@ -1,6 +1,7 @@
 import uuid
 import io
 import os
+import shutil
 import glob
 import datetime
 import yaml
@@ -25,10 +26,7 @@ def clear_tmp():
     global TEMP_CAPTURE_PATH
 
     logging.info("Clearing {}...".format(TEMP_CAPTURE_PATH))
-    files = glob.glob('{}/*'.format(TEMP_CAPTURE_PATH))
-    for f in files:
-        os.remove(f)
-        logging.debug("Removed {}".format(f))
+    shutil.rmtree(TEMP_CAPTURE_PATH)
     logging.debug("Cleared {}.".format(TEMP_CAPTURE_PATH))
 
 
