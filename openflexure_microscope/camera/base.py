@@ -14,7 +14,7 @@ except ImportError:
     except ImportError:
         from _thread import get_ident
 
-from .capture import CaptureObject, capture_from_dict, BASE_CAPTURE_PATH
+from .capture import CaptureObject, capture_from_dict, BASE_CAPTURE_PATH, TEMP_CAPTURE_PATH
 from openflexure_microscope.config import USER_CONFIG_DIR
 from openflexure_microscope.utilities import entry_by_id
 from openflexure_microscope.lock import StrictLock
@@ -111,6 +111,8 @@ class BaseCamera(object):
         self.paths = {
             'image': BASE_CAPTURE_PATH,
             'video': BASE_CAPTURE_PATH,
+            'image_tmp': TEMP_CAPTURE_PATH,
+            'video_tpm': TEMP_CAPTURE_PATH
         }  #: dict: Dictionary of capture paths
 
         # Capture data
@@ -292,7 +294,7 @@ class BaseCamera(object):
             write_to_file: bool = False,
             temporary: bool = True,
             filename: str = None,
-            folder: str = None,
+            folder: str = "",
             fmt: str = 'jpeg'):
 
         """
@@ -311,10 +313,8 @@ class BaseCamera(object):
             logging.debug(filename)
 
         # Generate folder
-        if folder:
-            folder = os.path.join(self.paths['image'], folder)
-        else:
-            folder = self.paths['image']
+        base_folder = self.paths['image_tmp'] if temporary else self.paths['image']
+        folder = os.path.join(base_folder, folder)
 
         # Create capture object
         output = CaptureObject(
@@ -357,10 +357,8 @@ class BaseCamera(object):
             logging.debug(filename)
 
         # Generate folder
-        if folder:
-            folder = os.path.join(self.paths['video'], folder)
-        else:
-            folder = self.paths['video']
+        base_folder = self.paths['video_tmp'] if temporary else self.paths['video']
+        folder = os.path.join(base_folder, folder)
 
         # Create capture object
         output = CaptureObject(
