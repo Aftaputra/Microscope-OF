@@ -238,9 +238,16 @@ class StreamingCamera(BaseCamera):
         self.start_stream_recording()
         try:
             with self.lock:
-                self.camera.start_preview(fullscreen=fullscreen, window=window)
+                if not self.camera.preview:
+                    logging.debug("Starting preview")
+                    self.camera.start_preview(fullscreen=fullscreen, window=window)
+                else:
+                    logging.debug("Resizing preview")
+                    if window:
+                        self.camera.preview.window = window
+                    if fullscreen:
+                        self.camera.preview.fullscreen = fullscreen
                 self.state['preview_active'] = True
-                time.sleep(0.2)
         except picamera.exc.PiCameraMMALError as e:
             logging.error("Suppressed a MMALError in start_preview. Exception: {}".format(e))
         except picamera.exc.PiCameraValueError as e:
@@ -252,7 +259,6 @@ class StreamingCamera(BaseCamera):
         with self.lock:
             self.camera.stop_preview()
             self.state['preview_active'] = False
-            time.sleep(0.2)
         return True
 
     def start_recording(
