@@ -256,7 +256,12 @@ class BaseCamera(object):
         if os.path.isfile(db_path):
             # Load list of capture dictionary representations from db_path
             with open(db_path, 'r') as infile:
-                capture_dict_list = yaml.load(infile)
+                try:
+                    capture_dict_list = yaml.load(infile)
+                except yaml.scanner.ScannerError as e:
+                    logging.error(e)
+                    logging.warning('Emptying malformed database. Your captures will not be deleted, but may not appear in the gallery.')
+                    capture_dict_list = []
 
             # Create capture object list, and validate captures
             capture_list = []
