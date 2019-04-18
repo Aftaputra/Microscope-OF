@@ -25,9 +25,10 @@ def clear_tmp():
     """
     global TEMP_CAPTURE_PATH
 
-    logging.info("Clearing {}...".format(TEMP_CAPTURE_PATH))
-    shutil.rmtree(TEMP_CAPTURE_PATH)
-    logging.debug("Cleared {}.".format(TEMP_CAPTURE_PATH))
+    if os.path.isdir(TEMP_CAPTURE_PATH):
+        logging.info("Clearing {}...".format(TEMP_CAPTURE_PATH))
+        shutil.rmtree(TEMP_CAPTURE_PATH)
+        logging.debug("Cleared {}.".format(TEMP_CAPTURE_PATH))
 
 
 def pull_usercomment_dict(filepath):
@@ -37,6 +38,7 @@ def pull_usercomment_dict(filepath):
         filepath: Path to the Exif-containing file
     """
     exif_dict = piexif.load(filepath)
+
     if 'Exif' in exif_dict and 37510 in exif_dict['Exif']:
         return yaml.load(exif_dict['Exif'][37510].decode())
     else:
@@ -75,16 +77,18 @@ def capture_from_dict(capture_dict):
     """
     global EXIF_FORMATS
 
-    capture = CaptureObject()  # Create a placeholder capture
+    capture = CaptureObject(initialise_capture=False)  # Create a placeholder capture
 
     # Get inherent capture information from database
     capture.file = capture_dict['path']
-    capture.temporary = capture_dict['temporary']
     capture.split_file_path(capture.file)
+
+    capture.temporary = capture_dict['temporary']
 
     if capture.format.upper() in EXIF_FORMATS:
         md_exif = pull_usercomment_dict(capture.file)
     else:
+        logging.debug("Unsupported format for EXIF data. Skipping.")
         md_exif = {}
 
     md_database = capture_dict['metadata']
@@ -96,6 +100,9 @@ def capture_from_dict(capture_dict):
 
     capture._metadata = extract_with_priority('custom', md_exif, md_database)
     capture.tags = extract_with_priority('tags', md_exif, md_database)
+
+    
+    capture.initialise_stream()
 
     return capture
 
@@ -113,7 +120,8 @@ class CaptureObject(object):
             temporary: bool = False,
             filename: str = '',
             folder: str = '',
-            fmt: str = '') -> None:
+            fmt: str = '',
+            initialise_capture: bool = True) -> None:
         """Create a new StreamObject, to manage capture data."""
 
         # Store a nice ID
@@ -133,10 +141,7 @@ class CaptureObject(object):
         # Create file name. Default to UUID
         if not filename:
             filename = self.id
-        self.filename = "{}.{}".format(filename, fmt)
-
-        # Create folder path
-        self.folder = folder
+        filename = "{}.{}".format(filename, fmt)
 
         # Dictionary for storing custom metadata
         self._metadata = {}  #: dict: Dictionary of custom metadata to be included in metadata file
@@ -145,7 +150,9 @@ class CaptureObject(object):
         self.tags = []  #: list: List of tags. Essentially just as extra custom metadata field, but useful for quick organisation
 
         # Initialise the capture stream
-        self.initialise_capture()
+        if initialise_capture:
+            self.build_file_path(filename, folder)
+            self.initialise_stream()
 
         # Log if created by context manager
         self.context_manager = False
@@ -174,15 +181,10 @@ class CaptureObject(object):
         logging.info("Cleaning up {}".format(self.id))
         self.close()
 
-    def initialise_capture(self):
+    def initialise_stream(self):
         """
-        Initialise the capture object. Creates a file name and builds a file path,
-        creates an in-memory byte stream for capture data, and creates a metadata
-        file on disk.
-
+        Create an in-memory byte stream for capture data.
         """
-        self.build_file_path()
-
         # Byte bytestream properties
         self.bytestream = io.BytesIO()  # Byte bytestream that data will be written to
 
@@ -197,25 +199,20 @@ class CaptureObject(object):
         # Save initial metadata file
         self.save_metadata()
 
-    def build_file_path(self):
+    def build_file_path(self, filename, foldername):
         """
         Construct a full file path, based on filename, folder, and file format.
         Defaults to UUID.
         """
-        global TEMP_CAPTURE_PATH
-        # TODO: Combine this and split_file_path, and tidy. Let the device (camera) handle folders. This should be more basic.
-        # TODO: Even let the base camera manage moving captures to temp folder
-        # This module will clear out the temp folder, but won't MOVE anything there.
-        # In Base cameras new_image method, the full folder is constructed. Temp folder should be inserted there.
+        global BASE_CAPTURE_PATH
 
-        self.file = os.path.join(self.folder, self.filename)  # Full file name by joining given folder to given name
+        self.file = os.path.join(foldername, filename)  # Full file name by joining given folder to given name
 
         self.split_file_path(self.file)  # Split file path into folder, filename, and basename
 
         # Check directory is a subdirectory of BASE_CAPTURE_PATH
-        # TODO: Do we need this?
         if not os.path.commonprefix([self.file, BASE_CAPTURE_PATH]) == BASE_CAPTURE_PATH:
-            raise Exception("Captures cannot be stored in a lower-level directory than {}.".format(BASE_CAPTURE_PATH))
+            raise Exception("Exception raised by capture path {}.\nCaptures cannot be stored in a lower-level directory than {}.".format(self.file, BASE_CAPTURE_PATH))
 
         # Create folder and file
         if not os.path.exists(self.filefolder):
