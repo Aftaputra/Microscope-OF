@@ -4,7 +4,7 @@ TODO: Implement API route to cleanly shut down server
 """
 
 from flask import (
-    Flask, render_template)
+    Flask, render_template, jsonify)
 
 from flask.logging import default_handler
 from serial import SerialException
@@ -12,6 +12,7 @@ from serial import SerialException
 from flask_cors import CORS
 
 from openflexure_microscope.api.exceptions import JSONExceptionHandler
+from openflexure_microscope.api.utilities import list_routes
 
 from openflexure_microscope import Microscope
 from openflexure_microscope.camera.pi import StreamingCamera
@@ -89,15 +90,6 @@ def attach_microscope():
 
 ##### WEBAPP ROUTES ######
 
-@app.route('/')
-def index():
-    """
-    API demo app
-    """
-    return render_template(
-        'index_v1.html'
-    )
-
 ##### API ROUTES ######
 from openflexure_microscope.api.v1 import blueprints
 
@@ -121,6 +113,22 @@ app.register_blueprint(plugin_blueprint, url_prefix=uri('/plugin', 'v1'))
 task_blueprint = blueprints.task.construct_blueprint(api_microscope)
 app.register_blueprint(task_blueprint, url_prefix=uri('/task', 'v1'))
 
+@app.route('/')
+def index():
+    """
+    API demo app
+    """
+    return render_template(
+        'index_v1.html'
+    )
+
+@app.route('/routes')
+def routes():
+    """
+    List of all connected API routes
+    """
+    return jsonify(list_routes(app))
+
 # Automatically clean up microscope at exit
 def cleanup():
     global api_microscope
@@ -138,9 +146,7 @@ def cleanup():
     api_microscope.close()
     logging.debug("App teardown complete.")
 
-
 atexit.register(cleanup)
-
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port="5000", threaded=True, debug=True, use_reloader=False)
