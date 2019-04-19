@@ -171,9 +171,6 @@ class CaptureObject(object):
         self.temporary = True  # Flag file to be removed on close.
         self.context_manager = True  # Used in metadata
 
-        logging.info("Rebuilding as a temporary capture...")
-        self.initialise_capture()
-
         return self
 
     def __exit__(self, *args):
