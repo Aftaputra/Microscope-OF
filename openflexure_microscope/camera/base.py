@@ -343,7 +343,7 @@ class BaseCamera(object):
             write_to_file: bool = True,
             temporary: bool = False,
             filename: str = None,
-            folder: str = None,
+            folder: str = "",
             fmt: str = 'h264'):
 
         """
