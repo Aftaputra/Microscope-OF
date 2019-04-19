@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-"""
-TODO: Implement API route to cleanly shut down server
-"""
 
 from flask import (
     Flask, render_template, jsonify)
