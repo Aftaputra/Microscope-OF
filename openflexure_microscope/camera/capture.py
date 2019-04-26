@@ -18,7 +18,7 @@ THUMBNAIL_SIZE = (200, 150)
 BASE_CAPTURE_PATH = os.path.join(os.path.expanduser('~'), 'micrographs')  #: str: Base path to store all captures
 TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, 'tmp')  #: str: Base path to store all temporary captures (automatically emptied)
 
-
+# TODO: Move these methods to a camera utilities module?
 def clear_tmp():
     """
     Removes all files in the ``TEMP_CAPTURE_PATH`` directory
@@ -75,11 +75,9 @@ def capture_from_dict(capture_dict):
     """
     global EXIF_FORMATS
 
-    capture = CaptureObject()  # Create a placeholder capture
-
-    # Get inherent capture information from database
-    capture.file = capture_dict['path']
-    capture.temporary = capture_dict['temporary']
+    capture = CaptureObject(
+        filepath=capture_dict['path']
+    )  # Create a placeholder capture
     capture.split_file_path(capture.file)
 
     if capture.format.upper() in EXIF_FORMATS:
@@ -111,9 +109,7 @@ class CaptureObject(object):
             self,
             write_to_file: bool = False,
             temporary: bool = False,
-            filename: str = '',
-            folder: str = '',
-            fmt: str = '') -> None:
+            filepath: str = '') -> None:
         """Create a new StreamObject, to manage capture data."""
 
         # Store a nice ID
@@ -121,22 +117,15 @@ class CaptureObject(object):
         logging.info("Created StreamObject {}".format(self.id))
         self.timestring = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  #: str: Timestring of capture creation time
 
-        # Store file format
-        self.format = fmt  #: str: Capture data format (e.g. jpeg, h264)
-
         # Keep on disk after close by default
         self.temporary = temporary  #: bool: Mark the capture as temporary, to be deleted as the server closes, or as resources are required
 
-        # Explicitally state if capture should be written to a file, not a bytestream
-        self.write_to_file = write_to_file  #: bool: Write capture data to disk immediately, rather than to memory initially (useful for video recordings)
-
         # Create file name. Default to UUID
-        if not filename:
-            filename = self.id
-        self.filename = "{}.{}".format(filename, fmt)
-
-        # Create folder path
-        self.folder = folder
+        if not filepath:
+            self.file = self.build_file_path()
+        else:
+            self.file = filepath
+        self.split_file_path(self.file)
 
         # Dictionary for storing custom metadata
         self._metadata = {}  #: dict: Dictionary of custom metadata to be included in metadata file
@@ -144,14 +133,17 @@ class CaptureObject(object):
         # List for storing tags
         self.tags = []  #: list: List of tags. Essentially just as extra custom metadata field, but useful for quick organisation
 
-        # Initialise the capture stream
-        self.initialise_capture()
+        # Byte bytestream properties
+        self.bytestream = io.BytesIO()  # Byte bytestream that data will be written to
+
+        # Set default write target
+        if not write_to_file:
+            self.stream = self.bytestream
+        else:
+            self.stream = self.file
 
         # Log if created by context manager
         self.context_manager = False
-
-        # Object lock
-        self.locked = False
 
         # Thumbnail (populated only for PIL captures)
         self.thumb_bytes = None
@@ -165,7 +157,7 @@ class CaptureObject(object):
         self.context_manager = True  # Used in metadata
 
         logging.info("Rebuilding as a temporary capture...")
-        self.initialise_capture()
+        self.build_file_path()
 
         return self
 
@@ -174,52 +166,13 @@ class CaptureObject(object):
         logging.info("Cleaning up {}".format(self.id))
         self.close()
 
-    def initialise_capture(self):
-        """
-        Initialise the capture object. Creates a file name and builds a file path,
-        creates an in-memory byte stream for capture data, and creates a metadata
-        file on disk.
-
-        """
-        self.build_file_path()
-
-        # Byte bytestream properties
-        self.bytestream = io.BytesIO()  # Byte bytestream that data will be written to
-
-        # Set default write target
-        if not self.write_to_file:
-            logging.debug("Target for {} set to 'bytestream'".format(self.id))
-            self.stream = self.bytestream
-        else:
-            logging.debug("Target for {} set to 'file'".format(self.id))
-            self.stream = self.file
-
-        # Save initial metadata file
-        self.save_metadata()
-
     def build_file_path(self):
         """
         Construct a full file path, based on filename, folder, and file format.
         Defaults to UUID.
         """
         global TEMP_CAPTURE_PATH
-        # TODO: Combine this and split_file_path, and tidy. Let the device (camera) handle folders. This should be more basic.
-        # TODO: Even let the base camera manage moving captures to temp folder
-        # This module will clear out the temp folder, but won't MOVE anything there.
-        # In Base cameras new_image method, the full folder is constructed. Temp folder should be inserted there.
-
-        self.file = os.path.join(self.folder, self.filename)  # Full file name by joining given folder to given name
-
-        self.split_file_path(self.file)  # Split file path into folder, filename, and basename
-
-        # Check directory is a subdirectory of BASE_CAPTURE_PATH
-        # TODO: Do we need this?
-        if not os.path.commonprefix([self.file, BASE_CAPTURE_PATH]) == BASE_CAPTURE_PATH:
-            raise Exception("Captures cannot be stored in a lower-level directory than {}.".format(BASE_CAPTURE_PATH))
-
-        # Create folder and file
-        if not os.path.exists(self.filefolder):
-            os.makedirs(self.filefolder)
+        return os.path.join(self.folder, self.filename)  # Full file name by joining given folder to given name
 
     def split_file_path(self, filepath):
         """
@@ -230,17 +183,11 @@ class CaptureObject(object):
         """
         self.filefolder, self.filename = os.path.split(filepath)  # Split the full file path into a folder and a filename
         self.basename = os.path.splitext(self.filename)[0]  # Split the filename out from it's file extension
+        self.format = self.filename.split('.')[-1]
 
-        if not self.format:
-            self.format = self.filename.split('.')[-1]
-
-    def lock(self):
-        """Set locked flag to True."""
-        self.locked = True
-
-    def unlock(self):
-        """Set locked flag to False."""
-        self.locked = False
+        # Create folder and file
+        if not os.path.exists(self.filefolder):
+            os.makedirs(self.filefolder)
 
     @property
     def stream_exists(self, auto_rewind=True) -> bool:
@@ -325,7 +272,7 @@ class CaptureObject(object):
         Create basic metadata dictionary from basic capture data, 
         and any added custom metadata and tags.
         """
-        d = {'id': self.id, 'filename': self.filename, 'path': self.file, 'time': self.timestring,
+        d = {'id': self.id, 'filename': self.filename, 'time': self.timestring,
              'format': self.format, 'tags': self.tags, 'custom': self._metadata}
 
         # Add custom metadata to dictionary
@@ -354,7 +301,7 @@ class CaptureObject(object):
         """
 
         # Create basic state dictionary
-        d = {'path': self.file, 'locked': self.locked, 'temporary': self.temporary, 'metadata': self.metadata}
+        d = {'path': self.file, 'temporary': self.temporary, 'metadata': self.metadata}
 
         # Check bytestream
         if self.stream_exists:
@@ -382,6 +329,7 @@ class CaptureObject(object):
 
         if self.stream_exists:  # If data bytestream contains data
             # Create a copy of the bytestream bytes
+            logging.debug("STREAM EXISTS")
             data = io.BytesIO(self.bytestream.getbuffer())
 
         else:  # If data bytestream is empty

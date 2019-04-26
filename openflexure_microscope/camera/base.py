@@ -316,18 +316,20 @@ class BaseCamera(object):
         if not filename:
             filename = generate_numbered_basename(self.images)
             logging.debug(filename)
+        filename = "{}.{}".format(filename, fmt)
 
         # Generate folder
         base_folder = self.paths['image_tmp'] if temporary else self.paths['image']
         folder = os.path.join(base_folder, folder)
 
+        # Generate file path
+        filepath = os.path.join(folder, filename)
+
         # Create capture object
         output = CaptureObject(
             write_to_file=write_to_file,
             temporary=temporary,
-            filename=filename,
-            folder=folder,
-            fmt=fmt)
+            filepath=filepath)
 
         # Update capture list
         self.shunt_captures(self.images)
@@ -360,18 +362,20 @@ class BaseCamera(object):
         if not filename:
             filename = generate_numbered_basename(self.videos)
             logging.debug(filename)
+        filename = "{}.{}".format(filename, fmt)
 
         # Generate folder
         base_folder = self.paths['video_tmp'] if temporary else self.paths['video']
         folder = os.path.join(base_folder, folder)
 
+        # Generate file path
+        filepath = os.path.join(folder, filename)
+
         # Create capture object
         output = CaptureObject(
             write_to_file=write_to_file,
             temporary=temporary,
-            filename=filename,
-            folder=folder,
-            fmt=fmt)
+            filepath=filepath)
 
         # Update capture list
         self.shunt_captures(self.videos)
