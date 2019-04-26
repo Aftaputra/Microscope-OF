@@ -1,7 +1,7 @@
 import pprint
 import logging
 from werkzeug.exceptions import BadRequest
-
+from flask import url_for
 
 class JsonPayload:
     def __init__(self, request):
@@ -69,5 +69,20 @@ def get_bool(get_arg):
 
 
 def list_routes(app):
-    """Print available functions."""
-    pprint.pprint(list(map(lambda x: repr(x), app.url_map.iter_rules())))
+    output = {}
+    for rule in app.url_map.iter_rules():
+
+        options = {}
+        for arg in rule.arguments:
+            options[arg] = "[{0}]".format(arg)
+
+        endpoint = rule.endpoint
+        methods = list(rule.methods)
+        url = url_for(rule.endpoint, **options)
+        line = {
+            'endpoint': endpoint,
+            'methods': methods
+        }
+        output[url] = line
+    
+    return output

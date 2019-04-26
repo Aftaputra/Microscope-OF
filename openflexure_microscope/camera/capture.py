@@ -25,9 +25,10 @@ def clear_tmp():
     """
     global TEMP_CAPTURE_PATH
 
-    logging.info("Clearing {}...".format(TEMP_CAPTURE_PATH))
-    shutil.rmtree(TEMP_CAPTURE_PATH)
-    logging.debug("Cleared {}.".format(TEMP_CAPTURE_PATH))
+    if os.path.isdir(TEMP_CAPTURE_PATH):
+        logging.info("Clearing {}...".format(TEMP_CAPTURE_PATH))
+        shutil.rmtree(TEMP_CAPTURE_PATH)
+        logging.debug("Cleared {}.".format(TEMP_CAPTURE_PATH))
 
 
 def pull_usercomment_dict(filepath):
@@ -37,6 +38,7 @@ def pull_usercomment_dict(filepath):
         filepath: Path to the Exif-containing file
     """
     exif_dict = piexif.load(filepath)
+
     if 'Exif' in exif_dict and 37510 in exif_dict['Exif']:
         return yaml.load(exif_dict['Exif'][37510].decode())
     else:
@@ -80,9 +82,12 @@ def capture_from_dict(capture_dict):
     )  # Create a placeholder capture
     capture.split_file_path(capture.file)
 
+    capture.temporary = capture_dict['temporary']
+
     if capture.format.upper() in EXIF_FORMATS:
         md_exif = pull_usercomment_dict(capture.file)
     else:
+        logging.debug("Unsupported format for EXIF data. Skipping.")
         md_exif = {}
 
     md_database = capture_dict['metadata']
@@ -94,6 +99,9 @@ def capture_from_dict(capture_dict):
 
     capture._metadata = extract_with_priority('custom', md_exif, md_database)
     capture.tags = extract_with_priority('tags', md_exif, md_database)
+
+    
+    capture.initialise_stream()
 
     return capture
 

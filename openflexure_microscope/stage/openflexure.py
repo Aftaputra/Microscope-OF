@@ -5,7 +5,6 @@ from openflexure_microscope.lock import StrictLock
 import logging
 
 
-# TODO: Implement lock on movement
 class Stage(OpenFlexureStage):
     def __init__(self, *args, **kwargs):
         """

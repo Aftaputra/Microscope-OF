@@ -379,8 +379,6 @@ addEventListener("keydown", function (e) {
 
     // If not currently in an input box
     if (!(e.target instanceof HTMLInputElement)) {
-
-        // TODO: Remove this if condition? Pointless?
         // If stage movement keys are pressed
         if ((leftKeyID in keysDown) || (rightKeyID in keysDown) || (upKeyID in keysDown) || (downKeyID in keysDown) || (pgupKeyID in keysDown) || (pgdnKeyID in keysDown)) {
             // Calculate movement array
