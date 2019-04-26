@@ -100,9 +100,6 @@ def capture_from_dict(capture_dict):
     capture._metadata = extract_with_priority('custom', md_exif, md_database)
     capture.tags = extract_with_priority('tags', md_exif, md_database)
 
-    
-    capture.initialise_stream()
-
     return capture
 
 
