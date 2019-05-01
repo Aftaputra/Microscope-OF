@@ -296,7 +296,7 @@ class BaseCamera(object):
 
     def new_image(
             self,
-            write_to_file: bool = False,
+            write_to_file: bool = True,
             temporary: bool = True,
             filename: str = None,
             folder: str = "",
