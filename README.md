@@ -3,6 +3,8 @@ OpenFlexure Microscope Software
 
 # Installation
 
+A general guide on setting up your microscope can be found [here on our website](https://www.openflexure.org/projects/microscope/).
+
 ## Easy
 - Run `curl -LSs get.openflexure.org/microscope |sudo bash`
 - Follow on-screen prompts
