@@ -110,15 +110,6 @@ app.register_blueprint(plugin_blueprint, url_prefix=uri('/plugin', 'v1'))
 task_blueprint = blueprints.task.construct_blueprint(api_microscope)
 app.register_blueprint(task_blueprint, url_prefix=uri('/task', 'v1'))
 
-@app.route('/')
-def index():
-    """
-    API demo app
-    """
-    return render_template(
-        'index_v1.html'
-    )
-
 @app.route('/routes')
 def routes():
     """
