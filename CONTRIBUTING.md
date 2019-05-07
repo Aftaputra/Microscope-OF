@@ -5,21 +5,20 @@ email, or any other method with the owners of this repository before making a ch
 
 Please note we have a working flow, and a code of conduct. Please follow it in all your interactions with the project.
 
-## Development flow
+## Flow
 
-* Master is the latest working version, always
+### Development
 
-* We shouldn't be pushing to Master directly
+* Master is the latest working version, always.
+* Do not push to Master directly.
+* New features should be developed on branches (or forks), and merged.
+* Bugfixes likewise should be developed in branches.
 
-* New features should be developed on branches and merged
-
-* Bugfixes likewise should be done in branches
+### Releases
 
 * Once we've merged a few things in and want to make a release, we tag it on master.  
-Not every commit on master will get a tag, we'll accumulate a few changes before making a release, unless there's a reason to release straight away.
-
-* As and when v2 appears, we will move v1 to a branch in case we want to push out bugfixes, 
-but we're not likely to do this for minor versions/feature releases.
+* Not every commit on master will get a tag, we'll accumulate a few changes before making a release, unless there's a reason to release straight away.
+* As and when 2.x.x appears, we will move 1.x.x to a branch in case we want to push out bugfixes, but we're not likely to do this for minor releases.
 
 ## Code of Conduct
 
