@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 
 from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
 from openflexure_microscope.api.utilities import JsonPayload
@@ -19,7 +20,7 @@ class AutofocusAPI(MicroscopeViewPlugin):
         # Figure out the range of z values to use
         dz = payload.param("dz", default=np.linspace(-300, 300, 7), convert=np.array)
 
-        print("Running autofocus...")
+        logging.info("Running autofocus...")
         task = self.microscope.task.start(self.plugin.autofocus, dz)
 
         # return a handle on the autofocus task
@@ -35,7 +36,7 @@ class FastAutofocusAPI(MicroscopeViewPlugin):
         if backlash < 0:
             backlash = None
 
-        print("Running autofocus...")
+        logging.info("Running autofocus...")
         task = self.microscope.task.start(self.plugin.fast_autofocus, dz, backlash=backlash)
 
         # return a handle on the autofocus task

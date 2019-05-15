@@ -2,7 +2,7 @@ from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
 from openflexure_microscope.api.utilities import JsonPayload
 
 from flask import request, jsonify, abort
-
+import logging
 
 class TileScanAPI(MicroscopeViewPlugin):
     def post(self):
@@ -34,7 +34,7 @@ class TileScanAPI(MicroscopeViewPlugin):
         metadata = payload.param('metadata', default={}, convert=dict)
         tags = payload.param('tags', default=[], convert=list)
 
-        print("Running tile scan...")
+        logging.info("Running tile scan...")
         task = self.microscope.task.start(
             self.plugin.tile,
             basename=filename,

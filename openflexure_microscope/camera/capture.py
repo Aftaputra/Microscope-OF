@@ -18,6 +18,7 @@ THUMBNAIL_SIZE = (200, 150)
 BASE_CAPTURE_PATH = os.path.join(os.path.expanduser('~'), 'micrographs')  #: str: Base path to store all captures
 TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, 'tmp')  #: str: Base path to store all temporary captures (automatically emptied)
 
+
 # TODO: Move these methods to a camera utilities module?
 def clear_tmp():
     """
@@ -38,67 +39,66 @@ def pull_usercomment_dict(filepath):
         filepath: Path to the Exif-containing file
     """
     exif_dict = piexif.load(filepath)
-
     if 'Exif' in exif_dict and 37510 in exif_dict['Exif']:
         return yaml.load(exif_dict['Exif'][37510].decode())
     else:
         return {}
 
 
-def extract_with_priority(key, best_dict, backup_dict):
-    """
-    Extracts a value from one of two dictionaries, prioritising one over the other.
-    Second dictionary is used only if the key doesn't exist in the first.
+def make_file_list(directory, formats):
+    files = []
+    for fmt in formats:
+        files.extend(glob.glob('{}/**/*.{}'.format(directory, fmt.lower()), recursive=True))
 
-    Args:
-        key: Key to search for
-        best_dict: Ideal dictionary to use
-        backup_dict: Fallback dictionary
+    logging.info("{} capture files found on disk".format(len(files)))
 
-    """
-    if key in best_dict:
-        return best_dict[key]
-    elif key in backup_dict:
-        logging.warning("Key {} not found in primary dictionary. Falling back to backup.".format(key))
-        return backup_dict[key]
-    else:
-        logging.error("Key {} not found in either dictionary!".format(key))
-        return None
+    return files
 
 
-def capture_from_dict(capture_dict):
+def build_captures_from_exif():
+    global BASE_CAPTURE_PATH, EXIF_FORMATS
+
+    logging.debug("Reloading captures from {}...".format(BASE_CAPTURE_PATH))
+    files = make_file_list(BASE_CAPTURE_PATH, EXIF_FORMATS)
+    captures = []
+
+    for f in files:
+        logging.debug("Reloading capture {}...".format(f))
+        exif = pull_usercomment_dict(f)
+        capture = capture_from_exif(f, exif)
+        captures.append(capture)
+
+    logging.info("{} capture files successfully reloaded".format(len(captures)))
+
+    return captures
+
+
+def capture_from_exif(path, exif_dict):
     """
     Creates an instance of CaptureObject from a dictionary of capture information.
     This is used when reloading the API server, to restore captures created in the 
     previous session.
 
     Args:
-        capture_dict (dict): Dictionary containing capture information
+        exif_dict (dict): Dictionary containing capture information
     """
-    global EXIF_FORMATS
 
+    # Create a placeholder capture
     capture = CaptureObject(
-        filepath=capture_dict['path']
-    )  # Create a placeholder capture
+        filepath=path
+    ) 
+
+    # Build file path information
     capture.split_file_path(capture.file)
 
-    capture.temporary = capture_dict['temporary']
-
-    if capture.format.upper() in EXIF_FORMATS:
-        md_exif = pull_usercomment_dict(capture.file)
-    else:
-        logging.debug("Unsupported format for EXIF data. Skipping.")
-        md_exif = {}
-
-    md_database = capture_dict['metadata']
-
     # Populate capture parameters
-    capture.id = extract_with_priority('id', md_exif, md_database)
-    capture.timestring = extract_with_priority('time', md_exif, md_database)
-    capture.format = extract_with_priority('format', md_exif, md_database)
+    capture.id = exif_dict['id']
+    
+    capture.timestring = exif_dict['time']
+    capture.format = exif_dict['format']
 
-    capture._metadata = extract_with_priority('custom', md_exif, md_database)
-    capture.tags = extract_with_priority('tags', md_exif, md_database)
+    capture._metadata = exif_dict['custom']
+    capture.tags = exif_dict['tags']
 
     return capture
 
@@ -119,7 +119,7 @@ class CaptureObject(object):
 
         # Store a nice ID
         self.id = uuid.uuid4().hex  #: str: Unique capture ID
-        logging.info("Created StreamObject {}".format(self.id))
+        logging.debug("Created StreamObject {}".format(self.id))
         self.timestring = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  #: str: Timestring of capture creation time
 
         # Keep on disk after close by default
