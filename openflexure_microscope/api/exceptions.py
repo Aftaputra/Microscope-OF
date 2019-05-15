@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify, escape
 from werkzeug.exceptions import default_exceptions
 from werkzeug.exceptions import HTTPException
 
@@ -21,7 +21,7 @@ class JSONExceptionHandler(object):
 
         response = {
             'status_code': status_code,
-            'message': message
+            'message': escape(message)
         }
         return jsonify(response), status_code
 

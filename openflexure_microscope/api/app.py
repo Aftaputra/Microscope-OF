@@ -13,7 +13,8 @@ from openflexure_microscope.api.utilities import list_routes
 
 from openflexure_microscope import Microscope
 from openflexure_microscope.camera.pi import StreamingCamera
-from openflexure_microscope.stage.openflexure import Stage
+from openflexure_microscope.stage.sanga import SangaStage
+from openflexure_microscope.stage.mock import MockStage
 
 import atexit
 import logging
@@ -71,11 +72,12 @@ def attach_microscope():
     
     logging.debug("Creating stage object...")
     try:
-        api_stage = Stage("/dev/ttyUSB0")
-    except SerialException as e:
-        api_camera.close()
-        raise e
-    else:
+        api_stage = SangaStage()
+    except (SerialException, OSError) as e:
+        logging.error(e)
+        logging.warning("No valid stage hardware found. Falling back to mock stage!")
+        api_stage = MockStage()
+    finally:
         logging.debug("Attaching devices to microscope...")
         api_microscope.attach(
             api_camera,
