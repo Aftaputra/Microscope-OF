@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 from flask import (
-    Flask, render_template, jsonify)
+    Flask, render_template, jsonify, send_file)
 
 from flask.logging import default_handler
 from serial import SerialException
+from datetime import datetime
 
 from flask_cors import CORS
 
@@ -16,6 +17,8 @@ from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_microscope.stage.sanga import SangaStage
 from openflexure_microscope.stage.mock import MockStage
 
+from openflexure_microscope.config import USER_CONFIG_DIR
+
 import atexit
 import logging
 import sys, os
@@ -23,20 +26,34 @@ import sys, os
 # Handle logging
 is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
 
+DEFAULT_LOGFILE = os.path.join(USER_CONFIG_DIR, 'openflexure_microscope.log')
+print(DEFAULT_LOGFILE)
+
 if (__name__ == "__main__") or (not is_gunicorn):
     # If imported, but not by gunicorn
     print("Letting sys handle logs")
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 else:
-    print("Letting gunicorn handle logs")
-    # If running in gunicorn, let gunicorn handle logging
+    # Direct standard Python logging to file and console
     root = logging.getLogger()
-    
-    gunicorn_logger = logging.getLogger('gunicorn.error')
-    for handler in gunicorn_logger.handlers:
+    error_formatter = logging.Formatter("[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s")
+
+    rotating_logfile = logging.handlers.RotatingFileHandler(
+        DEFAULT_LOGFILE, 
+        maxBytes=1000000, 
+        backupCount=7
+    )
+
+    error_handlers = [
+        rotating_logfile,
+        logging.StreamHandler()
+    ]
+
+    for handler in error_handlers:
+        handler.setFormatter(error_formatter)
         root.addHandler(handler)
-    
-    root.setLevel(gunicorn_logger.level)
+
+    root.setLevel(logging.getLogger("gunicorn.error").level)
 
 # Create a dummy microscope object, with no hardware attachments
 api_microscope = Microscope(None, None)
@@ -118,6 +135,14 @@ def routes():
     List of all connected API routes
     """
     return jsonify(list_routes(app))
+
+@app.route('/log')
+def err_log():
+    """
+    Most recent 1mb of log output
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    return send_file(DEFAULT_LOGFILE, as_attachment=True, attachment_filename='openflexure_microscope_{}.log'.format(timestamp))
 
 # Automatically clean up microscope at exit
 def cleanup():
