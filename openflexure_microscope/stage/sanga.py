@@ -1,0 +1,144 @@
+import numpy as np
+from .sangaboard import Sangaboard
+from openflexure_microscope.stage.base import BaseStage
+from openflexure_microscope.lock import StrictLock
+
+import logging
+
+class SangaStage(BaseStage):
+    def __init__(self, port=None, **kwargs):
+        """Class managing serial communications with the motors for an Openflexure stage"""
+        BaseStage.__init__(self)
+        
+        self.board = Sangaboard(port, **kwargs)
+        self._backlash = None
+
+    @property
+    def state(self):
+        """The general state dictionary of the board."""
+        state = {
+            'position': {
+                'x': self.position[0],
+                'y': self.position[1],
+                'z': self.position[2],
+            },
+            'board': self.board.board,
+            'firmware': self.board.firmware
+        }
+        return state
+
+    @property
+    def n_axes(self):
+        """The number of axes this stage has."""
+        return len(self.board.axis_names)
+
+    @property
+    def position(self):
+        return self.board.position
+
+    @property
+    def backlash(self):
+        """The distance used for backlash compensation.
+        Software backlash compensation is enabled by setting this property to a value
+        other than `None`.  The value can either be an array-like object (list, tuple,
+        or numpy array) with one element for each axis, or a single integer if all axes
+        are the same.
+        The property will always return an array with the same length as the number of
+        axes.
+        The backlash compensation algorithm is fairly basic - it ensures that we always
+        approach a point from the same direction.  For each axis that's moving, the
+        direction of motion is compared with ``backlash``.  If the direction is opposite,
+        then the stage will overshoot by the amount in ``-backlash[i]`` and then move
+        back by ``backlash[i]``.  This is computed per-axis, so if some axes are moving
+        in the same direction as ``backlash``, they won't do two moves.
+        """
+        return self._backlash if self._backlash else np.array([0]*self.n_axes)
+
+    @backlash.setter
+    def backlash(self, blsh):
+        if blsh is None:
+            self._backlash = None
+        try:
+            assert len(blsh) == self.n_axes
+            self._backlash = np.array(blsh, dtype=np.int)
+        except:
+            self._backlash = np.array([int(blsh)]*self.n_axes, dtype=np.int)
+
+    def move_rel(self, displacement, axis=None, backlash=True):
+        """Make a relative move, optionally correcting for backlash.
+        displacement: integer or array/list of 3 integers
+        axis: None (for 3-axis moves) or one of 'x','y','z'
+        backlash: (default: True) whether to correct for backlash.
+        """
+        with self.lock:
+            if not backlash or self.backlash is None:
+                return self.board.move_rel(displacement, axis=axis)
+
+            if axis is not None:
+                # backlash correction is easier if we're always in 3D
+                # so this code just converts single-axis moves into all-axis moves.
+                assert axis in self.axis_names, "axis must be one of {}".format(self.axis_names)
+                move = np.zeros(self.n_axes, dtype=np.int)
+                move[np.argmax(np.array(self.axis_names) == axis)] = int(displacement)
+                displacement = move
+
+            initial_move = np.array(displacement, dtype=np.int)
+            # Backlash Correction
+            # This backlash correction strategy ensures we're always approaching the
+            # end point from the same direction, while minimising the amount of extra
+            # motion.  It's a good option if you're scanning in a line, for example,
+            # as it will kick in when moving to the start of the line, but not for each
+            # point on the line.
+            # For each axis where we're moving in the *opposite*
+            # direction to self.backlash, we deliberately overshoot:
+            initial_move -= np.where(self.backlash*displacement < 0,
+                                    self.backlash,
+                                    np.zeros(self.n_axes, dtype=self.backlash.dtype))
+            self.board.move_rel(initial_move)
+            if np.any(displacement - initial_move != 0):
+                # If backlash correction has kicked in and made us overshoot, move
+                # to the correct end position (i.e. the move we were asked to make)
+                self.board.move_rel(displacement - initial_move)
+
+    def move_abs(self, final, **kwargs):
+        """Make an absolute move to a position
+        """
+        with self.lock:
+            self.board.move_abs(final, **kwargs)
+
+    def close(self):
+        """Cleanly close communication with the stage"""
+        self.board.close()
+
+    # Methods specific to Sangaboard
+    def release_motors(self):
+        """De-energise the stepper motor coils"""
+        self.board.release_motors()
+
+    def __del__(self):
+        """Close the port when the object is deleted
+        
+        NB if the object is created in a with statement, this will cause
+        the port to be closed at the end of the with block."""
+        self.close()
+
+    def __enter__(self):
+        """When we use this in a with statement, remember where we started."""
+        self._position_on_enter = self.position
+        return self
+
+    def __exit__(self, type, value, traceback):
+        """The end of the with statement.  Reset position if it went wrong.
+        NB the instrument is closed when the object is deleted, so we don't
+        need to worry about that here.
+        """
+        if type is not None:
+            print("An exception occurred inside a with block, resetting " +
+                  "position to its value at the start of the with block")
+            try:
+                time.sleep(0.5)
+                self.move_abs(self._position_on_enter)
+            except Exception as e:
+                print("A further exception occurred when resetting position: {}".format(e))
+            print("Move completed, raising exception...")
+            raise value #propagate the exception

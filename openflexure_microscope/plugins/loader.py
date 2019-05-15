@@ -132,10 +132,15 @@ class PluginMount(object):
         print("Creating plugin mount")
 
     @property
+    def state(self):
+        return [m[0] for m in self.members]
+
+    @property
     def members(self):
+        ignores = ['state', 'members', 'attach']
         plugin_array = []
         for obj_name in dir(self):
-            if not obj_name == "plugins" and not obj_name[:2] == '__':
+            if not obj_name in ignores and not obj_name[:2] == '__':
                 obj = getattr(self, obj_name)
                 if isinstance(obj, MicroscopePlugin):
                     plugin_members = [member for member in inspect.getmembers(obj) if not member[0][:2] == '__']

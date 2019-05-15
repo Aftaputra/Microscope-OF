@@ -163,26 +163,10 @@ class Microscope(object):
             dict: Dictionary containing position data, and :py:attr:`openflexure_microscope.camera.base.BaseCamera.state`
         """
         state = {
-            'camera': {},
-            'stage': {},
-            'plugin': {}
+            'camera': self.camera.state,
+            'stage': self.stage.state,
+            'plugin': self.plugin.state
         }
-
-        # Add stage position
-        if self.stage:  # If stage exists, populate with real values
-            position = self.stage.position
-        else:  # Else, zero
-            position = [0, 0, 0]
-
-        state['stage']['position'] = {
-            'x': position[0],
-            'y': position[1],
-            'z': position[2],
-        }
-
-        # Add camera state
-        state['camera'] = self.camera.state
-
         return state
 
     def write_config(self, config: dict):
@@ -216,7 +200,10 @@ class Microscope(object):
 
         # If attached to a stage
         if self.stage:
-            backlash = self.stage.backlash.tolist()
+            if hasattr(self.stage.backlash, 'tolist'):
+                backlash = self.stage.backlash.tolist() 
+            else:
+                backlash = self.stage.backlash
         else:
             backlash = [0, 0, 0]
 
