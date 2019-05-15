@@ -67,8 +67,6 @@ def check_module(module_path):
 def name_from_module(plugin_path):
     path_array = plugin_path.split('.')
 
-    print(path_array)
-
     # Truncate namespace of default plugins
     if path_array[0:2] == ['openflexure_microscope', 'plugins']:
         path_array = path_array[2:]
@@ -129,7 +127,7 @@ class PluginMount(object):
     def __init__(self, parent):
         self.parent = parent
         self.plugins = []
-        print("Creating plugin mount")
+        logging.info("Creating plugin mount")
 
     @property
     def state(self):

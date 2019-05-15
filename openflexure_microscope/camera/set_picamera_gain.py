@@ -4,7 +4,7 @@ import picamera
 from picamera import mmal, mmalobj, exc
 from picamera.mmalobj import to_rational
 import time
-
+import logging
 
 MMAL_PARAMETER_ANALOG_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x59
 MMAL_PARAMETER_DIGITAL_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A
@@ -51,11 +51,11 @@ if __name__ == "__main__":
         # fix the shutter speed
         cam.shutter_speed = cam.exposure_speed
 
-        print("Current a/d gains: {}, {}".format(cam.analog_gain, cam.digital_gain))
+        logging.info("Current a/d gains: {}, {}".format(cam.analog_gain, cam.digital_gain))
 
-        print("Attempting to set analogue gain to 1")
+        logging.info("Attempting to set analogue gain to 1")
         set_analog_gain(cam, 1)
-        print("Attempting to set digital gain to 1")
+        logging.info("Attempting to set digital gain to 1")
         set_digital_gain(cam, 1)
         # The old code is left in here in case it is a useful example...
         #ret = mmal.mmal_port_parameter_set_rational(cam._camera.control._port, 
@@ -65,9 +65,9 @@ if __name__ == "__main__":
 
         try:
             while True:
-                print("Current a/d gains: {}, {}".format(cam.analog_gain, cam.digital_gain))
+                logging.info("Current a/d gains: {}, {}".format(cam.analog_gain, cam.digital_gain))
                 time.sleep(1)
         except KeyboardInterrupt:
-            print("Stopping...")
+            logging.info("Stopping...")
 
 

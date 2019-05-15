@@ -14,7 +14,7 @@ class RecalibrateAPIView(MicroscopeViewPlugin):
         
         # TODO: Figure out the range of z values to use
 
-        print("Starting microscope recalibration...")
+        logging.info("Starting microscope recalibration...")
         task = self.microscope.task.start(self.plugin.recalibrate)
 
         # Return a handle on the autofocus task

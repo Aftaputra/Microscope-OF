@@ -17,6 +17,8 @@ from openflexure_microscope.camera.pi import StreamingCamera
 from openflexure_microscope.stage.sanga import SangaStage
 from openflexure_microscope.stage.mock import MockStage
 
+from openflexure_microscope.camera.capture import build_captures_from_exif
+
 from openflexure_microscope.config import USER_CONFIG_DIR
 
 import atexit
@@ -58,6 +60,10 @@ else:
 # Create a dummy microscope object, with no hardware attachments
 api_microscope = Microscope(None, None)
 
+# Rebuild the capture list
+# TODO: Offload to a thread?
+stored_image_list = build_captures_from_exif()
+
 # Generate API URI based on version from filename
 def uri(suffix, api_version, base=None):
     if not base:
@@ -81,7 +87,7 @@ handler = JSONExceptionHandler(app)
 @app.before_first_request
 def attach_microscope():
     # Create the microscope object globally (common to all spawned server threads)
-    global api_microscope
+    global api_microscope, capture_list
     logging.debug("First request made. Populating microscope with hardware...")
 
     logging.debug("Creating camera object...")
@@ -100,6 +106,10 @@ def attach_microscope():
             api_camera,
             api_stage
         )
+
+        logging.debug("Restoring captures...")
+        if stored_image_list:
+            api_microscope.camera.images = stored_image_list
 
         logging.debug("Microscope successfully attached!")
 
@@ -152,10 +162,6 @@ def cleanup():
     # Save config
     if api_microscope.rc:
         api_microscope.rc.save(backup=True)
-
-    # Update capture DB and metadata files before exiting
-    if api_microscope.camera:
-        api_microscope.camera.store_captures()
 
     # Close down the microscope
     api_microscope.close()

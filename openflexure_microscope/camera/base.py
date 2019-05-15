@@ -14,7 +14,7 @@ except ImportError:
     except ImportError:
         from _thread import get_ident
 
-from .capture import CaptureObject, capture_from_dict, BASE_CAPTURE_PATH, TEMP_CAPTURE_PATH
+from .capture import CaptureObject, BASE_CAPTURE_PATH, TEMP_CAPTURE_PATH
 from openflexure_microscope.config import USER_CONFIG_DIR
 from openflexure_microscope.utilities import entry_by_id
 from openflexure_microscope.lock import StrictLock
@@ -118,14 +118,6 @@ class BaseCamera(object):
         # Capture data
         self.images = []  #: list: List of image capture objects
         self.videos = []  #: list: List of video recording objects
-
-        # Capture data files
-        self.images_db = os.path.join(USER_CONFIG_DIR, "images_db.yaml")
-        self.videos_db = os.path.join(USER_CONFIG_DIR, "videos_db.yaml")
-
-        # Load captures from persistent db
-        self.images = self.load_capture_db(self.images_db)
-        self.videos = self.load_capture_db(self.videos_db)
 
     def apply_config(self, config):
         """Update settings from a config dictionary"""
@@ -244,50 +236,6 @@ class BaseCamera(object):
         """Return a video StreamObject with a matching ID."""
         return entry_by_id(video_id, self.videos)
 
-    # MANAGE CAPTURE DATABASE
-
-    def save_capture_db(self, capture_list, db_path):
-        capture_state = [capture.state for capture in capture_list]
-
-        with open(db_path, 'w') as outfile:
-            yaml.safe_dump(capture_state, outfile)
-
-    def load_capture_db(self, db_path):
-        if os.path.isfile(db_path):
-            # Load list of capture dictionary representations from db_path
-            with open(db_path, 'r') as infile:
-                try:
-                    capture_dict_list = yaml.load(infile)
-                except yaml.scanner.ScannerError as e:
-                    logging.error(e)
-                    logging.warning('Emptying malformed database. Your captures will not be deleted, but may not appear in the gallery.')
-                    capture_dict_list = []
-
-            # Create capture object list, and validate captures
-            capture_list = []
-
-            if capture_dict_list:
-                for capture_dict in capture_dict_list:
-                    if 'path' in capture_dict and os.path.isfile(capture_dict['path']):
-                        capture_list.append(capture_from_dict(capture_dict))
-
-            return capture_list
-
-        else:
-            return []
-
-    def store_captures(self):
-        # Save metadata files
-        #for image in self.images:
-        #    image.save_metadata()
-        #for video in self.videos:
-        #    video.save_metadata()
-
-        # Update capture database
-        self.save_capture_db(self.images, self.images_db)
-        self.save_capture_db(self.videos, self.videos_db)
-
-
     # CREATING NEW CAPTURES
 
     def shunt_captures(self, target_list: list):
@@ -335,9 +283,6 @@ class BaseCamera(object):
         self.shunt_captures(self.images)
         self.images.append(output)
 
-        # Update capture database
-        self.save_capture_db(self.images, self.images_db)
-
         return output
 
     def new_video(
@@ -380,9 +325,6 @@ class BaseCamera(object):
         # Update capture list
         self.shunt_captures(self.videos)
         self.videos.append(output)
-
-        # Update capture database
-        self.save_capture_db(self.videos, self.videos_db)
 
         return output
 
