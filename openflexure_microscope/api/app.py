@@ -29,7 +29,6 @@ import sys, os
 is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
 
 DEFAULT_LOGFILE = os.path.join(USER_CONFIG_DIR, 'openflexure_microscope.log')
-print(DEFAULT_LOGFILE)
 
 if (__name__ == "__main__") or (not is_gunicorn):
     # If imported, but not by gunicorn
