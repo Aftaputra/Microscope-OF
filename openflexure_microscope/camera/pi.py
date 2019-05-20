@@ -41,8 +41,8 @@ from .set_picamera_gain import set_analog_gain, set_digital_gain
 
 # Handle config and picamera settings
 CONFIG_KEYS = {
-    'video_resolution': (832, 624),
-    'image_resolution': (2592, 1944),
+    'video_resolution': (1640, 1232),
+    'image_resolution': (2592, 1944),  # Default for PiCamera v1. Overridden in __init__
     'numpy_resolution': (1312, 976),
     'jpeg_quality': 75,
     'picamera_settings': {
@@ -85,6 +85,11 @@ class StreamingCamera(BaseCamera):
 
         # Populate config and settings with all available keys
         self.config.update(CONFIG_KEYS)
+
+        # Update config based on PiCamera parameters
+        self.config.update({
+            'image_resolution': tuple(self.camera.MAX_RESOLUTION)
+        })
 
         # Load config dictionary if passed
         if config:
