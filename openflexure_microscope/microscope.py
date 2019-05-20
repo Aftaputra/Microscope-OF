@@ -143,7 +143,7 @@ class Microscope(object):
         if 'plugins' in self.rc.config:
             self.attach_plugin_maps(self.rc.config['plugins'])
         else:
-            logging.warning("No plugins specified in microscoperc.yaml. Skipping.")
+            logging.warning("No plugins specified in microscope_settings.yaml. Skipping.")
 
     def reload_plugins(self):
         """
