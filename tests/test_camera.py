@@ -81,7 +81,7 @@ class TestCaptureMethods(unittest.TestCase):
                         dims = resize
                     else:
                         if use_video_port:
-                            dims = camera.config['video_resolution']
+                            dims = camera.config['stream_resolution']
                         else:
                             dims = camera.config['image_resolution']
 
@@ -148,7 +148,7 @@ class TestUnencodedMethods(unittest.TestCase):
                     dims = resize
                 else:
                     if use_video_port:
-                        dims = camera.config['video_resolution']
+                        dims = camera.config['stream_resolution']
                     else:
                         dims = camera.config['numpy_resolution']
 
@@ -180,7 +180,7 @@ class TestUnencodedMethods(unittest.TestCase):
                     dims = resize
                 else:
                     if use_video_port:
-                        dims = camera.config['video_resolution']
+                        dims = camera.config['stream_resolution']
                     else:
                         dims = camera.config['numpy_resolution']
 
