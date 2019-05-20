@@ -12,8 +12,8 @@ Video port:
     Splitter port 2: Video capture
     Splitter port 3: [Currently unused]
 
-StreamingCamera streams at video_resolution
-Camera capture resolution set to video_resolution in frames()
+StreamingCamera streams at stream_resolution
+Camera capture resolution set to stream_resolution in frames()
 Video port uses that resolution for everything. If a different resolution
 is specified for video capture, this is handled by the resizer.
 
@@ -41,7 +41,7 @@ from .set_picamera_gain import set_analog_gain, set_digital_gain
 
 # Handle config and picamera settings
 CONFIG_KEYS = {
-    'video_resolution': (1640, 1232),
+    'stream_resolution': (832, 624),
     'image_resolution': (2592, 1944),  # Default for PiCamera v1. Overridden in __init__
     'numpy_resolution': (1312, 976),
     'jpeg_quality': 75,
@@ -304,7 +304,7 @@ class StreamingCamera(BaseCamera):
                     output_stream,
                     format=fmt,
                     splitter_port=2,
-                    resize=self.config['video_resolution'],
+                    resize=self.config['stream_resolution'],
                     quality=quality)
 
                 # Update state dictionary
@@ -365,7 +365,7 @@ class StreamingCamera(BaseCamera):
 
         Args:
             splitter_port (int): Splitter port to start recording on
-            resolution ((int, int)): Resolution to set the camera to, before starting recording. Defaults to `self.config['video_resolution']`.
+            resolution ((int, int)): Resolution to set the camera to, before starting recording. Defaults to `self.config['stream_resolution']`.
         """
         # If stream object was destroyed
         if not hasattr(self, 'stream'):
@@ -373,7 +373,7 @@ class StreamingCamera(BaseCamera):
 
         # If no explicit resolution is passed
         if not resolution:
-            resolution = self.config['video_resolution']  # Default to video recording resolution
+            resolution = self.config['stream_resolution']  # Default to video recording resolution
 
         # Reduce the resolution for video streaming
         try:
@@ -461,7 +461,7 @@ class StreamingCamera(BaseCamera):
         """
         with self.lock:
             if use_video_port:
-                resolution = self.config['video_resolution']
+                resolution = self.config['stream_resolution']
             else:
                 resolution = self.config['numpy_resolution']
 
@@ -501,7 +501,7 @@ class StreamingCamera(BaseCamera):
         """
         with self.lock:
             if use_video_port:
-                resolution = self.config['video_resolution']
+                resolution = self.config['stream_resolution']
             else:
                 resolution = self.config['numpy_resolution']
 

@@ -17,7 +17,7 @@ class TestCapture(unittest.TestCase):
         
         expected_keys = [
             'image_resolution',
-            'video_resolution',
+            'stream_resolution',
             'numpy_resolution',
         ]
 
@@ -26,7 +26,7 @@ class TestCapture(unittest.TestCase):
 
     def test_capture_videoport(self):
         connection = APIconnection(host="localhost", port=5000, api_ver="v1")
-        resolution = connection.get_config()['video_resolution']
+        resolution = connection.get_config()['stream_resolution']
 
         for resize in [None, (640, 480)]:
 

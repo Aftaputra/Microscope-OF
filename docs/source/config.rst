@@ -22,7 +22,7 @@ Default microscope_settings.yaml
 .. code-block:: yaml
 
     # Resolutions for streaming and capture
-    video_resolution: [832, 624]
+    stream_resolution: [832, 624]
     image_resolution: [2592, 1944]
     numpy_resolution: [1312, 976]
 

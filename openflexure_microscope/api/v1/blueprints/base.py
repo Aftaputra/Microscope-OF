@@ -126,7 +126,7 @@ class ConfigAPI(MicroscopeView):
             "plugins": [
                 "openflexure_microscope.plugins.default:Plugin"
             ], 
-            "video_resolution": [
+            "stream_resolution": [
                 832, 
                 624
             ]
