@@ -11,13 +11,13 @@ Microscope RC file
 ------------------
 
 Microscope configuration is made persistent via a microscope runtime-config (RC) file. By default, this
-file exists at ``~/.openflexure/microscoperc.yaml``, and contains basic parameters to set up the microscope.
+file exists at ``~/.openflexure/microscope_settings.yaml``, and contains basic parameters to set up the microscope.
 
 Additionally, by default, configurations for specific pieces of hardware (i.e. the Pi camera) are located
 in separate "auxillary" config files, and are linked together by adding the config file's path to your main
 microscope RC file. This is set up by default, as shown below:
 
-Default microscoperc.yaml
+Default microscope_settings.yaml
 +++++++++++++++++++++++++
 .. code-block:: yaml
 
