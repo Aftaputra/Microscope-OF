@@ -15,11 +15,19 @@ DEFAULT_CONFIG_PATH = os.path.join(HERE, 'microscope_settings.default.yaml')
 USER_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".openflexure")  #: str: Default path of the user-config directory, containing runtime-config and calibration files. Obtained from ``os.path.join(os.path.expanduser("~"), ".openflexure")``.
 USER_CONFIG_FILE = os.path.join(USER_CONFIG_DIR, "microscope_settings.yaml")  #: str: Default path of the user microscope_settings.yaml runtime-config file. Obtained from ``os.path.join(USER_CONFIG_DIR, "microscope_settings.yaml")``
 
+USER_CONFIG_FILE_OLD = os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")
+
+# Load the default config
 with open(DEFAULT_CONFIG_PATH, 'r') as default_rc:
     DEFAULT_CONFIG = default_rc.read()
 
-# HANDLE CUSTOM YAML PARSING
+# Run a one-time conversion of the old microscoperc.yaml into the new microscope_settings.yaml
+# TODO: Should be removed in >1.0.1?
+if (not os.path.isfile(USER_CONFIG_FILE)) and (os.path.isfile(USER_CONFIG_FILE_OLD)):
+    os.rename(USER_CONFIG_FILE_OLD, USER_CONFIG_FILE)
 
+
+# HANDLE CUSTOM YAML PARSING
 def construct_yaml_bool(self, node):
     """
     Override PyYAML constructors handling of bools.
@@ -162,8 +170,8 @@ def initialise_file(config_path, populate: str = ""):
         with open(config_path, 'w') as outfile:
             outfile.write(populate)
 
-# MAIN CONFIG CLASS
 
+# MAIN CONFIG CLASS
 class OpenflexureConfig:
     """
     An object to handle expansion, conversion, and saving of the microscope configuration.
