@@ -11,6 +11,9 @@ class StrictLock(object):
         self._lock = RLock()
         self.timeout = timeout
 
+    def locked(self):
+        return self._lock.locked()
+
     def acquire(self, blocking=True):
         return self._lock.acquire(blocking, timeout=self.timeout)
 
