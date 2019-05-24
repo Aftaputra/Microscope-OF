@@ -98,6 +98,8 @@ class BaseCamera(object):
             access to stage hardware
         frame (bytes): Current frame is stored here by background thread
         last_access (time): Time of last client access to the camera
+        stream_timeout (int): Number of inactive seconds before timing out the stream
+        stream_timeout_enabled (bool): Enable or disable timing out the stream
         state (dict): Dictionary for capture state
         config (dict): Dictionary of base camera config
         paths (dict): Dictionary of capture paths
@@ -113,6 +115,9 @@ class BaseCamera(object):
         self.frame = None
         self.last_access = 0
         self.event = CameraEvent()
+
+        self.stream_timeout = 20
+        self.stream_timeout_enabled = False
 
         self.state = {}
         self.config = {}
