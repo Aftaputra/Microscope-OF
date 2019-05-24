@@ -242,7 +242,7 @@ class StreamingCamera(BaseCamera):
         logging.info("Starting the GPU preview")
 
         # TODO: Commented out as I honestly can't remember why this was here. May need to put back?
-        #self.start_stream_recording() 
+        # self.start_stream_recording()
 
         try:
             if not self.camera.preview:
@@ -365,7 +365,8 @@ class StreamingCamera(BaseCamera):
 
         Args:
             splitter_port (int): Splitter port to start recording on
-            resolution ((int, int)): Resolution to set the camera to, before starting recording. Defaults to `self.config['stream_resolution']`.
+            resolution ((int, int)): Resolution to set the camera to, before starting recording. 
+                Defaults to `self.config['stream_resolution']`.
         """
         with self.lock:
             # If stream object was destroyed
@@ -392,7 +393,7 @@ class StreamingCamera(BaseCamera):
                         self.stream,
                         format='mjpeg',
                         quality=self.config['jpeg_quality'],
-                        bitrate=-1, # RWB: disable bitrate control 
+                        bitrate=-1,  # RWB: disable bitrate control 
                         # (bitrate control makes JPEG size less good as a focus
                         # metric)
                         splitter_port=splitter_port)

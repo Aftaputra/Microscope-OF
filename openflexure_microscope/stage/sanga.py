@@ -1,15 +1,24 @@
 import numpy as np
+import time
 from .sangaboard import Sangaboard
 from openflexure_microscope.stage.base import BaseStage
-from openflexure_microscope.lock import StrictLock
 
-import logging
 
 class SangaStage(BaseStage):
+    """
+    Sangaboard v0.2 and v0.3 powered Stage object
+
+    Args:
+        port (str): Serial port on which to open communication
+
+    Attributes:
+        board (:py:class:`openflexure_microscope.stage.sangaboard.Sangaboard`): Parent Sangaboard object.
+        _backlash (list): 3-element (element-per-axis) list of backlash compensation in steps.
+    """
     def __init__(self, port=None, **kwargs):
         """Class managing serial communications with the motors for an Openflexure stage"""
         BaseStage.__init__(self)
-        
+
         self.board = Sangaboard(port, **kwargs)
         self._backlash = None
 
@@ -58,11 +67,8 @@ class SangaStage(BaseStage):
     def backlash(self, blsh):
         if blsh is None:
             self._backlash = None
-        try:
-            assert len(blsh) == self.n_axes
-            self._backlash = np.array(blsh, dtype=np.int)
-        except:
-            self._backlash = np.array([int(blsh)]*self.n_axes, dtype=np.int)
+        assert len(blsh) == self.n_axes
+        self._backlash = np.array([int(blsh)]*self.n_axes, dtype=np.int)
 
     def move_rel(self, displacement, axis=None, backlash=True):
         """Make a relative move, optionally correcting for backlash.
@@ -91,9 +97,11 @@ class SangaStage(BaseStage):
             # point on the line.
             # For each axis where we're moving in the *opposite*
             # direction to self.backlash, we deliberately overshoot:
-            initial_move -= np.where(self.backlash*displacement < 0,
-                                    self.backlash,
-                                    np.zeros(self.n_axes, dtype=self.backlash.dtype))
+            initial_move -= np.where(
+                self.backlash*displacement < 0,
+                self.backlash,
+                np.zeros(self.n_axes, dtype=self.backlash.dtype)
+            )
             self.board.move_rel(initial_move)
             if np.any(displacement - initial_move != 0):
                 # If backlash correction has kicked in and made us overshoot, move
@@ -141,4 +149,4 @@ class SangaStage(BaseStage):
             except Exception as e:
                 print("A further exception occurred when resetting position: {}".format(e))
             print("Move completed, raising exception...")
-            raise value #propagate the exception
+            raise value  # Propagate the exception
