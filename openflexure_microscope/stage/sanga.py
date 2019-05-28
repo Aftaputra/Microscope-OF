@@ -1,5 +1,7 @@
 import numpy as np
 import time
+import logging
+from collections.abc import Iterable
 from .sangaboard import Sangaboard
 from openflexure_microscope.stage.base import BaseStage
 
@@ -69,10 +71,14 @@ class SangaStage(BaseStage):
 
     @backlash.setter
     def backlash(self, blsh):
+        logging.debug("Setting backlash to {}".format(blsh))
         if blsh is None:
             self._backlash = None
-        assert len(blsh) == self.n_axes
-        self._backlash = np.array([int(blsh)]*self.n_axes, dtype=np.int)
+        elif isinstance(blsh, Iterable):
+            assert len(blsh) == self.n_axes
+            self._backlash = np.array(blsh)
+        else:
+            self._backlash = np.array([int(blsh)]*self.n_axes, dtype=np.int)
 
     def move_rel(self, displacement, axis=None, backlash=True):
         """Make a relative move, optionally correcting for backlash.
