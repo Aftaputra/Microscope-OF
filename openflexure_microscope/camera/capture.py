@@ -10,6 +10,7 @@ from PIL import Image
 import atexit
 
 from openflexure_microscope.camera import piexif
+from openflexure_microscope.camera.piexif._exceptions import InvalidImageDataError
 
 """
 Attributes:
@@ -44,7 +45,10 @@ def pull_usercomment_dict(filepath):
     Args:
         filepath: Path to the Exif-containing file
     """
-    exif_dict = piexif.load(filepath)
+    try:
+        exif_dict = piexif.load(filepath)
+    except InvalidImageDataError:
+        logging.error("Invalid data at {}. Skipping.".format(filepath))
     if 'Exif' in exif_dict and 37510 in exif_dict['Exif']:
         return yaml.load(exif_dict['Exif'][37510].decode())
     else:
