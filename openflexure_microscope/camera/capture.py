@@ -49,11 +49,11 @@ def pull_usercomment_dict(filepath):
         exif_dict = piexif.load(filepath)
     except InvalidImageDataError:
         logging.error("Invalid data at {}. Skipping.".format(filepath))
-        return {}
+        return None
     if 'Exif' in exif_dict and 37510 in exif_dict['Exif']:
         return yaml.load(exif_dict['Exif'][37510].decode())
     else:
-        return {}
+        return None
 
 
 def make_file_list(directory, formats):
@@ -76,8 +76,11 @@ def build_captures_from_exif():
     for f in files:
         logging.debug("Reloading capture {}...".format(f))
         exif = pull_usercomment_dict(f)
-        capture = capture_from_exif(f, exif)
-        captures.append(capture)
+        if exif:
+            capture = capture_from_exif(f, exif)
+            captures.append(capture)
+        else:
+            logging.error("Invalid data at {}. Skipping.".format(f))
 
     logging.info("{} capture files successfully reloaded".format(len(captures)))
 
