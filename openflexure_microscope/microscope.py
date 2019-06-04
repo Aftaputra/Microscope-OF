@@ -7,6 +7,7 @@ import numpy as np
 import uuid
 
 from openflexure_stage import OpenFlexureStage
+
 from .camera.pi import StreamingCamera
 
 from .plugins import PluginMount
@@ -16,18 +17,11 @@ from .lock import CompositeLock
 from .config import OpenflexureConfig
 
 
-class Microscope(object):
+class Microscope:
     """
     A basic microscope object.
 
     The camera and stage should already be initialised, and passed as arguments.
-
-    Args:
-        camera (:py:class:`openflexure_microscope.camera.pi.StreamingCamera`): camera object
-        stage (:py:class:`openflexure_stage.stage.OpenFlexureStage`): stage object
-        config (:py:class:`openflexure_microscope.config.OpenflexureConfig`): Runtime-config object,
-            automatically created if None.
-        attach_plugins (bool): Should the microscope attach plugins listen in 'config' immediately.
 
     Attributes:
         rc (:py:class:`openflexure_microscope.config.OpenflexureConfig`): Runtime-config object,
@@ -40,26 +34,17 @@ class Microscope(object):
             background tasks using microscope hardware
         plugin (:py:class:`openflexure_microscope.plugins.PluginMount`): Mounting point for all microscope plugins
     """
-    def __init__(
-            self,
-            camera: StreamingCamera,
-            stage: OpenFlexureStage,
-            config=None,
-            attach_plugins: bool = True):
 
-        # Create RC object
-        if config:
-            self.rc = config
-        else:
-            self.rc = OpenflexureConfig(expand=True)
+    def __init__(self):
+        # Create runtime config object
+        self.rc = OpenflexureConfig(expand=True)
 
         # Initialise with an empty composite lock
         self.lock = CompositeLock([])
 
-        # Attach initial hardware (may be NoneTypes)
-        self.camera = None
-        self.stage = None
-        self.attach(camera, stage)
+        # Attach dummy hardware initially
+        # TODO: Handle better. Maybe monad?
+        self.attach(None, None)
 
         # Create a task orchestrator
         self.task = TaskOrchestrator()
@@ -68,8 +53,7 @@ class Microscope(object):
         self.plugin = PluginMount(self)
 
         # Attach plugins
-        if attach_plugins:
-            self.attach_plugins()
+        self.attach_plugins()
 
         # Set default parameters
         if 'name' not in self.rc.config:
@@ -106,12 +90,16 @@ class Microscope(object):
             camera (:py:class:`openflexure_microscope.camera.pi.StreamingCamera`): camera object
             stage (:py:class:`openflexure_stage.stage.OpenFlexureStage`): stage object
         """
+        # TODO: Actually attach dummy hardware!
+        # TODO: Use some form of Mabye monad to say arguments may be actual hardware, else dummy?
 
         logging.debug("Attaching camera...")
         self.camera = camera  #: :py:class:`openflexure_microscope.camera.pi.StreamingCamera`: Picamera object
         if isinstance(self.camera, StreamingCamera):
             logging.info("Attached camera {}".format(camera))
             logging.info("Updating camera settings")
+            self.camera.apply_config(self.rc.read())
+            logging.info("Reading complete camera settings")
             self.write_config(self.camera.read_config())
         elif not self.camera:
             logging.info("Attached dummy camera.")
@@ -185,6 +173,7 @@ class Microscope(object):
         """
         Writes and applies a config dictionary. Missing parameters will be left untouched.
         """
+        # TODO: Have stage object handle apply_config, like camera does
         # If attached to a camera
         if self.camera:
             # Update camera config
