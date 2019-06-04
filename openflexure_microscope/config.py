@@ -142,6 +142,7 @@ def save_yaml_file(config_path: str, config_dict: dict, safe: bool = False):
     config_path = os.path.expanduser(config_path)
 
     logging.info("Saving {}...".format(config_path))
+    logging.debug(config_dict)
 
     with open(config_path, 'w') as outfile:
         if not safe:
