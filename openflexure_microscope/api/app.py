@@ -59,7 +59,7 @@ else:
     root.setLevel(logging.getLogger("gunicorn.error").level)
 
 # Create a dummy microscope object, with no hardware attachments
-api_microscope = Microscope(None, None)
+api_microscope = Microscope()
 
 # Rebuild the capture list
 # TODO: Offload to a thread?
@@ -89,13 +89,15 @@ handler = JSONExceptionHandler(app)
 @app.before_first_request
 def attach_microscope():
     # Create the microscope object globally (common to all spawned server threads)
-    global api_microscope, capture_list
+    global api_microscope, stored_image_list
     logging.debug("First request made. Populating microscope with hardware...")
 
     logging.debug("Creating camera object...")
-    api_camera = StreamingCamera(config=api_microscope.rc.read())
+    # TODO: Try except finally, like with stage
+    api_camera = StreamingCamera()
 
     logging.debug("Creating stage object...")
+    # TODO: Tidy this up. api_stage may be referenced before assignment. Use some form of Maybe monad?
     try:
         api_stage = SangaStage()
     except (SerialException, OSError) as e:
