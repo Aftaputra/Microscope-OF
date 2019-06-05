@@ -112,7 +112,10 @@ class AutofocusPlugin(MicroscopePlugin):
            might slightly hurt accuracy, but is unlikely to be a big issue.  Too big
            may cause you to overshoot, which is a problem.
         """
-        with self.monitor_sharpness() as m:
+        with self.monitor_sharpness() as m, self.microscope.camera.lock:
+            # Ensure the MJPEG stream has started
+            self.microscope.camera.start_stream_recording()
+
             df = dz #TODO: refactor so I actually use dz in the code below!
             if initial_move_up:
                 m.focus_rel(df/2)
