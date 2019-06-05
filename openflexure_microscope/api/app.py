@@ -22,6 +22,7 @@ from openflexure_microscope.config import USER_CONFIG_DIR
 
 from openflexure_microscope.api.v1 import blueprints
 
+import time
 import atexit
 import logging
 import sys
@@ -168,13 +169,23 @@ def err_log():
 def cleanup():
     global api_microscope
     logging.debug("App teardown started...")
+    logging.debug("Settling...")
+    time.sleep(0.5)
 
     # Save config
-    if api_microscope.rc:
-        api_microscope.rc.save(backup=True)
+    logging.debug("Saving config for teardown...")
+    api_microscope.save_config(backup=True)
+
+    logging.debug("Settling...")
+    time.sleep(0.5)
 
     # Close down the microscope
+    logging.debug("Closing devices...")
     api_microscope.close()
+
+    logging.debug("Settling...")
+    time.sleep(0.5)
+
     logging.debug("App teardown complete.")
 
 
