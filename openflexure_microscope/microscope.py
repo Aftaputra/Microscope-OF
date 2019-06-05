@@ -14,7 +14,7 @@ from .plugins import PluginMount
 from .utilities import axes_to_array
 from .task import TaskOrchestrator
 from .lock import CompositeLock
-from .config import OpenflexureConfig
+from .config import OpenflexureSettingsFile, settings_to_json
 
 
 class Microscope:
@@ -24,7 +24,7 @@ class Microscope:
     The camera and stage should already be initialised, and passed as arguments.
 
     Attributes:
-        rc (:py:class:`openflexure_microscope.config.OpenflexureConfig`): Runtime-config object,
+        settings_file (:py:class:`openflexure_microscope.config.OpenflexureSettingsFile`): Runtime-config object,
             automatically created if None.
         lock (:py:class:`openflexure_microscope.lock.CompositeLock`): Composite lock controlling thread access
             to multiple pieces of hardware.
@@ -36,31 +36,28 @@ class Microscope:
     """
 
     def __init__(self):
-        # Create runtime config object
-        self.rc = OpenflexureConfig(expand=True)
+        # Initial attributes
+        self.id = uuid.uuid4().hex
+        self.name = self.id
+        self.fov = [0, 0]
+        self.plugin_maps = []
+        self.camera = None
+        self.stage = None
 
         # Initialise with an empty composite lock
         self.lock = CompositeLock([])
 
-        # Attach dummy hardware initially
-        # TODO: Handle better. Maybe monad?
-        self.attach(None, None)
-
         # Create a task orchestrator
         self.task = TaskOrchestrator()
 
-        # Create plugin mount-point
+        # Attach to a settings file
+        self.settings_file = OpenflexureSettingsFile(expand=True)
+        # Apply settings loaded from file
+        self.apply_config(self.settings_file.load())
+
+        # Create plugin mount-point and attach plugins from maps
         self.plugin = PluginMount(self)
-
-        # Attach plugins
-        self.attach_plugins()
-
-        # Set default parameters
-        if 'name' not in self.rc.config:
-            self.rc.write({'name': uuid.uuid4().hex})
-
-        if 'fov' not in self.rc.config:
-            self.rc.write({'fov': [0, 0]})
+        self.attach_plugins(self.plugin_maps)
 
     def __enter__(self):
         """Create microscope on context enter."""
@@ -90,59 +87,48 @@ class Microscope:
             camera (:py:class:`openflexure_microscope.camera.pi.StreamingCamera`): camera object
             stage (:py:class:`openflexure_stage.stage.OpenFlexureStage`): stage object
         """
+
+        settings_full = self.read_config()
+
         # TODO: Actually attach dummy hardware!
-        # TODO: Use some form of Mabye monad to say arguments may be actual hardware, else dummy?
+        # Maybe even attach dummy hardware at __init__, and replace with real hardware if it exists
 
         logging.debug("Attaching camera...")
         self.camera = camera  #: :py:class:`openflexure_microscope.camera.pi.StreamingCamera`: Picamera object
-        if isinstance(self.camera, StreamingCamera):
+        if not self.camera:
+            logging.info("No camera attached.")
+        else:
             logging.info("Attached camera {}".format(camera))
-            logging.info("Updating camera settings")
-            self.camera.apply_config(self.rc.read())
-            logging.info("Reading complete camera settings")
-            self.write_config(self.camera.read_config())
-        elif not self.camera:
-            logging.info("Attached dummy camera.")
-        # If camera has a lock
-        if hasattr(self.camera, 'lock'):
-            logging.info("Attaching {} to composite lock.".format(self.camera.lock))
-            # Add the lock to the microscope composite lock
-            self.lock.locks.append(self.camera.lock)
+
+            if hasattr(self.camera, 'lock'):  # If camera has a lock
+                logging.info("Attaching {} to composite lock.".format(self.camera.lock))
+                # Add the lock to the microscope composite lock
+                self.lock.locks.append(self.camera.lock)
 
         logging.debug("Attaching stage...")
         self.stage = stage  #: :py:class:`openflexure_stage.stage.OpenFlexureStage`: OpenFlexure stage object
-        if isinstance(self.stage, OpenFlexureStage):  # If a stage object has been attached
+        if not self.stage:
+            logging.info("No stage attached.")
+        else:
             logging.info("Attached stage {}".format(stage))
-            self.stage.backlash = np.zeros(3, dtype=np.int)
-        elif not self.stage:
-            logging.info("Attached dummy stage.")
-        # If stage object has a lock
-        if hasattr(self.stage, 'lock'):
-            logging.info("Attaching lock {} to composite lock.".format(self.stage.lock))
-            # Add the lock to the microscope composite lock
-            self.lock.locks.append(self.stage.lock)
 
-    def attach_plugin_maps(self, plugin_maps):
-        """
-        Attach plugins from a list of plugin map strings
+            if hasattr(self.stage, 'lock'):  # If stage object has a lock
+                logging.info("Attaching lock {} to composite lock.".format(self.stage.lock))
+                # Add the lock to the microscope composite lock
+                self.lock.locks.append(self.stage.lock)
 
-        Args:
-            plugin_maps (list): List of strings of plugin maps.
-        """
-        logging.debug("Attaching plugins...")
+        logging.info("Reapplying settings to newly attached devices")
+        self.apply_config(settings_full)
 
-        for plugin_map in plugin_maps:
-            self.plugin.attach(plugin_map)
-        logging.debug("Plugins attached.")
-
-    def attach_plugins(self):
+    def attach_plugins(self, plugin_maps: list):
         """
         Automatically search for plugin maps in self.config, and attach.
         """
-        if 'plugins' in self.rc.config:
-            self.attach_plugin_maps(self.rc.config['plugins'])
+        if plugin_maps:
+            for plugin_map in plugin_maps:
+                self.plugin.attach(plugin_map)
         else:
-            logging.warning("No plugins specified in microscope_settings.yaml. Skipping.")
+            logging.warning("No plugins specified. Skipping.")
 
     def reload_plugins(self):
         """
@@ -151,7 +137,7 @@ class Microscope:
         logging.info("Tearing down existing PluginMount...")
         self.plugin = PluginMount(self)
         logging.info("Repopulating PluginMount...")
-        self.attach_plugins()
+        self.attach_plugins(self.plugin_maps)
 
     # Create unified state
     @property
@@ -169,65 +155,87 @@ class Microscope:
         }
         return state
 
-    def write_config(self, config: dict):
+    def apply_config(self, config: dict):
         """
-        Writes and applies a config dictionary. Missing parameters will be left untouched.
+        Applies a config dictionary. Missing parameters will be left untouched.
         """
-        # TODO: Have stage object handle apply_config, like camera does
+        logging.debug("Microscope: Applying config: {}".format(config))
+
         # If attached to a camera
-        if self.camera:
+        if ('camera_settings' in config) and self.camera:
             # Update camera config
-            self.camera.apply_config(config)
+            self.camera.apply_config(config['camera_settings'])
 
         # If attached to a stage
-        # TODO: Convert stage settings into a config expansion
-        if self.stage:
+        if ('stage_settings' in config) and self.stage:
             if 'backlash' in config:
                 # Construct backlash array
                 backlash = axes_to_array(config['backlash'], ['x', 'y', 'z'], [0, 0, 0])
                 self.stage.backlash = backlash
 
-        # Cache config
-        self.rc.write(config)
+        # Todo: tidy up with some loopy goodness
+        if 'id' in config:
+            self.id = config['id']
+        if 'name' in config:
+            self.name = config['name']
+        if 'fov' in config:
+            self.fov = config['fov']
+        if 'plugins' in config:
+            self.plugin_maps = config['plugins']
 
     def read_config(self, json_safe=False):
         """
-        Read an updated config including camera settings.
+        Get an updated settings dictionary.
+
+        Reads current attributes and properties from connected hardware,
+        then merges those with the currently saved settings.
+
+        This is to ensure that settings for currently disconnected hardware
+        don't get removed from the settings file.
         """
+
+        settings_current = {
+            'id': self.id,
+            'name': self.name,
+            'fov': self.fov,
+            'plugins': self.plugin_maps
+        }
+
         # If attached to a camera
         if self.camera:
-            # Update camera config params from StreamingCamera object
-            self.rc.write(self.camera.read_config())
+            settings_current_camera = self.camera.read_config()
+            settings_current['camera_settings'] = settings_current_camera
 
         # If attached to a stage
+        # TODO: Offload to stage object
         if self.stage:
             if hasattr(self.stage.backlash, 'tolist'):
                 backlash = self.stage.backlash.tolist() 
             else:
                 backlash = self.stage.backlash
-        else:
-            backlash = [0, 0, 0]
 
-        backlash = {
-            'backlash': {
-                'x': backlash[0],
-                'y': backlash[1],
-                'z': backlash[2],
+            settings_current_stage = {
+                'backlash': {
+                    'x': backlash[0],
+                    'y': backlash[1],
+                    'z': backlash[2],
+                }
             }
-        }
 
-        self.rc.write(backlash)
+            settings_current['stage_settings'] = settings_current_stage
 
-        return self.rc.read(json_safe=json_safe)
+        settings_full = self.settings_file.merge(settings_current)
+
+        if json_safe:
+            settings_full = settings_to_json(settings_full, clean_keys=True)
+
+        return settings_full
 
     def save_config(self, backup: bool = True):
         """
-        Saves the current runtime-config back to disk
+        Merges the current settings back to disk
         """
-        # Get any changed device settings
-        self.read_config(json_safe=False)
-        # Save to disk
-        self.rc.save(backup=backup)
+        self.settings_file.save(self.read_config(), backup=True)
 
     @property
     def config(self) -> dict:
