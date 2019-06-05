@@ -3,7 +3,7 @@
 Defines a microscope object, binding a camera and stage with basic functionality.
 """
 import logging
-import numpy as np
+import pkg_resources
 import uuid
 
 from openflexure_stage import OpenFlexureStage
@@ -151,7 +151,8 @@ class Microscope:
         state = {
             'camera': self.camera.state,
             'stage': self.stage.state,
-            'plugin': self.plugin.state
+            'plugin': self.plugin.state,
+            'version': pkg_resources.get_distribution('openflexure_microscope').version
         }
         return state
 
