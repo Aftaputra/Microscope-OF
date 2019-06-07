@@ -86,6 +86,8 @@ class ScanPlugin(MicroscopePlugin):
             'position': self.microscope.state['stage']['position'],
             'scan_id': scan_id,
             'basename': basename,
+            'microscope_id': self.microscope.id,
+            'microscope_name': self.microscope.name
         })
 
         output.put_metadata(metadata)
