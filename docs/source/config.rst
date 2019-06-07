@@ -1,5 +1,5 @@
 Microscope configuration
-=======================================================
+========================
 
 .. toctree::
    :maxdepth: 2
@@ -18,7 +18,7 @@ in separate "auxillary" config files, and are linked together by adding the conf
 microscope RC file. This is set up by default, as shown below:
 
 Default microscope_settings.yaml
-+++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++
 .. code-block:: yaml
 
     # Resolutions for streaming and capture
@@ -58,7 +58,7 @@ Example picamera_settings.yaml
 
 
 Loading the runtime-config
-+++++++
+++++++++++++++++++++++++++
 
 By default, a microscope object will load the a runtime-config from the default location.
 This RC can then be passed to any hardware attached to the microscope. This can be particularly

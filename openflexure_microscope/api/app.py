@@ -148,6 +148,12 @@ app.register_blueprint(task_blueprint, url_prefix=uri('/task', 'v1'))
 def routes():
     """
     List of all connected API routes
+
+    .. :quickref: System; Routes
+
+    :>header Accept: application/json
+    :>header Content-Type: application/json
+    :status 200: stream active
     """
     return jsonify(list_routes(app))
 
@@ -156,6 +162,12 @@ def routes():
 def err_log():
     """
     Most recent 1mb of log output
+
+    .. :quickref: System; Log
+
+    :>header Accept: application/json
+    :>header Content-Type: application/json
+    :status 200: stream active
     """
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     return send_file(

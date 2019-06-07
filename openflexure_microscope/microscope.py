@@ -6,9 +6,9 @@ import logging
 import pkg_resources
 import uuid
 
-from openflexure_stage import OpenFlexureStage
+from .stage.base import BaseStage
 
-from .camera.pi import StreamingCamera
+from .camera.base import BaseCamera
 
 from .plugins import PluginMount
 from .utilities import axes_to_array
@@ -28,8 +28,8 @@ class Microscope:
             automatically created if None.
         lock (:py:class:`openflexure_microscope.lock.CompositeLock`): Composite lock controlling thread access
             to multiple pieces of hardware.
-        camera (:py:class:`openflexure_microscope.camera.pi.StreamingCamera`): Camera object
-        stage (:py:class:`openflexure_stage.stage.OpenFlexureStage`): Stage object
+        camera (:py:class:`openflexure_microscope.camera.base.BaseCamera`): Camera object
+        stage (:py:class:`openflexure_microscope.stage.base.BaseStage`): Stage object
         task: (:py:class:`openflexure_microscope.task.TaskOrchestrator`): Threaded ask orchestrator for managing
             background tasks using microscope hardware
         plugin (:py:class:`openflexure_microscope.plugins.PluginMount`): Mounting point for all microscope plugins
@@ -76,7 +76,7 @@ class Microscope:
             self.stage.close()
         logging.info("Closed {}".format(self))
 
-    def attach(self, camera: StreamingCamera, stage: OpenFlexureStage):
+    def attach(self, camera: BaseCamera, stage: BaseStage):
         """
         Retroactively attaches a camera and stage to the microscope object.
 
@@ -84,8 +84,8 @@ class Microscope:
         opened at a later time.
 
         Args:
-            camera (:py:class:`openflexure_microscope.camera.pi.StreamingCamera`): camera object
-            stage (:py:class:`openflexure_stage.stage.OpenFlexureStage`): stage object
+            camera (:py:class:`openflexure_microscope.camera.base.BaseCamera`): camera object
+            stage (:py:class:`openflexure_microscope.stage.base.BaseStage`): stage object
         """
 
         settings_full = self.read_config()
@@ -94,7 +94,7 @@ class Microscope:
         # Maybe even attach dummy hardware at __init__, and replace with real hardware if it exists
 
         logging.debug("Attaching camera...")
-        self.camera = camera  #: :py:class:`openflexure_microscope.camera.pi.StreamingCamera`: Picamera object
+        self.camera = camera  #: :py:class:`openflexure_microscope.camera.base.BaseCamera`: Picamera object
         if not self.camera:
             logging.info("No camera attached.")
         else:
@@ -106,7 +106,7 @@ class Microscope:
                 self.lock.locks.append(self.camera.lock)
 
         logging.debug("Attaching stage...")
-        self.stage = stage  #: :py:class:`openflexure_stage.stage.OpenFlexureStage`: OpenFlexure stage object
+        self.stage = stage  #: :py:class:`openflexure_microscope.stage.base.BaseStage`: OpenFlexure stage object
         if not self.stage:
             logging.info("No stage attached.")
         else:
