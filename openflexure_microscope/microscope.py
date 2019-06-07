@@ -241,7 +241,7 @@ class Microscope:
         # Merge in server version responsible for saving the config file
         current_config['server_version'] = pkg_resources.get_distribution('openflexure_microscope').version
         # Save config to file
-        self.settings_file.save(self.read_config(), backup=True)
+        self.settings_file.save(current_config, backup=True)
 
     @property
     def config(self) -> dict:
