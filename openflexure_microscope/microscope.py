@@ -236,6 +236,11 @@ class Microscope:
         """
         Merges the current settings back to disk
         """
+        # Read curent config
+        current_config = self.read_config()
+        # Merge in server version responsible for saving the config file
+        current_config['server_version'] = pkg_resources.get_distribution('openflexure_microscope').version
+        # Save config to file
         self.settings_file.save(self.read_config(), backup=True)
 
     @property
