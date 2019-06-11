@@ -208,7 +208,6 @@ class Microscope:
             settings_current['camera_settings'] = settings_current_camera
 
         # If attached to a stage
-        # TODO: Offload to stage object
         if self.stage:
             if hasattr(self.stage.backlash, 'tolist'):
                 backlash = self.stage.backlash.tolist() 
