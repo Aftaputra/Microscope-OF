@@ -122,7 +122,7 @@ class Microscope:
 
     def attach_plugins(self, plugin_maps: list):
         """
-        Automatically search for plugin maps in self.config, and attach.
+        Automatically search for plugin maps in config, and attach.
         """
         if plugin_maps:
             for plugin_map in plugin_maps:
@@ -132,7 +132,7 @@ class Microscope:
 
     def reload_plugins(self):
         """
-        Empty the plugin mount and re-attach from self.config.
+        Empty the plugin mount and re-attach from config.
         """
         logging.info("Tearing down existing PluginMount...")
         self.plugin = PluginMount(self)
@@ -245,8 +245,16 @@ class Microscope:
 
     @property
     def config(self) -> dict:
+        logging.warn(
+            "Reading microscope through config property is deprecated.\
+            Please use read_config method instead."
+        )
         return self.read_config()
 
     @config.setter
     def config(self, config: dict) -> None:
-        self.write_config(config)
+        logging.warn(
+            "Setting microscope through config property is deprecated.\
+            Please use apply_config method instead."
+        )
+        self.apply_config(config)
