@@ -144,7 +144,7 @@ class BaseCamera(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def read_config(self):
+    def read_config(self) -> dict:
         """Return the current settings as a dictionary"""
         pass
 

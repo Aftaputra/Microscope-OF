@@ -95,7 +95,7 @@ class StreamingCamera(BaseCamera):
             self.camera.close()
 
     # HANDLE SETTINGS
-    def read_config(self):
+    def read_config(self) -> dict:
         """
         Return config dictionary of the StreamingCamera.
         """
@@ -119,7 +119,7 @@ class StreamingCamera(BaseCamera):
 
         return conf_dict
 
-    def apply_config(self, config: dict) -> None:
+    def apply_config(self, config: dict):
         """
         Write a config dictionary to the StreamingCamera config.
 
