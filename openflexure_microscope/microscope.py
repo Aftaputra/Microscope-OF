@@ -164,15 +164,11 @@ class Microscope:
 
         # If attached to a camera
         if ('camera_settings' in config) and self.camera:
-            # Update camera config
             self.camera.apply_config(config['camera_settings'])
 
         # If attached to a stage
         if ('stage_settings' in config) and self.stage:
-            if 'backlash' in config:
-                # Construct backlash array
-                backlash = axes_to_array(config['backlash'], ['x', 'y', 'z'], [0, 0, 0])
-                self.stage.backlash = backlash
+            self.stage.apply_config(config['stage_settings'])
 
         # Todo: tidy up with some loopy goodness
         if 'id' in config:
@@ -209,19 +205,7 @@ class Microscope:
 
         # If attached to a stage
         if self.stage:
-            if hasattr(self.stage.backlash, 'tolist'):
-                backlash = self.stage.backlash.tolist() 
-            else:
-                backlash = self.stage.backlash
-
-            settings_current_stage = {
-                'backlash': {
-                    'x': backlash[0],
-                    'y': backlash[1],
-                    'z': backlash[2],
-                }
-            }
-
+            settings_current_stage = self.stage.read_config()
             settings_current['stage_settings'] = settings_current_stage
 
         settings_full = self.settings_file.merge(settings_current)
