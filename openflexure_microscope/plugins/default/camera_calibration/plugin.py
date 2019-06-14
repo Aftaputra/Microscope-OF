@@ -26,8 +26,6 @@ API_SCHEMA = {
 
 class RecalibrateAPIView(MicroscopeViewPlugin):
     def post(self):
-        payload = JsonPayload(request)
-
         logging.info("Starting microscope recalibration...")
         task = self.microscope.task.start(self.plugin.recalibrate)
 
