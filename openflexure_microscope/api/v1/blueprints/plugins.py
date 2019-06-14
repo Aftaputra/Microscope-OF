@@ -83,7 +83,7 @@ def construct_blueprint(microscope_obj):
             # If plugin includes an API schema
             if hasattr(plugin_obj, 'api_schema') and isinstance(plugin_obj.api_schema, dict):
                 schema = plugin_obj.api_schema
-                # TODO: Validate schema?
+                # TODO: Validate schema? We need to make sure no single plugin can break all plugins.
                 schema['id'] = plugin_name
                 if 'forms' in schema and isinstance(schema['forms'], list):
                     for form in schema['forms']:
