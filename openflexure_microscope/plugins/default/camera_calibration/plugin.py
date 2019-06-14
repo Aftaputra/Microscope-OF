@@ -17,8 +17,19 @@ API_SCHEMA = {
                 {
                     'fieldType': "htmlBlock",
                     'name': "heading",
-                    'content': "<b>This is different form in a plugin!</b>"
-                }
+                    'content': "<b>This plugin was generated from JSON!</b><p>In fact, I'm typing this HTML block into my Python plugin right now."
+                },     
+                {
+                    'fieldType': "radioList",
+                    'name': "coolness",
+                    'label': "How cool is that!?",
+                    'options': ["Very", "Very very", "I'm losing my mind"]
+                },
+                {
+                    'fieldType': "htmlBlock",
+                    'name': "subheading",
+                    'content': "I should apologise to the auto-calibrate plugin though. I'm using that as a test-bed..."
+                },   
             ]
         }
     ]
