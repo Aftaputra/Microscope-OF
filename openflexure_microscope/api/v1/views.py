@@ -22,5 +22,6 @@ class MicroscopeViewPlugin(MicroscopeView):
     def __init__(self, microscope, plugin=None, **kwargs):
 
         self.plugin = plugin
+        self.route = None
 
         MicroscopeView.__init__(self, microscope=microscope, **kwargs)
