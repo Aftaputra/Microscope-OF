@@ -2,6 +2,7 @@ import time
 import numpy as np
 from typing import Tuple
 import uuid
+import itertools
 import logging
 
 from openflexure_microscope.camera.base import generate_basename
