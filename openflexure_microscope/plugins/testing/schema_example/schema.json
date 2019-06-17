@@ -1,0 +1,61 @@
+{
+  "id": "test-plugin",
+  "forms": [
+    {
+      "route": "/do",
+      "submitLabel": "Do things",
+      "selfUpdate": true,
+      "schema": [
+        {
+          "fieldType": "htmlBlock",
+          "name": "heading",
+          "content": "<b>This is a plugin!</b>"
+        },
+        [
+          {
+            "fieldType": "numberInput",
+            "placeholder": "Some integer",
+            "name": "val_int",
+            "label": "Number value",
+            "minValue": 0
+          },
+          {
+            "fieldType": "textInput",
+            "placeholder": "Some string",
+            "label": "String value",
+            "name": "val_str"
+          }
+        ],
+        [
+          {
+            "fieldType": "radioList",
+            "name": "val_radio",
+            "label": "Radio value",
+            "options": ["First", "Second", "Third"]
+          },
+          {
+            "fieldType": "checkList",
+            "name": "val_check",
+            "label": "Checklist values",
+            "options": ["Foo", "Bar", "Baz"]
+          }
+        ],
+
+        {
+          "fieldType": "selectList",
+          "name": "val_select",
+          "multi": false,
+          "label": "Some selection",
+          "options": ["Most", "Average", "Least"]
+        },
+
+        {
+          "fieldType": "textInput",
+          "placeholder": "Some string",
+          "label": "Non-persistent string",
+          "name": "val_disposable"
+        }
+      ]
+    }
+  ] 
+}

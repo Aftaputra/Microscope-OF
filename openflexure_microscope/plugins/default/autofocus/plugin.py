@@ -15,6 +15,8 @@ API_SCHEMA = {
     'forms': [
         {
             'route': '/fast_autofocus',
+            'isTask': True,
+            'submitLabel': "Run autofocus",
             'schema': [
                 {
                     'fieldType': "htmlBlock",
