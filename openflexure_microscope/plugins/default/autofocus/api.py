@@ -32,9 +32,9 @@ class FastAutofocusAPI(MicroscopeViewPlugin):
         
         # Figure out the parameters to use
         dz = payload.param("dz", default=2000, convert=int)
-        backlash = payload.param("backlash", default=None, convert=int)
+        backlash = payload.param("backlash", default=0, convert=int)
         if backlash < 0:
-            backlash = None
+            backlash = 0
 
         logging.info("Running autofocus...")
         task = self.microscope.task.start(self.plugin.fast_autofocus, dz, backlash=backlash)
