@@ -9,24 +9,6 @@ from openflexure_microscope.utilities import set_properties
 from .focus_utils import sharpness_sum_lap2, JPEGSharpnessMonitor
 from .api import MeasureSharpnessAPI, AutofocusAPI, FastAutofocusAPI
 
-API_SCHEMA = {
-    'icon': 'center_focus_strong',
-    'requireConnection': True,
-    'forms': [
-        {
-            'route': '/fast_autofocus',
-            'isTask': True,
-            'submitLabel': "Run autofocus",
-            'schema': [
-                {
-                    'fieldType': "htmlBlock",
-                    'name': "heading",
-                    'content': "<b>This plugin was generated from JSON</b>"
-                },     
-            ]
-        }
-    ]
-}
 
 class AutofocusPlugin(MicroscopePlugin):
     """
@@ -38,8 +20,6 @@ class AutofocusPlugin(MicroscopePlugin):
         '/autofocus': AutofocusAPI,
         '/fast_autofocus': FastAutofocusAPI,
     }
-
-    api_schema = API_SCHEMA
 
     ### SLOW AUTOFOCUS
 
