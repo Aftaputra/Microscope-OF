@@ -60,27 +60,19 @@
       ]
     },
     {
-      "name": "Different form",
-      "isTask": false,
+      "name": "Task form",
+      "isTask": true,
       "selfUpdate": true,
-      "route": "/do",
-      "submitLabel": "Do different things",
+      "route": "/task",
+      "submitLabel": "Start task",
       "schema": [
-        [
           {
             "fieldType": "numberInput",
-            "placeholder": "Some integer",
-            "name": "val_int",
-            "label": "Number value",
-            "minValue": 0
-          },
-          {
-            "fieldType": "textInput",
-            "placeholder": "Some string",
-            "label": "String value",
-            "name": "val_str"
+            "placeholder": "",
+            "name": "run_time",
+            "label": "Run time (seconds)",
+            "minValue": 1
           }
-        ]
       ]
     }
   ] 

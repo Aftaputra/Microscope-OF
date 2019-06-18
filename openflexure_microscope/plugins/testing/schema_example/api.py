@@ -3,6 +3,7 @@ from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
 from openflexure_microscope.exceptions import TaskDeniedException
 
 from flask import request, Response, escape, jsonify
+import logging
 
 class DoAPI(MicroscopeViewPlugin):
     """
@@ -38,3 +39,26 @@ class DoAPI(MicroscopeViewPlugin):
         return jsonify({
             'response': 'completed'
         })
+
+class TaskAPI(MicroscopeViewPlugin):
+    """
+    A task example API plugin
+    """
+
+    def get(self):
+        return jsonify({
+            'run_time': self.plugin.run_time
+        })
+
+    def post(self):
+        # Get payload JSON
+        payload = JsonPayload(request)
+
+        # Extract a values from the JSON payload.
+        val_int = payload.param('run_time', default=5, convert=int)
+
+        logging.info("Running task...")
+        task = self.microscope.task.start(self.plugin.generate_random_numbers_for_a_while, val_int)
+
+        # return a handle on the autofocus task
+        return jsonify(task.state), 202

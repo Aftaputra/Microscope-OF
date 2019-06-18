@@ -4,7 +4,7 @@ import os
 import json
 from openflexure_microscope.plugins import MicroscopePlugin
 
-from .api import DoAPI
+from .api import DoAPI, TaskAPI
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 SCHEMA_PATH = os.path.join(HERE, "schema.json")
@@ -20,6 +20,7 @@ class ExamplePlugin(MicroscopePlugin):
 
     api_views = {
         '/do': DoAPI,
+        '/task': TaskAPI
     }
 
     def __init__(self):
@@ -29,6 +30,8 @@ class ExamplePlugin(MicroscopePlugin):
         self.val_check = ["Foo", "Bar"]
         self.val_select = "Most"
         self.val_unused = "I'm an unused string, here to confuse the form parsing"
+
+        self.run_time = 5
 
     def set_values(self, val_int, val_str, val_radio, val_check, val_select, val_disposable):
         """
@@ -58,3 +61,12 @@ class ExamplePlugin(MicroscopePlugin):
             'val_select': self.val_select,
             'val_unused': self.val_unused
         }
+
+    def generate_random_numbers_for_a_while(self, run_time: int):
+        self.run_time = run_time
+        vals = []
+        for _ in range(run_time):
+            vals.append(random.random())
+            time.sleep(1)
+        
+        return vals
