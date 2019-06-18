@@ -1,5 +1,6 @@
 {
   "id": "test-plugin",
+  "icon": "pets",
   "forms": [
     {
       "name": "Simple request",
