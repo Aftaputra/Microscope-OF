@@ -2,15 +2,13 @@
   "id": "test-plugin",
   "forms": [
     {
+      "name": "Simple request",
+      "isCollapsible": false,
+      "isTask": false,
+      "selfUpdate": true,
       "route": "/do",
       "submitLabel": "Do things",
-      "selfUpdate": true,
       "schema": [
-        {
-          "fieldType": "htmlBlock",
-          "name": "heading",
-          "content": "<b>This is a plugin!</b>"
-        },
         [
           {
             "fieldType": "numberInput",
@@ -40,7 +38,11 @@
             "options": ["Foo", "Bar", "Baz"]
           }
         ],
-
+        {
+          "fieldType": "htmlBlock",
+          "name": "html_block",
+          "content": "<i>This is a block of HTML in a plugin!</i><br>I can do paragraph breaks and stuff."
+        },
         {
           "fieldType": "selectList",
           "name": "val_select",
@@ -55,6 +57,30 @@
           "label": "Non-persistent string",
           "name": "val_disposable"
         }
+      ]
+    },
+    {
+      "name": "Different form",
+      "isTask": false,
+      "selfUpdate": true,
+      "route": "/do",
+      "submitLabel": "Do different things",
+      "schema": [
+        [
+          {
+            "fieldType": "numberInput",
+            "placeholder": "Some integer",
+            "name": "val_int",
+            "label": "Number value",
+            "minValue": 0
+          },
+          {
+            "fieldType": "textInput",
+            "placeholder": "Some string",
+            "label": "String value",
+            "name": "val_str"
+          }
+        ]
       ]
     }
   ] 
