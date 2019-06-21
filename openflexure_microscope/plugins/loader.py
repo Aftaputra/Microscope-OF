@@ -126,7 +126,8 @@ class PluginMount(object):
     """
     def __init__(self, parent):
         self.parent = parent
-        self.plugins = []
+        self.plugins = []  # List of plugin objects
+        self.schemas = []  # List of plugin schemas
         logging.info("Creating plugin mount")
 
     @property

@@ -7,27 +7,9 @@ import logging
 
 from .recalibrate_utils import recalibrate_camera, auto_expose_and_freeze_settings
 
-API_SCHEMA = {
-    'icon': 'lifesaver',
-    'requireConnection': True,
-    'forms': [
-        {
-            'route': '/recalibrate',
-            'schema': [
-                {
-                    'fieldType': "htmlBlock",
-                    'name': "heading",
-                    'content': "<b>This is different form in a plugin!</b>"
-                }
-            ]
-        }
-    ]
-}
 
 class RecalibrateAPIView(MicroscopeViewPlugin):
     def post(self):
-        payload = JsonPayload(request)
-
         logging.info("Starting microscope recalibration...")
         task = self.microscope.task.start(self.plugin.recalibrate)
 
@@ -43,8 +25,6 @@ class Plugin(MicroscopePlugin):
     api_views = {
         '/recalibrate': RecalibrateAPIView,
     }
-
-    api_schema = API_SCHEMA
 
     def recalibrate(self):
         """Reset the camera's settings.
