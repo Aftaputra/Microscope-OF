@@ -3,12 +3,12 @@ import logging
 import numpy as np
 from contextlib import contextmanager
 
-from openflexure_microscope.plugins import MicroscopePlugin
 from openflexure_microscope.utilities import set_properties
 
 from .focus_utils import sharpness_sum_lap2, JPEGSharpnessMonitor
 from .api import MeasureSharpnessAPI, AutofocusAPI, FastAutofocusAPI
 
+from openflexure_microscope.devel import MicroscopePlugin
 
 class AutofocusPlugin(MicroscopePlugin):
     """

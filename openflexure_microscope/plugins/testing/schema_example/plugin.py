@@ -2,7 +2,7 @@ import random
 import time
 import os
 import json
-from openflexure_microscope.plugins import MicroscopePlugin
+from openflexure_microscope.devel import MicroscopePlugin
 
 from .api import DoAPI, TaskAPI
 

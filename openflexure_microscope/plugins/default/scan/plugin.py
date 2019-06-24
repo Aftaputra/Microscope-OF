@@ -6,7 +6,8 @@ import itertools
 import logging
 
 from openflexure_microscope.camera.base import generate_basename
-from openflexure_microscope.plugins import MicroscopePlugin
+
+from openflexure_microscope.devel import MicroscopePlugin
 
 from .api import TileScanAPI
 

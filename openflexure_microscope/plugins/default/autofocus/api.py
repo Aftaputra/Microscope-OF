@@ -1,11 +1,7 @@
 import numpy as np
 import logging
 
-from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
-from openflexure_microscope.api.utilities import JsonPayload
-
-from flask import request, jsonify
-
+from openflexure_microscope.devel import MicroscopeViewPlugin, JsonPayload, request, jsonify
 
 class MeasureSharpnessAPI(MicroscopeViewPlugin):
     def post(self):
