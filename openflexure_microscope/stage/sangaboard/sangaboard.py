@@ -67,7 +67,8 @@ class Sangaboard(ExtensibleSerialInstrument):
         you will use to communicate with the motor controller.  That's the first argument so
         it doesn't need to be named.
         """
-        super(Sangaboard, self).__init__(port, **kwargs)
+        ExtensibleSerialInstrument.__init__(self, port, **kwargs)
+
         try:
             logging.debug("Running firmware checks")
             # Request firmware version from the board
