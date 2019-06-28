@@ -186,7 +186,8 @@ class SangaStage(BaseStage):
 
     def close(self):
         """Cleanly close communication with the stage"""
-        self.board.close()
+        if hasattr(self, 'board'):
+            self.board.close()
 
     # Methods specific to Sangaboard
     def release_motors(self):

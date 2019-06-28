@@ -12,14 +12,17 @@ from openflexure_microscope.api.exceptions import JSONExceptionHandler
 from openflexure_microscope.api.utilities import list_routes
 
 from openflexure_microscope import Microscope
-from openflexure_microscope.camera.pi import StreamingCamera
+
+try:
+    from openflexure_microscope.camera.pi import StreamingCamera
+except ImportError:
+    from openflexure_microscope.camera.mock import StreamingCamera
+
 from openflexure_microscope.stage.sanga import SangaStage
 from openflexure_microscope.stage.mock import MockStage
 
 from openflexure_microscope.camera.capture import build_captures_from_exif
-
 from openflexure_microscope.config import USER_CONFIG_DIR
-
 from openflexure_microscope.api.v1 import blueprints
 
 import time
@@ -101,7 +104,7 @@ def attach_microscope():
     # TODO: Tidy this up. api_stage may be referenced before assignment. Use some form of Maybe monad?
     try:
         api_stage = SangaStage()
-    except (SerialException, OSError) as e:
+    except Exception as e:
         logging.error(e)
         logging.warning("No valid stage hardware found. Falling back to mock stage!")
         api_stage = MockStage()
