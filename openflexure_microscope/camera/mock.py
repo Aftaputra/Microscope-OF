@@ -33,7 +33,7 @@ class StreamingCamera(BaseCamera):
 
         # Update config properties
         self.image_resolution = (1312, 976)
-        self.stream_resolution = (832, 624)
+        self.stream_resolution = (640, 480)
         self.numpy_resolution = (1312, 976)
         self.jpeg_quality = 75
         self.framerate = 10
