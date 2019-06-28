@@ -167,15 +167,6 @@ class BaseCamera(metaclass=ABCMeta):
         self.stop_worker()
         logging.info("Closed {}".format(self))
 
-    def wait_for_camera(self, timeout=5):
-        """Wait for camera object, with 5 second timeout."""
-        timeout_time = time.time() + timeout
-        while not self.camera:
-            if time.time() > timeout_time:
-                raise TimeoutError("Timeout waiting for camera")
-            else:
-                pass
-
     # START AND STOP WORKER THREAD
 
     def start_worker(self, timeout: int = 5) -> bool:

@@ -28,6 +28,7 @@ from serial import STOPBITS_ONE, STOPBITS_ONE_POINT_FIVE, STOPBITS_TWO
 import io
 import time
 import warnings
+import logging
 
 class ExtensibleSerialInstrument(object):
     """
@@ -58,8 +59,11 @@ class ExtensibleSerialInstrument(object):
         """
         Set up the serial port and so on.
         """
+        logging.info("Updating BSI port settings")
         self.port_settings.update(kwargs)
+        logging.info("Opening BSI connection to port {}".format(port))
         self.open(port, False) # Eventually this shouldn't rely on init...
+        logging.info("Opened BSI connection to port {}".format(port))
 
     def open(self, port=None, quiet=True):
         """Open communications with the serial port.
@@ -81,11 +85,13 @@ class ExtensibleSerialInstrument(object):
 
     def close(self):
         """Release the serial port"""
+        logging.debug("Closing serial connection")
         with self.communications_lock:
             try:
                 self._ser.close()
             except Exception as e:
                 print("The serial port didn't close cleanly:", e)
+        logging.debug("Connection closed")
 
     def __del__(self):
         """Close the port when the object is deleted

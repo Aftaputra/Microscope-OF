@@ -12,6 +12,7 @@ import time
 from .extensible_serial_instrument import ExtensibleSerialInstrument, OptionalModule, QueriedProperty, EIGHTBITS, PARITY_NONE, STOPBITS_ONE
 import re
 import warnings
+import logging
 
 class Sangaboard(ExtensibleSerialInstrument):
     """Class managing serial communications with a Sangaboard
@@ -68,6 +69,7 @@ class Sangaboard(ExtensibleSerialInstrument):
         """
         super(Sangaboard, self).__init__(port, **kwargs)
         try:
+            logging.debug("Running firmware checks")
             # Request firmware version from the board
             self.firmware = self.query("version",timeout=2).rstrip()
             # The slightly complicated regexp below will match the version string,

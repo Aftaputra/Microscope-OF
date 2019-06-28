@@ -529,6 +529,15 @@ class StreamingCamera(BaseCamera):
 
     # HANDLE STREAM FRAMES
 
+    def wait_for_camera(self, timeout=5):
+        """Wait for camera object, with 5 second timeout."""
+        timeout_time = time.time() + timeout
+        while not self.camera:
+            if time.time() > timeout_time:
+                raise TimeoutError("Timeout waiting for camera")
+            else:
+                pass
+
     def frames(self):
         """
         Create generator that returns frames from the camera.
