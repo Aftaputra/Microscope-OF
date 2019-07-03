@@ -4,16 +4,10 @@ OpenFlexure Microscope Software
 # Quickstart
 
 A general user-guide on setting up your microscope can be found [**here on our website**](https://www.openflexure.org/projects/microscope/).
+This includes basic installation instructions suitable for most users.
 
-## Installation
-- Run `curl -LSs get.openflexure.org/microscope |sudo bash`
-- Follow on-screen prompts
-
-# Developer notes
-
-## Documentation
-
-Full documentation can be found on [ReadTheDocs](https://openflexure-microscope-software.readthedocs.io/en/stable/)
+Full developer documentation can be found on [**ReadTheDocs**](https://openflexure-microscope-software.readthedocs.io/en/stable/). 
+This includes installing the server in a mode better suited for active development.
 
 ## Build-system
 As of 1.0.0b0, we're using [Poetry](https://github.com/sdispater/poetry) to manage dependencies, build, and distribute the package. All package information and dependencies are found in `pyproject.toml`, in line with [PEP 518](https://www.python.org/dev/peps/pep-0518/). If you're developing this package, make use of `poetry.lock` to ensure you're using the latest locked dependency list.
