@@ -246,7 +246,7 @@ urllib3 = ">=1.21.1,<1.25.0 || >1.25.0,<1.25.1 || >1.25.1,<1.26"
 category = "main"
 description = "A module to control Raspberry Pi GPIO channels"
 name = "rpi.gpio"
-optional = false
+optional = true
 python-versions = "*"
 version = "0.6.5"
 
@@ -381,7 +381,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "0.15.4"
 
 [metadata]
-content-hash = "ec0d5aa30422b8f44fb92e8e818120d4f0e1b084773594ce2531e31db5af26f4"
+content-hash = "33585d30bda3df47511879542dd7c778bb1922947b650a5554c231a0be7c8b4a"
 python-versions = "^3.5"
 
 [metadata.hashes]
