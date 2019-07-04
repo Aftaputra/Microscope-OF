@@ -3,9 +3,9 @@ import App from './App.vue'
 import store from './store'
 
 import UIkit from 'uikit';
-// Import UIkit icon set
-import Icons from 'uikit/dist/js/uikit-icons';
-UIkit.use(Icons);
+
+// Import MD icons
+import 'material-design-icons/iconfont/material-icons.css'
 
 Vue.config.productionTip = false
 
@@ -36,8 +36,20 @@ Vue.mixin({
       return new Promise(showModal)
     },
 
-    modalNotify: function(message) {
-      UIkit.notification({message: message, status: 'success'})
+    modalNotify: function(message, status = 'success') {
+      UIkit.notification({message: message, status: status})
+    },
+
+    modalDialog: function(title, message) {
+      UIkit.modal.dialog(`
+        <button class="uk-modal-close-default" type="button" uk-close></button>
+        <div class="uk-modal-header">
+          <h2 class="uk-modal-title">${title}</h2>
+        </div>
+        <div class="uk-modal-body">
+          <p>${message}</p>
+        </div>
+      `);
     },
 
     modalError: function(error) {
@@ -66,7 +78,7 @@ Vue.mixin({
         console.log(errormsg)
       }
       this.$store.commit('setError', errormsg);
-      UIkit.notification({message: `<span uk-icon=\'icon: warning\'></span> ${errormsg}`, status: 'danger'})
+      UIkit.notification({message: `${errormsg}`, status: 'danger'})
     },
 
     getLocalStorageObj: function(keyName) {

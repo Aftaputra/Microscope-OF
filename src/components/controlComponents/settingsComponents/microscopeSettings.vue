@@ -52,26 +52,30 @@ export default {
   data: function () {
     return {
       microscopeName: this.$store.state.apiConfig.name,
-      stageBacklash: this.$store.state.apiConfig.backlash
+      stageBacklash: this.$store.state.apiConfig.stage_settings.backlash
     }
   },
 
   methods: {
     updateInputValues: function () {
       this.microscopeName = this.$store.state.apiConfig.name;
-      this.stageBacklash = this.$store.state.apiConfig.backlash
+      this.stageBacklash = this.$store.state.apiConfig.stage_settings.backlash
     },
 
     applyConfigRequest: function() {
-      var payload = {}
+      var payload = {
+        stage_settings: {}
+      }
 
       if (this.microscopeName != this.$store.state.apiConfig.name) {
         payload.name = this.microscopeName
       };
 
-      if (this.stageBacklash != this.$store.state.apiConfig.backlash) {
-        payload.backlash = this.stageBacklash
+      if (this.stageBacklash != this.$store.state.apiConfig.stage_settings.backlash) {
+        payload.stage_settings.backlash = this.stageBacklash
       }
+
+      console.log(payload)
 
       // Send request to update config
       axios.post(this.configApiUri, payload)

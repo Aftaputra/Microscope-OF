@@ -1,9 +1,12 @@
-const { app, Menu } = require('electron')
+const { app, shell, Menu } = require('electron')
 const updater = require("electron-updater");
 const autoUpdater = updater.autoUpdater;
 const path = require('path')
 
 const openAboutWindow = require('about-window').default
+
+const main = require('./app')
+const { store } = require('./store')
 
 const template = [
   {
@@ -26,7 +29,16 @@ const template = [
       { role: 'forcereload' },
       { role: 'toggledevtools' },
       { type: 'separator' },
-      { role: 'togglefullscreen' }
+      { role: 'togglefullscreen' },
+      { type: 'separator' },
+      {
+        type: 'checkbox',
+        checked: store.get('drawCustomTitleBar'),
+        label: 'Custom titlebar',
+        click () {
+          main.toggleCustomTitleBar()
+        }
+      }
     ]
   },
   {
@@ -50,6 +62,13 @@ const template = [
           })
         }
       },
+      {
+        label: 'Homepage',
+        click () {
+          shell.openExternal('https://openflexure.org')
+        }
+      },
+      { type: 'separator' },
       {
         label: 'Check for Updates',
         click () {

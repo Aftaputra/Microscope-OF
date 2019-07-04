@@ -4,30 +4,31 @@
       <div>
         <label class="uk-form-label" for="form-stacked-text">Exposure time</label>
         <div class="uk-form-controls">
-          <input v-model="shutterSpeed" class="uk-input uk-form-small" type="number">
+          <input v-model="displayShutterSpeed" class="uk-input uk-form-small" type="number">
         </div>
       </div>
 
       <div>
         <label class="uk-form-label" for="form-stacked-text">Analogue gain</label>
         <div class="uk-form-controls">
-          <input v-model="analogGain" class="uk-input uk-form-small" type="number">
+          <input v-model="displayAnalogGain" class="uk-input uk-form-small" type="number" step="0.01">
         </div>
       </div>
 
       <div>
         <label class="uk-form-label" for="form-stacked-text">Digital gain</label>
         <div class="uk-form-controls">
-          <input v-model="digitalGain" class="uk-input uk-form-small" type="number">
+          <input v-model="displayDigitalGain" class="uk-input uk-form-small" type="number" step="0.01">
         </div>
       </div>
 
     <button type="submit" class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1">Apply Settings</button>
     
-    <div class="uk-text-center uk-container" v-if="isCalibrating">
-      <div class="center-spinner" uk-spinner></div>
+    <div v-if="isCalibrating">
+      <progressBar/>
     </div>
-    <div v-else>
+
+    <div v-bind:hidden="isCalibrating">
       <button type="button" v-on:click="recalibrateConfirm()" class="uk-button uk-button-default uk-form-small uk-float-right uk-margin-small uk-width-1-1">Auto-Calibrate</button>
     </div>
 
@@ -40,35 +41,42 @@
 
 <script>
 import axios from 'axios'
+import progressBar from "../../genericComponents/progressBar"
 
 // Export main app
 export default {
   name: 'microscopeSettings',
 
+  components: {
+    progressBar
+  },
+
   data: function () {
     return {
-      shutterSpeed: this.$store.state.apiConfig.picamera_settings.shutter_speed,
-      analogGain: this.$store.state.apiConfig.picamera_settings.analog_gain,
-      digitalGain: this.$store.state.apiConfig.picamera_settings.digital_gain,
+      shutterSpeed: this.$store.state.apiConfig.camera_settings.picamera_settings.shutter_speed,
+      analogGain: this.$store.state.apiConfig.camera_settings.picamera_settings.analog_gain,
+      digitalGain: this.$store.state.apiConfig.camera_settings.picamera_settings.digital_gain,
       isCalibrating: false
     }
   },
 
   methods: {
     updateInputValues: function () {
-      this.shutterSpeed = this.$store.state.apiConfig.picamera_settings.shutter_speed
-      this.digitalGain = this.$store.state.apiConfig.picamera_settings.digital_gain
-      this.analogGain = this.$store.state.apiConfig.picamera_settings.analog_gain
+      this.shutterSpeed = this.$store.state.apiConfig.camera_settings.picamera_settings.shutter_speed
+      this.digitalGain = this.$store.state.apiConfig.camera_settings.picamera_settings.digital_gain
+      this.analogGain = this.$store.state.apiConfig.camera_settings.picamera_settings.analog_gain
     },
 
     applyConfigRequest: function() {
       console.log("Applying config to the microscope")
-      var payload = {picamera_settings:{}}
+      var payload = {
+        picamera_settings: {}
+      }
 
       //if (this.shutterSpeed != this.$store.state.apiConfig.picamera_settings.shutter_speed) {
-      payload.picamera_settings.shutter_speed = this.shutterSpeed
-      payload.picamera_settings.analog_gain = this.analogGain
-      payload.picamera_settings.digital_gain = this.digitalGain
+      payload.camera_settings.picamera_settings.shutter_speed = this.shutterSpeed
+      payload.camera_settings.picamera_settings.analog_gain = this.analogGain
+      payload.camera_settings.picamera_settings.digital_gain = this.digitalGain
       //};
 
       // Send request
@@ -119,6 +127,15 @@ export default {
   },
 
   computed: {
+    displayDigitalGain: function () {
+      return Number(this.digitalGain).toFixed(2)
+    },
+    displayAnalogGain: function () {
+      return Number(this.analogGain).toFixed(2)
+    },
+    displayShutterSpeed: function () {
+      return (this.shutterSpeed != 0) ? this.shutterSpeed : "auto"
+    },
     recalibrateApiUri: function () {
       return this.$store.getters.uri + "/plugin/default/camera_calibration/recalibrate"
     },

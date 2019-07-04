@@ -1,6 +1,5 @@
 stages:
   - build
-  - package
   - meta
 
 # Cache modules in between jobs
@@ -9,13 +8,13 @@ cache:
   paths:
   - node_modules/
 
-# Build basic webapp
+# Basic webapp build
 build:
   stage: build
   image: electronuserland/builder:wine
   script:
     - npm install
-    - npm run build
+    - npm run build:web
   artifacts:
     name: "build"
     paths:
@@ -25,20 +24,20 @@ build:
     - tags
     - web
 
-# Platform-specific Electron builds
+# Electron app build
 package:
-  stage: package
-  dependencies:
-    - build
+  stage: build
   image: electronuserland/builder:wine
-  retry: 2
   script:
+    - npm install
+    - npm run build:app
     - npm run release
+    - shopt -s extglob
     - mv ./release-builds/*.AppImage .
     - mv ./release-builds/*.deb .
     - mv ./release-builds/*.exe .
     - mv ./release-builds/*.exe.blockmap .
-    - mv ./release-builds/latest*.yml .
+    - mv ./release-builds/?(beta*.yml|latest*.yml) .
   artifacts:
     name: "dist"
     paths:
@@ -47,6 +46,7 @@ package:
       - "*.exe"
       - "*.exe.blockmap"
       - "latest*.yml"
+      - "beta*.yml"
   only:
     - stable
     - tags
@@ -74,6 +74,4 @@ meta:choco:
       - tools/chocolateyInstall.ps1
       - ./*.nupkg
   only:
-    - stable
     - tags
-    - web
