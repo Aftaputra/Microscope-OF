@@ -41,7 +41,7 @@ Components
       - dict
       - **name** (str) Unique name of the component
 
-        **value** (dict) Dictionary (JS object) of key-value pairs
+        **value** (dict) Dictionary of key-value pairs
 
       - .. figure:: https://openflexure.gitlab.io/assets/plugin-form-components/keyvalList.png 
     * - labelInput
