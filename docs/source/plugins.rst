@@ -7,6 +7,7 @@ Developing Plugins
    ./plugins/introduction.rst
    ./plugins/structure.rst
    ./plugins/routes.rst
+   ./plugins/schema.rst
    ./plugins/hardware.rst
    ./plugins/example.rst
    ./plugins/class.rst
