@@ -1,11 +1,6 @@
 Adding a GUI
 =====================
 
-.. toctree::
-   :maxdepth: 1
-
-   ./schema/json_schema.rst
-
 Introduction
 ------------
 
@@ -189,3 +184,9 @@ JSON form example
 
 .. literalinclude:: schema_example.json
   :language: JSON
+
+
+.. toctree::
+   :maxdepth: 1
+
+   ./schema/json_schema.rst
