@@ -156,7 +156,7 @@ class Sangaboard(ExtensibleSerialInstrument):
 
         # Request firmware version from the board
         self.firmware = self.query("version",timeout=2).rstrip()
-
+        logging.info("Firmware response: {}".format(self.firmware))
         # Check for valid firmware string
         if self.firmware:
             match = re.match(r"Sangaboard Firmware v(([\d]+)(?:\.([\d]+))+)", self.firmware)
