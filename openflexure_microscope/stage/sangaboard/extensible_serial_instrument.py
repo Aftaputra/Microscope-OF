@@ -271,10 +271,10 @@ class ExtensibleSerialInstrument(object):
             success = False
             for port_name, _, _ in serial.tools.list_ports.comports(): #loop through serial ports, apparently 256 is the limit?!
                 try:
-                    print("Trying port",port_name)
+                    logging.info("Trying port",port_name)
                     self.open(port_name)
                     success = True
-                    print("Success!")
+                    logging.info("Success!")
                 except:
                     pass
                 finally:
