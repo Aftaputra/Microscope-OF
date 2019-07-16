@@ -31,7 +31,9 @@ class TestPluginMethods(unittest.TestCase):
 
 if __name__ == '__main__':
 
-        with Microscope(PiCameraStreamer(), OpenFlexureStage("/dev/ttyUSB0")) as microscope:
+        with Microscope() as microscope:
+
+            microscope.attach(PiCameraStreamer(), OpenFlexureStage())
 
             microscope.plugin.attach("openflexure_microscope.plugins.testing:Plugin")
 
