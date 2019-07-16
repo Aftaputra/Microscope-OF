@@ -37,3 +37,4 @@ picamera = { git = "https://github.com/rwb27/picamera.git", branch = "lens-shadi
 
 [tool.poetry.dev-dependencies]
 sphinxcontrib-httpdomain = "^1.7"
+rope = "^0.14.0"
