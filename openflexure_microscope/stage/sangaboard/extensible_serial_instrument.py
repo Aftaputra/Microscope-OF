@@ -83,32 +83,27 @@ class ExtensibleSerialInstrument(object):
             #be set to 1 byte for maximum responsiveness.
             assert self.test_communications(), "The instrument doesn't seem to be responding.  Did you specify the right port?"
 
-    def close_serial_communications(self):
-        """
-        Close communication to the serial device. No exception handling.
-        """
-        with self.communications_lock:
-            self._ser.close()
-
     def close(self):
         """Cleanly close the device. Includes proper logging statements."""
         logging.debug("Closing serial connection")
-        try:
-            self.close_serial_communications()
-        except Exception as e:
-            logging.warning("The serial port didn't close cleanly: {}".format(e))
-        logging.debug("Connection closed")
+        with self.communications_lock:
+            try:
+                self._ser.close()
+            except Exception as e:
+                logging.warning("The serial port didn't close cleanly: {}".format(e))
+            logging.debug("Connection closed")
 
     def __del__(self):
         """Emergency close the device. Try to avoid having to use this."""
         if hasattr(self, '_ser') and self._ser.isOpen():
-            print(
-                "Closing an open serial communication has been triggered by garbage collection!\n"\
-                "Please close this device more sensibly in future.")
-            try:
-                self.close_serial_communications()
-            except Exception as e:
-                print("The serial port didn't close cleanly: {}".format(e))
+            with self.communications_lock:
+                print(
+                    "Closing an open serial communication has been triggered by garbage collection!\n"\
+                    "Please close this device more sensibly in future.")
+                try:
+                    self._ser.close()
+                except Exception as e:
+                    print("The serial port didn't close cleanly: {}".format(e))
 
     def __enter__(self):
         return self
