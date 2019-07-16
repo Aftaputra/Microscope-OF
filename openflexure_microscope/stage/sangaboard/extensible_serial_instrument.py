@@ -26,8 +26,8 @@ from serial import PARITY_NONE, PARITY_EVEN, PARITY_ODD, PARITY_MARK, PARITY_SPA
 from serial import STOPBITS_ONE, STOPBITS_ONE_POINT_FIVE, STOPBITS_TWO
 import io
 import time
-import warnings
 import logging
+import warnings
 
 class ExtensibleSerialInstrument(object):
     """
@@ -83,29 +83,39 @@ class ExtensibleSerialInstrument(object):
             #be set to 1 byte for maximum responsiveness.
             assert self.test_communications(), "The instrument doesn't seem to be responding.  Did you specify the right port?"
 
-    def close(self):
-        """Release the serial port"""
-        logging.debug("Closing serial connection")
+    def close_serial_communications(self):
+        """
+        Close communication to the serial device. No exception handling.
+        """
         with self.communications_lock:
-            try:
-                self._ser.close()
-            except Exception as e:
-                logging.warning("The serial port didn't close cleanly:", e)
+            self._ser.close()
+
+    def close(self):
+        """Cleanly close the device. Includes proper logging statements."""
+        logging.debug("Closing serial connection")
+        try:
+            self.close_serial_communications()
+        except Exception as e:
+            logging.warning("The serial port didn't close cleanly: {}".format(e))
         logging.debug("Connection closed")
 
     def __del__(self):
-        """Close the port when the object is deleted
-        
-        NB if the object is created in a with statement, this will cause
-        the port to be closed at the end of the with block."""
-        self.close()
+        """Emergency close the device. Try to avoid having to use this."""
+        if hasattr(self, '_ser') and self._ser.isOpen():
+            print(
+                "Closing an open serial communication has been triggered by garbage collection!\n"\
+                "Please close this device more sensibly in future.")
+            try:
+                self.close_serial_communications()
+            except Exception as e:
+                print("The serial port didn't close cleanly: {}".format(e))
 
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, traceback):
-        """Close down the instrument.  This happens in __del__ though."""
-        pass
+        """Cleanly close down the instrument at end of a with block."""
+        self.close()
         
     def write(self,query_string):
         """Write a string to the serial port"""
@@ -234,7 +244,7 @@ class ExtensibleSerialInstrument(object):
                 reply = self.readline().strip()
                 res=re.search(response_regex, reply, flags=re_flags)
                 if res is not None:
-                    warnings.warn("Query suceeded after initially receieving unmatched response ('%s') to '%s'. Match pattern /%s/ (generated regex /%s/)"%(original_reply, query_string, response_string, response_regex),RuntimeWarning)
+                    warnings.warn("Query suceeded after initially receieving unmatched response ('%s') to '%s'. Match pattern /%s/ (generated regex /%s/)"%(original_reply, query_string, response_string, response_regex), RuntimeWarning)
             else:
                 raise ValueError("Stage response to '%s' ('%s') wasn't matched by /%s/ (generated regex /%s/)" % (query_string, original_reply, response_string, response_regex))
         try:
@@ -244,9 +254,8 @@ class ExtensibleSerialInstrument(object):
             else:
                 return parsed_result
         except ValueError:
-            logging.error("Parsing Error")
-            logging.info("Matched Groups:", res.groups())
-            logging.info("Parsing Functions:", parse_function)
+            logging.info("Matched Groups: {}".format(res.groups()))
+            logging.info("Parsing Functions {}:".format(parse_function))
             raise ValueError("Stage response to %s ('%s') couldn't be parsed by the supplied function" % (query_string, reply))
     def int_query(self, query_string, **kwargs):
         """Perform a query and return the result(s) as integer(s) (see parsedQuery)"""
