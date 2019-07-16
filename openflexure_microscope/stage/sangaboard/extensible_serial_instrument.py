@@ -54,7 +54,7 @@ class ExtensibleSerialInstrument(object):
     ignore_echo = False
     port_settings = {}
 
-    def __init__(self, port, **kwargs):
+    def __init__(self, port=None, **kwargs):
         """
         Set up the serial port and so on.
         """
@@ -64,7 +64,7 @@ class ExtensibleSerialInstrument(object):
         self.open(port, False) # Eventually this shouldn't rely on init...
         logging.info("Opened ESI connection to port {}".format(port))
 
-    def open(self, port, quiet=True):
+    def open(self, port=None, quiet=True):
         """Open communications with the serial port.
         
         If no port is specified, it will attempt to autodetect.  If quiet=True
@@ -74,6 +74,8 @@ class ExtensibleSerialInstrument(object):
             if hasattr(self,'_ser') and self._ser.isOpen():
                 if not quiet: logging.warning("Attempted to open an already-open port!")
                 return
+            if port is None: 
+                port=self.find_port()
             assert port is not None, "We don't have a serial port to open, meaning you didn't specify a valid port.  Are you sure the instrument is connected?"
             self._ser = serial.Serial(port,**self.port_settings)
             #the block above wraps the serial IO layer with a text IO layer
@@ -199,15 +201,15 @@ class ExtensibleSerialInstrument(object):
         response_regex = response_string
         noop = lambda x: x #placeholder null parse function
         placeholders = [ #tuples of (regex matching placeholder, regex to replace it with, parse function)
-            (r"%c",r".", noop),
-            (r"%(\d+)c",r".{\1}", noop), #TODO support %cn where n is a number of chars
-            (r"%d",r"[-+]?\d+", int),
-            (r"%[eEfg]",r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?", float),
-            (r"%i",r"[-+]?(?:0[xX][\dA-Fa-f]+|0[0-7]*|\d+)", lambda x: int(x, 0)), #0=autodetect base
-            (r"%o",r"[-+]?[0-7]+", lambda x: int(x, 8)), #8 means octal
-            (r"%s",r"\S+",noop),
-            (r"%u",r"\d+",int),
-            (r"%[xX]",r"[-+]?(?:0[xX])?[\dA-Fa-f]+",lambda x: int(x, 16)), #16 forces hexadecimal
+            (r"%c", r".", noop),
+            (r"%(\d+)c", r".{\1}", noop), #TODO support %cn where n is a number of chars
+            (r"%d", r"[-+]?\\d+", int),
+            (r"%[eEfg]", r"[-+]?(?:\\d+(?:\.\\d*)?|\.\\d+)(?:[eE][-+]?\\d+)?", float),
+            (r"%i", r"[-+]?(?:0[xX][\\dA-Fa-f]+|0[0-7]*|\\d+)", lambda x: int(x, 0)), #0=autodetect base
+            (r"%o", r"[-+]?[0-7]+", lambda x: int(x, 8)), #8 means octal
+            (r"%s", r"\\s+", noop),
+            (r"%u", r"\\d+", int),
+            (r"%[xX]", r"[-+]?(?:0[xX])?[\\dA-Fa-f]+", lambda x: int(x, 16)), #16 forces hexadecimal
         ]
         matched_placeholders = []
         for placeholder, regex, parse_fun in placeholders:
@@ -261,7 +263,32 @@ class ExtensibleSerialInstrument(object):
         Usually this function sends a command and checks for a known reply."""
         with self.communications_lock:
             return True
-    
+
+    def find_port(self):
+        """Iterate through the available serial ports and query them to see
+        if our instrument is there."""
+        with self.communications_lock:
+            success = False
+            for port_name, _, _ in serial.tools.list_ports.comports(): #loop through serial ports, apparently 256 is the limit?!
+                try:
+                    logging.info("Trying port {}".format(port_name))
+                    self.open(port_name)
+                    success = True
+                    logging.info("Success!")
+                except:
+                    pass
+                finally:
+                    try:
+                        self.close()
+                    except:
+                        pass #we don't care if there's an error closing the port...
+                if success:
+                    break #again, make sure this happens *after* closing the port
+            if success:
+                return port_name
+            else:
+                return None
+
 class OptionalModule(object):
     """This allows a `ExtensibleSerialInstrument` to have optional features.
 
