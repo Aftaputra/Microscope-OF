@@ -32,7 +32,7 @@ except ImportError:
     logging.warning("Unable to import PiCameraStreamer")
 from openflexure_microscope.camera.mock import MockStreamer
 
-from openflexure_microscope.stage.sanga import SangaStage
+from openflexure_microscope.stage.sanga import SangaStage, SangaDeltaStage
 from openflexure_microscope.stage.mock import MockStage
 
 
@@ -113,7 +113,7 @@ def attach_microscope():
     # Initialise stage
     logging.debug("Creating stage object...")
     try:
-        api_stage = SangaStage()
+        api_stage = SangaDeltaStage()
     except Exception as e:
         logging.error(e)
         logging.warning("No valid stage hardware found. Falling back to mock stage!")

@@ -104,23 +104,25 @@ class SangaStage(BaseStage):
 
         return config
 
+    def steps_to_array(self, displacement, axis):
+        assert axis in self.axis_names, "axis must be one of {}".format(self.axis_names)
+        move = np.zeros(self.n_axes, dtype=np.int)
+        move[np.argmax(np.array(self.axis_names) == axis)] = int(displacement)
+        return move
+
     def move_rel(self, displacement, axis=None, backlash=True):
         """Make a relative move, optionally correcting for backlash.
         displacement: integer or array/list of 3 integers
         axis: None (for 3-axis moves) or one of 'x','y','z'
         backlash: (default: True) whether to correct for backlash.
         """
+
+        if axis is not None:
+            displacement = self.steps_to_array(displacement, axis)
+
         with self.lock:
             if not backlash or self.backlash is None:
                 return self.board.move_rel(displacement, axis=axis)
-
-            if axis is not None:
-                # backlash correction is easier if we're always in 3D
-                # so this code just converts single-axis moves into all-axis moves.
-                assert axis in self.axis_names, "axis must be one of {}".format(self.axis_names)
-                move = np.zeros(self.n_axes, dtype=np.int)
-                move[np.argmax(np.array(self.axis_names) == axis)] = int(displacement)
-                displacement = move
 
             initial_move = np.array(displacement, dtype=np.int)
             # Backlash Correction
@@ -214,3 +216,67 @@ class SangaStage(BaseStage):
                 print("A further exception occurred when resetting position: {}".format(e))
             print("Move completed, raising exception...")
             raise value  # Propagate the exception
+
+
+class SangaDeltaStage(SangaStage):
+    def __init__(self, port=None, flex_h=80, flex_a=48, camera_angle=37.5, scale=10, **kwargs):
+        self.flex_h = flex_h
+        self.flex_a = flex_a
+
+        # Set up camera rotation relative to stage
+        camera_theta = (camera_angle/180)*np.pi
+        self.R_camera = np.array([
+            [np.cos(camera_theta), -np.sin(camera_theta), 0],
+            [np.sin(camera_theta), np.cos(camera_theta), 0],
+            [0, 0, 1]
+        ])
+
+        # Transformation matrix converting delta into cartesian
+        x_fac = np.divide(np.divide(2, np.sqrt(3)), self.flex_h)
+        y_fac = np.divide(1, self.flex_h)
+        z_fac = np.divide(1, self.flex_a)
+
+        self.Tvd = np.array([
+            [x_fac, -x_fac, 0],
+            [0.5 * y_fac, 0.5 * y_fac, -y_fac],
+            [z_fac, z_fac, z_fac]
+        ]) * scale
+
+        self.Tdv = np.linalg.inv(self.Tvd)
+
+        SangaStage.__init__(self, port=port, **kwargs)
+    
+    @property
+    def position(self):
+        # TODO: Account for camera rotation
+        position = np.dot(self.Tvd, self.board.position)
+
+        position = np.dot(np.linalg.inv(self.R_camera), position)
+        return position.tolist()
+
+    def move_rel(self, displacement, axis=None, backlash=True):
+        if axis is not None:
+            displacement = self.steps_to_array(displacement, axis)
+
+        # Transform into camera coordinates
+        displacement = np.dot(self.R_camera, displacement)
+
+        # Transform into delta coordinates
+        displacement = np.dot(self.Tdv, displacement)
+
+        logging.debug("Delta displacement: {}".format(displacement))
+
+        # Do the move
+        SangaStage.move_rel(self, displacement, axis=None, backlash=backlash)
+
+    def move_abs(self, final, **kwargs):
+        # Transform into camera coordinates
+        final = np.dot(self.R_camera, final)
+
+        # Transform into delta coordinates
+        final = np.dot(self.Tdv, final)
+
+        logging.debug("Delta final: {}".format(final))
+
+        # Do the move
+        SangaStage.move_abs(self, final, **kwargs)
