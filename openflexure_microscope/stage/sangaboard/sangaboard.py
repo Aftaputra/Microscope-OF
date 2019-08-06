@@ -174,6 +174,10 @@ class Sangaboard(ExtensibleSerialInstrument):
         """De-energise the stepper motor coils"""
         self.query("release")
 
+    def zero(self):
+        """Zero the stored motor positions"""
+        self.query("zero")
+
     def move_abs(self, final, **kwargs):
         """Make an absolute move to a position
 
