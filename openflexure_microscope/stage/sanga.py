@@ -219,9 +219,10 @@ class SangaStage(BaseStage):
 
 
 class SangaDeltaStage(SangaStage):
-    def __init__(self, port=None, flex_h=80, flex_a=48, camera_angle=37.5, scale=10, **kwargs):
+    def __init__(self, port=None, flex_h=80, flex_a=50, flex_b=38, camera_angle=45, **kwargs):
         self.flex_h = flex_h
         self.flex_a = flex_a
+        self.flex_b = flex_b
 
         # Set up camera rotation relative to stage
         camera_theta = (camera_angle/180)*np.pi
@@ -232,15 +233,15 @@ class SangaDeltaStage(SangaStage):
         ])
 
         # Transformation matrix converting delta into cartesian
-        x_fac = np.divide(np.divide(2, np.sqrt(3)), self.flex_h)
-        y_fac = np.divide(1, self.flex_h)
-        z_fac = np.divide(1, self.flex_a)
+        x_fac = -1 * np.multiply(np.divide(2, np.sqrt(3)), np.divide(self.flex_b, self.flex_h))
+        y_fac = -1 * np.divide(self.flex_b, self.flex_h)
+        z_fac = np.divide(self.flex_b, self.flex_a)
 
         self.Tvd = np.array([
             [x_fac, -x_fac, 0],
             [0.5 * y_fac, 0.5 * y_fac, -y_fac],
             [z_fac, z_fac, z_fac]
-        ]) * scale
+        ])
 
         self.Tdv = np.linalg.inv(self.Tvd)
 
@@ -252,7 +253,7 @@ class SangaDeltaStage(SangaStage):
         position = np.dot(self.Tvd, self.board.position)
 
         position = np.dot(np.linalg.inv(self.R_camera), position)
-        return position.tolist()
+        return [int(p) for p in position]
 
     def move_rel(self, displacement, axis=None, backlash=True):
         if axis is not None:
