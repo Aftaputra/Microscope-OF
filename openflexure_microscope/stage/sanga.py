@@ -219,7 +219,7 @@ class SangaStage(BaseStage):
 
 
 class SangaDeltaStage(SangaStage):
-    def __init__(self, port=None, flex_h=80, flex_a=50, flex_b=38, camera_angle=45, **kwargs):
+    def __init__(self, port=None, flex_h=80, flex_a=50, flex_b=50, camera_angle=0, **kwargs):
         self.flex_h = flex_h
         self.flex_a = flex_a
         self.flex_b = flex_b
@@ -235,15 +235,17 @@ class SangaDeltaStage(SangaStage):
         # Transformation matrix converting delta into cartesian
         x_fac = -1 * np.multiply(np.divide(2, np.sqrt(3)), np.divide(self.flex_b, self.flex_h))
         y_fac = -1 * np.divide(self.flex_b, self.flex_h)
-        z_fac = np.divide(self.flex_b, self.flex_a)
+        z_fac = np.multiply(np.divide(1, 3), np.divide(self.flex_b, self.flex_a))
 
         self.Tvd = np.array([
             [x_fac, -x_fac, 0],
             [0.5 * y_fac, 0.5 * y_fac, -y_fac],
             [z_fac, z_fac, z_fac]
         ])
+        logging.debug(self.Tvd)
 
         self.Tdv = np.linalg.inv(self.Tvd)
+        logging.debug(self.Tdv)
 
         SangaStage.__init__(self, port=port, **kwargs)
     
