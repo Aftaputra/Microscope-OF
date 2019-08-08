@@ -62,7 +62,8 @@
       </div>
     </li>
 
-    <li class="uk-open">
+    <!--Show autofocus if default plugin is enabled-->
+    <li v-if="this.$store.state.apiState.plugin.includes('default_autofocus')" class="uk-open">
       <a class="uk-accordion-title" href="#">Autofocus</a>
       <div class="uk-accordion-content">
 

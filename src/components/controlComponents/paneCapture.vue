@@ -59,7 +59,9 @@
     <hr>
 
     <ul uk-accordion="multiple: true">
-      <li>
+
+      <!--Show stack and scan if default plugin is enabled-->
+      <li v-if="this.$store.state.apiState.plugin.includes('default_scan')">
         <a class="uk-accordion-title" href="#">Stack and Scan</a>
         <div v-if="isScanning" class="uk-accordion-content">
           <div class="uk-text-center uk-container" >
