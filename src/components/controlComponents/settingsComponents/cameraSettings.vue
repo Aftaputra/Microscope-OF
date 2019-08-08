@@ -4,34 +4,36 @@
       <div>
         <label class="uk-form-label" for="form-stacked-text">Exposure time</label>
         <div class="uk-form-controls">
-          <input v-model="displayShutterSpeed" class="uk-input uk-form-small" type="number">
+          <input v-bind:value="displayShutterSpeed" v-on:input="shutterSpeed = $event.target.value" class="uk-input uk-form-small" type="number">
         </div>
       </div>
 
       <div>
         <label class="uk-form-label" for="form-stacked-text">Analogue gain</label>
         <div class="uk-form-controls">
-          <input v-model="displayAnalogGain" class="uk-input uk-form-small" type="number" step="0.01">
+          <input v-bind:value="displayAnalogGain" v-on:input="analogGain = $event.target.value" class="uk-input uk-form-small" type="number" step="0.01">
         </div>
       </div>
 
       <div>
         <label class="uk-form-label" for="form-stacked-text">Digital gain</label>
         <div class="uk-form-controls">
-          <input v-model="displayDigitalGain" class="uk-input uk-form-small" type="number" step="0.01">
+          <input v-bind:value="displayDigitalGain" v-on:input="digitalGain = $event.target.value" class="uk-input uk-form-small" type="number" step="0.01">
         </div>
       </div>
 
     <button type="submit" class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1">Apply Settings</button>
     
-    <div v-if="isCalibrating">
-      <progressBar/>
-    </div>
+    <!--Show auto calibrate if default plugin is enabled-->
+    <div v-if="this.$store.state.apiState.plugin.includes('default_camera_calibration')">
+      <div v-if="isCalibrating">
+        <progressBar/>
+      </div>
 
-    <div v-bind:hidden="isCalibrating">
-      <button type="button" v-on:click="recalibrateConfirm()" class="uk-button uk-button-default uk-form-small uk-float-right uk-margin-small uk-width-1-1">Auto-Calibrate</button>
+      <div v-bind:hidden="isCalibrating">
+        <button type="button" v-on:click="recalibrateConfirm()" class="uk-button uk-button-default uk-form-small uk-float-right uk-margin-small uk-width-1-1">Auto-Calibrate</button>
+      </div>
     </div>
-
 
   </form>
 
@@ -70,7 +72,9 @@ export default {
     applyConfigRequest: function() {
       console.log("Applying config to the microscope")
       var payload = {
-        picamera_settings: {}
+        camera_settings: {
+          picamera_settings: {}
+        }
       }
 
       //if (this.shutterSpeed != this.$store.state.apiConfig.picamera_settings.shutter_speed) {
@@ -86,7 +90,7 @@ export default {
           return this.$store.dispatch('updateConfig');
         })
         .then(this.updateInputValues)
-        .then(r=>{console.log("Updated Config: ", payload.picamera_settings)})
+        .then(r=>{console.log("Updated Config: ", payload)})
         .catch(error => {
           this.modalError(error) // Let mixin handle error
         })
@@ -134,7 +138,7 @@ export default {
       return Number(this.analogGain).toFixed(2)
     },
     displayShutterSpeed: function () {
-      return (this.shutterSpeed != 0) ? this.shutterSpeed : "auto"
+      return (this.shutterSpeed != "0") ? this.shutterSpeed : "auto"
     },
     recalibrateApiUri: function () {
       return this.$store.getters.uri + "/plugin/default/camera_calibration/recalibrate"
