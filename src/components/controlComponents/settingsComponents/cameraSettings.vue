@@ -11,14 +11,14 @@
       <div>
         <label class="uk-form-label" for="form-stacked-text">Analogue gain</label>
         <div class="uk-form-controls">
-          <input v-bind:value="displayAnalogGain" v-on:input="analogGain = $event.target.value" class="uk-input uk-form-small" type="number" step="0.01">
+          <input v-bind:value="displayAnalogGain" v-on:input="analogGain = $event.target.value" class="uk-input uk-form-small" type="number" step="0.1">
         </div>
       </div>
 
       <div>
         <label class="uk-form-label" for="form-stacked-text">Digital gain</label>
         <div class="uk-form-controls">
-          <input v-bind:value="displayDigitalGain" v-on:input="digitalGain = $event.target.value" class="uk-input uk-form-small" type="number" step="0.01">
+          <input v-bind:value="displayDigitalGain" v-on:input="digitalGain = $event.target.value" class="uk-input uk-form-small" type="number" step="0.1">
         </div>
       </div>
 
