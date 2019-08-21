@@ -12,11 +12,6 @@ const { store } = require('./store')
 // Auto upadater 
 autoUpdater.autoDownload = false;
 
-autoUpdater.setFeedURL({
-    provider: "generic",
-    url: "https://gitlab.com/openflexure/openflexure-microscope-jsclient/-/jobs/artifacts/stable/raw?job=package"
-});
-
 autoUpdater.on('checking-for-update', function () {});
 
 autoUpdater.on('update-available', function (info) {

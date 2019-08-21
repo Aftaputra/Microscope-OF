@@ -2,11 +2,11 @@ directories:
   output: release-builds
   buildResources: app/resources
 appId: org.openflexure.ev
-artifactName: ${name}-${os}-${arch}.${ext}
+artifactName: ${name}-${version}-${os}-${arch}.${ext}
 asar: true
 publish:
   - provider: generic
-    url: https://gitlab.com
+    url: https://build.openflexure.org/openflexure-ev/
 files:
   - filter:
       - '**/*'
