@@ -1,6 +1,5 @@
 stages:
   - build
-  - meta
   - deploy
 
 # Cache modules in between jobs
@@ -10,7 +9,7 @@ cache:
   - node_modules/
 
 # Electron app build
-package:
+build:
   stage: build
   image: electronuserland/builder:wine
   script:
@@ -27,10 +26,13 @@ package:
       - "./release-builds/latest*.yml"
       - "./release-builds/beta*.yml"
   only:
+    - web
     - tags
 
 deploy:
   stage: deploy
+  dependencies:
+    - build
   image: ubuntu:latest
   before_script:
     - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
@@ -41,31 +43,7 @@ deploy:
   script:
     - 'which rsync || ( apt-get update -y && apt-get install rsync -y )'
     - mkdir -p "./release-builds"
-    - touch "./release-builds/build-placeholder.txt"
     - rsync -hrvz -e ssh release-builds/ ci-user@openflexure.bath.ac.uk:/var/www/build/openflexure-ev/
   only:
     - web
 
-# Create a nupkg file for Choco package manager
-meta:choco:
-  stage: meta
-  dependencies:
-    - package
-  image: patrickhuber/choco-linux
-  script:
-    - chmod +x ./app/make-nupkg.sh
-    - ./app/make-nupkg.sh
-    - cd ./release-builds/choco
-    - choco pack
-    - cd ../../
-    - mv ./release-builds/choco/openflexure-ev.nuspec .
-    - mv ./release-builds/choco/*.nupkg .
-    - mv ./release-builds/choco/tools .
-  artifacts:
-    name: "openflexure-ev-choco-nupkg"
-    paths:
-      - ./openflexure-ev.nuspec
-      - tools/chocolateyInstall.ps1
-      - ./*.nupkg
-  only:
-    - tags
