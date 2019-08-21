@@ -17,22 +17,15 @@ package:
     - npm install
     - npm run build:app
     - npm run release
-    - shopt -s extglob
-    - mv ./release-builds/*.AppImage .
-    - mv ./release-builds/*.deb .
-    - mv ./release-builds/*.exe .
-    - mv ./release-builds/*.exe.blockmap .
-    - mv ./release-builds/?(beta*.yml|latest*.yml) .
   artifacts:
     name: "dist"
-    expire_in: 1 day
+    expire_in: 1 hour
     paths:
-      - "*.AppImage"
-      - "*.deb"
-      - "*.exe"
-      - "*.exe.blockmap"
-      - "latest*.yml"
-      - "beta*.yml"
+      - "./release-builds/*.AppImage"
+      - "./release-builds/*.exe"
+      - "./release-builds/*.exe.blockmap"
+      - "./release-builds/latest*.yml"
+      - "./release-builds/beta*.yml"
   only:
     - tags
 
@@ -46,7 +39,9 @@ deploy:
     - mkdir -p ~/.ssh
     - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
   script:
-    - ssh -t ci-user@openflexure.bath.ac.uk "touch test.txt"
+    - mkdir -p "./release-builds"
+    - touch "./release-builds/build-placeholder.txt"
+    - rsync -hrvz -e ssh release-builds/ ci-user@openflexure.bath.ac.uk:/var/www/build/openflexure-ev/
   only:
     - web
 
