@@ -1,6 +1,6 @@
 stages:
   - build
-  - deploy
+  - meta
 
 # Cache modules in between jobs
 cache:
@@ -8,42 +8,71 @@ cache:
   paths:
   - node_modules/
 
-# Electron app build
+# Basic webapp build
 build:
+  stage: build
+  image: electronuserland/builder:wine
+  script:
+    - npm install
+    - npm run build:web
+  artifacts:
+    name: "build"
+    paths:
+      - dist/
+  only:
+    - stable
+    - tags
+    - web
+
+
+# Electron app build
+package:
   stage: build
   image: electronuserland/builder:wine
   script:
     - npm install
     - npm run build:app
     - npm run release
+    - shopt -s extglob
+    - mv ./release-builds/*.AppImage .
+    - mv ./release-builds/*.deb .
+    - mv ./release-builds/*.exe .
+    - mv ./release-builds/*.exe.blockmap .
+    - mv ./release-builds/?(beta*.yml|latest*.yml) .
   artifacts:
     name: "dist"
-    expire_in: 1 hour
     paths:
-      - "./release-builds/*.AppImage"
-      - "./release-builds/*.exe"
-      - "./release-builds/*.exe.blockmap"
-      - "./release-builds/latest*.yml"
-      - "./release-builds/beta*.yml"
+      - "*.AppImage"
+      - "*.deb"
+      - "*.exe"
+      - "*.exe.blockmap"
+      - "latest*.yml"
+      - "beta*.yml"
   only:
-    - web
+    - stable
     - tags
-
-deploy:
-  stage: deploy
-  dependencies:
-    - build
-  image: ubuntu:latest
-  before_script:
-    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
-    - eval $(ssh-agent -s)
-    - ssh-add <(echo "$SSH_PRIVATE_KEY_BASE64" | base64 --decode)
-    - mkdir -p ~/.ssh
-    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-  script:
-    - 'which rsync || ( apt-get update -y && apt-get install rsync -y )'
-    - mkdir -p "./release-builds"
-    - rsync -hrvz -e ssh release-builds/ ci-user@openflexure.bath.ac.uk:/var/www/build/openflexure-ev/
-  only:
     - web
 
+# Create a nupkg file for Choco package manager
+meta:choco:
+  stage: meta
+  dependencies:
+    - package
+  image: patrickhuber/choco-linux
+  script:
+    - chmod +x ./app/make-nupkg.sh
+    - ./app/make-nupkg.sh
+    - cd ./release-builds/choco
+    - choco pack
+    - cd ../../
+    - mv ./release-builds/choco/openflexure-ev.nuspec .
+    - mv ./release-builds/choco/*.nupkg .
+    - mv ./release-builds/choco/tools .
+  artifacts:
+    name: "openflexure-ev-choco-nupkg"
+    paths:
+      - ./openflexure-ev.nuspec
+      - tools/chocolateyInstall.ps1
+      - ./*.nupkg
+  only:
+    - tags
