@@ -39,6 +39,7 @@ deploy:
     - mkdir -p ~/.ssh
     - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
   script:
+    - 'which rsync || ( apt-get update -y && apt-get install rsync -y )'
     - mkdir -p "./release-builds"
     - touch "./release-builds/build-placeholder.txt"
     - rsync -hrvz -e ssh release-builds/ ci-user@openflexure.bath.ac.uk:/var/www/build/openflexure-ev/
