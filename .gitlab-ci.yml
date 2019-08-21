@@ -8,23 +8,6 @@ cache:
   paths:
   - node_modules/
 
-# Basic webapp build
-build:
-  stage: build
-  image: electronuserland/builder:wine
-  script:
-    - npm install
-    - npm run build:web
-  artifacts:
-    name: "build"
-    paths:
-      - dist/
-  only:
-    - stable
-    - tags
-    - web
-
-
 # Electron app build
 package:
   stage: build
@@ -41,6 +24,7 @@ package:
     - mv ./release-builds/?(beta*.yml|latest*.yml) .
   artifacts:
     name: "dist"
+    expire_in: 1 day
     paths:
       - "*.AppImage"
       - "*.deb"
@@ -49,8 +33,19 @@ package:
       - "latest*.yml"
       - "beta*.yml"
   only:
-    - stable
     - tags
+
+deploy:
+  image: ubuntu:latest
+  before_script:
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$SSH_PRIVATE_KEY_BASE64" | base64 --decode)
+    - mkdir -p ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+  script:
+    - ssh -t ci-user@openflexure.bath.ac.uk "touch test.txt"
+  only:
     - web
 
 # Create a nupkg file for Choco package manager
