@@ -39,7 +39,7 @@ deploy:
   before_script:
     - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
     - eval $(ssh-agent -s)
-    - ssh-add <(echo "$SSH_PRIVATE_KEY_BASE64" | base64 --decode)
+    - ssh-add <(echo "$SSH_PRIVATE_KEY_BATH_OPENFLEXURE_BASE64" | base64 --decode)
     - mkdir -p ~/.ssh
     - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
   script:
