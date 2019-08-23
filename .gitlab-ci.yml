@@ -18,7 +18,7 @@ build:
     - npm run release
   artifacts:
     name: "dist"
-    expire_in: 1 hour
+    expire_in: 1 week
     paths:
       - "./release-builds/*.AppImage"
       - "./release-builds/*.exe"
@@ -26,10 +26,10 @@ build:
       - "./release-builds/latest*.yml"
       - "./release-builds/beta*.yml"
   only:
-    - web
+    - merge_requests
     - stable
-    - tags
-
+    - web
+    
 # Deploy to builds.openflexure.org
 deploy:
   stage: deploy
@@ -47,5 +47,4 @@ deploy:
     - rsync -hrvz -e ssh release-builds/ ci-user@openflexure.bath.ac.uk:/var/www/build/openflexure-ev/
     - ssh -t ci-user@openflexure.bath.ac.uk "/var/www/build/update-latest.py"
   only:
-    - web
     - stable
