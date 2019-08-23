@@ -12,19 +12,22 @@ cache:
 build:
   stage: build
   image: electronuserland/builder:wine
+ 
   script:
     - npm install
     - npm run build:app
     - npm run release
+
   artifacts:
     name: "dist"
-    expire_in: 1 hour
+    expire_in: 1 week
     paths:
       - "./release-builds/*.AppImage"
       - "./release-builds/*.exe"
       - "./release-builds/*.exe.blockmap"
       - "./release-builds/latest*.yml"
       - "./release-builds/beta*.yml"
+
   only:
     - web
     - stable
@@ -33,19 +36,28 @@ build:
 # Deploy to builds.openflexure.org
 deploy:
   stage: deploy
+
   dependencies:
     - build
+
   image: ubuntu:latest
+
   before_script:
     - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
     - eval $(ssh-agent -s)
     - ssh-add <(echo "$SSH_PRIVATE_KEY_BATH_OPENFLEXURE_BASE64" | base64 --decode)
     - mkdir -p ~/.ssh
     - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
   script:
     - 'which rsync || ( apt-get update -y && apt-get install rsync -y )'
     - rsync -hrvz -e ssh release-builds/ ci-user@openflexure.bath.ac.uk:/var/www/build/openflexure-ev/
     - ssh -t ci-user@openflexure.bath.ac.uk "/var/www/build/update-latest.py"
+
+  when: manual
+  allow_failure: false
+
   only:
     - web
     - stable
+    - tags
