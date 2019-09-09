@@ -97,7 +97,10 @@ function createWindow() {
     frame: !store.get('drawCustomTitleBar'),
     width: 1124, 
     height: 800,
-    icon: path.join(__dirname, '/icons/png/64x64.png')
+    icon: path.join(__dirname, '/icons/png/64x64.png'),
+    webPreferences: {
+      nodeIntegration: true
+    }
   })
 
   // Make a context menu
