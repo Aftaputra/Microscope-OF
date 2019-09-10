@@ -110,6 +110,8 @@ export default {
 
     // Handle mDNS browsing
     if (mdns) {
+      // TODO: Have this run periodically on a timer
+
       // Store the current context for callbacks
       var context = this;
 
