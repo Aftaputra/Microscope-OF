@@ -43,7 +43,7 @@
         <li v-if="!localMode" class="uk-open">
           <a class="uk-accordion-title" href="#">Nearby devices</a>
           <div class="uk-accordion-content">
-            <div v-for="host in foundHosts" :key="host.name" class="uk-margin-small uk-margin-remove-left uk-margin-remove-right uk-flex uk-flex-middle">
+            <div v-for="host in Object.values(foundHosts)" :key="host.name" class="uk-margin-small uk-margin-remove-left uk-margin-remove-right uk-flex uk-flex-middle">
               <a href="#" v-on:click="autofillHost(host)" class="uk-link uk-padding-remove uk-width-expand host-description"><b>{{ host.name }}</b> ({{ host.hostname }}:{{ host.port }})</a> 
             </div>
           </div>
@@ -97,7 +97,7 @@ export default {
       port: 5000,
       selectedHost: "",
       savedHosts: [],
-      foundHosts: []
+      foundHosts: {}
     }  
   },
 
@@ -131,7 +131,7 @@ export default {
           }
 
           if (typeof data.port !== "undefined") {
-            context.foundHosts.push(hostData)
+            context.foundHosts[hostData.hostname] = hostData
           } 
 
           console.log(context.foundHosts)
