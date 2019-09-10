@@ -49,7 +49,7 @@
           </div>
         </li>
 
-        <li v-if="!localMode">
+        <li v-if="!localMode" class="uk-open">
           <a class="uk-accordion-title" href="#">Saved devices</a>
           <div class="uk-accordion-content">
             <button v-if="$store.getters.ready" v-on:click="saveHost()" class="uk-button uk-button-default uk-form-small uk-margin-small uk-width-1-1">Save Current</button>
@@ -130,7 +130,10 @@ export default {
             port: data.port
           }
 
-          context.foundHosts.push(hostData)
+          if (typeof data.port !== "undefined") {
+            context.foundHosts.push(hostData)
+          } 
+
           console.log(context.foundHosts)
       });
     }
