@@ -41,7 +41,16 @@
         </li>
 
         <li v-if="!localMode" class="uk-open">
-          <a class="uk-accordion-title" href="#">Saved hosts</a>
+          <a class="uk-accordion-title" href="#">Nearby devices</a>
+          <div class="uk-accordion-content">
+            <div v-for="host in foundHosts" :key="host.name" class="uk-margin-small uk-margin-remove-left uk-margin-remove-right uk-flex uk-flex-middle">
+              <a href="#" v-on:click="autofillHost(host)" class="uk-link uk-padding-remove uk-width-expand host-description"><b>{{ host.name }}</b> ({{ host.hostname }}:{{ host.port }})</a> 
+            </div>
+          </div>
+        </li>
+
+        <li v-if="!localMode">
+          <a class="uk-accordion-title" href="#">Saved devices</a>
           <div class="uk-accordion-content">
             <button v-if="$store.getters.ready" v-on:click="saveHost()" class="uk-button uk-button-default uk-form-small uk-margin-small uk-width-1-1">Save Current</button>
             <div v-for="host in savedHosts" :key="host.name" class="uk-margin-small uk-margin-remove-left uk-margin-remove-right uk-flex uk-flex-middle">
@@ -71,6 +80,13 @@
 <script>
 import { version } from 'punycode';
 
+// Import mDNS package if running in Electron
+var userAgent = navigator.userAgent.toLowerCase();
+if (userAgent.indexOf(' electron/') > -1) {
+  var mdns = require('mdns-js');
+}
+
+
 export default {
   name: 'paneConnect',
 
@@ -80,13 +96,8 @@ export default {
       hostname: "",
       port: 5000,
       selectedHost: "",
-      savedHosts: [
-        {
-          name: "local",
-          hostname: "localhost",
-          port: 5000
-        }
-      ]
+      savedHosts: [],
+      foundHosts: []
     }  
   },
 
@@ -96,6 +107,32 @@ export default {
 
     // Try loading savedHosts from localStorage. If null, don't change.
     this.savedHosts = this.getLocalStorageObj('savedHosts') || this.savedHosts
+
+    // Handle mDNS browsing
+    if (mdns) {
+      // Store the current context for callbacks
+      var context = this;
+
+      // Create a browser to search for 'openflexure' type services
+      var browser = mdns.createBrowser(mdns.tcp('openflexure'));
+
+      // Start discovering services when ready
+      browser.on('ready', function () {
+          browser.discover(); 
+      });
+
+      browser.on('update', function (data) {
+          var hostData = {
+            hostname: data.addresses[0],
+            name: `${data.host} on ${data.networkInterface}`,
+            port: data.port
+          }
+
+          context.foundHosts.push(hostData)
+          console.log(context.foundHosts)
+      });
+    }
+
   },
 
   // When savedHosts changes, serialise to JSON and save to localStorage
