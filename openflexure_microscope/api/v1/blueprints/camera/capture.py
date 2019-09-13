@@ -1,4 +1,4 @@
-from openflexure_microscope.api.utilities import get_bool, JsonPayload
+from openflexure_microscope.api.utilities import get_bool, JsonResponse
 from openflexure_microscope.api.v1.views import MicroscopeView
 from openflexure_microscope.utilities import filter_dict
 
@@ -98,7 +98,7 @@ class ListAPI(MicroscopeView):
         :<header Content-Type: application/json
         :status 200: capture created
         """
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
 
         filename = payload.param('filename')
         temporary = payload.param('temporary', default=False, convert=bool)
@@ -258,7 +258,7 @@ class CaptureAPI(MicroscopeView):
         if not capture_obj:
             return abort(404)  # 404 Not Found
         
-        data_dict = JsonPayload(request).json
+        data_dict = JsonResponse(request).json
 
         capture_obj.put_metadata(data_dict)
 
@@ -463,7 +463,7 @@ class TagsAPI(MicroscopeView):
         if not capture_obj or not capture_obj.state['available']:
             return abort(404)  # 404 Not Found
         
-        data_dict = JsonPayload(request).json
+        data_dict = JsonResponse(request).json
 
         if type(data_dict) != list:
             return abort(400)
@@ -499,7 +499,7 @@ class TagsAPI(MicroscopeView):
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        data_dict = JsonPayload(request).json
+        data_dict = JsonResponse(request).json
 
         if type(data_dict) != list:
             return abort(400)

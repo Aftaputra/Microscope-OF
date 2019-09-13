@@ -1,5 +1,5 @@
 from openflexure_microscope.api.v1.views import MicroscopeView
-from openflexure_microscope.api.utilities import JsonPayload
+from openflexure_microscope.api.utilities import JsonResponse
 
 from flask import jsonify, request
 
@@ -43,7 +43,7 @@ class ZoomAPI(MicroscopeView):
         :<header Content-Type: application/json
         :status 200: preview started/stopped
         """
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
         zoom_value = payload.param('zoom_value', default=1.0, convert=float)
 
         self.microscope.camera.set_zoom(zoom_value)
@@ -93,7 +93,7 @@ class OverlayAPI(MicroscopeView):
         :status 200: preview started/stopped
         """
 
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
         text = payload.param('text', default="", convert=str)
         size = payload.param('size', default=50, convert=int)
 

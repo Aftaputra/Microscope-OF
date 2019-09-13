@@ -1,4 +1,4 @@
-from openflexure_microscope.devel import MicroscopeViewPlugin, TaskDeniedException, JsonPayload, Response, request, escape, jsonify
+from openflexure_microscope.devel import MicroscopeViewPlugin, TaskDeniedException, JsonResponse, Response, request, escape, jsonify
 
 import logging
 
@@ -12,7 +12,7 @@ class DoAPI(MicroscopeViewPlugin):
 
     def post(self):
         # Get payload JSON
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
 
         # Extract a values from the JSON payload.
         val_int = payload.param('val_int', default=None, convert=int)
@@ -49,7 +49,7 @@ class TaskAPI(MicroscopeViewPlugin):
 
     def post(self):
         # Get payload JSON
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
 
         # Extract a values from the JSON payload.
         val_int = payload.param('run_time', default=5, convert=int)

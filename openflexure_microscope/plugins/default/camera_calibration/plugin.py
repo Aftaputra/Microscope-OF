@@ -1,4 +1,4 @@
-from openflexure_microscope.devel import MicroscopePlugin, MicroscopeViewPlugin, JsonPayload, request, jsonify
+from openflexure_microscope.devel import MicroscopePlugin, MicroscopeViewPlugin, JsonResponse, request, jsonify
 
 import logging
 

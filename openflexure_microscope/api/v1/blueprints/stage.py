@@ -1,4 +1,4 @@
-from openflexure_microscope.api.utilities import JsonPayload
+from openflexure_microscope.api.utilities import JsonResponse
 from openflexure_microscope.api.v1.views import MicroscopeView
 from openflexure_microscope.utilities import axes_to_array, filter_dict
 
@@ -60,7 +60,7 @@ class PositionAPI(MicroscopeView):
 
         """
         # Create response object
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
         logging.debug(payload.json)
 
         # Construct position array

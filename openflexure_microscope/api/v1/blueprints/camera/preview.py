@@ -1,4 +1,4 @@
-from openflexure_microscope.api.utilities import JsonPayload
+from openflexure_microscope.api.utilities import JsonResponse
 from openflexure_microscope.api.v1.views import MicroscopeView
 
 from flask import jsonify, request
@@ -37,7 +37,7 @@ class GPUPreviewAPI(MicroscopeView):
         :status 200: preview started/stopped
         """
         if operation == "start":
-            payload = JsonPayload(request)
+            payload = JsonResponse(request)
 
             window = payload.param('window', default=[])
             logging.debug(window)

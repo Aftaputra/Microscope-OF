@@ -29,12 +29,6 @@ USER_CONFIG_FILE_OLD = os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")
 with open(DEFAULT_CONFIG_PATH, 'r') as default_rc:
     DEFAULT_CONFIG = default_rc.read()
 
-# Run a one-time conversion of the old microscoperc.yaml into the new microscope_settings.yaml
-# TODO: Should be removed in >1.0.1?
-if (not os.path.isfile(USER_CONFIG_FILE)) and (os.path.isfile(USER_CONFIG_FILE_OLD)):
-    os.rename(USER_CONFIG_FILE_OLD, USER_CONFIG_FILE)
-
-
 # HANDLE CUSTOM YAML PARSING
 def construct_yaml_bool(self, node):
     """

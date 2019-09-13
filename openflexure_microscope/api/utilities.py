@@ -3,7 +3,7 @@ from werkzeug.exceptions import BadRequest
 from flask import url_for
 
 
-class JsonPayload:
+class JsonResponse:
     def __init__(self, request):
         """
         Object to wrap up simple functionality for parsing a JSON response.

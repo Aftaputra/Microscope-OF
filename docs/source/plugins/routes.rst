@@ -130,7 +130,7 @@ An example web route with simple responses may look like:
 
 Parsing JSON from HTTP POST requests
 ------------------------------------
-To ease obtaining values from a JSON payload attached to an HTTP POST request, you can use the :py:class:`openflexure_microscope.api.utilities.JsonPayload` class. This allows parameters to be extracted by their key, with a default value supplied to avoid errors associated with nonexistent keys. Additionally, a converter function may be passed, used in the following examples to convert the type of a value. In principle, however, you can pass any single-argument function and it will apply that function to the value, if it exists.
+To ease obtaining values from a JSON payload attached to an HTTP POST request, you can use the :py:class:`openflexure_microscope.api.utilities.JsonResponse` class. This allows parameters to be extracted by their key, with a default value supplied to avoid errors associated with nonexistent keys. Additionally, a converter function may be passed, used in the following examples to convert the type of a value. In principle, however, you can pass any single-argument function and it will apply that function to the value, if it exists.
 
 .. code-block:: python
 
@@ -139,7 +139,7 @@ To ease obtaining values from a JSON payload attached to an HTTP POST request, y
 
         def post(self):
             # Get payload JSON from request
-            payload = JsonPayload(request)
+            payload = JsonResponse(request)
 
             # Try to find value associated with 'my_string' key.
             # If that key doesn't exist in the payload, return '' instead.
@@ -147,5 +147,5 @@ To ease obtaining values from a JSON payload attached to an HTTP POST request, y
             new_plugin_string = payload.param('my_string', default='', convert=str)
             ...
 
-.. autoclass:: openflexure_microscope.api.utilities.JsonPayload
+.. autoclass:: openflexure_microscope.api.utilities.JsonResponse
     :members:

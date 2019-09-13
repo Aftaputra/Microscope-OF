@@ -1,17 +1,17 @@
 import numpy as np
 import logging
 
-from openflexure_microscope.devel import MicroscopeViewPlugin, JsonPayload, request, jsonify
+from openflexure_microscope.devel import MicroscopeViewPlugin, JsonResponse, request, jsonify
 
 class MeasureSharpnessAPI(MicroscopeViewPlugin):
     def post(self):
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
         return jsonify({'sharpness': self.plugin.measure_sharpness()})
 
 
 class AutofocusAPI(MicroscopeViewPlugin):
     def post(self):
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
         
         # Figure out the range of z values to use
         dz = payload.param("dz", default=np.linspace(-300, 300, 7), convert=np.array)
@@ -24,7 +24,7 @@ class AutofocusAPI(MicroscopeViewPlugin):
 
 class FastAutofocusAPI(MicroscopeViewPlugin):
     def post(self):
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
         
         # Figure out the parameters to use
         dz = payload.param("dz", default=2000, convert=int)

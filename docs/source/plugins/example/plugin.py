@@ -1,6 +1,6 @@
 from openflexure_microscope.plugins import MicroscopePlugin
 from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
-from openflexure_microscope.api.utilities import JsonPayload
+from openflexure_microscope.api.utilities import JsonResponse
 
 import os
 import time
@@ -115,7 +115,7 @@ class HelloWorldAPI(MicroscopeViewPlugin):
         Assumes request will include a JSON payload.
         """
         # Get payload JSON
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
 
         # Extract a value from the JSON key 'plugin_string', and convert to a string. If no value is given, default to empty.
         new_plugin_string = payload.param('plugin_string', default='', convert=str)
@@ -134,7 +134,7 @@ class TimelapseAPI(MicroscopeViewPlugin):
     def post(self):
 
         # Get any JSON data in the body of the POST request
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
 
         # Extract the "n_images" parameter if it was passed. Otherwise, default to 10.
         n_images = payload.param('n_images', default=10, convert=int)

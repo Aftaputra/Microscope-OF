@@ -1,10 +1,10 @@
-from openflexure_microscope.devel import MicroscopeViewPlugin, JsonPayload, request, jsonify, abort
+from openflexure_microscope.devel import MicroscopeViewPlugin, JsonResponse, request, jsonify, abort
 
 import logging
 
 class TileScanAPI(MicroscopeViewPlugin):
     def post(self):
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
 
         # Get params
         filename = payload.param('filename')

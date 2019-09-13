@@ -80,7 +80,7 @@ For example, a timelapse plugin may look like:
     from openflexure_microscope.plugins import MicroscopePlugin
     from openflexure_microscope.exceptions import TaskDeniedException
     from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
-    from openflexure_microscope.api.utilities import JsonPayload
+    from openflexure_microscope.api.utilities import JsonResponse
 
 
     ### MICROSCOPE PLUGIN ###

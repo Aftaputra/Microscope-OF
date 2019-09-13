@@ -1,4 +1,4 @@
-from openflexure_microscope.api.utilities import gen, JsonPayload
+from openflexure_microscope.api.utilities import gen, JsonResponse
 from openflexure_microscope.api.v1.views import MicroscopeView
 
 from flask import Response, Blueprint, jsonify, request
@@ -203,7 +203,7 @@ class ConfigAPI(MicroscopeView):
         :status 200: capture created
 
         """
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
 
         logging.debug("Updating settings from POST request:")
         logging.debug(payload.json)

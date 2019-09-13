@@ -1,4 +1,4 @@
-from openflexure_microscope.api.utilities import JsonPayload
+from openflexure_microscope.api.utilities import JsonResponse
 from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
 from openflexure_microscope.exceptions import TaskDeniedException
 
@@ -40,7 +40,7 @@ class HelloWorldAPI(MicroscopeViewPlugin):
         Assumes request will include a JSON payload.
         """
         # Get payload JSON
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
 
         # Extract a value from the JSON key 'plugin_string', and convert to a string. If no value is given, default to empty.
         new_plugin_string = payload.param('plugin_string', default='', convert=str)
@@ -61,7 +61,7 @@ class LongRunningAPI(MicroscopeViewPlugin):
         Method to call when an HTTP POST request is made.
         """
         # Get payload JSON
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
 
         # Extract a values from the JSON payload.
         time_to_run = payload.param('time', default=10, convert=int)
@@ -84,7 +84,7 @@ class SomeExceptionAPI(MicroscopeViewPlugin):
         Method to call when an HTTP POST request is made.
         """
         # Get payload JSON
-        payload = JsonPayload(request)
+        payload = JsonResponse(request)
 
         # Attach the long-running method as a microscope task
         try:
