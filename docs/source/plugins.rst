@@ -8,6 +8,6 @@ Developing Plugins
    ./plugins/structure.rst
    ./plugins/routes.rst
    ./plugins/hardware.rst
-   ./plugins/form.rst
+   ./plugins/forms.rst
    ./plugins/example.rst
    ./plugins/class.rst
