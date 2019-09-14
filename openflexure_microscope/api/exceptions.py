@@ -5,6 +5,11 @@ from werkzeug.exceptions import HTTPException
 
 class JSONExceptionHandler(object):
 
+    """
+    A class to be registered as a Flask error handler,
+    converts error codes into a JSON response
+    """
+
     def __init__(self, app=None):
         if app:
             self.init_app(app)
