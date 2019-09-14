@@ -9,7 +9,7 @@
       "selfUpdate": true,
       "route": "/do",
       "submitLabel": "Do things",
-      "form": [
+      "schema": [
         [
           {
             "fieldType": "numberInput",
@@ -66,7 +66,7 @@
       "selfUpdate": true,
       "route": "/task",
       "submitLabel": "Start task",
-      "form": [
+      "schema": [
           {
             "fieldType": "numberInput",
             "placeholder": "",

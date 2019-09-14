@@ -7,7 +7,7 @@
         "isTask": false,
         "selfUpdate": true,
         "route": "/hello",
-        "form": [
+        "schema": [
           {
             "fieldType": "textInput",
             "placeholder": "Enter a string",
@@ -21,7 +21,7 @@
         "isTask": true,
         "route": "/timelapse",
         "submitLabel": "Start timelapse",
-        "form": [
+        "schema": [
             {
               "fieldType": "numberInput",
               "name": "n_images",
