@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "openflexure_microscope"
-version = "1.1.2"
+version = "1.2.0-beta.1"
 description = "Python module, and Flask-based web API, to run the OpenFlexure Microscope."
 
 authors = [
@@ -23,7 +23,7 @@ keywords = ['raspberry pi', 'arduino', 'microscope']
 license = "GPL-3.0"
 
 [tool.poetry.dependencies]
-python = "^3.5"
+python = "^3.7"
 Flask = "^1.0"
 pyyaml = "^3.13"
 numpy = "1.16.4" # Exact version until we can guarantee a wheel
@@ -39,3 +39,4 @@ picamera = { git = "https://github.com/rwb27/picamera.git", branch = "lens-shadi
 sphinxcontrib-httpdomain = "^1.7"
 rope = "^0.14.0"
 pylint = "^2.3"
+black = {version = "^18.3-alpha.0",allows-prereleases = true}
