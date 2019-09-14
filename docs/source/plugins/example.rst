@@ -10,7 +10,7 @@ plugin.py
 form.json
 +++++++++++
 
-.. literalinclude:: example/form.json
+.. literalinclude:: example/forms.json
   :language: JSON
 
 Notes
