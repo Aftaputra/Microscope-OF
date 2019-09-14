@@ -1,5 +1,5 @@
-Full JSON Schema
+Full JSON Form
 ================
 
-.. literalinclude:: schema.json
+.. literalinclude:: form.json
   :language: JSON

@@ -107,7 +107,6 @@ class MockStreamer(BaseCamera):
                 # If stream was paused to update config, unpause
                 if paused_stream:
                     logging.info("Resuming stream.")
-                    self.start_stream_recording()
 
             else:
                 raise Exception(

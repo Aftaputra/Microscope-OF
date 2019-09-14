@@ -4,39 +4,39 @@ Adding a GUI
 Introduction
 ------------
 
-In order to bind user-interface elements to your plugin, an ``api_schema`` variable must be included in your microscope plugin, similar to your ``api_views``.
+In order to bind user-interface elements to your plugin, an ``api_form`` variable must be included in your microscope plugin, similar to your ``api_views``.
 
-This variable must be in the form of a dictionary, with all data able to be parsed into JSON. Because of this requirement, it is suggested that you create your API schema as a JSON file, and load that file as a dictionary into your plugin. For example:
+This variable must be in the form of a dictionary, with all data able to be parsed into JSON. Because of this requirement, it is suggested that you create your API form as a JSON file, and load that file as a dictionary into your plugin. For example:
 
 .. code-block:: python
 
     import json
 
     HERE = os.path.dirname(os.path.realpath(__file__))  # Find the full path of your plugin Python file
-    SCHEMA_PATH = os.path.join(HERE, "schema.json")  # Find the full path of the adjascent JSON file
+    FORM_PATH = os.path.join(HERE, "form.json")  # Find the full path of the adjascent JSON file
 
     class MyPluginClass(MicroscopePlugin):
 
-        with open(SCHEMA_PATH, 'r') as sc:  # Open the JSON file
-            api_schema = json.load(sc)  # Load the JSON file into the api_schema dictionary
+        with open(FORM_PATH, 'r') as sc:  # Open the JSON file
+            api_form = json.load(sc)  # Load the JSON file into the api_form dictionary
 
-Throughout this documentation, all example of ``api_schema`` sections will be in JSON format. Keep in mind however that it is possible to directly define your ``api_schema`` as a dictionary, without loading an external file.
+Throughout this documentation, all example of ``api_form`` sections will be in JSON format. Keep in mind however that it is possible to directly define your ``api_form`` as a dictionary, without loading an external file.
 
 
-Forms from ``api_schema``
+Forms from ``api_form``
 -------------------------
 
-The ``api_schema`` object essentially describes HTML forms, which it is up to the client to render. The form is constructed by specifying a set of components, and their values. A form can update it's values by sending a GET request to the API route bound to that form, and can send it's current values via a POST request to *this same API route*.
+The ``api_form`` object essentially describes HTML forms, which it is up to the client to render. The form is constructed by specifying a set of components, and their values. A form can update it's values by sending a GET request to the API route bound to that form, and can send it's current values via a POST request to *this same API route*.
 
 Each component in the form has a ``name`` property, which must match up to a property your API route expects in JSON POST requests, and returns in JSON GET requests.
 
-Structure of ``api_schema``
+Structure of ``api_form``
 ---------------------------
 
 Root level
 ++++++++++
 
-The root of your ``api_schema`` expects 3 properties:
+The root of your ``api_form`` expects 3 properties:
 
 ``id`` - A unique ID to give your client-side plugin
 
@@ -61,7 +61,7 @@ Each form is described by a JSON object, with the following properties:
 
 ``submitLabel`` *(optional)* - String to place inside of the form's submit button
 
-``schema`` - An array of form components as described below
+``form`` - An array of form components as described below
 
 Component level
 +++++++++++++++
@@ -182,11 +182,11 @@ Overview of components
 JSON form example
 -----------------
 
-.. literalinclude:: schema_example.json
+.. literalinclude:: forms_example.json
   :language: JSON
 
 
 .. toctree::
    :maxdepth: 1
 
-   ./schema/json_schema.rst
+   ./form/json_form.rst

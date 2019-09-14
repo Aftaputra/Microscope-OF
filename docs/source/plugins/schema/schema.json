@@ -1,9 +1,9 @@
 {
     "definitions": {},
-    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$form": "http://json-form.org/draft-07/form#",
     "$id": "http://example.com/root.json",
     "type": "object",
-    "title": "The Root Schema",
+    "title": "The Root Form",
     "required": [
       "id",
       "icon",
@@ -41,11 +41,11 @@
         "items": {
           "$id": "#/properties/forms/items",
           "type": "object",
-          "title": "The Items Schema",
+          "title": "The Items Form",
           "required": [
             "name",
             "route",
-            "schema"
+            "form"
           ],
           "properties": {
             "name": {
@@ -62,7 +62,7 @@
             "isCollapsible": {
               "$id": "#/properties/forms/items/properties/isCollapsible",
               "type": "boolean",
-              "title": "The isCollapsible Schema",
+              "title": "The isCollapsible Form",
               "description": "Should the form be rendered as a collapsible item",
               "default": false,
               "examples": [
@@ -72,7 +72,7 @@
             "isTask": {
               "$id": "#/properties/forms/items/properties/isTask",
               "type": "boolean",
-              "title": "The isTask Schema",
+              "title": "The isTask Form",
               "description": "Should the form's submit function be treated as a long-running task",
               "default": false,
               "examples": [
@@ -82,7 +82,7 @@
             "selfUpdate": {
               "$id": "#/properties/forms/items/properties/selfUpdate",
               "type": "boolean",
-              "title": "The selfUpdate Schema",
+              "title": "The selfUpdate Form",
               "description": "Should the form's component values be automatically updated with a GET request",
               "default": false,
               "examples": [
@@ -92,7 +92,7 @@
             "route": {
               "$id": "#/properties/forms/items/properties/route",
               "type": "string",
-              "title": "The Route Schema",
+              "title": "The Route Form",
               "description": "Form submit POST request's corresponding api_views route",
               "default": "",
               "examples": [
@@ -103,7 +103,7 @@
             "submitLabel": {
               "$id": "#/properties/forms/items/properties/submitLabel",
               "type": "string",
-              "title": "The submitLabel Schema",
+              "title": "The submitLabel Form",
               "description": "String to place in submit button",
               "default": "Submit",
               "examples": [
@@ -111,12 +111,12 @@
               ],
               "pattern": "^(.*)$"
             },
-            "schema": {
-              "$id": "#/properties/forms/items/properties/schema",
+            "form": {
+              "$id": "#/properties/forms/items/properties/form",
               "type": "array",
               "title": "Form component array",
               "items": {
-                "$id": "#/properties/forms/items/properties/schema/items",
+                "$id": "#/properties/forms/items/properties/form/items",
                 "type": "object",
                 "title": "A form component",
                 "required": [
@@ -125,7 +125,7 @@
                 ],
                 "properties": {
                   "fieldType": {
-                    "$id": "#/properties/forms/items/properties/schema/items/properties/fieldType",
+                    "$id": "#/properties/forms/items/properties/form/items/properties/fieldType",
                     "type": "string",
                     "title": "Component type",
                     "default": "",
@@ -143,7 +143,7 @@
                     "pattern": "^(.*)$"
                   },
                   "placeholder": {
-                    "$id": "#/properties/forms/items/properties/schema/items/properties/placeholder",
+                    "$id": "#/properties/forms/items/properties/form/items/properties/placeholder",
                     "type": "string",
                     "title": "Component placeholder value",
                     "default": "",
@@ -153,7 +153,7 @@
                     "pattern": "^(.*)$"
                   },
                   "name": {
-                    "$id": "#/properties/forms/items/properties/schema/items/properties/name",
+                    "$id": "#/properties/forms/items/properties/form/items/properties/name",
                     "type": "string",
                     "title": "Unique component name",
                     "examples": [
@@ -162,7 +162,7 @@
                     "pattern": "^(.*)$"
                   },
                   "label": {
-                    "$id": "#/properties/forms/items/properties/schema/items/properties/label",
+                    "$id": "#/properties/forms/items/properties/form/items/properties/label",
                     "type": "string",
                     "title": "Component label (if applicable)",
                     "default": "",
@@ -172,7 +172,7 @@
                     "pattern": "^(.*)$"
                   },
                   "value": {
-                    "$id": "#/properties/forms/items/properties/schema/items/properties/value",
+                    "$id": "#/properties/forms/items/properties/form/items/properties/value",
                     "type": ["array", "boolean", "integer", "number", "object", "string"],
                     "title": "Component value",
                     "pattern": "^(.*)$"

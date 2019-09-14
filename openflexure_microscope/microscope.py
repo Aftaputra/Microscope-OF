@@ -94,26 +94,32 @@ class Microscope:
         # Maybe even attach dummy hardware at __init__, and replace with real hardware if it exists
 
         logging.debug("Attaching camera...")
-        self.camera = camera  #: :py:class:`openflexure_microscope.camera.base.BaseCamera`: Picamera object
+        self.camera = (
+            camera
+        )  #: :py:class:`openflexure_microscope.camera.base.BaseCamera`: Picamera object
         if not self.camera:
             logging.info("No camera attached.")
         else:
             logging.info("Attached camera {}".format(camera))
 
-            if hasattr(self.camera, 'lock'):  # If camera has a lock
+            if hasattr(self.camera, "lock"):  # If camera has a lock
                 logging.info("Attaching {} to composite lock.".format(self.camera.lock))
                 # Add the lock to the microscope composite lock
                 self.lock.locks.append(self.camera.lock)
 
         logging.debug("Attaching stage...")
-        self.stage = stage  #: :py:class:`openflexure_microscope.stage.base.BaseStage`: OpenFlexure stage object
+        self.stage = (
+            stage
+        )  #: :py:class:`openflexure_microscope.stage.base.BaseStage`: OpenFlexure stage object
         if not self.stage:
             logging.info("No stage attached.")
         else:
             logging.info("Attached stage {}".format(stage))
 
-            if hasattr(self.stage, 'lock'):  # If stage object has a lock
-                logging.info("Attaching lock {} to composite lock.".format(self.stage.lock))
+            if hasattr(self.stage, "lock"):  # If stage object has a lock
+                logging.info(
+                    "Attaching lock {} to composite lock.".format(self.stage.lock)
+                )
                 # Add the lock to the microscope composite lock
                 self.lock.locks.append(self.stage.lock)
 
@@ -149,10 +155,10 @@ class Microscope:
                 and :py:attr:`openflexure_microscope.camera.base.BaseCamera.state`
         """
         state = {
-            'camera': self.camera.state,
-            'stage': self.stage.state,
-            'plugin': self.plugin.state,
-            'version': pkg_resources.get_distribution('openflexure_microscope').version
+            "camera": self.camera.state,
+            "stage": self.stage.state,
+            "plugin": self.plugin.state,
+            "version": pkg_resources.get_distribution("openflexure_microscope").version,
         }
         return state
 
@@ -163,22 +169,22 @@ class Microscope:
         logging.debug("Microscope: Applying config: {}".format(config))
 
         # If attached to a camera
-        if ('camera_settings' in config) and self.camera:
-            self.camera.apply_config(config['camera_settings'])
+        if ("camera_settings" in config) and self.camera:
+            self.camera.apply_config(config["camera_settings"])
 
         # If attached to a stage
-        if ('stage_settings' in config) and self.stage:
-            self.stage.apply_config(config['stage_settings'])
+        if ("stage_settings" in config) and self.stage:
+            self.stage.apply_config(config["stage_settings"])
 
         # Todo: tidy up with some loopy goodness
-        if 'id' in config:
-            self.id = config['id']
-        if 'name' in config:
-            self.name = config['name']
-        if 'fov' in config:
-            self.fov = config['fov']
-        if 'plugins' in config:
-            self.plugin_maps = config['plugins']
+        if "id" in config:
+            self.id = config["id"]
+        if "name" in config:
+            self.name = config["name"]
+        if "fov" in config:
+            self.fov = config["fov"]
+        if "plugins" in config:
+            self.plugin_maps = config["plugins"]
 
     def read_config(self, json_safe=False):
         """
@@ -192,21 +198,21 @@ class Microscope:
         """
 
         settings_current = {
-            'id': self.id,
-            'name': self.name,
-            'fov': self.fov,
-            'plugins': self.plugin_maps
+            "id": self.id,
+            "name": self.name,
+            "fov": self.fov,
+            "plugins": self.plugin_maps,
         }
 
         # If attached to a camera
         if self.camera:
             settings_current_camera = self.camera.read_config()
-            settings_current['camera_settings'] = settings_current_camera
+            settings_current["camera_settings"] = settings_current_camera
 
         # If attached to a stage
         if self.stage:
             settings_current_stage = self.stage.read_config()
-            settings_current['stage_settings'] = settings_current_stage
+            settings_current["stage_settings"] = settings_current_stage
 
         settings_full = self.settings_file.merge(settings_current)
 
@@ -222,7 +228,9 @@ class Microscope:
         # Read curent config
         current_config = self.read_config()
         # Merge in server version responsible for saving the config file
-        current_config['server_version'] = pkg_resources.get_distribution('openflexure_microscope').version
+        current_config["server_version"] = pkg_resources.get_distribution(
+            "openflexure_microscope"
+        ).version
         # Save config to file
         self.settings_file.save(current_config, backup=True)
 

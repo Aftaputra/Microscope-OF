@@ -132,7 +132,7 @@ class PluginMount(object):
     def __init__(self, parent):
         self.parent = parent
         self.plugins = []  # List of plugin objects
-        self.schemas = []  # List of plugin schemas
+        self.forms = []  # List of plugin forms
         logging.info("Creating plugin mount")
 
     @property
@@ -182,7 +182,7 @@ class PluginMount(object):
                     logging.info(ConColors.OKGREEN + "Plugin {} loaded as {}.".format(plugin_map, plugin_name) + ConColors.ENDC)
 
         else:
-            logging.error("Error loading plugin. Moving on.")
+            logging.error(f"Error loading plugin {plugin_map}. Moving on.")
 
 class MicroscopePlugin:
     """

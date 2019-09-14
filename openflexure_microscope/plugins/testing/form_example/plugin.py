@@ -7,16 +7,16 @@ from openflexure_microscope.devel import MicroscopePlugin
 from .api import DoAPI, TaskAPI
 
 HERE = os.path.dirname(os.path.realpath(__file__))
-SCHEMA_PATH = os.path.join(HERE, "schema.json")
+FORM_PATH = os.path.join(HERE, "forms.json")
 
 class ExamplePlugin(MicroscopePlugin):
     """
-    An example plugin using a comprehensive schema
+    An example plugin using a comprehensive form
     """
-    global SCHEMA_PATH
+    global FORM_PATH
 
-    with open(SCHEMA_PATH, 'r') as sc:
-        api_schema = json.load(sc)
+    with open(FORM_PATH, 'r') as sc:
+        api_form = json.load(sc)
 
     api_views = {
         '/do': DoAPI,
@@ -35,7 +35,7 @@ class ExamplePlugin(MicroscopePlugin):
 
     def set_values(self, val_int, val_str, val_radio, val_check, val_select, val_disposable):
         """
-        Demonstrate a plugin with schema
+        Demonstrate a plugin with form
         """
         if val_int:
             self.val_int = int(val_int)

@@ -9,7 +9,7 @@ import json
 from flask import request, Response, escape, jsonify
 
 HERE = os.path.dirname(os.path.realpath(__file__))
-SCHEMA_PATH = os.path.join(HERE, "schema.json")
+FORM_PATH = os.path.join(HERE, "forms.json")
 
 ### MICROSCOPE PLUGIN ###
 
@@ -18,10 +18,10 @@ class MyPluginClass(MicroscopePlugin):
     A set of default plugins
     """
 
-    global SCHEMA_PATH
+    global FORM_PATH
 
-    with open(SCHEMA_PATH, 'r') as sc:
-        api_schema = json.load(sc)
+    with open(FORM_PATH, 'r') as sc:
+        api_form = json.load(sc)
 
     api_views = {
         '/identify': IdentifyAPI,

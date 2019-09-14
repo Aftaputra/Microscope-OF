@@ -7,10 +7,10 @@ plugin.py
 .. literalinclude:: example/plugin.py
   :language: python
 
-schema.json
+form.json
 +++++++++++
 
-.. literalinclude:: example/schema.json
+.. literalinclude:: example/form.json
   :language: JSON
 
 Notes

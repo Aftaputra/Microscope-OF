@@ -6,21 +6,21 @@ from openflexure_microscope.api.v1.views import MicroscopeView
 import logging
 import warnings
 
-class PluginSchemaAPI(MicroscopeView):
+class PluginFormAPI(MicroscopeView):
     def get(self):
         """
-        Return the current plugin schemas
+        Return the current plugin forms
 
-        .. :quickref: Plugin; Get schemas
+        .. :quickref: Plugin; Get forms
 
-        Returns an array of present plugin schemas (describing plugin user interfaces.)
+        Returns an array of present plugin forms (describing plugin user interfaces.)
         Please note, this is *not* a list of all enabled plugins, only those with associated
         user interface forms.
 
         A complete list of enabled plugins can be found in the microscope state.
 
         """
-        out = self.microscope.plugin.schemas
+        out = self.microscope.plugin.forms
         return jsonify(out)
 
 
@@ -28,10 +28,10 @@ def construct_blueprint(microscope_obj):
 
     blueprint = Blueprint('plugin_blueprint', __name__)
 
-    # Create a base route to return plugin API schemas, if any exist
+    # Create a base route to return plugin API forms, if any exist
     blueprint.add_url_rule(
         '/',
-        view_func=PluginSchemaAPI.as_view('plugin_api_schema', microscope=microscope_obj)
+        view_func=PluginFormAPI.as_view('plugin_api_form', microscope=microscope_obj)
     )
 
     all_routes = []
@@ -86,20 +86,21 @@ def construct_blueprint(microscope_obj):
                         )
                     )
 
-            # If plugin includes an API schema
-            if hasattr(plugin_obj, 'api_schema') and isinstance(plugin_obj.api_schema, dict):
-                schema = plugin_obj.api_schema
-                # TODO: Validate schema? We need to make sure no single plugin can break all plugins.
-                schema['id'] = plugin_name
-                if 'forms' in schema and isinstance(schema['forms'], list):
-                    for form in schema['forms']:
+            # If plugin includes an API form
+            if hasattr(plugin_obj, 'api_form') and isinstance(plugin_obj.api_form, dict):
+                api_form_info = plugin_obj.api_form
+                # TODO: Validate form? We need to make sure no single plugin can break all plugins.
+                api_form_info['id'] = plugin_name
+                if 'forms' in api_form_info and isinstance(api_form_info['forms'], list):
+                    for form in api_form_info['forms']:
                         if 'route' in form and form['route'] in expanded_routes.keys():
                             form['route'] = expanded_routes[form['route']]
                         else:
                             logging.warn("No valid expandable route found for {}".format(form['route']))
                 
-                # Store the complete schema in Microscope().plugin.schema
-                microscope_obj.plugin.schemas.append(schema)
+                # Store the complete form in Microscope().plugin.form
+                microscope_obj.plugin.forms.append(api_form_info)
+                print(microscope_obj.plugin.forms)
 
         else:
             warnings.warn(
