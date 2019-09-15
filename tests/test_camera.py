@@ -12,11 +12,11 @@ import unittest
 
 import logging
 import sys
+
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 
 class TestCaptureMethods(unittest.TestCase):
-
     def test_still_capture(self):
         """Tests capturing still images to a BytesIO stream."""
         global camera
@@ -30,11 +30,7 @@ class TestCaptureMethods(unittest.TestCase):
                 # Capture to a context (auto-deletes files when done)
                 with camera.new_image(write_to_file=False) as output:
 
-                    camera.capture(
-                        output, 
-                        use_video_port=use_video_port, 
-                        resize=resize
-                    ) 
+                    camera.capture(output, use_video_port=use_video_port, resize=resize)
 
                     # Ensure file deletion fails and returns False
                     self.assertFalse(output.delete_file())
@@ -43,14 +39,8 @@ class TestCaptureMethods(unittest.TestCase):
 
                     # BEFORE DELETE: Ensure StreamObject 'stream' has
                     # a valid BytesIO object and byte string
-                    self.assertTrue(isinstance(
-                        output.data,
-                        io.IOBase
-                        ))
-                    self.assertTrue(isinstance(
-                        output.binary,
-                        (bytes, bytearray)
-                        ))
+                    self.assertTrue(isinstance(output.data, io.IOBase))
+                    self.assertTrue(isinstance(output.binary, (bytes, bytearray)))
 
                     # Save capture to file
                     output.save_file()
@@ -65,10 +55,7 @@ class TestCaptureMethods(unittest.TestCase):
                     # AFTER DELETE: Ensure StreamObject 'stream' has
                     # a valid BytesIO object and byte string
                     self.assertTrue(isinstance(output.data, io.IOBase))
-                    self.assertTrue(isinstance(
-                        output.binary,
-                        (bytes, bytearray)
-                        ))
+                    self.assertTrue(isinstance(output.binary, (bytes, bytearray)))
 
                     # Create a PIL image from stream
                     image = Image.open(output.data)
@@ -102,7 +89,8 @@ class TestCaptureMethods(unittest.TestCase):
                 output = camera.capture(
                     camera.new_image(write_to_file=True),
                     use_video_port=use_video_port,
-                    resize=resize)
+                    resize=resize,
+                )
 
                 # Check file got saved
                 self.assertTrue(os.path.isfile(output.file))
@@ -122,7 +110,6 @@ class TestCaptureMethods(unittest.TestCase):
 
 
 class TestUnencodedMethods(unittest.TestCase):
-
     def test_yuv_array(self):
         """Tests capturing unencoded YUV data to a Numpy array."""
         global camera
@@ -136,9 +123,7 @@ class TestUnencodedMethods(unittest.TestCase):
                 camera.wait_for_camera()
 
                 # Capture RGB array
-                yuv = camera.yuv(
-                    use_video_port=use_video_port,
-                    resize=resize)
+                yuv = camera.yuv(use_video_port=use_video_port, resize=resize)
 
                 # Ensure capture output is a valid numpy array
                 self.assertTrue(isinstance(yuv, np.ndarray))
@@ -168,9 +153,7 @@ class TestUnencodedMethods(unittest.TestCase):
                 camera.wait_for_camera()
 
                 # Capture RGB array
-                rgb = camera.array(
-                    use_video_port=use_video_port,
-                    resize=resize)
+                rgb = camera.array(use_video_port=use_video_port, resize=resize)
 
                 # Ensure capture output is a valid numpy array
                 self.assertTrue(isinstance(rgb, np.ndarray))
@@ -189,7 +172,6 @@ class TestUnencodedMethods(unittest.TestCase):
 
 
 class TestRecordMethods(unittest.TestCase):
-
     def test_video_record(self):
         """Tests recording videos to BytesIO stream, and to file on disk."""
         global camera
@@ -201,9 +183,7 @@ class TestRecordMethods(unittest.TestCase):
             # Wait for camera
             camera.wait_for_camera()
 
-            with camera.new_video(
-                write_to_file=write_to_file
-            ) as output:
+            with camera.new_video(write_to_file=write_to_file) as output:
 
                 # Start recording
                 camera.start_recording(output)
@@ -278,7 +258,7 @@ class TestThreadStarting(unittest.TestCase):
         self.assertIsInstance(camera.stream, io.IOBase)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with PiCameraStreamer() as camera:
 
         suites = [
