@@ -217,7 +217,7 @@ class Microscope:
         settings_full = self.settings_file.merge(settings_current)
 
         if json_safe:
-            settings_full = settings_to_json(settings_full, clean_keys=True)
+            settings_full = settings_to_json(settings_full)
 
         return settings_full
 
