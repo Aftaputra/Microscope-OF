@@ -7,14 +7,6 @@ import logging
 
 from abc import ABCMeta, abstractmethod
 
-try:
-    from greenlet import getcurrent as get_ident
-except ImportError:
-    try:
-        from thread import get_ident
-    except ImportError:
-        from _thread import get_ident
-
 from .capture import CaptureObject, BASE_CAPTURE_PATH, TEMP_CAPTURE_PATH
 from openflexure_microscope.utilities import entry_by_id
 from openflexure_microscope.lock import StrictLock
@@ -62,7 +54,7 @@ class CameraEvent(object):
 
     def wait(self, timeout: int = 5):
         """Wait for the next frame (invoked from each client's thread)."""
-        ident = get_ident()
+        ident = threading.get_ident()
         if ident not in self.events:
             # this is a new client
             # add an entry for it in the self.events dict
@@ -92,7 +84,7 @@ class CameraEvent(object):
 
     def clear(self):
         """Clear frame event, once processed."""
-        self.events[get_ident()][0].clear()
+        self.events[threading.get_ident()][0].clear()
 
 
 class BaseCamera(metaclass=ABCMeta):
