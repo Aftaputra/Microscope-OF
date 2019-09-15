@@ -17,7 +17,11 @@ def set_properties(obj, **kwargs):
         try:
             saved_properties[k] = getattr(obj, k)
         except AttributeError:
-            print("Warning: could not get {} on {}.  This property will not be restored!".format(k, obj))
+            print(
+                "Warning: could not get {} on {}.  This property will not be restored!".format(
+                    k, obj
+                )
+            )
     for k, v in kwargs.items():
         setattr(obj, k, v)
     try:
@@ -27,12 +31,14 @@ def set_properties(obj, **kwargs):
             setattr(obj, k, v)
 
 
-def axes_to_array(coordinate_dictionary, axis_keys=('x', 'y', 'z'), base_array=None, asint=True):
+def axes_to_array(
+    coordinate_dictionary, axis_keys=("x", "y", "z"), base_array=None, asint=True
+):
     """Takes key-value pairs of a JSON value, and maps onto an array"""
     # If no base array is given
     if not base_array:
         # Create an array of zeros
-        base_array = [0]*len(axis_keys)
+        base_array = [0] * len(axis_keys)
     else:
         # Create a copy of the passed base_array
         base_array = copy.copy(base_array)
@@ -40,7 +46,9 @@ def axes_to_array(coordinate_dictionary, axis_keys=('x', 'y', 'z'), base_array=N
     # Do the mapping
     for axis, key in enumerate(axis_keys):
         if key in coordinate_dictionary:
-            base_array[axis] = int(coordinate_dictionary[key]) if asint else coordinate_dictionary[key]
+            base_array[axis] = (
+                int(coordinate_dictionary[key]) if asint else coordinate_dictionary[key]
+            )
 
     return base_array
 

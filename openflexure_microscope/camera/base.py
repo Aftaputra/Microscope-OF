@@ -56,6 +56,7 @@ class CameraEvent(object):
 
     An event-like class that signals all active clients when a new frame is available.
     """
+
     def __init__(self):
         self.events = {}
 
@@ -112,9 +113,10 @@ class BaseCamera(metaclass=ABCMeta):
         images (list): List of image capture objects
         videos (list): List of video capture objects
     """
+
     def __init__(self):
         self.thread = None
-        self.camera = None 
+        self.camera = None
 
         self.lock = StrictLock(timeout=1)
 
@@ -128,11 +130,11 @@ class BaseCamera(metaclass=ABCMeta):
 
         self.state = {}
         self.paths = {
-            'image': BASE_CAPTURE_PATH,
-            'video': BASE_CAPTURE_PATH,
-            'image_tmp': TEMP_CAPTURE_PATH,
-            'video_tpm': TEMP_CAPTURE_PATH
-        } 
+            "image": BASE_CAPTURE_PATH,
+            "video": BASE_CAPTURE_PATH,
+            "image_tmp": TEMP_CAPTURE_PATH,
+            "video_tpm": TEMP_CAPTURE_PATH,
+        }
 
         # Capture data
         self.images = []
@@ -176,7 +178,7 @@ class BaseCamera(metaclass=ABCMeta):
         self.last_access = time.time()
         self.stop = False
 
-        if not self.state['stream_active']:
+        if not self.state["stream_active"]:
             # start background frame thread
             self.thread = threading.Thread(target=self._thread)
             self.thread.daemon = True
@@ -196,12 +198,12 @@ class BaseCamera(metaclass=ABCMeta):
         logging.debug("Stopping worker thread")
         timeout_time = time.time() + timeout
 
-        if self.state['stream_active']:
+        if self.state["stream_active"]:
             self.stop = True
             self.thread.join()  # Wait for stream thread to exit
             logging.debug("Waiting for stream thread to exit.")
 
-        while self.state['stream_active']:
+        while self.state["stream_active"]:
             if time.time() > timeout_time:
                 logging.debug("Timeout waiting for worker thread close.")
                 raise TimeoutError("Timeout waiting for worker thread close.")
@@ -249,12 +251,13 @@ class BaseCamera(metaclass=ABCMeta):
     # CREATING NEW CAPTURES
 
     def new_image(
-            self,
-            write_to_file: bool = True,
-            temporary: bool = True,
-            filename: str = None,
-            folder: str = "",
-            fmt: str = 'jpeg'):
+        self,
+        write_to_file: bool = True,
+        temporary: bool = True,
+        filename: str = None,
+        folder: str = "",
+        fmt: str = "jpeg",
+    ):
 
         """
         Create a new image capture object. Adds to the image list, and shunt all others.
@@ -275,7 +278,7 @@ class BaseCamera(metaclass=ABCMeta):
         filename = "{}.{}".format(filename, fmt)
 
         # Generate folder
-        base_folder = self.paths['image_tmp'] if temporary else self.paths['image']
+        base_folder = self.paths["image_tmp"] if temporary else self.paths["image"]
         folder = os.path.join(base_folder, folder)
 
         # Generate file path
@@ -283,9 +286,8 @@ class BaseCamera(metaclass=ABCMeta):
 
         # Create capture object
         output = CaptureObject(
-            write_to_file=write_to_file,
-            temporary=temporary,
-            filepath=filepath)
+            write_to_file=write_to_file, temporary=temporary, filepath=filepath
+        )
 
         # Update capture list
         shunt_captures(self.images)
@@ -294,12 +296,13 @@ class BaseCamera(metaclass=ABCMeta):
         return output
 
     def new_video(
-            self,
-            write_to_file: bool = True,
-            temporary: bool = False,
-            filename: str = None,
-            folder: str = "",
-            fmt: str = 'h264'):
+        self,
+        write_to_file: bool = True,
+        temporary: bool = False,
+        filename: str = None,
+        folder: str = "",
+        fmt: str = "h264",
+    ):
 
         """
         Create a new video capture object. Adds to the image list, and shunt all others.
@@ -320,7 +323,7 @@ class BaseCamera(metaclass=ABCMeta):
         filename = "{}.{}".format(filename, fmt)
 
         # Generate folder
-        base_folder = self.paths['video_tmp'] if temporary else self.paths['video']
+        base_folder = self.paths["video_tmp"] if temporary else self.paths["video"]
         folder = os.path.join(base_folder, folder)
 
         # Generate file path
@@ -328,9 +331,8 @@ class BaseCamera(metaclass=ABCMeta):
 
         # Create capture object
         output = CaptureObject(
-            write_to_file=write_to_file,
-            temporary=temporary,
-            filepath=filepath)
+            write_to_file=write_to_file, temporary=temporary, filepath=filepath
+        )
 
         # Update capture list
         shunt_captures(self.videos)
@@ -345,7 +347,7 @@ class BaseCamera(metaclass=ABCMeta):
         self.frames_iterator = self.frames()
         logging.debug("Entering worker thread.")
 
-        self.state['stream_active'] = True
+        self.state["stream_active"] = True
 
         for frame in self.frames_iterator:
             self.frame = frame
@@ -354,9 +356,13 @@ class BaseCamera(metaclass=ABCMeta):
 
             # Handle timeout
             if (
-                self.stream_timeout_enabled and  # If using timeout
-                (time.time() - self.last_access > self.stream_timeout) and  # And timeout time
-                not self.state['preview_active']  # And GPU preview is not active
+                self.stream_timeout_enabled
+                and (  # If using timeout
+                    time.time() - self.last_access > self.stream_timeout
+                )
+                and not self.state[  # And timeout time
+                    "preview_active"
+                ]  # And GPU preview is not active
             ):
                 self.frames_iterator.close()
                 break
@@ -372,4 +378,4 @@ class BaseCamera(metaclass=ABCMeta):
 
         logging.debug("BaseCamera worker thread exiting...")
         # Set stream_activate state
-        self.state['stream_active'] = False
+        self.state["stream_active"] = False

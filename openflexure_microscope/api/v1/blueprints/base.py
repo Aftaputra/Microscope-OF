@@ -6,7 +6,6 @@ import logging
 
 
 class StreamAPI(MicroscopeView):
-
     def get(self):
         """
         Real-time MJPEG stream from the microscope camera
@@ -22,11 +21,11 @@ class StreamAPI(MicroscopeView):
 
         return Response(
             gen(self.microscope.camera),
-            mimetype='multipart/x-mixed-replace; boundary=frame')
+            mimetype="multipart/x-mixed-replace; boundary=frame",
+        )
 
 
 class StateAPI(MicroscopeView):
-
     def get(self):
         """
         JSON representation of the microscope object.
@@ -77,7 +76,6 @@ class StateAPI(MicroscopeView):
 
 
 class ConfigAPI(MicroscopeView):
-
     def get(self):
         """
         JSON representation of the microscope config.
@@ -216,21 +214,18 @@ class ConfigAPI(MicroscopeView):
 
 def construct_blueprint(microscope_obj):
 
-    blueprint = Blueprint('base_blueprint', __name__)
+    blueprint = Blueprint("base_blueprint", __name__)
 
     blueprint.add_url_rule(
-        '/stream',
-        view_func=StreamAPI.as_view('stream', microscope=microscope_obj)
+        "/stream", view_func=StreamAPI.as_view("stream", microscope=microscope_obj)
     )
 
     blueprint.add_url_rule(
-        '/state',
-        view_func=StateAPI.as_view('state', microscope=microscope_obj)
+        "/state", view_func=StateAPI.as_view("state", microscope=microscope_obj)
     )
 
     blueprint.add_url_rule(
-        '/config',
-        view_func=ConfigAPI.as_view('config', microscope=microscope_obj)
+        "/config", view_func=ConfigAPI.as_view("config", microscope=microscope_obj)
     )
 
     return blueprint

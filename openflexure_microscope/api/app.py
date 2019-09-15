@@ -6,8 +6,7 @@ import logging
 import sys
 import os
 
-from flask import (
-    Flask, jsonify, send_file)
+from flask import Flask, jsonify, send_file
 
 from serial import SerialException
 from datetime import datetime
@@ -39,7 +38,7 @@ from openflexure_microscope.stage.mock import MockStage
 # Handle logging
 is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
 
-DEFAULT_LOGFILE = os.path.join(USER_CONFIG_DIR, 'openflexure_microscope.log')
+DEFAULT_LOGFILE = os.path.join(USER_CONFIG_DIR, "openflexure_microscope.log")
 
 if (__name__ == "__main__") or (not is_gunicorn):
     # If imported, but not by gunicorn
@@ -48,18 +47,15 @@ if (__name__ == "__main__") or (not is_gunicorn):
 else:
     # Direct standard Python logging to file and console
     root = logging.getLogger()
-    error_formatter = logging.Formatter("[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s")
-
-    rotating_logfile = logging.handlers.RotatingFileHandler(
-        DEFAULT_LOGFILE, 
-        maxBytes=1000000, 
-        backupCount=7
+    error_formatter = logging.Formatter(
+        "[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s"
     )
 
-    error_handlers = [
-        rotating_logfile,
-        logging.StreamHandler()
-    ]
+    rotating_logfile = logging.handlers.RotatingFileHandler(
+        DEFAULT_LOGFILE, maxBytes=1000000, backupCount=7
+    )
+
+    error_handlers = [rotating_logfile, logging.StreamHandler()]
 
     for handler in error_handlers:
         handler.setFormatter(error_formatter)
@@ -88,7 +84,7 @@ def uri(suffix, api_version, base=None):
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
-CORS(app, resources=r'/api/*')
+CORS(app, resources=r"/api/*")
 
 # Make errors more API friendly
 handler = JSONExceptionHandler(app)
@@ -121,10 +117,7 @@ def attach_microscope():
 
     # Attach devices to microscope
     logging.debug("Attaching devices to microscope...")
-    api_microscope.attach(
-        api_camera,
-        api_stage
-    )
+    api_microscope.attach(api_camera, api_stage)
 
     # Restore loaded capture array to camera object
     logging.debug("Restoring captures...")
@@ -140,26 +133,26 @@ def attach_microscope():
 
 # Base routes
 base_blueprint = blueprints.base.construct_blueprint(api_microscope)
-app.register_blueprint(base_blueprint, url_prefix=uri('', 'v1'))
+app.register_blueprint(base_blueprint, url_prefix=uri("", "v1"))
 
 # Stage routes
 stage_blueprint = blueprints.stage.construct_blueprint(api_microscope)
-app.register_blueprint(stage_blueprint, url_prefix=uri('/stage', 'v1'))
+app.register_blueprint(stage_blueprint, url_prefix=uri("/stage", "v1"))
 
 # Camera routes
 camera_blueprint = blueprints.camera.construct_blueprint(api_microscope)
-app.register_blueprint(camera_blueprint, url_prefix=uri('/camera', 'v1'))
+app.register_blueprint(camera_blueprint, url_prefix=uri("/camera", "v1"))
 
 # Plugin routes
 plugin_blueprint = blueprints.plugins.construct_blueprint(api_microscope)
-app.register_blueprint(plugin_blueprint, url_prefix=uri('/plugin', 'v1'))
+app.register_blueprint(plugin_blueprint, url_prefix=uri("/plugin", "v1"))
 
 # Task routes
 task_blueprint = blueprints.task.construct_blueprint(api_microscope)
-app.register_blueprint(task_blueprint, url_prefix=uri('/task', 'v1'))
+app.register_blueprint(task_blueprint, url_prefix=uri("/task", "v1"))
 
 
-@app.route('/routes')
+@app.route("/routes")
 def routes():
     """
     List of all connected API routes
@@ -173,7 +166,7 @@ def routes():
     return jsonify(list_routes(app))
 
 
-@app.route('/log')
+@app.route("/log")
 def err_log():
     """
     Most recent 1mb of log output
@@ -186,9 +179,9 @@ def err_log():
     """
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     return send_file(
-        DEFAULT_LOGFILE, 
-        as_attachment=True, 
-        attachment_filename='openflexure_microscope_{}.log'.format(timestamp)
+        DEFAULT_LOGFILE,
+        as_attachment=True,
+        attachment_filename="openflexure_microscope_{}.log".format(timestamp),
     )
 
 
@@ -219,4 +212,4 @@ def cleanup():
 atexit.register(cleanup)
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port="5000", threaded=True, debug=True, use_reloader=False)
+    app.run(host="0.0.0.0", port="5000", threaded=True, debug=True, use_reloader=False)

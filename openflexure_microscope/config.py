@@ -65,7 +65,6 @@ def convert_type_to_json_safe(v):
         return v
 
 
-
 def settings_to_json(data: dict):
     """
     Make a copy of an input dictionary that's safe for JSON return

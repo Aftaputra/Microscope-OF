@@ -18,12 +18,12 @@ Attributes:
     TEMP_CAPTURE_PATH (str): Base path to store all temporary captures (automatically emptied)
 """
 
-PIL_FORMATS = ['JPG', 'JPEG', 'PNG', 'TIF', 'TIFF']
-EXIF_FORMATS = ['JPG', 'JPEG', 'TIF', 'TIFF']
+PIL_FORMATS = ["JPG", "JPEG", "PNG", "TIF", "TIFF"]
+EXIF_FORMATS = ["JPG", "JPEG", "TIF", "TIFF"]
 THUMBNAIL_SIZE = (200, 150)
 
-BASE_CAPTURE_PATH = os.path.join(os.path.expanduser('~'), 'micrographs')
-TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, 'tmp')
+BASE_CAPTURE_PATH = os.path.join(os.path.expanduser("~"), "micrographs")
+TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, "tmp")
 
 
 # TODO: Move these methods to a camera utilities module?
@@ -50,8 +50,8 @@ def pull_usercomment_dict(filepath):
     except InvalidImageDataError:
         logging.error("Invalid data at {}. Skipping.".format(filepath))
         return None
-    if 'Exif' in exif_dict and 37510 in exif_dict['Exif']:
-        return yaml.load(exif_dict['Exif'][37510].decode())
+    if "Exif" in exif_dict and 37510 in exif_dict["Exif"]:
+        return yaml.load(exif_dict["Exif"][37510].decode())
     else:
         return None
 
@@ -59,7 +59,9 @@ def pull_usercomment_dict(filepath):
 def make_file_list(directory, formats):
     files = []
     for fmt in formats:
-        files.extend(glob.glob('{}/**/*.{}'.format(directory, fmt.lower()), recursive=True))
+        files.extend(
+            glob.glob("{}/**/*.{}".format(directory, fmt.lower()), recursive=True)
+        )
 
     logging.info("{} capture files found on disk".format(len(files)))
 
@@ -98,21 +100,19 @@ def capture_from_exif(path, exif_dict):
     """
 
     # Create a placeholder capture
-    capture = CaptureObject(
-        filepath=path
-    ) 
+    capture = CaptureObject(filepath=path)
 
     # Build file path information
     capture.split_file_path(capture.file)
 
     # Populate capture parameters
-    capture.id = exif_dict['id']
-    
-    capture.timestring = exif_dict['time']
-    capture.format = exif_dict['format']
+    capture.id = exif_dict["id"]
 
-    capture._metadata = exif_dict['custom']
-    capture.tags = exif_dict['tags']
+    capture.timestring = exif_dict["time"]
+    capture.format = exif_dict["format"]
+
+    capture._metadata = exif_dict["custom"]
+    capture.tags = exif_dict["tags"]
 
     return capture
 
@@ -138,10 +138,8 @@ class CaptureObject(object):
     """
 
     def __init__(
-            self,
-            write_to_file: bool = False,
-            temporary: bool = False,
-            filepath: str = '') -> None:
+        self, write_to_file: bool = False, temporary: bool = False, filepath: str = ""
+    ) -> None:
         """Create a new StreamObject, to manage capture data."""
 
         # Store a nice ID
@@ -184,7 +182,9 @@ class CaptureObject(object):
         """Create StreamObject in context, to auto-clean disk data."""
         logging.debug(
             "Entering context for {}. Stored files will be cleaned up automatically regardless of location.".format(
-                self.id))
+                self.id
+            )
+        )
         self.temporary = True  # Flag file to be removed on close.
         self.context_manager = True  # Used in metadata
 
@@ -203,12 +203,14 @@ class CaptureObject(object):
         Construct a full file path, based on filename, folder, and file format.
         Defaults to UUID.
         """
-        global TEMP_CAPTURE_PATH, BASE_CAPTURE_PATH 
+        global TEMP_CAPTURE_PATH, BASE_CAPTURE_PATH
         if self.temporary:
             base_dir = TEMP_CAPTURE_PATH
         else:
             base_dir = BASE_CAPTURE_PATH
-        return os.path.join(base_dir, self.filename)  # Full file name by joining given folder to given name
+        return os.path.join(
+            base_dir, self.filename
+        )  # Full file name by joining given folder to given name
 
     def split_file_path(self, filepath):
         """
@@ -221,7 +223,7 @@ class CaptureObject(object):
         self.filefolder, self.filename = os.path.split(filepath)
         # Split the filename out from it's file extension
         self.basename = os.path.splitext(self.filename)[0]
-        self.format = self.filename.split('.')[-1]
+        self.format = self.filename.split(".")[-1]
 
         # Create folder and file
         if not os.path.exists(self.filefolder):
@@ -298,7 +300,7 @@ class CaptureObject(object):
             # Serialize metadata
             metadata_string = yaml.safe_dump(self.metadata)
             # Insert metadata into exif_dict
-            exif_dict['Exif'][piexif.ExifIFD.UserComment] = metadata_string.encode()
+            exif_dict["Exif"][piexif.ExifIFD.UserComment] = metadata_string.encode()
             # Convert new exif dict to exif bytes
             exif_bytes = piexif.dump(exif_dict)
             # Insert exif into file
@@ -310,8 +312,14 @@ class CaptureObject(object):
         Create basic metadata dictionary from basic capture data, 
         and any added custom metadata and tags.
         """
-        d = {'id': self.id, 'filename': self.filename, 'time': self.timestring,
-             'format': self.format, 'tags': self.tags, 'custom': self._metadata}
+        d = {
+            "id": self.id,
+            "filename": self.filename,
+            "time": self.timestring,
+            "format": self.format,
+            "tags": self.tags,
+            "custom": self._metadata,
+        }
 
         # Add custom metadata to dictionary
         return d
@@ -339,19 +347,19 @@ class CaptureObject(object):
         """
 
         # Create basic state dictionary
-        d = {'path': self.file, 'temporary': self.temporary, 'metadata': self.metadata}
+        d = {"path": self.file, "temporary": self.temporary, "metadata": self.metadata}
 
         # Check bytestream
         if self.stream_exists:
-            d['bytestream'] = True
+            d["bytestream"] = True
         else:
-            d['bytestream'] = False
+            d["bytestream"] = False
 
         # Combined availability of data
         if self.exists:
-            d['available'] = True
+            d["available"] = True
         else:
-            d['available'] = False
+            d["available"] = False
 
         return d
 
@@ -373,7 +381,7 @@ class CaptureObject(object):
         else:  # If data bytestream is empty
             if self.file_exists:  # If data file exists
                 logging.info("Opening from file {}".format(self.file))
-                with open(self.file, 'rb') as f:
+                with open(self.file, "rb") as f:
                     d = io.BytesIO(f.read())  # Load bytes from file
                 d.seek(0)  # Rewind loaded bytestream
                 # Create a copy of the bytestream bytes
@@ -413,7 +421,7 @@ class CaptureObject(object):
     def load_file(self) -> bool:
         """Load data stored on disk to the in-memory bytestream."""
         if self.file_exists:  # If data file exists
-            with open(self.file, 'rb') as f:
+            with open(self.file, "rb") as f:
                 self.bytestream = io.BytesIO(f.read())  # Load bytes from file
             self.bytestream.seek(0)  # Rewind data bytes again
             return True
@@ -423,7 +431,7 @@ class CaptureObject(object):
     def save_file(self) -> bool:
         """Write the StreamObjects bytestream to a file."""
         if self.stream_exists:  # If there's a bytestream to save
-            with open(self.file, 'ab') as f:  # Load file as bytes
+            with open(self.file, "ab") as f:  # Load file as bytes
                 logging.debug("Writing bytestream to file {}".format(self.file))
                 f.seek(0, 0)  # Seek to the start of the file
                 f.write(self.binary)  # Write data bytes to file
