@@ -1,5 +1,6 @@
 import copy
 import operator
+from collections import abc
 from functools import reduce
 from contextlib import contextmanager
 
@@ -61,3 +62,26 @@ def entry_by_id(entry_id: str, object_list: list):
         if o.id == entry_id:
             found = o
     return found
+
+
+def recursively_apply(data, func):
+    """
+    Recursively apply a function to a dictionary, list, array, or tuple
+
+    Args:
+        data: Input iterable data
+        func: Function to apply to all non-iterable values
+    """
+    # If the object is a dictionary
+    if isinstance(data, abc.Mapping):
+        return {key: recursively_apply(val, func) for key, val in data.items()}
+    # If the object is iterable but NOT a dictionary or a string
+    elif (
+        isinstance(data, abc.Iterable)
+        and not isinstance(data, abc.Mapping)
+        and not isinstance(data, str)
+    ):
+        return [recursively_apply(x, func) for x in data]
+    # if the object is neither a map nor iterable
+    else:
+        return func(data)
