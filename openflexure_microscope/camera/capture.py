@@ -236,13 +236,6 @@ class CaptureObject(object):
         return d
 
     @property
-    def yaml(self) -> str:
-        """
-        Return a string containing a YAML-formatted representation of the capture matadata
-        """
-        return yaml.dump(self.metadata, default_flow_style=False)
-
-    @property
     def state(self) -> dict:
         """
         Return a dictionary of objects full state, including metadata.
