@@ -95,7 +95,6 @@ def construct_blueprint(microscope_obj):
                 plugin_obj.api_form, dict
             ):
                 api_form_info = plugin_obj.api_form
-                # TODO: Validate form? We need to make sure no single plugin can break all plugins.
                 api_form_info["id"] = plugin_name
                 if "forms" in api_form_info and isinstance(
                     api_form_info["forms"], list

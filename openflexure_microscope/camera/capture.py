@@ -99,6 +99,7 @@ def capture_from_exif(path, exif_dict):
 class CaptureObject(object):
     """
     StreamObject used to store and process on-disk capture data, and metadata.
+    Serves to simplify modifying properties of on-disk capture data.
 
     Attributes:
         timestring (str): Timestring of capture creation time
@@ -314,10 +315,5 @@ class CaptureObject(object):
         else:
             return False
 
-    def shunt(self):
-        # TODO: Remove
-        pass
-
     def close(self):
-        # TODO: Remove
         pass

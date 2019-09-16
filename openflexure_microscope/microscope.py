@@ -90,9 +90,6 @@ class Microscope:
 
         settings_full = self.read_config()
 
-        # TODO: Actually attach dummy hardware!
-        # Maybe even attach dummy hardware at __init__, and replace with real hardware if it exists
-
         logging.debug("Attaching camera...")
         self.camera = (
             camera

@@ -42,11 +42,6 @@ def generate_numbered_basename(obj_list: list) -> str:
     return basename
 
 
-def shunt_captures(target_list: list):
-    for obj in target_list:  # For each older capture
-        obj.shunt()  # Shunt capture from memory to storage
-
-
 class CameraEvent(object):
     """
     A frame-signaller object used by any instances or subclasses of BaseCamera.
@@ -295,7 +290,6 @@ class BaseCamera(metaclass=ABCMeta):
         output = CaptureObject(filepath=filepath)
 
         # Update capture list
-        shunt_captures(self.images)
         self.images.append(output)
 
         return output
@@ -336,7 +330,6 @@ class BaseCamera(metaclass=ABCMeta):
         output = CaptureObject(filepath=filepath)
 
         # Update capture list
-        shunt_captures(self.videos)
         self.videos.append(output)
 
         return output

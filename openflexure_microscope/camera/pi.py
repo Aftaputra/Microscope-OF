@@ -131,7 +131,6 @@ class PiCameraStreamer(BaseCamera):
         Args:
             config (dict): Dictionary of config parameters.
         """
-        # TODO: Include timing and batching logic when applying PiCamera settings
 
         paused_stream = False
         logging.debug("PiCameraStreamer: Applying config:")
@@ -259,9 +258,6 @@ class PiCameraStreamer(BaseCamera):
     def start_preview(self, fullscreen=True, window=None):
         """Start the on board GPU camera preview."""
         logging.info("Starting the GPU preview")
-
-        # TODO: Commented out as I honestly can't remember why this was here. May need to put back?
-        # self.start_stream_recording()
 
         try:
             if not self.camera.preview:
