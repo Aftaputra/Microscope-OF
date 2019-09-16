@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
 import time
 import os
+import shutil
 import threading
 import datetime
 import logging
 
 from abc import ABCMeta, abstractmethod
 
-from .capture import CaptureObject, BASE_CAPTURE_PATH, TEMP_CAPTURE_PATH
+from .capture import CaptureObject
 from openflexure_microscope.utilities import entry_by_id
 from openflexure_microscope.lock import StrictLock
+
+
+BASE_CAPTURE_PATH = os.path.join(os.path.expanduser("~"), "micrographs")
+TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, "tmp")
 
 
 def last_entry(object_list: list):
@@ -121,11 +126,11 @@ class BaseCamera(metaclass=ABCMeta):
         self.stream_timeout_enabled = False
 
         self.state = {}
+
+        # TODO: Load/save these to config
         self.paths = {
-            "image": BASE_CAPTURE_PATH,
-            "video": BASE_CAPTURE_PATH,
-            "image_tmp": TEMP_CAPTURE_PATH,
-            "video_tpm": TEMP_CAPTURE_PATH,
+            "default": BASE_CAPTURE_PATH,
+            "temp": TEMP_CAPTURE_PATH
         }
 
         # Capture data
@@ -157,9 +162,21 @@ class BaseCamera(metaclass=ABCMeta):
         for capture_list in [self.images, self.videos]:
             for stream_object in capture_list:
                 stream_object.close()
+        # Empty temp directory
+        self.clear_tmp()
         # Stop worker thread
         self.stop_worker()
         logging.info("Closed {}".format(self))
+
+    def clear_tmp(self):
+        """
+        Removes all files in the temporary capture directories
+        """
+
+        if os.path.isdir(self.paths["temp"]):
+            logging.info("Clearing {}...".format(self.paths["temp"]))
+            shutil.rmtree(self.paths["temp"])
+            logging.debug("Cleared {}.".format(self.paths["temp"]))
 
     # START AND STOP WORKER THREAD
 
@@ -244,7 +261,6 @@ class BaseCamera(metaclass=ABCMeta):
 
     def new_image(
         self,
-        write_to_file: bool = True,
         temporary: bool = True,
         filename: str = None,
         folder: str = "",
@@ -252,10 +268,9 @@ class BaseCamera(metaclass=ABCMeta):
     ):
 
         """
-        Create a new image capture object. Adds to the image list, and shunt all others.
+        Create a new image capture object.
 
         Args:
-            write_to_file (bool): Should the StreamObject write to a file, or an in-memory byte stream.
             temporary (bool): Should the data be deleted after session ends. 
                 Creating the capture with a content manager sets this to true.
             filename (str): Name of the stored file. Defaults to timestamp.
@@ -270,16 +285,14 @@ class BaseCamera(metaclass=ABCMeta):
         filename = "{}.{}".format(filename, fmt)
 
         # Generate folder
-        base_folder = self.paths["image_tmp"] if temporary else self.paths["image"]
+        base_folder = self.paths["temp"] if temporary else self.paths["default"]
         folder = os.path.join(base_folder, folder)
 
         # Generate file path
         filepath = os.path.join(folder, filename)
 
         # Create capture object
-        output = CaptureObject(
-            write_to_file=write_to_file, temporary=temporary, filepath=filepath
-        )
+        output = CaptureObject(filepath=filepath)
 
         # Update capture list
         shunt_captures(self.images)
@@ -289,7 +302,6 @@ class BaseCamera(metaclass=ABCMeta):
 
     def new_video(
         self,
-        write_to_file: bool = True,
         temporary: bool = False,
         filename: str = None,
         folder: str = "",
@@ -297,10 +309,9 @@ class BaseCamera(metaclass=ABCMeta):
     ):
 
         """
-        Create a new video capture object. Adds to the image list, and shunt all others.
+        Create a new video capture object.
 
         Args:
-            write_to_file (bool): Should the StreamObject write to a file, or an in-memory byte stream.
             temporary (bool): Should the data be deleted after session ends. 
                 Creating the capture with a content manager sets this to true.
             filename (str): Name of the stored file. Defaults to timestamp.
@@ -315,16 +326,14 @@ class BaseCamera(metaclass=ABCMeta):
         filename = "{}.{}".format(filename, fmt)
 
         # Generate folder
-        base_folder = self.paths["video_tmp"] if temporary else self.paths["video"]
+        base_folder = self.paths["temp"] if temporary else self.paths["default"]
         folder = os.path.join(base_folder, folder)
 
         # Generate file path
         filepath = os.path.join(folder, filename)
 
         # Create capture object
-        output = CaptureObject(
-            write_to_file=write_to_file, temporary=temporary, filepath=filepath
-        )
+        output = CaptureObject(filepath=filepath)
 
         # Update capture list
         shunt_captures(self.videos)

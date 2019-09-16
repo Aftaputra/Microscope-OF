@@ -123,11 +123,11 @@ class ListAPI(MicroscopeView):
         # Explicitally acquire lock (prevents empty files being created if lock is unavailable)
         with self.microscope.camera.lock:
             output = self.microscope.camera.new_image(
-                write_to_file=True, temporary=temporary, filename=filename
+                temporary=temporary, filename=filename
             )
 
             self.microscope.camera.capture(
-                output, use_video_port=use_video_port, resize=resize, bayer=bayer
+                output.file, use_video_port=use_video_port, resize=resize, bayer=bayer
             )
 
             metadata.update(

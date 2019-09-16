@@ -296,7 +296,7 @@ class PiCameraStreamer(BaseCamera):
         Start a new video recording, writing to a output object.
 
         Args:
-            output (CaptureObject/str): Output object to write data bytes to.
+            output: String or file-like object to write capture data to
             fmt (str): Format of the capture.
             quality (int): Video recording quality.
 
@@ -308,18 +308,11 @@ class PiCameraStreamer(BaseCamera):
             # Start recording method only if a current recording is not running
             if not self.state["record_active"]:
 
-                # If output is a StreamObject
-                if isinstance(output, CaptureObject):
-                    # Set target to capture stream
-                    output_stream = output.stream
-                else:
-                    output_stream = output
-
                 # Start the camera video recording on port 2
                 logging.info("Recording to {}".format(output))
 
                 self.camera.start_recording(
-                    output_stream,
+                    output,
                     format=fmt,
                     splitter_port=2,
                     resize=self.stream_resolution,
@@ -453,7 +446,7 @@ class PiCameraStreamer(BaseCamera):
         Target object can be overridden for development purposes.
 
         Args:
-            output (CaptureObject/str): Output object to write data bytes to.
+            output: String or file-like object to write capture data to
             use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
             fmt (str): Format of the capture.
             resize ((int, int)): Resize the captured image.
@@ -461,13 +454,6 @@ class PiCameraStreamer(BaseCamera):
         """
 
         with self.lock:
-            # If output is a StreamObject
-            if isinstance(output, CaptureObject):
-                # Set target to capture stream
-                output_stream = output.stream
-            else:
-                output_stream = output
-
             logging.info("Capturing to {}".format(output))
 
             # Set resolution and stop stream recording if necessary
@@ -475,7 +461,7 @@ class PiCameraStreamer(BaseCamera):
                 self.stop_stream_recording()
 
             self.camera.capture(
-                output_stream,
+                output,
                 format=fmt,
                 quality=100,
                 resize=resize,

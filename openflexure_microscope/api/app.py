@@ -43,7 +43,7 @@ DEFAULT_LOGFILE = os.path.join(USER_CONFIG_DIR, "openflexure_microscope.log")
 if (__name__ == "__main__") or (not is_gunicorn):
     # If imported, but not by gunicorn
     print("Letting sys handle logs")
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG)
 else:
     # Direct standard Python logging to file and console
     root = logging.getLogger()
@@ -66,10 +66,33 @@ else:
 # Create a dummy microscope object, with no hardware attachments
 api_microscope = Microscope()
 
-# Rebuild the capture list
-# TODO: Offload to a thread?
-stored_image_list = build_captures_from_exif()
+# Initialise camera
+logging.debug("Creating camera object...")
+try:
+    api_camera = PiCameraStreamer()
+except Exception as e:
+    logging.error(e)
+    logging.warning("No valid camera hardware found. Falling back to mock camera!")
+    api_camera = MockStreamer()
 
+# Initialise stage
+logging.debug("Creating stage object...")
+try:
+    api_stage = SangaStage()
+except Exception as e:
+    logging.error(e)
+    logging.warning("No valid stage hardware found. Falling back to mock stage!")
+    api_stage = MockStage()
+
+# Attach devices to microscope
+logging.debug("Attaching devices to microscope...")
+api_microscope.attach(api_camera, api_stage)
+
+# Restore loaded capture array to camera object
+logging.debug("Restoring captures...")
+api_microscope.camera.images = build_captures_from_exif(api_microscope.camera.paths["default"])
+
+logging.debug("Microscope successfully attached!")
 
 # Generate API URI based on version from filename
 def uri(suffix, api_version, base=None):
@@ -89,47 +112,7 @@ CORS(app, resources=r"/api/*")
 # Make errors more API friendly
 handler = JSONExceptionHandler(app)
 
-
-# After app starts, but before first request, attach hardware to global microscope
-@app.before_first_request
-def attach_microscope():
-    # Create the microscope object globally (common to all spawned server threads)
-    global api_microscope, stored_image_list
-    logging.debug("First request made. Populating microscope with hardware...")
-
-    # Initialise camera
-    logging.debug("Creating camera object...")
-    try:
-        api_camera = PiCameraStreamer()
-    except Exception as e:
-        logging.error(e)
-        logging.warning("No valid camera hardware found. Falling back to mock camera!")
-        api_camera = MockStreamer()
-
-    # Initialise stage
-    logging.debug("Creating stage object...")
-    try:
-        api_stage = SangaStage()
-    except Exception as e:
-        logging.error(e)
-        logging.warning("No valid stage hardware found. Falling back to mock stage!")
-        api_stage = MockStage()
-
-    # Attach devices to microscope
-    logging.debug("Attaching devices to microscope...")
-    api_microscope.attach(api_camera, api_stage)
-
-    # Restore loaded capture array to camera object
-    logging.debug("Restoring captures...")
-    if stored_image_list:
-        api_microscope.camera.images = stored_image_list
-
-    logging.debug("Microscope successfully attached!")
-
-
 # WEBAPP ROUTES
-
-# API ROUTES
 
 # Base routes
 base_blueprint = blueprints.base.construct_blueprint(api_microscope)

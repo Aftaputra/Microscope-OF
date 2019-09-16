@@ -71,12 +71,12 @@ class ScanPlugin(MicroscopePlugin):
 
         # Create output object
         output = self.microscope.camera.new_image(
-            write_to_file=True, temporary=temporary, filename=filename, folder=folder
+            temporary=temporary, filename=filename, folder=folder
         )
 
         # Capture
         self.microscope.camera.capture(
-            output, use_video_port=use_video_port, resize=resize, bayer=bayer
+            output.file, use_video_port=use_video_port, resize=resize, bayer=bayer
         )
 
         # Affix metadata

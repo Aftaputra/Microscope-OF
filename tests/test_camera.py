@@ -28,9 +28,9 @@ class TestCaptureMethods(unittest.TestCase):
                 camera.wait_for_camera()
 
                 # Capture to a context (auto-deletes files when done)
-                with camera.new_image(write_to_file=False) as output:
+                with camera.new_image() as output:
 
-                    camera.capture(output, use_video_port=use_video_port, resize=resize)
+                    camera.capture(output.file, use_video_port=use_video_port, resize=resize)
 
                     # Ensure file deletion fails and returns False
                     self.assertFalse(output.delete_file())
@@ -87,7 +87,7 @@ class TestCaptureMethods(unittest.TestCase):
 
                 # Capture
                 output = camera.capture(
-                    camera.new_image(write_to_file=True),
+                    camera.new_image().file,
                     use_video_port=use_video_port,
                     resize=resize,
                 )
@@ -176,34 +176,29 @@ class TestRecordMethods(unittest.TestCase):
         """Tests recording videos to BytesIO stream, and to file on disk."""
         global camera
 
-        for write_to_file in [True, False, None]:
+        # Wait for camera
+        camera.wait_for_camera()
 
-            logging.debug("\nWRITE TO FILE: {}".format(write_to_file))
+        with camera.new_video() as output:
 
-            # Wait for camera
-            camera.wait_for_camera()
+            # Start recording
+            camera.start_recording(output)
 
-            with camera.new_video(write_to_file=write_to_file) as output:
+            # Record for 2 seconds
+            time.sleep(2)
+            # Stop recording
+            camera.stop_recording()
 
-                # Start recording
-                camera.start_recording(output)
+            # Check stream
+            self.assertTrue(isinstance(output.data, io.IOBase))
+            self.assertTrue(isinstance(output.binary, (bytes, bytearray)))
 
-                # Record for 2 seconds
-                time.sleep(2)
-                # Stop recording
-                camera.stop_recording()
+            # Check file
+            statinfo = os.stat(output.file)
+            self.assertTrue(statinfo.st_size > 0)
 
-                # Check stream
-                self.assertTrue(isinstance(output.data, io.IOBase))
-                self.assertTrue(isinstance(output.binary, (bytes, bytearray)))
-
-                # Check file
-                if write_to_file:
-                    statinfo = os.stat(output.file)
-                    self.assertTrue(statinfo.st_size > 0)
-
-                # Log path
-                temp_path = output.file
+            # Log path
+            temp_path = output.file
 
             # Check file got deleted on __exit__
             self.assertFalse(os.path.isfile(temp_path))
