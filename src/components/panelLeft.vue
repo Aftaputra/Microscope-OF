@@ -3,7 +3,7 @@
 
     <!-- Vertical tab bar -->
     <div id="switcher-left" class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1">
-      <tabIcon id="connect" :requireConnection="false" :currentTab="currentTab" @set-tab="setTab">
+      <tabIcon id="status" :requireConnection="false" :currentTab="currentTab" @set-tab="setTab">
         <i class="material-icons">settings_ethernet</i>
       </tabIcon>
       <tabIcon id="navigate" :requireConnection="true" :currentTab="currentTab" @set-tab="setTab">
@@ -31,8 +31,8 @@
     <!-- Corresponding vertical tab content -->
     <div v-bind:hidden="!showControlBar" id="container-left" class="uk-padding-remove uk-height-1-1 uk-width-expand">
       <div id="component-left" class="uk-padding-remove uk-flex uk-flex-1 panel-content">
-        <tabContent id="connect" :requireConnection="false" :currentTab="currentTab">
-          <paneConnect/>
+        <tabContent id="status" :requireConnection="false" :currentTab="currentTab">
+          <paneStatus/>
         </tabContent>
         <tabContent id="navigate" :requireConnection="true" :currentTab="currentTab">
           <paneNavigate/>
@@ -79,7 +79,7 @@ import tabIcon from './genericComponents/tabIcon'
 import tabContent from './genericComponents/tabContent'
 
 // Import pane components
-import paneConnect from './controlComponents/paneConnect'
+import paneStatus from './controlComponents/paneStatus'
 import paneNavigate from './controlComponents/paneNavigate'
 import paneCapture from './controlComponents/paneCapture'
 import paneSettings from './controlComponents/paneSettings'
@@ -94,7 +94,7 @@ export default {
   components: {
     tabIcon,
     tabContent,
-    paneConnect,
+    paneStatus,
     paneNavigate,
     paneCapture,
     paneSettings,
@@ -103,7 +103,7 @@ export default {
 
   data: function () {
     return {
-      currentTab: 'connect',
+      currentTab: 'status',
       showControlBar: true
     }  
   },

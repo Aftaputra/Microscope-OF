@@ -2,10 +2,12 @@
   <!-- Tabbed panel for gallery and live views -->
   <div id="panel-right" class="uk-flex uk-flex-column uk-margin-remove uk-padding-remove uk-width-expand uk-height-1-1">
     <ul class="uk-flex-none uk-flex-center uk-margin-remove-bottom uk-text-center" uk-tab="swiping: false">
-        <li><a href="#" uk-switcher-item="preview">Live</a></li>
+        <li><a href="#" uk-switcher-item="connect">Connect</a></li>
+        <li v-bind:class="{'uk-disabled': !this.$store.getters.ready}"><a href="#" uk-switcher-item="preview">Live</a></li>
         <li v-bind:class="{'uk-disabled': !this.$store.getters.ready}"><a href="#" uk-switcher-item="gallery">Gallery</a></li>
     </ul>
     <ul class="uk-switcher uk-flex uk-flex-1">
+        <li class="uk-height-1-1 uk-width-1-1 uk-overflow-auto" id="connectDisplayTab"><connectDisplay/></li>
         <li class="uk-height-1-1 uk-width-1-1 clickableTab" id="streamDisplayTab"><streamDisplay/></li>
         <li class="uk-height-1-1 uk-width-1-1 uk-overflow-auto" id="galleryDisplayTab"><galleryDisplay/></li>
     </ul>
@@ -19,6 +21,7 @@ import axios from 'axios'
 import UIkit from 'uikit';
 
 // Import components
+import connectDisplay from './viewComponents/connectDisplay.vue'
 import streamDisplay from './viewComponents/streamDisplay.vue'
 import galleryDisplay from './viewComponents/galleryDisplay.vue'
 
@@ -27,6 +30,7 @@ export default {
   name: 'panelRight',
 
   components: {
+    connectDisplay,
     streamDisplay,
     galleryDisplay,
   },

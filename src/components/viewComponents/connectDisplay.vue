@@ -1,80 +1,107 @@
 <template>
-<div class="host-input">
-  <div class="uk-margin">
+	<div class="connectDisplay uk-padding uk-padding-remove-left">
 
-    <form @submit.prevent="handleSubmit">
-      <div class="uk-form-controls uk-margin">
-        <label><input class="uk-radio" type="radio" name="radio_local" v-model="computedLocalMode" v-bind:value="true"> Connect locally</label><br>
-        <label><input class="uk-radio" type="radio" name="radio_local" v-model="computedLocalMode" v-bind:value="false" checked> Connect remotely</label>
-      </div>
+    <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove" margin=0>
 
-      <div v-if="!localMode">
-        <div class="uk-inline uk-width-1-1">
-          <span class="uk-form-icon"><i class="material-icons">dns</i></span>
-          <input v-model="hostname" v-bind:class="IpFormClasses" class="uk-input uk-form-small" type="text" placeholder="Hostname or IP address">
+      <div class="uk-width-auto">
+
+        <div class="uk-card uk-card-default uk-card-hover uk-padding-remove uk-width-medium">
+
+          <div class="uk-card-body uk-padding-small">
+            <form @submit.prevent="handleSubmit">
+              <div class="uk-form-controls uk-margin">
+                <label><input class="uk-radio" type="radio" name="radio_local" v-model="computedLocalMode" v-bind:value="true"> Connect locally</label><br>
+                <label><input class="uk-radio" type="radio" name="radio_local" v-model="computedLocalMode" v-bind:value="false" checked> Connect remotely</label>
+              </div>
+              <div v-if="!localMode">
+                <div class="uk-inline uk-width-1-1">
+                  <span class="uk-form-icon"><i class="material-icons">dns</i></span>
+                  <input v-model="hostname" v-bind:class="IpFormClasses" class="uk-input uk-form-small" type="text" placeholder="Hostname or IP address">
+                </div>
+                <label class="uk-form-label" for="form-stacked-text">Port</label>
+                <div class="uk-form-controls">
+                  <input v-model="computedPort" class="uk-input uk-form-small" id="form-stacked-text" type="number" value=5000>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div class="uk-card-footer uk-padding-small">
+            <button
+              v-on:click="handleSubmit"
+              class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1">
+              Connect
+            </button>
+
+            <button 
+              v-if="$store.getters.ready" 
+              v-on:click="saveHost()" 
+              class="uk-button uk-button-default uk-form-small uk-margin-small uk-width-1-1">
+              Save Current
+            </button>
+
+            <button 
+              v-if="$store.getters.ready" 
+              v-on:click="$store.commit('resetState')" 
+              class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1">
+              Disconnect
+            </button>
+          </div>
+
         </div>
       </div>
 
-      <ul uk-accordion="multiple: true">
-        <li>
-          <a class="uk-accordion-title" href="#">Advanced</a>
-          <div class="uk-accordion-content">
-            <label class="uk-form-label" for="form-stacked-text">Port</label>
-            <div class="uk-form-controls">
-              <input v-model="computedPort" class="uk-input uk-form-small" id="form-stacked-text" type="number" value=5000>
+      <div class="uk-width-expand">
+        <ul uk-accordion="multiple: true">
+
+          <li class="uk-open">
+            <a class="uk-accordion-title" href="#">Saved devices</a>
+            <div class="uk-accordion-content">
+            
+              <div class="uk-grid-medium uk-grid-match uk-margin-top" uk-grid>
+
+                <div v-for="host in savedHosts" :key="host.name">
+                  <hostCard 
+                    :name="host.name" 
+                    :hostname="host.hostname" 
+                    :port="host.port"
+                    v-on:connect="connectToHost(host)"
+                    v-on:delete="delSavedHost(host)"
+                  ></hostCard>
+                </div>
+                
+              </div>
+
             </div>
-          </div>
-        </li>
+          </li>
 
-        <li>
-          <a class="uk-accordion-title" href="#">Status</a>
-          <div class="uk-accordion-content">
-            <div v-if="$store.getters.ready">
-              <p><b>Host:</b> {{ $store.state.host }}</p>
-              <p><b>Base URI:</b> {{ $store.getters.uri }}</p>
-              <p v-if="$store.state.apiConfig.name"><b>Device name:</b> {{ $store.state.apiConfig.name }}</p>
+          <li class="uk-open">
+            <a class="uk-accordion-title" href="#">Nearby devices</a>
+            <div class="uk-accordion-content">
+
+              <div class="uk-grid-medium uk-grid-match uk-margin-top" uk-grid>
+
+                <div v-for="host in Object.values(foundHosts)" :key="host.name">
+                  <hostCard 
+                    :name="host.name" 
+                    :hostname="host.hostname" 
+                    :port="host.port"
+                    :deletable="false"
+                    v-on:connect="connectToHost(host)"
+                  ></hostCard>
+                </div>
+                
+              </div>
+
             </div>
-            <div v-else-if="$store.state.waiting"><div uk-spinner></div></div>
-            <div v-else-if="$store.state.error"><b>Error:</b> {{ $store.state.error }}</div>
-            <div v-else>No active connection</div>
-          </div>
-        </li>
+          </li>
 
-        <li v-if="!localMode" class="uk-open">
-          <a class="uk-accordion-title" href="#">Nearby devices</a>
-          <div class="uk-accordion-content">
-            <div v-for="host in Object.values(foundHosts)" :key="host.name" class="uk-margin-small uk-margin-remove-left uk-margin-remove-right uk-flex uk-flex-middle">
-              <a href="#" v-on:click="autofillHost(host)" class="uk-link uk-padding-remove uk-width-expand host-description"><b>{{ host.name }}</b> ({{ host.hostname }}:{{ host.port }})</a> 
-            </div>
-          </div>
-        </li>
+        </ul>
+      </div>
 
-        <li v-if="!localMode" class="uk-open">
-          <a class="uk-accordion-title" href="#">Saved devices</a>
-          <div class="uk-accordion-content">
-            <button v-if="$store.getters.ready" v-on:click="saveHost()" class="uk-button uk-button-default uk-form-small uk-margin-small uk-width-1-1">Save Current</button>
-            <div v-for="host in savedHosts" :key="host.name" class="uk-margin-small uk-margin-remove-left uk-margin-remove-right uk-flex uk-flex-middle">
-              <a href="#" v-on:click="autofillHost(host)" class="uk-link uk-padding-remove uk-width-expand host-description"><b>{{ host.name }}</b> ({{ host.hostname }}:{{ host.port }})</a> 
-              <a href="#" v-on:click="delSavedHost(host)" class="uk-icon uk-width-auto host-delete"><i class="material-icons">delete</i></a> 
-            </div>
-          </div>
-        </li>
+    </div>
 
-      </ul>
-
-      <button class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1">Connect</button>
-    </form>
-
-  <button 
-    v-if="$store.getters.ready" 
-    v-on:click="$store.commit('resetState')" 
-    class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1">
-    Disconnect
-  </button>
-
-  </div>
-
-</div>
+	</div>
 </template>
 
 <script>
@@ -86,9 +113,15 @@ if (userAgent.indexOf(' electron/') > -1) {
   var mdns = require('mdns-js');
 }
 
+import hostCard from './connectComponents/hostCard.vue'
 
+// Export main app
 export default {
-  name: 'paneConnect',
+  name: 'connectDisplay',
+
+  components: {
+    hostCard
+  },
 
   data: function () {
     return {
@@ -98,7 +131,7 @@ export default {
       selectedHost: "",
       savedHosts: [],
       foundHosts: {}
-    }  
+    }    
   },
 
   mounted() {
@@ -148,23 +181,16 @@ export default {
   },
 
   methods: {
-    handleSubmit: function(event) {
-      // Split host and port if needed
-      if (this.hostname.includes(':')) {
-        this.port = this.computedPort;
-        this.hostname = this.hostname.split(':')[0];
-      }
-      // Handle auto-local-connect
-      if (this.localMode) {
-        var hostname = "localhost";
-      }
-      else {
-        var hostname = this.hostname;
-      }
+    connectToHost: function(host) {
+      console.log(host)
+      // Set the global form values
+      this.hostname = host.hostname
+      this.port = host.port
+    
       // Commit the hostname and port to store
       this.$store.commit('changeHost', [
-        hostname, 
-        this.port
+        host.hostname, 
+        host.port
       ]);
       // Try to get config and state JSON from the newly submitted host
       this.$store.dispatch('firstConnect')
@@ -174,7 +200,30 @@ export default {
       })
       .catch(error => {
         this.modalError(error) // Let mixin handle error
-      })
+      })    
+    },
+
+    handleSubmit: function(event) {
+      // Split host and port if needed
+      if (this.hostname.includes(':')) {
+        this.port = this.computedPort;
+        this.hostname = this.hostname.split(':')[0];
+      }
+
+      // Handle auto-local-connect
+      if (this.localMode) {
+        var hostname = "localhost";
+      }
+      else {
+        var hostname = this.hostname;
+      }
+
+      var selectedHost = {
+        hostname: hostname,
+        port: this.port
+      }
+
+      this.connectToHost(selectedHost)
     },
 
     checkServerVersion: function () {
@@ -215,11 +264,6 @@ export default {
       this.$store.commit("changeSetting", ['disableStream', state]);
       this.$store.commit("changeSetting", ['autoGpuPreview', state]);
       //this.$root.$emit('globalTogglePreview', state)
-    },
-
-    autofillHost: function (host) {
-      this.hostname = host.hostname;
-      this.port = host.port
     },
 
     delSavedHost: function (host) {
@@ -279,16 +323,6 @@ export default {
       }
     },
 
-    computedSelectedHost: {
-      get: function() {
-        return this.selectedHost
-      },
-      set: function(host) {
-        this.selectedHost = host;
-        this.hostname = host.hostname;
-        this.port = host.port;
-      }
-    }
   }
 
 }
