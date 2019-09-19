@@ -288,6 +288,9 @@ class BaseCamera(metaclass=ABCMeta):
 
         # Create capture object
         output = CaptureObject(filepath=filepath)
+        # Insert a temporary tag if temporary
+        if temporary:
+            output.put_tags(['temporary'])
 
         # Update capture list
         self.images.append(output)
@@ -328,6 +331,9 @@ class BaseCamera(metaclass=ABCMeta):
 
         # Create capture object
         output = CaptureObject(filepath=filepath)
+        # Insert a temporary tag if temporary
+        if temporary:
+            output.put_tags(['temporary'])
 
         # Update capture list
         self.videos.append(output)
