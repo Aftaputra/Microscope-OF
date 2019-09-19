@@ -1,7 +1,7 @@
 <template>
 <div id="paneNavigate">
 
-  <ul uk-accordion="multiple: true">
+  <ul uk-accordion="multiple: true; animation: false">
     <li>
       <a class="uk-accordion-title" href="#">Configure</a>
       <div class="uk-accordion-content">

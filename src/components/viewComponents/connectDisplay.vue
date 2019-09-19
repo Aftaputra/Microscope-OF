@@ -52,7 +52,7 @@
       </div>
 
       <div class="uk-width-expand">
-        <ul uk-accordion="multiple: true">
+        <ul uk-accordion="multiple: true; animation: false">
 
           <li class="uk-open">
             <a class="uk-accordion-title" href="#">Saved devices</a>

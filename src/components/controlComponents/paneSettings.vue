@@ -3,7 +3,7 @@
     
     <appSettings/>
 
-    <ul uk-accordion="multiple: true">
+    <ul uk-accordion="multiple: true; animation: false">
       <li>
         <a class="uk-accordion-title" href="#">Stream settings</a>
         <div class="uk-accordion-content"><streamSettings/></div>

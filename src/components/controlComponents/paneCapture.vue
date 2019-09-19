@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <ul uk-accordion="multiple: true">
+    <ul uk-accordion="multiple: true; animation: false">
       <li>
         <a class="uk-accordion-title" href="#">Notes</a>
         <div class="uk-accordion-content">
@@ -58,7 +58,7 @@
 
     <hr>
 
-    <ul uk-accordion="multiple: true">
+    <ul uk-accordion="multiple: true; animation: false">
 
       <!--Show stack and scan if default plugin is enabled-->
       <li v-if="this.$store.state.apiState.plugin.includes('default_scan')">
