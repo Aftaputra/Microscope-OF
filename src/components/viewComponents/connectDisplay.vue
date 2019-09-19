@@ -5,7 +5,7 @@
 
       <div class="uk-width-auto">
 
-        <div class="uk-card uk-card-default uk-card-hover uk-padding-remove uk-width-medium">
+        <div class="uk-card uk-card-default uk-card-hover uk-padding-remove uk-width-medium connect-card-align-top">
 
           <div class="uk-card-body uk-padding-small">
             <form @submit.prevent="handleSubmit">
@@ -338,17 +338,9 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="less">
-.host-input {
-  text-align: left;
-}
 
-.host-description {
-  text-overflow: ellipsis;
-  overflow: hidden;
-}
-
-.host-delete {
-  padding: 0 2px 0 10px;
+.connect-card-align-top {
+  margin-top: 52px;
 }
 
 </style>
