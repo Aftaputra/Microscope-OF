@@ -25,7 +25,11 @@ class MockStreamer(BaseCamera):
         BaseCamera.__init__(self)
 
         # Store state of PiCameraStreamer
-        self.state.update({"stream_active": False, "record_active": False})
+        self.state.update({
+            "stream_active": False, 
+            "record_active": False,
+            "board": None
+        })
 
         # Update config properties
         self.image_resolution = (1312, 976)

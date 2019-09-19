@@ -120,7 +120,9 @@ class BaseCamera(metaclass=ABCMeta):
         self.stream_timeout = 20
         self.stream_timeout_enabled = False
 
-        self.state = {}
+        self.state = {
+            "board": None
+        }
 
         # TODO: Load/save these to config
         self.paths = {

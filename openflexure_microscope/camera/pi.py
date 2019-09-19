@@ -66,9 +66,13 @@ class PiCameraStreamer(BaseCamera):
         )  #: :py:class:`picamera.PiCamera`: Picamera object
 
         # Store state of PiCameraStreamer
-        self.state.update(
-            {"stream_active": False, "record_active": False, "preview_active": False}
-        )
+        self.state.update({
+            "stream_active": False, 
+            "record_active": False, 
+            "preview_active": False,
+            "board": f"picamera_{self.camera.revision}",
+        })
+
         # Reset variable states
         self.set_zoom(1.0)
 
@@ -77,6 +81,9 @@ class PiCameraStreamer(BaseCamera):
         self.stream_resolution = (832, 624)
         self.numpy_resolution = (1312, 976)
         self.jpeg_quality = 75
+
+        # Update board identifier
+        self.state.update({})
 
         # Create an empty stream
         self.stream = io.BytesIO()
