@@ -65,7 +65,7 @@
                     :name="host.name" 
                     :hostname="host.hostname" 
                     :port="host.port"
-                    v-on:connect="connectToHost(host)"
+                    v-on:connect="handleConnectButton(host)"
                     v-on:delete="delSavedHost(host)"
                   ></hostCard>
                 </div>
@@ -87,7 +87,7 @@
                     :hostname="host.hostname" 
                     :port="host.port"
                     :deletable="false"
-                    v-on:connect="connectToHost(host)"
+                    v-on:connect="handleConnectButton(host)"
                   ></hostCard>
                 </div>
                 
@@ -196,7 +196,10 @@ export default {
       this.$store.dispatch('firstConnect')
       .then (() => {
         console.log("Connected!")
+        // Check client and server match
         this.checkServerVersion()
+        // Switch to live view tab
+        this.$root.$emit('globalTogglePanelRightTab', 'preview')
       })
       .catch(error => {
         this.modalError(error) // Let mixin handle error
@@ -224,6 +227,11 @@ export default {
       }
 
       this.connectToHost(selectedHost)
+    },
+
+    handleConnectButton: function(host) {
+      this.computedLocalMode = false
+      this.connectToHost(host)
     },
 
     checkServerVersion: function () {

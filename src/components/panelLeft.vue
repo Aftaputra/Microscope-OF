@@ -4,7 +4,7 @@
     <!-- Vertical tab bar -->
     <div id="switcher-left" class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1">
       <tabIcon id="status" :requireConnection="false" :currentTab="currentTab" @set-tab="setTab">
-        <i class="material-icons">settings_ethernet</i>
+        <i class="material-icons">thumbs_up_down</i>
       </tabIcon>
       <tabIcon id="navigate" :requireConnection="true" :currentTab="currentTab" @set-tab="setTab">
         <i class="material-icons">gamepad</i>  

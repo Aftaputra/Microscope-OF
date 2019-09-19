@@ -29,9 +29,10 @@
     </div>
 
     <div class="uk-card-footer uk-padding-small">
-      <span v-if="temporary" class="uk-label uk-label-danger uk-margin-small-right" uk-tooltip="title: Capture will be removed automatically; delay: 500">Temporary</span>
-
-      <span v-for="tag in tags" :key="tag" v-on:click="delTagConfirm(tag)" class="uk-label uk-margin-small-right deletable-label"> {{ tag }} </span>
+      <div v-for="tag in tags" :key="tag">
+        <span v-if="tag==='temporary'" class="uk-label uk-label-danger uk-margin-small-right" uk-tooltip="title: Capture will be removed automatically; delay: 500">Temporary</span>
+        <span v-else v-on:click="delTagConfirm(tag)" class="uk-label uk-margin-small-right deletable-label"> {{ tag }} </span>
+      </div>
 
       <a v-bind:href="tagModalTarget" uk-toggle>
         <span class="uk-label uk-label-success uk-margin-small-right">Add</span>
@@ -84,10 +85,6 @@ export default {
   name: 'captureCard',
 
   props: {
-    temporary: {
-      type: Boolean,
-      required: true
-    },
     metadata: {
       type: Object,
       required: true

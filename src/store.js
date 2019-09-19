@@ -74,13 +74,10 @@ export default new Vuex.Store({
       var sendRequest = function(resolve, reject) {
         // Do requests
         context.dispatch('updateConfig')
+        .then (() => context.dispatch('updateState'))
+        .then (() => context.dispatch('updatePlugins'))
         .then (() => {
-          context.dispatch('updateState')
-        })
-        .then (() => {
-          context.dispatch('updatePlugins')
-        })
-        .then (() => {
+          console.log("Finished first connect")
           resolve()
         })
         .catch(error => {
@@ -91,6 +88,7 @@ export default new Vuex.Store({
     },
 
     updateConfig(context, uri=`${context.getters.uri}/config`) {
+      console.log("Updating config")
       context.commit('changeWaiting', true)
   
       var sendRequest = function(resolve, reject) {
@@ -98,6 +96,7 @@ export default new Vuex.Store({
         .then(response => { 
           context.commit('commitConfig', response.data)
           context.commit('setConnected')
+          console.log("Updating config finished")
           resolve()
         })
         .catch(error => {
@@ -108,6 +107,7 @@ export default new Vuex.Store({
     },
 
     updateState(context, uri=`${context.getters.uri}/state`) {
+      console.log("Updating state")
       context.commit('changeWaiting', true)
   
       var sendRequest = function(resolve, reject) {
@@ -115,6 +115,7 @@ export default new Vuex.Store({
         .then(response => { 
           context.commit('commitState', response.data)
           context.commit('setConnected')
+          console.log("Updating state finished")
           resolve()
         })
         .catch(error => {
@@ -125,6 +126,7 @@ export default new Vuex.Store({
     },
 
     updatePlugins(context, uri=`${context.getters.uri}/plugin`) {
+      console.log("Updating plugins")
       context.commit('changeWaiting', true)
   
       var sendRequest = function(resolve, reject) {
@@ -134,6 +136,7 @@ export default new Vuex.Store({
           console.log(response.data)
           context.commit('commitPlugins', response.data)
           context.commit('setConnected')
+          console.log("Updating plugins finished")
           resolve()
         })
         .catch(error => {
