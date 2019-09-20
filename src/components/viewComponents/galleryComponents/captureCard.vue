@@ -2,11 +2,9 @@
 	<div class="captureCard uk-card uk-card-default uk-card-hover uk-padding-remove uk-width-medium" v-bind:class="{ 'uk-card-secondary': $store.state.globalSettings.darkMode }">
 
     <div class="uk-card-media-top">
-        
-          <a class="lightbox-link" v-bind:href="imgURL" v-bind:data-caption="metadata.filename">
-            <img class="uk-width-1-1" v-bind:data-src="thumbURL" v-bind:alt="metadata.id" width="300" height="225" uk-img>
-          </a>
-
+      <a class="lightbox-link" v-bind:href="imgURL" v-bind:data-caption="metadata.filename">
+        <img class="uk-width-1-1" v-bind:data-src="thumbURL" v-bind:alt="metadata.id" width="300" height="225" uk-img>
+      </a>
     </div>
 
     <div class="uk-card-body uk-padding-small">
