@@ -23,24 +23,24 @@
     "release": "electron-builder --linux --config app/builder-config-raspi.yaml & electron-builder --win --linux --config app/builder-config-x86_64.yaml"
   },
   "dependencies": {
-    "about-window": "^1.12.1",
-    "custom-electron-titlebar": "^3.0.8",
+    "about-window": "^1.13.1",
+    "custom-electron-titlebar": "^3.1.0",
     "electron-context-menu": "^0.11.0",
-    "electron-store": "^3.2.0",
-    "electron-updater": "^4.0.6",
+    "electron-store": "^3.3.0",
+    "electron-updater": "^4.1.2",
     "material-design-icons": "^3.0.1"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^3.3.0",
-    "@vue/cli-service": "^3.6.0",
+    "@vue/cli-plugin-babel": "^3.11.0",
+    "@vue/cli-service": "^3.11.0",
     "axios": "^0.18.1",
     "css-loader": "^2.1.1",
-    "electron": "^4.1.4",
+    "electron": "^4.2.10",
     "electron-builder": "^21.2.0",
-    "less": "^3.9.0",
+    "less": "^3.10.3",
     "less-loader": "^4.1.0",
     "mdns-js": "^1.0.3",
-    "uikit": "^3.1.1",
+    "uikit": "^3.2.0",
     "vue": "^2.5.21",
     "vue-template-compiler": "^2.6.10",
     "vuex": "^3.0.1"
