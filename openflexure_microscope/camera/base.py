@@ -137,12 +137,16 @@ class BaseCamera(metaclass=ABCMeta):
     @abstractmethod
     def apply_config(self, config: dict):
         """Update settings from a config dictionary"""
-        pass
+        with self.lock:
+            # Apply valid config params to camera object
+            for key, value in config.items():  # For each provided setting
+                if hasattr(self, key):  # If the instance has a matching property
+                    setattr(self, key, value)  # Set to the target value
 
     @abstractmethod
     def read_config(self) -> dict:
         """Return the current settings as a dictionary"""
-        pass
+        return {"paths": self.paths}
 
     def __enter__(self):
         """Create camera on context enter."""

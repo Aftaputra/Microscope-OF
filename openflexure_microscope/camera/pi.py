@@ -109,15 +109,20 @@ class PiCameraStreamer(BaseCamera):
         Return config dictionary of the PiCameraStreamer.
         """
 
-        conf_dict = {
+        # Get config items from the base class
+        conf_dict = BaseCamera.read_config(self)
+
+        # Include device-specific config items
+        conf_dict.update({
             "stream_resolution": self.stream_resolution,
             "image_resolution": self.image_resolution,
             "numpy_resolution": self.numpy_resolution,
             "jpeg_quality": self.jpeg_quality,
             "picamera_settings": {},
-        }
+        })
 
-        # PiCamera parameters
+        # Include a subset of picamera properties
+        # TODO: Expand this subset so we have more metadata?
         for key in PiCameraStreamer.picamera_settings_keys:
             try:
                 value = getattr(self.camera, key)
