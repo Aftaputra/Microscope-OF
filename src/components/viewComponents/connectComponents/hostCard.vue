@@ -76,6 +76,7 @@ export default {
         // Tell the view that a snapshot is available
         this.snapshotAvailable = true
         // Set the snapshot image src to the snapshot URL
+        // Note, we add a timestamp argument to act as a cache-breaker
         this.snapshotSrc = `${this.snapshotURL}?${Date.now()}`
         // If not already polling, start polling
         if (this.polling === null) {
@@ -118,7 +119,7 @@ export default {
 }
 
 img[data-src][src*='data:image'] { 
-  background: rgba(0,0,0,0.1); 
+  background: rgba(127,127,127,0.1); 
 }
 
 </style>
