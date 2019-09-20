@@ -25,6 +25,25 @@ class StreamAPI(MicroscopeView):
         )
 
 
+class SnapshotAPI(MicroscopeView):
+    def get(self):
+        """
+        Single snapshot from the camera stream
+
+        .. :quickref: State; Camera snapshot
+
+        :>header Accept: image/jpeg
+        :>header Content-Type: image/jpeg
+        :status 200: stream active
+        """
+        # Restart stream worker thread
+        self.microscope.camera.start_worker()
+
+        return Response(
+            self.microscope.camera.get_frame(),
+            mimetype="image/jpeg",
+        )
+
 class StateAPI(MicroscopeView):
     def get(self):
         """
@@ -218,6 +237,10 @@ def construct_blueprint(microscope_obj):
 
     blueprint.add_url_rule(
         "/stream", view_func=StreamAPI.as_view("stream", microscope=microscope_obj)
+    )
+
+    blueprint.add_url_rule(
+        "/snapshot", view_func=SnapshotAPI.as_view("snapshot", microscope=microscope_obj)
     )
 
     blueprint.add_url_rule(
