@@ -107,7 +107,7 @@ def uri(suffix, api_version, base=None):
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
-CORS(app, resources=r"/api/*")
+CORS(app, resources=r"*")
 
 # Make errors more API friendly
 handler = JSONExceptionHandler(app)
