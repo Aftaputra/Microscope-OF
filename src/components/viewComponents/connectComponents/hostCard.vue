@@ -61,27 +61,36 @@ export default {
 
   mounted() {
     // Try to load the microscope snapshot when mounted
-    this.getSnapshotRequest()
+    this.checkSnapshotAvailable()
   },
 
   beforeDestroy () {
-    clearInterval(this.polling)
+    // Clear the polling timer
+    if (this.polling !== null) {
+      clearInterval(this.polling)
+    }
   },
 
   methods: {
-    getSnapshotRequest: function() {
+    checkSnapshotAvailable: function() {
+      // Fetches the list of routes from the host, and starts
+      // a snapshot timer if the snapshot route is available
+
       // Send tag request
-      axios.get(this.snapshotURL)
-      .then(() => { 
-        // Tell the view that a snapshot is available
-        this.snapshotAvailable = true
-        // Set the snapshot image src to the snapshot URL
-        // Note, we add a timestamp argument to act as a cache-breaker
-        this.snapshotSrc = `${this.snapshotURL}?${Date.now()}`
-        // If not already polling, start polling
-        if (this.polling === null) {
-          this.updateSnapshotPoll()
+      axios.get(this.routesURL)
+      .then((response) => { 
+        // If the host has a snapshot route available
+        if ("/api/v1/snapshot" in response.data) {
+          // Tell the view that a snapshot is available
+          this.snapshotAvailable = true
+          // Update the snapshot URL
+          this.updateSnapshotURL()
+          // If not already polling, start polling
+          if (this.polling === null) {
+            this.updateSnapshotPoll()
+          }
         }
+
       })
       .catch(error => {
         // Tell the view that a snapshot is not available, and ignore
@@ -89,17 +98,25 @@ export default {
       })
     },
 
+    updateSnapshotURL: function() {
+      // Set the snapshot image src to the snapshot URL,
+      // adding a timestamp argument to act as a cache-breaker
+      this.snapshotSrc = `${this.snapshotURL}?${Date.now()}`
+      console.log(`Updating snapshot URL to ${this.snapshotSrc}`)
+    },
+
     updateSnapshotPoll: function() {
+      // Start a timer to call updateSnapshotURL periodically
       this.polling = setInterval(() => {
-        this.getSnapshotRequest()
+        this.updateSnapshotURL()
       }, 15000)
     }
   },
 
-  created: function () {
-  },
-
   computed: {
+    routesURL: function () {
+      return `http://${this.hostname}:${this.port}/routes`
+    },
     snapshotURL: function () {
       return `http://${this.hostname}:${this.port}/api/v1/snapshot`
     },
