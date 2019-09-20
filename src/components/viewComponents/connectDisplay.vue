@@ -283,7 +283,8 @@ export default {
     },
 
     saveHost: function() {
-      this.savedHosts.push(
+      // We use unshift instead of push to add the entry to the beginning of the array
+      this.savedHosts.unshift(
         {
           name: this.$store.state.apiConfig.name,
           hostname: this.$store.state.host,
