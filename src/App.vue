@@ -69,8 +69,7 @@ export default {
 
 body, html {
   height: 100%;
-  overflow: auto;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .uk-disabled {

@@ -6,10 +6,10 @@
         <li v-bind:class="{'uk-disabled': !this.$store.getters.ready}"><a href="#" uk-switcher-item="preview">Live</a></li>
         <li v-bind:class="{'uk-disabled': !this.$store.getters.ready}"><a href="#" uk-switcher-item="gallery">Gallery</a></li>
     </ul>
-    <ul class="uk-switcher uk-flex uk-flex-1">
-        <li class="uk-height-1-1 uk-width-1-1 uk-overflow-auto" id="connectDisplayTab"><connectDisplay/></li>
+    <ul class="uk-switcher uk-flex uk-flex-1 uk-overflow-auto">
+        <li class="uk-height-1-1 uk-width-1-1" id="connectDisplayTab"><connectDisplay/></li>
         <li class="uk-height-1-1 uk-width-1-1 clickableTab" id="streamDisplayTab"><streamDisplay/></li>
-        <li class="uk-height-1-1 uk-width-1-1 uk-overflow-auto" id="galleryDisplayTab"><galleryDisplay/></li>
+        <li class="uk-height-1-1 uk-width-1-1" id="galleryDisplayTab"><galleryDisplay/></li>
     </ul>
   </div>
 </template>
