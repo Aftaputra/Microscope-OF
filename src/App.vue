@@ -60,6 +60,13 @@ export default {
 // Custom UIkit CSS modifications
 @import "./assets/less/theme.less";
 
+// We override the custom-electron-titlebar z-index
+// UIKit lightbox must be able to draw over the titlebar
+// as it currently always spawns at the root of the DOM
+.titlebar, .titlebar > * {
+  z-index: 1000 !important;
+}
+
 #app {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
