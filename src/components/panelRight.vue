@@ -39,8 +39,8 @@ export default {
     // Attach methods to UIkit events for tab switching
     var context = this;
     // Gallery tab
-    UIkit.util.on('#galleryDisplayTab', 'shown', function(event, area) {
-      console.log("Gallery tab entered")
+    UIkit.util.on('#streamDisplayTab', 'hidden', function(event, area) {
+      console.log("Stream tab hidden")
       if (context.$store.state.globalSettings.trackWindow == true) {
         context.$root.$emit('globalTogglePreview', false)
       }
