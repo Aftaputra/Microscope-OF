@@ -81,7 +81,7 @@
 
               <div class="uk-grid-medium uk-grid-match uk-margin-top" uk-grid>
 
-                <div v-for="host in Object.values(foundHosts)" :key="host.name">
+                <div v-for="host in foundHostArray" :key="host.name">
                   <hostCard 
                     :name="host.name" 
                     :hostname="host.hostname" 
@@ -108,8 +108,8 @@
 import { version } from 'punycode';
 
 // Import mDNS package if running in Electron
-var userAgent = navigator.userAgent.toLowerCase();
-if (userAgent.indexOf(' electron/') > -1) {
+import isElectron from '../../modules/isElectron';
+if (isElectron()) {
   var mdns = require('mdns-js');
 }
 
@@ -164,7 +164,7 @@ export default {
           }
 
           if (typeof data.port !== "undefined") {
-            context.foundHosts[hostData.hostname] = hostData
+            context.$set(context.foundHosts, hostData.hostname, hostData)
           } 
 
           console.log(context.foundHosts)
@@ -296,6 +296,9 @@ export default {
   },
 
   computed: {
+    foundHostArray: function () {
+      return Object.values(this.foundHosts)
+    },
     // Stylises the hostname input box based on connection status
     IpFormClasses: function () {
       return {
