@@ -1,5 +1,4 @@
 stages:
-  - dependency_scanning
   - build
   - deploy
 
