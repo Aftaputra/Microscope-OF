@@ -13,14 +13,20 @@ cache:
   paths:
   - node_modules/
 
-dependency_scanning:
+
+# Check for dependency vulnerabilities
+audit:
   stage: test
-  variables:
-    CI_DEBUG_TRACE: "true"
-    DOCKER_DRIVER: overlay2
-    
-  services:
-    - docker:19.03.3-dind
+  image: electronuserland/builder:wine
+
+  script:
+    - npm audit --json> audit.json
+
+  allow_failure: true
+
+  artifacts:
+    paths:
+      - "./audit.json"
 
 
 # Electron app build
