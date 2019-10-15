@@ -2,6 +2,7 @@ include:
   template: Dependency-Scanning.gitlab-ci.yml
 
 stages:
+  - dependency_scanning
   - build
   - deploy
 
