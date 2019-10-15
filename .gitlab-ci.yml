@@ -1,7 +1,16 @@
+include:
+  template: Dependency-Scanning.gitlab-ci.yml
+
 stages:
+  - test
   - build
   - deploy
 
+
+dependency_scanning:
+  stage: test
+  variables:
+    CI_DEBUG_TRACE: "true"
 
 # Cache modules in between jobs
 cache:
