@@ -14,7 +14,7 @@ cache:
 # Check for dependency vulnerabilities
 audit:
   stage: test
-  image: electronuserland/builder:wine
+  image: node:latest
 
   script:
     - npm audit --json> audit.json
