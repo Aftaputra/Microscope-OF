@@ -9,6 +9,7 @@ import io
 import time
 import numpy as np
 from PIL import Image, ImageFont, ImageDraw
+from datetime import datetime
 
 import logging
 
@@ -56,7 +57,7 @@ class MockStreamer(BaseCamera):
         )
 
         draw = ImageDraw.Draw(image)
-        draw.text((20, 70), "Camera disconnected")
+        draw.text((20, 70), "Camera disconnected: {}".format(datetime.now().strftime("%d/%m/%Y, %H:%M:%S")))
 
         image.save(self.stream, format="JPEG")
 
@@ -199,7 +200,14 @@ class MockStreamer(BaseCamera):
         # While the iterator is not closed
         try:
             while True:
-                time.sleep(1 / self.framerate * 0.1)
+                time.sleep(1)  # Only serve frames at 1fps
+                # Reset stream
+                self.stream.seek(0)
+                self.stream.truncate()
+
+                # Generate new dumm image
+                self.generate_new_dummy_image()
+                # Get frame data
                 frame = self.stream.getvalue()
 
                 # ensure the size of package is right
