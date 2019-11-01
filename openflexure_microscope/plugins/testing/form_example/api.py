@@ -1,11 +1,9 @@
 from openflexure_microscope.devel import (
     MicroscopeViewPlugin,
-    TaskDeniedException,
     JsonResponse,
-    Response,
     request,
-    escape,
     jsonify,
+    taskify
 )
 
 import logging
@@ -56,9 +54,7 @@ class TaskAPI(MicroscopeViewPlugin):
         val_int = payload.param("run_time", default=5, convert=int)
 
         logging.info("Running task...")
-        task = self.microscope.task.start(
-            self.plugin.generate_random_numbers_for_a_while, val_int
-        )
+        task = taskify(self.plugin.generate_random_numbers_for_a_while)(val_int)
 
         # return a handle on the autofocus task
         return jsonify(task.state), 202

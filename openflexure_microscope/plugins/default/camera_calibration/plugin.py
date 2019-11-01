@@ -4,6 +4,7 @@ from openflexure_microscope.devel import (
     JsonResponse,
     request,
     jsonify,
+    taskify
 )
 
 import logging
@@ -14,7 +15,7 @@ from .recalibrate_utils import recalibrate_camera, auto_expose_and_freeze_settin
 class RecalibrateAPIView(MicroscopeViewPlugin):
     def post(self):
         logging.info("Starting microscope recalibration...")
-        task = self.microscope.task.start(self.plugin.recalibrate)
+        task = taskify(self.plugin.recalibrate)
 
         # Return a handle on the autofocus task
         return jsonify(task.state), 202

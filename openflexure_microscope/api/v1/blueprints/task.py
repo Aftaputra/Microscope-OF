@@ -1,8 +1,10 @@
-from openflexure_microscope.api.v1.views import MicroscopeView
+from openflexure_microscope.api.v1.views import MethodView
 from flask import jsonify, abort, Blueprint
 
+from openflexure_microscope.common import tasks
 
-class TaskListAPI(MicroscopeView):
+
+class TaskListAPI(MethodView):
     def get(self):
         """
         Get list of long-running tasks.
@@ -43,7 +45,7 @@ class TaskListAPI(MicroscopeView):
         :>header Content-Type: application/json
         """
 
-        data = self.microscope.task.state
+        data = tasks.states()
 
         return jsonify(data)
 
@@ -58,13 +60,13 @@ class TaskListAPI(MicroscopeView):
         :>header Content-Type: application/json
         """
 
-        self.microscope.task.clean()
-        data = self.microscope.task.state
+        tasks.cleanup_tasks()
+        data = tasks.states()
 
         return jsonify(data)
 
 
-class TaskAPI(MicroscopeView):
+class TaskAPI(MethodView):
     def get(self, task_id):
         """
         Get JSON representation of a task
@@ -99,9 +101,9 @@ class TaskAPI(MicroscopeView):
 
         """
 
-        task = self.microscope.task.task_from_id(task_id)
-
-        if not task_id:
+        try:
+            task = tasks.tasks()[task_id]
+        except KeyError:
             return abort(404)  # 404 Not Found
 
         # Return task state
@@ -109,26 +111,23 @@ class TaskAPI(MicroscopeView):
 
     def delete(self, task_id):
         """
-        Remove a particular task (fails if task is currently running).
+        Terminate a particular task.
 
-        .. :quickref: Tasks; Remove a task
+        .. :quickref: Tasks; Terminate a task
 
         :>header Accept: application/json
 
         :>header Content-Type: application/json
         """
 
-        success = self.microscope.task.delete(task_id)
+        try:
+            task = tasks.tasks()[task_id]
+        except KeyError:
+            return abort(404)  # 404 Not Found
 
-        if success:
-            data = {"status": "success", "message": "task successfully deleted"}
-        else:
-            data = {
-                "status": "fail",
-                "message": "task could not be deleted, as it is currently running or does not exist",
-            }
+        task.terminate()
 
-        return jsonify(data)
+        return jsonify(task.state)
 
 
 def construct_blueprint(microscope_obj):
@@ -136,11 +135,11 @@ def construct_blueprint(microscope_obj):
     blueprint = Blueprint("task_blueprint", __name__)
 
     blueprint.add_url_rule(
-        "/", view_func=TaskListAPI.as_view("task_list", microscope=microscope_obj)
+        "/", view_func=TaskListAPI.as_view("task_list")
     )
 
     blueprint.add_url_rule(
-        "/<task_id>/", view_func=TaskAPI.as_view("task", microscope=microscope_obj)
+        "/<task_id>/", view_func=TaskAPI.as_view("task")
     )
 
     return blueprint

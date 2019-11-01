@@ -4,6 +4,7 @@ from openflexure_microscope.devel import (
     request,
     jsonify,
     abort,
+    taskify
 )
 
 import logging
@@ -43,8 +44,7 @@ class TileScanAPI(MicroscopeViewPlugin):
         tags = payload.param("tags", default=[], convert=list)
 
         logging.info("Running tile scan...")
-        task = self.microscope.task.start(
-            self.plugin.tile,
+        task = taskify(self.plugin.tile)(
             basename=filename,
             temporary=temporary,
             step_size=step_size,
@@ -59,5 +59,5 @@ class TileScanAPI(MicroscopeViewPlugin):
             tags=tags,
         )
 
-        # return a handle on the autofocus task
+        # return a handle on the scan task
         return jsonify(task.state), 202

@@ -6,6 +6,7 @@ from openflexure_microscope.devel import (
     JsonResponse,
     request,
     jsonify,
+    taskify
 )
 
 
@@ -23,7 +24,7 @@ class AutofocusAPI(MicroscopeViewPlugin):
         dz = payload.param("dz", default=np.linspace(-300, 300, 7), convert=np.array)
 
         logging.info("Running autofocus...")
-        task = self.microscope.task.start(self.plugin.autofocus, dz)
+        task = taskify(self.plugin.autofocus)(dz)
 
         # return a handle on the autofocus task
         return jsonify(task.state), 202
@@ -40,9 +41,7 @@ class FastAutofocusAPI(MicroscopeViewPlugin):
             backlash = 0
 
         logging.info("Running autofocus...")
-        task = self.microscope.task.start(
-            self.plugin.fast_autofocus, dz, backlash=backlash
-        )
+        task = taskify(self.plugin.fast_autofocus)(dz, backlash=backlash)
 
         # return a handle on the autofocus task
         return jsonify(task.state), 202
