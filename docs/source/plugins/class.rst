@@ -9,15 +9,6 @@ Plugin class
 .. autoclass:: openflexure_microscope.api.v1.views.MicroscopeViewPlugin
     :members:
 
-Task module
------------
-.. automodule:: openflexure_microscope.task
-    :members:
-
-Lock module
------------
-.. automodule:: openflexure_microscope.lock
-    :members:
 
 Default plugins
 ---------------

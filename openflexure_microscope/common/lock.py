@@ -41,7 +41,7 @@ class StrictLock(object):
 
 class CompositeLock(object):
     """
-    Class that behaves like a :py:class:`openflexure_microscope.lock.StrictLock`,
+    Class that behaves like a :py:class:`openflexure_microscope.common.lock.StrictLock`,
     but allows multiple locks to be acquired and released.
 
     Args:

@@ -21,8 +21,8 @@ Tasks are introduced to manage long-running functions in a way that does not blo
 the use of tasks, long-running functions would block an HTTP response until the function returns, often 
 resulting in a timeout.
 
-To prevent this, any function can be offloaded to a background task. This is done through the microscope's ``task`` object,
-by calling ``<microscope>.task.start(<long_running_function>, *args, **kwargs)``. Internally, the ``task`` object stores a list
+To prevent this, any function can be offloaded to a background task. This is done through the :py:meth:`openflexure_microscope.common.tasks.taskify` 
+function, by calling ``taskify(<long_running_function>)(*args, **kwargs)``. Internally, the ``tasks`` submodule stores a list
 of all requested tasks, which themselves contain a ``state`` dictionary. This dictionary stores the status of the task (if it
 is idle, running, error, or success), information about the start and end times, a unique task ID, and the return value of 
 the long-running function. 
@@ -38,17 +38,13 @@ An example of a long running task may look like:
 .. code-block:: python
 
     from openflexure_microscope.plugins import MicroscopeViewPlugin
-    from openflexure_microscope.exceptions import TaskDeniedException
+    from openflexure_microscope.common.tasks import taskify
 
     class MyPlugin(MicroscopeViewPlugin):
         def post(self):
             # Attach the long-running method as a microscope task
-            try:
-                self.my_task = self.microscope.task.start(self.plugin.long_running_function)
-                return jsonify(self.my_task.state), 202
-
-            except TaskDeniedException:
-                return abort(409)
+            self.my_task = taskify(self.plugin.long_running_function)()
+            return jsonify(self.my_task.state), 202
 
 After some time, once the task has completed, it could be retreived using:
 
@@ -67,7 +63,7 @@ the microscope hardware. For example, even if the stage is not actively moving (
 within a tile scan), another user should not be able to move the microscope, interrupting the task. Thread locks act
 to prevent this.
 
-The camera and stage both contain an instance of :py:class:`openflexure_microscope.lock.StrictLock`, named ``lock``.
+The camera and stage both contain an instance of :py:class:`openflexure_microscope.common.lock.StrictLock`, named ``lock``.
 Built-in functions such as capture and move will always acquire this lock for the duration of the function. This ensures
 that, for example, simultaneous attemps to move do not occur.
 

@@ -1,11 +1,11 @@
 from abc import ABCMeta, abstractmethod
-from openflexure_microscope.lock import StrictLock
+from openflexure_microscope.common.lock import StrictLock
 
 
 class BaseStage(metaclass=ABCMeta):
     """
     Attributes:
-        lock (:py:class:`openflexure_microscope.lock.StrictLock`): Strict lock controlling thread
+        lock (:py:class:`openflexure_microscope.common.lock.StrictLock`): Strict lock controlling thread
             access to camera hardware
     """
 

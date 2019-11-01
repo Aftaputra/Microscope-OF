@@ -2,6 +2,8 @@ from openflexure_microscope.plugins import MicroscopePlugin
 from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
 from openflexure_microscope.api.utilities import JsonResponse
 
+from openflexure_microscope.common.tasks import taskify
+
 import os
 import time
 import json
@@ -139,9 +141,7 @@ class TimelapseAPI(MicroscopeViewPlugin):
         n_images = payload.param("n_images", default=10, convert=int)
 
         # Attach the long-running method as a microscope task
-        self.timelapse_task = self.microscope.task.start(
-            self.plugin.timelapse, n_images
-        )
+        self.timelapse_task = taskify(self.plugin.timelapse)(n_images)
 
         # Return the state of the task (will show ID, start time, and status before the task has finished)
         return jsonify(self.timelapse_task.state), 202

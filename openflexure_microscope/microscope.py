@@ -6,15 +6,14 @@ import logging
 import pkg_resources
 import uuid
 
-from .stage.base import BaseStage
+from openflexure_microscope.stage.base import BaseStage
 
-from .camera.base import BaseCamera
+from openflexure_microscope.camera.base import BaseCamera
 
-from .plugins import PluginMount
-from .utilities import axes_to_array
-from .task import TaskOrchestrator
-from .lock import CompositeLock
-from .config import OpenflexureSettingsFile, settings_to_json
+from openflexure_microscope.plugins import PluginMount
+from openflexure_microscope.task import TaskOrchestrator
+from openflexure_microscope.common.lock import CompositeLock
+from openflexure_microscope.config import OpenflexureSettingsFile, settings_to_json
 
 
 class Microscope:
@@ -26,7 +25,7 @@ class Microscope:
     Attributes:
         settings_file (:py:class:`openflexure_microscope.config.OpenflexureSettingsFile`): Runtime-config object,
             automatically created if None.
-        lock (:py:class:`openflexure_microscope.lock.CompositeLock`): Composite lock controlling thread access
+        lock (:py:class:`openflexure_microscope.common.lock.CompositeLock`): Composite lock controlling thread access
             to multiple pieces of hardware.
         camera (:py:class:`openflexure_microscope.camera.base.BaseCamera`): Camera object
         stage (:py:class:`openflexure_microscope.stage.base.BaseStage`): Stage object

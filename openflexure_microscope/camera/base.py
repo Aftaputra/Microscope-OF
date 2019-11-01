@@ -10,7 +10,7 @@ from abc import ABCMeta, abstractmethod
 
 from .capture import CaptureObject
 from openflexure_microscope.utilities import entry_by_id
-from openflexure_microscope.lock import StrictLock
+from openflexure_microscope.common.lock import StrictLock
 
 
 BASE_CAPTURE_PATH = os.path.join(os.path.expanduser("~"), "micrographs")
@@ -94,7 +94,7 @@ class BaseCamera(metaclass=ABCMeta):
     Attributes:
         thread: Background thread reading frames from camera
         camera: Camera object
-        lock (:py:class:`openflexure_microscope.lock.StrictLock`): Strict lock controlling thread
+        lock (:py:class:`openflexure_microscope.common.lock.StrictLock`): Strict lock controlling thread
             access to stage hardware
         frame (bytes): Current frame is stored here by background thread
         last_access (time): Time of last client access to the camera
