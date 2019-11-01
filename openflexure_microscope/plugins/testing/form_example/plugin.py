@@ -2,7 +2,7 @@ import random
 import time
 import os
 import json
-from openflexure_microscope.devel import MicroscopePlugin
+from openflexure_microscope.devel import MicroscopePlugin, update_task_progress
 
 from .api import DoAPI, TaskAPI
 
@@ -66,8 +66,13 @@ class ExamplePlugin(MicroscopePlugin):
     def generate_random_numbers_for_a_while(self, run_time: int):
         self.run_time = run_time
         vals = []
-        for _ in range(run_time):
+
+        for t in range(run_time):
             vals.append(random.random())
             time.sleep(1)
+
+            # Update task progress (if running as a task)
+            percent_complete = int(((t + 1)/run_time)*100)
+            update_task_progress(percent_complete)
 
         return vals
