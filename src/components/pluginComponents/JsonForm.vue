@@ -27,10 +27,10 @@
       </div>
 
       <div v-if="taskRunning">
-        <progressBar/>
+        <taskProgress v-bind:taskId="taskId"></taskProgress>
       </div>
 
-      <button v-bind:hidden="taskRunning" class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1">{{ submitLabel }}</button>
+      <button type="submit" v-bind:hidden="taskRunning" class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1">{{ submitLabel }}</button>
 
     </form>
 
@@ -51,6 +51,7 @@ import tagList from "../fieldComponents/tagList"
 import keyvalList from "../fieldComponents/keyvalList"
 
 import progressBar from "../genericComponents/progressBar"
+import taskProgress from "../genericComponents/taskProgress"
 
 export default {
   name: 'JsonForm',
@@ -64,7 +65,8 @@ export default {
     checkList,
     tagList,
     keyvalList,
-    progressBar
+    progressBar,
+    taskProgress
   },
 
   props: {
@@ -101,7 +103,8 @@ export default {
   data: function () {
     return {
       formData: {},
-      taskRunning: false
+      taskRunning: false,
+      taskId: null
     }
   },
 
@@ -182,23 +185,30 @@ export default {
     },
 
     newLongRequest: function(params) {
-        this.taskRunning = true
         axios.post(this.submitApiUri, params)
         .then(response => { 
+          // Fetch the task ID
           console.log("Task ID: " + response.data.id)
+          this.taskId = response.data.id
           // Start the store polling TaskId for success
-          return this.$store.dispatch('pollTask', [response.data.id, null, null])
+          this.taskRunning = true
+          return this.$store.dispatch('pollTask', [this.taskId, null, null])
         })
         .then(response => {
           // Do something with the response
           console.log(response)
         })
         .catch(error => {
-          this.modalError(error) // Let mixin handle error
+          console.log("Task eneded with error: ", error)
+          if (error) {
+            this.modalError(error) // Display the error, if one exists
+          }
         })
         .finally(() => {
           console.log("Cleaning up after task.")
+          // Reset taskRunning and taskId
           this.taskRunning = false
+          this.taskId = null
           // Update the form data if we're self-updating
           if (this.selfUpdate) {
             this.getFormData()

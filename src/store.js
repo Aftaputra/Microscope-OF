@@ -162,7 +162,18 @@ export default new Vuex.Store({
           }
           // If task ends with an error
           else if (result == 'error') {
+            // Pass the error string back with reject
             reject(new Error(response.data.return))
+          }
+          // If task ends with termination
+          else if (result == 'terminated') {
+            // Pass a generic termination error back with reject
+            reject(new Error("Task terminated"))
+          }
+          // If task ends in any other way
+          else if (result != 'running') {
+            // Pass status string as error
+            reject(new Error(result))
           }
           // If the condition isn't met but the timeout hasn't elapsed, go again
           else if (Number(new Date()) < endTime) {
