@@ -40,6 +40,10 @@ export default {
 			console.log(`Toggling preview to ${state}`)
 			this.previewRequest(state)
 		})
+    // A global signal listener to flash the stream element
+    this.$root.$on('globalFlashStream', (state) => {
+			this.flashStream()
+		})
 
 		// Mutation observer
 		this.sizeObserver = new ResizeObserver(entries => {
@@ -85,8 +89,17 @@ export default {
 
 			// Emit a signal to move, acted on by panelNavigate.vue
 			this.$root.$emit('globalMoveEvent', xSteps, ySteps, 0, false)
+
+			this.flashStream()
 		},
 		
+		flashStream: function() {
+			let element = this.$refs.streamDisplay
+			element.classList.remove("uk-animation-fade");
+			element.offsetHeight; /* trigger reflow */
+			element.classList.add("uk-animation-fade");
+		},
+
 		handleResize: function(event) {
 			// Only fires resize event after no resize in 500ms (prevents resize event spam)
 			clearTimeout(this.resizeTimeoutId);

@@ -224,6 +224,9 @@ export default {
       // Send move request
       axios.post(this.captureApiUri, params)
         .then(response => { 
+          // Flash the stream (capture animation)
+          this.$root.$emit('globalFlashStream')
+          // Update the global capture list
           this.$root.$emit('globalUpdateCaptureList')
         })
         .catch(error => {
