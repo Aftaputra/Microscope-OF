@@ -63,12 +63,7 @@
       <!--Show stack and scan if default plugin is enabled-->
       <li v-if="this.$store.state.apiState.plugin.includes('default_scan')">
         <a class="uk-accordion-title" href="#">Stack and Scan</a>
-        <div v-if="isScanning" class="uk-accordion-content">
-          <div class="uk-text-center uk-container" >
-            <div class="center-spinner" uk-spinner></div>
-          </div>
-        </div>
-        <div v-else class="uk-accordion-content">
+        <div class="uk-accordion-content">
 
           <div class="uk-margin">
             <label><input v-model="scanCapture" class="uk-checkbox" type="checkbox"> Scan capture</label>
@@ -147,7 +142,15 @@
       </li>
     </ul>
 
-    <button v-if="scanCapture" v-on:click="handleScan()" v-bind:class="{ 'uk-disabled': isScanning }" class="uk-button uk-button-primary uk-form-small uk-margin uk-float-right uk-width-1-1">Start Scan</button>
+    <taskSubmitter v-if="scanCapture"
+      v-bind:submitURL="scanApiUri"
+      v-bind:submitData="scanPayload"
+      v-bind:submitLabel="'Start Scan'"
+      v-on:submit="onScanSubmit"
+      v-on:response="onScanResponse"
+      v-on:error="onScanError">
+    </taskSubmitter>
+
     <button v-else v-on:click="handleCapture()" class="uk-button uk-button-primary uk-form-small uk-margin uk-float-right uk-width-1-1">Capture</button>
 
   </div>
@@ -159,13 +162,16 @@ import axios from 'axios'
 import tagList from "../fieldComponents/tagList"
 import keyvalList from "../fieldComponents/keyvalList"
 
+import taskSubmitter from "../genericComponents/taskSubmitter"
+
 // Export main app
 export default {
   name: 'paneCapture',
 
   components: {
     tagList,
-    keyvalList
+    keyvalList,
+    taskSubmitter
   },
 
 
@@ -178,7 +184,6 @@ export default {
       resizeCapture: false,
       captureNotes: "",
       scanCapture: false,
-      isScanning: false,
       scanDeltaZ: 'Medium',
       scanStyle: 'Raster',
       scanStepSize: {
@@ -209,24 +214,7 @@ export default {
     },
 
     handleScan: function() {
-      var payload = this.basePayload
-
-      // Scan params
-      payload.grid = [this.scanSteps.x, this.scanSteps.y, this.scanSteps.z]
-      payload.step_size = [this.scanStepSize.x, this.scanStepSize.y, this.scanStepSize.z]
-      payload.style = this.scanStyle.toLowerCase()
-
-      // Convert AF selector to dz
-      var afDeltas = {
-        Off: 0,
-        Coarse: 100,
-        Medium: 30,
-        Fine: 10,
-        Fast: 1500
-      }
-
-      payload.autofocus_dz = afDeltas[this.scanDeltaZ]
-      payload.fast_autofocus = this.scanDeltaZ == "Fast"
+      var payload = this.scanPayload
 
       // Do capture
       this.newScanRequest(payload)
@@ -243,22 +231,18 @@ export default {
         })
     },
 
-    newScanRequest: function(params) {
-      axios.post(this.scanApiUri, params)
-        .then(response => { 
-          console.log("Task ID: " + response.data.id)
-          this.isScanning = true
-          return this.$store.dispatch('pollTask', [response.data.id, 3600, 5])
-        })
-        .then(() => {
-          this.modalNotify("Finished scan.")
-        })
-        .catch(error => {
-          this.modalError(error)
-        })
-        .finally(() => {
-          this.isScanning = false
-        })
+    onScanSubmit: function(submitData) {
+      // We don't need to do anything on this event yet
+      console.log("onScanSubmit event triggered")
+    },
+
+    onScanResponse: function(responseData) {
+      console.log("Scan finished with response data: ", responseData)
+      this.modalNotify("Finished scan.")
+    },
+
+    onScanError: function(error) {
+      this.modalError(error)
     }
 
   },
@@ -306,7 +290,31 @@ export default {
       }
 
       return payload
-    }
+    },
+
+    scanPayload: function() {
+      var payload = this.basePayload
+
+      // Scan params
+      payload.grid = [this.scanSteps.x, this.scanSteps.y, this.scanSteps.z]
+      payload.step_size = [this.scanStepSize.x, this.scanStepSize.y, this.scanStepSize.z]
+      payload.style = this.scanStyle.toLowerCase()
+
+      // Convert AF selector to dz
+      var afDeltas = {
+        Off: 0,
+        Coarse: 100,
+        Medium: 30,
+        Fine: 10,
+        Fast: 1500
+      }
+
+      payload.autofocus_dz = afDeltas[this.scanDeltaZ]
+      payload.fast_autofocus = this.scanDeltaZ == "Fast"
+
+      return payload
+    },
+
   }
 
 }
