@@ -3,7 +3,7 @@ from openflexure_microscope.utilities import axes_to_array
 
 from collections.abc import Iterable
 import numpy as np
-
+import time
 
 class MockStage(BaseStage):
     def __init__(self, port=None, **kwargs):
@@ -11,6 +11,8 @@ class MockStage(BaseStage):
         self._position = [0, 0, 0]
         self._n_axis = 3
         self._backlash = None
+
+        self.axis_names = ["x", "y", "z"]  # Assume all sangaboards are 3 axis
 
     @property
     def state(self):
@@ -66,11 +68,24 @@ class MockStage(BaseStage):
         else:
             self._backlash = np.array([int(blsh)] * self.n_axes, dtype=np.int)
 
-    def move_rel(self, displacement, axis=None, backlash=True):
-        pass
+    def move_rel(self, displacement: list, axis=None, backlash=True, simulate_time: bool=True):
+        if simulate_time:
+            time.sleep(1)
+        if axis is not None:
+            # This code just converts single-axis moves into all-axis moves.
+            assert axis in self.axis_names, "axis must be one of {}".format(
+                self.axis_names
+            )
+            move = np.zeros(self.n_axes, dtype=np.int)
+            move[np.argmax(np.array(self.axis_names) == axis)] = int(displacement)
 
-    def move_abs(self, final, **kwargs):
-        pass
+            self._position = list(np.array(self._position) + np.array(move))
+
+    def move_abs(self, final, simulate_time: bool=True, **kwargs):
+        if simulate_time:
+            time.sleep(1)
+
+        self._position = list(final)
 
     def close(self):
         pass
