@@ -22,6 +22,11 @@ export default {
       type: String,
       required: true
     },
+    pollInterval: {
+      type: Number,
+      required: false,
+      default: 500
+    },
   },
 
   data: function () {
@@ -34,7 +39,7 @@ export default {
   created() {
     this.polling = setInterval(() => {
       this.pollProgress()
-    }, 500)
+    }, this.pollInterval)
   },
 
   beforeDestroy () {
@@ -44,14 +49,11 @@ export default {
   methods: {
     pollProgress: function() {
       console.log("Starting progress polling")
-      var interval = 500;
-
       axios.get(`${this.$store.getters.uri}/task/${this.taskId}`)
       .then(response => { 
         console.log("PROGRESS RESPONSE: ", response.data.progress)
         this.progress = response.data.progress
       })
-
     },
 
     terminateTask: function() {

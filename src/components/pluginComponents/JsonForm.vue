@@ -6,7 +6,7 @@
       <a href="#" v-if="selfUpdate" v-on:click="getFormData()" class="uk-icon uk-width-auto"><i class="material-icons">cached</i></a>
     </div>
 
-    <form @submit.prevent="submitForm" class="uk-form-stacked">
+    <form @submit.prevent="" class="uk-form-stacked" ref="formContainer">
 
       <div v-for="(field, index) in schema" :key="index"> 
         <div v-if="Array.isArray(field)" class="uk-grid-small uk-width-1-1 uk-child-width-expand" uk-grid>
@@ -26,11 +26,16 @@
         </component>
       </div>
 
-      <div v-if="taskRunning">
-        <taskProgress v-bind:taskId="taskId"></taskProgress>
-      </div>
+      <taskSubmitter v-if="isTask"
+        v-bind:submitURL="submitApiUri"
+        v-bind:submitData="formData"
+        v-bind:submitLabel="submitLabel"
+        v-on:submit="onTaskSubmit"
+        v-on:response="onTaskResponse"
+        v-on:error="onTaskError">
+      </taskSubmitter>
 
-      <button type="submit" v-bind:hidden="taskRunning" class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1">{{ submitLabel }}</button>
+      <button v-else type="button" v-on:click="newQuickRequest(formData);" class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1">{{ submitLabel }}</button>
 
     </form>
 
@@ -50,8 +55,7 @@ import checkList from "../fieldComponents/checkList"
 import tagList from "../fieldComponents/tagList"
 import keyvalList from "../fieldComponents/keyvalList"
 
-import progressBar from "../genericComponents/progressBar"
-import taskProgress from "../genericComponents/taskProgress"
+import taskSubmitter from "../genericComponents/taskSubmitter"
 
 export default {
   name: 'JsonForm',
@@ -65,8 +69,7 @@ export default {
     checkList,
     tagList,
     keyvalList,
-    progressBar,
-    taskProgress
+    taskSubmitter
   },
 
   props: {
@@ -102,9 +105,7 @@ export default {
 
   data: function () {
     return {
-      formData: {},
-      taskRunning: false,
-      taskId: null
+      formData: {}
     }
   },
 
@@ -145,15 +146,6 @@ export default {
       this.$emit('input', this.formData)
     },
 
-    submitForm() {
-      if (this.isTask == true) {
-        this.newLongRequest(this.formData)
-      }
-      else {
-        this.newQuickRequest(this.formData)
-      }
-    },
-
     getFormData: function() {
       // Send a quick request
       axios.get(this.submitApiUri)
@@ -184,37 +176,21 @@ export default {
         })
     },
 
-    newLongRequest: function(params) {
-        axios.post(this.submitApiUri, params)
-        .then(response => { 
-          // Fetch the task ID
-          console.log("Task ID: " + response.data.id)
-          this.taskId = response.data.id
-          // Start the store polling TaskId for success
-          this.taskRunning = true
-          return this.$store.dispatch('pollTask', [this.taskId, null, null])
-        })
-        .then(response => {
-          // Do something with the response
-          console.log(response)
-        })
-        .catch(error => {
-          console.log("Task eneded with error: ", error)
-          if (error) {
-            this.modalError(error) // Display the error, if one exists
-          }
-        })
-        .finally(() => {
-          console.log("Cleaning up after task.")
-          // Reset taskRunning and taskId
-          this.taskRunning = false
-          this.taskId = null
-          // Update the form data if we're self-updating
-          if (this.selfUpdate) {
-            this.getFormData()
-          }
-        })
+    onTaskSubmit: function(submitData) {
+      // We don't need to do anything on this event yet
+      console.log("onTaskSubmit event triggered")
     },
+
+    onTaskResponse: function(responseData) {
+      console.log("Task finished with response data: ", responseData)
+      if (this.selfUpdate) {
+        this.getFormData()
+      }
+    },
+
+    onTaskError: function(error) {
+      this.modalError(error)
+    }
 
   },
 
