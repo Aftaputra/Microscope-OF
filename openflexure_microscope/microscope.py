@@ -143,17 +143,13 @@ class Microscope:
         self.attach_plugins(self.plugin_maps)
 
     def has_real_stage(self):
-        if hasattr(self, "stage") and not isinstance(
-                self.stage, MockStage
-        ):
+        if hasattr(self, "stage") and not isinstance(self.stage, MockStage):
             return True
         else:
             return False
 
     def has_real_camera(self):
-        if hasattr(self, "camera") and not isinstance(
-                self.camera, MockStreamer
-        ):
+        if hasattr(self, "camera") and not isinstance(self.camera, MockStreamer):
             return True
         else:
             return False

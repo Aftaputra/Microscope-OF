@@ -90,7 +90,9 @@ api_microscope.attach(api_camera, api_stage)
 
 # Restore loaded capture array to camera object
 logging.debug("Restoring captures...")
-api_microscope.camera.images = build_captures_from_exif(api_microscope.camera.paths["default"])
+api_microscope.camera.images = build_captures_from_exif(
+    api_microscope.camera.paths["default"]
+)
 
 logging.debug("Microscope successfully attached!")
 

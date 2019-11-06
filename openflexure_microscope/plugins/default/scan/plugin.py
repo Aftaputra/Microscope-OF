@@ -7,7 +7,11 @@ import logging
 
 from openflexure_microscope.camera.base import generate_basename
 
-from openflexure_microscope.devel import MicroscopePlugin, update_task_progress, update_task_data
+from openflexure_microscope.devel import (
+    MicroscopePlugin,
+    update_task_progress,
+    update_task_data,
+)
 
 from .api import TileScanAPI
 
@@ -64,15 +68,15 @@ class ScanPlugin(MicroscopePlugin):
         return progress
 
     def capture(
-            self,
-            basename,
-            scan_id,
-            temporary: bool = False,
-            use_video_port: bool = False,
-            resize: Tuple[int, int] = None,
-            bayer: bool = False,
-            metadata: dict = {},
-            tags: list = [],
+        self,
+        basename,
+        scan_id,
+        temporary: bool = False,
+        use_video_port: bool = False,
+        resize: Tuple[int, int] = None,
+        bayer: bool = False,
+        metadata: dict = {},
+        tags: list = [],
     ):
 
         # Construct a tile filename
@@ -107,19 +111,19 @@ class ScanPlugin(MicroscopePlugin):
         output.put_tags(tags)
 
     def tile(
-            self,
-            basename: str = None,
-            temporary: bool = False,
-            step_size: int = [2000, 1500, 100],
-            grid: list = [3, 3, 5],
-            style="raster",
-            autofocus_dz: int = 50,
-            use_video_port: bool = False,
-            resize: Tuple[int, int] = None,
-            bayer: bool = False,
-            fast_autofocus=False,
-            metadata: dict = {},
-            tags: list = [],
+        self,
+        basename: str = None,
+        temporary: bool = False,
+        step_size: int = [2000, 1500, 100],
+        grid: list = [3, 3, 5],
+        style="raster",
+        autofocus_dz: int = 50,
+        use_video_port: bool = False,
+        resize: Tuple[int, int] = None,
+        bayer: bool = False,
+        fast_autofocus=False,
+        metadata: dict = {},
+        tags: list = [],
     ):
 
         # Keep task progress
@@ -143,17 +147,17 @@ class ScanPlugin(MicroscopePlugin):
 
         # Check if autofocus is enabled
         if (
-                autofocus_dz
-                and hasattr(self.microscope.plugin, "default_autofocus")
-                and self.microscope.has_real_stage()
-                and self.microscope.has_real_camera()
+            autofocus_dz
+            and hasattr(self.microscope.plugin, "default_autofocus")
+            and self.microscope.has_real_stage()
+            and self.microscope.has_real_camera()
         ):
             autofocus_enabled = True
         else:
             autofocus_enabled = False
 
         if fast_autofocus and not hasattr(
-                self.microscope.plugin.default_autofocus, "monitor_sharpness"
+            self.microscope.plugin.default_autofocus, "monitor_sharpness"
         ):
             logging.warning(
                 "Can't use fast autofocus in the scan - the default plugin doesn't support monitor_sharpness; maybe it is too old?"
@@ -241,7 +245,7 @@ class ScanPlugin(MicroscopePlugin):
                 next_z = self.microscope.stage.position[2]
                 if fast_autofocus:
                     next_z += (
-                            autofocus_dz / 2
+                        autofocus_dz / 2
                     )  # Fast autofocus requires us to start at the top of the range
                     if grid[2] > 1:
                         next_z -= int(
@@ -252,19 +256,19 @@ class ScanPlugin(MicroscopePlugin):
         self.microscope.stage.move_abs(initial_position)
 
     def stack(
-            self,
-            basename: str = None,
-            temporary: bool = False,
-            scan_id: str = None,
-            step_size: int = 100,
-            steps: int = 5,
-            center: bool = True,
-            return_to_start: bool = True,
-            use_video_port: bool = False,
-            resize: Tuple[int, int] = None,
-            bayer: bool = False,
-            metadata: dict = {},
-            tags: list = [],
+        self,
+        basename: str = None,
+        temporary: bool = False,
+        scan_id: str = None,
+        step_size: int = 100,
+        steps: int = 5,
+        center: bool = True,
+        return_to_start: bool = True,
+        use_video_port: bool = False,
+        resize: Tuple[int, int] = None,
+        bayer: bool = False,
+        metadata: dict = {},
+        tags: list = [],
     ):
 
         # Generate a basename if none given
