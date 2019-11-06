@@ -151,7 +151,7 @@
       v-on:error="onScanError">
     </taskSubmitter>
 
-    <button v-else v-on:click="handleCapture()" class="uk-button uk-button-primary uk-form-small uk-margin uk-float-right uk-width-1-1">Capture</button>
+    <button v-else v-on:click="handleCapture()" class="uk-button uk-button-primary uk-form-small uk-margin uk-margin-remove-top uk-float-right uk-width-1-1">Capture</button>
 
   </div>
 </template>

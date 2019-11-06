@@ -1,5 +1,5 @@
 <template>
-<div class="uk-margin-top uk-margin-horizontal-remove uk-padding-remove">
+<div class="uk-margin-horizontal-remove uk-padding-remove">
 
   <div v-if="taskRunning" ref="isPollingElement">
     <div class="progress">
@@ -7,10 +7,10 @@
       <div v-else class="indeterminate"></div>
     </div>
 
-    <button type="button" v-on:click="terminateTask()" class="uk-button uk-button-danger uk-form-small uk-float-right uk-width-1-1">Terminate</button>
+    <button type="button" v-on:click="terminateTask()" class="uk-button uk-button-danger uk-form-small uk-margin uk-float-right uk-width-1-1">Terminate</button>
   </div>
 
-  <button type="button" v-on:click="startTask()" v-bind:hidden="taskRunning" class="uk-button uk-button-primary uk-form-small uk-float-right uk-width-1-1">{{ submitLabel }}</button>
+  <button type="button" v-on:click="startTask()" v-bind:hidden="taskRunning" class="uk-button uk-button-primary uk-form-small uk-margin uk-float-right uk-width-1-1">{{ submitLabel }}</button>
 
 </div>
 </template>
