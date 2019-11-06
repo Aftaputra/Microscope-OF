@@ -34,7 +34,12 @@ export default {
     pollInterval: {
       type: Number,
       required: false,
-      default: 500
+      default: 0.5
+    },
+    pollTimeout: {
+      type: Number,
+      required: false,
+      default: 1800
     },
     submitLabel: {
       type: String,
@@ -72,7 +77,7 @@ export default {
         // Start the store polling TaskId for success
         this.taskRunning = true
         // Return the poll-task promise (starts polling the task)
-        return this.pollTask(this.taskId, null, null)
+        return this.pollTask(this.taskId, this.pollTimeout, this.pollInterval)
       })
       .then(response => {
         // Do something with the final response
