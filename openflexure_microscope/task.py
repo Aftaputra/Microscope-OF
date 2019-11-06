@@ -1,5 +1,11 @@
 import logging
-from openflexure_microscope.common.tasks import tasks, states, taskify, cleanup_tasks, remove_task
+from openflexure_microscope.common.tasks import (
+    tasks,
+    states,
+    taskify,
+    cleanup_tasks,
+    remove_task,
+)
 
 
 class TaskOrchestrator:
@@ -14,7 +20,9 @@ class TaskOrchestrator:
 
     @property
     def tasks(self):
-        logging.warning("TaskOrchestrator class is deprecated. Please use common.tasks.tasks().values() instead.")
+        logging.warning(
+            "TaskOrchestrator class is deprecated. Please use common.tasks.tasks().values() instead."
+        )
         return tasks().values()
 
     @property
@@ -22,7 +30,9 @@ class TaskOrchestrator:
         """
         Returns a list of dictionary representations of all tasks in the session.
         """
-        logging.warning("TaskOrchestrator class is deprecated. Please use common.tasks.tasks() instead.")
+        logging.warning(
+            "TaskOrchestrator class is deprecated. Please use common.tasks.tasks() instead."
+        )
         return states()
 
     def task_from_id(self, task_id: str):
@@ -41,7 +51,9 @@ class TaskOrchestrator:
             function (function): The target function to run in the background
             args, kwargs: Arguments that will be passed to `function` at runtime.
         """
-        logging.warning("TaskOrchestrator class is deprecated. Please use common.tasks.taskify() instead.")
+        logging.warning(
+            "TaskOrchestrator class is deprecated. Please use common.tasks.taskify() instead."
+        )
         return taskify(function)(*args, **kwargs)
 
     def clean(self):
@@ -49,12 +61,16 @@ class TaskOrchestrator:
         Remove all inactive tasks from the task array.
         This will remove tasks that either finished or never started.
         """
-        logging.warning("TaskOrchestrator class is deprecated. Please use common.tasks.cleanup_tasks() instead.")
+        logging.warning(
+            "TaskOrchestrator class is deprecated. Please use common.tasks.cleanup_tasks() instead."
+        )
         cleanup_tasks()
 
     def delete(self, task_id: str):
         """
         Delete a given task by ID, only if task is not currently running.
         """
-        logging.warning("TaskOrchestrator class is deprecated. Please use common.tasks.remove_task() instead.")
+        logging.warning(
+            "TaskOrchestrator class is deprecated. Please use common.tasks.remove_task() instead."
+        )
         remove_task(task_id)

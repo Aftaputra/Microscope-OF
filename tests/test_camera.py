@@ -30,7 +30,9 @@ class TestCaptureMethods(unittest.TestCase):
                 # Capture to a context (auto-deletes files when done)
                 with camera.new_image() as output:
 
-                    camera.capture(output.file, use_video_port=use_video_port, resize=resize)
+                    camera.capture(
+                        output.file, use_video_port=use_video_port, resize=resize
+                    )
 
                     # Ensure file deletion fails and returns False
                     self.assertFalse(output.delete_file())

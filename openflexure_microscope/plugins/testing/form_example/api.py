@@ -3,7 +3,7 @@ from openflexure_microscope.devel import (
     JsonResponse,
     request,
     jsonify,
-    taskify
+    taskify,
 )
 
 import logging

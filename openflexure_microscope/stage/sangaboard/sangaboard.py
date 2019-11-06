@@ -136,7 +136,7 @@ class Sangaboard(ExtensibleSerialInstrument):
             # make sure we close the serial port cleanly (otherwise it hangs open).
             self.close()
             logging.error(e)
-            logging.error(
+            logging.warning(
                 "You may need to update the firmware running on the Sangaboard."
             )
             raise e
@@ -164,12 +164,12 @@ class Sangaboard(ExtensibleSerialInstrument):
                     r"OpenFlexure Motor Board v(([\d]+)(?:\.([\d]+))+)", self.firmware
                 )
             if not match:
-                logging.error(
+                logging.warning(
                     'Version string "{}" not recognised.'.format(self.firmware)
                 )
                 return False
         else:
-            logging.error("No firmware version string was returned.")
+            logging.warning("No firmware version string was returned.")
             return False
 
         # Check for matching/valid version number
@@ -179,7 +179,7 @@ class Sangaboard(ExtensibleSerialInstrument):
         self.firmware_version = match.group(1)
 
         if version_tuple not in Sangaboard.valid_firmwares:
-            logging.error(
+            logging.warning(
                 "This version of the Python module requires firmware v0.5 (with legacy support for v0.4)"
             )
             return False

@@ -66,12 +66,14 @@ class PiCameraStreamer(BaseCamera):
         )  #: :py:class:`picamera.PiCamera`: Picamera object
 
         # Store state of PiCameraStreamer
-        self.state.update({
-            "stream_active": False, 
-            "record_active": False, 
-            "preview_active": False,
-            "board": f"picamera_{self.camera.revision}",
-        })
+        self.state.update(
+            {
+                "stream_active": False,
+                "record_active": False,
+                "preview_active": False,
+                "board": f"picamera_{self.camera.revision}",
+            }
+        )
 
         # Reset variable states
         self.set_zoom(1.0)
@@ -113,13 +115,15 @@ class PiCameraStreamer(BaseCamera):
         conf_dict = BaseCamera.read_config(self)
 
         # Include device-specific config items
-        conf_dict.update({
-            "stream_resolution": self.stream_resolution,
-            "image_resolution": self.image_resolution,
-            "numpy_resolution": self.numpy_resolution,
-            "jpeg_quality": self.jpeg_quality,
-            "picamera_settings": {},
-        })
+        conf_dict.update(
+            {
+                "stream_resolution": self.stream_resolution,
+                "image_resolution": self.image_resolution,
+                "numpy_resolution": self.numpy_resolution,
+                "jpeg_quality": self.jpeg_quality,
+                "picamera_settings": {},
+            }
+        )
 
         # Include a subset of picamera properties
         # TODO: Expand this subset so we have more metadata?
@@ -333,7 +337,7 @@ class PiCameraStreamer(BaseCamera):
                 return output
 
             else:
-                logging.error(
+                logging.warning(
                     "Cannot start a new recording\
                     until the current recording has stopped."
                 )

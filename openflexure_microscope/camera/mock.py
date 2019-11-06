@@ -16,7 +16,7 @@ import logging
 # Type hinting
 from typing import Tuple
 
-from .base import BaseCamera, CaptureObject
+from openflexure_microscope.camera.base import BaseCamera
 
 
 # MAIN CLASS
@@ -26,11 +26,9 @@ class MockStreamer(BaseCamera):
         BaseCamera.__init__(self)
 
         # Store state of PiCameraStreamer
-        self.state.update({
-            "stream_active": False, 
-            "record_active": False,
-            "board": None
-        })
+        self.state.update(
+            {"stream_active": False, "record_active": False, "board": None}
+        )
 
         # Update config properties
         self.image_resolution = (1312, 976)
@@ -57,7 +55,12 @@ class MockStreamer(BaseCamera):
         )
 
         draw = ImageDraw.Draw(image)
-        draw.text((20, 70), "Camera disconnected: {}".format(datetime.now().strftime("%d/%m/%Y, %H:%M:%S")))
+        draw.text(
+            (20, 70),
+            "Camera disconnected: {}".format(
+                datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+            ),
+        )
 
         image.save(self.stream, format="JPEG")
 
@@ -80,12 +83,14 @@ class MockStreamer(BaseCamera):
         conf_dict = BaseCamera.read_config(self)
 
         # Include device-specific config items
-        conf_dict.update({
-            "stream_resolution": self.stream_resolution,
-            "image_resolution": self.image_resolution,
-            "numpy_resolution": self.numpy_resolution,
-            "jpeg_quality": self.jpeg_quality,
-        })
+        conf_dict.update(
+            {
+                "stream_resolution": self.stream_resolution,
+                "image_resolution": self.image_resolution,
+                "numpy_resolution": self.numpy_resolution,
+                "jpeg_quality": self.jpeg_quality,
+            }
+        )
 
         return conf_dict
 
@@ -179,7 +184,7 @@ class MockStreamer(BaseCamera):
 
         with self.lock:
             if isinstance(output, str):
-                output = open(output, 'wb')
+                output = open(output, "wb")
 
             output.write(self.stream.getvalue())
 

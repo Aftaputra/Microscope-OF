@@ -5,6 +5,7 @@ from collections.abc import Iterable
 import numpy as np
 import time
 
+
 class MockStage(BaseStage):
     def __init__(self, port=None, **kwargs):
         BaseStage.__init__(self)
@@ -68,7 +69,9 @@ class MockStage(BaseStage):
         else:
             self._backlash = np.array([int(blsh)] * self.n_axes, dtype=np.int)
 
-    def move_rel(self, displacement: list, axis=None, backlash=True, simulate_time: bool=True):
+    def move_rel(
+        self, displacement: list, axis=None, backlash=True, simulate_time: bool = True
+    ):
         if simulate_time:
             time.sleep(1)
         if axis is not None:
@@ -81,7 +84,7 @@ class MockStage(BaseStage):
 
             self._position = list(np.array(self._position) + np.array(move))
 
-    def move_abs(self, final, simulate_time: bool=True, **kwargs):
+    def move_abs(self, final, simulate_time: bool = True, **kwargs):
         if simulate_time:
             time.sleep(1)
 

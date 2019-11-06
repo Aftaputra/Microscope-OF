@@ -4,7 +4,7 @@ from openflexure_microscope.devel import (
     request,
     jsonify,
     abort,
-    taskify
+    taskify,
 )
 
 import logging

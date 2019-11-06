@@ -39,10 +39,8 @@ class SnapshotAPI(MicroscopeView):
         # Restart stream worker thread
         self.microscope.camera.start_worker()
 
-        return Response(
-            self.microscope.camera.get_frame(),
-            mimetype="image/jpeg",
-        )
+        return Response(self.microscope.camera.get_frame(), mimetype="image/jpeg")
+
 
 class StateAPI(MicroscopeView):
     def get(self):
@@ -240,7 +238,8 @@ def construct_blueprint(microscope_obj):
     )
 
     blueprint.add_url_rule(
-        "/snapshot", view_func=SnapshotAPI.as_view("snapshot", microscope=microscope_obj)
+        "/snapshot",
+        view_func=SnapshotAPI.as_view("snapshot", microscope=microscope_obj),
     )
 
     blueprint.add_url_rule(

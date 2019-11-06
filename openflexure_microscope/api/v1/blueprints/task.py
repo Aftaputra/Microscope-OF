@@ -134,12 +134,8 @@ def construct_blueprint(microscope_obj):
 
     blueprint = Blueprint("task_blueprint", __name__)
 
-    blueprint.add_url_rule(
-        "/", view_func=TaskListAPI.as_view("task_list")
-    )
+    blueprint.add_url_rule("/", view_func=TaskListAPI.as_view("task_list"))
 
-    blueprint.add_url_rule(
-        "/<task_id>/", view_func=TaskAPI.as_view("task")
-    )
+    blueprint.add_url_rule("/<task_id>/", view_func=TaskAPI.as_view("task"))
 
     return blueprint

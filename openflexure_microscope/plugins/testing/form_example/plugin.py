@@ -72,7 +72,7 @@ class ExamplePlugin(MicroscopePlugin):
             time.sleep(1)
 
             # Update task progress (if running as a task)
-            percent_complete = int(((t + 1)/run_time)*100)
+            percent_complete = int(((t + 1) / run_time) * 100)
             update_task_progress(percent_complete)
 
         return vals

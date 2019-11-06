@@ -27,7 +27,7 @@ def pull_usercomment_dict(filepath):
     try:
         exif_dict = piexif.load(filepath)
     except InvalidImageDataError:
-        logging.error("Invalid data at {}. Skipping.".format(filepath))
+        logging.warning("Invalid data at {}. Skipping.".format(filepath))
         return None
     if "Exif" in exif_dict and 37510 in exif_dict["Exif"]:
         return yaml.load(exif_dict["Exif"][37510].decode())

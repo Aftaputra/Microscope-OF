@@ -87,7 +87,7 @@ def load_plugin_module(plugin_path):
             plugin_module = importlib.import_module(plugin_path)
             plugin_name = name_from_module(plugin_path)
         except Exception as e:
-            logging.error("Error loading plugin.")
+            logging.warning("Error loading plugin.")
             logging.error(e)
             return None, None
 
@@ -216,7 +216,7 @@ class PluginMount(object):
                     )
 
         else:
-            logging.error(f"Error loading plugin {plugin_map}. Moving on.")
+            logging.warning(f"Error loading plugin {plugin_map}. Moving on.")
 
 
 class MicroscopePlugin:

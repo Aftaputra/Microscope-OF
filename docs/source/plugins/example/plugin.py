@@ -61,9 +61,7 @@ class MyPluginClass(MicroscopePlugin):
             for _ in range(n_images):
 
                 # Create a data stream to capture to
-                output = self.microscope.camera.new_image(
-                    temporary=False
-                )
+                output = self.microscope.camera.new_image(temporary=False)
 
                 # Capture a still image from the Pi camera, into the data stream
                 self.microscope.camera.capture(output.file, use_video_port=True)

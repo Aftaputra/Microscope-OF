@@ -1,3 +1,4 @@
+import numpy as np
 from abc import ABCMeta, abstractmethod
 from openflexure_microscope.common.lock import StrictLock
 

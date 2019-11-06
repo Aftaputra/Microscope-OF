@@ -1,13 +1,13 @@
 import time
-import numpy as np
 from typing import Tuple
+from functools import reduce
 import uuid
 import itertools
 import logging
 
 from openflexure_microscope.camera.base import generate_basename
 
-from openflexure_microscope.devel import MicroscopePlugin
+from openflexure_microscope.devel import MicroscopePlugin, update_task_progress, update_task_data
 
 from .api import TileScanAPI
 
@@ -53,16 +53,26 @@ class ScanPlugin(MicroscopePlugin):
 
     api_views = {"/tile": TileScanAPI}
 
+    def __init__(self):
+        self.images_to_be_captured: int = 1
+        update_task_data({"images_to_be_captured": self.images_to_be_captured})
+
+    @property
+    def progress(self):
+        progress = (self.images_captured_so_far / self.images_to_be_captured) * 100
+        logging.info(progress)
+        return progress
+
     def capture(
-        self,
-        basename,
-        scan_id,
-        temporary: bool = False,
-        use_video_port: bool = False,
-        resize: Tuple[int, int] = None,
-        bayer: bool = False,
-        metadata: dict = {},
-        tags: list = [],
+            self,
+            basename,
+            scan_id,
+            temporary: bool = False,
+            use_video_port: bool = False,
+            resize: Tuple[int, int] = None,
+            bayer: bool = False,
+            metadata: dict = {},
+            tags: list = [],
     ):
 
         # Construct a tile filename
@@ -97,20 +107,25 @@ class ScanPlugin(MicroscopePlugin):
         output.put_tags(tags)
 
     def tile(
-        self,
-        basename: str = None,
-        temporary: bool = False,
-        step_size: int = [2000, 1500, 100],
-        grid: list = [3, 3, 5],
-        style="raster",
-        autofocus_dz: int = 50,
-        use_video_port: bool = False,
-        resize: Tuple[int, int] = None,
-        bayer: bool = False,
-        fast_autofocus=False,
-        metadata: dict = {},
-        tags: list = [],
+            self,
+            basename: str = None,
+            temporary: bool = False,
+            step_size: int = [2000, 1500, 100],
+            grid: list = [3, 3, 5],
+            style="raster",
+            autofocus_dz: int = 50,
+            use_video_port: bool = False,
+            resize: Tuple[int, int] = None,
+            bayer: bool = False,
+            fast_autofocus=False,
+            metadata: dict = {},
+            tags: list = [],
     ):
+
+        # Keep task progress
+        # TODO: Make this line not nasty
+        self.images_to_be_captured = reduce((lambda x, y: x * y), grid)
+        self.images_captured_so_far = 0
 
         # Generate a basename if none given
         if not basename:
@@ -123,19 +138,24 @@ class ScanPlugin(MicroscopePlugin):
         initial_position = self.microscope.stage.position
 
         # Add scan metadata
-        if not "time" in metadata:
+        if "time" not in metadata:
             metadata["time"] = generate_basename()
 
         # Check if autofocus is enabled
-        if autofocus_dz and hasattr(self.microscope.plugin, "default_autofocus"):
+        if (
+                autofocus_dz
+                and hasattr(self.microscope.plugin, "default_autofocus")
+                and self.microscope.has_real_stage()
+                and self.microscope.has_real_camera()
+        ):
             autofocus_enabled = True
         else:
             autofocus_enabled = False
 
         if fast_autofocus and not hasattr(
-            self.microscope.plugin.default_autofocus, "monitor_sharpness"
+                self.microscope.plugin.default_autofocus, "monitor_sharpness"
         ):
-            logging.error(
+            logging.warning(
                 "Can't use fast autofocus in the scan - the default plugin doesn't support monitor_sharpness; maybe it is too old?"
             )
             fast_autofocus = False
@@ -198,6 +218,9 @@ class ScanPlugin(MicroscopePlugin):
                         metadata=metadata,
                         tags=tags,
                     )
+                    # Update task progress
+                    self.images_captured_so_far += 1
+                    update_task_progress(self.progress)
                 else:
                     logging.debug("Entering z-stack")
                     self.stack(
@@ -218,7 +241,7 @@ class ScanPlugin(MicroscopePlugin):
                 next_z = self.microscope.stage.position[2]
                 if fast_autofocus:
                     next_z += (
-                        autofocus_dz / 2
+                            autofocus_dz / 2
                     )  # Fast autofocus requires us to start at the top of the range
                     if grid[2] > 1:
                         next_z -= int(
@@ -229,19 +252,19 @@ class ScanPlugin(MicroscopePlugin):
         self.microscope.stage.move_abs(initial_position)
 
     def stack(
-        self,
-        basename: str = None,
-        temporary: bool = False,
-        scan_id: str = None,
-        step_size: int = 100,
-        steps: int = 5,
-        center: bool = True,
-        return_to_start: bool = True,
-        use_video_port: bool = False,
-        resize: Tuple[int, int] = None,
-        bayer: bool = False,
-        metadata: dict = {},
-        tags: list = [],
+            self,
+            basename: str = None,
+            temporary: bool = False,
+            scan_id: str = None,
+            step_size: int = 100,
+            steps: int = 5,
+            center: bool = True,
+            return_to_start: bool = True,
+            use_video_port: bool = False,
+            resize: Tuple[int, int] = None,
+            bayer: bool = False,
+            metadata: dict = {},
+            tags: list = [],
     ):
 
         # Generate a basename if none given
@@ -278,6 +301,9 @@ class ScanPlugin(MicroscopePlugin):
                     metadata=metadata,
                     tags=tags,
                 )
+                # Update task progress
+                self.images_captured_so_far += 1
+                update_task_progress(self.progress)
 
                 if i != steps - 1:
                     logging.debug("Moving z by {}".format(step_size))

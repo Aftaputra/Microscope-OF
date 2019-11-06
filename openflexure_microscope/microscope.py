@@ -7,8 +7,9 @@ import pkg_resources
 import uuid
 
 from openflexure_microscope.stage.base import BaseStage
-
+from openflexure_microscope.stage.mock import MockStage
 from openflexure_microscope.camera.base import BaseCamera
+from openflexure_microscope.camera.mock import MockStreamer
 
 from openflexure_microscope.plugins import PluginMount
 from openflexure_microscope.task import TaskOrchestrator
@@ -140,6 +141,22 @@ class Microscope:
         self.plugin = PluginMount(self)
         logging.info("Repopulating PluginMount...")
         self.attach_plugins(self.plugin_maps)
+
+    def has_real_stage(self):
+        if hasattr(self, "stage") and not isinstance(
+                self.stage, MockStage
+        ):
+            return True
+        else:
+            return False
+
+    def has_real_camera(self):
+        if hasattr(self, "camera") and not isinstance(
+                self.camera, MockStreamer
+        ):
+            return True
+        else:
+            return False
 
     # Create unified state
     @property

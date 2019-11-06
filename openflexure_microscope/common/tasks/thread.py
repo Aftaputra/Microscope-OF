@@ -41,7 +41,7 @@ class TaskThread(threading.Thread):
         self._return_value = None  # Return value
         self._start_time = None  # Task start time
         self._end_time = None  # Task end time
-        
+
         # Public state properties
         self.progress: int = None  # Percent progress of the task
         self.data = {}  # Dictionary of custom data added during the task

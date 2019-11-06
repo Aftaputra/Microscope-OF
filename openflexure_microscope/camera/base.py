@@ -120,15 +120,10 @@ class BaseCamera(metaclass=ABCMeta):
         self.stream_timeout = 20
         self.stream_timeout_enabled = False
 
-        self.state = {
-            "board": None
-        }
+        self.state = {"board": None}
 
         # TODO: Load/save these to config
-        self.paths = {
-            "default": BASE_CAPTURE_PATH,
-            "temp": TEMP_CAPTURE_PATH
-        }
+        self.paths = {"default": BASE_CAPTURE_PATH, "temp": TEMP_CAPTURE_PATH}
 
         # Capture data
         self.images = []
@@ -296,7 +291,7 @@ class BaseCamera(metaclass=ABCMeta):
         output = CaptureObject(filepath=filepath)
         # Insert a temporary tag if temporary
         if temporary:
-            output.put_tags(['temporary'])
+            output.put_tags(["temporary"])
 
         # Update capture list
         self.images.append(output)
@@ -339,7 +334,7 @@ class BaseCamera(metaclass=ABCMeta):
         output = CaptureObject(filepath=filepath)
         # Insert a temporary tag if temporary
         if temporary:
-            output.put_tags(['temporary'])
+            output.put_tags(["temporary"])
 
         # Update capture list
         self.videos.append(output)

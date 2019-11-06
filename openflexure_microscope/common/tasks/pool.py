@@ -43,6 +43,7 @@ class TaskMaster:
 
 # Task management
 
+
 def tasks():
     """
     Dictionary of tasks in default taskmaster
@@ -62,6 +63,7 @@ def states():
     global _default_task_master
     return _default_task_master.states
 
+
 def cleanup_tasks():
     global _default_task_master
     return _default_task_master.cleanup()
@@ -73,6 +75,7 @@ def remove_task(task_id: str):
 
 
 # Operations on the current task
+
 
 def current_task():
     current_task_thread = threading.current_thread()
@@ -96,6 +99,7 @@ def update_task_data(data: dict):
 
 
 # Main "taskify" functions
+
 
 def taskify(f):
     """
