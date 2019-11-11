@@ -142,7 +142,7 @@ def routes():
     """
     List of all connected API routes
 
-    .. :quickref: System; Routes
+    .. :quickref: Global; Routes
 
     :>header Accept: application/json
     :>header Content-Type: application/json
@@ -156,7 +156,7 @@ def err_log():
     """
     Most recent 1mb of log output
 
-    .. :quickref: System; Log
+    .. :quickref: Global; Log
 
     :>header Accept: application/json
     :>header Content-Type: application/json
