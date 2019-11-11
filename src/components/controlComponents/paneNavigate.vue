@@ -125,11 +125,28 @@ export default {
     }
   },
 
+  created: function () {
+    window.addEventListener('keydown', this.keyDownMonitor);
+    window.addEventListener("keyup", this.keyUpMonitor);
+    window.addEventListener('wheel', this.wheelMonitor);
+  },
+
   mounted() {
     // A global signal listener to perform a move action
     this.$root.$on('globalMoveEvent', (x, y, z, absolute) => {
       this.moveRequest(x, y, z, absolute)
     })
+  },
+
+  beforeDestroy () {
+    // Remove global signal listener to perform a move action
+    this.$root.$off('globalMoveEvent')
+  },
+
+  destroyed: function () {
+    window.removeEventListener('keydown', this.keyDownMonitor);
+    window.removeEventListener("keyup", this.keyUpMonitor);
+    window.removeEventListener('wheel', this.wheelMonitor);
   },
 
   methods: {
@@ -269,12 +286,6 @@ export default {
       }
     }
 
-  },
-
-  created: function () {
-    window.addEventListener('keydown', this.keyDownMonitor);
-    window.addEventListener("keyup", this.keyUpMonitor);
-    window.addEventListener('wheel', this.wheelMonitor);
   },
 
   computed: {

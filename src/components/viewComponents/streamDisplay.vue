@@ -1,19 +1,22 @@
 <template>
 	<div ref="streamDisplay" class="stream-display uk-width-1-1 uk-height-1-1 scrollTarget" id="stream-display">
 
-		<img class="uk-align-center uk-margin-remove-bottom" v-on:dblclick="clickmonitor" v-if="showStream" v-bind:src="streamImgUri" alt="Stream">
+		<img class="uk-align-center uk-margin-remove-bottom" v-on:dblclick="clickMonitor" v-bind:hidden="!showStream" v-bind:src="streamImgUri" alt="Stream" ref="click-frame">
 
-		<div v-else-if="$store.state.waiting" class="uk-position-center">
-			<div uk-spinner="ratio: 4.5" ></div>
+		<div v-if="!showStream">
+			<div v-if="$store.state.waiting" class="uk-position-center">
+				<div uk-spinner="ratio: 4.5" ></div>
+			</div>
+
+			<div v-else-if="$store.state.globalSettings.disableStream" class="uk-position-center position-relative text-center">
+				Stream preview disabled
+			</div>
+
+			<div v-else class="uk-position-center position-relative text-center">
+				No active connection
+			</div>
 		</div>
 
-		<div v-else-if="$store.state.globalSettings.disableStream" class="uk-position-center position-relative text-center">
-			Stream preview disabled
-		</div>
-
-		<div v-else class="uk-position-center position-relative text-center">
-			No active connection
-		</div>
 
 	</div>
 </template>
@@ -76,7 +79,7 @@ export default {
 	},
 
   methods: {
-    clickmonitor: function(event) {
+    clickMonitor: function(event) {
 			// Calculate steps from event coordinates and store config FOV
 			let xCoordinate = event.offsetX;
 			let yCoordinate = event.offsetY;
@@ -89,8 +92,6 @@ export default {
 
 			// Emit a signal to move, acted on by panelNavigate.vue
 			this.$root.$emit('globalMoveEvent', xSteps, ySteps, 0, false)
-
-			this.flashStream()
 		},
 		
 		flashStream: function() {
