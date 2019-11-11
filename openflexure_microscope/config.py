@@ -59,6 +59,8 @@ def convert_type_to_json_safe(v):
     """Make an individual attribute JSON-safe"""
     if isinstance(v, Fraction):
         return float(v)
+    elif isinstance(v, np.integer):
+        return int(v)
     elif isinstance(v, np.ndarray):
         return v.tolist()
     else:
