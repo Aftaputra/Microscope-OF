@@ -7,10 +7,10 @@
       <div v-else class="indeterminate"></div>
     </div>
 
-    <button type="button" v-on:click="terminateTask()" class="uk-button uk-button-danger uk-form-small uk-margin uk-float-right uk-width-1-1">Terminate</button>
+    <button v-if="canTerminate" type="button" v-on:click="terminateTask()" class="uk-button uk-button-danger uk-form-small uk-margin uk-float-right uk-width-1-1">Terminate</button>
   </div>
 
-  <button type="button" v-on:click="startTask()" v-bind:hidden="taskRunning" class="uk-button uk-button-primary uk-form-small uk-margin uk-float-right uk-width-1-1">{{ submitLabel }}</button>
+  <button type="button" v-on:click="bootstrapTask()" v-bind:hidden="taskRunning" class="uk-button uk-button-primary uk-form-small uk-margin uk-float-right uk-width-1-1">{{ submitLabel }}</button>
 
 </div>
 </template>
@@ -29,7 +29,7 @@ export default {
     submitData: {
       type: Object,
       required: false,
-      default: {}
+      default: () => ({})
     },
     pollInterval: {
       type: Number,
@@ -46,6 +46,21 @@ export default {
       required: false,
       default: "Submit"
     },
+    canTerminate: {
+      type: Boolean,
+      required: false,
+      default: true
+    },
+    requiresConfirmation: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
+    confirmationMessage: {
+      type: String,
+      required: false,
+      default: "Start task?"
+    }
   },
 
   data: function () {
@@ -64,6 +79,18 @@ export default {
   },
 
   methods: {
+    bootstrapTask: function() {
+      if (this.requiresConfirmation) {
+        this.modalConfirm(this.confirmationMessage)
+          .then(() => {
+            this.startTask()
+          }, () => {})
+      }
+      else {
+        this.startTask()
+      }
+    },
+
     startTask: function() {
       console.log("Task start clicked")
       this.$emit('submit', this.submitData)
@@ -86,7 +113,7 @@ export default {
       })
       .catch(error => {
         if (!error) {
-          error =  "Unknown error"
+          error =  Error("Unknown error")
         }
         console.log("Emitting onError: ", error)
         this.$emit('error', error)

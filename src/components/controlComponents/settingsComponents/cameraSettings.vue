@@ -26,13 +26,15 @@
     
     <!--Show auto calibrate if default plugin is enabled-->
     <div v-if="this.$store.state.apiState.plugin.includes('default_camera_calibration')">
-      <div v-if="isCalibrating">
-        <progressBar/>
-      </div>
-
-      <div v-bind:hidden="isCalibrating">
-        <button type="button" v-on:click="recalibrateConfirm()" class="uk-button uk-button-default uk-form-small uk-float-right uk-margin-small uk-width-1-1">Auto-Calibrate</button>
-      </div>
+      <taskSubmitter
+        v-bind:canTerminate="false"
+        v-bind:requiresConfirmation="true"
+        v-bind:confirmationMessage="'Start recalibration? This may take a while, and the microscope will be locked during this time.'"
+        v-bind:submitURL="recalibrateApiUri"
+        v-bind:submitLabel="'Auto-Calibrate (Task)'"
+        v-on:response="onRecalibrateResponse"
+        v-on:error="onRecalibrateError">
+      </taskSubmitter>
     </div>
 
   </form>
@@ -43,14 +45,14 @@
 
 <script>
 import axios from 'axios'
-import progressBar from "../../genericComponents/progressBar"
+import taskSubmitter from "../../genericComponents/taskSubmitter"
 
 // Export main app
 export default {
   name: 'microscopeSettings',
 
   components: {
-    progressBar
+    taskSubmitter
   },
 
   data: function () {
@@ -95,37 +97,14 @@ export default {
           this.modalError(error) // Let mixin handle error
         })
     },
-    recalibrateConfirm: function() {
-      var context = this
-      this.modalConfirm('Start recalibration? This may take a while, and the microscope will be locked during this time.')
-        .then(function() {
-          context.recalibrateRequest()
-        }, function () {
-          console.log('Rejected recalibration.')
-        })
+
+    onRecalibrateResponse: function() {
+      this.modalNotify("Finished recalibration.")
+      return new Promise(r => setTimeout(r, 500)) // wait 500ms before updating config, so it's fresh
     },
-    recalibrateRequest: function() {
-      // Send move request
-      axios.post(this.recalibrateApiUri)
-        .then(response => { 
-          console.log("Task ID: " + response.data.id)
-          this.isCalibrating = true
-          return this.$store.dispatch('pollTask', [response.data.id, null, null])
-        })
-        .then(() => {
-          this.modalNotify("Finished recalibration.")
-          return new Promise(r => setTimeout(r, 500)) // wait 500ms before updating config, so it's fresh
-        })
-        .then(() => {
-          return this.$store.dispatch('updateConfig');
-        })
-        .then(this.updateInputValues)
-        .catch(error => {
-          this.modalError(error) // Let mixin handle error
-        })
-        .finally(() => {
-          this.isCalibrating = false
-        })
+
+    onRecalibrateError: function(error) {
+      this.modalError(error) // Let mixin handle error
     }
 
   },
