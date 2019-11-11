@@ -1,33 +1,41 @@
 <template>
   <div>
-    <label class="uk-form-label">{{label}}</label>
+    <label class="uk-form-label">{{ label }}</label>
 
-    <input 
+    <input
       class="uk-input uk-form-small"
       type="number"
       :name="name"
       :value="value"
-      @input="$emit('input', $event.target.value)"
       :placeholder="placeholder"
-    >
-
+      @input="$emit('input', $event.target.value)"
+    />
   </div>
 </template>
 
 <script>
-
 export default {
-  name: 'numberInput',
+  name: "NumberInput",
 
-  props: [
-    'placeholder', 
-    'label', 
-    'name', 
-    'value'
-  ]
-
-}
-
+  props: {
+    value: {
+      type: Number,
+      required: true
+    },
+    placeholder: {
+      type: Number,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    label: {
+      type: String,
+      required: true
+    }
+  }
+};
 </script>
 
 <style scoped></style>

@@ -1,36 +1,36 @@
 <template>
-  
-  <div 
+  <div
     v-if="!(this.requireConnection && !this.$store.getters.ready)"
-    v-bind:hidden="currentTab!=id" 
+    :hidden="currentTab != id"
     class="uk-width-expand"
   >
     <div class="section-heading">{{ id }}</div>
     <div class="section-content"><slot></slot></div>
-    
   </div>
-
 </template>
 
 <script>
-
 export default {
-  name: 'tabContent',
+  name: "TabContent",
 
   props: {
-    id: String,
-    currentTab: String,
-    requireConnection: Boolean,
+    id: {
+      type: String,
+      required: true
+    },
+    currentTab: {
+      type: String,
+      required: true
+    },
+    requireConnection: Boolean
   },
+  computed: {},
 
-  methods: {},
-  computed: {}
-}
-
+  methods: {}
+};
 </script>
 
 <style lang="less" scoped>
-
 .section-heading {
   display: block;
   font-size: 12px;
@@ -39,8 +39,8 @@ export default {
   cursor: default;
 }
 
-.section-content, .section-heading {
+.section-content,
+.section-heading {
   padding: 9px 10px;
 }
-
 </style>

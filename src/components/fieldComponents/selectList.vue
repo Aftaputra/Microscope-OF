@@ -1,33 +1,42 @@
 <template>
   <div>
-    <label class="uk-form-label">{{label}}</label>
+    <label class="uk-form-label">{{ label }}</label>
 
     <select
       class="uk-select uk-form-small"
-      :multiple="multi"
       :value="value"
       @input="$emit('input', $event.target.value)"
     >
       <option v-for="option in options" :key="option">
-        {{option}}
+        {{ option }}
       </option>
-
     </select>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'selectList',
+  name: "SelectList",
 
-  props: [
-    'multi', 
-    'options', 
-    'name', 
-    'label',
-    'value'
-  ]
-}
+  props: {
+    value: {
+      type: String,
+      required: true
+    },
+    options: {
+      type: Array,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    label: {
+      type: String,
+      required: true
+    }
+  }
+};
 </script>
 
 <style scoped></style>

@@ -1,95 +1,147 @@
 <template>
-  <div id="panel-left" class="uk-margin-remove uk-padding-remove uk-height-1-1" uk-grid>
-
+  <div
+    id="panel-left"
+    class="uk-margin-remove uk-padding-remove uk-height-1-1"
+    uk-grid
+  >
     <!-- Vertical tab bar -->
-    <div id="switcher-left" class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1">
-      <tabIcon id="status" :requireConnection="false" :currentTab="currentTab" @set-tab="setTab">
+    <div
+      id="switcher-left"
+      class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1"
+    >
+      <tabIcon
+        id="status"
+        :require-connection="false"
+        :current-tab="currentTab"
+        @set-tab="setTab"
+      >
         <i class="material-icons">bug_report</i>
       </tabIcon>
-      <tabIcon id="navigate" :requireConnection="true" :currentTab="currentTab" @set-tab="setTab">
-        <i class="material-icons">gamepad</i>  
+      <tabIcon
+        id="navigate"
+        :require-connection="true"
+        :current-tab="currentTab"
+        @set-tab="setTab"
+      >
+        <i class="material-icons">gamepad</i>
       </tabIcon>
-      <tabIcon id="capture" :requireConnection="true" :currentTab="currentTab" @set-tab="setTab">
+      <tabIcon
+        id="capture"
+        :require-connection="true"
+        :current-tab="currentTab"
+        @set-tab="setTab"
+      >
         <i class="material-icons">camera_alt</i>
       </tabIcon>
-      <tabIcon id="settings" :requireConnection="false" :currentTab="currentTab" @set-tab="setTab">
-        <i class="material-icons">settings</i>  
+      <tabIcon
+        id="settings"
+        :require-connection="false"
+        :current-tab="currentTab"
+        @set-tab="setTab"
+      >
+        <i class="material-icons">settings</i>
       </tabIcon>
 
-      <hr>
+      <hr />
 
-      <tabIcon v-for="plugin in $store.state.apiPlugins" @set-tab="setTab"
-        :key="plugin.id" 
-        :id="plugin.id" 
-        :requireConnection="plugin.requiresConnection" 
-        :currentTab="currentTab">
-        <i class="material-icons">{{ plugin.icon || "extension" }}</i> 
+      <tabIcon
+        v-for="plugin in $store.state.apiPlugins"
+        :id="plugin.id"
+        :key="plugin.id"
+        :require-connection="plugin.requiresConnection"
+        :current-tab="currentTab"
+        @set-tab="setTab"
+      >
+        <i class="material-icons">{{ plugin.icon || "extension" }}</i>
       </tabIcon>
-
     </div>
 
     <!-- Corresponding vertical tab content -->
-    <div v-bind:hidden="!showControlBar" id="container-left" class="uk-padding-remove uk-height-1-1 uk-width-expand">
-      <div id="component-left" class="uk-padding-remove uk-flex uk-flex-1 panel-content">
-        <tabContent id="status" :requireConnection="false" :currentTab="currentTab">
-          <paneStatus/>
+    <div
+      id="container-left"
+      :hidden="!showControlBar"
+      class="uk-padding-remove uk-height-1-1 uk-width-expand"
+    >
+      <div
+        id="component-left"
+        class="uk-padding-remove uk-flex uk-flex-1 panel-content"
+      >
+        <tabContent
+          id="status"
+          :require-connection="false"
+          :current-tab="currentTab"
+        >
+          <paneStatus />
         </tabContent>
-        <tabContent id="navigate" :requireConnection="true" :currentTab="currentTab">
-          <paneNavigate/>
+        <tabContent
+          id="navigate"
+          :require-connection="true"
+          :current-tab="currentTab"
+        >
+          <paneNavigate />
         </tabContent>
-        <tabContent id="capture" :requireConnection="true" :currentTab="currentTab">
-          <paneCapture/>
+        <tabContent
+          id="capture"
+          :require-connection="true"
+          :current-tab="currentTab"
+        >
+          <paneCapture />
         </tabContent>
-        <tabContent id="settings" :requireConnection="false" :currentTab="currentTab">
-          <paneSettings/>
+        <tabContent
+          id="settings"
+          :require-connection="false"
+          :current-tab="currentTab"
+        >
+          <paneSettings />
         </tabContent>
 
-        <tabContent v-for="plugin in $store.state.apiPlugins" 
-          :key="plugin.id" 
-          :id="plugin.id" 
-          :requireConnection="plugin.requiresConnection" 
-          :currentTab="currentTab">
-
-          <div class="uk-flex uk-flex-column" v-for="form in plugin.forms" :key="`${form.route}/${form.name}`.replace(/\s+/g, '-').toLowerCase()" >
-            <JsonForm 
+        <tabContent
+          v-for="plugin in $store.state.apiPlugins"
+          :id="plugin.id"
+          :key="plugin.id"
+          :require-connection="plugin.requiresConnection"
+          :current-tab="currentTab"
+        >
+          <div
+            v-for="form in plugin.forms"
+            :key="
+              `${form.route}/${form.name}`.replace(/\s+/g, '-').toLowerCase()
+            "
+            class="uk-flex uk-flex-column"
+          >
+            <JsonForm
               :name="form.name"
               :route="form.route"
-              :isTask="form.isTask"
-              :submitLabel="form.submitLabel"
-              :selfUpdate="form.selfUpdate"
-              :schema="form.schema"/>
-            <hr>
+              :is-task="form.isTask"
+              :submit-label="form.submitLabel"
+              :self-update="form.selfUpdate"
+              :schema="form.schema"
+            />
+            <hr />
           </div>
-
         </tabContent>
-  
       </div>
     </div>
-
   </div>
-
 </template>
 
 <script>
-// Import axios for HTTP requests
-import axios from 'axios'
-
 // Import generic components
-import tabIcon from './genericComponents/tabIcon'
-import tabContent from './genericComponents/tabContent'
+import tabIcon from "./genericComponents/tabIcon";
+import tabContent from "./genericComponents/tabContent";
 
 // Import pane components
-import paneStatus from './controlComponents/paneStatus'
-import paneNavigate from './controlComponents/paneNavigate'
-import paneCapture from './controlComponents/paneCapture'
-import paneSettings from './controlComponents/paneSettings'
+import paneStatus from "./controlComponents/paneStatus";
+import paneNavigate from "./controlComponents/paneNavigate";
+import paneCapture from "./controlComponents/paneCapture";
+import paneSettings from "./controlComponents/paneSettings";
 
 // Import plugin components
-import JsonForm from './pluginComponents/JsonForm'
+import JsonForm from "./pluginComponents/JsonForm";
 
 // Export main app
 export default {
-  name: 'panelLeft',
+  name: "PanelLeft",
 
   components: {
     tabIcon,
@@ -101,38 +153,34 @@ export default {
     JsonForm
   },
 
-  data: function () {
+  data: function() {
     return {
-      currentTab: 'status',
+      currentTab: "status",
       showControlBar: true
-    }  
+    };
+  },
+
+  computed: {
+    pluginApiUri: function() {
+      return this.$store.getters.uri + "/plugin";
+    }
   },
 
   methods: {
     setTab: function(event, tab) {
       if (this.currentTab == tab) {
-        this.showControlBar = !this.showControlBar
-        this.currentTab = 'none'
+        this.showControlBar = !this.showControlBar;
+        this.currentTab = "none";
+      } else {
+        this.showControlBar = true;
+        this.currentTab = tab;
       }
-      else {
-        this.showControlBar = true
-        this.currentTab = tab
-      }
-    },
-
-  },
-
-  computed: {
-    pluginApiUri: function () {
-      return this.$store.getters.uri + "/plugin"
-    },
+    }
   }
-
-}
+};
 </script>
 
 <style scoped lang="less">
-
 #component-left {
   width: 300px;
 }
@@ -142,19 +190,19 @@ export default {
   background-color: rgba(180, 180, 180, 0.025);
 }
 
-#container-left, #switcher-left {
+#container-left,
+#switcher-left {
   border-width: 0 1px 0 0;
   border-style: solid;
-  border-color: rgba(180, 180, 180, 0.25)
+  border-color: rgba(180, 180, 180, 0.25);
 }
 
-#switcher-left a{
+#switcher-left a {
   padding: 10px 16px;
 }
 
-#switcher-left{
+#switcher-left {
   background-color: rgba(180, 180, 180, 0.1);
   padding-top: 2px !important;
 }
-
 </style>

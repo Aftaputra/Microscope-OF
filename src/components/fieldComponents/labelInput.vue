@@ -1,58 +1,65 @@
 <template>
   <div>
-    <label class="uk-form-label uk-text-bold">{{label}}</label>
+    <label class="uk-form-label uk-text-bold">{{ label }}</label>
 
-    <div @click="setEditing(true)" uk-tooltip="title: Click to edit value; delay: 250">
-
+    <div
+      uk-tooltip="title: Click to edit value; delay: 250"
+      @click="setEditing(true)"
+    >
       <div v-show="editing == false">
-        <label> {{value}} </label>
+        <label> {{ value }} </label>
       </div>
 
       <input
         v-show="editing == true"
+        ref="textinput"
         class="uk-input uk-form-small"
         type="text"
-        v-bind:name="name"
-        v-bind:value="value"
-        ref="textinput"
-        v-on:blur= "setEditing(false)"
-        @keyup.enter = "setEditing(false)"
-        @input="$emit('input', $event.target.value)"
+        :name="name"
+        :value="value"
         autofocus
-      >
+        @blur="setEditing(false)"
+        @keyup.enter="setEditing(false)"
+        @input="$emit('input', $event.target.value)"
+      />
     </div>
-
-
-
   </div>
 </template>
 
 <script>
 export default {
-  name: 'labelInput',
+  name: "LabelInput",
 
-  data: function () {
-    return {
-      editing: false
+  props: {
+    label: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    value: {
+      type: String,
+      required: true
     }
   },
 
-  props: [
-    'name',
-    'label',
-    'value'
-  ],
+  data: function() {
+    return {
+      editing: false
+    };
+  },
 
   methods: {
     setEditing(editing) {
-      this.editing = editing
+      this.editing = editing;
       if (editing == true) {
-        this.$nextTick(() => this.$refs.textinput.focus())
+        this.$nextTick(() => this.$refs.textinput.focus());
       }
     }
-  },
-
-}
+  }
+};
 </script>
 
 <style scoped></style>

@@ -1,18 +1,17 @@
-import Vue from 'vue'
-import Vuex from 'vuex'
-import axios from 'axios'
+import Vue from "vue";
+import Vuex from "vuex";
+import axios from "axios";
 
-Vue.use(Vuex)
+Vue.use(Vuex);
 
 export default new Vuex.Store({
-  
   state: {
-    host: '',
+    host: "",
     port: 5000,
-    apiVer: 'v1',
+    apiVer: "v1",
     available: true,
     waiting: false,
-    error: '',
+    error: "",
     apiConfig: {},
     apiState: {},
     apiPlugins: [],
@@ -25,13 +24,13 @@ export default new Vuex.Store({
   },
 
   mutations: {
-    changeHost(state, [host, port, apiVer='v1']) {
+    changeHost(state, [host, port, apiVer = "v1"]) {
       state.host = host;
       state.port = port;
       state.apiVer = apiVer;
     },
     changeWaiting(state, waiting) {
-      state.waiting = waiting
+      state.waiting = waiting;
     },
     commitConfig(state, configData) {
       state.apiConfig = configData;
@@ -46,155 +45,158 @@ export default new Vuex.Store({
       state.globalSettings[key] = value;
     },
     resetState(state) {
-      state.waiting = false
-      state.available = true
-      state.error = null
-      state.apiConfig = {}
-      state.apiState = {}
-      state.apiPlugins = []
+      state.waiting = false;
+      state.available = true;
+      state.error = null;
+      state.apiConfig = {};
+      state.apiState = {};
+      state.apiPlugins = [];
     },
     setConnected(state) {
-      state.waiting = false
-      state.available = true
+      state.waiting = false;
+      state.available = true;
     },
     setError(state, msg) {
-      state.waiting = false
-      state.available = false
-      state.error = msg
+      state.waiting = false;
+      state.available = false;
+      state.error = msg;
     }
   },
 
   actions: {
     firstConnect(context) {
       // Reset the state when reconnecting starts
-      context.commit('resetState')
+      context.commit("resetState");
       // Mark as loading
-      context.commit('changeWaiting', true)
+      context.commit("changeWaiting", true);
 
       var sendRequest = function(resolve, reject) {
         // Do requests
-        context.dispatch('updateConfig')
-        .then (() => context.dispatch('updateState'))
-        .then (() => context.dispatch('updatePlugins'))
-        .then (() => {
-          console.log("Finished first connect")
-          resolve()
-        })
-        .catch(error => {
-          reject(error)
-        })
-      }
-      return new Promise(sendRequest)
+        context
+          .dispatch("updateConfig")
+          .then(() => context.dispatch("updateState"))
+          .then(() => context.dispatch("updatePlugins"))
+          .then(() => {
+            console.log("Finished first connect");
+            resolve();
+          })
+          .catch(error => {
+            reject(error);
+          });
+      };
+      return new Promise(sendRequest);
     },
 
-    updateConfig(context, uri=`${context.getters.uri}/config`) {
-      console.log("Updating config")
-      context.commit('changeWaiting', true)
-  
+    updateConfig(context, uri = `${context.getters.uri}/config`) {
+      console.log("Updating config");
+      context.commit("changeWaiting", true);
+
       var sendRequest = function(resolve, reject) {
-        axios.get(uri)
-        .then(response => { 
-          context.commit('commitConfig', response.data)
-          context.commit('setConnected')
-          console.log("Updating config finished")
-          resolve()
-        })
-        .catch(error => {
-          reject(new Error(error))
-        })
-      }
-      return new Promise(sendRequest)
+        axios
+          .get(uri)
+          .then(response => {
+            context.commit("commitConfig", response.data);
+            context.commit("setConnected");
+            console.log("Updating config finished");
+            resolve();
+          })
+          .catch(error => {
+            reject(new Error(error));
+          });
+      };
+      return new Promise(sendRequest);
     },
 
-    updateState(context, uri=`${context.getters.uri}/state`) {
-      console.log("Updating state")
-      context.commit('changeWaiting', true)
-  
+    updateState(context, uri = `${context.getters.uri}/state`) {
+      console.log("Updating state");
+      context.commit("changeWaiting", true);
+
       var sendRequest = function(resolve, reject) {
-        axios.get(uri)
-        .then(response => { 
-          context.commit('commitState', response.data)
-          context.commit('setConnected')
-          console.log("Updating state finished")
-          resolve()
-        })
-        .catch(error => {
-          reject(new Error(error))
-        })
-      }
-      return new Promise(sendRequest)
+        axios
+          .get(uri)
+          .then(response => {
+            context.commit("commitState", response.data);
+            context.commit("setConnected");
+            console.log("Updating state finished");
+            resolve();
+          })
+          .catch(error => {
+            reject(new Error(error));
+          });
+      };
+      return new Promise(sendRequest);
     },
 
-    updatePlugins(context, uri=`${context.getters.uri}/plugin`) {
-      console.log("Updating plugins")
-      context.commit('changeWaiting', true)
-  
+    updatePlugins(context, uri = `${context.getters.uri}/plugin`) {
+      console.log("Updating plugins");
+      context.commit("changeWaiting", true);
+
       var sendRequest = function(resolve, reject) {
-        axios.get(uri)
-        .then(response => { 
-          console.log("PLUGINS")
-          console.log(response.data)
-          context.commit('commitPlugins', response.data)
-          context.commit('setConnected')
-          console.log("Updating plugins finished")
-          resolve()
-        })
-        .catch(error => {
-          reject(new Error(error))
-        })
-      }
-      return new Promise(sendRequest)
+        axios
+          .get(uri)
+          .then(response => {
+            console.log("PLUGINS");
+            console.log(response.data);
+            context.commit("commitPlugins", response.data);
+            context.commit("setConnected");
+            console.log("Updating plugins finished");
+            resolve();
+          })
+          .catch(error => {
+            reject(new Error(error));
+          });
+      };
+      return new Promise(sendRequest);
     },
 
     pollTask(context, [taskId, timeout, interval]) {
-      var endTime = Number(new Date()) + (timeout*1000 || 30000);
-      interval = interval*1000 || 500;
+      var endTime = Number(new Date()) + (timeout * 1000 || 30000);
+      interval = interval * 1000 || 500;
 
       var checkCondition = function(resolve, reject) {
-        // If the condition is met, we're done! 
-        axios.get(`${context.getters.uri}/task/${taskId}`)
-        .then(response => { 
-          console.log(response.data.status)
-          var result = response.data.status
+        // If the condition is met, we're done!
+        axios.get(`${context.getters.uri}/task/${taskId}`).then(response => {
+          console.log(response.data.status);
+          var result = response.data.status;
           // If the task ends with success
-          if(result == 'success') {
-            resolve(response.data)
+          if (result == "success") {
+            resolve(response.data);
           }
           // If task ends with an error
-          else if (result == 'error') {
+          else if (result == "error") {
             // Pass the error string back with reject
-            reject(new Error(response.data.return))
+            reject(new Error(response.data.return));
           }
           // If task ends with termination
-          else if (result == 'terminated') {
+          else if (result == "terminated") {
             // Pass a generic termination error back with reject
-            reject(new Error("Task terminated"))
+            reject(new Error("Task terminated"));
           }
           // If task ends in any other way
-          else if (result != 'running') {
+          else if (result != "running") {
             // Pass status string as error
-            reject(new Error(result))
+            reject(new Error(result));
           }
           // If the condition isn't met but the timeout hasn't elapsed, go again
           else if (Number(new Date()) < endTime) {
-            setTimeout(checkCondition, interval, resolve, reject)
+            setTimeout(checkCondition, interval, resolve, reject);
           }
           // Didn't match and too much time, reject!
           else {
-            reject(new Error('Polling timed out'))
+            reject(new Error("Polling timed out"));
           }
-        })
-
+        });
       };
 
       return new Promise(checkCondition);
-      
     }
   },
 
   getters: {
     uri: state => `http://${state.host}:${state.port}/api/${state.apiVer}`,
-    ready: state => ((state.available) && (Object.keys(state.apiConfig).length !== 0) && (Object.keys(state.apiState).length !== 0))
+    ready: state =>
+      state.available &&
+      Object.keys(state.apiConfig).length !== 0 &&
+      Object.keys(state.apiState).length !== 0
   }
-
-})
+});

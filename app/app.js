@@ -1,144 +1,159 @@
 // Required packages
-const electron = require('electron')
-const { dialog } = require('electron')
+const electron = require("electron");
+const { dialog } = require("electron");
 const updater = require("electron-updater");
 const autoUpdater = updater.autoUpdater;
-const contextMenu = require('electron-context-menu')
-const path = require('path')
+const contextMenu = require("electron-context-menu");
+const path = require("path");
 
 // Attach settings store
-const { store } = require('./store')
+const { store } = require("./store");
 
-// Auto upadater 
+// Auto upadater
 autoUpdater.autoDownload = false;
 
-autoUpdater.on('checking-for-update', function () {});
+autoUpdater.on("checking-for-update", function() {});
 
-autoUpdater.on('update-available', function (info) {
-  sendStatusToWindow('Update available.' + info)
-  dialog.showMessageBox(mainWindow, {
-    type: 'info',
-    title: 'Update available',
-    message: 'A new version of OpenFlexure eV is available.',
-    buttons: ['Download', 'Later']
-  }, (buttonIndex) => {
-    if (buttonIndex === 0) {
-      autoUpdater.downloadUpdate()
+autoUpdater.on("update-available", function(info) {
+  sendStatusToWindow("Update available." + info);
+  dialog.showMessageBox(
+    mainWindow,
+    {
+      type: "info",
+      title: "Update available",
+      message: "A new version of OpenFlexure eV is available.",
+      buttons: ["Download", "Later"]
+    },
+    buttonIndex => {
+      if (buttonIndex === 0) {
+        autoUpdater.downloadUpdate();
+      }
     }
-  })
+  );
 });
 
-autoUpdater.on('update-downloaded', function (info) {
-  sendStatusToWindow('Update downloaded.' + info)
-  dialog.showMessageBox(mainWindow, {
-      type: 'info',
+autoUpdater.on("update-downloaded", function(info) {
+  sendStatusToWindow("Update downloaded." + info);
+  dialog.showMessageBox(
+    mainWindow,
+    {
+      type: "info",
       title: "Update downloaded",
-      message: 'Please restart the application to apply the update.',
-      buttons: ['Update', 'Later']
-  }, (buttonIndex) => {
-    if (buttonIndex === 0) {
-      autoUpdater.quitAndInstall();
+      message: "Please restart the application to apply the update.",
+      buttons: ["Update", "Later"]
+    },
+    buttonIndex => {
+      if (buttonIndex === 0) {
+        autoUpdater.quitAndInstall();
+      }
     }
-  })
+  );
 });
 
-autoUpdater.on('update-not-available', function (info) {
-  sendStatusToWindow('Update not available.');
+autoUpdater.on("update-not-available", function() {
+  sendStatusToWindow("Update not available.");
 });
 
-autoUpdater.on('error', function (err) {
-  sendStatusToWindow('Error in auto-updater.');
+autoUpdater.on("error", function() {
+  sendStatusToWindow("Error in auto-updater.");
 });
 
-autoUpdater.on('download-progress', function (progressObj) {
+autoUpdater.on("download-progress", function(progressObj) {
   let log_message = "Download speed: " + progressObj.bytesPerSecond;
-  log_message = log_message + ' - Downloaded ' + parseInt(progressObj.percent) + '%';
-  log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+  log_message =
+    log_message + " - Downloaded " + parseInt(progressObj.percent) + "%";
+  log_message =
+    log_message +
+    " (" +
+    progressObj.transferred +
+    "/" +
+    progressObj.total +
+    ")";
   sendStatusToWindow(log_message);
 });
 
 function sendStatusToWindow(message) {
-    console.log(message);
+  console.log(message);
 }
 
 // Set up the app
-const app = electron.app
-const BrowserWindow = electron.BrowserWindow
+const app = electron.app;
+const BrowserWindow = electron.BrowserWindow;
 
 // Set the window content
-let url = `file://${path.join(__dirname, '/dist/index.html')}`
-let mainWindow
+let url = `file://${path.join(__dirname, "/dist/index.html")}`;
+let mainWindow;
 
 // Set the application menu
-require('./menu.js')
+require("./menu.js");
 
 // Handle redrawing the mainWindow
 let recreatingWindowInProgress = false;
 
-function toggleCustomTitleBar () {
+function toggleCustomTitleBar() {
   // Mark window as being recreated, to prevent stopping the application
-  recreatingWindowInProgress = true
+  recreatingWindowInProgress = true;
 
   // Invert the drawCustomTitleBar setting
-  store.set('drawCustomTitleBar', !store.get('drawCustomTitleBar'))
+  store.set("drawCustomTitleBar", !store.get("drawCustomTitleBar"));
 
   // Destroy old window
-  mainWindow.destroy()
+  mainWindow.destroy();
   // Create new window
-  createWindow()
+  createWindow();
 
   // Mark window as no longer being recreated
-  recreatingWindowInProgress = false
+  recreatingWindowInProgress = false;
 }
 
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    frame: !store.get('drawCustomTitleBar'),
-    width: 1124, 
+    frame: !store.get("drawCustomTitleBar"),
+    width: 1124,
     height: 800,
-    icon: path.join(__dirname, '/icons/png/64x64.png'),
+    icon: path.join(__dirname, "/icons/png/64x64.png"),
     webPreferences: {
       nodeIntegration: true
     }
-  })
+  });
 
   // Make a context menu
   contextMenu({
     showCopyImageAddress: true,
     showSaveImageAs: true,
-    showInspectElement: false,
+    showInspectElement: false
   });
 
   // Load window contents
-  mainWindow.loadURL(url)
+  mainWindow.loadURL(url);
 
   // Check for updates
   autoUpdater.checkForUpdates();
 
   // Emitted when the window is closed.
-  mainWindow.on('closed', function() {
-    mainWindow = null  // Dereference the window object
-  })
+  mainWindow.on("closed", function() {
+    mainWindow = null; // Dereference the window object
+  });
 }
 
 // Some APIs can only be used after this event occurs.
-app.on('ready', () => {
-  createWindow()
-})
+app.on("ready", () => {
+  createWindow();
+});
 
 // Quit when all windows are closed.
-app.on('window-all-closed', function() {
-  if ((process.platform !== 'darwin') && recreatingWindowInProgress != true) {
-    app.quit()
+app.on("window-all-closed", function() {
+  if (process.platform !== "darwin" && recreatingWindowInProgress != true) {
+    app.quit();
   }
-})
+});
 
-app.on('activate', function() {
+app.on("activate", function() {
   if (mainWindow === null) {
-    createWindow()
+    createWindow();
   }
-})
+});
 
 // Export toggleCustomTitleBar for use in ./menu.js
-module.exports.toggleCustomTitleBar = toggleCustomTitleBar
+module.exports.toggleCustomTitleBar = toggleCustomTitleBar;

@@ -6,14 +6,23 @@
 
 <script>
 export default {
-  name: 'htmlBlock',
+  name: "HtmlBlock",
 
-  props: [ 
-    'label', 
-    'name',
-    'content'
-  ]
-}
+  props: {
+    label: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    content: {
+      type: String,
+      required: true
+    }
+  }
+};
 </script>
 
 <style scoped></style>

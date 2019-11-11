@@ -1,52 +1,66 @@
 <template>
   <div>
-    <label>{{label}}</label>
+    <label>{{ label }}</label>
 
     <div class="uk-form-controls">
-
       <div v-for="option in options" :key="option">
         <label>
-          <input class="uk-checkbox" type="checkbox" v-bind:value="option" v-bind:checked="(value && value.includes(option))" @change="updateValue($event.target)"> 
+          <input
+            class="uk-checkbox"
+            type="checkbox"
+            :value="option"
+            :checked="value && value.includes(option)"
+            @change="updateValue($event.target)"
+          />
           {{ option }}
         </label>
       </div>
-
     </div>
-
   </div>
 </template>
 
 <script>
 export default {
-  name: 'checkList',
+  name: "CheckList",
 
-  props: [
-    'options', 
-    'name', 
-    'label',
-    'value'
-  ],
+  props: {
+    value: {
+      type: Array,
+      required: true
+    },
+    options: {
+      type: Array,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    label: {
+      type: String,
+      required: true
+    }
+  },
 
   methods: {
     updateValue(target) {
-      var newSelected = this.value != null ? [...this.value] : []  // Clone value array
+      var newSelected = this.value != null ? [...this.value] : []; // Clone value array
 
       if (target.checked) {
         if (!newSelected.includes(target.value)) {
-          newSelected.push(target.value)
+          newSelected.push(target.value);
         }
-      }
-      else {
+      } else {
         if (newSelected.includes(target.value)) {
-          var newSelected = newSelected.filter(function(value, index, arr){
-              return value != target.value;
-          })
+          newSelected = newSelected.filter(function(value) {
+            return value != target.value;
+          });
         }
       }
-      this.$emit('input', newSelected)
+      this.$emit("input", newSelected);
     }
   }
-}
+};
 </script>
 
 <style scoped></style>

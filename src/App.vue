@@ -1,57 +1,55 @@
 <template>
-  <div id="app" v-bind:class="handleTheme">
-
+  <div id="app" :class="handleTheme">
     <!-- Grid managing whole app -->
-    <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove" margin=0>
-      <panelLeft/>
-      <panelRight/>
+    <div
+      uk-grid
+      class="uk-height-1-1 uk-margin-remove uk-padding-remove"
+      margin="0"
+    >
+      <panelLeft />
+      <panelRight />
     </div>
-
   </div>
 </template>
 
 <script>
-// Import axios for HTTP requests
-import axios from 'axios'
-
 // Import components
-import panelLeft from './components/panelLeft.vue'
-import panelRight from './components/panelRight.vue'
+import panelLeft from "./components/panelLeft.vue";
+import panelRight from "./components/panelRight.vue";
 
 // Export main app
 export default {
-  name: 'app',
+  name: "App",
 
   components: {
     panelRight,
     panelLeft
   },
 
-  data: function () {
-    return {}  
-  },
-
-  created: function () {
-    window.addEventListener('beforeunload', this.handleExit)
-  },
-
-  methods: {
-    handleExit: function(event) {
-      console.log("Triggered beforeunload")
-      this.$root.$emit('globalTogglePreview', false)
-    }
+  data: function() {
+    return {};
   },
 
   computed: {
-    handleTheme: function () {
+    handleTheme: function() {
       return {
-        'uk-light': this.$store.state.globalSettings.darkMode,
-        'uk-background-secondary': this.$store.state.globalSettings.darkMode
-      }
+        "uk-light": this.$store.state.globalSettings.darkMode,
+        "uk-background-secondary": this.$store.state.globalSettings.darkMode
+      };
+    }
+  },
+
+  created: function() {
+    window.addEventListener("beforeunload", this.handleExit);
+  },
+
+  methods: {
+    handleExit: function() {
+      console.log("Triggered beforeunload");
+      this.$root.$emit("globalTogglePreview", false);
     }
   }
-
-}
+};
 </script>
 
 <style lang="less">
@@ -63,7 +61,8 @@ export default {
 // We override the custom-electron-titlebar z-index
 // UIKit lightbox must be able to draw over the titlebar
 // as it currently always spawns at the root of the DOM
-.titlebar, .titlebar > * {
+.titlebar,
+.titlebar > * {
   z-index: 1000 !important;
 }
 
@@ -71,10 +70,11 @@ export default {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: left;
-  height: 100%
+  height: 100%;
 }
 
-body, html {
+body,
+html {
   height: 100%;
   overflow: hidden;
 }
@@ -83,5 +83,4 @@ body, html {
   pointer-events: none;
   opacity: 0.4;
 }
-
 </style>

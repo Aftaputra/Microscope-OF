@@ -1,68 +1,86 @@
 <template>
   <div>
-
     <div class="uk-flex">
-      <div class="uk-text-bold uk-text-uppercase uk-width-expand">{{ name }}</div>
-      <a href="#" v-if="selfUpdate" v-on:click="getFormData()" class="uk-icon uk-width-auto"><i class="material-icons">cached</i></a>
+      <div class="uk-text-bold uk-text-uppercase uk-width-expand">
+        {{ name }}
+      </div>
+      <a
+        v-if="selfUpdate"
+        href="#"
+        class="uk-icon uk-width-auto"
+        @click="getFormData()"
+        ><i class="material-icons">cached</i></a
+      >
     </div>
 
-    <form @submit.prevent="" class="uk-form-stacked" ref="formContainer">
-
-      <div v-for="(field, index) in schema" :key="index"> 
-        <div v-if="Array.isArray(field)" class="uk-grid-small uk-width-1-1 uk-child-width-expand" uk-grid>
-          <div v-for="(subfield, subindex) in field" :key="subindex"> 
+    <form ref="formContainer" class="uk-form-stacked" @submit.prevent="">
+      <div v-for="(field, index) in schema" :key="index">
+        <div
+          v-if="Array.isArray(field)"
+          class="uk-grid-small uk-width-1-1 uk-child-width-expand"
+          uk-grid
+        >
+          <div v-for="(subfield, subindex) in field" :key="subindex">
             <component
               :is="subfield.fieldType"
               v-model="formData[subfield.name]"
-              v-bind="subfield">
+              v-bind="subfield"
+            >
             </component>
           </div>
         </div>
-        
+
         <component
           :is="field.fieldType"
           v-model="formData[field.name]"
-          v-bind="field">
+          v-bind="field"
+        >
         </component>
       </div>
 
-      <taskSubmitter v-if="isTask"
-        v-bind:submitURL="submitApiUri"
-        v-bind:submitData="formData"
-        v-bind:submitLabel="submitLabel"
-        v-on:submit="onTaskSubmit"
-        v-on:response="onTaskResponse"
-        v-on:error="onTaskError">
+      <taskSubmitter
+        v-if="isTask"
+        :submit-u-r-l="submitApiUri"
+        :submit-data="formData"
+        :submit-label="submitLabel"
+        @submit="onTaskSubmit"
+        @response="onTaskResponse"
+        @error="onTaskError"
+      >
       </taskSubmitter>
 
-      <button v-else type="button" v-on:click="newQuickRequest(formData);" class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1">{{ submitLabel }}</button>
-
+      <button
+        v-else
+        type="button"
+        class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1"
+        @click="newQuickRequest(formData)"
+      >
+        {{ submitLabel }}
+      </button>
     </form>
-
   </div>
-
 </template>
 
 <script>
-import axios from 'axios'
+import axios from "axios";
 
-import numberInput from "../fieldComponents/numberInput"
-import selectList from "../fieldComponents/selectList"
-import textInput from "../fieldComponents/textInput"
-import htmlBlock from "../fieldComponents/htmlBlock"
-import radioList from "../fieldComponents/radioList"
-import checkList from "../fieldComponents/checkList"
-import tagList from "../fieldComponents/tagList"
-import keyvalList from "../fieldComponents/keyvalList"
+import numberInput from "../fieldComponents/numberInput";
+import selectList from "../fieldComponents/selectList";
+import textInput from "../fieldComponents/textInput";
+import htmlBlock from "../fieldComponents/htmlBlock";
+import radioList from "../fieldComponents/radioList";
+import checkList from "../fieldComponents/checkList";
+import tagList from "../fieldComponents/tagList";
+import keyvalList from "../fieldComponents/keyvalList";
 
-import taskSubmitter from "../genericComponents/taskSubmitter"
+import taskSubmitter from "../genericComponents/taskSubmitter";
 
 export default {
-  name: 'JsonForm',
+  name: "JsonForm",
 
-  components: { 
-    numberInput, 
-    selectList, 
+  components: {
+    numberInput,
+    selectList,
     textInput,
     htmlBlock,
     radioList,
@@ -73,47 +91,57 @@ export default {
   },
 
   props: {
-    'name': {
+    name: {
       type: String,
       required: false,
       default: "Plugin"
     },
-    'schema': {
+    schema: {
       type: Array,
       required: true
     },
-    'route': {
+    route: {
       type: String,
       required: true
     },
-    'isTask': {
+    isTask: {
       type: Boolean,
       required: false,
       default: false
     },
-    'submitLabel': {
+    submitLabel: {
       type: String,
       required: false,
       default: "Submit"
     },
-    'selfUpdate': {
+    selfUpdate: {
       type: Boolean,
       required: false,
       default: false
-    },
+    }
   },
 
-  data: function () {
+  data: function() {
     return {
       formData: {}
+    };
+  },
+
+  computed: {
+    pluginApiUri: function() {
+      return this.$store.getters.uri + "/plugin";
+    },
+
+    submitApiUri: function() {
+      return this.pluginApiUri + this.route;
     }
   },
 
   created() {
-    this.initialiseFormData()
+    this.initialiseFormData();
 
     if (this.selfUpdate) {
-      this.getFormData()
+      this.getFormData();
     }
   },
 
@@ -129,83 +157,67 @@ export default {
       for (const field of this.schema) {
         if (Array.isArray(field)) {
           for (const subfield of field) {
-          console.log(subfield.name)
-          this.$set(this.formData, subfield.name, null)
+            console.log(subfield.name);
+            this.$set(this.formData, subfield.name, null);
           }
+        } else {
+          console.log(field.name);
+          this.$set(this.formData, field.name, null);
         }
-        else {
-          console.log(field.name)
-          this.$set(this.formData, field.name, null)
-        }
-        
       }
     },
 
     updateForm(fieldName, value) {
       this.$set(this.formData, fieldName, value);
-      this.$emit('input', this.formData)
+      this.$emit("input", this.formData);
     },
 
     getFormData: function() {
       // Send a quick request
-      axios.get(this.submitApiUri)
-        .then(response => { 
-          console.log(response.data)
-          Object.assign(this.formData, response.data)
+      axios
+        .get(this.submitApiUri)
+        .then(response => {
+          console.log(response.data);
+          Object.assign(this.formData, response.data);
         })
         .catch(error => {
-          this.modalError(error) // Let mixin handle error
-        })
+          this.modalError(error); // Let mixin handle error
+        });
     },
 
     newQuickRequest: function(params) {
-      console.log(this.submitApiUri)
-      console.log(params)
+      console.log(this.submitApiUri);
+      console.log(params);
       // Send a quick request
-      axios.post(this.submitApiUri, params)
-        .then(response => { 
+      axios
+        .post(this.submitApiUri, params)
+        .then(response => {
           // Do something with the response
-          console.log(response)
+          console.log(response);
           // Update the form data if we're self-updating
           if (this.selfUpdate) {
-            this.getFormData()
+            this.getFormData();
           }
         })
         .catch(error => {
-          this.modalError(error) // Let mixin handle error
-        })
+          this.modalError(error); // Let mixin handle error
+        });
     },
 
-    onTaskSubmit: function(submitData) {
-      // We don't need to do anything on this event yet
-      console.log("onTaskSubmit event triggered")
-    },
+    onTaskSubmit: function() {},
 
     onTaskResponse: function(responseData) {
-      console.log("Task finished with response data: ", responseData)
+      console.log("Task finished with response data: ", responseData);
       if (this.selfUpdate) {
-        this.getFormData()
+        this.getFormData();
       }
     },
 
     onTaskError: function(error) {
-      this.modalError(error)
+      this.modalError(error);
     }
-
-  },
-
-  computed: {
-    pluginApiUri: function () {
-      return this.$store.getters.uri + "/plugin"
-    },
-
-    submitApiUri: function () {
-      return this.pluginApiUri + this.route
-    },
-
   }
-
-}
+};
 </script>
 
 <style scoped>
@@ -214,6 +226,6 @@ export default {
 }
 
 .flex-container > div {
-  flex-basis: 100%
+  flex-basis: 100%;
 }
 </style>

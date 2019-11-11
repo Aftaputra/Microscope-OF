@@ -1,34 +1,49 @@
 <template>
-<div id="streamSettings">
+  <div id="streamSettings">
+    <p>
+      <label
+        ><input v-model="disableStream" class="uk-checkbox" type="checkbox" />
+        Disable live stream</label
+      >
+    </p>
 
-  <p><label><input v-model="disableStream" class="uk-checkbox" type="checkbox"> Disable live stream</label></p>
-
-  <div class="uk-child-width-1-2" uk-grid>
-    <p><label v-bind:class="[{'uk-disabled': !this.$store.getters.ready}]"><input v-model="autoGpuPreview" class="uk-checkbox" type="checkbox"> GPU preview</label></p>
-    <p><label v-bind:class="[{'uk-disabled': !this.$store.getters.ready}]"><input v-model="trackWindow" class="uk-checkbox" type="checkbox"> Track window</label></p>
+    <div class="uk-child-width-1-2" uk-grid>
+      <p>
+        <label :class="[{ 'uk-disabled': !this.$store.getters.ready }]"
+          ><input
+            v-model="autoGpuPreview"
+            class="uk-checkbox"
+            type="checkbox"
+          />
+          GPU preview</label
+        >
+      </p>
+      <p>
+        <label :class="[{ 'uk-disabled': !this.$store.getters.ready }]"
+          ><input v-model="trackWindow" class="uk-checkbox" type="checkbox" />
+          Track window</label
+        >
+      </p>
+    </div>
   </div>
-
-</div>
 </template>
 
 <script>
-
 // Export main app
 export default {
-  name: 'streamSettings',
+  name: "StreamSettings",
 
-  data: function () {
-    return {}
+  data: function() {
+    return {};
   },
 
   computed: {
-
     disableStream: {
       get() {
         return this.$store.state.globalSettings.disableStream;
       },
       set(value) {
-        this.$store.commit("changeSetting", ['disableStream', value]);
+        this.$store.commit("changeSetting", ["disableStream", value]);
       }
     },
 
@@ -37,8 +52,8 @@ export default {
         return this.$store.state.globalSettings.autoGpuPreview;
       },
       set(value) {
-        this.$store.commit("changeSetting", ['autoGpuPreview', value]);
-        this.$root.$emit('globalTogglePreview', value)
+        this.$store.commit("changeSetting", ["autoGpuPreview", value]);
+        this.$root.$emit("globalTogglePreview", value);
       }
     },
 
@@ -47,13 +62,11 @@ export default {
         return this.$store.state.globalSettings.trackWindow;
       },
       set(value) {
-        this.$store.commit("changeSetting", ['trackWindow', value]);
+        this.$store.commit("changeSetting", ["trackWindow", value]);
       }
     }
   }
-
-}
+};
 </script>
 
-<style lang="less">
-</style>
+<style lang="less"></style>

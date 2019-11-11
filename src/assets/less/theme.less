@@ -15,31 +15,31 @@
 // UIkit
 // ========================================================================
 
-@global-font-family:                            ProximaNova, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-@global-font-size:                              14px;
+@global-font-family: ProximaNova, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+@global-font-size: 14px;
 
-@global-xxlarge-font-size:                      38px;
-@global-xlarge-font-size:                       30px;
-@global-large-font-size:                        24px;
-@global-medium-font-size:                       20px;
-@global-small-font-size:                        14px;
+@global-xxlarge-font-size: 38px;
+@global-xlarge-font-size: 30px;
+@global-large-font-size: 24px;
+@global-medium-font-size: 20px;
+@global-small-font-size: 14px;
 
-@global-emphasis-color:                         #222;
+@global-emphasis-color: #222;
 
 //
 // Base
 //
 
-@base-code-font-family:                         'Roboto Mono', monospace;
-@base-code-font-size:                           12px;
+@base-code-font-family: 'Roboto Mono', monospace;
+@base-code-font-size: 12px;
 
-@base-heading-font-weight:                      300;
+@base-heading-font-weight: 300;
 
-@base-pre-font-size:                            12px;
-@base-pre-padding:                              25px;
-@base-pre-background:                           @global-muted-background;
-@base-pre-border-width:                         0;
-@base-pre-border-radius:                        0;
+@base-pre-font-size: 12px;
+@base-pre-padding: 25px;
+@base-pre-background: @global-muted-background;
+@base-pre-border-width: 0;
+@base-pre-border-radius: 0;
 
 .hook-base-body() {
     -webkit-font-smoothing: antialiased;
@@ -51,96 +51,103 @@
 // Container
 //
 
-@container-max-width:                           1380px;
-@container-small-max-width:                     650px;
+@container-max-width: 1380px;
+@container-small-max-width: 650px;
 
 //
 // Navbar
 //
 
-@inverse-navbar-nav-item-color:                @inverse-global-color;
-@inverse-navbar-nav-item-hover-color:          @inverse-global-emphasis-color;
+@inverse-navbar-nav-item-color: @inverse-global-color;
+@inverse-navbar-nav-item-hover-color: @inverse-global-emphasis-color;
 
 //
 // Nav
 //
 
-@nav-header-font-size:                          12px;
+@nav-header-font-size: 12px;
 
 //
 // Subnav
 //
 
-@inverse-subnav-item-color:                     @inverse-global-color;
-@inverse-subnav-item-hover-color:               @inverse-global-emphasis-color;
+@inverse-subnav-item-color: @inverse-global-color;
+@inverse-subnav-item-hover-color: @inverse-global-emphasis-color;
 
 //
 // Tab
 //
 
-@tab-item-padding-horizontal:                   10px;
-@tab-item-padding-vertical:                     9px;
-@tab-item-border-width:                         2px;
-@tab-item-font-size:                            12px;
+@tab-item-padding-horizontal: 10px;
+@tab-item-padding-vertical: 9px;
+@tab-item-border-width: 2px;
+@tab-item-font-size: 12px;
 
-.hook-tab-item() { line-height: 20px; }
+.hook-tab-item() {
+    line-height: 20px;
+}
 
 //
 // Table
 //
 
-@table-header-cell-font-size:                   12px;
+@table-header-cell-font-size: 12px;
 
 //
 // Label
 //
 
-@label-font-size:                               12px;
+@label-font-size: 12px;
 
 //
 // Text
 //
 
-.hook-text-lead() { font-weight: 300; }
-.hook-text-large() { font-weight: 300; }
+.hook-text-lead() {
+    font-weight: 300;
+}
+
+.hook-text-large() {
+    font-weight: 300;
+}
 
 //
 // Utility
 //
 
-@inverse-logo-color:                           @inverse-global-emphasis-color;
-@inverse-logo-hover-color:                     @inverse-global-emphasis-color;
+@inverse-logo-color: @inverse-global-emphasis-color;
+@inverse-logo-hover-color: @inverse-global-emphasis-color;
 
 //
 // Off-canvas
 //
 
-@offcanvas-bar-background:                      #fff;
-@offcanvas-bar-color-mode:                      dark;
+@offcanvas-bar-background: #fff;
+@offcanvas-bar-color-mode: dark;
 
 //
 // Inverse
 //
 
-@inverse-global-color:                          fade(@global-inverse-color, 80%);
-@inverse-global-muted-color:                    fade(@global-inverse-color, 60%);
+@inverse-global-color: fade(@global-inverse-color, 80%);
+@inverse-global-muted-color: fade(@global-inverse-color, 60%);
 
 //
 // Paper
 //
-@paper-border-radius:                           4px;
+@paper-border-radius: 4px;
 
 
 /* ========================================================================
    Theme
  ========================================================================== */
 
-@sidebar-left-width:     240px;
-@sidebar-left-width-xl:  300px;
+@sidebar-left-width: 240px;
+@sidebar-left-width-xl: 300px;
 
-@sidebar-right-width:    200px;
-@sidebar-right-left:     0px;
-@sidebar-right-left-xl:  60px;
+@sidebar-right-width: 200px;
+@sidebar-right-left: 0px;
+@sidebar-right-left-xl: 60px;
 
 
 
@@ -152,11 +159,11 @@
  */
 
 // Line Mode
-@navbar-nav-item-line-margin-vertical:          20px;
-@navbar-nav-item-line-margin-horizontal:        @navbar-nav-item-padding-horizontal;
-@navbar-nav-item-line-height:                   1px;
-@navbar-nav-item-line-background:               currentColor;
-@navbar-nav-item-line-transition-duration:      0.3s;
+@navbar-nav-item-line-margin-vertical: 20px;
+@navbar-nav-item-line-margin-horizontal: @navbar-nav-item-padding-horizontal;
+@navbar-nav-item-line-height: 1px;
+@navbar-nav-item-line-background: currentColor;
+@navbar-nav-item-line-transition-duration: 0.3s;
 
 .uk-navbar-dropdown.uk-open {
     border-radius: @paper-border-radius;
@@ -168,7 +175,7 @@
 
 .uk-card {
     border-radius: @paper-border-radius;
-    border: 1px solid  rgba(180, 180, 180, 0.25);
+    border: 1px solid rgba(180, 180, 180, 0.25);
 }
 
 .uk-card-media-top img {
@@ -176,14 +183,15 @@
 }
 
 .uk-card-default .uk-card-footer {
-    border-top: 1px solid  rgba(180, 180, 180, 0.25);
+    border-top: 1px solid rgba(180, 180, 180, 0.25);
 }
 
 .uk-card-primary .uk-card-footer {
-    border-top: 1px solid  rgba(0, 0, 0, 0.075);
+    border-top: 1px solid rgba(0, 0, 0, 0.075);
 }
 
 .hook-inverse() {
+
     // Override background colour in dark mode
     .uk-card-default {
         background-color: #2a2a2a !important;
@@ -228,16 +236,22 @@
 /*
  * Links
  */
-.uk-link, .uk-button-link {
+.uk-link,
+.uk-button-link {
     color: @global-muted-color;
 }
 
-.uk-link:hover, .uk-button-link:hover, a:hover {
+.uk-link:hover,
+.uk-button-link:hover,
+a:hover {
     color: @global-primary-background;
 }
 
 .hook-inverse() {
-    .uk-link:hover, .uk-button-link:hover, a:hover {
+
+    .uk-link:hover,
+    .uk-button-link:hover,
+    a:hover {
         color: @inverse-primary-muted-color;
     }
 }
@@ -256,7 +270,7 @@
 }
 
 .hook-inverse() {
-    .uk-button-primary{
+    .uk-button-primary {
         background-color: rgba(180, 180, 180, 0.15);
         color: @inverse-primary-muted-color;
         border-color: @inverse-primary-muted-color;
@@ -268,7 +282,8 @@
     }
 }
 
-.uk-icon-button, .uk-icon-button:hover {
+.uk-icon-button,
+.uk-icon-button:hover {
     text-decoration: none
 }
 
@@ -296,7 +311,7 @@
     background-color: #333;
 }
 
-.uk-open > .uk-accordion-title::before {
+.uk-open>.uk-accordion-title::before {
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3C/svg%3E");
     mask-position: 100% 50%;
     background-image: none;
