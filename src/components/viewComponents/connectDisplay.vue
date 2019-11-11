@@ -145,9 +145,6 @@ export default {
     if (mdns) {
       // TODO: Have this run periodically on a timer
 
-      // Store the current context for callbacks
-      var context = this;
-
       // Create a browser to search for 'openflexure' type services
       var browser = mdns.createBrowser(mdns.tcp('openflexure'));
 
@@ -156,18 +153,31 @@ export default {
           browser.discover(); 
       });
 
-      browser.on('update', function (data) {
-          var hostData = {
-            hostname: data.addresses[0],
-            name: `${data.host} on ${data.networkInterface}`,
-            port: data.port
+      browser.on('update', (data) => {
+        console.log(data)
+
+        // We will be checking if it's a valid openflexure device
+        var validDevice = false
+
+        // Go through each type of the host, make valid if 'openflexure' appears
+        data.type.forEach((element) => {
+          console.log(element)
+          if (element.name === "openflexure") {
+            validDevice = true
           }
+        })
 
-          if (typeof data.port !== "undefined") {
-            context.$set(context.foundHosts, hostData.hostname, hostData)
-          } 
+        var hostData = {
+          hostname: data.addresses[0],
+          name: `${data.host} on ${data.networkInterface}`,
+          port: data.port
+        }
 
-          console.log(context.foundHosts)
+        if ((typeof data.port !== "undefined") && (validDevice === true)) {
+          this.$set(this.foundHosts, hostData.hostname, hostData)
+        } 
+
+        console.log(this.foundHosts)
       });
     }
 
