@@ -14,7 +14,7 @@ from openflexure_microscope.camera.mock import MockStreamer
 from openflexure_microscope.plugins import PluginMount
 from openflexure_microscope.task import TaskOrchestrator
 from openflexure_microscope.common.lock import CompositeLock
-from openflexure_microscope.config import OpenflexureSettingsFile, settings_to_json
+from openflexure_microscope.config import OpenflexureSettingsFile
 
 
 class Microscope:
@@ -225,8 +225,8 @@ class Microscope:
 
         settings_full = self.settings_file.merge(settings_current)
 
-        if json_safe:
-            settings_full = settings_to_json(settings_full)
+        #if json_safe:
+        #    settings_full = settings_to_json(settings_full)
 
         return settings_full
 
@@ -241,6 +241,10 @@ class Microscope:
             "openflexure_microscope"
         ).version
         # Save config to file
+        if self.camera:
+            self.camera.save_config()
+        if self.stage:
+            self.stage.save_config()
         self.settings_file.save(current_config, backup=True)
 
     @property

@@ -143,6 +143,10 @@ class BaseCamera(metaclass=ABCMeta):
         """Return the current settings as a dictionary"""
         return {"paths": self.paths}
 
+    def save_config(self):
+        """(Optional) Save any settings to disk that need to be stored"""
+        return
+
     def __enter__(self):
         """Create camera on context enter."""
         return self

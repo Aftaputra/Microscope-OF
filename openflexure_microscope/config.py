@@ -1,4 +1,4 @@
-import yaml
+import json
 import os
 import errno
 import logging
@@ -13,103 +13,57 @@ from .utilities import recursively_apply
 Attributes:
     USER_CONFIG_DIR (str): Default path of the user-config directory, containing runtime-config and
         calibration files. Obtained from ``os.path.join(os.path.expanduser("~"), ".openflexure")``.
-    USER_CONFIG_FILE (str): Default path of the user microscope_settings.yaml runtime-config file. 
-        Obtained from ``os.path.join(USER_CONFIG_DIR, "microscope_settings.yaml")``
+    USER_CONFIG_FILE (str): Default path of the user microscope_settings.json runtime-config file. 
+        Obtained from ``os.path.join(USER_CONFIG_DIR, "microscope_settings.json")``
 """
 
 # HANDLE THE DEFAULT CONFIGURATION FILE
 
 HERE = os.path.abspath(os.path.dirname(__file__))
-DEFAULT_CONFIG_PATH = os.path.join(HERE, "microscope_settings.default.yaml")
+DEFAULT_CONFIG_PATH = os.path.join(HERE, "microscope_settings.default.json")
 
 USER_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".openflexure")
-USER_CONFIG_FILE = os.path.join(USER_CONFIG_DIR, "microscope_settings.yaml")
+USER_CONFIG_FILE = os.path.join(USER_CONFIG_DIR, "microscope_settings.json")
 
-USER_CONFIG_FILE_OLD = os.path.join(USER_CONFIG_DIR, "microscoperc.yaml")
+USER_CONFIG_FILE_OLD = os.path.join(USER_CONFIG_DIR, "microscoperc.json")
 
 # Load the default config
 with open(DEFAULT_CONFIG_PATH, "r") as default_rc:
     DEFAULT_CONFIG = default_rc.read()
 
-# HANDLE CUSTOM YAML PARSING
-def construct_yaml_bool(self, node):
+
+# HANDLE BASIC LOADING AND SAVING OF SETTINGS FILES
+
+
+def load_json_file(config_path) -> dict:
     """
-    Override PyYAML constructors handling of bools.
-    YAML otherwise caused grief for picamera properties where 'off' is a valid string value.
-    """
-    override_bool_values = {
-        "yes": True,
-        "no": False,
-        "true": True,
-        "false": False,
-        "on": "on",
-        "off": "off",
-    }
-    value = self.construct_scalar(node)
-    return override_bool_values[value.lower()]
-
-
-yaml.Loader.add_constructor(u"tag:yaml.org,2002:bool", construct_yaml_bool)
-
-
-# HANDLE CONVERTING ARBITRARY CONFIG TO JSON-SAFE JSON
-
-
-def convert_type_to_json_safe(v):
-    """Make an individual attribute JSON-safe"""
-    if isinstance(v, Fraction):
-        return float(v)
-    elif isinstance(v, np.integer):
-        return int(v)
-    elif isinstance(v, np.ndarray):
-        return v.tolist()
-    else:
-        return v
-
-
-def settings_to_json(data: dict):
-    """
-    Make a copy of an input dictionary that's safe for JSON return
+    Open a .json config file
 
     Args:
-        data: Input dictionary
-    """
-
-    # Do not overwrite original data dictionary
-    d = copy.deepcopy(data)
-
-    return recursively_apply(d, convert_type_to_json_safe)
-
-
-# HANDLE BASIC LOADING AND SAVING OF YAML FILES
-
-
-def load_yaml_file(config_path) -> dict:
-    """
-    Open a .yaml config file
-
-    Args:
-        config_path (str): Path to the config YAML file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
+        config_path (str): Path to the config JSON file. If `None`, defaults to `DEFAULT_CONFIG_PATH`
     """
     config_path = os.path.expanduser(config_path)
 
     logging.info("Loading {}...".format(config_path))
 
     with open(config_path) as config_file:
-        config_data = yaml.load(config_file)
+        try:
+            config_data = json.load(config_file)
+        except json.decoder.JSONDecodeError as e:
+            logging.error(e)
+            config_data = {}
 
     # Return loaded config dictionary
     return config_data
 
 
-def save_yaml_file(config_path: str, config_dict: dict, safe: bool = False):
+def save_json_file(config_path: str, config_dict: dict):
     """
-    Save a .yaml config file
+    Save a .json config file
 
     Args:
         config_dict (dict): Dictionary of config data to save.
-        config_path (str): Path to the config YAML file.
-        safe (bool): Whether to use PyYAML safe_dump instead of dump
+        config_path (str): Path to the config JSON file.
     """
     config_path = os.path.expanduser(config_path)
 
@@ -117,10 +71,7 @@ def save_yaml_file(config_path: str, config_dict: dict, safe: bool = False):
     logging.debug(config_dict)
 
     with open(config_path, "w") as outfile:
-        if not safe:
-            yaml.dump(config_dict, outfile)
-        else:
-            yaml.safe_dump(config_dict, outfile)
+        json.dump(config_dict, outfile, cls=JSONEncoder, indent=2, sort_keys=True)
 
 
 def create_file(config_path):
@@ -132,7 +83,7 @@ def create_file(config_path):
                 raise
 
 
-def initialise_file(config_path, populate: str = ""):
+def initialise_file(config_path, populate: str = "{}\n"):
     """
     Check if a file exists, and if not, create it
     and optionally populate it with content
@@ -155,13 +106,35 @@ def initialise_file(config_path, populate: str = ""):
             outfile.write(populate)
 
 
+def settings_file_path(filename:str):
+    """Generate a full file path for a filename to be stored in user settings"""
+    global USER_CONFIG_DIR
+    return os.path.join(USER_CONFIG_DIR, filename)
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, o, markers=None):
+        # PiCamera fractions
+        if isinstance(o, Fraction):
+            return float(o)
+        # Numpy integers
+        elif isinstance(o, np.integer):
+            return int(o)
+        # Numpy arrays
+        elif isinstance(o, np.ndarray):
+            return o.tolist()
+        else:
+            # call base class implementation which takes care of
+            # raising exceptions for unsupported types
+            return json.JSONEncoder.default(self, o)
+
 # MAIN CONFIG CLASS
+
 class OpenflexureSettingsFile:
     """
     An object to handle expansion, conversion, and saving of the microscope configuration.
 
     Args:
-        config_path (str): Path to the config YAML file (None falls back to default location)
+        config_path (str): Path to the config JSON file (None falls back to default location)
         expand (bool): Expand paths to valid auxillary config files.
     """
 
@@ -185,7 +158,7 @@ class OpenflexureSettingsFile:
         Loads config from a file on-disk, and expands auxillary config files if available.
         """
         # Unexpanded config dictionary (used at load/save time)
-        loaded_config = load_yaml_file(self.config_path)
+        loaded_config = load_json_file(self.config_path)
 
         # If the loaded config is in contracted format
         if self.expand:
@@ -211,7 +184,7 @@ class OpenflexureSettingsFile:
                 shutil.copyfile(self.config_path, self.config_path + ".bk")
 
         logging.debug("Saving settings dictionary to disk")
-        save_yaml_file(self.config_path, save_config)
+        save_json_file(self.config_path, save_config)
 
     def merge(self, config: dict, backup: bool = True):
         logging.debug("Merging settings with file on disk")
@@ -243,7 +216,7 @@ class OpenflexureSettingsFile:
                 # Create the expansion file if it doesn't yet exist
                 initialise_file(value)
                 # Load the expansion file into _config
-                return_config[key] = load_yaml_file(value) or {}
+                return_config[key] = load_json_file(value) or {}
             else:
                 return_config[key] = value
 
@@ -270,7 +243,7 @@ class OpenflexureSettingsFile:
                 # Create the file if it doesn't exist
                 initialise_file(self.expandable_keys[key])
                 # Save the expanded config dictionary to the file
-                save_yaml_file(self.expandable_keys[key], value)
+                save_json_file(self.expandable_keys[key], value)
                 # Replace the expanded dictionary with a file path
                 return_config[key] = self.expandable_keys[key]
             else:

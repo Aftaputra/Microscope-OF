@@ -19,7 +19,7 @@ from openflexure_microscope.api.utilities import list_routes
 from openflexure_microscope import Microscope
 
 from openflexure_microscope.camera.capture import build_captures_from_exif
-from openflexure_microscope.config import USER_CONFIG_DIR
+from openflexure_microscope.config import settings_file_path, JSONEncoder
 from openflexure_microscope.api.v1 import blueprints
 
 # Import device modules
@@ -38,7 +38,7 @@ from openflexure_microscope.stage.mock import MockStage
 # Handle logging
 is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
 
-DEFAULT_LOGFILE = os.path.join(USER_CONFIG_DIR, "openflexure_microscope.log")
+DEFAULT_LOGFILE = settings_file_path("openflexure_microscope.log")
 
 if (__name__ == "__main__") or (not is_gunicorn):
     # If imported, but not by gunicorn
@@ -109,6 +109,10 @@ def uri(suffix, api_version, base=None):
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
+# Use custom JSON encoder
+app.json_encoder = JSONEncoder
+
+# Enable CORS everywhere
 CORS(app, resources=r"*")
 
 # Make errors more API friendly

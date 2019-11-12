@@ -23,6 +23,10 @@ class BaseStage(metaclass=ABCMeta):
         """Return the current settings as a dictionary"""
         pass
 
+    def save_config(self):
+        """(Optional) Save any settings to disk that need to be stored"""
+        return
+
     @property
     @abstractmethod
     def state(self):

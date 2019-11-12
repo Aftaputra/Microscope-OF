@@ -9,21 +9,6 @@ def construct_blueprint(microscope_obj):
 
     blueprint = Blueprint("camera_blueprint", __name__)
 
-    # Metadata routes
-    blueprint.add_url_rule(
-        "/capture/<capture_id>/metadata/<filename>",
-        view_func=capture.MetadataAPI.as_view(
-            "metadata_download", microscope=microscope_obj
-        ),
-    )
-
-    blueprint.add_url_rule(
-        "/capture/<capture_id>/metadata",
-        view_func=capture.MetadataRedirectAPI.as_view(
-            "metadata_download_redirect", microscope=microscope_obj
-        ),
-    )
-
     # Tag routes
     blueprint.add_url_rule(
         "/capture/<capture_id>/tags",

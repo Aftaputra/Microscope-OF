@@ -236,7 +236,7 @@ class CaptureAPI(MicroscopeView):
 
     def put(self, capture_id):
         """
-        Add arbitrary metadata to the capture (stored in an accompanying capture `.yaml` file)
+        Add arbitrary metadata to the capture
 
         .. :quickref: Capture; Update capture metadata
 
@@ -351,76 +351,6 @@ class DownloadAPI(MicroscopeView):
         return send_file(img, mimetype="image/jpeg")
 
 
-class MetadataRedirectAPI(MicroscopeView):
-    def get(self, capture_id):
-        """
-        Return metadatadata for a capture.
-
-        Return capture metadata as a YAML file with the requested filename. 
-        I.e., `/(capture_id)/download/bar.yaml` will download the file as 
-        `bar.yaml`, regardless of the capture's initially set filename.
-
-        Route automatically redirects to download the capture metadata under it's currently set filename. 
-        I.e., `/(capture_id)/download` will 
-        redirect to `/(capture_id)/download/(filename)`.
-
-        .. :quickref: Capture; Download capture metadata
-
-        **Example request**:
-
-        .. sourcecode:: http
-
-          GET /camera/capture/d0b2067abbb946f19351e075c5e7cd5b/metadata/2018-11-20_16-04-17.yaml HTTP/1.1
-          Accept: text/yaml
-
-        :>header Accept: text/yaml
-        :query as_attachment: return the image as an attachment download e.g. ?as_attachment=true
-
-        :>header Content-Type: text/yaml
-        :status 200: capture data found
-        :status 404: no capture found with that id
-
-        """
-        capture_obj = self.microscope.camera.image_from_id(capture_id)
-
-        if not capture_obj or not capture_obj.state["available"]:
-            return abort(404)  # 404 Not Found
-
-        return redirect(
-            url_for(
-                ".metadata_download",
-                capture_id=capture_id,
-                filename=capture_obj.metadataname,
-            ),
-            code=307,
-        )
-
-
-class MetadataAPI(MicroscopeView):
-    def get(self, capture_id, filename):
-
-        capture_obj = self.microscope.camera.image_from_id(capture_id)
-
-        if not capture_obj or not capture_obj.state["available"]:
-            return abort(404)  # 404 Not Found
-
-        # If no filename is specified, redirect to the capture's currently set filename
-        if not filename:
-            return redirect(
-                url_for(
-                    "capture_download",
-                    capture_id=capture_id,
-                    filename=capture_obj.metadataname,
-                ),
-                code=307,
-            )
-
-        # Download the metadata using the requested filename
-        data = capture_obj.yaml
-
-        return Response(data, mimetype="text/yaml")
-
-
 class TagsAPI(MicroscopeView):
     def get(self, capture_id):
         """
@@ -433,11 +363,11 @@ class TagsAPI(MicroscopeView):
         .. sourcecode:: http
 
           GET /camera/capture/d0b2067abbb946f19351e075c5e7cd5b/tags HTTP/1.1
-          Accept: text/yaml
+          Accept: text/json
 
-        :>header Accept: text/yaml
+        :>header Accept: text/json
 
-        :>header Content-Type: text/yaml
+        :>header Content-Type: text/json
         :status 200: capture data found
         :status 404: no capture found with that id
         """

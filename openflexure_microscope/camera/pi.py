@@ -26,6 +26,7 @@ from __future__ import division
 import io
 import time
 import numpy as np
+import os
 import logging
 
 # Pi camera
@@ -40,6 +41,7 @@ from .base import BaseCamera, CaptureObject
 # Richard's fix gain
 from .set_picamera_gain import set_analog_gain, set_digital_gain
 
+from openflexure_microscope.config import settings_file_path
 
 # MAIN CLASS
 class PiCameraStreamer(BaseCamera):
@@ -54,10 +56,20 @@ class PiCameraStreamer(BaseCamera):
         "awb_mode",
         "framerate",
         "saturation",
-        "lens_shading_table",
+        "iso",
+        "brightness",
+        "contrast",
+        "crop",
+        "drc_strength",
+        "exposure_compensation",
+        "image_effect",
+        "meter_mode",
+        "sharpness"
     ]
 
     def __init__(self):
+        global USER_CONFIG_DIR
+
         # Run BaseCamera init
         BaseCamera.__init__(self)
         # Attach to Pi camera
@@ -78,11 +90,13 @@ class PiCameraStreamer(BaseCamera):
         # Reset variable states
         self.set_zoom(1.0)
 
-        # Update config properties
-        self.image_resolution = tuple(self.camera.MAX_RESOLUTION)
-        self.stream_resolution = (832, 624)
-        self.numpy_resolution = (1312, 976)
-        self.jpeg_quality = 75
+        # Set default settings
+        self.image_resolution = tuple(self.camera.MAX_RESOLUTION)  #: tuple: Resolution for image captures
+        self.stream_resolution = (832, 624)  #: tuple: Resolution for stream and video captures
+        self.numpy_resolution = (1312, 976)  #: tuple: Resolution for numpy array captures
+        self.jpeg_quality = 75  #: int: JPEG quality
+        # Set default lens shading table path
+        self.picamera_lst_path = settings_file_path("picamera_lst.npy")  #: str: Path of .npy lens shading table file
 
         # Update board identifier
         self.state.update({})
@@ -121,12 +135,12 @@ class PiCameraStreamer(BaseCamera):
                 "image_resolution": self.image_resolution,
                 "numpy_resolution": self.numpy_resolution,
                 "jpeg_quality": self.jpeg_quality,
+                "picamera_lst_path": self.picamera_lst_path if os.path.isfile(self.picamera_lst_path) else None,
                 "picamera_settings": {},
             }
         )
 
-        # Include a subset of picamera properties
-        # TODO: Expand this subset so we have more metadata?
+        # Include a subset of picamera properties. Excludes lens shading table
         for key in PiCameraStreamer.picamera_settings_keys:
             try:
                 value = getattr(self.camera, key)
@@ -136,6 +150,11 @@ class PiCameraStreamer(BaseCamera):
                 logging.debug("Unable to read PiCamera attribute {}".format(key))
 
         return conf_dict
+
+    def save_config(self):
+        """Save lens-shading table to disk"""
+        logging.info("Saving picamera_lst to {}".format(self.picamera_lst_path))
+        self.save_lens_shading_table()
 
     def apply_config(self, config: dict):
         """
@@ -173,6 +192,17 @@ class PiCameraStreamer(BaseCamera):
                 for key, value in config.items():  # For each provided setting
                     if (key != "picamera_settings") and hasattr(self, key):
                         setattr(self, key, value)
+
+                # Handle lens shading if camera supports it
+                if ("picamera_lst_path" in config) and hasattr(
+                    self.camera, "lens_shading_table"
+                ):
+                    logging.debug(
+                        "Applying lens_shading_table from file: {}".format(
+                            config["picamera_lst_path"]
+                        )
+                    )
+                    self.apply_lens_shading_table(config["picamera_lst_path"])
 
                 # If stream was paused to update config, unpause
                 if paused_stream:
@@ -232,20 +262,39 @@ class PiCameraStreamer(BaseCamera):
                 logging.debug("Applying {}: {}".format(key, settings_dict[key]))
                 setattr(self.camera, key, settings_dict[key])
 
-        # Handle lens shading if camera supports it
-        if ("lens_shading_table" in settings_dict) and hasattr(
-            self.camera, "lens_shading_table"
-        ):
-            logging.debug(
-                "Applying lens_shading_table: {}".format(
-                    settings_dict["lens_shading_table"]
-                )
-            )
-            self.camera.lens_shading_table = settings_dict["lens_shading_table"]
-
         # Final optional pause to settle
         if pause_for_effect:
             time.sleep(0.2)
+
+    def read_lens_shading_table(self):
+        """
+        Read the current lens shading table as a numpy array, if it exists. Return None otherwise.
+        """
+        if hasattr(self.camera, 'lens_shading_table'):
+            return self.camera.lens_shading_table
+        else:
+            return None
+
+    def save_lens_shading_table(self):
+        """
+        Save the current lens shading table to an .npy file, if it exists. 
+        """
+        logging.debug(self.read_lens_shading_table())
+        if self.read_lens_shading_table() is not None:
+            np.save(self.picamera_lst_path, self.read_lens_shading_table())
+        else:
+            logging.warning("Unable to save a nonexistant lens shading table")
+
+    def apply_lens_shading_table(self, lst_array_or_path):
+        """
+        Apply a lens shading table from an .npy file, or numpy array. 
+        """
+        if isinstance(lst_array_or_path, np.ndarray):
+            self.camera.lens_shading_table = lst_array_or_path
+        elif (type(lst_array_or_path) == str) and os.path.isfile(lst_array_or_path):
+            self.camera.lens_shading_table = np.load(lst_array_or_path)
+        else:
+            logging.error("Unsupported or missing data for camera lens_shading_table. Must be numpy ndarray, or .npy file path string. Skipping.")
 
     def set_zoom(self, zoom_value: float = 1.0) -> None:
         """

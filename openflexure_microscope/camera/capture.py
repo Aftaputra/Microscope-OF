@@ -5,13 +5,14 @@ import shutil
 import glob
 import datetime
 import yaml
+import json
 import logging
 from PIL import Image
 import atexit
 
 from openflexure_microscope.camera import piexif
 from openflexure_microscope.camera.piexif._exceptions import InvalidImageDataError
-
+from openflexure_microscope.config import JSONEncoder
 
 PIL_FORMATS = ["JPG", "JPEG", "PNG", "TIF", "TIFF"]
 EXIF_FORMATS = ["JPG", "JPEG", "TIF", "TIFF"]
@@ -30,7 +31,12 @@ def pull_usercomment_dict(filepath):
         logging.warning("Invalid data at {}. Skipping.".format(filepath))
         return None
     if "Exif" in exif_dict and 37510 in exif_dict["Exif"]:
-        return yaml.load(exif_dict["Exif"][37510].decode())
+        try:
+            return json.loads(exif_dict["Exif"][37510].decode())
+        except json.decoder.JSONDecodeError:
+            # TODO: Remove YAML support in a later version
+            logging.warning(f"Capture {filepath} has metadata stored in YAML format. This is now deprecated in favour of JSON.")
+            return yaml.load(exif_dict["Exif"][37510].decode())
     else:
         return None
 
@@ -210,7 +216,7 @@ class CaptureObject(object):
             # Extract current Exif data
             exif_dict = piexif.load(self.file)
             # Serialize metadata
-            metadata_string = yaml.safe_dump(self.metadata)
+            metadata_string = json.dumps(self.metadata, cls=JSONEncoder)
             # Insert metadata into exif_dict
             exif_dict["Exif"][piexif.ExifIFD.UserComment] = metadata_string.encode()
             # Convert new exif dict to exif bytes
