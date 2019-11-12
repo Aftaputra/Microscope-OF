@@ -81,6 +81,7 @@ def capture_from_exif(path, exif_dict):
     previous session.
 
     Args:
+        path (str): Path to image file
         exif_dict (dict): Dictionary containing capture information
     """
 
