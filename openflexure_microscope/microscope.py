@@ -14,7 +14,7 @@ from openflexure_microscope.camera.mock import MockStreamer
 from openflexure_microscope.plugins import PluginMount
 from openflexure_microscope.task import TaskOrchestrator
 from openflexure_microscope.common.lock import CompositeLock
-from openflexure_microscope.config import OpenflexureSettingsFile
+from openflexure_microscope.config import user_settings
 
 
 class Microscope:
@@ -24,8 +24,6 @@ class Microscope:
     The camera and stage should already be initialised, and passed as arguments.
 
     Attributes:
-        settings_file (:py:class:`openflexure_microscope.config.OpenflexureSettingsFile`): Runtime-config object,
-            automatically created if None.
         lock (:py:class:`openflexure_microscope.common.lock.CompositeLock`): Composite lock controlling thread access
             to multiple pieces of hardware.
         camera (:py:class:`openflexure_microscope.camera.base.BaseCamera`): Camera object
@@ -50,10 +48,8 @@ class Microscope:
         # Create a task orchestrator
         self.task = TaskOrchestrator()
 
-        # Attach to a settings file
-        self.settings_file = OpenflexureSettingsFile(expand=True)
         # Apply settings loaded from file
-        self.apply_config(self.settings_file.load())
+        self.apply_config(user_settings.load())
 
         # Create plugin mount-point and attach plugins from maps
         self.plugin = PluginMount(self)
@@ -223,14 +219,11 @@ class Microscope:
             settings_current_stage = self.stage.read_config()
             settings_current["stage_settings"] = settings_current_stage
 
-        settings_full = self.settings_file.merge(settings_current)
-
-        #if json_safe:
-        #    settings_full = settings_to_json(settings_full)
+        settings_full = user_settings.merge(settings_current)
 
         return settings_full
 
-    def save_config(self, backup: bool = True):
+    def save_config(self):
         """
         Merges the current settings back to disk
         """
@@ -245,11 +238,11 @@ class Microscope:
             self.camera.save_config()
         if self.stage:
             self.stage.save_config()
-        self.settings_file.save(current_config, backup=True)
+        user_settings.save(current_config, backup=True)
 
     @property
     def config(self) -> dict:
-        logging.warn(
+        logging.warning(
             "Reading microscope through config property is deprecated.\
             Please use read_config method instead."
         )
@@ -257,7 +250,7 @@ class Microscope:
 
     @config.setter
     def config(self, config: dict) -> None:
-        logging.warn(
+        logging.warning(
             "Setting microscope through config property is deprecated.\
             Please use apply_config method instead."
         )

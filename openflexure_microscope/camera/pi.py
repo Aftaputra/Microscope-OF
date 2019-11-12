@@ -68,8 +68,6 @@ class PiCameraStreamer(BaseCamera):
     ]
 
     def __init__(self):
-        global USER_CONFIG_DIR
-
         # Run BaseCamera init
         BaseCamera.__init__(self)
         # Attach to Pi camera
