@@ -132,7 +132,8 @@ class ListAPI(MicroscopeView):
 
             metadata.update(
                 {
-                    "position": self.microscope.state["stage"]["position"],
+                    "microscope_settings": self.microscope.read_config(),
+                    "microscope_state": self.microscope.state,
                     "microscope_id": self.microscope.id,
                     "microscope_name": self.microscope.name,
                 }
