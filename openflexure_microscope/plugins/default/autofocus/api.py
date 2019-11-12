@@ -7,6 +7,7 @@ from openflexure_microscope.devel import (
     request,
     jsonify,
     taskify,
+    abort,
 )
 
 
@@ -23,12 +24,15 @@ class AutofocusAPI(MicroscopeViewPlugin):
         # Figure out the range of z values to use
         dz = payload.param("dz", default=np.linspace(-300, 300, 7), convert=np.array)
 
-        logging.info("Running autofocus...")
-        task = taskify(self.plugin.autofocus)(dz)
+        if self.microscope.has_real_stage():
+            logging.info("Running autofocus...")
+            task = taskify(self.plugin.autofocus)(dz)
 
-        # return a handle on the autofocus task
-        return jsonify(task.state), 202
+            # return a handle on the autofocus task
+            return jsonify(task.state), 202
 
+        else:
+            abort(503, 'No stage connected. Unable to autofocus.')
 
 class FastAutofocusAPI(MicroscopeViewPlugin):
     def post(self):
@@ -40,8 +44,12 @@ class FastAutofocusAPI(MicroscopeViewPlugin):
         if backlash < 0:
             backlash = 0
 
-        logging.info("Running autofocus...")
-        task = taskify(self.plugin.fast_autofocus)(dz, backlash=backlash)
+        if self.microscope.has_real_stage():
+            logging.info("Running autofocus...")
+            task = taskify(self.plugin.fast_autofocus)(dz, backlash=backlash)
 
-        # return a handle on the autofocus task
-        return jsonify(task.state), 202
+            # return a handle on the autofocus task
+            return jsonify(task.state), 202
+
+        else:
+            abort(503, 'No stage connected. Unable to autofocus.')
