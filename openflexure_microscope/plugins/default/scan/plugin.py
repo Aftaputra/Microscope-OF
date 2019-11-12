@@ -99,9 +99,10 @@ class ScanPlugin(MicroscopePlugin):
 
         metadata.update(
             {
-                "position": self.microscope.state["stage"]["position"],
                 "scan_id": scan_id,
                 "basename": basename,
+                "microscope_settings": self.microscope.read_config(),
+                "microscope_state": self.microscope.state,
                 "microscope_id": self.microscope.id,
                 "microscope_name": self.microscope.name,
             }
@@ -144,6 +145,15 @@ class ScanPlugin(MicroscopePlugin):
         # Add scan metadata
         if "time" not in metadata:
             metadata["time"] = generate_basename()
+
+        metadata.update({
+            "scan_parameters": {
+                "step_size": step_size,
+                "grid": grid,
+                "style": style,
+                "autofocus_dz": autofocus_dz
+            }
+        })
 
         # Check if autofocus is enabled
         if (
