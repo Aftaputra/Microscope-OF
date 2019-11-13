@@ -1,4 +1,4 @@
-from openflexure_microscope.api.v1.views import MethodView
+from openflexure_microscope.api.views import MethodView
 from flask import jsonify, abort, Blueprint
 
 from openflexure_microscope.common import tasks

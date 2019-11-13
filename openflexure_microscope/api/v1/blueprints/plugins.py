@@ -1,7 +1,7 @@
-from openflexure_microscope.api.v1.views import MicroscopeViewPlugin
+from openflexure_microscope.api.views import MicroscopeViewPlugin
 
 from flask import Blueprint, jsonify
-from openflexure_microscope.api.v1.views import MicroscopeView
+from openflexure_microscope.api.views import MicroscopeView
 
 import logging
 import warnings

@@ -96,6 +96,7 @@ api_microscope.camera.images = build_captures_from_exif(
 
 logging.debug("Microscope successfully attached!")
 
+
 # Generate API URI based on version from filename
 def uri(suffix, api_version, base=None):
     if not base:

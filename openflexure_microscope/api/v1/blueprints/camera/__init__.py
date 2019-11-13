@@ -1,5 +1,3 @@
-from openflexure_microscope.api.v1.views import MicroscopeView
-
 from flask import Blueprint
 
 from . import capture, record, preview, function

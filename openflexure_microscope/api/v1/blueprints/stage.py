@@ -1,5 +1,5 @@
 from openflexure_microscope.api.utilities import JsonResponse
-from openflexure_microscope.api.v1.views import MicroscopeView
+from openflexure_microscope.api.views import MicroscopeView
 from openflexure_microscope.utilities import axes_to_array, filter_dict
 
 from flask import Blueprint, jsonify, request

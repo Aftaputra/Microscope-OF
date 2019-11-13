@@ -1,8 +1,8 @@
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
-from openflexure_microscope.api.v1.views import MicroscopeView
+from openflexure_microscope.api.views import MicroscopeView
 from openflexure_microscope.utilities import filter_dict
 
-from flask import Response, jsonify, request, abort, url_for, redirect, send_file
+from flask import jsonify, request, abort, url_for, redirect, send_file
 
 
 class ListAPI(MicroscopeView):
