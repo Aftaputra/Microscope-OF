@@ -1,6 +1,6 @@
 from flask import Blueprint
 
-from . import capture, record, preview, function
+from . import capture, preview, function
 
 
 def construct_blueprint(microscope_obj):
