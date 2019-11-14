@@ -82,9 +82,7 @@
           />
           <captureCard
             v-else
-            :metadata="item.metadata"
-            :temporary="item.temporary"
-            :path="item.path"
+            :captureState="item"
           />
         </div>
       </div>

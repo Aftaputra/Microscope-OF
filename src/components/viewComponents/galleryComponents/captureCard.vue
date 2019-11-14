@@ -4,11 +4,11 @@
     :class="{ 'uk-card-secondary': $store.state.globalSettings.darkMode }"
   >
     <div class="uk-card-media-top">
-      <a class="lightbox-link" :href="imgURL" :data-caption="metadata.filename">
+      <a class="lightbox-link" :href="imgURL" :data-caption="captureState.filename">
         <img
           class="uk-width-1-1"
           :data-src="thumbURL"
-          :alt="metadata.id"
+          :alt="captureState.metadata.id"
           width="300"
           height="225"
           uk-img
@@ -22,7 +22,7 @@
         uk-grid
       >
         <div class="uk-margin-remove-top uk-padding-remove uk-width-expand">
-          {{ metadata.filename }}
+          {{ captureState.filename }}
         </div>
         <div class="uk-margin-remove-top uk-padding-remove uk-width-auto">
           <a href="#" class="uk-icon" @click="delCaptureConfirm()">
@@ -44,7 +44,7 @@
     </div>
 
     <div class="uk-card-footer uk-padding-small">
-      <div v-for="tag in tags" :key="tag">
+      <div v-for="tag in captureState.metadata.tags" :key="tag">
         <span
           v-if="tag === 'temporary'"
           class="uk-label uk-label-danger uk-margin-small-right"
@@ -74,13 +74,13 @@
         }"
       >
         <button class="uk-modal-close-default" type="button" uk-close></button>
-        <h2 class="uk-modal-title">{{ metadata.filename }}</h2>
-        <p><b>Path: </b>{{ path }}</p>
+        <h2 class="uk-modal-title">{{ captureState.filename }}</h2>
+        <p><b>Path: </b>{{ captureState.path }}</p>
         <p><b>Time: </b>{{ betterTimestring }}</p>
-        <p><b>ID: </b>{{ metadata.id }}</p>
-        <p><b>Format: </b>{{ metadata.format }}</p>
+        <p><b>ID: </b>{{ captureState.metadata.id }}</p>
+        <p><b>Format: </b>{{ captureState.metadata.format }}</p>
 
-        <div v-for="(value, key) in metadata.custom" :key="key">
+        <div v-for="(value, key) in captureState.metadata.custom" :key="key">
           <p>
             <b>{{ key }}: </b>{{ value }}
           </p>
@@ -134,12 +134,8 @@ export default {
   name: "CaptureCard",
 
   props: {
-    metadata: {
+    captureState: {
       type: Object,
-      required: true
-    },
-    path: {
-      type: String,
       required: true
     }
   },
@@ -168,16 +164,16 @@ export default {
       return this.captureURL + "/download?thumbnail=true";
     },
     imgURL: function() {
-      return this.captureURL + "/download/" + this.metadata.filename;
+      return this.captureURL + "/download/" + this.captureState.filename;
     },
     tagURL: function() {
       return this.captureURL + "/tags";
     },
     captureURL: function() {
-      return this.$store.getters.uri + "/camera/capture/" + this.metadata.id;
+      return this.$store.getters.uri + "/camera/capture/" + this.captureState.metadata.id;
     },
     betterTimestring: function() {
-      var dtSplit = this.metadata.time.split("_");
+      var dtSplit = this.captureState.metadata.time.split("_");
       var date = dtSplit[0];
       var time = dtSplit[1].replace(/-/g, ":");
       return date + " " + time;
@@ -264,7 +260,7 @@ export default {
     },
 
     makeModalName: function(prefix) {
-      return prefix + this.metadata.id;
+      return prefix + this.captureState.metadata.id;
     }
   }
 };
