@@ -137,7 +137,7 @@ def class_from_map(plugin_map):
         return load_plugin_class(*plugin_arr)
 
 
-class PluginMount(object):
+class PluginLoader(object):
     """
     A mount-point for all loaded plugins. Attaches to a Microscope object.
 
@@ -147,30 +147,19 @@ class PluginMount(object):
 
     def __init__(self, parent):
         self.parent = parent
-        self.plugins = []  # List of plugin objects
+        self._plugins = []  # List of plugin objects
         self.forms = []  # List of plugin forms
         logging.info("Creating plugin mount")
 
     @property
     def state(self):
-        return [m[0] for m in self.members]
+        # DEPRECATED
+        logging.warning("PluginMount.state is deprecated. Use PluginMount.active instead. State will be removed in a future version.")
+        return [m["python_name"] for m in self._plugins]
 
     @property
-    def members(self):
-        ignores = ["state", "members", "attach"]
-        plugin_array = []
-        for obj_name in dir(self):
-            if not obj_name in ignores and not obj_name[:2] == "__":
-                obj = getattr(self, obj_name)
-                if isinstance(obj, MicroscopePlugin):
-                    plugin_members = [
-                        member
-                        for member in inspect.getmembers(obj)
-                        if not member[0][:2] == "__"
-                    ]
-                    plugin_info = (obj_name, plugin_members)
-                    plugin_array.append(plugin_info)
-        return plugin_array
+    def active(self):
+        return self._plugins
 
     def attach(self, plugin_map):
         """
@@ -204,7 +193,15 @@ class PluginMount(object):
                 ):  # If plugin_object is an instance of MicroscopePlugin
                     # Attach plugin_object to the plugin mount
                     setattr(self, pythonsafe_plugin_name, plugin_object)
-                    self.plugins.append((plugin_name, plugin_object))
+
+                    # Store the plugin object, and it's properties
+                    self._plugins.append({
+                        "name": plugin_name,
+                        "python_name": pythonsafe_plugin_name,
+                        "plugin": plugin_object,
+                        "routes": [],
+                        "form": None
+                    })
 
                     # Grant plugin access to the hardware
                     plugin_object.microscope = self.parent

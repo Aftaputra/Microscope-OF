@@ -97,18 +97,19 @@ class ScanPlugin(MicroscopePlugin):
         if "scan" not in tags:
             tags.append("scan")
 
-        metadata.update(
-            {
-                "scan_id": scan_id,
-                "basename": basename,
-                "microscope_settings": self.microscope.read_config(),
-                "microscope_state": self.microscope.state,
-                "microscope_id": self.microscope.id,
-                "microscope_name": self.microscope.name,
-            }
-        )
+        # Inject system metadata
+        system_metadata = {
+            "microscope_settings": self.microscope.read_settings(),
+            "microscope_state": self.microscope.state,
+            "microscope_id": self.microscope.id,
+            "microscope_name": self.microscope.name,
+        }
+        output.system_metadata.update(system_metadata)
 
+        # Insert custom metadata
         output.put_metadata(metadata)
+
+        # Insert custom tags
         output.put_tags(tags)
 
     def tile(

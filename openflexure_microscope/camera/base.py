@@ -100,7 +100,7 @@ class BaseCamera(metaclass=ABCMeta):
         last_access (time): Time of last client access to the camera
         stream_timeout (int): Number of inactive seconds before timing out the stream
         stream_timeout_enabled (bool): Enable or disable timing out the stream
-        state (dict): Dictionary for capture state
+        status (dict): Dictionary for capture state
         paths (dict): Dictionary of capture paths
         images (list): List of image capture objects
         videos (list): List of video capture objects
@@ -120,7 +120,7 @@ class BaseCamera(metaclass=ABCMeta):
         self.stream_timeout = 20
         self.stream_timeout_enabled = False
 
-        self.state = {"board": None}
+        self.status = {"board": None}
 
         # TODO: Load/save these to config
         self.paths = {"default": BASE_CAPTURE_PATH, "temp": TEMP_CAPTURE_PATH}
@@ -130,7 +130,7 @@ class BaseCamera(metaclass=ABCMeta):
         self.videos = []
 
     @abstractmethod
-    def apply_config(self, config: dict):
+    def apply_settings(self, config: dict):
         """Update settings from a config dictionary"""
         with self.lock:
             # Apply valid config params to camera object
@@ -139,11 +139,11 @@ class BaseCamera(metaclass=ABCMeta):
                     setattr(self, key, value)  # Set to the target value
 
     @abstractmethod
-    def read_config(self) -> dict:
+    def read_settings(self) -> dict:
         """Return the current settings as a dictionary"""
         return {"paths": self.paths}
 
-    def save_config(self):
+    def save_settings(self):
         """(Optional) Save any settings to disk that need to be stored"""
         return
 
@@ -187,7 +187,7 @@ class BaseCamera(metaclass=ABCMeta):
         self.last_access = time.time()
         self.stop = False
 
-        if not self.state["stream_active"]:
+        if not self.status["stream_active"]:
             # start background frame thread
             self.thread = threading.Thread(target=self._thread)
             self.thread.daemon = True
@@ -207,12 +207,12 @@ class BaseCamera(metaclass=ABCMeta):
         logging.debug("Stopping worker thread")
         timeout_time = time.time() + timeout
 
-        if self.state["stream_active"]:
+        if self.status["stream_active"]:
             self.stop = True
             self.thread.join()  # Wait for stream thread to exit
             logging.debug("Waiting for stream thread to exit.")
 
-        while self.state["stream_active"]:
+        while self.status["stream_active"]:
             if time.time() > timeout_time:
                 logging.debug("Timeout waiting for worker thread close.")
                 raise TimeoutError("Timeout waiting for worker thread close.")
@@ -352,7 +352,7 @@ class BaseCamera(metaclass=ABCMeta):
         self.frames_iterator = self.frames()
         logging.debug("Entering worker thread.")
 
-        self.state["stream_active"] = True
+        self.status["stream_active"] = True
 
         for frame in self.frames_iterator:
             self.frame = frame
@@ -365,7 +365,7 @@ class BaseCamera(metaclass=ABCMeta):
                 and (  # If using timeout
                     time.time() - self.last_access > self.stream_timeout
                 )
-                and not self.state[  # And timeout time
+                and not self.status[  # And timeout time
                     "preview_active"
                 ]  # And GPU preview is not active
             ):
@@ -383,4 +383,4 @@ class BaseCamera(metaclass=ABCMeta):
 
         logging.debug("BaseCamera worker thread exiting...")
         # Set stream_activate state
-        self.state["stream_active"] = False
+        self.status["stream_active"] = False

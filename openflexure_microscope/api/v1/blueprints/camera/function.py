@@ -16,7 +16,7 @@ class ZoomAPI(MicroscopeView):
         :<header Content-Type: application/json
         :status 200: preview started/stopped
         """
-        zoom_value = self.microscope.camera.state["zoom_value"]
+        zoom_value = self.microscope.camera.status["zoom_value"]
 
         return jsonify({"zoom_value": zoom_value})
 
@@ -47,7 +47,7 @@ class ZoomAPI(MicroscopeView):
 
         self.microscope.camera.set_zoom(zoom_value)
 
-        return jsonify(self.microscope.camera.state)
+        return jsonify(self.microscope.camera.status)
 
 
 class OverlayAPI(MicroscopeView):

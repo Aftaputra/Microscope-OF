@@ -1,3 +1,4 @@
+from openflexure_microscope.plugins import PluginLoader, MicroscopePlugin
 from openflexure_microscope.api.views import MicroscopeViewPlugin
 
 from flask import Blueprint, jsonify
@@ -6,6 +7,29 @@ from openflexure_microscope.api.views import MicroscopeView
 import copy
 import logging
 import warnings
+
+
+def plugins_representation(plugin_loader_object: PluginLoader):
+    """
+    Generate a dictionary representation of all plugins, including Flask route URLs
+
+    Args:
+        plugin_loader_object (:py:class:`openflexure_microscope.plugins.PluginLoader`): Microscope plugin loader
+
+    Returns:
+        dict: Dictionary representation of all plugins
+    """
+    plugins = []
+    for plugin in plugin_loader_object.active:
+        d = {
+            "name": plugin["name"],
+            "plugin": str(plugin["plugin"]),
+            "routes": plugin["routes"],
+            "form": plugin["form"]
+        }
+        plugins.append(d)
+
+    return plugins
 
 
 class PluginFormAPI(MicroscopeView):
@@ -22,18 +46,17 @@ class PluginFormAPI(MicroscopeView):
         A complete list of enabled plugins can be found in the microscope state.
 
         """
-        out = self.microscope.plugins.forms
-        return jsonify(out)
+        return jsonify(plugins_representation(self.microscope.plugins))
 
 
 def construct_blueprint(microscope_obj):
 
-    blueprint = Blueprint("plugin_blueprint", __name__)
+    blueprint = Blueprint("plugins_blueprint", __name__)
 
     # Create a base route to return plugin API forms, if any exist
     blueprint.add_url_rule(
         "/",
-        view_func=PluginFormAPI.as_view("plugin_api_form", microscope=microscope_obj),
+        view_func=PluginFormAPI.as_view("plugins", microscope=microscope_obj),
     )
 
     all_routes = []
@@ -87,6 +110,9 @@ def construct_blueprint(microscope_obj):
                         ),
                     )
 
+                    # Add route to the plugin representation dictionary
+                    plugin_representation["routes"].append(full_view_route)
+
                 else:
                     warnings.warn(
                         "An endpoint /{} has already been loaded. Skipping {}.".format(
@@ -98,6 +124,7 @@ def construct_blueprint(microscope_obj):
             if hasattr(plugin_obj, "api_form") and isinstance(
                 plugin_obj.api_form, dict
             ):
+                # TODO: We deep copy this to avoid clashing between API versions. Can be removed when v1 is removed.
                 api_form_info = copy.deepcopy(plugin_obj.api_form)
                 api_form_info["id"] = plugin_name
                 if "forms" in api_form_info and isinstance(
@@ -114,7 +141,7 @@ def construct_blueprint(microscope_obj):
                             )
 
                 # Store the complete form in Microscope().plugin.form
-                microscope_obj.plugins.forms.append(api_form_info)
+                plugin_representation["form"] = api_form_info
                 print(microscope_obj.plugins.forms)
 
         else:

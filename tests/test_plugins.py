@@ -14,18 +14,18 @@ logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 class TestPluginMethods(unittest.TestCase):
     def test_plugin_load(self):
-        plugin_arr = microscope.plugin.plugins
+        plugin_arr = microscope.plugins.plugins
 
         plugin_names = [plugin[0] for plugin in plugin_arr]
 
         self.assertTrue("testing" in plugin_names)
 
     def test_camera_access(self):
-        identify = microscope.plugin.testing.identify()
+        identify = microscope.plugins.testing.identify()
         self.assertTrue(identify[0] is microscope.camera)
 
     def test_stage_access(self):
-        identify = microscope.plugin.testing.identify()
+        identify = microscope.plugins.testing.identify()
         self.assertTrue(identify[1] is microscope.stage)
 
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
         microscope.attach(PiCameraStreamer(), OpenFlexureStage())
 
-        microscope.plugin.attach("openflexure_microscope.plugins.testing:Plugin")
+        microscope.plugins.attach("openflexure_microscope.plugins.testing:Plugin")
 
         suites = [unittest.TestLoader().loadTestsFromTestCase(TestPluginMethods)]
 

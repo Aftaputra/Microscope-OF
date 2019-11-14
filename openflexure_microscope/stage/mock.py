@@ -16,9 +16,9 @@ class MockStage(BaseStage):
         self.axis_names = ["x", "y", "z"]  # Assume all sangaboards are 3 axis
 
     @property
-    def state(self):
-        """The general state dictionary of the board."""
-        state = {
+    def status(self):
+        """The general status dictionary of the board."""
+        status = {
             "position": {
                 "x": self.position[0],
                 "y": self.position[1],
@@ -27,9 +27,9 @@ class MockStage(BaseStage):
             "board": None,
             "version": "0",
         }
-        return state
+        return status
 
-    def apply_config(self, config: dict):
+    def apply_settings(self, config: dict):
         """Update settings from a config dictionary"""
 
         # Set backlash. Expects a dictionary with axis labels
@@ -38,7 +38,7 @@ class MockStage(BaseStage):
             backlash = axes_to_array(config["backlash"], ["x", "y", "z"], [0, 0, 0])
             self.backlash = backlash
 
-    def read_config(self) -> dict:
+    def read_settings(self) -> dict:
         """Return the current settings as a dictionary"""
         blsh = self.backlash.tolist()
         config = {"backlash": {"x": blsh[0], "y": blsh[1], "z": blsh[2]}}

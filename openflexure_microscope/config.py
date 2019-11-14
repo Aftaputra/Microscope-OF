@@ -85,16 +85,16 @@ class OpenflexureSettingsFile:
         # If the loaded config was in contracted format
         if self.expand:
             # Contract self._config into self.raw_config
-            save_config = self.contract_config(config)
+            save_settings = self.contract_config(config)
         else:
-            save_config = config
+            save_settings = config
 
         if backup:
             if os.path.isfile(self.config_path):
                 shutil.copyfile(self.config_path, self.config_path + ".bk")
 
         logging.debug("Saving settings dictionary to disk")
-        save_json_file(self.config_path, save_config)
+        save_json_file(self.config_path, save_settings)
 
     def merge(self, config: dict, backup: bool = True):
         logging.debug("Merging settings with file on disk")

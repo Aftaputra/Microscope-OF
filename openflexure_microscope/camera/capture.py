@@ -97,7 +97,7 @@ def capture_from_exif(path, exif_dict):
     capture.timestring = exif_dict["time"]
     capture.format = exif_dict["format"]
 
-    capture._metadata = exif_dict["custom"]
+    capture.custom_metadata = exif_dict["custom"]
     capture.tags = exif_dict["tags"]
 
     return capture
@@ -110,7 +110,7 @@ class CaptureObject(object):
 
     Attributes:
         timestring (str): Timestring of capture creation time
-        _metadata (dict): Dictionary of custom metadata to be included in metadata file
+        custom_metadata (dict): Dictionary of custom metadata to be included in metadata file
         tags (list): List of tags. Essentially just as extra custom metadata field, but useful for quick organisation
         filefolder (str): Folder in which the capture file will be stored
         filename (str): Full name of the capture file
@@ -132,7 +132,9 @@ class CaptureObject(object):
         self.split_file_path(self.file)
 
         # Dictionary for storing custom metadata
-        self._metadata = {}
+        self.custom_metadata = {}
+        # Dictionary for adding top-level metadata (cannmot be accessed through web API)
+        self.system_metadata = {}
 
         # List for storing tags
         self.tags = []
@@ -203,7 +205,7 @@ class CaptureObject(object):
         Args:
             data (dict): Dictionary of metadata to be added
         """
-        self._metadata.update(data)
+        self.custom_metadata.update(data)
         self.save_metadata()
 
     def save_metadata(self) -> None:
@@ -225,6 +227,7 @@ class CaptureObject(object):
             # Insert exif into file
             piexif.insert(exif_bytes, self.file)
 
+
     @property
     def metadata(self) -> dict:
         """
@@ -233,12 +236,13 @@ class CaptureObject(object):
         """
         d = {
             "id": self.id,
-            "filename": self.filename,
             "time": self.timestring,
             "format": self.format,
             "tags": self.tags,
-            "custom": self._metadata,
+            "custom": self.custom_metadata,
         }
+
+        d.update(self.system_metadata)
 
         # Add custom metadata to dictionary
         return d
@@ -250,7 +254,7 @@ class CaptureObject(object):
         """
 
         # Create basic state dictionary
-        d = {"path": self.file, "metadata": self.metadata}
+        d = {"path": self.file, "filename": self.filename, "metadata": self.metadata}
 
         # Combined availability of data
         if self.exists:

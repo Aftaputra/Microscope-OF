@@ -21,6 +21,7 @@ from openflexure_microscope import Microscope
 from openflexure_microscope.camera.capture import build_captures_from_exif
 from openflexure_microscope.config import settings_file_path, JSONEncoder
 from openflexure_microscope.api.v1 import blueprints
+from openflexure_microscope.api import v2
 
 # Import device modules
 # NB this will eventually be handled by the RC file, so you can choose what device
@@ -141,6 +142,31 @@ app.register_blueprint(plugin_blueprint, url_prefix=uri("/plugin", "v1"))
 task_blueprint = blueprints.task.construct_blueprint(api_microscope)
 app.register_blueprint(task_blueprint, url_prefix=uri("/task", "v1"))
 
+### V2
+# Tasks routes
+v2_stream_blueprint = v2.blueprints.stream.construct_blueprint(api_microscope)
+app.register_blueprint(v2_stream_blueprint, url_prefix=uri("/", "v2"))
+
+# Captures routes
+v2_captures_blueprint = v2.blueprints.captures.construct_blueprint(api_microscope)
+app.register_blueprint(v2_captures_blueprint, url_prefix=uri("/captures", "v2"))
+
+# Settings routes
+v2_settings_blueprint = v2.blueprints.settings.construct_blueprint(api_microscope)
+app.register_blueprint(v2_settings_blueprint, url_prefix=uri("/settings", "v2"))
+
+# Status routes
+v2_status_blueprint = v2.blueprints.status.construct_blueprint(api_microscope)
+app.register_blueprint(v2_status_blueprint, url_prefix=uri("/status", "v2"))
+
+# Plugins routes
+v2_plugin_blueprint = v2.blueprints.plugins.construct_blueprint(api_microscope)
+app.register_blueprint(v2_plugin_blueprint, url_prefix=uri("/plugins", "v2"))
+
+# Tasks routes
+v2_tasks_blueprint = v2.blueprints.tasks.construct_blueprint(api_microscope)
+app.register_blueprint(v2_tasks_blueprint, url_prefix=uri("/tasks", "v2"))
+
 
 @app.route("/routes")
 def routes():
@@ -184,7 +210,7 @@ def cleanup():
 
     # Save config
     logging.debug("Saving config for teardown...")
-    api_microscope.save_config(backup=True)
+    api_microscope.save_settings()
 
     logging.debug("Settling...")
     time.sleep(0.5)

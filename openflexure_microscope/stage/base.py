@@ -14,22 +14,22 @@ class BaseStage(metaclass=ABCMeta):
         self.lock = StrictLock(timeout=5)
 
     @abstractmethod
-    def apply_config(self, config: dict):
+    def apply_settings(self, config: dict):
         """Update settings from a config dictionary"""
         pass
 
     @abstractmethod
-    def read_config(self):
+    def read_settings(self):
         """Return the current settings as a dictionary"""
         pass
 
-    def save_config(self):
+    def save_settings(self):
         """(Optional) Save any settings to disk that need to be stored"""
         return
 
     @property
     @abstractmethod
-    def state(self):
+    def status(self):
         """The general state dictionary of the board.
         Should at least contain 'position', and 'board' keys.
         Note: A None/Null value for 'board' will disable stage
