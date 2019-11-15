@@ -29,7 +29,7 @@ class AutofocusAPI(MicroscopeViewPlugin):
             task = taskify(self.plugin.autofocus)(dz)
 
             # return a handle on the autofocus task
-            return jsonify(task.state), 202
+            return jsonify(task.state), 201
 
         else:
             abort(503, "No stage connected. Unable to autofocus.")
@@ -50,7 +50,7 @@ class FastAutofocusAPI(MicroscopeViewPlugin):
             task = taskify(self.plugin.fast_autofocus)(dz, backlash=backlash)
 
             # return a handle on the autofocus task
-            return jsonify(task.state), 202
+            return jsonify(task.state), 201
 
         else:
             abort(503, "No stage connected. Unable to autofocus.")

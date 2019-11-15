@@ -142,4 +142,4 @@ class TimelapseAPI(MicroscopeViewPlugin):
         self.timelapse_task = taskify(self.plugin.timelapse)(n_images)
 
         # Return the state of the task (will show ID, start time, and status before the task has finished)
-        return jsonify(self.timelapse_task.state), 202
+        return jsonify(self.timelapse_task.state), 201

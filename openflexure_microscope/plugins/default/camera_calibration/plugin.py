@@ -18,7 +18,7 @@ class RecalibrateAPIView(MicroscopeViewPlugin):
         task = taskify(self.plugin.recalibrate)()
 
         # Return a handle on the autofocus task
-        return jsonify(task.state), 202
+        return jsonify(task.state), 201
 
 
 class Plugin(MicroscopePlugin):

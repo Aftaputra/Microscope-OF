@@ -73,7 +73,7 @@ class LongRunningAPI(MicroscopeViewPlugin):
         # Attach the long-running method as a microscope task
         try:
             task = self.microscope.task.start(self.plugin.long_running, time_to_run)
-            return jsonify(task.state), 202
+            return jsonify(task.state), 201
 
         except TaskDeniedException:
             return abort(409)
@@ -94,7 +94,7 @@ class SomeExceptionAPI(MicroscopeViewPlugin):
         # Attach the long-running method as a microscope task
         try:
             task = self.microscope.task.start(self.plugin.some_exception)
-            return jsonify(task.state), 202
+            return jsonify(task.state), 201
 
         except TaskDeniedException:
             return abort(409)
