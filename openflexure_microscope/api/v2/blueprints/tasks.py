@@ -17,7 +17,7 @@ def tasks_representation():
         # Add API routes to returned representations
         extra_state = {
             "links": {
-                "properties": "{}".format(url_for(".task", task_id=task_key)),
+                "self": "{}".format(url_for(".task", task_id=task_key)),
             }
         }
 

@@ -26,7 +26,7 @@ def captures_representation(capture_list: list, include_unavailable: bool = Fals
         # Add API routes to returned representations
         extra_state = {
             "links": {
-                "properties": "{}".format(url_for(".capture", capture_id=capture_key)),
+                "self": "{}".format(url_for(".capture", capture_id=capture_key)),
                 "download": "{}".format(url_for(".capture_download", capture_id=capture_key, filename=capture_repr["filename"])),
                 "tags": "{}".format(url_for(".capture_tags", capture_id=capture_key)),
             }
@@ -131,30 +131,15 @@ class CaptureAPI(MicroscopeView):
                          - **state** *(string)*: api uri to the capture json representation
 
         """
-        capture_obj = self.microscope.camera.image_from_id(capture_id)
 
-        if not capture_obj:
+        all_captures = captures_representation(self.microscope.camera.images, include_unavailable=True)
+
+        if capture_id in all_captures:
+            representation = all_captures[capture_id]
+        else:
             return abort(404)  # 404 Not Found
 
-        # Get capture state
-        capture_metadata = capture_obj.state
-
-        # Add API routes to returned state
-        uri_dict = {
-            "uri": {
-                "state": "{}".format(url_for(".capture", capture_id=capture_obj.id))
-            }
-        }
-
-        # If available, also add download link
-        if capture_metadata["available"]:
-            uri_dict["uri"]["download"] = "{}download/{}".format(
-                url_for(".capture", capture_id=capture_obj.id), capture_obj.filename
-            )
-
-        capture_metadata.update(uri_dict)
-
-        return jsonify(capture_metadata)
+        return jsonify(representation)
 
     def delete(self, capture_id):
         """

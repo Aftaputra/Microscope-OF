@@ -143,7 +143,7 @@ task_blueprint = blueprints.task.construct_blueprint(api_microscope)
 app.register_blueprint(task_blueprint, url_prefix=uri("/task", "v1"))
 
 ### V2
-# Tasks routes
+# Root routes
 v2_stream_blueprint = v2.blueprints.stream.construct_blueprint(api_microscope)
 app.register_blueprint(v2_stream_blueprint, url_prefix=uri("/", "v2"))
 
@@ -166,6 +166,10 @@ app.register_blueprint(v2_plugin_blueprint, url_prefix=uri("/plugins", "v2"))
 # Tasks routes
 v2_tasks_blueprint = v2.blueprints.tasks.construct_blueprint(api_microscope)
 app.register_blueprint(v2_tasks_blueprint, url_prefix=uri("/tasks", "v2"))
+
+# Actions routes
+v2_actions_blueprint = v2.blueprints.actions.construct_blueprint(api_microscope)
+app.register_blueprint(v2_actions_blueprint, url_prefix=uri("/actions", "v2"))
 
 
 @app.route("/routes")

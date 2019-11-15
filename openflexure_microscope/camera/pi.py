@@ -43,6 +43,7 @@ from .set_picamera_gain import set_analog_gain, set_digital_gain
 
 from openflexure_microscope.config import settings_file_path
 
+
 # MAIN CLASS
 class PiCameraStreamer(BaseCamera):
     """Raspberry Pi camera implementation of PiCameraStreamer."""
@@ -64,7 +65,10 @@ class PiCameraStreamer(BaseCamera):
         "exposure_compensation",
         "image_effect",
         "meter_mode",
-        "sharpness"
+        "sharpness",
+        "annotate_text",
+        "annotate_text_size",
+        "zoom"
     ]
 
     def __init__(self):
@@ -93,6 +97,7 @@ class PiCameraStreamer(BaseCamera):
         self.stream_resolution = (832, 624)  #: tuple: Resolution for stream and video captures
         self.numpy_resolution = (1312, 976)  #: tuple: Resolution for numpy array captures
         self.jpeg_quality = 75  #: int: JPEG quality
+
         # Set default lens shading table path
         self.picamera_lst_path = settings_file_path("picamera_lst.npy")  #: str: Path of .npy lens shading table file
 
@@ -298,6 +303,7 @@ class PiCameraStreamer(BaseCamera):
         """
         Change the camera zoom, handling re-centering and scaling.
         """
+        logging.warning("set_zoom is deprecated. Please use the 'zoom' property in picamera_settings.")
         with self.lock:
             self.status["zoom_value"] = float(zoom_value)
             if self.status["zoom_value"] < 1:
