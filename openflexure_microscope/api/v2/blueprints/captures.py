@@ -61,9 +61,7 @@ class ListAPI(MicroscopeView):
         :status 200: capture found
         :status 404: no capture found with that id
         """
-        include_unavailable = get_bool(request.args.get("include_unavailable"))
-
-        representation = captures_representation(self.microscope.camera.images, include_unavailable=include_unavailable)
+        representation = captures_representation(self.microscope.camera.images)
 
         return jsonify(representation)
 
@@ -132,11 +130,9 @@ class CaptureAPI(MicroscopeView):
 
         """
 
-        all_captures = captures_representation(self.microscope.camera.images, include_unavailable=True)
-
-        if capture_id in all_captures:
-            representation = all_captures[capture_id]
-        else:
+        try:
+            representation = captures_representation(self.microscope.camera.images)[capture_id]
+        except KeyError:
             return abort(404)  # 404 Not Found
 
         return jsonify(representation)

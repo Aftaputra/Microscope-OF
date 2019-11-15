@@ -34,6 +34,7 @@ class AutofocusAPI(MicroscopeViewPlugin):
         else:
             abort(503, 'No stage connected. Unable to autofocus.')
 
+
 class FastAutofocusAPI(MicroscopeViewPlugin):
     def post(self):
         payload = JsonResponse(request)

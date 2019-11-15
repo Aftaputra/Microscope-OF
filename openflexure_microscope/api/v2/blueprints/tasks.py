@@ -121,7 +121,7 @@ class TaskAPI(MethodView):
         """
 
         try:
-            task = tasks.tasks()[task_id]
+            task = tasks_representation()[task_id]
         except KeyError:
             return abort(404)  # 404 Not Found
 
@@ -140,7 +140,7 @@ class TaskAPI(MethodView):
         """
 
         try:
-            task = tasks.tasks()[task_id]
+            task = tasks_representation()[task_id]
         except KeyError:
             return abort(404)  # 404 Not Found
 

@@ -45,7 +45,6 @@ _actions = {
 
 def enabled_actions():
     global _actions
-
     return {k: v for k, v in _actions.items() if v["conditions"]}
 
 
@@ -53,7 +52,6 @@ def actions_representation():
     global _actions
 
     actions = {}
-
     for name, action in enabled_actions().items():
         d = {
             "links": {"self": url_for(f".{name}")},

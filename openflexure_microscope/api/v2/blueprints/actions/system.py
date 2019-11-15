@@ -1,12 +1,8 @@
 from openflexure_microscope.api.views import MicroscopeView
 
-from flask import jsonify
-
 import subprocess
-import logging
 
 
-# TODO: Make robust against different host OS
 class ShutdownAPI(MicroscopeView):
     def post(self):
         """
@@ -17,7 +13,7 @@ class ShutdownAPI(MicroscopeView):
         """
         subprocess.Popen(['shutdown', '-h', 'now'])
 
-        return '', 202
+        return "{}", 201
 
 
 class RebootAPI(MicroscopeView):
@@ -30,4 +26,4 @@ class RebootAPI(MicroscopeView):
         """
         subprocess.Popen(['sudo', 'shutdown', '-r', 'now'])
 
-        return '', 202
+        return "{}", 201
