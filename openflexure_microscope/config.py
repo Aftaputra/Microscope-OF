@@ -21,6 +21,7 @@ class JSONEncoder(json.JSONEncoder):
     """
     A custom JSON encoder, with type conversions for PiCamera fractions, Numpy integers, and Numpy arrays
     """
+
     def default(self, o, markers=None):
         # PiCamera fractions
         if isinstance(o, Fraction):
@@ -38,6 +39,7 @@ class JSONEncoder(json.JSONEncoder):
 
 
 # MAIN CONFIG CLASS
+
 
 class OpenflexureSettingsFile:
     """
@@ -163,6 +165,7 @@ class OpenflexureSettingsFile:
 
 
 # HANDLE BASIC LOADING AND SAVING OF SETTINGS FILES
+
 
 def load_json_file(config_path) -> dict:
     """

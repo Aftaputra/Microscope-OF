@@ -25,7 +25,7 @@ def plugins_representation(plugin_loader_object: PluginLoader):
             "name": plugin["name"],
             "plugin": str(plugin["plugin"]),
             "routes": plugin["routes"],
-            "form": plugin["form"]
+            "form": plugin["form"],
         }
         plugins.append(d)
 
@@ -55,8 +55,7 @@ def construct_blueprint(microscope_obj):
 
     # Create a base route to return plugin API forms, if any exist
     blueprint.add_url_rule(
-        "/",
-        view_func=PluginFormAPI.as_view("plugins", microscope=microscope_obj),
+        "/", view_func=PluginFormAPI.as_view("plugins", microscope=microscope_obj)
     )
 
     all_routes = []

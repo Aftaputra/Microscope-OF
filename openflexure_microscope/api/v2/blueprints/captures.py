@@ -20,14 +20,22 @@ def captures_representation(capture_list: list, include_unavailable: bool = Fals
     if include_unavailable:
         captures = {image.id: image.state for image in capture_list}
     else:
-        captures = {image.id: image.state for image in capture_list if image.state["available"]}
+        captures = {
+            image.id: image.state for image in capture_list if image.state["available"]
+        }
 
     for capture_key, capture_repr in captures.items():
         # Add API routes to returned representations
         extra_state = {
             "links": {
                 "self": "{}".format(url_for(".capture", capture_id=capture_key)),
-                "download": "{}".format(url_for(".capture_download", capture_id=capture_key, filename=capture_repr["filename"])),
+                "download": "{}".format(
+                    url_for(
+                        ".capture_download",
+                        capture_id=capture_key,
+                        filename=capture_repr["filename"],
+                    )
+                ),
                 "tags": "{}".format(url_for(".capture_tags", capture_id=capture_key)),
             }
         }
@@ -131,7 +139,9 @@ class CaptureAPI(MicroscopeView):
         """
 
         try:
-            representation = captures_representation(self.microscope.camera.images)[capture_id]
+            representation = captures_representation(self.microscope.camera.images)[
+                capture_id
+            ]
         except KeyError:
             return abort(404)  # 404 Not Found
 
@@ -379,9 +389,7 @@ def construct_blueprint(microscope_obj):
     # Capture routes
     blueprint.add_url_rule(
         "/<capture_id>/download/<filename>",
-        view_func=DownloadAPI.as_view(
-            "capture_download", microscope=microscope_obj
-        ),
+        view_func=DownloadAPI.as_view("capture_download", microscope=microscope_obj),
     )
 
     blueprint.add_url_rule(
@@ -397,7 +405,6 @@ def construct_blueprint(microscope_obj):
     )
 
     blueprint.add_url_rule(
-        "/",
-        view_func=ListAPI.as_view("capture_list", microscope=microscope_obj),
+        "/", view_func=ListAPI.as_view("capture_list", microscope=microscope_obj)
     )
     return blueprint

@@ -32,7 +32,7 @@ class AutofocusAPI(MicroscopeViewPlugin):
             return jsonify(task.state), 202
 
         else:
-            abort(503, 'No stage connected. Unable to autofocus.')
+            abort(503, "No stage connected. Unable to autofocus.")
 
 
 class FastAutofocusAPI(MicroscopeViewPlugin):
@@ -53,4 +53,4 @@ class FastAutofocusAPI(MicroscopeViewPlugin):
             return jsonify(task.state), 202
 
         else:
-            abort(503, 'No stage connected. Unable to autofocus.')
+            abort(503, "No stage connected. Unable to autofocus.")

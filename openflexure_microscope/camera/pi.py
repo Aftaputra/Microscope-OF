@@ -68,7 +68,7 @@ class PiCameraStreamer(BaseCamera):
         "sharpness",
         "annotate_text",
         "annotate_text_size",
-        "zoom"
+        "zoom",
     ]
 
     def __init__(self):
@@ -93,13 +93,23 @@ class PiCameraStreamer(BaseCamera):
         self.set_zoom(1.0)
 
         # Set default settings
-        self.image_resolution = tuple(self.camera.MAX_RESOLUTION)  #: tuple: Resolution for image captures
-        self.stream_resolution = (832, 624)  #: tuple: Resolution for stream and video captures
-        self.numpy_resolution = (1312, 976)  #: tuple: Resolution for numpy array captures
+        self.image_resolution = tuple(
+            self.camera.MAX_RESOLUTION
+        )  #: tuple: Resolution for image captures
+        self.stream_resolution = (
+            832,
+            624,
+        )  #: tuple: Resolution for stream and video captures
+        self.numpy_resolution = (
+            1312,
+            976,
+        )  #: tuple: Resolution for numpy array captures
         self.jpeg_quality = 75  #: int: JPEG quality
 
         # Set default lens shading table path
-        self.picamera_lst_path = settings_file_path("picamera_lst.npy")  #: str: Path of .npy lens shading table file
+        self.picamera_lst_path = settings_file_path(
+            "picamera_lst.npy"
+        )  #: str: Path of .npy lens shading table file
 
         # Update board identifier
         self.status.update({})
@@ -138,7 +148,9 @@ class PiCameraStreamer(BaseCamera):
                 "image_resolution": self.image_resolution,
                 "numpy_resolution": self.numpy_resolution,
                 "jpeg_quality": self.jpeg_quality,
-                "picamera_lst_path": self.picamera_lst_path if os.path.isfile(self.picamera_lst_path) else None,
+                "picamera_lst_path": self.picamera_lst_path
+                if os.path.isfile(self.picamera_lst_path)
+                else None,
                 "picamera_settings": {},
             }
         )
@@ -273,7 +285,7 @@ class PiCameraStreamer(BaseCamera):
         """
         Read the current lens shading table as a numpy array, if it exists. Return None otherwise.
         """
-        if hasattr(self.camera, 'lens_shading_table'):
+        if hasattr(self.camera, "lens_shading_table"):
             return self.camera.lens_shading_table
         else:
             return None
@@ -297,13 +309,17 @@ class PiCameraStreamer(BaseCamera):
         elif (type(lst_array_or_path) == str) and os.path.isfile(lst_array_or_path):
             self.camera.lens_shading_table = np.load(lst_array_or_path)
         else:
-            logging.error("Unsupported or missing data for camera lens_shading_table. Must be numpy ndarray, or .npy file path string. Skipping.")
+            logging.error(
+                "Unsupported or missing data for camera lens_shading_table. Must be numpy ndarray, or .npy file path string. Skipping."
+            )
 
     def set_zoom(self, zoom_value: float = 1.0) -> None:
         """
         Change the camera zoom, handling re-centering and scaling.
         """
-        logging.warning("set_zoom is deprecated. Please use the 'zoom' property in picamera_settings.")
+        logging.warning(
+            "set_zoom is deprecated. Please use the 'zoom' property in picamera_settings."
+        )
         with self.lock:
             self.status["zoom_value"] = float(zoom_value)
             if self.status["zoom_value"] < 1:

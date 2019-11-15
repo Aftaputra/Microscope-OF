@@ -154,7 +154,9 @@ class PluginLoader(object):
     @property
     def state(self):
         # DEPRECATED
-        logging.warning("PluginMount.state is deprecated. Use PluginMount.active instead. State will be removed in a future version.")
+        logging.warning(
+            "PluginMount.state is deprecated. Use PluginMount.active instead. State will be removed in a future version."
+        )
         return [m["python_name"] for m in self._plugins]
 
     @property
@@ -195,13 +197,15 @@ class PluginLoader(object):
                     setattr(self, pythonsafe_plugin_name, plugin_object)
 
                     # Store the plugin object, and it's properties
-                    self._plugins.append({
-                        "name": plugin_name,
-                        "python_name": pythonsafe_plugin_name,
-                        "plugin": plugin_object,
-                        "routes": [],
-                        "form": None
-                    })
+                    self._plugins.append(
+                        {
+                            "name": plugin_name,
+                            "python_name": pythonsafe_plugin_name,
+                            "plugin": plugin_object,
+                            "routes": [],
+                            "form": None,
+                        }
+                    )
 
                     # Grant plugin access to the hardware
                     plugin_object.microscope = self.parent

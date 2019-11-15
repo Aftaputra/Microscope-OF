@@ -35,7 +35,9 @@ def pull_usercomment_dict(filepath):
             return json.loads(exif_dict["Exif"][37510].decode())
         except json.decoder.JSONDecodeError:
             # TODO: Remove YAML support in a later version
-            logging.warning(f"Capture {filepath} has metadata stored in YAML format. This is now deprecated in favour of JSON.")
+            logging.warning(
+                f"Capture {filepath} has metadata stored in YAML format. This is now deprecated in favour of JSON."
+            )
             return yaml.load(exif_dict["Exif"][37510].decode())
     else:
         return None
@@ -226,7 +228,6 @@ class CaptureObject(object):
             exif_bytes = piexif.dump(exif_dict)
             # Insert exif into file
             piexif.insert(exif_bytes, self.file)
-
 
     @property
     def metadata(self) -> dict:

@@ -8,38 +8,38 @@ _actions = {
         "rule": "/camera/capture/",
         "view_class": camera.CaptureAPI,
         "description": "Take a single still capture",
-        "conditions": True
+        "conditions": True,
     },
     "preview_start": {
         "rule": "/camera/preview/start",
         "view_class": camera.GPUPreviewStartAPI,
         "description": "Start the on-board GPU preview",
-        "conditions": True
+        "conditions": True,
     },
     "preview_stop": {
         "rule": "/camera/preview/stop",
         "view_class": camera.GPUPreviewStopAPI,
         "description": "Stop the on-board GPU preview",
-        "conditions": True
+        "conditions": True,
     },
     "move": {
         "rule": "/stage/move/",
         "view_class": stage.MoveStageAPI,
         "description": "Move the microscope stage",
-        "conditions": True
+        "conditions": True,
     },
     "shutdown": {
         "rule": "/system/shutdown/",
         "view_class": system.ShutdownAPI,
         "description": "Shutdown the device",
-        "conditions": (platform == "linux")
+        "conditions": (platform == "linux"),
     },
     "reboot": {
         "rule": "/system/reboot/",
         "view_class": system.RebootAPI,
         "description": "Reboot the device",
-        "conditions": (platform == "linux")
-    }
+        "conditions": (platform == "linux"),
+    },
 }
 
 
@@ -57,7 +57,7 @@ def actions_representation():
             "links": {"self": url_for(f".{name}")},
             "description": action["description"],
             "rule": action["rule"],
-            "view_class": str(action["view_class"])
+            "view_class": str(action["view_class"]),
         }
 
         actions[name] = d

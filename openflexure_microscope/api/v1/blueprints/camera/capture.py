@@ -132,11 +132,11 @@ class ListAPI(MicroscopeView):
 
             # Inject system metadata
             system_metadata = {
-                    "microscope_settings": self.microscope.read_settings(),
-                    "microscope_state": self.microscope.state,
-                    "microscope_id": self.microscope.id,
-                    "microscope_name": self.microscope.name,
-                }
+                "microscope_settings": self.microscope.read_settings(),
+                "microscope_state": self.microscope.state,
+                "microscope_id": self.microscope.id,
+                "microscope_name": self.microscope.name,
+            }
             output.system_metadata.update(system_metadata)
 
             # Insert custom metadata

@@ -16,9 +16,7 @@ def tasks_representation():
     for task_key, task_repr in tasks_dict.items():
         # Add API routes to returned representations
         extra_state = {
-            "links": {
-                "self": "{}".format(url_for(".task", task_id=task_key)),
-            }
+            "links": {"self": "{}".format(url_for(".task", task_id=task_key))}
         }
 
         tasks_dict[task_key].update(extra_state)

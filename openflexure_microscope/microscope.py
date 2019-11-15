@@ -160,7 +160,9 @@ class Microscope:
                 and :py:attr:`openflexure_microscope.camera.base.BaseCamera.status`
         """
         # DEPRECATED
-        logging.warning("Microscope.state is deprecated. Use Microscope.status instead. State will be removed in a future version.")
+        logging.warning(
+            "Microscope.state is deprecated. Use Microscope.status instead. State will be removed in a future version."
+        )
         state = {
             "camera": self.camera.status,
             "stage": self.stage.status,

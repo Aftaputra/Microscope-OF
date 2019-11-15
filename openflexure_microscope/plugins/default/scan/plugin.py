@@ -147,14 +147,16 @@ class ScanPlugin(MicroscopePlugin):
         if "time" not in metadata:
             metadata["time"] = generate_basename()
 
-        metadata.update({
-            "scan_parameters": {
-                "step_size": step_size,
-                "grid": grid,
-                "style": style,
-                "autofocus_dz": autofocus_dz
+        metadata.update(
+            {
+                "scan_parameters": {
+                    "step_size": step_size,
+                    "grid": grid,
+                    "style": style,
+                    "autofocus_dz": autofocus_dz,
+                }
             }
-        })
+        )
 
         # Check if autofocus is enabled
         if (
