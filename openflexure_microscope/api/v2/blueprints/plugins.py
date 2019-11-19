@@ -28,13 +28,15 @@ def plugins_representation(plugin_loader_object: PluginLoader):
             "plugin": str(plugin),
             "views": {},
             "form": plugin.form,
+            "description": plugin.__doc__.strip() if plugin.__doc__ else ""
         }
 
-        for view_id, view in plugin.views.items():
+        for view_id, view_data in plugin.views.items():
             logging.debug(f"Representing view {view_id}")
             uri = url_for(f"v2_plugins_blueprint.{view_id}")
             # Make links dictionary if it doesn't yet exist
             view_d = {
+                "description": view_data["view"].__doc__.strip() if view_data["view"].__doc__ else "",
                 "links": {"self": uri}
             }
 
