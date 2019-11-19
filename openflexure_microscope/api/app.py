@@ -44,7 +44,8 @@ DEFAULT_LOGFILE = settings_file_path("openflexure_microscope.log")
 if (__name__ == "__main__") or (not is_gunicorn):
     # If imported, but not by gunicorn
     print("Letting sys handle logs")
-    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
 else:
     # Direct standard Python logging to file and console
     root = logging.getLogger()
