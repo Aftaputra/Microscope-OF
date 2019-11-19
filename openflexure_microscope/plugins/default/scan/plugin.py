@@ -58,6 +58,8 @@ class ScanPlugin(MicroscopePlugin):
     api_views = {"/tile": TileScanAPI}
 
     def __init__(self):
+        MicroscopePlugin.__init__(self)
+
         self.images_to_be_captured: int = 1
         update_task_data({"images_to_be_captured": self.images_to_be_captured})
 

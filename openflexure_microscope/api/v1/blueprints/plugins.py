@@ -39,10 +39,7 @@ def construct_blueprint(microscope_obj):
     all_routes = []
 
     # For each plugin attached to the microscope object
-    for plugin_representation in microscope_obj.plugins.active:
-
-        plugin_obj = plugin_representation["plugin"]
-        plugin_name = plugin_representation["name"]
+    for plugin_name, plugin_obj in microscope_obj.plugins._legacy_plugins.items():
 
         # If plugin contains valid endpoints
         if hasattr(plugin_obj, "api_views") and isinstance(plugin_obj.api_views, dict):

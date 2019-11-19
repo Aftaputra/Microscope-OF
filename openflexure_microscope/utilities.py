@@ -1,9 +1,18 @@
+import re
 import copy
 import operator
 from collections import abc
 from functools import reduce
 from contextlib import contextmanager
 
+
+def camel_to_snake(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+def camel_to_spine(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1-\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1-\2', s1).lower()
 
 @contextmanager
 def set_properties(obj, **kwargs):

@@ -20,20 +20,34 @@ def plugins_representation(plugin_loader_object: PluginLoader):
         dict: Dictionary representation of all plugins
     """
     plugins = []
+
+    print(plugin_loader_object.active)
+
     for plugin in plugin_loader_object.active:
+        logging.info(f"Representing plugin {plugin._name}")
         d = {
-            "name": plugin["name"],
-            "plugin": str(plugin["plugin"]),
-            "routes": plugin["routes"],
-            "form": plugin["form"],
+            "name": plugin._name,
+            "plugin": str(plugin),
+            "views": {},
+            "form": plugin.form,
         }
 
-        for route in d["routes"]:
-            route_id = route["id"]
-            uri = url_for(f"v2_plugins_blueprint.{route_id}")
-            route["links"]["self"] = uri
+        for view_id, view in plugin.views.items():
+            logging.info(f"Representing view {view_id}")
+            uri = url_for(f"v2_plugins_blueprint.{view_id}")
+            # Make links dictionary if it doesn't yet exist
+            view_d = {
+                "links": {"self": uri}
+            }
+
+            d["views"][view_id] = view_d
+
+        print("\n")
+        print(d)
+        print("\n")
         plugins.append(d)
 
+    print(plugins)
     return plugins
 
 
@@ -66,69 +80,20 @@ def construct_blueprint(microscope_obj):
     all_routes = []
 
     # For each plugin attached to the microscope object
-    for plugin_representation in microscope_obj.plugins.active:
+    for plugin in microscope_obj.plugins.active:
 
-        plugin_obj = plugin_representation["plugin"]
-        plugin_name = plugin_representation["name"]
+        for plugin_view_id, plugin_view in plugin.views.items():
+            # Add route to the plugins blueprint
+            blueprint.add_url_rule(
+                plugin_view["rule"],
+                view_func=plugin_view["view"].as_view(
+                    plugin_view_id,
+                    microscope=microscope_obj,
+                    plugin=plugin,
+                ),
+            )
 
-        # If plugin contains valid endpoints
-        if hasattr(plugin_obj, "api_views") and isinstance(plugin_obj.api_views, dict):
-
-            # We'll keep a record of how each route was expanded
-            expanded_routes = {}
-
-            # For each defined endpoint
-            for view_route, view_class in plugin_obj.api_views.items():
-
-                # Remove all leading slashes from view route
-                cleaned_route = view_route
-                while cleaned_route[0] == "/":
-                    cleaned_route = cleaned_route[1:]
-
-                # Construct a full view route from the plugin name
-                full_view_route = "/{}/{}".format(plugin_name, cleaned_route)
-                logging.debug(full_view_route)
-
-                # Record how the view_route got expanded
-                expanded_routes[view_route] = full_view_route
-
-                # Check if endpoint name clashes
-                if full_view_route not in all_routes and issubclass(
-                    view_class, MicroscopeViewPlugin
-                ):
-                    # Add route to main route dictionary
-                    all_routes.append(full_view_route)
-
-                    # Create a Python-safe name for the route
-                    plugin_route_id = "plugin{}".format(full_view_route).replace(
-                        "/", "_"
-                    )
-
-                    # Add route to the plugins blueprint
-                    blueprint.add_url_rule(
-                        full_view_route,
-                        view_func=view_class.as_view(
-                            plugin_route_id,
-                            microscope=microscope_obj,
-                            plugin=plugin_obj,
-                        ),
-                    )
-
-                    # Add route to the plugin representation dictionary
-                    route_representation = {
-                        "id": plugin_route_id,
-                        "route": full_view_route,
-                        "links": {},
-                    }
-                    plugin_representation["routes"].append(route_representation)
-
-                else:
-                    warnings.warn(
-                        "An endpoint /{} has already been loaded. Skipping {}.".format(
-                            full_view_route, view_class
-                        )
-                    )
-
+            """
             # If plugin includes an API form
             if hasattr(plugin_obj, "api_form") and isinstance(
                 plugin_obj.api_form, dict
@@ -152,9 +117,6 @@ def construct_blueprint(microscope_obj):
                 # Store the complete form in Microscope().plugin.form
                 plugin_representation["form"] = api_form_info
                 print(microscope_obj.plugins.forms)
+            """
 
-        else:
-            warnings.warn(
-                "No valid 'api_views' dictionary found in {}".format(plugin_obj)
-            )
     return blueprint
