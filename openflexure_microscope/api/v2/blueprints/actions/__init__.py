@@ -6,7 +6,7 @@ from openflexure_microscope.api.views import MicroscopeView
 
 from . import camera, stage, system
 
-
+# TODO: Could allowed methods be calculated automatically by looking at what methods exist?
 _actions = {
     "capture": {
         "rule": "/camera/capture/",
