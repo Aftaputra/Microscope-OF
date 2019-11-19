@@ -19,12 +19,12 @@ def plugins_representation(plugin_loader_object: PluginLoader):
     Returns:
         dict: Dictionary representation of all plugins
     """
-    plugins = []
+    plugins = {}
 
     for plugin in plugin_loader_object.active:
         logging.debug(f"Representing plugin {plugin._name}")
         d = {
-            "name": plugin._name,
+            "python_name": plugin._name_python_safe,
             "plugin": str(plugin),
             "views": {},
             "form": plugin.form,
@@ -40,7 +40,7 @@ def plugins_representation(plugin_loader_object: PluginLoader):
 
             d["views"][view_id] = view_d
 
-        plugins.append(d)
+        plugins[plugin._name] = d
 
     return plugins
 
