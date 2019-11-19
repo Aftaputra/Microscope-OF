@@ -378,7 +378,7 @@ class TagsAPI(MicroscopeView):
 
 
 def construct_blueprint(microscope_obj):
-    blueprint = Blueprint("captures_blueprint", __name__)
+    blueprint = Blueprint("v2_captures_blueprint", __name__)
 
     # Tag routes
     blueprint.add_url_rule(
@@ -405,6 +405,6 @@ def construct_blueprint(microscope_obj):
     )
 
     blueprint.add_url_rule(
-        "/", view_func=ListAPI.as_view("capture_list", microscope=microscope_obj)
+        "/", view_func=ListAPI.as_view("captures", microscope=microscope_obj)
     )
     return blueprint

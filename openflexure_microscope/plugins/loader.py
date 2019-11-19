@@ -1,7 +1,10 @@
 import importlib
+import copy
 import os
 import inspect
 import logging
+
+from openflexure_microscope.api.views import MicroscopeViewPlugin
 
 
 class ConColors:
@@ -137,6 +140,50 @@ def class_from_map(plugin_map):
         return load_plugin_class(*plugin_arr)
 
 
+def expand_views(plugin_object, plugin_name):
+    routes = []
+
+    # If plugin contains valid endpoints
+    if hasattr(plugin_object, "api_views") and isinstance(plugin_object.api_views, dict):
+
+        # We'll keep a record of how each route was expanded
+        expanded_routes = {}
+
+        # For each defined endpoint
+        for view_route, view_class in plugin_object.api_views.items():
+
+            # Remove all leading slashes from view route
+            cleaned_route = view_route
+            while cleaned_route[0] == "/":
+                cleaned_route = cleaned_route[1:]
+
+            # Construct a full view route from the plugin name
+            full_view_route = "/{}/{}".format(plugin_name, cleaned_route)
+            logging.debug(full_view_route)
+
+            # Record how the view_route got expanded
+            expanded_routes[view_route] = full_view_route
+
+            # Check if endpoint name clashes
+            if issubclass(view_class, MicroscopeViewPlugin):
+
+                # Create a Python-safe name for the route
+                plugin_route_id = "plugin{}".format(full_view_route).replace(
+                    "/", "_"
+                )
+
+                # Add route to the plugin representation dictionary
+                route_representation = {
+                    "id": plugin_route_id,
+                    "route": full_view_route,
+                    "links": {},
+                }
+
+                routes.append(route_representation)
+
+    return routes
+
+
 class PluginLoader(object):
     """
     A mount-point for all loaded plugins. Attaches to a Microscope object.
@@ -174,7 +221,7 @@ class PluginLoader(object):
 
         if plugin_class is not None:
 
-            pythonsafe_plugin_name = plugin_name.replace("/", "_")
+            plugin_name_python_safe = plugin_name.replace("/", "_")
 
             if plugin_class and plugin_name:
                 plugin_object = plugin_class()
@@ -194,13 +241,13 @@ class PluginLoader(object):
                     plugin_object, MicroscopePlugin
                 ):  # If plugin_object is an instance of MicroscopePlugin
                     # Attach plugin_object to the plugin mount
-                    setattr(self, pythonsafe_plugin_name, plugin_object)
+                    setattr(self, plugin_name_python_safe, plugin_object)
 
                     # Store the plugin object, and it's properties
                     self._plugins.append(
                         {
                             "name": plugin_name,
-                            "python_name": pythonsafe_plugin_name,
+                            "python_name": plugin_name_python_safe,
                             "plugin": plugin_object,
                             "routes": [],
                             "form": None,

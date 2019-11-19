@@ -1,7 +1,7 @@
 from openflexure_microscope.plugins import PluginLoader, MicroscopePlugin
 from openflexure_microscope.api.views import MicroscopeViewPlugin
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, url_for
 from openflexure_microscope.api.views import MicroscopeView
 
 import copy
@@ -27,6 +27,11 @@ def plugins_representation(plugin_loader_object: PluginLoader):
             "routes": plugin["routes"],
             "form": plugin["form"],
         }
+
+        for route in d["routes"]:
+            route_id = route["id"]
+            uri = url_for(f"v2_plugins_blueprint.{route_id}")
+            route["links"]["self"] = uri
         plugins.append(d)
 
     return plugins
@@ -51,7 +56,7 @@ class PluginFormAPI(MicroscopeView):
 
 def construct_blueprint(microscope_obj):
 
-    blueprint = Blueprint("plugins_blueprint", __name__)
+    blueprint = Blueprint("v2_plugins_blueprint", __name__)
 
     # Create a base route to return plugin API forms, if any exist
     blueprint.add_url_rule(
@@ -110,7 +115,12 @@ def construct_blueprint(microscope_obj):
                     )
 
                     # Add route to the plugin representation dictionary
-                    plugin_representation["routes"].append(full_view_route)
+                    route_representation = {
+                        "id": plugin_route_id,
+                        "route": full_view_route,
+                        "links": {},
+                    }
+                    plugin_representation["routes"].append(route_representation)
 
                 else:
                     warnings.warn(

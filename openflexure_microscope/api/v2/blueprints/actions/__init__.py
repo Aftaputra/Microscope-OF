@@ -1,6 +1,8 @@
 from flask import Blueprint, url_for, jsonify
 from sys import platform
 
+from openflexure_microscope.api.views import MicroscopeView
+
 from . import camera, stage, system
 
 _actions = {
@@ -64,11 +66,14 @@ def actions_representation():
 
     return actions
 
+class ActionsAPI(MicroscopeView):
+    def get(self):
+        return jsonify(actions_representation())
 
 def construct_blueprint(microscope_obj):
     global _actions
 
-    blueprint = Blueprint("actions_blueprint", __name__)
+    blueprint = Blueprint("v2_actions_blueprint", __name__)
 
     # For each enabled action route defined in our dictionary above
     for name, action in enabled_actions().items():
@@ -78,8 +83,8 @@ def construct_blueprint(microscope_obj):
             view_func=action["view_class"].as_view(name, microscope=microscope_obj),
         )
 
-    @blueprint.route("/")
-    def representation():
-        return jsonify(actions_representation())
+    blueprint.add_url_rule(
+        "/", view_func=ActionsAPI.as_view("actions", microscope=microscope_obj)
+    )
 
     return blueprint

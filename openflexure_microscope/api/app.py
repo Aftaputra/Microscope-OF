@@ -144,6 +144,9 @@ app.register_blueprint(task_blueprint, url_prefix=uri("/task", "v1"))
 
 ### V2
 # Root routes
+v2_root_blueprint = v2.blueprints.root.construct_blueprint(api_microscope)
+app.register_blueprint(v2_root_blueprint, url_prefix=uri("/", "v2"))
+
 v2_stream_blueprint = v2.blueprints.stream.construct_blueprint(api_microscope)
 app.register_blueprint(v2_stream_blueprint, url_prefix=uri("/", "v2"))
 
