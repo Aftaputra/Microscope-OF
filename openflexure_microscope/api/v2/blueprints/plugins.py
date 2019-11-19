@@ -21,8 +21,6 @@ def plugins_representation(plugin_loader_object: PluginLoader):
     """
     plugins = []
 
-    print(plugin_loader_object.active)
-
     for plugin in plugin_loader_object.active:
         logging.info(f"Representing plugin {plugin._name}")
         d = {
@@ -42,12 +40,8 @@ def plugins_representation(plugin_loader_object: PluginLoader):
 
             d["views"][view_id] = view_d
 
-        print("\n")
-        print(d)
-        print("\n")
         plugins.append(d)
 
-    print(plugins)
     return plugins
 
 
@@ -92,31 +86,5 @@ def construct_blueprint(microscope_obj):
                     plugin=plugin,
                 ),
             )
-
-            """
-            # If plugin includes an API form
-            if hasattr(plugin_obj, "api_form") and isinstance(
-                plugin_obj.api_form, dict
-            ):
-                # TODO: We deep copy this to avoid clashing between API versions. Can be removed when v1 is removed.
-                api_form_info = copy.deepcopy(plugin_obj.api_form)
-                api_form_info["id"] = plugin_name
-                if "forms" in api_form_info and isinstance(
-                    api_form_info["forms"], list
-                ):
-                    for form in api_form_info["forms"]:
-                        if "route" in form and form["route"] in expanded_routes.keys():
-                            form["route"] = expanded_routes[form["route"]]
-                        else:
-                            logging.warn(
-                                "No valid expandable route found for {}".format(
-                                    form["route"]
-                                )
-                            )
-
-                # Store the complete form in Microscope().plugin.form
-                plugin_representation["form"] = api_form_info
-                print(microscope_obj.plugins.forms)
-            """
 
     return blueprint

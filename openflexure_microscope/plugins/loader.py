@@ -229,8 +229,8 @@ class BasePlugin:
     """
 
     def __init__(self):
-        self._views = {}
-        self._rules = {}
+        self._views = {}  # Key: Full, Python-safe ID. Val: Original rule, and view class
+        self._rules = {}  # Key: Original rule. Val: View class
         self._form = None
 
         # If old api_views dictionary is found
@@ -241,10 +241,6 @@ class BasePlugin:
         if hasattr(self, "api_form"):
             # Convert to new format
             self._convert_old_api_form()
-
-        print("\n\n NAME: " + self._name + "\n\n")
-        print(self.views)
-        print(self.form)
 
     @property
     def views(self):

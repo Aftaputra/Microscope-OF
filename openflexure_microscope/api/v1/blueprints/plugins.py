@@ -112,7 +112,6 @@ def construct_blueprint(microscope_obj):
 
                 # Store the complete form in Microscope().plugin.form
                 microscope_obj.plugins.forms.append(api_form_info)
-                print(microscope_obj.plugins.forms)
 
         else:
             warnings.warn(
