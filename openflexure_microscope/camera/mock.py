@@ -19,6 +19,13 @@ from typing import Tuple
 from openflexure_microscope.camera.base import BaseCamera
 
 
+"""
+PIL spams the logger with debug-level information. This is a pain when debugging api.app.
+We override the logging settings in api.app by setting a level for PIL here.
+"""
+pil_logger = logging.getLogger('PIL')
+pil_logger.setLevel(logging.INFO)
+
 # MAIN CLASS
 class MockStreamer(BaseCamera):
     def __init__(self):

@@ -22,7 +22,7 @@ def plugins_representation(plugin_loader_object: PluginLoader):
     plugins = []
 
     for plugin in plugin_loader_object.active:
-        logging.info(f"Representing plugin {plugin._name}")
+        logging.debug(f"Representing plugin {plugin._name}")
         d = {
             "name": plugin._name,
             "plugin": str(plugin),
@@ -31,7 +31,7 @@ def plugins_representation(plugin_loader_object: PluginLoader):
         }
 
         for view_id, view in plugin.views.items():
-            logging.info(f"Representing view {view_id}")
+            logging.debug(f"Representing view {view_id}")
             uri = url_for(f"v2_plugins_blueprint.{view_id}")
             # Make links dictionary if it doesn't yet exist
             view_d = {

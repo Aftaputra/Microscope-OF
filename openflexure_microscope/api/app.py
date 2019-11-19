@@ -45,7 +45,7 @@ if (__name__ == "__main__") or (not is_gunicorn):
     # If imported, but not by gunicorn
     print("Letting sys handle logs")
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 else:
     # Direct standard Python logging to file and console
     root = logging.getLogger()
