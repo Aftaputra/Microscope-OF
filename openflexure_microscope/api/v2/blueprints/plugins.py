@@ -1,5 +1,6 @@
 from openflexure_microscope.plugins import PluginLoader, MicroscopePlugin
 from openflexure_microscope.api.views import MicroscopeViewPlugin
+from openflexure_microscope.utilities import get_docstring
 
 from flask import Blueprint, jsonify, url_for
 from openflexure_microscope.api.views import MicroscopeView
@@ -28,7 +29,7 @@ def plugins_representation(plugin_loader_object: PluginLoader):
             "plugin": str(plugin),
             "views": {},
             "form": plugin.form,
-            "description": plugin.__doc__.strip() if plugin.__doc__ else ""
+            "description": get_docstring(plugin)
         }
 
         for view_id, view_data in plugin.views.items():
@@ -36,7 +37,7 @@ def plugins_representation(plugin_loader_object: PluginLoader):
             uri = url_for(f"v2_plugins_blueprint.{view_id}")
             # Make links dictionary if it doesn't yet exist
             view_d = {
-                "description": view_data["view"].__doc__.strip() if view_data["view"].__doc__ else "",
+                "description": get_docstring(view_data["view"]),
                 "links": {"self": uri}
             }
 

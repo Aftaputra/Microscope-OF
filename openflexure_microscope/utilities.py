@@ -5,6 +5,12 @@ from collections import abc
 from functools import reduce
 from contextlib import contextmanager
 
+def get_docstring(obj):
+    ds = obj.__doc__
+    if ds:
+        return ds.strip()
+    else:
+        return ""
 
 def camel_to_snake(name):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)

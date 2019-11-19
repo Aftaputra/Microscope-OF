@@ -1,45 +1,41 @@
 from flask import Blueprint, url_for, jsonify
 from sys import platform
 
+from openflexure_microscope.utilities import get_docstring
 from openflexure_microscope.api.views import MicroscopeView
 
 from . import camera, stage, system
+
 
 _actions = {
     "capture": {
         "rule": "/camera/capture/",
         "view_class": camera.CaptureAPI,
-        "description": "Take a single still capture",
         "conditions": True,
     },
     "preview_start": {
         "rule": "/camera/preview/start",
         "view_class": camera.GPUPreviewStartAPI,
-        "description": "Start the on-board GPU preview",
         "conditions": True,
     },
     "preview_stop": {
         "rule": "/camera/preview/stop",
         "view_class": camera.GPUPreviewStopAPI,
-        "description": "Stop the on-board GPU preview",
         "conditions": True,
     },
     "move": {
         "rule": "/stage/move/",
         "view_class": stage.MoveStageAPI,
-        "description": "Move the microscope stage",
         "conditions": True,
     },
     "shutdown": {
         "rule": "/system/shutdown/",
         "view_class": system.ShutdownAPI,
-        "description": "Shutdown the device",
         "conditions": (platform == "linux"),
     },
     "reboot": {
         "rule": "/system/reboot/",
         "view_class": system.RebootAPI,
-        "description": "Reboot the device",
         "conditions": (platform == "linux"),
     },
 }
@@ -57,7 +53,7 @@ def actions_representation():
     for name, action in enabled_actions().items():
         d = {
             "links": {"self": url_for(f".{name}")},
-            "description": action["description"],
+            "description": get_docstring(action["view_class"]),
             "rule": action["rule"],
             "view_class": str(action["view_class"]),
         }

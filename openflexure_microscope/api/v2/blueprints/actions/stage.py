@@ -8,6 +8,12 @@ import logging
 
 
 class MoveStageAPI(MicroscopeView):
+    """
+    Handle stage movements. 
+    
+    Allowed methods: 
+        POST
+    """
     def post(self):
         """
         Set x, y and z positions of the stage.
