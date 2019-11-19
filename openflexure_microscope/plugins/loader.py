@@ -201,7 +201,6 @@ class PluginLoader(object):
                 ):  # If plugin_object is an instance of MicroscopePlugin
                     # Attach plugin_object to the plugin mount
                     setattr(self, plugin_name_python_safe, plugin_object)
-
                     # Store the plugin object, and it's properties
                     self._plugins.append(plugin_object)
                     # DEPRECATED: Store the plugin with it's old name
@@ -213,7 +212,7 @@ class PluginLoader(object):
 
                     logging.info(
                         ConColors.OKGREEN
-                        + "Plugin {} loaded as {}.".format(plugin_map, plugin_name)
+                        + "Plugin {} loaded as {}.".format(plugin_map, plugin_object._name)
                         + ConColors.ENDC
                     )
 
@@ -257,7 +256,6 @@ class BasePlugin:
 
         # Create a Python-safe route ID
         view_id = cleaned_rule.replace("/", "_")
-        full_view_id = f"{self._name_python_safe}_{view_id}"
 
         # Store route information in a dictionary
         d = {
@@ -266,9 +264,9 @@ class BasePlugin:
         }
 
         # Add view to private views dictionary
-        self._views[full_view_id] = d
+        self._views[view_id] = d
         # Store the rule expansion information
-        self._rules[rule] = self._views[full_view_id]
+        self._rules[rule] = self._views[view_id]
 
     @property
     def form(self):
