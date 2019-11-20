@@ -204,7 +204,7 @@ class PluginLoader(object):
                     # Store the plugin object, and it's properties
                     self._plugins.append(plugin_object)
                     # DEPRECATED: Store the plugin with it's old name
-                    self._legacy_plugins[plugin_name_python_safe] = plugin_object
+                    self._legacy_plugins[plugin_name] = plugin_object
 
                     # Grant plugin access to the hardware
                     if isinstance(plugin_object, MicroscopePlugin):

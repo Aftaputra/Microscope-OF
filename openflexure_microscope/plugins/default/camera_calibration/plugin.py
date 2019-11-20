@@ -21,9 +21,9 @@ class RecalibrateAPIView(MicroscopeViewPlugin):
         return jsonify(task.state), 201
 
 
-class Plugin(MicroscopePlugin):
+class AutocalibrationPlugin(MicroscopePlugin):
     """
-    A set of default plugins
+    Auto-calibration plugin
     """
 
     api_views = {"/recalibrate": RecalibrateAPIView}
