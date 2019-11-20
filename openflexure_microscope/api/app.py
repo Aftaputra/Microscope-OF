@@ -148,8 +148,8 @@ app.register_blueprint(task_blueprint, url_prefix=uri("/task", "v1"))
 v2_root_blueprint = v2.blueprints.root.construct_blueprint(api_microscope)
 app.register_blueprint(v2_root_blueprint, url_prefix=uri("/", "v2"))
 
-v2_stream_blueprint = v2.blueprints.stream.construct_blueprint(api_microscope)
-app.register_blueprint(v2_stream_blueprint, url_prefix=uri("/", "v2"))
+v2_streams_blueprint = v2.blueprints.streams.construct_blueprint(api_microscope)
+app.register_blueprint(v2_streams_blueprint, url_prefix=uri("/streams", "v2"))
 
 # Captures routes
 v2_captures_blueprint = v2.blueprints.captures.construct_blueprint(api_microscope)

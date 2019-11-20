@@ -11,6 +11,11 @@ from openflexure_microscope.api.views import MicroscopeView
 
 from . import camera, stage, system
 
+class ActionsAPI(MicroscopeView):
+    def get(self):
+        return jsonify(actions_representation())
+
+
 _actions = {
     "capture": {
         "rule": "/camera/capture/",
@@ -67,9 +72,6 @@ def actions_representation():
 
     return actions
 
-class ActionsAPI(MicroscopeView):
-    def get(self):
-        return jsonify(actions_representation())
 
 def construct_blueprint(microscope_obj):
     global _actions
