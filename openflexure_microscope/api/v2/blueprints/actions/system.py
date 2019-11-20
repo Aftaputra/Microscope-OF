@@ -6,9 +6,6 @@ import subprocess
 class ShutdownAPI(MicroscopeView):
     """
     Attempt to shutdown the device 
-    
-    Allowed methods: 
-        POST
     """
     def post(self):
         """
@@ -25,9 +22,6 @@ class ShutdownAPI(MicroscopeView):
 class RebootAPI(MicroscopeView):
     """
     Attempt to reboot the device 
-    
-    Allowed methods: 
-        POST
     """
     def post(self):
         """

@@ -1,6 +1,11 @@
+"""
+Top-level representation of all acquired captures
+"""
+
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
 from openflexure_microscope.api.views import MicroscopeView
 from openflexure_microscope.utilities import filter_dict
+from openflexure_microscope.api.utilities import blueprint_for_module
 
 from flask import jsonify, request, abort, url_for, redirect, send_file, Blueprint
 
@@ -378,7 +383,8 @@ class TagsAPI(MicroscopeView):
 
 
 def construct_blueprint(microscope_obj):
-    blueprint = Blueprint("v2_captures_blueprint", __name__)
+    
+    blueprint = blueprint_for_module(__name__)
 
     # Tag routes
     blueprint.add_url_rule(

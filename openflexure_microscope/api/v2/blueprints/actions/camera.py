@@ -9,9 +9,6 @@ from flask import jsonify, request, abort, url_for, redirect, send_file
 class CaptureAPI(MicroscopeView):
     """
     Create a new image capture. 
-    
-    Allowed methods: 
-        POST
     """
     def post(self):
         """
@@ -109,9 +106,6 @@ class CaptureAPI(MicroscopeView):
 class GPUPreviewStartAPI(MicroscopeView):
     """
     Start the onboard GPU preview.
-    
-    Allowed methods: 
-        POST
     """
     def post(self, operation):
         """
@@ -157,9 +151,6 @@ class GPUPreviewStartAPI(MicroscopeView):
 class GPUPreviewStopAPI(MicroscopeView):
     """
     Stop the onboard GPU preview.
-    
-    Allowed methods: 
-        POST
     """
     def post(self, operation):
         """

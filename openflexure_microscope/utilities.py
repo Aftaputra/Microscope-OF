@@ -5,6 +5,23 @@ from collections import abc
 from functools import reduce
 from contextlib import contextmanager
 
+def bottom_level_name(obj):
+    return obj.__name__.split('.')[-1]
+
+def description_from_view(view_class):
+    methods = []
+    for method_key in ["get", "post", "put", "delete"]:
+        if hasattr(view_class, method_key):
+            methods.append(method_key.upper())
+    brief_description = get_docstring(view_class).partition('\n')[0].strip()
+
+    d = {
+        "methods": methods,
+        "description": brief_description
+    }
+
+    return d
+
 def get_docstring(obj):
     ds = obj.__doc__
     if ds:

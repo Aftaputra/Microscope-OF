@@ -1,6 +1,11 @@
+"""
+Top-level representation of attached and enabled plugins
+"""
+
 from openflexure_microscope.plugins import PluginLoader, MicroscopePlugin
 from openflexure_microscope.api.views import MicroscopeViewPlugin
-from openflexure_microscope.utilities import get_docstring
+from openflexure_microscope.utilities import get_docstring, description_from_view
+from openflexure_microscope.api.utilities import blueprint_for_module
 
 from flask import Blueprint, jsonify, url_for
 from openflexure_microscope.api.views import MicroscopeView
@@ -8,7 +13,6 @@ from openflexure_microscope.api.views import MicroscopeView
 import copy
 import logging
 import warnings
-
 
 def plugins_representation(plugin_loader_object: PluginLoader):
     """
@@ -28,7 +32,7 @@ def plugins_representation(plugin_loader_object: PluginLoader):
             "python_name": plugin._name_python_safe,
             "plugin": str(plugin),
             "views": {},
-            "form": plugin.form,
+            "gui": plugin.gui,
             "description": get_docstring(plugin)
         }
 
@@ -37,9 +41,10 @@ def plugins_representation(plugin_loader_object: PluginLoader):
             uri = url_for(f"v2_plugins_blueprint.{view_id}")
             # Make links dictionary if it doesn't yet exist
             view_d = {
-                "description": get_docstring(view_data["view"]),
                 "links": {"self": uri}
             }
+
+            view_d.update(description_from_view(view_data["view"]))
 
             d["views"][view_id] = view_d
 
@@ -67,14 +72,12 @@ class PluginFormAPI(MicroscopeView):
 
 def construct_blueprint(microscope_obj):
 
-    blueprint = Blueprint("v2_plugins_blueprint", __name__)
+    blueprint = blueprint_for_module(__name__)
 
     # Create a base route to return plugin API forms, if any exist
     blueprint.add_url_rule(
         "/", view_func=PluginFormAPI.as_view("plugins", microscope=microscope_obj)
     )
-
-    all_routes = []
 
     # For each plugin attached to the microscope object
     for plugin in microscope_obj.plugins.active:

@@ -1,12 +1,16 @@
+"""
+Top-level representation of enabled actions
+"""
+
 from flask import Blueprint, url_for, jsonify
 from sys import platform
 
-from openflexure_microscope.utilities import get_docstring
+from openflexure_microscope.api.utilities import blueprint_for_module
+from openflexure_microscope.utilities import get_docstring, description_from_view
 from openflexure_microscope.api.views import MicroscopeView
 
 from . import camera, stage, system
 
-# TODO: Could allowed methods be calculated automatically by looking at what methods exist?
 _actions = {
     "capture": {
         "rule": "/camera/capture/",
@@ -53,10 +57,11 @@ def actions_representation():
     for name, action in enabled_actions().items():
         d = {
             "links": {"self": url_for(f".{name}")},
-            "description": get_docstring(action["view_class"]),
             "rule": action["rule"],
             "view_class": str(action["view_class"]),
         }
+
+        d.update(description_from_view(action["view_class"]))
 
         actions[name] = d
 
@@ -69,7 +74,7 @@ class ActionsAPI(MicroscopeView):
 def construct_blueprint(microscope_obj):
     global _actions
 
-    blueprint = Blueprint("v2_actions_blueprint", __name__)
+    blueprint = blueprint_for_module(__name__)
 
     # For each enabled action route defined in our dictionary above
     for name, action in enabled_actions().items():

@@ -1,5 +1,6 @@
 from openflexure_microscope.api.utilities import gen, JsonResponse
 from openflexure_microscope.api.views import MicroscopeView
+from openflexure_microscope.api.utilities import blueprint_for_module
 
 from flask import Response, Blueprint, jsonify, request
 
@@ -43,7 +44,7 @@ class SnapshotAPI(MicroscopeView):
 
 def construct_blueprint(microscope_obj):
 
-    blueprint = Blueprint("v2_stream_blueprint", __name__)
+    blueprint = blueprint_for_module(__name__)
 
     blueprint.add_url_rule(
         "/stream", view_func=StreamAPI.as_view("stream", microscope=microscope_obj)

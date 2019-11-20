@@ -2,29 +2,29 @@ from flask import Blueprint, jsonify, url_for
 from openflexure_microscope import Microscope
 from openflexure_microscope.api.views import MicroscopeView
 
-def root_representation(microscope_obj: Microscope):
-    d = {
-        "settings": {
-            "description": "Writeable settings for the microscope, and attached hardware",
-            "links": {"self": url_for("v2_settings_blueprint.settings")}
-        },
-        "status": {
-            "description": "Read-only status of the microscope, and attached hardware info",
-            "links": {"self": url_for("v2_status_blueprint.status")}
-        },
-        "plugins": {
-            "description": "Top-level representation of attached and enabled plugins",
-            "links": {"self": url_for("v2_plugins_blueprint.plugins")}
-        },
-        "captures": {
-            "description": "Top-level representation of all acquired captures",
-            "links": {"self": url_for("v2_captures_blueprint.captures")}
-        },
-        "actions": {
-            "description": "Top-level representation of enabled actions",
-            "links": {"self": url_for("v2_actions_blueprint.actions")}
-        },
-    }
+from openflexure_microscope.utilities import get_docstring, bottom_level_name
+from openflexure_microscope.api.utilities import blueprint_name_for_module
+from openflexure_microscope.api.v2.blueprints import settings, status, plugins, captures, actions, stream
+
+# List of submodules containing create_blueprint methods using standard blueprint_for_module naming
+_root_blueprint_modules = [settings, status, plugins, captures, actions, stream]
+
+def root_representation():
+    """
+    Generate a dictionar representation of all top-level blueprint rules
+    """
+    global _root_blueprint_modules
+    d = {}
+
+    for blueprint_module in _root_blueprint_modules:
+        module_short_name = bottom_level_name(blueprint_module)
+        blueprint_name = blueprint_name_for_module(blueprint_module.__name__)
+
+        d[module_short_name] = {
+            "name": blueprint_module.__name__,
+            "description": get_docstring(blueprint_module),
+            "links": {"self": url_for(f"{blueprint_name}.{module_short_name}")}
+        }
 
     return d
 
@@ -32,7 +32,7 @@ def root_representation(microscope_obj: Microscope):
 class RootAPI(MicroscopeView):
     def get(self):
 
-        return jsonify(root_representation(self.microscope))
+        return jsonify(root_representation())
 
 
 def construct_blueprint(microscope_obj):

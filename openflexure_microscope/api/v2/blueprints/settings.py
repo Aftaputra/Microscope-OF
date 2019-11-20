@@ -1,5 +1,10 @@
+"""
+Writeable settings for the microscope, and attached hardware
+"""
+
 from openflexure_microscope.api.utilities import gen, JsonResponse
 from openflexure_microscope.api.views import MicroscopeView
+from openflexure_microscope.api.utilities import blueprint_for_module
 
 from flask import Blueprint, jsonify, request
 import logging
@@ -144,7 +149,7 @@ class SettingsAPI(MicroscopeView):
 
 def construct_blueprint(microscope_obj):
 
-    blueprint = Blueprint("v2_settings_blueprint", __name__)
+    blueprint = blueprint_for_module(__name__)
 
     blueprint.add_url_rule(
         "/", view_func=SettingsAPI.as_view("settings", microscope=microscope_obj)
