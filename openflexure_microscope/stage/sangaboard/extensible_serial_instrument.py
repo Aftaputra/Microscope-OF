@@ -143,7 +143,7 @@ class ExtensibleSerialInstrument(object):
             if self._ser.inWaiting() > 0:
                 self._ser.flushInput()
 
-    def readline(self):
+    def readline(self, timeout=None):
         """Read one line from the serial port."""
         with self.communications_lock:
             return (
@@ -163,7 +163,7 @@ class ExtensibleSerialInstrument(object):
             self._communications_lock = threading.RLock()
         return self._communications_lock
 
-    def read_multiline(self, termination_line=None):
+    def read_multiline(self, termination_line=None, timeout=None):
         """Read one line from the underlying bus.  Must be overriden.
 
         This should not need to be reimplemented unless there's a more efficient
@@ -179,11 +179,11 @@ class ExtensibleSerialInstrument(object):
             while (
                 termination_line not in last_line and len(last_line) > 0
             ):  # read until we get the termination line.
-                last_line = self.readline()
+                last_line = self.readline(timeout)
                 response += last_line
             return response
 
-    def query(self, queryString, multiline=False, termination_line=None):
+    def query(self, queryString, multiline=False, termination_line=None, timeout=None):
         """
         Write a string to the stage controller and return its response.
 
@@ -198,10 +198,10 @@ class ExtensibleSerialInstrument(object):
             logging.debug("Query written")
             if self.ignore_echo == True:  # Needs Implementing for a multiline read!
                 logging.debug("Reading first line...")
-                first_line = self.readline().strip()
+                first_line = self.readline(timeout).strip()
                 logging.debug(f"Read finished. Got {first_line}")
                 if first_line == queryString:
-                    return self.readline().strip()
+                    return self.readline(timeout).strip()
                 else:
                     logging.info("This command did not echo!!!")
                     return first_line
@@ -214,7 +214,7 @@ class ExtensibleSerialInstrument(object):
             else:
                 logging.debug("Reading response...")
                 line = (
-                    self.readline().strip()
+                    self.readline(timeout).strip()
                 )  # question: should we strip the final newline?
                 logging.debug(f"Read finished. Got {line}")
                 return line
@@ -352,6 +352,7 @@ class ExtensibleSerialInstrument(object):
     def find_port(self):
         """Iterate through the available serial ports and query them to see
         if our instrument is there."""
+        print("Auto-scanning ports")
         with self.communications_lock:
             success = False
             for (

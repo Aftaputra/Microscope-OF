@@ -102,7 +102,7 @@ class Sangaboard(ExtensibleSerialInstrument):
 
         # Initialise basic serial instrument with specified
         logging.info(f"Initialising ExtensibleSerialInstrument on port {port}")
-        ExtensibleSerialInstrument.__init__(self, port, timeout=timeout, **kwargs)
+        ExtensibleSerialInstrument.__init__(self, port, **kwargs)
 
         try:
             # Make absolutely sure that whatever port we're on is valid
