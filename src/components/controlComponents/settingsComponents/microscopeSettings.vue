@@ -116,8 +116,9 @@ export default {
       axios
         .put(this.settingsUri, payload)
         .then(() => {
+          // Update local settings
           this.updateSettings();
-          this.modalNotify("Microscope config applied.");
+          this.modalNotify("Microscope settings applied.");
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error

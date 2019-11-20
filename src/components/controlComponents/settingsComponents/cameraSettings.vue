@@ -158,11 +158,9 @@ export default {
           return new Promise(r => setTimeout(r, 500));
         }) // why is there no built-in for this??!
         .then(() => {
-          return this.$store.dispatch("updateConfig");
-        })
-        .then(this.updateInputValues)
-        .then(() => {
-          console.log("Updated Config: ", payload);
+          // Update local settings
+          this.updateSettings();
+          this.modalNotify("Camera settings applied.");
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -171,7 +169,8 @@ export default {
 
     onRecalibrateResponse: function() {
       this.modalNotify("Finished recalibration.");
-      return new Promise(r => setTimeout(r, 500)); // wait 500ms before updating config, so it's fresh
+      // Update local settings
+      this.updateSettings();
     },
 
     onRecalibrateError: function(error) {
