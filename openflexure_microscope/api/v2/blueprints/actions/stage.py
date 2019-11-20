@@ -11,6 +11,7 @@ class MoveStageAPI(MicroscopeView):
     """
     Handle stage movements. 
     """
+
     def post(self):
         """
         Set x, y and z positions of the stage.

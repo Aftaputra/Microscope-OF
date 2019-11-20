@@ -7,6 +7,7 @@ from openflexure_microscope.api.utilities import blueprint_for_module
 
 from flask import Blueprint, jsonify
 
+
 class StatusAPI(MicroscopeView):
     def get(self):
         """

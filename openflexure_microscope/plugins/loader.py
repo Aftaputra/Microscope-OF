@@ -186,7 +186,7 @@ class PluginLoader(object):
                 plugin_object = plugin_class()
 
                 if hasattr(
-                        self, plugin_name
+                    self, plugin_name
                 ):  # If a plugin with the same name is already attached.
                     logging.warning(
                         ConColors.WARNING
@@ -197,7 +197,7 @@ class PluginLoader(object):
                     )
 
                 elif isinstance(
-                        plugin_object, BasePlugin
+                    plugin_object, BasePlugin
                 ):  # If plugin_object is an instance of MicroscopePlugin
                     # Attach plugin_object to the plugin mount
                     setattr(self, plugin_name_python_safe, plugin_object)
@@ -212,7 +212,9 @@ class PluginLoader(object):
 
                     logging.info(
                         ConColors.OKGREEN
-                        + "Plugin {} loaded as {}.".format(plugin_map, plugin_object._name)
+                        + "Plugin {} loaded as {}.".format(
+                            plugin_map, plugin_object._name
+                        )
                         + ConColors.ENDC
                     )
 
@@ -228,7 +230,9 @@ class BasePlugin:
     """
 
     def __init__(self):
-        self._views = {}  # Key: Full, Python-safe ID. Val: Original rule, and view class
+        self._views = (
+            {}
+        )  # Key: Full, Python-safe ID. Val: Original rule, and view class
         self._rules = {}  # Key: Original rule. Val: View class
         self._gui = None
 
@@ -258,10 +262,7 @@ class BasePlugin:
         view_id = cleaned_rule.replace("/", "_")
 
         # Store route information in a dictionary
-        d = {
-            "rule": full_rule,
-            "view": view_class
-        }
+        d = {"rule": full_rule, "view": view_class}
 
         # Add view to private views dictionary
         self._views[view_id] = d
@@ -276,17 +277,13 @@ class BasePlugin:
         api_gui = copy.deepcopy(self._gui)
         api_gui["id"] = self._name
 
-        if "forms" in api_gui and isinstance(
-                api_gui["forms"], list
-        ):
+        if "forms" in api_gui and isinstance(api_gui["forms"], list):
             for form in api_gui["forms"]:
                 if "route" in form and form["route"] in self._rules.keys():
                     form["route"] = self._rules[form["route"]]["rule"]
                 else:
                     logging.warn(
-                        "No valid expandable route found for {}".format(
-                            form["route"]
-                        )
+                        "No valid expandable route found for {}".format(form["route"])
                     )
         return api_gui
 
@@ -317,7 +314,7 @@ class BasePlugin:
         if module is None or module == str.__class__.__module__:
             return self.__class__.__name__  # Avoid reporting __builtin__
         else:
-            return module + '.' + self.__class__.__name__
+            return module + "." + self.__class__.__name__
 
 
 class MicroscopePlugin(BasePlugin):

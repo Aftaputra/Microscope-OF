@@ -5,22 +5,22 @@ from collections import abc
 from functools import reduce
 from contextlib import contextmanager
 
+
 def bottom_level_name(obj):
-    return obj.__name__.split('.')[-1]
+    return obj.__name__.split(".")[-1]
+
 
 def description_from_view(view_class):
     methods = []
     for method_key in ["get", "post", "put", "delete"]:
         if hasattr(view_class, method_key):
             methods.append(method_key.upper())
-    brief_description = get_docstring(view_class).partition('\n')[0].strip()
+    brief_description = get_docstring(view_class).partition("\n")[0].strip()
 
-    d = {
-        "methods": methods,
-        "description": brief_description
-    }
+    d = {"methods": methods, "description": brief_description}
 
     return d
+
 
 def get_docstring(obj):
     ds = obj.__doc__
@@ -29,13 +29,16 @@ def get_docstring(obj):
     else:
         return ""
 
+
 def camel_to_snake(name):
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
 
 def camel_to_spine(name):
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1-\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1-\2', s1).lower()
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1-\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1-\2", s1).lower()
+
 
 @contextmanager
 def set_properties(obj, **kwargs):

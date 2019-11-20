@@ -213,7 +213,9 @@ class ExtensibleSerialInstrument(object):
                 return self.read_multiline(termination_line)
             else:
                 logging.debug("Reading response...")
-                line = self.readline().strip()  # question: should we strip the final newline?
+                line = (
+                    self.readline().strip()
+                )  # question: should we strip the final newline?
                 logging.debug(f"Read finished. Got {line}")
                 return line
 
@@ -223,7 +225,7 @@ class ExtensibleSerialInstrument(object):
         response_string=r"%d",
         re_flags=0,
         parse_function=None,
-        **kwargs
+        **kwargs,
     ):
         """
         Perform a query, returning a parsed form of the response.

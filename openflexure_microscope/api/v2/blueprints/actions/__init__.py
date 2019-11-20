@@ -11,6 +11,7 @@ from openflexure_microscope.api.views import MicroscopeView
 
 from . import camera, stage, system
 
+
 class ActionsAPI(MicroscopeView):
     def get(self):
         return jsonify(actions_representation())

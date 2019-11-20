@@ -14,6 +14,7 @@ import copy
 import logging
 import warnings
 
+
 def plugins_representation(plugin_loader_object: PluginLoader):
     """
     Generate a dictionary representation of all plugins, including Flask route URLs
@@ -33,16 +34,14 @@ def plugins_representation(plugin_loader_object: PluginLoader):
             "plugin": str(plugin),
             "views": {},
             "gui": plugin.gui,
-            "description": get_docstring(plugin)
+            "description": get_docstring(plugin),
         }
 
         for view_id, view_data in plugin.views.items():
             logging.debug(f"Representing view {view_id}")
             uri = url_for(f"v2_plugins_blueprint.{view_id}")
             # Make links dictionary if it doesn't yet exist
-            view_d = {
-                "links": {"self": uri}
-            }
+            view_d = {"links": {"self": uri}}
 
             view_d.update(description_from_view(view_data["view"]))
 
@@ -87,9 +86,7 @@ def construct_blueprint(microscope_obj):
             blueprint.add_url_rule(
                 plugin_view["rule"],
                 view_func=plugin_view["view"].as_view(
-                    plugin_view_id,
-                    microscope=microscope_obj,
-                    plugin=plugin,
+                    plugin_view_id, microscope=microscope_obj, plugin=plugin
                 ),
             )
 

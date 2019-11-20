@@ -2,12 +2,18 @@ import logging
 from werkzeug.exceptions import BadRequest
 from flask import url_for, Blueprint
 
+
 def blueprint_for_module(module_name, api_ver=2, suffix=""):
-    return Blueprint(blueprint_name_for_module(module_name, api_ver=api_ver, suffix=suffix), module_name)
+    return Blueprint(
+        blueprint_name_for_module(module_name, api_ver=api_ver, suffix=suffix),
+        module_name,
+    )
+
 
 def blueprint_name_for_module(module_name, api_ver=2, suffix=""):
-    bp_name = module_name.split('.')[-1]
+    bp_name = module_name.split(".")[-1]
     return f"v{api_ver}_{bp_name}_blueprint{suffix}"
+
 
 class JsonResponse:
     def __init__(self, request):

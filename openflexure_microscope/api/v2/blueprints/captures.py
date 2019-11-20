@@ -383,7 +383,7 @@ class TagsAPI(MicroscopeView):
 
 
 def construct_blueprint(microscope_obj):
-    
+
     blueprint = blueprint_for_module(__name__)
 
     # Tag routes

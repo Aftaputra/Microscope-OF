@@ -10,6 +10,7 @@ class CaptureAPI(MicroscopeView):
     """
     Create a new image capture. 
     """
+
     def post(self):
         """
         Create a new image capture.
@@ -107,6 +108,7 @@ class GPUPreviewStartAPI(MicroscopeView):
     """
     Start the onboard GPU preview.
     """
+
     def post(self, operation):
         """
         Start the onboard GPU preview.
@@ -152,6 +154,7 @@ class GPUPreviewStopAPI(MicroscopeView):
     """
     Stop the onboard GPU preview.
     """
+
     def post(self, operation):
         """
         Stop the onboard GPU preview.

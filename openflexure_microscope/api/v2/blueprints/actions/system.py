@@ -7,6 +7,7 @@ class ShutdownAPI(MicroscopeView):
     """
     Attempt to shutdown the device 
     """
+
     def post(self):
         """
         Attempt to shutdown the device
@@ -23,6 +24,7 @@ class RebootAPI(MicroscopeView):
     """
     Attempt to reboot the device 
     """
+
     def post(self):
         """
         Attempt to shutdown the device

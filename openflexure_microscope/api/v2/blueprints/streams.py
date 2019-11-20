@@ -4,7 +4,10 @@ Top-level description of routes related to live camera stream data
 
 from openflexure_microscope.api.utilities import gen, JsonResponse
 from openflexure_microscope.api.views import MicroscopeView
-from openflexure_microscope.api.utilities import blueprint_for_module, blueprint_name_for_module
+from openflexure_microscope.api.utilities import (
+    blueprint_for_module,
+    blueprint_name_for_module,
+)
 from openflexure_microscope.utilities import description_from_view
 
 from flask import Response, Blueprint, jsonify, request, url_for
@@ -19,6 +22,7 @@ class MjpegAPI(MicroscopeView):
     """
     Real-time MJPEG stream from the microscope camera
     """
+
     def get(self):
         """
         Real-time MJPEG stream from the microscope camera
@@ -42,6 +46,7 @@ class SnapshotAPI(MicroscopeView):
     """
     Single JPEG snapshot from the camera stream
     """
+
     def get(self):
         """
         Single snapshot from the camera stream
@@ -59,16 +64,8 @@ class SnapshotAPI(MicroscopeView):
 
 
 _streams = {
-    "mjpeg": {
-        "rule": "/mjpeg",
-        "view_class": MjpegAPI,
-        "conditions": True,
-    },
-    "snapshot": {
-        "rule": "/snapshot",
-        "view_class": SnapshotAPI,
-        "conditions": True,
-    }
+    "mjpeg": {"rule": "/mjpeg", "view_class": MjpegAPI, "conditions": True},
+    "snapshot": {"rule": "/snapshot", "view_class": SnapshotAPI, "conditions": True},
 }
 
 
@@ -82,9 +79,7 @@ def streams_representation():
 
     streams = {}
     for name, stream in enabled_streams().items():
-        d = {
-            "links": {"self": url_for(f".{name}")},
-        }
+        d = {"links": {"self": url_for(f".{name}")}}
 
         d.update(description_from_view(stream["view_class"]))
 

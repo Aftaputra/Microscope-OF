@@ -21,6 +21,7 @@ class AutofocusAPI(MicroscopeViewPlugin):
     """
     Run a standard autofocus
     """
+
     def post(self):
         payload = JsonResponse(request)
 
@@ -42,6 +43,7 @@ class FastAutofocusAPI(MicroscopeViewPlugin):
     """
     Run a fast autofocus
     """
+
     def post(self):
         payload = JsonResponse(request)
 

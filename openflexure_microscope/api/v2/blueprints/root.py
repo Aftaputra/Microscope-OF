@@ -4,10 +4,18 @@ from openflexure_microscope.api.views import MicroscopeView
 
 from openflexure_microscope.utilities import get_docstring, bottom_level_name
 from openflexure_microscope.api.utilities import blueprint_name_for_module
-from openflexure_microscope.api.v2.blueprints import settings, status, plugins, captures, actions, streams
+from openflexure_microscope.api.v2.blueprints import (
+    settings,
+    status,
+    plugins,
+    captures,
+    actions,
+    streams,
+)
 
 # List of submodules containing create_blueprint methods using standard blueprint_for_module naming
 _root_blueprint_modules = [settings, status, plugins, captures, actions, streams]
+
 
 def root_representation():
     """
@@ -23,7 +31,7 @@ def root_representation():
         d[module_short_name] = {
             "name": blueprint_module.__name__,
             "description": get_docstring(blueprint_module),
-            "links": {"self": url_for(f"{blueprint_name}.{module_short_name}")}
+            "links": {"self": url_for(f"{blueprint_name}.{module_short_name}")},
         }
 
     return d
