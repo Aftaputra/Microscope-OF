@@ -42,6 +42,7 @@
     >
       <div class="uk-margin-remove-top uk-padding-remove uk-width-expand">
         <labelInput
+          :name="key"
           :label="key"
           :value="value[key]"
           @input="value[key] = $event"
