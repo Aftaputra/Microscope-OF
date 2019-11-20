@@ -4,7 +4,7 @@
     :class="{ 'uk-card-secondary': $store.state.globalSettings.darkMode }"
   >
     <div class="uk-card-media-top">
-      <a class="lightbox-link" :href="imgURL" :data-caption="captureState.filename">
+      <a class="lightbox-link" :href="imgURL" :data-caption="fileName">
         <img
           class="uk-width-1-1"
           :data-src="thumbURL"
@@ -22,7 +22,7 @@
         uk-grid
       >
         <div class="uk-margin-remove-top uk-padding-remove uk-width-expand">
-          {{ captureState.filename }}
+          {{ fileName }}
         </div>
         <div class="uk-margin-remove-top uk-padding-remove uk-width-auto">
           <a href="#" class="uk-icon" @click="delCaptureConfirm()">
@@ -74,7 +74,7 @@
         }"
       >
         <button class="uk-modal-close-default" type="button" uk-close></button>
-        <h2 class="uk-modal-title">{{ captureState.filename }}</h2>
+        <h2 class="uk-modal-title">{{ fileName }}</h2>
         <p><b>Path: </b>{{ captureState.path }}</p>
         <p><b>Time: </b>{{ betterTimestring }}</p>
         <p><b>ID: </b>{{ captureState.metadata.id }}</p>
@@ -148,6 +148,11 @@ export default {
   },
 
   computed: {
+    fileName: function() {
+      return this.captureState.filename // If this.captureState.filename exists
+        ? this.captureState.filename // Use this.captureState.filename
+        : this.captureState.metadata.filename; // Otherwise use old this.captureState.metadata.filename
+    },
     tagModalID: function() {
       return this.makeModalName("tag-modal-");
     },
@@ -164,13 +169,17 @@ export default {
       return this.captureURL + "/download?thumbnail=true";
     },
     imgURL: function() {
-      return this.captureURL + "/download/" + this.captureState.filename;
+      return this.captureURL + "/download/" + this.fileName;
     },
     tagURL: function() {
       return this.captureURL + "/tags";
     },
     captureURL: function() {
-      return this.$store.getters.uri + "/camera/capture/" + this.captureState.metadata.id;
+      return (
+        this.$store.getters.uri +
+        "/camera/capture/" +
+        this.captureState.metadata.id
+      );
     },
     betterTimestring: function() {
       var dtSplit = this.captureState.metadata.time.split("_");

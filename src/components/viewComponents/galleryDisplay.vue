@@ -80,10 +80,7 @@
             :metadata="item.metadata"
             :thumbnail="item.thumbnail"
           />
-          <captureCard
-            v-else
-            :captureState="item"
-          />
+          <captureCard v-else :capture-state="item" />
         </div>
       </div>
     </div>
