@@ -17,12 +17,12 @@ _actions = {
         "view_class": camera.CaptureAPI,
         "conditions": True,
     },
-    "preview_start": {
+    "previewStart": {
         "rule": "/camera/preview/start",
         "view_class": camera.GPUPreviewStartAPI,
         "conditions": True,
     },
-    "preview_stop": {
+    "previewStop": {
         "rule": "/camera/preview/stop",
         "view_class": camera.GPUPreviewStopAPI,
         "conditions": True,
