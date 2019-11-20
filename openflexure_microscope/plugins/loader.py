@@ -230,7 +230,7 @@ class BasePlugin:
     def __init__(self):
         self._views = {}  # Key: Full, Python-safe ID. Val: Original rule, and view class
         self._rules = {}  # Key: Original rule. Val: View class
-        self._form = None
+        self._gui = None
 
         # If old api_views dictionary is found
         if hasattr(self, "api_views"):
@@ -269,17 +269,17 @@ class BasePlugin:
         self._rules[rule] = self._views[view_id]
 
     @property
-    def form(self):
-        if not self._form:
+    def gui(self):
+        if not self._gui:
             return None
 
-        api_form_info = copy.deepcopy(self._form)
-        api_form_info["id"] = self._name
+        api_gui = copy.deepcopy(self._gui)
+        api_gui["id"] = self._name
 
-        if "forms" in api_form_info and isinstance(
-                api_form_info["forms"], list
+        if "forms" in api_gui and isinstance(
+                api_gui["forms"], list
         ):
-            for form in api_form_info["forms"]:
+            for form in api_gui["forms"]:
                 if "route" in form and form["route"] in self._rules.keys():
                     form["route"] = self._rules[form["route"]]["rule"]
                 else:
@@ -288,17 +288,17 @@ class BasePlugin:
                             form["route"]
                         )
                     )
-        return api_form_info
+        return api_gui
 
-    def set_form(self, form_dictionary: dict):
-        self._form = form_dictionary
+    def set_gui(self, form_dictionary: dict):
+        self._gui = form_dictionary
 
     def _convert_old_api_views(self):
         for view_route, view_class in self.api_views.items():
             self.add_view(view_route, view_class)
 
     def _convert_old_api_form(self):
-        self.set_form(self.api_form)
+        self.set_gui(self.api_form)
 
     @property
     def _name(self):
