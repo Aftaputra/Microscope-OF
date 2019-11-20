@@ -40,7 +40,7 @@
 
       <taskSubmitter
         v-if="isTask"
-        :submit-u-r-l="submitApiUri"
+        :submit-url="submitApiUri"
         :submit-data="formData"
         :submit-label="submitLabel"
         @submit="onTaskSubmit"

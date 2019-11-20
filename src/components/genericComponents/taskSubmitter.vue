@@ -40,7 +40,7 @@ export default {
   name: "TaskSubmitter",
 
   props: {
-    submitURL: {
+    submitUrl: {
       type: String,
       required: true
     },
@@ -120,8 +120,9 @@ export default {
       console.log("Task start clicked");
       this.$emit("submit", this.submitData);
       // Send a request to start a task
+      console.log("Submitting to ", this.submitUrl);
       axios
-        .post(this.submitURL, this.submitData)
+        .post(this.submitUrl, this.submitData)
         // Get the returned Task ID
         .then(response => {
           // Fetch the task ID

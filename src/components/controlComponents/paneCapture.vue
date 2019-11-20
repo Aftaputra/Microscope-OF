@@ -234,7 +234,7 @@
 
     <taskSubmitter
       v-if="scanCapture"
-      :submit-u-r-l="scanApiUri"
+      :submit-url="scanApiUri"
       :submit-data="scanPayload"
       :submit-label="'Start Scan'"
       @submit="onScanSubmit"
