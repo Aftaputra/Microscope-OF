@@ -161,7 +161,7 @@ class PluginLoader(object):
         logging.warning(
             "PluginMount.state is deprecated. Use PluginMount.active instead. State will be removed in a future version."
         )
-        return [m["python_name"] for m in self._plugins]
+        return list(self._legacy_plugins.keys())
 
     @property
     def active(self):
