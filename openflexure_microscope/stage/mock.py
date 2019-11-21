@@ -74,9 +74,8 @@ class MockStage(BaseStage):
         self, displacement: list, axis=None, backlash=True, simulate_time: bool = True
     ):
         if simulate_time:
-            time.sleep(1)
+            time.sleep(0.5)
         if axis is not None:
-
             assert axis in self.axis_names, "axis must be one of {}".format(
                 self.axis_names
             )
@@ -86,19 +85,13 @@ class MockStage(BaseStage):
 
         initial_move = np.array(displacement, dtype=np.int)
 
-        initial_move -= np.where(
-            self.backlash * displacement < 0,
-            self.backlash,
-            np.zeros(self.n_axes, dtype=self.backlash.dtype),
-        )
-
         self._position = list(np.array(self._position) + np.array(initial_move))
         logging.debug(np.array(self._position) + np.array(initial_move))
         logging.debug(f"New position: {self._position}")
 
     def move_abs(self, final, simulate_time: bool = True, **kwargs):
         if simulate_time:
-            time.sleep(1)
+            time.sleep(0.5)
 
         self._position = list(final)
         logging.debug(f"New position: {self._position}")
