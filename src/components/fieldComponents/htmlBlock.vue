@@ -11,7 +11,8 @@ export default {
   props: {
     label: {
       type: String,
-      required: true
+      required: false,
+      default: ""
     },
     name: {
       type: String,

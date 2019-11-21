@@ -26,7 +26,10 @@ export default {
   props: {
     value: {
       type: Array,
-      required: true
+      required: false,
+      default: function() {
+        return [];
+      }
     },
     options: {
       type: Array,

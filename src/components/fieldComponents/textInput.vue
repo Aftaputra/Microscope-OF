@@ -1,6 +1,6 @@
 <template>
   <div>
-    <label class="uk-form-label">{{ label }}</label>
+    <label v-if="label" class="uk-form-label">{{ label }}</label>
 
     <input
       class="uk-input uk-form-small"
@@ -20,11 +20,13 @@ export default {
   props: {
     placeholder: {
       type: String,
-      required: true
+      required: false,
+      default: null
     },
     label: {
       type: String,
-      required: true
+      required: false,
+      default: null
     },
     name: {
       type: String,
@@ -32,7 +34,8 @@ export default {
     },
     value: {
       type: String,
-      required: true
+      required: false,
+      default: ""
     }
   }
 };

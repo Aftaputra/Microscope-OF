@@ -20,11 +20,13 @@ export default {
   props: {
     value: {
       type: Number,
-      required: true
+      required: false,
+      default: 0
     },
     placeholder: {
       type: Number,
-      required: true
+      required: false,
+      default: NaN
     },
     name: {
       type: String,

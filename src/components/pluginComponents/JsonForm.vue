@@ -156,13 +156,16 @@ export default {
       */
       for (const field of this.schema) {
         if (Array.isArray(field)) {
+          var defaultValue; // Initial value of the form component
           for (const subfield of field) {
-            console.log(subfield.name);
-            this.$set(this.formData, subfield.name, null);
+            // If a default value is given in the schema, use this
+            defaultValue = subfield.default ? subfield.default : null;
+            this.$set(this.formData, subfield.name, defaultValue);
           }
         } else {
-          console.log(field.name);
-          this.$set(this.formData, field.name, null);
+          // If a default value is given in the schema, use this
+          defaultValue = field.default ? field.default : null;
+          this.$set(this.formData, field.name, defaultValue);
         }
       }
     },
