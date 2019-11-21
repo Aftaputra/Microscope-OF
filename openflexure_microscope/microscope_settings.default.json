@@ -9,6 +9,6 @@
   "plugins": [
     "openflexure_microscope.plugins.default.autofocus:AutofocusPlugin",
     "openflexure_microscope.plugins.default.scan:ScanPlugin",
-    "openflexure_microscope.plugins.default.camera_calibration:Plugin"
+    "openflexure_microscope.plugins.default.camera_calibration:AutocalibrationPlugin"
   ]
 }

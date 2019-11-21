@@ -90,7 +90,7 @@ class Sangaboard(ExtensibleSerialInstrument):
     # Once initialised, `firmware` is a string that identifies the firmware version
     firmware = None
 
-    def __init__(self, port=None, **kwargs):
+    def __init__(self, port=None, timeout: int = 2, **kwargs):
         """Create a sangaboard object.
 
         Arguments are passed to the constructor of
@@ -101,13 +101,16 @@ class Sangaboard(ExtensibleSerialInstrument):
         """
 
         # Initialise basic serial instrument with specified
+        logging.info(f"Initialising ExtensibleSerialInstrument on port {port}")
         ExtensibleSerialInstrument.__init__(self, port, **kwargs)
 
         try:
             # Make absolutely sure that whatever port we're on is valid
+            logging.info("Checking valid firmware...")
             self.check_valid_firmware()
 
             # Bit messy: Defining all valid modules as not available, then overwriting with available information if available.
+            logging.info("Loading modules...")
             self.light_sensor = LightSensor(False)
 
             for module in self.list_modules():
@@ -145,10 +148,11 @@ class Sangaboard(ExtensibleSerialInstrument):
         """
         Overrides superclass, used in self.open(), and port scanning
         """
+        logging.info("Testing communication to SangaBoard")
         return self.check_valid_firmware()
 
     def check_valid_firmware(self):
-        logging.debug("Running firmware checks")
+        logging.info("Running firmware checks...")
 
         # Request firmware version from the board
         self.firmware = self.query("version", timeout=2).rstrip()

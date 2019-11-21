@@ -7,7 +7,7 @@ from openflexure_microscope.common.tasks import (
     remove_task,
 )
 
-
+# DEPRECATED
 class TaskOrchestrator:
     """
     DEPRECATED: Class responsible for spawning threaded tasks, and storing their returns.

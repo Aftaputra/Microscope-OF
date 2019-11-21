@@ -1,7 +1,11 @@
 import importlib
+import copy
 import os
 import inspect
 import logging
+
+from openflexure_microscope.utilities import camel_to_snake, camel_to_spine
+from openflexure_microscope.api.views import MicroscopeViewPlugin
 
 
 class ConColors:
@@ -80,7 +84,6 @@ def name_from_module(plugin_path):
 
 
 def load_plugin_module(plugin_path):
-
     # If the loader was found (i.e. plugin probably exists)
     if check_module(plugin_path):
         try:
@@ -137,7 +140,7 @@ def class_from_map(plugin_map):
         return load_plugin_class(*plugin_arr)
 
 
-class PluginMount(object):
+class PluginLoader(object):
     """
     A mount-point for all loaded plugins. Attaches to a Microscope object.
 
@@ -147,30 +150,22 @@ class PluginMount(object):
 
     def __init__(self, parent):
         self.parent = parent
-        self.plugins = []  # List of plugin objects
+        self._plugins = []  # List of plugin objects
+        self._legacy_plugins = {}  # DEPRECATED: Dictionary of plugins with old names
         self.forms = []  # List of plugin forms
         logging.info("Creating plugin mount")
 
     @property
     def state(self):
-        return [m[0] for m in self.members]
+        # DEPRECATED
+        logging.warning(
+            "PluginMount.state is deprecated. Use PluginMount.active instead. State will be removed in a future version."
+        )
+        return list(self._legacy_plugins.keys())
 
     @property
-    def members(self):
-        ignores = ["state", "members", "attach"]
-        plugin_array = []
-        for obj_name in dir(self):
-            if not obj_name in ignores and not obj_name[:2] == "__":
-                obj = getattr(self, obj_name)
-                if isinstance(obj, MicroscopePlugin):
-                    plugin_members = [
-                        member
-                        for member in inspect.getmembers(obj)
-                        if not member[0][:2] == "__"
-                    ]
-                    plugin_info = (obj_name, plugin_members)
-                    plugin_array.append(plugin_info)
-        return plugin_array
+    def active(self):
+        return self._plugins
 
     def attach(self, plugin_map):
         """
@@ -183,7 +178,9 @@ class PluginMount(object):
 
         if plugin_class is not None:
 
-            pythonsafe_plugin_name = plugin_name.replace("/", "_")
+            logging.debug(f"Loading plugin class {plugin_class}, {plugin_name}")
+
+            plugin_name_python_safe = plugin_name.replace("/", "_")
 
             if plugin_class and plugin_name:
                 plugin_object = plugin_class()
@@ -200,18 +197,24 @@ class PluginMount(object):
                     )
 
                 elif isinstance(
-                    plugin_object, MicroscopePlugin
+                    plugin_object, BasePlugin
                 ):  # If plugin_object is an instance of MicroscopePlugin
                     # Attach plugin_object to the plugin mount
-                    setattr(self, pythonsafe_plugin_name, plugin_object)
-                    self.plugins.append((plugin_name, plugin_object))
+                    setattr(self, plugin_name_python_safe, plugin_object)
+                    # Store the plugin object, and it's properties
+                    self._plugins.append(plugin_object)
+                    # DEPRECATED: Store the plugin with it's old name
+                    self._legacy_plugins[plugin_name] = plugin_object
 
                     # Grant plugin access to the hardware
-                    plugin_object.microscope = self.parent
+                    if isinstance(plugin_object, MicroscopePlugin):
+                        plugin_object.microscope = self.parent
 
                     logging.info(
                         ConColors.OKGREEN
-                        + "Plugin {} loaded as {}.".format(plugin_map, plugin_name)
+                        + "Plugin {} loaded as {}.".format(
+                            plugin_map, plugin_object._name
+                        )
                         + ConColors.ENDC
                     )
 
@@ -219,7 +222,102 @@ class PluginMount(object):
             logging.warning(f"Error loading plugin {plugin_map}. Moving on.")
 
 
-class MicroscopePlugin:
+class BasePlugin:
+    """
+    Parent class for all plugins.
+
+    Handles binding route views and forms.
+    """
+
+    def __init__(self):
+        self._views = (
+            {}
+        )  # Key: Full, Python-safe ID. Val: Original rule, and view class
+        self._rules = {}  # Key: Original rule. Val: View class
+        self._gui = None
+
+        # If old api_views dictionary is found
+        if hasattr(self, "api_views"):
+            # Convert to new format
+            self._convert_old_api_views()
+        # If old api_form dictionary is found
+        if hasattr(self, "api_form"):
+            # Convert to new format
+            self._convert_old_api_form()
+
+    @property
+    def views(self):
+        return self._views
+
+    def add_view(self, rule, view_class):
+        # Remove all leading slashes from view route
+        cleaned_rule = rule
+        while cleaned_rule[0] == "/":
+            cleaned_rule = cleaned_rule[1:]
+
+        # Expand the rule to include plugin name
+        full_rule = "/{}/{}".format(self._name_uri_safe, cleaned_rule)
+
+        # Create a Python-safe route ID
+        view_id = cleaned_rule.replace("/", "_")
+
+        # Store route information in a dictionary
+        d = {"rule": full_rule, "view": view_class}
+
+        # Add view to private views dictionary
+        self._views[view_id] = d
+        # Store the rule expansion information
+        self._rules[rule] = self._views[view_id]
+
+    @property
+    def gui(self):
+        if not self._gui:
+            return None
+
+        api_gui = copy.deepcopy(self._gui)
+        api_gui["id"] = self._name
+
+        if "forms" in api_gui and isinstance(api_gui["forms"], list):
+            for form in api_gui["forms"]:
+                if "route" in form and form["route"] in self._rules.keys():
+                    form["route"] = self._rules[form["route"]]["rule"]
+                else:
+                    logging.warn(
+                        "No valid expandable route found for {}".format(form["route"])
+                    )
+        return api_gui
+
+    def set_gui(self, form_dictionary: dict):
+        self._gui = form_dictionary
+
+    def _convert_old_api_views(self):
+        for view_route, view_class in self.api_views.items():
+            self.add_view(view_route, view_class)
+
+    def _convert_old_api_form(self):
+        self.set_gui(self.api_form)
+
+    @property
+    def _name(self):
+        return self.__class__.__name__
+
+    @property
+    def _name_python_safe(self):
+        return camel_to_snake(self._name)
+
+    @property
+    def _name_uri_safe(self):
+        return camel_to_spine(self._name)
+
+    def _full_name(self):
+        module = self.__class__.__module__
+        if module is None or module == str.__class__.__module__:
+            return self.__class__.__name__  # Avoid reporting __builtin__
+        else:
+            return module + "." + self.__class__.__name__
+
+
+class MicroscopePlugin(BasePlugin):
     """
     Parent class for all microscope plugins.
 
@@ -230,6 +328,7 @@ class MicroscopePlugin:
     api_views = {}  # Initially empty dictionary of API views associated with the plugin
 
     def __init__(self):
+        BasePlugin.__init__(self)
         self.microscope = (
             None
         )  #: :py:class:`openflexure_microscope.microscope.Microscope`: Microscope object

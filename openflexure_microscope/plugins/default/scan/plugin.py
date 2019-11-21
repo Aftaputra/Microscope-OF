@@ -58,6 +58,8 @@ class ScanPlugin(MicroscopePlugin):
     api_views = {"/tile": TileScanAPI}
 
     def __init__(self):
+        MicroscopePlugin.__init__(self)
+
         self.images_to_be_captured: int = 1
         update_task_data({"images_to_be_captured": self.images_to_be_captured})
 
@@ -97,18 +99,19 @@ class ScanPlugin(MicroscopePlugin):
         if "scan" not in tags:
             tags.append("scan")
 
-        metadata.update(
-            {
-                "scan_id": scan_id,
-                "basename": basename,
-                "microscope_settings": self.microscope.read_config(),
-                "microscope_state": self.microscope.state,
-                "microscope_id": self.microscope.id,
-                "microscope_name": self.microscope.name,
-            }
-        )
+        # Inject system metadata
+        system_metadata = {
+            "microscope_settings": self.microscope.read_settings(),
+            "microscope_state": self.microscope.state,
+            "microscope_id": self.microscope.id,
+            "microscope_name": self.microscope.name,
+        }
+        output.system_metadata.update(system_metadata)
 
+        # Insert custom metadata
         output.put_metadata(metadata)
+
+        # Insert custom tags
         output.put_tags(tags)
 
     def tile(
@@ -146,14 +149,18 @@ class ScanPlugin(MicroscopePlugin):
         if "time" not in metadata:
             metadata["time"] = generate_basename()
 
-        metadata.update({
-            "scan_parameters": {
-                "step_size": step_size,
-                "grid": grid,
-                "style": style,
-                "autofocus_dz": autofocus_dz
+        metadata.update(
+            {
+                "scan_id": scan_id,
+                "basename": basename,
+                "scan_parameters": {
+                    "step_size": step_size,
+                    "grid": grid,
+                    "style": style,
+                    "autofocus_dz": autofocus_dz,
+                },
             }
-        })
+        )
 
         # Check if autofocus is enabled
         if (

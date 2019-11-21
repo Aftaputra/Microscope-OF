@@ -1,8 +1,53 @@
+"""
+Top-level representation of all acquired captures
+"""
+
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
 from openflexure_microscope.api.views import MicroscopeView
 from openflexure_microscope.utilities import filter_dict
+from openflexure_microscope.api.utilities import blueprint_for_module
 
-from flask import jsonify, request, abort, url_for, redirect, send_file
+from flask import jsonify, request, abort, url_for, redirect, send_file, Blueprint
+
+
+def captures_representation(capture_list: list, include_unavailable: bool = False):
+    """
+    Generate a dictionary representation of all captures, including Flask route URLs
+
+    Args:
+        capture_list (list): List of capture objects
+        include_unavailable (bool): Include unavailable captures in response?
+
+    Returns:
+        dict: Dictionary representation of all captures
+
+    """
+    if include_unavailable:
+        captures = {image.id: image.state for image in capture_list}
+    else:
+        captures = {
+            image.id: image.state for image in capture_list if image.state["available"]
+        }
+
+    for capture_key, capture_repr in captures.items():
+        # Add API routes to returned representations
+        extra_state = {
+            "links": {
+                "self": "{}".format(url_for(".capture", capture_id=capture_key)),
+                "download": "{}".format(
+                    url_for(
+                        ".capture_download",
+                        capture_id=capture_key,
+                        filename=capture_repr["filename"],
+                    )
+                ),
+                "tags": "{}".format(url_for(".capture_tags", capture_id=capture_key)),
+            }
+        }
+
+        captures[capture_key].update(extra_state)
+
+    return captures
 
 
 class ListAPI(MicroscopeView):
@@ -29,22 +74,13 @@ class ListAPI(MicroscopeView):
         :status 200: capture found
         :status 404: no capture found with that id
         """
-        include_unavailable = get_bool(request.args.get("include_unavailable"))
+        representation = captures_representation(self.microscope.camera.images)
 
-        if include_unavailable:
-            captures = [image.state for image in self.microscope.camera.images]
-        else:
-            captures = [
-                image.state
-                for image in self.microscope.camera.images
-                if image.state["available"]
-            ]
-
-        return jsonify(captures)
+        return jsonify(representation)
 
     def delete(self):
         """
-        Delete all captures (not yet implemented)
+        Delete all captures
 
         .. :quickref: Captures; Delete all captures
         """
@@ -54,98 +90,6 @@ class ListAPI(MicroscopeView):
         captures = [image.state for image in self.microscope.camera.images]
 
         return jsonify(captures)
-
-    def post(self):
-        """
-        Create a new image capture.
-
-        .. :quickref: Captures; New capture
-
-        **Example request**:
-
-        .. sourcecode:: http
-
-          POST /camera/capture HTTP/1.1
-          Accept: application/json
-
-          {
-            "filename": "myfirstcapture", 
-            "temporary": false, 
-            "use_video_port": true,
-            "bayer": true,
-            "size": {
-                "width": 640,
-                "height": 480
-            }
-          }
-
-        :>header Accept: application/json
-
-        :<json string filename: filename of stored capture
-        :<json boolean temporary: delete the capture file on microscope after closing
-        :<json boolean use_video_port: capture still image from the video port
-        :<json boolean bayer: keep raw capture data in the image file
-        :<json json size:   - **x** *(int)*: x-axis resize
-                            - **y** *(int)*: y-axis resize
-
-        :>json boolean available: availability of capture data
-        :>json string filename: filename of capture
-        :>json string id: unique id of the capture object
-        :>json boolean temporary: delete the capture file on microscope after closing
-        :>json boolean locked: file locked for modifications (mostly used for video recording)
-        :>json string path: path on pi storage to the capture file, if available
-        :>json boolean stream: capture stored in-memory as a BytesIO stream
-        :>json json uri: - **download** *(string)*: api uri to the capture file download
-                         - **state** *(string)*: api uri to the capture json representation
-
-        :<header Content-Type: application/json
-        :status 200: capture created
-        """
-        payload = JsonResponse(request)
-
-        filename = payload.param("filename")
-        temporary = payload.param("temporary", default=False, convert=bool)
-        use_video_port = payload.param("use_video_port", default=False, convert=bool)
-        bayer = payload.param("bayer", default=True, convert=bool)
-        metadata = payload.param("metadata", default={}, convert=dict)
-        tags = payload.param("tags", default=[], convert=list)
-
-        resize = payload.param("size", default=None)
-        if resize:
-            if ("width" in resize) and ("height" in resize):
-                resize = (
-                    int(resize["width"]),
-                    int(resize["height"]),
-                )  # Convert dict to tuple
-            else:
-                abort(404)
-
-        # Explicitally acquire lock (prevents empty files being created if lock is unavailable)
-        with self.microscope.camera.lock:
-            output = self.microscope.camera.new_image(
-                temporary=temporary, filename=filename
-            )
-
-            self.microscope.camera.capture(
-                output.file, use_video_port=use_video_port, resize=resize, bayer=bayer
-            )
-
-            # Inject system metadata
-            system_metadata = {
-                "microscope_settings": self.microscope.read_settings(),
-                "microscope_state": self.microscope.state,
-                "microscope_id": self.microscope.id,
-                "microscope_name": self.microscope.name,
-            }
-            output.system_metadata.update(system_metadata)
-
-            # Insert custom metadata
-            output.put_metadata(metadata)
-
-            # Insert custom tags
-            output.put_tags(tags)
-
-        return jsonify(output.state)
 
 
 class CaptureAPI(MicroscopeView):
@@ -198,30 +142,15 @@ class CaptureAPI(MicroscopeView):
                          - **state** *(string)*: api uri to the capture json representation
 
         """
-        capture_obj = self.microscope.camera.image_from_id(capture_id)
 
-        if not capture_obj:
+        try:
+            representation = captures_representation(self.microscope.camera.images)[
+                capture_id
+            ]
+        except KeyError:
             return abort(404)  # 404 Not Found
 
-        # Get capture state
-        capture_metadata = capture_obj.state
-
-        # Add API routes to returned state
-        uri_dict = {
-            "uri": {
-                "state": "{}".format(url_for(".capture", capture_id=capture_obj.id))
-            }
-        }
-
-        # If available, also add download link
-        if capture_metadata["available"]:
-            uri_dict["uri"]["download"] = "{}download/{}".format(
-                url_for(".capture", capture_id=capture_obj.id), capture_obj.filename
-            )
-
-        capture_metadata.update(uri_dict)
-
-        return jsonify(capture_metadata)
+        return jsonify(representation)
 
     def delete(self, capture_id):
         """
@@ -380,9 +309,7 @@ class TagsAPI(MicroscopeView):
         if not capture_obj or not capture_obj.state["available"]:
             return abort(404)  # 404 Not Found
 
-        metadata_tags = filter_dict(capture_obj.state, ["metadata", "tags"])
-
-        return jsonify(metadata_tags)
+        return jsonify(capture_obj.tags)
 
     def put(self, capture_id):
         """
@@ -417,9 +344,7 @@ class TagsAPI(MicroscopeView):
 
         capture_obj.put_tags(data_dict)
 
-        metadata_tags = filter_dict(capture_obj.state, ["metadata", "tags"])
-
-        return jsonify(metadata_tags)
+        return jsonify(capture_obj.tags)
 
     def delete(self, capture_id):
         """
@@ -454,6 +379,38 @@ class TagsAPI(MicroscopeView):
         for tag in data_dict:
             capture_obj.delete_tag(str(tag))
 
-        metadata_tags = filter_dict(capture_obj.state, ["metadata", "tags"])
+        return jsonify(capture_obj.tags)
 
-        return jsonify(metadata_tags)
+
+def construct_blueprint(microscope_obj):
+
+    blueprint = blueprint_for_module(__name__)
+
+    # Tag routes
+    blueprint.add_url_rule(
+        "/<capture_id>/tags",
+        view_func=TagsAPI.as_view("capture_tags", microscope=microscope_obj),
+    )
+
+    # Capture routes
+    blueprint.add_url_rule(
+        "/<capture_id>/download/<filename>",
+        view_func=DownloadAPI.as_view("capture_download", microscope=microscope_obj),
+    )
+
+    blueprint.add_url_rule(
+        "/<capture_id>/download",
+        view_func=DownloadRedirectAPI.as_view(
+            "capture_download_redirect", microscope=microscope_obj
+        ),
+    )
+
+    blueprint.add_url_rule(
+        "/<capture_id>/",
+        view_func=CaptureAPI.as_view("capture", microscope=microscope_obj),
+    )
+
+    blueprint.add_url_rule(
+        "/", view_func=ListAPI.as_view("captures", microscope=microscope_obj)
+    )
+    return blueprint

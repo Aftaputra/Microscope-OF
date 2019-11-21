@@ -44,7 +44,7 @@ An example of a long running task may look like:
         def post(self):
             # Attach the long-running method as a microscope task
             self.my_task = taskify(self.plugin.long_running_function)()
-            return jsonify(self.my_task.state), 202
+            return jsonify(self.my_task.state), 201
 
 After some time, once the task has completed, it could be retreived using:
 
@@ -132,7 +132,7 @@ For example, a timelapse plugin may look like:
             self.timelapse_task = taskify(self.plugin.timelapse)(n_images)
 
             # Return the state of the task (will show ID, start time, and status before the task has finished)
-            return jsonify(self.timelapse_task.state), 202
+            return jsonify(self.timelapse_task.state), 201
 
 
 Notice that even though we never use the stage here, we still acquire the lock. This means that during the timelapse, 

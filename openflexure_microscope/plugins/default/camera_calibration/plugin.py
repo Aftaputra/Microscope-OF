@@ -18,12 +18,12 @@ class RecalibrateAPIView(MicroscopeViewPlugin):
         task = taskify(self.plugin.recalibrate)()
 
         # Return a handle on the autofocus task
-        return jsonify(task.state), 202
+        return jsonify(task.state), 201
 
 
-class Plugin(MicroscopePlugin):
+class AutocalibrationPlugin(MicroscopePlugin):
     """
-    A set of default plugins
+    Auto-calibration plugin
     """
 
     api_views = {"/recalibrate": RecalibrateAPIView}
@@ -37,10 +37,10 @@ class Plugin(MicroscopePlugin):
         """
         scamera = self.microscope.camera
         with scamera.lock:
-            assert not scamera.state[
+            assert not scamera.status[
                 "record_active"
             ], "Can't recalibrate while recording!"
-            streaming = scamera.state["stream_active"]
+            streaming = scamera.status["stream_active"]
             if streaming:
                 logging.info("Stopping stream before recalibration")
                 scamera.stop_stream_recording(resolution=(640, 480))
@@ -51,7 +51,7 @@ class Plugin(MicroscopePlugin):
                 recalibrate_camera(scamera.camera)
             finally:
                 scamera.camera.resolution = old_resolution
-                self.microscope.save_config()
+                self.microscope.save_settings()
                 if streaming:
                     logging.info("Restarting stream after recalibration")
                     scamera.start_stream_recording()

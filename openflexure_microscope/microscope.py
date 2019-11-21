@@ -11,7 +11,7 @@ from openflexure_microscope.stage.mock import MockStage
 from openflexure_microscope.camera.base import BaseCamera
 from openflexure_microscope.camera.mock import MockStreamer
 
-from openflexure_microscope.plugins import PluginMount
+from openflexure_microscope.plugins import PluginLoader
 from openflexure_microscope.task import TaskOrchestrator
 from openflexure_microscope.common.lock import CompositeLock
 from openflexure_microscope.config import user_settings
@@ -30,7 +30,7 @@ class Microscope:
         stage (:py:class:`openflexure_microscope.stage.base.BaseStage`): Stage object
         task: (:py:class:`openflexure_microscope.task.TaskOrchestrator`): Threaded ask orchestrator for managing
             background tasks using microscope hardware
-        plugin (:py:class:`openflexure_microscope.plugins.PluginMount`): Mounting point for all microscope plugins
+        plugins (:py:class:`openflexure_microscope.plugins.PluginLoader`): Mounting point for all microscope plugins
     """
 
     def __init__(self):
@@ -49,10 +49,10 @@ class Microscope:
         self.task = TaskOrchestrator()
 
         # Apply settings loaded from file
-        self.apply_config(user_settings.load())
+        self.apply_settings(user_settings.load())
 
         # Create plugin mount-point and attach plugins from maps
-        self.plugin = PluginMount(self)
+        self.plugins = PluginLoader(self)
         self.attach_plugins(self.plugin_maps)
 
     def __enter__(self):
@@ -84,7 +84,7 @@ class Microscope:
             stage (:py:class:`openflexure_microscope.stage.base.BaseStage`): stage object
         """
 
-        settings_full = self.read_config()
+        settings_full = self.read_settings()
 
         logging.debug("Attaching camera...")
         self.camera = (
@@ -117,7 +117,7 @@ class Microscope:
                 self.lock.locks.append(self.stage.lock)
 
         logging.info("Reapplying settings to newly attached devices")
-        self.apply_config(settings_full)
+        self.apply_settings(settings_full)
 
     def attach_plugins(self, plugin_maps: list):
         """
@@ -125,7 +125,7 @@ class Microscope:
         """
         if plugin_maps:
             for plugin_map in plugin_maps:
-                self.plugin.attach(plugin_map)
+                self.plugins.attach(plugin_map)
         else:
             logging.warning("No plugins specified. Skipping.")
 
@@ -134,7 +134,7 @@ class Microscope:
         Empty the plugin mount and re-attach from config.
         """
         logging.info("Tearing down existing PluginMount...")
-        self.plugin = PluginMount(self)
+        self.plugins = PluginLoader(self)
         logging.info("Repopulating PluginMount...")
         self.attach_plugins(self.plugin_maps)
 
@@ -157,17 +157,36 @@ class Microscope:
 
         Return:
             dict: Dictionary containing position data, 
-                and :py:attr:`openflexure_microscope.camera.base.BaseCamera.state`
+                and :py:attr:`openflexure_microscope.camera.base.BaseCamera.status`
         """
+        # DEPRECATED
+        logging.warning(
+            "Microscope.state is deprecated. Use Microscope.status instead. State will be removed in a future version."
+        )
         state = {
-            "camera": self.camera.state,
-            "stage": self.stage.state,
-            "plugin": self.plugin.state,
+            "camera": self.camera.status,
+            "stage": self.stage.status,
+            "plugin": self.plugins.state,
             "version": pkg_resources.get_distribution("openflexure_microscope").version,
         }
         return state
 
-    def apply_config(self, config: dict):
+    # Create unified status
+    @property
+    def status(self):
+        """Dictionary of the basic microscope status.
+
+        Return:
+            dict: Dictionary containing complete microscope status
+        """
+        state = {
+            "camera": self.camera.status,
+            "stage": self.stage.status,
+            "version": pkg_resources.get_distribution("openflexure_microscope").version,
+        }
+        return state
+
+    def apply_settings(self, config: dict):
         """
         Applies a config dictionary. Missing parameters will be left untouched.
         """
@@ -175,11 +194,11 @@ class Microscope:
 
         # If attached to a camera
         if ("camera_settings" in config) and self.camera:
-            self.camera.apply_config(config["camera_settings"])
+            self.camera.apply_settings(config["camera_settings"])
 
         # If attached to a stage
         if ("stage_settings" in config) and self.stage:
-            self.stage.apply_config(config["stage_settings"])
+            self.stage.apply_settings(config["stage_settings"])
 
         # Todo: tidy up with some loopy goodness
         if "id" in config:
@@ -191,7 +210,7 @@ class Microscope:
         if "plugins" in config:
             self.plugin_maps = config["plugins"]
 
-    def read_config(self, json_safe=False):
+    def read_settings(self, json_safe=False):
         """
         Get an updated settings dictionary.
 
@@ -211,47 +230,43 @@ class Microscope:
 
         # If attached to a camera
         if self.camera:
-            settings_current_camera = self.camera.read_config()
+            settings_current_camera = self.camera.read_settings()
             settings_current["camera_settings"] = settings_current_camera
 
         # If attached to a stage
         if self.stage:
-            settings_current_stage = self.stage.read_config()
+            settings_current_stage = self.stage.read_settings()
             settings_current["stage_settings"] = settings_current_stage
 
         settings_full = user_settings.merge(settings_current)
 
         return settings_full
 
-    def save_config(self):
+    def save_settings(self):
         """
         Merges the current settings back to disk
         """
         # Read curent config
-        current_config = self.read_config()
-        # Merge in server version responsible for saving the config file
-        current_config["server_version"] = pkg_resources.get_distribution(
-            "openflexure_microscope"
-        ).version
+        current_config = self.read_settings()
         # Save config to file
         if self.camera:
-            self.camera.save_config()
+            self.camera.save_settings()
         if self.stage:
-            self.stage.save_config()
+            self.stage.save_settings()
         user_settings.save(current_config, backup=True)
 
     @property
     def config(self) -> dict:
         logging.warning(
             "Reading microscope through config property is deprecated.\
-            Please use read_config method instead."
+            Please use read_settings method instead."
         )
-        return self.read_config()
+        return self.read_settings()
 
     @config.setter
     def config(self, config: dict) -> None:
         logging.warning(
             "Setting microscope through config property is deprecated.\
-            Please use apply_config method instead."
+            Please use apply_settings method instead."
         )
-        self.apply_config(config)
+        self.apply_settings(config)

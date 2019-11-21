@@ -23,6 +23,8 @@ class ExamplePlugin(MicroscopePlugin):
     api_views = {"/do": DoAPI, "/task": TaskAPI}
 
     def __init__(self):
+        MicroscopePlugin.__init__(self)
+
         self.val_int = 10
         self.val_str = "Hello"
         self.val_radio = "First"

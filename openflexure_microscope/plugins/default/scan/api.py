@@ -60,4 +60,4 @@ class TileScanAPI(MicroscopeViewPlugin):
         )
 
         # return a handle on the scan task
-        return jsonify(task.state), 202
+        return jsonify(task.state), 201

@@ -3,7 +3,7 @@ __all__ = [
     "load_plugin_class",
     "load_plugin_module",
     "class_from_map",
-    "PluginMount",
+    "PluginLoader",
     "MicroscopePlugin",
 ]
 
@@ -12,6 +12,6 @@ from .loader import (
     load_plugin_class,
     load_plugin_module,
     class_from_map,
-    PluginMount,
+    PluginLoader,
     MicroscopePlugin,
 )

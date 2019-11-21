@@ -3,6 +3,7 @@ from openflexure_microscope.api.views import MicroscopeViewPlugin
 from flask import Blueprint, jsonify
 from openflexure_microscope.api.views import MicroscopeView
 
+import copy
 import logging
 import warnings
 
@@ -21,7 +22,7 @@ class PluginFormAPI(MicroscopeView):
         A complete list of enabled plugins can be found in the microscope state.
 
         """
-        out = self.microscope.plugin.forms
+        out = self.microscope.plugins.forms
         return jsonify(out)
 
 
@@ -38,7 +39,7 @@ def construct_blueprint(microscope_obj):
     all_routes = []
 
     # For each plugin attached to the microscope object
-    for plugin_name, plugin_obj in microscope_obj.plugin.plugins:
+    for plugin_name, plugin_obj in microscope_obj.plugins._legacy_plugins.items():
 
         # If plugin contains valid endpoints
         if hasattr(plugin_obj, "api_views") and isinstance(plugin_obj.api_views, dict):
@@ -94,7 +95,7 @@ def construct_blueprint(microscope_obj):
             if hasattr(plugin_obj, "api_form") and isinstance(
                 plugin_obj.api_form, dict
             ):
-                api_form_info = plugin_obj.api_form
+                api_form_info = copy.deepcopy(plugin_obj.api_form)
                 api_form_info["id"] = plugin_name
                 if "forms" in api_form_info and isinstance(
                     api_form_info["forms"], list
@@ -110,8 +111,7 @@ def construct_blueprint(microscope_obj):
                             )
 
                 # Store the complete form in Microscope().plugin.form
-                microscope_obj.plugin.forms.append(api_form_info)
-                print(microscope_obj.plugin.forms)
+                microscope_obj.plugins.forms.append(api_form_info)
 
         else:
             warnings.warn(

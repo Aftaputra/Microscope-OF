@@ -57,4 +57,4 @@ class TaskAPI(MicroscopeViewPlugin):
         task = taskify(self.plugin.generate_random_numbers_for_a_while)(val_int)
 
         # return a handle on the autofocus task
-        return jsonify(task.state), 202
+        return jsonify(task.state), 201

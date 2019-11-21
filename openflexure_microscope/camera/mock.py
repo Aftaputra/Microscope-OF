@@ -19,6 +19,13 @@ from typing import Tuple
 from openflexure_microscope.camera.base import BaseCamera
 
 
+"""
+PIL spams the logger with debug-level information. This is a pain when debugging api.app.
+We override the logging settings in api.app by setting a level for PIL here.
+"""
+pil_logger = logging.getLogger("PIL")
+pil_logger.setLevel(logging.INFO)
+
 # MAIN CLASS
 class MockStreamer(BaseCamera):
     def __init__(self):
@@ -26,7 +33,7 @@ class MockStreamer(BaseCamera):
         BaseCamera.__init__(self)
 
         # Store state of PiCameraStreamer
-        self.state.update(
+        self.status.update(
             {"stream_active": False, "record_active": False, "board": None}
         )
 
@@ -74,13 +81,13 @@ class MockStreamer(BaseCamera):
         BaseCamera.close(self)
 
     # HANDLE SETTINGS
-    def read_config(self) -> dict:
+    def read_settings(self) -> dict:
         """
         Return config dictionary of the PiCameraStreamer.
         """
 
         # Get config items from the base class
-        conf_dict = BaseCamera.read_config(self)
+        conf_dict = BaseCamera.read_settings(self)
 
         # Include device-specific config items
         conf_dict.update(
@@ -94,7 +101,7 @@ class MockStreamer(BaseCamera):
 
         return conf_dict
 
-    def apply_config(self, config: dict):
+    def apply_settings(self, config: dict):
         """
         Write a config dictionary to the PiCameraStreamer config.
 
@@ -110,7 +117,7 @@ class MockStreamer(BaseCamera):
         with self.lock:
 
             # Apply valid config params to camera object
-            if not self.state["record_active"]:  # If not recording a video
+            if not self.status["record_active"]:  # If not recording a video
 
                 for key, value in config.items():  # For each provided setting
                     if hasattr(self, key):

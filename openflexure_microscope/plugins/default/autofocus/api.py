@@ -18,6 +18,10 @@ class MeasureSharpnessAPI(MicroscopeViewPlugin):
 
 
 class AutofocusAPI(MicroscopeViewPlugin):
+    """
+    Run a standard autofocus
+    """
+
     def post(self):
         payload = JsonResponse(request)
 
@@ -29,12 +33,17 @@ class AutofocusAPI(MicroscopeViewPlugin):
             task = taskify(self.plugin.autofocus)(dz)
 
             # return a handle on the autofocus task
-            return jsonify(task.state), 202
+            return jsonify(task.state), 201
 
         else:
-            abort(503, 'No stage connected. Unable to autofocus.')
+            abort(503, "No stage connected. Unable to autofocus.")
+
 
 class FastAutofocusAPI(MicroscopeViewPlugin):
+    """
+    Run a fast autofocus
+    """
+
     def post(self):
         payload = JsonResponse(request)
 
@@ -49,7 +58,7 @@ class FastAutofocusAPI(MicroscopeViewPlugin):
             task = taskify(self.plugin.fast_autofocus)(dz, backlash=backlash)
 
             # return a handle on the autofocus task
-            return jsonify(task.state), 202
+            return jsonify(task.state), 201
 
         else:
-            abort(503, 'No stage connected. Unable to autofocus.')
+            abort(503, "No stage connected. Unable to autofocus.")
