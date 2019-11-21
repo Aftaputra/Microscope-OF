@@ -1,8 +1,7 @@
 {
   "id": "test-plugin",
   "icon": "pets",
-  "forms": [
-    {
+  "forms": [{
       "name": "Simple request",
       "isCollapsible": false,
       "isTask": false,
@@ -10,8 +9,7 @@
       "route": "/do",
       "submitLabel": "Do things",
       "schema": [
-        [
-          {
+        [{
             "fieldType": "numberInput",
             "placeholder": "Some integer",
             "name": "val_int",
@@ -25,8 +23,7 @@
             "name": "val_str"
           }
         ],
-        [
-          {
+        [{
             "fieldType": "radioList",
             "name": "val_radio",
             "label": "Radio value",
@@ -54,8 +51,8 @@
 
         {
           "fieldType": "textInput",
-          "placeholder": "Some string",
           "label": "Non-persistent string",
+          "default": "A default value",
           "name": "val_disposable"
         }
       ]
@@ -66,15 +63,13 @@
       "selfUpdate": true,
       "route": "/task",
       "submitLabel": "Start task",
-      "schema": [
-          {
-            "fieldType": "numberInput",
-            "placeholder": "",
-            "name": "run_time",
-            "label": "Run time (seconds)",
-            "minValue": 1
-          }
-      ]
+      "schema": [{
+        "fieldType": "numberInput",
+        "placeholder": "",
+        "name": "run_time",
+        "label": "Run time (seconds)",
+        "minValue": 1
+      }]
     }
-  ] 
+  ]
 }
