@@ -101,8 +101,8 @@
     <hr />
 
     <ul uk-accordion="multiple: true; animation: false">
-      <!--Show stack and scan if default plugin is enabled-->
-      <li v-if="this.$store.state.apiState.plugin.includes('default_scan')">
+      <!--Show stack and scan if scan plugin is enabled-->
+      <li v-if="scanUri">
         <a class="uk-accordion-title" href="#">Stack and Scan</a>
         <div class="uk-accordion-content">
           <div class="uk-margin">
@@ -234,7 +234,7 @@
 
     <taskSubmitter
       v-if="scanCapture"
-      :submit-url="scanApiUri"
+      :submit-url="scanUri"
       :submit-data="scanPayload"
       :submit-label="'Start Scan'"
       @submit="onScanSubmit"
@@ -296,7 +296,8 @@ export default {
       tags: [],
       metadata: {
         Client: `${process.env.PACKAGE.name}.${process.env.PACKAGE.version}`
-      }
+      },
+      scanUri: null
     };
   },
 
@@ -306,11 +307,15 @@ export default {
         "uk-disabled": !this.resizeCapture
       };
     },
-    captureApiUri: function() {
-      return this.$store.getters.uri + "/camera/capture";
+    captureActionUri: function() {
+      return `http://${this.$store.state.host}:${
+        this.$store.state.port
+      }/api/v2/actions/camera/capture`;
     },
-    scanApiUri: function() {
-      return this.$store.getters.uri + "/plugin/default/scan/tile";
+    pluginsUri: function() {
+      return `http://${this.$store.state.host}:${
+        this.$store.state.port
+      }/api/v2/plugins`;
     },
     basePayload: function() {
       var payload = {};
@@ -373,30 +378,42 @@ export default {
     }
   },
 
+  mounted() {
+    this.updateScanUri();
+  },
+
   methods: {
     handleCapture: function() {
       var payload = this.basePayload;
 
       // Do capture
-      this.newCaptureRequest(payload);
-    },
-
-    handleScan: function() {
-      var payload = this.scanPayload;
-
-      // Do capture
-      this.newScanRequest(payload);
-    },
-
-    newCaptureRequest: function(params) {
-      // Send move request
       axios
-        .post(this.captureApiUri, params)
+        .post(this.captureActionUri, payload)
         .then(() => {
           // Flash the stream (capture animation)
           this.$root.$emit("globalFlashStream");
           // Update the global capture list
           this.$root.$emit("globalUpdateCaptureList");
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+    },
+
+    updateScanUri: function() {
+      axios
+        .get(this.pluginsUri) // Get a list of plugins
+        .then(response => {
+          var plugins = response.data;
+          // if ScanPlugin is enabled
+          if ("ScanPlugin" in plugins) {
+            // Get plugin action link
+            var link = plugins.ScanPlugin.views.tile.links.self;
+            // Store plugin action URI
+            this.scanUri = `http://${this.$store.state.host}:${
+              this.$store.state.port
+            }${link}`;
+          }
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
