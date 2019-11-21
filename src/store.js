@@ -58,7 +58,6 @@ export default new Vuex.Store({
     },
     setError(state, msg) {
       state.waiting = false;
-      state.available = false;
       state.error = msg;
     }
   },
