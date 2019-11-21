@@ -133,7 +133,6 @@ export default {
       // Set the snapshot image src to the snapshot URL,
       // adding a timestamp argument to act as a cache-breaker
       this.snapshotSrc = `${this.snapshotURL}?${Date.now()}`;
-      console.log(`Updating snapshot URL to ${this.snapshotSrc}`);
     },
 
     updateSnapshotPoll: function() {
