@@ -40,7 +40,12 @@
         <a class="uk-accordion-title" href="#">Move-to</a>
         <div class="uk-accordion-content">
           <form @submit.prevent="handleSubmit">
-            <div class="uk-grid-small uk-child-width-1-3" uk-grid>
+            <!-- Text boxes to set and view position -->
+            <div
+              v-if="setPosition"
+              class="uk-grid-small uk-child-width-1-3"
+              uk-grid
+            >
               <div>
                 <label class="uk-form-label" for="form-stacked-text">x</label>
                 <div class="uk-form-controls">
@@ -80,7 +85,7 @@
 
             <p>
               <button
-                class="uk-button uk-button-primary uk-form-small uk-float-right uk-width-1-1"
+                class="uk-button uk-button-default uk-form-small uk-float-right uk-width-1-1"
               >
                 Move
               </button>
@@ -90,44 +95,44 @@
       </li>
 
       <!--Show autofocus if default plugin is enabled-->
-      <li
-        v-if="this.$store.state.apiState.plugin.includes('default_autofocus')"
-        class="uk-open"
-      >
+      <li class="uk-open">
         <a class="uk-accordion-title" href="#">Autofocus</a>
         <div class="uk-accordion-content">
-          <div v-if="isAutofocusing">
-            <progressBar />
-          </div>
+          <div class="uk-grid-small uk-child-width-expand" uk-grid>
+            <div v-show="!isAutofocusing || isAutofocusing == 1">
+              <taskSubmitter
+                v-if="fastAutofocusUri"
+                :submit-url="fastAutofocusUri"
+                :submit-data="{ dz: 2000, backlash: 300 }"
+                :submit-label="'Fast'"
+                @taskStarted="isAutofocusing = 1"
+                @finished="isAutofocusing = 0"
+              >
+              </taskSubmitter>
+            </div>
 
-          <div
-            class="uk-grid-small uk-child-width-1-3"
-            :hidden="isAutofocusing"
-            uk-grid
-          >
-            <div>
-              <button
-                class="uk-button uk-button-default uk-form-small uk-float-right uk-width-1-1"
-                @click="runFastAutofocus(2000, 300)"
+            <div v-show="!isAutofocusing || isAutofocusing == 2">
+              <taskSubmitter
+                v-if="normalAutofocusUri"
+                :submit-url="normalAutofocusUri"
+                :submit-data="{ dz: [-60, -30, 0, 30, 60] }"
+                :submit-label="'Medium'"
+                @taskStarted="isAutofocusing = 2"
+                @finished="isAutofocusing = 0"
               >
-                Fast
-              </button>
+              </taskSubmitter>
             </div>
-            <div>
-              <button
-                class="uk-button uk-button-default uk-form-small uk-float-right uk-width-1-1"
-                @click="runAutofocus([-60, -30, 0, 30, 60])"
+
+            <div v-show="!isAutofocusing || isAutofocusing == 3">
+              <taskSubmitter
+                v-if="normalAutofocusUri"
+                :submit-url="normalAutofocusUri"
+                :submit-data="{ dz: [-20, -10, 0, 10, 20] }"
+                :submit-label="'Fine'"
+                @taskStarted="isAutofocusing = 3"
+                @finished="isAutofocusing = 0"
               >
-                Medium
-              </button>
-            </div>
-            <div>
-              <button
-                class="uk-button uk-button-default uk-form-small uk-float-right uk-width-1-1"
-                @click="runAutofocus([-20, -10, 0, 10, 20])"
-              >
-                Fine
-              </button>
+              </taskSubmitter>
             </div>
           </div>
         </div>
@@ -138,7 +143,7 @@
 
 <script>
 import axios from "axios";
-import progressBar from "../genericComponents/progressBar";
+import taskSubmitter from "../genericComponents/taskSubmitter";
 
 // Key Codes
 const keyCodes = {
@@ -157,7 +162,7 @@ export default {
   name: "PaneNavigate",
 
   components: {
-    progressBar
+    taskSubmitter
   },
 
   data: function() {
@@ -165,23 +170,29 @@ export default {
       keysDown: {},
       stepXy: 200,
       stepZz: 50,
-      setPosition: this.$store.state.apiState.stage.position,
-      isAutofocusing: false,
-      moveLock: false
+      setPosition: null,
+      isAutofocusing: 0,
+      moveLock: false,
+      fastAutofocusUri: null,
+      normalAutofocusUri: null
     };
   },
 
   computed: {
-    positionApiUri: function() {
-      return this.$store.getters.uri + "/stage/position";
+    moveActionUri: function() {
+      return `http://${this.$store.state.host}:${
+        this.$store.state.port
+      }/api/v2/actions/stage/move`;
     },
-    autofocusApiUri: function() {
-      return this.$store.getters.uri + "/plugin/default/autofocus/autofocus";
+    positionStatusUri: function() {
+      return `http://${this.$store.state.host}:${
+        this.$store.state.port
+      }/api/v2/status/stage/position`;
     },
-    fastAutofocusApiUri: function() {
-      return (
-        this.$store.getters.uri + "/plugin/default/autofocus/fast_autofocus"
-      );
+    pluginsUri: function() {
+      return `http://${this.$store.state.host}:${
+        this.$store.state.port
+      }/api/v2/plugins`;
     }
   },
 
@@ -196,6 +207,10 @@ export default {
     this.$root.$on("globalMoveEvent", (x, y, z, absolute) => {
       this.moveRequest(x, y, z, absolute);
     });
+    // Update the current position in text boxes
+    this.updatePosition();
+    // Look for autofocus plugin
+    this.updateAutofocusUri();
   },
 
   beforeDestroy() {
@@ -287,15 +302,14 @@ export default {
 
         // Send move request
         axios
-          .post(this.positionApiUri, {
+          .post(this.moveActionUri, {
             x: x,
             y: y,
             z: z,
             absolute: absolute
           })
-          .then(response => {
-            this.$store.dispatch("updateState"); // Update store state
-            this.setPosition = response.data.stage.position; // Update boxes from response
+          .then(() => {
+            this.updatePosition(); // Update the position in text boxes
           })
           .catch(error => {
             this.modalError(error); // Let mixin handle error
@@ -306,64 +320,40 @@ export default {
       }
     },
 
-    runAutofocus: function(dz) {
-      if (!this.moveLock) {
-        // Lock move requests
-        this.moveLock = true;
-        this.isAutofocusing = true;
-        axios
-          .post(this.autofocusApiUri, { dz: dz })
-          .then(response => {
-            console.log("Autofocus Task ID: " + response.data.id);
-            // Start the store polling TaskId for success
-            return this.$store.dispatch("pollTask", [
-              response.data.id,
-              null,
-              null
-            ]);
-          })
-          .then(() => {
-            console.log("Successfully finished autofocus");
-          })
-          .catch(error => {
-            this.modalError(error); // Let mixin handle error
-          })
-          .finally(() => {
-            console.log("Cleaning up after autofocus.");
-            this.isAutofocusing = false;
-            this.moveLock = false; // Release the move lock
-          });
-      }
+    updatePosition: function() {
+      axios
+        .get(this.positionStatusUri)
+        .then(response => {
+          this.setPosition = response.data;
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
     },
 
-    runFastAutofocus: function(dz, backlash) {
-      if (!this.moveLock) {
-        // Lock move requests
-        this.moveLock = true;
-        this.isAutofocusing = true;
-        axios
-          .post(this.fastAutofocusApiUri, { dz: dz, backlash: backlash })
-          .then(response => {
-            console.log("Autofocus Task ID: " + response.data.id);
-            // Start the store polling TaskId for success
-            return this.$store.dispatch("pollTask", [
-              response.data.id,
-              null,
-              null
-            ]);
-          })
-          .then(() => {
-            console.log("Successfully finished autofocus");
-          })
-          .catch(error => {
-            this.modalError(error); // Let mixin handle error
-          })
-          .finally(() => {
-            console.log("Cleaning up after autofocus.");
-            this.isAutofocusing = false;
-            this.moveLock = false; // Release the move lock
-          });
-      }
+    updateAutofocusUri: function() {
+      axios
+        .get(this.pluginsUri) // Get a list of plugins
+        .then(response => {
+          var plugins = response.data;
+          // if ScanPlugin is enabled
+          if ("AutofocusPlugin" in plugins) {
+            // Get plugin action link
+            var fastLink =
+              plugins.AutofocusPlugin.views.fast_autofocus.links.self;
+            var normalLink = plugins.AutofocusPlugin.views.autofocus.links.self;
+            // Store plugin action URI
+            this.fastAutofocusUri = `http://${this.$store.state.host}:${
+              this.$store.state.port
+            }${fastLink}`;
+            this.normalAutofocusUri = `http://${this.$store.state.host}:${
+              this.$store.state.port
+            }${normalLink}`;
+          }
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
     }
   }
 };
