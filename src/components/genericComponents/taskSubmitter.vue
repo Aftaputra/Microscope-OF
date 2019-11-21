@@ -130,6 +130,7 @@ export default {
           this.taskId = response.data.id;
           // Start the store polling TaskId for success
           this.taskRunning = true;
+          this.$emit("taskStarted", this.taskId);
           // Return the poll-task promise (starts polling the task)
           return this.pollTask(
             this.taskId,
@@ -141,6 +142,7 @@ export default {
           // Do something with the final response
           console.log("Emitting onResponse: ", response);
           this.$emit("response", response);
+          this.$emit("finished");
         })
         .catch(error => {
           if (!error) {
@@ -148,6 +150,7 @@ export default {
           }
           console.log("Emitting onError: ", error);
           this.$emit("error", error);
+          this.$emit("finished");
         })
         .finally(() => {
           console.log("Cleaning up after task.");
