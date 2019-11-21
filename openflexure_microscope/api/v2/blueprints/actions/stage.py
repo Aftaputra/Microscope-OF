@@ -52,5 +52,7 @@ class MoveStageAPI(MicroscopeView):
             # Explicitally acquire lock
             with self.microscope.stage.lock:
                 self.microscope.stage.move_rel(position)
+        else:
+            logging.warning("Unable to move. No stage found.")
 
         return jsonify(self.microscope.status["stage"]["position"])

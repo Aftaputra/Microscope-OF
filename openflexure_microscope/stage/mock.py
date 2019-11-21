@@ -4,6 +4,7 @@ from openflexure_microscope.utilities import axes_to_array
 from collections.abc import Iterable
 import numpy as np
 import time
+import logging
 
 
 class MockStage(BaseStage):
@@ -75,20 +76,32 @@ class MockStage(BaseStage):
         if simulate_time:
             time.sleep(1)
         if axis is not None:
-            # This code just converts single-axis moves into all-axis moves.
+
             assert axis in self.axis_names, "axis must be one of {}".format(
                 self.axis_names
             )
             move = np.zeros(self.n_axes, dtype=np.int)
             move[np.argmax(np.array(self.axis_names) == axis)] = int(displacement)
+            displacement = move
 
-            self._position = list(np.array(self._position) + np.array(move))
+        initial_move = np.array(displacement, dtype=np.int)
+
+        initial_move -= np.where(
+            self.backlash * displacement < 0,
+            self.backlash,
+            np.zeros(self.n_axes, dtype=self.backlash.dtype),
+        )
+
+        self._position = list(np.array(self._position) + np.array(initial_move))
+        logging.debug(np.array(self._position) + np.array(initial_move))
+        logging.debug(f"New position: {self._position}")
 
     def move_abs(self, final, simulate_time: bool = True, **kwargs):
         if simulate_time:
             time.sleep(1)
 
         self._position = list(final)
+        logging.debug(f"New position: {self._position}")
 
     def close(self):
         pass
