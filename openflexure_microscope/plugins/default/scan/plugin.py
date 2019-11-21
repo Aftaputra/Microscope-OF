@@ -165,7 +165,7 @@ class ScanPlugin(MicroscopePlugin):
         # Check if autofocus is enabled
         if (
             autofocus_dz
-            and hasattr(self.microscope.plugin, "default_autofocus")
+            and hasattr(self.microscope.plugins, "default_autofocus")
             and self.microscope.has_real_stage()
             and self.microscope.has_real_camera()
         ):
@@ -174,7 +174,7 @@ class ScanPlugin(MicroscopePlugin):
             autofocus_enabled = False
 
         if fast_autofocus and not hasattr(
-            self.microscope.plugin.default_autofocus, "monitor_sharpness"
+            self.microscope.plugins.default_autofocus, "monitor_sharpness"
         ):
             logging.warning(
                 "Can't use fast autofocus in the scan - the default plugin doesn't support monitor_sharpness; maybe it is too old?"
@@ -213,7 +213,7 @@ class ScanPlugin(MicroscopePlugin):
                 # Refocus
                 if autofocus_enabled:
                     if fast_autofocus:
-                        self.microscope.plugin.default_autofocus.fast_up_down_up_autofocus(
+                        self.microscope.plugins.default_autofocus.fast_up_down_up_autofocus(
                             dz=autofocus_dz,
                             target_z=-z_stack_dz / 2.0,  # Finish below the focus
                             initial_move_up=False,  # We're already at the top of the scan
@@ -221,7 +221,7 @@ class ScanPlugin(MicroscopePlugin):
                         # TODO: save the focus data for future reference? Use it for diagnostics?
                     else:
                         logging.debug("Running autofocus")
-                        self.microscope.plugin.default_autofocus.autofocus(
+                        self.microscope.plugins.default_autofocus.autofocus(
                             range(-3 * autofocus_dz, 4 * autofocus_dz, autofocus_dz)
                         )
                         logging.debug("Finished autofocus")
