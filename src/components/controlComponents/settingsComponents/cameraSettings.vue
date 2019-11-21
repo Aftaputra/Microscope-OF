@@ -1,44 +1,47 @@
 <template>
   <div v-if="camera_settings" id="cameraSettings">
     <form @submit.prevent="applyConfigRequest">
-      <div v-if="camera_settings.picamera_settings.shutter_speed">
-        <label class="uk-form-label" for="form-stacked-text"
-          >Exposure time</label
-        >
-        <div class="uk-form-controls">
-          <input
-            v-model="camera_settings.picamera_settings.shutter_speed"
-            class="uk-input uk-form-small"
-            type="number"
-          />
+      <div v-if="camera_settings.picamera_settings">
+        <!--PiCamera settings block-->
+        <div v-if="camera_settings.picamera_settings.shutter_speed">
+          <label class="uk-form-label" for="form-stacked-text"
+            >Exposure time</label
+          >
+          <div class="uk-form-controls">
+            <input
+              v-model="camera_settings.picamera_settings.shutter_speed"
+              class="uk-input uk-form-small"
+              type="number"
+            />
+          </div>
         </div>
-      </div>
 
-      <div v-if="camera_settings.picamera_settings.analog_gain">
-        <label class="uk-form-label" for="form-stacked-text"
-          >Analogue gain</label
-        >
-        <div class="uk-form-controls">
-          <input
-            v-model="camera_settings.picamera_settings.analog_gain"
-            class="uk-input uk-form-small"
-            type="number"
-            step="0.000001"
-          />
+        <div v-if="camera_settings.picamera_settings.analog_gain">
+          <label class="uk-form-label" for="form-stacked-text"
+            >Analogue gain</label
+          >
+          <div class="uk-form-controls">
+            <input
+              v-model="camera_settings.picamera_settings.analog_gain"
+              class="uk-input uk-form-small"
+              type="number"
+              step="0.000001"
+            />
+          </div>
         </div>
-      </div>
 
-      <div v-if="camera_settings.picamera_settings.digital_gain">
-        <label class="uk-form-label" for="form-stacked-text"
-          >Digital gain</label
-        >
-        <div class="uk-form-controls">
-          <input
-            v-model="camera_settings.picamera_settings.digital_gain"
-            class="uk-input uk-form-small"
-            type="number"
-            step="0.000001"
-          />
+        <div v-if="camera_settings.picamera_settings.digital_gain">
+          <label class="uk-form-label" for="form-stacked-text"
+            >Digital gain</label
+          >
+          <div class="uk-form-controls">
+            <input
+              v-model="camera_settings.picamera_settings.digital_gain"
+              class="uk-input uk-form-small"
+              type="number"
+              step="0.000001"
+            />
+          </div>
         </div>
       </div>
 
