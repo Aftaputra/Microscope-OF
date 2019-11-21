@@ -53,6 +53,4 @@ class MoveStageAPI(MicroscopeView):
             with self.microscope.stage.lock:
                 self.microscope.stage.move_rel(position)
 
-        out = filter_dict(self.microscope.state, ["stage", "position"])
-
-        return jsonify(out)
+        return jsonify(self.microscope.status["stage"]["position"])

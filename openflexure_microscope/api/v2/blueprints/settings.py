@@ -6,7 +6,9 @@ from openflexure_microscope.api.utilities import gen, JsonResponse
 from openflexure_microscope.api.views import MicroscopeView
 from openflexure_microscope.api.utilities import blueprint_for_module
 
-from flask import Blueprint, jsonify, request
+from openflexure_microscope.utilities import get_by_path, set_by_path, create_from_path
+
+from flask import Blueprint, jsonify, request, abort
 import logging
 
 
@@ -144,7 +146,38 @@ class SettingsAPI(MicroscopeView):
         self.microscope.apply_settings(payload.json)
         self.microscope.save_settings()
 
-        return jsonify(self.microscope.read_settings(json_safe=True))
+        return jsonify(self.microscope.read_settings())
+
+
+class NestedSettingsAPI(MicroscopeView):
+    def get(self, route):
+
+        keys = route.split("/")
+
+        try:
+            value = get_by_path(self.microscope.read_settings(), keys)
+        except KeyError:
+            return abort(404)
+
+        return jsonify(value)
+
+    def put(self, route):
+        keys = route.split("/")
+
+        payload = JsonResponse(request)
+
+        logging.debug("Updating settings from PUT request:")
+        logging.debug(payload.json)
+
+        dictionary = create_from_path(keys)
+        set_by_path(dictionary, keys, payload.json)
+
+        logging.debug(f"Applying settings: {dictionary}")
+
+        self.microscope.apply_settings(dictionary)
+        self.microscope.save_settings()
+
+        return self.get(route)
 
 
 def construct_blueprint(microscope_obj):
@@ -153,6 +186,13 @@ def construct_blueprint(microscope_obj):
 
     blueprint.add_url_rule(
         "/", view_func=SettingsAPI.as_view("settings", microscope=microscope_obj)
+    )
+
+    blueprint.add_url_rule(
+        "/<path:route>",
+        view_func=NestedSettingsAPI.as_view(
+            "nested_settings", microscope=microscope_obj
+        ),
     )
 
     return blueprint

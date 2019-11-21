@@ -6,6 +6,23 @@ from functools import reduce
 from contextlib import contextmanager
 
 
+def get_by_path(root, items):
+    """Access a nested object in root by item sequence."""
+    return reduce(operator.getitem, items, root)
+
+
+def set_by_path(root, items, value):
+    """Set a value in a nested object in root by item sequence."""
+    get_by_path(root, items[:-1])[items[-1]] = value
+
+
+def create_from_path(items):
+    tree_dict = {}
+    for key in reversed(items):
+        tree_dict = {key: tree_dict}
+    return tree_dict
+
+
 def bottom_level_name(obj):
     return obj.__name__.split(".")[-1]
 
