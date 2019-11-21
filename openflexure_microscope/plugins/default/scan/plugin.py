@@ -151,12 +151,14 @@ class ScanPlugin(MicroscopePlugin):
 
         metadata.update(
             {
+                "scan_id": scan_id,
+                "basename": basename,
                 "scan_parameters": {
                     "step_size": step_size,
                     "grid": grid,
                     "style": style,
                     "autofocus_dz": autofocus_dz,
-                }
+                },
             }
         )
 
