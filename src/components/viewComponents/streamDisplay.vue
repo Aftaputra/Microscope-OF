@@ -43,6 +43,7 @@ export default {
     return {
       displaySize: [0, 0],
       displayPosition: [0, 0],
+      fov: [0, 0],
       GpuPreviewActive: false,
       resizeTimeoutId: setTimeout(this.doneResizing, 500)
     };
@@ -69,6 +70,11 @@ export default {
       return `http://${this.$store.state.host}:${
         this.$store.state.port
       }/api/v2/actions/camera/preview/stop`;
+    },
+    settingsUri: function() {
+      return `http://${this.$store.state.host}:${
+        this.$store.state.port
+      }/api/v2/settings`;
     }
   },
 
@@ -99,10 +105,11 @@ export default {
       (state, getters) => {
         return getters.ready;
       },
-      (newValue, oldValue) => {
-        // 'ready' changed, so do something
-        console.log(`Updating from ${oldValue} to ${newValue}`);
+      () => {
+        // Send a request to start/stop GPU preview based on global setting
         this.previewRequest(this.$store.state.globalSettings.autoGpuPreview);
+        // Get FOV from settings
+        this.updateFov();
       }
     );
   },
@@ -125,8 +132,8 @@ export default {
         (0.5 * event.target.offsetHeight - yCoordinate) /
         event.target.offsetHeight;
 
-      let xSteps = xRelative * this.$store.state.apiConfig.fov[0];
-      let ySteps = yRelative * this.$store.state.apiConfig.fov[1];
+      let xSteps = xRelative * this.fov[0];
+      let ySteps = yRelative * this.fov[1];
 
       // Emit a signal to move, acted on by panelNavigate.vue
       this.$root.$emit("globalMoveEvent", xSteps, ySteps, 0, false);
@@ -225,6 +232,17 @@ export default {
             this.modalError(error); // Let mixin handle error
           });
       }
+    },
+
+    updateFov: function() {
+      axios
+        .get(`${this.settingsUri}/fov`)
+        .then(response => {
+          this.fov = response.data;
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
     }
   }
 };
