@@ -10,7 +10,9 @@ from openflexure_microscope.stage.base import BaseStage
 from openflexure_microscope.stage.mock import MockStage
 from openflexure_microscope.camera.base import BaseCamera
 from openflexure_microscope.camera.mock import MockStreamer
+from openflexure_microscope.camera.pi import PiCameraStreamer
 
+from openflexure_microscope.utilities import serialise_array_b64
 from openflexure_microscope.plugins import PluginLoader
 from openflexure_microscope.task import TaskOrchestrator
 from openflexure_microscope.common.lock import CompositeLock
@@ -270,3 +272,30 @@ class Microscope:
             Please use apply_settings method instead."
         )
         self.apply_settings(config)
+
+    @property
+    def metadata(self):
+        """
+        Microscope system metadata, to be applied to basically all captures
+        """
+        system_metadata = {
+            "microscope_settings": self.read_settings(),
+            "microscope_state": self.state,
+            "microscope_id": self.id,
+            "microscope_name": self.name,
+        }
+
+        # Store an encoded copy of the PiCamera lens shading table, if it exists
+        if self.camera and isinstance(self.camera, PiCameraStreamer):
+            # Read LST. Returns None if no LST is active
+            lst_arr = self.camera.read_lens_shading_table()
+
+            b64_string, dtype, shape = serialise_array_b64(lst_arr)
+            
+            system_metadata["lens_shading_table"] = {
+                "b64_string": b64_string,
+                "dtype": dtype,
+                "shape": shape
+            }
+        
+        return system_metadata

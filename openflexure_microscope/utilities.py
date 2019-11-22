@@ -1,10 +1,22 @@
 import re
 import copy
 import operator
+import base64
+import numpy as np
 from collections import abc
 from functools import reduce
 from contextlib import contextmanager
 
+
+def deserialise_array_b64(b64_string, dtype, shape):
+    flat_arr = np.fromstring(base64.b64decode(b64_string), dtype)
+    return flat_arr.reshape(shape)
+
+def serialise_array_b64(npy_arr):
+    b64_string = base64.b64encode(npy_arr).decode('ascii')
+    dtype = str(npy_arr.dtype)
+    shape = npy_arr.shape
+    return b64_string, dtype, shape
 
 def get_by_path(root, items):
     """Access a nested object in root by item sequence."""
