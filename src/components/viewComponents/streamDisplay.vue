@@ -93,7 +93,7 @@ export default {
     this.sizeObserver = new ResizeObserver(() => {
       this.handleResize(); // For any element attached to the observer, run handleResize() on change
     });
-    // Fetch streamDisplay by ref
+    // Fetch streamDisplay component by ref
     const streamDisplayElement = this.$refs.streamDisplay.parentNode;
     // Attach streamDisplay to the size observer
     this.sizeObserver.observe(streamDisplayElement);
@@ -140,6 +140,7 @@ export default {
     },
 
     flashStream: function() {
+      // Run an animation that flashes the stream (for capture feedback)
       let element = this.$refs.streamDisplay;
       element.classList.remove("uk-animation-fade");
       element.offsetHeight; /* trigger reflow */
@@ -225,9 +226,7 @@ export default {
         // Send preview request
         axios
           .post(requestUri, payload)
-          .then(() => {
-            this.$store.dispatch("updateState"); // Update store state
-          })
+          .then(() => {})
           .catch(error => {
             this.modalError(error); // Let mixin handle error
           });
@@ -235,10 +234,13 @@ export default {
     },
 
     updateFov: function() {
+      // Get the current field-of-view setting from the server
       axios
         .get(`${this.settingsUri}/fov`)
         .then(response => {
-          this.fov = response.data;
+          if (response.data) {
+            this.fov = response.data;
+          }
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
