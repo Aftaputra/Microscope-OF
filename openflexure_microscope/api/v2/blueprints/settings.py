@@ -78,7 +78,7 @@ class SettingsAPI(MicroscopeView):
         """
         Modify microscope configuration
 
-        .. :quickref: Config; Set microscope config
+        .. :quickref: Settings; Update microscope settings
 
         **Example request**:
 

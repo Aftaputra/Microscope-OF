@@ -27,7 +27,7 @@ class MjpegAPI(MicroscopeView):
         """
         Real-time MJPEG stream from the microscope camera
 
-        .. :quickref: Stream; Camera MJPEG stream
+        .. :quickref: Streams; Camera MJPEG stream
 
         :>header Accept: image/jpeg
         :>header Content-Type: image/jpeg
@@ -51,7 +51,7 @@ class SnapshotAPI(MicroscopeView):
         """
         Single snapshot from the camera stream
 
-        .. :quickref: Stream; Camera snapshot
+        .. :quickref: Streams; Camera snapshot
 
         :>header Accept: image/jpeg
         :>header Content-Type: image/jpeg

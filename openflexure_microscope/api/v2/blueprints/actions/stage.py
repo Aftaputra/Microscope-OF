@@ -16,7 +16,7 @@ class MoveStageAPI(MicroscopeView):
         """
         Set x, y and z positions of the stage.
 
-        .. :quickref: Position; Update current position
+        .. :quickref: Actions; Move stage
 
         :reqheader Accept: application/json
         :<json boolean absolute: (true) move to absolute position, (false) move by relative amount
