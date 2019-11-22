@@ -103,7 +103,7 @@ class GPUPreviewStartAPI(MicroscopeView):
     Start the onboard GPU preview.
     """
 
-    def post(self, operation):
+    def post(self):
         """
         Start the onboard GPU preview.
         Optional "window" parameter can be passed to control the position and size of the preview window,
@@ -149,7 +149,7 @@ class GPUPreviewStopAPI(MicroscopeView):
     Stop the onboard GPU preview.
     """
 
-    def post(self, operation):
+    def post(self):
         """
         Stop the onboard GPU preview.
 
