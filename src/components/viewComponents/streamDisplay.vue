@@ -56,13 +56,19 @@ export default {
       );
     },
     streamImgUri: function() {
-      return this.$store.getters.uri + "/stream";
+      return `http://${this.$store.state.host}:${
+        this.$store.state.port
+      }/api/v2/streams/mjpeg`;
     },
     startPreviewUri: function() {
-      return this.$store.getters.uri + "/camera/preview/start";
+      return `http://${this.$store.state.host}:${
+        this.$store.state.port
+      }/api/v2/actions/camera/preview/start`;
     },
     stopPreviewUri: function() {
-      return this.$store.getters.uri + "/camera/preview/stop";
+      return `http://${this.$store.state.host}:${
+        this.$store.state.port
+      }/api/v2/actions/camera/preview/stop`;
     }
   },
 
