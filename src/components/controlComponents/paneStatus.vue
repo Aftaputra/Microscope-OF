@@ -1,34 +1,40 @@
 <template>
   <div class="host-input">
-    <div v-if="$store.getters.ready">
-      <div v-if="$store.state.apiConfig.name">
-        <b>Device name:</b> <br />
-        {{ $store.state.apiConfig.name }}
+    <div v-if="status">
+      <div>
+        <div class="uk-margin-small-bottom">
+          <b>Host:</b>
+          <br />
+          {{ $store.state.host }}
+        </div>
       </div>
+
       <hr />
-      <div class="uk-margin-small-bottom">
-        <b>Host:</b>
-        <br />
-        {{ $store.state.host }}
+
+      <div v-if="settings">
+        <b>Device name:</b> <br />
+        {{ settings.name }}
       </div>
       <div>
         <b>Server version:</b> <br />
-        {{ $store.state.apiState.version }}
+        {{ status.version }}
       </div>
+
       <hr />
+
       <div class="uk-margin-small-bottom">
         <b>Camera:</b>
         <br />
-        <div v-if="$store.state.apiState.camera.board">
-          {{ $store.state.apiState.camera.board }}
+        <div v-if="status.camera.board">
+          {{ status.camera.board }}
         </div>
         <div v-else class="uk-text-danger"><b>No camera connected</b></div>
       </div>
       <div>
         <b>Stage:</b>
         <br />
-        <div v-if="$store.state.apiState.stage.board">
-          {{ $store.state.apiState.stage.board }}
+        <div v-if="status.stage.board">
+          {{ status.stage.board }}
         </div>
         <div v-else class="uk-text-danger"><b>No stage connected</b></div>
       </div>
@@ -44,6 +50,7 @@
 </template>
 
 <script>
+import axios from "axios";
 import progressBar from "../genericComponents/progressBar";
 
 export default {
@@ -54,16 +61,60 @@ export default {
   },
 
   data: function() {
-    return {};
+    return {
+      status: null,
+      settings: null
+    };
   },
 
-  computed: {},
+  computed: {
+    settingsUri: function() {
+      return `http://${this.$store.state.host}:${
+        this.$store.state.port
+      }/api/v2/settings`;
+    },
+    statusUri: function() {
+      return `http://${this.$store.state.host}:${
+        this.$store.state.port
+      }/api/v2/status`;
+    }
+  },
 
-  watch: {},
+  created: function() {
+    // Watch for host 'ready', then update status
+    this.$store.watch(
+      (state, getters) => {
+        return getters.ready;
+      },
+      () => {
+        this.updateStatus();
+        this.updateSettings();
+      }
+    );
+  },
 
-  mounted() {},
-
-  methods: {}
+  methods: {
+    updateStatus: function() {
+      axios
+        .get(this.statusUri)
+        .then(response => {
+          this.status = response.data;
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+    },
+    updateSettings: function() {
+      axios
+        .get(this.settingsUri)
+        .then(response => {
+          this.settings = response.data;
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+    }
+  }
 };
 </script>
 
