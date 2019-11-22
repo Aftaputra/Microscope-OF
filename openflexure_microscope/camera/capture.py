@@ -95,11 +95,11 @@ def capture_from_exif(path, exif_dict):
 
     # Populate capture parameters
     capture.id = exif_dict["id"]
-
     capture.timestring = exif_dict["time"]
     capture.format = exif_dict["format"]
 
     capture.custom_metadata = exif_dict["custom"]
+    capture.system_metadata = exif_dict["system"]
     capture.tags = exif_dict["tags"]
 
     return capture
@@ -200,14 +200,17 @@ class CaptureObject(object):
 
     # HANDLE METADATA
 
-    def put_metadata(self, data: dict) -> None:
+    def put_metadata(self, data: dict, system: bool=False) -> None:
         """
         Merge metadata from a passed dictionary into the capture metadata, and saves.
 
         Args:
             data (dict): Dictionary of metadata to be added
         """
-        self.custom_metadata.update(data)
+        if system:
+            self.system_metadata.update(data)
+        else:
+            self.custom_metadata.update(data)
         self.save_metadata()
 
     def save_metadata(self) -> None:
@@ -222,6 +225,7 @@ class CaptureObject(object):
             exif_dict = piexif.load(self.file)
             # Serialize metadata
             metadata_string = json.dumps(self.metadata, cls=JSONEncoder)
+            logging.debug(f"Saving metadata string to file: {metadata_string}")
             # Insert metadata into exif_dict
             exif_dict["Exif"][piexif.ExifIFD.UserComment] = metadata_string.encode()
             # Convert new exif dict to exif bytes
@@ -241,9 +245,8 @@ class CaptureObject(object):
             "format": self.format,
             "tags": self.tags,
             "custom": self.custom_metadata,
+            "system": self.system_metadata
         }
-
-        d.update(self.system_metadata)
 
         # Add custom metadata to dictionary
         return d

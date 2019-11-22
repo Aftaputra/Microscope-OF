@@ -100,7 +100,7 @@ class ScanPlugin(MicroscopePlugin):
             tags.append("scan")
 
         # Inject system metadata
-        output.system_metadata.update(self.microscope.metadata)
+        output.put_metadata(self.microscope.metadata, system=True)
 
         # Insert custom metadata
         output.put_metadata(metadata)
