@@ -98,8 +98,12 @@ def capture_from_exif(path, exif_dict):
     capture.timestring = exif_dict["time"]
     capture.format = exif_dict["format"]
 
-    capture.custom_metadata = exif_dict["custom"]
-    capture.system_metadata = exif_dict["system"]
+    capture.custom_metadata = (
+        exif_dict["custom"] if "custom" in exif_dict.keys() else {}
+    )
+    capture.system_metadata = (
+        exif_dict["system"] if "system" in exif_dict.keys() else {}
+    )
     capture.tags = exif_dict["tags"]
 
     return capture
@@ -200,7 +204,7 @@ class CaptureObject(object):
 
     # HANDLE METADATA
 
-    def put_metadata(self, data: dict, system: bool=False) -> None:
+    def put_metadata(self, data: dict, system: bool = False) -> None:
         """
         Merge metadata from a passed dictionary into the capture metadata, and saves.
 
@@ -245,7 +249,7 @@ class CaptureObject(object):
             "format": self.format,
             "tags": self.tags,
             "custom": self.custom_metadata,
-            "system": self.system_metadata
+            "system": self.system_metadata,
         }
 
         # Add custom metadata to dictionary
