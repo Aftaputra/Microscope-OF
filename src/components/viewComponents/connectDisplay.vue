@@ -138,6 +138,8 @@ if (isElectron()) {
   var mdns = require("mdns-js");
 }
 
+import axios from "axios";
+
 import hostCard from "./connectComponents/hostCard.vue";
 
 // Export main app
@@ -262,18 +264,37 @@ export default {
       this.port = host.port;
 
       // Commit the hostname and port to store
+      this.$store.commit("resetState");
       this.$store.commit("changeHost", [host.hostname, host.port]);
-      // Try to get config and state JSON from the newly submitted host
-      this.$store
-        .dispatch("firstConnect")
-        .then(() => {
-          console.log("Connected!");
-          // Check client and server match
-          this.checkServerVersion();
-          // Switch to live view tab
-          this.$root.$emit("globalTogglePanelRightTab", "preview");
+      this.$store.commit("changeWaiting", true);
+      // Try to get list of available routes
+      axios
+        .get(`${this.$store.getters.baseUri}/routes`)
+        .then(response => {
+          console.log(response.data);
+          // If the /api/v2 route is available
+          if (Object.keys(response.data).includes("/api/v2/")) {
+            console.log("API v2 available");
+            // Tell Vuex store that we're connected
+            this.$store.commit("setConnected");
+            // Check client and server match
+            this.checkServerVersion();
+            // Switch to live view tab
+            // TODO: Not working for some reason?
+            this.$root.$emit("globalTogglePanelRightTab", "preview");
+          } else {
+            // Error and no-connect if API v2 is missing
+            var ApiVersionError = Error(`Your microscope is running an old API version.\
+            You must update your microscope software to continue.\
+            <br><br> \n
+            For API upgrades, burning the latest Raspbian-OpenFlexure is often easiest.\
+            <br><br> \n
+            Alternatively, you can run 'ofm upgrade' on your microscope.`);
+            this.modalError(ApiVersionError);
+          }
         })
         .catch(error => {
+          this.$store.commit("setError");
           this.modalError(error); // Let mixin handle error
         });
     },
@@ -307,14 +328,15 @@ export default {
     },
 
     checkServerVersion: function() {
-      this.$store
-        .dispatch("updateState")
-        .then(() => {
+      var versionUri = `${this.$store.getters.baseUri}/api/v2/status/version`;
+      axios
+        .get(versionUri)
+        .then(response => {
+          var serverVersion = response.data;
           var clientVersion = process.env.PACKAGE.version;
           var clientVersionMajor = clientVersion.substring(0, 3);
           console.log(clientVersionMajor);
 
-          var serverVersion = this.$store.state.apiState.version;
           if (serverVersion != undefined) {
             var serverVersionMajor = serverVersion.substring(0, 3);
           }
@@ -362,12 +384,23 @@ export default {
     },
 
     saveHost: function() {
-      // We use unshift instead of push to add the entry to the beginning of the array
-      this.savedHosts.unshift({
-        name: this.$store.state.apiConfig.name,
-        hostname: this.$store.state.host,
-        port: this.$store.state.port
-      });
+      // URI to get hostname directly from settings
+      var hostnameUri = `${this.$store.getters.baseUri}/api/v2/settings/name`;
+      axios
+        .get(hostnameUri)
+        .then(response => {
+          // Get device name from response
+          var deviceName = response.data;
+          // We use unshift instead of push to add the entry to the beginning of the array
+          this.savedHosts.unshift({
+            name: deviceName,
+            hostname: this.$store.state.host,
+            port: this.$store.state.port
+          });
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
     }
   }
 };
