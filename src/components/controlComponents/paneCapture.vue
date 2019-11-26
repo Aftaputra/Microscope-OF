@@ -283,9 +283,9 @@ export default {
       scanDeltaZ: "Medium",
       scanStyle: "Raster",
       scanStepSize: {
-        x: parseInt(0.8 * this.$store.state.apiConfig.fov[0]),
-        y: parseInt(0.8 * this.$store.state.apiConfig.fov[1]),
-        z: 50
+        x: 0,
+        y: 0,
+        z: 0
       },
       scanSteps: {
         x: 3,
@@ -308,14 +308,13 @@ export default {
       };
     },
     captureActionUri: function() {
-      return `http://${this.$store.state.host}:${
-        this.$store.state.port
-      }/api/v2/actions/camera/capture`;
+      return `${this.$store.getters.baseUri}/api/v2/actions/camera/capture`;
     },
     pluginsUri: function() {
-      return `http://${this.$store.state.host}:${
-        this.$store.state.port
-      }/api/v2/plugins`;
+      return `${this.$store.getters.baseUri}/api/v2/plugins`;
+    },
+    settingsFovUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2/settings/fov`;
     },
     basePayload: function() {
       var payload = {};
@@ -380,6 +379,7 @@ export default {
 
   mounted() {
     this.updateScanUri();
+    this.updateScanStepSize();
   },
 
   methods: {
@@ -414,6 +414,21 @@ export default {
               this.$store.state.port
             }${link}`;
           }
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+    },
+
+    updateScanStepSize: function() {
+      axios
+        .get(this.settingsFovUri) // Get a list of plugins
+        .then(response => {
+          this.scanStepSize = {
+            x: parseInt(0.5 * response.data[0]),
+            y: parseInt(0.5 * response.data[1]),
+            z: 50
+          };
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
