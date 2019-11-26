@@ -193,6 +193,8 @@ export default new Vuex.Store({
 
   getters: {
     uri: state => `http://${state.host}:${state.port}/api/${state.apiVer}`,
+    uriV2: state => `http://${state.host}:${state.port}/api/v2`,
+    baseUri: state => `http://${state.host}:${state.port}`,
     ready: state =>
       state.available &&
       Object.keys(state.apiConfig).length !== 0 &&
