@@ -133,6 +133,7 @@ export default {
     },
 
     submitApiUri: function() {
+      // TODO: This could probably be handled more explicitally
       return this.pluginApiUri + this.route;
     }
   },
