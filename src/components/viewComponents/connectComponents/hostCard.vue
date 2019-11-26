@@ -86,7 +86,7 @@ export default {
       return `http://${this.hostname}:${this.port}/routes`;
     },
     snapshotURL: function() {
-      return `http://${this.hostname}:${this.port}/api/v1/snapshot`;
+      return `http://${this.hostname}:${this.port}/api/v2/streams/snapshot`;
     }
   },
 
