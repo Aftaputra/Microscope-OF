@@ -124,7 +124,7 @@ class TaskAPI(MethodView):
             return abort(404)  # 404 Not Found
 
         # Return task state
-        return jsonify(task.state)
+        return jsonify(task)
 
     def delete(self, task_id):
         """
