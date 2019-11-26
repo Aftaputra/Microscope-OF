@@ -241,6 +241,24 @@ export default {
     });
   },
 
+  created: function() {
+    // Watch for host 'ready', then update status
+    this.$store.watch(
+      (state, getters) => {
+        return getters.ready;
+      },
+      ready => {
+        if (ready) {
+          // If the connection is now ready, update capture list
+          this.updateCaptureList();
+        } else {
+          // If the connection is now disconnected, empty capture list
+          this.captures = {};
+        }
+      }
+    );
+  },
+
   methods: {
     updateCaptureList: function() {
       console.log("Updating capture list...");
