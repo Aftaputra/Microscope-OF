@@ -68,7 +68,7 @@ export default {
     pollProgress: function() {
       console.log("Starting progress polling");
       axios
-        .get(`${this.$store.getters.uri}/task/${this.taskId}`)
+        .get(`${this.$store.getters.uriV2}/tasks/${this.taskId}`)
         .then(response => {
           console.log("PROGRESS RESPONSE: ", response.data.progress);
           this.progress = response.data.progress;
@@ -77,7 +77,7 @@ export default {
 
     terminateTask: function() {
       axios
-        .delete(`${this.$store.getters.uri}/task/${this.taskId}`)
+        .delete(`${this.$store.getters.uriV2}/tasks/${this.taskId}`)
         .then(response => {
           console.log("TERMINATION RESPONSE: ", response.data);
         });
