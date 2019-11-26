@@ -103,7 +103,7 @@ export default {
 
   data: function() {
     return {
-      captureList: [],
+      captures: {},
       checkedTags: [],
       sortDescending: true,
       galleryFolder: "",
@@ -112,10 +112,13 @@ export default {
   },
 
   computed: {
-    captureApiUri: function() {
-      return this.$store.getters.uri + "/camera/capture";
+    capturesUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2/captures`;
     },
-
+    captureList: function() {
+      // List of captures, obtained from this.captures values
+      return Object.values(this.captures);
+    },
     allTags: function() {
       // Return an array of unique tags across all captures
       var tags = [];
@@ -130,6 +133,7 @@ export default {
     },
 
     noScanCaptureList: function() {
+      // List of captures that are not part of a scan
       var captures = [];
       for (var capture of this.captureList) {
         // Filter by selected tags
@@ -145,7 +149,7 @@ export default {
     },
 
     allScans: function() {
-      // Return an array of unique tags across all captures
+      // List of scans as capture-like objects
       var scans = {};
 
       for (var capture of this.captureList) {
@@ -187,12 +191,11 @@ export default {
           }
 
           // Create a preview thumbnail
+          // TODO: Use URI defined in capture representation
           if (!("thumbnail" in scans[id])) {
-            scans[id].thumbnail =
-              this.$store.getters.uri +
-              "/camera/capture/" +
-              capture.metadata.id +
-              "/download?thumbnail=true";
+            scans[id].thumbnail = `${this.$store.getters.baseUri}${
+              capture.links.download
+            }?thumbnail=true`;
           }
         }
       }
@@ -200,10 +203,14 @@ export default {
     },
 
     scanList: function() {
+      // List of scans, obtained from this.allScans values
       return Object.values(this.allScans);
     },
 
     itemList: function() {
+      // Get list of current items to show
+      // If galleryFolder (ie inside a scan folder), show scan captures
+      // Otherwise, show root captures and scan cards
       if (this.galleryFolder) {
         console.log(this.allScans[this.galleryFolder].captureList);
         return this.allScans[this.galleryFolder].captureList;
@@ -213,10 +220,12 @@ export default {
     },
 
     filteredItems: function() {
+      // Filter itemList by checkedTags
       return this.filterCaptureList(this.itemList, this.checkedTags);
     },
 
     sortedItems: function() {
+      // Sort filteredItems using sortCaptureList function
       return this.sortCaptureList(this.filteredItems);
     }
   },
@@ -235,12 +244,10 @@ export default {
   methods: {
     updateCaptureList: function() {
       console.log("Updating capture list...");
-      // Send move request
       axios
-        .get(this.captureApiUri)
+        .get(this.capturesUri)
         .then(response => {
-          this.$store.dispatch("updateState"); // Update store state for good measure
-          this.captureList = response.data; // Update boxes from response
+          this.captures = response.data;
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -248,6 +255,7 @@ export default {
     },
 
     filterCaptureList: function(list, filterTags) {
+      // Filter a list of captures by an array of tags
       var result = [];
       for (var capture of list) {
         // Assume exclusion
@@ -269,6 +277,7 @@ export default {
     },
 
     sortCaptureList: function(list) {
+      // Sort a list of captures by metadata time
       function compare(a, b) {
         if (a.metadata.time < b.metadata.time) return -1;
         if (a.metadata.time > b.metadata.time) return 1;

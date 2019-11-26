@@ -44,7 +44,7 @@
     </div>
 
     <div class="uk-card-footer uk-padding-small">
-      <div v-for="tag in captureState.metadata.tags" :key="tag">
+      <div v-for="tag in tags" :key="tag" class="uk-display-inline">
         <span
           v-if="tag === 'temporary'"
           class="uk-label uk-label-danger uk-margin-small-right"
@@ -166,20 +166,20 @@ export default {
       return "#" + this.metadataModalID;
     },
     thumbURL: function() {
-      return this.captureURL + "/download?thumbnail=true";
+      return `${this.$store.getters.baseUri}${
+        this.captureState.links.download
+      }?thumbnail=true`;
     },
     imgURL: function() {
-      return this.captureURL + "/download/" + this.fileName;
+      return `${this.$store.getters.baseUri}${
+        this.captureState.links.download
+      }`;
     },
-    tagURL: function() {
-      return this.captureURL + "/tags";
+    tagsURL: function() {
+      return `${this.$store.getters.baseUri}${this.captureState.links.tags}`;
     },
     captureURL: function() {
-      return (
-        this.$store.getters.uri +
-        "/camera/capture/" +
-        this.captureState.metadata.id
-      );
+      return `${this.$store.getters.baseUri}${this.captureState.links.self}`;
     },
     betterTimestring: function() {
       var dtSplit = this.captureState.metadata.time.split("_");
@@ -195,8 +195,6 @@ export default {
 
   methods: {
     handleTagSubmit: function(event) {
-      console.log(this.tagURL);
-      console.log(this.newtag);
       this.newTagRequest(this.newtag);
       this.newtag = "";
       UIkit.modal(event.target.parentNode).hide(); // TODO: Remove somehow
@@ -225,7 +223,7 @@ export default {
     newTagRequest: function(tag_string) {
       // Send tag PUT request
       axios
-        .put(this.tagURL, [tag_string])
+        .put(this.tagsURL, [tag_string])
         .then(() => {
           // Update tag array
           this.getTagRequest();
@@ -246,7 +244,7 @@ export default {
       console.log(tag_string);
       // Send tag DELETE request
       axios
-        .delete(this.tagURL, { data: [tag_string] })
+        .delete(this.tagsURL, { data: [tag_string] })
         .then(() => {
           // Update tag array
           this.getTagRequest();
@@ -259,9 +257,9 @@ export default {
     getTagRequest: function() {
       // Send tag request
       axios
-        .get(this.tagURL)
+        .get(this.tagsURL)
         .then(response => {
-          this.tags = response.data.metadata.tags;
+          this.tags = response.data;
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
