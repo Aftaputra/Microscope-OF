@@ -45,7 +45,7 @@
       <hr />
 
       <tabIcon
-        v-for="plugin in $store.state.apiPlugins"
+        v-for="plugin in pluginsGuiList"
         :id="plugin.id"
         :key="plugin.id"
         :require-connection="plugin.requiresConnection"
@@ -96,7 +96,7 @@
         </tabContent>
 
         <tabContent
-          v-for="plugin in $store.state.apiPlugins"
+          v-for="plugin in pluginsGuiList"
           :id="plugin.id"
           :key="plugin.id"
           :require-connection="plugin.requiresConnection"
@@ -126,6 +126,8 @@
 </template>
 
 <script>
+import axios from "axios";
+
 // Import generic components
 import tabIcon from "./genericComponents/tabIcon";
 import tabContent from "./genericComponents/tabContent";
@@ -155,18 +157,52 @@ export default {
 
   data: function() {
     return {
+      plugins: {},
       currentTab: "status",
       showControlBar: true
     };
   },
 
   computed: {
-    pluginApiUri: function() {
-      return this.$store.getters.uri + "/plugin";
+    pluginsUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2/plugins`;
+    },
+    pluginsGuiList: function() {
+      // List of plugin GUIs, obtained from this.plugins values
+      console.log("Recalculating plugins");
+      var pluginGuis = [];
+      for (let plugin of Object.values(this.plugins)) {
+        if (plugin.gui) {
+          pluginGuis.push(plugin.gui);
+        }
+      }
+      return pluginGuis;
     }
   },
 
+  created: function() {
+    // Watch for host 'ready', then update status
+    this.$store.watch(
+      (state, getters) => {
+        return getters.ready;
+      },
+      () => {
+        this.updatePlugins();
+      }
+    );
+  },
   methods: {
+    updatePlugins: function() {
+      axios
+        .get(this.pluginsUri)
+        .then(response => {
+          console.log(response);
+          this.plugins = response.data;
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+    },
     setTab: function(event, tab) {
       if (this.currentTab == tab) {
         this.showControlBar = !this.showControlBar;

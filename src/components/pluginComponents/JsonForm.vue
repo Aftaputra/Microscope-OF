@@ -129,7 +129,7 @@ export default {
 
   computed: {
     pluginApiUri: function() {
-      return this.$store.getters.uri + "/plugin";
+      return `${this.$store.getters.baseUri}/api/v2/plugins`;
     },
 
     submitApiUri: function() {
