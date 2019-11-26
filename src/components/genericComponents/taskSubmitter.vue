@@ -171,7 +171,7 @@ export default {
       var checkCondition = (resolve, reject) => {
         // If the condition is met, we're done!
         axios
-          .get(`${this.$store.getters.uri}/task/${taskId}`)
+          .get(`${this.$store.getters.uriV2}/tasks/${taskId}`)
           .then(response => {
             console.log(response.data.status);
             var result = response.data.status;
@@ -215,7 +215,7 @@ export default {
       console.log("Starting progress polling");
 
       axios
-        .get(`${this.$store.getters.uri}/task/${this.taskId}`)
+        .get(`${this.$store.getters.uriV2}/tasks/${this.taskId}`)
         .then(response => {
           console.log("PROGRESS RESPONSE: ", response.data.progress);
           this.progress = response.data.progress;
@@ -224,7 +224,7 @@ export default {
 
     terminateTask: function() {
       axios
-        .delete(`${this.$store.getters.uri}/task/${this.taskId}`)
+        .delete(`${this.$store.getters.uriV2}/tasks/${this.taskId}`)
         .then(response => {
           console.log("TERMINATION RESPONSE: ", response.data);
         });
