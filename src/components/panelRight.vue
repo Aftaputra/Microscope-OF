@@ -9,24 +9,60 @@
       class="uk-flex-none uk-flex-center uk-margin-remove-bottom uk-text-center"
       uk-tab="swiping: false"
     >
-      <li><a href="#" uk-switcher-item="connect">Connect</a></li>
-      <li :class="{ 'uk-disabled': !this.$store.getters.ready }">
-        <a href="#" uk-switcher-item="preview">Live</a>
+      <!-- Connect tab button -->
+      <li :class="[{ 'uk-active': selectedTab == 0 }]">
+        <a href="#" uk-switcher-item="connect" @click="selectedTab = 0"
+          >Connect</a
+        >
       </li>
-      <li :class="{ 'uk-disabled': !this.$store.getters.ready }">
-        <a href="#" uk-switcher-item="gallery">Gallery</a>
+      <!-- Preview tab button -->
+      <li
+        :class="[
+          { 'uk-disabled': !$store.getters.ready },
+          { 'uk-active': selectedTab == 1 }
+        ]"
+      >
+        <a href="#" uk-switcher-item="preview" @click="selectedTab = 1">Live</a>
+      </li>
+      <!-- Gallery tab button -->
+      <li
+        :class="[
+          { 'uk-disabled': !$store.getters.ready },
+          { 'uk-active': selectedTab == 2 }
+        ]"
+      >
+        <a href="#" uk-switcher-item="gallery" @click="selectedTab = 2"
+          >Gallery</a
+        >
       </li>
     </ul>
-    <ul class="uk-switcher uk-flex uk-flex-1 uk-overflow-auto">
-      <li id="connectDisplayTab" class="uk-height-1-1 uk-width-1-1">
+    <ul class="uk-flex uk-flex-1 uk-overflow-auto uk-margin-remove">
+      <!-- Connect tab -->
+      <div
+        v-show="selectedTab == 0"
+        id="connectDisplayTab"
+        class="uk-height-1-1 uk-width-1-1"
+      >
         <connectDisplay />
-      </li>
-      <li id="streamDisplayTab" class="uk-height-1-1 uk-width-1-1 clickableTab">
+      </div>
+      <!-- Preview tab -->
+      <div
+        v-if="$store.getters.ready"
+        v-show="selectedTab == 1"
+        id="streamDisplayTab"
+        class="uk-height-1-1 uk-width-1-1"
+      >
         <streamDisplay />
-      </li>
-      <li id="galleryDisplayTab" class="uk-height-1-1 uk-width-1-1">
+      </div>
+      <!-- Gallery tab -->
+      <div
+        v-if="$store.getters.ready"
+        v-show="selectedTab == 2"
+        id="galleryDisplayTab"
+        class="uk-height-1-1 uk-width-1-1"
+      >
         <galleryDisplay />
-      </li>
+      </div>
     </ul>
   </div>
 </template>
@@ -50,44 +86,69 @@ export default {
     galleryDisplay
   },
 
-  mounted() {
-    // Attach methods to UIkit events for tab switching
-    var context = this;
-
-    // Stream tab leave
-    UIkit.util.on("#streamDisplayTab", "hidden", function() {
-      console.log("Stream tab hidden");
-      if (context.$store.state.globalSettings.trackWindow == true) {
-        context.$root.$emit("globalTogglePreview", false);
-      }
-    });
-
-    // Stream tab enter
-    UIkit.util.on("#streamDisplayTab", "shown", function() {
-      console.log("Stream tab entered");
-      UIkit.update();
-      if (context.$store.state.globalSettings.trackWindow == true) {
-        context.$root.$emit("globalTogglePreview", true);
-      }
-    });
-
-    // Gallery tab enter
-    UIkit.util.on("#galleryDisplayTab", "shown", function() {
-      console.log("Gallery tab entered");
-      UIkit.update();
-      context.$root.$emit("globalUpdateCaptureList");
-    });
-
-    // Create a global event to switch the active tab
-    var switcherObj = UIkit.tab("#tabContainer");
-    console.log(switcherObj);
-    this.$root.$on("globalTogglePanelRightTab", state => {
-      console.log(`Toggling panelRight tab to ${state}`);
-      switcherObj.show(1);
-    });
+  data: function() {
+    return {
+      selectedTab: 0,
+      unwatchStoreFunction: null
+    };
   },
 
-  methods: {}
+  watch: {
+    selectedTab: function(index) {
+      // If entering the gallery
+      if (index == 2) {
+        console.log("Gallery tab entered");
+        this.$root.$emit("globalUpdateCaptureList");
+      }
+      // If entering the stream
+      if (index == 1) {
+        console.log("Stream tab entered");
+        this.$root.$emit("globalTogglePreview", true);
+      }
+      // If leaving the stream
+      else {
+        console.log("Stream tab hidden");
+        this.$root.$emit("globalTogglePreview", false);
+      }
+    }
+  },
+
+  created: function() {
+    // Watch for host 'ready', then update status
+    this.unwatchStoreFunction = this.$store.watch(
+      (state, getters) => {
+        return getters.ready;
+      },
+      ready => {
+        if (ready) {
+          console.log("Right panel now ready");
+          this.selectedTab = 1;
+        } else {
+          console.log("Right panel now disabled");
+          this.selectedTab = 0;
+        }
+      }
+    );
+  },
+
+  beforeDestroy() {
+    // Then we call that function here to unwatch
+    if (this.unwatchStoreFunction) {
+      this.unwatchStoreFunction();
+      this.unwatchStoreFunction = null;
+    }
+  },
+
+  methods: {
+    switchTab: function(index) {
+      var switcherObj = UIkit.switcher("#tabContainer");
+      console.log(switcherObj);
+      console.log(switcherObj.toggles);
+      console.log(`Switching to ${index}`);
+      var a = switcherObj.show(index);
+      console.log(a);
+    }
+  }
 };
 </script>
 

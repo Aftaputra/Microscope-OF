@@ -279,9 +279,6 @@ export default {
             this.$store.commit("setConnected");
             // Check client and server match
             this.checkServerVersion();
-            // Switch to live view tab
-            // TODO: Not working for some reason?
-            this.$root.$emit("globalTogglePanelRightTab", "preview");
           } else {
             // Error and no-connect if API v2 is missing
             var ApiVersionError = Error(`Your microscope is running an old API version.\
