@@ -107,7 +107,8 @@ export default {
       checkedTags: [],
       sortDescending: true,
       galleryFolder: "",
-      scanTag: "scan"
+      scanTag: "scan",
+      unwatchStoreFunction: null
     };
   },
 
@@ -243,7 +244,7 @@ export default {
 
   created: function() {
     // Watch for host 'ready', then update status
-    this.$store.watch(
+    this.unwatchStoreFunction = this.$store.watch(
       (state, getters) => {
         return getters.ready;
       },
@@ -257,6 +258,14 @@ export default {
         }
       }
     );
+  },
+
+  beforeDestroy() {
+    // Then we call that function here to unwatch
+    if (this.unwatchStoreFunction) {
+      this.unwatchStoreFunction();
+      this.unwatchStoreFunction = null;
+    }
   },
 
   methods: {
