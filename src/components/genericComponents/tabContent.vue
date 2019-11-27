@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!(this.requireConnection && !this.$store.getters.ready)"
+    v-if="!(requireConnection && !$store.getters.ready)"
     :hidden="currentTab != id"
     class="uk-width-expand"
   >
