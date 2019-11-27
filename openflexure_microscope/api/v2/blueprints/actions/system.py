@@ -15,7 +15,7 @@ class ShutdownAPI(MicroscopeView):
         .. :quickref: Actions; Shutdown
 
         """
-        subprocess.Popen(["shutdown", "-h", "now"])
+        subprocess.Popen(["sudo", "shutdown", "-h", "now"])
 
         return "{}", 201
 
@@ -32,6 +32,6 @@ class RebootAPI(MicroscopeView):
         .. :quickref: Actions; Shutdown
 
         """
-        subprocess.Popen(["shutdown", "-r", "now"])
+        subprocess.Popen(["sudo", "shutdown", "-r", "now"])
 
         return "{}", 201
