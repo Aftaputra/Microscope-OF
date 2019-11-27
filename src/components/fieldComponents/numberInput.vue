@@ -8,7 +8,7 @@
       :name="name"
       :value="value"
       :placeholder="placeholder"
-      @input="$emit('input', $event.target.value)"
+      @input="$emit('input', Number($event.target.value))"
     />
   </div>
 </template>
