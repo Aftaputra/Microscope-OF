@@ -1,6 +1,6 @@
 <template>
   <div class="host-input">
-    <div v-if="status">
+    <div v-if="status && $store.getters.ready">
       <div>
         <div class="uk-margin-small-bottom">
           <b>Host:</b>
@@ -46,6 +46,30 @@
       <b>Error:</b> {{ $store.state.error }}
     </div>
     <div v-else>No active connection</div>
+
+    <hr />
+
+    <div class="uk-grid-small uk-child-width-1-2" uk-grid>
+      <div>
+        <button
+          v-if="'shutdown' in systemActionLinks"
+          class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
+          @click="shutdownRequest"
+        >
+          Shutdown
+        </button>
+      </div>
+
+      <div>
+        <button
+          v-if="'reboot' in systemActionLinks"
+          class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
+          @click="rebootRequest"
+        >
+          Restart
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -63,7 +87,8 @@ export default {
   data: function() {
     return {
       status: null,
-      settings: null
+      settings: null,
+      systemActionLinks: {}
     };
   },
 
@@ -73,6 +98,9 @@ export default {
     },
     statusUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/status`;
+    },
+    actionsUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2/actions`;
     }
   },
 
@@ -85,6 +113,7 @@ export default {
       () => {
         this.updateStatus();
         this.updateSettings();
+        this.updateSystemActions();
       }
     );
   },
@@ -109,6 +138,63 @@ export default {
         .catch(error => {
           this.modalError(error); // Let mixin handle error
         });
+    },
+    updateSystemActions: function() {
+      axios
+        .get(this.actionsUri)
+        .then(response => {
+          if ("reboot" in response.data) {
+            this.systemActionLinks.reboot = `${this.$store.getters.baseUri}${
+              response.data.reboot.links.self
+            }`;
+          } else {
+            delete this.systemActionLinks.reboot;
+          }
+          if ("shutdown" in response.data) {
+            this.systemActionLinks.shutdown = `${this.$store.getters.baseUri}${
+              response.data.shutdown.links.self
+            }`;
+          } else {
+            delete this.systemActionLinks.shutdown;
+          }
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+    },
+    shutdownRequest: function() {
+      this.modalConfirm("Shut down microscope?").then(
+        () => {
+          if ("shutdown" in this.systemActionLinks) {
+            axios
+              .post(this.systemActionLinks.shutdown)
+              .then(() => {
+                this.$store.commit("resetState");
+              })
+              .catch(error => {
+                this.modalError(error); // Let mixin handle error
+              });
+          }
+        },
+        () => {}
+      );
+    },
+    rebootRequest: function() {
+      this.modalConfirm("Restart microscope?").then(
+        () => {
+          if ("reboot" in this.systemActionLinks) {
+            axios
+              .post(this.systemActionLinks.reboot)
+              .then(() => {
+                this.$store.commit("resetState");
+              })
+              .catch(error => {
+                this.modalError(error); // Let mixin handle error
+              });
+          }
+        },
+        () => {}
+      );
     }
   }
 };
