@@ -10,8 +10,8 @@
       uk-tab="swiping: false"
     >
       <!-- Connect tab button -->
-      <li :class="[{ 'uk-active': selectedTab == 0 }]">
-        <a href="#" uk-switcher-item="connect" @click="selectedTab = 0"
+      <li :class="[{ 'uk-active': currentTab == 'connect' }]">
+        <a href="#" uk-switcher-item="connect" @click="currentTab = 'connect'"
           >Connect</a
         >
       </li>
@@ -19,19 +19,21 @@
       <li
         :class="[
           { 'uk-disabled': !$store.getters.ready },
-          { 'uk-active': selectedTab == 1 }
+          { 'uk-active': currentTab == 'preview' }
         ]"
       >
-        <a href="#" uk-switcher-item="preview" @click="selectedTab = 1">Live</a>
+        <a href="#" uk-switcher-item="preview" @click="currentTab = 'preview'"
+          >Live</a
+        >
       </li>
       <!-- Gallery tab button -->
       <li
         :class="[
           { 'uk-disabled': !$store.getters.ready },
-          { 'uk-active': selectedTab == 2 }
+          { 'uk-active': currentTab == 'gallery' }
         ]"
       >
-        <a href="#" uk-switcher-item="gallery" @click="selectedTab = 2"
+        <a href="#" uk-switcher-item="gallery" @click="currentTab = 'gallery'"
           >Gallery</a
         >
       </li>
@@ -39,7 +41,7 @@
     <ul class="uk-flex uk-flex-1 uk-overflow-auto uk-margin-remove">
       <!-- Connect tab -->
       <div
-        v-show="selectedTab == 0"
+        v-show="currentTab == 'connect'"
         id="connectDisplayTab"
         class="uk-height-1-1 uk-width-1-1"
       >
@@ -48,7 +50,7 @@
       <!-- Preview tab -->
       <div
         v-if="$store.getters.ready"
-        v-show="selectedTab == 1"
+        v-show="currentTab == 'preview'"
         id="streamDisplayTab"
         class="uk-height-1-1 uk-width-1-1"
       >
@@ -57,7 +59,7 @@
       <!-- Gallery tab -->
       <div
         v-if="$store.getters.ready"
-        v-show="selectedTab == 2"
+        v-show="currentTab == 'gallery'"
         id="galleryDisplayTab"
         class="uk-height-1-1 uk-width-1-1"
       >
@@ -88,26 +90,26 @@ export default {
 
   data: function() {
     return {
-      selectedTab: 0,
+      currentTab: "connect",
       unwatchStoreFunction: null
     };
   },
 
   watch: {
-    selectedTab: function(index) {
+    currentTab: function(index) {
       // If entering the gallery
-      if (index == 2) {
+      if (index == "gallery") {
         console.log("Gallery tab entered");
         this.$root.$emit("globalUpdateCaptureList");
       }
       // If entering the stream
-      if (index == 1) {
-        console.log("Stream tab entered");
+      if (index == "preview") {
+        console.log("Preview tab entered");
         this.$root.$emit("globalTogglePreview", true);
       }
       // If leaving the stream
       else {
-        console.log("Stream tab hidden");
+        console.log("Preview tab hidden");
         this.$root.$emit("globalTogglePreview", false);
       }
     }
@@ -122,10 +124,10 @@ export default {
       ready => {
         if (ready) {
           console.log("Right panel now ready");
-          this.selectedTab = 1;
+          this.currentTab = "preview";
         } else {
           console.log("Right panel now disabled");
-          this.selectedTab = 0;
+          this.currentTab = "connect";
         }
       }
     );
