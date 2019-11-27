@@ -1,7 +1,15 @@
 from openflexure_microscope.api.views import MicroscopeView
 
 import subprocess
+import os
+from sys import platform
 
+
+def is_raspberrypi():
+    if (platform != "linux"):
+        return False
+    else:
+        return (os.uname()[1] == 'raspberrypi')
 
 class ShutdownAPI(MicroscopeView):
     """

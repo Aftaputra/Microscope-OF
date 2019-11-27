@@ -3,7 +3,6 @@ Top-level representation of enabled actions
 """
 
 from flask import Blueprint, url_for, jsonify
-from sys import platform
 
 from openflexure_microscope.api.utilities import blueprint_for_module
 from openflexure_microscope.utilities import get_docstring, description_from_view
@@ -41,12 +40,12 @@ _actions = {
     "shutdown": {
         "rule": "/system/shutdown/",
         "view_class": system.ShutdownAPI,
-        "conditions": (platform == "linux"),
+        "conditions": system.is_raspberrypi(),
     },
     "reboot": {
         "rule": "/system/reboot/",
         "view_class": system.RebootAPI,
-        "conditions": (platform == "linux"),
+        "conditions": system.is_raspberrypi(),
     },
 }
 
