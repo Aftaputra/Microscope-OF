@@ -160,7 +160,8 @@ export default {
     return {
       plugins: {},
       currentTab: "status",
-      showControlBar: true
+      showControlBar: true,
+      unwatchStoreFunction: null
     };
   },
 
@@ -198,6 +199,14 @@ export default {
         }
       }
     );
+  },
+
+  beforeDestroy() {
+    // Then we call that function here to unwatch
+    if (this.unwatchStoreFunction) {
+      this.unwatchStoreFunction();
+      this.unwatchStoreFunction = null;
+    }
   },
 
   methods: {
