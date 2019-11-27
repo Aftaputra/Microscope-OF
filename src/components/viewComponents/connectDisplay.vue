@@ -281,13 +281,14 @@ export default {
             this.checkServerVersion();
           } else {
             // Error and no-connect if API v2 is missing
-            var ApiVersionError = Error(`Your microscope is running an old API version.\
+            var ApiVersionError = `Your microscope is running an old API version.\
             You must update your microscope software to continue.\
-            <br><br> \n
-            For API upgrades, burning the latest Raspbian-OpenFlexure is often easiest.\
-            <br><br> \n
-            Alternatively, you can run 'ofm upgrade' on your microscope.`);
-            this.modalError(ApiVersionError);
+            <br><br>
+            For API upgrades, burning the latest Raspbian-OpenFlexure to your SD card is recommended.\
+            <br><br>
+            <b>Downloads and instructions can be found <a target="_blank" href="https://openflexure.org/projects/microscope/install">here</a></b>`;
+            this.modalDialog("API upgrade required", ApiVersionError);
+            this.$store.commit("setError");
           }
         })
         .catch(error => {
