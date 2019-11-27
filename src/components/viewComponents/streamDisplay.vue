@@ -96,18 +96,10 @@ export default {
   },
 
   created: function() {
-    // Watch for host 'ready'
-    this.$store.watch(
-      (state, getters) => {
-        return getters.ready;
-      },
-      () => {
-        // Send a request to start/stop GPU preview based on global setting
-        this.previewRequest(this.$store.state.globalSettings.autoGpuPreview);
-        // Get FOV from settings
-        this.updateFov();
-      }
-    );
+    // Send a request to start/stop GPU preview based on global setting
+    this.previewRequest(this.$store.state.globalSettings.autoGpuPreview);
+    // Get FOV from settings
+    this.updateFov();
   },
 
   beforeDestroy: function() {
@@ -230,6 +222,7 @@ export default {
     },
 
     updateFov: function() {
+      console.log("Updating FOV");
       // Get the current field-of-view setting from the server
       axios
         .get(`${this.settingsUri}/fov`)
