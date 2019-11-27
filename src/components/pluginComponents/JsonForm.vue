@@ -4,11 +4,7 @@
       <div class="uk-text-bold uk-text-uppercase uk-width-expand">
         {{ name }}
       </div>
-      <a
-        v-if="selfUpdate"
-        href="#"
-        class="uk-icon uk-width-auto"
-        @click="getFormData()"
+      <a href="#" class="uk-icon uk-width-auto" @click="updateForm()"
         ><i class="material-icons">cached</i></a
       >
     </div>
@@ -171,9 +167,14 @@ export default {
       }
     },
 
-    updateForm(fieldName, value) {
-      this.$set(this.formData, fieldName, value);
-      this.$emit("input", this.formData);
+    updateForm() {
+      // Trigger a plugin form update
+      this.$emit("reloadForms");
+      // If the form can self-update (GET request to update component values)
+      if (this.selfUpdate) {
+        // Update form data values using a GET request
+        this.getFormData();
+      }
     },
 
     getFormData: function() {
@@ -199,9 +200,7 @@ export default {
           // Do something with the response
           console.log(response);
           // Update the form data if we're self-updating
-          if (this.selfUpdate) {
-            this.getFormData();
-          }
+          this.updateForm();
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error

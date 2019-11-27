@@ -116,6 +116,7 @@
               :submit-label="form.submitLabel"
               :self-update="form.selfUpdate"
               :schema="form.schema"
+              @reloadForms="updatePlugins()"
             />
             <hr />
           </div>
@@ -201,6 +202,7 @@ export default {
 
   methods: {
     updatePlugins: function() {
+      console.log("Updating plugin forms");
       axios
         .get(this.pluginsUri)
         .then(response => {
