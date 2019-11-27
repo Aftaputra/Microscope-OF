@@ -1,6 +1,7 @@
 import importlib
 import copy
 import os
+import collections
 import inspect
 import logging
 
@@ -258,8 +259,10 @@ class BasePlugin:
         # Expand the rule to include plugin name
         full_rule = "/{}/{}".format(self._name_uri_safe, cleaned_rule)
 
-        # Create a Python-safe route ID
         view_id = cleaned_rule.replace("/", "_")
+
+        # Create a Python-safe route ID
+        logging.debug(view_id)
 
         # Store route information in a dictionary
         d = {"rule": full_rule, "view": view_class}
@@ -271,10 +274,22 @@ class BasePlugin:
 
     @property
     def gui(self):
+        print(self._gui)
+        # Handle missing/no GUI
         if not self._gui:
             return None
+        # Handle GUI as a dictionary-returning callable function
+        elif isinstance(self._gui, collections.Callable):
+            api_gui = self._gui()
+        # Handle GUI as a static dictionary
+        elif isinstance(self._gui, dict):
+            api_gui = copy.deepcopy(self._gui)
+        # Handle borked GUI
+        else:
+            raise ValueError(
+                "GUI must be a dictionary, or a dictionary-returning function with no arguments."
+            )
 
-        api_gui = copy.deepcopy(self._gui)
         api_gui["id"] = self._name
 
         if "forms" in api_gui and isinstance(api_gui["forms"], list):

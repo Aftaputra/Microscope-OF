@@ -39,7 +39,7 @@ def plugins_representation(plugin_loader_object: PluginLoader):
 
         for view_id, view_data in plugin.views.items():
             logging.debug(f"Representing view {view_id}")
-            uri = url_for(f"v2_plugins_blueprint.{view_id}")
+            uri = url_for(f"v2_plugins_blueprint.{plugin._name_python_safe}_{view_id}")
             # Make links dictionary if it doesn't yet exist
             view_d = {"links": {"self": uri}}
 
@@ -86,7 +86,9 @@ def construct_blueprint(microscope_obj):
             blueprint.add_url_rule(
                 plugin_view["rule"],
                 view_func=plugin_view["view"].as_view(
-                    plugin_view_id, microscope=microscope_obj, plugin=plugin
+                    f"{plugin._name_python_safe}_{plugin_view_id}",
+                    microscope=microscope_obj,
+                    plugin=plugin,
                 ),
             )
 
