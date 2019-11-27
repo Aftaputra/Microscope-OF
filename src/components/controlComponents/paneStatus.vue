@@ -38,6 +38,30 @@
         </div>
         <div v-else class="uk-text-danger"><b>No stage connected</b></div>
       </div>
+
+      <hr />
+
+      <div class="uk-grid-small uk-child-width-1-2" uk-grid>
+        <div>
+          <button
+            v-if="'shutdown' in systemActionLinks"
+            class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
+            @click="shutdownRequest"
+          >
+            Shutdown
+          </button>
+        </div>
+
+        <div>
+          <button
+            v-if="'reboot' in systemActionLinks"
+            class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
+            @click="rebootRequest"
+          >
+            Restart
+          </button>
+        </div>
+      </div>
     </div>
     <div v-else-if="$store.state.waiting">
       <progressBar></progressBar>
@@ -46,30 +70,6 @@
       <b>Error:</b> {{ $store.state.error }}
     </div>
     <div v-else>No active connection</div>
-
-    <hr />
-
-    <div class="uk-grid-small uk-child-width-1-2" uk-grid>
-      <div>
-        <button
-          v-if="'shutdown' in systemActionLinks"
-          class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
-          @click="shutdownRequest"
-        >
-          Shutdown
-        </button>
-      </div>
-
-      <div>
-        <button
-          v-if="'reboot' in systemActionLinks"
-          class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
-          @click="rebootRequest"
-        >
-          Restart
-        </button>
-      </div>
-    </div>
   </div>
 </template>
 
