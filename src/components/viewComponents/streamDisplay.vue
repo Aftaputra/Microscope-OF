@@ -103,6 +103,10 @@ export default {
   },
 
   beforeDestroy: function() {
+    // Remove global signal listener to change the GPU preview state
+    this.$root.$off("globalTogglePreview");
+    // Remove global signal listener to flash the stream element
+    this.$root.$off("globalFlashStream");
     // Disconnect the size observer
     this.sizeObserver.disconnect();
   },

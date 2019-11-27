@@ -261,6 +261,10 @@ export default {
   },
 
   beforeDestroy() {
+    // Remove global signal listener to perform a gallery refresh
+    this.$root.$off("globalUpdateCaptureList");
+    // Remove global signal listener to set the gallery folder
+    this.$root.$off("globalUpdateCaptureFolder");
     // Then we call that function here to unwatch
     if (this.unwatchStoreFunction) {
       this.unwatchStoreFunction();
