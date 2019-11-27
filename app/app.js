@@ -135,6 +135,11 @@ function createWindow() {
   mainWindow.on("closed", function() {
     mainWindow = null; // Dereference the window object
   });
+
+  mainWindow.webContents.on("new-window", function(event, url) {
+    event.preventDefault();
+    electron.shell.openExternal(url);
+  });
 }
 
 // Some APIs can only be used after this event occurs.
