@@ -182,15 +182,23 @@ export default {
 
   created: function() {
     // Watch for host 'ready', then update status
-    this.$store.watch(
+    this.unwatchStoreFunction = this.$store.watch(
       (state, getters) => {
         return getters.ready;
       },
-      () => {
+      ready => {
+        // Update plugins
         this.updatePlugins();
+        if (ready) {
+          console.log("Left panel now ready");
+        } else {
+          console.log("Right panel now disabled");
+          this.currentTab = "status";
+        }
       }
     );
   },
+
   methods: {
     updatePlugins: function() {
       axios

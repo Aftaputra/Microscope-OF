@@ -93,14 +93,10 @@ export default {
 
   computed: {
     settingsUri: function() {
-      return `http://${this.$store.state.host}:${
-        this.$store.state.port
-      }/api/v2/settings`;
+      return `${this.$store.getters.baseUri}/api/v2/settings`;
     },
     pluginsUri: function() {
-      return `http://${this.$store.state.host}:${
-        this.$store.state.port
-      }/api/v2/plugins`;
+      return `${this.$store.getters.baseUri}/api/v2/plugins`;
     }
   },
 
@@ -132,9 +128,7 @@ export default {
             var link =
               plugins.AutocalibrationPlugin.views.recalibrate.links.self;
             // Store plugin action URI
-            this.recalibrationUri = `http://${this.$store.state.host}:${
-              this.$store.state.port
-            }${link}`;
+            this.recalibrationUri = `${this.$store.getters.baseUri}${link}`;
           }
         })
         .catch(error => {

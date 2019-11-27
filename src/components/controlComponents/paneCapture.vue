@@ -410,9 +410,7 @@ export default {
             // Get plugin action link
             var link = plugins.ScanPlugin.views.tile.links.self;
             // Store plugin action URI
-            this.scanUri = `http://${this.$store.state.host}:${
-              this.$store.state.port
-            }${link}`;
+            this.scanUri = `${this.$store.getters.baseUri}${link}`;
           }
         })
         .catch(error => {

@@ -57,24 +57,20 @@ export default {
       );
     },
     streamImgUri: function() {
-      return `http://${this.$store.state.host}:${
-        this.$store.state.port
-      }/api/v2/streams/mjpeg`;
+      return `${this.$store.getters.baseUri}/api/v2/streams/mjpeg`;
     },
     startPreviewUri: function() {
-      return `http://${this.$store.state.host}:${
-        this.$store.state.port
+      return `${
+        this.$store.getters.baseUri
       }/api/v2/actions/camera/preview/start`;
     },
     stopPreviewUri: function() {
-      return `http://${this.$store.state.host}:${
-        this.$store.state.port
+      return `${
+        this.$store.getters.baseUri
       }/api/v2/actions/camera/preview/stop`;
     },
     settingsUri: function() {
-      return `http://${this.$store.state.host}:${
-        this.$store.state.port
-      }/api/v2/settings`;
+      return `${this.$store.getters.baseUri}/api/v2/settings`;
     }
   },
 

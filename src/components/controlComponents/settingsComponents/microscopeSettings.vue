@@ -80,9 +80,7 @@ export default {
 
   computed: {
     settingsUri: function() {
-      return `http://${this.$store.state.host}:${
-        this.$store.state.port
-      }/api/v2/settings`;
+      return `${this.$store.getters.baseUri}/api/v2/settings`;
     }
   },
 

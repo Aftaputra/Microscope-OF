@@ -180,19 +180,13 @@ export default {
 
   computed: {
     moveActionUri: function() {
-      return `http://${this.$store.state.host}:${
-        this.$store.state.port
-      }/api/v2/actions/stage/move`;
+      return `${this.$store.getters.baseUri}/api/v2/actions/stage/move`;
     },
     positionStatusUri: function() {
-      return `http://${this.$store.state.host}:${
-        this.$store.state.port
-      }/api/v2/status/stage/position`;
+      return `${this.$store.getters.baseUri}/api/v2/status/stage/position`;
     },
     pluginsUri: function() {
-      return `http://${this.$store.state.host}:${
-        this.$store.state.port
-      }/api/v2/plugins`;
+      return `${this.$store.getters.baseUri}/api/v2/plugins`;
     }
   },
 
@@ -343,11 +337,9 @@ export default {
               plugins.AutofocusPlugin.views.fast_autofocus.links.self;
             var normalLink = plugins.AutofocusPlugin.views.autofocus.links.self;
             // Store plugin action URI
-            this.fastAutofocusUri = `http://${this.$store.state.host}:${
-              this.$store.state.port
-            }${fastLink}`;
-            this.normalAutofocusUri = `http://${this.$store.state.host}:${
-              this.$store.state.port
+            this.fastAutofocusUri = `${this.$store.getters.baseUri}${fastLink}`;
+            this.normalAutofocusUri = `${
+              this.$store.getters.baseUri
             }${normalLink}`;
           }
         })
