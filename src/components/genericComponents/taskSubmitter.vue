@@ -45,7 +45,7 @@ export default {
       required: true
     },
     submitData: {
-      type: Object,
+      type: [Object, Array],
       required: false,
       default: () => ({})
     },
