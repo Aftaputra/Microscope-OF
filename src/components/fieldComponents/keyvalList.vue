@@ -8,6 +8,7 @@
         >
           <div class="uk-margin-remove uk-width-1-2">
             <input
+              ref="textboxKey"
               v-model="newMetadata.key"
               class="uk-input uk-form-width-small uk-form-small"
               type="text"
@@ -22,6 +23,7 @@
               type="text"
               name="flavor"
               placeholder="Value"
+              @keyup.enter="handleMetadataSubmit()"
             />
           </div>
         </div>
@@ -94,6 +96,9 @@ export default {
       this.newMetadata.value = "";
 
       this.$emit("input", newSelected);
+
+      // Move focus back to key textbox
+      this.$refs.textboxKey.focus();
     },
 
     delMetadataKey: function(key) {
