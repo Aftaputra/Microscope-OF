@@ -65,6 +65,7 @@
       </a>
     </div>
 
+    <!-- Metadata modal -->
     <div :id="metadataModalID" uk-modal>
       <div
         class="uk-modal-dialog uk-modal-body"
@@ -80,14 +81,33 @@
         <p><b>ID: </b>{{ captureState.metadata.id }}</p>
         <p><b>Format: </b>{{ captureState.metadata.format }}</p>
 
-        <div v-for="(value, key) in captureState.metadata.custom" :key="key">
+        <hr />
+
+        <div v-for="(value, key) in customMetadata" :key="key">
           <p>
             <b>{{ key }}: </b>{{ value }}
           </p>
         </div>
+
+        <hr />
+
+        <div class="uk-flex-bottom" uk-grid>
+          <div class="uk-width-2-3">
+            <keyvalList v-model="newCustomMetadata" />
+          </div>
+          <div class="uk-width-1-3">
+            <button
+              class="uk-button uk-button-primary uk-form-small uk-width-1-1"
+              @click="handleMetadataSubmit()"
+            >
+              Add metadata
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
+    <!-- New tag modal -->
     <div :id="tagModalID" uk-modal>
       <form
         class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical"
@@ -100,7 +120,8 @@
         <div class="uk-inline">
           <span class="uk-form-icon"><i class="material-icons">label</i></span>
           <input
-            v-model="newtag"
+            v-model="newTag"
+            autofocus
             class="uk-input uk-form-width-medium uk-form-small"
             type="text"
             name="tagname"
@@ -129,9 +150,15 @@
 import UIkit from "uikit";
 import axios from "axios";
 
+import keyvalList from "../../fieldComponents/keyvalList";
+
 // Export main app
 export default {
   name: "CaptureCard",
+
+  components: {
+    keyvalList
+  },
 
   props: {
     captureState: {
@@ -143,7 +170,9 @@ export default {
   data: function() {
     return {
       tags: [],
-      newtag: ""
+      newTag: "",
+      customMetadata: {},
+      newCustomMetadata: {}
     };
   },
 
@@ -191,13 +220,21 @@ export default {
 
   created: function() {
     this.getTagRequest();
+    this.getMetadataRequest();
   },
 
   methods: {
     handleTagSubmit: function(event) {
-      this.newTagRequest(this.newtag);
-      this.newtag = "";
-      UIkit.modal(event.target.parentNode).hide(); // TODO: Remove somehow
+      if (this.newTag !== "") {
+        this.newTagRequest(this.newTag);
+        this.newTag = "";
+      }
+      UIkit.modal(event.target.parentNode).hide();
+    },
+
+    handleMetadataSubmit: function() {
+      this.putMetadataRequest(this.newCustomMetadata);
+      this.newCustomMetadata = {};
     },
 
     delCaptureConfirm: function() {
@@ -220,10 +257,10 @@ export default {
         });
     },
 
-    newTagRequest: function(tag_string) {
+    newTagRequest: function(tagString) {
       // Send tag PUT request
       axios
-        .put(this.tagsURL, [tag_string])
+        .put(this.tagsURL, [tagString])
         .then(() => {
           // Update tag array
           this.getTagRequest();
@@ -233,18 +270,31 @@ export default {
         });
     },
 
-    delTagConfirm: function(tag_string) {
+    putMetadataRequest: function(metadataObject) {
+      // Send metadata PUT request
+      axios
+        .put(this.captureURL, metadataObject)
+        .then(() => {
+          // Update metadata object
+          this.getMetadataRequest();
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+    },
+
+    delTagConfirm: function(tagString) {
       var context = this;
-      this.modalConfirm(`Remove tag '${tag_string}'?`).then(function() {
-        context.delTagRequest(tag_string);
+      this.modalConfirm(`Remove tag '${tagString}'?`).then(function() {
+        context.delTagRequest(tagString);
       });
     },
 
-    delTagRequest: function(tag_string) {
-      console.log(tag_string);
+    delTagRequest: function(tagString) {
+      console.log(tagString);
       // Send tag DELETE request
       axios
-        .delete(this.tagsURL, { data: [tag_string] })
+        .delete(this.tagsURL, { data: [tagString] })
         .then(() => {
           // Update tag array
           this.getTagRequest();
@@ -260,6 +310,18 @@ export default {
         .get(this.tagsURL)
         .then(response => {
           this.tags = response.data;
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+    },
+
+    getMetadataRequest: function() {
+      // Send tag request
+      axios
+        .get(this.captureURL)
+        .then(response => {
+          this.customMetadata = response.data.metadata.custom;
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
