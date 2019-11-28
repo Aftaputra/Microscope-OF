@@ -122,7 +122,6 @@ class BaseCamera(metaclass=ABCMeta):
 
         self.status = {"board": None}
 
-        # TODO: Load/save these to config
         self.paths = {"default": BASE_CAPTURE_PATH, "temp": TEMP_CAPTURE_PATH}
 
         # Capture data

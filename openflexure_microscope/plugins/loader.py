@@ -250,7 +250,7 @@ class BasePlugin:
     def views(self):
         return self._views
 
-    def add_view(self, rule, view_class):
+    def add_view(self, rule, view_class, **kwargs):
         # Remove all leading slashes from view route
         cleaned_rule = rule
         while cleaned_rule[0] == "/":
@@ -259,13 +259,13 @@ class BasePlugin:
         # Expand the rule to include plugin name
         full_rule = "/{}/{}".format(self._name_uri_safe, cleaned_rule)
 
-        view_id = cleaned_rule.replace("/", "_")
+        view_id = cleaned_rule.replace("/", "_").replace("<", "").replace(">", "")
 
         # Create a Python-safe route ID
         logging.debug(view_id)
 
         # Store route information in a dictionary
-        d = {"rule": full_rule, "view": view_class}
+        d = {"rule": full_rule, "view": view_class, "kwargs": kwargs}
 
         # Add view to private views dictionary
         self._views[view_id] = d
