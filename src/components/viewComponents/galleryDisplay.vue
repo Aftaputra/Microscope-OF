@@ -52,6 +52,10 @@
           </li>
         </ul>
       </div>
+
+      <div class="uk-navbar-right">
+        <ZipDownloader :capture-ids="Object.keys(filteredCaptures)" />
+      </div>
     </nav>
 
     <div
@@ -92,13 +96,16 @@ import axios from "axios";
 import captureCard from "./galleryComponents/captureCard.vue";
 import scanCard from "./galleryComponents/scanCard.vue";
 
+import ZipDownloader from "./galleryComponents/zipDownloader";
+
 // Export main app
 export default {
   name: "GalleryDisplay",
 
   components: {
     captureCard,
-    scanCard
+    scanCard,
+    ZipDownloader
   },
 
   data: function() {
@@ -223,6 +230,22 @@ export default {
     filteredItems: function() {
       // Filter itemList by checkedTags
       return this.filterCaptureList(this.itemList, this.checkedTags);
+    },
+
+    filteredCaptures: function() {
+      var captures = {};
+
+      for (var item of this.filteredItems) {
+        if ("captureList" in item) {
+          for (var capture of item.captureList) {
+            captures[capture.metadata.id] = capture;
+          }
+        } else {
+          captures[item.metadata.id] = item;
+        }
+      }
+
+      return captures;
     },
 
     sortedItems: function() {
