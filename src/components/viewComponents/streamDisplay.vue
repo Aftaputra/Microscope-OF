@@ -13,7 +13,7 @@
       @dblclick="clickMonitor"
     />
 
-    <div v-if="!showStream">
+    <div v-if="!showStream" class="uk-height-1-1">
       <div v-if="$store.state.waiting" class="uk-position-center">
         <div uk-spinner="ratio: 4.5"></div>
       </div>
