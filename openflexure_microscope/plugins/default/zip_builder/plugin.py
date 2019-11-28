@@ -10,6 +10,7 @@ from openflexure_microscope.devel import (
 from flask import send_file, abort
 
 import uuid
+import os
 import zipfile
 import tempfile
 import logging
@@ -32,15 +33,35 @@ class ZipListAPIView(MicroscopeViewPlugin):
 
 
 class ZipGetterAPIView(MicroscopeViewPlugin):
-    def get(self, session_id="No session ID"):
+    def get(self, session_id):
+        if not session_id in self.plugin.session_zips:
+            return abort(404)  # 404 Not Found
+
         logging.info(f"Session ID: {session_id}")
 
         return send_file(
-            self.plugin.zip_from_id(session_id),
+            self.plugin.session_zips[session_id].name,
             mimetype="application/zip",
             as_attachment=True,
             attachment_filename=f"{session_id}.zip",
         )
+
+    def delete(self, session_id):
+        if not session_id in self.plugin.session_zips:
+            return abort(404)  # 404 Not Found
+
+        logging.info(f"Session ID: {session_id}")
+        logging.debug(self.plugin.session_zips[session_id].name)
+
+        fp = self.plugin.session_zips[session_id]
+        fp.close()
+        os.unlink(fp.name)
+
+        assert not os.path.exists(fp.name)
+
+        del self.plugin.session_zips[session_id]
+
+        return jsonify({"return": session_id})
 
 
 class ZipBuilderPlugin(MicroscopePlugin):
@@ -75,6 +96,4 @@ class ZipBuilderPlugin(MicroscopePlugin):
         return session_id
 
     def zip_from_id(self, session_id):
-        fp = self.session_zips[session_id]
-        fp.seek(0)
-        return fp
+        return self.session_zips[session_id]
