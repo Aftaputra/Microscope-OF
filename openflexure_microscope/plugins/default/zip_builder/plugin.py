@@ -115,8 +115,11 @@ class ZipBuilderPlugin(MicroscopePlugin):
         with zipfile.ZipFile(fp, "w") as zipObj:
             for index, capture_obj in enumerate(capture_list):
                 # Add to ZIP file if it exists
-                filePath = capture_obj.file
-                zipObj.write(filePath)
+                file_path = capture_obj.file
+                rel_path = os.path.relpath(
+                    file_path, self.microscope.camera.paths["default"]
+                )
+                zipObj.write(file_path, arcname=rel_path)
                 # Update task progress
                 update_task_progress(int((index / n_files) * 100))
 
