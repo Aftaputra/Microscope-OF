@@ -34,25 +34,27 @@
         </component>
       </div>
 
-      <taskSubmitter
-        v-if="isTask"
-        :submit-url="submitApiUri"
-        :submit-data="formData"
-        :submit-label="submitLabel"
-        @submit="onTaskSubmit"
-        @response="onTaskResponse"
-        @error="onTaskError"
-      >
-      </taskSubmitter>
+      <div v-if="isTask" class="uk-margin">
+        <taskSubmitter
+          :submit-url="submitApiUri"
+          :submit-data="formData"
+          :submit-label="submitLabel"
+          @submit="onTaskSubmit"
+          @response="onTaskResponse"
+          @error="onTaskError"
+        >
+        </taskSubmitter>
+      </div>
 
-      <button
-        v-else
-        type="button"
-        class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1"
-        @click="newQuickRequest(formData)"
-      >
-        {{ submitLabel }}
-      </button>
+      <div v-else class="uk-margin">
+        <button
+          type="button"
+          class="uk-button uk-button-primary uk-form-small uk-width-1-1"
+          @click="newQuickRequest(formData)"
+        >
+          {{ submitLabel }}
+        </button>
+      </div>
     </form>
   </div>
 </template>
