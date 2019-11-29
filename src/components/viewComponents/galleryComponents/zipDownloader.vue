@@ -146,7 +146,7 @@ export default {
     },
 
     onResponse: function(response) {
-      this.lastSessionId = response.return;
+      this.lastSessionId = response.return.id;
       this.downloadUrl = `${this.zipGetterUri}/${this.lastSessionId}`;
       this.downloadReady = true;
     },
