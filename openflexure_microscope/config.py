@@ -35,7 +35,11 @@ class JSONEncoder(json.JSONEncoder):
         else:
             # call base class implementation which takes care of
             # raising exceptions for unsupported types
-            return json.JSONEncoder.default(self, o)
+            try:
+                return json.JSONEncoder.default(self, o)
+            # if it's some mystery object, just return a string representation
+            except TypeError:
+                return str(o)
 
 
 # MAIN CONFIG CLASS
