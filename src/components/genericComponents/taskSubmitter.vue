@@ -20,14 +20,17 @@
       </button>
     </div>
 
-    <button
-      type="button"
-      :hidden="taskRunning"
-      class="uk-button uk-button-primary uk-form-small uk-margin-remove uk-float-right uk-width-1-1"
-      @click="bootstrapTask()"
-    >
-      {{ submitLabel }}
-    </button>
+    <div>
+      <button
+        type="button"
+        :hidden="taskRunning"
+        class="uk-button uk-form-small uk-margin-remove uk-width-1-1"
+        :class="[buttonPrimary ? 'uk-button-primary' : 'uk-button-default']"
+        @click="bootstrapTask()"
+      >
+        {{ submitLabel }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -76,6 +79,11 @@ export default {
       type: String,
       required: false,
       default: "Start task?"
+    },
+    buttonPrimary: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
 

@@ -232,20 +232,22 @@
       </li>
     </ul>
 
-    <taskSubmitter
-      v-if="scanCapture"
-      :submit-url="scanUri"
-      :submit-data="scanPayload"
-      :submit-label="'Start Scan'"
-      @submit="onScanSubmit"
-      @response="onScanResponse"
-      @error="onScanError"
-    >
-    </taskSubmitter>
+    <div v-if="scanCapture" class="uk-margin uk-margin-remove-top ">
+      <taskSubmitter
+        :submit-url="scanUri"
+        :submit-data="scanPayload"
+        :submit-label="'Start Scan'"
+        :button-primary="true"
+        @submit="onScanSubmit"
+        @response="onScanResponse"
+        @error="onScanError"
+      >
+      </taskSubmitter>
+    </div>
 
     <button
       v-else
-      class="uk-button uk-button-primary uk-form-small uk-margin uk-margin-remove-top uk-float-right uk-width-1-1"
+      class="uk-button uk-button-primary uk-form-small uk-margin uk-margin-remove-top uk-width-1-1"
       @click="handleCapture()"
     >
       Capture

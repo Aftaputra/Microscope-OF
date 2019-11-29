@@ -61,7 +61,7 @@
             'Start recalibration? This may take a while, and the microscope will be locked during this time.'
           "
           :submit-url="recalibrationUri"
-          :submit-label="'Auto-Calibrate (Task)'"
+          :submit-label="'Auto-Calibrate'"
           @response="onRecalibrateResponse"
           @error="onRecalibrateError"
         >

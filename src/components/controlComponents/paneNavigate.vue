@@ -95,7 +95,7 @@
       </li>
 
       <!--Show autofocus if default plugin is enabled-->
-      <li class="uk-open">
+      <li v-show="fastAutofocusUri || normalAutofocusUri" class="uk-open">
         <a class="uk-accordion-title" href="#">Autofocus</a>
         <div class="uk-accordion-content">
           <div class="uk-grid-small uk-child-width-expand" uk-grid>
