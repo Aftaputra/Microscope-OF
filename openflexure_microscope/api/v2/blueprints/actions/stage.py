@@ -56,3 +56,22 @@ class MoveStageAPI(MicroscopeView):
             logging.warning("Unable to move. No stage found.")
 
         return jsonify(self.microscope.status["stage"]["position"])
+
+
+class ZeroStageAPI(MicroscopeView):
+    """
+    Zero stage coordinates 
+    """
+
+    def post(self):
+        """
+        Set the current position to zero
+
+        .. :quickref: Actions; Zero stage
+
+        :reqheader Accept: application/json
+
+        """
+        self.microscope.stage.zero_position()
+
+        return jsonify(self.microscope.status["stage"])

@@ -75,6 +75,11 @@ class BaseStage(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def zero_position(self):
+        """Set the current position to zero"""
+        pass
+
+    @abstractmethod
     def close(self):
         """Cleanly close communication with the stage"""
         pass

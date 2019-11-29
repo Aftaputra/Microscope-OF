@@ -96,5 +96,9 @@ class MockStage(BaseStage):
         self._position = list(final)
         logging.debug(f"New position: {self._position}")
 
+    def zero_position(self):
+        """Set the current position to zero"""
+        self._position = [0, 0, 0]
+
     def close(self):
         pass

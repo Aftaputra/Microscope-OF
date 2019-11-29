@@ -52,7 +52,7 @@ class Sangaboard(ExtensibleSerialInstrument):
 
     # These are the settings for the sangaboards serial port, and can usually be left as default.
     port_settings = {
-        "baudrate": 115200,
+        "baudrate": 115_200,
         "bytesize": EIGHTBITS,
         "parity": PARITY_NONE,
         "stopbits": STOPBITS_ONE,
@@ -214,6 +214,10 @@ class Sangaboard(ExtensibleSerialInstrument):
     def release_motors(self):
         """De-energise the stepper motor coils"""
         self.query("release")
+
+    def zero_position(self):
+        """Set the current position to zero"""
+        self.query("zero")
 
     def move_abs(self, final, **kwargs):
         """Make an absolute move to a position

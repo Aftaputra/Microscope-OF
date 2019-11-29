@@ -147,6 +147,11 @@ class SangaStage(BaseStage):
         with self.lock:
             self.board.move_abs(final, **kwargs)
 
+    def zero_position(self):
+        """Set the current position to zero"""
+        with self.lock:
+            self.board.zero_position()
+
     def close(self):
         """Cleanly close communication with the stage"""
         if hasattr(self, "board"):
