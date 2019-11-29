@@ -1,13 +1,13 @@
 <template>
-  <div v-if="zipBuilderUri">
+  <div v-if="zipBuilderUri" class="uk-width-small">
     <div v-show="downloadReady">
       <button
         :disabled="isDownloading"
         type="button"
-        class="uk-button uk-button-default uk-form-small"
+        class="uk-button uk-button-default uk-form-small uk-width-1-1"
         @click="downloadWithAxios()"
       >
-        {{ isDownloading ? "Downloading..." : "Download" }}
+        {{ isDownloading ? `${downloadProgress}%` : "Download" }}
       </button>
     </div>
     <div v-show="!downloadReady">
@@ -47,6 +47,7 @@ export default {
 
   data: function() {
     return {
+      downloadProgress: 0,
       isDownloading: false,
       downloadReady: false,
       downloadUrl: null,
@@ -92,6 +93,9 @@ export default {
     },
 
     forceFileDownload(response) {
+      // Start file download by creating and clicking an invisible link
+      // One day I hope for a better solution to exist for this...
+      // A man can dream.....
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -101,9 +105,22 @@ export default {
     },
 
     downloadWithAxios() {
+      // Configure progress indicator and response type
+      let config = {
+        responseType: "blob",
+        onDownloadProgress: progressEvent => {
+          this.downloadProgress = Math.floor(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+        }
+      };
+
+      // Set downloading flag
       this.isDownloading = true;
+
+      // Start download
       axios
-        .get(this.downloadUrl, { responseType: "arraybuffer" })
+        .get(this.downloadUrl, config)
         .then(response => {
           this.forceFileDownload(response);
           this.deleteLastZip();
