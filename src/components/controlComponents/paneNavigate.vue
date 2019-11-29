@@ -33,6 +33,13 @@
               </div>
             </div>
           </div>
+
+          <button
+            class="uk-button uk-button-default uk-form-small uk-margin uk-width-1-1"
+            @click="zeroRequest()"
+          >
+            Zero coordinates
+          </button>
         </div>
       </li>
 
@@ -182,6 +189,9 @@ export default {
     moveActionUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/actions/stage/move`;
     },
+    zeroActionUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2/actions/stage/zero`;
+    },
     positionStatusUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/status/stage/position`;
     },
@@ -312,6 +322,18 @@ export default {
             this.moveLock = false; // Release the move lock
           });
       }
+    },
+
+    zeroRequest: function() {
+      // Send move request
+      axios
+        .post(this.zeroActionUri)
+        .then(() => {
+          this.updatePosition(); // Update the position in text boxes
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
     },
 
     updatePosition: function() {
