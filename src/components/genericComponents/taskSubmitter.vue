@@ -1,9 +1,7 @@
 <template>
-  <div
-    class="uk-margin-horizontal-remove uk-margin-small-top uk-padding-remove"
-  >
+  <div class="uk-margin-remove uk-padding-remove">
     <div v-if="taskRunning" ref="isPollingElement">
-      <div class="progress">
+      <div class="progress uk-margin-small">
         <div
           v-if="progress"
           class="determinate"
@@ -15,7 +13,7 @@
       <button
         v-if="canTerminate"
         type="button"
-        class="uk-button uk-button-danger uk-form-small uk-margin uk-float-right uk-width-1-1"
+        class="uk-button uk-button-danger uk-form-small uk-margin-remove uk-float-right uk-width-1-1"
         @click="terminateTask()"
       >
         Terminate
@@ -25,7 +23,7 @@
     <button
       type="button"
       :hidden="taskRunning"
-      class="uk-button uk-button-primary uk-form-small uk-margin uk-float-right uk-width-1-1"
+      class="uk-button uk-button-primary uk-form-small uk-margin-remove uk-float-right uk-width-1-1"
       @click="bootstrapTask()"
     >
       {{ submitLabel }}
