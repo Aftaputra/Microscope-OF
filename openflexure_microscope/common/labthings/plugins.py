@@ -6,7 +6,11 @@ from importlib import util
 import sys
 
 from openflexure_microscope.config import USER_CONFIG_DIR
-from openflexure_microscope.utilities import camel_to_snake, camel_to_spine
+from openflexure_microscope.utilities import (
+    camel_to_snake,
+    camel_to_spine,
+    snake_to_spine,
+)
 
 
 class BasePlugin:
@@ -96,7 +100,7 @@ class BasePlugin:
 
     @property
     def _name_uri_safe(self):
-        return camel_to_spine(self._name_python_safe)
+        return snake_to_spine(self._name_python_safe)
 
 
 def find_plugins(plugin_path, module_name="plugins"):

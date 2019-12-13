@@ -12,11 +12,13 @@ def deserialise_array_b64(b64_string, dtype, shape):
     flat_arr = np.fromstring(base64.b64decode(b64_string), dtype)
     return flat_arr.reshape(shape)
 
+
 def serialise_array_b64(npy_arr):
-    b64_string = base64.b64encode(npy_arr).decode('ascii')
+    b64_string = base64.b64encode(npy_arr).decode("ascii")
     dtype = str(npy_arr.dtype)
     shape = npy_arr.shape
     return b64_string, dtype, shape
+
 
 def get_by_path(root, items):
     """Access a nested object in root by item sequence."""
@@ -67,6 +69,10 @@ def camel_to_snake(name):
 def camel_to_spine(name):
     s1 = re.sub("(.)([A-Z][a-z]+)", r"\1-\2", name)
     return re.sub("([a-z0-9])([A-Z])", r"\1-\2", s1).lower()
+
+
+def snake_to_spine(name):
+    return name.replace("_", "-")
 
 
 @contextmanager
