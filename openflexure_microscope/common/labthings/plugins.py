@@ -16,12 +16,14 @@ class BasePlugin:
     Handles binding route views and forms.
     """
 
-    def __init__(self):
+    def __init__(self, name: str, description=""):
         self._views = (
             {}
         )  # Key: Full, Python-safe ID. Val: Original rule, and view class
         self._rules = {}  # Key: Original rule. Val: View class
         self._gui = None
+
+        self.name = name
 
     @property
     def views(self):
@@ -84,22 +86,17 @@ class BasePlugin:
 
     @property
     def _name(self):
-        return self.__class__.__name__
+        return self.name
 
     @property
     def _name_python_safe(self):
-        return camel_to_snake(self._name)
+        name = camel_to_snake(self._name)  # Camel to snake
+        name = name.replace(" ", "_")  # Spaces to snake
+        return name
 
     @property
     def _name_uri_safe(self):
-        return camel_to_spine(self._name)
-
-    def _full_name(self):
-        module = self.__class__.__module__
-        if module is None or module == str.__class__.__module__:
-            return self.__class__.__name__  # Avoid reporting __builtin__
-        else:
-            return module + "." + self.__class__.__name__
+        return camel_to_spine(self._name_python_safe)
 
 
 def find_plugins(plugin_path, module_name="plugins"):
@@ -116,4 +113,7 @@ def find_plugins(plugin_path, module_name="plugins"):
 
     spec.loader.exec_module(mod)
 
-    return mod
+    if hasattr(mod, "__plugins__"):
+        return mod.__plugins__
+    else:
+        return None

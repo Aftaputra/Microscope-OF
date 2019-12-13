@@ -16,16 +16,11 @@ from flask_cors import CORS
 from openflexure_microscope.api.exceptions import JSONExceptionHandler
 from openflexure_microscope.api.utilities import list_routes
 
-from openflexure_microscope.config import (
-    settings_file_path,
-    JSONEncoder,
-    USER_PLUGINS_PATH,
-)
+from openflexure_microscope.config import settings_file_path, JSONEncoder
 from openflexure_microscope.api.v1 import blueprints
 from openflexure_microscope.api import v2
 
 from openflexure_microscope.common.labthings import LabThing
-from openflexure_microscope.common.labthings.plugins import find_plugins
 
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
 
@@ -138,21 +133,6 @@ app.register_blueprint(v2_tasks_blueprint, url_prefix=uri("/tasks", "v2"))
 # Actions routes
 v2_actions_blueprint = v2.blueprints.actions.construct_blueprint(api_microscope)
 app.register_blueprint(v2_actions_blueprint, url_prefix=uri("/actions", "v2"))
-
-
-plugins = find_plugins(USER_PLUGINS_PATH)
-print(plugins.__plugins__)
-
-for plugin_obj in plugins.__plugins__:
-    for plugin_view_id, plugin_view in plugin_obj.views.items():
-        # Add route to the plugins blueprint
-        app.add_url_rule(
-            "/new-plugins" + plugin_view["rule"],
-            view_func=plugin_view["view"].as_view(
-                f"{plugin_obj._name_python_safe}_{plugin_view_id}"
-            ),
-            **plugin_view["kwargs"],
-        )
 
 
 @app.route("/routes")

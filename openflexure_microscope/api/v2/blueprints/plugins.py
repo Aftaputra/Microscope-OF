@@ -2,10 +2,12 @@
 Top-level representation of attached and enabled plugins
 """
 
-from openflexure_microscope.plugins import PluginLoader, MicroscopePlugin
 from openflexure_microscope.api.views import MicroscopeViewPlugin
 from openflexure_microscope.utilities import get_docstring, description_from_view
 from openflexure_microscope.api.utilities import blueprint_for_module
+
+from openflexure_microscope.common.labthings.plugins import find_plugins
+from openflexure_microscope.config import USER_PLUGINS_PATH
 
 from flask import Blueprint, jsonify, url_for
 from openflexure_microscope.api.views import MicroscopeView
@@ -14,8 +16,11 @@ import copy
 import logging
 import warnings
 
+_plugins = find_plugins(USER_PLUGINS_PATH)
+print(_plugins)
 
-def plugins_representation(plugin_loader_object: PluginLoader):
+
+def plugins_representation(plugin_list):
     """
     Generate a dictionary representation of all plugins, including Flask route URLs
 
@@ -27,7 +32,7 @@ def plugins_representation(plugin_loader_object: PluginLoader):
     """
     plugins = {}
 
-    for plugin in plugin_loader_object.active:
+    for plugin in plugin_list:
         logging.debug(f"Representing plugin {plugin._name}")
         d = {
             "python_name": plugin._name_python_safe,
@@ -67,12 +72,24 @@ class PluginFormAPI(MicroscopeView):
         A complete list of enabled plugins can be found in the microscope state.
 
         """
-        return jsonify(plugins_representation(self.microscope.plugins))
+        global _plugins
+        return jsonify(plugins_representation(_plugins))
 
 
 def construct_blueprint(microscope_obj):
 
     blueprint = blueprint_for_module(__name__)
+
+    for plugin_obj in _plugins:
+        for plugin_view_id, plugin_view in plugin_obj.views.items():
+            # Add route to the plugins blueprint
+            blueprint.add_url_rule(
+                plugin_view["rule"],
+                view_func=plugin_view["view"].as_view(
+                    f"{plugin_obj._name_python_safe}_{plugin_view_id}"
+                ),
+                **plugin_view["kwargs"],
+            )
 
     # Create a base route to return plugin API forms, if any exist
     blueprint.add_url_rule(
