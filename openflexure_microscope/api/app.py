@@ -16,25 +16,18 @@ from flask_cors import CORS
 from openflexure_microscope.api.exceptions import JSONExceptionHandler
 from openflexure_microscope.api.utilities import list_routes
 
-from openflexure_microscope import Microscope
-
-from openflexure_microscope.camera.capture import build_captures_from_exif
-from openflexure_microscope.config import settings_file_path, JSONEncoder
+from openflexure_microscope.config import (
+    settings_file_path,
+    JSONEncoder,
+    USER_PLUGINS_PATH,
+)
 from openflexure_microscope.api.v1 import blueprints
 from openflexure_microscope.api import v2
 
-# Import device modules
-# NB this will eventually be handled by the RC file, so you can choose what device
-# class should be attached.
-try:
-    from openflexure_microscope.camera.pi import PiCameraStreamer
-except ImportError:
-    logging.warning("Unable to import PiCameraStreamer")
-from openflexure_microscope.camera.mock import MockStreamer
+from openflexure_microscope.common.labthings import LabThing
+from openflexure_microscope.common.labthings.plugins import find_plugins
 
-from openflexure_microscope.stage.sanga import SangaStage
-from openflexure_microscope.stage.mock import MockStage
-
+from openflexure_microscope.api.microscope import default_microscope as api_microscope
 
 # Handle logging
 is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
@@ -54,7 +47,7 @@ else:
     )
 
     rotating_logfile = logging.handlers.RotatingFileHandler(
-        DEFAULT_LOGFILE, maxBytes=1000000, backupCount=7
+        DEFAULT_LOGFILE, maxBytes=1_000_000, backupCount=7
     )
 
     error_handlers = [rotating_logfile, logging.StreamHandler()]
@@ -64,39 +57,6 @@ else:
         root.addHandler(handler)
 
     root.setLevel(logging.getLogger("gunicorn.error").level)
-
-# Create a dummy microscope object, with no hardware attachments
-api_microscope = Microscope()
-
-# Initialise camera
-logging.debug("Creating camera object...")
-try:
-    api_camera = PiCameraStreamer()
-except Exception as e:
-    logging.error(e)
-    logging.warning("No valid camera hardware found. Falling back to mock camera!")
-    api_camera = MockStreamer()
-
-# Initialise stage
-logging.debug("Creating stage object...")
-try:
-    api_stage = SangaStage()
-except Exception as e:
-    logging.error(e)
-    logging.warning("No valid stage hardware found. Falling back to mock stage!")
-    api_stage = MockStage()
-
-# Attach devices to microscope
-logging.debug("Attaching devices to microscope...")
-api_microscope.attach(api_camera, api_stage)
-
-# Restore loaded capture array to camera object
-logging.debug("Restoring captures...")
-api_microscope.camera.images = build_captures_from_exif(
-    api_microscope.camera.paths["default"]
-)
-
-logging.debug("Microscope successfully attached!")
 
 
 # Generate API URI based on version from filename
@@ -120,6 +80,10 @@ CORS(app, resources=r"*")
 
 # Make errors more API friendly
 handler = JSONExceptionHandler(app)
+
+# Attach lab devices
+labthing = LabThing(app)
+labthing.register_device(api_microscope, "openflexure_microscope")
 
 # WEBAPP ROUTES
 
@@ -174,6 +138,21 @@ app.register_blueprint(v2_tasks_blueprint, url_prefix=uri("/tasks", "v2"))
 # Actions routes
 v2_actions_blueprint = v2.blueprints.actions.construct_blueprint(api_microscope)
 app.register_blueprint(v2_actions_blueprint, url_prefix=uri("/actions", "v2"))
+
+
+plugins = find_plugins(USER_PLUGINS_PATH)
+print(plugins.__plugins__)
+
+for plugin_obj in plugins.__plugins__:
+    for plugin_view_id, plugin_view in plugin_obj.views.items():
+        # Add route to the plugins blueprint
+        app.add_url_rule(
+            "/new-plugins" + plugin_view["rule"],
+            view_func=plugin_view["view"].as_view(
+                f"{plugin_obj._name_python_safe}_{plugin_view_id}"
+            ),
+            **plugin_view["kwargs"],
+        )
 
 
 @app.route("/routes")
