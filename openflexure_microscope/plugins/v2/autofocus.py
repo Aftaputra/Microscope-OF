@@ -2,13 +2,7 @@ from openflexure_microscope.common.labthings import find_device
 from openflexure_microscope.common.labthings.plugins import BasePlugin
 from openflexure_microscope.microscope import Microscope
 
-from openflexure_microscope.devel import (
-    JsonResponse,
-    request,
-    jsonify,
-    taskify,
-    abort,
-)
+from openflexure_microscope.devel import JsonResponse, request, jsonify, taskify, abort
 from openflexure_microscope.utilities import set_properties
 
 from flask.views import MethodView
@@ -21,6 +15,7 @@ from scipy import ndimage
 from contextlib import contextmanager
 
 ### Autofocus utilities
+
 
 class JPEGSharpnessMonitor:
     def __init__(self, microscope, timeout=60):
@@ -148,9 +143,11 @@ def sharpness_edge(image):
 
 ### Autofocus plugin
 
+
 def measure_sharpness(microscope, metric_fn=sharpness_sum_lap2):
     """Measure the sharpness of the camera's current view."""
     return metric_fn(microscope.camera.array(use_video_port=True))
+
 
 def autofocus(microscope, dz, settle=0.5, metric_fn=sharpness_sum_lap2):
     """Perform a simple autofocus routine.
@@ -203,14 +200,11 @@ def fast_autofocus(microscope, dz=2000, backlash=None):
         i, z = m.focus_rel(dz)
         fz = m.sharpest_z_on_move(i)
         if backlash is None:
-            i, z = m.focus_rel(
-                -dz
-            )  # move all the way to the start so it's consistent
+            i, z = m.focus_rel(-dz)  # move all the way to the start so it's consistent
         else:
             i, z = m.focus_rel(fz - z - backlash)
         m.focus_rel(fz - z)
         return m.data_dict()
-
 
 
 def fast_up_down_up_autofocus(
@@ -299,6 +293,9 @@ class MeasureSharpnessAPI(MethodView):
     def post(self):
         microscope = find_device("openflexure_microscope")
 
+        if not microscope:
+            abort(503, "No microscope connected. Unable to measure sharpness.")
+
         return jsonify({"sharpness": measure_sharpness(microscope)})
 
 
@@ -310,6 +307,9 @@ class AutofocusAPI(MethodView):
     def post(self):
         payload = JsonResponse(request)
         microscope = find_device("openflexure_microscope")
+
+        if not microscope:
+            abort(503, "No microscope connected. Unable to autofocus.")
 
         # Figure out the range of z values to use
         dz = payload.param("dz", default=np.linspace(-300, 300, 7), convert=np.array)
@@ -333,6 +333,9 @@ class FastAutofocusAPI(MethodView):
     def post(self):
         payload = JsonResponse(request)
         microscope = find_device("openflexure_microscope")
+
+        if not microscope:
+            abort(503, "No microscope connected. Unable to autofocus.")
 
         # Figure out the parameters to use
         dz = payload.param("dz", default=2000, convert=int)
