@@ -20,7 +20,10 @@ from openflexure_microscope.config import settings_file_path, JSONEncoder
 from openflexure_microscope.api.v1 import blueprints
 from openflexure_microscope.api import v2
 
-from openflexure_microscope.common.labthings import LabThing
+from openflexure_microscope.common.labthings.labthing import LabThing
+from openflexure_microscope.common.labthings.find import registered_plugins
+from openflexure_microscope.common.labthings.plugins import find_plugins
+from openflexure_microscope.config import USER_PLUGINS_PATH
 
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
 
@@ -78,29 +81,15 @@ handler = JSONExceptionHandler(app)
 
 # Attach lab devices
 labthing = LabThing(app)
+labthing.url_prefix = "/api/v2b"
+labthing.description = "Test LabThing-based API for OpenFlexure Microscope"
+
 labthing.register_device(api_microscope, "openflexure_microscope")
 
+for _plugin in find_plugins(USER_PLUGINS_PATH):
+    labthing.register_plugin(_plugin)
+
 # WEBAPP ROUTES
-
-# Base routes
-base_blueprint = blueprints.base.construct_blueprint(api_microscope)
-app.register_blueprint(base_blueprint, url_prefix=uri("", "v1"))
-
-# Stage routes
-stage_blueprint = blueprints.stage.construct_blueprint(api_microscope)
-app.register_blueprint(stage_blueprint, url_prefix=uri("/stage", "v1"))
-
-# Camera routes
-camera_blueprint = blueprints.camera.construct_blueprint(api_microscope)
-app.register_blueprint(camera_blueprint, url_prefix=uri("/camera", "v1"))
-
-# Plugin routes
-plugin_blueprint = blueprints.plugins.construct_blueprint(api_microscope)
-app.register_blueprint(plugin_blueprint, url_prefix=uri("/plugin", "v1"))
-
-# Task routes
-task_blueprint = blueprints.task.construct_blueprint(api_microscope)
-app.register_blueprint(task_blueprint, url_prefix=uri("/task", "v1"))
 
 ### V2
 # Root routes
@@ -123,8 +112,8 @@ v2_status_blueprint = v2.blueprints.status.construct_blueprint(api_microscope)
 app.register_blueprint(v2_status_blueprint, url_prefix=uri("/status", "v2"))
 
 # Plugins routes
-v2_plugin_blueprint = v2.blueprints.plugins.construct_blueprint(api_microscope)
-app.register_blueprint(v2_plugin_blueprint, url_prefix=uri("/plugins", "v2"))
+# v2_plugin_blueprint = v2.blueprints.plugins.construct_blueprint(api_microscope)
+# app.register_blueprint(v2_plugin_blueprint, url_prefix=uri("/plugins", "v2"))
 
 # Tasks routes
 v2_tasks_blueprint = v2.blueprints.tasks.construct_blueprint(api_microscope)

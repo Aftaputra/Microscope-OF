@@ -1,4 +1,4 @@
-from openflexure_microscope.common.labthings import find_device
+from openflexure_microscope.common.labthings.find import find_device
 from openflexure_microscope.common.labthings.plugins import BasePlugin
 from openflexure_microscope.microscope import Microscope
 
