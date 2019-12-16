@@ -7,7 +7,7 @@ from . import EXTENSION_NAME
 
 
 class LabThing(object):
-    def __init__(self, app=None, url_prefix="", description=""):
+    def __init__(self, app=None, prefix="", description=""):
         self.app = app
 
         self.devices = {}
@@ -17,7 +17,7 @@ class LabThing(object):
         self.resources = []
         self.endpoints = set()
 
-        self.url_prefix = url_prefix
+        self.url_prefix = prefix
         self.description = description
 
         if app is not None:
@@ -50,6 +50,8 @@ class LabThing(object):
             self.plugins[plugin_object.name] = plugin_object
         else:
             raise TypeError("Plugin object must be an instance of BasePlugin")
+
+        # TODO: Add plugin routes
 
     ### Resource stuff
 

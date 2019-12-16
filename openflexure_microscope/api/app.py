@@ -80,8 +80,7 @@ CORS(app, resources=r"*")
 handler = JSONExceptionHandler(app)
 
 # Attach lab devices
-labthing = LabThing(app)
-labthing.url_prefix = "/api/v2b"
+labthing = LabThing(app, prefix="/api/v2b")
 labthing.description = "Test LabThing-based API for OpenFlexure Microscope"
 
 labthing.register_device(api_microscope, "openflexure_microscope")
