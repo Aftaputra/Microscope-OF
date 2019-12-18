@@ -33,9 +33,11 @@ class CaptureSchema(Schema):
                 "mimetype": "application/json",
             },
             "download": {
-                "href": fields.AbsoluteUrlFor("CaptureDownload", id="<id>", filename="<filename>"),
+                "href": fields.AbsoluteUrlFor(
+                    "CaptureDownload", id="<id>", filename="<filename>"
+                ),
                 "mimetype": "image/jpeg",
-            }
+            },
         }
     )
 
@@ -185,11 +187,14 @@ def add_captures_to_labthing(labthing, prefix=""):
     Add all capture resources to a labthing
     """
     labthing.add_resource(CaptureList, f"{prefix}/captures", endpoint="CaptureList")
+    labthing.register_property(CaptureList)
     labthing.add_resource(
         CaptureResource, f"{prefix}/captures/<id>", endpoint="CaptureResource"
     )
     labthing.add_resource(
-        CaptureDownload, f"{prefix}/captures/<id>/download/<filename>", endpoint="CaptureDownload"
+        CaptureDownload,
+        f"{prefix}/captures/<id>/download/<filename>",
+        endpoint="CaptureDownload",
     )
     labthing.add_resource(
         CaptureTags, f"{prefix}/captures/<id>/tags", endpoint="CaptureTags"

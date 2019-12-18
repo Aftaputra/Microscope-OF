@@ -7,7 +7,6 @@ from openflexure_microscope.api.utilities import blueprint_name_for_module
 from openflexure_microscope.api.v2.blueprints import (
     settings,
     status,
-    plugins,
     captures,
     actions,
     streams,

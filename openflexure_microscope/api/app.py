@@ -6,7 +6,7 @@ import logging
 import sys
 import os
 
-from flask import Flask, jsonify, send_file
+from flask import Flask, jsonify, send_file, url_for
 
 from serial import SerialException
 from datetime import datetime
@@ -79,7 +79,7 @@ CORS(app, resources=r"*")
 handler = JSONExceptionHandler(app)
 
 # Attach lab devices
-labthing = LabThing(app, prefix="/api/v2b")
+labthing = LabThing(app, prefix="/api/v2")
 labthing.description = "Test LabThing-based API for OpenFlexure Microscope"
 
 labthing.register_device(api_microscope, "openflexure_microscope")
@@ -88,41 +88,23 @@ for _plugin in find_plugins(USER_PLUGINS_PATH):
     labthing.register_plugin(_plugin)
 
 from openflexure_microscope.api.v2.views.captures import add_captures_to_labthing
+
 add_captures_to_labthing(labthing, prefix="")
+from openflexure_microscope.api.v2.views.state import add_states_to_labthing
 
-# WEBAPP ROUTES
+add_states_to_labthing(labthing, prefix="")
 
-### V2
-# Root routes
-v2_root_blueprint = v2.blueprints.root.construct_blueprint(api_microscope)
-app.register_blueprint(v2_root_blueprint, url_prefix=uri("/", "v2"))
+from openflexure_microscope.api.v2.views.tasks import add_tasks_to_labthing
 
-v2_streams_blueprint = v2.blueprints.streams.construct_blueprint(api_microscope)
-app.register_blueprint(v2_streams_blueprint, url_prefix=uri("/streams", "v2"))
+add_tasks_to_labthing(labthing, prefix="")
 
-# Captures routes
-v2_captures_blueprint = v2.blueprints.captures.construct_blueprint(api_microscope)
-app.register_blueprint(v2_captures_blueprint, url_prefix=uri("/captures", "v2"))
+from openflexure_microscope.api.v2.views.streams import add_streams_to_labthing
 
-# Settings routes
-v2_settings_blueprint = v2.blueprints.settings.construct_blueprint(api_microscope)
-app.register_blueprint(v2_settings_blueprint, url_prefix=uri("/settings", "v2"))
+add_streams_to_labthing(labthing, prefix="")
 
-# Status routes
-v2_status_blueprint = v2.blueprints.status.construct_blueprint(api_microscope)
-app.register_blueprint(v2_status_blueprint, url_prefix=uri("/status", "v2"))
+from openflexure_microscope.api.v2.views.actions import add_actions_to_labthing
 
-# Plugins routes
-# v2_plugin_blueprint = v2.blueprints.plugins.construct_blueprint(api_microscope)
-# app.register_blueprint(v2_plugin_blueprint, url_prefix=uri("/plugins", "v2"))
-
-# Tasks routes
-v2_tasks_blueprint = v2.blueprints.tasks.construct_blueprint(api_microscope)
-app.register_blueprint(v2_tasks_blueprint, url_prefix=uri("/tasks", "v2"))
-
-# Actions routes
-v2_actions_blueprint = v2.blueprints.actions.construct_blueprint(api_microscope)
-app.register_blueprint(v2_actions_blueprint, url_prefix=uri("/actions", "v2"))
+add_actions_to_labthing(labthing)
 
 
 @app.route("/routes")
@@ -137,6 +119,26 @@ def routes():
     :status 200: stream active
     """
     return jsonify(list_routes(app))
+
+
+@app.route("/props")
+def props():
+    p = {}
+    for key, prop in labthing.properties.items():
+        p[key] = {}
+        p[key]["view"] = prop
+        p[key]["url"] = labthing.url_for(prop, _external=True)
+    return jsonify(p)
+
+
+@app.route("/ac")
+def actions():
+    p = {}
+    for key, prop in labthing.actions.items():
+        p[key] = {}
+        p[key]["view"] = prop
+        p[key]["url"] = labthing.url_for(prop, _external=True)
+    return jsonify(p)
 
 
 @app.route("/log")

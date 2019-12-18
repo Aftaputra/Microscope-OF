@@ -6,12 +6,21 @@ from .thread import TaskThread
 
 from flask import copy_current_request_context
 
+
 class TaskMaster:
     def __init__(self, *args, **kwargs):
         self._tasks = []
 
     @property
     def tasks(self):
+        """
+        Returns:
+            list: List of TaskThread objects. 
+        """
+        return self._tasks
+
+    @property
+    def dict(self):
         """
         Returns:
             dict: Dictionary of TaskThread objects. Key is TaskThread ID.
@@ -28,7 +37,9 @@ class TaskMaster:
 
     def new(self, f, *args, **kwargs):
         # copy_current_request_context allows threads to access flask current_app
-        task = TaskThread(target=copy_current_request_context(f), args=args, kwargs=kwargs)
+        task = TaskThread(
+            target=copy_current_request_context(f), args=args, kwargs=kwargs
+        )
         self._tasks.append(task)
         return task
 
@@ -48,12 +59,22 @@ class TaskMaster:
 
 def tasks():
     """
+    List of tasks in default taskmaster
+    Returns:
+        list: List of tasks in default taskmaster
+    """
+    global _default_task_master
+    return _default_task_master.tasks
+
+
+def dict():
+    """
     Dictionary of tasks in default taskmaster
     Returns:
         dict: Dictionary of tasks in default taskmaster
     """
     global _default_task_master
-    return _default_task_master.tasks
+    return _default_task_master.dict
 
 
 def states():

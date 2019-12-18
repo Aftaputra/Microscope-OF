@@ -25,6 +25,7 @@ import time
 
 ### Grid construction
 
+
 def construct_grid(initial, step_sizes, n_steps, style="raster"):
     """
     Given an initial position, step sizes, and number of steps,
@@ -64,6 +65,7 @@ def flatten_grid(grid):
 _images_to_be_captured: int = 1
 _images_captured_so_far: int = 0
 
+
 def progress():
     progress = (_images_captured_so_far / _images_to_be_captured) * 100
     logging.info(progress)
@@ -71,6 +73,7 @@ def progress():
 
 
 ### Capturing
+
 
 def capture(
     microscope,
@@ -113,6 +116,7 @@ def capture(
 
 
 ### Scanning
+
 
 def tile(
     microscope,
@@ -181,9 +185,7 @@ def tile(
     )  # shorthand for Z stack range
 
     # Construct an x-y grid (worry about z later)
-    x_y_grid = construct_grid(
-        initial_position, step_size[:2], grid[:2], style=style
-    )
+    x_y_grid = construct_grid(initial_position, step_size[:2], grid[:2], style=style)
 
     # Keep the initial Z position the same as our current position
     next_z = initial_position[2]
@@ -270,6 +272,7 @@ def tile(
     logging.debug("Returning to {}".format(initial_position))
     microscope.stage.move_abs(initial_position)
 
+
 def stack(
     microscope,
     basename: str = None,
@@ -336,6 +339,7 @@ def stack(
 
 ### Web views
 
+
 class TileScanAPI(MethodView):
     def post(self):
         payload = JsonResponse(request)
@@ -396,4 +400,5 @@ class TileScanAPI(MethodView):
 
 scan_plugin_v2 = BasePlugin("scan")
 
-scan_plugin_v2.add_view("/tile", TileScanAPI)
+scan_plugin_v2.add_view(TileScanAPI, "/tile")
+scan_plugin_v2.register_action(TileScanAPI)

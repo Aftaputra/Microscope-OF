@@ -1,1 +1,1 @@
-from . import root, captures, settings, status, tasks, streams, plugins, actions
+from . import root, captures, settings, status, tasks, streams, actions

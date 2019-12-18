@@ -1,6 +1,7 @@
 __all__ = [
     "taskify",
     "tasks",
+    "dict",
     "states",
     "current_task",
     "update_task_progress",
@@ -12,6 +13,7 @@ __all__ = [
 
 from .pool import (
     tasks,
+    dict,
     states,
     current_task,
     update_task_progress,

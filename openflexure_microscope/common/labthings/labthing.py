@@ -1,13 +1,17 @@
-from flask import current_app, _app_ctx_stack, request
+from flask import current_app, _app_ctx_stack, request, url_for, jsonify
 
 from .plugins import BasePlugin
 from .views.plugins import PluginListResource
+
+from .resource import Resource
+
+from ..utilities import get_docstring
 
 from . import EXTENSION_NAME
 
 
 class LabThing(object):
-    def __init__(self, app=None, prefix="", description=""):
+    def __init__(self, app=None, prefix="", title="", description=""):
         self.app = app
 
         self.devices = {}
@@ -15,10 +19,14 @@ class LabThing(object):
         self.plugins = {}
 
         self.resources = []
+        self.properties = {}
+        self.actions = {}
+
         self.endpoints = set()
 
         self.url_prefix = prefix
         self.description = description
+        self.title = title
 
         if app is not None:
             self.init_app(app)
@@ -33,10 +41,17 @@ class LabThing(object):
 
         self._create_base_routes()
 
+        if len(self.resources) > 0:
+            for resource, urls, endpoint, kwargs in self.resources:
+                self._register_view(app, resource, *urls, endpoint=endpoint, **kwargs)
+
     def teardown(self, exception):
         print(f"Tearing down devices: {self.devices}")
 
     def _create_base_routes(self):
+        # Add thing description to root
+        self.app.add_url_rule(self._complete_url("/", ""), "td", self.td)
+        # Add plugin overview
         self.add_resource(PluginListResource, "/plugins")
 
     ### Device stuff
@@ -51,8 +66,6 @@ class LabThing(object):
         else:
             raise TypeError("Plugin object must be an instance of BasePlugin")
 
-        # TODO: Add plugin routes
-
         for plugin_view_id, plugin_view in plugin_object.views.items():
             # Add route to the plugins blueprint
             self.add_resource(
@@ -60,6 +73,12 @@ class LabThing(object):
                 "/plugins" + plugin_view["rule"],
                 **plugin_view["kwargs"],
             )
+
+        for prop in plugin_object.properties:
+            self.register_property(prop)
+
+        for action in plugin_object.actions:
+            self.register_action(action)
 
     ### Resource stuff
 
@@ -73,7 +92,23 @@ class LabThing(object):
         parts = [registration_prefix, self.url_prefix, url_part]
         return "".join([part for part in parts if part])
 
-    def add_resource(self, resource, *urls, **kwargs):
+    def register_property(self, resource):
+        if hasattr(resource, "endpoint"):
+            self.properties[resource.endpoint] = resource
+        else:
+            raise RuntimeError(
+                f"Resource {resource} has not yet been added. Cannot set as a property."
+            )
+
+    def register_action(self, resource):
+        if hasattr(resource, "endpoint"):
+            self.actions[resource.endpoint] = resource
+        else:
+            raise RuntimeError(
+                f"Resource {resource} has not yet been added. Cannot set as an action."
+            )
+
+    def add_resource(self, resource, *urls, endpoint=None, **kwargs):
         """Adds a resource to the api.
         :param resource: the class name of your resource
         :type resource: :class:`Type[Resource]`
@@ -81,7 +116,7 @@ class LabThing(object):
                     flask routing rules apply.  Any url variables will be
                     passed to the resource method as args.
         :type urls: str
-        :param endpoint: endpoint name (defaults to :meth:`Resource.__name__.lower`
+        :param endpoint: endpoint name (defaults to :meth:`Resource.__name__`
             Can be used to reference this route in :class:`fields.Url` fields
         :type endpoint: str
         :param resource_class_args: args to be forwarded to the constructor of
@@ -97,10 +132,11 @@ class LabThing(object):
             api.add_resource(Foo, '/foo', endpoint="foo")
             api.add_resource(FooSpecial, '/special/foo', endpoint="foo")
         """
+        endpoint = endpoint or resource.__name__
         if self.app is not None:
-            self._register_view(self.app, resource, *urls, **kwargs)
+            self._register_view(self.app, resource, *urls, endpoint=endpoint, **kwargs)
         else:
-            self.resources.append((resource, urls, kwargs))
+            self.resources.append((resource, urls, endpoint, kwargs))
 
     def resource(self, *urls, **kwargs):
         """Wraps a :class:`~flask_restful.Resource` class, adding it to the
@@ -120,8 +156,8 @@ class LabThing(object):
 
         return decorator
 
-    def _register_view(self, app, resource, *urls, **kwargs):
-        endpoint = kwargs.pop("endpoint", None) or resource.__name__.lower()
+    def _register_view(self, app, resource, *urls, endpoint=None, **kwargs):
+        endpoint = endpoint or resource.__name__
         self.endpoints.add(endpoint)
         resource_class_args = kwargs.pop("resource_class_args", ())
         resource_class_kwargs = kwargs.pop("resource_class_kwargs", {})
@@ -147,3 +183,36 @@ class LabThing(object):
             rule = self._complete_url(url, "")
             # Add the url to the application or blueprint
             app.add_url_rule(rule, view_func=resource_func, **kwargs)
+
+    ### Utilities
+
+    def url_for(self, resource, **values):
+        """Generates a URL to the given resource.
+        Works like :func:`flask.url_for`."""
+        endpoint = resource.endpoint
+        return url_for(endpoint, **values)
+
+    ### Description
+    def td(self):
+        props = {}
+        for key, prop in self.properties.items():
+            props[key] = {}
+            props[key]["title"] = prop.__name__
+            props[key]["description"] = get_docstring(prop)
+            props[key]["links"] = [{"href": self.url_for(prop, _external=True)}]
+
+        actions = {}
+        for key, prop in self.actions.items():
+            actions[key] = {}
+            actions[key]["title"] = prop.__name__
+            actions[key]["description"] = get_docstring(prop)
+            actions[key]["links"] = [{"href": self.url_for(prop, _external=True)}]
+
+        td = {
+            "title": self.title,
+            "description": self.description,
+            "properties": props,
+            "actions": actions,
+        }
+
+        return jsonify(td)

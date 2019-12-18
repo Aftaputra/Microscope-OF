@@ -147,7 +147,6 @@ class Microscope:
         else:
             return False
 
-
     # Create unified status
     @property
     def status(self):
@@ -239,7 +238,7 @@ class Microscope:
         """
         system_metadata = {
             "microscope_settings": self.read_settings(),
-            "microscope_state": self.state,
+            "microscope_state": self.status,
             "microscope_id": self.id,
             "microscope_name": self.name,
         }

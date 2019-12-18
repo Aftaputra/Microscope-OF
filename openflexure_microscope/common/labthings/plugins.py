@@ -27,6 +27,9 @@ class BasePlugin:
         self._rules = {}  # Key: Original rule. Val: View class
         self._gui = None
 
+        self.actions = []
+        self.properties = []
+
         self.name = name
 
         self.methods = {}
@@ -35,7 +38,7 @@ class BasePlugin:
     def views(self):
         return self._views
 
-    def add_view(self, rule, view_class, **kwargs):
+    def add_view(self, view_class, rule, **kwargs):
         # Remove all leading slashes from view route
         cleaned_rule = rule
         while cleaned_rule[0] == "/":
@@ -56,6 +59,12 @@ class BasePlugin:
         self._views[view_id] = d
         # Store the rule expansion information
         self._rules[rule] = self._views[view_id]
+
+    def register_action(self, view_class):
+        self.actions.append(view_class)
+
+    def register_property(self, view_class):
+        self.properties.append(view_class)
 
     @property
     def gui(self):
@@ -104,13 +113,16 @@ class BasePlugin:
     def _name_uri_safe(self):
         return snake_to_spine(self._name_python_safe)
 
-    def add_method(self, method_name, method):
+    def add_method(self, method, method_name):
         self.methods[method_name] = method
 
         if not hasattr(self, method_name):
             setattr(self, method_name, method)
         else:
-            logging.warning("Unable to bind method to plugin. Method name already exists.")
+            logging.warning(
+                "Unable to bind method to plugin. Method name already exists."
+            )
+
 
 def find_plugins(plugin_path, module_name="plugins"):
     print(f"Loading plugins from {plugin_path}")

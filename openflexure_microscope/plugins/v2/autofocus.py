@@ -356,9 +356,10 @@ class FastAutofocusAPI(MethodView):
 
 autofocus_plugin_v2 = BasePlugin("autofocus")
 
-autofocus_plugin_v2.add_method("fast_autofocus", fast_autofocus)
-autofocus_plugin_v2.add_method("autofocus", autofocus)
+autofocus_plugin_v2.add_method(fast_autofocus, "fast_autofocus")
+autofocus_plugin_v2.add_method(autofocus, "autofocus")
 
-autofocus_plugin_v2.add_view("/measure_sharpness", MeasureSharpnessAPI)
-autofocus_plugin_v2.add_view("/autofocus", AutofocusAPI)
-autofocus_plugin_v2.add_view("/fast_autofocus", FastAutofocusAPI)
+autofocus_plugin_v2.add_view(MeasureSharpnessAPI, "/measure_sharpness")
+autofocus_plugin_v2.add_view(AutofocusAPI, "/autofocus")
+autofocus_plugin_v2.add_view(FastAutofocusAPI, "/fast_autofocus")
+
