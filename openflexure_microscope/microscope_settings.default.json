@@ -4,8 +4,6 @@
     3146
   ],
   "jpeg_quality": 75,
-  "camera_settings": "~/.openflexure/camera_settings.json",
-  "stage_settings": "~/.openflexure/stage_settings.json",
   "plugins": [
     "openflexure_microscope.plugins.default.autofocus:AutofocusPlugin",
     "openflexure_microscope.plugins.default.scan:ScanPlugin",
