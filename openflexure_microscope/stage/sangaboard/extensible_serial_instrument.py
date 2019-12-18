@@ -213,9 +213,9 @@ class ExtensibleSerialInstrument(object):
                 return self.read_multiline(termination_line)
             else:
                 logging.debug("Reading response...")
-                line = (
-                    self.readline(timeout).strip()
-                )  # question: should we strip the final newline?
+                line = self.readline(
+                    timeout
+                ).strip()  # question: should we strip the final newline?
                 logging.debug(f"Read finished. Got {line}")
                 return line
 

@@ -69,4 +69,3 @@ class NestedStatusProperty(Resource):
             return abort(404)
 
         return jsonify(value)
-

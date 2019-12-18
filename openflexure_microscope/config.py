@@ -97,6 +97,7 @@ class OpenflexureSettingsFile:
 
 # HANDLE BASIC LOADING AND SAVING OF SETTINGS FILES
 
+
 def load_json_file(config_path) -> dict:
     """
     Open a .json config file
