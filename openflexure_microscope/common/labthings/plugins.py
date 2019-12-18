@@ -29,6 +29,8 @@ class BasePlugin:
 
         self.name = name
 
+        self.methods = {}
+
     @property
     def views(self):
         return self._views
@@ -102,6 +104,13 @@ class BasePlugin:
     def _name_uri_safe(self):
         return snake_to_spine(self._name_python_safe)
 
+    def add_method(self, method_name, method):
+        self.methods[method_name] = method
+
+        if not hasattr(self, method_name):
+            setattr(self, method_name, method)
+        else:
+            logging.warning("Unable to bind method to plugin. Method name already exists.")
 
 def find_plugins(plugin_path, module_name="plugins"):
     print(f"Loading plugins from {plugin_path}")

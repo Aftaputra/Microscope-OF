@@ -53,6 +53,14 @@ class LabThing(object):
 
         # TODO: Add plugin routes
 
+        for plugin_view_id, plugin_view in plugin_object.views.items():
+            # Add route to the plugins blueprint
+            self.add_resource(
+                plugin_view["view"],
+                "/plugins" + plugin_view["rule"],
+                **plugin_view["kwargs"],
+            )
+
     ### Resource stuff
 
     def _complete_url(self, url_part, registration_prefix):

@@ -13,7 +13,6 @@ from openflexure_microscope.camera.mock import MockStreamer
 
 from openflexure_microscope.utilities import serialise_array_b64
 from openflexure_microscope.plugins import PluginLoader
-from openflexure_microscope.task import TaskOrchestrator
 from openflexure_microscope.common.lock import CompositeLock
 from openflexure_microscope.config import user_settings
 
@@ -45,9 +44,6 @@ class Microscope:
 
         # Initialise with an empty composite lock
         self.lock = CompositeLock([])
-
-        # Create a task orchestrator
-        self.task = TaskOrchestrator()
 
         # Apply settings loaded from file
         self.apply_settings(user_settings.load())
@@ -151,26 +147,6 @@ class Microscope:
         else:
             return False
 
-    # Create unified state
-    @property
-    def state(self):
-        """Dictionary of the basic microscope state.
-
-        Return:
-            dict: Dictionary containing position data, 
-                and :py:attr:`openflexure_microscope.camera.base.BaseCamera.status`
-        """
-        # DEPRECATED
-        logging.warning(
-            "Microscope.state is deprecated. Use Microscope.status instead. State will be removed in a future version."
-        )
-        state = {
-            "camera": self.camera.status,
-            "stage": self.stage.status,
-            "plugin": self.plugins.state,
-            "version": pkg_resources.get_distribution("openflexure_microscope").version,
-        }
-        return state
 
     # Create unified status
     @property
@@ -255,22 +231,6 @@ class Microscope:
         if self.stage:
             self.stage.save_settings()
         user_settings.save(current_config, backup=True)
-
-    @property
-    def config(self) -> dict:
-        logging.warning(
-            "Reading microscope through config property is deprecated.\
-            Please use read_settings method instead."
-        )
-        return self.read_settings()
-
-    @config.setter
-    def config(self, config: dict) -> None:
-        logging.warning(
-            "Setting microscope through config property is deprecated.\
-            Please use apply_settings method instead."
-        )
-        self.apply_settings(config)
 
     @property
     def metadata(self):

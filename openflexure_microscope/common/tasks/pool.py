@@ -4,6 +4,7 @@ from functools import wraps
 
 from .thread import TaskThread
 
+from flask import copy_current_request_context
 
 class TaskMaster:
     def __init__(self, *args, **kwargs):
@@ -26,7 +27,8 @@ class TaskMaster:
         return {t.id: t.state for t in self._tasks}
 
     def new(self, f, *args, **kwargs):
-        task = TaskThread(target=f, args=args, kwargs=kwargs)
+        # copy_current_request_context allows threads to access flask current_app
+        task = TaskThread(target=copy_current_request_context(f), args=args, kwargs=kwargs)
         self._tasks.append(task)
         return task
 
