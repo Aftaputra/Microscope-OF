@@ -86,6 +86,7 @@ handler = JSONExceptionHandler(app)
 # Build a labthing
 labthing = LabThing(app, prefix="/api/v2")
 labthing.description = "Test LabThing-based API for OpenFlexure Microscope"
+labthing.title = f"OpenFlexure Microscope {api_microscope.name}"
 
 # Attach lab devices
 labthing.register_device(api_microscope, "openflexure_microscope")
@@ -144,26 +145,6 @@ def routes():
     :status 200: stream active
     """
     return jsonify(list_routes(app))
-
-
-@app.route("/props")
-def props():
-    p = {}
-    for key, prop in labthing.properties.items():
-        p[key] = {}
-        p[key]["view"] = prop
-        p[key]["url"] = labthing.url_for(prop, _external=True)
-    return jsonify(p)
-
-
-@app.route("/ac")
-def actions():
-    p = {}
-    for key, prop in labthing.actions.items():
-        p[key] = {}
-        p[key]["view"] = prop
-        p[key]["url"] = labthing.url_for(prop, _external=True)
-    return jsonify(p)
 
 
 @app.route("/log")
