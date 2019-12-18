@@ -17,7 +17,6 @@ from openflexure_microscope.api.exceptions import JSONExceptionHandler
 from openflexure_microscope.api.utilities import list_routes
 
 from openflexure_microscope.config import settings_file_path, JSONEncoder
-from openflexure_microscope.api.v1 import blueprints
 from openflexure_microscope.api import v2
 
 from openflexure_microscope.common.labthings.labthing import LabThing
@@ -87,6 +86,9 @@ labthing.register_device(api_microscope, "openflexure_microscope")
 
 for _plugin in find_plugins(USER_PLUGINS_PATH):
     labthing.register_plugin(_plugin)
+
+from openflexure_microscope.api.v2.views.captures import add_captures_to_labthing
+add_captures_to_labthing(labthing, prefix="")
 
 # WEBAPP ROUTES
 
