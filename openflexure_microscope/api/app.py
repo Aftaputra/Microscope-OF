@@ -61,15 +61,6 @@ else:
     root.setLevel(logging.getLogger("gunicorn.error").level)
 
 
-# Generate API URI based on version from filename
-def uri(suffix, api_version, base=None):
-    if not base:
-        base = "/api/{}".format(api_version)
-    return_uri = base + suffix
-    logging.debug("Created app route: {}".format(return_uri))
-    return return_uri
-
-
 # Create flask app
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -92,8 +83,8 @@ labthing.title = f"OpenFlexure Microscope {api_microscope.name}"
 labthing.register_device(api_microscope, "openflexure_microscope")
 
 # Attach plugins
-for _plugin in find_plugins(USER_PLUGINS_PATH):
-    labthing.register_plugin(_plugin)
+for plugin in find_plugins(USER_PLUGINS_PATH):
+    labthing.register_plugin(plugin)
 
 # Attach captures resources
 labthing.add_resource(views.CaptureList, f"/captures", endpoint="CaptureList")
