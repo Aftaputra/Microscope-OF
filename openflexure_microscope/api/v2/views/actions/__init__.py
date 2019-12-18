@@ -49,17 +49,6 @@ _actions = {
 }
 
 
-def enabled_actions():
+def enabled_root_actions():
     global _actions
     return {k: v for k, v in _actions.items() if v["conditions"]}
-
-
-def add_actions_to_labthing(labthing, prefix=""):
-    """
-    Add all capture resources to a labthing
-    """
-    for name, action in enabled_actions().items():
-        view_class = action["view_class"]
-        rule = action["rule"]
-        labthing.add_resource(view_class, f"{prefix}/actions{rule}")
-        labthing.register_action(view_class)

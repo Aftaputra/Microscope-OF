@@ -16,15 +16,20 @@ from flask_cors import CORS
 from openflexure_microscope.api.exceptions import JSONExceptionHandler
 from openflexure_microscope.api.utilities import list_routes
 
-from openflexure_microscope.config import settings_file_path, JSONEncoder
+from openflexure_microscope.config import (
+    settings_file_path,
+    JSONEncoder,
+    USER_PLUGINS_PATH,
+)
 from openflexure_microscope.api import v2
 
 from openflexure_microscope.common.labthings.labthing import LabThing
 from openflexure_microscope.common.labthings.find import registered_plugins
 from openflexure_microscope.common.labthings.plugins import find_plugins
-from openflexure_microscope.config import USER_PLUGINS_PATH
 
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
+
+from openflexure_microscope.api.v2 import views
 
 # Handle logging
 is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
@@ -78,33 +83,53 @@ CORS(app, resources=r"*")
 # Make errors more API friendly
 handler = JSONExceptionHandler(app)
 
-# Attach lab devices
+# Build a labthing
 labthing = LabThing(app, prefix="/api/v2")
 labthing.description = "Test LabThing-based API for OpenFlexure Microscope"
 
+# Attach lab devices
 labthing.register_device(api_microscope, "openflexure_microscope")
 
+# Attach plugins
 for _plugin in find_plugins(USER_PLUGINS_PATH):
     labthing.register_plugin(_plugin)
 
-from openflexure_microscope.api.v2.views.captures import add_captures_to_labthing
+# Attach captures resources
+labthing.add_resource(views.CaptureList, f"/captures", endpoint="CaptureList")
+labthing.register_property(views.CaptureList)
+labthing.add_resource(
+    views.CaptureResource, f"/captures/<id>", endpoint="CaptureResource"
+)
+labthing.add_resource(
+    views.CaptureDownload,
+    f"/captures/<id>/download/<filename>",
+    endpoint="CaptureDownload",
+)
+labthing.add_resource(views.CaptureTags, f"/captures/<id>/tags", endpoint="CaptureTags")
+labthing.add_resource(
+    views.CaptureMetadata, f"/captures/<id>/metadata", endpoint="CaptureMetadata"
+)
 
-add_captures_to_labthing(labthing, prefix="")
-from openflexure_microscope.api.v2.views.state import add_states_to_labthing
+# Attach settings and status resources
+labthing.add_resource(views.SettingsProperty, f"/settings")
+labthing.register_property(views.SettingsProperty)
+labthing.add_resource(views.NestedSettingsProperty, "/settings/<path:route>")
+labthing.add_resource(views.StatusProperty, "/status")
+labthing.register_property(views.StatusProperty)
+labthing.add_resource(views.NestedStatusProperty, "/status/<path:route>")
 
-add_states_to_labthing(labthing, prefix="")
+# Attach streams resources
+labthing.add_resource(views.MjpegStream, f"/streams/mjpeg")
+labthing.register_property(views.MjpegStream)
+labthing.add_resource(views.SnapshotStream, f"/streams/snapshot")
+labthing.register_property(views.SnapshotStream)
 
-from openflexure_microscope.api.v2.views.tasks import add_tasks_to_labthing
-
-add_tasks_to_labthing(labthing, prefix="")
-
-from openflexure_microscope.api.v2.views.streams import add_streams_to_labthing
-
-add_streams_to_labthing(labthing, prefix="")
-
-from openflexure_microscope.api.v2.views.actions import add_actions_to_labthing
-
-add_actions_to_labthing(labthing)
+# Attach microscope action resources
+for name, action in views.enabled_root_actions().items():
+    view_class = action["view_class"]
+    rule = action["rule"]
+    labthing.add_resource(view_class, "/actions{rule}")
+    labthing.register_action(view_class)
 
 
 @app.route("/routes")

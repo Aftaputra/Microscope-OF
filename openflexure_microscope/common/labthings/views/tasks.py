@@ -48,7 +48,7 @@ class TaskResource(Resource):
             return abort(404)  # 404 Not Found
 
         # Return task state
-        return jsonify(task)
+        return task_schema.jsonify(task)
 
     def delete(self, id):
         try:
@@ -58,4 +58,4 @@ class TaskResource(Resource):
 
         task.terminate()
 
-        return jsonify(task.state)
+        return task_schema.jsonify(task)

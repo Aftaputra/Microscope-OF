@@ -2,8 +2,7 @@ from flask import current_app, _app_ctx_stack, request, url_for, jsonify
 
 from .plugins import BasePlugin
 from .views.plugins import PluginListResource
-
-from .resource import Resource
+from .views.tasks import TaskList, TaskResource
 
 from ..utilities import get_docstring
 
@@ -53,6 +52,11 @@ class LabThing(object):
         self.app.add_url_rule(self._complete_url("/", ""), "td", self.td)
         # Add plugin overview
         self.add_resource(PluginListResource, "/plugins")
+        self.register_property(PluginListResource)
+        # Add task routes
+        self.add_resource(TaskList, "/tasks", endpoint="TasksProperty")
+        self.register_property(TaskList)
+        self.add_resource(TaskResource, "/tasks/<id>", endpoint="TaskResource")
 
     ### Device stuff
 
@@ -209,6 +213,7 @@ class LabThing(object):
             actions[key]["links"] = [{"href": self.url_for(prop, _external=True)}]
 
         td = {
+            "id": url_for("td", _external=True),
             "title": self.title,
             "description": self.description,
             "properties": props,

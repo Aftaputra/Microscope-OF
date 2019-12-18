@@ -70,25 +70,3 @@ class NestedStatusProperty(Resource):
 
         return jsonify(value)
 
-
-def add_states_to_labthing(labthing, prefix=""):
-    """
-    Add all settings and status resources to a labthing
-    """
-    labthing.add_resource(
-        SettingsProperty, f"{prefix}/settings", endpoint="SettingsProperty"
-    )
-    labthing.register_property(SettingsProperty)
-    labthing.add_resource(
-        NestedSettingsProperty,
-        f"{prefix}/settings/<path:route>",
-        endpoint="NestedSettingsProperty",
-    )
-    labthing.add_resource(StatusProperty, f"{prefix}/status", endpoint="StatusProperty")
-    labthing.register_property(StatusProperty)
-    labthing.add_resource(
-        NestedStatusProperty,
-        f"{prefix}/status/<path:route>",
-        endpoint="NestedStatusProperty",
-    )
-

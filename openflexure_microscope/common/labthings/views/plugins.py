@@ -39,7 +39,7 @@ def plugins_representation(plugin_dict):
 
         for view_id, view_data in plugin.views.items():
             logging.debug(f"Representing view {view_id}")
-            uri = url_for(f"pluginlistresource") + "/" + view_data["rule"][1:]
+            uri = url_for(f"PluginListResource") + "/" + view_data["rule"][1:]
             # uri = view_data["rule"]
             # Make links dictionary if it doesn't yet exist
             view_d = {"links": {"self": uri}}
