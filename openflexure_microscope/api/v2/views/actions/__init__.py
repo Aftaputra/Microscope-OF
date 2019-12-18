@@ -6,7 +6,6 @@ from flask import Blueprint, url_for, jsonify
 
 from openflexure_microscope.api.utilities import blueprint_for_module
 from openflexure_microscope.utilities import get_docstring, description_from_view
-from openflexure_microscope.api.views import MicroscopeView
 
 from . import camera, stage, system
 
