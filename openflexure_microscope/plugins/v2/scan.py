@@ -19,7 +19,7 @@ from openflexure_microscope.devel import (
     update_task_data,
 )
 
-from flask.views import MethodView
+from openflexure_microscope.common.flask_labthings.resource import Resource
 import time
 
 
@@ -340,7 +340,7 @@ def stack(
 ### Web views
 
 
-class TileScanAPI(MethodView):
+class TileScanAPI(Resource):
     def post(self):
         payload = JsonResponse(request)
         microscope = find_device("openflexure_microscope")
