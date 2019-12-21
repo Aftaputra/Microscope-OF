@@ -67,9 +67,9 @@ class LabThing(object):
         self.add_resource(PluginListResource, "/plugins")
         self.register_property(PluginListResource)
         # Add task routes
-        self.add_resource(TaskList, "/tasks", endpoint="TasksProperty")
+        self.add_resource(TaskList, "/tasks")
         self.register_property(TaskList)
-        self.add_resource(TaskResource, "/tasks/<id>", endpoint="TaskResource")
+        self.add_resource(TaskResource, "/tasks/<id>")
 
     ### Device stuff
 
@@ -150,7 +150,7 @@ class LabThing(object):
             api.add_resource(Foo, '/foo', endpoint="foo")
             api.add_resource(FooSpecial, '/special/foo', endpoint="foo")
         """
-        endpoint = endpoint or resource.__name__
+        endpoint = endpoint or resource.__name__.lower()
         if self.app is not None:
             self._register_view(self.app, resource, *urls, endpoint=endpoint, **kwargs)
         else:
@@ -175,7 +175,7 @@ class LabThing(object):
         return decorator
 
     def _register_view(self, app, resource, *urls, endpoint=None, **kwargs):
-        endpoint = endpoint or resource.__name__
+        endpoint = endpoint or resource.__name__.lower()
         self.endpoints.add(endpoint)
         resource_class_args = kwargs.pop("resource_class_args", ())
         resource_class_kwargs = kwargs.pop("resource_class_kwargs", {})
