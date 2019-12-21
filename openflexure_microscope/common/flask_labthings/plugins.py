@@ -5,10 +5,7 @@ import copy
 from importlib import util
 import sys
 
-from openflexure_microscope.utilities import (
-    camel_to_snake,
-    snake_to_spine,
-)
+from openflexure_microscope.utilities import camel_to_snake, snake_to_spine
 
 
 class BasePlugin:

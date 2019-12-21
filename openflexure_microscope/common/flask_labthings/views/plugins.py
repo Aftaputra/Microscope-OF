@@ -36,7 +36,11 @@ def plugins_representation(plugin_dict):
         }
 
         for view_id, view_data in plugin.views.items():
-            uri = url_for(f"PluginListResource", _external=True) + "/" + view_data["rule"][1:]
+            uri = (
+                url_for(f"PluginListResource", _external=True)
+                + "/"
+                + view_data["rule"][1:]
+            )
             # Make links dictionary if it doesn't yet exist
             view_d = {"href": uri, **description_from_view(view_data["view"])}
 

@@ -82,17 +82,10 @@ for plugin in find_plugins(USER_PLUGINS_PATH):
 # Attach captures resources
 labthing.add_resource(views.CaptureList, f"/captures")
 labthing.register_property(views.CaptureList)
-labthing.add_resource(
-    views.CaptureResource, f"/captures/<id>"
-)
-labthing.add_resource(
-    views.CaptureDownload,
-    f"/captures/<id>/download/<filename>",
-)
+labthing.add_resource(views.CaptureResource, f"/captures/<id>")
+labthing.add_resource(views.CaptureDownload, f"/captures/<id>/download/<filename>")
 labthing.add_resource(views.CaptureTags, f"/captures/<id>/tags")
-labthing.add_resource(
-    views.CaptureMetadata, f"/captures/<id>/metadata"
-)
+labthing.add_resource(views.CaptureMetadata, f"/captures/<id>/metadata")
 
 # Attach settings and status resources
 labthing.add_resource(views.SettingsProperty, f"/settings")

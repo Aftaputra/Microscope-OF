@@ -72,7 +72,9 @@ class URLFor(Field):
             self.view_class = None
             self.endpoint = endpoint
         else:
-            raise RuntimeError(f"Endpoint {endpoint} is not a valid Flask view or endpoint string.")
+            raise RuntimeError(
+                f"Endpoint {endpoint} is not a valid Flask view or endpoint string."
+            )
         self.params = kwargs
         Field.__init__(self, **kwargs)
 
@@ -85,7 +87,9 @@ class URLFor(Field):
             if hasattr(self.view_class, "endpoint"):
                 self.endpoint = self.view_class.endpoint
             else:
-                raise RuntimeError(f"Resource {self.endpoint} has not been added to a LabThing application. Unable to generate URL.")
+                raise RuntimeError(
+                    f"Resource {self.endpoint} has not been added to a LabThing application. Unable to generate URL."
+                )
 
         # Generate URL for
         param_values = {}

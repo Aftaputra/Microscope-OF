@@ -61,6 +61,7 @@ class GPUPreviewStartAPI(Resource):
     Optional "window" parameter can be passed to control the position and size of the preview window,
     in the format ``[x, y, width, height]``.
     """
+
     def post(self):
         microscope = find_device("openflexure_microscope")
         payload = JsonResponse(request)
@@ -84,6 +85,7 @@ class GPUPreviewStopAPI(Resource):
     """
     Start the onboard GPU preview.
     """
+
     def post(self):
         microscope = find_device("openflexure_microscope")
         microscope.camera.stop_preview()

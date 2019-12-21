@@ -11,7 +11,14 @@ from . import EXTENSION_NAME
 
 
 class LabThing(object):
-    def __init__(self, app=None, prefix: str = "", title: str = "", description: str = "", handle_errors: bool = True):
+    def __init__(
+        self,
+        app=None,
+        prefix: str = "",
+        title: str = "",
+        description: str = "",
+        handle_errors: bool = True,
+    ):
         self.app = app
 
         self.devices = {}
@@ -219,7 +226,7 @@ class LabThing(object):
 
         if self.blueprint:
             if endpoint.startswith(self.blueprint.name):
-                endpoint = endpoint.split(self.blueprint.name + '.', 1)[-1]
+                endpoint = endpoint.split(self.blueprint.name + ".", 1)[-1]
             else:
                 return False
         return endpoint in self.endpoints

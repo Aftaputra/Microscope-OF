@@ -6,7 +6,9 @@ from openflexure_microscope.api.utilities import get_bool, JsonResponse
 from openflexure_microscope.common.flask_labthings.schema import Schema
 from openflexure_microscope.common.flask_labthings import fields
 from openflexure_microscope.common.flask_labthings.resource import Resource
-from openflexure_microscope.common.flask_labthings.utilities import description_from_view
+from openflexure_microscope.common.flask_labthings.utilities import (
+    description_from_view,
+)
 from openflexure_microscope.common.flask_labthings.decorators import marshal_with
 
 from openflexure_microscope.common.flask_labthings.find import find_device
@@ -30,24 +32,27 @@ class CaptureSchema(Schema):
             "self": {
                 "href": url_for(CaptureResource.endpoint, id=data.id, _external=True),
                 "mimetype": "application/json",
-                **description_from_view(CaptureResource)
+                **description_from_view(CaptureResource),
             },
             "tags": {
                 "href": url_for(CaptureTags.endpoint, id=data.id, _external=True),
                 "mimetype": "application/json",
-                **description_from_view(CaptureTags)
+                **description_from_view(CaptureTags),
             },
             "metadata": {
                 "href": url_for(CaptureMetadata.endpoint, id=data.id, _external=True),
                 "mimetype": "application/json",
-                **description_from_view(CaptureMetadata)
+                **description_from_view(CaptureMetadata),
             },
             "download": {
                 "href": url_for(
-                    CaptureDownload.endpoint, id=data.id, filename=data.filename, _external=True
+                    CaptureDownload.endpoint,
+                    id=data.id,
+                    filename=data.filename,
+                    _external=True,
                 ),
                 "mimetype": "image/jpeg",
-                **description_from_view(CaptureDownload)
+                **description_from_view(CaptureDownload),
             },
         }
         return data
@@ -61,6 +66,7 @@ class CaptureList(Resource):
     """
     List all image captures
     """
+
     @marshal_with(CaptureSchema(many=True))
     def get(self):
         microscope = find_device("openflexure_microscope")
@@ -99,6 +105,7 @@ class CaptureDownload(Resource):
     """
     Image data for a single image capture
     """
+
     def get(self, id, filename):
 
         microscope = find_device("openflexure_microscope")
@@ -134,6 +141,7 @@ class CaptureTags(Resource):
     """
     Tags associated with a single image capture
     """
+
     def get(self, id):
 
         microscope = find_device("openflexure_microscope")
@@ -184,6 +192,7 @@ class CaptureMetadata(Resource):
     """
     All metadata associated with a single image capture
     """
+
     def get(self, id):
         microscope = find_device("openflexure_microscope")
         capture_obj = microscope.camera.image_from_id(id)

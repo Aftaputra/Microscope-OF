@@ -4,7 +4,9 @@ from openflexure_microscope.common.flask_labthings.schema import Schema
 from openflexure_microscope.common.flask_labthings import fields
 from openflexure_microscope.common.labthings_core import tasks
 from openflexure_microscope.common.flask_labthings.resource import Resource
-from openflexure_microscope.common.flask_labthings.utilities import description_from_view
+from openflexure_microscope.common.flask_labthings.utilities import (
+    description_from_view,
+)
 
 from marshmallow import pre_dump
 
@@ -52,8 +54,8 @@ class TaskSchema(Schema):
             "self": {
                 "href": url_for(TaskResource.endpoint, id=data.id, _external=True),
                 "mimetype": "application/json",
-                **description_from_view(TaskResource)
-            },
+                **description_from_view(TaskResource),
+            }
         }
         return data
 

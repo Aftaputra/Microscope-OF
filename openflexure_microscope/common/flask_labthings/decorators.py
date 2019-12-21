@@ -41,4 +41,5 @@ class marshal_with(object):
                 return make_response(self.schema.jsonify(data), code, headers)
             else:
                 return make_response(self.schema.jsonify(resp))
+
         return wrapper
