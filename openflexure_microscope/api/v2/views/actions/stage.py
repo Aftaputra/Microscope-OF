@@ -9,6 +9,10 @@ import logging
 
 
 class MoveStageAPI(Resource):
+    """
+    Handle stage movements.
+    """
+
     def post(self):
         microscope = find_device("openflexure_microscope")
         # Create response object

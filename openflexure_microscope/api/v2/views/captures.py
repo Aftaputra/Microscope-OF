@@ -12,6 +12,9 @@ from openflexure_microscope.common.flask_labthings.find import find_device
 
 
 class CaptureList(Resource):
+    """
+    List all image captures
+    """
     def get(self):
         microscope = find_device("openflexure_microscope")
         image_list = microscope.camera.images
@@ -19,6 +22,9 @@ class CaptureList(Resource):
 
 
 class CaptureResource(Resource):
+    """
+    Description of a single image capture
+    """
     def get(self, id):
         microscope = find_device("openflexure_microscope")
         capture_obj = microscope.camera.image_from_id(id)
@@ -41,6 +47,9 @@ class CaptureResource(Resource):
 
 
 class CaptureDownload(Resource):
+    """
+    Image data for a single image capture
+    """
     def get(self, id, filename):
 
         microscope = find_device("openflexure_microscope")
@@ -73,6 +82,9 @@ class CaptureDownload(Resource):
 
 
 class CaptureTags(Resource):
+    """
+    Tags associated with a single image capture
+    """
     def get(self, id):
 
         microscope = find_device("openflexure_microscope")
@@ -120,6 +132,9 @@ class CaptureTags(Resource):
 
 
 class CaptureMetadata(Resource):
+    """
+    All metadata associated with a single image capture
+    """
     def get(self, id):
         microscope = find_device("openflexure_microscope")
         capture_obj = microscope.camera.image_from_id(id)

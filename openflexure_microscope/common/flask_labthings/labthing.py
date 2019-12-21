@@ -225,6 +225,7 @@ class LabThing(object):
         return endpoint in self.endpoints
 
     ### Description
+
     def td(self):
         """
         W3C-style Thing Description
