@@ -1,11 +1,9 @@
 from openflexure_microscope.common.flask_labthings.find import find_device
 from openflexure_microscope.common.flask_labthings.plugins import BasePlugin
-from openflexure_microscope.microscope import Microscope
+from openflexure_microscope.common.flask_labthings.resource import Resource
 
 from openflexure_microscope.devel import JsonResponse, request, jsonify, taskify, abort
 from openflexure_microscope.utilities import set_properties
-
-from flask.views import MethodView
 
 import time
 import numpy as np
@@ -289,7 +287,7 @@ def fast_up_down_up_autofocus(
         return m.data_dict()
 
 
-class MeasureSharpnessAPI(MethodView):
+class MeasureSharpnessAPI(Resource):
     def post(self):
         microscope = find_device("openflexure_microscope")
 
@@ -299,7 +297,7 @@ class MeasureSharpnessAPI(MethodView):
         return jsonify({"sharpness": measure_sharpness(microscope)})
 
 
-class AutofocusAPI(MethodView):
+class AutofocusAPI(Resource):
     """
     Run a standard autofocus
     """
@@ -325,7 +323,7 @@ class AutofocusAPI(MethodView):
             abort(503, "No stage connected. Unable to autofocus.")
 
 
-class FastAutofocusAPI(MethodView):
+class FastAutofocusAPI(Resource):
     """
     Run a fast autofocus
     """
