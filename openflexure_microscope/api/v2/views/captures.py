@@ -7,24 +7,73 @@ from openflexure_microscope.common.flask_labthings.schema import Schema
 from openflexure_microscope.common.flask_labthings import fields
 from openflexure_microscope.common.flask_labthings.resource import Resource
 from openflexure_microscope.common.flask_labthings.utilities import description_from_view
+from openflexure_microscope.common.flask_labthings.decorators import marshal_with
 
 from openflexure_microscope.common.flask_labthings.find import find_device
+
+from marshmallow import pre_dump
+
+
+class CaptureSchema(Schema):
+    id = fields.String()
+    file = fields.String(data_key="path")
+    exists = fields.Bool(data_key="available")
+    filename = fields.String()
+    metadata = fields.Dict()
+
+    links = fields.Dict()
+
+    # TODO: Automate this somewhat
+    @pre_dump
+    def generate_links(self, data, **kwargs):
+        data.links = {
+            "self": {
+                "href": url_for(CaptureResource.endpoint, id=data.id, _external=True),
+                "mimetype": "application/json",
+                **description_from_view(CaptureResource)
+            },
+            "tags": {
+                "href": url_for(CaptureTags.endpoint, id=data.id, _external=True),
+                "mimetype": "application/json",
+                **description_from_view(CaptureTags)
+            },
+            "metadata": {
+                "href": url_for(CaptureMetadata.endpoint, id=data.id, _external=True),
+                "mimetype": "application/json",
+                **description_from_view(CaptureMetadata)
+            },
+            "download": {
+                "href": url_for(
+                    CaptureDownload.endpoint, id=data.id, filename=data.filename, _external=True
+                ),
+                "mimetype": "image/jpeg",
+                **description_from_view(CaptureDownload)
+            },
+        }
+        return data
+
+
+capture_schema = CaptureSchema()
+capture_list_schema = CaptureSchema(many=True)
 
 
 class CaptureList(Resource):
     """
     List all image captures
     """
+    @marshal_with(CaptureSchema(many=True))
     def get(self):
         microscope = find_device("openflexure_microscope")
         image_list = microscope.camera.images
-        return capture_list_schema.jsonify(image_list)
+        return image_list
 
 
 class CaptureResource(Resource):
     """
     Description of a single image capture
     """
+
+    @marshal_with(CaptureSchema())
     def get(self, id):
         microscope = find_device("openflexure_microscope")
         capture_obj = microscope.camera.image_from_id(id)
@@ -32,7 +81,7 @@ class CaptureResource(Resource):
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        return capture_schema.jsonify(capture_obj)
+        return capture_obj
 
     def delete(self, id):
         microscope = find_device("openflexure_microscope")
@@ -43,7 +92,7 @@ class CaptureResource(Resource):
 
         capture_obj.delete()
 
-        return ("", 204)
+        return "", 204
 
 
 class CaptureDownload(Resource):
@@ -160,46 +209,6 @@ class CaptureMetadata(Resource):
         capture_obj.put_metadata(data_dict)
 
         return jsonify(capture_obj.metadata)
-
-
-class CaptureSchema(Schema):
-    id = fields.String()
-    file = fields.String(data_key="path")
-    exists = fields.Bool(data_key="available")
-    filename = fields.String()
-    metadata = fields.Dict()
-
-    # TODO: Add HTTP methods
-    links = fields.Hyperlinks(
-        {
-            "self": {
-                "href": fields.AbsoluteUrlFor(CaptureResource, id="<id>"),
-                "mimetype": "application/json",
-                **description_from_view(CaptureResource)
-            },
-            "tags": {
-                "href": fields.AbsoluteUrlFor(CaptureTags, id="<id>"),
-                "mimetype": "application/json",
-                **description_from_view(CaptureTags)
-            },
-            "metadata": {
-                "href": fields.AbsoluteUrlFor(CaptureMetadata, id="<id>"),
-                "mimetype": "application/json",
-                **description_from_view(CaptureMetadata)
-            },
-            "download": {
-                "href": fields.AbsoluteUrlFor(
-                    CaptureDownload, id="<id>", filename="<filename>"
-                ),
-                "mimetype": "image/jpeg",
-                **description_from_view(CaptureDownload)
-            },
-        }
-    )
-
-
-capture_schema = CaptureSchema()
-capture_list_schema = CaptureSchema(many=True)
 
 
 def add_captures_to_labthing(labthing, prefix=""):

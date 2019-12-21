@@ -1,10 +1,12 @@
-from flask import abort
+from flask import abort, url_for
 
 from openflexure_microscope.common.flask_labthings.schema import Schema
 from openflexure_microscope.common.flask_labthings import fields
 from openflexure_microscope.common.labthings_core import tasks
 from openflexure_microscope.common.flask_labthings.resource import Resource
 from openflexure_microscope.common.flask_labthings.utilities import description_from_view
+
+from marshmallow import pre_dump
 
 
 class TaskList(Resource):
@@ -43,16 +45,17 @@ class TaskSchema(Schema):
     _start_time = fields.String(data_key="start_time")
     _end_time = fields.String(data_key="end_time")
 
-    # TODO: Add HTTP methods
-    links = fields.Hyperlinks(
-        {
+    # TODO: Automate this somewhat
+    @pre_dump
+    def generate_links(self, data, **kwargs):
+        data.links = {
             "self": {
-                "href": fields.AbsoluteUrlFor(TaskResource, id="<id>"),
+                "href": url_for(TaskResource.endpoint, id=data.id, _external=True),
                 "mimetype": "application/json",
                 **description_from_view(TaskResource)
-            }
+            },
         }
-    )
+        return data
 
 
 task_schema = TaskSchema()
