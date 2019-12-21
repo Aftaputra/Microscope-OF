@@ -5,10 +5,8 @@ import copy
 from importlib import util
 import sys
 
-from openflexure_microscope.config import USER_CONFIG_DIR
 from openflexure_microscope.utilities import (
     camel_to_snake,
-    camel_to_spine,
     snake_to_spine,
 )
 
@@ -125,11 +123,6 @@ class BasePlugin:
 
 
 def find_plugins(plugin_path, module_name="plugins"):
-    print(f"Loading plugins from {plugin_path}")
-    # plugin_path = os.path.join(USER_CONFIG_DIR, "microscope_plugins")
-    # plugins = importlib.machinery.SourceFileLoader(
-    #    module_name, plugin_path
-    # ).exec_module()
     logging.debug(f"Loading plugins from {plugin_path}")
 
     spec = util.spec_from_file_location(module_name, plugin_path)

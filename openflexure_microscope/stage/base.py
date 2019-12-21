@@ -1,6 +1,6 @@
 import numpy as np
 from abc import ABCMeta, abstractmethod
-from openflexure_microscope.common.lock import StrictLock
+from openflexure_microscope.common.labthings_core.lock import StrictLock
 
 
 class BaseStage(metaclass=ABCMeta):

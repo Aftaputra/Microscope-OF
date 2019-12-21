@@ -1,16 +1,17 @@
-from flask import current_app, _app_ctx_stack, request, url_for, jsonify
+from flask import url_for, jsonify
 
 from .plugins import BasePlugin
 from .views.plugins import PluginListResource
 from .views.tasks import TaskList, TaskResource
 
-from ..utilities import get_docstring
+from openflexure_microscope.common.labthings_core.utilities import get_docstring
+from .exceptions import JSONExceptionHandler
 
 from . import EXTENSION_NAME
 
 
 class LabThing(object):
-    def __init__(self, app=None, prefix="", title="", description=""):
+    def __init__(self, app=None, prefix: str = "", title: str = "", description: str = "", handle_errors: bool = True):
         self.app = app
 
         self.devices = {}
@@ -27,6 +28,11 @@ class LabThing(object):
         self.description = description
         self.title = title
 
+        if handle_errors:
+            self.error_handler = JSONExceptionHandler()
+        else:
+            self.error_handler = None
+
         if app is not None:
             self.init_app(app)
 
@@ -35,21 +41,28 @@ class LabThing(object):
     def init_app(self, app):
         app.teardown_appcontext(self.teardown)
 
+        # Register Flask extension
         app.extensions = getattr(app, "extensions", {})
         app.extensions[EXTENSION_NAME] = self
 
+        # Register error handler if one exists
+        if self.error_handler:
+            self.error_handler.init_app(self.app)
+
+        # Create base routes
         self._create_base_routes()
 
+        # Add resources, if registered before tying to a Flask app
         if len(self.resources) > 0:
             for resource, urls, endpoint, kwargs in self.resources:
                 self._register_view(app, resource, *urls, endpoint=endpoint, **kwargs)
 
     def teardown(self, exception):
-        print(f"Tearing down devices: {self.devices}")
+        pass
 
     def _create_base_routes(self):
         # Add thing description to root
-        self.app.add_url_rule(self._complete_url("/", ""), "td", self.td)
+        self.app.add_url_rule(self._complete_url("/td", ""), "td", self.td)
         # Add plugin overview
         self.add_resource(PluginListResource, "/plugins")
         self.register_property(PluginListResource)
@@ -64,6 +77,7 @@ class LabThing(object):
         self.devices[device_name] = device_object
 
     ### Plugin stuff
+
     def register_plugin(self, plugin_object):
         if isinstance(plugin_object, BasePlugin):
             self.plugins[plugin_object.name] = plugin_object
@@ -196,8 +210,25 @@ class LabThing(object):
         endpoint = resource.endpoint
         return url_for(endpoint, **values)
 
+    def owns_endpoint(self, endpoint):
+        """Tests if an endpoint name (not path) belongs to this Api.  Takes
+        in to account the Blueprint name part of the endpoint name.
+        :param endpoint: The name of the endpoint being checked
+        :return: bool
+        """
+
+        if self.blueprint:
+            if endpoint.startswith(self.blueprint.name):
+                endpoint = endpoint.split(self.blueprint.name + '.', 1)[-1]
+            else:
+                return False
+        return endpoint in self.endpoints
+
     ### Description
     def td(self):
+        """
+        W3C-style Thing Description
+        """
         props = {}
         for key, prop in self.properties.items():
             props[key] = {}
@@ -221,3 +252,5 @@ class LabThing(object):
         }
 
         return jsonify(td)
+
+    # TODO: Add a nicer root resource like the old self-documenting system

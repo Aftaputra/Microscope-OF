@@ -1,4 +1,4 @@
-from openflexure_microscope.common.labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.resource import Resource
 import subprocess
 import os
 from sys import platform

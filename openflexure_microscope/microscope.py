@@ -12,7 +12,7 @@ from openflexure_microscope.camera.base import BaseCamera
 from openflexure_microscope.camera.mock import MockStreamer
 
 from openflexure_microscope.utilities import serialise_array_b64
-from openflexure_microscope.common.lock import CompositeLock
+from openflexure_microscope.common.labthings_core.lock import CompositeLock
 from openflexure_microscope.config import user_settings
 
 

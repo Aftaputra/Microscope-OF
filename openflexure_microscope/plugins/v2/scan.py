@@ -6,8 +6,8 @@ from typing import Tuple
 from functools import reduce
 
 from openflexure_microscope.camera.base import generate_basename
-from openflexure_microscope.common.labthings.find import find_device, find_plugin
-from openflexure_microscope.common.labthings.plugins import BasePlugin
+from openflexure_microscope.common.flask_labthings.find import find_device, find_plugin
+from openflexure_microscope.common.flask_labthings.plugins import BasePlugin
 
 from openflexure_microscope.devel import (
     JsonResponse,

@@ -3,29 +3,24 @@
 import time
 import atexit
 import logging
-import sys
 import os
 
-from flask import Flask, jsonify, send_file, url_for
+from flask import Flask, jsonify, send_file
 
-from serial import SerialException
 from datetime import datetime
 
 from flask_cors import CORS
 
-from openflexure_microscope.api.exceptions import JSONExceptionHandler
-from openflexure_microscope.api.utilities import list_routes
+from openflexure_microscope.api.utilities import list_routes, init_default_plugins
 
 from openflexure_microscope.config import (
     settings_file_path,
     JSONEncoder,
     USER_PLUGINS_PATH,
 )
-from openflexure_microscope.api import v2
 
-from openflexure_microscope.common.labthings.labthing import LabThing
-from openflexure_microscope.common.labthings.find import registered_plugins
-from openflexure_microscope.common.labthings.plugins import find_plugins
+from openflexure_microscope.common.flask_labthings.labthing import LabThing
+from openflexure_microscope.common.flask_labthings.plugins import find_plugins
 
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
 
@@ -36,14 +31,13 @@ is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
 
 DEFAULT_LOGFILE = settings_file_path("openflexure_microscope.log")
 
+logger = logging.getLogger()
 if (__name__ == "__main__") or (not is_gunicorn):
     # If imported, but not by gunicorn
     print("Letting sys handle logs")
-    logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 else:
     # Direct standard Python logging to file and console
-    root = logging.getLogger()
     error_formatter = logging.Formatter(
         "[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s"
     )
@@ -56,9 +50,9 @@ else:
 
     for handler in error_handlers:
         handler.setFormatter(error_formatter)
-        root.addHandler(handler)
+        logger.addHandler(handler)
 
-    root.setLevel(logging.getLogger("gunicorn.error").level)
+    logger.setLevel(logging.getLogger("gunicorn.error").level)
 
 
 # Create flask app
@@ -71,9 +65,6 @@ app.json_encoder = JSONEncoder
 # Enable CORS everywhere
 CORS(app, resources=r"*")
 
-# Make errors more API friendly
-handler = JSONExceptionHandler(app)
-
 # Build a labthing
 labthing = LabThing(app, prefix="/api/v2")
 labthing.description = "Test LabThing-based API for OpenFlexure Microscope"
@@ -83,6 +74,8 @@ labthing.title = f"OpenFlexure Microscope {api_microscope.name}"
 labthing.register_device(api_microscope, "openflexure_microscope")
 
 # Attach plugins
+if not os.path.isfile(USER_PLUGINS_PATH):
+    init_default_plugins(USER_PLUGINS_PATH)
 for plugin in find_plugins(USER_PLUGINS_PATH):
     labthing.register_plugin(plugin)
 
@@ -120,7 +113,7 @@ labthing.register_property(views.SnapshotStream)
 for name, action in views.enabled_root_actions().items():
     view_class = action["view_class"]
     rule = action["rule"]
-    labthing.add_resource(view_class, "/actions{rule}")
+    labthing.add_resource(view_class, f"/actions{rule}")
     labthing.register_action(view_class)
 
 
@@ -159,7 +152,6 @@ def err_log():
 
 # Automatically clean up microscope at exit
 def cleanup():
-    global api_microscope
     logging.debug("App teardown started...")
     logging.debug("Settling...")
     time.sleep(0.5)

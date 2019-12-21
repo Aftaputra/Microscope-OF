@@ -28,12 +28,8 @@ except Exception as e:
 
 # Initialise stage
 logging.debug("Creating stage object...")
-try:
-    api_stage = SangaStage()
-except Exception as e:
-    logging.error(e)
-    logging.warning("No valid stage hardware found. Falling back to mock stage!")
-    api_stage = MockStage()
+
+api_stage = MockStage()
 
 # Attach devices to microscope
 logging.debug("Attaching devices to microscope...")

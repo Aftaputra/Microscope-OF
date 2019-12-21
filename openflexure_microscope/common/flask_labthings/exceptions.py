@@ -24,7 +24,7 @@ class JSONExceptionHandler(object):
 
         status_code = error.code if isinstance(error, HTTPException) else 500
 
-        response = {"status_code": status_code, "message": escape(message)}
+        response = {"code": status_code, "message": escape(message)}
         return jsonify(response), status_code
 
     def init_app(self, app):

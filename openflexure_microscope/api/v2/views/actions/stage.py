@@ -1,6 +1,6 @@
 from openflexure_microscope.api.utilities import JsonResponse
-from openflexure_microscope.common.labthings.resource import Resource
-from openflexure_microscope.common.labthings.find import find_device
+from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.find import find_device
 from openflexure_microscope.utilities import axes_to_array, filter_dict
 
 from flask import Blueprint, jsonify, request

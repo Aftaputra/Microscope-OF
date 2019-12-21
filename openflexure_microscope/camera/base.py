@@ -10,7 +10,7 @@ from abc import ABCMeta, abstractmethod
 
 from .capture import CaptureObject
 from openflexure_microscope.utilities import entry_by_id
-from openflexure_microscope.common.lock import StrictLock
+from openflexure_microscope.common.labthings_core.lock import StrictLock
 
 
 BASE_CAPTURE_PATH = os.path.join(os.path.expanduser("~"), "micrographs")

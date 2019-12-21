@@ -2,6 +2,7 @@ from marshmallow.fields import *
 from marshmallow import missing
 import re
 from flask import url_for
+from flask.views import View
 
 _tpl_pattern = re.compile(r"\s*<\s*(\S*)\s*>\s*")
 
@@ -62,7 +63,16 @@ class URLFor(Field):
     _CHECK_ATTRIBUTE = False
 
     def __init__(self, endpoint, **kwargs):
-        self.endpoint = endpoint
+        # Handle the case where endpoint is an attached flask View of any kind
+        if isinstance(endpoint, type) and issubclass(endpoint, View):
+            self.view_class = endpoint
+            self.endpoint = None
+        # Handle cases where endpoint is passed directly as a string
+        elif type(endpoint) == str:
+            self.view_class = None
+            self.endpoint = endpoint
+        else:
+            raise RuntimeError(f"Endpoint {endpoint} is not a valid Flask view or endpoint string.")
         self.params = kwargs
         Field.__init__(self, **kwargs)
 
@@ -70,6 +80,14 @@ class URLFor(Field):
         """Output the URL for the endpoint, given the kwargs passed to
         ``__init__``.
         """
+        # Get endpoint from view_class, if needed
+        if self.view_class and not self.endpoint:
+            if hasattr(self.view_class, "endpoint"):
+                self.endpoint = self.view_class.endpoint
+            else:
+                raise RuntimeError(f"Resource {self.endpoint} has not been added to a LabThing application. Unable to generate URL.")
+
+        # Generate URL for
         param_values = {}
         for name, attr_tpl in self.params.items():
             attr_name = _tpl(str(attr_tpl))

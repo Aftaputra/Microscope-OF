@@ -1,5 +1,5 @@
-from openflexure_microscope.common.labthings.find import find_device
-from openflexure_microscope.common.labthings.plugins import BasePlugin
+from openflexure_microscope.common.flask_labthings.find import find_device
+from openflexure_microscope.common.flask_labthings.plugins import BasePlugin
 from openflexure_microscope.microscope import Microscope
 
 from openflexure_microscope.devel import JsonResponse, request, jsonify, taskify, abort

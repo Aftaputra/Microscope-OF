@@ -3,47 +3,12 @@ from flask import abort, request, redirect, url_for, send_file, jsonify
 
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
 
-from openflexure_microscope.common.labthings.schema import Schema
-from openflexure_microscope.common.labthings import fields
-from openflexure_microscope.common.labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.schema import Schema
+from openflexure_microscope.common.flask_labthings import fields
+from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.utilities import description_from_view
 
-from openflexure_microscope.common.labthings.find import find_device
-
-
-class CaptureSchema(Schema):
-    id = fields.String()
-    file = fields.String(data_key="path")
-    exists = fields.Bool(data_key="available")
-    filename = fields.String()
-    metadata = fields.Dict()
-
-    # TODO: Add HTTP methods
-    links = fields.Hyperlinks(
-        {
-            "self": {
-                "href": fields.AbsoluteUrlFor("CaptureResource", id="<id>"),
-                "mimetype": "application/json",
-            },
-            "tags": {
-                "href": fields.AbsoluteUrlFor("CaptureTags", id="<id>"),
-                "mimetype": "application/json",
-            },
-            "metadata": {
-                "href": fields.AbsoluteUrlFor("CaptureMetadata", id="<id>"),
-                "mimetype": "application/json",
-            },
-            "download": {
-                "href": fields.AbsoluteUrlFor(
-                    "CaptureDownload", id="<id>", filename="<filename>"
-                ),
-                "mimetype": "image/jpeg",
-            },
-        }
-    )
-
-
-capture_schema = CaptureSchema()
-capture_list_schema = CaptureSchema(many=True)
+from openflexure_microscope.common.flask_labthings.find import find_device
 
 
 class CaptureList(Resource):
@@ -180,6 +145,46 @@ class CaptureMetadata(Resource):
         capture_obj.put_metadata(data_dict)
 
         return jsonify(capture_obj.metadata)
+
+
+class CaptureSchema(Schema):
+    id = fields.String()
+    file = fields.String(data_key="path")
+    exists = fields.Bool(data_key="available")
+    filename = fields.String()
+    metadata = fields.Dict()
+
+    # TODO: Add HTTP methods
+    links = fields.Hyperlinks(
+        {
+            "self": {
+                "href": fields.AbsoluteUrlFor(CaptureResource, id="<id>"),
+                "mimetype": "application/json",
+                **description_from_view(CaptureResource)
+            },
+            "tags": {
+                "href": fields.AbsoluteUrlFor(CaptureTags, id="<id>"),
+                "mimetype": "application/json",
+                **description_from_view(CaptureTags)
+            },
+            "metadata": {
+                "href": fields.AbsoluteUrlFor(CaptureMetadata, id="<id>"),
+                "mimetype": "application/json",
+                **description_from_view(CaptureMetadata)
+            },
+            "download": {
+                "href": fields.AbsoluteUrlFor(
+                    CaptureDownload, id="<id>", filename="<filename>"
+                ),
+                "mimetype": "image/jpeg",
+                **description_from_view(CaptureDownload)
+            },
+        }
+    )
+
+
+capture_schema = CaptureSchema()
+capture_list_schema = CaptureSchema(many=True)
 
 
 def add_captures_to_labthing(labthing, prefix=""):

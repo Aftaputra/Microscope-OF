@@ -1,4 +1,6 @@
 import logging
+import os
+import errno
 from werkzeug.exceptions import BadRequest
 from flask import url_for, Blueprint
 
@@ -95,3 +97,31 @@ def list_routes(app):
         output[url] = line
 
     return output
+
+
+def create_file(config_path):
+    if not os.path.exists(os.path.dirname(config_path)):
+        try:
+            os.makedirs(os.path.dirname(config_path))
+        except OSError as exc:  # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
+
+
+def init_default_plugins(plugin_path):
+    global _DEFAULT_PLUGIN_INIT
+    os.makedirs(os.path.dirname(plugin_path), exist_ok=True)
+
+    if not os.path.exists(plugin_path):  # If user plugins file doesn't exist
+        logging.warning("No plugin file found at {}. Creating...".format(plugin_path))
+        create_file(plugin_path)
+
+        logging.info("Populating {}...".format(plugin_path))
+        with open(plugin_path, "w") as outfile:
+            outfile.write(_DEFAULT_PLUGIN_INIT)
+
+
+_DEFAULT_PLUGIN_INIT = """from openflexure_microscope.plugins.v2.autofocus import autofocus_plugin_v2
+from openflexure_microscope.plugins.v2.scan import scan_plugin_v2
+
+__plugins__ = [autofocus_plugin_v2, scan_plugin_v2]"""

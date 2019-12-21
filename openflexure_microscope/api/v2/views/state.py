@@ -1,8 +1,8 @@
 from openflexure_microscope.api.utilities import JsonResponse
 from openflexure_microscope.utilities import get_by_path, set_by_path, create_from_path
 
-from openflexure_microscope.common.labthings.find import find_device
-from openflexure_microscope.common.labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.find import find_device
+from openflexure_microscope.common.flask_labthings.resource import Resource
 
 from flask import jsonify, request, abort
 import logging
