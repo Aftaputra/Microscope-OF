@@ -209,25 +209,3 @@ class CaptureMetadata(Resource):
         capture_obj.put_metadata(data_dict)
 
         return jsonify(capture_obj.metadata)
-
-
-def add_captures_to_labthing(labthing, prefix=""):
-    """
-    Add all capture resources to a labthing
-    """
-    labthing.add_resource(CaptureList, f"{prefix}/captures", endpoint="CaptureList")
-    labthing.register_property(CaptureList)
-    labthing.add_resource(
-        CaptureResource, f"{prefix}/captures/<id>", endpoint="CaptureResource"
-    )
-    labthing.add_resource(
-        CaptureDownload,
-        f"{prefix}/captures/<id>/download/<filename>",
-        endpoint="CaptureDownload",
-    )
-    labthing.add_resource(
-        CaptureTags, f"{prefix}/captures/<id>/tags", endpoint="CaptureTags"
-    )
-    labthing.add_resource(
-        CaptureMetadata, f"{prefix}/captures/<id>/metadata", endpoint="CaptureMetadata"
-    )

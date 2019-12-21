@@ -46,17 +46,3 @@ class SnapshotStream(Resource):
         microscope.camera.start_worker()
 
         return Response(microscope.camera.get_frame(), mimetype="image/jpeg")
-
-
-def add_streams_to_labthing(labthing, prefix=""):
-    """
-    Add all stream resources to a labthing
-    """
-    labthing.add_resource(
-        MjpegStream, f"{prefix}/streams/mjpeg", endpoint="MjpegStream"
-    )
-    labthing.register_property(MjpegStream)
-    labthing.add_resource(
-        SnapshotStream, f"{prefix}/streams/snapshot", endpoint="SnapshotStream"
-    )
-    labthing.register_property(SnapshotStream)
