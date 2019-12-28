@@ -144,7 +144,8 @@ def sharpness_edge(image):
 
 def measure_sharpness(microscope, metric_fn=sharpness_sum_lap2):
     """Measure the sharpness of the camera's current view."""
-    return metric_fn(microscope.camera.array(use_video_port=True))
+    if hasattr(microscope.camera, "array"):
+        return metric_fn(microscope.camera.array(use_video_port=True))
 
 
 def autofocus(microscope, dz, settle=0.5, metric_fn=sharpness_sum_lap2):
