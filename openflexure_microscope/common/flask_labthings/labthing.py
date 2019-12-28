@@ -218,17 +218,6 @@ class LabThing(object):
         return url_for(endpoint, **values)
 
     def owns_endpoint(self, endpoint):
-        """Tests if an endpoint name (not path) belongs to this Api.  Takes
-        in to account the Blueprint name part of the endpoint name.
-        :param endpoint: The name of the endpoint being checked
-        :return: bool
-        """
-
-        if self.blueprint:
-            if endpoint.startswith(self.blueprint.name):
-                endpoint = endpoint.split(self.blueprint.name + ".", 1)[-1]
-            else:
-                return False
         return endpoint in self.endpoints
 
     ### Description
