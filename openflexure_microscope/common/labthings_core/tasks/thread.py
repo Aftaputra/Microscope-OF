@@ -26,7 +26,7 @@ class TaskThread(threading.Thread):
         )
 
         # A UUID for the TaskThread (not the same as the threading.Thread ident)
-        self._ID = uuid.uuid4().hex  # Task ID
+        self._ID = uuid.uuid4()  # Task ID
 
         # Make _target, _args, and _kwargs available to the subclass
         self._target = target

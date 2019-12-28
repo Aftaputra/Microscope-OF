@@ -33,7 +33,7 @@ class Microscope:
 
     def __init__(self):
         # Initial attributes
-        self.id = uuid.uuid4().hex
+        self.id = uuid.uuid4()
         self.name = self.id
         self.fov = [0, 0]
         self.camera = None

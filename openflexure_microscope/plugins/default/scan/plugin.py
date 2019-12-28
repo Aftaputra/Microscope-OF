@@ -134,7 +134,7 @@ class ScanPlugin(MicroscopePlugin):
             basename = generate_basename()
 
         # Generate a stack ID
-        scan_id = uuid.uuid4().hex
+        scan_id = uuid.uuid4()
 
         # Store initial position
         initial_position = self.microscope.stage.position
@@ -288,7 +288,7 @@ class ScanPlugin(MicroscopePlugin):
 
         # Generate a stack ID
         if not scan_id:
-            scan_id = uuid.uuid4().hex
+            scan_id = uuid.uuid4()
 
         # Add scan metadata
         if not "time" in metadata:

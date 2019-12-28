@@ -123,7 +123,7 @@ class ZipBuilderPlugin(MicroscopePlugin):
                 # Update task progress
                 update_task_progress(int((index / n_files) * 100))
 
-        session_id = uuid.uuid4().hex
+        session_id = uuid.uuid4()
         # self.session_zips[session_id] = fp
         self.session_zips[session_id] = {
             "id": session_id,
