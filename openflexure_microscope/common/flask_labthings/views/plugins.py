@@ -37,7 +37,7 @@ def plugins_representation(plugin_dict):
 
         for view_id, view_data in plugin.views.items():
             uri = (
-                url_for(f"PluginListResource", _external=True)
+                url_for(f"pluginlistresource", _external=True)
                 + "/"
                 + view_data["rule"][1:]
             )
