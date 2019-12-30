@@ -5,6 +5,7 @@ import copy
 from importlib import util
 import sys
 
+from openflexure_microscope.common.labthings_core.utilities import get_docstring
 from openflexure_microscope.utilities import camel_to_snake, snake_to_spine
 
 
@@ -22,10 +23,13 @@ class BasePlugin:
         self._rules = {}  # Key: Original rule. Val: View class
         self._gui = None
 
+        self._cls = str(self)  # String description of plugin instance
+
         self.actions = []
         self.properties = []
 
         self.name = name
+        self.description = get_docstring(self)
 
         self.methods = {}
 

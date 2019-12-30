@@ -5,53 +5,47 @@ Top-level representation of attached and enabled plugins
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
 from ..utilities import description_from_view
 
-from openflexure_microscope.common.flask_labthings.find import registered_plugins
 from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.find import registered_plugins
+from openflexure_microscope.common.flask_labthings.schema import Schema
+from openflexure_microscope.common.flask_labthings.decorators import marshal_with
+from openflexure_microscope.common.flask_labthings import fields
+from marshmallow import pre_dump
 
 from flask import jsonify, url_for
 
 import logging
 
 
-def plugins_representation(plugin_dict):
-    """
-    Generate a dictionary representation of all plugins, including Flask route URLs
+class PluginSchema(Schema):
+    name = fields.String(data_key="title")
+    _name_python_safe = fields.String(data_key="pythonName")
+    _cls = fields.String(data_key="pythonObject")
+    gui = fields.Dict()
+    description = fields.String()
 
-    Args:
-        plugin_dict (dict): Dictionary of plugin objects
+    links = fields.Dict()
 
-    Returns:
-        dict: Dictionary representation of all plugins
-    """
-    plugins = {}
-
-    for plugin_name, plugin in plugin_dict.items():
-        logging.debug(f"Representing plugin {plugin._name}")
-        d = {
-            "python_name": plugin._name_python_safe,
-            "plugin": str(plugin),
-            "links": {},
-            "gui": plugin.gui,
-            "description": get_docstring(plugin),
-        }
-
-        for view_id, view_data in plugin.views.items():
-            uri = (
-                url_for(f"pluginlistresource", _external=True)
-                + "/"
-                + view_data["rule"][1:]
-            )
+    # TODO: Automate this somewhat
+    @pre_dump
+    def generate_links(self, data, **kwargs):
+        d = {}
+        for view_id, view_data in data.views.items():
+            view_cls = view_data["view"]
+            view_kwargs = view_data["kwargs"]
             # Make links dictionary if it doesn't yet exist
-            view_d = {"href": uri, **description_from_view(view_data["view"])}
+            d[view_id] = {
+                "href": url_for(view_cls.endpoint, **view_kwargs, _external=True),
+                **description_from_view(view_cls),
+            }
 
-            d["links"][view_id] = view_d
+        data.links = d
 
-        plugins[plugin_name] = d
-
-    return plugins
+        return data
 
 
 class PluginListResource(Resource):
+    @marshal_with(PluginSchema(many=True))
     def get(self):
         """
         Return the current plugin forms
@@ -65,4 +59,4 @@ class PluginListResource(Resource):
         A complete list of enabled plugins can be found in the microscope state.
 
         """
-        return jsonify(plugins_representation(registered_plugins()))
+        return registered_plugins().values()
