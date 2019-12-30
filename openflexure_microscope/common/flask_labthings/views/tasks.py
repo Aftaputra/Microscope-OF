@@ -1,6 +1,7 @@
 from flask import abort, url_for
 
 from openflexure_microscope.common.flask_labthings.schema import Schema
+from openflexure_microscope.common.flask_labthings.decorators import marshal_with
 from openflexure_microscope.common.flask_labthings import fields
 from openflexure_microscope.common.labthings_core import tasks
 from openflexure_microscope.common.flask_labthings.resource import Resource
@@ -9,32 +10,6 @@ from openflexure_microscope.common.flask_labthings.utilities import (
 )
 
 from marshmallow import pre_dump
-
-
-class TaskList(Resource):
-    def get(self):
-        return task_list_schema.jsonify(tasks.tasks())
-
-
-class TaskResource(Resource):
-    def get(self, id):
-        try:
-            task = tasks.dict()[id]
-        except KeyError:
-            return abort(404)  # 404 Not Found
-
-        # Return task state
-        return task_schema.jsonify(task)
-
-    def delete(self, id):
-        try:
-            task = tasks.dict()[id]
-        except KeyError:
-            return abort(404)  # 404 Not Found
-
-        task.terminate()
-
-        return task_schema.jsonify(task)
 
 
 class TaskSchema(Schema):
@@ -60,5 +35,29 @@ class TaskSchema(Schema):
         return data
 
 
-task_schema = TaskSchema()
-task_list_schema = TaskSchema(many=True)
+class TaskList(Resource):
+    @marshal_with(TaskSchema(many=True))
+    def get(self):
+        return tasks.tasks()
+
+
+class TaskResource(Resource):
+    @marshal_with(TaskSchema())
+    def get(self, id):
+        try:
+            task = tasks.dict()[id]
+        except KeyError:
+            return abort(404)  # 404 Not Found
+
+        return task
+
+    @marshal_with(TaskSchema())
+    def delete(self, id):
+        try:
+            task = tasks.dict()[id]
+        except KeyError:
+            return abort(404)  # 404 Not Found
+
+        task.terminate()
+
+        return task
