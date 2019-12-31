@@ -1,7 +1,7 @@
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
 from openflexure_microscope.common.flask_labthings.resource import Resource
 from openflexure_microscope.common.flask_labthings.find import find_device
-from openflexure_microscope.common.flask_labthings.decorators import use_args
+from openflexure_microscope.common.flask_labthings.decorators import use_args, marshal_with
 from openflexure_microscope.common.flask_labthings import fields
 from openflexure_microscope.utilities import filter_dict
 
@@ -27,6 +27,7 @@ class CaptureAPI(Resource):
             "resize": fields.Dict(missing=None),  # TODO: Validate keys
         }
     )
+    @marshal_with(capture_schema)
     def post(self, args):
         microscope = find_device("openflexure_microscope")
 
@@ -62,7 +63,7 @@ class CaptureAPI(Resource):
             # Insert custom tags
             output.put_tags(args.get("tags"))
 
-        return capture_schema.jsonify(output)
+        return output
 
 
 class GPUPreviewStartAPI(Resource):
