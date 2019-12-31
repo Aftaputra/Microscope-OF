@@ -1,6 +1,8 @@
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
 from openflexure_microscope.common.flask_labthings.resource import Resource
 from openflexure_microscope.common.flask_labthings.find import find_device
+from openflexure_microscope.common.flask_labthings.decorators import use_args
+from openflexure_microscope.common.flask_labthings import fields
 from openflexure_microscope.utilities import filter_dict
 
 from openflexure_microscope.api.v2.views.captures import capture_schema
@@ -14,18 +16,21 @@ class CaptureAPI(Resource):
     Create a new image capture. 
     """
 
-    def post(self):
+    @use_args(
+        {
+            "filename": fields.String(),
+            "temporary": fields.Boolean(missing=False),
+            "use_video_port": fields.Boolean(missing=False),
+            "bayer": fields.Boolean(missing=False),
+            "metadata": fields.Dict(missing={}),
+            "tags": fields.List(fields.String, missing=[]),
+            "resize": fields.Dict(missing=None),  # TODO: Validate keys
+        }
+    )
+    def post(self, args):
         microscope = find_device("openflexure_microscope")
-        payload = JsonResponse(request)
 
-        filename = payload.param("filename")
-        temporary = payload.param("temporary", default=False, convert=bool)
-        use_video_port = payload.param("use_video_port", default=False, convert=bool)
-        bayer = payload.param("bayer", default=True, convert=bool)
-        metadata = payload.param("metadata", default={}, convert=dict)
-        tags = payload.param("tags", default=[], convert=list)
-
-        resize = payload.param("size", default=None)
+        resize = args.get("resize", None)
         if resize:
             if ("width" in resize) and ("height" in resize):
                 resize = (
@@ -37,20 +42,25 @@ class CaptureAPI(Resource):
 
         # Explicitally acquire lock (prevents empty files being created if lock is unavailable)
         with microscope.camera.lock:
-            output = microscope.camera.new_image(temporary=temporary, filename=filename)
+            output = microscope.camera.new_image(
+                temporary=args.get("temporary"), filename=args.get("filename")
+            )
 
             microscope.camera.capture(
-                output.file, use_video_port=use_video_port, resize=resize, bayer=bayer
+                output.file,
+                use_video_port=args.get("use_video_port"),
+                resize=resize,
+                bayer=args.get("bayer"),
             )
 
             # Inject system metadata
             output.put_metadata(microscope.metadata, system=True)
 
             # Insert custom metadata
-            output.put_metadata(metadata)
+            output.put_metadata(args.get("metadata"))
 
             # Insert custom tags
-            output.put_tags(tags)
+            output.put_tags(args.get("tags"))
 
         return capture_schema.jsonify(output)
 
