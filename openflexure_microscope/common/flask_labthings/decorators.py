@@ -1,5 +1,5 @@
-from webargs.flaskparser import use_args, use_kwargs
-from functools import wraps
+from webargs import flaskparser
+from functools import wraps, update_wrapper
 from flask import make_response
 
 
@@ -43,3 +43,30 @@ class marshal_with(object):
                 return make_response(self.schema.jsonify(resp))
 
         return wrapper
+
+
+class use_args(object):
+    def __init__(self, argmap, **kwargs):
+        """
+        Equivalent to webargs.flask_parser.use_args
+        """
+        self.argmap = argmap
+        self.wrapper = flaskparser.use_args(argmap, **kwargs)
+
+    def __call__(self, f):
+        update_wrapper(self.wrapper, f)
+        return self.wrapper(f)
+
+
+class use_kwargs(object):
+    def __init__(self, argmap, **kwargs):
+        """
+        Equivalent to webargs.flask_parser.use_kwargs
+        """
+        kwargs["as_kwargs"] = True
+        self.argmap = argmap
+        self.wrapper = flaskparser.use_args(argmap, **kwargs)
+
+    def __call__(self, f):
+        update_wrapper(self.wrapper, f)
+        return self.wrapper(f)
