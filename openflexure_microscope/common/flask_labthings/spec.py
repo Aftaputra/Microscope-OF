@@ -4,6 +4,8 @@ from .utilities import rupdate
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 
+from openflexure_microscope.common.labthings_core.utilities import get_docstring
+
 from .fields import Field
 from marshmallow import Schema as BaseSchema
 
@@ -13,6 +15,8 @@ def view2path(rule: str, view: Resource, spec: APISpec):
     params = {
         "path": rule,  # TODO: Validate this slightly (leading / etc)
         "operations": view2operations(view, spec),
+        "description": get_docstring(view),
+        "summary": get_docstring(view).partition("\n")[0].strip()
     }
 
     if hasattr(view, "__apispec__"):
