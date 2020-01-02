@@ -2,6 +2,7 @@ from webargs import flaskparser
 from functools import wraps, update_wrapper
 from flask import make_response
 
+from .utilities import rupdate
 
 def unpack(value):
     """Return a three tuple of data, code, and headers"""
@@ -83,4 +84,25 @@ class doc(object):
         # Pass params to call function attribute for external access
         f.__apispec__ = f.__dict__.get('__apispec__', {})
         f.__apispec__.update(self.kwargs)
+        return f
+
+
+class response(object):
+    def __init__(self, code, description, **kwargs):
+        self.code = code
+        self.description = description
+        self.kwargs = kwargs
+
+    def __call__(self, f):
+        # Pass params to call function attribute for external access
+        f.__apispec__ = f.__dict__.get('__apispec__', {})
+        d = {
+            "responses": {
+                self.code: {
+                    "description": self.description,
+                    **self.kwargs
+                }
+            }
+        }
+        rupdate(f.__apispec__, d)
         return f
