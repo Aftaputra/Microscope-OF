@@ -11,6 +11,11 @@ from marshmallow import Schema as BaseSchema
 
 from collections import Mapping
 
+def update_spec(obj, spec):
+        obj.__apispec__ = obj.__dict__.get('__apispec__', {})
+        rupdate(obj.__apispec__, spec)
+        return obj.__apispec__
+
 def view2path(rule: str, view: Resource, spec: APISpec):
     params = {
         "path": rule,  # TODO: Validate this slightly (leading / etc)

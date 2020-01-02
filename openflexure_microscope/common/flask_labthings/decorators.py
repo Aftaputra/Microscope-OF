@@ -3,6 +3,7 @@ from functools import wraps, update_wrapper
 from flask import make_response
 
 from .utilities import rupdate
+from .spec import update_spec
 
 def unpack(value):
     """Return a three tuple of data, code, and headers"""
@@ -34,8 +35,7 @@ class marshal_with(object):
 
     def __call__(self, f):
         # Pass params to call function attribute for external access
-        f.__apispec__ = f.__dict__.get('__apispec__', {})
-        f.__apispec__["_schema"] = self.schema
+        update_spec(f, {"_schema": self.schema})
         # Wrapper function
         @wraps(f)
         def wrapper(*args, **kwargs):
@@ -60,8 +60,7 @@ class use_args(object):
 
     def __call__(self, f):
         # Pass params to call function attribute for external access
-        f.__apispec__ = f.__dict__.get('__apispec__', {})
-        f.__apispec__["_params"] = self.schema
+        update_spec(f, {"_params": self.schema})
         # Wrapper function
         update_wrapper(self.wrapper, f)
         return self.wrapper(f)
@@ -82,8 +81,7 @@ class doc(object):
 
     def __call__(self, f):
         # Pass params to call function attribute for external access
-        f.__apispec__ = f.__dict__.get('__apispec__', {})
-        f.__apispec__.update(self.kwargs)
+        update_spec(f, self.kwargs)
         return f
 
 
