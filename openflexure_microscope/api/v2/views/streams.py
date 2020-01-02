@@ -15,7 +15,7 @@ class MjpegStream(Resource):
 
     def get(self):
         """
-        Real-time MJPEG stream from the microscope camera
+        MJPEG stream from the microscope camera
         """
         microscope = find_device("openflexure_microscope")
         # Restart stream worker thread

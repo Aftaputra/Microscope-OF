@@ -4,7 +4,7 @@ from .utilities import rupdate
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 
-from openflexure_microscope.common.labthings_core.utilities import get_docstring
+from openflexure_microscope.common.labthings_core.utilities import get_docstring, get_summary
 
 from .fields import Field
 from marshmallow import Schema as BaseSchema
@@ -16,7 +16,7 @@ def view2path(rule: str, view: Resource, spec: APISpec):
         "path": rule,  # TODO: Validate this slightly (leading / etc)
         "operations": view2operations(view, spec),
         "description": get_docstring(view),
-        "summary": get_docstring(view).partition("\n")[0].strip()
+        "summary": get_summary(view)
     }
 
     if hasattr(view, "__apispec__"):
@@ -29,20 +29,28 @@ def view2operations(view: Resource, spec: APISpec, populate_default: bool = True
     ops = {}
     for method in Resource.methods:
         if hasattr(view, method):
-            
+            # Populate with default responses
             if populate_default:
                 ops[method] = {
                     "responses": {
                         200: {
-                            "description": "success"
+                            "description": get_summary(getattr(view, method)) or "Success"
+                        },
+                        404: {
+                            "description": "Resource not found"
                         }
-                    }
+                    },
                 }
             else:
                 ops[method] = {}
+            
+            rupdate(ops[method], {
+                "description": get_docstring(getattr(view, method)),
+                "summary": get_summary(getattr(view, method))
+            })
         
             if hasattr(getattr(view, method), "__apispec__"):
-                ops[method] = doc2operation(getattr(view, method).__apispec__, spec)
+                rupdate(ops[method], doc2operation(getattr(view, method).__apispec__, spec))
     
     return ops
 
@@ -50,25 +58,29 @@ def view2operations(view: Resource, spec: APISpec, populate_default: bool = True
 def doc2operation(apispec: dict, spec: APISpec):
     op = {}
     if "_params" in apispec:
-        op["requestBody"] = {
-            "content": {
-                "application/json": {
-                    "schema": convert_schema(apispec.get("_params"), spec)
-                }
-            },
-        }
-
-    if "_schema" in apispec:
-        op["responses"] = {
-            200: {
-                "description": "success",
+        rupdate(op, {
+            "requestBody": {
                 "content": {
                     "application/json": {
-                        "schema": convert_schema(apispec.get("_schema"), spec)
+                        "schema": convert_schema(apispec.get("_params"), spec)
                     }
-                },
+                }
             }
-        }
+        })
+
+    if "_schema" in apispec:
+        rupdate(op, 
+        {
+            "responses": {
+                200: {
+                    "content": {
+                        "application/json": {
+                            "schema": convert_schema(apispec.get("_schema"), spec)
+                        }
+                    },
+                }
+            }
+        })
 
     for key, val in apispec.items():
         if not key in ["_params", "_schema"]:

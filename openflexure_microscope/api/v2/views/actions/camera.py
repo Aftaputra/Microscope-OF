@@ -30,6 +30,9 @@ class CaptureAPI(Resource):
     @marshal_with(capture_schema)
     @doc_response(200, "Capture successful")
     def post(self, args):
+        """
+        Create a new capture
+        """
         microscope = find_device("openflexure_microscope")
 
         resize = args.get("resize", None)

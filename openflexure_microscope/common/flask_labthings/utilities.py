@@ -22,6 +22,8 @@ def description_from_view(view_class):
 def rupdate(d, u):
     for k, v in u.items():
         if isinstance(v, collections.abc.Mapping):
+            if not k in d:
+                d[k] = {}
             d[k] = rupdate(d.get(k, {}), v)
         else:
             d[k] = v
