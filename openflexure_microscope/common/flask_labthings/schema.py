@@ -2,7 +2,7 @@
 import flask
 import marshmallow
 
-_MARSHMALLOW_VERSION_INFO = tuple(
+MARSHMALLOW_VERSION_INFO = tuple(
     [int(part) for part in marshmallow.__version__.split(".") if part.isdigit()]
 )
 
@@ -32,7 +32,7 @@ class Schema(marshmallow.Schema):
         """
         if many is sentinel:
             many = self.many
-        if _MARSHMALLOW_VERSION_INFO[0] >= 3:
+        if MARSHMALLOW_VERSION_INFO[0] >= 3:
             data = self.dump(obj, many=many)
         else:
             data = self.dump(obj, many=many).data

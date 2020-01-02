@@ -1,14 +1,19 @@
 from flask import url_for, jsonify
+from apispec import APISpec
+from apispec.ext.marshmallow import MarshmallowPlugin
 
 from .plugins import BasePlugin
 from .views.plugins import PluginListResource
 from .views.tasks import TaskList, TaskResource
+
+from .spec import view2path
 
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
 from .exceptions import JSONExceptionHandler
 
 from . import EXTENSION_NAME
 
+import logging
 
 class LabThing(object):
     def __init__(
@@ -17,6 +22,7 @@ class LabThing(object):
         prefix: str = "",
         title: str = "",
         description: str = "",
+        version: str = "0.0.0",
         handle_errors: bool = True,
     ):
         self.app = app
@@ -32,16 +38,52 @@ class LabThing(object):
         self.endpoints = set()
 
         self.url_prefix = prefix
-        self.description = description
-        self.title = title
+        self._description = description
+        self._title = title
+        self._version = version
 
         if handle_errors:
             self.error_handler = JSONExceptionHandler()
         else:
             self.error_handler = None
 
+        self.spec = APISpec(
+            title=self.title,
+            version=self.version,
+            openapi_version="3.0.2",
+            plugins=[MarshmallowPlugin()],
+        )
+
         if app is not None:
             self.init_app(app)
+
+    @property
+    def description(self, ):
+        return self._description
+    
+    @description.setter
+    def description(self, description: str):
+        self._description = description
+        self.spec.description = description
+    
+    @property
+    def title(self, ):
+        return self._title
+    
+    @title.setter
+    def title(self, title: str):
+        self._title = title
+        self.spec.title = title
+    
+    @property
+    def version(self, ):
+        return str(self._version)
+    
+    @version.setter
+    def version(self, version: str):
+        self._version = version
+        self.spec.version = version
+    
 
     ### Flask stuff
 
@@ -56,13 +98,13 @@ class LabThing(object):
         if self.error_handler:
             self.error_handler.init_app(self.app)
 
-        # Create base routes
-        self._create_base_routes()
-
         # Add resources, if registered before tying to a Flask app
         if len(self.resources) > 0:
             for resource, urls, endpoint, kwargs in self.resources:
                 self._register_view(app, resource, *urls, endpoint=endpoint, **kwargs)
+
+        # Create base routes
+        self._create_base_routes()
 
     def teardown(self, exception):
         pass
@@ -158,10 +200,13 @@ class LabThing(object):
             api.add_resource(FooSpecial, '/special/foo', endpoint="foo")
         """
         endpoint = endpoint or resource.__name__.lower()
+
+        logging.debug(f"{endpoint}: {type(resource)}")
+
         if self.app is not None:
             self._register_view(self.app, resource, *urls, endpoint=endpoint, **kwargs)
-        else:
-            self.resources.append((resource, urls, endpoint, kwargs))
+        
+        self.resources.append((resource, urls, endpoint, kwargs))
 
     def resource(self, *urls, **kwargs):
         """Wraps a :class:`~flask_restful.Resource` class, adding it to the
@@ -208,6 +253,10 @@ class LabThing(object):
             rule = self._complete_url(url, "")
             # Add the url to the application or blueprint
             app.add_url_rule(rule, view_func=resource_func, **kwargs)
+            # Add the resource to our API spec
+            self.spec.path(
+                **view2path(rule, resource, self.spec)
+            )
 
     ### Utilities
 

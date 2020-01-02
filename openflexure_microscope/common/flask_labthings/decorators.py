@@ -32,6 +32,10 @@ class marshal_with(object):
         self.schema = schema
 
     def __call__(self, f):
+        # Pass params to call function attribute for external access
+        f.__apispec__ = f.__dict__.get('__apispec__', {})
+        f.__apispec__["_schema"] = self.schema
+        # Wrapper function
         @wraps(f)
         def wrapper(*args, **kwargs):
             resp = f(*args, **kwargs)
@@ -46,27 +50,37 @@ class marshal_with(object):
 
 
 class use_args(object):
-    def __init__(self, argmap, **kwargs):
+    def __init__(self, schema, **kwargs):
         """
         Equivalent to webargs.flask_parser.use_args
         """
-        self.argmap = argmap
-        self.wrapper = flaskparser.use_args(argmap, **kwargs)
+        self.schema = schema
+        self.wrapper = flaskparser.use_args(schema, **kwargs)
 
     def __call__(self, f):
+        # Pass params to call function attribute for external access
+        f.__apispec__ = f.__dict__.get('__apispec__', {})
+        f.__apispec__["_params"] = self.schema
+        # Wrapper function
         update_wrapper(self.wrapper, f)
         return self.wrapper(f)
 
 
-class use_kwargs(object):
-    def __init__(self, argmap, **kwargs):
+class use_kwargs(use_args):
+    def __init__(self, schema, **kwargs):
         """
         Equivalent to webargs.flask_parser.use_kwargs
         """
         kwargs["as_kwargs"] = True
-        self.argmap = argmap
-        self.wrapper = flaskparser.use_args(argmap, **kwargs)
+        use_args.__init__(self, schema, **kwargs)
+
+
+class doc(object):
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
 
     def __call__(self, f):
-        update_wrapper(self.wrapper, f)
-        return self.wrapper(f)
+        # Pass params to call function attribute for external access
+        f.__apispec__ = f.__dict__.get('__apispec__', {})
+        f.__apispec__.update(self.kwargs)
+        return f
