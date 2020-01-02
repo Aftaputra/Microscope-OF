@@ -87,7 +87,7 @@ class doc(object):
         return f
 
 
-class response(object):
+class doc_response(object):
     def __init__(self, code, description, **kwargs):
         self.code = code
         self.description = description

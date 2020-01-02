@@ -28,7 +28,7 @@ class CaptureAPI(Resource):
         }
     )
     @marshal_with(capture_schema)
-    @response(200, "Capture successful")
+    @doc_response(200, "Capture successful")
     def post(self, args):
         microscope = find_device("openflexure_microscope")
 
