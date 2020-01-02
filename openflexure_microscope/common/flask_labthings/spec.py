@@ -21,11 +21,22 @@ def view2path(rule: str, view: Resource, spec: APISpec):
 
     return params
 
-def view2operations(view: Resource, spec: APISpec):
+def view2operations(view: Resource, spec: APISpec, populate_default: bool = True):
     ops = {}
     for method in Resource.methods:
         if hasattr(view, method):
-            ops[method] = {}
+            
+            if populate_default:
+                ops[method] = {
+                    "responses": {
+                        200: {
+                            "description": "success"
+                        }
+                    }
+                }
+            else:
+                ops[method] = {}
+        
             if hasattr(getattr(view, method), "__apispec__"):
                 ops[method] = doc2operation(getattr(view, method).__apispec__, spec)
     
