@@ -18,7 +18,7 @@ from marshmallow import pre_dump
 
 class CaptureSchema(Schema):
     id = fields.String()
-    file = fields.String(data_key="path")
+    file = fields.String(data_key="path", description="Path of file on microscope device")
     exists = fields.Bool(data_key="available")
     filename = fields.String()
     metadata = fields.Dict()
