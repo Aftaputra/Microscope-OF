@@ -36,6 +36,9 @@ class TaskSchema(Schema):
 
 
 class TaskList(Resource):
+    """
+    List and basic documentation for all session tasks
+    """
     @marshal_with(TaskSchema(many=True))
     def get(self):
         return tasks.tasks()

@@ -8,6 +8,8 @@ from .views.tasks import TaskList, TaskResource
 
 from .spec import view2path
 
+from .utilities import description_from_view
+
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
 from .exceptions import JSONExceptionHandler
 
@@ -110,8 +112,13 @@ class LabThing(object):
         pass
 
     def _create_base_routes(self):
-        # Add thing description to root
+        # Add root representation
+        self.app.add_url_rule(self._complete_url("/", ""), "rootrep", self.rootrep)
+        # Add thing description
         self.app.add_url_rule(self._complete_url("/td", ""), "td", self.td)
+        # Add swagger spec
+        self.app.add_url_rule(self._complete_url("/swagger", ""), "swagger", self.swagger)
+
         # Add plugin overview
         self.add_resource(PluginListResource, "/plugins")
         self.register_property(PluginListResource)
@@ -299,4 +306,42 @@ class LabThing(object):
 
         return jsonify(td)
 
-    # TODO: Add a nicer root resource like the old self-documenting system
+    def rootrep(self):
+        """
+        Root representation
+        """
+        # TODO: Allow custom root representations
+
+        rr = {
+            "id": url_for("rootrep", _external=True),
+            "title": self.title,
+            "description": self.description,
+            "links": {
+                "thingDescription": {
+                    "href": url_for("td", _external=True),
+                    "description": get_docstring(self.td),
+                    "methods": ["GET"],
+                },
+                "swagger": {
+                    "href": url_for("swagger", _external=True),
+                    "description": get_docstring(self.swagger),
+                    "methods": ["GET"],
+                },
+                "plugins": {
+                    "href": self.url_for(PluginListResource, _external=True),
+                    **description_from_view(PluginListResource),
+                },
+                "tasks": {
+                    "href": self.url_for(TaskList, _external=True),
+                    **description_from_view(TaskList),
+                }
+            }
+        }
+
+        return jsonify(rr)
+
+    def swagger(self):
+        """
+        OpenAPI v3 documentation
+        """
+        return jsonify(self.spec.to_dict())
