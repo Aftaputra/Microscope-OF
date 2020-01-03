@@ -169,7 +169,7 @@ atexit.register(cleanup)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port="5000", threaded=True, debug=True, use_reloader=False)
-    #from pprint import pprint
-    #pprint(labthing.spec.to_dict())
-    #with open('spec.yaml', 'w') as f:
+    # from pprint import pprint
+    # pprint(labthing.spec.to_dict())
+    # with open('spec.yaml', 'w') as f:
     #    f.write(labthing.spec.to_yaml())

@@ -48,6 +48,7 @@ class PluginListResource(Resource):
     """
     List and basic documentation for all enabled plugins
     """
+
     @marshal_with(PluginSchema(many=True))
     def get(self):
         """

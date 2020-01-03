@@ -5,6 +5,7 @@ from flask import make_response
 from .utilities import rupdate
 from .spec import update_spec
 
+
 def unpack(value):
     """Return a three tuple of data, code, and headers"""
     if not isinstance(value, tuple):
@@ -93,14 +94,7 @@ class doc_response(object):
 
     def __call__(self, f):
         # Pass params to call function attribute for external access
-        f.__apispec__ = f.__dict__.get('__apispec__', {})
-        d = {
-            "responses": {
-                self.code: {
-                    "description": self.description,
-                    **self.kwargs
-                }
-            }
-        }
+        f.__apispec__ = f.__dict__.get("__apispec__", {})
+        d = {"responses": {self.code: {"description": self.description, **self.kwargs}}}
         rupdate(f.__apispec__, d)
         return f

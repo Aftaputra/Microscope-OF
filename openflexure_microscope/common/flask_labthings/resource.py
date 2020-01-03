@@ -4,6 +4,7 @@ from flask.views import MethodView
 class Resource(MethodView):
     """Currently identical to MethodView
     """
+
     endpoint = None
     methods = ["get", "post", "put", "delete"]
 
@@ -14,7 +15,6 @@ class Resource(MethodView):
         docs = {"operations": {}}
         if hasattr(self, "__apispec__"):
             docs.update(self.__apispec__)
-
 
         for meth in Resource.methods:
             if hasattr(self, meth) and hasattr(getattr(self, meth), "__apispec__"):

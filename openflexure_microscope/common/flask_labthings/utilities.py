@@ -1,4 +1,7 @@
-from openflexure_microscope.common.labthings_core.utilities import get_docstring, get_summary
+from openflexure_microscope.common.labthings_core.utilities import (
+    get_docstring,
+    get_summary,
+)
 from .schema import Schema, marshmallow, MARSHMALLOW_VERSION_INFO
 import collections.abc
 

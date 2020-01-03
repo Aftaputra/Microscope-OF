@@ -1,7 +1,12 @@
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
 from openflexure_microscope.common.flask_labthings.resource import Resource
 from openflexure_microscope.common.flask_labthings.find import find_device
-from openflexure_microscope.common.flask_labthings.decorators import use_args, marshal_with, doc, doc_response
+from openflexure_microscope.common.flask_labthings.decorators import (
+    use_args,
+    marshal_with,
+    doc,
+    doc_response,
+)
 from openflexure_microscope.common.flask_labthings import fields
 from openflexure_microscope.utilities import filter_dict
 
@@ -9,6 +14,7 @@ from openflexure_microscope.api.v2.views.captures import capture_schema
 
 import logging
 from flask import jsonify, request, abort, url_for, redirect, send_file
+
 
 @doc(tags=["actions"])
 class CaptureAPI(Resource):

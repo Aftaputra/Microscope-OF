@@ -17,6 +17,7 @@ from . import EXTENSION_NAME
 
 import logging
 
+
 class LabThing(object):
     def __init__(
         self,
@@ -60,32 +61,31 @@ class LabThing(object):
             self.init_app(app)
 
     @property
-    def description(self, ):
+    def description(self,):
         return self._description
-    
+
     @description.setter
     def description(self, description: str):
         self._description = description
         self.spec.description = description
-    
+
     @property
-    def title(self, ):
+    def title(self,):
         return self._title
-    
+
     @title.setter
     def title(self, title: str):
         self._title = title
         self.spec.title = title
-    
+
     @property
-    def version(self, ):
+    def version(self,):
         return str(self._version)
-    
+
     @version.setter
     def version(self, version: str):
         self._version = version
         self.spec.version = version
-    
 
     ### Flask stuff
 
@@ -117,7 +117,9 @@ class LabThing(object):
         # Add thing description
         self.app.add_url_rule(self._complete_url("/td", ""), "td", self.td)
         # Add swagger spec
-        self.app.add_url_rule(self._complete_url("/swagger", ""), "swagger", self.swagger)
+        self.app.add_url_rule(
+            self._complete_url("/swagger", ""), "swagger", self.swagger
+        )
 
         # Add plugin overview
         self.add_resource(PluginListResource, "/plugins")
@@ -212,7 +214,7 @@ class LabThing(object):
 
         if self.app is not None:
             self._register_view(self.app, resource, *urls, endpoint=endpoint, **kwargs)
-        
+
         self.resources.append((resource, urls, endpoint, kwargs))
 
     def resource(self, *urls, **kwargs):
@@ -261,9 +263,7 @@ class LabThing(object):
             # Add the url to the application or blueprint
             app.add_url_rule(rule, view_func=resource_func, **kwargs)
             # Add the resource to our API spec
-            self.spec.path(
-                **view2path(rule, resource, self.spec)
-            )
+            self.spec.path(**view2path(rule, resource, self.spec))
 
     ### Utilities
 
@@ -334,8 +334,8 @@ class LabThing(object):
                 "tasks": {
                     "href": self.url_for(TaskList, _external=True),
                     **description_from_view(TaskList),
-                }
-            }
+                },
+            },
         }
 
         return jsonify(rr)
