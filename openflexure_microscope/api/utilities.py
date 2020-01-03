@@ -124,6 +124,7 @@ def init_default_plugins(plugin_path):
 _DEFAULT_PLUGIN_INIT = """
 from openflexure_microscope.api.default_plugins.autofocus import autofocus_plugin_v2
 from openflexure_microscope.api.default_plugins.scan import scan_plugin_v2
+from openflexure_microscope.api.default_plugins.zip_builder import zip_plugin_v2
 
-__plugins__ = [autofocus_plugin_v2, scan_plugin_v2]
+__plugins__ = [autofocus_plugin_v2, scan_plugin_v2, zip_plugin_v2]
 """
