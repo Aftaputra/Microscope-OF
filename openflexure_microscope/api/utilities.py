@@ -124,6 +124,7 @@ def init_default_extensions(extension_path):
 _DEFAULT_extension_INIT = """
 from openflexure_microscope.api.default_extensions.autofocus import autofocus_extension_v2
 from openflexure_microscope.api.default_extensions.scan import scan_extension_v2
+from openflexure_microscope.api.default_extensions.zip_builder import zip_extension_v2
 
-__extensions__ = [autofocus_extension_v2, scan_extension_v2]
+__extensions__ = [autofocus_extension_v2, scan_extension_v2, zip_extension_v2]
 """

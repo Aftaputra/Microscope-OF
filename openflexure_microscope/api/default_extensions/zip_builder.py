@@ -16,7 +16,7 @@ import logging
 
 from openflexure_microscope.common.flask_labthings.find import find_device
 from openflexure_microscope.common.flask_labthings.resource import Resource
-from openflexure_microscope.common.flask_labthings.plugins import BasePlugin
+from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
 
 
 class ZipManager:
@@ -138,11 +138,11 @@ class ZipGetterAPIView(Resource):
         return jsonify({"return": session_id})
 
 
-zip_plugin_v2 = BasePlugin("zip_builder")
+zip_extension_v2 = BaseExtension("zip_builder")
 
-zip_plugin_v2.add_view(ZipGetterAPIView, "/get/<string:session_id>")
-zip_plugin_v2.add_view(ZipListAPIView, "/get")
+zip_extension_v2.add_view(ZipGetterAPIView, "/get/<string:session_id>")
+zip_extension_v2.add_view(ZipListAPIView, "/get")
 
-zip_plugin_v2.add_view(ZipBuilderAPIView, "/build")
-zip_plugin_v2.register_action(ZipBuilderAPIView)
+zip_extension_v2.add_view(ZipBuilderAPIView, "/build")
+zip_extension_v2.register_action(ZipBuilderAPIView)
 
