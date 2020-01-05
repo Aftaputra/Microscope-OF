@@ -33,9 +33,10 @@ class ExtensionSchema(Schema):
         for view_id, view_data in data.views.items():
             view_cls = view_data["view"]
             view_kwargs = view_data["kwargs"]
+            view_rule = view_data["rule"]
             # Make links dictionary if it doesn't yet exist
             d[view_id] = {
-                "href": url_for(view_cls.endpoint, **view_kwargs, _external=True),
+                "href": url_for(ExtensionListResource.endpoint, **view_kwargs, _external=True) + view_rule,
                 **description_from_view(view_cls),
             }
 
