@@ -11,16 +11,16 @@ from datetime import datetime
 
 from flask_cors import CORS
 
-from openflexure_microscope.api.utilities import list_routes, init_default_plugins
+from openflexure_microscope.api.utilities import list_routes, init_default_extensions
 
 from openflexure_microscope.config import (
     settings_file_path,
     JSONEncoder,
-    USER_PLUGINS_PATH,
+    USER_EXTENSIONS_PATH,
 )
 
 from openflexure_microscope.common.flask_labthings.labthing import LabThing
-from openflexure_microscope.common.flask_labthings.plugins import find_plugins
+from openflexure_microscope.common.flask_labthings.extensions import find_extensions
 
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
 
@@ -73,11 +73,11 @@ labthing.title = f"OpenFlexure Microscope {api_microscope.name}"
 # Attach lab devices
 labthing.register_device(api_microscope, "openflexure_microscope")
 
-# Attach plugins
-if not os.path.isfile(USER_PLUGINS_PATH):
-    init_default_plugins(USER_PLUGINS_PATH)
-for plugin in find_plugins(USER_PLUGINS_PATH):
-    labthing.register_plugin(plugin)
+# Attach extensions
+if not os.path.isfile(USER_EXTENSIONS_PATH):
+    init_default_extensions(USER_EXTENSIONS_PATH)
+for extension in find_extensions(USER_EXTENSIONS_PATH):
+    labthing.register_extension(extension)
 
 # Attach captures resources
 labthing.add_resource(views.CaptureList, f"/captures")

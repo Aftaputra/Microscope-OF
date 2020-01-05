@@ -1,5 +1,5 @@
 from openflexure_microscope.common.flask_labthings.find import find_device
-from openflexure_microscope.common.flask_labthings.plugins import BasePlugin
+from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
 from openflexure_microscope.common.flask_labthings.resource import Resource
 
 from openflexure_microscope.devel import JsonResponse, request, jsonify, taskify, abort
@@ -139,7 +139,7 @@ def sharpness_edge(image):
     )
 
 
-### Autofocus plugin
+### Autofocus extension
 
 
 def measure_sharpness(microscope, metric_fn=sharpness_sum_lap2):
@@ -353,15 +353,15 @@ class FastAutofocusAPI(Resource):
             abort(503, "No stage connected. Unable to autofocus.")
 
 
-autofocus_plugin_v2 = BasePlugin("autofocus")
+autofocus_extension_v2 = BaseExtension("autofocus")
 
-autofocus_plugin_v2.add_method(fast_autofocus, "fast_autofocus")
-autofocus_plugin_v2.add_method(autofocus, "autofocus")
+autofocus_extension_v2.add_method(fast_autofocus, "fast_autofocus")
+autofocus_extension_v2.add_method(autofocus, "autofocus")
 
-autofocus_plugin_v2.add_view(MeasureSharpnessAPI, "/measure_sharpness")
+autofocus_extension_v2.add_view(MeasureSharpnessAPI, "/measure_sharpness")
 
-autofocus_plugin_v2.add_view(AutofocusAPI, "/autofocus")
-autofocus_plugin_v2.register_action(AutofocusAPI)
+autofocus_extension_v2.add_view(AutofocusAPI, "/autofocus")
+autofocus_extension_v2.register_action(AutofocusAPI)
 
-autofocus_plugin_v2.add_view(FastAutofocusAPI, "/fast_autofocus")
-autofocus_plugin_v2.register_action(FastAutofocusAPI)
+autofocus_extension_v2.add_view(FastAutofocusAPI, "/fast_autofocus")
+autofocus_extension_v2.register_action(FastAutofocusAPI)

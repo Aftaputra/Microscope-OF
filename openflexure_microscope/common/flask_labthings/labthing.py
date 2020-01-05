@@ -2,8 +2,8 @@ from flask import url_for, jsonify
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 
-from .plugins import BasePlugin
-from .views.plugins import PluginListResource
+from .extensions import BaseExtension
+from .views.extensions import ExtensionListResource
 from .views.tasks import TaskList, TaskResource
 
 from .spec import view2path
@@ -32,7 +32,7 @@ class LabThing(object):
 
         self.devices = {}
 
-        self.plugins = {}
+        self.extensions = {}
 
         self.resources = []
         self.properties = {}
@@ -121,9 +121,9 @@ class LabThing(object):
             self._complete_url("/swagger", ""), "swagger", self.swagger
         )
 
-        # Add plugin overview
-        self.add_resource(PluginListResource, "/plugins")
-        self.register_property(PluginListResource)
+        # Add extension overview
+        self.add_resource(ExtensionListResource, "/extensions")
+        self.register_property(ExtensionListResource)
         # Add task routes
         self.add_resource(TaskList, "/tasks")
         self.register_property(TaskList)
@@ -134,26 +134,26 @@ class LabThing(object):
     def register_device(self, device_object, device_name: str):
         self.devices[device_name] = device_object
 
-    ### Plugin stuff
+    ### Extension stuff
 
-    def register_plugin(self, plugin_object):
-        if isinstance(plugin_object, BasePlugin):
-            self.plugins[plugin_object.name] = plugin_object
+    def register_extension(self, extension_object):
+        if isinstance(extension_object, BaseExtension):
+            self.extensions[extension_object.name] = extension_object
         else:
-            raise TypeError("Plugin object must be an instance of BasePlugin")
+            raise TypeError("Extension object must be an instance of BaseExtension")
 
-        for plugin_view_id, plugin_view in plugin_object.views.items():
-            # Add route to the plugins blueprint
+        for extension_view_id, extension_view in extension_object.views.items():
+            # Add route to the extensions blueprint
             self.add_resource(
-                plugin_view["view"],
-                "/plugins" + plugin_view["rule"],
-                **plugin_view["kwargs"],
+                extension_view["view"],
+                "/extensions" + extension_view["rule"],
+                **extension_view["kwargs"],
             )
 
-        for prop in plugin_object.properties:
+        for prop in extension_object.properties:
             self.register_property(prop)
 
-        for action in plugin_object.actions:
+        for action in extension_object.actions:
             self.register_action(action)
 
     ### Resource stuff
@@ -327,9 +327,9 @@ class LabThing(object):
                     "description": get_docstring(self.swagger),
                     "methods": ["GET"],
                 },
-                "plugins": {
-                    "href": self.url_for(PluginListResource, _external=True),
-                    **description_from_view(PluginListResource),
+                "extensions": {
+                    "href": self.url_for(ExtensionListResource, _external=True),
+                    **description_from_view(ExtensionListResource),
                 },
                 "tasks": {
                     "href": self.url_for(TaskList, _external=True),

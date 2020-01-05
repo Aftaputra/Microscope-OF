@@ -9,9 +9,9 @@ from openflexure_microscope.common.labthings_core.utilities import get_docstring
 from openflexure_microscope.utilities import camel_to_snake, snake_to_spine
 
 
-class BasePlugin:
+class BaseExtension:
     """
-    Parent class for all plugins.
+    Parent class for all extensions.
 
     Handles binding route views and forms.
     """
@@ -23,7 +23,7 @@ class BasePlugin:
         self._rules = {}  # Key: Original rule. Val: View class
         self._gui = None
 
-        self._cls = str(self)  # String description of plugin instance
+        self._cls = str(self)  # String description of extension instance
 
         self.actions = []
         self.properties = []
@@ -43,7 +43,7 @@ class BasePlugin:
         while cleaned_rule[0] == "/":
             cleaned_rule = cleaned_rule[1:]
 
-        # Expand the rule to include plugin name
+        # Expand the rule to include extension name
         full_rule = "/{}/{}".format(self._name_uri_safe, cleaned_rule)
 
         view_id = cleaned_rule.replace("/", "_").replace("<", "").replace(">", "")
@@ -119,20 +119,20 @@ class BasePlugin:
             setattr(self, method_name, method)
         else:
             logging.warning(
-                "Unable to bind method to plugin. Method name already exists."
+                "Unable to bind method to extension. Method name already exists."
             )
 
 
-def find_plugins(plugin_path, module_name="plugins"):
-    logging.debug(f"Loading plugins from {plugin_path}")
+def find_extensions(extension_path, module_name="extensions"):
+    logging.debug(f"Loading extensions from {extension_path}")
 
-    spec = util.spec_from_file_location(module_name, plugin_path)
+    spec = util.spec_from_file_location(module_name, extension_path)
     mod = util.module_from_spec(spec)
     sys.modules[spec.name] = mod
 
     spec.loader.exec_module(mod)
 
-    if hasattr(mod, "__plugins__"):
-        return mod.__plugins__
+    if hasattr(mod, "__extensions__"):
+        return mod.__extensions__
     else:
         return None

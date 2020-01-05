@@ -1,12 +1,12 @@
 """
-Top-level representation of attached and enabled plugins
+Top-level representation of attached and enabled Extensions
 """
 
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
 from ..utilities import description_from_view
 
 from openflexure_microscope.common.flask_labthings.resource import Resource
-from openflexure_microscope.common.flask_labthings.find import registered_plugins
+from openflexure_microscope.common.flask_labthings.find import registered_extensions
 from openflexure_microscope.common.flask_labthings.schema import Schema
 from openflexure_microscope.common.flask_labthings.decorators import marshal_with
 from openflexure_microscope.common.flask_labthings import fields
@@ -17,7 +17,7 @@ from flask import jsonify, url_for
 import logging
 
 
-class PluginSchema(Schema):
+class ExtensionSchema(Schema):
     name = fields.String(data_key="title")
     _name_python_safe = fields.String(data_key="pythonName")
     _cls = fields.String(data_key="pythonObject")
@@ -44,23 +44,23 @@ class PluginSchema(Schema):
         return data
 
 
-class PluginListResource(Resource):
+class ExtensionListResource(Resource):
     """
-    List and basic documentation for all enabled plugins
+    List and basic documentation for all enabled Extensions
     """
 
-    @marshal_with(PluginSchema(many=True))
+    @marshal_with(ExtensionSchema(many=True))
     def get(self):
         """
-        Return the current plugin forms
+        Return the current Extension forms
 
-        .. :quickref: Plugin; Get forms
+        .. :quickref: Extension; Get forms
 
-        Returns an array of present plugin forms (describing plugin user interfaces.)
-        Please note, this is *not* a list of all enabled plugins, only those with associated
+        Returns an array of present Extension forms (describing Extension user interfaces.)
+        Please note, this is *not* a list of all enabled Extensions, only those with associated
         user interface forms.
 
-        A complete list of enabled plugins can be found in the microscope state.
+        A complete list of enabled Extensions can be found in the microscope state.
 
         """
-        return registered_plugins().values()
+        return registered_extensions().values()

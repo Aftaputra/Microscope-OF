@@ -108,22 +108,22 @@ def create_file(config_path):
                 raise
 
 
-def init_default_plugins(plugin_path):
-    global _DEFAULT_PLUGIN_INIT
-    os.makedirs(os.path.dirname(plugin_path), exist_ok=True)
+def init_default_extensions(extension_path):
+    global _DEFAULT_extension_INIT
+    os.makedirs(os.path.dirname(extension_path), exist_ok=True)
 
-    if not os.path.exists(plugin_path):  # If user plugins file doesn't exist
-        logging.warning("No plugin file found at {}. Creating...".format(plugin_path))
-        create_file(plugin_path)
+    if not os.path.exists(extension_path):  # If user extensions file doesn't exist
+        logging.warning("No extension file found at {}. Creating...".format(extension_path))
+        create_file(extension_path)
 
-        logging.info("Populating {}...".format(plugin_path))
-        with open(plugin_path, "w") as outfile:
-            outfile.write(_DEFAULT_PLUGIN_INIT)
+        logging.info("Populating {}...".format(extension_path))
+        with open(extension_path, "w") as outfile:
+            outfile.write(_DEFAULT_extension_INIT)
 
 
-_DEFAULT_PLUGIN_INIT = """
-from openflexure_microscope.api.default_plugins.autofocus import autofocus_plugin_v2
-from openflexure_microscope.api.default_plugins.scan import scan_plugin_v2
+_DEFAULT_extension_INIT = """
+from openflexure_microscope.api.default_extensions.autofocus import autofocus_extension_v2
+from openflexure_microscope.api.default_extensions.scan import scan_extension_v2
 
-__plugins__ = [autofocus_plugin_v2, scan_plugin_v2]
+__extensions__ = [autofocus_extension_v2, scan_extension_v2]
 """

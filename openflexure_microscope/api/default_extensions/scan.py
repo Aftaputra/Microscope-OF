@@ -6,8 +6,8 @@ from typing import Tuple
 from functools import reduce
 
 from openflexure_microscope.camera.base import generate_basename
-from openflexure_microscope.common.flask_labthings.find import find_device, find_plugin
-from openflexure_microscope.common.flask_labthings.plugins import BasePlugin
+from openflexure_microscope.common.flask_labthings.find import find_device, find_extension
+from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
 
 from openflexure_microscope.devel import (
     JsonResponse,
@@ -169,10 +169,10 @@ def tile(
     )
 
     # Check if autofocus is enabled
-    autofocus_plugin = find_plugin("autofocus")
+    autofocus_extension = find_extension("autofocus")
     if (
         autofocus_dz
-        and autofocus_plugin
+        and autofocus_extension
         and microscope.has_real_stage()
         and microscope.has_real_camera()
     ):
@@ -211,7 +211,7 @@ def tile(
             # Refocus
             if autofocus_enabled:
                 if fast_autofocus:
-                    autofocus_plugin.fast_autofocus(
+                    autofocus_extension.fast_autofocus(
                         dz=autofocus_dz,
                         target_z=-z_stack_dz / 2.0,  # Finish below the focus
                         initial_move_up=False,  # We're already at the top of the scan
@@ -219,7 +219,7 @@ def tile(
                     # TODO: save the focus data for future reference? Use it for diagnostics?
                 else:
                     logging.debug("Running autofocus")
-                    autofocus_plugin.autofocus(
+                    autofocus_extension.autofocus(
                         range(-3 * autofocus_dz, 4 * autofocus_dz, autofocus_dz)
                     )
                     logging.debug("Finished autofocus")
@@ -398,7 +398,7 @@ class TileScanAPI(Resource):
         return jsonify(task.state), 201
 
 
-scan_plugin_v2 = BasePlugin("scan")
+scan_extension_v2 = BaseExtension("scan")
 
-scan_plugin_v2.add_view(TileScanAPI, "/tile")
-scan_plugin_v2.register_action(TileScanAPI)
+scan_extension_v2.add_view(TileScanAPI, "/tile")
+scan_extension_v2.register_action(TileScanAPI)

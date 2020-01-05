@@ -15,10 +15,10 @@ def current_labthing():
     return app.extensions[EXTENSION_NAME]
 
 
-def registered_plugins(labthing_instance=None):
+def registered_extensions(labthing_instance=None):
     if not labthing_instance:
         labthing_instance = current_labthing()
-    return labthing_instance.plugins
+    return labthing_instance.extensions
 
 
 def registered_devices(labthing_instance=None):
@@ -37,14 +37,14 @@ def find_device(device_name, labthing_instance=None):
         return None
 
 
-def find_plugin(plugin_name, labthing_instance=None):
+def find_extension(extension_name, labthing_instance=None):
     if not labthing_instance:
         labthing_instance = current_labthing()
 
     logging.debug("Current labthing:")
     logging.debug(current_labthing())
 
-    if plugin_name in labthing_instance.plugins:
-        return labthing_instance.plugins[plugin_name]
+    if extension_name in labthing_instance.extensions:
+        return labthing_instance.extensions[extension_name]
     else:
         return None
