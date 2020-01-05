@@ -4,6 +4,8 @@ import copy
 
 from importlib import util
 import sys
+import os
+import glob
 
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
 from openflexure_microscope.utilities import camel_to_snake, snake_to_spine
@@ -123,7 +125,16 @@ class BaseExtension:
             )
 
 
-def find_extensions(extension_path, module_name="extensions"):
+def find_instances_in_module(module, class_to_find):
+    objs = []
+    for attribute in dir(module):
+        if not attribute.startswith("__"):
+            if isinstance(getattr(module, attribute), class_to_find):
+                objs.append(getattr(module, attribute))
+    return objs
+
+
+def find_extensions_in_file(extension_path, module_name="extensions"):
     logging.debug(f"Loading extensions from {extension_path}")
 
     spec = util.spec_from_file_location(module_name, extension_path)
@@ -133,6 +144,18 @@ def find_extensions(extension_path, module_name="extensions"):
     spec.loader.exec_module(mod)
 
     if hasattr(mod, "__extensions__"):
-        return mod.__extensions__
+        return [getattr(mod, ext_name) for ext_name in mod.__extensions__]
     else:
-        return None
+        return find_instances_in_module(mod, BaseExtension)
+
+
+def find_extensions(extension_dir, module_name="extensions"):
+    logging.debug(f"Loading extensions from {extension_dir}")
+
+    extensions = []
+    extension_paths = glob.glob(os.path.join(extension_dir, "*.py"))
+
+    for extension_path in extension_paths:
+        extensions.extend(find_extensions_in_file(extension_path, module_name=module_name))
+
+    return extensions

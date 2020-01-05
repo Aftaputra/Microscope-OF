@@ -109,7 +109,7 @@ def create_file(config_path):
 
 
 def init_default_extensions(extension_path):
-    global _DEFAULT_extension_INIT
+    global _DEFAULT_EXTENSION_INIT
     os.makedirs(os.path.dirname(extension_path), exist_ok=True)
 
     if not os.path.exists(extension_path):  # If user extensions file doesn't exist
@@ -118,13 +118,7 @@ def init_default_extensions(extension_path):
 
         logging.info("Populating {}...".format(extension_path))
         with open(extension_path, "w") as outfile:
-            outfile.write(_DEFAULT_extension_INIT)
+            outfile.write(_DEFAULT_EXTENSION_INIT)
 
 
-_DEFAULT_extension_INIT = """
-from openflexure_microscope.api.default_extensions.autofocus import autofocus_extension_v2
-from openflexure_microscope.api.default_extensions.scan import scan_extension_v2
-from openflexure_microscope.api.default_extensions.zip_builder import zip_extension_v2
-
-__extensions__ = [autofocus_extension_v2, scan_extension_v2, zip_extension_v2]
-"""
+_DEFAULT_EXTENSION_INIT = "from openflexure_microscope.api.default_extensions import *"

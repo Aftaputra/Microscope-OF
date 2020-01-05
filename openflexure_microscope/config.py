@@ -182,7 +182,7 @@ DEFAULT_CONFIG_FILE_PATH = os.path.join(HERE, "microscope_settings.default.json"
 
 USER_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".openflexure")
 USER_CONFIG_FILE_PATH = os.path.join(USER_CONFIG_DIR, "microscope_settings.json")
-USER_EXTENSIONS_PATH = os.path.join(USER_CONFIG_DIR, "microscope_extensions", "__init__.py")
+USER_EXTENSIONS_PATH = os.path.join(USER_CONFIG_DIR, "microscope_extensions")
 
 # Load the default config
 with open(DEFAULT_CONFIG_FILE_PATH, "r") as default_rc:
