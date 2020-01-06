@@ -25,7 +25,7 @@ class TaskMaster:
         Returns:
             dict: Dictionary of TaskThread objects. Key is TaskThread ID.
         """
-        return {t.id: t for t in self._tasks}
+        return {str(t.id): t for t in self._tasks}
 
     @property
     def states(self):
@@ -33,7 +33,7 @@ class TaskMaster:
         Returns:
             dict: Dictionary of TaskThread.state dictionaries. Key is TaskThread ID.
         """
-        return {t.id: t.state for t in self._tasks}
+        return {str(t.id): t.state for t in self._tasks}
 
     def new(self, f, *args, **kwargs):
         # copy_current_request_context allows threads to access flask current_app
