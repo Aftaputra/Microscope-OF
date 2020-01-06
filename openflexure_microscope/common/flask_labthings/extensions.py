@@ -13,10 +13,6 @@ from openflexure_microscope.common.labthings_core.utilities import (
     snake_to_spine,
 )
 
-
-# TODO: Move into core?
-
-
 class BaseExtension:
     """
     Parent class for all extensions.
