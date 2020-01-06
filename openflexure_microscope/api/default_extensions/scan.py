@@ -1,4 +1,3 @@
-import numpy as np
 import itertools
 import logging
 import uuid
@@ -19,13 +18,9 @@ from openflexure_microscope.common.flask_labthings.decorators import (
 from openflexure_microscope.common.flask_labthings import fields
 
 from openflexure_microscope.devel import (
-    JsonResponse,
-    request,
-    jsonify,
     taskify,
     abort,
     update_task_progress,
-    update_task_data,
 )
 
 from openflexure_microscope.common.flask_labthings.resource import Resource
@@ -368,7 +363,6 @@ class TileScanAPI(Resource):
     )
     @marshal_with(TaskSchema())
     def post(self, args):
-        payload = JsonResponse(request)
         microscope = find_device("openflexure_microscope")
 
         if not microscope:
