@@ -12,7 +12,11 @@ from openflexure_microscope.common.flask_labthings.find import (
 )
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
 from openflexure_microscope.common.flask_labthings.views.tasks import TaskSchema
-from openflexure_microscope.common.flask_labthings.decorators import marshal_with
+from openflexure_microscope.common.flask_labthings.decorators import (
+    marshal_with,
+    use_args,
+)
+from openflexure_microscope.common.flask_labthings import fields
 
 from openflexure_microscope.devel import (
     JsonResponse,
@@ -346,30 +350,31 @@ def stack(
 
 
 class TileScanAPI(Resource):
+    @use_args(
+        {
+            "filename": fields.String(),
+            "temporary": fields.Boolean(missing=False),
+            "step_size": fields.List(fields.Integer, missing=[2000, 1500, 100]),
+            "grid": fields.List(fields.Integer, missing=[3, 3, 5]),
+            "style": fields.String(missing="raster"),
+            "autofocus_dz": fields.Integer(missing=50),
+            "fast_autofocus": fields.Boolean(missing=False),
+            "use_video_port": fields.Boolean(missing=False),
+            "bayer": fields.Boolean(missing=False),
+            "metadata": fields.Dict(missing={}),
+            "tags": fields.List(fields.String, missing=[]),
+            "resize": fields.Dict(missing=None),  # TODO: Validate keys
+        }
+    )
     @marshal_with(TaskSchema())
-    def post(self):
+    def post(self, args):
         payload = JsonResponse(request)
         microscope = find_device("openflexure_microscope")
 
         if not microscope:
             abort(503, "No microscope connected. Unable to autofocus.")
 
-        # Get params
-        filename = payload.param("filename")
-        temporary = payload.param("temporary", default=False, convert=bool)
-
-        step_size = payload.param("step_size", default=[2000, 1500, 100], convert=list)
-        step_size = [int(i) for i in step_size]
-
-        grid = payload.param("grid", default=[3, 3, 5], convert=list)
-        grid = [int(i) for i in grid]
-
-        style = payload.param("style", default="raster", convert=str)
-        autofocus_dz = payload.param("autofocus_dz", default=50, convert=int)
-        fast_autofocus = payload.param("fast_autofocus", default=False, convert=bool)
-
-        use_video_port = payload.param("use_video_port", default=True, convert=bool)
-        resize = payload.param("size", default=None)
+        resize = args.get("resize", None)
         if resize:
             if ("width" in resize) and ("height" in resize):
                 resize = (
@@ -379,25 +384,21 @@ class TileScanAPI(Resource):
             else:
                 abort(404)
 
-        bayer = payload.param("bayer", default=False, convert=bool)
-        metadata = payload.param("metadata", default={}, convert=dict)
-        tags = payload.param("tags", default=[], convert=list)
-
         logging.info("Running tile scan...")
         task = taskify(tile)(
             microscope,
-            basename=filename,
-            temporary=temporary,
-            step_size=step_size,
-            grid=grid,
-            style=style,
-            autofocus_dz=autofocus_dz,
-            use_video_port=use_video_port,
+            basename=args.get("filename"),
+            temporary=args.get("temporary"),
+            step_size=args.get("step_size"),
+            grid=args.get("grid"),
+            style=args.get("style"),
+            autofocus_dz=args.get("autofocus_dz"),
+            use_video_port=args.get("use_video_port"),
             resize=resize,
-            bayer=bayer,
-            fast_autofocus=fast_autofocus,
-            metadata=metadata,
-            tags=tags,
+            bayer=args.get("bayer"),
+            fast_autofocus=args.get("fast_autofocus"),
+            metadata=args.get("metadata"),
+            tags=args.get("tags"),
         )
 
         # return a handle on the scan task
