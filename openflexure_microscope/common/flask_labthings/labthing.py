@@ -11,7 +11,6 @@ from .spec import view2path
 from .utilities import description_from_view
 
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
-from .exceptions import JSONExceptionHandler
 
 from . import EXTENSION_NAME
 
@@ -26,7 +25,6 @@ class LabThing(object):
         title: str = "",
         description: str = "",
         version: str = "0.0.0",
-        handle_errors: bool = True,
     ):
         self.app = app
 
@@ -45,10 +43,8 @@ class LabThing(object):
         self._title = title
         self._version = version
 
-        if handle_errors:
-            self.error_handler = JSONExceptionHandler()
-        else:
-            self.error_handler = None
+        # Store handlers for things like errors and CORS
+        self.handlers = {}
 
         self.spec = APISpec(
             title=self.title,
@@ -95,10 +91,6 @@ class LabThing(object):
         # Register Flask extension
         app.extensions = getattr(app, "extensions", {})
         app.extensions[EXTENSION_NAME] = self
-
-        # Register error handler if one exists
-        if self.error_handler:
-            self.error_handler.init_app(self.app)
 
         # Add resources, if registered before tying to a Flask app
         if len(self.resources) > 0:

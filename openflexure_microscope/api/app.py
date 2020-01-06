@@ -19,7 +19,7 @@ from openflexure_microscope.config import (
     USER_EXTENSIONS_PATH,
 )
 
-from openflexure_microscope.common.flask_labthings.labthing import LabThing
+from openflexure_microscope.common.flask_labthings.quick import create_app
 from openflexure_microscope.common.flask_labthings.extensions import find_extensions
 
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
@@ -56,19 +56,15 @@ else:
 
 
 # Create flask app
-app = Flask(__name__)
-app.url_map.strict_slashes = False
+app, labthing = create_app(
+    __name__,
+    prefix="/api/v2",
+    description="Test LabThing-based API for OpenFlexure Microscope",
+    title=f"OpenFlexure Microscope {api_microscope.name}",
+)
 
 # Use custom JSON encoder
 app.json_encoder = JSONEncoder
-
-# Enable CORS everywhere
-CORS(app, resources=r"*")
-
-# Build a labthing
-labthing = LabThing(app, prefix="/api/v2")
-labthing.description = "Test LabThing-based API for OpenFlexure Microscope"
-labthing.title = f"OpenFlexure Microscope {api_microscope.name}"
 
 # Attach lab devices
 labthing.register_device(api_microscope, "openflexure_microscope")
