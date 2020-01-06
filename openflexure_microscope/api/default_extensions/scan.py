@@ -11,6 +11,8 @@ from openflexure_microscope.common.flask_labthings.find import (
     find_extension,
 )
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
+from openflexure_microscope.common.flask_labthings.views.tasks import TaskSchema
+from openflexure_microscope.common.flask_labthings.decorators import marshal_with
 
 from openflexure_microscope.devel import (
     JsonResponse,
@@ -344,6 +346,7 @@ def stack(
 
 
 class TileScanAPI(Resource):
+    @marshal_with(TaskSchema())
     def post(self):
         payload = JsonResponse(request)
         microscope = find_device("openflexure_microscope")
@@ -398,7 +401,7 @@ class TileScanAPI(Resource):
         )
 
         # return a handle on the scan task
-        return jsonify(task.state), 201
+        return task
 
 
 scan_extension_v2 = BaseExtension("scan")
