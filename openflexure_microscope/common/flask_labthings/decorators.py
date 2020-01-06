@@ -95,7 +95,12 @@ class doc_response(object):
 
     def __call__(self, f):
         # Pass params to call function attribute for external access
-        f.__apispec__ = f.__dict__.get("__apispec__", {})
-        d = {"responses": {self.code: {"description": self.description, **self.kwargs}}}
-        rupdate(f.__apispec__, d)
+        update_spec(
+            f,
+            {
+                "responses": {
+                    self.code: {"description": self.description, **self.kwargs}
+                }
+            },
+        )
         return f
