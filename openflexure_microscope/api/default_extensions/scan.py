@@ -6,7 +6,10 @@ from typing import Tuple
 from functools import reduce
 
 from openflexure_microscope.camera.base import generate_basename
-from openflexure_microscope.common.flask_labthings.find import find_device, find_extension
+from openflexure_microscope.common.flask_labthings.find import (
+    find_device,
+    find_extension,
+)
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
 
 from openflexure_microscope.devel import (

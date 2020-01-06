@@ -86,8 +86,10 @@ class ZipManager:
     def zip_from_id(self, session_id):
         return self.session_zips[session_id]["fp"]
 
+
 # Create a global ZIP manager
 default_zip_manager = ZipManager()
+
 
 class ZipBuilderAPIView(Resource):
     def post(self):
@@ -145,4 +147,3 @@ zip_extension_v2.add_view(ZipListAPIView, "/get")
 
 zip_extension_v2.add_view(ZipBuilderAPIView, "/build")
 zip_extension_v2.register_action(ZipBuilderAPIView)
-

@@ -113,7 +113,9 @@ def init_default_extensions(extension_path):
     os.makedirs(os.path.dirname(extension_path), exist_ok=True)
 
     if not os.path.exists(extension_path):  # If user extensions file doesn't exist
-        logging.warning("No extension file found at {}. Creating...".format(extension_path))
+        logging.warning(
+            "No extension file found at {}. Creating...".format(extension_path)
+        )
         create_file(extension_path)
 
         logging.info("Populating {}...".format(extension_path))

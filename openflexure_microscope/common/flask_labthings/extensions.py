@@ -156,6 +156,8 @@ def find_extensions(extension_dir, module_name="extensions"):
     extension_paths = glob.glob(os.path.join(extension_dir, "*.py"))
 
     for extension_path in extension_paths:
-        extensions.extend(find_extensions_in_file(extension_path, module_name=module_name))
+        extensions.extend(
+            find_extensions_in_file(extension_path, module_name=module_name)
+        )
 
     return extensions
