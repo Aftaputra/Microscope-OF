@@ -39,7 +39,7 @@ class ExtensionSchema(Schema):
             # Make links dictionary if it doesn't yet exist
             d[view_id] = {
                 "href": url_for(
-                    ExtensionListResource.endpoint, **view_kwargs, _external=True
+                    ExtensionList.endpoint, **view_kwargs, _external=True
                 )
                 + view_rule,
                 **description_from_view(view_cls),
