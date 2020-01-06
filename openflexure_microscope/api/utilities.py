@@ -2,7 +2,11 @@ import logging
 import os
 import errno
 from werkzeug.exceptions import BadRequest
-from flask import url_for, Blueprint
+from flask import url_for, Blueprint, current_app
+
+
+def view_class_from_endpoint(endpoint: str):
+    return current_app.view_functions[endpoint].view_class
 
 
 def blueprint_for_module(module_name, api_ver=2, suffix=""):

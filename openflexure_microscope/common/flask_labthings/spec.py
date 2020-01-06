@@ -12,6 +12,7 @@ from .fields import Field
 from marshmallow import Schema as BaseSchema
 
 from collections import Mapping
+from http import HTTPStatus
 
 
 def update_spec(obj, spec):
@@ -35,23 +36,11 @@ def view2path(rule: str, view: Resource, spec: APISpec):
     return params
 
 
-def view2operations(view: Resource, spec: APISpec, populate_default: bool = True):
+def view2operations(view: Resource, spec: APISpec):
     ops = {}
     for method in Resource.methods:
         if hasattr(view, method):
-            # Populate with default responses
-            if populate_default:
-                ops[method] = {
-                    "responses": {
-                        200: {
-                            "description": get_summary(getattr(view, method))
-                            or "Success"
-                        },
-                        404: {"description": "Resource not found"},
-                    }
-                }
-            else:
-                ops[method] = {}
+            ops[method] = {}
 
             rupdate(
                 ops[method],
@@ -61,15 +50,17 @@ def view2operations(view: Resource, spec: APISpec, populate_default: bool = True
                 },
             )
 
-            if hasattr(getattr(view, method), "__apispec__"):
-                rupdate(
-                    ops[method], doc2operation(getattr(view, method).__apispec__, spec)
-                )
+            rupdate(ops[method], method2operation(getattr(view, method), spec))
 
     return ops
 
 
-def doc2operation(apispec: dict, spec: APISpec):
+def method2operation(method: callable, spec: APISpec):
+    if hasattr(method, "__apispec__"):
+        apispec = getattr(method, "__apispec__")
+    else:
+        apispec = {}
+
     op = {}
     if "_params" in apispec:
         rupdate(
@@ -86,24 +77,37 @@ def doc2operation(apispec: dict, spec: APISpec):
         )
 
     if "_schema" in apispec:
+        for code, schema in apispec.get("_schema", {}).items():
+            rupdate(
+                op,
+                {
+                    "responses": {
+                        code: {
+                            "description": HTTPStatus(code).phrase,
+                            "content": {
+                                "application/json": {
+                                    "schema": convert_schema(schema, spec)
+                                }
+                            },
+                        }
+                    }
+                },
+            )
+    else:
+        # If no explicit responses are known, populate with defaults
         rupdate(
             op,
             {
                 "responses": {
-                    200: {
-                        "content": {
-                            "application/json": {
-                                "schema": convert_schema(apispec.get("_schema"), spec)
-                            }
-                        }
-                    }
+                    200: {"description": get_summary(method) or HTTPStatus(200).phrase}
                 }
             },
         )
 
+    # Bung in any extra swagger fields supplied
     for key, val in apispec.items():
         if not key in ["_params", "_schema"]:
-            op[key] = val
+            rupdate(op, {key: val})
 
     return op
 

@@ -1,10 +1,12 @@
 from webargs import flaskparser
 from functools import wraps, update_wrapper
 from flask import make_response
+from http import HTTPStatus
 
 from openflexure_microscope.common.labthings_core.utilities import rupdate
 
 from .spec import update_spec
+from .schema import TaskSchema
 
 
 def unpack(value):
@@ -28,28 +30,45 @@ def unpack(value):
 
 
 class marshal_with(object):
-    def __init__(self, schema):
+    def __init__(self, schema, code=200):
         """
         :param schema: a dict of whose keys will make up the final
                         serialized response output
         """
         self.schema = schema
+        self.code = code
 
     def __call__(self, f):
         # Pass params to call function attribute for external access
-        update_spec(f, {"_schema": self.schema})
+        update_spec(f, {"_schema": {self.code: self.schema}})
         # Wrapper function
         @wraps(f)
         def wrapper(*args, **kwargs):
             resp = f(*args, **kwargs)
             if isinstance(resp, tuple):
                 data, code, headers = unpack(resp)
-                print((data, code, headers))
                 return make_response(self.schema.jsonify(data), code, headers)
             else:
                 return make_response(self.schema.jsonify(resp))
 
         return wrapper
+
+
+def marshal_task(f):
+    # Pass params to call function attribute for external access
+    update_spec(f, {"responses": {201: {"description": "Task started successfully"}}})
+    update_spec(f, {"_schema": {201: TaskSchema()}})
+    # Wrapper function
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        resp = f(*args, **kwargs)
+        if isinstance(resp, tuple):
+            data, code, headers = unpack(resp)
+            return make_response(TaskSchema().jsonify(data), code, headers)
+        else:
+            return make_response(TaskSchema().jsonify(resp))
+
+    return wrapper
 
 
 class use_args(object):
@@ -88,7 +107,7 @@ class doc(object):
 
 
 class doc_response(object):
-    def __init__(self, code, description, **kwargs):
+    def __init__(self, code, description=None, **kwargs):
         self.code = code
         self.description = description
         self.kwargs = kwargs
@@ -99,7 +118,10 @@ class doc_response(object):
             f,
             {
                 "responses": {
-                    self.code: {"description": self.description, **self.kwargs}
+                    self.code: {
+                        "description": self.description or HTTPStatus(self.code).phrase,
+                        **self.kwargs,
+                    }
                 }
             },
         )

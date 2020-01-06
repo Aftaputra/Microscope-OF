@@ -2,7 +2,8 @@ from flask import url_for, jsonify
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 
-from . import EXTENSION_NAME
+from . import EXTENSION_NAME  # TODO: Move into .names
+from .names import TASK_ENDPOINT, TASK_LIST_ENDPOINT, EXTENSION_LIST_ENDPOINT
 from .extensions import BaseExtension
 from .utilities import description_from_view
 from .spec import view2path
@@ -112,12 +113,14 @@ class LabThing(object):
         )
 
         # Add extension overview
-        self.add_resource(ExtensionList, "/extensions")
+        self.add_resource(
+            ExtensionList, "/extensions", endpoint=EXTENSION_LIST_ENDPOINT
+        )
         self.register_property(ExtensionList)
         # Add task routes
-        self.add_resource(TaskList, "/tasks")
+        self.add_resource(TaskList, "/tasks", endpoint=TASK_LIST_ENDPOINT)
         self.register_property(TaskList)
-        self.add_resource(TaskResource, "/tasks/<id>")
+        self.add_resource(TaskResource, "/tasks/<id>", endpoint=TASK_ENDPOINT)
 
     ### Device stuff
 

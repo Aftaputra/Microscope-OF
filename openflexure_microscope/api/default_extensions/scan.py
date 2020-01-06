@@ -10,18 +10,14 @@ from openflexure_microscope.common.flask_labthings.find import (
     find_extension,
 )
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
-from openflexure_microscope.common.flask_labthings.views.tasks import TaskSchema
 from openflexure_microscope.common.flask_labthings.decorators import (
+    marshal_task,
     marshal_with,
     use_args,
 )
 from openflexure_microscope.common.flask_labthings import fields
 
-from openflexure_microscope.devel import (
-    taskify,
-    abort,
-    update_task_progress,
-)
+from openflexure_microscope.devel import taskify, abort, update_task_progress
 
 from openflexure_microscope.common.flask_labthings.resource import Resource
 import time
@@ -361,7 +357,7 @@ class TileScanAPI(Resource):
             "resize": fields.Dict(missing=None),  # TODO: Validate keys
         }
     )
-    @marshal_with(TaskSchema())
+    @marshal_task
     def post(self, args):
         microscope = find_device("openflexure_microscope")
 

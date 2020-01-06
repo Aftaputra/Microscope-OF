@@ -6,46 +6,10 @@ from openflexure_microscope.common.flask_labthings.utilities import get_docstrin
 from openflexure_microscope.common.flask_labthings.schema import Schema
 from openflexure_microscope.common.flask_labthings import fields
 
-from ..utilities import description_from_view
-
 from ..resource import Resource
 from ..find import registered_extensions
-
+from ..schema import ExtensionSchema
 from ..decorators import marshal_with
-from marshmallow import pre_dump
-
-from flask import jsonify, url_for
-
-import logging
-
-
-class ExtensionSchema(Schema):
-    name = fields.String(data_key="title")
-    _name_python_safe = fields.String(data_key="pythonName")
-    _cls = fields.String(data_key="pythonObject")
-    gui = fields.Dict()
-    description = fields.String()
-
-    links = fields.Dict()
-
-    # TODO: Automate this somewhat
-    @pre_dump
-    def generate_links(self, data, **kwargs):
-        d = {}
-        for view_id, view_data in data.views.items():
-            view_cls = view_data["view"]
-            view_kwargs = view_data["kwargs"]
-            view_rule = view_data["rule"]
-            # Make links dictionary if it doesn't yet exist
-            d[view_id] = {
-                "href": url_for(ExtensionList.endpoint, **view_kwargs, _external=True)
-                + view_rule,
-                **description_from_view(view_cls),
-            }
-
-        data.links = d
-
-        return data
 
 
 class ExtensionList(Resource):
