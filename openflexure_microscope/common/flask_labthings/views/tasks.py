@@ -1,12 +1,11 @@
 from flask import abort, url_for
 
-from openflexure_microscope.common.flask_labthings.decorators import marshal_with
-from openflexure_microscope.common.flask_labthings.resource import Resource
-from openflexure_microscope.common.flask_labthings.schema import Schema
-from openflexure_microscope.common.flask_labthings import fields
-from openflexure_microscope.common.flask_labthings.utilities import (
-    description_from_view,
-)
+from ..decorators import marshal_with
+from ..resource import Resource
+from ..schema import Schema
+from .. import fields
+from ..utilities import description_from_view
+from ..spec import update_spec
 
 from openflexure_microscope.common.labthings_core import tasks
 
