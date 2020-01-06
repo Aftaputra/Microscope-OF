@@ -1,11 +1,11 @@
-from .resource import BaseResource
-from .utilities import rupdate
+from .resource import Resource
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 
 from openflexure_microscope.common.labthings_core.utilities import (
     get_docstring,
     get_summary,
+    rupdate,
 )
 
 from .fields import Field
@@ -20,7 +20,7 @@ def update_spec(obj, spec):
     return obj.__apispec__
 
 
-def view2path(rule: str, view: BaseResource, spec: APISpec):
+def view2path(rule: str, view: Resource, spec: APISpec):
     params = {
         "path": rule,  # TODO: Validate this slightly (leading / etc)
         "operations": view2operations(view, spec),
@@ -35,9 +35,9 @@ def view2path(rule: str, view: BaseResource, spec: APISpec):
     return params
 
 
-def view2operations(view: BaseResource, spec: APISpec, populate_default: bool = True):
+def view2operations(view: Resource, spec: APISpec, populate_default: bool = True):
     ops = {}
-    for method in BaseResource.methods:
+    for method in Resource.methods:
         if hasattr(view, method):
             # Populate with default responses
             if populate_default:

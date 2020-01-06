@@ -2,9 +2,9 @@
 Top-level representation of attached and enabled Extensions
 """
 
-from openflexure_microscope.common.labthings_core.utilities import get_docstring
-from openflexure_microscope.common.labthings_core.schema import Schema
-from openflexure_microscope.common.labthings_core import fields
+from openflexure_microscope.common.flask_labthings.utilities import get_docstring
+from openflexure_microscope.common.flask_labthings.schema import Schema
+from openflexure_microscope.common.flask_labthings import fields
 
 from ..utilities import description_from_view
 
@@ -38,9 +38,7 @@ class ExtensionSchema(Schema):
             view_rule = view_data["rule"]
             # Make links dictionary if it doesn't yet exist
             d[view_id] = {
-                "href": url_for(
-                    ExtensionList.endpoint, **view_kwargs, _external=True
-                )
+                "href": url_for(ExtensionList.endpoint, **view_kwargs, _external=True)
                 + view_rule,
                 **description_from_view(view_cls),
             }

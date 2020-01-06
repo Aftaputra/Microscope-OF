@@ -2,16 +2,15 @@ from flask import url_for, jsonify
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 
+from . import EXTENSION_NAME
 from .extensions import BaseExtension
 from .utilities import description_from_view
+from .spec import view2path
 
 from .views.extensions import ExtensionList
 from .views.tasks import TaskList, TaskResource
 
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
-from openflexure_microscope.common.labthings_core.spec import view2path
-
-from . import EXTENSION_NAME
 
 import logging
 
