@@ -23,6 +23,8 @@ class TaskSchema(Schema):
     _start_time = fields.String(data_key="start_time")
     _end_time = fields.String(data_key="end_time")
 
+    links = fields.Dict()
+
     # TODO: Automate this somewhat
     @pre_dump
     def generate_links(self, data, **kwargs):
@@ -50,6 +52,7 @@ class TaskResource(Resource):
     @marshal_with(TaskSchema())
     def get(self, id):
         try:
+            print(tasks.dict())
             task = tasks.dict()[id]
         except KeyError:
             return abort(404)  # 404 Not Found
