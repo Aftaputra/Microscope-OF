@@ -2,8 +2,10 @@ from webargs import flaskparser
 from functools import wraps, update_wrapper
 from flask import make_response
 
-from .utilities import rupdate
-from .spec import update_spec
+from openflexure_microscope.common.labthings_core.utilities import rupdate
+from openflexure_microscope.common.labthings_core.spec import update_spec
+
+from openflexure_microscope.common.labthings_core.decorators import doc, doc_response
 
 
 def unpack(value):
@@ -74,27 +76,3 @@ class use_kwargs(use_args):
         """
         kwargs["as_kwargs"] = True
         use_args.__init__(self, schema, **kwargs)
-
-
-class doc(object):
-    def __init__(self, **kwargs):
-        self.kwargs = kwargs
-
-    def __call__(self, f):
-        # Pass params to call function attribute for external access
-        update_spec(f, self.kwargs)
-        return f
-
-
-class doc_response(object):
-    def __init__(self, code, description, **kwargs):
-        self.code = code
-        self.description = description
-        self.kwargs = kwargs
-
-    def __call__(self, f):
-        # Pass params to call function attribute for external access
-        f.__apispec__ = f.__dict__.get("__apispec__", {})
-        d = {"responses": {self.code: {"description": self.description, **self.kwargs}}}
-        rupdate(f.__apispec__, d)
-        return f

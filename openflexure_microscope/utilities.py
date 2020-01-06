@@ -20,41 +20,6 @@ def serialise_array_b64(npy_arr):
     return b64_string, dtype, shape
 
 
-def get_by_path(root, items):
-    """Access a nested object in root by item sequence."""
-    return reduce(operator.getitem, items, root)
-
-
-def set_by_path(root, items, value):
-    """Set a value in a nested object in root by item sequence."""
-    get_by_path(root, items[:-1])[items[-1]] = value
-
-
-def create_from_path(items):
-    tree_dict = {}
-    for key in reversed(items):
-        tree_dict = {key: tree_dict}
-    return tree_dict
-
-
-def bottom_level_name(obj):
-    return obj.__name__.split(".")[-1]
-
-
-def camel_to_snake(name):
-    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
-    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-
-
-def camel_to_spine(name):
-    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1-\2", name)
-    return re.sub("([a-z0-9])([A-Z])", r"\1-\2", s1).lower()
-
-
-def snake_to_spine(name):
-    return name.replace("_", "-")
-
-
 @contextmanager
 def set_properties(obj, **kwargs):
     """A context manager to set, then reset, certain properties of an object.

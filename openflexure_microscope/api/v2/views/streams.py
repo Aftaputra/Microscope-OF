@@ -1,5 +1,10 @@
 from openflexure_microscope.api.utilities import gen, JsonResponse
-from openflexure_microscope.utilities import get_by_path, set_by_path, create_from_path
+
+from openflexure_microscope.common.labthings_core.utilities import (
+    get_by_path,
+    set_by_path,
+    create_from_path,
+)
 
 from openflexure_microscope.common.flask_labthings.find import find_device
 from openflexure_microscope.common.flask_labthings.resource import Resource

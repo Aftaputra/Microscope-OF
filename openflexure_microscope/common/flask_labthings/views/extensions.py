@@ -3,13 +3,15 @@ Top-level representation of attached and enabled Extensions
 """
 
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
+from openflexure_microscope.common.labthings_core.schema import Schema
+from openflexure_microscope.common.labthings_core import fields
+
 from ..utilities import description_from_view
 
-from openflexure_microscope.common.flask_labthings.resource import Resource
-from openflexure_microscope.common.flask_labthings.find import registered_extensions
-from openflexure_microscope.common.flask_labthings.schema import Schema
-from openflexure_microscope.common.flask_labthings.decorators import marshal_with
-from openflexure_microscope.common.flask_labthings import fields
+from ..resource import Resource
+from ..find import registered_extensions
+
+from ..decorators import marshal_with
 from marshmallow import pre_dump
 
 from flask import jsonify, url_for
@@ -48,7 +50,7 @@ class ExtensionSchema(Schema):
         return data
 
 
-class ExtensionListResource(Resource):
+class ExtensionList(Resource):
     """
     List and basic documentation for all enabled Extensions
     """

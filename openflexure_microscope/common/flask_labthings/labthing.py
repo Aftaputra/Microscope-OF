@@ -3,14 +3,13 @@ from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 
 from .extensions import BaseExtension
-from .views.extensions import ExtensionListResource
-from .views.tasks import TaskList, TaskResource
-
-from .spec import view2path
-
 from .utilities import description_from_view
 
+from .views.extensions import ExtensionList
+from .views.tasks import TaskList, TaskResource
+
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
+from openflexure_microscope.common.labthings_core.spec import view2path
 
 from . import EXTENSION_NAME
 
@@ -114,8 +113,8 @@ class LabThing(object):
         )
 
         # Add extension overview
-        self.add_resource(ExtensionListResource, "/extensions")
-        self.register_property(ExtensionListResource)
+        self.add_resource(ExtensionList, "/extensions")
+        self.register_property(ExtensionList)
         # Add task routes
         self.add_resource(TaskList, "/tasks")
         self.register_property(TaskList)
@@ -320,8 +319,8 @@ class LabThing(object):
                     "methods": ["GET"],
                 },
                 "extensions": {
-                    "href": self.url_for(ExtensionListResource, _external=True),
-                    **description_from_view(ExtensionListResource),
+                    "href": self.url_for(ExtensionList, _external=True),
+                    **description_from_view(ExtensionList),
                 },
                 "tasks": {
                     "href": self.url_for(TaskList, _external=True),

@@ -2,10 +2,6 @@ from openflexure_microscope.common.labthings_core.utilities import (
     get_docstring,
     get_summary,
 )
-from .schema import Schema, marshmallow, MARSHMALLOW_VERSION_INFO
-import collections.abc
-
-import logging
 
 
 def description_from_view(view_class):
@@ -17,15 +13,4 @@ def description_from_view(view_class):
 
     d = {"methods": methods, "description": summary}
 
-    return d
-
-
-def rupdate(d, u):
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            if not k in d:
-                d[k] = {}
-            d[k] = rupdate(d.get(k, {}), v)
-        else:
-            d[k] = v
     return d

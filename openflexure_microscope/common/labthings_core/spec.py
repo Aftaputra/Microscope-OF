@@ -1,4 +1,4 @@
-from .resource import Resource
+from .resource import BaseResource
 from .utilities import rupdate
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
@@ -20,7 +20,7 @@ def update_spec(obj, spec):
     return obj.__apispec__
 
 
-def view2path(rule: str, view: Resource, spec: APISpec):
+def view2path(rule: str, view: BaseResource, spec: APISpec):
     params = {
         "path": rule,  # TODO: Validate this slightly (leading / etc)
         "operations": view2operations(view, spec),
@@ -35,9 +35,9 @@ def view2path(rule: str, view: Resource, spec: APISpec):
     return params
 
 
-def view2operations(view: Resource, spec: APISpec, populate_default: bool = True):
+def view2operations(view: BaseResource, spec: APISpec, populate_default: bool = True):
     ops = {}
-    for method in Resource.methods:
+    for method in BaseResource.methods:
         if hasattr(view, method):
             # Populate with default responses
             if populate_default:
