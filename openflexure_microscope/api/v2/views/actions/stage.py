@@ -1,6 +1,13 @@
 from openflexure_microscope.api.utilities import JsonResponse
 from openflexure_microscope.common.flask_labthings.resource import Resource
 from openflexure_microscope.common.flask_labthings.find import find_device
+from openflexure_microscope.common.flask_labthings.decorators import (
+    use_args,
+    marshal_with,
+    doc,
+)
+from openflexure_microscope.common.flask_labthings import fields
+
 from openflexure_microscope.utilities import axes_to_array, filter_dict
 
 from flask import Blueprint, jsonify, request
@@ -9,21 +16,23 @@ import logging
 
 
 class MoveStageAPI(Resource):
-    """
-    Handle stage movements.
-    """
-
-    def post(self):
+    @use_args(
+        {
+            "absolute": fields.Boolean(default=False, example=False),
+            "x": fields.Int(default=0, example=100),
+            "y": fields.Int(default=0, example=100),
+            "z": fields.Int(default=0, example=20),
+        }
+    )
+    def post(self, args):
+        """
+        Move the microscope stage in x, y, z
+        """
         microscope = find_device("openflexure_microscope")
-        # Create response object
-        payload = JsonResponse(request)
-        logging.debug(payload.json)
 
         # Handle absolute positioning (calculate a relative move from current position and target)
-        if (payload.param("absolute") is True) and (
-            microscope.stage
-        ):  # Only if stage exists
-            target_position = axes_to_array(payload.json, ["x", "y", "z"])
+        if (args.get("absolute")) and (microscope.stage):  # Only if stage exists
+            target_position = axes_to_array(args, ["x", "y", "z"])
             logging.debug("TARGET: {}".format(target_position))
             position = [
                 target_position[i] - microscope.stage.position[i] for i in range(3)
@@ -32,7 +41,7 @@ class MoveStageAPI(Resource):
 
         else:
             # Get coordinates from payload
-            position = axes_to_array(payload.json, ["x", "y", "z"], [0, 0, 0])
+            position = axes_to_array(args, ["x", "y", "z"], [0, 0, 0])
 
         logging.debug(position)
 
@@ -48,11 +57,11 @@ class MoveStageAPI(Resource):
 
 
 class ZeroStageAPI(Resource):
-    """
-    Zero stage coordinates 
-    """
-
     def post(self):
+        """
+        Zero the stage coordinates.
+        Does not move the stage, but rather makes the current position read as [0, 0, 0]
+        """
         microscope = find_device("openflexure_microscope")
         microscope.stage.zero_position()
 

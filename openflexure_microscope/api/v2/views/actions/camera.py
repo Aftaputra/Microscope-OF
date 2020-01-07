@@ -25,13 +25,19 @@ class CaptureAPI(Resource):
 
     @use_args(
         {
-            "filename": fields.String(),
-            "temporary": fields.Boolean(missing=False),
+            "filename": fields.String(example="MyFileName"),
+            "temporary": fields.Boolean(
+                missing=False, description="Delete capture on shutdown"
+            ),
             "use_video_port": fields.Boolean(missing=False),
-            "bayer": fields.Boolean(missing=False),
-            "metadata": fields.Dict(missing={}),
-            "tags": fields.List(fields.String, missing=[]),
-            "resize": fields.Dict(missing=None),  # TODO: Validate keys
+            "bayer": fields.Boolean(
+                missing=False, description="Store raw bayer data in file"
+            ),
+            "metadata": fields.Dict(missing={}, example={"Client": "SwaggerUI"}),
+            "tags": fields.List(fields.String, missing=[], example=["docs"]),
+            "resize": fields.Dict(
+                missing=None, example={"width": 640, "height": 480}
+            ),  # TODO: Validate keys
         }
     )
     @marshal_with(capture_schema)
@@ -85,6 +91,9 @@ class GPUPreviewStartAPI(Resource):
     """
 
     def post(self):
+        """
+        Start the onboard GPU preview.
+        """
         microscope = find_device("openflexure_microscope")
         payload = JsonResponse(request)
 
@@ -104,11 +113,10 @@ class GPUPreviewStartAPI(Resource):
 
 
 class GPUPreviewStopAPI(Resource):
-    """
-    Start the onboard GPU preview.
-    """
-
     def post(self):
+        """
+        Stop the onboard GPU preview.
+        """
         microscope = find_device("openflexure_microscope")
         microscope.camera.stop_preview()
         return jsonify(microscope.state)
