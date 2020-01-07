@@ -106,12 +106,7 @@ class LabThing(object):
     def _create_base_routes(self):
         # Add root representation
         self.app.add_url_rule(self._complete_url("/", ""), "rootrep", self.rootrep)
-        # Add thing description
-        # self.app.add_url_rule(self._complete_url("/td", ""), "td", self.td)
-        # Add swagger spec
-        # self.app.add_url_rule(
-        #    self._complete_url("/swagger", ""), "swagger", self.swagger
-        # )
+        # Add thing descriptions
         self.app.register_blueprint(docs_blueprint, url_prefix=self.url_prefix)
 
         # Add extension overview
