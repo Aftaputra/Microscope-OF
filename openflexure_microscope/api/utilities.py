@@ -112,18 +112,20 @@ def create_file(config_path):
                 raise
 
 
-def init_default_extensions(extension_path):
+def init_default_extensions(extension_dir):
     global _DEFAULT_EXTENSION_INIT
-    os.makedirs(os.path.dirname(extension_path), exist_ok=True)
+    os.makedirs(extension_dir, exist_ok=True)
 
-    if not os.path.exists(extension_path):  # If user extensions file doesn't exist
+    default_ext_path = os.path.join(extension_dir, "defaults.py")
+
+    if not os.path.isfile(default_ext_path):  # If user extensions file doesn't exist
         logging.warning(
-            "No extension file found at {}. Creating...".format(extension_path)
+            "No extension file found at {}. Creating...".format(extension_dir)
         )
-        create_file(extension_path)
+        create_file(default_ext_path)
 
-        logging.info("Populating {}...".format(extension_path))
-        with open(extension_path, "w") as outfile:
+        logging.info("Populating {}...".format(default_ext_path))
+        with open(default_ext_path, "w") as outfile:
             outfile.write(_DEFAULT_EXTENSION_INIT)
 
 
