@@ -26,6 +26,7 @@ class BaseExtension:
             {}
         )  # Key: Full, Python-safe ID. Val: Original rule, and view class
         self._rules = {}  # Key: Original rule. Val: View class
+        self._meta = {}  # Extra metadata to add to the extension description
         self._gui = None
 
         self._cls = str(self)  # String description of extension instance
@@ -71,36 +72,17 @@ class BaseExtension:
         self.properties.append(view_class)
 
     @property
-    def gui(self):
-        # Handle missing/no GUI
-        if not self._gui:
-            return None
-        # Handle GUI as a dictionary-returning callable function
-        elif isinstance(self._gui, collections.Callable):
-            api_gui = self._gui()
-        # Handle GUI as a static dictionary
-        elif isinstance(self._gui, dict):
-            api_gui = copy.deepcopy(self._gui)
-        # Handle borked GUI
-        else:
-            raise ValueError(
-                "GUI must be a dictionary, or a dictionary-returning function with no arguments."
-            )
+    def meta(self):
+        d = {}
+        for k, v in self._meta.items():
+            if callable(v):
+                d[k] = v()
+            else:
+                d[k] = v
+        return d
 
-        api_gui["id"] = self._name
-
-        if "forms" in api_gui and isinstance(api_gui["forms"], list):
-            for form in api_gui["forms"]:
-                if "route" in form and form["route"] in self._rules.keys():
-                    form["route"] = self._rules[form["route"]]["rule"]
-                else:
-                    logging.warn(
-                        "No valid expandable route found for {}".format(form["route"])
-                    )
-        return api_gui
-
-    def set_gui(self, form_dictionary: dict):
-        self._gui = form_dictionary
+    def add_meta(self, key, val):
+        self._meta[key] = val
 
     @property
     def _name(self):

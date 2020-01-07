@@ -71,7 +71,7 @@ class ExtensionSchema(Schema):
     name = fields.String(data_key="title")
     _name_python_safe = fields.String(data_key="pythonName")
     _cls = fields.String(data_key="pythonObject")
-    gui = fields.Dict()
+    meta = fields.Dict()
     description = fields.String()
 
     links = fields.Dict()
@@ -81,12 +81,10 @@ class ExtensionSchema(Schema):
         d = {}
         for view_id, view_data in data.views.items():
             view_cls = view_data["view"]
-            view_kwargs = view_data["kwargs"]
             view_rule = view_data["rule"]
             # Make links dictionary if it doesn't yet exist
             d[view_id] = {
-                "href": url_for(EXTENSION_LIST_ENDPOINT, **view_kwargs, _external=True)
-                + view_rule,
+                "href": url_for(EXTENSION_LIST_ENDPOINT, _external=True) + view_rule,
                 **description_from_view(view_cls),
             }
 
