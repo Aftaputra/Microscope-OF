@@ -21,7 +21,6 @@ class TaskResource(Resource):
     @marshal_with(TaskSchema())
     def get(self, id):
         try:
-            print(tasks.dict())
             task = tasks.dict()[id]
         except KeyError:
             return abort(404)  # 404 Not Found

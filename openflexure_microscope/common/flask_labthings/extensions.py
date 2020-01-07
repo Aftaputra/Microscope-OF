@@ -72,7 +72,6 @@ class BaseExtension:
 
     @property
     def gui(self):
-        print(self._gui)
         # Handle missing/no GUI
         if not self._gui:
             return None
