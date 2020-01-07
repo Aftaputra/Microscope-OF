@@ -10,7 +10,7 @@ from .spec import view2path
 
 from .views.extensions import ExtensionList
 from .views.tasks import TaskList, TaskResource
-from .views.docs import docs_blueprint, APISpecResource, W3CThingDescriptionResource
+from .views.docs import docs_blueprint, SwaggerUIResource, W3CThingDescriptionResource
 
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
 
@@ -286,11 +286,10 @@ class LabThing(object):
                 "thingDescription": {
                     "href": url_for("labthings_docs.w3c_td", _external=True),
                     "description": get_docstring(W3CThingDescriptionResource),
-                    "methods": ["GET"],
                 },
                 "swaggerUI": {
                     "href": url_for("labthings_docs.swagger_ui", _external=True),
-                    **description_from_view(APISpecResource),
+                    **description_from_view(SwaggerUIResource),
                 },
                 "extensions": {
                     "href": self.url_for(ExtensionList, _external=True),
