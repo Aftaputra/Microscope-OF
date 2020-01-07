@@ -19,10 +19,18 @@ def get_summary(obj):
 
 def rupdate(d, u):
     for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
+        # Merge lists if they're present in both objects
+        if isinstance(v, list):
+            if not k in d:
+                d[k] = []
+            if isinstance(d[k], list):
+                d[k].extend(v)
+        # Recursively merge dictionaries if the element is a dictionary
+        elif isinstance(v, collections.abc.Mapping):
             if not k in d:
                 d[k] = {}
             d[k] = rupdate(d.get(k, {}), v)
+        # If not a list or dictionary, overwrite old value with new value
         else:
             d[k] = v
     return d

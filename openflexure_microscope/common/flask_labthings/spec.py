@@ -37,6 +37,12 @@ def view2path(rule: str, view: Resource, spec: APISpec):
 
 
 def view2operations(view: Resource, spec: APISpec):
+    # Operations inherit tags from parent
+    inherited_tags = []
+    if hasattr(view, "__apispec__"):
+        inherited_tags = getattr(view, "__apispec__").get("tags", [])
+
+    # Build dictionary of operations (HTTP methods)
     ops = {}
     for method in Resource.methods:
         if hasattr(view, method):
@@ -47,6 +53,7 @@ def view2operations(view: Resource, spec: APISpec):
                 {
                     "description": get_docstring(getattr(view, method)),
                     "summary": get_summary(getattr(view, method)),
+                    "tags": inherited_tags,
                 },
             )
 
