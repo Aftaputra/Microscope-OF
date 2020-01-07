@@ -18,7 +18,7 @@ import logging
 class MoveStageAPI(Resource):
     @use_args(
         {
-            "absolute": fields.Boolean(default=False, example=False),
+            "absolute": fields.Boolean(default=False, example=False, description="Move to an absolute position"),
             "x": fields.Int(default=0, example=100),
             "y": fields.Int(default=0, example=100),
             "z": fields.Int(default=0, example=20),
