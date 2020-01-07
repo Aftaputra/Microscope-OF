@@ -29,7 +29,7 @@ def create_app(
 
     # Create a LabThing
     labthing = LabThing(
-        app, prefix=prefix, title=title, description=description, version=version
+        app, prefix=prefix, title=title, description=description, version=str(version)
     )
 
     # Store references to added-in handlers

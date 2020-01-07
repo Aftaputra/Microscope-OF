@@ -4,6 +4,7 @@ import time
 import atexit
 import logging
 import os
+import pkg_resources
 
 from flask import Flask, jsonify, send_file
 
@@ -59,8 +60,9 @@ else:
 app, labthing = create_app(
     __name__,
     prefix="/api/v2",
-    description="Test LabThing-based API for OpenFlexure Microscope",
     title=f"OpenFlexure Microscope {api_microscope.name}",
+    description="Test LabThing-based API for OpenFlexure Microscope",
+    version=pkg_resources.get_distribution("openflexure_microscope").version,
 )
 
 # Use custom JSON encoder

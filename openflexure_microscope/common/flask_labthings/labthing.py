@@ -10,6 +10,7 @@ from .spec import view2path
 
 from .views.extensions import ExtensionList
 from .views.tasks import TaskList, TaskResource
+from .views.docs import docs_blueprint, APISpecResource, W3CThingDescriptionResource
 
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
 
@@ -106,11 +107,12 @@ class LabThing(object):
         # Add root representation
         self.app.add_url_rule(self._complete_url("/", ""), "rootrep", self.rootrep)
         # Add thing description
-        self.app.add_url_rule(self._complete_url("/td", ""), "td", self.td)
+        # self.app.add_url_rule(self._complete_url("/td", ""), "td", self.td)
         # Add swagger spec
-        self.app.add_url_rule(
-            self._complete_url("/swagger", ""), "swagger", self.swagger
-        )
+        # self.app.add_url_rule(
+        #    self._complete_url("/swagger", ""), "swagger", self.swagger
+        # )
+        self.app.register_blueprint(docs_blueprint, url_prefix=self.url_prefix)
 
         # Add extension overview
         self.add_resource(
@@ -270,35 +272,6 @@ class LabThing(object):
         return endpoint in self.endpoints
 
     ### Description
-
-    def td(self):
-        """
-        W3C-style Thing Description
-        """
-        props = {}
-        for key, prop in self.properties.items():
-            props[key] = {}
-            props[key]["title"] = prop.__name__
-            props[key]["description"] = get_docstring(prop)
-            props[key]["links"] = [{"href": self.url_for(prop, _external=True)}]
-
-        actions = {}
-        for key, prop in self.actions.items():
-            actions[key] = {}
-            actions[key]["title"] = prop.__name__
-            actions[key]["description"] = get_docstring(prop)
-            actions[key]["links"] = [{"href": self.url_for(prop, _external=True)}]
-
-        td = {
-            "id": url_for("td", _external=True),
-            "title": self.title,
-            "description": self.description,
-            "properties": props,
-            "actions": actions,
-        }
-
-        return jsonify(td)
-
     def rootrep(self):
         """
         Root representation
@@ -311,14 +284,13 @@ class LabThing(object):
             "description": self.description,
             "links": {
                 "thingDescription": {
-                    "href": url_for("td", _external=True),
-                    "description": get_docstring(self.td),
+                    "href": url_for("labthings_docs.w3c_td", _external=True),
+                    "description": get_docstring(W3CThingDescriptionResource),
                     "methods": ["GET"],
                 },
-                "swagger": {
-                    "href": url_for("swagger", _external=True),
-                    "description": get_docstring(self.swagger),
-                    "methods": ["GET"],
+                "swaggerUI": {
+                    "href": url_for("labthings_docs.swagger_ui", _external=True),
+                    **description_from_view(APISpecResource),
                 },
                 "extensions": {
                     "href": self.url_for(ExtensionList, _external=True),
@@ -332,9 +304,3 @@ class LabThing(object):
         }
 
         return jsonify(rr)
-
-    def swagger(self):
-        """
-        OpenAPI v3 documentation
-        """
-        return jsonify(self.spec.to_dict())
