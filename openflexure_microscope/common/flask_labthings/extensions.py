@@ -27,7 +27,6 @@ class BaseExtension:
         )  # Key: Full, Python-safe ID. Val: Original rule, and view class
         self._rules = {}  # Key: Original rule. Val: View class
         self._meta = {}  # Extra metadata to add to the extension description
-        self._gui = None
 
         self._cls = str(self)  # String description of extension instance
 
