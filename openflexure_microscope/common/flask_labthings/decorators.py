@@ -71,17 +71,21 @@ def marshal_task(f):
     return wrapper
 
 
-def ltaction(f):
+def ThingAction(viewcls):
     # Pass params to call function attribute for external access
-    update_spec(f, {"tags": ["actions"]})
-    update_spec(f, {"_groups": ["actions"]})
-    return f
+    update_spec(viewcls, {"tags": ["actions"]})
+    update_spec(viewcls, {"_groups": ["actions"]})
+    return viewcls
 
-def ltproperty(f):
+thing_action = ThingAction
+
+def ThingProperty(viewcls):
     # Pass params to call function attribute for external access
-    update_spec(f, {"tags": ["properties"]})
-    update_spec(f, {"_groups": ["properties"]})
-    return f
+    update_spec(viewcls, {"tags": ["properties"]})
+    update_spec(viewcls, {"_groups": ["properties"]})
+    return viewcls
+
+thing_property = ThingProperty
 
 class use_args(object):
     def __init__(self, schema, **kwargs):
