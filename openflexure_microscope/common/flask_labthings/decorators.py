@@ -71,6 +71,18 @@ def marshal_task(f):
     return wrapper
 
 
+def ltaction(f):
+    # Pass params to call function attribute for external access
+    update_spec(f, {"tags": ["actions"]})
+    update_spec(f, {"_groups": ["actions"]})
+    return f
+
+def ltproperty(f):
+    # Pass params to call function attribute for external access
+    update_spec(f, {"tags": ["properties"]})
+    update_spec(f, {"_groups": ["properties"]})
+    return f
+
 class use_args(object):
     def __init__(self, schema, **kwargs):
         """
@@ -103,6 +115,21 @@ class doc(object):
     def __call__(self, f):
         # Pass params to call function attribute for external access
         update_spec(f, self.kwargs)
+        return f
+
+
+class tag(object):
+    def __init__(self, tags):
+        if isinstance(tags, str):
+            self.tags = [tags]
+        elif isinstance(tags, list) and all([isinstance(e, str) for e in tags]):
+            self.tags = tags
+        else:
+            raise TypeError("Tags must be a string or list of strings")
+
+    def __call__(self, f):
+        # Pass params to call function attribute for external access
+        update_spec(f, {"tags": self.tags})
         return f
 
 

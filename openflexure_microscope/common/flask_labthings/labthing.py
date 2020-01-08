@@ -6,7 +6,7 @@ from . import EXTENSION_NAME  # TODO: Move into .names
 from .names import TASK_ENDPOINT, TASK_LIST_ENDPOINT, EXTENSION_LIST_ENDPOINT
 from .extensions import BaseExtension
 from .utilities import description_from_view
-from .spec import view2path
+from .spec import view2path, get_spec
 
 from .views.extensions import ExtensionList
 from .views.tasks import TaskList, TaskResource
@@ -159,20 +159,12 @@ class LabThing(object):
         return "".join([part for part in parts if part])
 
     def register_property(self, resource):
-        if hasattr(resource, "endpoint"):
-            self.properties[resource.endpoint] = resource
-        else:
-            raise RuntimeError(
-                f"Resource {resource} has not yet been added. Cannot set as a property."
-            )
+        logging.warning("register_property is deprecated. Use the @ltproperty class decorator instead.")
+        pass
 
     def register_action(self, resource):
-        if hasattr(resource, "endpoint"):
-            self.actions[resource.endpoint] = resource
-        else:
-            raise RuntimeError(
-                f"Resource {resource} has not yet been added. Cannot set as an action."
-            )
+        logging.warning("register_action is deprecated. Use the @ltaction class decorator instead.")
+        pass
 
     def add_resource(self, resource, *urls, endpoint=None, **kwargs):
         """Adds a resource to the api.
@@ -208,17 +200,6 @@ class LabThing(object):
         self.resources.append((resource, urls, endpoint, kwargs))
 
     def resource(self, *urls, **kwargs):
-        """Wraps a :class:`~flask_restful.Resource` class, adding it to the
-        api. Parameters are the same as :meth:`~flask_restful.Api.add_resource`.
-        Example::
-            app = Flask(__name__)
-            api = restful.Api(app)
-            @api.resource('/foo')
-            class Foo(Resource):
-                def get(self):
-                    return 'Hello, World!'
-        """
-
         def decorator(cls):
             self.add_resource(cls, *urls, **kwargs)
             return cls
@@ -254,6 +235,14 @@ class LabThing(object):
             app.add_url_rule(rule, view_func=resource_func, **kwargs)
             # Add the resource to our API spec
             self.spec.path(**view2path(rule, resource, self.spec))
+
+        # Handle resource groups listed in API spec
+        view_spec = get_spec(resource)
+        view_groups = view_spec.get("_groups", {})
+        if "actions" in view_groups:
+            self.actions[resource.endpoint] = resource
+        if "properties" in view_groups:
+            self.properties[resource.endpoint] = resource
 
     ### Utilities
 

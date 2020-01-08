@@ -5,6 +5,8 @@ from openflexure_microscope.common.flask_labthings.decorators import (
     use_args,
     marshal_with,
     doc,
+    tag,
+    ltaction,
     doc_response,
 )
 
@@ -17,7 +19,7 @@ import logging
 from flask import jsonify, request, abort, url_for, redirect, send_file
 
 
-@doc(tags=["actions"])
+@ltaction
 class CaptureAPI(Resource):
     """
     Create a new image capture. 
@@ -42,7 +44,7 @@ class CaptureAPI(Resource):
     )
     @marshal_with(capture_schema)
     @doc_response(200, description="Capture successful")
-    @doc(tags=["foo"])
+    @tag("foo")
     def post(self, args):
         """
         Create a new capture
