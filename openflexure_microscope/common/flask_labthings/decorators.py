@@ -112,7 +112,7 @@ class use_kwargs(use_args):
         use_args.__init__(self, schema, **kwargs)
 
 
-class doc(object):
+class Doc(object):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
@@ -121,8 +121,9 @@ class doc(object):
         update_spec(f, self.kwargs)
         return f
 
+doc = Doc
 
-class tag(object):
+class Tag(object):
     def __init__(self, tags):
         if isinstance(tags, str):
             self.tags = [tags]
@@ -136,6 +137,7 @@ class tag(object):
         update_spec(f, {"tags": self.tags})
         return f
 
+tag = Tag
 
 class doc_response(object):
     def __init__(self, code, description=None, **kwargs):
