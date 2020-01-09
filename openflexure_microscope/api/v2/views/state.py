@@ -15,11 +15,11 @@ import logging
 
 class SettingsProperty(Resource):
     def get(self):
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
         return jsonify(microscope.read_settings())
 
     def put(self):
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
         payload = JsonResponse(request)
 
         logging.debug("Updating settings from PUT request:")
@@ -33,7 +33,7 @@ class SettingsProperty(Resource):
 
 class NestedSettingsProperty(Resource):
     def get(self, route):
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
         keys = route.split("/")
 
         try:
@@ -44,7 +44,7 @@ class NestedSettingsProperty(Resource):
         return jsonify(value)
 
     def put(self, route):
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
         keys = route.split("/")
         payload = JsonResponse(request)
 
@@ -59,13 +59,13 @@ class NestedSettingsProperty(Resource):
 
 class StatusProperty(Resource):
     def get(self):
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
         return jsonify(microscope.status)
 
 
 class NestedStatusProperty(Resource):
     def get(self, route):
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
         keys = route.split("/")
 
         try:

@@ -290,7 +290,7 @@ def fast_up_down_up_autofocus(
 
 class MeasureSharpnessAPI(Resource):
     def post(self):
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
 
         if not microscope:
             abort(503, "No microscope connected. Unable to measure sharpness.")
@@ -305,7 +305,7 @@ class AutofocusAPI(Resource):
 
     def post(self):
         payload = JsonResponse(request)
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
 
         if not microscope:
             abort(503, "No microscope connected. Unable to autofocus.")
@@ -331,7 +331,7 @@ class FastAutofocusAPI(Resource):
 
     def post(self):
         payload = JsonResponse(request)
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
 
         if not microscope:
             abort(503, "No microscope connected. Unable to autofocus.")

@@ -359,7 +359,7 @@ class TileScanAPI(Resource):
     )
     @marshal_task
     def post(self, args):
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
 
         if not microscope:
             abort(503, "No microscope connected. Unable to autofocus.")

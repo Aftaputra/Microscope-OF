@@ -69,7 +69,7 @@ app, labthing = create_app(
 app.json_encoder = JSONEncoder
 
 # Attach lab devices
-labthing.register_device(api_microscope, "openflexure_microscope")
+labthing.register_device(api_microscope, "org.openflexure.microscope")
 
 # Attach extensions
 if not os.path.isfile(USER_EXTENSIONS_PATH):

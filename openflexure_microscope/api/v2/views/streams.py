@@ -22,7 +22,7 @@ class MjpegStream(Resource):
         """
         MJPEG stream from the microscope camera
         """
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
         # Restart stream worker thread
         microscope.camera.start_worker()
 
@@ -46,7 +46,7 @@ class SnapshotStream(Resource):
         :>header Content-Type: image/jpeg
         :status 200: stream active
         """
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
         # Restart stream worker thread
         microscope.camera.start_worker()
 

@@ -49,7 +49,7 @@ class CaptureAPI(Resource):
         """
         Create a new capture
         """
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
 
         resize = args.get("resize", None)
         if resize:
@@ -97,7 +97,7 @@ class GPUPreviewStartAPI(Resource):
         """
         Start the onboard GPU preview.
         """
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
         payload = JsonResponse(request)
 
         window = payload.param("window", default=[])
@@ -120,6 +120,6 @@ class GPUPreviewStopAPI(Resource):
         """
         Stop the onboard GPU preview.
         """
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
         microscope.camera.stop_preview()
         return jsonify(microscope.state)

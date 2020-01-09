@@ -28,7 +28,7 @@ class MoveStageAPI(Resource):
         """
         Move the microscope stage in x, y, z
         """
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
 
         # Handle absolute positioning (calculate a relative move from current position and target)
         if (args.get("absolute")) and (microscope.stage):  # Only if stage exists
@@ -62,7 +62,7 @@ class ZeroStageAPI(Resource):
         Zero the stage coordinates.
         Does not move the stage, but rather makes the current position read as [0, 0, 0]
         """
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
         microscope.stage.zero_position()
 
         return jsonify(microscope.status["stage"])

@@ -95,7 +95,7 @@ class ZipBuilderAPIView(Resource):
     def post(self):
 
         ids = list(JsonResponse(request).json)
-        microscope = find_device("openflexure_microscope")
+        microscope = find_device("org.openflexure.microscope")
 
         task = taskify(default_zip_manager.build_zip_from_capture_ids)(microscope, ids)
 
