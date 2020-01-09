@@ -11,7 +11,13 @@ from decimal import Decimal
 from typing import Dict, List, Tuple, Union
 from uuid import UUID
 
-# TODO: Use this to convert arbitrary dictionary into its own schema, for W3C TD
+"""
+TODO: Use this to convert arbitrary dictionary into its own schema, for W3C TD
+
+First: Convert Python non-builtins to builtins using DEFAULT_BUILTIN_CONVERSIONS
+Then match types of each element to Field using DEFAULT_TYPE_MAPPING
+Finally convert Fields to JSON using converter (preferred due to extra metadata), or DEFAULT_FIELD_MAPPING
+"""
 # Python types to Marshmallow fields
 DEFAULT_TYPE_MAPPING = {
     bool: Boolean,
@@ -48,10 +54,11 @@ def to_string(o):
 
 
 # Map of Python type conversions
-DEFAULT_TYPE_CONVERSIONS = {
+DEFAULT_BUILTIN_CONVERSIONS = {
     "numpy.ndarray": ndarray_to_list,
     "numpy.int": to_int,
     "fractions.Fraction": to_float,
 }
 
 # Use with [x.__module__+"."+x.__name__ for x in inspect.getmro(type(POSSIBLE_MATCHER))]
+# Resulting array will contain strings with the same format as keys in DEFAULT_BUILTIN_CONVERSIONS
