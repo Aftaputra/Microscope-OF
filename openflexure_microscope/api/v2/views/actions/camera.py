@@ -114,8 +114,8 @@ class GPUPreviewStartAPI(Resource):
 
         microscope.camera.start_preview(fullscreen=fullscreen, window=window)
 
-        # TODO: Make schema for microscope state
-        return jsonify(microscope.state)
+        # TODO: Make schema for microscope status
+        return jsonify(microscope.status)
 
 
 @ThingAction
@@ -126,5 +126,5 @@ class GPUPreviewStopAPI(Resource):
         """
         microscope = find_device("org.openflexure.microscope")
         microscope.camera.stop_preview()
-        # TODO: Make schema for microscope state
-        return jsonify(microscope.state)
+        # TODO: Make schema for microscope status
+        return jsonify(microscope.status)
