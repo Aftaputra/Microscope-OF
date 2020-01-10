@@ -48,7 +48,9 @@ class W3CThingDescriptionResource(Resource):
         for key, prop in current_labthing().actions.items():
             actions[key] = {}
             actions[key]["title"] = prop.__name__
-            actions[key]["description"] = get_docstring(prop)
+            actions[key]["description"] = get_docstring(prop) or (
+                get_docstring(prop.post) if hasattr(prop, "post") else ""
+            )
             actions[key]["links"] = [
                 {"href": current_labthing().url_for(prop, _external=True)}
             ]
