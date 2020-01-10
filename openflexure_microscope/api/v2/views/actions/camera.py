@@ -44,7 +44,6 @@ class CaptureAPI(Resource):
     )
     @marshal_with(capture_schema)
     @doc_response(200, description="Capture successful")
-    @tag("foo")
     def post(self, args):
         """
         Create a new capture
@@ -86,6 +85,7 @@ class CaptureAPI(Resource):
         return output
 
 
+@ThingAction
 class GPUPreviewStartAPI(Resource):
     """
     Start the onboard GPU preview.
@@ -93,14 +93,16 @@ class GPUPreviewStartAPI(Resource):
     in the format ``[x, y, width, height]``.
     """
 
-    def post(self):
+    @use_args(
+        {"window": fields.List(fields.Integer, missing=[], example=[0, 0, 640, 480])}
+    )
+    def post(self, args):
         """
         Start the onboard GPU preview.
         """
         microscope = find_device("org.openflexure.microscope")
-        payload = JsonResponse(request)
 
-        window = payload.param("window", default=[])
+        window = args.get("window")
         logging.debug(window)
 
         if len(window) != 4:
@@ -112,9 +114,11 @@ class GPUPreviewStartAPI(Resource):
 
         microscope.camera.start_preview(fullscreen=fullscreen, window=window)
 
+        # TODO: Make schema for microscope state
         return jsonify(microscope.state)
 
 
+@ThingAction
 class GPUPreviewStopAPI(Resource):
     def post(self):
         """
@@ -122,4 +126,5 @@ class GPUPreviewStopAPI(Resource):
         """
         microscope = find_device("org.openflexure.microscope")
         microscope.camera.stop_preview()
+        # TODO: Make schema for microscope state
         return jsonify(microscope.state)
