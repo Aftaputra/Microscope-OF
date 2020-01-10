@@ -5,6 +5,7 @@ from openflexure_microscope.common.flask_labthings.decorators import (
     use_args,
     marshal_with,
     doc,
+    ThingAction,
 )
 from openflexure_microscope.common.flask_labthings import fields
 
@@ -15,10 +16,13 @@ from flask import Blueprint, jsonify, request
 import logging
 
 
+@ThingAction
 class MoveStageAPI(Resource):
     @use_args(
         {
-            "absolute": fields.Boolean(default=False, example=False, description="Move to an absolute position"),
+            "absolute": fields.Boolean(
+                default=False, example=False, description="Move to an absolute position"
+            ),
             "x": fields.Int(default=0, example=100),
             "y": fields.Int(default=0, example=100),
             "z": fields.Int(default=0, example=20),
@@ -53,9 +57,11 @@ class MoveStageAPI(Resource):
         else:
             logging.warning("Unable to move. No stage found.")
 
+        # TODO: Make schema for microscope status
         return jsonify(microscope.status["stage"]["position"])
 
 
+@ThingAction
 class ZeroStageAPI(Resource):
     def post(self):
         """
@@ -65,4 +71,5 @@ class ZeroStageAPI(Resource):
         microscope = find_device("org.openflexure.microscope")
         microscope.stage.zero_position()
 
+        # TODO: Make schema for microscope status
         return jsonify(microscope.status["stage"])
