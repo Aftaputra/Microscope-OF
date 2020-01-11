@@ -39,7 +39,14 @@ class W3CThingDescriptionResource(Resource):
         for key, prop in current_labthing().properties.items():
             props[key] = {}
             props[key]["title"] = prop.__name__
-            props[key]["description"] = get_docstring(prop)
+            # TODO: Get description from __apispec__ preferentially
+            props[key]["description"] = get_docstring(prop) or (
+                get_docstring(prop.get) if hasattr(prop, "get") else ""
+            )
+            props[key]["readOnly"] = not (
+                hasattr(prop, "post") or hasattr(prop, "put") or hasattr(prop, "delete")
+            )
+            props[key]["writeOnly"] = not hasattr(prop, "get")
             props[key]["links"] = [
                 {"href": current_labthing().url_for(prop, _external=True)}
             ]
@@ -48,6 +55,7 @@ class W3CThingDescriptionResource(Resource):
         for key, prop in current_labthing().actions.items():
             actions[key] = {}
             actions[key]["title"] = prop.__name__
+            # TODO: Get description from __apispec__ preferentially
             actions[key]["description"] = get_docstring(prop) or (
                 get_docstring(prop.post) if hasattr(prop, "post") else ""
             )
@@ -56,6 +64,7 @@ class W3CThingDescriptionResource(Resource):
             ]
 
         td = {
+            "@context": "https://www.w3.org/2019/wot/td/v1",
             "id": url_for("labthings_docs.w3c_td", _external=True),
             "title": current_labthing().title,
             "description": current_labthing().description,
