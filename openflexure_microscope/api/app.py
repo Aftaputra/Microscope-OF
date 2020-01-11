@@ -69,7 +69,7 @@ app, labthing = create_app(
 app.json_encoder = JSONEncoder
 
 # Attach lab devices
-labthing.register_device(api_microscope, "org.openflexure.microscope")
+labthing.add_component(api_microscope, "org.openflexure.microscope")
 
 # Attach extensions
 if not os.path.isfile(USER_EXTENSIONS_PATH):
@@ -78,33 +78,27 @@ for extension in find_extensions(USER_EXTENSIONS_PATH):
     labthing.register_extension(extension)
 
 # Attach captures resources
-labthing.add_resource(views.CaptureList, f"/captures")
-labthing.register_property(views.CaptureList)
-labthing.add_resource(views.CaptureResource, f"/captures/<id>")
-labthing.add_resource(views.CaptureDownload, f"/captures/<id>/download/<filename>")
-labthing.add_resource(views.CaptureTags, f"/captures/<id>/tags")
-labthing.add_resource(views.CaptureMetadata, f"/captures/<id>/metadata")
+labthing.add_view(views.CaptureList, f"/captures")
+labthing.add_view(views.CaptureResource, f"/captures/<id>")
+labthing.add_view(views.CaptureDownload, f"/captures/<id>/download/<filename>")
+labthing.add_view(views.CaptureTags, f"/captures/<id>/tags")
+labthing.add_view(views.CaptureMetadata, f"/captures/<id>/metadata")
 
 # Attach settings and status resources
-labthing.add_resource(views.SettingsProperty, f"/settings")
-labthing.register_property(views.SettingsProperty)
-labthing.add_resource(views.NestedSettingsProperty, "/settings/<path:route>")
-labthing.add_resource(views.StatusProperty, "/status")
-labthing.register_property(views.StatusProperty)
-labthing.add_resource(views.NestedStatusProperty, "/status/<path:route>")
+labthing.add_view(views.SettingsProperty, f"/settings")
+labthing.add_view(views.NestedSettingsProperty, "/settings/<path:route>")
+labthing.add_view(views.StatusProperty, "/status")
+labthing.add_view(views.NestedStatusProperty, "/status/<path:route>")
 
 # Attach streams resources
-labthing.add_resource(views.MjpegStream, f"/streams/mjpeg")
-labthing.register_property(views.MjpegStream)
-labthing.add_resource(views.SnapshotStream, f"/streams/snapshot")
-labthing.register_property(views.SnapshotStream)
+labthing.add_view(views.MjpegStream, f"/streams/mjpeg")
+labthing.add_view(views.SnapshotStream, f"/streams/snapshot")
 
 # Attach microscope action resources
 for name, action in views.enabled_root_actions().items():
     view_class = action["view_class"]
     rule = action["rule"]
-    labthing.add_resource(view_class, f"/actions{rule}")
-    labthing.register_action(view_class)
+    labthing.add_view(view_class, f"/actions{rule}")
 
 
 @app.route("/routes")

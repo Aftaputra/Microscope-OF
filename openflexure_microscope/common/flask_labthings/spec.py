@@ -20,9 +20,11 @@ def update_spec(obj, spec):
     rupdate(obj.__apispec__, spec)
     return obj.__apispec__
 
+
 def get_spec(obj):
     obj.__apispec__ = obj.__dict__.get("__apispec__", {})
     return obj.__apispec__
+
 
 def view2path(rule: str, view: Resource, spec: APISpec):
     params = {

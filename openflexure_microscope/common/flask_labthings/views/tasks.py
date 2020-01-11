@@ -1,12 +1,13 @@
 from flask import abort, url_for
 
-from ..decorators import marshal_with
+from ..decorators import marshal_with, ThingProperty
 from ..resource import Resource
 from ..schema import TaskSchema
 
 from openflexure_microscope.common.labthings_core import tasks
 
 
+@ThingProperty
 class TaskList(Resource):
     """
     List and basic documentation for all session tasks

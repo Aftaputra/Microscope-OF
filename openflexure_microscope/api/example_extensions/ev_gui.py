@@ -1,5 +1,9 @@
 from openflexure_microscope.common.flask_labthings.resource import Resource
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
+from openflexure_microscope.common.flask_labthings.decorators import (
+    ThingAction,
+    ThingProperty,
+)
 
 from openflexure_microscope.api.utilities.gui import expand_routes
 
@@ -72,6 +76,7 @@ static_form = {
 }
 
 
+@ThingProperty
 class TestAPIView(Resource):
     def get(self):
         global val_int
@@ -79,6 +84,7 @@ class TestAPIView(Resource):
         return jsonify({"val": True})
 
 
+@ThingAction
 class TestDoAPIView(Resource):
     def post(self):
         global val_int

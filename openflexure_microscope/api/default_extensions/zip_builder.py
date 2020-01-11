@@ -17,6 +17,10 @@ import logging
 from openflexure_microscope.common.flask_labthings.find import find_device
 from openflexure_microscope.common.flask_labthings.resource import Resource
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
+from openflexure_microscope.common.flask_labthings.decorators import (
+    ThingAction,
+    ThingProperty,
+)
 
 
 class ZipManager:
@@ -91,6 +95,7 @@ class ZipManager:
 default_zip_manager = ZipManager()
 
 
+@ThingAction
 class ZipBuilderAPIView(Resource):
     def post(self):
 
@@ -103,6 +108,7 @@ class ZipBuilderAPIView(Resource):
         return jsonify(task.state), 201
 
 
+@ThingProperty
 class ZipListAPIView(Resource):
     def get(self):
         return jsonify(default_zip_manager.session_zips)
@@ -146,4 +152,3 @@ zip_extension_v2.add_view(ZipGetterAPIView, "/get/<string:session_id>")
 zip_extension_v2.add_view(ZipListAPIView, "/get")
 
 zip_extension_v2.add_view(ZipBuilderAPIView, "/build")
-zip_extension_v2.register_action(ZipBuilderAPIView)

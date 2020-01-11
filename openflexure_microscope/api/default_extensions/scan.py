@@ -12,8 +12,8 @@ from openflexure_microscope.common.flask_labthings.find import (
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
 from openflexure_microscope.common.flask_labthings.decorators import (
     marshal_task,
-    marshal_with,
     use_args,
+    ThingAction,
 )
 from openflexure_microscope.common.flask_labthings import fields
 
@@ -340,6 +340,7 @@ def stack(
 ### Web views
 
 
+@ThingAction
 class TileScanAPI(Resource):
     @use_args(
         {
@@ -398,4 +399,3 @@ class TileScanAPI(Resource):
 scan_extension_v2 = BaseExtension("scan")
 
 scan_extension_v2.add_view(TileScanAPI, "/tile")
-scan_extension_v2.register_action(TileScanAPI)

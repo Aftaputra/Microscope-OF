@@ -1,6 +1,10 @@
 from openflexure_microscope.common.flask_labthings.find import find_device
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
 from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.decorators import (
+    ThingAction,
+    ThingProperty,
+)
 
 from openflexure_microscope.devel import JsonResponse, request, jsonify, taskify, abort
 from openflexure_microscope.utilities import set_properties
@@ -298,6 +302,7 @@ class MeasureSharpnessAPI(Resource):
         return jsonify({"sharpness": measure_sharpness(microscope)})
 
 
+@ThingAction
 class AutofocusAPI(Resource):
     """
     Run a standard autofocus
@@ -324,6 +329,7 @@ class AutofocusAPI(Resource):
             abort(503, "No stage connected. Unable to autofocus.")
 
 
+@ThingAction
 class FastAutofocusAPI(Resource):
     """
     Run a fast autofocus
@@ -359,9 +365,5 @@ autofocus_extension_v2.add_method(fast_autofocus, "fast_autofocus")
 autofocus_extension_v2.add_method(autofocus, "autofocus")
 
 autofocus_extension_v2.add_view(MeasureSharpnessAPI, "/measure_sharpness")
-
 autofocus_extension_v2.add_view(AutofocusAPI, "/autofocus")
-autofocus_extension_v2.register_action(AutofocusAPI)
-
 autofocus_extension_v2.add_view(FastAutofocusAPI, "/fast_autofocus")
-autofocus_extension_v2.register_action(FastAutofocusAPI)

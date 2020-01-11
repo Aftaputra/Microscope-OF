@@ -28,11 +28,11 @@ class LabThing(object):
     ):
         self.app = app
 
-        self.devices = {}
+        self.components = {}
 
         self.extensions = {}
 
-        self.resources = []
+        self.views = []
         self.properties = {}
         self.actions = {}
 
@@ -93,8 +93,8 @@ class LabThing(object):
         app.extensions[EXTENSION_NAME] = self
 
         # Add resources, if registered before tying to a Flask app
-        if len(self.resources) > 0:
-            for resource, urls, endpoint, kwargs in self.resources:
+        if len(self.views) > 0:
+            for resource, urls, endpoint, kwargs in self.views:
                 self._register_view(app, resource, *urls, endpoint=endpoint, **kwargs)
 
         # Create base routes
@@ -110,19 +110,15 @@ class LabThing(object):
         self.app.register_blueprint(docs_blueprint, url_prefix=self.url_prefix)
 
         # Add extension overview
-        self.add_resource(
-            ExtensionList, "/extensions", endpoint=EXTENSION_LIST_ENDPOINT
-        )
-        self.register_property(ExtensionList)
+        self.add_view(ExtensionList, "/extensions", endpoint=EXTENSION_LIST_ENDPOINT)
         # Add task routes
-        self.add_resource(TaskList, "/tasks", endpoint=TASK_LIST_ENDPOINT)
-        self.register_property(TaskList)
-        self.add_resource(TaskResource, "/tasks/<id>", endpoint=TASK_ENDPOINT)
+        self.add_view(TaskList, "/tasks", endpoint=TASK_LIST_ENDPOINT)
+        self.add_view(TaskResource, "/tasks/<id>", endpoint=TASK_ENDPOINT)
 
     ### Device stuff
 
-    def register_device(self, device_object, device_name: str):
-        self.devices[device_name] = device_object
+    def add_component(self, device_object, device_name: str):
+        self.components[device_name] = device_object
 
     ### Extension stuff
 
@@ -134,17 +130,11 @@ class LabThing(object):
 
         for extension_view_id, extension_view in extension_object.views.items():
             # Add route to the extensions blueprint
-            self.add_resource(
+            self.add_view(
                 extension_view["view"],
                 "/extensions" + extension_view["rule"],
                 **extension_view["kwargs"],
             )
-
-        for prop in extension_object.properties:
-            self.register_property(prop)
-
-        for action in extension_object.actions:
-            self.register_action(action)
 
     ### Resource stuff
 
@@ -158,16 +148,8 @@ class LabThing(object):
         parts = [registration_prefix, self.url_prefix, url_part]
         return "".join([part for part in parts if part])
 
-    def register_property(self, resource):
-        logging.warning("register_property is deprecated. Use the @ltproperty class decorator instead.")
-        pass
-
-    def register_action(self, resource):
-        logging.warning("register_action is deprecated. Use the @ltaction class decorator instead.")
-        pass
-
-    def add_resource(self, resource, *urls, endpoint=None, **kwargs):
-        """Adds a resource to the api.
+    def add_view(self, resource, *urls, endpoint=None, **kwargs):
+        """Adds a view to the api.
         :param resource: the class name of your resource
         :type resource: :class:`Type[Resource]`
         :param urls: one or more url routes to match for the resource, standard
@@ -197,11 +179,11 @@ class LabThing(object):
         if self.app is not None:
             self._register_view(self.app, resource, *urls, endpoint=endpoint, **kwargs)
 
-        self.resources.append((resource, urls, endpoint, kwargs))
+        self.views.append((resource, urls, endpoint, kwargs))
 
-    def resource(self, *urls, **kwargs):
+    def view(self, *urls, **kwargs):
         def decorator(cls):
-            self.add_resource(cls, *urls, **kwargs)
+            self.add_view(cls, *urls, **kwargs)
             return cls
 
         return decorator

@@ -77,7 +77,9 @@ def ThingAction(viewcls):
     update_spec(viewcls, {"_groups": ["actions"]})
     return viewcls
 
+
 thing_action = ThingAction
+
 
 def ThingProperty(viewcls):
     # Pass params to call function attribute for external access
@@ -85,7 +87,9 @@ def ThingProperty(viewcls):
     update_spec(viewcls, {"_groups": ["properties"]})
     return viewcls
 
+
 thing_property = ThingProperty
+
 
 class use_args(object):
     def __init__(self, schema, **kwargs):
@@ -121,7 +125,9 @@ class Doc(object):
         update_spec(f, self.kwargs)
         return f
 
+
 doc = Doc
+
 
 class Tag(object):
     def __init__(self, tags):
@@ -137,7 +143,9 @@ class Tag(object):
         update_spec(f, {"tags": self.tags})
         return f
 
+
 tag = Tag
+
 
 class doc_response(object):
     def __init__(self, code, description=None, **kwargs):

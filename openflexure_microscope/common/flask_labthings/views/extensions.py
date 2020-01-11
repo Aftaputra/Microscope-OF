@@ -1,17 +1,13 @@
 """
 Top-level representation of attached and enabled Extensions
 """
-
-from openflexure_microscope.common.flask_labthings.utilities import get_docstring
-from openflexure_microscope.common.flask_labthings.schema import Schema
-from openflexure_microscope.common.flask_labthings import fields
-
 from ..resource import Resource
 from ..find import registered_extensions
 from ..schema import ExtensionSchema
-from ..decorators import marshal_with
+from ..decorators import marshal_with, ThingProperty
 
 
+@ThingProperty
 class ExtensionList(Resource):
     """
     List and basic documentation for all enabled Extensions
