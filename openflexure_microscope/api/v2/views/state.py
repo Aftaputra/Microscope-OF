@@ -9,10 +9,13 @@ from openflexure_microscope.common.labthings_core.utilities import (
 from openflexure_microscope.common.flask_labthings.find import find_device
 from openflexure_microscope.common.flask_labthings.resource import Resource
 
+from openflexure_microscope.common.flask_labthings.decorators import ThingProperty
+
 from flask import jsonify, request, abort
 import logging
 
 
+@ThingProperty
 class SettingsProperty(Resource):
     def get(self):
         microscope = find_device("org.openflexure.microscope")
@@ -57,6 +60,7 @@ class NestedSettingsProperty(Resource):
         return self.get(route)
 
 
+@ThingProperty
 class StatusProperty(Resource):
     def get(self):
         microscope = find_device("org.openflexure.microscope")
