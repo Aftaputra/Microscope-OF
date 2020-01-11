@@ -20,8 +20,9 @@ class BaseExtension:
 
     Handles binding route views and forms.
     """
+    # TODO: Allow adding components to extensions
 
-    def __init__(self, name: str, description=""):
+    def __init__(self, name: str, description="", version="0.0.0"):
         self._views = (
             {}
         )  # Key: Full, Python-safe ID. Val: Original rule, and view class
@@ -35,6 +36,7 @@ class BaseExtension:
 
         self.name = name
         self.description = get_docstring(self)
+        self.version = str(version)
 
         self.methods = {}
 
@@ -63,12 +65,6 @@ class BaseExtension:
         self._views[view_id] = d
         # Store the rule expansion information
         self._rules[rule] = self._views[view_id]
-
-    def register_action(self, view_class):
-        self.actions.append(view_class)
-
-    def register_property(self, view_class):
-        self.properties.append(view_class)
 
     @property
     def meta(self):

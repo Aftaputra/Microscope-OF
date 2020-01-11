@@ -146,7 +146,7 @@ class ZipGetterAPIView(Resource):
         return jsonify({"return": session_id})
 
 
-zip_extension_v2 = BaseExtension("zip_builder")
+zip_extension_v2 = BaseExtension("org.openflexure.zipbuilder", version="2.0.0-beta.1")
 
 zip_extension_v2.add_view(ZipGetterAPIView, "/get/<string:session_id>")
 zip_extension_v2.add_view(ZipListAPIView, "/get")

@@ -169,7 +169,7 @@ def tile(
     )
 
     # Check if autofocus is enabled
-    autofocus_extension = find_extension("autofocus")
+    autofocus_extension = find_extension("org.openflexure.autofocus")
     if (
         autofocus_dz
         and autofocus_extension
@@ -396,6 +396,6 @@ class TileScanAPI(Resource):
         return task
 
 
-scan_extension_v2 = BaseExtension("scan")
+scan_extension_v2 = BaseExtension("org.openflexure.scan", version="2.0.0-beta.1")
 
 scan_extension_v2.add_view(TileScanAPI, "/tile")
