@@ -6,23 +6,24 @@ from openflexure_microscope.common.labthings_core.utilities import (
     create_from_path,
 )
 
-from openflexure_microscope.common.flask_labthings.find import find_device
+from openflexure_microscope.common.flask_labthings.find import find_component
 from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.decorators import doc_response, ThingProperty
 
-from flask import jsonify, request, abort, Response
-import logging
+from flask import Response
 
-
+@ThingProperty
 class MjpegStream(Resource):
     """
     Real-time MJPEG stream from the microscope camera
     """
 
+    @doc_response(200, mimetype="multipart/x-mixed-replace")
     def get(self):
         """
         MJPEG stream from the microscope camera
         """
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         # Restart stream worker thread
         microscope.camera.start_worker()
 
@@ -31,22 +32,18 @@ class MjpegStream(Resource):
         )
 
 
+@ThingProperty
 class SnapshotStream(Resource):
     """
     Single JPEG snapshot from the camera stream
     """
 
+    @doc_response(200, description="Snapshot taken", mimetype="image/jpeg")
     def get(self):
         """
         Single snapshot from the camera stream
-
-        .. :quickref: Streams; Camera snapshot
-
-        :>header Accept: image/jpeg
-        :>header Content-Type: image/jpeg
-        :status 200: stream active
         """
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         # Restart stream worker thread
         microscope.camera.start_worker()
 
