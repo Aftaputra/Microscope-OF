@@ -8,6 +8,7 @@ from openflexure_microscope.common.labthings_core import tasks
 
 
 @ThingProperty
+@Tag("tasks")
 class TaskList(Resource):
     @marshal_with(TaskSchema(many=True))
     def get(self):
@@ -17,7 +18,7 @@ class TaskList(Resource):
         return tasks.tasks()
 
 
-@Tag("properties")
+@Tag(["properties", "tasks"])
 class TaskResource(Resource):
     @marshal_with(TaskSchema())
     def get(self, id):
