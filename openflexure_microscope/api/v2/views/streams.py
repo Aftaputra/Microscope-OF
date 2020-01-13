@@ -12,6 +12,7 @@ from openflexure_microscope.common.flask_labthings.decorators import doc_respons
 
 from flask import Response
 
+
 @ThingProperty
 class MjpegStream(Resource):
     """

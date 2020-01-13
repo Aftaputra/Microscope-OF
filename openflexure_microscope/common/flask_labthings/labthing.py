@@ -6,7 +6,7 @@ from . import EXTENSION_NAME  # TODO: Move into .names
 from .names import TASK_ENDPOINT, TASK_LIST_ENDPOINT, EXTENSION_LIST_ENDPOINT
 from .extensions import BaseExtension
 from .utilities import description_from_view
-from .spec import view2path, get_spec
+from .spec import rule2path, get_spec
 
 from .views.extensions import ExtensionList
 from .views.tasks import TaskList, TaskResource
@@ -188,8 +188,8 @@ class LabThing(object):
 
         return decorator
 
-    def _register_view(self, app, resource, *urls, endpoint=None, **kwargs):
-        endpoint = endpoint or resource.__name__.lower()
+    def _register_view(self, app, view, *urls, endpoint=None, **kwargs):
+        endpoint = endpoint or view.__name__.lower()
         self.endpoints.add(endpoint)
         resource_class_args = kwargs.pop("resource_class_args", ())
         resource_class_kwargs = kwargs.pop("resource_class_kwargs", {})
@@ -199,14 +199,14 @@ class LabThing(object):
             previous_view_class = app.view_functions[endpoint].__dict__["view_class"]
 
             # if you override the endpoint with a different class, avoid the collision by raising an exception
-            if previous_view_class != resource:
+            if previous_view_class != view:
                 raise ValueError(
                     "This endpoint (%s) is already set to the class %s."
                     % (endpoint, previous_view_class.__name__)
                 )
 
-        resource.endpoint = endpoint
-        resource_func = resource.as_view(
+        view.endpoint = endpoint
+        resource_func = view.as_view(
             endpoint, *resource_class_args, **resource_class_kwargs
         )
 
@@ -216,15 +216,20 @@ class LabThing(object):
             # Add the url to the application or blueprint
             app.add_url_rule(rule, view_func=resource_func, **kwargs)
             # Add the resource to our API spec
-            self.spec.path(**view2path(rule, resource, self.spec))
+            #self.spec.path(**view2path(rule, view, self.spec))
+
+        # TEST: Getting Flask rule objects
+        flask_rules = app.url_map._rules_by_endpoint.get(endpoint)
+        for flask_rule in flask_rules:
+            self.spec.path(**rule2path(flask_rule, view, self.spec))
 
         # Handle resource groups listed in API spec
-        view_spec = get_spec(resource)
+        view_spec = get_spec(view)
         view_groups = view_spec.get("_groups", {})
         if "actions" in view_groups:
-            self.actions[resource.endpoint] = resource
+            self.actions[view.endpoint] = view
         if "properties" in view_groups:
-            self.properties[resource.endpoint] = resource
+            self.properties[view.endpoint] = view
 
     ### Utilities
 

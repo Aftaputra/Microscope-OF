@@ -9,7 +9,7 @@ from openflexure_microscope.common.labthings_core.utilities import (
 from openflexure_microscope.common.flask_labthings.find import find_component
 from openflexure_microscope.common.flask_labthings.resource import Resource
 
-from openflexure_microscope.common.flask_labthings.decorators import ThingProperty, marshal_with
+from openflexure_microscope.common.flask_labthings.decorators import ThingProperty, Tag
 
 from flask import jsonify, request, abort
 import logging
@@ -40,8 +40,12 @@ class SettingsProperty(Resource):
         return self.get()
 
 
+@Tag("properties")
 class NestedSettingsProperty(Resource):
     def get(self, route):
+        """
+        Show a nested section of the current microscope settings
+        """
         microscope = find_component("org.openflexure.microscope")
         keys = route.split("/")
 
@@ -53,6 +57,9 @@ class NestedSettingsProperty(Resource):
         return jsonify(value)
 
     def put(self, route):
+        """
+        Update a nested section of the current microscope settings
+        """
         microscope = find_component("org.openflexure.microscope")
         keys = route.split("/")
         payload = JsonResponse(request)
@@ -76,8 +83,12 @@ class StatusProperty(Resource):
         return jsonify(microscope.status)
 
 
+@Tag("properties")
 class NestedStatusProperty(Resource):
     def get(self, route):
+        """
+        Show a nested section of the current microscope state
+        """
         microscope = find_component("org.openflexure.microscope")
         keys = route.split("/")
 

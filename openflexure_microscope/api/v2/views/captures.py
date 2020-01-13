@@ -9,7 +9,7 @@ from openflexure_microscope.common.flask_labthings.resource import Resource
 from openflexure_microscope.common.flask_labthings.utilities import (
     description_from_view,
 )
-from openflexure_microscope.common.flask_labthings.decorators import marshal_with
+from openflexure_microscope.common.flask_labthings.decorators import marshal_with, doc_response, Tag, ThingProperty
 
 from openflexure_microscope.common.flask_labthings.find import find_component
 
@@ -64,25 +64,26 @@ capture_schema = CaptureSchema()
 capture_list_schema = CaptureSchema(many=True)
 
 
+@ThingProperty
+@Tag("captures")
 class CaptureList(Resource):
-    """
-    List all image captures
-    """
-
     @marshal_with(CaptureSchema(many=True))
     def get(self):
+        """
+        List all image captures
+        """
         microscope = find_component("org.openflexure.microscope")
         image_list = microscope.camera.images
         return image_list
 
 
+@Tag("captures")
 class CaptureResource(Resource):
-    """
-    Description of a single image capture
-    """
-
     @marshal_with(CaptureSchema())
     def get(self, id):
+        """
+        Description of a single image capture
+        """
         microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
@@ -92,6 +93,9 @@ class CaptureResource(Resource):
         return capture_obj
 
     def delete(self, id):
+        """
+        Delete a single image capture
+        """
         microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
@@ -103,13 +107,13 @@ class CaptureResource(Resource):
         return "", 204
 
 
+@Tag("captures")
 class CaptureDownload(Resource):
-    """
-    Image data for a single image capture
-    """
-
+    @doc_response(200, mimetype="image/jpeg")
     def get(self, id, filename):
-
+        """
+        Image data for a single image capture
+        """
         microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
@@ -139,13 +143,12 @@ class CaptureDownload(Resource):
         return send_file(img, mimetype="image/jpeg")
 
 
+@Tag("captures")
 class CaptureTags(Resource):
-    """
-    Tags associated with a single image capture
-    """
-
     def get(self, id):
-
+        """
+        Get tags associated with a single image capture
+        """
         microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
@@ -155,13 +158,16 @@ class CaptureTags(Resource):
         return jsonify(capture_obj.tags)
 
     def put(self, id):
-
+        """
+        Add tags to a single image capture
+        """
         microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
+        # TODO: Replace with normal Flask request JSON thing
         data_dict = JsonResponse(request).json
 
         if type(data_dict) != list:
@@ -172,7 +178,9 @@ class CaptureTags(Resource):
         return jsonify(capture_obj.tags)
 
     def delete(self, capture_id):
-
+        """
+        Delete tags from a single image capture
+        """
         microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
@@ -190,12 +198,12 @@ class CaptureTags(Resource):
         return jsonify(capture_obj.tags)
 
 
+@Tag("captures")
 class CaptureMetadata(Resource):
-    """
-    All metadata associated with a single image capture
-    """
-
     def get(self, id):
+        """
+        Get metadata associated with a single image capture
+        """
         microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
@@ -205,6 +213,9 @@ class CaptureMetadata(Resource):
         return jsonify(capture_obj.metadata)
 
     def put(self, id):
+        """
+        Update metadata for a single image capture
+        """
         microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 

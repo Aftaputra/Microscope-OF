@@ -1,4 +1,4 @@
-from .resource import Resource
+from ..resource import Resource
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 
@@ -8,9 +8,12 @@ from openflexure_microscope.common.labthings_core.utilities import (
     rupdate,
 )
 
-from .fields import Field
+from ..fields import Field
 from marshmallow import Schema as BaseSchema
 
+from .paths import rule_to_path, rule_to_params
+
+from werkzeug.routing import Rule
 from collections import Mapping
 from http import HTTPStatus
 
@@ -26,14 +29,22 @@ def get_spec(obj):
     return obj.__apispec__
 
 
-def view2path(rule: str, view: Resource, spec: APISpec):
+def rule2path(rule: Rule, view: Resource, spec: APISpec):
     params = {
-        "path": rule,  # TODO: Validate this slightly (leading / etc)
+        "path": rule_to_path(rule),
         "operations": view2operations(view, spec),
         "description": get_docstring(view),
         "summary": get_summary(view),
     }
 
+    # Add URL arguments
+    if rule.arguments:
+        for op in params.get("operations").keys():
+            params["operations"][op].update({
+                "parameters": rule_to_params(rule)
+            })
+
+    # Add extra parameters
     if hasattr(view, "__apispec__"):
         # Recursively update params
         rupdate(params, view.__apispec__)

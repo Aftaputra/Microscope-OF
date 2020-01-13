@@ -1,9 +1,10 @@
-from flask import abort, url_for, jsonify, render_template, Blueprint
+from flask import abort, url_for, jsonify, render_template, Blueprint, current_app, request
 
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
 
 from ...resource import Resource
 from ...find import current_labthing
+from ...spec import rule_to_path
 
 import os
 
@@ -35,8 +36,13 @@ class W3CThingDescriptionResource(Resource):
     """
 
     def get(self):
+        base_url = request.host_url.rstrip('/')
+
         props = {}
         for key, prop in current_labthing().properties.items():
+            prop_rules = current_app.url_map._rules_by_endpoint.get(prop.endpoint)
+            prop_urls = [rule_to_path(rule) for rule in prop_rules]
+
             props[key] = {}
             props[key]["title"] = prop.__name__
             # TODO: Get description from __apispec__ preferentially
@@ -48,19 +54,22 @@ class W3CThingDescriptionResource(Resource):
             )
             props[key]["writeOnly"] = not hasattr(prop, "get")
             props[key]["links"] = [
-                {"href": current_labthing().url_for(prop, _external=True)}
+                {"href": f"{base_url}{url}"} for url in prop_urls
             ]
 
         actions = {}
-        for key, prop in current_labthing().actions.items():
+        for key, action in current_labthing().actions.items():
+            action_rules = current_app.url_map._rules_by_endpoint.get(action.endpoint)
+            action_urls = [rule_to_path(rule) for rule in action_rules]
+
             actions[key] = {}
-            actions[key]["title"] = prop.__name__
+            actions[key]["title"] = action.__name__
             # TODO: Get description from __apispec__ preferentially
-            actions[key]["description"] = get_docstring(prop) or (
-                get_docstring(prop.post) if hasattr(prop, "post") else ""
+            actions[key]["description"] = get_docstring(action) or (
+                get_docstring(action.post) if hasattr(action, "post") else ""
             )
             actions[key]["links"] = [
-                {"href": current_labthing().url_for(prop, _external=True)}
+                {"href": f"{base_url}{url}"} for url in action_urls
             ]
 
         td = {

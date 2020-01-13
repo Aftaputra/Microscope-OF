@@ -1,6 +1,6 @@
 from flask import abort, url_for
 
-from ..decorators import marshal_with, ThingProperty
+from ..decorators import marshal_with, ThingProperty, Tag
 from ..resource import Resource
 from ..schema import TaskSchema
 
@@ -9,18 +9,23 @@ from openflexure_microscope.common.labthings_core import tasks
 
 @ThingProperty
 class TaskList(Resource):
-    """
-    List and basic documentation for all session tasks
-    """
-
     @marshal_with(TaskSchema(many=True))
     def get(self):
+        """
+        List of all session tasks
+        """
         return tasks.tasks()
 
 
+@Tag("properties")
 class TaskResource(Resource):
     @marshal_with(TaskSchema())
     def get(self, id):
+        """
+        Show status of a session task
+
+        Includes progress and intermediate data.
+        """
         try:
             task = tasks.dict()[id]
         except KeyError:
@@ -30,6 +35,11 @@ class TaskResource(Resource):
 
     @marshal_with(TaskSchema())
     def delete(self, id):
+        """
+        Terminate a running task.
+
+        If the task is finished, deletes its entry.
+        """
         try:
             task = tasks.dict()[id]
         except KeyError:
