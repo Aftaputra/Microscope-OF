@@ -4,7 +4,7 @@ from openflexure_microscope.common.labthings_core.utilities import get_docstring
 
 from ...resource import Resource
 from ...find import current_labthing
-from ...spec import rule_to_path
+from ...spec import rule_to_path, rule_to_params
 
 import os
 
@@ -56,6 +56,20 @@ class W3CThingDescriptionResource(Resource):
             props[key]["links"] = [
                 {"href": f"{base_url}{url}"} for url in prop_urls
             ]
+
+            props[key]["uriVariables"] = {}
+            for prop_rule in prop_rules:
+                params = rule_to_params(prop_rule)
+                params_dict = {}
+                for param in params:
+                    params_dict.update({
+                        param.get("name"): {
+                            "type": param.get("type")
+                        }
+                    })
+                props[key]["uriVariables"].update(params_dict)
+            if not props[key]["uriVariables"]:
+                del props[key]["uriVariables"]
 
         actions = {}
         for key, action in current_labthing().actions.items():
