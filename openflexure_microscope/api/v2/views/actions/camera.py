@@ -1,6 +1,6 @@
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
 from openflexure_microscope.common.flask_labthings.resource import Resource
-from openflexure_microscope.common.flask_labthings.find import find_device
+from openflexure_microscope.common.flask_labthings.find import find_component
 from openflexure_microscope.common.flask_labthings.decorators import (
     use_args,
     marshal_with,
@@ -48,7 +48,7 @@ class CaptureAPI(Resource):
         """
         Create a new capture
         """
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
 
         resize = args.get("resize", None)
         if resize:
@@ -100,7 +100,7 @@ class GPUPreviewStartAPI(Resource):
         """
         Start the onboard GPU preview.
         """
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
 
         window = args.get("window")
         logging.debug(window)
@@ -124,7 +124,7 @@ class GPUPreviewStopAPI(Resource):
         """
         Stop the onboard GPU preview.
         """
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         microscope.camera.stop_preview()
         # TODO: Make schema for microscope status
         return jsonify(microscope.status)

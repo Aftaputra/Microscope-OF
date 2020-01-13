@@ -1,6 +1,6 @@
 from openflexure_microscope.api.utilities import JsonResponse
 from openflexure_microscope.common.flask_labthings.resource import Resource
-from openflexure_microscope.common.flask_labthings.find import find_device
+from openflexure_microscope.common.flask_labthings.find import find_component
 from openflexure_microscope.common.flask_labthings.decorators import (
     use_args,
     marshal_with,
@@ -32,7 +32,7 @@ class MoveStageAPI(Resource):
         """
         Move the microscope stage in x, y, z
         """
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
 
         # Handle absolute positioning (calculate a relative move from current position and target)
         if (args.get("absolute")) and (microscope.stage):  # Only if stage exists
@@ -68,7 +68,7 @@ class ZeroStageAPI(Resource):
         Zero the stage coordinates.
         Does not move the stage, but rather makes the current position read as [0, 0, 0]
         """
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         microscope.stage.zero_position()
 
         # TODO: Make schema for microscope status

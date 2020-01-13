@@ -6,7 +6,7 @@ from functools import reduce
 
 from openflexure_microscope.camera.base import generate_basename
 from openflexure_microscope.common.flask_labthings.find import (
-    find_device,
+    find_component,
     find_extension,
 )
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
@@ -360,7 +360,7 @@ class TileScanAPI(Resource):
     )
     @marshal_task
     def post(self, args):
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
 
         if not microscope:
             abort(503, "No microscope connected. Unable to autofocus.")

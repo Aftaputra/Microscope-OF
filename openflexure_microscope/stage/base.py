@@ -50,6 +50,14 @@ class BaseStage(metaclass=ABCMeta):
         pass
 
     @property
+    def position_map(self):
+        return {
+            "x": self.position[0],
+            "y": self.position[1],
+            "z": self.position[2],
+        }
+
+    @property
     @abstractmethod
     def backlash(self):
         """Get the distance used for backlash compensation."""

@@ -20,13 +20,10 @@ class MockStage(BaseStage):
     def status(self):
         """The general status dictionary of the board."""
         status = {
-            "position": {
-                "x": self.position[0],
-                "y": self.position[1],
-                "z": self.position[2],
-            },
+            "position": self.position_map,
             "board": None,
-            "version": "0",
+            "firmware": None,
+            "version": None
         }
         return status
 

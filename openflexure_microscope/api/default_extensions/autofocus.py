@@ -1,4 +1,4 @@
-from openflexure_microscope.common.flask_labthings.find import find_device
+from openflexure_microscope.common.flask_labthings.find import find_component
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
 from openflexure_microscope.common.flask_labthings.resource import Resource
 from openflexure_microscope.common.flask_labthings.decorators import (
@@ -294,7 +294,7 @@ def fast_up_down_up_autofocus(
 
 class MeasureSharpnessAPI(Resource):
     def post(self):
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
 
         if not microscope:
             abort(503, "No microscope connected. Unable to measure sharpness.")
@@ -310,7 +310,7 @@ class AutofocusAPI(Resource):
 
     def post(self):
         payload = JsonResponse(request)
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
 
         if not microscope:
             abort(503, "No microscope connected. Unable to autofocus.")
@@ -337,7 +337,7 @@ class FastAutofocusAPI(Resource):
 
     def post(self):
         payload = JsonResponse(request)
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
 
         if not microscope:
             abort(503, "No microscope connected. Unable to autofocus.")

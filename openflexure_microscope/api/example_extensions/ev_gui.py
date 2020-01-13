@@ -93,7 +93,7 @@ class TestDoAPIView(Resource):
 
 
 # Using the dynamic form
-dynamic_test_extension_v2 = BaseExtension("dynamic_test_extension")
+dynamic_test_extension_v2 = BaseExtension("org.openflexure.examples.dynamic-gui")
 dynamic_test_extension_v2.add_view(
     TestAPIView, "/get", endpoint="dynamic_test_extension_get"
 )
@@ -107,7 +107,7 @@ dynamic_test_extension_v2.add_meta(
 
 
 # Using the static form
-static_test_extension_v2 = BaseExtension("static_test_extension")
+static_test_extension_v2 = BaseExtension("org.openflexure.examples.static-gui")
 static_test_extension_v2.add_view(
     TestAPIView, "/get", endpoint="static_test_extension_get"
 )

@@ -11,7 +11,7 @@ from openflexure_microscope.common.flask_labthings.utilities import (
 )
 from openflexure_microscope.common.flask_labthings.decorators import marshal_with
 
-from openflexure_microscope.common.flask_labthings.find import find_device
+from openflexure_microscope.common.flask_labthings.find import find_component
 
 from marshmallow import pre_dump
 
@@ -71,7 +71,7 @@ class CaptureList(Resource):
 
     @marshal_with(CaptureSchema(many=True))
     def get(self):
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         image_list = microscope.camera.images
         return image_list
 
@@ -83,7 +83,7 @@ class CaptureResource(Resource):
 
     @marshal_with(CaptureSchema())
     def get(self, id):
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
         if not capture_obj:
@@ -92,7 +92,7 @@ class CaptureResource(Resource):
         return capture_obj
 
     def delete(self, id):
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
         if not capture_obj:
@@ -110,7 +110,7 @@ class CaptureDownload(Resource):
 
     def get(self, id, filename):
 
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
         if not capture_obj:
@@ -146,7 +146,7 @@ class CaptureTags(Resource):
 
     def get(self, id):
 
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
         if not capture_obj:
@@ -156,7 +156,7 @@ class CaptureTags(Resource):
 
     def put(self, id):
 
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
         if not capture_obj:
@@ -173,7 +173,7 @@ class CaptureTags(Resource):
 
     def delete(self, capture_id):
 
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
         if not capture_obj:
@@ -196,7 +196,7 @@ class CaptureMetadata(Resource):
     """
 
     def get(self, id):
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
         if not capture_obj:
@@ -205,7 +205,7 @@ class CaptureMetadata(Resource):
         return jsonify(capture_obj.metadata)
 
     def put(self, id):
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
 
         if not capture_obj:

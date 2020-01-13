@@ -14,7 +14,7 @@ import zipfile
 import tempfile
 import logging
 
-from openflexure_microscope.common.flask_labthings.find import find_device
+from openflexure_microscope.common.flask_labthings.find import find_component
 from openflexure_microscope.common.flask_labthings.resource import Resource
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
 from openflexure_microscope.common.flask_labthings.decorators import (
@@ -100,7 +100,7 @@ class ZipBuilderAPIView(Resource):
     def post(self):
 
         ids = list(JsonResponse(request).json)
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
 
         task = taskify(default_zip_manager.build_zip_from_capture_ids)(microscope, ids)
 
