@@ -21,18 +21,18 @@ def registered_extensions(labthing_instance=None):
     return labthing_instance.extensions
 
 
-def registered_devices(labthing_instance=None):
+def registered_components(labthing_instance=None):
     if not labthing_instance:
         labthing_instance = current_labthing()
-    return labthing_instance.devices
+    return labthing_instance.components
 
 
-def find_device(device_name, labthing_instance=None):
+def find_component(device_name, labthing_instance=None):
     if not labthing_instance:
         labthing_instance = current_labthing()
 
-    if device_name in labthing_instance.devices:
-        return labthing_instance.devices[device_name]
+    if device_name in labthing_instance.components:
+        return labthing_instance.components[device_name]
     else:
         return None
 
