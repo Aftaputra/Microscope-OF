@@ -9,7 +9,7 @@ from openflexure_microscope.common.labthings_core.utilities import (
 from openflexure_microscope.common.flask_labthings.find import find_component
 from openflexure_microscope.common.flask_labthings.resource import Resource
 
-from openflexure_microscope.common.flask_labthings.decorators import ThingProperty, Tag
+from openflexure_microscope.common.flask_labthings.decorators import ThingProperty, Tag, doc_response
 
 from flask import jsonify, request, abort
 import logging
@@ -42,6 +42,7 @@ class SettingsProperty(Resource):
 
 @Tag("properties")
 class NestedSettingsProperty(Resource):
+    @doc_response(404, description="Settings key cannot be found")
     def get(self, route):
         """
         Show a nested section of the current microscope settings
@@ -56,6 +57,7 @@ class NestedSettingsProperty(Resource):
 
         return jsonify(value)
 
+    @doc_response(404, description="Settings key cannot be found")
     def put(self, route):
         """
         Update a nested section of the current microscope settings
@@ -85,6 +87,7 @@ class StatusProperty(Resource):
 
 @Tag("properties")
 class NestedStatusProperty(Resource):
+    @doc_response(404, description="Status key cannot be found")
     def get(self, route):
         """
         Show a nested section of the current microscope state
