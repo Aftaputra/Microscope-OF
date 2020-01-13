@@ -7,6 +7,7 @@ from .names import TASK_ENDPOINT, TASK_LIST_ENDPOINT, EXTENSION_LIST_ENDPOINT
 from .extensions import BaseExtension
 from .utilities import description_from_view
 from .spec import rule2path, get_spec
+from .decorators import tag
 
 from .views.extensions import ExtensionList
 from .views.tasks import TaskList, TaskResource
@@ -131,7 +132,7 @@ class LabThing(object):
         for extension_view_id, extension_view in extension_object.views.items():
             # Add route to the extensions blueprint
             self.add_view(
-                extension_view["view"],
+                tag("extensions")(extension_view["view"]),
                 "/extensions" + extension_view["rule"],
                 **extension_view["kwargs"],
             )
