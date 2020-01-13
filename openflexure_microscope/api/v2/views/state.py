@@ -6,10 +6,10 @@ from openflexure_microscope.common.labthings_core.utilities import (
     create_from_path,
 )
 
-from openflexure_microscope.common.flask_labthings.find import find_device
+from openflexure_microscope.common.flask_labthings.find import find_component
 from openflexure_microscope.common.flask_labthings.resource import Resource
 
-from openflexure_microscope.common.flask_labthings.decorators import ThingProperty
+from openflexure_microscope.common.flask_labthings.decorators import ThingProperty, marshal_with
 
 from flask import jsonify, request, abort
 import logging
@@ -18,11 +18,17 @@ import logging
 @ThingProperty
 class SettingsProperty(Resource):
     def get(self):
-        microscope = find_device("org.openflexure.microscope")
+        """
+        Current microscope settings, including camera and stage
+        """
+        microscope = find_component("org.openflexure.microscope")
         return jsonify(microscope.read_settings())
 
     def put(self):
-        microscope = find_device("org.openflexure.microscope")
+        """
+        Update current microscope settings, including camera and stage
+        """
+        microscope = find_component("org.openflexure.microscope")
         payload = JsonResponse(request)
 
         logging.debug("Updating settings from PUT request:")
@@ -36,7 +42,7 @@ class SettingsProperty(Resource):
 
 class NestedSettingsProperty(Resource):
     def get(self, route):
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         keys = route.split("/")
 
         try:
@@ -47,7 +53,7 @@ class NestedSettingsProperty(Resource):
         return jsonify(value)
 
     def put(self, route):
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         keys = route.split("/")
         payload = JsonResponse(request)
 
@@ -63,13 +69,16 @@ class NestedSettingsProperty(Resource):
 @ThingProperty
 class StatusProperty(Resource):
     def get(self):
-        microscope = find_device("org.openflexure.microscope")
+        """
+        Show current read-only state of the microscope
+        """
+        microscope = find_component("org.openflexure.microscope")
         return jsonify(microscope.status)
 
 
 class NestedStatusProperty(Resource):
     def get(self, route):
-        microscope = find_device("org.openflexure.microscope")
+        microscope = find_component("org.openflexure.microscope")
         keys = route.split("/")
 
         try:
