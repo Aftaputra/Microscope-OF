@@ -5,7 +5,7 @@ from openflexure_microscope.common.flask_labthings.decorators import (
     ThingProperty,
 )
 
-from openflexure_microscope.api.utilities.gui import expand_routes
+from openflexure_microscope.api.utilities.gui import build_gui
 
 import logging
 
@@ -17,6 +17,7 @@ val_int = 0
 
 
 def dynamic_form():
+    global val_int
     return {
         "id": "test-plugin",
         "icon": "pets",
@@ -34,6 +35,7 @@ def dynamic_form():
                         "name": "val_int",
                         "label": "Number value",
                         "minValue": 0,
+                        "value": val_int
                     },
                     {
                         "fieldType": "htmlBlock",
@@ -64,6 +66,7 @@ static_form = {
                     "name": "val_int",
                     "label": "Number value",
                     "minValue": 0,
+                    "default": 1
                 },
                 {
                     "fieldType": "htmlBlock",
@@ -102,7 +105,7 @@ dynamic_test_extension_v2.add_view(
 )
 
 dynamic_test_extension_v2.add_meta(
-    "gui", expand_routes(dynamic_form, dynamic_test_extension_v2)
+    "gui", build_gui(dynamic_form, dynamic_test_extension_v2)
 )
 
 
@@ -115,5 +118,5 @@ static_test_extension_v2.add_view(
     TestDoAPIView, "/do", endpoint="static_test_extension_do"
 )
 static_test_extension_v2.add_meta(
-    "gui", expand_routes(static_form, static_test_extension_v2)
+    "gui", build_gui(static_form, static_test_extension_v2)
 )
