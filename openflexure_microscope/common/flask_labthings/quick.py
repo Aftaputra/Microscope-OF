@@ -20,7 +20,7 @@ def create_app(
 
     # Handle CORS
     if handle_cors:
-        cors_handler = CORS(app, resources=r"{prefix}/*")
+        cors_handler = CORS(app, resources=f"{prefix}/*")
 
     # Handle errors
     if handle_errors:
