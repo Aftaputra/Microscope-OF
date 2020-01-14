@@ -1,6 +1,6 @@
 import numpy as np
 from abc import ABCMeta, abstractmethod
-from openflexure_microscope.common.lock import StrictLock
+from openflexure_microscope.common.labthings_core.lock import StrictLock
 
 
 class BaseStage(metaclass=ABCMeta):
@@ -48,6 +48,14 @@ class BaseStage(metaclass=ABCMeta):
     def position(self):
         """The current position, as a list"""
         pass
+
+    @property
+    def position_map(self):
+        return {
+            "x": self.position[0],
+            "y": self.position[1],
+            "z": self.position[2],
+        }
 
     @property
     @abstractmethod

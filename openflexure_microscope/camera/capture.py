@@ -129,7 +129,7 @@ class CaptureObject(object):
         """Create a new StreamObject, to manage capture data."""
 
         # Store a nice ID
-        self.id = uuid.uuid4().hex  #: str: Unique capture ID
+        self.id = uuid.uuid4()  #: str: Unique capture ID
         logging.debug("Created StreamObject {}".format(self.id))
         self.timestring = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 

@@ -12,10 +12,9 @@ from openflexure_microscope.camera.base import BaseCamera
 from openflexure_microscope.camera.mock import MockStreamer
 
 from openflexure_microscope.utilities import serialise_array_b64
-from openflexure_microscope.plugins import PluginLoader
-from openflexure_microscope.task import TaskOrchestrator
-from openflexure_microscope.common.lock import CompositeLock
 from openflexure_microscope.config import user_settings
+
+from openflexure_microscope.common.labthings_core.lock import CompositeLock
 
 
 class Microscope:
@@ -31,30 +30,21 @@ class Microscope:
         stage (:py:class:`openflexure_microscope.stage.base.BaseStage`): Stage object
         task: (:py:class:`openflexure_microscope.task.TaskOrchestrator`): Threaded ask orchestrator for managing
             background tasks using microscope hardware
-        plugins (:py:class:`openflexure_microscope.plugins.PluginLoader`): Mounting point for all microscope plugins
     """
 
     def __init__(self):
         # Initial attributes
-        self.id = uuid.uuid4().hex
+        self.id = uuid.uuid4()
         self.name = self.id
         self.fov = [0, 0]
-        self.plugin_maps = []
         self.camera = None
         self.stage = None
 
         # Initialise with an empty composite lock
         self.lock = CompositeLock([])
 
-        # Create a task orchestrator
-        self.task = TaskOrchestrator()
-
         # Apply settings loaded from file
         self.apply_settings(user_settings.load())
-
-        # Create plugin mount-point and attach plugins from maps
-        self.plugins = PluginLoader(self)
-        self.attach_plugins(self.plugin_maps)
 
     def __enter__(self):
         """Create microscope on context enter."""
@@ -120,25 +110,6 @@ class Microscope:
         logging.info("Reapplying settings to newly attached devices")
         self.apply_settings(settings_full)
 
-    def attach_plugins(self, plugin_maps: list):
-        """
-        Automatically search for plugin maps in config, and attach.
-        """
-        if plugin_maps:
-            for plugin_map in plugin_maps:
-                self.plugins.attach(plugin_map)
-        else:
-            logging.warning("No plugins specified. Skipping.")
-
-    def reload_plugins(self):
-        """
-        Empty the plugin mount and re-attach from config.
-        """
-        logging.info("Tearing down existing PluginMount...")
-        self.plugins = PluginLoader(self)
-        logging.info("Repopulating PluginMount...")
-        self.attach_plugins(self.plugin_maps)
-
     def has_real_stage(self):
         if hasattr(self, "stage") and not isinstance(self.stage, MockStage):
             return True
@@ -150,27 +121,6 @@ class Microscope:
             return True
         else:
             return False
-
-    # Create unified state
-    @property
-    def state(self):
-        """Dictionary of the basic microscope state.
-
-        Return:
-            dict: Dictionary containing position data, 
-                and :py:attr:`openflexure_microscope.camera.base.BaseCamera.status`
-        """
-        # DEPRECATED
-        logging.warning(
-            "Microscope.state is deprecated. Use Microscope.status instead. State will be removed in a future version."
-        )
-        state = {
-            "camera": self.camera.status,
-            "stage": self.stage.status,
-            "plugin": self.plugins.state,
-            "version": pkg_resources.get_distribution("openflexure_microscope").version,
-        }
-        return state
 
     # Create unified status
     @property
@@ -208,8 +158,6 @@ class Microscope:
             self.name = config["name"]
         if "fov" in config:
             self.fov = config["fov"]
-        if "plugins" in config:
-            self.plugin_maps = config["plugins"]
 
     def read_settings(self, json_safe=False):
         """
@@ -222,12 +170,7 @@ class Microscope:
         don't get removed from the settings file.
         """
 
-        settings_current = {
-            "id": self.id,
-            "name": self.name,
-            "fov": self.fov,
-            "plugins": self.plugin_maps,
-        }
+        settings_current = {"id": self.id, "name": self.name, "fov": self.fov}
 
         # If attached to a camera
         if self.camera:
@@ -257,29 +200,13 @@ class Microscope:
         user_settings.save(current_config, backup=True)
 
     @property
-    def config(self) -> dict:
-        logging.warning(
-            "Reading microscope through config property is deprecated.\
-            Please use read_settings method instead."
-        )
-        return self.read_settings()
-
-    @config.setter
-    def config(self, config: dict) -> None:
-        logging.warning(
-            "Setting microscope through config property is deprecated.\
-            Please use apply_settings method instead."
-        )
-        self.apply_settings(config)
-
-    @property
     def metadata(self):
         """
         Microscope system metadata, to be applied to basically all captures
         """
         system_metadata = {
             "microscope_settings": self.read_settings(),
-            "microscope_state": self.state,
+            "microscope_state": self.status,
             "microscope_id": self.id,
             "microscope_name": self.name,
         }

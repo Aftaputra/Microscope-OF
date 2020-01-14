@@ -2,6 +2,7 @@ import re
 import copy
 import operator
 import base64
+from uuid import UUID
 import numpy as np
 from collections import abc
 from functools import reduce
@@ -12,61 +13,12 @@ def deserialise_array_b64(b64_string, dtype, shape):
     flat_arr = np.fromstring(base64.b64decode(b64_string), dtype)
     return flat_arr.reshape(shape)
 
+
 def serialise_array_b64(npy_arr):
-    b64_string = base64.b64encode(npy_arr).decode('ascii')
+    b64_string = base64.b64encode(npy_arr).decode("ascii")
     dtype = str(npy_arr.dtype)
     shape = npy_arr.shape
     return b64_string, dtype, shape
-
-def get_by_path(root, items):
-    """Access a nested object in root by item sequence."""
-    return reduce(operator.getitem, items, root)
-
-
-def set_by_path(root, items, value):
-    """Set a value in a nested object in root by item sequence."""
-    get_by_path(root, items[:-1])[items[-1]] = value
-
-
-def create_from_path(items):
-    tree_dict = {}
-    for key in reversed(items):
-        tree_dict = {key: tree_dict}
-    return tree_dict
-
-
-def bottom_level_name(obj):
-    return obj.__name__.split(".")[-1]
-
-
-def description_from_view(view_class):
-    methods = []
-    for method_key in ["get", "post", "put", "delete"]:
-        if hasattr(view_class, method_key):
-            methods.append(method_key.upper())
-    brief_description = get_docstring(view_class).partition("\n")[0].strip()
-
-    d = {"methods": methods, "description": brief_description}
-
-    return d
-
-
-def get_docstring(obj):
-    ds = obj.__doc__
-    if ds:
-        return ds.strip()
-    else:
-        return ""
-
-
-def camel_to_snake(name):
-    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
-    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-
-
-def camel_to_spine(name):
-    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1-\2", name)
-    return re.sub("([a-z0-9])([A-Z])", r"\1-\2", s1).lower()
 
 
 @contextmanager
@@ -127,11 +79,20 @@ def filter_dict(dictionary: dict, keys: list):
     return out
 
 
-def entry_by_id(entry_id: str, object_list: list):
+def entry_by_uuid(entry_id: str, object_list: list):
     """Return an object from a list, if <object>.id matches id argument."""
     found = None
+    if type(entry_id) == str:
+        converter = str
+    elif type(entry_id) == int:
+        converter = int
+    elif isinstance(entry_id, UUID):
+        converter = int
+    else:
+        raise TypeError("Argument entry_id must be a string, integer, or UUID object.")
     for o in object_list:
-        if o.id == entry_id:
+        # Convert to strings (in case of UUID objects, for example)
+        if converter(o.id) == converter(entry_id):
             found = o
     return found
 

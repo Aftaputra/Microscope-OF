@@ -317,9 +317,6 @@ class PiCameraStreamer(BaseCamera):
         """
         Change the camera zoom, handling re-centering and scaling.
         """
-        logging.warning(
-            "set_zoom is deprecated. Please use the 'zoom' property in picamera_settings."
-        )
         with self.lock:
             self.status["zoom_value"] = float(zoom_value)
             if self.status["zoom_value"] < 1:
