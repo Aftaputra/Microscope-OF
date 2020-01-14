@@ -109,12 +109,6 @@ for name, action in views.enabled_root_actions().items():
 def routes():
     """
     List of all connected API routes
-
-    .. :quickref: Global; Routes
-
-    :>header Accept: application/json
-    :>header Content-Type: application/json
-    :status 200: stream active
     """
     return jsonify(list_routes(app))
 
@@ -123,12 +117,6 @@ def routes():
 def err_log():
     """
     Most recent 1mb of log output
-
-    .. :quickref: Global; Log
-
-    :>header Accept: application/json
-    :>header Content-Type: application/json
-    :status 200: stream active
     """
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     return send_file(

@@ -18,8 +18,6 @@ class ExtensionList(View):
         """
         Return the current Extension forms
 
-        .. :quickref: Extension; Get forms
-
         Returns an array of present Extension forms (describing Extension user interfaces.)
         Please note, this is *not* a list of all enabled Extensions, only those with associated
         user interface forms.
