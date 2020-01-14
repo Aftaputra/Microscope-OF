@@ -75,6 +75,7 @@ export default {
 
   data: function() {
     return {
+      snapshotRule: "/api/v2/streams/snapshot",
       snapshotSrc: "",
       snapshotAvailable: false,
       polling: null
@@ -86,7 +87,7 @@ export default {
       return `http://${this.hostname}:${this.port}/routes`;
     },
     snapshotURL: function() {
-      return `http://${this.hostname}:${this.port}/api/v2/streams/snapshot`;
+      return `http://${this.hostname}:${this.port}${this.snapshotRule}`;
     }
   },
 
@@ -112,7 +113,7 @@ export default {
         .get(this.routesURL)
         .then(response => {
           // If the host has a snapshot route available
-          if ("/api/v1/snapshot" in response.data) {
+          if (this.snapshotRule in response.data) {
             // Tell the view that a snapshot is available
             this.snapshotAvailable = true;
             // Update the snapshot URL
