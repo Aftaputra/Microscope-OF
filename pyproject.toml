@@ -33,8 +33,10 @@ scipy = "1.3.0" # Exact version until we can guarantee a wheel
 
 picamera = { git = "https://github.com/rwb27/picamera.git", branch = "lens-shading", optional = true }  # Lens shading requires >1.14 or RWB fork, lens-shading branch.
 "RPi.GPIO" = { version = "^0.6.5", optional = true }
-marshmallow = "^3.3"
-webargs = "^5.5.2"
+marshmallow = "^3.3" # LabThings
+webargs = "^5.5.2" # LabThings
+pyserial = "^3.4" # Used for sangaboard (basic_serial_instrument) until we move to sangaboard pip library
+apispec = "^3.2" # LabThings
 
 [tool.poetry.extras]
 rpi = ["picamera", "RPi.GPIO"]
