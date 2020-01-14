@@ -3,6 +3,7 @@ import os
 import errno
 import logging
 import shutil
+from uuid import UUID
 import numpy as np
 from fractions import Fraction
 
@@ -23,8 +24,10 @@ class JSONEncoder(json.JSONEncoder):
     """
 
     def default(self, o, markers=None):
+        if isinstance(o, UUID):
+            return str(o)
         # PiCamera fractions
-        if isinstance(o, Fraction):
+        elif isinstance(o, Fraction):
             return float(o)
         # Numpy integers
         elif isinstance(o, np.integer):
