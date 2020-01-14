@@ -2,6 +2,7 @@ import re
 import copy
 import operator
 import base64
+from uuid import UUID
 import numpy as np
 from collections import abc
 from functools import reduce
@@ -78,11 +79,20 @@ def filter_dict(dictionary: dict, keys: list):
     return out
 
 
-def entry_by_id(entry_id: str, object_list: list):
+def entry_by_uuid(entry_id: str, object_list: list):
     """Return an object from a list, if <object>.id matches id argument."""
     found = None
+    if type(entry_id) == str:
+        converter = str
+    elif type(entry_id) == int:
+        converter = int
+    elif isinstance(entry_id, UUID):
+        converter = int
+    else:
+        raise TypeError("Argument entry_id must be a string, integer, or UUID object.")
     for o in object_list:
-        if o.id == entry_id:
+        # Convert to strings (in case of UUID objects, for example)
+        if converter(o.id) == converter(entry_id):
             found = o
     return found
 

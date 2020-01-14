@@ -9,7 +9,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 
 from .capture import CaptureObject
-from openflexure_microscope.utilities import entry_by_id
+from openflexure_microscope.utilities import entry_by_uuid
 from openflexure_microscope.common.labthings_core.lock import StrictLock
 
 
@@ -250,11 +250,11 @@ class BaseCamera(metaclass=ABCMeta):
 
     def image_from_id(self, image_id):
         """Return an image StreamObject with a matching ID."""
-        return entry_by_id(image_id, self.images)
+        return entry_by_uuid(image_id, self.images)
 
     def video_from_id(self, video_id):
         """Return a video StreamObject with a matching ID."""
-        return entry_by_id(video_id, self.videos)
+        return entry_by_uuid(video_id, self.videos)
 
     # CREATING NEW CAPTURES
 
