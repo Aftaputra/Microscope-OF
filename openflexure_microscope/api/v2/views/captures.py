@@ -223,8 +223,9 @@ class CaptureMetadata(View):
             return abort(404)  # 404 Not Found
 
         data_dict = JsonResponse(request).json
+        logging.debug(data_dict)
 
-        if type(data_dict) != list:
+        if type(data_dict) != dict:
             return abort(400)
 
         # TODO: Allow putting system metadata maybe?
