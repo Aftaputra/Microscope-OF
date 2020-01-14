@@ -26,7 +26,7 @@ export default {
     placeholder: {
       type: Number,
       required: false,
-      default: NaN
+      default: 0
     },
     name: {
       type: String,

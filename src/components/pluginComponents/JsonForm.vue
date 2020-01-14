@@ -111,11 +111,6 @@ export default {
       type: String,
       required: false,
       default: "Submit"
-    },
-    selfUpdate: {
-      type: Boolean,
-      required: false,
-      default: false
     }
   },
 
@@ -127,7 +122,7 @@ export default {
 
   computed: {
     pluginApiUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/plugins`;
+      return `${this.$store.getters.baseUri}/api/v2/extensions`;
     },
 
     submitApiUri: function() {
@@ -136,12 +131,15 @@ export default {
     }
   },
 
+  watch: {
+    // Whenever the form schema updates, re-check server for field values
+    schema: function() {
+      this.updateFormValues();
+    }
+  },
+
   created() {
     this.initialiseFormData();
-
-    if (this.selfUpdate) {
-      this.getFormData();
-    }
   },
 
   methods: {
@@ -158,13 +156,42 @@ export default {
           var defaultValue; // Initial value of the form component
           for (const subfield of field) {
             // If a default value is given in the schema, use this
-            defaultValue = subfield.default ? subfield.default : null;
+            if (subfield.value) {
+              defaultValue = subfield.value;
+            } else if (subfield.default) {
+              defaultValue = subfield.default;
+            } else {
+              defaultValue = null;
+            }
             this.$set(this.formData, subfield.name, defaultValue);
           }
         } else {
           // If a default value is given in the schema, use this
-          defaultValue = field.default ? field.default : null;
+          if (field.value) {
+            defaultValue = field.value;
+          } else if (field.default) {
+            defaultValue = field.default;
+          } else {
+            defaultValue = null;
+          }
           this.$set(this.formData, field.name, defaultValue);
+        }
+      }
+    },
+
+    updateFormValues() {
+      for (const field of this.schema) {
+        if (Array.isArray(field)) {
+          for (const subfield of field) {
+            // If a default value is given in the schema, use this
+            if (subfield.value) {
+              this.$set(this.formData, subfield.name, subfield.value);
+            }
+          }
+        } else {
+          if (field.value) {
+            this.$set(this.formData, field.name, field.value);
+          }
         }
       }
     },
@@ -172,24 +199,6 @@ export default {
     updateForm() {
       // Trigger a plugin form update
       this.$emit("reloadForms");
-      // If the form can self-update (GET request to update component values)
-      if (this.selfUpdate) {
-        // Update form data values using a GET request
-        this.getFormData();
-      }
-    },
-
-    getFormData: function() {
-      // Send a quick request
-      axios
-        .get(this.submitApiUri)
-        .then(response => {
-          console.log(response.data);
-          Object.assign(this.formData, response.data);
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
     },
 
     newQuickRequest: function(params) {

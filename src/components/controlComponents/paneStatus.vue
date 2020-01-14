@@ -144,16 +144,14 @@ export default {
         .get(this.actionsUri)
         .then(response => {
           if ("reboot" in response.data) {
-            this.systemActionLinks.reboot = `${this.$store.getters.baseUri}${
-              response.data.reboot.links.self
-            }`;
+            this.systemActionLinks.reboot =
+              response.data.reboot.links.self.href;
           } else {
             delete this.systemActionLinks.reboot;
           }
           if ("shutdown" in response.data) {
-            this.systemActionLinks.shutdown = `${this.$store.getters.baseUri}${
-              response.data.shutdown.links.self
-            }`;
+            this.systemActionLinks.shutdown =
+              response.data.shutdown.links.self.href;
           } else {
             delete this.systemActionLinks.shutdown;
           }

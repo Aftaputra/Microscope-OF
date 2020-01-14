@@ -313,7 +313,7 @@ export default {
       return `${this.$store.getters.baseUri}/api/v2/actions/camera/capture`;
     },
     pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/plugins`;
+      return `${this.$store.getters.baseUri}/api/v2/extensions`;
     },
     settingsFovUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/settings/fov`;
@@ -395,7 +395,7 @@ export default {
           // Flash the stream (capture animation)
           this.$root.$emit("globalFlashStream");
           // Update the global capture list
-          this.$root.$emit("globalUpdateCaptureList");
+          this.$root.$emit("globalUpdateCaptures");
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -407,12 +407,13 @@ export default {
         .get(this.pluginsUri) // Get a list of plugins
         .then(response => {
           var plugins = response.data;
+          var foundExtension = plugins.find(
+            e => e.title === "org.openflexure.scan"
+          );
           // if ScanPlugin is enabled
-          if ("ScanPlugin" in plugins) {
+          if (foundExtension) {
             // Get plugin action link
-            var link = plugins.ScanPlugin.views.tile.links.self;
-            // Store plugin action URI
-            this.scanUri = `${this.$store.getters.baseUri}${link}`;
+            this.scanUri = foundExtension.links.tile.href;
           }
         })
         .catch(error => {
@@ -422,7 +423,7 @@ export default {
 
     updateScanStepSize: function() {
       axios
-        .get(this.settingsFovUri) // Get a list of plugins
+        .get(this.settingsFovUri) // Get the microscope FOV
         .then(response => {
           this.scanStepSize = {
             x: parseInt(0.5 * response.data[0]),

@@ -59,7 +59,7 @@ export default {
 
   computed: {
     pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/plugins`;
+      return `${this.$store.getters.baseUri}/api/v2/extensions`;
     }
   },
 
@@ -73,14 +73,14 @@ export default {
         .get(this.pluginsUri) // Get a list of plugins
         .then(response => {
           var plugins = response.data;
+          var foundExtension = plugins.find(
+            e => e.title === "org.openflexure.zipbuilder"
+          );
           // if ZipBuilderPlugin is enabled
-          if ("ZipBuilderPlugin" in plugins) {
-            // Get plugin action link
-            var builderLink = plugins.ZipBuilderPlugin.views.build.links.self;
-            var getterLink = plugins.ZipBuilderPlugin.views.get.links.self;
-            // Store plugin action URI
-            this.zipBuilderUri = `${this.$store.getters.baseUri}${builderLink}`;
-            this.zipGetterUri = `${this.$store.getters.baseUri}${getterLink}`;
+          if (foundExtension) {
+            // Get plugin action links
+            this.zipBuilderUri = foundExtension.links.build.href;
+            this.zipGetterUri = foundExtension.links.get.href;
           }
         })
         .catch(error => {

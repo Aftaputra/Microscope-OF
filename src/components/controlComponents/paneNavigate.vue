@@ -196,7 +196,7 @@ export default {
       return `${this.$store.getters.baseUri}/api/v2/status/stage/position`;
     },
     pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/plugins`;
+      return `${this.$store.getters.baseUri}/api/v2/extensions`;
     }
   },
 
@@ -352,17 +352,14 @@ export default {
         .get(this.pluginsUri) // Get a list of plugins
         .then(response => {
           var plugins = response.data;
+          var foundExtension = plugins.find(
+            e => e.title === "org.openflexure.autofocus"
+          );
           // if ScanPlugin is enabled
-          if ("AutofocusPlugin" in plugins) {
+          if (foundExtension) {
             // Get plugin action link
-            var fastLink =
-              plugins.AutofocusPlugin.views.fast_autofocus.links.self;
-            var normalLink = plugins.AutofocusPlugin.views.autofocus.links.self;
-            // Store plugin action URI
-            this.fastAutofocusUri = `${this.$store.getters.baseUri}${fastLink}`;
-            this.normalAutofocusUri = `${
-              this.$store.getters.baseUri
-            }${normalLink}`;
+            this.fastAutofocusUri = foundExtension.links.fast_autofocus.href;
+            this.normalAutofocusUri = foundExtension.links.autofocus.href;
           }
         })
         .catch(error => {

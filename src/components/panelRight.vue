@@ -100,7 +100,7 @@ export default {
       // If entering the gallery
       if (index == "gallery") {
         console.log("Gallery tab entered");
-        this.$root.$emit("globalUpdateCaptureList");
+        this.$root.$emit("globalUpdateCaptures");
       }
       // If entering the stream
       if (index == "preview") {

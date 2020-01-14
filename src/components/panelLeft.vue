@@ -114,7 +114,6 @@
               :route="form.route"
               :is-task="form.isTask"
               :submit-label="form.submitLabel"
-              :self-update="form.selfUpdate"
               :schema="form.schema"
               @reloadForms="updatePlugins()"
             />
@@ -158,7 +157,7 @@ export default {
 
   data: function() {
     return {
-      plugins: {},
+      plugins: [],
       currentTab: "status",
       showControlBar: true,
       unwatchStoreFunction: null
@@ -167,15 +166,15 @@ export default {
 
   computed: {
     pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/plugins`;
+      return `${this.$store.getters.baseUri}/api/v2/extensions`;
     },
     pluginsGuiList: function() {
       // List of plugin GUIs, obtained from this.plugins values
       console.log("Recalculating plugins");
       var pluginGuis = [];
       for (let plugin of Object.values(this.plugins)) {
-        if (plugin.gui) {
-          pluginGuis.push(plugin.gui);
+        if (plugin.meta.gui) {
+          pluginGuis.push(plugin.meta.gui);
         }
       }
       return pluginGuis;

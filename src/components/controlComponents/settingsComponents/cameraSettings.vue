@@ -96,7 +96,7 @@ export default {
       return `${this.$store.getters.baseUri}/api/v2/settings`;
     },
     pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/plugins`;
+      return `${this.$store.getters.baseUri}/api/v2/extensions`;
     }
   },
 
@@ -122,13 +122,13 @@ export default {
         .get(this.pluginsUri) // Get a list of plugins
         .then(response => {
           var plugins = response.data;
+          var foundExtension = plugins.find(
+            e => e.title === "org.openflexure.calibration.picamera"
+          );
           // if AutocalibrationPlugin is enabled
-          if ("AutocalibrationPlugin" in plugins) {
+          if (foundExtension) {
             // Get plugin action link
-            var link =
-              plugins.AutocalibrationPlugin.views.recalibrate.links.self;
-            // Store plugin action URI
-            this.recalibrationUri = `${this.$store.getters.baseUri}${link}`;
+            this.recalibrationUri = foundExtension.links.recalibrate.href;
           }
         })
         .catch(error => {

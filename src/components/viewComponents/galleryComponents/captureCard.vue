@@ -195,20 +195,19 @@ export default {
       return "#" + this.metadataModalID;
     },
     thumbURL: function() {
-      return `${this.$store.getters.baseUri}${
-        this.captureState.links.download
-      }?thumbnail=true`;
+      return `${this.captureState.links.download.href}?thumbnail=true`;
     },
     imgURL: function() {
-      return `${this.$store.getters.baseUri}${
-        this.captureState.links.download
-      }`;
+      return this.captureState.links.download.href;
     },
     tagsURL: function() {
-      return `${this.$store.getters.baseUri}${this.captureState.links.tags}`;
+      return this.captureState.links.tags.href;
+    },
+    metadataURL: function() {
+      return this.captureState.links.metadata.href;
     },
     captureURL: function() {
-      return `${this.$store.getters.baseUri}${this.captureState.links.self}`;
+      return this.captureState.links.self.href;
     },
     betterTimestring: function() {
       var dtSplit = this.captureState.metadata.time.split("_");
@@ -250,7 +249,7 @@ export default {
         .delete(this.captureURL)
         .then(() => {
           // Emit signal to update capture list
-          this.$root.$emit("globalUpdateCaptureList");
+          this.$root.$emit("globalUpdateCaptures");
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -273,7 +272,7 @@ export default {
     putMetadataRequest: function(metadataObject) {
       // Send metadata PUT request
       axios
-        .put(this.captureURL, metadataObject)
+        .put(this.metadataURL, metadataObject)
         .then(() => {
           // Update metadata object
           this.getMetadataRequest();
@@ -319,9 +318,9 @@ export default {
     getMetadataRequest: function() {
       // Send tag request
       axios
-        .get(this.captureURL)
+        .get(this.metadataURL)
         .then(response => {
-          this.customMetadata = response.data.metadata.custom;
+          this.customMetadata = response.data.custom;
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
