@@ -1,2 +1,2 @@
 from . import flask_labthings
-from openflexure_microscope.common.labthings_core import tasks
+from .labthings_core import tasks, lock
