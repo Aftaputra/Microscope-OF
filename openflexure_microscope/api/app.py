@@ -10,7 +10,7 @@ from flask import Flask, jsonify, send_file
 
 from datetime import datetime
 
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 
 from openflexure_microscope.api.utilities import list_routes, init_default_extensions
 
@@ -65,6 +65,9 @@ app, labthing = create_app(
     version=pkg_resources.get_distribution("openflexure_microscope").version,
 )
 
+# Enable CORS for some routes outside of LabThings
+cors = CORS(app)
+
 # Use custom JSON encoder
 app.json_encoder = JSONEncoder
 
@@ -99,6 +102,7 @@ labthing.add_view(views.MjpegStream, f"/streams/mjpeg")
 labthing.add_view(views.SnapshotStream, f"/streams/snapshot")
 
 # Attach microscope action resources
+labthing.add_view(views.actions.ActionsView, "/actions")
 for name, action in views.enabled_root_actions().items():
     view_class = action["view_class"]
     rule = action["rule"]
@@ -106,6 +110,7 @@ for name, action in views.enabled_root_actions().items():
 
 
 @app.route("/routes")
+@cross_origin()
 def routes():
     """
     List of all connected API routes
