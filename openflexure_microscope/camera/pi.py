@@ -4,16 +4,21 @@
 Raspberry Pi camera implementation of the PiCameraStreamer class.
 
 NOTES:
-Still port used for image capture
-Preview port reserved for onboard GPU preview
+
+Still port used for image capture.
+Preview port reserved for onboard GPU preview.
+
 Video port:
-    Splitter port 0: Image capture (if use_video_port == True)
-    Splitter port 1: Streaming frames
-    Splitter port 2: Video capture
-    Splitter port 3: [Currently unused]
+
+* Splitter port 0: Image capture (if use_video_port == True)
+* Splitter port 1: Streaming frames
+* Splitter port 2: Video capture
+* Splitter port 3: [Currently unused]
 
 PiCameraStreamer streams at video_resolution
+
 Camera capture resolution set to stream_resolution in frames()
+
 Video port uses that resolution for everything. If a different resolution
 is specified for video capture, this is handled by the resizer.
 

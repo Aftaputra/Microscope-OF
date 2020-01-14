@@ -184,9 +184,3 @@ JSON form example
 
 .. literalinclude:: forms_example.json
   :language: JSON
-
-
-.. toctree::
-   :maxdepth: 1
-
-   ./form/json_form.rst
