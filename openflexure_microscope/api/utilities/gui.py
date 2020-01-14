@@ -3,8 +3,11 @@ import logging
 from functools import wraps
 
 
-def expand_routes_from_dict(gui_description, extension_object):
+def build_gui_from_dict(gui_description, extension_object):
+    # Make a working copy of GUI description
     api_gui = copy.deepcopy(gui_description)
+
+    # Expand shorthand routes into full relative URLs
     if "forms" in gui_description and isinstance(api_gui["forms"], list):
         for form in api_gui["forms"]:
             if "route" in form and form["route"] in extension_object._rules.keys():
@@ -13,22 +16,26 @@ def expand_routes_from_dict(gui_description, extension_object):
                 logging.warn(
                     "No valid expandable route found for {}".format(form["route"])
                 )
+
+    # Inject extension information
+    api_gui["id"] = extension_object.name
+    api_gui["version"] = extension_object.version
     return api_gui
 
 
-def expand_routes_from_func(func, extension_object):
+def build_gui_from_func(func, extension_object):
     @wraps(func)
     def wrapped(*args, **kwargs):
-        return expand_routes_from_dict(func(*args, **kwargs), extension_object)
+        return build_gui_from_dict(func(*args, **kwargs), extension_object)
 
     return wrapped
 
 
-def expand_routes(gui_description, extension_object):
+def build_gui(gui_description, extension_object):
     # If given a function that generates a GUI dictionary
     if callable(gui_description):
         # Wrap in the route expander
-        return expand_routes_from_func(gui_description, extension_object)
+        return build_gui_from_func(gui_description, extension_object)
     # If given a dictionary directly
     elif isinstance(gui_description, dict):
         # Build a GUI generator function
@@ -36,6 +43,6 @@ def expand_routes(gui_description, extension_object):
             return gui_description
 
         # Wrap in the route expander
-        return expand_routes_from_func(gui_description_func, extension_object)
+        return build_gui_from_func(gui_description_func, extension_object)
     else:
         raise RuntimeError("GUI description must be a function or a dictionary")
