@@ -36,7 +36,7 @@ class BaseExtension:
         self.actions = []
         self.properties = []
 
-        self.name = name
+        self._name = name
         self.description = get_docstring(self)
         self.version = str(version)
 
@@ -56,9 +56,6 @@ class BaseExtension:
         full_rule = "/{}/{}".format(self._name_uri_safe, cleaned_rule)
 
         view_id = cleaned_rule.replace("/", "_").replace("<", "").replace(">", "")
-
-        # Create a Python-safe route ID
-        logging.debug(view_id)
 
         # Store route information in a dictionary
         d = {"rule": full_rule, "view": view_class, "kwargs": kwargs}
@@ -82,8 +79,8 @@ class BaseExtension:
         self._meta[key] = val
 
     @property
-    def _name(self):
-        return self.name
+    def name(self):
+        return self._name
 
     @property
     def _name_python_safe(self):
@@ -111,6 +108,7 @@ def find_instances_in_module(module, class_to_find):
     for attribute in dir(module):
         if not attribute.startswith("__"):
             if isinstance(getattr(module, attribute), class_to_find):
+                logging.debug(f"Found extension {getattr(module, attribute).name}")
                 objs.append(getattr(module, attribute))
     return objs
 
