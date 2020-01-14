@@ -77,15 +77,16 @@ class ZipManager:
                 update_task_progress(int((index / n_files) * 100))
 
         session_id = uuid.uuid4()
+        session_key = str(session_id)
         # self.session_zips[session_id] = fp
-        self.session_zips[session_id] = {
+        self.session_zips[session_key] = {
             "id": session_id,
             "fp": fp,
             "data_size": data_size_megabytes,
             "zip_size": os.path.getsize(fp.name) * 1e-6,
         }
 
-        return self.session_zips[session_id]
+        return self.session_zips[session_key]
 
     def zip_from_id(self, session_id):
         return self.session_zips[session_id]["fp"]
