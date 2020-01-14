@@ -15,7 +15,7 @@ import tempfile
 import logging
 
 from openflexure_microscope.common.flask_labthings.find import find_component
-from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.view import View
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
 from openflexure_microscope.common.flask_labthings.decorators import (
     ThingAction,
@@ -96,7 +96,7 @@ default_zip_manager = ZipManager()
 
 
 @ThingAction
-class ZipBuilderAPIView(Resource):
+class ZipBuilderAPIView(View):
     def post(self):
 
         ids = list(JsonResponse(request).json)
@@ -109,12 +109,12 @@ class ZipBuilderAPIView(Resource):
 
 
 @ThingProperty
-class ZipListAPIView(Resource):
+class ZipListAPIView(View):
     def get(self):
         return jsonify(default_zip_manager.session_zips)
 
 
-class ZipGetterAPIView(Resource):
+class ZipGetterAPIView(View):
     def get(self, session_id):
         if not session_id in default_zip_manager.session_zips:
             return abort(404)  # 404 Not Found

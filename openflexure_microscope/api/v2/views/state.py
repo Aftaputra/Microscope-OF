@@ -7,7 +7,7 @@ from openflexure_microscope.common.labthings_core.utilities import (
 )
 
 from openflexure_microscope.common.flask_labthings.find import find_component
-from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.view import View
 
 from openflexure_microscope.common.flask_labthings.decorators import ThingProperty, Tag, doc_response
 
@@ -16,7 +16,7 @@ import logging
 
 
 @ThingProperty
-class SettingsProperty(Resource):
+class SettingsProperty(View):
     def get(self):
         """
         Current microscope settings, including camera and stage
@@ -41,7 +41,7 @@ class SettingsProperty(Resource):
 
 
 @Tag("properties")
-class NestedSettingsProperty(Resource):
+class NestedSettingsProperty(View):
     @doc_response(404, description="Settings key cannot be found")
     def get(self, route):
         """
@@ -76,7 +76,7 @@ class NestedSettingsProperty(Resource):
 
 
 @ThingProperty
-class StatusProperty(Resource):
+class StatusProperty(View):
     def get(self):
         """
         Show current read-only state of the microscope
@@ -86,7 +86,7 @@ class StatusProperty(Resource):
 
 
 @Tag("properties")
-class NestedStatusProperty(Resource):
+class NestedStatusProperty(View):
     @doc_response(404, description="Status key cannot be found")
     def get(self, route):
         """

@@ -19,7 +19,7 @@ from openflexure_microscope.common.flask_labthings import fields
 
 from openflexure_microscope.devel import taskify, abort, update_task_progress
 
-from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.view import View
 import time
 
 
@@ -341,7 +341,7 @@ def stack(
 
 
 @ThingAction
-class TileScanAPI(Resource):
+class TileScanAPI(View):
     @use_args(
         {
             "filename": fields.String(),

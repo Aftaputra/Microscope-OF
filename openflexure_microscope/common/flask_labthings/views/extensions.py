@@ -1,14 +1,14 @@
 """
 Top-level representation of attached and enabled Extensions
 """
-from ..resource import Resource
+from ..view import View
 from ..find import registered_extensions
 from ..schema import ExtensionSchema
 from ..decorators import marshal_with, ThingProperty
 
 
 @ThingProperty
-class ExtensionList(Resource):
+class ExtensionList(View):
     """
     List and basic documentation for all enabled Extensions
     """

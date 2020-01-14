@@ -1,4 +1,4 @@
-from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.view import View
 import subprocess
 import os
 from sys import platform
@@ -18,7 +18,7 @@ def is_raspberrypi(raise_on_errors=False):
 
 
 @ThingAction
-class ShutdownAPI(Resource):
+class ShutdownAPI(View):
     """
     Attempt to shutdown the device 
     """
@@ -34,7 +34,7 @@ class ShutdownAPI(Resource):
 
 
 @ThingAction
-class RebootAPI(Resource):
+class RebootAPI(View):
     """
     Attempt to reboot the device 
     """

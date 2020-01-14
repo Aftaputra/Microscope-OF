@@ -2,14 +2,14 @@ from flask import abort, url_for, jsonify, render_template, Blueprint, current_a
 
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
 
-from ...resource import Resource
+from ...view import View
 from ...find import current_labthing
 from ...spec import rule_to_path, rule_to_params
 
 import os
 
 
-class APISpecResource(Resource):
+class APISpecView(View):
     """
     OpenAPI v3 documentation
     """
@@ -21,7 +21,7 @@ class APISpecResource(Resource):
         return jsonify(current_labthing().spec.to_dict())
 
 
-class SwaggerUIResource(Resource):
+class SwaggerUIView(View):
     """
     Swagger UI documentation
     """
@@ -30,7 +30,7 @@ class SwaggerUIResource(Resource):
         return render_template("swagger-ui.html")
 
 
-class W3CThingDescriptionResource(Resource):
+class W3CThingDescriptionView(View):
     """
     W3C-style Thing Description
     """
@@ -103,11 +103,11 @@ docs_blueprint = Blueprint(
 )
 
 docs_blueprint.add_url_rule(
-    "/swagger", view_func=APISpecResource.as_view("swagger_json")
+    "/swagger", view_func=APISpecView.as_view("swagger_json")
 )
 docs_blueprint.add_url_rule(
-    "/swagger-ui", view_func=SwaggerUIResource.as_view("swagger_ui")
+    "/swagger-ui", view_func=SwaggerUIView.as_view("swagger_ui")
 )
 docs_blueprint.add_url_rule(
-    "/td", view_func=W3CThingDescriptionResource.as_view("w3c_td")
+    "/td", view_func=W3CThingDescriptionView.as_view("w3c_td")
 )

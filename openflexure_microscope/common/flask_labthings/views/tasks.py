@@ -1,7 +1,7 @@
 from flask import abort, url_for
 
 from ..decorators import marshal_with, ThingProperty, Tag
-from ..resource import Resource
+from ..view import View
 from ..schema import TaskSchema
 
 from openflexure_microscope.common.labthings_core import tasks
@@ -9,7 +9,7 @@ from openflexure_microscope.common.labthings_core import tasks
 
 @ThingProperty
 @Tag("tasks")
-class TaskList(Resource):
+class TaskList(View):
     @marshal_with(TaskSchema(many=True))
     def get(self):
         """
@@ -19,7 +19,7 @@ class TaskList(Resource):
 
 
 @Tag(["properties", "tasks"])
-class TaskResource(Resource):
+class TaskView(View):
     @marshal_with(TaskSchema())
     def get(self, id):
         """

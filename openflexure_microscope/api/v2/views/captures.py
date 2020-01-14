@@ -5,7 +5,7 @@ from openflexure_microscope.api.utilities import get_bool, JsonResponse
 
 from openflexure_microscope.common.flask_labthings.schema import Schema
 from openflexure_microscope.common.flask_labthings import fields
-from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.view import View
 from openflexure_microscope.common.flask_labthings.utilities import (
     description_from_view,
 )
@@ -32,9 +32,9 @@ class CaptureSchema(Schema):
     def generate_links(self, data, **kwargs):
         data.links = {
             "self": {
-                "href": url_for(CaptureResource.endpoint, id=data.id, _external=True),
+                "href": url_for(CaptureView.endpoint, id=data.id, _external=True),
                 "mimetype": "application/json",
-                **description_from_view(CaptureResource),
+                **description_from_view(CaptureView),
             },
             "tags": {
                 "href": url_for(CaptureTags.endpoint, id=data.id, _external=True),
@@ -66,7 +66,7 @@ capture_list_schema = CaptureSchema(many=True)
 
 @ThingProperty
 @Tag("captures")
-class CaptureList(Resource):
+class CaptureList(View):
     @marshal_with(CaptureSchema(many=True))
     def get(self):
         """
@@ -78,7 +78,7 @@ class CaptureList(Resource):
 
 
 @Tag("captures")
-class CaptureResource(Resource):
+class CaptureView(View):
     @marshal_with(CaptureSchema())
     def get(self, id):
         """
@@ -108,7 +108,7 @@ class CaptureResource(Resource):
 
 
 @Tag("captures")
-class CaptureDownload(Resource):
+class CaptureDownload(View):
     @doc_response(200, mimetype="image/jpeg")
     def get(self, id, filename):
         """
@@ -144,7 +144,7 @@ class CaptureDownload(Resource):
 
 
 @Tag("captures")
-class CaptureTags(Resource):
+class CaptureTags(View):
     def get(self, id):
         """
         Get tags associated with a single image capture
@@ -199,7 +199,7 @@ class CaptureTags(Resource):
 
 
 @Tag("captures")
-class CaptureMetadata(Resource):
+class CaptureMetadata(View):
     def get(self, id):
         """
         Get metadata associated with a single image capture

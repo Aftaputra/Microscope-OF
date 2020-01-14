@@ -10,8 +10,8 @@ from .spec import rule2path, get_spec
 from .decorators import tag
 
 from .views.extensions import ExtensionList
-from .views.tasks import TaskList, TaskResource
-from .views.docs import docs_blueprint, SwaggerUIResource, W3CThingDescriptionResource
+from .views.tasks import TaskList, TaskView
+from .views.docs import docs_blueprint, SwaggerUIView, W3CThingDescriptionView
 
 from openflexure_microscope.common.labthings_core.utilities import get_docstring
 
@@ -36,6 +36,8 @@ class LabThing(object):
         self.views = []
         self.properties = {}
         self.actions = {}
+
+        self.custom_root_links = {}
 
         self.endpoints = set()
 
@@ -114,7 +116,7 @@ class LabThing(object):
         self.add_view(ExtensionList, "/extensions", endpoint=EXTENSION_LIST_ENDPOINT)
         # Add task routes
         self.add_view(TaskList, "/tasks", endpoint=TASK_LIST_ENDPOINT)
-        self.add_view(TaskResource, "/tasks/<id>", endpoint=TASK_ENDPOINT)
+        self.add_view(TaskView, "/tasks/<id>", endpoint=TASK_ENDPOINT)
 
     ### Device stuff
 
@@ -234,14 +236,17 @@ class LabThing(object):
 
     ### Utilities
 
-    def url_for(self, resource, **values):
+    def url_for(self, view, **values):
         """Generates a URL to the given resource.
         Works like :func:`flask.url_for`."""
-        endpoint = resource.endpoint
+        endpoint = view.endpoint
         return url_for(endpoint, **values)
 
     def owns_endpoint(self, endpoint):
         return endpoint in self.endpoints
+
+    def add_root_link(self, view, title, kwargs={}):
+        self.custom_root_links[title] = (view, kwargs)
 
     ### Description
     def rootrep(self):
@@ -257,11 +262,11 @@ class LabThing(object):
             "links": {
                 "thingDescription": {
                     "href": url_for("labthings_docs.w3c_td", _external=True),
-                    "description": get_docstring(W3CThingDescriptionResource),
+                    "description": get_docstring(W3CThingDescriptionView),
                 },
                 "swaggerUI": {
                     "href": url_for("labthings_docs.swagger_ui", _external=True),
-                    **description_from_view(SwaggerUIResource),
+                    **description_from_view(SwaggerUIView),
                 },
                 "extensions": {
                     "href": self.url_for(ExtensionList, _external=True),
@@ -273,5 +278,11 @@ class LabThing(object):
                 },
             },
         }
+
+        for title, (view, kwargs) in self.custom_root_links.items():
+            rr["links"][title] = {
+                "href": self.url_for(view, **kwargs, _external=True),
+                **description_from_view(view),
+            }
 
         return jsonify(rr)

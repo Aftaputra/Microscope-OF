@@ -1,5 +1,5 @@
 from openflexure_microscope.api.utilities import JsonResponse
-from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.view import View
 from openflexure_microscope.common.flask_labthings.find import find_component
 from openflexure_microscope.common.flask_labthings.decorators import (
     use_args,
@@ -17,7 +17,7 @@ import logging
 
 
 @ThingAction
-class MoveStageAPI(Resource):
+class MoveStageAPI(View):
     @use_args(
         {
             "absolute": fields.Boolean(
@@ -62,7 +62,7 @@ class MoveStageAPI(Resource):
 
 
 @ThingAction
-class ZeroStageAPI(Resource):
+class ZeroStageAPI(View):
     def post(self):
         """
         Zero the stage coordinates.

@@ -1,5 +1,5 @@
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
-from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.view import View
 from openflexure_microscope.common.flask_labthings.find import find_component
 from openflexure_microscope.common.flask_labthings.decorators import (
     use_args,
@@ -20,7 +20,7 @@ from flask import jsonify, request, abort, url_for, redirect, send_file
 
 
 @ThingAction
-class CaptureAPI(Resource):
+class CaptureAPI(View):
     """
     Create a new image capture. 
     """
@@ -86,7 +86,7 @@ class CaptureAPI(Resource):
 
 
 @ThingAction
-class GPUPreviewStartAPI(Resource):
+class GPUPreviewStartAPI(View):
     """
     Start the onboard GPU preview.
     Optional "window" parameter can be passed to control the position and size of the preview window,
@@ -119,7 +119,7 @@ class GPUPreviewStartAPI(Resource):
 
 
 @ThingAction
-class GPUPreviewStopAPI(Resource):
+class GPUPreviewStopAPI(View):
     def post(self):
         """
         Stop the onboard GPU preview.

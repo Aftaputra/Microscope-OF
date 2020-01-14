@@ -79,16 +79,20 @@ for extension in find_extensions(USER_EXTENSIONS_PATH):
 
 # Attach captures resources
 labthing.add_view(views.CaptureList, f"/captures")
-labthing.add_view(views.CaptureResource, f"/captures/<id>")
+labthing.add_root_link(views.CaptureList, "captures")
+
+labthing.add_view(views.CaptureView, f"/captures/<id>")
 labthing.add_view(views.CaptureDownload, f"/captures/<id>/download/<filename>")
 labthing.add_view(views.CaptureTags, f"/captures/<id>/tags")
 labthing.add_view(views.CaptureMetadata, f"/captures/<id>/metadata")
 
 # Attach settings and status resources
 labthing.add_view(views.SettingsProperty, f"/settings")
+labthing.add_root_link(views.SettingsProperty, "settings")
 labthing.add_view(views.NestedSettingsProperty, "/settings/<path:route>")
 labthing.add_view(views.StatusProperty, "/status")
 labthing.add_view(views.NestedStatusProperty, "/status/<path:route>")
+labthing.add_root_link(views.StatusProperty, "status")
 
 # Attach streams resources
 labthing.add_view(views.MjpegStream, f"/streams/mjpeg")

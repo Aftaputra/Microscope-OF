@@ -1,4 +1,4 @@
-from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.view import View
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
 from openflexure_microscope.common.flask_labthings.decorators import (
     ThingAction,
@@ -77,7 +77,7 @@ static_form = {
 
 
 @ThingProperty
-class TestAPIView(Resource):
+class TestAPIView(View):
     def get(self):
         global val_int
         val_int += 1
@@ -85,7 +85,7 @@ class TestAPIView(Resource):
 
 
 @ThingAction
-class TestDoAPIView(Resource):
+class TestDoAPIView(View):
     def post(self):
         global val_int
         val_int += 1

@@ -1,4 +1,4 @@
-from ..resource import Resource
+from ..view import View
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 
@@ -29,7 +29,7 @@ def get_spec(obj):
     return obj.__apispec__
 
 
-def rule2path(rule: Rule, view: Resource, spec: APISpec):
+def rule2path(rule: Rule, view: View, spec: APISpec):
     params = {
         "path": rule_to_path(rule),
         "operations": view2operations(view, spec),
@@ -52,7 +52,7 @@ def rule2path(rule: Rule, view: Resource, spec: APISpec):
     return params
 
 
-def view2operations(view: Resource, spec: APISpec):
+def view2operations(view: View, spec: APISpec):
     # Operations inherit tags from parent
     inherited_tags = []
     if hasattr(view, "__apispec__"):
@@ -60,7 +60,7 @@ def view2operations(view: Resource, spec: APISpec):
 
     # Build dictionary of operations (HTTP methods)
     ops = {}
-    for method in Resource.methods:
+    for method in View.methods:
         if hasattr(view, method):
             ops[method] = {}
 

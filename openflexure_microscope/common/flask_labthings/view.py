@@ -1,7 +1,7 @@
 from flask.views import MethodView
 
 
-class Resource(MethodView):
+class View(MethodView):
     """
     A LabThing Resource class should make use of functions get(), put(), post(), and delete() 
     corresponding to HTTP methods.
@@ -20,7 +20,7 @@ class Resource(MethodView):
         if hasattr(self, "__apispec__"):
             docs.update(self.__apispec__)
 
-        for meth in BaseResource.methods:
+        for meth in View.methods:
             if hasattr(self, meth) and hasattr(getattr(self, meth), "__apispec__"):
                 docs["operations"][meth] = {}
                 docs["operations"][meth] = getattr(self, meth).__apispec__

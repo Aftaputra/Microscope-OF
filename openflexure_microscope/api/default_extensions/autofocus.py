@@ -1,6 +1,6 @@
 from openflexure_microscope.common.flask_labthings.find import find_component
 from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
-from openflexure_microscope.common.flask_labthings.resource import Resource
+from openflexure_microscope.common.flask_labthings.view import View
 from openflexure_microscope.common.flask_labthings.decorators import (
     ThingAction,
     ThingProperty,
@@ -292,7 +292,7 @@ def fast_up_down_up_autofocus(
         return m.data_dict()
 
 
-class MeasureSharpnessAPI(Resource):
+class MeasureSharpnessAPI(View):
     def post(self):
         microscope = find_component("org.openflexure.microscope")
 
@@ -303,7 +303,7 @@ class MeasureSharpnessAPI(Resource):
 
 
 @ThingAction
-class AutofocusAPI(Resource):
+class AutofocusAPI(View):
     """
     Run a standard autofocus
     """
@@ -330,7 +330,7 @@ class AutofocusAPI(Resource):
 
 
 @ThingAction
-class FastAutofocusAPI(Resource):
+class FastAutofocusAPI(View):
     """
     Run a fast autofocus
     """
