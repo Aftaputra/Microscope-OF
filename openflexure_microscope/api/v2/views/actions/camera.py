@@ -94,7 +94,7 @@ class RAMCaptureAPI(View):
 
     @use_args(
         {
-            "use_video_port": fields.Boolean(missing=False),
+            "use_video_port": fields.Boolean(missing=True),
             "bayer": fields.Boolean(
                 missing=False, description="Return with raw bayer data"
             ),
