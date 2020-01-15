@@ -15,6 +15,11 @@ _actions = {
         "view_class": camera.CaptureAPI,
         "conditions": True,
     },
+    "ramCapture": {
+        "rule": "/camera/ram-capture/",
+        "view_class": camera.RAMCaptureAPI,
+        "conditions": True,
+    },
     "previewStart": {
         "rule": "/camera/preview/start",
         "view_class": camera.GPUPreviewStartAPI,

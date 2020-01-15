@@ -16,6 +16,7 @@ from openflexure_microscope.utilities import filter_dict
 from openflexure_microscope.api.v2.views.captures import capture_schema
 
 import logging
+import io
 from flask import jsonify, request, abort, url_for, redirect, send_file
 
 
@@ -83,6 +84,58 @@ class CaptureAPI(View):
             output.put_tags(args.get("tags"))
 
         return output
+
+
+@ThingAction
+class RAMCaptureAPI(View):
+    """
+    Create a non-persistant image capture.
+    """
+
+    @use_args(
+        {
+            "use_video_port": fields.Boolean(missing=False),
+            "bayer": fields.Boolean(
+                missing=False, description="Return with raw bayer data"
+            ),
+            "resize": fields.Dict(
+                missing=None, example={"width": 640, "height": 480}
+            ),  # TODO: Validate keys
+        }
+    )
+    @doc_response(200, mimetype="image/jpeg")
+    def post(self, args):
+        """
+        Create a non-persistant image capture.
+        """
+        microscope = find_component("org.openflexure.microscope")
+
+        resize = args.get("resize", None)
+        if resize:
+            if ("width" in resize) and ("height" in resize):
+                resize = (
+                    int(resize["width"]),
+                    int(resize["height"]),
+                )  # Convert dict to tuple
+            else:
+                abort(404)
+
+        # Open a BytesIO stream to be destroyed once request has returned
+        with microscope.camera.lock, io.BytesIO() as stream:
+
+            microscope.camera.capture(
+                stream,
+                use_video_port=args.get("use_video_port"),
+                resize=resize,
+                bayer=args.get("bayer"),
+            )
+
+            stream.seek(0)
+
+            return send_file(
+                io.BytesIO(stream.getbuffer()),
+                mimetype="image/jpeg"
+            )
 
 
 @ThingAction
