@@ -89,7 +89,7 @@ class CaptureAPI(View):
 @ThingAction
 class RAMCaptureAPI(View):
     """
-    Create a non-persistant image capture.
+    Take a non-persistant image capture.
     """
 
     @use_args(
@@ -106,7 +106,7 @@ class RAMCaptureAPI(View):
     @doc_response(200, mimetype="image/jpeg")
     def post(self, args):
         """
-        Create a non-persistant image capture.
+        Take a non-persistant image capture.
         """
         microscope = find_component("org.openflexure.microscope")
 
