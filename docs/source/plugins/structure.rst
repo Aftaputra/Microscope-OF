@@ -27,12 +27,15 @@ A simple extension file, with no API views but application-available methods may
                                                                                 parent_stage)
         return response
 
-    def hello_world():
+    def rename(new_name):
         """
-        Demonstrate passive method
+        Rename the microscope
         """
 
-        return "Hello world!"
+        microscope = find_component("org.openflexure.microscope")
+
+        microscope.name = new_name
+        microscope.save_settings()
     
 
     # Create your extension object
@@ -40,7 +43,7 @@ A simple extension file, with no API views but application-available methods may
 
     # Add methods to your extension
     my_extension.add_method(identify, "identify")
-    my_extension.add_method(hello_world, "hello_world")
+    my_extension.add_method(hello_world, "rename")
 
 
 Once this extension is loaded, any other extensions will have access to your methods:
