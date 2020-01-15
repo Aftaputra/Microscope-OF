@@ -1,5 +1,5 @@
-Adding web API routes
-=====================
+Adding web API views
+====================
 
 .. toctree::
    :maxdepth: 2
@@ -7,37 +7,38 @@ Adding web API routes
 
 Introduction
 ------------
-Plugins can automatically create routes to expose plugin functionality via the web API. Creating API routes for your plugin is strongly recommended, as this is the primary way we encourage interaction with the microscope device.
+Extensions can create views to expose extension functionality via the web API. Creating API views for your extension is strongly recommended, as this is the primary way we encourage interaction with the microscope device.
 
-To create API routes, add a dictionary to your plugin class, named ``api_views``. Within this dictionary, each key should be a string defining the route URL, whose value is a class, subclassing :py:class:`openflexure_microscope.api.v1.views.MicroscopeViewPlugin`.
+To create API views, add a dictionary to your extension class, named ``api_views``. Within this dictionary, each key should be a string defining the route URL, whose value is a class, subclassing :py:class:`openflexure_microscope.api.v1.views.MicroscopeViewExtension`.
 
 For example, your ``api_views`` dictionary may look like:
 
 .. code-block:: python
 
-    class MyPluginClass(MicroscopePlugin):
+    class MyExtensionClass(MicroscopeExtension):
 
         api_views = {
-            '/myplugin': MyRouteAPI,
+            '/myextension': MyRouteAPI,
         }
 
-Here, ``MyRouteAPI`` is a web API plugin class, subclassing :py:class:`openflexure_microscope.api.v1.views.MicroscopeViewPlugin`. If your plugin package were named ``myplugins.package``, an API route would be automatically added at ``/api/v1/plugin/myplugins/package/myplugin``.
+Here, ``MyRouteAPI`` is a web API extension class, subclassing :py:class:`openflexure_microscope.api.v1.views.MicroscopeViewExtension`. If your extension package were named ``myextensions.package``, an API route would be automatically added at ``/api/v1/extension/myextensions/package/myextension``.
 
-The full URL that your plugin will attach to is essentially identical to it's full module path. That is, if your plugin is loaded from ``my_microscope_plugins.mypluginpackage:MyPluginClass``, then your plugin routes will appear at ``<microscope_url>/plugin/my_microscope_plugins/mypluginpackage/<route>``. While this means that plugin routes can get long very quickly, they will generally only ever be accessed by client applications, and so this generally should not be a problem. 
+The full URL that your extension will attach to is essentially identical to it's full module path. That is, if your extension is loaded from ``my_microscope_extensions.myextensionpackage:MyExtensionClass``, then your extension views will appear at ``<microscope_url>/extension/my_microscope_extensions/myextensionpackage/<route>``. While this means that extension views can get long very quickly, they will generally only ever be accessed by client applications, and so this generally should not be a problem. 
 
-The MicroscopeViewPlugin class
+
+The MicroscopeViewExtension class
 ------------------------------
 
-All API plugin classes must subclass :py:class:`openflexure_microscope.api.v1.views.MicroscopeViewPlugin`, which is itself a subclass of `Flask's MethodView <http://flask.pocoo.org/docs/1.0/api/#flask.views.MethodView>`_. This greatly simplifies defining different functionality associated with different HTTP methods at a single URL route.
-It is best practice to clearly separate out types of functionality by HTTP method. For example, a GET request should never change the state of the microscope. For this, POST or PUT requests are acceptable. Parameters should be passed to POST and PUT requests as JSON payloads, and your methods should include fallback code for cases where parameters are not passed, or are passed in an invalid format. The DELETE method should only be used in situations where your plugin creates additional URL routes for newly created objects, and should serve only to delete these objects and routes.
+All API extension classes must subclass :py:class:`openflexure_microscope.api.v1.views.MicroscopeViewExtension`, which is itself a subclass of `Flask's MethodView <http://flask.pocoo.org/docs/1.0/api/#flask.views.MethodView>`_. This greatly simplifies defining different functionality associated with different HTTP methods at a single URL route.
+It is best practice to clearly separate out types of functionality by HTTP method. For example, a GET request should never change the state of the microscope. For this, POST or PUT requests are acceptable. Parameters should be passed to POST and PUT requests as JSON payloads, and your methods should include fallback code for cases where parameters are not passed, or are passed in an invalid format. The DELETE method should only be used in situations where your extension creates additional URL views for newly created objects, and should serve only to delete these objects and views.
 
-Each HTTP method maps to a function with the same name, in lowercase. For example, your :py:class:`openflexure_microscope.api.v1.views.MicroscopeViewPlugin` may look like:
+Each HTTP method maps to a function with the same name, in lowercase. For example, your :py:class:`openflexure_microscope.api.v1.views.MicroscopeViewExtension` may look like:
 
 .. code-block:: python
 
     from flask import jsonify
     ...
-    class MyRouteAPI(MicroscopeViewPlugin):
+    class MyRouteAPI(MicroscopeViewExtension):
 
         def get(self):
             # Retrieve some information, without changing the state of the microscope
@@ -47,39 +48,39 @@ Each HTTP method maps to a function with the same name, in lowercase. For exampl
             # Change the state of the microscope based on passed parameters
             ...
 
-Sometimes you will need to create variable API routes. For example, the built-in routes for managing capture data use capture IDs in the request URL to specify which capture data should be returned. Plugins can also access this functionality. This is done using `Flask variable rules <http://flask.pocoo.org/docs/1.0/quickstart/#variable-rules>`_. Here, variables are added to the URL route string by marking them with ``<variable_name>``, which then passes ``variable_name`` to your request function as a keyword argument.
+Sometimes you will need to create variable API views. For example, the built-in views for managing capture data use capture IDs in the request URL to specify which capture data should be returned. Extensions can also access this functionality. This is done using `Flask variable rules <http://flask.pocoo.org/docs/1.0/quickstart/#variable-rules>`_. Here, variables are added to the URL route string by marking them with ``<variable_name>``, which then passes ``variable_name`` to your request function as a keyword argument.
 
 For example:
 
 .. code-block:: python
 
-    class MyPluginClass(MicroscopePlugin):
+    class MyExtensionClass(MicroscopeExtension):
 
         api_views = {
-            '/myplugin/<object_id>': MyRouteAPI,
+            '/myextension/<object_id>': MyRouteAPI,
         }
     ...
 
-    class MyRouteAPI(MicroscopeViewPlugin):
+    class MyRouteAPI(MicroscopeViewExtension):
 
         def get(self, object_id):
             # Retrieve some information about object_id
             this_object = object_dictionary[object_id]
             ...
 
-Calling plugin methods from routes
+Calling extension methods from views
 ++++++++++++++++++++++++++++++++++
 
-Instances of MicroscopeViewPlugin have direct access to their associated microscope plugin methods, without needing to know the plugin namespace in advance. As described earlier in this section, all plugins get attached to the microscope in their own namespace, based on the plugins name. This means there are two equivalent ways to access your plugin methods from a web API plugin:
+Instances of MicroscopeViewExtension have direct access to their associated microscope extension methods, without needing to know the extension namespace in advance. As described earlier in this section, all extensions get attached to the microscope in their own namespace, based on the extensions name. This means there are two equivalent ways to access your extension methods from a web API extension:
 
 .. code-block:: python
 
     ...
-    # Call a method from our plugin, using the MicroscopeViewPlugin.plugin shortcut
-    self.plugin.my_plugin_method()
+    # Call a method from our extension, using the MicroscopeViewExtension.extension shortcut
+    self.extension.my_extension_method()
 
-    # Call a method from our plugin, using the full route
-    self.microscope.my_plugin_name.my_plugin_method()
+    # Call a method from our extension, using the full route
+    self.microscope.my_extension_name.my_extension_method()
     ...
 
 Building responses
@@ -98,14 +99,14 @@ An example web route with simple responses may look like:
     from flask import jsonify
     ...
 
-    class MyPluginClass(MicroscopePlugin):
+    class MyExtensionClass(MicroscopeExtension):
 
         api_views = {
-            '/myplugin/<object_id>': MyRouteAPI,
+            '/myextension/<object_id>': MyRouteAPI,
         }
     ...
 
-    class MyRouteAPI(MicroscopeViewPlugin):
+    class MyRouteAPI(MicroscopeViewExtension):
 
         def get(self, object_id):
 
@@ -135,7 +136,7 @@ To ease obtaining values from a JSON payload attached to an HTTP POST request, y
 .. code-block:: python
 
     ...
-    class MyRouteAPI(MicroscopeViewPlugin):
+    class MyRouteAPI(MicroscopeViewExtension):
 
         def post(self):
             # Get payload JSON from request
@@ -144,7 +145,7 @@ To ease obtaining values from a JSON payload attached to an HTTP POST request, y
             # Try to find value associated with 'my_string' key.
             # If that key doesn't exist in the payload, return '' instead.
             # If a value does exist, convert it to a string, regardless of its original type.
-            new_plugin_string = payload.param('my_string', default='', convert=str)
+            new_extension_string = payload.param('my_string', default='', convert=str)
             ...
 
 .. autoclass:: openflexure_microscope.api.utilities.JsonResponse

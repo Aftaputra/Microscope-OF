@@ -1,5 +1,5 @@
-Developing Plugins
-=======================================================
+Developing API Extensions
+=========================
 
 .. toctree::
    :maxdepth: 2

@@ -9,7 +9,6 @@ Welcome to OpenFlexure Microscope Software's documentation!
    config.rst
    microscope.rst
    camera.rst
-   common.rst
    plugins.rst
    api.rst
 

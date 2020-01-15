@@ -21,26 +21,19 @@ class Microscope:
     """
     A basic microscope object.
 
-    The camera and stage should already be initialised, and passed as arguments.
-
-    Attributes:
-        lock (:py:class:`openflexure_microscope.common.lock.CompositeLock`): Composite lock controlling thread access
-            to multiple pieces of hardware.
-        camera (:py:class:`openflexure_microscope.camera.base.BaseCamera`): Camera object
-        stage (:py:class:`openflexure_microscope.stage.base.BaseStage`): Stage object
-        task: (:py:class:`openflexure_microscope.task.TaskOrchestrator`): Threaded ask orchestrator for managing
-            background tasks using microscope hardware
+    The camera and stage objects may already be initialised, and can be passed as arguments.
     """
 
     def __init__(self):
         # Initial attributes
-        self.id = uuid.uuid4()
-        self.name = self.id
-        self.fov = [0, 0]
-        self.camera = None
-        self.stage = None
+        self.id = uuid.uuid4()  #: Microscope UUID
+        self.name = self.id  #: Microscope name (modifiable)
+        self.fov = [0, 0]   #: Microscope field-of-view in stage motor steps
+        self.camera = None  #: Currently connected camera object
+        self.stage = None  #: Currently connected stage object
 
         # Initialise with an empty composite lock
+        #: :py:class:`openflexure_microscope.common.lock.CompositeLock`: Composite lock for locking both camera and stage
         self.lock = CompositeLock([])
 
         # Apply settings loaded from file
@@ -110,13 +103,19 @@ class Microscope:
         logging.info("Reapplying settings to newly attached devices")
         self.apply_settings(settings_full)
 
-    def has_real_stage(self):
+    def has_real_stage(self) -> bool:
+        """
+        Check if a real (non-mock) stage is currently attached.
+        """
         if hasattr(self, "stage") and not isinstance(self.stage, MockStage):
             return True
         else:
             return False
 
     def has_real_camera(self):
+        """
+        Check if a real (non-mock) camera is currently attached.
+        """
         if hasattr(self, "camera") and not isinstance(self.camera, MockStreamer):
             return True
         else:
@@ -139,7 +138,7 @@ class Microscope:
 
     def apply_settings(self, config: dict):
         """
-        Applies a config dictionary. Missing parameters will be left untouched.
+        Applies a settings dictionary to the microscope. Missing parameters will be left untouched.
         """
         logging.debug("Microscope: Applying config: {}".format(config))
 

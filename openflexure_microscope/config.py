@@ -18,6 +18,67 @@ Attributes:
 """
 
 
+class OpenflexureSettingsFile:
+    """
+    An object to handle expansion, conversion, and saving of the microscope configuration.
+
+    Args:
+        config_path (str): Path to the config JSON file (None falls back to default location)
+        expand (bool): Expand paths to valid auxillary config files.
+    """
+
+    def __init__(self, config_path: str = None):
+        global DEFAULT_CONFIG, USER_CONFIG_FILE_PATH
+
+        # Set arguments
+        self.config_path = config_path or USER_CONFIG_FILE_PATH
+
+        # Initialise basic config file with defaults if it doesn't exist
+        initialise_file(self.config_path, populate=DEFAULT_CONFIG)
+
+    def load(self) -> dict:
+        """
+        Loads settings from a file on-disk.
+        """
+        # Unexpanded config dictionary (used at load/save time)
+        loaded_config = load_json_file(self.config_path)
+
+        logging.debug("Reading settings from disk")
+        return loaded_config
+
+    def save(self, config: dict, backup: bool = True):
+        """
+        Save settings to a file on-disk.
+
+        Args:
+            config (dict): Dictionary of new settings
+            backup (bool): Back up previous settings file
+        """
+
+        save_settings = config
+
+        if backup:
+            if os.path.isfile(self.config_path):
+                shutil.copyfile(self.config_path, self.config_path + ".bk")
+
+        logging.debug("Saving settings dictionary to disk")
+        save_json_file(self.config_path, save_settings)
+
+    def merge(self, config: dict) -> dict:
+        """
+        Merge settings dictionary with settings loaded from file on-disk.
+
+        Args:
+            config (dict): Dictionary of new settings
+        """
+
+        logging.debug("Merging settings with file on disk")
+        settings = self.load()
+        settings.update(config)
+
+        return settings
+
+
 class JSONEncoder(json.JSONEncoder):
     """
     A custom JSON encoder, with type conversions for PiCamera fractions, Numpy integers, and Numpy arrays
@@ -45,61 +106,7 @@ class JSONEncoder(json.JSONEncoder):
                 return str(o)
 
 
-# MAIN CONFIG CLASS
-
-
-class OpenflexureSettingsFile:
-    """
-    An object to handle expansion, conversion, and saving of the microscope configuration.
-
-    Args:
-        config_path (str): Path to the config JSON file (None falls back to default location)
-        expand (bool): Expand paths to valid auxillary config files.
-    """
-
-    def __init__(self, config_path: str = None):
-        global DEFAULT_CONFIG, USER_CONFIG_FILE_PATH
-
-        # Set arguments
-        self.config_path = config_path or USER_CONFIG_FILE_PATH
-
-        # Initialise basic config file with defaults if it doesn't exist
-        initialise_file(self.config_path, populate=DEFAULT_CONFIG)
-
-    def load(self):
-        """
-        Loads config from a file on-disk, and expands auxillary config files if available.
-        """
-        # Unexpanded config dictionary (used at load/save time)
-        loaded_config = load_json_file(self.config_path)
-
-        logging.debug("Reading settings from disk")
-        return loaded_config
-
-    def save(self, config: dict, backup: bool = True):
-        """
-        Save config to a file on-disk, and splits into auxillary config files if available.
-        """
-
-        save_settings = config
-
-        if backup:
-            if os.path.isfile(self.config_path):
-                shutil.copyfile(self.config_path, self.config_path + ".bk")
-
-        logging.debug("Saving settings dictionary to disk")
-        save_json_file(self.config_path, save_settings)
-
-    def merge(self, config: dict, backup: bool = True):
-        logging.debug("Merging settings with file on disk")
-        settings = self.load()
-        settings.update(config)
-
-        return settings
-
-
 # HANDLE BASIC LOADING AND SAVING OF SETTINGS FILES
-
 
 def load_json_file(config_path) -> dict:
     """
@@ -141,6 +148,12 @@ def save_json_file(config_path: str, config_dict: dict):
 
 
 def create_file(config_path):
+    """
+    Creates an empty file, and all folder structure currently nonexistant.
+
+    Args:
+        config_path: Path to the (possibly) new file
+    """
     if not os.path.exists(os.path.dirname(config_path)):
         try:
             os.makedirs(os.path.dirname(config_path))
@@ -181,15 +194,20 @@ def settings_file_path(filename: str):
 # HANDLE THE DEFAULT CONFIGURATION FILE
 
 HERE = os.path.abspath(os.path.dirname(__file__))
+
+#: Path of default (first-run) microscope settings
 DEFAULT_CONFIG_FILE_PATH = os.path.join(HERE, "microscope_settings.default.json")
 
+#: Path of microscope settings directory
 USER_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".openflexure")
+#: Path of microscope settings directory
 USER_CONFIG_FILE_PATH = os.path.join(USER_CONFIG_DIR, "microscope_settings.json")
+#: Path of microscope extensions directory
 USER_EXTENSIONS_PATH = os.path.join(USER_CONFIG_DIR, "microscope_extensions")
 
 # Load the default config
 with open(DEFAULT_CONFIG_FILE_PATH, "r") as default_rc:
     DEFAULT_CONFIG = default_rc.read()
 
-# Create the default user settings object
+#: Default user settings object
 user_settings = OpenflexureSettingsFile(config_path=USER_CONFIG_FILE_PATH)

@@ -3,14 +3,14 @@
 """
 Raspberry Pi camera implementation of the PiCameraStreamer class.
 
-NOTES:
+**NOTES:**
 
 Still port used for image capture.
 Preview port reserved for onboard GPU preview.
 
 Video port:
 
-* Splitter port 0: Image capture (if use_video_port == True)
+* Splitter port 0: Image capture (if `use_video_port == True`)
 * Splitter port 1: Streaming frames
 * Splitter port 2: Video capture
 * Splitter port 3: [Currently unused]
@@ -237,6 +237,12 @@ class PiCameraStreamer(BaseCamera):
     def apply_picamera_settings(
         self, settings_dict: dict, pause_for_effect: bool = True
     ):
+        """
+
+        Args:
+            settings_dict (dict): Dictionary of properties to apply to the :py:class:`picamera.PiCamera`: object
+            pause_for_effect (bool): Pause tactically to reduce risk of timing issues
+        """
         # Set exposure mode
         if "exposure_mode" in settings_dict:
             logging.debug(
@@ -307,7 +313,10 @@ class PiCameraStreamer(BaseCamera):
 
     def apply_lens_shading_table(self, lst_array_or_path):
         """
-        Apply a lens shading table from an .npy file, or numpy array. 
+        Apply a lens shading table from an .npy file, or numpy array.
+
+        Args:
+            lst_array_or_path: Numpy array, or path to .npy file, describing the lens-shading table
         """
         if isinstance(lst_array_or_path, np.ndarray):
             self.camera.lens_shading_table = lst_array_or_path
@@ -530,10 +539,13 @@ class PiCameraStreamer(BaseCamera):
 
         Args:
             output: String or file-like object to write capture data to
-            use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
             fmt (str): Format of the capture.
+            use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
             resize ((int, int)): Resize the captured image.
             bayer (bool): Store raw bayer data in capture
+
+        Returns:
+            output_object (str/BytesIO): Target object.
         """
 
         with self.lock:
@@ -566,6 +578,9 @@ class PiCameraStreamer(BaseCamera):
         Args:
             use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
             resize ((int, int)): Resize the captured image.
+
+        Returns:
+            output_array (np.ndarray): Output array of capture
         """
         with self.lock:
             if use_video_port:
@@ -603,6 +618,9 @@ class PiCameraStreamer(BaseCamera):
         Args:
             use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
             resize ((int, int)): Resize the captured image.
+
+        Returns:
+            output_array (np.ndarray): Output array of capture
         """
         with self.lock:
             if use_video_port:

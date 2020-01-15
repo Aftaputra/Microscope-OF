@@ -1,33 +1,58 @@
-Basic plugin structure
-===========================
+Basic extension structure
+=========================
 
-As described earlier, a plugin must subclass :py:class:`openflexure_microscope.plugins.MicroscopePlugin`. Each plugin in described by a single class, containing any number of methods. The methods defined within your plugin class will be attached to the microscope. By subclassing :py:class:`openflexure_microscope.plugins.MicroscopePlugin`, your methods automatically get access to the microscope object your plugin is attached to, through ``self.microscope``. This is an instance of :py:class:`openflexure_microscope.Microscope`, and gives unrestricted access to the attached camera and stage hardware.
+An extension starts as a simple instance of :py:class:`openflexure_microscope.common.flask_labthings.extensions.BaseExtension`. 
+Each extension is described by a single ``BaseExtension`` instance, containing any number of methods, API views, and additional hardware components. 
 
-For example, a simple plugin file named ``myplugin.py``, may look like:
+In order to access the currently running microscope object, use the :py:func:`openflexure_microscope.common.flask_labthings.find` function, with the argument ``"org.openflexure.microscope"``. Likewise, any new components attached by other extensions can be found using their full name, as above.
+
+A simple extension file, with no API views but application-available methods may look like:
 
 .. code-block:: python
 
-    from openflexure_microscope.plugins import MicroscopePlugin
+    from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
+    from openflexure_microscope.common.flask_labthings.find import find_component
 
-    class MyPlugin(MicroscopePlugin):
 
-        def identify(self):
-            """
-            Demonstrate access to Microscope.camera, and Microscope.stage
-            """
+    def identify():
+        """
+        Demonstrate access to Microscope.camera, and Microscope.stage
+        """
+        microscope = find_component("org.openflexure.microscope")
 
-            parent_camera = self.microscope.camera
-            parent_stage = self.microscope.stage
+        parent_camera = microscope.camera
+        parent_stage = microscope.stage
 
-            response = "My parent camera is {}, and my parent stage is {}.".format(parent_camera, 
-                                                                                   parent_stage)
-            return response
+        response = "My parent camera is {}, and my parent stage is {}.".format(parent_camera, 
+                                                                                parent_stage)
+        return response
 
-        def hello_world(self):
-            """
-            Demonstrate passive method
-            """
+    def hello_world():
+        """
+        Demonstrate passive method
+        """
 
-            return "Hello world!"
+        return "Hello world!"
+    
 
-When this plugin is loaded and attached to a microscope object named ``microscope``, the plugin methods will be available at ``microscope.plugin.myplugin.identify()`` and ``microscope.plugin.myplugin.hello_world()``.
+    # Create your extension object
+    my_extension = BaseExtension("com.myname.myextension", version="0.0.0")
+
+    # Add methods to your extension
+    my_extension.add_method(identify, "identify")
+    my_extension.add_method(hello_world, "hello_world")
+
+
+Once this extension is loaded, any other extensions will have access to your methods:
+
+.. code-block:: python
+
+    from openflexure_microscope.common.flask_labthings.find import find_extension
+
+    def test_extension_method():
+        # Find your extension. Returns None if it hasn't been found.
+        my_found_extension = find_extension("com.myname.myextension")
+
+        # Call a function from your extension
+        if my_found_extension:
+            my_found_extension.identify()
