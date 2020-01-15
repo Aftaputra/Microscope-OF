@@ -195,7 +195,8 @@ class MockStreamer(BaseCamera):
 
             output.write(self.stream.getvalue())
 
-            output.close()
+            if isinstance(output, str):
+                output.close()
 
     # HANDLE STREAM FRAMES
 
