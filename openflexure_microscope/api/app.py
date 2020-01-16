@@ -15,7 +15,12 @@ from flask_cors import CORS, cross_origin
 from openflexure_microscope.api.utilities import list_routes, init_default_extensions
 
 from openflexure_microscope.config import JSONEncoder
-from openflexure_microscope.paths import EXTENSIONS_PATH, settings_file_path
+from openflexure_microscope.paths import (
+    OPENFLEXURE_ETC_PATH,
+    OPENFLEXURE_VAR_PATH,
+    OPENFLEXURE_EXTENSIONS_PATH,
+    settings_file_path,
+)
 
 from openflexure_microscope.common.flask_labthings.quick import create_app
 from openflexure_microscope.common.flask_labthings.extensions import find_extensions
@@ -53,6 +58,10 @@ else:
     logger.setLevel(logging.getLogger("gunicorn.error").level)
 
 
+# Log server paths being used
+logging.info(f"Running with data path {OPENFLEXURE_VAR_PATH}")
+logging.info(f"Running with server path {OPENFLEXURE_ETC_PATH}")
+
 # Create flask app
 app, labthing = create_app(
     __name__,
@@ -72,9 +81,9 @@ app.json_encoder = JSONEncoder
 labthing.add_component(api_microscope, "org.openflexure.microscope")
 
 # Attach extensions
-if not os.path.isfile(EXTENSIONS_PATH):
-    init_default_extensions(EXTENSIONS_PATH)
-for extension in find_extensions(EXTENSIONS_PATH):
+if not os.path.isfile(OPENFLEXURE_EXTENSIONS_PATH):
+    init_default_extensions(OPENFLEXURE_EXTENSIONS_PATH)
+for extension in find_extensions(OPENFLEXURE_EXTENSIONS_PATH):
     labthing.register_extension(extension)
 
 # Attach captures resources
