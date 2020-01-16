@@ -1,1 +1,1 @@
-EXTENSION_NAME = "flask-lab"
+EXTENSION_NAME = "flask-labthings"
