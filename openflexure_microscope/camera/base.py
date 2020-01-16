@@ -12,8 +12,9 @@ from .capture import CaptureObject
 from openflexure_microscope.utilities import entry_by_uuid
 from openflexure_microscope.common.labthings_core.lock import StrictLock
 
+from openflexure_microscope.paths import data_file_path
 
-BASE_CAPTURE_PATH = os.path.join(os.path.expanduser("~"), "micrographs")
+BASE_CAPTURE_PATH = data_file_path("micrographs")
 TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, "tmp")
 
 

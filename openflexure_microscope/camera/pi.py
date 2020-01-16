@@ -46,7 +46,7 @@ from .base import BaseCamera, CaptureObject
 # Richard's fix gain
 from .set_picamera_gain import set_analog_gain, set_digital_gain
 
-from openflexure_microscope.config import settings_file_path
+from openflexure_microscope.paths import settings_file_path
 
 
 # MAIN CLASS

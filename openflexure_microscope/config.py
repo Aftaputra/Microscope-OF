@@ -7,15 +7,7 @@ from uuid import UUID
 import numpy as np
 from fractions import Fraction
 
-"""
-Attributes:
-    USER_CONFIG_DIR (str): Default path of the user-config directory, containing runtime-config and
-        calibration files. Obtained from ``os.path.join(os.path.expanduser("~"), ".openflexure")``.
-    USER_CONFIG_FILE_PATH (str): Default path of the user microscope_settings.json runtime-config file. 
-        Obtained from ``os.path.join(USER_CONFIG_DIR, "microscope_settings.json")``
-    user_settings (OpenflexureSettingsFile): Default settings file object, which handles expansion and
-        contraction of settings dictionaries.
-"""
+from .paths import OPENFLEXURE_ETC_PATH, CONFIG_FILE_PATH, DEFAULT_CONFIG_FILE_PATH
 
 
 class OpenflexureSettingsFile:
@@ -28,10 +20,10 @@ class OpenflexureSettingsFile:
     """
 
     def __init__(self, config_path: str = None):
-        global DEFAULT_CONFIG, USER_CONFIG_FILE_PATH
+        global DEFAULT_CONFIG, CONFIG_FILE_PATH
 
         # Set arguments
-        self.config_path = config_path or USER_CONFIG_FILE_PATH
+        self.config_path = config_path or CONFIG_FILE_PATH
 
         # Initialise basic config file with defaults if it doesn't exist
         initialise_file(self.config_path, populate=DEFAULT_CONFIG)
@@ -107,6 +99,7 @@ class JSONEncoder(json.JSONEncoder):
 
 
 # HANDLE BASIC LOADING AND SAVING OF SETTINGS FILES
+
 
 def load_json_file(config_path) -> dict:
     """
@@ -185,29 +178,10 @@ def initialise_file(config_path, populate: str = "{}\n"):
             outfile.write(populate)
 
 
-def settings_file_path(filename: str):
-    """Generate a full file path for a filename to be stored in user settings"""
-    global USER_CONFIG_DIR
-    return os.path.join(USER_CONFIG_DIR, filename)
-
-
-# HANDLE THE DEFAULT CONFIGURATION FILE
-
-HERE = os.path.abspath(os.path.dirname(__file__))
-
-#: Path of default (first-run) microscope settings
-DEFAULT_CONFIG_FILE_PATH = os.path.join(HERE, "microscope_settings.default.json")
-
-#: Path of microscope settings directory
-USER_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".openflexure")
-#: Path of microscope settings directory
-USER_CONFIG_FILE_PATH = os.path.join(USER_CONFIG_DIR, "microscope_settings.json")
-#: Path of microscope extensions directory
-USER_EXTENSIONS_PATH = os.path.join(USER_CONFIG_DIR, "microscope_extensions")
-
 # Load the default config
 with open(DEFAULT_CONFIG_FILE_PATH, "r") as default_rc:
     DEFAULT_CONFIG = default_rc.read()
 
+
 #: Default user settings object
-user_settings = OpenflexureSettingsFile(config_path=USER_CONFIG_FILE_PATH)
+user_settings = OpenflexureSettingsFile(config_path=CONFIG_FILE_PATH)

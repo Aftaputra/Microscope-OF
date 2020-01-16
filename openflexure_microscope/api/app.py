@@ -14,11 +14,8 @@ from flask_cors import CORS, cross_origin
 
 from openflexure_microscope.api.utilities import list_routes, init_default_extensions
 
-from openflexure_microscope.config import (
-    settings_file_path,
-    JSONEncoder,
-    USER_EXTENSIONS_PATH,
-)
+from openflexure_microscope.config import JSONEncoder
+from openflexure_microscope.paths import EXTENSIONS_PATH, settings_file_path
 
 from openflexure_microscope.common.flask_labthings.quick import create_app
 from openflexure_microscope.common.flask_labthings.extensions import find_extensions
@@ -75,9 +72,9 @@ app.json_encoder = JSONEncoder
 labthing.add_component(api_microscope, "org.openflexure.microscope")
 
 # Attach extensions
-if not os.path.isfile(USER_EXTENSIONS_PATH):
-    init_default_extensions(USER_EXTENSIONS_PATH)
-for extension in find_extensions(USER_EXTENSIONS_PATH):
+if not os.path.isfile(EXTENSIONS_PATH):
+    init_default_extensions(EXTENSIONS_PATH)
+for extension in find_extensions(EXTENSIONS_PATH):
     labthing.register_extension(extension)
 
 # Attach captures resources
