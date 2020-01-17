@@ -22,8 +22,8 @@ from openflexure_microscope.paths import (
     settings_file_path,
 )
 
-from openflexure_microscope.common.flask_labthings.quick import create_app
-from openflexure_microscope.common.flask_labthings.extensions import find_extensions
+from labthings.server.quick import create_app
+from labthings.server.extensions import find_extensions
 
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
 

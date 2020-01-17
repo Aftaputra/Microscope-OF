@@ -4,10 +4,10 @@ Top-level representation of enabled actions
 
 from . import camera, stage, system
 
-from openflexure_microscope.common.flask_labthings.view import View
-from openflexure_microscope.common.flask_labthings.find import current_labthing
-from openflexure_microscope.common.flask_labthings.utilities import description_from_view
-from openflexure_microscope.common.flask_labthings.decorators import Tag
+from labthings.server.view import View
+from labthings.server.find import current_labthing
+from labthings.server.utilities import description_from_view
+from labthings.server.decorators import Tag
 
 _actions = {
     "capture": {

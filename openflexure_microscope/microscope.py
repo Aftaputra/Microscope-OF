@@ -14,7 +14,7 @@ from openflexure_microscope.camera.mock import MockStreamer
 from openflexure_microscope.utilities import serialise_array_b64
 from openflexure_microscope.config import user_settings
 
-from openflexure_microscope.common.labthings_core.lock import CompositeLock
+from labthings.core.lock import CompositeLock
 
 
 class Microscope:
@@ -33,7 +33,7 @@ class Microscope:
         self.stage = None  #: Currently connected stage object
 
         # Initialise with an empty composite lock
-        #: :py:class:`openflexure_microscope.common.lock.CompositeLock`: Composite lock for locking both camera and stage
+        #: :py:class:`labthings.lock.CompositeLock`: Composite lock for locking both camera and stage
         self.lock = CompositeLock([])
 
         # Apply settings loaded from file

@@ -1,7 +1,7 @@
-from openflexure_microscope.common.flask_labthings.find import find_component
-from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
-from openflexure_microscope.common.flask_labthings.view import View
-from openflexure_microscope.common.flask_labthings.decorators import (
+from labthings.server.find import find_component
+from labthings.server.extensions import BaseExtension
+from labthings.server.view import View
+from labthings.server.decorators import (
     ThingAction,
     ThingProperty,
 )

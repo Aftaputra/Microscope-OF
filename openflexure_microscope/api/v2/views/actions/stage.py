@@ -1,13 +1,13 @@
 from openflexure_microscope.api.utilities import JsonResponse
-from openflexure_microscope.common.flask_labthings.view import View
-from openflexure_microscope.common.flask_labthings.find import find_component
-from openflexure_microscope.common.flask_labthings.decorators import (
+from labthings.server.view import View
+from labthings.server.find import find_component
+from labthings.server.decorators import (
     use_args,
     marshal_with,
     doc,
     ThingAction,
 )
-from openflexure_microscope.common.flask_labthings import fields
+from labthings.server import fields
 
 from openflexure_microscope.utilities import axes_to_array, filter_dict
 

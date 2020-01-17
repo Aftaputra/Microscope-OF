@@ -1,17 +1,17 @@
 Basic extension structure
 =========================
 
-An extension starts as a simple instance of :py:class:`openflexure_microscope.common.flask_labthings.extensions.BaseExtension`. 
+An extension starts as a simple instance of :py:class:`labthings.server.extensions.BaseExtension`. 
 Each extension is described by a single ``BaseExtension`` instance, containing any number of methods, API views, and additional hardware components. 
 
-In order to access the currently running microscope object, use the :py:func:`openflexure_microscope.common.flask_labthings.find` function, with the argument ``"org.openflexure.microscope"``. Likewise, any new components attached by other extensions can be found using their full name, as above.
+In order to access the currently running microscope object, use the :py:func:`labthings.server.find` function, with the argument ``"org.openflexure.microscope"``. Likewise, any new components attached by other extensions can be found using their full name, as above.
 
 A simple extension file, with no API views but application-available methods may look like:
 
 .. code-block:: python
 
-    from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
-    from openflexure_microscope.common.flask_labthings.find import find_component
+    from labthings.server.extensions import BaseExtension
+    from labthings.server.find import find_component
 
 
     def identify():
@@ -50,7 +50,7 @@ Once this extension is loaded, any other extensions will have access to your met
 
 .. code-block:: python
 
-    from openflexure_microscope.common.flask_labthings.find import find_extension
+    from labthings.server.find import find_extension
 
     def test_extension_method():
         # Find your extension. Returns None if it hasn't been found.

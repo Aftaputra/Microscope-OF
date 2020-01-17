@@ -5,21 +5,21 @@ from typing import Tuple
 from functools import reduce
 
 from openflexure_microscope.camera.base import generate_basename
-from openflexure_microscope.common.flask_labthings.find import (
+from labthings.server.find import (
     find_component,
     find_extension,
 )
-from openflexure_microscope.common.flask_labthings.extensions import BaseExtension
-from openflexure_microscope.common.flask_labthings.decorators import (
+from labthings.server.extensions import BaseExtension
+from labthings.server.decorators import (
     marshal_task,
     use_args,
     ThingAction,
 )
-from openflexure_microscope.common.flask_labthings import fields
+from labthings.server import fields
 
 from openflexure_microscope.devel import taskify, abort, update_task_progress
 
-from openflexure_microscope.common.flask_labthings.view import View
+from labthings.server.view import View
 import time
 
 

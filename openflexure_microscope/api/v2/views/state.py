@@ -1,15 +1,15 @@
 from openflexure_microscope.api.utilities import JsonResponse
 
-from openflexure_microscope.common.labthings_core.utilities import (
+from labthings.core.utilities import (
     get_by_path,
     set_by_path,
     create_from_path,
 )
 
-from openflexure_microscope.common.flask_labthings.find import find_component
-from openflexure_microscope.common.flask_labthings.view import View
+from labthings.server.find import find_component
+from labthings.server.view import View
 
-from openflexure_microscope.common.flask_labthings.decorators import ThingProperty, Tag, doc_response
+from labthings.server.decorators import ThingProperty, Tag, doc_response
 
 from flask import jsonify, request, abort
 import logging

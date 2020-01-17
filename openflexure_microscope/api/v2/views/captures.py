@@ -3,15 +3,15 @@ from flask import abort, request, redirect, url_for, send_file, jsonify
 
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
 
-from openflexure_microscope.common.flask_labthings.schema import Schema
-from openflexure_microscope.common.flask_labthings import fields
-from openflexure_microscope.common.flask_labthings.view import View
-from openflexure_microscope.common.flask_labthings.utilities import (
+from labthings.server.schema import Schema
+from labthings.server import fields
+from labthings.server.view import View
+from labthings.server.utilities import (
     description_from_view,
 )
-from openflexure_microscope.common.flask_labthings.decorators import marshal_with, doc_response, Tag, ThingProperty
+from labthings.server.decorators import marshal_with, doc_response, Tag, ThingProperty
 
-from openflexure_microscope.common.flask_labthings.find import find_component
+from labthings.server.find import find_component
 
 from marshmallow import pre_dump
 

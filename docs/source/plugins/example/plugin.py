@@ -2,7 +2,7 @@ from openflexure_microscope.plugins import MicroscopePlugin
 from openflexure_microscope.api.views import MicroscopeViewPlugin
 from openflexure_microscope.api.utilities import JsonResponse
 
-from openflexure_microscope.common.labthings_core.tasks import taskify
+from labthings.core.tasks import taskify
 
 import os
 import time

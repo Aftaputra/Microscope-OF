@@ -1,9 +1,9 @@
-from openflexure_microscope.common.flask_labthings.view import View
+from labthings.server.view import View
 import subprocess
 import os
 from sys import platform
 
-from openflexure_microscope.common.flask_labthings.decorators import (
+from labthings.server.decorators import (
     ThingAction,
     doc_response,
 )

@@ -3,5 +3,5 @@ Classes and Modules
 
 Extension class
 ---------------
-.. autoclass:: openflexure_microscope.common.flask_labthings.extensions.BaseExtension
+.. autoclass:: labthings.server.extensions.BaseExtension
     :members:

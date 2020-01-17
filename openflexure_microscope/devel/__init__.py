@@ -8,15 +8,13 @@ as well as some Flask imports to simplify API route development
 from openflexure_microscope.api.utilities import JsonResponse
 
 # Task management
-from openflexure_microscope.common.labthings_core.tasks import (
+from labthings.core.tasks import (
     current_task,
     update_task_progress,
     update_task_data,
     taskify,
 )
 
-# Exceptions
-from openflexure_microscope.exceptions import TaskDeniedException
 
 # Flask things
 from flask import abort, escape, jsonify, Response, request

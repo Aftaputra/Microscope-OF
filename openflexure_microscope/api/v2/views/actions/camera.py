@@ -1,7 +1,7 @@
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
-from openflexure_microscope.common.flask_labthings.view import View
-from openflexure_microscope.common.flask_labthings.find import find_component
-from openflexure_microscope.common.flask_labthings.decorators import (
+from labthings.server.view import View
+from labthings.server.find import find_component
+from labthings.server.decorators import (
     use_args,
     marshal_with,
     doc,
@@ -10,7 +10,7 @@ from openflexure_microscope.common.flask_labthings.decorators import (
     doc_response,
 )
 
-from openflexure_microscope.common.flask_labthings import fields
+from labthings.server import fields
 from openflexure_microscope.utilities import filter_dict
 
 from openflexure_microscope.api.v2.views.captures import capture_schema

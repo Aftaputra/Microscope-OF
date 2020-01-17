@@ -1,12 +1,12 @@
 import numpy as np
 from abc import ABCMeta, abstractmethod
-from openflexure_microscope.common.labthings_core.lock import StrictLock
+from labthings.core.lock import StrictLock
 
 
 class BaseStage(metaclass=ABCMeta):
     """
     Attributes:
-        lock (:py:class:`openflexure_microscope.common.lock.StrictLock`): Strict lock controlling thread
+        lock (:py:class:`labthings.lock.StrictLock`): Strict lock controlling thread
             access to camera hardware
     """
 
