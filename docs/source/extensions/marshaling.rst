@@ -53,15 +53,3 @@ This JSON data is the parsed, converted into a Python dictionary, and passed as 
 
 
 - Example (from ``03_marshaling_data.py``)
-
-
-Scraps
-++++++
-
-An example request body that would be valid for this view is:
-
-.. code-block:: json
-
-    {
-        "name": "My microscope name"
-    }
