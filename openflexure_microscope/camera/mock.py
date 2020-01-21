@@ -16,7 +16,7 @@ import logging
 # Type hinting
 from typing import Tuple
 
-from openflexure_microscope.camera.base import BaseCamera
+from openflexure_microscope.camera.base import BaseCamera, CaptureObject
 
 
 """
@@ -189,14 +189,19 @@ class MockStreamer(BaseCamera):
             bayer (bool): Store raw bayer data in capture
         """
 
+        if isinstance(output, CaptureObject):
+            target = output.file
+        else:
+            target = target
+
         with self.lock:
-            if isinstance(output, str):
-                output = open(output, "wb")
+            if isinstance(target, str):
+                target = open(target, "wb")
 
-            output.write(self.stream.getvalue())
+            target.write(self.stream.getvalue())
 
-            if isinstance(output, str):
-                output.close()
+            if isinstance(target, str):
+                target.close()
 
     # HANDLE STREAM FRAMES
 

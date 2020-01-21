@@ -548,6 +548,11 @@ class PiCameraStreamer(BaseCamera):
             output_object (str/BytesIO): Target object.
         """
 
+        if isinstance(output, CaptureObject):
+            target = output.file
+        else:
+            target = target
+
         with self.lock:
             logging.info("Capturing to {}".format(output))
 
@@ -556,7 +561,7 @@ class PiCameraStreamer(BaseCamera):
                 self.stop_stream_recording()
 
             self.camera.capture(
-                output,
+                target,
                 format=fmt,
                 quality=100,
                 resize=resize,
@@ -568,7 +573,7 @@ class PiCameraStreamer(BaseCamera):
             if not use_video_port:
                 self.start_stream_recording()
 
-            return output
+            return target
 
     def yuv(
         self, use_video_port: bool = True, resize: Tuple[int, int] = None
