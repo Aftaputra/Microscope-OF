@@ -5,6 +5,7 @@
     <select
       class="uk-select uk-form-small"
       :value="value"
+      v-bind="$attrs"
       @input="$emit('input', $event.target.value)"
     >
       <option v-for="option in options" :key="option">

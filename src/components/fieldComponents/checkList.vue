@@ -10,6 +10,7 @@
             type="checkbox"
             :value="option"
             :checked="value && value.includes(option)"
+            v-bind="$attrs"
             @change="updateValue($event.target)"
           />
           {{ option }}

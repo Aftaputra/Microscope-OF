@@ -8,6 +8,7 @@
       :name="name"
       :value="value"
       :placeholder="placeholder"
+      v-bind="$attrs"
       @input="$emit('input', $event.target.value)"
     />
   </div>
