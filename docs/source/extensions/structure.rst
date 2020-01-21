@@ -20,12 +20,12 @@ A simple extension file, with no API views but application-available methods may
         """
         microscope = find_component("org.openflexure.microscope")
 
-        parent_camera = microscope.camera
-        parent_stage = microscope.stage
-
-        response = "My parent camera is {}, and my parent stage is {}.".format(
-            parent_camera, parent_stage
+        response = (
+            f"My name is {microscope.name}. "
+            f"My parent camera is {microscope.camera}, "
+            f"and my parent stage is {microscope.stage}."
         )
+
         return response
 
 
