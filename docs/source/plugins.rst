@@ -11,3 +11,4 @@ Developing API Extensions
    ./extensions/properties.rst
    ./extensions/actions.rst
    ./extensions/tasks_locks.rst
+   ./extensions/ev_gui.rst

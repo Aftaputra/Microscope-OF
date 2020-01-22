@@ -1,44 +1,34 @@
-Adding a GUI
-=====================
+OpenFlexure eV GUI
+==================
 
 Introduction
 ------------
 
-In order to bind user-interface elements to your plugin, an ``api_form`` variable must be included in your microscope plugin, similar to your ``api_views``.
+The main client application for the OpenFlexure Microscope, OpenFlexure eV, can render simple GUIs (graphical user interfaces) for extensions.
 
-This variable must be in the form of a dictionary, with all data able to be parsed into JSON. Because of this requirement, it is suggested that you create your API form as a JSON file, and load that file as a dictionary into your plugin. For example:
+We define our user interface by making use of the extensions general metadata, added using the ``add_meta`` function. This function adds arbitrary additional data to your extensions web API description, for example:
 
 .. code-block:: python
 
-    import json
+    # Create your extension object
+    my_extension = BaseExtension("com.myname.myextension", version="0.0.0")
 
-    HERE = os.path.dirname(os.path.realpath(__file__))  # Find the full path of your plugin Python file
-    FORM_PATH = os.path.join(HERE, "form.json")  # Find the full path of the adjascent JSON file
+    ...
 
-    class MyPluginClass(MicroscopePlugin):
+    my_extension.add_meta("myKey", "My metadata value")
 
-        with open(FORM_PATH, 'r') as sc:  # Open the JSON file
-            api_form = json.load(sc)  # Load the JSON file into the api_form dictionary
-
-Throughout this documentation, all example of ``api_form`` sections will be in JSON format. Keep in mind however that it is possible to directly define your ``api_form`` as a dictionary, without loading an external file.
-
-
-Forms from ``api_form``
--------------------------
-
-The ``api_form`` object essentially describes HTML forms, which it is up to the client to render. The form is constructed by specifying a set of components, and their values. A form can update it's values by sending a GET request to the API route bound to that form, and can send it's current values via a POST request to *this same API route*.
+OpenFlexure eV will recognise the ``gui`` metadata key, and render properly structured descriptions of a GUI in the format described below. The ``gui`` data essentially describes HTML forms, which it is up to the client to render. The form is constructed by specifying a set of components, and their values. 
 
 Each component in the form has a ``name`` property, which must match up to a property your API route expects in JSON POST requests, and returns in JSON GET requests.
 
-Structure of ``api_form``
+
+Structure of ``gui``
 ---------------------------
 
 Root level
 ++++++++++
 
-The root of your ``api_form`` expects 3 properties:
-
-``id`` - A unique ID to give your client-side plugin
+The root of your ``gui`` dictionary expects 2 properties:
 
 ``icon`` - The name of a Material Design icon to use for your plugin
 
@@ -47,7 +37,7 @@ The root of your ``api_form`` expects 3 properties:
 Form level
 ++++++++++
 
-Your plugin can contain multiple forms. For example, if your plugin creates several API routes, you will need a separate form for each route.
+Your extension can contain multiple forms. For example, if your extension creates several API routes, you will need a separate form for each route.
 
 Each form is described by a JSON object, with the following properties:
 
@@ -55,22 +45,20 @@ Each form is described by a JSON object, with the following properties:
 
 ``route`` - String of the corresponding API route. *Must* match a route defined in your ``api_views`` dictionary
 
-``selfUpdate`` *(optional)* - Whether the client should automatically update form component values with a GET request to your API route
-
 ``isTask`` *(optional)* - Whether the client should treat your API route as a long-running task
+
+``isCollapsible`` *(optional)* - Whether the form can be collapsed into an accordion
 
 ``submitLabel`` *(optional)* - String to place inside of the form's submit button
 
-``form`` - An array of form components as described below
+``schema`` - List of dictionaries. Each dictionary element describes a form component.
 
 Component level
 +++++++++++++++
 
-Each form can (and probably should) contain multiple components. For example, if your API route expects several properties in POST requests, each property can be bound to a form component.
+Each form can (and probably should) contain multiple components. For example, if your API route expects several parameters in a POST requests, each parameter can be bound to a form component.
 
 Upon form submission, the form data will be converted into a JSON object of key-value pairs, where the key is the components ``name``, and the value is it's current value.
-
-On load, the form will make a GET request to it's API route, an expects a JSON object of key-value pairs in the same format (keys will be matched to component names).
 
 An overview of available components, and their properties, can be found below.
 
@@ -179,8 +167,53 @@ Overview of components
 
       - .. figure:: https://openflexure.gitlab.io/assets/plugin-form-components/textInput.png 
 
-JSON form example
------------------
+**Note:** Basic input types (``textInput``, ``numberInput``) can also include additional attributes for HTML input elements inputs (e.g. ``placeholder``, ``required``, ``min``, ``max``). These additional attributes will be forwarded to the rendered HTML elements.
 
-.. literalinclude:: forms_example.json
-  :language: JSON
+Building the GUI
+----------------
+
+Once you have a dictionary describing your GUI, use the :py:meth:`openflexure_microscope.api.utilities.gui.build_gui` function to fill in and expand any information required to have it properly function. This function expands your ``route`` values to include your extensions full URI, and handles returning dynamic GUIs.
+
+For example:
+
+.. code-block:: python
+
+    my_gui = {...}
+
+    # Create your extension object
+    my_extension = BaseExtension("com.myname.myextension", version="0.0.0")
+
+    ...
+
+    my_extension.add_meta("gui", build_gui(my_gui, my_extension))
+
+Dynamic GUIs
+------------
+
+Instead of passing a static dictionary to :py:meth:`openflexure_microscope.api.utilities.gui.build_gui`, you can instead pass a callable function which returns a dictionary. This function is then called every time a client requests a description of active extensions.
+
+Using a callable has the advantage of allowing your extensions GUI to be updated as it is used. This could be as simple as changing ``value`` parameters of components (to show up-to-date default form values), but could be used to entirely change the GUI form as it is used, for example dynamically changing options in select boxes.
+
+For example, this could take the form:
+
+.. code-block:: python
+
+    def create_dynamic_form():
+        ...
+        generated_form_dict = {...}
+        return generated_form_dict
+
+    # Create your extension object
+    my_extension = BaseExtension("com.myname.myextension", version="0.0.0")
+
+    ...
+
+    my_extension.add_meta("gui", build_gui(create_dynamic_form, my_extension))
+
+
+Complete example
+----------------
+
+Adding a GUI to our previous timelapse example extension becomes:
+
+.. literalinclude:: ./example_extension/07_ev_gui.py

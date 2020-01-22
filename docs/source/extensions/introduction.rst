@@ -9,11 +9,11 @@ This also allows access to the :py:class:`picamera.PiCamera` object.
 Extensions can either be loaded from a single Python file, or as a Python package installed to the environment being used. 
 
 Single-file extensions
-----------------------------
+----------------------
 For adding simple functionality, such as a few basic functions and API routes, a single Python file can be loaded as a extension. This Python file must contain all of your extension objects, and be located in the applications extensions directory (by default ``~/.openflexure/microscope_extensions``).
 
 Package extensions
----------------
+------------------
 Generally, for adding anything other than very simple functionality, extensions should be written as `package distributions <https://packaging.python.org/tutorials/packaging-projects/>`_. This has the advantage of allowing relative imports, so functionality can be easily split over several files. For example, class definitions associated with API routes can be separated from class definitions associated with the microscope extension.
 
 The main restriction is that the extension package must be importable using an absolute import from within the Python environment being used to load your microscope. 
