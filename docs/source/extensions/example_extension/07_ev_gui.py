@@ -105,9 +105,9 @@ extension_gui = {
     "forms": [  # List of forms. Each form is a collapsible accordion panel
         {
             "name": "Start a timelapse",  # Form title
-            "isCollapsible": False,  # This form cannot be collapsed into an accordion
-            "isTask": True,  # This forms submission starts a background task
             "route": "/timelapse",  # The URL rule (as given by "add_view") of your submission view
+            "isTask": True,  # This forms submission starts a background task
+            "isCollapsible": False,  # This form cannot be collapsed into an accordion
             "submitLabel": "Start",  # Label for the form submit button
             "schema": [  # List of dictionaries. Each element is a form component.
                 {
