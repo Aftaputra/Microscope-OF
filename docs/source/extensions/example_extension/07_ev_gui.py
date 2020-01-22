@@ -134,7 +134,7 @@ extension_gui = {
 ## Create extension
 
 # Create your extension object
-my_extension = BaseExtension("com.myname.myextension", version="0.0.0")
+my_extension = BaseExtension("com.myname.timelapse-extension", version="0.0.0")
 
 # Add methods to your extension
 my_extension.add_method(timelapse, "timelapse")

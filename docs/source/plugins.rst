@@ -8,3 +8,6 @@ Developing API Extensions
    ./extensions/structure.rst
    ./extensions/views.rst
    ./extensions/marshaling.rst
+   ./extensions/properties.rst
+   ./extensions/actions.rst
+   ./extensions/tasks_locks.rst
