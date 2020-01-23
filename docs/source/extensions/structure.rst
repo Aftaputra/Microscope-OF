@@ -4,7 +4,7 @@ Basic extension structure
 An extension starts as a simple instance of :py:class:`labthings.server.extensions.BaseExtension`. 
 Each extension is described by a single ``BaseExtension`` instance, containing any number of methods, API views, and additional hardware components. 
 
-In order to access the currently running microscope object, use the :py:func:`labthings.server.find` function, with the argument ``"org.openflexure.microscope"``. Likewise, any new components attached by other extensions can be found using their full name, as above.
+In order to access the currently running microscope object, use the :py:func:`labthings.server.find.find_component` function, with the argument ``"org.openflexure.microscope"``. Likewise, any new components attached by other extensions can be found using their full name, as above.
 
 A simple extension file, with no API views but application-available methods may look like:
 
