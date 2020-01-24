@@ -229,7 +229,7 @@ marshmallow = "^3.3.0"
 webargs = "^5.5.2"
 
 [package.source]
-reference = "ea5142a9642e7b852a6e1175f3c4aa1a4bfac044"
+reference = "23732b17074486367541439a1caa2eb61b9cc22f"
 type = "git"
 url = "https://github.com/labthings/python-labthings.git"
 [[package]]
@@ -561,8 +561,8 @@ category = "dev"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 name = "urllib3"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4"
-version = "1.25.7"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
+version = "1.25.8"
 
 [package.extras]
 brotli = ["brotlipy (>=0.6.0)"]
@@ -612,7 +612,7 @@ version = "1.11.2"
 rpi = ["picamera", "RPi.GPIO"]
 
 [metadata]
-content-hash = "53c82daa835ef29f7aac8ac7d36048487a9d989662a58a2d05d9a70465fbc8c6"
+content-hash = "cd4e5d59e9a63ae053a05c994a61a46be87a29ec6867bcd47f6ef9b39bb785d3"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -967,8 +967,8 @@ typed-ast = [
     {file = "typed_ast-1.4.1.tar.gz", hash = "sha256:8c8aaad94455178e3187ab22c8b01a3837f8ee50e09cf31f1ba129eb293ec30b"},
 ]
 urllib3 = [
-    {file = "urllib3-1.25.7-py2.py3-none-any.whl", hash = "sha256:a8a318824cc77d1fd4b2bec2ded92646630d7fe8619497b142c84a9e6f5a7293"},
-    {file = "urllib3-1.25.7.tar.gz", hash = "sha256:f3c5fd51747d450d4dcf6f923c81f78f811aab8205fda64b0aba34a4e48b0745"},
+    {file = "urllib3-1.25.8-py2.py3-none-any.whl", hash = "sha256:2f3db8b19923a873b3e5256dc9c2dedfa883e33d87c690d9c7913e1f40673cdc"},
+    {file = "urllib3-1.25.8.tar.gz", hash = "sha256:87716c2d2a7121198ebcb7ce7cccf6ce5e9ba539041cfbaeecfb641dc0bf6acc"},
 ]
 webargs = [
     {file = "webargs-5.5.2-py2-none-any.whl", hash = "sha256:3f9dc15de183d356c9a0acc159c100ea0506c0c240c1e6f1d8b308c5fed4dbbd"},
