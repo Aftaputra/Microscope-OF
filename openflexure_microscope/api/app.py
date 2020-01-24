@@ -19,6 +19,7 @@ from openflexure_microscope.paths import (
     OPENFLEXURE_VAR_PATH,
     OPENFLEXURE_EXTENSIONS_PATH,
     settings_file_path,
+    logs_file_path
 )
 
 from labthings.server.quick import create_app
@@ -31,7 +32,7 @@ from openflexure_microscope.api.v2 import views
 # Handle logging
 is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
 
-DEFAULT_LOGFILE = settings_file_path("openflexure_microscope.log")
+DEFAULT_LOGFILE = logs_file_path("openflexure_microscope.log")
 
 logger = logging.getLogger()
 if (__name__ == "__main__") or (not is_gunicorn):

@@ -23,6 +23,10 @@ def extensions_file_path(filename: str):
     return os.path.join(OPENFLEXURE_VAR_PATH, "extensions", filename)
 
 
+def logs_file_path(filename: str):
+    """Generate a full file path for a filename to be stored in server logs"""
+    return os.path.join(OPENFLEXURE_VAR_PATH, "logs", filename)
+
 # HANDLE DEFAULTS FILES STORED IN THIS APPLICATION
 
 HERE = os.path.abspath(os.path.dirname(__file__))
