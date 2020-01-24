@@ -192,7 +192,7 @@ class MockStreamer(BaseCamera):
         if isinstance(output, CaptureObject):
             target = output.file
         else:
-            target = target
+            target = output
 
         with self.lock:
             if isinstance(target, str):
