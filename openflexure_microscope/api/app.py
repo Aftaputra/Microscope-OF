@@ -16,7 +16,6 @@ from openflexure_microscope.api.utilities import list_routes, init_default_exten
 
 from openflexure_microscope.config import JSONEncoder
 from openflexure_microscope.paths import (
-    OPENFLEXURE_ETC_PATH,
     OPENFLEXURE_VAR_PATH,
     OPENFLEXURE_EXTENSIONS_PATH,
     settings_file_path,
@@ -60,7 +59,6 @@ else:
 
 # Log server paths being used
 logging.info(f"Running with data path {OPENFLEXURE_VAR_PATH}")
-logging.info(f"Running with server path {OPENFLEXURE_ETC_PATH}")
 
 # Create flask app
 app, labthing = create_app(

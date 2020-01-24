@@ -7,7 +7,7 @@ from uuid import UUID
 import numpy as np
 from fractions import Fraction
 
-from .paths import OPENFLEXURE_ETC_PATH, CONFIG_FILE_PATH, DEFAULT_CONFIG_FILE_PATH
+from .paths import CONFIG_FILE_PATH, DEFAULT_CONFIG_FILE_PATH
 
 
 class OpenflexureSettingsFile:

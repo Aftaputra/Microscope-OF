@@ -10,12 +10,17 @@ def check_rw(path):
 
 def settings_file_path(filename: str):
     """Generate a full file path for a filename to be stored in server settings folder"""
-    return os.path.join(OPENFLEXURE_ETC_PATH, filename)
+    return os.path.join(OPENFLEXURE_VAR_PATH, "settings", filename)
 
 
 def data_file_path(filename: str):
     """Generate a full file path for a filename to be stored in server data folder"""
-    return os.path.join(OPENFLEXURE_VAR_PATH, filename)
+    return os.path.join(OPENFLEXURE_VAR_PATH, "data", filename)
+
+
+def extensions_file_path(filename: str):
+    """Generate a full file path for a folder to be stored in server extensions"""
+    return os.path.join(OPENFLEXURE_VAR_PATH, "extensions", filename)
 
 
 # HANDLE DEFAULTS FILES STORED IN THIS APPLICATION
@@ -26,7 +31,7 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_CONFIG_FILE_PATH = os.path.join(HERE, "microscope_settings.default.json")
 
 
-# DATA BASE PATHS
+# BASE PATHS
 
 if os.name == "nt":
     PREFERRED_VAR_PATH = os.getenv("PROGRAMDATA") or "C:\\ProgramData"
@@ -49,37 +54,9 @@ else:
     OPENFLEXURE_VAR_PATH = FALLBACK_OPENFLEXURE_VAR_PATH
 
 
-# SERVER BASE PATHS
-
-if os.name == "nt":
-    PREFERRED_ETC_PATH = os.getenv("PROGRAMDATA") or "C:\\ProgramData"
-    FALLBACK_ETC_PATH = os.path.expanduser("~")
-else:
-    PREFERRED_ETC_PATH = "/etc"
-    FALLBACK_ETC_PATH = os.path.join(os.path.expanduser("~"), ".config")
-
-PREFERRED_OPENFLEXURE_ETC_PATH = os.path.join(PREFERRED_ETC_PATH, "openflexure")
-FALLBACK_OPENFLEXURE_ETC_PATH = os.path.join(FALLBACK_ETC_PATH, "openflexure")
-
-if not os.path.exists(PREFERRED_OPENFLEXURE_ETC_PATH) and check_rw(PREFERRED_ETC_PATH):
-    os.makedirs(PREFERRED_OPENFLEXURE_ETC_PATH)
-
-if check_rw(PREFERRED_OPENFLEXURE_ETC_PATH):
-    OPENFLEXURE_ETC_PATH = PREFERRED_OPENFLEXURE_ETC_PATH
-else:
-    if not os.path.exists(FALLBACK_OPENFLEXURE_ETC_PATH):
-        os.makedirs(FALLBACK_OPENFLEXURE_ETC_PATH)
-    OPENFLEXURE_ETC_PATH = FALLBACK_OPENFLEXURE_ETC_PATH
-
-
 # SERVER PATHS
 
 #: Path of microscope settings directory
-CONFIG_FILE_PATH = os.path.join(OPENFLEXURE_ETC_PATH, "microscope_settings.json")
+CONFIG_FILE_PATH = settings_file_path("microscope_settings.json")
 #: Path of microscope extensions directory
-OPENFLEXURE_EXTENSIONS_PATH = os.path.join(
-    OPENFLEXURE_ETC_PATH, "microscope_extensions"
-)
-
-
-# DATA PATHS
+OPENFLEXURE_EXTENSIONS_PATH = extensions_file_path("microscope_extensions")
