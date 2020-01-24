@@ -76,7 +76,7 @@ class ActionsView(View):
                     "self": {
                         "href": current_labthing().url_for(action["view_class"]),
                         "mimetype": "application/json",
-                        **description_from_view(action["view_class"])
+                        **description_from_view(action["view_class"]),
                     }
                 },
                 "rule": action["rule"],

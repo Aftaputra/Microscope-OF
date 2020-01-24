@@ -5,16 +5,9 @@ from typing import Tuple
 from functools import reduce
 
 from openflexure_microscope.camera.base import generate_basename
-from labthings.server.find import (
-    find_component,
-    find_extension,
-)
+from labthings.server.find import find_component, find_extension
 from labthings.server.extensions import BaseExtension
-from labthings.server.decorators import (
-    marshal_task,
-    use_args,
-    ThingAction,
-)
+from labthings.server.decorators import marshal_task, use_args, ThingAction
 from labthings.server import fields
 
 from openflexure_microscope.devel import taskify, abort, update_task_progress

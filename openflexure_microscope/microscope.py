@@ -28,7 +28,7 @@ class Microscope:
         # Initial attributes
         self.id = uuid.uuid4()  #: Microscope UUID
         self.name = self.id  #: Microscope name (modifiable)
-        self.fov = [0, 0]   #: Microscope field-of-view in stage motor steps
+        self.fov = [0, 0]  #: Microscope field-of-view in stage motor steps
         self.camera = None  #: Currently connected camera object
         self.stage = None  #: Currently connected stage object
 

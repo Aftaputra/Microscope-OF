@@ -3,10 +3,7 @@ import subprocess
 import os
 from sys import platform
 
-from labthings.server.decorators import (
-    ThingAction,
-    doc_response,
-)
+from labthings.server.decorators import ThingAction, doc_response
 
 
 def is_raspberrypi(raise_on_errors=False):

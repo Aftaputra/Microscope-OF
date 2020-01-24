@@ -1,10 +1,7 @@
 from labthings.server.find import find_component
 from labthings.server.extensions import BaseExtension
 from labthings.server.view import View
-from labthings.server.decorators import (
-    ThingAction,
-    ThingProperty,
-)
+from labthings.server.decorators import ThingAction, ThingProperty
 
 from openflexure_microscope.devel import JsonResponse, request, jsonify, taskify, abort
 from openflexure_microscope.utilities import set_properties
@@ -359,7 +356,9 @@ class FastAutofocusAPI(View):
             abort(503, "No stage connected. Unable to autofocus.")
 
 
-autofocus_extension_v2 = BaseExtension("org.openflexure.autofocus", version="2.0.0-beta.1")
+autofocus_extension_v2 = BaseExtension(
+    "org.openflexure.autofocus", version="2.0.0-beta.1"
+)
 
 autofocus_extension_v2.add_method(fast_autofocus, "fast_autofocus")
 autofocus_extension_v2.add_method(autofocus, "autofocus")

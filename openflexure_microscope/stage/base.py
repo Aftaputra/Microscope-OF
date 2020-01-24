@@ -51,11 +51,7 @@ class BaseStage(metaclass=ABCMeta):
 
     @property
     def position_map(self):
-        return {
-            "x": self.position[0],
-            "y": self.position[1],
-            "z": self.position[2],
-        }
+        return {"x": self.position[0], "y": self.position[1], "z": self.position[2]}
 
     @property
     @abstractmethod

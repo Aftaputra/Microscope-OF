@@ -6,9 +6,7 @@ from openflexure_microscope.api.utilities import get_bool, JsonResponse
 from labthings.server.schema import Schema
 from labthings.server import fields
 from labthings.server.view import View
-from labthings.server.utilities import (
-    description_from_view,
-)
+from labthings.server.utilities import description_from_view
 from labthings.server.decorators import marshal_with, doc_response, Tag, ThingProperty
 
 from labthings.server.find import find_component

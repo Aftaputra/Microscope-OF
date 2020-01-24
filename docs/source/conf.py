@@ -226,7 +226,7 @@ intersphinx_mapping = {
     "openflexure_stage": ("https://openflexure-stage.readthedocs.io/en/latest/", None),
     "picamera": ("https://picamera.readthedocs.io/en/release-1.13/", None),
     "marshmallow": ("https://marshmallow.readthedocs.io/en/stable/", None),
-    "webargs": ("https://webargs.readthedocs.io/en/latest/", None)
+    "webargs": ("https://webargs.readthedocs.io/en/latest/", None),
 }
 
 # -- Options for todo extension ----------------------------------------------

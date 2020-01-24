@@ -17,10 +17,7 @@ import logging
 from labthings.server.find import find_component
 from labthings.server.view import View
 from labthings.server.extensions import BaseExtension
-from labthings.server.decorators import (
-    ThingAction,
-    ThingProperty,
-)
+from labthings.server.decorators import ThingAction, ThingProperty
 
 
 class ZipManager:

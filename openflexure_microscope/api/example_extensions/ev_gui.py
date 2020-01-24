@@ -1,9 +1,6 @@
 from labthings.server.view import View
 from labthings.server.extensions import BaseExtension
-from labthings.server.decorators import (
-    ThingAction,
-    ThingProperty,
-)
+from labthings.server.decorators import ThingAction, ThingProperty
 
 from openflexure_microscope.api.utilities.gui import build_gui
 
@@ -35,7 +32,7 @@ def dynamic_form():
                         "name": "val_int",
                         "label": "Number value",
                         "minValue": 0,
-                        "value": val_int
+                        "value": val_int,
                     },
                     {
                         "fieldType": "htmlBlock",
@@ -66,7 +63,7 @@ static_form = {
                     "name": "val_int",
                     "label": "Number value",
                     "minValue": 0,
-                    "default": 1
+                    "default": 1,
                 },
                 {
                     "fieldType": "htmlBlock",

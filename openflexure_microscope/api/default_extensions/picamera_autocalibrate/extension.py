@@ -1,10 +1,7 @@
 from labthings.server.view import View
 from labthings.server.find import find_component
 from labthings.server.extensions import BaseExtension
-from labthings.server.decorators import (
-    marshal_task,
-    ThingAction,
-)
+from labthings.server.decorators import marshal_task, ThingAction
 
 from labthings.core.tasks import taskify
 

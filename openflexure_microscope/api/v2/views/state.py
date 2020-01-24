@@ -1,10 +1,6 @@
 from openflexure_microscope.api.utilities import JsonResponse
 
-from labthings.core.utilities import (
-    get_by_path,
-    set_by_path,
-    create_from_path,
-)
+from labthings.core.utilities import get_by_path, set_by_path, create_from_path
 
 from labthings.server.find import find_component
 from labthings.server.view import View

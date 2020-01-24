@@ -132,10 +132,7 @@ class RAMCaptureAPI(View):
 
             stream.seek(0)
 
-            return send_file(
-                io.BytesIO(stream.getbuffer()),
-                mimetype="image/jpeg"
-            )
+            return send_file(io.BytesIO(stream.getbuffer()), mimetype="image/jpeg")
 
 
 @ThingAction
