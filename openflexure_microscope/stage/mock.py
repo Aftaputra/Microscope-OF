@@ -23,7 +23,7 @@ class MockStage(BaseStage):
             "position": self.position_map,
             "board": None,
             "firmware": None,
-            "version": None
+            "version": None,
         }
         return status
 
