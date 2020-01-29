@@ -152,11 +152,11 @@ class CaptureObject(object):
         Args:
             filepath (str): String of the full file path, including file format extension
         """
-        # Split the full file path into a folder and a filename
-        self.filefolder, self.filename = os.path.split(filepath)
-        # Split the filename out from it's file extension
-        self.basename = os.path.splitext(self.filename)[0]
-        self.format = self.filename.split(".")[-1]
+        # Split the full file path into a folder and a name
+        self.filefolder, self.name = os.path.split(filepath)
+        # Split the name out from it's file extension
+        self.basename = os.path.splitext(self.name)[0]
+        self.format = self.name.split(".")[-1]
 
     @property
     def exists(self) -> bool:
@@ -243,7 +243,7 @@ class CaptureObject(object):
         d = {
             "image": {
                 "id": self.id,
-                "name": self.filename,
+                "name": self.name,
                 "acquisitionDate": self.datetime.isoformat(),
                 "format": self.format,
                 "tags": self.tags,
@@ -262,7 +262,7 @@ class CaptureObject(object):
         """
 
         # Create basic state dictionary
-        d = {"path": self.file, "filename": self.filename, "metadata": self.metadata}
+        d = {"path": self.file, "name": self.name, "metadata": self.metadata}
 
         # Combined availability of data
         if self.exists:

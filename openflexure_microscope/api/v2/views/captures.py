@@ -20,7 +20,7 @@ class CaptureSchema(Schema):
         data_key="path", description="Path of file on microscope device"
     )
     exists = fields.Bool(data_key="available")
-    filename = fields.String()
+    name = fields.String()
     metadata = fields.Dict()
 
     links = fields.Dict()
@@ -50,7 +50,7 @@ class CaptureSchema(Schema):
                 "href": url_for(
                     CaptureDownload.endpoint,
                     id=data.id,
-                    filename=data.filename,
+                    filename=data.name,
                     _external=True,
                 ),
                 "mimetype": "image/jpeg",
