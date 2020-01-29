@@ -7,7 +7,7 @@ from uuid import UUID
 import numpy as np
 from fractions import Fraction
 
-from .paths import CONFIG_FILE_PATH, DEFAULT_CONFIG_FILE_PATH
+from .paths import SETTINGS_FILE_PATH, DEFAULT_SETTINGS_FILE_PATH, CONFIGURATION_FILE_PATH, DEFAULT_CONFIGURATION_FILE_PATH
 
 
 class OpenflexureSettingsFile:
@@ -19,21 +19,21 @@ class OpenflexureSettingsFile:
         expand (bool): Expand paths to valid auxillary config files.
     """
 
-    def __init__(self, config_path: str = None):
-        global DEFAULT_CONFIG, CONFIG_FILE_PATH
+    def __init__(self, path: str, defaults: dict = {}):
+        global DEFAULT_SETTINGS
 
         # Set arguments
-        self.config_path = config_path or CONFIG_FILE_PATH
+        self.path = path
 
         # Initialise basic config file with defaults if it doesn't exist
-        initialise_file(self.config_path, populate=DEFAULT_CONFIG)
+        initialise_file(self.path, populate=defaults)
 
     def load(self) -> dict:
         """
         Loads settings from a file on-disk.
         """
         # Unexpanded config dictionary (used at load/save time)
-        loaded_config = load_json_file(self.config_path)
+        loaded_config = load_json_file(self.path)
 
         logging.debug("Reading settings from disk")
         return loaded_config
@@ -50,11 +50,11 @@ class OpenflexureSettingsFile:
         save_settings = config
 
         if backup:
-            if os.path.isfile(self.config_path):
-                shutil.copyfile(self.config_path, self.config_path + ".bk")
+            if os.path.isfile(self.path):
+                shutil.copyfile(self.path, self.path + ".bk")
 
         logging.debug("Saving settings dictionary to disk")
-        save_json_file(self.config_path, save_settings)
+        save_json_file(self.path, save_settings)
 
     def merge(self, config: dict) -> dict:
         """
@@ -178,10 +178,17 @@ def initialise_file(config_path, populate: str = "{}\n"):
             outfile.write(populate)
 
 
-# Load the default config
-with open(DEFAULT_CONFIG_FILE_PATH, "r") as default_rc:
-    DEFAULT_CONFIG = default_rc.read()
-
+# Load the default settings
+with open(DEFAULT_SETTINGS_FILE_PATH, "r") as default_settings:
+    DEFAULT_SETTINGS = default_settings.read()
 
 #: Default user settings object
-user_settings = OpenflexureSettingsFile(config_path=CONFIG_FILE_PATH)
+user_settings = OpenflexureSettingsFile(path=SETTINGS_FILE_PATH, defaults=DEFAULT_SETTINGS)
+
+
+# Load the default configuration
+with open(DEFAULT_CONFIGURATION_FILE_PATH, "r") as default_configuration:
+    DEFAULT_CONFIGURATION = default_configuration.read()
+
+#: Default user settings object
+user_configuration = OpenflexureSettingsFile(path=CONFIGURATION_FILE_PATH, defaults=DEFAULT_CONFIGURATION)

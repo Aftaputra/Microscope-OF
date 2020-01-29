@@ -32,8 +32,9 @@ def logs_file_path(filename: str):
 HERE = os.path.abspath(os.path.dirname(__file__))
 
 #: Path of default (first-run) microscope settings
-DEFAULT_CONFIG_FILE_PATH = os.path.join(HERE, "microscope_settings.default.json")
-
+DEFAULT_SETTINGS_FILE_PATH = os.path.join(HERE, "microscope_settings.default.json")
+#: Path of default (first-run) microscope configuration
+DEFAULT_CONFIGURATION_FILE_PATH = os.path.join(HERE, "microscope_configuration.default.json")
 
 # BASE PATHS
 
@@ -60,7 +61,9 @@ else:
 
 # SERVER PATHS
 
-#: Path of microscope settings directory
-CONFIG_FILE_PATH = settings_file_path("microscope_settings.json")
+#: Path of microscope settings file
+SETTINGS_FILE_PATH = settings_file_path("microscope_settings.json")
+#: Path of microscope configuration file
+CONFIGURATION_FILE_PATH = settings_file_path("microscope_configuration.json")
 #: Path of microscope extensions directory
 OPENFLEXURE_EXTENSIONS_PATH = extensions_file_path("microscope_extensions")

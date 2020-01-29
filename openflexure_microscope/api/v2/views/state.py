@@ -30,7 +30,7 @@ class SettingsProperty(View):
         logging.debug("Updating settings from PUT request:")
         logging.debug(payload.json)
 
-        microscope.apply_settings(payload.json)
+        microscope.update_settings(payload.json)
         microscope.save_settings()
 
         return self.get()
@@ -65,7 +65,7 @@ class NestedSettingsProperty(View):
         dictionary = create_from_path(keys)
         set_by_path(dictionary, keys, payload.json)
 
-        microscope.apply_settings(dictionary)
+        microscope.update_settings(dictionary)
         microscope.save_settings()
 
         return self.get(route)
