@@ -183,6 +183,7 @@ class Microscope:
                 b64_string, dtype, shape = serialise_array_b64(lst_arr)
 
                 settings_current["camera"]["lens_shading_table"] = {
+                    "@type": "ndarray",
                     "b64_string": b64_string,
                     "dtype": dtype,
                     "shape": shape,
