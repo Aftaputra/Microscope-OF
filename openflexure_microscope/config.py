@@ -1,4 +1,5 @@
 import json
+import flask
 import os
 import errno
 import logging
@@ -7,7 +8,12 @@ from uuid import UUID
 import numpy as np
 from fractions import Fraction
 
-from .paths import SETTINGS_FILE_PATH, DEFAULT_SETTINGS_FILE_PATH, CONFIGURATION_FILE_PATH, DEFAULT_CONFIGURATION_FILE_PATH
+from .paths import (
+    SETTINGS_FILE_PATH,
+    DEFAULT_SETTINGS_FILE_PATH,
+    CONFIGURATION_FILE_PATH,
+    DEFAULT_CONFIGURATION_FILE_PATH,
+)
 
 
 class OpenflexureSettingsFile:
@@ -71,7 +77,7 @@ class OpenflexureSettingsFile:
         return settings
 
 
-class JSONEncoder(json.JSONEncoder):
+class JSONEncoder(flask.json.JSONEncoder):
     """
     A custom JSON encoder, with type conversions for PiCamera fractions, Numpy integers, and Numpy arrays
     """
@@ -183,7 +189,9 @@ with open(DEFAULT_SETTINGS_FILE_PATH, "r") as default_settings:
     DEFAULT_SETTINGS = default_settings.read()
 
 #: Default user settings object
-user_settings = OpenflexureSettingsFile(path=SETTINGS_FILE_PATH, defaults=DEFAULT_SETTINGS)
+user_settings = OpenflexureSettingsFile(
+    path=SETTINGS_FILE_PATH, defaults=DEFAULT_SETTINGS
+)
 
 
 # Load the default configuration
@@ -191,4 +199,7 @@ with open(DEFAULT_CONFIGURATION_FILE_PATH, "r") as default_configuration:
     DEFAULT_CONFIGURATION = default_configuration.read()
 
 #: Default user settings object
-user_configuration = OpenflexureSettingsFile(path=CONFIGURATION_FILE_PATH, defaults=DEFAULT_CONFIGURATION)
+user_configuration = OpenflexureSettingsFile(
+    path=CONFIGURATION_FILE_PATH, defaults=DEFAULT_CONFIGURATION
+)
+

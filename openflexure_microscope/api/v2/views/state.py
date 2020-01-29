@@ -78,7 +78,7 @@ class StatusProperty(View):
         Show current read-only state of the microscope
         """
         microscope = find_component("org.openflexure.microscope")
-        return jsonify(microscope.status)
+        return jsonify(microscope.state)
 
 
 @Tag("properties")
@@ -92,7 +92,35 @@ class NestedStatusProperty(View):
         keys = route.split("/")
 
         try:
-            value = get_by_path(microscope.status, keys)
+            value = get_by_path(microscope.state, keys)
+        except KeyError:
+            return abort(404)
+
+        return jsonify(value)
+
+
+@ThingProperty
+class ConfigurationProperty(View):
+    def get(self):
+        """
+        Show current read-only state of the microscope
+        """
+        microscope = find_component("org.openflexure.microscope")
+        return jsonify(microscope.configuration)
+
+
+@Tag("properties")
+class NestedConfigurationProperty(View):
+    @doc_response(404, description="Configuration key cannot be found")
+    def get(self, route):
+        """
+        Show a nested section of the current microscope state
+        """
+        microscope = find_component("org.openflexure.microscope")
+        keys = route.split("/")
+
+        try:
+            value = get_by_path(microscope.configuration, keys)
         except KeyError:
             return abort(404)
 

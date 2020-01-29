@@ -119,22 +119,7 @@ class PiCameraStreamer(BaseCamera):
     @property
     def configuration(self):
         """The current camera configuration."""
-        config = {
-            "board": self.camera.revision,
-        }
-
-        if self.read_lens_shading_table():
-            b64_string, dtype, shape = serialise_array_b64(self.read_lens_shading_table())
-
-            config.update({
-                "lens_shading_table": {
-                    "b64_string": b64_string,
-                    "dtype": dtype,
-                    "shape": shape,
-                }
-            })
-
-        return config
+        return {"board": self.camera.revision}
 
     @property
     def state(self):

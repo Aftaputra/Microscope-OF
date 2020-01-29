@@ -19,7 +19,7 @@ from openflexure_microscope.paths import (
     OPENFLEXURE_VAR_PATH,
     OPENFLEXURE_EXTENSIONS_PATH,
     settings_file_path,
-    logs_file_path
+    logs_file_path,
 )
 
 from labthings.server.quick import create_app
@@ -92,7 +92,7 @@ labthing.add_root_link(views.CaptureList, "captures")
 labthing.add_view(views.CaptureView, f"/captures/<id>")
 labthing.add_view(views.CaptureDownload, f"/captures/<id>/download/<filename>")
 labthing.add_view(views.CaptureTags, f"/captures/<id>/tags")
-labthing.add_view(views.CaptureMetadata, f"/captures/<id>/metadata")
+labthing.add_view(views.CaptureAnnotations, f"/captures/<id>/annotations")
 
 # Attach settings and status resources
 labthing.add_view(views.SettingsProperty, f"/settings")
@@ -101,6 +101,10 @@ labthing.add_view(views.NestedSettingsProperty, "/settings/<path:route>")
 labthing.add_view(views.StatusProperty, "/status")
 labthing.add_view(views.NestedStatusProperty, "/status/<path:route>")
 labthing.add_root_link(views.StatusProperty, "status")
+labthing.add_view(views.ConfigurationProperty, "/configuration")
+labthing.add_view(views.NestedConfigurationProperty, "/configuration/<path:route>")
+labthing.add_root_link(views.ConfigurationProperty, "configuration")
+
 
 # Attach streams resources
 labthing.add_view(views.MjpegStream, f"/streams/mjpeg")

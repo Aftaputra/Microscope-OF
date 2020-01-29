@@ -39,10 +39,12 @@ class CaptureSchema(Schema):
                 "mimetype": "application/json",
                 **description_from_view(CaptureTags),
             },
-            "metadata": {
-                "href": url_for(CaptureMetadata.endpoint, id=data.id, _external=True),
+            "annotations": {
+                "href": url_for(
+                    CaptureAnnotations.endpoint, id=data.id, _external=True
+                ),
                 "mimetype": "application/json",
-                **description_from_view(CaptureMetadata),
+                **description_from_view(CaptureAnnotations),
             },
             "download": {
                 "href": url_for(
@@ -60,6 +62,9 @@ class CaptureSchema(Schema):
 
 capture_schema = CaptureSchema()
 capture_list_schema = CaptureSchema(many=True)
+
+
+from pprint import pprint
 
 
 @ThingProperty
@@ -197,10 +202,10 @@ class CaptureTags(View):
 
 
 @Tag("captures")
-class CaptureMetadata(View):
+class CaptureAnnotations(View):
     def get(self, id):
         """
-        Get metadata associated with a single image capture
+        Get annotations associated with a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
         capture_obj = microscope.camera.image_from_id(id)
@@ -208,7 +213,7 @@ class CaptureMetadata(View):
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        return jsonify(capture_obj.metadata)
+        return jsonify(capture_obj.annotations)
 
     def put(self, id):
         """
@@ -226,7 +231,6 @@ class CaptureMetadata(View):
         if type(data_dict) != dict:
             return abort(400)
 
-        # TODO: Allow putting system metadata maybe?
-        capture_obj.put_metadata(data_dict)
+        capture_obj.put_annotations(data_dict)
 
-        return jsonify(capture_obj.metadata)
+        return jsonify(capture_obj.annotations)

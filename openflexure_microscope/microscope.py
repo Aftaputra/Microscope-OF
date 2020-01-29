@@ -9,6 +9,7 @@ import uuid
 from openflexure_microscope.stage.mock import MissingStage
 from openflexure_microscope.camera.mock import MissingCamera
 from openflexure_microscope.stage.sanga import SangaStage
+
 try:
     from openflexure_microscope.camera.pi import PiCameraStreamer
 except ImportError:
@@ -29,7 +30,12 @@ class Microscope:
     The camera and stage objects may already be initialised, and can be passed as arguments.
     """
 
-    def __init__(self, settings = user_settings, configuration = user_configuration):
+    def __init__(self, settings=user_settings, configuration=user_configuration):
+        self.id = uuid.uuid4()
+        self.name = self.id
+
+        self.fov = [0, 0]  #: Microscope field-of-view in stage motor steps
+
         # Store settings and configuration files
         self.settings_file = settings
         self.configuration_file = configuration
@@ -44,17 +50,6 @@ class Microscope:
 
         # Apply settings loaded from file
         self.update_settings(self.settings_file.load())
-
-        # Initial attributes
-        if self.configuration_file.load().get("id"):
-            self.id = configuration.get("id")
-        else:
-            self.id = uuid.uuid4()
-            self.configuration_file.save({
-                "id": self.id
-            })
-
-        self.name = self.id
 
     def __enter__(self):
         """Create microscope on context enter."""
@@ -79,9 +74,9 @@ class Microscope:
         """
 
         ### Detector
-        if configuration.get("detector"):
-            detector_type = configuration["detector"].get("type")
-            if detector_type == "PiCamera" or detector_type == "PiCameraStreamer":
+        if configuration.get("camera"):
+            camera_type = configuration["camera"].get("type")
+            if camera_type == "PiCamera" or camera_type == "PiCameraStreamer":
                 try:
                     self.camera = PiCameraStreamer()
                 except Exception as e:
@@ -92,7 +87,7 @@ class Microscope:
         if configuration.get("stage"):
             stage_type = configuration["stage"].get("type")
             stage_port = configuration["stage"].get("port")
-            if stage_type == "SangaBoard" or detector_type == "SangaStage":
+            if stage_type == "SangaBoard" or camera_type == "SangaStage":
                 try:
                     self.stage = SangaStage(port=stage_port)
                 except Exception as e:
@@ -137,33 +132,32 @@ class Microscope:
         Return:
             dict: Dictionary containing complete microscope status
         """
-        state = {
-            "camera": self.camera.state,
-            "stage": self.stage.state,
-        }
+        state = {"camera": self.camera.state, "stage": self.stage.state}
         return state
 
-    def update_settings(self, config: dict):
+    def update_settings(self, settings: dict):
         """
         Applies a settings dictionary to the microscope. Missing parameters will be left untouched.
         """
-        logging.debug("Microscope: Applying config: {}".format(config))
+        logging.debug("Microscope: Applying settings: {}".format(settings))
 
         # If attached to a camera
-        if ("camera_settings" in config) and self.camera:
-            self.camera.update_settings(config["camera_settings"])
+        if ("camera" in settings) and self.camera:
+            self.camera.update_settings(settings["camera"])
 
         # If attached to a stage
-        if ("stage_settings" in config) and self.stage:
-            self.stage.update_settings(config["stage_settings"])
+        if ("stage" in settings) and self.stage:
+            self.stage.update_settings(settings["stage"])
 
-        # Todo: tidy up with some loopy goodness
-        if "name" in config:
-            self.name = config["name"]
-        if "fov" in config:
-            self.fov = config["fov"]
+        # Microscope settings
+        if "id" in settings:
+            self.id = settings["id"]
+        if "name" in settings:
+            self.name = settings["name"]
+        if "fov" in settings:
+            self.fov = settings["fov"]
 
-    def read_settings(self, full: bool=True):
+    def read_settings(self, full: bool = True):
         """
         Get an updated settings dictionary.
 
@@ -174,17 +168,30 @@ class Microscope:
         don't get removed from the settings file.
         """
 
-        settings_current = {"name": self.name, "fov": self.fov}
+        settings_current = {"id": self.id, "name": self.name, "fov": self.fov}
 
         # If attached to a camera
         if self.camera:
             settings_current_camera = self.camera.read_settings()
-            settings_current["camera_settings"] = settings_current_camera
+            settings_current["camera"] = settings_current_camera
+
+            # Store an encoded copy of the PiCamera lens shading table, if it exists
+            if hasattr(self.camera, "read_lens_shading_table"):
+                # Read LST. Returns None if no LST is active
+                lst_arr = self.camera.read_lens_shading_table()
+
+                b64_string, dtype, shape = serialise_array_b64(lst_arr)
+
+                settings_current["camera"]["lens_shading_table"] = {
+                    "b64_string": b64_string,
+                    "dtype": dtype,
+                    "shape": shape,
+                }
 
         # If attached to a stage
         if self.stage:
             settings_current_stage = self.stage.read_settings()
-            settings_current["stage_settings"] = settings_current_stage
+            settings_current["stage"] = settings_current_stage
 
         settings_full = self.settings_file.merge(settings_current)
 
@@ -207,50 +214,39 @@ class Microscope:
         self.settings_file.save(current_config, backup=True)
 
     @property
-    def metadata(self):
-        """
-        Microscope system metadata, to be applied to basically all captures
-        """
-        system_metadata = {
-            "@ID": self.id,
-            "settings": self.read_settings(full=False),
-            "state": self.state,
-            "configuration": self.configuration
-        }
-
-        # Store an encoded copy of the PiCamera lens shading table, if it exists
-        if self.camera and hasattr(self.camera, "read_lens_shading_table"):
-            # Read LST. Returns None if no LST is active
-            lst_arr = self.camera.read_lens_shading_table()
-
-            b64_string, dtype, shape = serialise_array_b64(lst_arr)
-
-            system_metadata["configuration"]["detector"]["lens_shading_table"] = {
-                "b64_string": b64_string,
-                "dtype": dtype,
-                "shape": shape,
-            }
-
-        return system_metadata
-
-    @property
     def configuration(self):
         initial_configuration = self.configuration_file.load()
 
         current_configuration = {
             "@application": {
                 "name": "openflexure_microscope",
-                "version": pkg_resources.get_distribution("openflexure_microscope").version
+                "version": pkg_resources.get_distribution(
+                    "openflexure_microscope"
+                ).version,
             },
             "stage": {
                 "type": self.stage.__class__.__name__,
-                **self.stage.configuration
+                **self.stage.configuration,
             },
-            "detector": {
+            "camera": {
                 "type": self.camera.__class__.__name__,
-                **self.camera.configuration
-            }
+                **self.camera.configuration,
+            },
         }
 
         initial_configuration.update(current_configuration)
         return initial_configuration
+
+    @property
+    def metadata(self):
+        """
+        Microscope system metadata, to be applied to basically all captures
+        """
+        system_metadata = {
+            "id": self.id,
+            "settings": self.read_settings(full=False),
+            "state": self.state,
+            "configuration": self.configuration,
+        }
+
+        return system_metadata

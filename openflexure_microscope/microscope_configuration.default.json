@@ -1,17 +1,9 @@
 {
-  "microscope": {
-    "stepsPerView": [4100, 3146]
-  },
-  "detector": {
+  "camera": {
     "type": "PiCamera"
   },
   "stage": {
     "type": "SangaStage",
     "port": null
-  },
-  "lightSource": {
-    "type": "LED"
-  },
-  "objective": {
   }
 }

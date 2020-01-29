@@ -8,6 +8,7 @@ import yaml
 import json
 import logging
 from PIL import Image
+import dateutil.parser
 import atexit
 
 from openflexure_microscope.camera import piexif
@@ -93,18 +94,18 @@ def capture_from_exif(path, exif_dict):
     # Build file path information
     capture.split_file_path(capture.file)
 
-    # Populate capture parameters
-    capture.id = exif_dict["id"]
-    capture.timestring = exif_dict["time"]
-    capture.format = exif_dict["format"]
+    # Image metadata
+    image_metadata = exif_dict.pop("image")
 
-    capture.custom_metadata = (
-        exif_dict["custom"] if "custom" in exif_dict.keys() else {}
-    )
-    capture.system_metadata = (
-        exif_dict["system"] if "system" in exif_dict.keys() else {}
-    )
-    capture.tags = exif_dict["tags"]
+    # Populate capture parameters
+    capture.id = image_metadata.get("id")
+    capture.datetime = dateutil.parser.isoparse(image_metadata.get("acquisitionDate"))
+    capture.format = image_metadata.get("format")
+    capture.tags = image_metadata.get("tags")
+    capture.annotations = image_metadata.get("annotations")
+
+    # Since we popped the "image" key, we dump whatever is left in _metadata
+    capture._metadata = exif_dict
 
     return capture
 
@@ -113,16 +114,6 @@ class CaptureObject(object):
     """
     StreamObject used to store and process on-disk capture data, and metadata.
     Serves to simplify modifying properties of on-disk capture data.
-
-    Attributes:
-        timestring (str): Timestring of capture creation time
-        custom_metadata (dict): Dictionary of custom metadata to be included in metadata file
-        tags (list): List of tags. Essentially just as extra custom metadata field, but useful for quick organisation
-        filefolder (str): Folder in which the capture file will be stored
-        filename (str): Full name of the capture file
-        basename (str): Filename of the capture, without a file extension
-        format (str): Format of the capture data
-
     """
 
     def __init__(self, filepath) -> None:
@@ -131,17 +122,20 @@ class CaptureObject(object):
         # Store a nice ID
         self.id = uuid.uuid4()  #: str: Unique capture ID
         logging.debug("Created StreamObject {}".format(self.id))
-        self.timestring = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.datetime = datetime.datetime.now()
 
         # Create file name. Default to UUID
         self.file = filepath
         self.split_file_path(self.file)
 
-        # Dictionary for storing custom metadata
-        self.custom_metadata = {}
-        # Dictionary for adding top-level metadata (cannmot be accessed through web API)
-        self.system_metadata = {}
+        if not os.path.exists(self.filefolder):
+            os.makedirs(self.filefolder)
 
+        # Dictionary for adding top-level metadata (cannmot be accessed through web API)
+        self._metadata = {}
+
+        # Dictionary for storing custom annotations
+        self.annotations = {}
         # List for storing tags
         self.tags = []
 
@@ -163,10 +157,6 @@ class CaptureObject(object):
         # Split the filename out from it's file extension
         self.basename = os.path.splitext(self.filename)[0]
         self.format = self.filename.split(".")[-1]
-
-        # Create folder and file
-        if not os.path.exists(self.filefolder):
-            os.makedirs(self.filefolder)
 
     @property
     def exists(self) -> bool:
@@ -204,17 +194,24 @@ class CaptureObject(object):
 
     # HANDLE METADATA
 
-    def put_metadata(self, data: dict, system: bool = False) -> None:
+    def put_annotations(self, data: dict) -> None:
         """
-        Merge metadata from a passed dictionary into the capture metadata, and saves.
+        Merge annotations from a passed dictionary into the capture metadata, and saves.
 
         Args:
             data (dict): Dictionary of metadata to be added
         """
-        if system:
-            self.system_metadata.update(data)
-        else:
-            self.custom_metadata.update(data)
+        self.annotations.update(data)
+        self.save_metadata()
+
+    def put_metadata(self, data: dict) -> None:
+        """
+        Merge root metadata from a passed dictionary into the capture metadata, and saves.
+
+        Args:
+            data (dict): Dictionary of metadata to be added
+        """
+        self._metadata.update(data)
         self.save_metadata()
 
     def save_metadata(self) -> None:
@@ -244,12 +241,15 @@ class CaptureObject(object):
         and any added custom metadata and tags.
         """
         d = {
-            "id": self.id,
-            "time": self.timestring,
-            "format": self.format,
-            "tags": self.tags,
-            "custom": self.custom_metadata,
-            "system": self.system_metadata,
+            "image": {
+                "id": self.id,
+                "name": self.filename,
+                "acquisitionDate": self.datetime.isoformat(),
+                "format": self.format,
+                "tags": self.tags,
+                "annotations": self.annotations,
+            },
+            **self._metadata,
         }
 
         # Add custom metadata to dictionary
