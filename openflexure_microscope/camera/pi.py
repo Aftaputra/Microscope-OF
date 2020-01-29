@@ -333,13 +333,13 @@ class PiCameraStreamer(BaseCamera):
         Change the camera zoom, handling re-centering and scaling.
         """
         with self.lock:
-            self.status["zoom_value"] = float(zoom_value)
-            if self.status["zoom_value"] < 1:
-                self.status["zoom_value"] = 1
+            self.zoom_value = float(zoom_value)
+            if self.zoom_value < 1:
+                self.zoom_value = 1
             # Richard's code for zooming !
             fov = self.camera.zoom
             centre = np.array([fov[0] + fov[2] / 2.0, fov[1] + fov[3] / 2.0])
-            size = 1.0 / self.status["zoom_value"]
+            size = 1.0 / self.zoom_value
             # If the new zoom value would be invalid, move the centre to
             # keep it within the camera's sensor (this is only relevant
             # when zooming out, if the FoV is not centred on (0.5, 0.5)
@@ -552,7 +552,7 @@ class PiCameraStreamer(BaseCamera):
         if isinstance(output, CaptureObject):
             target = output.file
         else:
-            target = target
+            target = output
 
         with self.lock:
             logging.info("Capturing to {}".format(output))

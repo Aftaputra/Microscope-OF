@@ -53,7 +53,7 @@ class MoveStageAPI(View):
             logging.warning("Unable to move. No stage found.")
 
         # TODO: Make schema for microscope status
-        return jsonify(microscope.status["stage"]["position"])
+        return jsonify(microscope.state["stage"]["position"])
 
 
 @ThingAction

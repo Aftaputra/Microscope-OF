@@ -76,7 +76,7 @@ class Microscope:
         ### Detector
         if configuration.get("camera"):
             camera_type = configuration["camera"].get("type")
-            if camera_type == "PiCamera" or camera_type == "PiCameraStreamer":
+            if camera_type in ("PiCamera", "PiCameraStreamer"):
                 try:
                     self.camera = PiCameraStreamer()
                 except Exception as e:
@@ -87,12 +87,8 @@ class Microscope:
         if configuration.get("stage"):
             stage_type = configuration["stage"].get("type")
             stage_port = configuration["stage"].get("port")
-            if stage_type == "SangaBoard" or camera_type == "SangaStage":
-                try:
-                    self.stage = SangaStage(port=stage_port)
-                except Exception as e:
-                    logging.error(e)
-                    logging.warning("No compatible stage hardware found.")
+            if stage_type in ("SangaBoard", "SangaStage"):
+                self.stage = SangaStage(port=stage_port)
 
         ### Fallbacks
         if not self.camera:
@@ -180,13 +176,14 @@ class Microscope:
                 # Read LST. Returns None if no LST is active
                 lst_arr = self.camera.read_lens_shading_table()
 
-                b64_string, dtype, shape = serialise_array_b64(lst_arr)
+                if lst_arr:
+                    b64_string, dtype, shape = serialise_array_b64(lst_arr)
 
-                settings_current["camera"]["lens_shading_table"] = {
-                    "b64_string": b64_string,
-                    "dtype": dtype,
-                    "shape": shape,
-                }
+                    settings_current["camera"]["lens_shading_table"] = {
+                        "b64_string": b64_string,
+                        "dtype": dtype,
+                        "shape": shape,
+                    }
 
         # If attached to a stage
         if self.stage:
