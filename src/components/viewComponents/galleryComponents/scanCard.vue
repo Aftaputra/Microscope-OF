@@ -7,11 +7,11 @@
         <img
           class="uk-width-1-1"
           :data-src="thumbnail"
-          :alt="metadata.id"
+          :alt="metadata.image.id"
           width="300"
           height="225"
           uk-img
-          @click="$root.$emit('globalUpdateCaptureFolder', metadata.id)"
+          @click="$root.$emit('globalUpdateCaptureFolder', metadata.image.id)"
         />
       </a>
     </div>
@@ -22,14 +22,14 @@
         uk-grid
       >
         <div class="uk-margin-remove-top uk-padding-remove uk-width-expand">
-          <b>{{ metadata.type || "Dataset" }}: </b> {{ metadata.name }}
+          <b>{{ metadata.type || "Dataset" }}: </b> {{ metadata.image.name }}
         </div>
       </div>
 
       <div
         class="uk-text-meta uk-margin-remove-top uk-padding-remove uk-width-expand"
       >
-        <time>{{ metadata.acquisitionDate }}</time>
+        <time>{{ metadata.image.acquisitionDate }}</time>
       </div>
       <div
         class="uk-text-meta uk-margin-remove-top uk-padding-remove uk-width-auto"
@@ -40,7 +40,7 @@
 
     <div class="uk-card-footer uk-padding-small">
       <span
-        v-for="tag in metadata.tags"
+        v-for="tag in metadata.image.tags"
         :key="tag"
         class="uk-label uk-margin-small-right deletable-label"
       >
@@ -51,13 +51,13 @@
     <div :id="metadataModalID" uk-modal>
       <div class="uk-modal-dialog uk-modal-body">
         <button class="uk-modal-close-default" type="button" uk-close></button>
-        <h2 class="uk-modal-title">{{ metadata.basename }}</h2>
-        <p><b>Time: </b>{{ metadata.acquisitionDate }}</p>
-        <p><b>ID: </b>{{ metadata.id }}</p>
+        <h2 class="uk-modal-title">{{ metadata.image.name }}</h2>
+        <p><b>Time: </b>{{ metadata.image.acquisitionDate }}</p>
+        <p><b>ID: </b>{{ metadata.image.id }}</p>
 
         <hr />
 
-        <div v-for="(value, key) in metadata.annotations" :key="key">
+        <div v-for="(value, key) in metadata.image.annotations" :key="key">
           <p>
             <b>{{ key }}: </b>{{ value }}
           </p>
@@ -100,7 +100,7 @@ export default {
 
   methods: {
     makeModalName: function(prefix) {
-      return prefix + this.metadata.id;
+      return prefix + this.metadata.image.id;
     }
   }
 };

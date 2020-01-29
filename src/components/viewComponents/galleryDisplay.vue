@@ -167,13 +167,15 @@ export default {
             scans[id].isScan = true;
             scans[id].captures = [];
             scans[id].metadata = {
-              name: dataset.name,
-              acquisitionDate: dataset.acquisitionDate,
-              id: dataset.id,
+              image: {
+                name: dataset.name,
+                acquisitionDate: dataset.acquisitionDate,
+                id: dataset.id,
+                tags: [],
+                annotations: {}
+              },
               type: dataset.type
             };
-            scans[id].metadata.tags = [];
-            scans[id].metadata.annotations = {};
           }
 
           // Add the capture object to the scan
@@ -181,15 +183,15 @@ export default {
 
           // Add missing scan metadata, prioritising first capture
           for (var key of Object.keys(annotations)) {
-            if (!(key in scans[id].metadata.annotations)) {
-              scans[id].metadata.annotations[key] = annotations[key];
+            if (!(key in scans[id].metadata.image.annotations)) {
+              scans[id].metadata.image.annotations[key] = annotations[key];
             }
           }
 
           // Append missing tags
           for (var tag of tags) {
-            if (!scans[id].metadata.tags.includes(tag)) {
-              scans[id].metadata.tags.push(tag);
+            if (!scans[id].metadata.image.tags.includes(tag)) {
+              scans[id].metadata.image.tags.push(tag);
             }
           }
 
@@ -313,7 +315,7 @@ export default {
         var includeCapture = false;
 
         // Filter by selected tags
-        var tags = capture.metadata.tags;
+        var tags = capture.metadata.image.tags;
         let checker = (arr, target) => target.every(v => arr.includes(v));
         // True if all tags match
         includeCapture = checker(tags, filterTags);
@@ -330,8 +332,10 @@ export default {
     sortCaptures: function(list) {
       // Sort a list of captures by metadata time
       function compare(a, b) {
-        if (a.metadata.time < b.metadata.time) return -1;
-        if (a.metadata.time > b.metadata.time) return 1;
+        if (a.metadata.image.acquisitionDate < b.metadata.image.acquisitionDate)
+          return -1;
+        if (a.metadata.image.acquisitionDate > b.metadata.image.acquisitionDate)
+          return 1;
         return 0;
       }
 
