@@ -6,15 +6,21 @@ import logging
 import pkg_resources
 import uuid
 
-from openflexure_microscope.stage.base import BaseStage
-from openflexure_microscope.stage.mock import MockStage
-from openflexure_microscope.camera.base import BaseCamera
-from openflexure_microscope.camera.mock import MockStreamer
+from openflexure_microscope.stage.mock import MissingStage
+from openflexure_microscope.camera.mock import MissingCamera
+from openflexure_microscope.stage.sanga import SangaStage
+
+try:
+    from openflexure_microscope.camera.pi import PiCameraStreamer
+except ImportError:
+    logging.warning("Unable to import PiCameraStreamer")
+from openflexure_microscope.camera.mock import MissingCamera
 
 from openflexure_microscope.utilities import serialise_array_b64
-from openflexure_microscope.config import user_settings
+from openflexure_microscope.config import user_settings, user_configuration
 
 from labthings.core.lock import CompositeLock
+from labthings.core.utilities import rupdate
 
 
 class Microscope:
@@ -24,20 +30,26 @@ class Microscope:
     The camera and stage objects may already be initialised, and can be passed as arguments.
     """
 
-    def __init__(self):
-        # Initial attributes
-        self.id = uuid.uuid4()  #: Microscope UUID
-        self.name = self.id  #: Microscope name (modifiable)
+    def __init__(self, settings=user_settings, configuration=user_configuration):
+        self.id = uuid.uuid4()
+        self.name = self.id
+
         self.fov = [0, 0]  #: Microscope field-of-view in stage motor steps
-        self.camera = None  #: Currently connected camera object
-        self.stage = None  #: Currently connected stage object
+
+        # Store settings and configuration files
+        self.settings_file = settings
+        self.configuration_file = configuration
 
         # Initialise with an empty composite lock
         #: :py:class:`labthings.lock.CompositeLock`: Composite lock for locking both camera and stage
         self.lock = CompositeLock([])
 
+        self.camera = None  #: Currently connected camera object
+        self.stage = None  #: Currently connected stage object
+        self.setup(self.configuration_file.load())  # Attach components
+
         # Apply settings loaded from file
-        self.apply_settings(user_settings.load())
+        self.update_settings(self.settings_file.load())
 
     def __enter__(self):
         """Create microscope on context enter."""
@@ -56,58 +68,45 @@ class Microscope:
             self.stage.close()
         logging.info("Closed {}".format(self))
 
-    def attach(self, camera: BaseCamera, stage: BaseStage):
+    def setup(self, configuration):
         """
-        Retroactively attaches a camera and stage to the microscope object.
-
-        Allows the microscope to be created as a "dummy", with hardware communications
-        opened at a later time.
-
-        Args:
-            camera (:py:class:`openflexure_microscope.camera.base.BaseCamera`): camera object
-            stage (:py:class:`openflexure_microscope.stage.base.BaseStage`): stage object
+        Attach microscope components based on initially passed configuration file
         """
 
-        settings_full = self.read_settings()
+        ### Detector
+        if configuration.get("camera"):
+            camera_type = configuration["camera"].get("type")
+            if camera_type in ("PiCamera", "PiCameraStreamer"):
+                try:
+                    self.camera = PiCameraStreamer()
+                except Exception as e:
+                    logging.error(e)
+                    logging.warning("No compatible camera hardware found.")
 
-        logging.debug("Attaching camera...")
-        self.camera = (
-            camera
-        )  #: :py:class:`openflexure_microscope.camera.base.BaseCamera`: Picamera object
+        ### Stage
+        if configuration.get("stage"):
+            stage_type = configuration["stage"].get("type")
+            stage_port = configuration["stage"].get("port")
+            if stage_type in ("SangaBoard", "SangaStage"):
+                self.stage = SangaStage(port=stage_port)
+
+        ### Fallbacks
         if not self.camera:
-            logging.info("No camera attached.")
-        else:
-            logging.info("Attached camera {}".format(camera))
-
-            if hasattr(self.camera, "lock"):  # If camera has a lock
-                logging.info("Attaching {} to composite lock.".format(self.camera.lock))
-                # Add the lock to the microscope composite lock
-                self.lock.locks.append(self.camera.lock)
-
-        logging.debug("Attaching stage...")
-        self.stage = (
-            stage
-        )  #: :py:class:`openflexure_microscope.stage.base.BaseStage`: OpenFlexure stage object
+            self.camera = MissingCamera()
         if not self.stage:
-            logging.info("No stage attached.")
-        else:
-            logging.info("Attached stage {}".format(stage))
+            self.stage = MissingStage()
 
-            if hasattr(self.stage, "lock"):  # If stage object has a lock
-                logging.info(
-                    "Attaching lock {} to composite lock.".format(self.stage.lock)
-                )
-                # Add the lock to the microscope composite lock
-                self.lock.locks.append(self.stage.lock)
-
-        logging.info("Reapplying settings to newly attached devices")
-        self.apply_settings(settings_full)
+        ### Locks
+        if hasattr(self.camera, "lock"):
+            self.lock.locks.append(self.camera.lock)
+        if hasattr(self.stage, "lock"):
+            self.lock.locks.append(self.stage.lock)
 
     def has_real_stage(self) -> bool:
         """
         Check if a real (non-mock) stage is currently attached.
         """
-        if hasattr(self, "stage") and not isinstance(self.stage, MockStage):
+        if hasattr(self, "stage") and not isinstance(self.stage, MissingStage):
             return True
         else:
             return False
@@ -116,49 +115,45 @@ class Microscope:
         """
         Check if a real (non-mock) camera is currently attached.
         """
-        if hasattr(self, "camera") and not isinstance(self.camera, MockStreamer):
+        if hasattr(self, "camera") and not isinstance(self.camera, MissingCamera):
             return True
         else:
             return False
 
-    # Create unified status
+    # Create unified state
     @property
-    def status(self):
-        """Dictionary of the basic microscope status.
+    def state(self):
+        """Dictionary of the basic microscope state.
 
         Return:
-            dict: Dictionary containing complete microscope status
+            dict: Dictionary containing complete microscope state
         """
-        state = {
-            "camera": self.camera.status,
-            "stage": self.stage.status,
-            "version": pkg_resources.get_distribution("openflexure_microscope").version,
-        }
+        state = {"camera": self.camera.state, "stage": self.stage.state}
         return state
 
-    def apply_settings(self, config: dict):
+    def update_settings(self, settings: dict):
         """
         Applies a settings dictionary to the microscope. Missing parameters will be left untouched.
         """
-        logging.debug("Microscope: Applying config: {}".format(config))
+        logging.debug("Microscope: Applying settings: {}".format(settings))
 
         # If attached to a camera
-        if ("camera_settings" in config) and self.camera:
-            self.camera.apply_settings(config["camera_settings"])
+        if ("camera" in settings) and self.camera:
+            self.camera.update_settings(settings["camera"])
 
         # If attached to a stage
-        if ("stage_settings" in config) and self.stage:
-            self.stage.apply_settings(config["stage_settings"])
+        if ("stage" in settings) and self.stage:
+            self.stage.update_settings(settings["stage"])
 
-        # Todo: tidy up with some loopy goodness
-        if "id" in config:
-            self.id = config["id"]
-        if "name" in config:
-            self.name = config["name"]
-        if "fov" in config:
-            self.fov = config["fov"]
+        # Microscope settings
+        if "id" in settings:
+            self.id = settings["id"]
+        if "name" in settings:
+            self.name = settings["name"]
+        if "fov" in settings:
+            self.fov = settings["fov"]
 
-    def read_settings(self, json_safe=False):
+    def read_settings(self, full: bool = True):
         """
         Get an updated settings dictionary.
 
@@ -174,16 +169,34 @@ class Microscope:
         # If attached to a camera
         if self.camera:
             settings_current_camera = self.camera.read_settings()
-            settings_current["camera_settings"] = settings_current_camera
+            settings_current["camera"] = settings_current_camera
+
+            # Store an encoded copy of the PiCamera lens shading table, if it exists
+            if hasattr(self.camera, "read_lens_shading_table"):
+                # Read LST. Returns None if no LST is active
+                lst_arr = self.camera.read_lens_shading_table()
+
+                if lst_arr:
+                    b64_string, dtype, shape = serialise_array_b64(lst_arr)
+
+                    settings_current["camera"]["lens_shading_table"] = {
+                        "@type": "ndarray",
+                        "b64_string": b64_string,
+                        "dtype": dtype,
+                        "shape": shape,
+                    }
 
         # If attached to a stage
         if self.stage:
             settings_current_stage = self.stage.read_settings()
-            settings_current["stage_settings"] = settings_current_stage
+            settings_current["stage"] = settings_current_stage
 
-        settings_full = user_settings.merge(settings_current)
+        settings_full = self.settings_file.merge(settings_current)
 
-        return settings_full
+        if full:
+            return settings_full
+        else:
+            return settings_current
 
     def save_settings(self):
         """
@@ -196,7 +209,31 @@ class Microscope:
             self.camera.save_settings()
         if self.stage:
             self.stage.save_settings()
-        user_settings.save(current_config, backup=True)
+        self.settings_file.save(current_config, backup=True)
+
+    @property
+    def configuration(self):
+        initial_configuration = self.configuration_file.load()
+
+        current_configuration = {
+            "application": {
+                "name": "openflexure_microscope",
+                "version": pkg_resources.get_distribution(
+                    "openflexure_microscope"
+                ).version,
+            },
+            "stage": {
+                "type": self.stage.__class__.__name__,
+                **self.stage.configuration,
+            },
+            "camera": {
+                "type": self.camera.__class__.__name__,
+                **self.camera.configuration,
+            },
+        }
+
+        initial_configuration.update(current_configuration)
+        return initial_configuration
 
     @property
     def metadata(self):
@@ -204,23 +241,10 @@ class Microscope:
         Microscope system metadata, to be applied to basically all captures
         """
         system_metadata = {
-            "microscope_settings": self.read_settings(),
-            "microscope_state": self.status,
-            "microscope_id": self.id,
-            "microscope_name": self.name,
+            "id": self.id,
+            "settings": self.read_settings(full=False),
+            "state": self.state,
+            "configuration": self.configuration,
         }
-
-        # Store an encoded copy of the PiCamera lens shading table, if it exists
-        if self.camera and hasattr(self.camera, "read_lens_shading_table"):
-            # Read LST. Returns None if no LST is active
-            lst_arr = self.camera.read_lens_shading_table()
-
-            b64_string, dtype, shape = serialise_array_b64(lst_arr)
-
-            system_metadata["lens_shading_table"] = {
-                "b64_string": b64_string,
-                "dtype": dtype,
-                "shape": shape,
-            }
 
         return system_metadata

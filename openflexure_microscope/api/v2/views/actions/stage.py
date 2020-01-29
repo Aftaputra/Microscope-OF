@@ -52,8 +52,8 @@ class MoveStageAPI(View):
         else:
             logging.warning("Unable to move. No stage found.")
 
-        # TODO: Make schema for microscope status
-        return jsonify(microscope.status["stage"]["position"])
+        # TODO: Make schema for microscope state
+        return jsonify(microscope.state["stage"]["position"])
 
 
 @ThingAction
@@ -66,5 +66,5 @@ class ZeroStageAPI(View):
         microscope = find_component("org.openflexure.microscope")
         microscope.stage.zero_position()
 
-        # TODO: Make schema for microscope status
-        return jsonify(microscope.status["stage"])
+        # TODO: Make schema for microscope state
+        return jsonify(microscope.state["stage"])

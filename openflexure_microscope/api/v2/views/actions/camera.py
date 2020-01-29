@@ -36,7 +36,7 @@ class CaptureAPI(View):
             "bayer": fields.Boolean(
                 missing=False, description="Store raw bayer data in file"
             ),
-            "metadata": fields.Dict(missing={}, example={"Client": "SwaggerUI"}),
+            "annotations": fields.Dict(missing={}, example={"Client": "SwaggerUI"}),
             "tags": fields.List(fields.String, missing=[], example=["docs"]),
             "resize": fields.Dict(
                 missing=None, example={"width": 640, "height": 480}
@@ -75,11 +75,10 @@ class CaptureAPI(View):
             )
 
             # Inject system metadata
-            output.put_metadata(microscope.metadata, system=True)
+            output.put_metadata({"instrument": microscope.metadata})
 
             # Insert custom metadata
-            output.put_metadata(args.get("metadata"))
-
+            output.put_annotations(args.get("annotations"))
             # Insert custom tags
             output.put_tags(args.get("tags"))
 
@@ -164,8 +163,8 @@ class GPUPreviewStartAPI(View):
 
         microscope.camera.start_preview(fullscreen=fullscreen, window=window)
 
-        # TODO: Make schema for microscope status
-        return jsonify(microscope.status)
+        # TODO: Make schema for microscope state
+        return jsonify(microscope.state)
 
 
 @ThingAction
@@ -176,5 +175,5 @@ class GPUPreviewStopAPI(View):
         """
         microscope = find_component("org.openflexure.microscope")
         microscope.camera.stop_preview()
-        # TODO: Make schema for microscope status
-        return jsonify(microscope.status)
+        # TODO: Make schema for microscope state
+        return jsonify(microscope.state)

@@ -35,6 +35,7 @@ picamera = { git = "https://github.com/rwb27/picamera.git", branch = "lens-shadi
 pyserial = "^3.4" # Used for sangaboard (basic_serial_instrument) until we move to sangaboard pip library
 
 labthings = { git = "https://github.com/labthings/python-labthings.git", branch = "master"} # TODO: Pin to a fixed version before 2.0.0 stable
+python-dateutil = "^2.8"
 
 [tool.poetry.extras]
 rpi = ["picamera", "RPi.GPIO"]

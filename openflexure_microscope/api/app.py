@@ -19,7 +19,7 @@ from openflexure_microscope.paths import (
     OPENFLEXURE_VAR_PATH,
     OPENFLEXURE_EXTENSIONS_PATH,
     settings_file_path,
-    logs_file_path
+    logs_file_path,
 )
 
 from labthings.server.quick import create_app
@@ -92,15 +92,21 @@ labthing.add_root_link(views.CaptureList, "captures")
 labthing.add_view(views.CaptureView, f"/captures/<id>")
 labthing.add_view(views.CaptureDownload, f"/captures/<id>/download/<filename>")
 labthing.add_view(views.CaptureTags, f"/captures/<id>/tags")
-labthing.add_view(views.CaptureMetadata, f"/captures/<id>/metadata")
+labthing.add_view(views.CaptureAnnotations, f"/captures/<id>/annotations")
 
-# Attach settings and status resources
-labthing.add_view(views.SettingsProperty, f"/settings")
-labthing.add_root_link(views.SettingsProperty, "settings")
-labthing.add_view(views.NestedSettingsProperty, "/settings/<path:route>")
-labthing.add_view(views.StatusProperty, "/status")
-labthing.add_view(views.NestedStatusProperty, "/status/<path:route>")
-labthing.add_root_link(views.StatusProperty, "status")
+# Attach settings and state resources
+labthing.add_view(views.SettingsProperty, f"/instrument/settings")
+labthing.add_root_link(views.SettingsProperty, "instrumentSettings")
+labthing.add_view(views.NestedSettingsProperty, "/instrument/settings/<path:route>")
+labthing.add_view(views.StateProperty, "/instrument/state")
+labthing.add_view(views.NestedStateProperty, "/instrument/state/<path:route>")
+labthing.add_root_link(views.StateProperty, "instrumentState")
+labthing.add_view(views.ConfigurationProperty, "/instrument/configuration")
+labthing.add_view(
+    views.NestedConfigurationProperty, "/instrument/configuration/<path:route>"
+)
+labthing.add_root_link(views.ConfigurationProperty, "instrumentConfiguration")
+
 
 # Attach streams resources
 labthing.add_view(views.MjpegStream, f"/streams/mjpeg")

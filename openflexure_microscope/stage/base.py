@@ -14,7 +14,7 @@ class BaseStage(metaclass=ABCMeta):
         self.lock = StrictLock(timeout=5)
 
     @abstractmethod
-    def apply_settings(self, config: dict):
+    def update_settings(self, config: dict):
         """Update settings from a config dictionary"""
         pass
 
@@ -29,12 +29,14 @@ class BaseStage(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def status(self):
-        """The general state dictionary of the board.
-        Should at least contain 'position', and 'board' keys.
-        Note: A None/Null value for 'board' will disable stage
-        movement in the OpenFlexure eV client software,
-        """
+    def state(self):
+        """The general state dictionary of the board."""
+        pass
+
+    @property
+    @abstractmethod
+    def configuration(self):
+        """The general stage configuration."""
         pass
 
     @property

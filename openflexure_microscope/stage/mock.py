@@ -7,7 +7,7 @@ import time
 import logging
 
 
-class MockStage(BaseStage):
+class MissingStage(BaseStage):
     def __init__(self, port=None, **kwargs):
         BaseStage.__init__(self)
         self._position = [0, 0, 0]
@@ -17,19 +17,17 @@ class MockStage(BaseStage):
         self.axis_names = ["x", "y", "z"]  # Assume all sangaboards are 3 axis
 
     @property
-    def status(self):
-        """The general status dictionary of the board."""
-        status = {
-            "position": self.position_map,
-            "board": None,
-            "firmware": None,
-            "version": None,
-        }
-        return status
+    def state(self):
+        """The general state dictionary of the board."""
+        state = {"position": self.position_map}
+        return state
 
-    def apply_settings(self, config: dict):
+    @property
+    def configuration(self):
+        return {}
+
+    def update_settings(self, config: dict):
         """Update settings from a config dictionary"""
-
         # Set backlash. Expects a dictionary with axis labels
         if "backlash" in config:
             # Construct backlash array

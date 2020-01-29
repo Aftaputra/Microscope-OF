@@ -23,6 +23,7 @@ class SangaStage(BaseStage):
         """Class managing serial communications with the motors for an Openflexure stage"""
         BaseStage.__init__(self)
 
+        self.port = port
         self.board = Sangaboard(port, **kwargs)
 
         self._backlash = (
@@ -31,14 +32,17 @@ class SangaStage(BaseStage):
         self.axis_names = ["x", "y", "z"]  # Assume all sangaboards are 3 axis
 
     @property
-    def status(self):
-        """The general status dictionary of the board."""
-        status = {
-            "position": self.position_map,
+    def state(self):
+        """The general state dictionary of the board."""
+        return {"position": self.position_map}
+
+    @property
+    def configuration(self):
+        return {
+            "port": self.port,
             "board": self.board.board,
             "firmware": self.board.firmware,
         }
-        return status
 
     @property
     def n_axes(self):
@@ -81,7 +85,7 @@ class SangaStage(BaseStage):
         else:
             self._backlash = np.array([int(blsh)] * self.n_axes, dtype=np.int)
 
-    def apply_settings(self, config: dict):
+    def update_settings(self, config: dict):
         """Update settings from a config dictionary"""
 
         # Set backlash. Expects a dictionary with axis labels
