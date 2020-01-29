@@ -70,7 +70,7 @@ export default {
       }/api/v2/actions/camera/preview/stop`;
     },
     settingsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/settings`;
+      return `${this.$store.getters.baseUri}/api/v2/instrument/settings`;
     }
   },
 

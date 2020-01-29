@@ -8,7 +8,7 @@
         <img
           class="uk-width-1-1"
           :data-src="thumbURL"
-          :alt="captureState.metadata.id"
+          :alt="captureState.metadata.image.id"
           width="300"
           height="225"
           uk-img
@@ -34,7 +34,7 @@
       <div
         class="uk-text-meta uk-margin-remove-top uk-padding-remove uk-width-expand"
       >
-        <time>{{ betterTimestring }}</time>
+        <time>{{ captureState.metadata.image.acquisitionDate }}</time>
       </div>
       <div
         class="uk-text-meta uk-margin-remove-top uk-padding-remove uk-width-auto"
@@ -77,13 +77,13 @@
         <button class="uk-modal-close-default" type="button" uk-close></button>
         <h2 class="uk-modal-title">{{ fileName }}</h2>
         <p><b>Path: </b>{{ captureState.path }}</p>
-        <p><b>Time: </b>{{ betterTimestring }}</p>
-        <p><b>ID: </b>{{ captureState.metadata.id }}</p>
-        <p><b>Format: </b>{{ captureState.metadata.format }}</p>
+        <p><b>Time: </b>{{ captureState.metadata.image.acquisitionDate }}</p>
+        <p><b>ID: </b>{{ captureState.metadata.image.id }}</p>
+        <p><b>Format: </b>{{ captureState.metadata.image.format }}</p>
 
         <hr />
 
-        <div v-for="(value, key) in customMetadata" :key="key">
+        <div v-for="(value, key) in annotations" :key="key">
           <p>
             <b>{{ key }}: </b>{{ value }}
           </p>
@@ -93,14 +93,14 @@
 
         <div class="uk-flex-bottom" uk-grid>
           <div class="uk-width-2-3">
-            <keyvalList v-model="newCustomMetadata" />
+            <keyvalList v-model="newAnnotations" />
           </div>
           <div class="uk-width-1-3">
             <button
               class="uk-button uk-button-primary uk-form-small uk-width-1-1"
-              @click="handleMetadataSubmit()"
+              @click="handleAnnotationsSubmit()"
             >
-              Add metadata
+              Add annotation
             </button>
           </div>
         </div>
@@ -171,15 +171,15 @@ export default {
     return {
       tags: [],
       newTag: "",
-      customMetadata: {},
-      newCustomMetadata: {}
+      annotations: {},
+      newAnnotations: {}
     };
   },
 
   computed: {
     fileName: function() {
-      return this.captureState.filename // If this.captureState.filename exists
-        ? this.captureState.filename // Use this.captureState.filename
+      return this.captureState.name // If this.captureState.filename exists
+        ? this.captureState.name // Use this.captureState.filename
         : this.captureState.metadata.filename; // Otherwise use old this.captureState.metadata.filename
     },
     tagModalID: function() {
@@ -203,23 +203,17 @@ export default {
     tagsURL: function() {
       return this.captureState.links.tags.href;
     },
-    metadataURL: function() {
-      return this.captureState.links.metadata.href;
+    annotationsURL: function() {
+      return this.captureState.links.annotations.href;
     },
     captureURL: function() {
       return this.captureState.links.self.href;
-    },
-    betterTimestring: function() {
-      var dtSplit = this.captureState.metadata.time.split("_");
-      var date = dtSplit[0];
-      var time = dtSplit[1].replace(/-/g, ":");
-      return date + " " + time;
     }
   },
 
   created: function() {
     this.getTagRequest();
-    this.getMetadataRequest();
+    this.getAnnotationsRequest();
   },
 
   methods: {
@@ -231,9 +225,9 @@ export default {
       UIkit.modal(event.target.parentNode).hide();
     },
 
-    handleMetadataSubmit: function() {
-      this.putMetadataRequest(this.newCustomMetadata);
-      this.newCustomMetadata = {};
+    handleAnnotationsSubmit: function() {
+      this.putAnnotationsRequest(this.newAnnotations);
+      this.newAnnotations = {};
     },
 
     delCaptureConfirm: function() {
@@ -269,13 +263,13 @@ export default {
         });
     },
 
-    putMetadataRequest: function(metadataObject) {
+    putAnnotationsRequest: function(annotationsObject) {
       // Send metadata PUT request
       axios
-        .put(this.metadataURL, metadataObject)
+        .put(this.annotationsURL, annotationsObject)
         .then(() => {
           // Update metadata object
-          this.getMetadataRequest();
+          this.getAnnotationsRequest();
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -315,12 +309,12 @@ export default {
         });
     },
 
-    getMetadataRequest: function() {
+    getAnnotationsRequest: function() {
       // Send tag request
       axios
-        .get(this.metadataURL)
+        .get(this.annotationsURL)
         .then(response => {
-          this.customMetadata = response.data.custom;
+          this.annotations = response.data;
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -328,7 +322,7 @@ export default {
     },
 
     makeModalName: function(prefix) {
-      return prefix + this.captureState.metadata.id;
+      return prefix + this.captureState.metadata.image.id;
     }
   }
 };

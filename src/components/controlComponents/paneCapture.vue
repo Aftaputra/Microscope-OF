@@ -84,9 +84,9 @@
       </li>
 
       <li>
-        <a class="uk-accordion-title" href="#">Metadata</a>
+        <a class="uk-accordion-title" href="#">Annotations</a>
         <div class="uk-accordion-content">
-          <keyvalList v-model="metadata" />
+          <keyvalList v-model="annotations" />
         </div>
       </li>
 
@@ -296,7 +296,7 @@ export default {
       },
       resizeDims: [640, 480],
       tags: [],
-      metadata: {
+      annotations: {
         Client: `${process.env.PACKAGE.name}.${process.env.PACKAGE.version}`
       },
       scanUri: null
@@ -316,7 +316,7 @@ export default {
       return `${this.$store.getters.baseUri}/api/v2/extensions`;
     },
     settingsFovUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/settings/fov`;
+      return `${this.$store.getters.baseUri}/api/v2/instrument/settings/fov`;
     },
     basePayload: function() {
       var payload = {};
@@ -339,13 +339,13 @@ export default {
         };
       }
 
-      // Additional metadata
-      payload.metadata = this.metadata;
+      // Additional annotations
+      payload.annotations = this.annotations;
       payload.tags = this.tags;
 
       // Attach notes
       if (this.captureNotes) {
-        payload.metadata["Notes"] = this.captureNotes;
+        payload.annotations["Notes"] = this.captureNotes;
       }
 
       return payload;

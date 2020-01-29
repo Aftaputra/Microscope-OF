@@ -193,7 +193,7 @@ export default {
       return `${this.$store.getters.baseUri}/api/v2/actions/stage/zero`;
     },
     positionStatusUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/status/stage/position`;
+      return `${this.$store.getters.baseUri}/api/v2/instrument/state/stage/position`;
     },
     pluginsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/extensions`;

@@ -326,7 +326,7 @@ export default {
     },
 
     checkServerVersion: function() {
-      var versionUri = `${this.$store.getters.baseUri}/api/v2/status/version`;
+      var versionUri = `${this.$store.getters.baseUri}/api/v2/instrument/configuration/application/version`;
       axios
         .get(versionUri)
         .then(response => {
@@ -383,7 +383,7 @@ export default {
 
     saveHost: function() {
       // URI to get hostname directly from settings
-      var hostnameUri = `${this.$store.getters.baseUri}/api/v2/settings/name`;
+      var hostnameUri = `${this.$store.getters.baseUri}/api/v2/instrument/settings/name`;
       axios
         .get(hostnameUri)
         .then(response => {

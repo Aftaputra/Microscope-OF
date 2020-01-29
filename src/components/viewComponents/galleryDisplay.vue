@@ -127,7 +127,7 @@ export default {
       // Return an array of unique tags across all captures
       var tags = [];
       for (var capture of this.captures) {
-        for (var tag of capture.metadata.tags) {
+        for (var tag of capture.metadata.image.tags) {
           if (!tags.includes(tag)) {
             tags.push(tag);
           }
@@ -140,11 +140,8 @@ export default {
       // List of captures that are not part of a scan
       var captures = [];
       for (var capture of this.captures) {
-        // Filter by selected tags
-        var tags = capture.metadata.tags;
-
         // Add to capture list if matched
-        if (!tags.includes(this.scanTag)) {
+        if (!capture.metadata.dataset) {
           captures.push(capture);
         }
       }
@@ -157,11 +154,12 @@ export default {
       var scans = {};
 
       for (var capture of this.captures) {
-        var custom = capture.metadata.custom;
-        var tags = capture.metadata.tags;
+        var annotations = capture.metadata.image.annotations;
+        var tags = capture.metadata.image.tags;
+        var dataset = capture.metadata.dataset;
 
-        if ("scan_id" in custom) {
-          var id = custom["scan_id"];
+        if (dataset) {
+          var id = dataset["id"];
 
           // If this scan ID hasn't been seen before
           if (!(id in scans)) {
@@ -169,21 +167,22 @@ export default {
             scans[id].isScan = true;
             scans[id].captures = [];
             scans[id].metadata = {
-              filename: custom.basename,
-              time: custom.time,
-              id: custom.scan_id
+              name: dataset.name,
+              acquisitionDate: dataset.acquisitionDate,
+              id: dataset.id,
+              type: dataset.type
             };
             scans[id].metadata.tags = [];
-            scans[id].metadata.custom = {};
+            scans[id].metadata.annotations = {};
           }
 
           // Add the capture object to the scan
           scans[id].captures.push(capture);
 
           // Add missing scan metadata, prioritising first capture
-          for (var key of Object.keys(custom)) {
-            if (!(key in scans[id].metadata.custom)) {
-              scans[id].metadata.custom[key] = custom[key];
+          for (var key of Object.keys(annotations)) {
+            if (!(key in scans[id].metadata.annotations)) {
+              scans[id].metadata.annotations[key] = annotations[key];
             }
           }
 
@@ -196,9 +195,9 @@ export default {
 
           // Create a preview thumbnail
           if (!("thumbnail" in scans[id])) {
-            scans[id].thumbnail = `${
-              capture.links.download.href
-            }?thumbnail=true`;
+            scans[
+              id
+            ].thumbnail = `${capture.links.download.href}?thumbnail=true`;
           }
         }
       }
@@ -231,12 +230,15 @@ export default {
       var captures = {};
 
       for (var item of this.filteredItems) {
+        // If it's a dataset
         if ("captures" in item) {
           for (var capture of item.captures) {
-            captures[capture.metadata.id] = capture;
+            // Get the ID of each capture in the set
+            captures[capture.metadata.image.id] = capture;
           }
         } else {
-          captures[item.metadata.id] = item;
+          // If it's a single capture, get the ID of the capture
+          captures[item.metadata.image.id] = item;
         }
       }
 

@@ -7,13 +7,11 @@
         <img
           class="uk-width-1-1"
           :data-src="thumbnail"
-          :alt="metadata.scan_id"
+          :alt="metadata.id"
           width="300"
           height="225"
           uk-img
-          @click="
-            $root.$emit('globalUpdateCaptureFolder', metadata.custom.scan_id)
-          "
+          @click="$root.$emit('globalUpdateCaptureFolder', metadata.id)"
         />
       </a>
     </div>
@@ -24,14 +22,14 @@
         uk-grid
       >
         <div class="uk-margin-remove-top uk-padding-remove uk-width-expand">
-          <b>Scan:</b> {{ metadata.custom.basename }}
+          <b>{{ metadata.type || "Dataset" }}: </b> {{ metadata.name }}
         </div>
       </div>
 
       <div
         class="uk-text-meta uk-margin-remove-top uk-padding-remove uk-width-expand"
       >
-        <time>{{ betterTimestring }}</time>
+        <time>{{ metadata.acquisitionDate }}</time>
       </div>
       <div
         class="uk-text-meta uk-margin-remove-top uk-padding-remove uk-width-auto"
@@ -54,10 +52,12 @@
       <div class="uk-modal-dialog uk-modal-body">
         <button class="uk-modal-close-default" type="button" uk-close></button>
         <h2 class="uk-modal-title">{{ metadata.basename }}</h2>
-        <p><b>Time: </b>{{ betterTimestring }}</p>
-        <p><b>Scan ID: </b>{{ metadata.custom.scan_id }}</p>
+        <p><b>Time: </b>{{ metadata.acquisitionDate }}</p>
+        <p><b>ID: </b>{{ metadata.id }}</p>
 
-        <div v-for="(value, key) in metadata.custom" :key="key">
+        <hr />
+
+        <div v-for="(value, key) in metadata.annotations" :key="key">
           <p>
             <b>{{ key }}: </b>{{ value }}
           </p>
@@ -95,12 +95,6 @@ export default {
     },
     metadataModalTarget: function() {
       return "#" + this.metadataModalID;
-    },
-    betterTimestring: function() {
-      var dtSplit = this.metadata.custom.time.split("_");
-      var date = dtSplit[0];
-      var time = dtSplit[1].replace(/-/g, ":");
-      return date + " " + time;
     }
   },
 

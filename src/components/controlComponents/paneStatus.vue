@@ -1,6 +1,6 @@
 <template>
   <div class="host-input">
-    <div v-if="status && $store.getters.ready">
+    <div v-if="configuration && $store.getters.ready">
       <div>
         <div class="uk-margin-small-bottom">
           <b>Host:</b>
@@ -17,7 +17,7 @@
       </div>
       <div>
         <b>Server version:</b> <br />
-        {{ status.version }}
+        {{ configuration.application.version }}
       </div>
 
       <hr />
@@ -25,16 +25,16 @@
       <div class="uk-margin-small-bottom">
         <b>Camera:</b>
         <br />
-        <div v-if="status.camera.board">
-          {{ status.camera.board }}
+        <div v-if="configuration.camera.type != 'MissingCamera'">
+          {{ configuration.camera.type }}
         </div>
         <div v-else class="uk-text-danger"><b>No camera connected</b></div>
       </div>
       <div>
         <b>Stage:</b>
         <br />
-        <div v-if="status.stage.board">
-          {{ status.stage.board }}
+        <div v-if="configuration.stage.type != 'MissingStage'">
+          {{ configuration.stage.type }}
         </div>
         <div v-else class="uk-text-danger"><b>No stage connected</b></div>
       </div>
@@ -86,7 +86,7 @@ export default {
 
   data: function() {
     return {
-      status: null,
+      configuration: null,
       settings: null,
       systemActionLinks: {}
     };
@@ -94,10 +94,10 @@ export default {
 
   computed: {
     settingsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/settings`;
+      return `${this.$store.getters.baseUri}/api/v2/instrument/settings`;
     },
-    statusUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/status`;
+    configurationUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2/instrument/configuration`;
     },
     actionsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/actions`;
@@ -105,13 +105,13 @@ export default {
   },
 
   created: function() {
-    // Watch for host 'ready', then update status
+    // Watch for host 'ready', then update configuration
     this.$store.watch(
       (state, getters) => {
         return getters.ready;
       },
       () => {
-        this.updateStatus();
+        this.updateConfiguration();
         this.updateSettings();
         this.updateSystemActions();
       }
@@ -119,11 +119,11 @@ export default {
   },
 
   methods: {
-    updateStatus: function() {
+    updateConfiguration: function() {
       axios
-        .get(this.statusUri)
+        .get(this.configurationUri)
         .then(response => {
-          this.status = response.data;
+          this.configuration = response.data;
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error

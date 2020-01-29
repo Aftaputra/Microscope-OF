@@ -1,28 +1,28 @@
 <template>
-  <div v-if="camera_settings" id="cameraSettings">
+  <div v-if="settings" id="cameraSettings">
     <form @submit.prevent="applyConfigRequest">
-      <div v-if="camera_settings.picamera_settings">
+      <div v-if="settings.picamera">
         <!--PiCamera settings block-->
-        <div v-if="camera_settings.picamera_settings.shutter_speed">
+        <div v-if="settings.picamera.shutter_speed">
           <label class="uk-form-label" for="form-stacked-text"
             >Exposure time</label
           >
           <div class="uk-form-controls">
             <input
-              v-model="camera_settings.picamera_settings.shutter_speed"
+              v-model="settings.picamera.shutter_speed"
               class="uk-input uk-form-small"
               type="number"
             />
           </div>
         </div>
 
-        <div v-if="camera_settings.picamera_settings.analog_gain">
+        <div v-if="settings.picamera.analog_gain">
           <label class="uk-form-label" for="form-stacked-text"
             >Analogue gain</label
           >
           <div class="uk-form-controls">
             <input
-              v-model="camera_settings.picamera_settings.analog_gain"
+              v-model="settings.picamera.analog_gain"
               class="uk-input uk-form-small"
               type="number"
               step="0.000001"
@@ -30,13 +30,13 @@
           </div>
         </div>
 
-        <div v-if="camera_settings.picamera_settings.digital_gain">
+        <div v-if="settings.picamera.digital_gain">
           <label class="uk-form-label" for="form-stacked-text"
             >Digital gain</label
           >
           <div class="uk-form-controls">
             <input
-              v-model="camera_settings.picamera_settings.digital_gain"
+              v-model="settings.picamera.digital_gain"
               class="uk-input uk-form-small"
               type="number"
               step="0.000001"
@@ -85,7 +85,7 @@ export default {
 
   data: function() {
     return {
-      camera_settings: null,
+      settings: null,
       recalibrationUri: null,
       isCalibrating: false
     };
@@ -93,7 +93,7 @@ export default {
 
   computed: {
     settingsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/settings`;
+      return `${this.$store.getters.baseUri}/api/v2/instrument/settings`;
     },
     pluginsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/extensions`;
@@ -110,7 +110,7 @@ export default {
       axios
         .get(this.settingsUri)
         .then(response => {
-          this.camera_settings = response.data.camera_settings;
+          this.settings = response.data.camera;
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -139,11 +139,11 @@ export default {
     applyConfigRequest: function() {
       console.log("Applying config to the microscope");
       var payload = {
-        camera_settings: {
-          picamera_settings: {
-            shutter_speed: this.camera_settings.picamera_settings.shutter_speed,
-            analog_gain: this.camera_settings.picamera_settings.analog_gain,
-            digital_gain: this.camera_settings.picamera_settings.digital_gain
+        camera: {
+          picamera: {
+            shutter_speed: this.settings.picamera.shutter_speed,
+            analog_gain: this.settings.picamera.analog_gain,
+            digital_gain: this.settings.picamera.digital_gain
           }
         }
       };

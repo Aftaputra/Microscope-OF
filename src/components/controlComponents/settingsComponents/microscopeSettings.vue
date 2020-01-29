@@ -11,7 +11,7 @@
           <label class="uk-form-label" for="form-stacked-text">x</label>
           <div class="uk-form-controls">
             <input
-              v-model="settings.stage_settings.backlash.x"
+              v-model="settings.stage.backlash.x"
               class="uk-input uk-form-small"
               type="number"
             />
@@ -22,7 +22,7 @@
           <label class="uk-form-label" for="form-stacked-text">y</label>
           <div class="uk-form-controls">
             <input
-              v-model="settings.stage_settings.backlash.y"
+              v-model="settings.stage.backlash.y"
               class="uk-input uk-form-small"
               type="number"
             />
@@ -33,7 +33,7 @@
           <label class="uk-form-label" for="form-stacked-text">z</label>
           <div class="uk-form-controls">
             <input
-              v-model="settings.stage_settings.backlash.z"
+              v-model="settings.stage.backlash.z"
               class="uk-input uk-form-small"
               type="number"
             />
@@ -80,7 +80,7 @@ export default {
 
   computed: {
     settingsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/settings`;
+      return `${this.$store.getters.baseUri}/api/v2/instrument/settings`;
     }
   },
 
@@ -103,8 +103,8 @@ export default {
     applyConfigRequest: function() {
       var payload = {
         name: this.settings.name,
-        stage_settings: {
-          backlash: this.settings.stage_settings.backlash
+        stage: {
+          backlash: this.settings.stage.backlash
         }
       };
 
