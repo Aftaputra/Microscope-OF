@@ -91,20 +91,6 @@ class CameraEvent(object):
 class BaseCamera(metaclass=ABCMeta):
     """
     Base implementation of StreamingCamera.
-
-    Attributes:
-        thread: Background thread reading frames from camera
-        camera: Camera object
-        lock (:py:class:`labthings.lock.StrictLock`): Strict lock controlling thread
-            access to stage hardware
-        frame (bytes): Current frame is stored here by background thread
-        last_access (time): Time of last client access to the camera
-        stream_timeout (int): Number of inactive seconds before timing out the stream
-        stream_timeout_enabled (bool): Enable or disable timing out the stream
-        status (dict): Dictionary for capture state
-        paths (dict): Dictionary of capture paths
-        images (list): List of image capture objects
-        videos (list): List of video capture objects
     """
 
     def __init__(self):

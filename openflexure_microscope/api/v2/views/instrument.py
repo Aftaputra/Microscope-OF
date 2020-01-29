@@ -72,7 +72,7 @@ class NestedSettingsProperty(View):
 
 
 @ThingProperty
-class StatusProperty(View):
+class StateProperty(View):
     def get(self):
         """
         Show current read-only state of the microscope
@@ -82,7 +82,7 @@ class StatusProperty(View):
 
 
 @Tag("properties")
-class NestedStatusProperty(View):
+class NestedStateProperty(View):
     @doc_response(404, description="Status key cannot be found")
     def get(self, route):
         """

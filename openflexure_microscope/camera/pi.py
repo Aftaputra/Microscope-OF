@@ -85,7 +85,7 @@ class PiCameraStreamer(BaseCamera):
             picamera.PiCamera()
         )  #: :py:class:`picamera.PiCamera`: Picamera object
 
-        # Store status of PiCameraStreamer
+        # Store state of PiCameraStreamer
         self.preview_active = False
 
         # Reset variable states
@@ -157,7 +157,7 @@ class PiCameraStreamer(BaseCamera):
                 "picamera_lst_path": self.picamera_lst_path
                 if os.path.isfile(self.picamera_lst_path)
                 else None,
-                "picamera_settings": {},
+                "picamera": {},
             }
         )
 
@@ -166,7 +166,7 @@ class PiCameraStreamer(BaseCamera):
             try:
                 value = getattr(self.camera, key)
                 logging.debug("Reading PiCamera().{}: {}".format(key, value))
-                conf_dict["picamera_settings"][key] = value
+                conf_dict["picamera"][key] = value
             except AttributeError:
                 logging.debug("Unable to read PiCamera attribute {}".format(key))
 
@@ -204,14 +204,14 @@ class PiCameraStreamer(BaseCamera):
                     paused_stream = True  # Remember to unpause stream when done
 
                 # PiCamera parameters
-                if "picamera_settings" in config:  # If new settings are given
+                if "picamera" in config:  # If new settings are given
                     self.apply_picamera_settings(
-                        config["picamera_settings"], pause_for_effect=True
+                        config["picamera"], pause_for_effect=True
                     )
 
                 # PiCameraStreamer parameters
                 for key, value in config.items():  # For each provided setting
-                    if (key != "picamera_settings") and hasattr(self, key):
+                    if (key != "picamera") and hasattr(self, key):
                         setattr(self, key, value)
 
                 # Handle lens shading if camera supports it
@@ -412,7 +412,7 @@ class PiCameraStreamer(BaseCamera):
                     quality=quality,
                 )
 
-                # Update status dictionary
+                # Update state
                 self.record_active = True
 
                 return output
@@ -432,7 +432,7 @@ class PiCameraStreamer(BaseCamera):
             self.camera.stop_recording(splitter_port=2)
             logging.info("Recording stopped")
 
-            # Update status dictionary
+            # Update state
             self.record_active = False
 
     def stop_stream_recording(
@@ -681,7 +681,6 @@ class PiCameraStreamer(BaseCamera):
         # Start stream recording (and set resolution)
         self.start_stream_recording()
 
-        # Update status
         logging.debug("STREAM ACTIVE")
 
         # While the iterator is not closed

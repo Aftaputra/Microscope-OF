@@ -33,7 +33,7 @@ class SangaStage(BaseStage):
 
     @property
     def state(self):
-        """The general status dictionary of the board."""
+        """The general state dictionary of the board."""
         return {"position": self.position_map}
 
     @property

@@ -18,9 +18,9 @@ class MissingStage(BaseStage):
 
     @property
     def state(self):
-        """The general status dictionary of the board."""
-        status = {"position": self.position_map}
-        return status
+        """The general state dictionary of the board."""
+        state = {"position": self.position_map}
+        return state
 
     @property
     def configuration(self):

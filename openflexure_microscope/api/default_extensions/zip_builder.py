@@ -73,17 +73,15 @@ class ZipManager:
                 # Update task progress
                 update_task_progress(int((index / n_files) * 100))
 
-        session_id = uuid.uuid4()
-        session_key = str(session_id)
-        # self.session_zips[session_id] = fp
-        self.session_zips[session_key] = {
+        session_id = str(uuid.uuid4())
+        self.session_zips[session_id] = {
             "id": session_id,
             "fp": fp,
             "data_size": data_size_megabytes,
             "zip_size": os.path.getsize(fp.name) * 1e-6,
         }
 
-        return self.session_zips[session_key]
+        return self.session_zips[session_id]
 
     def zip_from_id(self, session_id):
         return self.session_zips[session_id]["fp"]
@@ -103,13 +101,13 @@ class ZipBuilderAPIView(View):
         task = taskify(default_zip_manager.build_zip_from_capture_ids)(microscope, ids)
 
         # Return a handle on the autofocus task
-        return jsonify(task.state), 201
+        return task.state, 201
 
 
 @ThingProperty
 class ZipListAPIView(View):
     def get(self):
-        return jsonify(default_zip_manager.session_zips)
+        return default_zip_manager.session_zips
 
 
 class ZipGetterAPIView(View):
@@ -141,7 +139,7 @@ class ZipGetterAPIView(View):
 
         del default_zip_manager.session_zips[session_id]
 
-        return jsonify({"return": session_id})
+        return {"return": session_id}
 
 
 zip_extension_v2 = BaseExtension("org.openflexure.zipbuilder", version="2.0.0-beta.1")

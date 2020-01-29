@@ -120,13 +120,13 @@ class Microscope:
         else:
             return False
 
-    # Create unified status
+    # Create unified state
     @property
     def state(self):
-        """Dictionary of the basic microscope status.
+        """Dictionary of the basic microscope state.
 
         Return:
-            dict: Dictionary containing complete microscope status
+            dict: Dictionary containing complete microscope state
         """
         state = {"camera": self.camera.state, "stage": self.stage.state}
         return state
@@ -216,7 +216,7 @@ class Microscope:
         initial_configuration = self.configuration_file.load()
 
         current_configuration = {
-            "@application": {
+            "application": {
                 "name": "openflexure_microscope",
                 "version": pkg_resources.get_distribution(
                     "openflexure_microscope"
