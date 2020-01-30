@@ -155,7 +155,7 @@ class PiCameraStreamer(BaseCamera):
                 "numpy_resolution": self.numpy_resolution,
                 "jpeg_quality": self.jpeg_quality,
                 "picamera_lst_path": self.picamera_lst_path
-                if os.path.isfile(self.picamera_lst_path)
+                if (self.picamera_lst_path and os.path.isfile(self.picamera_lst_path))
                 else None,
                 "picamera": {},
             }
