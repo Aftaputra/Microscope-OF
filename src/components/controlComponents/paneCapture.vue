@@ -282,7 +282,7 @@ export default {
       resizeCapture: false,
       captureNotes: "",
       scanCapture: false,
-      scanDeltaZ: "Medium",
+      scanDeltaZ: "Fast",
       scanStyle: "Raster",
       scanStepSize: {
         x: 0,
@@ -369,7 +369,7 @@ export default {
         Coarse: 100,
         Medium: 30,
         Fine: 10,
-        Fast: 1500
+        Fast: 2000
       };
 
       payload.autofocus_dz = afDeltas[this.scanDeltaZ];
