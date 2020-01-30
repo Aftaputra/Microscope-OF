@@ -176,7 +176,7 @@ class Microscope:
                 # Read LST. Returns None if no LST is active
                 lst_arr = self.camera.read_lens_shading_table()
 
-                if lst_arr:
+                if lst_arr is not None:
                     b64_string, dtype, shape = serialise_array_b64(lst_arr)
 
                     settings_current["camera"]["lens_shading_table"] = {
