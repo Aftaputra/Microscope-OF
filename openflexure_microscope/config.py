@@ -100,11 +100,8 @@ class JSONEncoder(flask.json.JSONEncoder):
         else:
             # call base class implementation which takes care of
             # raising exceptions for unsupported types
-            try:
-                return flask.json.JSONEncoder.default(self, o)
-            # if it's some mystery object, just return a string representation
-            except TypeError:
-                return str(o)
+            return flask.json.JSONEncoder.default(self, o)
+
 
 
 # HANDLE BASIC LOADING AND SAVING OF SETTINGS FILES
