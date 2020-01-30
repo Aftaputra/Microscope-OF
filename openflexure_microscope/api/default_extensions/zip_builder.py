@@ -16,9 +16,47 @@ import logging
 
 from labthings.server.find import find_component
 from labthings.server.view import View
+from labthings.server.schema import Schema
+from labthings.server import fields
 from labthings.server.extensions import BaseExtension
-from labthings.server.decorators import ThingAction, ThingProperty
+from labthings.server.decorators import ThingAction, ThingProperty, marshal_task, marshal_with, pre_dump
 
+class ZipObjectSchema(Schema):
+    id = fields.String()
+    data_size = fields.Number()
+    zip_size = fields.Number()
+
+    @pre_dump
+    def generate_links(self, data, **kwargs):
+        data.links = {
+            "download": {
+                "href": url_for(
+                    ZipGetterAPIView.endpoint,
+                    session_id=data.id
+                ),
+                **description_from_view(ZipGetterAPIView),
+            },
+        }
+        return data
+
+
+class ZipObjectDescription:
+    def __init__(self, id, file_pointer, data_size=None):
+        self.id = id
+        self.fp = file_pointer
+        self.data_size = data_size
+        self.zip_size = os.path.getsize(self.fp.name) * 1e-6
+
+    def close(self):
+        logging.debug(self.fp.name)
+        self.fp.close()
+        os.unlink(self.fp.name)
+
+        assert not os.path.exists(self.fp.name)
+
+    def __del__(self):
+        self.close()
+        self.super().__del__()
 
 class ZipManager:
     """
@@ -74,17 +112,16 @@ class ZipManager:
                 update_task_progress(int((index / n_files) * 100))
 
         session_id = str(uuid.uuid4())
-        self.session_zips[session_id] = {
-            "id": session_id,
-            "fp": fp,
-            "data_size": data_size_megabytes,
-            "zip_size": os.path.getsize(fp.name) * 1e-6,
-        }
+        session_description = ZipObjectDescription(session_id, fp, data_size=data_size_megabytes)
+        self.session_zips[session_id] = session_description
 
         return self.session_zips[session_id]
 
-    def zip_from_id(self, session_id):
-        return self.session_zips[session_id]["fp"]
+    def marshaled_build_zip_from_capture_ids(self, *args, **kwargs):
+        return ZipObjectSchema().dump(self.build_zip_from_capture_ids(*args, **kwargs))
+
+    def zip_fp_from_id(self, session_id):
+        return self.session_zips[session_id].fp
 
 
 # Create a global ZIP manager
@@ -93,21 +130,23 @@ default_zip_manager = ZipManager()
 
 @ThingAction
 class ZipBuilderAPIView(View):
+    @marshal_task
     def post(self):
 
         ids = list(JsonResponse(request).json)
         microscope = find_component("org.openflexure.microscope")
 
-        task = taskify(default_zip_manager.build_zip_from_capture_ids)(microscope, ids)
+        task = taskify(default_zip_manager.marshaled_build_zip_from_capture_ids)(microscope, ids)
 
         # Return a handle on the autofocus task
-        return task.state, 201
+        return task
 
 
 @ThingProperty
 class ZipListAPIView(View):
+    @marshal_with(ZipObjectSchema(many=True))
     def get(self):
-        return default_zip_manager.session_zips
+        return default_zip_manager.session_zips.values()
 
 
 class ZipGetterAPIView(View):
@@ -118,7 +157,7 @@ class ZipGetterAPIView(View):
         logging.info(f"Session ID: {session_id}")
 
         return send_file(
-            default_zip_manager.zip_from_id(session_id).name,
+            default_zip_manager.zip_fp_from_id(session_id).name,
             mimetype="application/zip",
             as_attachment=True,
             attachment_filename=f"{session_id}.zip",
@@ -128,15 +167,9 @@ class ZipGetterAPIView(View):
         if not session_id in default_zip_manager.session_zips:
             return abort(404)  # 404 Not Found
 
-        logging.info(f"Session ID: {session_id}")
-
-        fp = default_zip_manager.zip_from_id(session_id)
-        logging.debug(fp.name)
-        fp.close()
-        os.unlink(fp.name)
-
-        assert not os.path.exists(fp.name)
-
+        # Close the file
+        default_zip_manager.session_zips[session_id].close()
+        # Delete the file reference
         del default_zip_manager.session_zips[session_id]
 
         return {"return": session_id}
