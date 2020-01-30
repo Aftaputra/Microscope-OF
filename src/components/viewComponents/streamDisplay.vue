@@ -60,14 +60,10 @@ export default {
       return `${this.$store.getters.baseUri}/api/v2/streams/mjpeg`;
     },
     startPreviewUri: function() {
-      return `${
-        this.$store.getters.baseUri
-      }/api/v2/actions/camera/preview/start`;
+      return `${this.$store.getters.baseUri}/api/v2/actions/camera/preview/start`;
     },
     stopPreviewUri: function() {
-      return `${
-        this.$store.getters.baseUri
-      }/api/v2/actions/camera/preview/stop`;
+      return `${this.$store.getters.baseUri}/api/v2/actions/camera/preview/stop`;
     },
     settingsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/instrument/settings`;
