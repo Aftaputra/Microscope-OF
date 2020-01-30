@@ -110,7 +110,7 @@
               <taskSubmitter
                 v-if="fastAutofocusUri"
                 :submit-url="fastAutofocusUri"
-                :submit-data="{ dz: 2000, backlash: 300 }"
+                :submit-data="{ dz: 2000 }"
                 :submit-label="'Fast'"
                 @taskStarted="isAutofocusing = 1"
                 @finished="isAutofocusing = 0"
