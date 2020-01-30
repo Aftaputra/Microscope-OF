@@ -14,7 +14,7 @@ export default new Vuex.Store({
       disableStream: false,
       autoGpuPreview: false,
       trackWindow: true,
-      darkMode: false
+      appTheme: "system"
     }
   },
 

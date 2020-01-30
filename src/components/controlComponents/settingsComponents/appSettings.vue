@@ -1,10 +1,14 @@
 <template>
   <div id="appSettings">
     <p>
-      <label
-        ><input v-model="darkMode" class="uk-checkbox" type="checkbox" /> Enable
-        dark theme</label
-      >
+      <label>
+        Theme
+        <select v-model="appTheme" class="uk-select">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="system">System</option>
+        </select>
+      </label>
     </p>
   </div>
 </template>
@@ -19,26 +23,26 @@ export default {
   },
 
   computed: {
-    darkMode: {
+    appTheme: {
       get() {
-        return this.$store.state.globalSettings.darkMode;
+        return this.$store.state.globalSettings.appTheme;
       },
       set(value) {
-        this.$store.commit("changeSetting", ["darkMode", value]);
+        this.$store.commit("changeSetting", ["appTheme", value]);
       }
     }
   },
 
   watch: {
-    darkMode() {
-      console.log("Saving darkmode setting");
-      this.setLocalStorageObj("darkMode", this.darkMode);
+    appTheme() {
+      console.log("Saving appTheme setting");
+      this.setLocalStorageObj("appTheme", this.appTheme);
     }
   },
 
   mounted() {
     // Try loading settings from localStorage. If null, don't change.
-    this.darkMode = this.getLocalStorageObj("darkMode") || this.darkMode;
+    this.appTheme = this.getLocalStorageObj("appTheme") || this.appTheme;
   }
 };
 </script>
