@@ -197,13 +197,15 @@ def tile(
             # Refocus
             if autofocus_enabled:
                 if fast_autofocus:
-                    autofocus_extension.fast_autofocus(
+                    # Run fast autofocus. Client should provide dz ~ 2000
+                    autofocus_extension.fast_up_down_up_autofocus(
+                        microscope,
                         dz=autofocus_dz,
                         target_z=-z_stack_dz / 2.0,  # Finish below the focus
                         initial_move_up=False,  # We're already at the top of the scan
                     )
                 else:
-                    logging.debug("Running autofocus")
+                    # Run slow autofocus. Client should provide dz ~ 50
                     autofocus_extension.autofocus(
                         range(-3 * autofocus_dz, 4 * autofocus_dz, autofocus_dz)
                     )
