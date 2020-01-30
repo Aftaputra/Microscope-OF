@@ -6,7 +6,7 @@ from openflexure_microscope.devel import (
     update_task_progress,
 )
 
-from flask import send_file, abort
+from flask import send_file, abort, url_for
 
 import uuid
 import os
@@ -19,23 +19,31 @@ from labthings.server.view import View
 from labthings.server.schema import Schema
 from labthings.server import fields
 from labthings.server.extensions import BaseExtension
-from labthings.server.decorators import ThingAction, ThingProperty, marshal_task, marshal_with, pre_dump
+from labthings.server.utilities import description_from_view
+from labthings.server.decorators import (
+    ThingAction,
+    ThingProperty,
+    marshal_task,
+    marshal_with,
+    pre_dump,
+)
+
 
 class ZipObjectSchema(Schema):
     id = fields.String()
     data_size = fields.Number()
     zip_size = fields.Number()
+    links = fields.Dict()
 
     @pre_dump
     def generate_links(self, data, **kwargs):
         data.links = {
             "download": {
                 "href": url_for(
-                    ZipGetterAPIView.endpoint,
-                    session_id=data.id
+                    ZipGetterAPIView.endpoint, session_id=data.id, _external=True
                 ),
                 **description_from_view(ZipGetterAPIView),
-            },
+            }
         }
         return data
 
@@ -56,7 +64,7 @@ class ZipObjectDescription:
 
     def __del__(self):
         self.close()
-        self.super().__del__()
+
 
 class ZipManager:
     """
@@ -112,7 +120,9 @@ class ZipManager:
                 update_task_progress(int((index / n_files) * 100))
 
         session_id = str(uuid.uuid4())
-        session_description = ZipObjectDescription(session_id, fp, data_size=data_size_megabytes)
+        session_description = ZipObjectDescription(
+            session_id, fp, data_size=data_size_megabytes
+        )
         self.session_zips[session_id] = session_description
 
         return self.session_zips[session_id]
@@ -122,6 +132,10 @@ class ZipManager:
 
     def zip_fp_from_id(self, session_id):
         return self.session_zips[session_id].fp
+
+    def __del__(self):
+        for zd in self.session_zips.values():
+            zd.close()
 
 
 # Create a global ZIP manager
@@ -136,7 +150,9 @@ class ZipBuilderAPIView(View):
         ids = list(JsonResponse(request).json)
         microscope = find_component("org.openflexure.microscope")
 
-        task = taskify(default_zip_manager.marshaled_build_zip_from_capture_ids)(microscope, ids)
+        task = taskify(default_zip_manager.marshaled_build_zip_from_capture_ids)(
+            microscope, ids
+        )
 
         # Return a handle on the autofocus task
         return task
@@ -150,7 +166,14 @@ class ZipListAPIView(View):
 
 
 class ZipGetterAPIView(View):
+    """
+    Download or delete a particular capture collection ZIP file
+    """
+
     def get(self, session_id):
+        """
+        Download a particular capture collection ZIP file
+        """
         if not session_id in default_zip_manager.session_zips:
             return abort(404)  # 404 Not Found
 
@@ -164,6 +187,9 @@ class ZipGetterAPIView(View):
         )
 
     def delete(self, session_id):
+        """
+        Close and delete a particular capture collection ZIP file
+        """
         if not session_id in default_zip_manager.session_zips:
             return abort(404)  # 404 Not Found
 
@@ -175,7 +201,11 @@ class ZipGetterAPIView(View):
         return {"return": session_id}
 
 
-zip_extension_v2 = BaseExtension("org.openflexure.zipbuilder", version="2.0.0-beta.1")
+zip_extension_v2 = BaseExtension(
+    "org.openflexure.zipbuilder",
+    version="2.0.0-beta.1",
+    description="Build and download capture collections as ZIP files",
+)
 
 zip_extension_v2.add_view(ZipGetterAPIView, "/get/<string:session_id>")
 zip_extension_v2.add_view(ZipListAPIView, "/get")
