@@ -10,22 +10,35 @@ def check_rw(path):
 
 def settings_file_path(filename: str):
     """Generate a full file path for a filename to be stored in server settings folder"""
-    return os.path.join(OPENFLEXURE_VAR_PATH, "settings", filename)
+    settings_dir = os.path.join(OPENFLEXURE_VAR_PATH, "settings")
+    if not os.path.exists(settings_dir):
+        os.makedirs(settings_dir)
+    return os.path.join(settings_dir, filename)
 
 
 def data_file_path(filename: str):
     """Generate a full file path for a filename to be stored in server data folder"""
-    return os.path.join(OPENFLEXURE_VAR_PATH, "data", filename)
+    data_dir = os.path.join(OPENFLEXURE_VAR_PATH, "data")
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+    return os.path.join(data_dir, filename)
 
 
 def extensions_file_path(filename: str):
     """Generate a full file path for a folder to be stored in server extensions"""
-    return os.path.join(OPENFLEXURE_VAR_PATH, "extensions", filename)
+    ext_dir = os.path.join(OPENFLEXURE_VAR_PATH, "extensions")
+    if not os.path.exists(ext_dir):
+        os.makedirs(ext_dir)
+    return os.path.join(ext_dir, filename)
 
 
 def logs_file_path(filename: str):
     """Generate a full file path for a filename to be stored in server logs"""
-    return os.path.join(OPENFLEXURE_VAR_PATH, "logs", filename)
+    logs_dir = os.path.join(OPENFLEXURE_VAR_PATH, "logs")
+    if not os.path.exists(logs_dir):
+        os.makedirs(logs_dir)
+    return os.path.join(logs_dir, filename)
+
 
 # HANDLE DEFAULTS FILES STORED IN THIS APPLICATION
 
@@ -34,7 +47,9 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 #: Path of default (first-run) microscope settings
 DEFAULT_SETTINGS_FILE_PATH = os.path.join(HERE, "microscope_settings.default.json")
 #: Path of default (first-run) microscope configuration
-DEFAULT_CONFIGURATION_FILE_PATH = os.path.join(HERE, "microscope_configuration.default.json")
+DEFAULT_CONFIGURATION_FILE_PATH = os.path.join(
+    HERE, "microscope_configuration.default.json"
+)
 
 # BASE PATHS
 
