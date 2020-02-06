@@ -205,10 +205,6 @@ class Microscope:
         # Read curent config
         current_config = self.read_settings()
         # Save config to file
-        if self.camera:
-            self.camera.save_settings()
-        if self.stage:
-            self.stage.save_settings()
         self.settings_file.save(current_config, backup=True)
 
     @property

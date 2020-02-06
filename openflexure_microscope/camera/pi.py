@@ -47,7 +47,11 @@ from .base import BaseCamera, CaptureObject
 from .set_picamera_gain import set_analog_gain, set_digital_gain
 
 from openflexure_microscope.paths import settings_file_path
-from openflexure_microscope.utilities import serialise_array_b64
+from openflexure_microscope.utilities import (
+    serialise_array_b64,
+    ndarray_to_json,
+    json_to_ndarray,
+)
 
 
 # MAIN CLASS
@@ -154,9 +158,6 @@ class PiCameraStreamer(BaseCamera):
                 "image_resolution": self.image_resolution,
                 "numpy_resolution": self.numpy_resolution,
                 "jpeg_quality": self.jpeg_quality,
-                "picamera_lst_path": self.picamera_lst_path
-                if (self.picamera_lst_path and os.path.isfile(self.picamera_lst_path))
-                else None,
                 "picamera": {},
             }
         )
@@ -170,12 +171,16 @@ class PiCameraStreamer(BaseCamera):
             except AttributeError:
                 logging.debug("Unable to read PiCamera attribute {}".format(key))
 
-        return conf_dict
+        # Include a serialised lens shading table
+        if (
+            hasattr(self.camera, "lens_shading_table")
+            and getattr(self.camera, "lens_shading_table") is not None
+        ):
+            conf_dict["picamera"]["lens_shading_table"] = ndarray_to_json(
+                getattr(self.camera, "lens_shading_table")
+            )
 
-    def save_settings(self):
-        """Save lens-shading table to disk"""
-        logging.info("Saving picamera_lst to {}".format(self.picamera_lst_path))
-        self.save_lens_shading_table()
+        return conf_dict
 
     def update_settings(self, config: dict):
         """
@@ -209,21 +214,22 @@ class PiCameraStreamer(BaseCamera):
                         config["picamera"], pause_for_effect=True
                     )
 
+                    # Handle lens shading if camera supports it
+                    if (
+                        hasattr(self.camera, "lens_shading_table")
+                        and "lens_shading_table" in config["picamera"]
+                    ):
+                        try:
+                            self.camera.lens_shading_table = json_to_ndarray(
+                                config["picamera"].get("lens_shading_table")
+                            )
+                        except KeyError as e:
+                            logging.error(e)
+
                 # PiCameraStreamer parameters
                 for key, value in config.items():  # For each provided setting
                     if (key != "picamera") and hasattr(self, key):
                         setattr(self, key, value)
-
-                # Handle lens shading if camera supports it
-                if ("picamera_lst_path" in config) and hasattr(
-                    self.camera, "lens_shading_table"
-                ):
-                    logging.debug(
-                        "Applying lens_shading_table from file: {}".format(
-                            config["picamera_lst_path"]
-                        )
-                    )
-                    self.apply_lens_shading_table(config["picamera_lst_path"])
 
                 # If stream was paused to update config, unpause
                 if paused_stream:
@@ -292,41 +298,6 @@ class PiCameraStreamer(BaseCamera):
         # Final optional pause to settle
         if pause_for_effect:
             time.sleep(0.2)
-
-    def read_lens_shading_table(self):
-        """
-        Read the current lens shading table as a numpy array, if it exists. Return None otherwise.
-        """
-        if hasattr(self.camera, "lens_shading_table"):
-            return self.camera.lens_shading_table
-        else:
-            return None
-
-    def save_lens_shading_table(self):
-        """
-        Save the current lens shading table to an .npy file, if it exists. 
-        """
-        logging.debug(self.read_lens_shading_table())
-        if self.read_lens_shading_table() is not None:
-            np.save(self.picamera_lst_path, self.read_lens_shading_table())
-        else:
-            logging.warning("Unable to save a nonexistant lens shading table")
-
-    def apply_lens_shading_table(self, lst_array_or_path):
-        """
-        Apply a lens shading table from an .npy file, or numpy array.
-
-        Args:
-            lst_array_or_path: Numpy array, or path to .npy file, describing the lens-shading table
-        """
-        if isinstance(lst_array_or_path, np.ndarray):
-            self.camera.lens_shading_table = lst_array_or_path
-        elif (type(lst_array_or_path) == str) and os.path.isfile(lst_array_or_path):
-            self.camera.lens_shading_table = np.load(lst_array_or_path)
-        else:
-            logging.error(
-                "Unsupported or missing data for camera lens_shading_table. Must be numpy ndarray, or .npy file path string. Skipping."
-            )
 
     def set_zoom(self, zoom_value: float = 1.0) -> None:
         """
