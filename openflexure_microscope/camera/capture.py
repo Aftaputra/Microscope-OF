@@ -4,7 +4,6 @@ import os
 import shutil
 import glob
 import datetime
-import yaml
 import json
 import logging
 from PIL import Image
@@ -35,11 +34,9 @@ def pull_usercomment_dict(filepath):
         try:
             return json.loads(exif_dict["Exif"][37510].decode())
         except json.decoder.JSONDecodeError:
-            # TODO: Remove YAML support in a later version
-            logging.warning(
-                f"Capture {filepath} has metadata stored in YAML format. This is now deprecated in favour of JSON."
+            logging.error(
+                f"Capture {filepath} has old, corrupt, or missing OpenFlexure metadata. Unable to reload to server."
             )
-            return yaml.load(exif_dict["Exif"][37510].decode())
     else:
         return None
 
@@ -68,7 +65,8 @@ def build_captures_from_exif(capture_path):
         exif = pull_usercomment_dict(f)
         if exif:
             capture = capture_from_exif(f, exif)
-            captures.append(capture)
+            if capture:
+                captures.append(capture)
         else:
             logging.error("Invalid data at {}. Skipping.".format(f))
 
@@ -95,7 +93,11 @@ def capture_from_exif(path, exif_dict):
     capture.split_file_path(capture.file)
 
     # Image metadata
-    image_metadata = exif_dict.pop("image")
+    try:
+        image_metadata = exif_dict.pop("image")
+    except KeyError as e:
+        logging.error(f"Unable to obtain OpenFlexure metadata from file {path}")
+        return None
 
     # Populate capture parameters
     capture.id = image_metadata.get("id")

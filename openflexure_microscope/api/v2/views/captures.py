@@ -14,6 +14,28 @@ from labthings.server.find import find_component
 from marshmallow import pre_dump
 
 
+class InstrumentSchema(Schema):
+    id = fields.UUID()
+    configuration = fields.Dict()
+    settings = fields.Dict()
+    state = fields.Dict()
+
+class CaptureMetadataImageSchema(Schema):
+    id = fields.UUID()
+    acquisitionDate = fields.String(format="date")
+    format = fields.String()
+    name = fields.String()
+    tags = fields.List(fields.String())
+    annotations = fields.Dict()
+
+
+class CaptureMetadataSchema(Schema):
+    experimenter = fields.Dict()  # TODO: Make schema
+    experimenterGroup = fields.Dict()  # TODO: Make schema
+    dataset = fields.Dict()  # TODO: Make schema
+    image = fields.Nested(CaptureMetadataImageSchema())
+    instrument = fields.Nested(InstrumentSchema())
+
 class CaptureSchema(Schema):
     id = fields.String()
     file = fields.String(
@@ -21,7 +43,7 @@ class CaptureSchema(Schema):
     )
     exists = fields.Bool(data_key="available")
     name = fields.String()
-    metadata = fields.Dict()
+    metadata = fields.Nested(CaptureMetadataSchema())
 
     links = fields.Dict()
 
