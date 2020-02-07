@@ -229,7 +229,7 @@ marshmallow = "^3.3.0"
 webargs = "^5.5.3"
 
 [package.source]
-reference = "8af573592efc59bb0b3f0a478391b4bc32f4b572"
+reference = "d9156c37a01c451f37d9949c7da72921d3b16ad2"
 type = "git"
 url = "https://github.com/labthings/python-labthings.git"
 [[package]]
@@ -307,7 +307,6 @@ test = ["coverage", "pytest", "mock", "pillow", "numpy"]
 reference = "b39c2b6e42f5f7f57bb46eafcb5c9e2bbdb5d0cb"
 type = "git"
 url = "https://github.com/rwb27/picamera.git"
-
 [[package]]
 category = "main"
 description = "Python Imaging Library (Fork)"
