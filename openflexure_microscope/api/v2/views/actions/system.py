@@ -25,7 +25,7 @@ class ShutdownAPI(View):
         """
         Attempt to shutdown the device
         """
-        subprocess.Popen(["shutdown", "-h", "now"])
+        subprocess.Popen(["sudo", "shutdown", "-h", "now"])
 
         return "{}", 201
 
@@ -41,6 +41,6 @@ class RebootAPI(View):
         """
         Attempt to reboot the device
         """
-        subprocess.Popen(["systemctl", "reboot", "-i"])
+        subprocess.Popen(["sudo", "shutdown", "-r", "now"])
 
         return "{}", 201
