@@ -20,7 +20,15 @@ module.exports = {
         })
       );
   },
-  outputDir:
-    process.env.VUE_APP_TARGET == "electron-renderer" ? "./app/dist" : "./dist",
+  outputDir: (function() {
+    if (process.env.VUE_APP_TARGET == "electron-renderer") {
+      return "./app/dist";
+    } else if (process.env.VUE_APP_LITEMODE == "true") {
+      return "./dist-lite";
+    } else {
+      return "./dist";
+    }
+  })(),
+
   publicPath: ""
 };

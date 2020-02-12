@@ -61,6 +61,9 @@ export default {
   },
 
   mounted() {
+    if (process.env.VUE_APP_LITEMODE == "true") {
+      console.log("Built lite-mode");
+    }
     // Query CSS dark theme preference
     var mql = window.matchMedia("(prefers-color-scheme: dark)");
     // Check for system dark theme when mounted
