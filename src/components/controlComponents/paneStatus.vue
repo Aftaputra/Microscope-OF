@@ -19,6 +19,10 @@
         <b>Server version:</b> <br />
         {{ configuration.application.version }}
       </div>
+      <div>
+        <b>OpenFlexure eV version:</b> <br />
+        {{ clientVersionName }}
+      </div>
 
       <hr />
 
@@ -88,7 +92,9 @@ export default {
     return {
       configuration: null,
       settings: null,
-      systemActionLinks: {}
+      systemActionLinks: {},
+      clientVersion: process.env.PACKAGE.version,
+      liteMode: process.env.VUE_APP_LITEMODE == "true" ? true : false
     };
   },
 
@@ -101,6 +107,11 @@ export default {
     },
     actionsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/actions`;
+    },
+    clientVersionName: function() {
+      const liteMode = process.env.VUE_APP_LITEMODE == "true" ? true : false;
+      const suffix = liteMode ? "-Lite" : "";
+      return `${process.env.PACKAGE.version}${suffix}`;
     }
   },
 
