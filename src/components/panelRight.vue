@@ -10,7 +10,10 @@
       uk-tab="swiping: false"
     >
       <!-- Connect tab button -->
-      <li :class="[{ 'uk-active': currentTab == 'connect' }]">
+      <li
+        v-show="!liteMode"
+        :class="[{ 'uk-active': currentTab == 'connect' }]"
+      >
         <a href="#" uk-switcher-item="connect" @click="currentTab = 'connect'"
           >Connect</a
         >
@@ -45,7 +48,8 @@
         id="connectDisplayTab"
         class="uk-height-1-1 uk-width-1-1"
       >
-        <connectDisplay />
+        <connectDisplayLite v-if="liteMode" />
+        <connectDisplay v-else />
       </div>
       <!-- Preview tab -->
       <div
@@ -75,6 +79,7 @@ import UIkit from "uikit";
 
 // Import components
 import connectDisplay from "./viewComponents/connectDisplay.vue";
+import connectDisplayLite from "./viewComponents/connectDisplayLite.vue";
 import streamDisplay from "./viewComponents/streamDisplay.vue";
 import galleryDisplay from "./viewComponents/galleryDisplay.vue";
 
@@ -84,6 +89,7 @@ export default {
 
   components: {
     connectDisplay,
+    connectDisplayLite,
     streamDisplay,
     galleryDisplay
   },
@@ -91,7 +97,8 @@ export default {
   data: function() {
     return {
       currentTab: "connect",
-      unwatchStoreFunction: null
+      unwatchStoreFunction: null,
+      liteMode: process.env.VUE_APP_LITEMODE == "true" ? true : false
     };
   },
 
