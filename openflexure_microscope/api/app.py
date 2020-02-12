@@ -68,6 +68,7 @@ app, labthing = create_app(
     title=f"OpenFlexure Microscope {api_microscope.name}",
     description="Test LabThing-based API for OpenFlexure Microscope",
     version=pkg_resources.get_distribution("openflexure_microscope").version,
+    flask_kwargs={"static_url_path": ""},
 )
 
 # Enable CORS for some routes outside of LabThings
@@ -118,6 +119,11 @@ for name, action in views.enabled_root_actions().items():
     view_class = action["view_class"]
     rule = action["rule"]
     labthing.add_view(view_class, f"/actions{rule}")
+
+
+@app.route("/")
+def openflexure_ev():
+    return app.send_static_file("index.html")
 
 
 @app.route("/routes")
