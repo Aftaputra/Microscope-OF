@@ -41,7 +41,9 @@
         >
       </li>
     </ul>
-    <ul class="uk-flex uk-flex-1 uk-overflow-auto uk-margin-remove">
+    <ul
+      class="uk-flex uk-flex-1 uk-overflow-auto uk-margin-remove uk-padding-remove"
+    >
       <!-- Connect tab -->
       <div
         v-show="currentTab == 'connect'"
