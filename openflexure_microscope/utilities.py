@@ -23,6 +23,10 @@ def serialise_array_b64(npy_arr):
 
 
 def ndarray_to_json(arr: np.ndarray):
+    if isinstance(arr, memoryview):
+        # We can transparently convert memoryview objects to arrays
+        # This comes in very handy for the lens shading table.
+        arr = np.array(arr)
     b64_string, dtype, shape = serialise_array_b64(arr)
     return {
         "@type": "ndarray",
