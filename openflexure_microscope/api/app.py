@@ -115,6 +115,7 @@ labthing.add_view(views.SnapshotStream, f"/streams/snapshot")
 
 # Attach microscope action resources
 labthing.add_view(views.actions.ActionsView, "/actions")
+labthing.add_root_link(views.actions.ActionsView, "actions")
 for name, action in views.enabled_root_actions().items():
     view_class = action["view_class"]
     rule = action["rule"]
