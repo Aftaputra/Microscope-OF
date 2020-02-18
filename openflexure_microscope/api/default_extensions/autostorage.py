@@ -44,7 +44,11 @@ def get_current_location(camera):
 def set_current_location(camera, location: str):
     if not os.path.isdir(location):
         os.makedirs(location)
-    return camera.paths.update({"default": location})
+    logging.debug("Updating location...")
+    camera.paths.update({"default": location})
+    logging.debug("Rebuilding captures...")
+    camera.rebuild_captures()
+    logging.debug("Capture location changed successfully.")
 
 
 def get_default_location():
@@ -96,16 +100,6 @@ class AutostorageExtension(BaseExtension):
         # Register the on_microscope function to run when the microscope is attached
         self.on_component("org.openflexure.microscope", self.on_microscope)
 
-    @property
-    def preferred(self):
-        return self._preferred
-
-    @preferred.setter
-    def preferred(self, new_path_key: str):
-        if not new_path_key in self.get_locations().keys():
-            raise KeyError(f"No location named {new_path_key}")
-        self._preferred = new_path_key
-
     def on_microscope(self, microscope_obj):
         """Function to automatically call when the parent LabThing has a microscope attached."""
         logging.debug(f"Autostorage extension found microscope {microscope_obj}")
@@ -118,16 +112,20 @@ class AutostorageExtension(BaseExtension):
             self.initial_location = get_current_location(self.camera)
 
             # If preferred path does not exist, or cannot be written to
-            if not (
-                os.path.isdir(self.initial_location) and check_rw(self.initial_location)
-            ):
-                logging.error(
-                    f"Preferred capture path {self.initial_location} is missing or cannot be written to. Restoring defaults."
-                )
-                # Reset the storage location to default
-                set_current_location(self.camera, get_default_location())
+            self.check_location(self.initial_location)
 
             logging.debug(self.get_locations())
+
+    def check_location(self, location=None):
+        if not location:
+            location = get_current_location(self.camera)
+        # If preferred path does not exist, or cannot be written to
+        if not (os.path.isdir(location) and check_rw(location)):
+            logging.error(
+                f"Preferred capture path {location} is missing or cannot be written to. Restoring defaults."
+            )
+            # Reset the storage location to default
+            set_current_location(self.camera, get_default_location())
 
     def get_locations(self):
         if self.camera:
@@ -195,6 +193,7 @@ class GetLocationsView(View):
     def get(self):
         global autostorage_extension_v2
 
+        autostorage_extension_v2.check_location()
         return autostorage_extension_v2.get_locations()
 
 
@@ -204,6 +203,7 @@ class PreferredLocationView(View):
     def get(self):
         global autostorage_extension_v2
 
+        autostorage_extension_v2.check_location()
         return autostorage_extension_v2.get_preferred_key()
 
     def post(self, new_path_key):
@@ -213,6 +213,7 @@ class PreferredLocationView(View):
         if not microscope:
             abort(503, "No microscope connected. Unable to autofocus.")
 
+        autostorage_extension_v2.check_location()
         autostorage_extension_v2.set_preferred_key(new_path_key)
         microscope.save_settings()
 
@@ -228,16 +229,15 @@ class PreferredLocationGUIView(View):
         new_path_key = autostorage_extension_v2.title_to_key(new_path_title)
         logging.debug(f"{new_path_key}")
 
+        autostorage_extension_v2.check_location()
         autostorage_extension_v2.set_preferred_key(new_path_key)
-
-        logging.debug("Restoring captures...")
-        autostorage_extension_v2.camera.rebuild_captures()
 
         return new_path_title
 
 
 def dynamic_form():
     global autostorage_extension_v2
+    autostorage_extension_v2.check_location()
     return {
         "icon": "sd_storage",
         "forms": [
@@ -246,6 +246,7 @@ def dynamic_form():
                 "isCollapsible": False,
                 "isTask": False,
                 "route": "/location-from-title",
+                "emitOnResponse": "globalUpdateCaptures",
                 "submitLabel": "Set path",
                 "schema": [
                     {
