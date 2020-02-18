@@ -12,12 +12,12 @@ description = "A pluggable API specification generator. Currently supports the O
 name = "apispec"
 optional = false
 python-versions = ">=3.5"
-version = "3.2.0"
+version = "3.3.0"
 
 [package.extras]
-dev = ["PyYAML (>=3.10)", "prance (>=0.11)", "marshmallow (>=2.19.2)", "pytest", "mock", "flake8 (3.7.9)", "flake8-bugbear (19.8.0)", "pre-commit (>=1.20,<2.0)", "tox"]
-docs = ["marshmallow (>=2.19.2)", "pyyaml (5.2)", "sphinx (2.3.0)", "sphinx-issues (1.2.0)", "sphinx-rtd-theme (0.4.3)"]
-lint = ["flake8 (3.7.9)", "flake8-bugbear (19.8.0)", "pre-commit (>=1.20,<2.0)"]
+dev = ["PyYAML (>=3.10)", "prance (>=0.11)", "marshmallow (>=2.19.2)", "pytest", "mock", "flake8 (3.7.9)", "flake8-bugbear (20.1.4)", "pre-commit (>=1.20,<3.0)", "tox"]
+docs = ["marshmallow (>=2.19.2)", "pyyaml (5.3)", "sphinx (2.4.1)", "sphinx-issues (1.2.0)", "sphinx-rtd-theme (0.4.3)"]
+lint = ["flake8 (3.7.9)", "flake8-bugbear (20.1.4)", "pre-commit (>=1.20,<3.0)"]
 tests = ["PyYAML (>=3.10)", "prance (>=0.11)", "marshmallow (>=2.19.2)", "pytest", "mock"]
 validation = ["prance (>=0.11)"]
 yaml = ["PyYAML (>=3.10)"]
@@ -232,7 +232,6 @@ webargs = "^5.5.3"
 reference = "12b6dda521f00e449c67c5ea8bf34005918fd649"
 type = "git"
 url = "https://github.com/labthings/python-labthings.git"
-
 [[package]]
 category = "dev"
 description = "A fast and thorough lazy object proxy."
@@ -308,7 +307,6 @@ test = ["coverage", "pytest", "mock", "pillow", "numpy"]
 reference = "b39c2b6e42f5f7f57bb46eafcb5c9e2bbdb5d0cb"
 type = "git"
 url = "https://github.com/rwb27/picamera.git"
-
 [[package]]
 category = "main"
 description = "Python Imaging Library (Fork)"
@@ -460,7 +458,7 @@ description = "Python documentation generator"
 name = "sphinx"
 optional = false
 python-versions = ">=3.5"
-version = "2.4.1"
+version = "2.4.2"
 
 [package.dependencies]
 Jinja2 = ">=2.3"
@@ -645,8 +643,8 @@ alabaster = [
     {file = "alabaster-0.7.12.tar.gz", hash = "sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02"},
 ]
 apispec = [
-    {file = "apispec-3.2.0-py2.py3-none-any.whl", hash = "sha256:f2ecb3a6534cfb42cf69b5c1222d2c0e695aab5ec3d7edde31b7354670948f05"},
-    {file = "apispec-3.2.0.tar.gz", hash = "sha256:c1625ae910f699c9adb21928693a3245b9faab6843f1b1c94ab2d505549cd78a"},
+    {file = "apispec-3.3.0-py2.py3-none-any.whl", hash = "sha256:9bf4e51d56c9067c60668b78210ae213894f060f85593dc2ad8805eb7d875a2a"},
+    {file = "apispec-3.3.0.tar.gz", hash = "sha256:419d0564b899e182c2af50483ea074db8cb05fee60838be58bb4542095d5c08d"},
 ]
 appdirs = [
     {file = "appdirs-1.4.3-py2.py3-none-any.whl", hash = "sha256:d8b24664561d0d34ddfaec54636d502d7cea6e29c3eaf68f3df6180863e2166e"},
@@ -965,8 +963,8 @@ snowballstemmer = [
     {file = "snowballstemmer-2.0.0.tar.gz", hash = "sha256:df3bac3df4c2c01363f3dd2cfa78cce2840a79b9f1c2d2de9ce8d31683992f52"},
 ]
 sphinx = [
-    {file = "Sphinx-2.4.1-py3-none-any.whl", hash = "sha256:5024a67f065fe60d9db2005580074d81f22a02dd8f00a5b1ec3d5f4d42bc88d8"},
-    {file = "Sphinx-2.4.1.tar.gz", hash = "sha256:f929b72e0cfe45fa581b8964d54457117863a6a6c9369ecc1a65b8827abd3bf2"},
+    {file = "Sphinx-2.4.2-py3-none-any.whl", hash = "sha256:543d39db5f82d83a5c1aa0c10c88f2b6cff2da3e711aa849b2c627b4b403bbd9"},
+    {file = "Sphinx-2.4.2.tar.gz", hash = "sha256:525527074f2e0c2585f68f73c99b4dc257c34bbe308b27f5f8c7a6e20642742f"},
 ]
 sphinxcontrib-applehelp = [
     {file = "sphinxcontrib-applehelp-1.0.1.tar.gz", hash = "sha256:edaa0ab2b2bc74403149cb0209d6775c96de797dfd5b5e2a71981309efab3897"},
