@@ -54,7 +54,20 @@
       </div>
 
       <div class="uk-navbar-right">
-        <ZipDownloader :capture-ids="Object.keys(filteredCaptures)" />
+        <div class="uk-grid">
+          <div>
+            <button
+              type="button"
+              class="uk-button uk-button-default uk-form-small uk-width-1-1"
+              @click="updateCaptures()"
+            >
+              Refresh Captures
+            </button>
+          </div>
+          <div>
+            <ZipDownloader :capture-ids="Object.keys(filteredCaptures)" />
+          </div>
+        </div>
       </div>
     </nav>
 
