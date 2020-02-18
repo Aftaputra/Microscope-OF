@@ -10,6 +10,11 @@ def build_gui_from_dict(gui_description, extension_object):
     # Expand shorthand routes into full relative URLs
     if "forms" in gui_description and isinstance(api_gui["forms"], list):
         for form in api_gui["forms"]:
+            # Clean leading slashes from rule
+            if "route" in form:
+                while form["route"][0] == "/":
+                    form["route"] = form["route"][1:]
+            # Match rule in extension object
             if "route" in form and form["route"] in extension_object._rules.keys():
                 form["route"] = extension_object._rules[form["route"]]["rule"]
             else:

@@ -32,7 +32,8 @@ class OpenflexureSettingsFile:
         self.path = path
 
         # Initialise basic config file with defaults if it doesn't exist
-        initialise_file(self.path, populate=defaults)
+        defaults_str = json.dumps(defaults, cls=JSONEncoder, indent=2, sort_keys=True)
+        initialise_file(self.path, populate=defaults_str)
 
     def load(self) -> dict:
         """
