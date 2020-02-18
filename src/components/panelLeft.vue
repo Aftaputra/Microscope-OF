@@ -50,6 +50,7 @@
         :key="plugin.id"
         :require-connection="plugin.requiresConnection"
         :current-tab="currentTab"
+        :click-callback="updatePlugins"
         @set-tab="setTab"
       >
         <i class="material-icons">{{ plugin.icon || "extension" }}</i>
@@ -115,6 +116,7 @@
               :is-task="form.isTask"
               :submit-label="form.submitLabel"
               :schema="form.schema"
+              :emit-on-response="form.emitOnResponse"
               @reloadForms="updatePlugins()"
             />
             <hr />

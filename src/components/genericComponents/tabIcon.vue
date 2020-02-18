@@ -23,6 +23,11 @@ export default {
       type: String,
       required: true
     },
+    clickCallback: {
+      type: Function,
+      required: false,
+      default: null
+    },
     requireConnection: Boolean
   },
 
@@ -43,6 +48,9 @@ export default {
   methods: {
     setThisTab(event) {
       this.$emit("set-tab", event, this.id);
+      if (this.clickCallback) {
+        this.clickCallback();
+      }
     }
   }
 };
