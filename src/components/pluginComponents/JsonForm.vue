@@ -111,6 +111,11 @@ export default {
       type: String,
       required: false,
       default: "Submit"
+    },
+    emitOnResponse: {
+      type: String,
+      required: false,
+      default: null
     }
   },
 
@@ -201,6 +206,13 @@ export default {
       this.$emit("reloadForms");
     },
 
+    onSubmissionCompleted: function() {
+      if (this.emitOnResponse) {
+        this.$root.$emit(this.emitOnResponse);
+      }
+      this.updateForm();
+    },
+
     newQuickRequest: function(params) {
       console.log(this.submitApiUri);
       console.log(params);
@@ -210,8 +222,8 @@ export default {
         .then(response => {
           // Do something with the response
           console.log(response);
-          // Update the form data if we're self-updating
-          this.updateForm();
+          // Do all the finished request stuff
+          this.onSubmissionCompleted();
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -222,9 +234,8 @@ export default {
 
     onTaskResponse: function(responseData) {
       console.log("Task finished with response data: ", responseData);
-      if (this.selfUpdate) {
-        this.getFormData();
-      }
+      // Do all the finished request stuff
+      this.onSubmissionCompleted();
     },
 
     onTaskError: function(error) {
