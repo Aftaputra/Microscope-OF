@@ -1,12 +1,15 @@
 from labthings.server.extensions import BaseExtension
 from labthings.server.view import View
-from labthings.server.decorators import ThingProperty, PropertySchema
+from labthings.server.decorators import ThingProperty, PropertySchema, use_args
 from labthings.server import fields
 from labthings.server.find import find_component
 
 from openflexure_microscope.paths import settings_file_path, check_rw
 from openflexure_microscope.config import OpenflexureSettingsFile
 from openflexure_microscope.camera.base import BASE_CAPTURE_PATH
+from openflexure_microscope.camera.capture import build_captures_from_exif
+
+from openflexure_microscope.api.utilities.gui import build_gui
 
 from flask import abort
 import logging
@@ -158,6 +161,31 @@ class AutostorageExtension(BaseExtension):
         location = self.get_locations().get(new_path_key)
         set_current_location(self.camera, location)
 
+    def key_to_title(self, path_key: str):
+        if not path_key in self.get_locations().keys():
+            raise KeyError(f"No location named {path_key}")
+
+        return f"{path_key} ({self.get_locations().get(path_key)})"
+
+    def title_to_key(self, path_title: str):
+        matches = []
+        for loc_key in self.get_locations().keys():
+            if path_title.startswith(loc_key):
+                matches.append(loc_key)
+
+        if len(matches) > 1:
+            logging.warning(
+                "Multiple path matches found. Weird, but carrying on using zeroth."
+            )
+
+        return matches[0]
+
+    def get_titles(self):
+        return [self.key_to_title(key) for key in self.get_locations().keys()]
+
+    def get_preferred_title(self):
+        return self.key_to_title(self.get_preferred_key())
+
 
 autostorage_extension_v2 = AutostorageExtension()
 
@@ -189,5 +217,53 @@ class PreferredLocationView(View):
         microscope.save_settings()
 
 
+class PreferredLocationGUIView(View):
+    @use_args({"new_path_title": fields.String(required=True)})
+    def post(self, args):
+        global autostorage_extension_v2
+
+        new_path_title = args.get("new_path_title")
+        logging.debug(new_path_title)
+
+        new_path_key = autostorage_extension_v2.title_to_key(new_path_title)
+        logging.debug(f"{new_path_key}")
+
+        autostorage_extension_v2.set_preferred_key(new_path_key)
+
+        logging.debug("Restoring captures...")
+        autostorage_extension_v2.camera.rebuild_captures()
+
+        return new_path_title
+
+
+def dynamic_form():
+    global autostorage_extension_v2
+    return {
+        "icon": "sd_storage",
+        "forms": [
+            {
+                "name": "Autostorage",
+                "isCollapsible": False,
+                "isTask": False,
+                "route": "/location-from-title",
+                "submitLabel": "Set path",
+                "schema": [
+                    {
+                        "fieldType": "selectList",
+                        "name": "new_path_title",
+                        "label": "Capture storage path",
+                        "options": autostorage_extension_v2.get_titles(),
+                        "value": autostorage_extension_v2.get_preferred_title(),
+                    }
+                ],
+            }
+        ],
+    }
+
+
 autostorage_extension_v2.add_view(GetLocationsView, "list-locations")
 autostorage_extension_v2.add_view(PreferredLocationView, "location")
+autostorage_extension_v2.add_view(PreferredLocationGUIView, "location-from-title")
+autostorage_extension_v2.add_meta(
+    "gui", build_gui(dynamic_form, autostorage_extension_v2)
+)
