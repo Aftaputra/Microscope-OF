@@ -8,7 +8,7 @@ import logging
 
 from abc import ABCMeta, abstractmethod
 
-from .capture import CaptureObject
+from .capture import CaptureObject, build_captures_from_exif
 from openflexure_microscope.utilities import entry_by_uuid
 from labthings.core.lock import StrictLock
 
@@ -176,6 +176,9 @@ class BaseCamera(metaclass=ABCMeta):
             logging.info("Clearing {}...".format(self.paths["temp"]))
             shutil.rmtree(self.paths["temp"])
             logging.debug("Cleared {}.".format(self.paths["temp"]))
+
+    def rebuild_captures(self):
+        self.images = build_captures_from_exif(self.paths["default"])
 
     # START AND STOP WORKER THREAD
 
