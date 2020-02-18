@@ -7,8 +7,6 @@ def build_gui_from_dict(gui_description, extension_object):
     # Make a working copy of GUI description
     api_gui = copy.deepcopy(gui_description)
 
-    logging.debug(extension_object._rules)
-
     # Expand shorthand routes into full relative URLs
     if "forms" in gui_description and isinstance(api_gui["forms"], list):
         for form in api_gui["forms"]:
@@ -18,7 +16,6 @@ def build_gui_from_dict(gui_description, extension_object):
                     form["route"] = form["route"][1:]
             # Match rule in extension object
             if "route" in form and form["route"] in extension_object._rules.keys():
-                logging.debug(f"Expanding {form}")
                 form["route"] = extension_object._rules[form["route"]]["rule"]
             else:
                 logging.warn(
