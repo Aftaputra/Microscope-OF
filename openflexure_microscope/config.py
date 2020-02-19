@@ -32,8 +32,7 @@ class OpenflexureSettingsFile:
         self.path = path
 
         # Initialise basic config file with defaults if it doesn't exist
-        defaults_str = json.dumps(defaults, cls=JSONEncoder, indent=2, sort_keys=True)
-        initialise_file(self.path, populate=defaults_str)
+        initialise_file(self.path, populate=defaults)
 
     def load(self) -> dict:
         """
@@ -102,7 +101,6 @@ class JSONEncoder(flask.json.JSONEncoder):
             # call base class implementation which takes care of
             # raising exceptions for unsupported types
             return flask.json.JSONEncoder.default(self, o)
-
 
 
 # HANDLE BASIC LOADING AND SAVING OF SETTINGS FILES
