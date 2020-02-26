@@ -356,7 +356,7 @@ export default {
 
       // Scan params
       payload.grid = [this.scanSteps.x, this.scanSteps.y, this.scanSteps.z];
-      payload.step_size = [
+      payload.stride_size = [
         this.scanStepSize.x,
         this.scanStepSize.y,
         this.scanStepSize.z
