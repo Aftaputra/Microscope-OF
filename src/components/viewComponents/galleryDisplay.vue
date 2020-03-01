@@ -85,7 +85,7 @@
         >
         <div class="uk-margin-left">
           <h3 class="uk-margin-remove uk-margin-left">
-            <b>SCAN</b> {{ allScans[galleryFolder].metadata.filename }}
+            <b>SCAN</b> {{ allScans[galleryFolder].metadata.image.name }}
           </h3>
         </div>
       </div>
