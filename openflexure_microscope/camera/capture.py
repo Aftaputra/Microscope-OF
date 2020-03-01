@@ -10,6 +10,8 @@ from PIL import Image
 import dateutil.parser
 import atexit
 
+from collections import OrderedDict
+
 from openflexure_microscope.camera import piexif
 from openflexure_microscope.camera.piexif._exceptions import InvalidImageDataError
 from openflexure_microscope.config import JSONEncoder
@@ -58,7 +60,7 @@ def build_captures_from_exif(capture_path):
 
     logging.debug("Reloading captures from {}...".format(capture_path))
     files = make_file_list(capture_path, EXIF_FORMATS)
-    captures = []
+    captures = OrderedDict()
 
     for f in files:
         logging.debug("Reloading capture {}...".format(f))
@@ -66,7 +68,7 @@ def build_captures_from_exif(capture_path):
         if exif:
             capture = capture_from_exif(f, exif)
             if capture:
-                captures.append(capture)
+                captures[capture.id] = capture
         else:
             logging.error("Invalid data at {}. Skipping.".format(f))
 

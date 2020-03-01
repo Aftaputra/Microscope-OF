@@ -7,6 +7,7 @@ import datetime
 import logging
 
 from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
 
 from .capture import CaptureObject, build_captures_from_exif
 from openflexure_microscope.utilities import entry_by_uuid
@@ -113,8 +114,8 @@ class BaseCamera(metaclass=ABCMeta):
         self.paths = {"default": BASE_CAPTURE_PATH, "temp": TEMP_CAPTURE_PATH}
 
         # Capture data
-        self.images = []
-        self.videos = []
+        self.images = OrderedDict()
+        self.videos = OrderedDict()
 
     @property
     @abstractmethod
@@ -158,7 +159,7 @@ class BaseCamera(metaclass=ABCMeta):
         """Close the BaseCamera and all attached StreamObjects."""
         logging.info("Closing {}".format(self))
         # Close all StreamObjects
-        for capture_list in [self.images, self.videos]:
+        for capture_list in [self.images.values(), self.videos.values()]:
             for stream_object in capture_list:
                 stream_object.close()
         # Empty temp directory
@@ -244,20 +245,22 @@ class BaseCamera(metaclass=ABCMeta):
     @property
     def image(self):
         """Return the latest captured image."""
-        return last_entry(self.images)
+        return last_entry(self.images.values())
 
     @property
     def video(self):
         """Return the latest recorded video."""
-        return last_entry(self.videos)
+        return last_entry(self.videos.values())
 
     def image_from_id(self, image_id):
         """Return an image StreamObject with a matching ID."""
-        return entry_by_uuid(image_id, self.images)
+        logging.warning("image_from_id is deprecated. Access captures as a dictionary.")
+        return entry_by_uuid(image_id, self.images.values())
 
     def video_from_id(self, video_id):
         """Return a video StreamObject with a matching ID."""
-        return entry_by_uuid(video_id, self.videos)
+        logging.warning("video_from_id is deprecated. Access captures as a dictionary.")
+        return entry_by_uuid(video_id, self.videos.values())
 
     # CREATING NEW CAPTURES
 
@@ -282,7 +285,7 @@ class BaseCamera(metaclass=ABCMeta):
 
         # Generate file name
         if not filename:
-            filename = generate_numbered_basename(self.images)
+            filename = generate_numbered_basename(self.images.values())
             logging.debug(filename)
         filename = "{}.{}".format(filename, fmt)
 
@@ -300,7 +303,7 @@ class BaseCamera(metaclass=ABCMeta):
             output.put_tags(["temporary"])
 
         # Update capture list
-        self.images.append(output)
+        self.images[output.id] = output
 
         return output
 
@@ -322,10 +325,11 @@ class BaseCamera(metaclass=ABCMeta):
             folder (str): Name of the folder in which to store the capture.
             fmt (str): Format of the capture.
         """
+        # TODO: Remove the redundancy here
 
         # Generate file name
         if not filename:
-            filename = generate_numbered_basename(self.videos)
+            filename = generate_numbered_basename(self.videos.values())
             logging.debug(filename)
         filename = "{}.{}".format(filename, fmt)
 
@@ -343,7 +347,7 @@ class BaseCamera(metaclass=ABCMeta):
             output.put_tags(["temporary"])
 
         # Update capture list
-        self.videos.append(output)
+        self.videos[output.id] = output
 
         return output
 

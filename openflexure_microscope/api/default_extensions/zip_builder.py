@@ -81,8 +81,7 @@ class ZipManager:
 
         # Get array of captures from IDs
         capture_list = [
-            microscope.camera.image_from_id(capture_id)
-            for capture_id in capture_id_list
+            microscope.camera.images.get(capture_id) for capture_id in capture_id_list
         ]
         # Remove Nones from list (missing/invalid captures)
         capture_list = [capture for capture in capture_list if capture]

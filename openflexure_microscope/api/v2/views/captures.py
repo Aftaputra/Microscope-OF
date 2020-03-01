@@ -20,6 +20,7 @@ class InstrumentSchema(Schema):
     settings = fields.Dict()
     state = fields.Dict()
 
+
 class CaptureMetadataImageSchema(Schema):
     id = fields.UUID()
     acquisitionDate = fields.String(format="date")
@@ -35,6 +36,7 @@ class CaptureMetadataSchema(Schema):
     dataset = fields.Dict()  # TODO: Make schema
     image = fields.Nested(CaptureMetadataImageSchema())
     instrument = fields.Nested(InstrumentSchema())
+
 
 class CaptureSchema(Schema):
     id = fields.String()
@@ -98,7 +100,7 @@ class CaptureList(View):
         List all image captures
         """
         microscope = find_component("org.openflexure.microscope")
-        image_list = microscope.camera.images
+        image_list = microscope.camera.images.values()
         return image_list
 
 
@@ -110,7 +112,7 @@ class CaptureView(View):
         Description of a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -122,12 +124,15 @@ class CaptureView(View):
         Delete a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
+        # Delete the capture file
         capture_obj.delete()
+        # Delete from capture list
+        del microscope.camera.images[id]
 
         return "", 204
 
@@ -140,7 +145,7 @@ class CaptureDownload(View):
         Image data for a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -175,7 +180,7 @@ class CaptureTags(View):
         Get tags associated with a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -187,7 +192,7 @@ class CaptureTags(View):
         Add tags to a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -207,7 +212,7 @@ class CaptureTags(View):
         Delete tags from a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -230,7 +235,7 @@ class CaptureAnnotations(View):
         Get annotations associated with a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -242,7 +247,7 @@ class CaptureAnnotations(View):
         Update metadata for a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
