@@ -7,7 +7,7 @@
     <!-- Vertical tab bar -->
     <div
       id="switcher-left"
-      class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1"
+      class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1 uk-text-center"
     >
       <tabIcon
         id="status"
@@ -254,7 +254,7 @@ export default {
 }
 
 #switcher-left a {
-  padding: 10px 16px;
+  padding: 10px 8px;
 }
 
 #switcher-left {

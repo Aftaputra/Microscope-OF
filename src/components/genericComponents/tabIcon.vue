@@ -7,6 +7,9 @@
     @click="setThisTab"
   >
     <slot></slot>
+    <div class="tabtitle">
+      {{ title }}
+    </div>
   </a>
 </template>
 
@@ -32,9 +35,15 @@ export default {
   },
 
   computed: {
+    title: function() {
+      // Get the last section of a fully qualified name
+      var topName = this.id.split(".").pop();
+      // Make first character uppercase, then add the rest of the string
+      return topName.charAt(0).toUpperCase() + topName.slice(1);
+    },
+
     tooltipOptions: function() {
-      var title = this.id.charAt(0).toUpperCase() + this.id.slice(1);
-      return `pos: right; title: ${title}; delay: 500`;
+      return `pos: right; title: ${this.title}; delay: 500`;
     },
 
     classObject: function() {
@@ -68,5 +77,15 @@ export default {
   .tabicon-active {
     color: @inverse-primary-muted-color !important;
   }
+}
+
+.tabtitle {
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tabtitle a :hover {
+  text-decoration: none;
 }
 </style>
