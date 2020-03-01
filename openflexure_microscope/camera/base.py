@@ -303,7 +303,9 @@ class BaseCamera(metaclass=ABCMeta):
             output.put_tags(["temporary"])
 
         # Update capture list
-        self.images[output.id] = output
+        capture_key = str(output.id)
+        logging.debug(f"Adding image {output} with key {capture_key}")
+        self.images[capture_key] = output
 
         return output
 
@@ -347,7 +349,9 @@ class BaseCamera(metaclass=ABCMeta):
             output.put_tags(["temporary"])
 
         # Update capture list
-        self.videos[output.id] = output
+        capture_key = str(output.id)
+        logging.debug(f"Adding video {output} with key {capture_key}")
+        self.videos[capture_key] = output
 
         return output
 
