@@ -85,7 +85,8 @@ export default {
   text-overflow: ellipsis;
 }
 
-.tabtitle a :hover {
-  text-decoration: none;
+a:hover,
+.uk-link:hover {
+  text-decoration: none !important;
 }
 </style>
