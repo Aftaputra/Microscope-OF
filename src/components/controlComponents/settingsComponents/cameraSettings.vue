@@ -3,7 +3,7 @@
     <form @submit.prevent="applyConfigRequest">
       <div v-if="settings.picamera">
         <!--PiCamera settings block-->
-        <div v-if="settings.picamera.shutter_speed">
+        <div v-if="settings.picamera.shutter_speed !== undefined">
           <label class="uk-form-label" for="form-stacked-text"
             >Exposure time</label
           >
@@ -16,7 +16,7 @@
           </div>
         </div>
 
-        <div v-if="settings.picamera.analog_gain">
+        <div v-if="settings.picamera.analog_gain !== undefined">
           <label class="uk-form-label" for="form-stacked-text"
             >Analogue gain</label
           >
@@ -30,7 +30,7 @@
           </div>
         </div>
 
-        <div v-if="settings.picamera.digital_gain">
+        <div v-if="settings.picamera.digital_gain !== undefined">
           <label class="uk-form-label" for="form-stacked-text"
             >Digital gain</label
           >
