@@ -34,7 +34,7 @@ build:
   script:
     - npm install
     - npm run build:app
-    - npm run release
+    - if [ "$CI_COMMIT_REF_NAME" == "stable"]; then npm run release; else npm run release:pre; fi
 
   artifacts:
     name: "dist"

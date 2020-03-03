@@ -1,0 +1,15 @@
+extends: app/builder-config-base.yaml
+artifactName: ${name}-${os}-${arch}.${ext}
+electronVersion: 3.0.13
+linux:
+  target:
+    - target: deb
+      arch:
+        - armv7l
+    - target: appImage
+      arch:
+        - armv7l
+  icon: app/icons/png/
+  category: Science
+deb:
+  fpm: ['--architecture', 'armhf']

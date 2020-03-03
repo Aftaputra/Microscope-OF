@@ -23,6 +23,7 @@
     "dist:dmg": "electron-builder --mac --config app/builder-config-x86_64.yaml",
     "dist:appx": "electron-builder --win --config app/builder-config-appx.yaml",
     "release": "electron-builder --linux --config app/builder-config-raspi.yaml & electron-builder --win --linux --config app/builder-config-x86_64.yaml",
+    "release:pre": "electron-builder --linux --config app/builder-config-raspi-pre.yaml & electron-builder --win --linux --config app/builder-config-x86_64-pre.yaml",
     "make-icons": "electron-icon-builder --input=./app/icons/icon_base.png --output=./app/"
   },
   "dependencies": {
