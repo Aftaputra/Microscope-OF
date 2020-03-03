@@ -1,4 +1,4 @@
-from openflexure_microscope import Microscope
+from openflexure_microscope.microscope import Microscope
 
 import logging
 

@@ -98,7 +98,9 @@ def capture_from_exif(path, exif_dict):
     try:
         image_metadata = exif_dict.pop("image")
     except KeyError as e:
-        logging.error(f"Unable to obtain OpenFlexure metadata from file {path}")
+        logging.error(
+            f"Unable to obtain valid 2.0 OpenFlexure metadata from file {path}"
+        )
         return None
 
     # Populate capture parameters
