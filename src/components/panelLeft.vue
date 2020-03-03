@@ -48,6 +48,7 @@
         v-for="plugin in pluginsGuiList"
         :id="plugin.id"
         :key="plugin.id"
+        :title="plugin.title"
         :require-connection="plugin.requiresConnection"
         :current-tab="currentTab"
         :click-callback="updatePlugins"

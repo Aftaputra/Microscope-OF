@@ -8,7 +8,7 @@
   >
     <slot></slot>
     <div class="tabtitle">
-      {{ title }}
+      {{ computedTitle }}
     </div>
   </a>
 </template>
@@ -21,6 +21,11 @@ export default {
     id: {
       type: String,
       required: true
+    },
+    title: {
+      type: String,
+      required: false,
+      default: undefined
     },
     currentTab: {
       type: String,
@@ -35,15 +40,19 @@ export default {
   },
 
   computed: {
-    title: function() {
-      // Get the last section of a fully qualified name
-      var topName = this.id.split(".").pop();
-      // Make first character uppercase, then add the rest of the string
-      return topName.charAt(0).toUpperCase() + topName.slice(1);
+    computedTitle: function() {
+      if (this.title !== undefined) {
+        return this.title;
+      } else {
+        // Get the last section of a fully qualified name
+        var topName = this.id.split(".").pop();
+        // Make first character uppercase, then add the rest of the string
+        return topName.charAt(0).toUpperCase() + topName.slice(1);
+      }
     },
 
     tooltipOptions: function() {
-      return `pos: right; title: ${this.title}; delay: 500`;
+      return `pos: right; title: ${this.computedTitle}; delay: 500`;
     },
 
     classObject: function() {
