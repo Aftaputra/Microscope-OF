@@ -240,6 +240,7 @@ def dynamic_form():
     autostorage_extension_v2.check_location()
     return {
         "icon": "sd_storage",
+        "title": "Storage",
         "forms": [
             {
                 "name": "Autostorage",
