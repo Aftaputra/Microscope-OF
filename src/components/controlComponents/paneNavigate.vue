@@ -90,6 +90,7 @@
 
               <p>
                 <button
+                  type="submit"
                   class="uk-button uk-button-default uk-form-small uk-float-right uk-width-1-1"
                 >
                   Move
