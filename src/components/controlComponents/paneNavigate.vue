@@ -1,150 +1,153 @@
 <template>
   <div id="paneNavigate">
-    <ul uk-accordion="multiple: true; animation: false">
-      <li>
-        <a class="uk-accordion-title" href="#">Configure</a>
-        <div class="uk-accordion-content">
-          <div class="uk-child-width-1-2" uk-grid>
-            <div>
-              <label class="uk-form-label" for="form-stacked-text"
-                >x-y step size</label
-              >
-              <div class="uk-form-controls">
-                <input
-                  v-model="stepXy"
-                  class="uk-input uk-form-width-medium uk-form-small"
-                  type="number"
-                  name="inputStepXy"
-                />
+    <div v-if="setPosition">
+      <ul uk-accordion="multiple: true; animation: false">
+        <li>
+          <a class="uk-accordion-title" href="#">Configure</a>
+          <div class="uk-accordion-content">
+            <div class="uk-child-width-1-2" uk-grid>
+              <div>
+                <label class="uk-form-label" for="form-stacked-text"
+                  >x-y step size</label
+                >
+                <div class="uk-form-controls">
+                  <input
+                    v-model="stepXy"
+                    class="uk-input uk-form-width-medium uk-form-small"
+                    type="number"
+                    name="inputStepXy"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label class="uk-form-label" for="form-stacked-text"
+                  >z step size</label
+                >
+                <div class="uk-form-controls">
+                  <input
+                    v-model="stepZz"
+                    class="uk-input uk-form-width-medium uk-form-small"
+                    type="number"
+                    name="inputStepZz"
+                  />
+                </div>
               </div>
             </div>
 
-            <div>
-              <label class="uk-form-label" for="form-stacked-text"
-                >z step size</label
-              >
-              <div class="uk-form-controls">
-                <input
-                  v-model="stepZz"
-                  class="uk-input uk-form-width-medium uk-form-small"
-                  type="number"
-                  name="inputStepZz"
-                />
-              </div>
-            </div>
-          </div>
-
-          <button
-            class="uk-button uk-button-default uk-form-small uk-margin uk-width-1-1"
-            @click="zeroRequest()"
-          >
-            Zero coordinates
-          </button>
-        </div>
-      </li>
-
-      <li class="uk-open">
-        <a class="uk-accordion-title" href="#">Move-to</a>
-        <div class="uk-accordion-content">
-          <form @submit.prevent="handleSubmit">
-            <!-- Text boxes to set and view position -->
-            <div
-              v-if="setPosition"
-              class="uk-grid-small uk-child-width-1-3"
-              uk-grid
+            <button
+              class="uk-button uk-button-default uk-form-small uk-margin uk-width-1-1"
+              @click="zeroRequest()"
             >
-              <div>
-                <label class="uk-form-label" for="form-stacked-text">x</label>
-                <div class="uk-form-controls">
-                  <input
-                    v-model="setPosition.x"
-                    class="uk-input uk-form-small"
-                    type="number"
-                    name="inputPositionX"
-                  />
+              Zero coordinates
+            </button>
+          </div>
+        </li>
+
+        <li class="uk-open">
+          <a class="uk-accordion-title" href="#">Move-to</a>
+          <div class="uk-accordion-content">
+            <form @submit.prevent="handleSubmit">
+              <!-- Text boxes to set and view position -->
+
+              <div class="uk-grid-small uk-child-width-1-3" uk-grid>
+                <div>
+                  <label class="uk-form-label" for="form-stacked-text">x</label>
+                  <div class="uk-form-controls">
+                    <input
+                      v-model="setPosition.x"
+                      class="uk-input uk-form-small"
+                      type="number"
+                      name="inputPositionX"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="uk-form-label" for="form-stacked-text">y</label>
+                  <div class="uk-form-controls">
+                    <input
+                      v-model="setPosition.y"
+                      class="uk-input uk-form-small"
+                      type="number"
+                      name="inputPositionY"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="uk-form-label" for="form-stacked-text">z</label>
+                  <div class="uk-form-controls">
+                    <input
+                      v-model="setPosition.z"
+                      class="uk-input uk-form-small"
+                      type="number"
+                      name="inputPositionZx"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label class="uk-form-label" for="form-stacked-text">y</label>
-                <div class="uk-form-controls">
-                  <input
-                    v-model="setPosition.y"
-                    class="uk-input uk-form-small"
-                    type="number"
-                    name="inputPositionY"
-                  />
-                </div>
+              <p>
+                <button
+                  class="uk-button uk-button-default uk-form-small uk-float-right uk-width-1-1"
+                >
+                  Move
+                </button>
+              </p>
+            </form>
+          </div>
+        </li>
+
+        <!--Show autofocus if default plugin is enabled-->
+        <li v-show="fastAutofocusUri || normalAutofocusUri" class="uk-open">
+          <a class="uk-accordion-title" href="#">Autofocus</a>
+          <div class="uk-accordion-content">
+            <div class="uk-grid-small uk-child-width-expand" uk-grid>
+              <div v-show="!isAutofocusing || isAutofocusing == 1">
+                <taskSubmitter
+                  v-if="fastAutofocusUri"
+                  :submit-url="fastAutofocusUri"
+                  :submit-data="{ dz: 2000 }"
+                  :submit-label="'Fast'"
+                  @taskStarted="isAutofocusing = 1"
+                  @finished="isAutofocusing = 0"
+                ></taskSubmitter>
               </div>
 
-              <div>
-                <label class="uk-form-label" for="form-stacked-text">z</label>
-                <div class="uk-form-controls">
-                  <input
-                    v-model="setPosition.z"
-                    class="uk-input uk-form-small"
-                    type="number"
-                    name="inputPositionZx"
-                  />
-                </div>
+              <div v-show="!isAutofocusing || isAutofocusing == 2">
+                <taskSubmitter
+                  v-if="normalAutofocusUri"
+                  :submit-url="normalAutofocusUri"
+                  :submit-data="{ dz: [-60, -30, 0, 30, 60] }"
+                  :submit-label="'Medium'"
+                  @taskStarted="isAutofocusing = 2"
+                  @finished="isAutofocusing = 0"
+                ></taskSubmitter>
               </div>
-            </div>
 
-            <p>
-              <button
-                class="uk-button uk-button-default uk-form-small uk-float-right uk-width-1-1"
-              >
-                Move
-              </button>
-            </p>
-          </form>
-        </div>
-      </li>
-
-      <!--Show autofocus if default plugin is enabled-->
-      <li v-show="fastAutofocusUri || normalAutofocusUri" class="uk-open">
-        <a class="uk-accordion-title" href="#">Autofocus</a>
-        <div class="uk-accordion-content">
-          <div class="uk-grid-small uk-child-width-expand" uk-grid>
-            <div v-show="!isAutofocusing || isAutofocusing == 1">
-              <taskSubmitter
-                v-if="fastAutofocusUri"
-                :submit-url="fastAutofocusUri"
-                :submit-data="{ dz: 2000 }"
-                :submit-label="'Fast'"
-                @taskStarted="isAutofocusing = 1"
-                @finished="isAutofocusing = 0"
-              >
-              </taskSubmitter>
-            </div>
-
-            <div v-show="!isAutofocusing || isAutofocusing == 2">
-              <taskSubmitter
-                v-if="normalAutofocusUri"
-                :submit-url="normalAutofocusUri"
-                :submit-data="{ dz: [-60, -30, 0, 30, 60] }"
-                :submit-label="'Medium'"
-                @taskStarted="isAutofocusing = 2"
-                @finished="isAutofocusing = 0"
-              >
-              </taskSubmitter>
-            </div>
-
-            <div v-show="!isAutofocusing || isAutofocusing == 3">
-              <taskSubmitter
-                v-if="normalAutofocusUri"
-                :submit-url="normalAutofocusUri"
-                :submit-data="{ dz: [-20, -10, 0, 10, 20] }"
-                :submit-label="'Fine'"
-                @taskStarted="isAutofocusing = 3"
-                @finished="isAutofocusing = 0"
-              >
-              </taskSubmitter>
+              <div v-show="!isAutofocusing || isAutofocusing == 3">
+                <taskSubmitter
+                  v-if="normalAutofocusUri"
+                  :submit-url="normalAutofocusUri"
+                  :submit-data="{ dz: [-20, -10, 0, 10, 20] }"
+                  :submit-label="'Fine'"
+                  @taskStarted="isAutofocusing = 3"
+                  @finished="isAutofocusing = 0"
+                ></taskSubmitter>
+              </div>
             </div>
           </div>
-        </div>
-      </li>
-    </ul>
+        </li>
+      </ul>
+    </div>
+    <div v-else class="uk-text-warning">
+      <p>Stage positioning is disabled since no stage is connected.</p>
+      <p>
+        Please check all data and power connections to your motor controller
+        board.
+      </p>
+    </div>
   </div>
 </template>
 
