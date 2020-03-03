@@ -10,7 +10,7 @@
           class="uk-card uk-card-default uk-card-hover uk-padding-remove uk-width-medium connect-card-align-top"
         >
           <div class="uk-card-body uk-padding-small">
-            <form @submit.prevent="handleSubmit">
+            <form id="formConnectToHost" @submit.prevent="handleSubmit">
               <div class="uk-form-controls uk-margin">
                 <label
                   ><input
@@ -65,6 +65,8 @@
 
           <div class="uk-card-footer uk-padding-small">
             <button
+              type="submit"
+              form="formConnectToHost"
               class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
               @click="handleSubmit"
             >
