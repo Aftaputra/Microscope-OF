@@ -1,6 +1,6 @@
 {
   "name": "openflexure-ev",
-  "version": "2.0.0-beta.5",
+  "version": "2.0.0-beta.6",
   "private": true,
   "description": "An electron-based user client for the OpenFlexure Microscope Server",
   "author": "OpenFlexure <contact@openflexure.org> (https://www.openflexure.org)",
@@ -29,17 +29,17 @@
     "about-window": "^1.13.2",
     "custom-electron-titlebar": "^3.2.2",
     "electron-context-menu": "^0.15.2",
-    "electron-store": "^5.1.0",
+    "electron-store": "^5.1.1",
     "electron-updater": "^4.2.2",
     "material-design-icons": "^3.0.1"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^3.12.1",
-    "@vue/cli-service": "^4.2.2",
+    "@vue/cli-service": "^4.2.3",
     "axios": "^0.19.2",
-    "babel-eslint": "^10.0.3",
+    "babel-eslint": "^10.1.0",
     "css-loader": "^3.4.2",
-    "electron": "^6.1.7",
+    "electron": "^6.1.9",
     "electron-builder": "^21.2.0",
     "electron-icon-builder": "^1.0.2",
     "eslint": "^6.8.0",
@@ -49,7 +49,7 @@
     "less": "^3.11.1",
     "less-loader": "^5.0.0",
     "mdns-js": "^1.0.3",
-    "uikit": "^3.3.2",
+    "uikit": "^3.3.3",
     "vue": "^2.6.11",
     "vue-template-compiler": "^2.6.11",
     "vuex": "^3.1.2"
