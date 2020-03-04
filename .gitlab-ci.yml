@@ -49,6 +49,7 @@ build:
   only:
     - merge_requests
     - stable
+    - master
     - web
 
 
