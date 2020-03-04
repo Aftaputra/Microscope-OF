@@ -34,6 +34,8 @@ build:
   script:
     # Install node dependencies
     - npm install
+    # Create build directory
+    - mkdir -p "release-builds"
     # Build eV-Lite for microscope server
     - npm run build:lite
     - tar -czvf "./release-builds/openflexure-ev-lite-${CI_COMMIT_REF_NAME}.tar.gz" -C "./dist-lite" .
