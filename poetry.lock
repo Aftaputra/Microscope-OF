@@ -281,7 +281,7 @@ marshmallow = "^3.4.0"
 webargs = "^5.5.3"
 
 [package.source]
-reference = "028e21cb5b53cc8feeea3af7a0579fde67a54daf"
+reference = "2abec0a200e3dbeb8afc8549342328be2357578e"
 type = "git"
 url = "https://github.com/labthings/python-labthings.git"
 [[package]]
@@ -700,7 +700,7 @@ version = "1.11.2"
 rpi = ["picamera", "RPi.GPIO"]
 
 [metadata]
-content-hash = "ad29f5c7d3a9ac55697f3d74f7b1c992cb2617039cbcab23caa0221f8ed4718a"
+content-hash = "4058356cd5db8d9653dd5f7204d691ca07a108936b76136d7332d6eba83029b6"
 python-versions = "^3.6"
 
 [metadata.files]
