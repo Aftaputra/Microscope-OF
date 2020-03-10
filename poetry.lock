@@ -281,7 +281,7 @@ marshmallow = "^3.4.0"
 webargs = "^5.5.3"
 
 [package.source]
-reference = "7413d4d0fd30ef534a710c0c1cfbbfbdba7eab8d"
+reference = "028e21cb5b53cc8feeea3af7a0579fde67a54daf"
 type = "git"
 url = "https://github.com/labthings/python-labthings.git"
 [[package]]
