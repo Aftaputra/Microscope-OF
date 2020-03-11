@@ -2,7 +2,7 @@
 
 import time
 import atexit
-import logging
+import logging, logging.handlers
 import os
 import pkg_resources
 
@@ -30,32 +30,25 @@ from openflexure_microscope.api.microscope import default_microscope as api_micr
 from openflexure_microscope.api.v2 import views
 
 # Handle logging
-is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
-
 DEFAULT_LOGFILE = logs_file_path("openflexure_microscope.log")
 
 logger = logging.getLogger()
-if (__name__ == "__main__") or (not is_gunicorn):
-    # If imported, but not by gunicorn
-    print("Letting sys handle logs")
-    logger.setLevel(logging.DEBUG)
-else:
-    # Direct standard Python logging to file and console
-    error_formatter = logging.Formatter(
-        "[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s"
-    )
 
-    rotating_logfile = logging.handlers.RotatingFileHandler(
-        DEFAULT_LOGFILE, maxBytes=1_000_000, backupCount=7
-    )
+error_formatter = logging.Formatter(
+    "[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s"
+)
 
-    error_handlers = [rotating_logfile, logging.StreamHandler()]
+rotating_logfile = logging.handlers.RotatingFileHandler(
+    DEFAULT_LOGFILE, maxBytes=1_000_000, backupCount=7
+)
 
-    for handler in error_handlers:
-        handler.setFormatter(error_formatter)
-        logger.addHandler(handler)
+error_handlers = [rotating_logfile, logging.StreamHandler()]
 
-    logger.setLevel(logging.getLogger("gunicorn.error").level)
+for handler in error_handlers:
+    handler.setFormatter(error_formatter)
+    logger.addHandler(handler)
+
+logger.setLevel(logging.INFO)
 
 
 # Log server paths being used
