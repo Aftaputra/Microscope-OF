@@ -6,7 +6,7 @@ from functools import wraps
 def clean_rule(rule: str):
     while rule[0] == "/":
         rule = rule[1:]
-    return f"/{rule}"
+    return f"{rule}"
 
 
 def build_gui_from_dict(gui_description, extension_object):
