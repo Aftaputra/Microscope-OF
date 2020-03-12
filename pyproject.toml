@@ -36,6 +36,7 @@ pyserial = "^3.4" # Used for sangaboard (basic_serial_instrument) until we move 
 labthings = { git = "https://github.com/labthings/python-labthings.git", branch = "master"} # TODO: Pin to a fixed version before 2.0.0 stable
 python-dateutil = "^2.8"
 psutil = "^5.6.7" # Autostorage extension
+opencv-python-headless = "3.4.7.28"
 
 [tool.poetry.extras]
 rpi = ["picamera", "RPi.GPIO"]
