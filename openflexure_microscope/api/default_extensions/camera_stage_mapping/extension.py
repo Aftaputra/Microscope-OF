@@ -13,7 +13,7 @@ from labthings.core.tasks import taskify
 from labthings.core.utilities import get_by_path, set_by_path, create_from_path
 
 
-from flask import abort
+from flask import abort, jsonify
 
 import logging
 import time
@@ -24,46 +24,105 @@ import io
 from .camera_stage_calibration_1d import calibrate_backlash_1d, image_to_stage_displacement_from_1d
 from .camera_stage_tracker import Tracker
 
-def update_extension_settings(microscope, settings):
-    """Update the stored extension settings dictionary"""
-    keys = ["extensions","org.openflexure.camera_stage_mapping"]
-    dictionary = create_from_path(keys)
-    set_by_path(dictionary, keys, settings)
+from openflexure_microscope.utilities import axes_to_array
 
-    microscope.update_settings(dictionary)
-    microscope.save_settings()
 
-def get_extension_settings(microscope):
-    """Retrieve the settings for this extension"""
-    keys = ["extensions","org.openflexure.camera_stage_mapping"]
-    return get_by_path(microscope.read_settings, keys)
+class CSMExtension(BaseExtension):
+    """
+    Use the camera as an encoder, so we can relate camera and stage coordinates
+    """
+    def __init__(self):
+        BaseExtension.__init__(
+            self,
+            "org.openflexure.camera_stage_mapping",
+            version="0.0.1",
+        )
 
-def camera_stage_functions(microscope):
-    """Return functions that allow us to interface with the microscope"""
-    microscope.camera.start_worker() # ensure the worker thread is running, so there is an MJPEG stream
+    _microscope = None
+    @property
+    def microscope(self):
+        # TODO: does caching the microscope actually help?
+        if self._microscope is None:
+            self._microscope = find_component("org.openflexure.microscope")
+        return self._microscope
     
-    def grab_image():
-        jpeg = microscope.camera.get_frame()
-        return np.array(PIL.Image.open(io.BytesIO(jpeg)))
-    
-    def get_position():
-        return microscope.stage.position
-    
-    move = microscope.stage.move_abs
+    def update_settings(self, settings):
+        """Update the stored extension settings dictionary"""
+        keys = ["extensions",self.name]
+        dictionary = create_from_path(keys)
+        set_by_path(dictionary, keys, settings)
+        logging.info(f"Updating settings with {dictionary}")
+        self.microscope.update_settings(dictionary)
+        self.microscope.save_settings()
 
-    return grab_image, get_position, move
+    def get_settings(self):
+        """Retrieve the settings for this extension"""
+        keys = ["extensions",self.name]
+        return get_by_path(self.microscope.read_settings(), keys)
 
-def calibrate_1d(microscope, direction):
-    """Move a microscope's stage in 1D, and figure out the relationship with the camera"""
-    grab_image, get_position, move = camera_stage_functions(microscope)
+    def camera_stage_functions(self):
+        """Return functions that allow us to interface with the microscope"""
+        self.microscope.camera.start_worker() # ensure the worker thread is running, so there is an MJPEG stream
+        
+        def grab_image():
+            jpeg = self.microscope.camera.get_frame()
+            return np.array(PIL.Image.open(io.BytesIO(jpeg)))
+        
+        def get_position():
+            return self.microscope.stage.position
+        
+        move = self.microscope.stage.move_abs
 
-    def wait():
-        time.sleep(0.2)
+        return grab_image, get_position, move
 
-    tracker = Tracker(grab_image, get_position, settle=wait)
+    def calibrate_1d(self, direction):
+        """Move a microscope's stage in 1D, and figure out the relationship with the camera"""
+        grab_image, get_position, move = self.camera_stage_functions()
 
-    return calibrate_backlash_1d(tracker, move, direction)
+        def wait():
+            time.sleep(0.2)
 
+        tracker = Tracker(grab_image, get_position, settle=wait)
+
+        return calibrate_backlash_1d(tracker, move, direction)
+
+    def calibrate_xy(self):
+        """Move the microscope's stage in X and Y, to calibrate its relationship to the camera"""
+        logging.info("Calibrating X axis:")
+        cal_x = self.calibrate_1d(np.array([1,0,0]))
+        logging.info("Calibrating Y axis:")
+        cal_y = self.calibrate_1d(np.array([0,1,0]))
+        
+        # Combine X and Y calibrations to make a 2D calibration
+        cal_xy = image_to_stage_displacement_from_1d([cal_x, cal_y])
+        self.update_settings(cal_xy)
+        return {
+            "camera_stage_mapping_calibration": cal_xy,
+            "linear_calibration_x": cal_x,
+            "linear_calibration_y": cal_y,
+        }
+
+    @property
+    def image_to_stage_displacement_matrix(self):
+        try:
+            settings = self.get_settings()
+            return settings["image_to_stage_displacement"]
+        except KeyError:
+            raise ValueError("The microscope has not yet been calibrated.")
+
+    def move_in_image_coordinates(self, displacement_in_pixels):
+        """Move by a given number of pixels on the camera"""
+        p = np.array(displacement_in_pixels)
+        relative_move = np.dot(p, self.image_to_stage_displacement_matrix)
+        self.microscope.stage.move_rel([relative_move[0], relative_move[1], 0])
+
+
+
+
+csm_extension = CSMExtension()
+
+#csm_extension.add_method(calibrate_1d, "calibrate_1d") # Not needed any more??
+#csm_extension.add_method(calibrate_xy, "calibrate_xy")
 
 
 @ThingAction
@@ -74,21 +133,39 @@ class Calibrate1DView(View):
     @marshal_task
     def post(self, args):
         """Calibrate one axis of the microscope stage against the camera."""
-        microscope = find_component("org.openflexure.microscope")
         
         direction = np.array(args.get("direction"))
 
-        task = taskify(calibrate_1d)(microscope, direction)
+        task = taskify(csm_extension.calibrate_1d)(direction)
 
         return task
 
-
-
-
-
-csm_extension = BaseExtension("org.openflexure.camera_stage_mapping", version="0.0.1")
-
-csm_extension.add_method(calibrate_1d, "calibrate_1d")
-#csm_extension.add_method(calibrate_xy, "calibrate_xy")
-
 csm_extension.add_view(Calibrate1DView, "/calibrate_1d")
+
+@ThingAction
+class CalibrateXYView(View):
+    @marshal_task
+    def post(self):
+        """Calibrate both axes of the microscope stage against the camera."""
+        task = taskify(csm_extension.calibrate_xy)()
+
+        return task
+
+csm_extension.add_view(CalibrateXYView, "/calibrate_xy")
+
+
+@ThingAction
+class MoveInImageCoordinatesView(View):
+    @use_args({
+        "x": fields.Float(),#description="The number of pixels to move in X", required=True, example=100),
+        "y": fields.Float(),#description="The number of pixels to move in Y", required=True, example=100),
+    })
+    def post(self, args):
+        logging.debug("moving in pixels")
+        """Move the microscope stage, such that we move by a given number of pixels on the camera"""
+        csm_extension.move_in_image_coordinates(np.array([args.get("x"), args.get("y")]))
+        
+        return jsonify(csm_extension.microscope.state["stage"]["position"])
+
+csm_extension.add_view(MoveInImageCoordinatesView, "/move_in_image_coordinates")
+
