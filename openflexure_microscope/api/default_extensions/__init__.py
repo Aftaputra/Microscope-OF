@@ -5,6 +5,7 @@ from .autofocus import autofocus_extension_v2
 from .scan import scan_extension_v2
 from .zip_builder import zip_extension_v2
 from .autostorage import autostorage_extension_v2
+from .camera_stage_mapping import csm_extension
 
 # "Gracefully" handle cases where picamera cannot be imported (eg test server)
 try:
