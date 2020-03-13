@@ -181,14 +181,10 @@ export default {
       this.modalConfirm("Shut down microscope?").then(
         () => {
           if ("shutdown" in this.systemActionLinks) {
-            axios
-              .post(this.systemActionLinks.shutdown)
-              .catch(error => {
-                this.modalError(error); // Let mixin handle error
-              })
-              .finally(() => {
-                this.$store.commit("resetState");
-              });
+            this.$store.commit("resetState");
+            axios.post(this.systemActionLinks.shutdown).catch(error => {
+              console.log(error); // Be quiet when empty response is recieved
+            });
           }
         },
         () => {}
@@ -198,14 +194,10 @@ export default {
       this.modalConfirm("Restart microscope?").then(
         () => {
           if ("reboot" in this.systemActionLinks) {
-            axios
-              .post(this.systemActionLinks.reboot)
-              .catch(error => {
-                this.modalError(error); // Let mixin handle error
-              })
-              .finally(() => {
-                this.$store.commit("resetState");
-              });
+            this.$store.commit("resetState");
+            axios.post(this.systemActionLinks.reboot).catch(error => {
+              console.log(error); // Be quiet when empty response is recieved
+            });
           }
         },
         () => {}
