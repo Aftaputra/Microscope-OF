@@ -48,7 +48,7 @@
       <div class="uk-grid-small uk-child-width-1-2" uk-grid>
         <div>
           <button
-            v-if="'shutdown' in systemActionLinks"
+            v-show="'shutdown' in systemActionLinks"
             class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
             @click="shutdownRequest"
           >
@@ -58,7 +58,7 @@
 
         <div>
           <button
-            v-if="'reboot' in systemActionLinks"
+            v-show="'reboot' in systemActionLinks"
             class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
             @click="rebootRequest"
           >
@@ -155,14 +155,20 @@ export default {
         .get(this.actionsUri)
         .then(response => {
           if ("reboot" in response.data) {
-            this.systemActionLinks.reboot =
-              response.data.reboot.links.self.href;
+            this.$set(
+              this.systemActionLinks,
+              "reboot",
+              response.data.reboot.links.self.href
+            );
           } else {
             delete this.systemActionLinks.reboot;
           }
           if ("shutdown" in response.data) {
-            this.systemActionLinks.shutdown =
-              response.data.shutdown.links.self.href;
+            this.$set(
+              this.systemActionLinks,
+              "shutdown",
+              response.data.shutdown.links.self.href
+            );
           } else {
             delete this.systemActionLinks.shutdown;
           }
@@ -177,11 +183,11 @@ export default {
           if ("shutdown" in this.systemActionLinks) {
             axios
               .post(this.systemActionLinks.shutdown)
-              .then(() => {
-                this.$store.commit("resetState");
-              })
               .catch(error => {
                 this.modalError(error); // Let mixin handle error
+              })
+              .finally(() => {
+                this.$store.commit("resetState");
               });
           }
         },
@@ -194,11 +200,11 @@ export default {
           if ("reboot" in this.systemActionLinks) {
             axios
               .post(this.systemActionLinks.reboot)
-              .then(() => {
-                this.$store.commit("resetState");
-              })
               .catch(error => {
                 this.modalError(error); // Let mixin handle error
+              })
+              .finally(() => {
+                this.$store.commit("resetState");
               });
           }
         },
