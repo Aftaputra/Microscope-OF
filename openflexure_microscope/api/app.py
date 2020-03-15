@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+from gevent import monkey
+
+# Patch most system modules. Leave threads untouched so we can still use them normally if needed.
+monkey.patch_all(thread=False)
 
 import time
 import atexit
@@ -175,4 +179,4 @@ if __name__ == "__main__":
     from labthings.server.wsgi import Server
 
     server = Server(app)
-    server.run(host="0.0.0.0", port=5000, debug=True)
+    server.run(host="0.0.0.0", port=5000, debug=False)
