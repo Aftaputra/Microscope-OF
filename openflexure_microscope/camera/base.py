@@ -181,65 +181,6 @@ class BaseCamera(metaclass=ABCMeta):
     def rebuild_captures(self):
         self.images = build_captures_from_exif(self.paths["default"])
 
-    # START AND STOP WORKER THREAD
-
-    def start_worker(self, timeout: int = 5) -> bool:
-        """Start the background camera thread if it isn't running yet."""
-        timeout_time = time.time() + timeout
-
-        self.last_access = time.time()
-        self.stop = False
-
-        if not self.stream_active:
-            # start background frame thread
-            self.thread = threading.Thread(target=self._thread)
-            self.thread.daemon = True
-            self.thread.start()
-
-            # wait until frames are available
-            logging.info("Waiting for frames")
-            while self.get_frame() is None:
-                if time.time() > timeout_time:
-                    raise TimeoutError("Timeout waiting for frames.")
-                else:
-                    time.sleep(0.1)
-        return True
-
-    def stop_worker(self, timeout: int = 5) -> bool:
-        """Flag worker thread for stop. Waits for thread close or timeout."""
-        logging.debug("Stopping worker thread")
-        timeout_time = time.time() + timeout
-
-        if self.stream_active:
-            self.stop = True
-            self.thread.join()  # Wait for stream thread to exit
-            logging.debug("Waiting for stream thread to exit.")
-
-        while self.stream_active:
-            if time.time() > timeout_time:
-                logging.debug("Timeout waiting for worker thread close.")
-                raise TimeoutError("Timeout waiting for worker thread close.")
-            else:
-                time.sleep(0.1)
-        return True
-
-    # HANDLE STREAM FRAMES
-
-    def get_frame(self):
-        """Return the current camera frame."""
-        self.last_access = time.time()
-
-        # wait for a signal from the camera thread
-        self.event.wait()
-        self.event.clear()
-
-        return self.frame
-
-    @abstractmethod
-    def frames(self):
-        """Create generator that returns frames from the camera."""
-        pass
-
     # RETURNING CAPTURES
 
     @property
@@ -355,6 +296,65 @@ class BaseCamera(metaclass=ABCMeta):
 
         return output
 
+    # START AND STOP WORKER THREAD
+
+    def start_worker(self, timeout: int = 5) -> bool:
+        """Start the background camera thread if it isn't running yet."""
+        timeout_time = time.time() + timeout
+
+        self.last_access = time.time()
+        self.stop = False
+
+        if not self.stream_active:
+            # start background frame thread
+            self.thread = threading.Thread(target=self._thread)
+            self.thread.daemon = True
+            self.thread.start()
+
+            # wait until frames are available
+            logging.info("Waiting for frames")
+            while self.get_frame() is None:
+                if time.time() > timeout_time:
+                    raise TimeoutError("Timeout waiting for frames.")
+                else:
+                    time.sleep(0.1)
+        return True
+
+    def stop_worker(self, timeout: int = 5) -> bool:
+        """Flag worker thread for stop. Waits for thread close or timeout."""
+        logging.debug("Stopping worker thread")
+        timeout_time = time.time() + timeout
+
+        if self.stream_active:
+            self.stop = True
+            self.thread.join()  # Wait for stream thread to exit
+            logging.debug("Waiting for stream thread to exit.")
+
+        while self.stream_active:
+            if time.time() > timeout_time:
+                logging.debug("Timeout waiting for worker thread close.")
+                raise TimeoutError("Timeout waiting for worker thread close.")
+            else:
+                time.sleep(0.1)
+        return True
+
+    # HANDLE STREAM FRAMES
+
+    def get_frame(self):
+        """Return the current camera frame."""
+        self.last_access = time.time()
+
+        # wait for a signal from the camera thread
+        self.event.wait()
+        self.event.clear()
+
+        return self.frame
+
+    @abstractmethod
+    def frames(self):
+        """Create generator that returns frames from the camera."""
+        pass
+
     # WORKER THREAD
 
     def _thread(self):
@@ -365,6 +365,7 @@ class BaseCamera(metaclass=ABCMeta):
         self.stream_active = True
 
         for frame in self.frames_iterator:
+            print(f"Generated new frame in mjpeg thread at {time.time()}")
             self.frame = frame
             self.event.set()  # send signal to clients
             time.sleep(0)
