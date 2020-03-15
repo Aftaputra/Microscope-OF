@@ -3,6 +3,7 @@ import time
 import os
 import shutil
 import threading
+import gevent.event
 import datetime
 import logging
 
@@ -61,7 +62,7 @@ class CameraEvent(object):
             # this is a new client
             # add an entry for it in the self.events dict
             # each entry has two elements, a threading.Event() and a timestamp
-            self.events[ident] = [threading.Event(), time.time()]
+            self.events[ident] = [gevent.event.Event(), time.time()]
         return self.events[ident][0].wait(timeout)
 
     def set(self):
