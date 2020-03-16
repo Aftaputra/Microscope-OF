@@ -61,7 +61,6 @@
     <!-- Corresponding vertical tab content -->
     <div
       id="container-left"
-      :hidden="!showControlBar"
       class="uk-padding-remove uk-height-1-1 uk-width-expand"
     >
       <div
@@ -135,11 +134,17 @@ import axios from "axios";
 import tabIcon from "./genericComponents/tabIcon";
 import tabContent from "./genericComponents/tabContent";
 
-// Import pane components
+// Import control components
 import paneStatus from "./controlComponents/paneStatus";
 import paneNavigate from "./controlComponents/paneNavigate";
 import paneCapture from "./controlComponents/paneCapture";
 import paneSettings from "./controlComponents/paneSettings";
+
+// Import view components
+import connectDisplay from "./viewComponents/connectDisplay.vue";
+import connectDisplayLite from "./viewComponents/connectDisplayLite.vue";
+import streamDisplay from "./viewComponents/streamDisplay.vue";
+import galleryDisplay from "./viewComponents/galleryDisplay.vue";
 
 // Import plugin components
 import JsonForm from "./pluginComponents/JsonForm";
@@ -162,7 +167,6 @@ export default {
     return {
       plugins: [],
       currentTab: "status",
-      showControlBar: true,
       unwatchStoreFunction: null
     };
   },
@@ -225,11 +229,7 @@ export default {
         });
     },
     setTab: function(event, tab) {
-      if (this.currentTab == tab) {
-        this.showControlBar = !this.showControlBar;
-        this.currentTab = "none";
-      } else {
-        this.showControlBar = true;
+      if (!(this.currentTab == tab)) {
         this.currentTab = tab;
       }
     }
@@ -239,7 +239,7 @@ export default {
 
 <style scoped lang="less">
 #component-left {
-  width: 300px;
+  width: 100%;
 }
 
 #container-left {
