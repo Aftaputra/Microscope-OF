@@ -1,5 +1,5 @@
 <template>
-  <div id="paneCapture">
+  <div id="paneCapture" class="uk-padding-small">
     <div>
       <label class="uk-form-label" for="form-stacked-text">Filename</label>
       <input

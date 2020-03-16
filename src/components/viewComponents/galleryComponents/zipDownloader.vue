@@ -63,8 +63,19 @@ export default {
     }
   },
 
-  mounted() {
-    this.updateZipperUri();
+  created: function() {
+    // Watch for host 'ready', then update status
+    this.unwatchStoreFunction = this.$store.watch(
+      (state, getters) => {
+        return getters.ready;
+      },
+      ready => {
+        if (ready) {
+          // If the connection is now ready, update zipper URL
+          this.updateZipperUri();
+        }
+      }
+    );
   },
 
   methods: {

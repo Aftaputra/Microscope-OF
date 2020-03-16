@@ -1,5 +1,5 @@
 <template>
-  <div class="host-input">
+  <div class="host-input uk-padding-small">
     <div v-if="configuration && $store.getters.ready">
       <div>
         <div class="uk-margin-small-bottom">
