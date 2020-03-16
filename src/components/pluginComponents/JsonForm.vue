@@ -203,6 +203,7 @@ export default {
 
     updateForm() {
       // Trigger a plugin form update
+      console.log("Emitting reloadForms");
       this.$emit("reloadForms");
     },
 

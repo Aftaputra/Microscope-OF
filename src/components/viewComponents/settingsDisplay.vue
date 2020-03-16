@@ -6,13 +6,17 @@
         <appSettings />
         <streamSettings />
       </div>
-      <div v-if="$store.getters.ready">
-        <h3>Camera settings</h3>
-        <cameraSettings />
+      <div>
+        <div v-if="$store.getters.ready">
+          <h3>Camera settings</h3>
+          <cameraSettings />
+        </div>
       </div>
-      <div v-if="$store.getters.ready">
-        <h3>Microscope settings</h3>
-        <microscopeSettings />
+      <div>
+        <div v-if="$store.getters.ready">
+          <h3>Microscope settings</h3>
+          <microscopeSettings />
+        </div>
       </div>
     </div>
   </div>

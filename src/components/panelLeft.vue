@@ -122,7 +122,7 @@
           :key="`${form.route}/${form.name}`.replace(/\s+/g, '-').toLowerCase()"
           class="uk-flex uk-flex-column"
         >
-          <JsonForm
+          <extensionContent
             :name="form.name"
             :route="form.route"
             :is-task="form.isTask"
@@ -145,16 +145,13 @@ import axios from "axios";
 import tabIcon from "./genericComponents/tabIcon";
 import tabContent from "./genericComponents/tabContent";
 
-// Import control components
-import paneNavigate from "./controlComponents/paneNavigate";
-import paneCapture from "./controlComponents/paneCapture";
-
 // Import new content components
 import connectContent from "./tabContentComponents/connectContent.vue";
 import navigateContent from "./tabContentComponents/navigateContent.vue";
 import captureContent from "./tabContentComponents/captureContent.vue";
 import settingsContent from "./tabContentComponents/settingsContent.vue";
 import galleryContent from "./tabContentComponents/galleryContent.vue";
+import extensionContent from "./tabContentComponents/extensionContent.vue";
 
 // Import plugin components
 import JsonForm from "./pluginComponents/JsonForm";
@@ -166,14 +163,13 @@ export default {
   components: {
     tabIcon,
     tabContent,
-    paneNavigate,
-    paneCapture,
     JsonForm,
     connectContent,
     navigateContent,
     captureContent,
     settingsContent,
-    galleryContent
+    galleryContent,
+    extensionContent
   },
 
   data: function() {
