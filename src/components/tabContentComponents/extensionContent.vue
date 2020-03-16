@@ -4,18 +4,20 @@
     <div class="control-component">
       <JsonForm v-bind="$props" v-on="$listeners" />
     </div>
-    <div class="view-component uk-width-expand"></div>
+    <div class="view-component uk-width-expand"><streamDisplay /></div>
   </div>
 </template>
 
 <script>
 import JsonForm from "../pluginComponents/JsonForm";
+import streamDisplay from "../viewComponents/streamDisplay.vue";
 
 export default {
   name: "ExtensionContent",
 
   components: {
-    JsonForm
+    JsonForm,
+    streamDisplay
   },
 
   props: {
