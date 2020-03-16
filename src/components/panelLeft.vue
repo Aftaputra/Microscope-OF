@@ -10,6 +10,7 @@
       class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1 uk-text-center"
     >
       <tabIcon
+        v-show="!liteMode"
         id="connect"
         :require-connection="false"
         :current-tab="currentTab"
@@ -153,9 +154,6 @@ import settingsContent from "./tabContentComponents/settingsContent.vue";
 import galleryContent from "./tabContentComponents/galleryContent.vue";
 import extensionContent from "./tabContentComponents/extensionContent.vue";
 
-// Import plugin components
-import JsonForm from "./pluginComponents/JsonForm";
-
 // Export main app
 export default {
   name: "PanelLeft",
@@ -163,7 +161,6 @@ export default {
   components: {
     tabIcon,
     tabContent,
-    JsonForm,
     connectContent,
     navigateContent,
     captureContent,
@@ -176,7 +173,8 @@ export default {
     return {
       plugins: [],
       currentTab: "connect",
-      unwatchStoreFunction: null
+      unwatchStoreFunction: null,
+      liteMode: process.env.VUE_APP_LITEMODE == "true" ? true : false
     };
   },
 
