@@ -120,7 +120,7 @@
         <div
           v-for="form in plugin.forms"
           :key="`${form.route}/${form.name}`.replace(/\s+/g, '-').toLowerCase()"
-          class="uk-flex uk-flex-column"
+          class="uk-height-1-1 uk-width-1-1"
         >
           <extensionContent
             :name="form.name"

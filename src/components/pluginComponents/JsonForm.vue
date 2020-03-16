@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="uk-padding-small">
     <div class="uk-flex">
       <div class="uk-text-bold uk-text-uppercase uk-width-expand">
         {{ name }}
