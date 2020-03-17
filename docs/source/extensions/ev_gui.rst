@@ -53,6 +53,10 @@ Each form is described by a JSON object, with the following properties:
 
 ``schema`` - List of dictionaries. Each dictionary element describes a form component.
 
+``viewPanel`` *(optional)* - Content to display to the right of the extension form. Either ``stream`` (default), ``gallery``, or ``settings``.
+
+``emitOnResponse`` *(optional)* - OpenFlexure eV event to emit when a response is recieved from the extension (generally avoid unless you know you need this.)
+
 Component level
 +++++++++++++++
 

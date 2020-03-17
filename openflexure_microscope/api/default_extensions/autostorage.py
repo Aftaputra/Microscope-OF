@@ -248,6 +248,7 @@ def dynamic_form():
                 "isTask": False,
                 "route": "/location-from-title",
                 "emitOnResponse": "globalUpdateCaptures",
+                "viewPanel": "gallery",
                 "submitLabel": "Set path",
                 "schema": [
                     {
