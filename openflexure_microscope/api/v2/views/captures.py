@@ -207,7 +207,7 @@ class CaptureTags(View):
 
         return jsonify(capture_obj.tags)
 
-    def delete(self, capture_id):
+    def delete(self, id):
         """
         Delete tags from a single image capture
         """
