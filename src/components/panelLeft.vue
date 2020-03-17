@@ -130,6 +130,7 @@
             :submit-label="form.submitLabel"
             :schema="form.schema"
             :emit-on-response="form.emitOnResponse"
+            :view-panel="form.viewPanel"
             @reloadForms="updatePlugins()"
           />
           <hr />

@@ -4,20 +4,28 @@
     <div class="control-component">
       <JsonForm v-bind="$props" v-on="$listeners" />
     </div>
-    <div class="view-component uk-width-expand"><streamDisplay /></div>
+    <div class="view-component uk-width-expand">
+      <galleryDisplay v-if="viewPanel == 'gallery'" />
+      <settingsDisplay v-else-if="viewPanel == 'settings'" />
+      <streamDisplay v-else />
+    </div>
   </div>
 </template>
 
 <script>
 import JsonForm from "../pluginComponents/JsonForm";
 import streamDisplay from "../viewComponents/streamDisplay.vue";
+import galleryDisplay from "../viewComponents/galleryDisplay.vue";
+import settingsDisplay from "../viewComponents/settingsDisplay.vue";
 
 export default {
   name: "ExtensionContent",
 
   components: {
     JsonForm,
-    streamDisplay
+    streamDisplay,
+    galleryDisplay,
+    settingsDisplay
   },
 
   props: {
@@ -48,6 +56,11 @@ export default {
       type: String,
       required: false,
       default: null
+    },
+    viewPanel: {
+      type: String,
+      required: false,
+      default: "stream"
     }
   }
 };
