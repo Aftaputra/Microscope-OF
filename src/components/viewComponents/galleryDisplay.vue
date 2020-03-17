@@ -9,14 +9,14 @@
       >
         <ul class="uk-navbar-nav">
           <li :class="[sortDescending ? 'uk-active' : '']">
-            <a class="uk-icon" href="#" @click="sortDescending = true"
-              ><i class="material-icons">keyboard_arrow_down</i></a
-            >
+            <a class="uk-icon" href="#" @click="sortDescending = true">
+              <i class="material-icons">keyboard_arrow_down</i>
+            </a>
           </li>
           <li :class="[!sortDescending ? 'uk-active' : '']">
-            <a class="uk-icon" href="#" @click="sortDescending = false"
-              ><i class="material-icons">keyboard_arrow_up</i></a
-            >
+            <a class="uk-icon" href="#" @click="sortDescending = false">
+              <i class="material-icons">keyboard_arrow_up</i>
+            </a>
           </li>
           <li>
             <a href="#">Filter</a>
@@ -34,8 +34,8 @@
                     :key="tag"
                     class="uk-margin-small"
                   >
-                    <label
-                      ><input
+                    <label>
+                      <input
                         :id="tag"
                         v-model="checkedTags"
                         class="uk-checkbox"
@@ -43,8 +43,8 @@
                         :value="tag"
                         checked
                       />
-                      {{ tag }}</label
-                    >
+                      {{ tag }}
+                    </label>
                   </div>
                 </form>
               </ul>
@@ -80,12 +80,17 @@
         v-if="galleryFolder"
         class="uk-flex uk-flex-middle uk-padding uk-padding-remove-horizontal uk-padding-remove-bottom"
       >
-        <a href="#" class="uk-icon uk-margin-remove" @click="galleryFolder = ''"
-          ><i class="material-icons">arrow_back</i></a
+        <a
+          href="#"
+          class="uk-icon uk-margin-remove"
+          @click="galleryFolder = ''"
         >
+          <i class="material-icons">arrow_back</i>
+        </a>
         <div class="uk-margin-left">
           <h3 class="uk-margin-remove uk-margin-left">
-            <b>SCAN</b> {{ allScans[galleryFolder].metadata.image.name }}
+            <b>SCAN</b>
+            {{ allScans[galleryFolder].metadata.image.name }}
           </h3>
         </div>
       </div>
@@ -267,6 +272,8 @@ export default {
   },
 
   mounted() {
+    // Update on mount (does nothing if not connected)
+    this.updateCaptures();
     // A global signal listener to perform a gallery refresh
     this.$root.$on("globalUpdateCaptures", () => {
       this.updateCaptures();
@@ -309,15 +316,19 @@ export default {
 
   methods: {
     updateCaptures: function() {
-      console.log("Updating capture list...");
-      axios
-        .get(this.capturesUri)
-        .then(response => {
-          this.captures = response.data;
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
+      if (this.$store.state.available) {
+        console.log("Updating capture list...");
+        axios
+          .get(this.capturesUri)
+          .then(response => {
+            this.captures = response.data;
+          })
+          .catch(error => {
+            this.modalError(error); // Let mixin handle error
+          });
+      } else {
+        console.log("Delaying capture update until connection is available");
+      }
     },
 
     filterCaptures: function(list, filterTags) {

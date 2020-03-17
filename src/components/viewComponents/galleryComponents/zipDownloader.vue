@@ -63,6 +63,10 @@ export default {
     }
   },
 
+  mounted: function() {
+    this.updateZipperUri();
+  },
+
   created: function() {
     // Watch for host 'ready', then update status
     this.unwatchStoreFunction = this.$store.watch(
@@ -80,23 +84,28 @@ export default {
 
   methods: {
     updateZipperUri: function() {
-      axios
-        .get(this.pluginsUri) // Get a list of plugins
-        .then(response => {
-          var plugins = response.data;
-          var foundExtension = plugins.find(
-            e => e.title === "org.openflexure.zipbuilder"
-          );
-          // if ZipBuilderPlugin is enabled
-          if (foundExtension) {
-            // Get plugin action links
-            this.zipBuilderUri = foundExtension.links.build.href;
-            this.zipGetterUri = foundExtension.links.get.href;
-          }
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
+      if (this.$store.state.available) {
+        axios
+          .get(this.pluginsUri) // Get a list of plugins
+          .then(response => {
+            var plugins = response.data;
+            var foundExtension = plugins.find(
+              e => e.title === "org.openflexure.zipbuilder"
+            );
+            // if ZipBuilderPlugin is enabled
+            if (foundExtension) {
+              // Get plugin action links
+              this.zipBuilderUri = foundExtension.links.build.href;
+              this.zipGetterUri = foundExtension.links.get.href;
+            }
+          })
+          .catch(error => {
+            this.modalError(error); // Let mixin handle error
+          });
+      } else {
+        this.zipBuilderUri = null;
+        this.zipGetterUri = null;
+      }
     },
 
     resetZipper: function() {
