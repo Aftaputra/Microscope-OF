@@ -1,6 +1,6 @@
 <template>
   <div
-    class="captureCard uk-card uk-card-primary uk-card-hover uk-padding-remove uk-width-medium"
+    class="capture-card uk-card uk-card-primary uk-card-hover uk-padding-remove uk-width-medium"
   >
     <div class="uk-card-media-top">
       <a href="#">

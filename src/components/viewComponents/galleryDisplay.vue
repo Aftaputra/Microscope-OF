@@ -1,9 +1,11 @@
 <template>
   <div class="galleryDisplay uk-padding uk-padding-remove-top">
+    <!-- Gallery nav bar -->
     <nav
-      class="uk-navbar-container uk-navbar-transparent navbar"
+      class="gallery-navbar uk-navbar-container uk-navbar-transparent"
       uk-navbar="mode: click"
     >
+      <!-- Left side controls -->
       <div
         class="uk-navbar-left uk-padding-remove-top uk-padding-remove-bottom"
       >
@@ -53,6 +55,7 @@
         </ul>
       </div>
 
+      <!-- Right side buttons -->
       <div class="uk-navbar-right">
         <div class="uk-grid">
           <div>
@@ -71,14 +74,16 @@
       </div>
     </nav>
 
+    <!-- Gallery -->
     <div
       v-if="$store.getters.ready"
       class="uk-padding-remove-top"
       uk-lightbox="toggle: .lightbox-link"
     >
+      <!-- Folder heading -->
       <div
         v-if="galleryFolder"
-        class="uk-flex uk-flex-middle uk-padding uk-padding-remove-horizontal uk-padding-remove-bottom"
+        class="gallery-folder-heading uk-flex uk-flex-middle"
       >
         <a
           href="#"
@@ -95,7 +100,8 @@
         </div>
       </div>
 
-      <div class="uk-grid-medium uk-grid-match uk-margin-top" uk-grid>
+      <!-- Gallery capture cards -->
+      <div class="gallery-grid">
         <div v-for="item in sortedItems" :key="item.metadata.id">
           <scanCard
             v-if="'isScan' in item"
@@ -374,9 +380,29 @@ export default {
 </script>
 
 <style scoped lang="less">
-.navbar {
+.gallery-navbar {
   border-width: 0 0 1px 0;
   border-style: solid;
   border-color: rgba(180, 180, 180, 0.25);
+}
+.gallery-navbar,
+.gallery-folder-heading {
+  margin-bottom: 30px;
+}
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 320px);
+  justify-content: center;
+}
+.gallery-grid > div {
+  display: inline-block;
+  margin-bottom: 20px;
+}
+
+/deep/ .capture-card {
+  width: 300px;
+  height: 100%; // Used to have all cards in a row match their heights
+  margin-left: auto;
+  margin-right: auto;
 }
 </style>
