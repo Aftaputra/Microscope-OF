@@ -88,7 +88,11 @@ class Microscope:
             stage_type = configuration["stage"].get("type")
             stage_port = configuration["stage"].get("port")
             if stage_type in ("SangaBoard", "SangaStage"):
-                self.stage = SangaStage(port=stage_port)
+                try:
+                    self.stage = SangaStage(port=stage_port)
+                except Exception as e:
+                    logging.error(e)
+                    logging.warning("No compatible Sangaboard hardware found.")
 
         ### Fallbacks
         if not self.camera:
