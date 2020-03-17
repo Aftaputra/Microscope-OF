@@ -366,7 +366,6 @@ class BaseCamera(metaclass=ABCMeta):
         self.stream_active = True
 
         for frame in self.frames_iterator:
-            print(f"Generated new frame in mjpeg thread at {time.time()}")
             self.frame = frame
             self.event.set()  # send signal to clients
             time.sleep(0)
