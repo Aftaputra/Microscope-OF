@@ -7,24 +7,20 @@
       >
     </p>
 
-    <div class="uk-child-width-1-2" uk-grid>
-      <p>
-        <label :class="[{ 'uk-disabled': !this.$store.getters.ready }]"
-          ><input
-            v-model="autoGpuPreview"
-            class="uk-checkbox"
-            type="checkbox"
-          />
-          GPU preview</label
-        >
-      </p>
-      <p>
-        <label :class="[{ 'uk-disabled': !this.$store.getters.ready }]"
-          ><input v-model="trackWindow" class="uk-checkbox" type="checkbox" />
-          Track window</label
-        >
-      </p>
-    </div>
+    <hr />
+
+    <p>
+      <label :class="[{ 'uk-disabled': !this.$store.getters.ready }]"
+        ><input v-model="autoGpuPreview" class="uk-checkbox" type="checkbox" />
+        GPU preview</label
+      >
+    </p>
+    <p>
+      <label :class="[{ 'uk-disabled': !this.$store.getters.ready }]"
+        ><input v-model="trackWindow" class="uk-checkbox" type="checkbox" />
+        Track window</label
+      >
+    </p>
   </div>
 </template>
 

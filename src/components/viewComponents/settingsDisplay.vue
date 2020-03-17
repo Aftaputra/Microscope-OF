@@ -1,19 +1,22 @@
 <template>
-  <div id="settingsDisplay" class="uk-padding">
-    <div class="uk-child-width-expand@m" uk-grid>
-      <div>
-        <h3>System settings</h3>
-        <appSettings />
-        <streamSettings />
+  <div id="settingsDisplay" class="uk-padding uk-height-1-1">
+    <div class="uk-height-1-1 uk-child-width-expand@m" uk-grid>
+      <div class="uk-padding-remove">
+        <div class="settings-pane uk-padding-small">
+          <h3>System settings</h3>
+          <appSettings />
+          <hr />
+          <streamSettings />
+        </div>
       </div>
-      <div>
-        <div v-if="$store.getters.ready">
+      <div class="uk-padding-remove">
+        <div v-if="$store.getters.ready" class="settings-pane uk-padding-small">
           <h3>Camera settings</h3>
           <cameraSettings />
         </div>
       </div>
-      <div>
-        <div v-if="$store.getters.ready">
+      <div class="uk-padding-remove">
+        <div v-if="$store.getters.ready" class="settings-pane uk-padding-small">
           <h3>Microscope settings</h3>
           <microscopeSettings />
         </div>
@@ -41,4 +44,11 @@ export default {
 };
 </script>
 
-<style lang="less"></style>
+<style lang="less">
+.settings-pane {
+  border-width: 0 1px 0 0;
+  border-style: solid;
+  border-color: rgba(180, 180, 180, 0.25);
+  min-height: 100%;
+}
+</style>
