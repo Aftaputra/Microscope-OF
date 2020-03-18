@@ -2,7 +2,28 @@
   <!-- Grid managing tab content -->
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <div class="control-component">
-      <JsonForm v-bind="$props" v-on="$listeners" />
+      <div v-if="webComponent">
+        <WebComponentLoader
+          :component-u-r-l="webComponent.href"
+          :component-name="webComponent.name"
+        />
+      </div>
+      <!-- Handle OpenFlexure eV Forms -->
+      <div
+        v-for="form in forms"
+        :key="`${form.route}/${form.name}`.replace(/\s+/g, '-').toLowerCase()"
+        class="uk-height-1-1 uk-width-1-1"
+      >
+        <JsonForm
+          :name="form.name"
+          :route="form.route"
+          :is-task="form.isTask"
+          :submit-label="form.submitLabel"
+          :schema="form.schema"
+          :emit-on-response="form.emitOnResponse"
+          v-on="$listeners"
+        />
+      </div>
     </div>
     <div class="view-component uk-width-expand">
       <galleryDisplay v-if="viewPanel == 'gallery'" />
@@ -14,6 +35,7 @@
 
 <script>
 import JsonForm from "../pluginComponents/JsonForm";
+import WebComponentLoader from "../pluginComponents/WebComponentLoader";
 import streamDisplay from "../viewComponents/streamDisplay.vue";
 import galleryDisplay from "../viewComponents/galleryDisplay.vue";
 import settingsDisplay from "../viewComponents/settingsDisplay.vue";
@@ -23,37 +45,20 @@ export default {
 
   components: {
     JsonForm,
+    WebComponentLoader,
     streamDisplay,
     galleryDisplay,
     settingsDisplay
   },
 
   props: {
-    name: {
-      type: String,
-      required: false,
-      default: "Plugin"
-    },
-    schema: {
+    forms: {
       type: Array,
-      required: true
-    },
-    route: {
-      type: String,
-      required: true
-    },
-    isTask: {
-      type: Boolean,
       required: false,
-      default: false
+      default: () => []
     },
-    submitLabel: {
-      type: String,
-      required: false,
-      default: "Submit"
-    },
-    emitOnResponse: {
-      type: String,
+    webComponent: {
+      type: Object,
       required: false,
       default: null
     },

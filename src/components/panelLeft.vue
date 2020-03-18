@@ -118,23 +118,12 @@
         :require-connection="plugin.requiresConnection"
         :current-tab="currentTab"
       >
-        <div
-          v-for="form in plugin.forms"
-          :key="`${form.route}/${form.name}`.replace(/\s+/g, '-').toLowerCase()"
-          class="uk-height-1-1 uk-width-1-1"
-        >
-          <extensionContent
-            :name="form.name"
-            :route="form.route"
-            :is-task="form.isTask"
-            :submit-label="form.submitLabel"
-            :schema="form.schema"
-            :emit-on-response="form.emitOnResponse"
-            :view-panel="form.viewPanel"
-            @reloadForms="updatePlugins()"
-          />
-          <hr />
-        </div>
+        <extensionContent
+          :forms="plugin.forms"
+          :web-component="plugin.wc"
+          :view-panel="plugin.viewPanel"
+          @reloadForms="updatePlugins()"
+        />
       </tabContent>
     </div>
   </div>
