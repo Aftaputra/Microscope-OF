@@ -241,6 +241,7 @@ def dynamic_form():
     return {
         "icon": "sd_storage",
         "title": "Storage",
+        "viewPanel": "gallery",
         "forms": [
             {
                 "name": "Autostorage",
@@ -248,7 +249,6 @@ def dynamic_form():
                 "isTask": False,
                 "route": "/location-from-title",
                 "emitOnResponse": "globalUpdateCaptures",
-                "viewPanel": "gallery",
                 "submitLabel": "Set path",
                 "schema": [
                     {
