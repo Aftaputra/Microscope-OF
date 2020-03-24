@@ -24,3 +24,13 @@ Once this extension is loaded, any other extensions will have access to your met
         # Call a function from your extension
         if my_found_extension:
             my_found_extension.identify()
+
+
+Subclassing ``BaseExtension``
+-------------------------------
+
+The syntax used above allows novice programmers to easily start building extensions, without having to deal with subclassing. However, for more complex extensions which require persistent state, subclassing :py:class:`labthings.server.extensions.BaseExtension` is recommended.
+
+The same simple extension as seen above can be written using subclassing:
+
+.. literalinclude:: ./example_extension/01b_basic_structure_subclass.py
