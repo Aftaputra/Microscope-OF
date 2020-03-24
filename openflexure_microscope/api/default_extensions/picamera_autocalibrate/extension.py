@@ -27,16 +27,14 @@ def pause_stream(scamera, resolution: Tuple[int, int] = None):
         streaming = scamera.stream_active
         old_resolution = scamera.camera.resolution
         if streaming:
-            logging.info("Stopping stream before recalibration")
+            logging.info("Stopping stream in pause_stream context manager")
             scamera.stop_stream_recording(resolution=resolution)
         try:
-            #if resolution is not None: # This code should be redundant...
-            #    scamera.camera.resolution = (640, 480)
             yield scamera
         finally:
             scamera.camera.resolution = old_resolution
             if streaming:
-                logging.info("Restarting stream after recalibration")
+                logging.info("Restarting stream in pause_stream context manager")
                 scamera.start_stream_recording()
 
 def recalibrate(microscope):
@@ -82,6 +80,22 @@ class FlattenLSTView(View):
             logging.exception("Error flattening the lens shading table.")
             abort(503, "Couldn't flatten the lens shading table - do you have the forked PiCamera library installed?")
 
+@ThingAction
+class DeleteLSTView(View):
+    def post(self):
+        microscope = find_component("org.openflexure.microscope")
+
+        if not microscope:
+            abort(503, "No microscope connected. Unable to flatten the lens shading table.")
+
+        try:
+            with pause_stream(microscope.camera) as scamera:
+                scamera.camera.lens_shading_table = None
+            microscope.save_settings()
+        except:
+            logging.exception("Error deleting the lens shading table.")
+            abort(503, "Couldn't flatten the lens shading table - do you have the forked PiCamera library installed?")
+
 
 lst_extension_v2 = BaseExtension(
     "org.openflexure.calibration.picamera", version="2.0.0-beta.1", description="Routines to perform flat-field correction on the camera."
@@ -93,3 +107,4 @@ lst_extension_v2.add_method(
 
 lst_extension_v2.add_view(RecalibrateView, "/recalibrate")
 lst_extension_v2.add_view(FlattenLSTView, "/flatten_lens_shading_table")
+lst_extension_v2.add_view(DeleteLSTView, "/delete_lens_shading_table")
