@@ -21,6 +21,6 @@ For offline (i.e. no real microscope connected) development, a basic development
 Managing the server
 -------------------
 
-Managing the server through the installer script's CLI is documented `on our website <https://openflexure.org/projects/microscope/install/#managing-the-microscope-server>`_.
+Managing the server through the installer script's CLI is documented `on our website <https://openflexure.org/projects/microscope/install#managing-the-microscope-server>`_.
 
 This includes starting the server as a background service, as well as starting a development server with real-time debug logging.
