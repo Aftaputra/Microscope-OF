@@ -7,10 +7,37 @@ from labthings.core.tasks import taskify
 
 from flask import abort
 
+from contextlib import contextmanager
 import logging
 
-from .recalibrate_utils import recalibrate_camera, auto_expose_and_freeze_settings
+# Type hinting
+from typing import Tuple
 
+from .recalibrate_utils import recalibrate_camera, auto_expose_and_freeze_settings, flat_lens_shading_table
+
+@contextmanager
+def pause_stream(scamera, resolution: Tuple[int, int] = None):
+    """This context manager locks a streaming camera, and pauses the stream.
+
+    The stream is re-enabled, with the original resolution, once the with
+    block has finished.
+    """
+    with scamera.lock:
+        assert not scamera.record_active, "We can't pause the camera's video stream while a recording is in progress."
+        streaming = scamera.stream_active
+        old_resolution = scamera.camera.resolution
+        if streaming:
+            logging.info("Stopping stream before recalibration")
+            scamera.stop_stream_recording(resolution=resolution)
+        try:
+            #if resolution is not None: # This code should be redundant...
+            #    scamera.camera.resolution = (640, 480)
+            yield scamera
+        finally:
+            scamera.camera.resolution = old_resolution
+            if streaming:
+                logging.info("Restarting stream after recalibration")
+                scamera.start_stream_recording()
 
 def recalibrate(microscope):
     """Reset the camera's settings.
@@ -19,24 +46,10 @@ def recalibrate(microscope):
     table such that the background is as uniform as possible
     with a gray level of 230.  It takes a little while to run.
     """
-    scamera = microscope.camera
-    with scamera.lock:
-        assert not scamera.record_active, "Can't recalibrate while recording!"
-        streaming = scamera.stream_active
-        if streaming:
-            logging.info("Stopping stream before recalibration")
-            scamera.stop_stream_recording(resolution=(640, 480))
-        old_resolution = scamera.camera.resolution
-        try:
-            scamera.camera.resolution = (640, 480)
-            auto_expose_and_freeze_settings(scamera.camera)
-            recalibrate_camera(scamera.camera)
-        finally:
-            scamera.camera.resolution = old_resolution
-            microscope.save_settings()
-            if streaming:
-                logging.info("Restarting stream after recalibration")
-                scamera.start_stream_recording()
+    with pause_stream(microscope.camera) as scamera:
+        auto_expose_and_freeze_settings(scamera.camera) # scamera.camera is the PiCamera object
+        recalibrate_camera(scamera.camera)
+    microscope.save_settings()
 
 
 @ThingAction
@@ -52,9 +65,26 @@ class RecalibrateView(View):
 
         return taskify(recalibrate)(microscope)
 
+@ThingAction
+class FlattenLSTView(View):
+    def post(self):
+        microscope = find_component("org.openflexure.microscope")
+
+        if not microscope:
+            abort(503, "No microscope connected. Unable to flatten the lens shading table.")
+
+        try:
+            with pause_stream(microscope.camera) as scamera:
+                flat_lst = flat_lens_shading_table(scamera.camera)
+                scamera.camera.lens_shading_table = flat_lst
+            microscope.save_settings()
+        except:
+            logging.exception("Error flattening the lens shading table.")
+            abort(503, "Couldn't flatten the lens shading table - do you have the forked PiCamera library installed?")
+
 
 lst_extension_v2 = BaseExtension(
-    "org.openflexure.calibration.picamera", version="2.0.0-beta.1"
+    "org.openflexure.calibration.picamera", version="2.0.0-beta.1", description="Routines to perform flat-field correction on the camera."
 )
 
 lst_extension_v2.add_method(
@@ -62,3 +92,4 @@ lst_extension_v2.add_method(
 )
 
 lst_extension_v2.add_view(RecalibrateView, "/recalibrate")
+lst_extension_v2.add_view(FlattenLSTView, "/flatten_lens_shading_table")
