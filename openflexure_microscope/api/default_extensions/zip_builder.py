@@ -6,7 +6,7 @@ from openflexure_microscope.devel import (
     update_task_progress,
 )
 
-from flask import send_file, abort
+from flask import send_file, abort, url_for
 
 import uuid
 import os
@@ -16,11 +16,54 @@ import logging
 
 from labthings.server.find import find_component
 from labthings.server.view import View
+from labthings.server.schema import Schema
+from labthings.server import fields
 from labthings.server.extensions import BaseExtension
+from labthings.server.utilities import description_from_view
 from labthings.server.decorators import (
     ThingAction,
     ThingProperty,
+    marshal_task,
+    marshal_with,
+    pre_dump,
 )
+
+
+class ZipObjectSchema(Schema):
+    id = fields.String()
+    data_size = fields.Number()
+    zip_size = fields.Number()
+    links = fields.Dict()
+
+    @pre_dump
+    def generate_links(self, data, **kwargs):
+        data.links = {
+            "download": {
+                "href": url_for(
+                    ZipGetterAPIView.endpoint, session_id=data.id, _external=True
+                ),
+                **description_from_view(ZipGetterAPIView),
+            }
+        }
+        return data
+
+
+class ZipObjectDescription:
+    def __init__(self, id, file_pointer, data_size=None):
+        self.id = id
+        self.fp = file_pointer
+        self.data_size = data_size
+        self.zip_size = os.path.getsize(self.fp.name) * 1e-6
+
+    def close(self):
+        logging.debug(self.fp.name)
+        self.fp.close()
+        os.unlink(self.fp.name)
+
+        assert not os.path.exists(self.fp.name)
+
+    def __del__(self):
+        self.close()
 
 
 class ZipManager:
@@ -38,8 +81,7 @@ class ZipManager:
 
         # Get array of captures from IDs
         capture_list = [
-            microscope.camera.image_from_id(capture_id)
-            for capture_id in capture_id_list
+            microscope.camera.images.get(capture_id) for capture_id in capture_id_list
         ]
         # Remove Nones from list (missing/invalid captures)
         capture_list = [capture for capture in capture_list if capture]
@@ -76,20 +118,23 @@ class ZipManager:
                 # Update task progress
                 update_task_progress(int((index / n_files) * 100))
 
-        session_id = uuid.uuid4()
-        session_key = str(session_id)
-        # self.session_zips[session_id] = fp
-        self.session_zips[session_key] = {
-            "id": session_id,
-            "fp": fp,
-            "data_size": data_size_megabytes,
-            "zip_size": os.path.getsize(fp.name) * 1e-6,
-        }
+        session_id = str(uuid.uuid4())
+        session_description = ZipObjectDescription(
+            session_id, fp, data_size=data_size_megabytes
+        )
+        self.session_zips[session_id] = session_description
 
-        return self.session_zips[session_key]
+        return self.session_zips[session_id]
 
-    def zip_from_id(self, session_id):
-        return self.session_zips[session_id]["fp"]
+    def marshaled_build_zip_from_capture_ids(self, *args, **kwargs):
+        return ZipObjectSchema().dump(self.build_zip_from_capture_ids(*args, **kwargs))
+
+    def zip_fp_from_id(self, session_id):
+        return self.session_zips[session_id].fp
+
+    def __del__(self):
+        for zd in self.session_zips.values():
+            zd.close()
 
 
 # Create a global ZIP manager
@@ -98,56 +143,68 @@ default_zip_manager = ZipManager()
 
 @ThingAction
 class ZipBuilderAPIView(View):
+    @marshal_task
     def post(self):
 
         ids = list(JsonResponse(request).json)
         microscope = find_component("org.openflexure.microscope")
 
-        task = taskify(default_zip_manager.build_zip_from_capture_ids)(microscope, ids)
+        task = taskify(default_zip_manager.marshaled_build_zip_from_capture_ids)(
+            microscope, ids
+        )
 
         # Return a handle on the autofocus task
-        return jsonify(task.state), 201
+        return task
 
 
 @ThingProperty
 class ZipListAPIView(View):
+    @marshal_with(ZipObjectSchema(many=True))
     def get(self):
-        return jsonify(default_zip_manager.session_zips)
+        return default_zip_manager.session_zips.values()
 
 
 class ZipGetterAPIView(View):
+    """
+    Download or delete a particular capture collection ZIP file
+    """
+
     def get(self, session_id):
+        """
+        Download a particular capture collection ZIP file
+        """
         if not session_id in default_zip_manager.session_zips:
             return abort(404)  # 404 Not Found
 
         logging.info(f"Session ID: {session_id}")
 
         return send_file(
-            default_zip_manager.zip_from_id(session_id).name,
+            default_zip_manager.zip_fp_from_id(session_id).name,
             mimetype="application/zip",
             as_attachment=True,
             attachment_filename=f"{session_id}.zip",
         )
 
     def delete(self, session_id):
+        """
+        Close and delete a particular capture collection ZIP file
+        """
         if not session_id in default_zip_manager.session_zips:
             return abort(404)  # 404 Not Found
 
-        logging.info(f"Session ID: {session_id}")
-
-        fp = default_zip_manager.zip_from_id(session_id)
-        logging.debug(fp.name)
-        fp.close()
-        os.unlink(fp.name)
-
-        assert not os.path.exists(fp.name)
-
+        # Close the file
+        default_zip_manager.session_zips[session_id].close()
+        # Delete the file reference
         del default_zip_manager.session_zips[session_id]
 
-        return jsonify({"return": session_id})
+        return {"return": session_id}
 
 
-zip_extension_v2 = BaseExtension("org.openflexure.zipbuilder", version="2.0.0-beta.1")
+zip_extension_v2 = BaseExtension(
+    "org.openflexure.zipbuilder",
+    version="2.0.0",
+    description="Build and download capture collections as ZIP files",
+)
 
 zip_extension_v2.add_view(ZipGetterAPIView, "/get/<string:session_id>")
 zip_extension_v2.add_view(ZipListAPIView, "/get")

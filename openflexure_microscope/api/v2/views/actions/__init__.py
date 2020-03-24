@@ -1,7 +1,7 @@
 """
 Top-level representation of enabled actions
 """
-
+from flask import url_for
 from . import camera, stage, system
 
 from labthings.server.view import View
@@ -74,9 +74,9 @@ class ActionsView(View):
             d = {
                 "links": {
                     "self": {
-                        "href": current_labthing().url_for(action["view_class"]),
+                        "href": url_for(action["view_class"].endpoint, _external=True),
                         "mimetype": "application/json",
-                        **description_from_view(action["view_class"])
+                        **description_from_view(action["view_class"]),
                     }
                 },
                 "rule": action["rule"],

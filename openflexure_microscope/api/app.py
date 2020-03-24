@@ -2,7 +2,7 @@
 
 import time
 import atexit
-import logging
+import logging, logging.handlers
 import os
 import pkg_resources
 
@@ -16,10 +16,10 @@ from openflexure_microscope.api.utilities import list_routes, init_default_exten
 
 from openflexure_microscope.config import JSONEncoder
 from openflexure_microscope.paths import (
-    OPENFLEXURE_ETC_PATH,
     OPENFLEXURE_VAR_PATH,
     OPENFLEXURE_EXTENSIONS_PATH,
     settings_file_path,
+    logs_file_path,
 )
 
 from labthings.server.quick import create_app
@@ -30,37 +30,29 @@ from openflexure_microscope.api.microscope import default_microscope as api_micr
 from openflexure_microscope.api.v2 import views
 
 # Handle logging
-is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
-
-DEFAULT_LOGFILE = settings_file_path("openflexure_microscope.log")
+DEFAULT_LOGFILE = logs_file_path("openflexure_microscope.log")
 
 logger = logging.getLogger()
-if (__name__ == "__main__") or (not is_gunicorn):
-    # If imported, but not by gunicorn
-    print("Letting sys handle logs")
-    logger.setLevel(logging.DEBUG)
-else:
-    # Direct standard Python logging to file and console
-    error_formatter = logging.Formatter(
-        "[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s"
-    )
 
-    rotating_logfile = logging.handlers.RotatingFileHandler(
-        DEFAULT_LOGFILE, maxBytes=1_000_000, backupCount=7
-    )
+error_formatter = logging.Formatter(
+    "[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s"
+)
 
-    error_handlers = [rotating_logfile, logging.StreamHandler()]
+rotating_logfile = logging.handlers.RotatingFileHandler(
+    DEFAULT_LOGFILE, maxBytes=1_000_000, backupCount=7
+)
 
-    for handler in error_handlers:
-        handler.setFormatter(error_formatter)
-        logger.addHandler(handler)
+error_handlers = [rotating_logfile, logging.StreamHandler()]
 
-    logger.setLevel(logging.getLogger("gunicorn.error").level)
+for handler in error_handlers:
+    handler.setFormatter(error_formatter)
+    logger.addHandler(handler)
+
+logger.setLevel(logging.INFO)
 
 
 # Log server paths being used
 logging.info(f"Running with data path {OPENFLEXURE_VAR_PATH}")
-logging.info(f"Running with server path {OPENFLEXURE_ETC_PATH}")
 
 # Create flask app
 app, labthing = create_app(
@@ -69,6 +61,7 @@ app, labthing = create_app(
     title=f"OpenFlexure Microscope {api_microscope.name}",
     description="Test LabThing-based API for OpenFlexure Microscope",
     version=pkg_resources.get_distribution("openflexure_microscope").version,
+    flask_kwargs={"static_url_path": ""},
 )
 
 # Enable CORS for some routes outside of LabThings
@@ -93,15 +86,21 @@ labthing.add_root_link(views.CaptureList, "captures")
 labthing.add_view(views.CaptureView, f"/captures/<id>")
 labthing.add_view(views.CaptureDownload, f"/captures/<id>/download/<filename>")
 labthing.add_view(views.CaptureTags, f"/captures/<id>/tags")
-labthing.add_view(views.CaptureMetadata, f"/captures/<id>/metadata")
+labthing.add_view(views.CaptureAnnotations, f"/captures/<id>/annotations")
 
-# Attach settings and status resources
-labthing.add_view(views.SettingsProperty, f"/settings")
-labthing.add_root_link(views.SettingsProperty, "settings")
-labthing.add_view(views.NestedSettingsProperty, "/settings/<path:route>")
-labthing.add_view(views.StatusProperty, "/status")
-labthing.add_view(views.NestedStatusProperty, "/status/<path:route>")
-labthing.add_root_link(views.StatusProperty, "status")
+# Attach settings and state resources
+labthing.add_view(views.SettingsProperty, f"/instrument/settings")
+labthing.add_root_link(views.SettingsProperty, "instrumentSettings")
+labthing.add_view(views.NestedSettingsProperty, "/instrument/settings/<path:route>")
+labthing.add_view(views.StateProperty, "/instrument/state")
+labthing.add_view(views.NestedStateProperty, "/instrument/state/<path:route>")
+labthing.add_root_link(views.StateProperty, "instrumentState")
+labthing.add_view(views.ConfigurationProperty, "/instrument/configuration")
+labthing.add_view(
+    views.NestedConfigurationProperty, "/instrument/configuration/<path:route>"
+)
+labthing.add_root_link(views.ConfigurationProperty, "instrumentConfiguration")
+
 
 # Attach streams resources
 labthing.add_view(views.MjpegStream, f"/streams/mjpeg")
@@ -109,10 +108,16 @@ labthing.add_view(views.SnapshotStream, f"/streams/snapshot")
 
 # Attach microscope action resources
 labthing.add_view(views.actions.ActionsView, "/actions")
+labthing.add_root_link(views.actions.ActionsView, "actions")
 for name, action in views.enabled_root_actions().items():
     view_class = action["view_class"]
     rule = action["rule"]
     labthing.add_view(view_class, f"/actions{rule}")
+
+
+@app.route("/")
+def openflexure_ev():
+    return app.send_static_file("index.html")
 
 
 @app.route("/routes")

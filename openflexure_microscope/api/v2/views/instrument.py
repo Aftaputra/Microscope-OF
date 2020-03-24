@@ -1,10 +1,6 @@
 from openflexure_microscope.api.utilities import JsonResponse
 
-from labthings.core.utilities import (
-    get_by_path,
-    set_by_path,
-    create_from_path,
-)
+from labthings.core.utilities import get_by_path, set_by_path, create_from_path
 
 from labthings.server.find import find_component
 from labthings.server.view import View
@@ -34,7 +30,7 @@ class SettingsProperty(View):
         logging.debug("Updating settings from PUT request:")
         logging.debug(payload.json)
 
-        microscope.apply_settings(payload.json)
+        microscope.update_settings(payload.json)
         microscope.save_settings()
 
         return self.get()
@@ -69,24 +65,24 @@ class NestedSettingsProperty(View):
         dictionary = create_from_path(keys)
         set_by_path(dictionary, keys, payload.json)
 
-        microscope.apply_settings(dictionary)
+        microscope.update_settings(dictionary)
         microscope.save_settings()
 
         return self.get(route)
 
 
 @ThingProperty
-class StatusProperty(View):
+class StateProperty(View):
     def get(self):
         """
         Show current read-only state of the microscope
         """
         microscope = find_component("org.openflexure.microscope")
-        return jsonify(microscope.status)
+        return jsonify(microscope.state)
 
 
 @Tag("properties")
-class NestedStatusProperty(View):
+class NestedStateProperty(View):
     @doc_response(404, description="Status key cannot be found")
     def get(self, route):
         """
@@ -96,7 +92,35 @@ class NestedStatusProperty(View):
         keys = route.split("/")
 
         try:
-            value = get_by_path(microscope.status, keys)
+            value = get_by_path(microscope.state, keys)
+        except KeyError:
+            return abort(404)
+
+        return jsonify(value)
+
+
+@ThingProperty
+class ConfigurationProperty(View):
+    def get(self):
+        """
+        Show current read-only state of the microscope
+        """
+        microscope = find_component("org.openflexure.microscope")
+        return jsonify(microscope.configuration)
+
+
+@Tag("properties")
+class NestedConfigurationProperty(View):
+    @doc_response(404, description="Configuration key cannot be found")
+    def get(self, route):
+        """
+        Show a nested section of the current microscope state
+        """
+        microscope = find_component("org.openflexure.microscope")
+        keys = route.split("/")
+
+        try:
+            value = get_by_path(microscope.configuration, keys)
         except KeyError:
             return abort(404)
 

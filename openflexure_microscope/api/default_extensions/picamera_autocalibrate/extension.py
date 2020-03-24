@@ -1,10 +1,7 @@
 from labthings.server.view import View
 from labthings.server.find import find_component
 from labthings.server.extensions import BaseExtension
-from labthings.server.decorators import (
-    marshal_task,
-    ThingAction,
-)
+from labthings.server.decorators import marshal_task, ThingAction
 
 from labthings.core.tasks import taskify
 
@@ -24,8 +21,8 @@ def recalibrate(microscope):
     """
     scamera = microscope.camera
     with scamera.lock:
-        assert not scamera.status["record_active"], "Can't recalibrate while recording!"
-        streaming = scamera.status["stream_active"]
+        assert not scamera.record_active, "Can't recalibrate while recording!"
+        streaming = scamera.stream_active
         if streaming:
             logging.info("Stopping stream before recalibration")
             scamera.stop_stream_recording(resolution=(640, 480))

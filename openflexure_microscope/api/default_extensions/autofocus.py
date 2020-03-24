@@ -1,10 +1,7 @@
 from labthings.server.find import find_component
 from labthings.server.extensions import BaseExtension
 from labthings.server.view import View
-from labthings.server.decorators import (
-    ThingAction,
-    ThingProperty,
-)
+from labthings.server.decorators import ThingAction, ThingProperty, marshal_task
 
 from openflexure_microscope.devel import JsonResponse, request, jsonify, taskify, abort
 from openflexure_microscope.utilities import set_properties
@@ -198,7 +195,7 @@ def move_and_find_focus(microscope, dz):
 
 def fast_autofocus(microscope, dz=2000, backlash=None):
     """Perform a down-up-down-up autofocus"""
-    with monitor_sharpness(microscope) as m:
+    with monitor_sharpness(microscope) as m, microscope.camera.lock:
         i, z = m.focus_rel(-dz / 2)
         i, z = m.focus_rel(dz)
         fz = m.sharpest_z_on_move(i)
@@ -211,7 +208,7 @@ def fast_autofocus(microscope, dz=2000, backlash=None):
 
 
 def fast_up_down_up_autofocus(
-    microscope, dz=2000, target_z=0, initial_move_up=True, mini_backlash=150
+    microscope, dz=2000, target_z=0, initial_move_up=True, mini_backlash=25
 ):
     """Autofocus by measuring on the way down, and moving back up with feedback.
 
@@ -242,7 +239,7 @@ def fast_up_down_up_autofocus(
             from the starting position.  Mostly useful if you're able to combine
             the initial move with something else, e.g. moving to the next scan point.
 
-        mini_backlash: (optional, default 50) is a small extra move made in step
+        mini_backlash: (optional, default 25) is a small extra move made in step
             3 to help counteract backlash.  It should be small enough that you
             would always expect there to be greater backlash than this.  Too small
             might slightly hurt accuracy, but is unlikely to be a big issue.  Too big
@@ -308,6 +305,7 @@ class AutofocusAPI(View):
     Run a standard autofocus
     """
 
+    @marshal_task
     def post(self):
         payload = JsonResponse(request)
         microscope = find_component("org.openflexure.microscope")
@@ -323,7 +321,7 @@ class AutofocusAPI(View):
             task = taskify(autofocus)(microscope, dz)
 
             # return a handle on the autofocus task
-            return jsonify(task.state), 201
+            return task
 
         else:
             abort(503, "No stage connected. Unable to autofocus.")
@@ -335,6 +333,7 @@ class FastAutofocusAPI(View):
     Run a fast autofocus
     """
 
+    @marshal_task
     def post(self):
         payload = JsonResponse(request)
         microscope = find_component("org.openflexure.microscope")
@@ -344,24 +343,27 @@ class FastAutofocusAPI(View):
 
         # Figure out the parameters to use
         dz = payload.param("dz", default=2000, convert=int)
-        backlash = payload.param("backlash", default=0, convert=int)
+        backlash = payload.param("backlash", default=25, convert=int)
         if backlash < 0:
             backlash = 0
 
         if microscope.has_real_stage():
             logging.info("Running autofocus...")
-            task = taskify(fast_autofocus)(microscope, dz, backlash=backlash)
+            task = taskify(fast_up_down_up_autofocus)(microscope, dz=dz, mini_backlash=backlash)
 
             # return a handle on the autofocus task
-            return jsonify(task.state), 201
+            return task
 
         else:
             abort(503, "No stage connected. Unable to autofocus.")
 
 
-autofocus_extension_v2 = BaseExtension("org.openflexure.autofocus", version="2.0.0-beta.1")
+autofocus_extension_v2 = BaseExtension(
+    "org.openflexure.autofocus", version="2.0.0"
+)
 
 autofocus_extension_v2.add_method(fast_autofocus, "fast_autofocus")
+autofocus_extension_v2.add_method(fast_up_down_up_autofocus, "fast_up_down_up_autofocus")
 autofocus_extension_v2.add_method(autofocus, "autofocus")
 
 autofocus_extension_v2.add_view(MeasureSharpnessAPI, "/measure_sharpness")

@@ -6,14 +6,36 @@ from openflexure_microscope.api.utilities import get_bool, JsonResponse
 from labthings.server.schema import Schema
 from labthings.server import fields
 from labthings.server.view import View
-from labthings.server.utilities import (
-    description_from_view,
-)
+from labthings.server.utilities import description_from_view
 from labthings.server.decorators import marshal_with, doc_response, Tag, ThingProperty
 
 from labthings.server.find import find_component
 
 from marshmallow import pre_dump
+
+
+class InstrumentSchema(Schema):
+    id = fields.UUID()
+    configuration = fields.Dict()
+    settings = fields.Dict()
+    state = fields.Dict()
+
+
+class CaptureMetadataImageSchema(Schema):
+    id = fields.UUID()
+    acquisitionDate = fields.String(format="date")
+    format = fields.String()
+    name = fields.String()
+    tags = fields.List(fields.String())
+    annotations = fields.Dict()
+
+
+class CaptureMetadataSchema(Schema):
+    experimenter = fields.Dict()  # TODO: Make schema
+    experimenterGroup = fields.Dict()  # TODO: Make schema
+    dataset = fields.Dict()  # TODO: Make schema
+    image = fields.Nested(CaptureMetadataImageSchema())
+    instrument = fields.Nested(InstrumentSchema())
 
 
 class CaptureSchema(Schema):
@@ -22,8 +44,8 @@ class CaptureSchema(Schema):
         data_key="path", description="Path of file on microscope device"
     )
     exists = fields.Bool(data_key="available")
-    filename = fields.String()
-    metadata = fields.Dict()
+    name = fields.String()
+    metadata = fields.Nested(CaptureMetadataSchema())
 
     links = fields.Dict()
 
@@ -41,16 +63,18 @@ class CaptureSchema(Schema):
                 "mimetype": "application/json",
                 **description_from_view(CaptureTags),
             },
-            "metadata": {
-                "href": url_for(CaptureMetadata.endpoint, id=data.id, _external=True),
+            "annotations": {
+                "href": url_for(
+                    CaptureAnnotations.endpoint, id=data.id, _external=True
+                ),
                 "mimetype": "application/json",
-                **description_from_view(CaptureMetadata),
+                **description_from_view(CaptureAnnotations),
             },
             "download": {
                 "href": url_for(
                     CaptureDownload.endpoint,
                     id=data.id,
-                    filename=data.filename,
+                    filename=data.name,
                     _external=True,
                 ),
                 "mimetype": "image/jpeg",
@@ -64,6 +88,9 @@ capture_schema = CaptureSchema()
 capture_list_schema = CaptureSchema(many=True)
 
 
+from pprint import pprint
+
+
 @ThingProperty
 @Tag("captures")
 class CaptureList(View):
@@ -73,7 +100,7 @@ class CaptureList(View):
         List all image captures
         """
         microscope = find_component("org.openflexure.microscope")
-        image_list = microscope.camera.images
+        image_list = microscope.camera.images.values()
         return image_list
 
 
@@ -85,7 +112,7 @@ class CaptureView(View):
         Description of a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -97,12 +124,15 @@ class CaptureView(View):
         Delete a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
+        # Delete the capture file
         capture_obj.delete()
+        # Delete from capture list
+        del microscope.camera.images[id]
 
         return "", 204
 
@@ -115,7 +145,7 @@ class CaptureDownload(View):
         Image data for a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -150,7 +180,7 @@ class CaptureTags(View):
         Get tags associated with a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -162,7 +192,7 @@ class CaptureTags(View):
         Add tags to a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -177,12 +207,12 @@ class CaptureTags(View):
 
         return jsonify(capture_obj.tags)
 
-    def delete(self, capture_id):
+    def delete(self, id):
         """
         Delete tags from a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -199,25 +229,25 @@ class CaptureTags(View):
 
 
 @Tag("captures")
-class CaptureMetadata(View):
+class CaptureAnnotations(View):
     def get(self, id):
         """
-        Get metadata associated with a single image capture
+        Get annotations associated with a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        return jsonify(capture_obj.metadata)
+        return jsonify(capture_obj.annotations)
 
     def put(self, id):
         """
         Update metadata for a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.camera.image_from_id(id)
+        capture_obj = microscope.camera.images.get(id)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -228,7 +258,6 @@ class CaptureMetadata(View):
         if type(data_dict) != dict:
             return abort(400)
 
-        # TODO: Allow putting system metadata maybe?
-        capture_obj.put_metadata(data_dict)
+        capture_obj.put_annotations(data_dict)
 
-        return jsonify(capture_obj.metadata)
+        return jsonify(capture_obj.annotations)

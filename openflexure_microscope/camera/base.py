@@ -7,8 +7,9 @@ import datetime
 import logging
 
 from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
 
-from .capture import CaptureObject
+from .capture import CaptureObject, build_captures_from_exif
 from openflexure_microscope.utilities import entry_by_uuid
 from labthings.core.lock import StrictLock
 
@@ -91,20 +92,6 @@ class CameraEvent(object):
 class BaseCamera(metaclass=ABCMeta):
     """
     Base implementation of StreamingCamera.
-
-    Attributes:
-        thread: Background thread reading frames from camera
-        camera: Camera object
-        lock (:py:class:`labthings.lock.StrictLock`): Strict lock controlling thread
-            access to stage hardware
-        frame (bytes): Current frame is stored here by background thread
-        last_access (time): Time of last client access to the camera
-        stream_timeout (int): Number of inactive seconds before timing out the stream
-        stream_timeout_enabled (bool): Enable or disable timing out the stream
-        status (dict): Dictionary for capture state
-        paths (dict): Dictionary of capture paths
-        images (list): List of image capture objects
-        videos (list): List of video capture objects
     """
 
     def __init__(self):
@@ -121,16 +108,33 @@ class BaseCamera(metaclass=ABCMeta):
         self.stream_timeout = 20
         self.stream_timeout_enabled = False
 
-        self.status = {"board": None}
+        self.stream_active = False
+        self.record_active = False
 
         self.paths = {"default": BASE_CAPTURE_PATH, "temp": TEMP_CAPTURE_PATH}
 
         # Capture data
-        self.images = []
-        self.videos = []
+        self.images = OrderedDict()
+        self.videos = OrderedDict()
+
+    @property
+    @abstractmethod
+    def configuration(self):
+        """The current camera configuration."""
+        pass
+
+    @property
+    @abstractmethod
+    def state(self):
+        """The current read-only camera state."""
+        pass
+
+    @property
+    def settings(self):
+        return self.read_settings()
 
     @abstractmethod
-    def apply_settings(self, config: dict):
+    def update_settings(self, config: dict):
         """Update settings from a config dictionary"""
         with self.lock:
             # Apply valid config params to camera object
@@ -142,10 +146,6 @@ class BaseCamera(metaclass=ABCMeta):
     def read_settings(self) -> dict:
         """Return the current settings as a dictionary"""
         return {"paths": self.paths}
-
-    def save_settings(self):
-        """(Optional) Save any settings to disk that need to be stored"""
-        return
 
     def __enter__(self):
         """Create camera on context enter."""
@@ -159,7 +159,7 @@ class BaseCamera(metaclass=ABCMeta):
         """Close the BaseCamera and all attached StreamObjects."""
         logging.info("Closing {}".format(self))
         # Close all StreamObjects
-        for capture_list in [self.images, self.videos]:
+        for capture_list in [self.images.values(), self.videos.values()]:
             for stream_object in capture_list:
                 stream_object.close()
         # Empty temp directory
@@ -178,6 +178,9 @@ class BaseCamera(metaclass=ABCMeta):
             shutil.rmtree(self.paths["temp"])
             logging.debug("Cleared {}.".format(self.paths["temp"]))
 
+    def rebuild_captures(self):
+        self.images = build_captures_from_exif(self.paths["default"])
+
     # START AND STOP WORKER THREAD
 
     def start_worker(self, timeout: int = 5) -> bool:
@@ -187,7 +190,7 @@ class BaseCamera(metaclass=ABCMeta):
         self.last_access = time.time()
         self.stop = False
 
-        if not self.status["stream_active"]:
+        if not self.stream_active:
             # start background frame thread
             self.thread = threading.Thread(target=self._thread)
             self.thread.daemon = True
@@ -207,12 +210,12 @@ class BaseCamera(metaclass=ABCMeta):
         logging.debug("Stopping worker thread")
         timeout_time = time.time() + timeout
 
-        if self.status["stream_active"]:
+        if self.stream_active:
             self.stop = True
             self.thread.join()  # Wait for stream thread to exit
             logging.debug("Waiting for stream thread to exit.")
 
-        while self.status["stream_active"]:
+        while self.stream_active:
             if time.time() > timeout_time:
                 logging.debug("Timeout waiting for worker thread close.")
                 raise TimeoutError("Timeout waiting for worker thread close.")
@@ -242,20 +245,22 @@ class BaseCamera(metaclass=ABCMeta):
     @property
     def image(self):
         """Return the latest captured image."""
-        return last_entry(self.images)
+        return last_entry(self.images.values())
 
     @property
     def video(self):
         """Return the latest recorded video."""
-        return last_entry(self.videos)
+        return last_entry(self.videos.values())
 
     def image_from_id(self, image_id):
         """Return an image StreamObject with a matching ID."""
-        return entry_by_uuid(image_id, self.images)
+        logging.warning("image_from_id is deprecated. Access captures as a dictionary.")
+        return entry_by_uuid(image_id, self.images.values())
 
     def video_from_id(self, video_id):
         """Return a video StreamObject with a matching ID."""
-        return entry_by_uuid(video_id, self.videos)
+        logging.warning("video_from_id is deprecated. Access captures as a dictionary.")
+        return entry_by_uuid(video_id, self.videos.values())
 
     # CREATING NEW CAPTURES
 
@@ -280,7 +285,7 @@ class BaseCamera(metaclass=ABCMeta):
 
         # Generate file name
         if not filename:
-            filename = generate_numbered_basename(self.images)
+            filename = generate_numbered_basename(self.images.values())
             logging.debug(filename)
         filename = "{}.{}".format(filename, fmt)
 
@@ -298,7 +303,9 @@ class BaseCamera(metaclass=ABCMeta):
             output.put_tags(["temporary"])
 
         # Update capture list
-        self.images.append(output)
+        capture_key = str(output.id)
+        logging.debug(f"Adding image {output} with key {capture_key}")
+        self.images[capture_key] = output
 
         return output
 
@@ -320,10 +327,11 @@ class BaseCamera(metaclass=ABCMeta):
             folder (str): Name of the folder in which to store the capture.
             fmt (str): Format of the capture.
         """
+        # TODO: Remove the redundancy here
 
         # Generate file name
         if not filename:
-            filename = generate_numbered_basename(self.videos)
+            filename = generate_numbered_basename(self.videos.values())
             logging.debug(filename)
         filename = "{}.{}".format(filename, fmt)
 
@@ -341,7 +349,9 @@ class BaseCamera(metaclass=ABCMeta):
             output.put_tags(["temporary"])
 
         # Update capture list
-        self.videos.append(output)
+        capture_key = str(output.id)
+        logging.debug(f"Adding video {output} with key {capture_key}")
+        self.videos[capture_key] = output
 
         return output
 
@@ -352,7 +362,7 @@ class BaseCamera(metaclass=ABCMeta):
         self.frames_iterator = self.frames()
         logging.debug("Entering worker thread.")
 
-        self.status["stream_active"] = True
+        self.stream_active = True
 
         for frame in self.frames_iterator:
             self.frame = frame
@@ -365,9 +375,7 @@ class BaseCamera(metaclass=ABCMeta):
                 and (  # If using timeout
                     time.time() - self.last_access > self.stream_timeout
                 )
-                and not self.status[  # And timeout time
-                    "preview_active"
-                ]  # And GPU preview is not active
+                and not self.preview_active  # And GPU preview is not active
             ):
                 self.frames_iterator.close()
                 break
@@ -383,4 +391,4 @@ class BaseCamera(metaclass=ABCMeta):
 
         logging.debug("BaseCamera worker thread exiting...")
         # Set stream_activate state
-        self.status["stream_active"] = False
+        self.stream_active = False

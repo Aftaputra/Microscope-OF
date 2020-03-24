@@ -1,12 +1,7 @@
 from openflexure_microscope.api.utilities import JsonResponse
 from labthings.server.view import View
 from labthings.server.find import find_component
-from labthings.server.decorators import (
-    use_args,
-    marshal_with,
-    doc,
-    ThingAction,
-)
+from labthings.server.decorators import use_args, marshal_with, doc, ThingAction
 from labthings.server import fields
 
 from openflexure_microscope.utilities import axes_to_array, filter_dict
@@ -57,8 +52,8 @@ class MoveStageAPI(View):
         else:
             logging.warning("Unable to move. No stage found.")
 
-        # TODO: Make schema for microscope status
-        return jsonify(microscope.status["stage"]["position"])
+        # TODO: Make schema for microscope state
+        return jsonify(microscope.state["stage"]["position"])
 
 
 @ThingAction
@@ -71,5 +66,5 @@ class ZeroStageAPI(View):
         microscope = find_component("org.openflexure.microscope")
         microscope.stage.zero_position()
 
-        # TODO: Make schema for microscope status
-        return jsonify(microscope.status["stage"])
+        # TODO: Make schema for microscope state
+        return jsonify(microscope.state["stage"])

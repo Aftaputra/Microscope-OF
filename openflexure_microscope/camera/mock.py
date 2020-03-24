@@ -26,16 +26,12 @@ We override the logging settings in api.app by setting a level for PIL here.
 pil_logger = logging.getLogger("PIL")
 pil_logger.setLevel(logging.INFO)
 
+
 # MAIN CLASS
-class MockStreamer(BaseCamera):
+class MissingCamera(BaseCamera):
     def __init__(self):
         # Run BaseCamera init
         BaseCamera.__init__(self)
-
-        # Store state of PiCameraStreamer
-        self.status.update(
-            {"stream_active": False, "record_active": False, "board": None}
-        )
 
         # Update config properties
         self.image_resolution = (1312, 976)
@@ -71,6 +67,16 @@ class MockStreamer(BaseCamera):
 
         image.save(self.stream, format="JPEG")
 
+    @property
+    def configuration(self):
+        """The current camera configuration."""
+        return {}
+
+    @property
+    def state(self):
+        """The current read-only camera state."""
+        return {}
+
     def initialisation(self):
         """Run any initialisation code when the frame iterator starts."""
         pass
@@ -101,7 +107,7 @@ class MockStreamer(BaseCamera):
 
         return conf_dict
 
-    def apply_settings(self, config: dict):
+    def update_settings(self, config: dict):
         """
         Write a config dictionary to the PiCameraStreamer config.
 
@@ -117,7 +123,7 @@ class MockStreamer(BaseCamera):
         with self.lock:
 
             # Apply valid config params to camera object
-            if not self.status["record_active"]:  # If not recording a video
+            if not self.record_active:  # If not recording a video
 
                 for key, value in config.items():  # For each provided setting
                     if hasattr(self, key):
@@ -192,7 +198,7 @@ class MockStreamer(BaseCamera):
         if isinstance(output, CaptureObject):
             target = output.file
         else:
-            target = target
+            target = output
 
         with self.lock:
             if isinstance(target, str):

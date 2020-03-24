@@ -3,10 +3,7 @@ import subprocess
 import os
 from sys import platform
 
-from labthings.server.decorators import (
-    ThingAction,
-    doc_response,
-)
+from labthings.server.decorators import ThingAction, doc_response
 
 
 def is_raspberrypi(raise_on_errors=False):
@@ -28,9 +25,14 @@ class ShutdownAPI(View):
         """
         Attempt to shutdown the device
         """
-        subprocess.Popen(["sudo", "shutdown", "-h", "now"])
+        p = subprocess.Popen(
+            ["sudo", "shutdown", "-h", "now"],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+        )
 
-        return "{}", 201
+        out, err = p.communicate()
+        return {"out": out, "err": err}, 201
 
 
 @ThingAction
@@ -44,6 +46,11 @@ class RebootAPI(View):
         """
         Attempt to reboot the device
         """
-        subprocess.Popen(["sudo", "shutdown", "-r", "now"])
+        p = subprocess.Popen(
+            ["sudo", "shutdown", "-r", "now"],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+        )
 
-        return "{}", 201
+        out, err = p.communicate()
+        return {"out": out, "err": err}, 201

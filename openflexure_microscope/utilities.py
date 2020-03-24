@@ -4,6 +4,7 @@ import operator
 import base64
 from uuid import UUID
 import numpy as np
+import logging
 from collections import abc
 from functools import reduce
 from contextlib import contextmanager
@@ -19,6 +20,31 @@ def serialise_array_b64(npy_arr):
     dtype = str(npy_arr.dtype)
     shape = npy_arr.shape
     return b64_string, dtype, shape
+
+
+def ndarray_to_json(arr: np.ndarray):
+    if isinstance(arr, memoryview):
+        # We can transparently convert memoryview objects to arrays
+        # This comes in very handy for the lens shading table.
+        arr = np.array(arr)
+    b64_string, dtype, shape = serialise_array_b64(arr)
+    return {
+        "@type": "ndarray",
+        "dtype": dtype,
+        "shape": shape,
+        "base64": b64_string
+    }
+
+
+def json_to_ndarray(json_dict: dict):
+    if not json_dict.get("@type") != "ndarray":
+        logging.warning("No valid @type attribute found. Conversion may fail.")
+    for required_param in ("dtype", "shape", "base64"):
+        if not json_dict.get(required_param):
+            raise KeyError(f"Missing required key {required_param}")
+    
+    return deserialise_array_b64(json_dict.get("base64"), json_dict.get("dtype"), json_dict.get("shape"))
+
 
 
 @contextmanager

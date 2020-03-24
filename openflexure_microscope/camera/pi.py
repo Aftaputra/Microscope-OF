@@ -47,6 +47,11 @@ from .base import BaseCamera, CaptureObject
 from .set_picamera_gain import set_analog_gain, set_digital_gain
 
 from openflexure_microscope.paths import settings_file_path
+from openflexure_microscope.utilities import (
+    serialise_array_b64,
+    ndarray_to_json,
+    json_to_ndarray,
+)
 
 
 # MAIN CLASS
@@ -84,15 +89,8 @@ class PiCameraStreamer(BaseCamera):
             picamera.PiCamera()
         )  #: :py:class:`picamera.PiCamera`: Picamera object
 
-        # Store status of PiCameraStreamer
-        self.status.update(
-            {
-                "stream_active": False,
-                "record_active": False,
-                "preview_active": False,
-                "board": f"picamera_{self.camera.revision}",
-            }
-        )
+        # Store state of PiCameraStreamer
+        self.preview_active = False
 
         # Reset variable states
         self.set_zoom(1.0)
@@ -116,14 +114,21 @@ class PiCameraStreamer(BaseCamera):
             "picamera_lst.npy"
         )  #: str: Path of .npy lens shading table file
 
-        # Update board identifier
-        self.status.update({})
-
         # Create an empty stream
         self.stream = io.BytesIO()
 
         # Start streaming
         self.start_worker()
+
+    @property
+    def configuration(self):
+        """The current camera configuration."""
+        return {"board": self.camera.revision}
+
+    @property
+    def state(self):
+        """The current read-only camera state."""
+        return {}
 
     def initialisation(self):
         """Run any initialisation code when the frame iterator starts."""
@@ -153,10 +158,7 @@ class PiCameraStreamer(BaseCamera):
                 "image_resolution": self.image_resolution,
                 "numpy_resolution": self.numpy_resolution,
                 "jpeg_quality": self.jpeg_quality,
-                "picamera_lst_path": self.picamera_lst_path
-                if os.path.isfile(self.picamera_lst_path)
-                else None,
-                "picamera_settings": {},
+                "picamera": {},
             }
         )
 
@@ -165,18 +167,22 @@ class PiCameraStreamer(BaseCamera):
             try:
                 value = getattr(self.camera, key)
                 logging.debug("Reading PiCamera().{}: {}".format(key, value))
-                conf_dict["picamera_settings"][key] = value
+                conf_dict["picamera"][key] = value
             except AttributeError:
                 logging.debug("Unable to read PiCamera attribute {}".format(key))
 
+        # Include a serialised lens shading table
+        if (
+            hasattr(self.camera, "lens_shading_table")
+            and getattr(self.camera, "lens_shading_table") is not None
+        ):
+            conf_dict["picamera"]["lens_shading_table"] = ndarray_to_json(
+                getattr(self.camera, "lens_shading_table")
+            )
+
         return conf_dict
 
-    def save_settings(self):
-        """Save lens-shading table to disk"""
-        logging.info("Saving picamera_lst to {}".format(self.picamera_lst_path))
-        self.save_lens_shading_table()
-
-    def apply_settings(self, config: dict):
+    def update_settings(self, config: dict):
         """
         Write a config dictionary to the PiCameraStreamer config.
 
@@ -194,35 +200,36 @@ class PiCameraStreamer(BaseCamera):
         with self.lock:
 
             # Apply valid config params to Picamera object
-            if not self.status["record_active"]:  # If not recording a video
+            if not self.record_active:  # If not recording a video
 
                 # Pause stream while changing settings
-                if self.status["stream_active"]:  # If stream is active
+                if self.stream_active:  # If stream is active
                     logging.info("Pausing stream to update config.")
                     self.stop_stream_recording()  # Pause stream
                     paused_stream = True  # Remember to unpause stream when done
 
                 # PiCamera parameters
-                if "picamera_settings" in config:  # If new settings are given
+                if "picamera" in config:  # If new settings are given
                     self.apply_picamera_settings(
-                        config["picamera_settings"], pause_for_effect=True
+                        config["picamera"], pause_for_effect=True
                     )
+
+                    # Handle lens shading if camera supports it
+                    if (
+                        hasattr(self.camera, "lens_shading_table")
+                        and "lens_shading_table" in config["picamera"]
+                    ):
+                        try:
+                            self.camera.lens_shading_table = json_to_ndarray(
+                                config["picamera"].get("lens_shading_table")
+                            )
+                        except KeyError as e:
+                            logging.error(e)
 
                 # PiCameraStreamer parameters
                 for key, value in config.items():  # For each provided setting
-                    if (key != "picamera_settings") and hasattr(self, key):
+                    if (key != "picamera") and hasattr(self, key):
                         setattr(self, key, value)
-
-                # Handle lens shading if camera supports it
-                if ("picamera_lst_path" in config) and hasattr(
-                    self.camera, "lens_shading_table"
-                ):
-                    logging.debug(
-                        "Applying lens_shading_table from file: {}".format(
-                            config["picamera_lst_path"]
-                        )
-                    )
-                    self.apply_lens_shading_table(config["picamera_lst_path"])
 
                 # If stream was paused to update config, unpause
                 if paused_stream:
@@ -292,53 +299,18 @@ class PiCameraStreamer(BaseCamera):
         if pause_for_effect:
             time.sleep(0.2)
 
-    def read_lens_shading_table(self):
-        """
-        Read the current lens shading table as a numpy array, if it exists. Return None otherwise.
-        """
-        if hasattr(self.camera, "lens_shading_table"):
-            return self.camera.lens_shading_table
-        else:
-            return None
-
-    def save_lens_shading_table(self):
-        """
-        Save the current lens shading table to an .npy file, if it exists. 
-        """
-        logging.debug(self.read_lens_shading_table())
-        if self.read_lens_shading_table() is not None:
-            np.save(self.picamera_lst_path, self.read_lens_shading_table())
-        else:
-            logging.warning("Unable to save a nonexistant lens shading table")
-
-    def apply_lens_shading_table(self, lst_array_or_path):
-        """
-        Apply a lens shading table from an .npy file, or numpy array.
-
-        Args:
-            lst_array_or_path: Numpy array, or path to .npy file, describing the lens-shading table
-        """
-        if isinstance(lst_array_or_path, np.ndarray):
-            self.camera.lens_shading_table = lst_array_or_path
-        elif (type(lst_array_or_path) == str) and os.path.isfile(lst_array_or_path):
-            self.camera.lens_shading_table = np.load(lst_array_or_path)
-        else:
-            logging.error(
-                "Unsupported or missing data for camera lens_shading_table. Must be numpy ndarray, or .npy file path string. Skipping."
-            )
-
     def set_zoom(self, zoom_value: float = 1.0) -> None:
         """
         Change the camera zoom, handling re-centering and scaling.
         """
         with self.lock:
-            self.status["zoom_value"] = float(zoom_value)
-            if self.status["zoom_value"] < 1:
-                self.status["zoom_value"] = 1
+            self.zoom_value = float(zoom_value)
+            if self.zoom_value < 1:
+                self.zoom_value = 1
             # Richard's code for zooming !
             fov = self.camera.zoom
             centre = np.array([fov[0] + fov[2] / 2.0, fov[1] + fov[3] / 2.0])
-            size = 1.0 / self.status["zoom_value"]
+            size = 1.0 / self.zoom_value
             # If the new zoom value would be invalid, move the centre to
             # keep it within the camera's sensor (this is only relevant
             # when zooming out, if the FoV is not centred on (0.5, 0.5)
@@ -365,7 +337,7 @@ class PiCameraStreamer(BaseCamera):
                     self.camera.preview.window = window
                 if fullscreen:
                     self.camera.preview.fullscreen = fullscreen
-            self.status["preview_active"] = True
+            self.preview_active = True
         except picamera.exc.PiCameraMMALError as e:
             logging.error(
                 "Suppressed a MMALError in start_preview. Exception: {}".format(e)
@@ -380,7 +352,7 @@ class PiCameraStreamer(BaseCamera):
     def stop_preview(self):
         """Stop the on board GPU camera preview."""
         self.camera.stop_preview()
-        self.status["preview_active"] = False
+        self.preview_active = False
 
     def start_recording(self, output, fmt: str = "h264", quality: int = 15):
         """Start recording.
@@ -398,7 +370,7 @@ class PiCameraStreamer(BaseCamera):
         """
         with self.lock:
             # Start recording method only if a current recording is not running
-            if not self.status["record_active"]:
+            if not self.record_active:
 
                 # Start the camera video recording on port 2
                 logging.info("Recording to {}".format(output))
@@ -411,8 +383,8 @@ class PiCameraStreamer(BaseCamera):
                     quality=quality,
                 )
 
-                # Update status dictionary
-                self.status["record_active"] = True
+                # Update state
+                self.record_active = True
 
                 return output
 
@@ -431,8 +403,8 @@ class PiCameraStreamer(BaseCamera):
             self.camera.stop_recording(splitter_port=2)
             logging.info("Recording stopped")
 
-            # Update status dictionary
-            self.status["record_active"] = False
+            # Update state
+            self.record_active = False
 
     def stop_stream_recording(
         self, splitter_port: int = 1, resolution: Tuple[int, int] = None
@@ -500,7 +472,7 @@ class PiCameraStreamer(BaseCamera):
                 self.camera.resolution = resolution
 
             # If the stream should be active
-            if self.status["stream_active"]:
+            if self.stream_active:
                 try:
                     # Start recording on stream port
                     self.camera.start_recording(
@@ -551,7 +523,7 @@ class PiCameraStreamer(BaseCamera):
         if isinstance(output, CaptureObject):
             target = output.file
         else:
-            target = target
+            target = output
 
         with self.lock:
             logging.info("Capturing to {}".format(output))
@@ -680,7 +652,6 @@ class PiCameraStreamer(BaseCamera):
         # Start stream recording (and set resolution)
         self.start_stream_recording()
 
-        # Update status
         logging.debug("STREAM ACTIVE")
 
         # While the iterator is not closed

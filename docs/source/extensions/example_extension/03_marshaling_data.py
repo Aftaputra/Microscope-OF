@@ -14,7 +14,7 @@ from labthings.server import fields
 class MicroscopeIdentifySchema(Schema):
     name = fields.String()  # Microscopes name
     id = fields.UUID()  # Microscopes unique ID
-    status = fields.Dict()  # Status dictionary
+    state = fields.Dict()  # Status dictionary
     camera = fields.String()  # Camera object (represented as a string)
     stage = fields.String()  # Stage object (represented as a string)
 
