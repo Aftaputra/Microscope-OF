@@ -67,16 +67,24 @@
         >
         </taskSubmitter>
       </div>
-      
-      <div v-if="'flatten_lens_shading_table' in recalibrationLinks" class="uk-margin-small">
-        <button
-          class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin-small uk-width-1-1"
-          @click="flattenLensShadingTableRequest"
-        >
-          Disable flat-field correction
-        </button>
-      </div>
     </form>
+      
+    <div v-if="'flatten_lens_shading_table' in recalibrationLinks" class="uk-margin-small">
+      <button
+        class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin-small uk-margin-remove-bottom uk-width-1-1"
+        @click="flattenLensShadingTableRequest"
+      >
+        Disable flat-field correction
+      </button>
+    </div>
+    <div v-if="'delete_lens_shading_table' in recalibrationLinks" class="uk-margin-small uk-margin-remove-top">
+      <button
+        class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin-small uk-width-1-1"
+        @click="deleteLensShadingTableRequest"
+      >
+        Adaptive flat-field correction
+      </button>
+    </div>
   </div>
 </template>
 
@@ -187,6 +195,9 @@ export default {
 
     flattenLensShadingTableRequest: function() {
       axios.post(this.recalibrationLinks.flatten_lens_shading_table.href)
+    },
+    deleteLensShadingTableRequest: function() {
+      axios.post(this.recalibrationLinks.delete_lens_shading_table.href)
     }
   }
 };
