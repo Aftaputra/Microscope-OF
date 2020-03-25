@@ -88,7 +88,7 @@ class AutostorageExtension(BaseExtension):
         BaseExtension.__init__(
             self,
             "org.openflexure.autostorage",
-            version="2.0.0-beta.1",
+            version="2.0.0",
             description="Handle switching capture storage devices",
         )
 
