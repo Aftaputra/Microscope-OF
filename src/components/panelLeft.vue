@@ -259,6 +259,7 @@ export default {
 }
 
 #switcher-left {
+  width: 75px;
   background-color: rgba(180, 180, 180, 0.1);
   padding-top: 2px !important;
 }
