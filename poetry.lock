@@ -265,25 +265,20 @@ i18n = ["Babel (>=0.8)"]
 
 [[package]]
 category = "main"
-description = ""
+description = "Python implementation of LabThings, based on the Flask microframework"
 name = "labthings"
 optional = false
-python-versions = "^3.6"
+python-versions = ">=3.6,<4.0"
 version = "0.2.0"
 
 [package.dependencies]
-Flask = "^1.1.1"
-apispec = "^3.2.0"
-flask-cors = "^3.0.8"
-gevent = "^1.4.0"
-gevent-websocket = "^0.10.1"
-marshmallow = "^3.4.0"
-webargs = "^5.5.3"
-
-[package.source]
-reference = "028e21cb5b53cc8feeea3af7a0579fde67a54daf"
-type = "git"
-url = "https://github.com/labthings/python-labthings.git"
+Flask = ">=1.1.1,<2.0.0"
+apispec = ">=3.2.0,<4.0.0"
+flask-cors = ">=3.0.8,<4.0.0"
+gevent = ">=1.4.0,<2.0.0"
+gevent-websocket = ">=0.10.1,<0.11.0"
+marshmallow = ">=3.4.0,<4.0.0"
+webargs = ">=5.5.3,<6.0.0"
 
 [[package]]
 category = "dev"
@@ -713,7 +708,7 @@ version = "1.11.2"
 rpi = ["picamera", "RPi.GPIO"]
 
 [metadata]
-content-hash = "c32b040f9990c0acaf6d1c984d503a6fa86a6d2f6eee51301dbdde7a5b176d82"
+content-hash = "3a3a3bd4ffd7e0fe4c4c418a1b191c33afd375e6f06bb298189fd84ff75ee4cc"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -876,7 +871,10 @@ jinja2 = [
     {file = "Jinja2-2.11.1-py2.py3-none-any.whl", hash = "sha256:b0eaf100007721b5c16c1fc1eecb87409464edc10469ddc9a22a27a99123be49"},
     {file = "Jinja2-2.11.1.tar.gz", hash = "sha256:93187ffbc7808079673ef52771baa950426fd664d3aad1d0fa3e95644360e250"},
 ]
-labthings = []
+labthings = [
+    {file = "labthings-0.2.0-py3-none-any.whl", hash = "sha256:e2235c0db45c7134403bd78b2aa55ae5aa1bfee677735c9674f52bfcb605e998"},
+    {file = "labthings-0.2.0.tar.gz", hash = "sha256:f77391bbb02676ac7c28de59c425c4dc8d6de63031f2a2db8bffd26bc691cb5e"},
+]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.4.3.tar.gz", hash = "sha256:f3900e8a5de27447acbf900b4750b0ddfd7ec1ea7fbaf11dfa911141bc522af0"},
     {file = "lazy_object_proxy-1.4.3-cp27-cp27m-macosx_10_13_x86_64.whl", hash = "sha256:a2238e9d1bb71a56cd710611a1614d1194dc10a175c1e08d75e1a7bcc250d442"},

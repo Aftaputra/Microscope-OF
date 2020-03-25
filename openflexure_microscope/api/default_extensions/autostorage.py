@@ -241,6 +241,7 @@ def dynamic_form():
     return {
         "icon": "sd_storage",
         "title": "Storage",
+        "viewPanel": "gallery",
         "forms": [
             {
                 "name": "Autostorage",

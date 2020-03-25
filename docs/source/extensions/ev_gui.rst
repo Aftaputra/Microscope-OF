@@ -32,6 +32,8 @@ The root of your ``gui`` dictionary expects 2 properties:
 
 ``icon`` - The name of a Material Design icon to use for your plugin
 
+``viewPanel`` *(optional)* - Content to display to the right of the extension form. Either ``stream`` (default), ``gallery``, or ``settings``.
+
 ``forms`` - An array of forms as described below
 
 Form level
@@ -52,6 +54,8 @@ Each form is described by a JSON object, with the following properties:
 ``submitLabel`` *(optional)* - String to place inside of the form's submit button
 
 ``schema`` - List of dictionaries. Each dictionary element describes a form component.
+
+``emitOnResponse`` *(optional)* - OpenFlexure eV event to emit when a response is recieved from the extension (generally avoid unless you know you need this.)
 
 Component level
 +++++++++++++++
