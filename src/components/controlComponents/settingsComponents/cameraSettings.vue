@@ -103,7 +103,7 @@ export default {
   data: function() {
     return {
       settings: null,
-      recalibrationLinks: null,
+      recalibrationLinks: {},
       isCalibrating: false
     };
   },

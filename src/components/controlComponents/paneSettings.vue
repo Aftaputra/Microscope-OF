@@ -14,6 +14,11 @@
       </li>
 
       <li v-if="$store.getters.ready">
+        <a class="uk-accordion-title" href="#">Camera/stage mapping settings</a>
+        <div class="uk-accordion-content"><cameraStageMappingSettings /></div>
+      </li>
+
+      <li v-if="$store.getters.ready">
         <a class="uk-accordion-title" href="#">Microscope settings</a>
         <div class="uk-accordion-content"><microscopeSettings /></div>
       </li>
@@ -25,6 +30,7 @@
 import streamSettings from "./settingsComponents/streamSettings.vue";
 import microscopeSettings from "./settingsComponents/microscopeSettings.vue";
 import cameraSettings from "./settingsComponents/cameraSettings.vue";
+import cameraStageMappingSettings from "./settingsComponents/cameraStageMappingSettings.vue";
 import appSettings from "./settingsComponents/appSettings.vue";
 
 // Export main app
@@ -34,6 +40,7 @@ export default {
   components: {
     streamSettings,
     cameraSettings,
+    cameraStageMappingSettings,
     microscopeSettings,
     appSettings
   }
