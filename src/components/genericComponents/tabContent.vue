@@ -2,9 +2,8 @@
   <div
     v-if="!(requireConnection && !$store.getters.ready)"
     :hidden="currentTab != id"
-    class="uk-width-expand"
+    class="uk-width-expand uk-height-1-1"
   >
-    <div class="section-heading">{{ id }}</div>
     <div class="section-content"><slot></slot></div>
   </div>
 </template>
@@ -39,8 +38,8 @@ export default {
   cursor: default;
 }
 
-.section-content,
-.section-heading {
-  padding: 9px 10px;
+.section-content {
+  padding: 0;
+  height: 100%;
 }
 </style>

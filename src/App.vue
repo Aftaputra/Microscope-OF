@@ -1,28 +1,22 @@
 <template>
-  <div id="app" :class="handleTheme">
-    <!-- Grid managing whole app -->
-    <div
-      uk-grid
-      class="uk-height-1-1 uk-margin-remove uk-padding-remove"
-      margin="0"
-    >
-      <panelLeft />
-      <panelRight />
-    </div>
+  <div
+    id="app"
+    class="uk-height-1-1 uk-margin-remove uk-padding-remove"
+    :class="handleTheme"
+  >
+    <panelLeft />
   </div>
 </template>
 
 <script>
 // Import components
 import panelLeft from "./components/panelLeft.vue";
-import panelRight from "./components/panelRight.vue";
 
 // Export main app
 export default {
   name: "App",
 
   components: {
-    panelRight,
     panelLeft
   },
 
@@ -130,5 +124,24 @@ html {
 .uk-disabled {
   pointer-events: none;
   opacity: 0.4;
+}
+
+.control-component {
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 300px;
+  height: 100%;
+  padding: 0;
+  background-color: rgba(180, 180, 180, 0.055);
+  border-width: 0 1px 0 0;
+  border-style: solid;
+  border-color: rgba(180, 180, 180, 0.25);
+}
+
+.view-component {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  padding: 0;
 }
 </style>

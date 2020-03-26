@@ -1,22 +1,24 @@
 <template>
   <div class="galleryDisplay uk-padding uk-padding-remove-top">
+    <!-- Gallery nav bar -->
     <nav
-      class="uk-navbar-container uk-navbar-transparent navbar"
+      class="gallery-navbar uk-navbar-container uk-navbar-transparent"
       uk-navbar="mode: click"
     >
+      <!-- Left side controls -->
       <div
         class="uk-navbar-left uk-padding-remove-top uk-padding-remove-bottom"
       >
         <ul class="uk-navbar-nav">
           <li :class="[sortDescending ? 'uk-active' : '']">
-            <a class="uk-icon" href="#" @click="sortDescending = true"
-              ><i class="material-icons">keyboard_arrow_down</i></a
-            >
+            <a class="uk-icon" href="#" @click="sortDescending = true">
+              <i class="material-icons">keyboard_arrow_down</i>
+            </a>
           </li>
           <li :class="[!sortDescending ? 'uk-active' : '']">
-            <a class="uk-icon" href="#" @click="sortDescending = false"
-              ><i class="material-icons">keyboard_arrow_up</i></a
-            >
+            <a class="uk-icon" href="#" @click="sortDescending = false">
+              <i class="material-icons">keyboard_arrow_up</i>
+            </a>
           </li>
           <li>
             <a href="#">Filter</a>
@@ -34,8 +36,8 @@
                     :key="tag"
                     class="uk-margin-small"
                   >
-                    <label
-                      ><input
+                    <label>
+                      <input
                         :id="tag"
                         v-model="checkedTags"
                         class="uk-checkbox"
@@ -43,8 +45,8 @@
                         :value="tag"
                         checked
                       />
-                      {{ tag }}</label
-                    >
+                      {{ tag }}
+                    </label>
                   </div>
                 </form>
               </ul>
@@ -53,6 +55,7 @@
         </ul>
       </div>
 
+      <!-- Right side buttons -->
       <div class="uk-navbar-right">
         <div class="uk-grid">
           <div>
@@ -71,26 +74,34 @@
       </div>
     </nav>
 
+    <!-- Gallery -->
     <div
       v-if="$store.getters.ready"
       class="uk-padding-remove-top"
       uk-lightbox="toggle: .lightbox-link"
     >
+      <!-- Folder heading -->
       <div
         v-if="galleryFolder"
-        class="uk-flex uk-flex-middle uk-padding uk-padding-remove-horizontal uk-padding-remove-bottom"
+        class="gallery-folder-heading uk-flex uk-flex-middle"
       >
-        <a href="#" class="uk-icon uk-margin-remove" @click="galleryFolder = ''"
-          ><i class="material-icons">arrow_back</i></a
+        <a
+          href="#"
+          class="uk-icon uk-margin-remove"
+          @click="galleryFolder = ''"
         >
+          <i class="material-icons">arrow_back</i>
+        </a>
         <div class="uk-margin-left">
           <h3 class="uk-margin-remove uk-margin-left">
-            <b>SCAN</b> {{ allScans[galleryFolder].metadata.image.name }}
+            <b>SCAN</b>
+            {{ allScans[galleryFolder].metadata.image.name }}
           </h3>
         </div>
       </div>
 
-      <div class="uk-grid-medium uk-grid-match uk-margin-top" uk-grid>
+      <!-- Gallery capture cards -->
+      <div class="gallery-grid">
         <div v-for="item in sortedItems" :key="item.metadata.id">
           <scanCard
             v-if="'isScan' in item"
@@ -267,6 +278,8 @@ export default {
   },
 
   mounted() {
+    // Update on mount (does nothing if not connected)
+    this.updateCaptures();
     // A global signal listener to perform a gallery refresh
     this.$root.$on("globalUpdateCaptures", () => {
       this.updateCaptures();
@@ -309,15 +322,19 @@ export default {
 
   methods: {
     updateCaptures: function() {
-      console.log("Updating capture list...");
-      axios
-        .get(this.capturesUri)
-        .then(response => {
-          this.captures = response.data;
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
+      if (this.$store.state.available) {
+        console.log("Updating capture list...");
+        axios
+          .get(this.capturesUri)
+          .then(response => {
+            this.captures = response.data;
+          })
+          .catch(error => {
+            this.modalError(error); // Let mixin handle error
+          });
+      } else {
+        console.log("Delaying capture update until connection is available");
+      }
     },
 
     filterCaptures: function(list, filterTags) {
@@ -363,9 +380,29 @@ export default {
 </script>
 
 <style scoped lang="less">
-.navbar {
+.gallery-navbar {
   border-width: 0 0 1px 0;
   border-style: solid;
   border-color: rgba(180, 180, 180, 0.25);
+}
+.gallery-navbar,
+.gallery-folder-heading {
+  margin-bottom: 30px;
+}
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 320px);
+  justify-content: center;
+}
+.gallery-grid > div {
+  display: inline-block;
+  margin-bottom: 20px;
+}
+
+/deep/ .capture-card {
+  width: 300px;
+  height: 100%; // Used to have all cards in a row match their heights
+  margin-left: auto;
+  margin-right: auto;
 }
 </style>

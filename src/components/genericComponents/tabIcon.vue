@@ -92,6 +92,7 @@ export default {
   max-width: 60px;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 85%;
 }
 
 a:hover,

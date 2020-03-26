@@ -1,6 +1,6 @@
 <template>
   <div
-    class="captureCard uk-card uk-card-default uk-card-hover uk-padding-remove uk-width-medium"
+    class="capture-card uk-card uk-card-default uk-card-hover uk-padding-remove uk-width-medium"
     :class="{ 'uk-card-secondary': $store.state.globalSettings.darkMode }"
   >
     <div class="uk-card-media-top">
