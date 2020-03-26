@@ -10,6 +10,7 @@ import time
 import numpy as np
 from PIL import Image, ImageFont, ImageDraw
 from datetime import datetime
+import gevent
 
 import logging
 
@@ -224,7 +225,7 @@ class MissingCamera(BaseCamera):
         # While the iterator is not closed
         try:
             while True:
-                time.sleep(1)  # Only serve frames at 1fps
+                gevent.sleep(1)  # Only serve frames at 1fps
                 # Reset stream
                 self.stream.seek(0)
                 self.stream.truncate()
