@@ -1,8 +1,6 @@
 <template>
   <div v-if="settings" id="microscopeSettings">
     <form @submit.prevent="applyConfigRequest">
-      <h4>Stage</h4>
-
       <label class="uk-form-label" for="form-stacked-text"
         >Backlash compensation</label
       >
@@ -41,7 +39,7 @@
         </div>
       </div>
 
-      <h4>Microscope</h4>
+      <br />
 
       <div>
         <label class="uk-form-label" for="form-stacked-text"
@@ -54,6 +52,8 @@
           placeholder="Leave blank for default"
         />
       </div>
+
+      <br />
 
       <button
         type="submit"

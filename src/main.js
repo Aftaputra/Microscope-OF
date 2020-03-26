@@ -7,6 +7,10 @@ import UIkit from "uikit";
 // Import MD icons
 import "material-design-icons/iconfont/material-icons.css";
 
+// Import load-script module
+import LoadScript from "vue-plugin-load-script";
+Vue.use(LoadScript);
+
 Vue.config.productionTip = false;
 
 Vue.mixin({

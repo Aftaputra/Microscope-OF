@@ -10,13 +10,25 @@
       class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1 uk-text-center"
     >
       <tabIcon
-        id="status"
+        v-show="!liteMode"
+        id="connect"
         :require-connection="false"
         :current-tab="currentTab"
         @set-tab="setTab"
       >
         <i class="material-icons">bug_report</i>
       </tabIcon>
+      <tabIcon
+        id="gallery"
+        :require-connection="true"
+        :current-tab="currentTab"
+        @set-tab="setTab"
+      >
+        <i class="material-icons">photo_library</i>
+      </tabIcon>
+
+      <hr />
+
       <tabIcon
         id="navigate"
         :require-connection="true"
@@ -61,69 +73,58 @@
     <!-- Corresponding vertical tab content -->
     <div
       id="container-left"
-      :hidden="!showControlBar"
       class="uk-padding-remove uk-height-1-1 uk-width-expand"
     >
-      <div
-        id="component-left"
-        class="uk-padding-remove uk-flex uk-flex-1 panel-content"
+      <tabContent
+        id="connect"
+        :require-connection="false"
+        :current-tab="currentTab"
       >
-        <tabContent
-          id="status"
-          :require-connection="false"
-          :current-tab="currentTab"
-        >
-          <paneStatus />
-        </tabContent>
-        <tabContent
-          id="navigate"
-          :require-connection="true"
-          :current-tab="currentTab"
-        >
-          <paneNavigate />
-        </tabContent>
-        <tabContent
-          id="capture"
-          :require-connection="true"
-          :current-tab="currentTab"
-        >
-          <paneCapture />
-        </tabContent>
-        <tabContent
-          id="settings"
-          :require-connection="false"
-          :current-tab="currentTab"
-        >
-          <paneSettings />
-        </tabContent>
+        <connectContent />
+      </tabContent>
+      <tabContent
+        id="gallery"
+        :require-connection="false"
+        :current-tab="currentTab"
+      >
+        <galleryContent />
+      </tabContent>
+      <tabContent
+        id="navigate"
+        :require-connection="true"
+        :current-tab="currentTab"
+      >
+        <navigateContent />
+      </tabContent>
+      <tabContent
+        id="capture"
+        :require-connection="true"
+        :current-tab="currentTab"
+      >
+        <captureContent />
+      </tabContent>
+      <tabContent
+        id="settings"
+        :require-connection="false"
+        :current-tab="currentTab"
+      >
+        <settingsContent />
+      </tabContent>
 
-        <tabContent
-          v-for="plugin in pluginsGuiList"
-          :id="plugin.id"
-          :key="plugin.id"
-          :require-connection="plugin.requiresConnection"
-          :current-tab="currentTab"
-        >
-          <div
-            v-for="form in plugin.forms"
-            :key="
-              `${form.route}/${form.name}`.replace(/\s+/g, '-').toLowerCase()
-            "
-            class="uk-flex uk-flex-column"
-          >
-            <JsonForm
-              :name="form.name"
-              :route="form.route"
-              :is-task="form.isTask"
-              :submit-label="form.submitLabel"
-              :schema="form.schema"
-              :emit-on-response="form.emitOnResponse"
-              @reloadForms="updatePlugins()"
-            />
-            <hr />
-          </div>
-        </tabContent>
-      </div>
+      <tabContent
+        v-for="plugin in pluginsGuiList"
+        :id="plugin.id"
+        :key="plugin.id"
+        :require-connection="plugin.requiresConnection"
+        :current-tab="currentTab"
+      >
+        <extensionContent
+          :forms="plugin.forms"
+          :web-component="plugin.wc"
+          :view-panel="plugin.viewPanel"
+          @reloadForms="updatePlugins()"
+        />
+      </tabContent>
     </div>
   </div>
 </template>
@@ -135,14 +136,13 @@ import axios from "axios";
 import tabIcon from "./genericComponents/tabIcon";
 import tabContent from "./genericComponents/tabContent";
 
-// Import pane components
-import paneStatus from "./controlComponents/paneStatus";
-import paneNavigate from "./controlComponents/paneNavigate";
-import paneCapture from "./controlComponents/paneCapture";
-import paneSettings from "./controlComponents/paneSettings";
-
-// Import plugin components
-import JsonForm from "./pluginComponents/JsonForm";
+// Import new content components
+import connectContent from "./tabContentComponents/connectContent.vue";
+import navigateContent from "./tabContentComponents/navigateContent.vue";
+import captureContent from "./tabContentComponents/captureContent.vue";
+import settingsContent from "./tabContentComponents/settingsContent.vue";
+import galleryContent from "./tabContentComponents/galleryContent.vue";
+import extensionContent from "./tabContentComponents/extensionContent.vue";
 
 // Export main app
 export default {
@@ -151,19 +151,20 @@ export default {
   components: {
     tabIcon,
     tabContent,
-    paneStatus,
-    paneNavigate,
-    paneCapture,
-    paneSettings,
-    JsonForm
+    connectContent,
+    navigateContent,
+    captureContent,
+    settingsContent,
+    galleryContent,
+    extensionContent
   },
 
   data: function() {
     return {
       plugins: [],
-      currentTab: "status",
-      showControlBar: true,
-      unwatchStoreFunction: null
+      currentTab: "connect",
+      unwatchStoreFunction: null,
+      liteMode: process.env.VUE_APP_LITEMODE == "true" ? true : false
     };
   },
 
@@ -197,7 +198,7 @@ export default {
           console.log("Left panel now ready");
         } else {
           console.log("Right panel now disabled");
-          this.currentTab = "status";
+          this.currentTab = "connect";
         }
       }
     );
@@ -225,11 +226,7 @@ export default {
         });
     },
     setTab: function(event, tab) {
-      if (this.currentTab == tab) {
-        this.showControlBar = !this.showControlBar;
-        this.currentTab = "none";
-      } else {
-        this.showControlBar = true;
+      if (!(this.currentTab == tab)) {
         this.currentTab = tab;
       }
     }
@@ -239,15 +236,17 @@ export default {
 
 <style scoped lang="less">
 #component-left {
-  width: 300px;
+  width: 100%;
+  height: 100%;
 }
 
 #container-left {
-  overflow: hidden auto;
+  overflow: hidden;
   background-color: rgba(180, 180, 180, 0.025);
+  width: 100%;
+  height: 100%;
 }
 
-#container-left,
 #switcher-left {
   border-width: 0 1px 0 0;
   border-style: solid;

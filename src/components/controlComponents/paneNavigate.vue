@@ -1,5 +1,5 @@
 <template>
-  <div id="paneNavigate">
+  <div id="paneNavigate" class="uk-padding-small">
     <div v-if="setPosition">
       <ul uk-accordion="multiple: true; animation: false">
         <li>
