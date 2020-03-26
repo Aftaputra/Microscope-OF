@@ -26,7 +26,7 @@ class CustomElementExtension(BaseExtension):
             self,
             "org.openflexure.customelement",
             description="Testing HTML components in an extension",
-            static_folder=path_relative_to(__file__, "static"),
+            static_folder=path_relative_to(__file__, "static", "dist"),
         )
 
         # Register the on_microscope function to run when the microscope is attached
