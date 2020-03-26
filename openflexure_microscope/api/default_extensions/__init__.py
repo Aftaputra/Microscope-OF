@@ -13,3 +13,5 @@ except Exception as e:
     logging.error(
         f"Exception loading builtin extension picamera_autocalibrate: \n{traceback.format_exc()}"
     )
+
+from ..example_extensions.custom_element import customelement_extension_v2

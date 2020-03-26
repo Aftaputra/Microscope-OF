@@ -531,6 +531,7 @@ class PiCameraStreamer(BaseCamera):
             # Set resolution and stop stream recording if necessary
             if not use_video_port:
                 self.stop_stream_recording()
+                time.sleep(0.1)
 
             self.camera.capture(
                 target,
@@ -540,6 +541,7 @@ class PiCameraStreamer(BaseCamera):
                 bayer=(not use_video_port) and bayer,
                 use_video_port=use_video_port,
             )
+            time.sleep(0.1)
 
             # Set resolution and start stream recording if necessary
             if not use_video_port:
