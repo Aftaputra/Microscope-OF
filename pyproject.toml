@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "openflexure_microscope"
-version = "2.0.0-beta.6"
+version = "2.1.0-dev"
 description = "Python module, and Flask-based web API, to run the OpenFlexure Microscope."
 
 authors = [
@@ -36,7 +36,7 @@ pyserial = "^3.4" # Used for sangaboard (basic_serial_instrument) until we move 
 python-dateutil = "^2.8"
 psutil = "^5.6.7" # Autostorage extension
 opencv-python-headless = "3.4.7.28"
-labthings = "0.2.0"
+labthings = "0.3.0"
 
 [tool.poetry.extras]
 rpi = ["picamera", "RPi.GPIO"]

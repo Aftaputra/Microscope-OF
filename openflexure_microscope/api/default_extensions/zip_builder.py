@@ -202,7 +202,7 @@ class ZipGetterAPIView(View):
 
 zip_extension_v2 = BaseExtension(
     "org.openflexure.zipbuilder",
-    version="2.0.0-beta.1",
+    version="2.0.0",
     description="Build and download capture collections as ZIP files",
 )
 
