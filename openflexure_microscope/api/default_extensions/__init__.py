@@ -1,18 +1,30 @@
 import logging
 import traceback
+from contextlib import contextmanager
 
-from .autofocus import autofocus_extension_v2
-from .scan import scan_extension_v2
-from .zip_builder import zip_extension_v2
-from .autostorage import autostorage_extension_v2
-from .camera_stage_mapping import csm_extension
+@contextmanager
+def handle_extension_error(extension_name):
+    """'gracefully' log an error if an extension fails to load."""
+    try:
+        yield
+    except Exception as e:
+        logging.error(
+            f"Exception loading builtin extension picamera_autocalibrate: \n{traceback.format_exc()}"
+        )
 
-# "Gracefully" handle cases where picamera cannot be imported (eg test server)
-try:
+with handle_extension_error("autofocus"):
+    from .autofocus import autofocus_extension_v2
+with handle_extension_error("scan"):
+    from .scan import scan_extension_v2
+with handle_extension_error("zip builder"):
+    from .zip_builder import zip_extension_v2
+with handle_extension_error("autostorage"):
+    from .autostorage import autostorage_extension_v2
+with handle_extension_error("camera stage mapping"):
+    from .camera_stage_mapping import csm_extension
+with handle_extension_error("lens shading calibration"):
     from .picamera_autocalibrate import lst_extension_v2
-except Exception as e:
-    logging.error(
-        f"Exception loading builtin extension picamera_autocalibrate: \n{traceback.format_exc()}"
-    )
 
-from ..example_extensions.custom_element import customelement_extension_v2
+#FIXME: this oughtn't stay in the production version...
+with handle_extension_error("custom element example"):
+    from ..example_extensions.custom_element import customelement_extension_v2
