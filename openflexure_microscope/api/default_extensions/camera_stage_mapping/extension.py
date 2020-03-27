@@ -121,10 +121,6 @@ class CSMExtension(BaseExtension):
 
 csm_extension = CSMExtension()
 
-#csm_extension.add_method(calibrate_1d, "calibrate_1d") # Not needed any more??
-#csm_extension.add_method(calibrate_xy, "calibrate_xy")
-
-
 @ThingAction
 class Calibrate1DView(View):
     @use_args({
@@ -157,8 +153,8 @@ csm_extension.add_view(CalibrateXYView, "/calibrate_xy")
 @ThingAction
 class MoveInImageCoordinatesView(View):
     @use_args({
-        "x": fields.Float(),#description="The number of pixels to move in X", required=True, example=100),
-        "y": fields.Float(),#description="The number of pixels to move in Y", required=True, example=100),
+        "x": fields.Float(description="The number of pixels to move in X", required=True, example=100),
+        "y": fields.Float(description="The number of pixels to move in Y", required=True, example=100),
     })
     def post(self, args):
         logging.debug("moving in pixels")
