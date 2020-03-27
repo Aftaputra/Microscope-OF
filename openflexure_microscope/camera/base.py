@@ -7,6 +7,7 @@ import datetime
 import logging
 
 import threading
+import gevent
 
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
@@ -266,9 +267,7 @@ class BaseCamera(metaclass=ABCMeta):
         if not self.stream_active:
             # Spawn a greenlet to handle stream
             # start background frame thread
-            self.thread = threading.Thread(target=self._thread)
-            self.thread.daemon = True
-            self.thread.start()
+            self.thread = gevent.spawn(self._thread)
 
             # wait until frames are available
             logging.info("Waiting for frames")
