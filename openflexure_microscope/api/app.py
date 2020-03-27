@@ -179,4 +179,4 @@ if __name__ == "__main__":
     from labthings.server.wsgi import Server
 
     server = Server(app)
-    server.run(host="0.0.0.0", port=5000, debug=True, zeroconf=True)
+    server.run(host="0.0.0.0", port=5000, debug=False, zeroconf=True)
