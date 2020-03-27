@@ -9,7 +9,6 @@ stage, and tracking the corresponding motion with the camera.
 import numpy as np
 import time
 from numpy.linalg import norm
-from matplotlib import pyplot as plt
 import cv2
 from scipy import ndimage
 
