@@ -53,14 +53,14 @@
       </button>
 
       <!--Show auto calibrate if default plugin is enabled-->
-      <div v-if="recalibrationUri">
+      <div v-if="'recalibrate' in recalibrationLinks" class="uk-margin-small">
         <taskSubmitter
           :can-terminate="false"
           :requires-confirmation="true"
           :confirmation-message="
             'Start recalibration? This may take a while, and the microscope will be locked during this time.'
           "
-          :submit-url="recalibrationUri"
+          :submit-url="recalibrationLinks.recalibrate.href"
           :submit-label="'Auto-Calibrate'"
           @response="onRecalibrateResponse"
           @error="onRecalibrateError"
@@ -68,6 +68,23 @@
         </taskSubmitter>
       </div>
     </form>
+      
+    <div v-if="'flatten_lens_shading_table' in recalibrationLinks" class="uk-margin-small">
+      <button
+        class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin-small uk-margin-remove-bottom uk-width-1-1"
+        @click="flattenLensShadingTableRequest"
+      >
+        Disable flat-field correction
+      </button>
+    </div>
+    <div v-if="'delete_lens_shading_table' in recalibrationLinks" class="uk-margin-small uk-margin-remove-top">
+      <button
+        class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin-small uk-width-1-1"
+        @click="deleteLensShadingTableRequest"
+      >
+        Adaptive flat-field correction
+      </button>
+    </div>
   </div>
 </template>
 
@@ -86,7 +103,7 @@ export default {
   data: function() {
     return {
       settings: null,
-      recalibrationUri: null,
+      recalibrationLinks: null,
       isCalibrating: false
     };
   },
@@ -102,7 +119,7 @@ export default {
 
   mounted() {
     this.updateSettings();
-    this.updateRecalibrationUri();
+    this.updateRecalibrationLinks();
   },
 
   methods: {
@@ -117,7 +134,7 @@ export default {
         });
     },
 
-    updateRecalibrationUri: function() {
+    updateRecalibrationLinks: function() {
       axios
         .get(this.pluginsUri) // Get a list of plugins
         .then(response => {
@@ -128,7 +145,9 @@ export default {
           // if AutocalibrationPlugin is enabled
           if (foundExtension) {
             // Get plugin action link
-            this.recalibrationUri = foundExtension.links.recalibrate.href;
+            this.recalibrationLinks = foundExtension.links;
+          } else {
+            this.recalibrationLinks = {}
           }
         })
         .catch(error => {
@@ -172,6 +191,13 @@ export default {
 
     onRecalibrateError: function(error) {
       this.modalError(error); // Let mixin handle error
+    },
+
+    flattenLensShadingTableRequest: function() {
+      axios.post(this.recalibrationLinks.flatten_lens_shading_table.href)
+    },
+    deleteLensShadingTableRequest: function() {
+      axios.post(this.recalibrationLinks.delete_lens_shading_table.href)
     }
   }
 };
