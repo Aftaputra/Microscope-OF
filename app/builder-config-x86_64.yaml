@@ -1,8 +1,8 @@
 extends: app/builder-config-base.yaml
-electronVersion: 4.1.5
 win:
   target:
     - NSIS
+    - portable
   icon: app/icons/win/icon.ico
 linux:
   target:

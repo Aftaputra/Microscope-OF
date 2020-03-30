@@ -1,3 +1,4 @@
+electronVersion: 8.2.0
 directories:
   output: release-builds
   buildResources: app/resources
@@ -26,5 +27,6 @@ files:
       - '!**/app/installers${/*}'
       - '!**/hooks${/*}'
       - '!**/platforms${/*}'
+      - '!**/dist*${/*}'
       - '!**/release-builds${/*}'
       - '!src${/*}'

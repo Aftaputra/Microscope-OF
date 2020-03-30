@@ -1,5 +1,4 @@
 extends: app/builder-config-base.yaml
-electronVersion: 3.0.13
 linux:
   target:
     - target: deb
