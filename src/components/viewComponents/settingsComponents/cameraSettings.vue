@@ -111,8 +111,8 @@ export default {
 
   data: function() {
     return {
-      settings: null,
-      recalibrationLinks: null,
+      settings: {},
+      recalibrationLinks: {},
       isCalibrating: false
     };
   },
