@@ -7,7 +7,7 @@
     >
       <div class="uk-width-auto">
         <div
-          class="uk-card uk-card-default uk-card-hover uk-padding-remove uk-width-medium connect-card-align-top"
+          class="uk-card uk-card-default uk-padding-remove uk-width-medium connect-card-align-top"
         >
           <div class="uk-card-body uk-padding-small">
             <form id="formConnectToHost" @submit.prevent="handleSubmit">
