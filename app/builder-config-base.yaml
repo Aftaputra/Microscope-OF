@@ -1,4 +1,3 @@
-electronVersion: 8.2.0
 directories:
   output: release-builds
   buildResources: app/resources
