@@ -108,6 +108,14 @@ export default {
   },
 
   methods: {
+    flashStream: function() {
+      // Run an animation that flashes the stream (for capture feedback)
+      let element = this.$refs.streamDisplay;
+      element.classList.remove("uk-animation-fade");
+      element.offsetHeight; /* trigger reflow */
+      element.classList.add("uk-animation-fade");
+    },
+
     clickMonitor: function(event) {
       // Calculate steps from event coordinates and store config FOV
       let xCoordinate = event.offsetX;
@@ -125,14 +133,6 @@ export default {
 
       // Emit a signal to move, acted on by panelNavigate.vue
       this.$root.$emit("globalMoveEvent", xSteps, ySteps, 0, false);
-    },
-
-    flashStream: function() {
-      // Run an animation that flashes the stream (for capture feedback)
-      let element = this.$refs.streamDisplay;
-      element.classList.remove("uk-animation-fade");
-      element.offsetHeight; /* trigger reflow */
-      element.classList.add("uk-animation-fade");
     },
 
     handleResize: function() {

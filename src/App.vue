@@ -12,6 +12,19 @@
 // Import components
 import panelLeft from "./components/panelLeft.vue";
 
+// Key Codes
+const keyCodes = {
+  pgup: 33,
+  pgdn: 34,
+  left: 37,
+  up: 38,
+  right: 39,
+  down: 40,
+  enter: 13,
+  esc: 27,
+  shift: 16
+};
+
 // Export main app
 export default {
   name: "App",
@@ -22,6 +35,7 @@ export default {
 
   data: function() {
     return {
+      keysDown: {},
       systemDark: undefined,
       themeObserver: undefined
     };
@@ -76,6 +90,10 @@ export default {
 
   created: function() {
     window.addEventListener("beforeunload", this.handleExit);
+    // Key events
+    window.addEventListener("keydown", this.keyDownMonitor);
+    window.addEventListener("keyup", this.keyUpMonitor);
+    window.addEventListener("wheel", this.wheelMonitor);
   },
 
   beforeDestroy: function() {
@@ -83,12 +101,102 @@ export default {
     if (this.themeObserver) {
       this.themeObserver.disconnect();
     }
+    // Remove key listeners
+    window.removeEventListener("keydown", this.keyDownMonitor);
+    window.removeEventListener("keyup", this.keyUpMonitor);
+    window.removeEventListener("wheel", this.wheelMonitor);
   },
 
   methods: {
     handleExit: function() {
       console.log("Triggered beforeunload");
       this.$root.$emit("globalTogglePreview", false);
+    },
+
+    // Handle global mouse wheel events to be associated with navigation
+    wheelMonitor: function(event) {
+      // Only capture scroll if the event target's parent contains the "scrollTarget" class
+      if (
+        event.target.parentNode.classList.contains("scrollTarget") ||
+        event.target.classList.contains("scrollTarget")
+      ) {
+        var z_rel = event.deltaY / 100;
+        // Emit a signal to move, acted on by panelNavigate.vue
+        this.$root.$emit("globalMoveStepEvent", 0, 0, z_rel, false);
+      }
+    },
+
+    // Handle global key press events to be associated with navigation
+    keyDownMonitor: function(event) {
+      this.keysDown[event.keyCode] = true; //Add key to array
+
+      // Convert keyCode dict into a list of key codes
+      var keyCodeList = Object.keys(keyCodes).map(function(key) {
+        return keyCodes[key];
+      });
+
+      if (
+        // If not inside an element we want to ignore
+        !(event.target instanceof HTMLInputElement) &&
+        !event.target.classList.contains("lightbox-link") &&
+        // If it's a recognised key
+        keyCodeList.includes(event.keyCode)
+      ) {
+        this.navigateKeyHandler(keyCodes);
+        this.captureKeyHandler(keyCodes);
+      }
+    },
+
+    keyUpMonitor: function(event) {
+      delete this.keysDown[event.keyCode]; //Remove key from array
+    },
+
+    navigateKeyHandler: function(keyCodes) {
+      const moveKeys = [
+        keyCodes.left,
+        keyCodes.right,
+        keyCodes.up,
+        keyCodes.down,
+        keyCodes.pgup,
+        keyCodes.pgdn
+      ];
+
+      if (
+        moveKeys.some(r => Object.keys(this.keysDown).includes(r.toString()))
+      ) {
+        // Calculate movement array
+        var x_rel = 0;
+        var y_rel = 0;
+        var z_rel = 0;
+        if (keyCodes.left in this.keysDown) {
+          x_rel = x_rel + 1;
+        }
+        if (keyCodes.right in this.keysDown) {
+          x_rel = x_rel - 1;
+        }
+        if (keyCodes.up in this.keysDown) {
+          y_rel = y_rel + 1;
+        }
+        if (keyCodes.down in this.keysDown) {
+          y_rel = y_rel - 1;
+        }
+        if (keyCodes.pgup in this.keysDown) {
+          z_rel = z_rel - 1;
+        }
+        if (keyCodes.pgdn in this.keysDown) {
+          z_rel = z_rel + 1;
+        }
+        // Make a position request
+        // Emit a signal to move, acted on by panelNavigate.vue
+        this.$root.$emit("globalMoveStepEvent", x_rel, y_rel, z_rel);
+      }
+    },
+
+    captureKeyHandler: function(keyCodes) {
+      if (keyCodes.shift in this.keysDown && keyCodes.enter in this.keysDown) {
+        console.log("Capturing");
+        this.$root.$emit("globalCaptureEvent");
+      }
     }
   }
 };
@@ -132,7 +240,7 @@ html {
   width: 300px;
   height: 100%;
   padding: 0;
-  background-color: rgba(180, 180, 180, 0.055);
+  background-color: rgba(180, 180, 180, 0.03);
   border-width: 0 1px 0 0;
   border-style: solid;
   border-color: rgba(180, 180, 180, 0.25);
