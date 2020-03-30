@@ -1,6 +1,6 @@
 <template>
   <div
-    class="hostCard uk-card uk-card-default uk-card-hover uk-padding-remove uk-width-medium"
+    class="hostCard uk-card uk-card-default uk-padding-remove uk-width-medium"
     :class="{ 'uk-card-secondary': $store.state.globalSettings.darkMode }"
   >
     <div class="uk-card-media-top">
@@ -32,6 +32,7 @@
           <div class="host-description">{{ hostname }}:{{ port }}</div>
         </div>
         <a
+          v-if="deletable"
           href="#"
           class="uk-icon uk-width-auto host-delete"
           @click="$emit('delete')"
@@ -70,6 +71,11 @@ export default {
     port: {
       type: Number,
       required: true
+    },
+    deletable: {
+      type: Boolean,
+      required: false,
+      default: true
     }
   },
 
