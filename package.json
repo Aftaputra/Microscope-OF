@@ -30,6 +30,7 @@
     "about-window": "^1.13.2",
     "custom-electron-titlebar": "^3.2.2",
     "electron-context-menu": "^0.15.2",
+    "electron-progressbar": "^1.2.0",
     "electron-store": "^5.1.1",
     "electron-updater": "^4.2.2",
     "material-design-icons": "^3.0.1"
