@@ -20,6 +20,9 @@
 @global-primary-background: #C32280;
 
 @inverse-primary-muted-color: lighten(@global-primary-background, 15%);
+@inverse-global-color: fade(@global-inverse-color, 80%);
+
+@global-border: #c5c5c5;
 
 // UIkit
 // ========================================================================
@@ -201,11 +204,16 @@
     border-top: 1px solid rgba(0, 0, 0, 0.075);
 }
 
+.uk-card-default {
+    color: @global-color;
+}
+
 .hook-inverse() {
 
     // Override background colour in dark mode
     .uk-card-default {
         background-color: #2a2a2a !important;
+        color: @inverse-global-color;
     }
 
     // Lighten on hover to show depth in dark mode
@@ -276,6 +284,11 @@ a:hover {
  */
 .uk-button {
     border-radius: 2px;
+}
+
+.uk-button-default {
+    background-color: rgba(180, 180, 180, 0.10);
+    border-color: @global-border;
 }
 
 .uk-button-danger {
