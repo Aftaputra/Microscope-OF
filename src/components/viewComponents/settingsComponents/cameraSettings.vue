@@ -47,39 +47,48 @@
 
       <button
         type="submit"
-        class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1"
+        class="uk-button uk-button-primary uk-form-small uk-margin-small uk-width-1-1"
       >
         Apply Settings
       </button>
-
-      <!--Show auto calibrate if default plugin is enabled-->
-      <div v-if="'recalibrate' in recalibrationLinks" class="uk-margin-small">
-        <taskSubmitter
-          :can-terminate="false"
-          :requires-confirmation="true"
-          :confirmation-message="
-            'Start recalibration? This may take a while, and the microscope will be locked during this time.'
-          "
-          :submit-url="recalibrationLinks.recalibrate.href"
-          :submit-label="'Auto-Calibrate'"
-          @response="onRecalibrateResponse"
-          @error="onRecalibrateError"
-        >
-        </taskSubmitter>
-      </div>
     </form>
-      
-    <div v-if="'flatten_lens_shading_table' in recalibrationLinks" class="uk-margin-small">
+
+    <hr />
+
+    <!--Show auto calibrate if default plugin is enabled-->
+    <div v-if="'recalibrate' in recalibrationLinks" class="uk-margin-small">
+      <taskSubmitter
+        :can-terminate="false"
+        :requires-confirmation="true"
+        :confirmation-message="
+          'Start recalibration? This may take a while, and the microscope will be locked during this time.'
+        "
+        :submit-url="recalibrationLinks.recalibrate.href"
+        :submit-label="'Auto-Calibrate'"
+        @response="onRecalibrateResponse"
+        @error="onRecalibrateError"
+      >
+      </taskSubmitter>
+    </div>
+
+    <div
+      v-if="'flatten_lens_shading_table' in recalibrationLinks"
+      class="uk-margin-small"
+    >
       <button
-        class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin-small uk-margin-remove-bottom uk-width-1-1"
+        class="uk-button uk-button-danger uk-form-small uk-width-1-1"
         @click="flattenLensShadingTableRequest"
       >
         Disable flat-field correction
       </button>
     </div>
-    <div v-if="'delete_lens_shading_table' in recalibrationLinks" class="uk-margin-small uk-margin-remove-top">
+
+    <div
+      v-if="'delete_lens_shading_table' in recalibrationLinks"
+      class="uk-margin-small"
+    >
       <button
-        class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin-small uk-width-1-1"
+        class="uk-button uk-button-danger uk-form-small uk-width-1-1"
         @click="deleteLensShadingTableRequest"
       >
         Adaptive flat-field correction
@@ -147,7 +156,7 @@ export default {
             // Get plugin action link
             this.recalibrationLinks = foundExtension.links;
           } else {
-            this.recalibrationLinks = {}
+            this.recalibrationLinks = {};
           }
         })
         .catch(error => {
@@ -194,10 +203,10 @@ export default {
     },
 
     flattenLensShadingTableRequest: function() {
-      axios.post(this.recalibrationLinks.flatten_lens_shading_table.href)
+      axios.post(this.recalibrationLinks.flatten_lens_shading_table.href);
     },
     deleteLensShadingTableRequest: function() {
-      axios.post(this.recalibrationLinks.delete_lens_shading_table.href)
+      axios.post(this.recalibrationLinks.delete_lens_shading_table.href);
     }
   }
 };
