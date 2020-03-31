@@ -20,7 +20,7 @@ export default {
   props: {
     'componentBaseURL': {
       required: false,
-      default: null,
+      default: "http://localhost/api/v2",
       type: String
     }
   },
