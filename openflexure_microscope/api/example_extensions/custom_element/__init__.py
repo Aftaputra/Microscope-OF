@@ -42,13 +42,18 @@ customelement_extension_v2 = CustomElementExtension()
 
 def wc_func():
     return {
-        "href": customelement_extension_v2.static_file_url("my-custom-element.min.js"),
-        "name": "my-custom-element",
+        "href": customelement_extension_v2.static_file_url("vue-web-component.min.js"),
+        "name": "vue-web-component",
     }
 
 
 def gui_func():
-    return {"icon": "pets", "title": "Element", "viewPanel": "stream", "wc": wc_func()}
+    return {
+        "icon": "grid_on",
+        "title": "Med Scan",
+        "viewPanel": "stream",
+        "wc": wc_func(),
+    }
 
 
 customelement_extension_v2.add_meta("wc", wc_func)
