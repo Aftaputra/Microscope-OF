@@ -62,6 +62,7 @@ app, labthing = create_app(
     prefix="/api/v2",
     title=f"OpenFlexure Microscope {api_microscope.name}",
     description="Test LabThing-based API for OpenFlexure Microscope",
+    types=["org.openflexure.microscope"],
     version=pkg_resources.get_distribution("openflexure_microscope").version,
     flask_kwargs={"static_url_path": ""},
 )
@@ -169,5 +170,9 @@ def cleanup():
 
 atexit.register(cleanup)
 
+# Start the app
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port="5000", threaded=True, debug=True, use_reloader=False)
+    from labthings.server.wsgi import Server
+
+    server = Server(app)
+    server.run(host="0.0.0.0", port=5000, debug=False, zeroconf=True)

@@ -6,12 +6,16 @@ import threading
 import datetime
 import logging
 
+import threading
+import gevent
+
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 
 from .capture import CaptureObject, build_captures_from_exif
 from openflexure_microscope.utilities import entry_by_uuid
 from labthings.core.lock import StrictLock
+from labthings.core.event import ClientEvent
 
 from openflexure_microscope.paths import data_file_path
 
@@ -44,51 +48,6 @@ def generate_numbered_basename(obj_list: list) -> str:
     return basename
 
 
-class CameraEvent(object):
-    """
-    A frame-signaller object used by any instances or subclasses of BaseCamera.
-
-    An event-like class that signals all active clients when a new frame is available.
-    """
-
-    def __init__(self):
-        self.events = {}
-
-    def wait(self, timeout: int = 5):
-        """Wait for the next frame (invoked from each client's thread)."""
-        ident = threading.get_ident()
-        if ident not in self.events:
-            # this is a new client
-            # add an entry for it in the self.events dict
-            # each entry has two elements, a threading.Event() and a timestamp
-            self.events[ident] = [threading.Event(), time.time()]
-        return self.events[ident][0].wait(timeout)
-
-    def set(self):
-        """Signal that a new frame is available."""
-        now = time.time()
-        remove = None
-        for ident, event in self.events.items():
-            if not event[0].isSet():
-                # if this client's event is not set, then set it
-                # also update the last set timestamp to now
-                event[0].set()
-                event[1] = now
-            else:
-                # if the client's event is already set, it means the client
-                # did not process a previous frame
-                # if the event stays set for more than 5 seconds, then assume
-                # the client is gone and remove it
-                if now - event[1] > 5:
-                    remove = ident
-        if remove:
-            del self.events[remove]
-
-    def clear(self):
-        """Clear frame event, once processed."""
-        self.events[threading.get_ident()][0].clear()
-
-
 class BaseCamera(metaclass=ABCMeta):
     """
     Base implementation of StreamingCamera.
@@ -98,11 +57,11 @@ class BaseCamera(metaclass=ABCMeta):
         self.thread = None
         self.camera = None
 
-        self.lock = StrictLock(timeout=1)
+        self.lock = StrictLock(timeout=1, name="Camera")
 
         self.frame = None
         self.last_access = 0
-        self.event = CameraEvent()
+        self.event = ClientEvent()
         self.stop = False  # Used to indicate that the stream loop should break
 
         self.stream_timeout = 20
@@ -180,65 +139,6 @@ class BaseCamera(metaclass=ABCMeta):
 
     def rebuild_captures(self):
         self.images = build_captures_from_exif(self.paths["default"])
-
-    # START AND STOP WORKER THREAD
-
-    def start_worker(self, timeout: int = 5) -> bool:
-        """Start the background camera thread if it isn't running yet."""
-        timeout_time = time.time() + timeout
-
-        self.last_access = time.time()
-        self.stop = False
-
-        if not self.stream_active:
-            # start background frame thread
-            self.thread = threading.Thread(target=self._thread)
-            self.thread.daemon = True
-            self.thread.start()
-
-            # wait until frames are available
-            logging.info("Waiting for frames")
-            while self.get_frame() is None:
-                if time.time() > timeout_time:
-                    raise TimeoutError("Timeout waiting for frames.")
-                else:
-                    time.sleep(0.1)
-        return True
-
-    def stop_worker(self, timeout: int = 5) -> bool:
-        """Flag worker thread for stop. Waits for thread close or timeout."""
-        logging.debug("Stopping worker thread")
-        timeout_time = time.time() + timeout
-
-        if self.stream_active:
-            self.stop = True
-            self.thread.join()  # Wait for stream thread to exit
-            logging.debug("Waiting for stream thread to exit.")
-
-        while self.stream_active:
-            if time.time() > timeout_time:
-                logging.debug("Timeout waiting for worker thread close.")
-                raise TimeoutError("Timeout waiting for worker thread close.")
-            else:
-                time.sleep(0.1)
-        return True
-
-    # HANDLE STREAM FRAMES
-
-    def get_frame(self):
-        """Return the current camera frame."""
-        self.last_access = time.time()
-
-        # wait for a signal from the camera thread
-        self.event.wait()
-        self.event.clear()
-
-        return self.frame
-
-    @abstractmethod
-    def frames(self):
-        """Create generator that returns frames from the camera."""
-        pass
 
     # RETURNING CAPTURES
 
@@ -355,6 +255,64 @@ class BaseCamera(metaclass=ABCMeta):
 
         return output
 
+    # START AND STOP WORKER THREAD
+
+    def start_worker(self, timeout: int = 5) -> bool:
+        """Start the background camera thread if it isn't running yet."""
+        timeout_time = time.time() + timeout
+
+        self.last_access = time.time()
+        self.stop = False
+
+        if not self.stream_active:
+            # Spawn a greenlet to handle stream
+            # start background frame thread
+            self.thread = gevent.spawn(self._thread)
+
+            # wait until frames are available
+            logging.info("Waiting for frames")
+            while self.get_frame() is None:
+                if time.time() > timeout_time:
+                    raise TimeoutError("Timeout waiting for frames.")
+                else:
+                    time.sleep(0.1)
+        return True
+
+    def stop_worker(self, timeout: int = 5) -> bool:
+        """Flag worker thread for stop. Waits for thread close or timeout."""
+        logging.debug("Stopping worker thread")
+        timeout_time = time.time() + timeout
+
+        if self.stream_active:
+            self.stop = True
+            self.thread.join()  # Wait for stream thread to exit
+            logging.debug("Waiting for stream thread to exit.")
+
+        while self.stream_active:
+            if time.time() > timeout_time:
+                logging.debug("Timeout waiting for worker thread close.")
+                raise TimeoutError("Timeout waiting for worker thread close.")
+            else:
+                time.sleep(0.1)
+        return True
+
+    # HANDLE STREAM FRAMES
+
+    def get_frame(self):
+        """Return the current camera frame."""
+        self.last_access = time.time()
+
+        # wait for a signal from the camera thread
+        self.event.wait()
+        self.event.clear()
+
+        return self.frame
+
+    @abstractmethod
+    def frames(self):
+        """Create generator that returns frames from the camera."""
+        pass
+
     # WORKER THREAD
 
     def _thread(self):
@@ -367,7 +325,6 @@ class BaseCamera(metaclass=ABCMeta):
         for frame in self.frames_iterator:
             self.frame = frame
             self.event.set()  # send signal to clients
-            time.sleep(0)
 
             # Handle timeout
             if (

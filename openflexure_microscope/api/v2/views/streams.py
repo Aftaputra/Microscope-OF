@@ -18,7 +18,16 @@ class MjpegStream(View):
     @doc_response(200, mimetype="multipart/x-mixed-replace")
     def get(self):
         """
-        MJPEG stream from the microscope camera
+        MJPEG stream from the microscope camera.
+
+        Note: While the code actually getting frame data from a camera and storing it in
+        camera.frame runs in a thread, the gen(microscope.camera) generator does not.
+        This response is therefore blocking. The generator just yields the most recent
+        frame from the camera object, passed to the Flask response, and then repeats until
+        the connection is closed.
+
+        Without monkey patching with gevent, or using a native threaded server, the stream
+        will block all proceeding requests.
         """
         microscope = find_component("org.openflexure.microscope")
         # Restart stream worker thread
