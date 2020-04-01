@@ -8,7 +8,7 @@
 
     <form v-on:submit.prevent v-on:keyup.enter="increment()">
       <div id="step-user" v-show="stepValue==0">
-        <h2>User information</h2>
+        <h2>User information (1/4)</h2>
 
         <label for="username">Your name:</label>
         <input type="text" id="username" name="username" v-model="username" required />
@@ -18,7 +18,7 @@
       </div>
 
       <div id="step-patient" v-show="stepValue==1">
-        <h2>Patient information</h2>
+        <h2>Patient information (2/4)</h2>
 
         <label for="patientID">Patient ID:</label>
         <input type="text" id="patientID" name="patientID" v-model="patientID" required />
@@ -26,7 +26,7 @@
       </div>
 
       <div id="step-sample" v-show="stepValue==2">
-        <h2>Sample information</h2>
+        <h2>Sample information (3/4)</h2>
 
         <label>Sample type:</label>
         <br />
@@ -39,8 +39,8 @@
       </div>
 
       <div id="step-scan" v-show="stepValue==3">
-        <h2>Start scan</h2>
-(Confirm information)
+        <h2>Start scan (4/4)</h2>
+        (Confirm information)
         (Confirm scan parameters, just a radio box for selecting defaults)
         <p>{{this.payload}}</p>(Start button)
       </div>
