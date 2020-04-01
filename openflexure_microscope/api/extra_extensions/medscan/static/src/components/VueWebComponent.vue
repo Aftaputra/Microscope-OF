@@ -3,25 +3,55 @@
     <h1>Sample Scan Wizard</h1>
     <div>Base URL: {{ componentBaseURL }}</div>
     <p>Host microscope name: {{ hostDeviceName }}</p>
-    <p>{{ message }}</p>
-    <br />
-    <p>This cheeky little counter has all of its logic contained in a server-side component:</p>
-    <button type="button" v-on:click="decrement()">-</button>
-    <span>{{ value }}</span>
-    <button type="button" v-on:click="increment()">+</button>
 
     <hr />
 
-    <form v-on:submit.prevent>
-      <label for="username">Your name:</label>
-      <input type="text" id="username" name="username" required />
-      <br />
-      <label for="patientID">Patient ID:</label>
-      <input type="text" id="patientID" name="patientID" required />
-      <br />
-      <label for="currentTime">Current time (check this is correct):</label>
-      <input type="datetime-local" id="currentTime" name="currentTime" v-model="currentTimeForm" />
+    <form v-on:submit.prevent v-on:keyup.enter="increment()">
+      <div id="step-user" v-show="stepValue==0">
+        <h2>User information</h2>
+
+        <label for="username">Your name:</label>
+        <input type="text" id="username" name="username" v-model="username" required />
+        <br />
+        <label for="currentTime">Current time (check this is correct):</label>
+        <input type="datetime-local" id="currentTime" name="currentTime" v-model="currentTimeForm" />
+      </div>
+
+      <div id="step-patient" v-show="stepValue==1">
+        <h2>Patient information</h2>
+
+        <label for="patientID">Patient ID:</label>
+        <input type="text" id="patientID" name="patientID" v-model="patientID" required />
+        <br />
+      </div>
+
+      <div id="step-sample" v-show="stepValue==2">
+        <h2>Sample information</h2>
+
+        <label>Sample type:</label>
+        <br />
+        <input type="radio" id="typeThin" value="thin" v-model="sampleType" />
+        <label for="typeThin">Thin smear</label>
+        <br />
+        <input type="radio" id="typeThick" value="thick" v-model="sampleType" />
+        <label for="typeThick">Thick smear</label>
+        <br />
+      </div>
+
+      <div id="step-scan" v-show="stepValue==3">
+        <h2>Start scan</h2>
+(Confirm information)
+        (Confirm scan parameters, just a radio box for selecting defaults)
+        <p>{{this.payload}}</p>(Start button)
+      </div>
     </form>
+
+    <div id="form-stepper">
+      <p>{{ message }}</p>
+      <button v-show="stepValue == 3" type="button" v-on:click="restart()">Restart</button>
+      <button v-show="stepValue > 0" type="button" v-on:click="decrement()">Previous</button>
+      <button v-show="stepValue < 3" type="button" v-on:click="increment()">Next</button>
+    </div>
   </div>
 </template>
 
@@ -39,10 +69,13 @@ export default {
 
   data: function() {
     return {
-      value: 0,
-      message: "",
+      stepValue: 0,
       hostDeviceName: null,
-      currentTime: this.getLocalDatetimeString()
+      message: null,
+      username: "",
+      currentTime: this.getLocalDatetimeString(),
+      patientID: "",
+      sampleType: "thin"
     };
   },
 
@@ -66,11 +99,37 @@ export default {
 
   methods: {
     decrement: function() {
-      this.value = this.value - 1;
+      if (this.stepValue > 0) {
+        this.stepValue = this.stepValue - 1;
+      }
     },
 
     increment: function() {
-      this.value = this.value + 1;
+      // Validate sections
+      if (this.stepValue == 0) {
+        if (!this.username) {
+          this.message = "Please enter your name";
+          return false;
+        }
+      }
+      if (this.stepValue == 1) {
+        if (!this.patientID) {
+          this.message = "Please enter a patient ID";
+          return false;
+        }
+      }
+      // Upper bound on section number
+      if (this.stepValue < 3) {
+        this.stepValue = this.stepValue + 1;
+        this.message = "";
+        return true;
+      }
+    },
+
+    restart: function() {
+      this.stepValue = 0;
+      this.patientID = "";
+      this.currentTime = this.getLocalDatetimeString();
     },
 
     getLocalDatetimeString: function() {
@@ -108,7 +167,7 @@ export default {
         return this.currentTime.substr(0, 19);
       },
       set(val) {
-        console.log(val)
+        console.log(val);
         // Get timezone
         var dt = new Date();
         var tzo = -dt.getTimezoneOffset(),
@@ -118,8 +177,25 @@ export default {
             return (norm < 10 ? "0" : "") + norm;
           };
         // Stick to the end of the new timestring from the form
-        this.currentTime =
-          val + dif + pad(tzo / 60) + ":" + pad(tzo % 60);
+        this.currentTime = val + dif + pad(tzo / 60) + ":" + pad(tzo % 60);
+      }
+    },
+
+    payload: {
+      get() {
+        return {
+          filename: `${this.patientID}_${this.sampleType}`,
+          temporary: false,
+          grid: [20, 20, 5],
+          fast_autofocus: true,
+          use_video_port: false,
+          annotations: {
+            patientID: this.patientID,
+            username: this.username,
+            clientDatetime: this.currentTime
+          },
+          tags: ["medscan"]
+        };
       }
     }
   }
@@ -129,5 +205,14 @@ export default {
 <style scoped>
 .medscan-component-class {
   text-align: left;
+}
+
+input {
+  display: block
+}
+
+button {
+  margin: 0 10px 0 0;
+  min-width: 100px;
 }
 </style>
