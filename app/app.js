@@ -143,8 +143,8 @@ function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     frame: !store.get("drawCustomTitleBar"),
-    width: 1124,
-    height: 800,
+    width: 1200,
+    height: 900,
     icon: path.join(__dirname, "/icons/png/64x64.png"),
     webPreferences: {
       nodeIntegration: true
