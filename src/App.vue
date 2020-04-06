@@ -370,7 +370,7 @@ html {
     0px 0px 0px 4px rgba(128, 128, 128, 0.5) !important;
   border-radius: 5px;
   opacity: 100%;
-  pointer-events: none;
+  pointer-events: none !important;
 }
 
 .v-step {
