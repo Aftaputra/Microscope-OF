@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="uk-padding-small">
     <div v-if="error" class="uk-padding-small uk-text-danger">
       <b>{{ error }}</b>
     </div>
