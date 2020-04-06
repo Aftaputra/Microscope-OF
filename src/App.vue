@@ -94,17 +94,6 @@ export default {
             placement: "bottom"
           }
         },
-        ...(!this.liteMode
-          ? [
-              {
-                target: "#saved-connections-grid",
-                header: {
-                  title: "Saved microscopes"
-                },
-                content: `Connect to your saved microscopes for faster access`
-              }
-            ]
-          : []),
         ...(this.isElectron && !this.liteMode
           ? [
               {
@@ -113,6 +102,17 @@ export default {
                   title: "Nearby microscopes"
                 },
                 content: `Connect to microscopes found on your network`
+              }
+            ]
+          : []),
+        ...(!this.liteMode
+          ? [
+              {
+                target: "#saved-connections-grid",
+                header: {
+                  title: "Saved microscopes"
+                },
+                content: `Connect to your saved microscopes for faster access`
               }
             ]
           : []),
