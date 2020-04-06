@@ -4,13 +4,13 @@
     class="uk-height-1-1 uk-margin-remove uk-padding-remove"
     :class="handleTheme"
   >
-    <panelLeft />
+    <appContent />
   </div>
 </template>
 
 <script>
 // Import components
-import panelLeft from "./components/panelLeft.vue";
+import appContent from "./components/appContent.vue";
 
 // Key Codes
 const keyCodes = {
@@ -30,7 +30,7 @@ export default {
   name: "App",
 
   components: {
-    panelLeft
+    appContent
   },
 
   data: function() {
