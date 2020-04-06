@@ -378,7 +378,7 @@ html {
 }
 
 .v-step__header {
-  background-color: darken(@global-primary-background, 15%) !important;
+  background-color: darken(@global-primary-background, 7%) !important;
 }
 
 .v-step__button {
@@ -388,9 +388,9 @@ html {
 // Change step arrow colour
 // This is awful and hacky and makes me sad, but needs must
 .v-step .v-step__arrow {
-  border-color: darken(@global-primary-background, 15%) !important;
+  border-color: darken(@global-primary-background, 7%) !important;
   &--dark {
-    border-color: darken(@global-primary-background, 15%) !important;
+    border-color: darken(@global-primary-background, 7%) !important;
   }
 }
 
