@@ -29,7 +29,8 @@ const keyCodes = {
   down: 40,
   enter: 13,
   esc: 27,
-  shift: 16
+  shift: 16,
+  t: 84
 };
 
 // Export main app
@@ -230,6 +231,7 @@ export default {
       ) {
         this.navigateKeyHandler(keyCodes);
         this.captureKeyHandler(keyCodes);
+        this.letterKeyHandler(keyCodes);
       }
     },
 
@@ -282,6 +284,12 @@ export default {
       if (keyCodes.shift in this.keysDown && keyCodes.enter in this.keysDown) {
         console.log("Capturing");
         this.$root.$emit("globalCaptureEvent");
+      }
+    },
+
+    letterKeyHandler: function(keyCodes) {
+      if (keyCodes.shift in this.keysDown && keyCodes.t in this.keysDown) {
+        this.$tours["guidedTour"].start();
       }
     }
   }
