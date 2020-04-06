@@ -2,7 +2,7 @@
   <div class="connectDisplay uk-padding uk-padding-remove-left">
     <div
       uk-grid
-      class="uk-height-1-1 uk-margin-remove uk-padding-remove"
+      class="uk-height-1-1 uk-margin-remove uk-padding-remove uk-flex-column"
       margin="0"
     >
       <div class="uk-width-auto">
@@ -409,8 +409,4 @@ export default {
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped lang="less">
-.connect-card-align-top {
-  margin-top: 52px;
-}
-</style>
+<style scoped lang="less"></style>

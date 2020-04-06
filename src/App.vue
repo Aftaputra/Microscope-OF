@@ -95,6 +95,17 @@ export default {
             placement: "bottom"
           }
         },
+        ...(!this.liteMode
+          ? [
+              {
+                target: "#new-connection-card",
+                header: {
+                  title: "New connection"
+                },
+                content: `Connect locally if you're running on a microscope, \nor open a new remote connection to a microscope`
+              }
+            ]
+          : []),
         ...(this.isElectron && !this.liteMode
           ? [
               {
@@ -114,17 +125,6 @@ export default {
                   title: "Saved microscopes"
                 },
                 content: `Connect to your saved microscopes for faster access`
-              }
-            ]
-          : []),
-        ...(!this.liteMode
-          ? [
-              {
-                target: "#new-connection-card",
-                header: {
-                  title: "New connection"
-                },
-                content: `Connect locally if you're running on a microscope, \nor open a new remote connection to a microscope`
               }
             ]
           : []),
@@ -367,7 +367,7 @@ html {
 
 // Style tour
 .v-tour__target--highlighted {
-  box-shadow: 0px 40px 160px 20px rgba(0, 0, 0, 0.5),
+  box-shadow: 0px 40px 200px 30px rgba(0, 0, 0, 0.5),
     0px 0px 0px 4px rgba(128, 128, 128, 0.5) !important;
   border-radius: 5px;
   opacity: 100% !important;
