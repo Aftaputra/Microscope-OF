@@ -349,7 +349,8 @@ html {
 
 // Style tour
 .v-tour__target--highlighted {
-  box-shadow: 0px 0px 180px 40px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0px 40px 160px 20px rgba(0, 0, 0, 0.5),
+    0px 0px 0px 4px rgba(128, 128, 128, 0.5) !important;
   border-radius: 5px;
   opacity: 100%;
 }
