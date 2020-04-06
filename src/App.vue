@@ -16,6 +16,7 @@
 </template>
 
 <script>
+import isElectron from "./modules/isElectron";
 // Import components
 import appContent from "./components/appContent.vue";
 
@@ -46,7 +47,43 @@ export default {
       keysDown: {},
       systemDark: undefined,
       themeObserver: undefined,
-      tourSteps: [
+      liteMode: process.env.VUE_APP_LITEMODE == "true" ? true : false,
+      isElectron: isElectron(),
+      tourCallbacks: {
+        onStop: () => {
+          this.setLocalStorageObj("completedTour", true);
+        }
+      }
+    };
+  },
+
+  computed: {
+    isSystemDark: function() {
+      if (
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+      ) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+    handleTheme: function() {
+      var isDark = false;
+      if (this.$store.state.globalSettings.appTheme == "dark") {
+        isDark = true;
+      } else if (this.$store.state.globalSettings.appTheme == "system") {
+        if (this.systemDark) {
+          isDark = true;
+        }
+      }
+      return {
+        "uk-light": isDark,
+        "uk-background-secondary": isDark
+      };
+    },
+    tourSteps: function() {
+      return [
         {
           target: "#tour-header", // We're using document.querySelector() under the hood
           header: {
@@ -57,27 +94,39 @@ export default {
             placement: "bottom"
           }
         },
-        {
-          target: "#saved-connections-grid",
-          header: {
-            title: "Saved microscopes"
-          },
-          content: `Connect to your saved microscopes for faster access`
-        },
-        {
-          target: "#nearby-connections-grid",
-          header: {
-            title: "Nearby microscopes"
-          },
-          content: `Connect to microscopes found on your network`
-        },
-        {
-          target: "#new-connection-card",
-          header: {
-            title: "New connection"
-          },
-          content: `Connect locally if you're running on a microscope, \nor open a new remote connection to a microscope`
-        },
+        ...(!this.liteMode
+          ? [
+              {
+                target: "#saved-connections-grid",
+                header: {
+                  title: "Saved microscopes"
+                },
+                content: `Connect to your saved microscopes for faster access`
+              }
+            ]
+          : []),
+        ...(this.isElectron && !this.liteMode
+          ? [
+              {
+                target: "#nearby-connections-grid",
+                header: {
+                  title: "Nearby microscopes"
+                },
+                content: `Connect to microscopes found on your network`
+              }
+            ]
+          : []),
+        ...(!this.liteMode
+          ? [
+              {
+                target: "#new-connection-card",
+                header: {
+                  title: "New connection"
+                },
+                content: `Connect locally if you're running on a microscope, \nor open a new remote connection to a microscope`
+              }
+            ]
+          : []),
         {
           target: "#gallery-tab-icon",
           header: {
@@ -113,39 +162,7 @@ export default {
           },
           content: `Extensions installed on your microscope will appear below this line`
         }
-      ],
-      tourCallbacks: {
-        onStop: () => {
-          this.setLocalStorageObj("completedTour", true);
-        }
-      }
-    };
-  },
-
-  computed: {
-    isSystemDark: function() {
-      if (
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches
-      ) {
-        return true;
-      } else {
-        return false;
-      }
-    },
-    handleTheme: function() {
-      var isDark = false;
-      if (this.$store.state.globalSettings.appTheme == "dark") {
-        isDark = true;
-      } else if (this.$store.state.globalSettings.appTheme == "system") {
-        if (this.systemDark) {
-          isDark = true;
-        }
-      }
-      return {
-        "uk-light": isDark,
-        "uk-background-secondary": isDark
-      };
+      ];
     }
   },
 

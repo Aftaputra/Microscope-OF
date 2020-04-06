@@ -95,14 +95,10 @@
 
       <div class="uk-width-expand">
         <ul uk-accordion="multiple: true; animation: false">
-          <li class="uk-open">
+          <li id="saved-connections-grid" class="uk-open">
             <a class="uk-accordion-title" href="#">Saved devices</a>
             <div class="uk-accordion-content">
-              <div
-                id="saved-connections-grid"
-                class="uk-grid-medium uk-grid-match uk-margin-top"
-                uk-grid
-              >
+              <div class="uk-grid-medium uk-grid-match uk-margin-top" uk-grid>
                 <div v-for="host in savedHosts" :key="host.name">
                   <hostCard
                     :name="host.name"
@@ -116,14 +112,10 @@
             </div>
           </li>
 
-          <li class="uk-open">
+          <li v-show="isElectron" id="nearby-connections-grid" class="uk-open">
             <a class="uk-accordion-title" href="#">Nearby devices</a>
             <div class="uk-accordion-content">
-              <div
-                id="nearby-connections-grid"
-                class="uk-grid-medium uk-grid-match uk-margin-top"
-                uk-grid
-              >
+              <div class="uk-grid-medium uk-grid-match uk-margin-top" uk-grid>
                 <div v-for="host in foundHostArray" :key="host.name">
                   <hostCard
                     :name="host.name"
@@ -163,6 +155,7 @@ export default {
 
   data: function() {
     return {
+      isElectron: isElectron(),
       localMode: true,
       hostname: "",
       port: 5000,
