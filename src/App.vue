@@ -31,6 +31,7 @@ const keyCodes = {
   enter: 13,
   esc: 27,
   shift: 16,
+  alt: 18,
   t: 84
 };
 
@@ -305,7 +306,7 @@ export default {
     },
 
     letterKeyHandler: function(keyCodes) {
-      if (keyCodes.shift in this.keysDown && keyCodes.t in this.keysDown) {
+      if (keyCodes.alt in this.keysDown && keyCodes.t in this.keysDown) {
         this.$tours["guidedTour"].start();
       }
     }
