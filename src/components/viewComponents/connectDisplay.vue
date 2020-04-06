@@ -7,6 +7,7 @@
     >
       <div class="uk-width-auto">
         <div
+          id="new-connection-card"
           class="uk-card uk-card-default uk-padding-remove uk-width-medium connect-card-align-top"
         >
           <div class="uk-card-body uk-padding-small">
@@ -97,7 +98,11 @@
           <li class="uk-open">
             <a class="uk-accordion-title" href="#">Saved devices</a>
             <div class="uk-accordion-content">
-              <div class="uk-grid-medium uk-grid-match uk-margin-top" uk-grid>
+              <div
+                id="saved-connections-grid"
+                class="uk-grid-medium uk-grid-match uk-margin-top"
+                uk-grid
+              >
                 <div v-for="host in savedHosts" :key="host.name">
                   <hostCard
                     :name="host.name"
@@ -114,7 +119,11 @@
           <li class="uk-open">
             <a class="uk-accordion-title" href="#">Nearby devices</a>
             <div class="uk-accordion-content">
-              <div class="uk-grid-medium uk-grid-match uk-margin-top" uk-grid>
+              <div
+                id="nearby-connections-grid"
+                class="uk-grid-medium uk-grid-match uk-margin-top"
+                uk-grid
+              >
                 <div v-for="host in foundHostArray" :key="host.name">
                   <hostCard
                     :name="host.name"

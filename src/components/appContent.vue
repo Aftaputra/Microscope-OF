@@ -1,6 +1,6 @@
 <template>
   <div
-    id="panel-left"
+    id="app-content"
     class="uk-margin-remove uk-padding-remove uk-height-1-1"
     uk-grid
   >
@@ -11,7 +11,8 @@
     >
       <tabIcon
         v-show="!liteMode"
-        id="connect"
+        id="connect-tab-icon"
+        tab-i-d="connect"
         :require-connection="false"
         :current-tab="currentTab"
         @set-tab="setTab"
@@ -19,7 +20,8 @@
         <i class="material-icons">bug_report</i>
       </tabIcon>
       <tabIcon
-        id="gallery"
+        id="gallery-tab-icon"
+        tab-i-d="gallery"
         :require-connection="true"
         :current-tab="currentTab"
         @set-tab="setTab"
@@ -30,7 +32,8 @@
       <hr />
 
       <tabIcon
-        id="navigate"
+        id="navigate-tab-icon"
+        tab-i-d="navigate"
         :require-connection="true"
         :current-tab="currentTab"
         @set-tab="setTab"
@@ -38,7 +41,8 @@
         <i class="material-icons">gamepad</i>
       </tabIcon>
       <tabIcon
-        id="capture"
+        id="capture-tab-icon"
+        tab-i-d="capture"
         :require-connection="true"
         :current-tab="currentTab"
         @set-tab="setTab"
@@ -46,7 +50,8 @@
         <i class="material-icons">camera_alt</i>
       </tabIcon>
       <tabIcon
-        id="settings"
+        id="settings-tab-icon"
+        tab-i-d="settings"
         :require-connection="false"
         :current-tab="currentTab"
         @set-tab="setTab"
@@ -54,12 +59,12 @@
         <i class="material-icons">settings</i>
       </tabIcon>
 
-      <hr />
+      <hr id="extension-tab-divider" />
 
       <tabIcon
         v-for="plugin in pluginsGuiList"
-        :id="plugin.id"
         :key="plugin.id"
+        :tab-i-d="plugin.id"
         :title="plugin.title"
         :require-connection="plugin.requiresConnection"
         :current-tab="currentTab"
@@ -76,35 +81,35 @@
       class="uk-padding-remove uk-height-1-1 uk-width-expand"
     >
       <tabContent
-        id="connect"
+        tab-i-d="connect"
         :require-connection="false"
         :current-tab="currentTab"
       >
         <connectContent />
       </tabContent>
       <tabContent
-        id="gallery"
+        tab-i-d="gallery"
         :require-connection="false"
         :current-tab="currentTab"
       >
         <galleryContent />
       </tabContent>
       <tabContent
-        id="navigate"
+        tab-i-d="navigate"
         :require-connection="true"
         :current-tab="currentTab"
       >
         <navigateContent />
       </tabContent>
       <tabContent
-        id="capture"
+        tab-i-d="capture"
         :require-connection="true"
         :current-tab="currentTab"
       >
         <captureContent />
       </tabContent>
       <tabContent
-        id="settings"
+        tab-i-d="settings"
         :require-connection="false"
         :current-tab="currentTab"
       >
@@ -113,8 +118,8 @@
 
       <tabContent
         v-for="plugin in pluginsGuiList"
-        :id="plugin.id"
         :key="plugin.id"
+        :tab-i-d="plugin.id"
         :require-connection="plugin.requiresConnection"
         :current-tab="currentTab"
       >
@@ -203,6 +208,8 @@ export default {
       }
     );
   },
+
+  mounted: function() {},
 
   beforeDestroy() {
     // Then we call that function here to unwatch

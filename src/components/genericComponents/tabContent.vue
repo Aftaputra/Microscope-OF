@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="!(requireConnection && !$store.getters.ready)"
-    :hidden="currentTab != id"
+    :hidden="currentTab != tabID"
     class="uk-width-expand uk-height-1-1"
   >
     <div class="section-content"><slot></slot></div>
@@ -13,7 +13,7 @@ export default {
   name: "TabContent",
 
   props: {
-    id: {
+    tabID: {
       type: String,
       required: true
     },
