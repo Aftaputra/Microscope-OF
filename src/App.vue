@@ -4,7 +4,14 @@
     class="uk-height-1-1 uk-margin-remove uk-padding-remove"
     :class="handleTheme"
   >
+    <div id="tour-header"></div>
     <appContent />
+    <v-tour
+      name="guidedTour"
+      :steps="tourSteps"
+      :callbacks="tourCallbacks"
+      :options="{ highlight: true }"
+    ></v-tour>
   </div>
 </template>
 
@@ -37,7 +44,80 @@ export default {
     return {
       keysDown: {},
       systemDark: undefined,
-      themeObserver: undefined
+      themeObserver: undefined,
+      tourSteps: [
+        {
+          target: "#tour-header", // We're using document.querySelector() under the hood
+          header: {
+            title: "Welcome to OpenFlexure eV"
+          },
+          content: `Click Next to learn how to use OpenFlexure eV`,
+          params: {
+            placement: "bottom"
+          }
+        },
+        {
+          target: "#saved-connections-grid",
+          header: {
+            title: "Saved microscopes"
+          },
+          content: `Connect to your saved microscopes for faster access`
+        },
+        {
+          target: "#nearby-connections-grid",
+          header: {
+            title: "Nearby microscopes"
+          },
+          content: `Connect to microscopes found on your network`
+        },
+        {
+          target: "#new-connection-card",
+          header: {
+            title: "New connection"
+          },
+          content: `Connect locally if you're running on a microscope, \nor open a new remote connection to a microscope`
+        },
+        {
+          target: "#gallery-tab-icon",
+          header: {
+            title: "Capture gallery"
+          },
+          content: `View and download your microscope images from the gallery tab`
+        },
+        {
+          target: "#navigate-tab-icon",
+          header: {
+            title: "Navigate around your sample"
+          },
+          content: `Move your microscope stage and perform autofocus from the navigate tab`
+        },
+        {
+          target: "#capture-tab-icon",
+          header: {
+            title: "Capture microscope images"
+          },
+          content: `Take images and simple tile scans from the capture tab`
+        },
+        {
+          target: "#settings-tab-icon",
+          header: {
+            title: "Change settings"
+          },
+          content: `Change app and microscope settings, including microscope calibration, from the settings tab`
+        },
+        {
+          target: "#extension-tab-divider",
+          header: {
+            title: "Microscope extensions"
+          },
+          content: `Extensions installed on your microscope will appear below this line`
+        }
+      ],
+      tourCallbacks: {
+        onStop: () => {
+          this.setLocalStorageObj("completedTour", true);
+        }
+      }
     };
   },
 
@@ -86,6 +166,12 @@ export default {
         this.systemDark = false;
       }
     });
+    // Handle guided tour
+    // If the user has already completed or skipped the guided tour
+    var completedTour = this.getLocalStorageObj("completedTour") || false;
+    if (!completedTour) {
+      this.$tours["guidedTour"].start();
+    }
   },
 
   created: function() {
@@ -251,5 +337,57 @@ html {
   overflow-x: hidden;
   height: 100%;
   padding: 0;
+}
+
+// Style tour
+.v-tour__target--highlighted {
+  box-shadow: 0px 0px 180px 40px rgba(0, 0, 0, 0.4) !important;
+  border-radius: 5px;
+  opacity: 100%;
+}
+
+.v-step {
+  background: @global-primary-background !important;
+}
+
+.v-step__header {
+  background-color: darken(@global-primary-background, 15%) !important;
+}
+
+.v-step__button {
+  font-size: 0.9rem !important;
+}
+
+// Change step arrow colour
+// This is awful and hacky and makes me sad, but needs must
+.v-step .v-step__arrow {
+  border-color: darken(@global-primary-background, 15%) !important;
+  &--dark {
+    border-color: darken(@global-primary-background, 15%) !important;
+  }
+}
+
+.v-step[x-placement^="top"] .v-step__arrow {
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+  border-bottom-color: transparent !important;
+}
+
+.v-step[x-placement^="bottom"] .v-step__arrow {
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+  border-top-color: transparent !important;
+}
+
+.v-step[x-placement^="right"] .v-step__arrow {
+  border-left-color: transparent !important;
+  border-top-color: transparent !important;
+  border-bottom-color: transparent !important;
+}
+
+.v-step[x-placement^="left"] .v-step__arrow {
+  border-top-color: transparent !important;
+  border-right-color: transparent !important;
+  border-bottom-color: transparent !important;
 }
 </style>
