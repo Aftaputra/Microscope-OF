@@ -10,12 +10,12 @@ Extensions can either be loaded from a single Python file, or as a Python packag
 
 Single-file extensions
 ----------------------
-For adding simple functionality, such as a few basic functions and API routes, a single Python file can be loaded as a extension. This Python file must contain all of your extension objects, and be located in the applications extensions directory (by default ``~/.openflexure/microscope_extensions``).
+For adding simple functionality, such as a few basic functions and API routes, a single Python file can be loaded as a extension. This Python file must contain all of your extension objects, and be located in the applications extensions directory (by default ``/var/openflexure/extensions/microscope_extensions``).
 
 Package extensions
 ------------------
 Generally, for adding anything other than very simple functionality, extensions should be written as `package distributions <https://packaging.python.org/tutorials/packaging-projects/>`_. This has the advantage of allowing relative imports, so functionality can be easily split over several files. For example, class definitions associated with API routes can be separated from class definitions associated with the microscope extension.
 
-The main restriction is that the extension package must be importable using an absolute import from within the Python environment being used to load your microscope. 
+Your module must be a folder within the extensions folder (by default ``/var/openflexure/extensions/microscope_extensions``), and include a top-level ``__init__.py`` file which includes (or imports) all of your extension objects.
 
-In order to enable your packaged extension, create a file in the applications extensions directory (by default ``~/.openflexure/microscope_extensions``) which imports your extension object(s) from your module.
+In order to enable a globally installed, packaged extension, create a file in the applications extensions directory (by default ``/var/openflexure/extensions/microscope_extensions``) which imports your extension object(s) from your module.
