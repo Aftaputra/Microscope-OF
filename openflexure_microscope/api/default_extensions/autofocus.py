@@ -8,10 +8,12 @@ from openflexure_microscope.utilities import set_properties
 
 import time
 import numpy as np
-import threading
+
 import logging
 from scipy import ndimage
 from contextlib import contextmanager
+
+from threading import Thread, Event
 
 ### Autofocus utilities
 
@@ -25,7 +27,7 @@ class JPEGSharpnessMonitor:
         self.jpeg_times = []
         self.stage_positions = []
         self.stage_times = []
-        self.stop_event = threading.Event()
+        self.stop_event = Event()
         self.timeout = timeout
         self.keep_alive()
         self.background_thread = None
@@ -48,26 +50,31 @@ class JPEGSharpnessMonitor:
 
     def start(self):
         "Start monitoring sharpness by looking at JPEG size"
-        self.background_thread = threading.Thread(target=self._measure_jpegs)
+        self.background_thread = Thread(target=self._measure_jpegs)
         self.background_thread.start()
         return self
 
     def stop(self):
         "Stop the background thread"
         self.stop_event.set()
+        print("Joining JPEG thread")
         self.background_thread.join()
 
     def _measure_jpegs(self):
         "Function that runs in a background thread to record sharpness"
-        logging.info("Starting sharpness measurement in background thread")
+        logging.debug("Starting sharpness measurement in background thread")
         self.keep_alive()
+        logging.debug(f"_measure_jpegs stop_event: {self.stop_event.is_set()}")
         while not self.stop_event.is_set() and not self.should_stop():
-            self.jpeg_sizes.append(self.jpeg_size())
-            self.jpeg_times.append(time.time())
+            size_now = self.jpeg_size()
+            time_now = time.time()
+            self.jpeg_sizes.append(size_now)
+            self.jpeg_times.append(time_now)
+        print("Exited JPEG measure loop")
         if self.stop_event.is_set():
-            logging.info("Cleanly stopped sharpness measurement in background thread")
+            logging.debug("Cleanly stopped sharpness measurement in background thread")
         if self.should_stop():
-            logging.info("Sharpness measurement timed out and has stopped")
+            logging.debug("Sharpness measurement timed out and has stopped")
 
     def jpeg_size(self):
         """Return the size of a frame from the MJPEG stream"""
@@ -195,7 +202,7 @@ def move_and_find_focus(microscope, dz):
 
 def fast_autofocus(microscope, dz=2000, backlash=None):
     """Perform a down-up-down-up autofocus"""
-    with monitor_sharpness(microscope) as m, microscope.camera.lock:
+    with monitor_sharpness(microscope) as m, microscope.camera.lock, microscope.stage.lock:
         i, z = m.focus_rel(-dz / 2)
         i, z = m.focus_rel(dz)
         fz = m.sharpest_z_on_move(i)
@@ -245,17 +252,20 @@ def fast_up_down_up_autofocus(
             might slightly hurt accuracy, but is unlikely to be a big issue.  Too big
             may cause you to overshoot, which is a problem.
     """
-    with monitor_sharpness(microscope) as m, microscope.camera.lock:
+    with monitor_sharpness(microscope) as m, microscope.camera.lock, microscope.stage.lock:
         # Ensure the MJPEG stream has started
         microscope.camera.start_stream_recording()
 
         df = dz  # TODO: refactor so I actually use dz in the code below!
+        logging.debug("Initial move")
         if initial_move_up:
             m.focus_rel(df / 2)
         # move down
+        logging.debug("Move down")
         i, z = m.focus_rel(-df)
         # now inspect where the sharpest point is, and estimate the sharpness
         # (JPEG size) that we should find at the start of the Z stack
+        logging.debug("Get target_s")
         jt, jz, js = m.move_data(i)
         best_z = jz[np.argmax(js)]
         target_s = np.interp(
@@ -263,11 +273,13 @@ def fast_up_down_up_autofocus(
         )  # NB jz is decreasing
 
         # now move to the start of the z stack
+        logging.debug("Move to the start of the z stack")
         i, z = m.focus_rel(
             best_z + target_z - z + mini_backlash
         )  # takes us to the start of the stack
 
         # We've deliberately undershot - figure out how much further we should move based on the curve
+        logging.debug("Calculate remining movement")
         current_js = m.jpeg_size()
         imax = np.argmax(js)  # we want to crop out just the bit below the peak
         js = js[imax:]  # NB z is in DECREASING order
@@ -279,6 +291,7 @@ def fast_up_down_up_autofocus(
 
         # So, the Z position corresponding to our current sharpness value is zs[inow]
         # That means we should move forwards, by best_z - zs[inow]
+        logging.debug("Correction move")
         correction_move = best_z + target_z - jz[inow]
         logging.debug(
             "Fast autofocus scan: correcting backlash by moving {} steps".format(
@@ -317,7 +330,7 @@ class AutofocusAPI(View):
         dz = payload.param("dz", default=np.linspace(-300, 300, 7), convert=np.array)
 
         if microscope.has_real_stage():
-            logging.info("Running autofocus...")
+            logging.debug("Running autofocus...")
             task = taskify(autofocus)(microscope, dz)
 
             # return a handle on the autofocus task
@@ -348,7 +361,7 @@ class FastAutofocusAPI(View):
             backlash = 0
 
         if microscope.has_real_stage():
-            logging.info("Running autofocus...")
+            logging.debug("Running autofocus...")
             task = taskify(fast_up_down_up_autofocus)(microscope, dz=dz, mini_backlash=backlash)
 
             # return a handle on the autofocus task

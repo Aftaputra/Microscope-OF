@@ -191,15 +191,10 @@ class ExtensibleSerialInstrument(object):
         will keep reading until a termination phrase is reached.
         """
         with self.communications_lock:
-            logging.debug("Flushing input buffer...")
             self.flush_input_buffer()
-            logging.debug(f"Writing query: {queryString}")
             self.write(queryString)
-            logging.debug("Query written")
             if self.ignore_echo == True:  # Needs Implementing for a multiline read!
-                logging.debug("Reading first line...")
                 first_line = self.readline(timeout).strip()
-                logging.debug(f"Read finished. Got {first_line}")
                 if first_line == queryString:
                     return self.readline(timeout).strip()
                 else:
@@ -209,14 +204,11 @@ class ExtensibleSerialInstrument(object):
             if termination_line is not None:
                 multiline = True
             if multiline:
-                logging.debug("Reading multiline...")
                 return self.read_multiline(termination_line)
             else:
-                logging.debug("Reading response...")
                 line = self.readline(
                     timeout
                 ).strip()  # question: should we strip the final newline?
-                logging.debug(f"Read finished. Got {line}")
                 return line
 
     def parsed_query(

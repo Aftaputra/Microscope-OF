@@ -277,7 +277,7 @@ description = "Python implementation of LabThings, based on the Flask microframe
 name = "labthings"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "0.3.0"
+version = "0.4.0"
 
 [package.dependencies]
 Flask = ">=1.1.1,<2.0.0"
@@ -375,6 +375,7 @@ test = ["pillow", "coverage", "mock", "numpy", "pytest"]
 reference = "79177fa7f28d6d5c6eab5ba814b420b1785b6b24"
 type = "git"
 url = "https://github.com/rwb27/picamera.git"
+
 [[package]]
 category = "main"
 description = "Python Imaging Library (Fork)"
@@ -727,7 +728,7 @@ ifaddr = "*"
 rpi = ["picamera", "RPi.GPIO"]
 
 [metadata]
-content-hash = "244c3bc80be3abde924d83e6287e16078d3e3f96c3aba0f09942b2fdc354c2e2"
+content-hash = "f7bb806f267f9f38aedfe6bb4ef6d23deef9df991c7117bd58f8c0e83c64b2b4"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -894,8 +895,8 @@ jinja2 = [
     {file = "Jinja2-2.11.1.tar.gz", hash = "sha256:93187ffbc7808079673ef52771baa950426fd664d3aad1d0fa3e95644360e250"},
 ]
 labthings = [
-    {file = "labthings-0.3.0-py3-none-any.whl", hash = "sha256:605999a8fe09a52ad32a4763020b81e5d1b7b786478b47e1f45594aa10bcdd2d"},
-    {file = "labthings-0.3.0.tar.gz", hash = "sha256:cc93ee4510fc1304a450346e11d0069541142e8867cfcf8e4381a872abf16a6c"},
+    {file = "labthings-0.4.0-py3-none-any.whl", hash = "sha256:75fe8f65b89783bb852ad4d1463b2f721ea42f03ae06fbe3df76b85d8c65eac1"},
+    {file = "labthings-0.4.0.tar.gz", hash = "sha256:e6b5c6c322915808f8833ec9aa81c7ede08282a0946a28562b5ca77549099ef4"},
 ]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.4.3.tar.gz", hash = "sha256:f3900e8a5de27447acbf900b4750b0ddfd7ec1ea7fbaf11dfa911141bc522af0"},

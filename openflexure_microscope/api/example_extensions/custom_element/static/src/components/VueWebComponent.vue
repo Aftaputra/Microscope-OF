@@ -20,7 +20,7 @@ export default {
   props: {
     'componentBaseURL': {
       required: false,
-      default: null,
+      default: "http://localhost:5000/api/v2",
       type: String
     }
   },
@@ -33,7 +33,8 @@ export default {
     };
   },
 
-  mounted () {
+  mounted: function() {
+    console.log(this.componentBaseURL)
     if (this.componentBaseURL){
       axios
       .get(`${this.componentBaseURL}`)

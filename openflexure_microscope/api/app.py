@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 from gevent import monkey
-
-# Patch most system modules. Leave threads untouched so we can still use them normally if needed.
-print("Monkey patching with Gevenet")
 monkey.patch_all()
-print("Monkey patching successful")
 
 import time
 import atexit

@@ -24,7 +24,3 @@ with handle_extension_error("camera stage mapping"):
     from .camera_stage_mapping import csm_extension
 with handle_extension_error("lens shading calibration"):
     from .picamera_autocalibrate import lst_extension_v2
-
-#FIXME: this oughtn't stay in the production version...
-with handle_extension_error("custom element example"):
-    from ..example_extensions.custom_element import customelement_extension_v2
