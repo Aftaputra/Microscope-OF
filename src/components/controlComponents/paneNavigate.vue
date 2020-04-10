@@ -156,18 +156,6 @@
 import axios from "axios";
 import taskSubmitter from "../genericComponents/taskSubmitter";
 
-// Key Codes
-const keyCodes = {
-  pgup: 33,
-  pgdn: 34,
-  left: 37,
-  up: 38,
-  right: 39,
-  down: 40,
-  enter: 13,
-  esc: 27
-};
-
 // Export main app
 export default {
   name: "PaneNavigate",
@@ -178,7 +166,6 @@ export default {
 
   data: function() {
     return {
-      keysDown: {},
       stepXy: 200,
       stepZz: 50,
       setPosition: null,
@@ -205,20 +192,22 @@ export default {
     }
   },
 
-  created: function() {
-    window.addEventListener("keydown", this.keyDownMonitor);
-    window.addEventListener("keyup", this.keyUpMonitor);
-    window.addEventListener("wheel", this.wheelMonitor);
-  },
-
   mounted() {
     // A global signal listener to perform a move action
     this.$root.$on("globalMoveEvent", (x, y, z, absolute) => {
       this.moveRequest(x, y, z, absolute);
     });
-    // A global signal listener to perform a move action
+    // A global signal listener to perform a move action in pixels
     this.$root.$on("globalMoveInImageCoordinatesEvent", (x, y, absolute) => {
       this.moveInImageCoordinatesRequest(x, y, absolute);
+    });
+    this.$root.$on("globalMoveStepEvent", (x_steps, y_steps, z_steps) => {
+      this.moveRequest(
+        x_steps * this.stepXy,
+        y_steps * this.stepXy,
+        z_steps * this.stepZz,
+        false
+      );
     });
     // Update the current position in text boxes
     this.updatePosition();
@@ -232,72 +221,7 @@ export default {
     this.$root.$off("globalMoveEvent");
   },
 
-  destroyed: function() {
-    window.removeEventListener("keydown", this.keyDownMonitor);
-    window.removeEventListener("keyup", this.keyUpMonitor);
-    window.removeEventListener("wheel", this.wheelMonitor);
-  },
-
   methods: {
-    // Handle global mouse wheel events to be associated with navigation
-    wheelMonitor: function(event) {
-      // Only capture scroll if the event target's parent contains the "scrollTarget" class
-      if (
-        event.target.parentNode.classList.contains("scrollTarget") ||
-        event.target.classList.contains("scrollTarget")
-      ) {
-        var z_rel = (event.deltaY / 100) * this.stepZz;
-        this.moveRequest(0, 0, z_rel, false);
-      }
-    },
-
-    // Handle global key press events to be associated with navigation
-    keyDownMonitor: function(event) {
-      this.keysDown[event.keyCode] = true; //Add key to array
-
-      // Convert keyCode dict into a list of key codes
-      var keyCodeList = Object.keys(keyCodes).map(function(key) {
-        return keyCodes[key];
-      });
-
-      if (
-        !(event.target instanceof HTMLInputElement) &&
-        !event.target.classList.contains("lightbox-link") &&
-        keyCodeList.includes(event.keyCode)
-      ) {
-        //console.log(this.keysDown)
-        // Calculate movement array
-        var x_rel = 0;
-        var y_rel = 0;
-        var z_rel = 0;
-        if (keyCodes.left in this.keysDown) {
-          x_rel = x_rel + this.stepXy;
-        }
-        if (keyCodes.right in this.keysDown) {
-          x_rel = x_rel - this.stepXy;
-        }
-        if (keyCodes.up in this.keysDown) {
-          y_rel = y_rel + this.stepXy;
-        }
-        if (keyCodes.down in this.keysDown) {
-          y_rel = y_rel - this.stepXy;
-        }
-        if (keyCodes.pgup in this.keysDown) {
-          z_rel = z_rel - this.stepZz;
-        }
-        if (keyCodes.pgdn in this.keysDown) {
-          z_rel = z_rel + this.stepZz;
-        }
-
-        // Make a position request
-        this.moveRequest(x_rel, y_rel, z_rel, false);
-      }
-    },
-
-    keyUpMonitor: function(event) {
-      delete this.keysDown[event.keyCode]; //Remove key from array
-    },
-
     handleSubmit: function() {
       this.moveRequest(
         this.setPosition.x,

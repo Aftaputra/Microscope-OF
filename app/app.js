@@ -4,6 +4,7 @@ const { dialog } = require("electron");
 const updater = require("electron-updater");
 const autoUpdater = updater.autoUpdater;
 const contextMenu = require("electron-context-menu");
+const ProgressBar = require("electron-progressbar");
 const path = require("path");
 
 // Attach settings store
@@ -26,12 +27,44 @@ autoUpdater.on("update-available", function(info) {
     },
     buttonIndex => {
       if (buttonIndex === 0) {
-        autoUpdater.downloadUpdate();
+        console.log("Downloading update selected");
+        handleDownloadUpdate();
       }
     }
   );
 });
 
+// Download, with a progress bar
+function handleDownloadUpdate() {
+  console.log("Downloading update");
+  var progressBar = new ProgressBar({
+    indeterminate: false,
+    text: "Downloading update...",
+    detail: "Please wait...",
+    browserWindow: {
+      webPreferences: {
+        nodeIntegration: true
+      }
+    }
+  });
+
+  progressBar.on("ready", function() {
+    autoUpdater.on("download-progress", function(info) {
+      progressBar.value = info.percent;
+      progressBar.detail = `${Math.floor(info.percent)}% ${info.bytesPerSecond /
+        1000}kb/s`;
+    });
+    autoUpdater.on("update-downloaded", function() {
+      progressBar.close();
+    });
+    autoUpdater.on("error", function() {
+      progressBar.close();
+    });
+    autoUpdater.downloadUpdate();
+  });
+}
+
+// Trigger update installation
 autoUpdater.on("update-downloaded", function(info) {
   sendStatusToWindow("Update downloaded." + info);
   dialog.showMessageBox(
@@ -110,8 +143,8 @@ function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     frame: !store.get("drawCustomTitleBar"),
-    width: 1124,
-    height: 800,
+    width: 1200,
+    height: 900,
     icon: path.join(__dirname, "/icons/png/64x64.png"),
     webPreferences: {
       nodeIntegration: true

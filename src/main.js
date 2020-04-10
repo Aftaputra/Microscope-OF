@@ -1,15 +1,20 @@
 import Vue from "vue";
 import App from "./App.vue";
 import store from "./store";
-
 import UIkit from "uikit";
+import VueTour from "vue-tour";
+import LoadScript from "vue-plugin-load-script";
+
+require("vue-tour/dist/vue-tour.css");
 
 // Import MD icons
 import "material-design-icons/iconfont/material-icons.css";
 
-// Import load-script module
-import LoadScript from "vue-plugin-load-script";
+// Use load-script module
 Vue.use(LoadScript);
+
+// Use vue-tour module
+Vue.use(VueTour);
 
 Vue.config.productionTip = false;
 

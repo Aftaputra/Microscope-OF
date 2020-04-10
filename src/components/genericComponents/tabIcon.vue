@@ -18,7 +18,7 @@ export default {
   name: "TabIcon",
 
   props: {
-    id: {
+    tabID: {
       type: String,
       required: true
     },
@@ -45,7 +45,7 @@ export default {
         return this.title;
       } else {
         // Get the last section of a fully qualified name
-        var topName = this.id.split(".").pop();
+        var topName = this.tabID.split(".").pop();
         // Make first character uppercase, then add the rest of the string
         return topName.charAt(0).toUpperCase() + topName.slice(1);
       }
@@ -57,7 +57,7 @@ export default {
 
     classObject: function() {
       return {
-        "tabicon-active": this.currentTab == this.id,
+        "tabicon-active": this.currentTab == this.tabID,
         "uk-disabled": this.requireConnection && !this.$store.getters.ready
       };
     }
@@ -65,7 +65,7 @@ export default {
 
   methods: {
     setThisTab(event) {
-      this.$emit("set-tab", event, this.id);
+      this.$emit("set-tab", event, this.tabID);
       if (this.clickCallback) {
         this.clickCallback();
       }

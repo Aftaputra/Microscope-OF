@@ -382,6 +382,10 @@ export default {
   mounted() {
     this.updateScanUri();
     this.updateScanStepSize();
+    // A global signal listener to perform a capture action
+    this.$root.$on("globalCaptureEvent", () => {
+      this.handleCapture();
+    });
   },
 
   methods: {

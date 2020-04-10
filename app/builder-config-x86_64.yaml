@@ -1,5 +1,4 @@
 extends: app/builder-config-base.yaml
-electronVersion: 4.1.5
 win:
   target:
     - NSIS

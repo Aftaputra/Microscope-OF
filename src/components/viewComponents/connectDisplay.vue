@@ -2,12 +2,13 @@
   <div class="connectDisplay uk-padding uk-padding-remove-left">
     <div
       uk-grid
-      class="uk-height-1-1 uk-margin-remove uk-padding-remove"
+      class="uk-height-1-1 uk-margin-remove uk-padding-remove uk-flex-column"
       margin="0"
     >
       <div class="uk-width-auto">
         <div
-          class="uk-card uk-card-default uk-card-hover uk-padding-remove uk-width-medium connect-card-align-top"
+          id="new-connection-card"
+          class="uk-card uk-card-default uk-padding-remove uk-width-medium connect-card-align-top"
         >
           <div class="uk-card-body uk-padding-small">
             <form id="formConnectToHost" @submit.prevent="handleSubmit">
@@ -94,24 +95,7 @@
 
       <div class="uk-width-expand">
         <ul uk-accordion="multiple: true; animation: false">
-          <li class="uk-open">
-            <a class="uk-accordion-title" href="#">Saved devices</a>
-            <div class="uk-accordion-content">
-              <div class="uk-grid-medium uk-grid-match uk-margin-top" uk-grid>
-                <div v-for="host in savedHosts" :key="host.name">
-                  <hostCard
-                    :name="host.name"
-                    :hostname="host.hostname"
-                    :port="host.port"
-                    @connect="handleConnectButton(host)"
-                    @delete="delSavedHost(host)"
-                  ></hostCard>
-                </div>
-              </div>
-            </div>
-          </li>
-
-          <li class="uk-open">
+          <li v-show="isElectron" id="nearby-connections-grid" class="uk-open">
             <a class="uk-accordion-title" href="#">Nearby devices</a>
             <div class="uk-accordion-content">
               <div class="uk-grid-medium uk-grid-match uk-margin-top" uk-grid>
@@ -122,6 +106,23 @@
                     :port="host.port"
                     :deletable="false"
                     @connect="handleConnectButton(host)"
+                  ></hostCard>
+                </div>
+              </div>
+            </div>
+          </li>
+
+          <li id="saved-connections-grid" class="uk-open">
+            <a class="uk-accordion-title" href="#">Saved devices</a>
+            <div class="uk-accordion-content">
+              <div class="uk-grid-medium uk-grid-match uk-margin-top" uk-grid>
+                <div v-for="host in savedHosts" :key="host.name">
+                  <hostCard
+                    :name="host.name"
+                    :hostname="host.hostname"
+                    :port="host.port"
+                    @connect="handleConnectButton(host)"
+                    @delete="delSavedHost(host)"
                   ></hostCard>
                 </div>
               </div>
@@ -154,6 +155,7 @@ export default {
 
   data: function() {
     return {
+      isElectron: isElectron(),
       localMode: true,
       hostname: "",
       port: 5000,
@@ -407,8 +409,4 @@ export default {
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped lang="less">
-.connect-card-align-top {
-  margin-top: 52px;
-}
-</style>
+<style scoped lang="less"></style>

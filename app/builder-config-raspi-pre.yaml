@@ -1,6 +1,5 @@
 extends: app/builder-config-base.yaml
 artifactName: ${name}-${os}-${arch}.${ext}
-electronVersion: 3.0.13
 linux:
   target:
     - target: deb
