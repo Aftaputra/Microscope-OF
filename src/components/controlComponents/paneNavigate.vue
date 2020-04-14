@@ -172,7 +172,8 @@ export default {
       isAutofocusing: 0,
       moveLock: false,
       fastAutofocusUri: null,
-      normalAutofocusUri: null
+      normalAutofocusUri: null,
+      moveInImageCoordinatesUri: null
     };
   },
 
@@ -196,6 +197,10 @@ export default {
     this.$root.$on("globalMoveEvent", (x, y, z, absolute) => {
       this.moveRequest(x, y, z, absolute);
     });
+    // A global signal listener to perform a move action in pixels
+    this.$root.$on("globalMoveInImageCoordinatesEvent", (x, y, absolute) => {
+      this.moveInImageCoordinatesRequest(x, y, absolute);
+    });
     this.$root.$on("globalMoveStepEvent", (x_steps, y_steps, z_steps) => {
       this.moveRequest(
         x_steps * this.stepXy,
@@ -208,6 +213,7 @@ export default {
     this.updatePosition();
     // Look for autofocus plugin
     this.updateAutofocusUri();
+    this.updateMoveInImageCoordinatesUri();
   },
 
   beforeDestroy() {
@@ -239,6 +245,35 @@ export default {
             y: y,
             z: z,
             absolute: absolute
+          })
+          .then(() => {
+            this.updatePosition(); // Update the position in text boxes
+          })
+          .catch(error => {
+            this.modalError(error); // Let mixin handle error
+          })
+          .then(() => {
+            this.moveLock = false; // Release the move lock
+          });
+      }
+    },
+
+    moveInImageCoordinatesRequest: function(x, y) {
+      console.log(`Sending move request in image coordinates: ${x}, ${y}`);
+      // If not movement-locked
+      if (!this.moveLock) {
+        // Lock move requests
+        this.moveLock = true;
+
+        if (!this.moveInImageCoordinatesUri){
+          this.modalError("Moving in image coordinates is not supported - you will need to upgrade your microscope's software.");
+        }
+
+        // Send move request
+        axios
+          .post(this.moveInImageCoordinatesUri, {
+            x: y, // NB the coordinates are numpy/PIL style, meaning X and Y are swapped.
+            y: x,
           })
           .then(() => {
             this.updatePosition(); // Update the position in text boxes
@@ -288,6 +323,24 @@ export default {
             // Get plugin action link
             this.fastAutofocusUri = foundExtension.links.fast_autofocus.href;
             this.normalAutofocusUri = foundExtension.links.autofocus.href;
+          }
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+    },
+
+    updateMoveInImageCoordinatesUri: function() {
+      axios
+        .get(this.pluginsUri) // Get a list of plugins
+        .then(response => {
+          var plugins = response.data;
+          var foundExtension = plugins.find(
+            e => e.title === "org.openflexure.camera_stage_mapping"
+          );
+          if (foundExtension) {
+            // Get plugin action link
+            this.moveInImageCoordinatesUri = foundExtension.links.move_in_image_coordinates.href;
           }
         })
         .catch(error => {

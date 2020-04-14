@@ -123,16 +123,13 @@ export default {
 
       let xRelative =
         (0.5 * event.target.offsetWidth - xCoordinate) /
-        event.target.offsetWidth;
+        event.target.offsetWidth * event.target.naturalWidth;
       let yRelative =
         (0.5 * event.target.offsetHeight - yCoordinate) /
-        event.target.offsetHeight;
-
-      let xSteps = xRelative * this.fov[0];
-      let ySteps = yRelative * this.fov[1];
+        event.target.offsetHeight * event.target.naturalHeight;
 
       // Emit a signal to move, acted on by panelNavigate.vue
-      this.$root.$emit("globalMoveEvent", xSteps, ySteps, 0, false);
+      this.$root.$emit("globalMoveInImageCoordinatesEvent", -xRelative, -yRelative);
     },
 
     handleResize: function() {

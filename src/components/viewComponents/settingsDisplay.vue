@@ -17,6 +17,12 @@
       </div>
       <div class="uk-padding-remove">
         <div v-if="$store.getters.ready" class="settings-pane uk-padding-small">
+          <h3>Camera/stage mapping settings</h3>
+          <cameraStageMappingSettings />
+        </div>
+      </div>
+      <div class="uk-padding-remove">
+        <div v-if="$store.getters.ready" class="settings-pane uk-padding-small">
           <h3>Microscope settings</h3>
           <microscopeSettings />
         </div>
@@ -30,6 +36,7 @@ import streamSettings from "./settingsComponents/streamSettings.vue";
 import microscopeSettings from "./settingsComponents/microscopeSettings.vue";
 import cameraSettings from "./settingsComponents/cameraSettings.vue";
 import appSettings from "./settingsComponents/appSettings.vue";
+import cameraStageMappingSettings from "./settingsComponents/cameraStageMappingSettings.vue";
 
 // Export main app
 export default {
@@ -39,6 +46,7 @@ export default {
     streamSettings,
     cameraSettings,
     microscopeSettings,
+    cameraStageMappingSettings,
     appSettings
   }
 };
