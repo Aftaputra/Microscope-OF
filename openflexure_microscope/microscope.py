@@ -40,6 +40,8 @@ class Microscope:
         self.settings_file = settings
         self.configuration_file = configuration
 
+        self.extension_settings = {}
+
         # Initialise with an empty composite lock
         #: :py:class:`labthings.lock.CompositeLock`: Composite lock for locking both camera and stage
         self.lock = CompositeLock([])
@@ -157,6 +159,12 @@ class Microscope:
         if "fov" in settings:
             self.fov = settings["fov"]
 
+        # Extension settings
+        if "extensions" in settings:
+            self.extension_settings.update(settings["extensions"])
+
+        # TODO: warn if there are settings that we silently ignore
+
     def read_settings(self, full: bool = True):
         """
         Get an updated settings dictionary.
@@ -168,7 +176,7 @@ class Microscope:
         don't get removed from the settings file.
         """
 
-        settings_current = {"id": self.id, "name": self.name, "fov": self.fov}
+        settings_current = {"id": self.id, "name": self.name, "fov": self.fov, "extensions": self.extension_settings}
 
         # If attached to a camera
         if self.camera:
