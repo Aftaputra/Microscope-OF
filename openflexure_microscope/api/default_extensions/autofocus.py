@@ -92,15 +92,20 @@ class JPEGSharpnessMonitor:
 
     def move_data(self, istart, istop=None):
         "Extract sharpness as a function of (interpolated) z"
-        global np, logging
         if istop is None:
             istop = istart + 2
         jpeg_times = np.array(self.jpeg_times)
         jpeg_sizes = np.array(self.jpeg_sizes)
         stage_times = np.array(self.stage_times)[istart:istop]
         stage_zs = np.array(self.stage_positions)[istart:istop, 2]
-        start = np.argmax(jpeg_times > stage_times[0])
-        stop = np.argmax(jpeg_times > stage_times[1])
+        try:
+            start = np.argmax(jpeg_times > stage_times[0])
+            stop = np.argmax(jpeg_times > stage_times[1])
+        except ValueError as e:
+            if np.sum(jpeg_times > stage_times[0]) == 0:
+                raise ValueError("No images were captured during the move of the stage.  Perhaps the camera is not streaming images?")
+            else:
+                raise e
         if stop < 1:
             stop = len(jpeg_times)
             logging.debug("changing stop to {}".format(stop))
@@ -111,6 +116,8 @@ class JPEGSharpnessMonitor:
     def sharpest_z_on_move(self, index):
         """Return the z position of the sharpest image on a given move"""
         jt, jz, js = self.move_data(index)
+        if len(js) == 0:
+            raise ValueError("No images were captured during the move of the stage.  Perhaps the camera is not streaming images?")
         return jz[np.argmax(js)]
 
     def data_dict(self):
