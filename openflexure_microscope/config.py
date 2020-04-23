@@ -8,6 +8,8 @@ from uuid import UUID
 import numpy as np
 from fractions import Fraction
 
+from labthings.server.representations import LabThingsJSONEncoder
+
 from .paths import (
     SETTINGS_FILE_PATH,
     DEFAULT_SETTINGS_FILE_PATH,
@@ -77,7 +79,7 @@ class OpenflexureSettingsFile:
         return settings
 
 
-class JSONEncoder(flask.json.JSONEncoder):
+class JSONEncoder(LabThingsJSONEncoder):
     """
     A custom JSON encoder, with type conversions for PiCamera fractions, Numpy integers, and Numpy arrays
     """
@@ -100,7 +102,7 @@ class JSONEncoder(flask.json.JSONEncoder):
         else:
             # call base class implementation which takes care of
             # raising exceptions for unsupported types
-            return flask.json.JSONEncoder.default(self, o)
+            return LabThingsJSONEncoder.default(self, o)
 
 
 # HANDLE BASIC LOADING AND SAVING OF SETTINGS FILES
