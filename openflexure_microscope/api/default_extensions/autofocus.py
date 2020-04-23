@@ -372,7 +372,8 @@ class FastAutofocusAPI(View):
 
 
 autofocus_extension_v2 = BaseExtension(
-    "org.openflexure.autofocus", version="2.0.0"
+    "org.openflexure.autofocus", version="2.0.0",
+    description="Actions to move the microscope in Z and pick the point with the sharpest image."
 )
 
 autofocus_extension_v2.add_method(fast_autofocus, "fast_autofocus")
