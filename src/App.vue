@@ -365,6 +365,11 @@ html {
   padding: 0;
 }
 
+.section-content {
+  padding: 0;
+  height: 100%;
+}
+
 // Style tour
 .v-tour__target--highlighted {
   box-shadow: 0px 40px 200px 30px rgba(0, 0, 0, 0.5),

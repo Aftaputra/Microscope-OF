@@ -113,7 +113,7 @@
         :require-connection="false"
         :current-tab="currentTab"
       >
-        <settingsContent />
+        <settingsContent class="section-content" />
       </tabContent>
 
       <tabContent

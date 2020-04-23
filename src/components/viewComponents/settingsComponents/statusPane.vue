@@ -79,10 +79,10 @@
 
 <script>
 import axios from "axios";
-import progressBar from "../genericComponents/progressBar";
+import progressBar from "../../genericComponents/progressBar";
 
 export default {
-  name: "PaneStatus",
+  name: "StatusPane",
 
   components: {
     progressBar
