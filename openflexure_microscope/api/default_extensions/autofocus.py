@@ -50,6 +50,9 @@ class JPEGSharpnessMonitor:
 
     def start(self):
         "Start monitoring sharpness by looking at JPEG size"
+        if not self.camera.stream_active:
+            logging.warn("Autofocus sharpness monitor was started but the camera isn't streaming.  Attempting to start the stream...")
+            self.camera.start_stream_recording()
         self.background_thread = Thread(target=self._measure_jpegs)
         self.background_thread.start()
         return self
