@@ -4,7 +4,7 @@
     :hidden="currentTab != tabID"
     class="uk-width-expand uk-height-1-1"
   >
-    <div class="section-content"><slot></slot></div>
+    <slot></slot>
   </div>
 </template>
 
@@ -36,10 +36,5 @@ export default {
   text-transform: uppercase;
   line-height: 20px;
   cursor: default;
-}
-
-.section-content {
-  padding: 0;
-  height: 100%;
 }
 </style>

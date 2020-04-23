@@ -7,7 +7,7 @@
     @click="setThisTab"
   >
     <slot></slot>
-    <div class="tabtitle">
+    <div v-if="showTitle" class="tabtitle">
       {{ computedTitle }}
     </div>
   </a>
@@ -26,6 +26,16 @@ export default {
       type: String,
       required: false,
       default: undefined
+    },
+    showTitle: {
+      type: Boolean,
+      required: false,
+      default: true
+    },
+    showTooltip: {
+      type: Boolean,
+      required: false,
+      default: true
     },
     currentTab: {
       type: String,
@@ -52,7 +62,11 @@ export default {
     },
 
     tooltipOptions: function() {
-      return `pos: right; title: ${this.computedTitle}; delay: 500`;
+      if (this.showTooltip) {
+        return `pos: right; title: ${this.computedTitle}; delay: 500`;
+      } else {
+        return false;
+      }
     },
 
     classObject: function() {
