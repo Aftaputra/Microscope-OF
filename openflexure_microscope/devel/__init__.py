@@ -17,4 +17,4 @@ from labthings.core.tasks import (
 
 
 # Flask things
-from flask import abort, escape, jsonify, Response, request
+from flask import abort, escape, Response, request

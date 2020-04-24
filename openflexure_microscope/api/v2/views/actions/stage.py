@@ -6,7 +6,7 @@ from labthings.server import fields
 
 from openflexure_microscope.utilities import axes_to_array, filter_dict
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request
 
 import logging
 
@@ -53,7 +53,7 @@ class MoveStageAPI(View):
             logging.warning("Unable to move. No stage found.")
 
         # TODO: Make schema for microscope state
-        return jsonify(microscope.state["stage"]["position"])
+        return microscope.state["stage"]["position"]
 
 
 @ThingAction
@@ -67,4 +67,4 @@ class ZeroStageAPI(View):
         microscope.stage.zero_position()
 
         # TODO: Make schema for microscope state
-        return jsonify(microscope.state["stage"])
+        return microscope.state["stage"]

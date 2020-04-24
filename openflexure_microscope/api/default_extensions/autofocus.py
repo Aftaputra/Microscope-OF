@@ -3,7 +3,7 @@ from labthings.server.extensions import BaseExtension
 from labthings.server.view import View
 from labthings.server.decorators import ThingAction, ThingProperty, marshal_task
 
-from openflexure_microscope.devel import JsonResponse, request, jsonify, taskify, abort
+from openflexure_microscope.devel import JsonResponse, request, taskify, abort
 from openflexure_microscope.utilities import set_properties
 
 import time
@@ -309,7 +309,7 @@ class MeasureSharpnessAPI(View):
         if not microscope:
             abort(503, "No microscope connected. Unable to measure sharpness.")
 
-        return jsonify({"sharpness": measure_sharpness(microscope)})
+        return {"sharpness": measure_sharpness(microscope)}
 
 
 @ThingAction
