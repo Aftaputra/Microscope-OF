@@ -20,7 +20,6 @@ from openflexure_microscope.utilities import serialise_array_b64
 from openflexure_microscope.config import user_settings, user_configuration
 
 from labthings.core.lock import CompositeLock
-from labthings.core.utilities import rupdate
 
 
 class Microscope:
