@@ -61,7 +61,7 @@
           <div>
             <button
               type="button"
-              class="uk-button uk-button-default uk-form-small uk-width-1-1"
+              class="uk-button uk-button-default uk-width-1-1"
               @click="updateCaptures()"
             >
               Refresh Captures
