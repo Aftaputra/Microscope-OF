@@ -6,26 +6,32 @@ This file contains the HTTP API for camera/stage calibration.
 from labthings.server.view import View
 from labthings.server.find import find_component
 from labthings.server.extensions import BaseExtension
-from labthings.server.decorators import marshal_task, ThingAction, use_args
+from labthings.server.decorators import marshal_task, ThingAction, use_args, ThingProperty
 from labthings.server import fields
 
 from labthings.core.tasks import taskify
 from labthings.core.utilities import get_by_path, set_by_path, create_from_path
 
 
-from flask import abort, jsonify
+from flask import abort, send_file
 
 import logging
 import time
 import numpy as np
 import PIL
 import io
+import os
+import json
 
 from .camera_stage_calibration_1d import calibrate_backlash_1d, image_to_stage_displacement_from_1d
 from .camera_stage_tracker import Tracker
 
 from openflexure_microscope.utilities import axes_to_array
+from openflexure_microscope.paths import data_file_path
+from openflexure_microscope.config import JSONEncoder
 
+CSM_DATAFILE_NAME = "csm_calibration.json"
+CSM_DATAFILE_PATH = data_file_path(CSM_DATAFILE_NAME)
 
 class CSMExtension(BaseExtension):
     """
@@ -39,6 +45,7 @@ class CSMExtension(BaseExtension):
         )
 
     _microscope = None
+
     @property
     def microscope(self):
         # TODO: does caching the microscope actually help?
@@ -96,11 +103,17 @@ class CSMExtension(BaseExtension):
         # Combine X and Y calibrations to make a 2D calibration
         cal_xy = image_to_stage_displacement_from_1d([cal_x, cal_y])
         self.update_settings(cal_xy)
-        return {
+
+        data = {
             "camera_stage_mapping_calibration": cal_xy,
             "linear_calibration_x": cal_x,
             "linear_calibration_y": cal_y,
         }
+
+        with open(CSM_DATAFILE_PATH, 'w') as f:
+            json.dump(data, f, cls=JSONEncoder)
+
+        return data
 
     @property
     def image_to_stage_displacement_matrix(self):
@@ -161,7 +174,21 @@ class MoveInImageCoordinatesView(View):
         """Move the microscope stage, such that we move by a given number of pixels on the camera"""
         csm_extension.move_in_image_coordinates(np.array([args.get("x"), args.get("y")]))
         
-        return jsonify(csm_extension.microscope.state["stage"]["position"])
+        return csm_extension.microscope.state["stage"]["position"]
 
 csm_extension.add_view(MoveInImageCoordinatesView, "/move_in_image_coordinates")
 
+@ThingProperty
+class GetCalibrationFile(View):
+    def get(self):
+        """Get the calibration data in JSON format."""
+        datafile_name = CSM_DATAFILE_NAME
+        datafile_path = CSM_DATAFILE_PATH
+
+        if os.path.isfile(datafile_path):
+            with open(datafile_path, 'rb') as f:
+                return json.load(f)
+        else:
+            return {}
+
+csm_extension.add_view(GetCalibrationFile, "/get_calibration")
