@@ -36,7 +36,7 @@ pyserial = "^3.4" # Used for sangaboard (basic_serial_instrument) until we move 
 python-dateutil = "^2.8"
 psutil = "^5.6.7" # Autostorage extension
 opencv-python-headless = "4.1.0.25"
-labthings = {path = "../python-labthings"}
+labthings = "0.5.1"
 
 [tool.poetry.extras]
 rpi = ["picamera", "RPi.GPIO"]
