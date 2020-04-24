@@ -1,62 +1,64 @@
 <template>
   <div v-if="settings" id="cameraSettings">
-    <form @submit.prevent="applyConfigRequest">
-      <div v-if="settings.picamera">
-        <!--PiCamera settings block-->
-        <div v-if="settings.picamera.shutter_speed !== undefined">
-          <label class="uk-form-label" for="form-stacked-text"
-            >Exposure time</label
-          >
-          <div class="uk-form-controls">
-            <input
-              v-model="settings.picamera.shutter_speed"
-              class="uk-input uk-form-small"
-              type="number"
-            />
+    <div>
+      <h3>Manual camera settings</h3>
+      <form @submit.prevent="applyConfigRequest">
+        <div v-if="settings.picamera">
+          <!--PiCamera settings block-->
+          <div v-if="settings.picamera.shutter_speed !== undefined">
+            <label class="uk-form-label" for="form-stacked-text"
+              >Exposure time</label
+            >
+            <div class="uk-form-controls">
+              <input
+                v-model="settings.picamera.shutter_speed"
+                class="uk-input uk-form-small"
+                type="number"
+              />
+            </div>
+          </div>
+
+          <div v-if="settings.picamera.analog_gain !== undefined">
+            <label class="uk-form-label" for="form-stacked-text"
+              >Analogue gain</label
+            >
+            <div class="uk-form-controls">
+              <input
+                v-model="settings.picamera.analog_gain"
+                class="uk-input uk-form-small"
+                type="number"
+                step="0.000001"
+              />
+            </div>
+          </div>
+
+          <div v-if="settings.picamera.digital_gain !== undefined">
+            <label class="uk-form-label" for="form-stacked-text"
+              >Digital gain</label
+            >
+            <div class="uk-form-controls">
+              <input
+                v-model="settings.picamera.digital_gain"
+                class="uk-input uk-form-small"
+                type="number"
+                step="0.000001"
+              />
+            </div>
           </div>
         </div>
 
-        <div v-if="settings.picamera.analog_gain !== undefined">
-          <label class="uk-form-label" for="form-stacked-text"
-            >Analogue gain</label
-          >
-          <div class="uk-form-controls">
-            <input
-              v-model="settings.picamera.analog_gain"
-              class="uk-input uk-form-small"
-              type="number"
-              step="0.000001"
-            />
-          </div>
-        </div>
-
-        <div v-if="settings.picamera.digital_gain !== undefined">
-          <label class="uk-form-label" for="form-stacked-text"
-            >Digital gain</label
-          >
-          <div class="uk-form-controls">
-            <input
-              v-model="settings.picamera.digital_gain"
-              class="uk-input uk-form-small"
-              type="number"
-              step="0.000001"
-            />
-          </div>
-        </div>
-      </div>
-
-      <button
-        type="submit"
-        class="uk-button uk-button-primary uk-form-small uk-margin-small uk-width-1-1"
-      >
-        Apply Settings
-      </button>
-    </form>
-
-    <hr />
+        <button
+          type="submit"
+          class="uk-button uk-button-primary uk-margin-small uk-width-1-1"
+        >
+          Apply Settings
+        </button>
+      </form>
+    </div>
 
     <!--Show auto calibrate if default plugin is enabled-->
     <div v-if="'recalibrate' in recalibrationLinks" class="uk-margin-small">
+      <h3>Automatic calibration</h3>
       <taskSubmitter
         :can-terminate="false"
         :requires-confirmation="true"
@@ -71,28 +73,24 @@
       </taskSubmitter>
     </div>
 
-    <div
-      v-if="'flatten_lens_shading_table' in recalibrationLinks"
-      class="uk-margin-small"
-    >
-      <button
-        class="uk-button uk-button-danger uk-form-small uk-width-1-1"
-        @click="flattenLensShadingTableRequest"
-      >
-        Disable flat-field correction
-      </button>
-    </div>
+    <div class="uk-child-width-expand" uk-grid>
+      <div v-if="'flatten_lens_shading_table' in recalibrationLinks">
+        <button
+          class="uk-button uk-button-danger uk-width-1-1"
+          @click="flattenLensShadingTableRequest"
+        >
+          Disable flat-field correction
+        </button>
+      </div>
 
-    <div
-      v-if="'delete_lens_shading_table' in recalibrationLinks"
-      class="uk-margin-small"
-    >
-      <button
-        class="uk-button uk-button-danger uk-form-small uk-width-1-1"
-        @click="deleteLensShadingTableRequest"
-      >
-        Adaptive flat-field correction
-      </button>
+      <div v-if="'delete_lens_shading_table' in recalibrationLinks">
+        <button
+          class="uk-button uk-button-danger uk-width-1-1"
+          @click="deleteLensShadingTableRequest"
+        >
+          Adaptive flat-field correction
+        </button>
+      </div>
     </div>
   </div>
 </template>

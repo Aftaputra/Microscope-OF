@@ -1,26 +1,36 @@
 <template>
   <div id="streamSettings">
-    <p>
+    <div>
+      <h3>Stream settings</h3>
       <label
         ><input v-model="disableStream" class="uk-checkbox" type="checkbox" />
         Disable live stream</label
       >
-    </p>
+    </div>
 
-    <hr />
+    <br />
 
-    <p>
-      <label :class="[{ 'uk-disabled': !this.$store.getters.ready }]"
-        ><input v-model="autoGpuPreview" class="uk-checkbox" type="checkbox" />
-        GPU preview</label
-      >
-    </p>
-    <p>
-      <label :class="[{ 'uk-disabled': !this.$store.getters.ready }]"
-        ><input v-model="trackWindow" class="uk-checkbox" type="checkbox" />
-        Track window</label
-      >
-    </p>
+    <div>
+      <h3>Microscope display output</h3>
+      <div uk-grid>
+        <div>
+          <label :class="[{ 'uk-disabled': !this.$store.getters.ready }]"
+            ><input
+              v-model="autoGpuPreview"
+              class="uk-checkbox"
+              type="checkbox"
+            />
+            Enable GPU preview</label
+          >
+        </div>
+        <div>
+          <label :class="[{ 'uk-disabled': !this.$store.getters.ready }]"
+            ><input v-model="trackWindow" class="uk-checkbox" type="checkbox" />
+            Track window</label
+          >
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

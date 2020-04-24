@@ -13,7 +13,7 @@
       <button
         v-if="canTerminate"
         type="button"
-        class="uk-button uk-button-danger uk-form-small uk-margin-remove uk-float-right uk-width-1-1"
+        class="uk-button uk-button-danger uk-margin-remove uk-float-right uk-width-1-1"
         @click="terminateTask()"
       >
         Terminate
@@ -24,7 +24,7 @@
       <button
         type="button"
         :hidden="taskRunning"
-        class="uk-button uk-form-small uk-margin-remove uk-width-1-1"
+        class="uk-button uk-margin-remove uk-width-1-1"
         :class="[buttonPrimary ? 'uk-button-primary' : 'uk-button-default']"
         @click="bootstrapTask()"
       >

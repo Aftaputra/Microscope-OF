@@ -79,7 +79,6 @@
         :current-tab="currentTab"
       >
         <div class="settings-pane uk-padding-small">
-          <h3>Status</h3>
           <statusPane />
         </div>
       </tabContent>
@@ -90,9 +89,7 @@
         :current-tab="currentTab"
       >
         <div class="settings-pane uk-padding-small">
-          <h3>Display settings</h3>
           <appSettings />
-          <hr />
           <streamSettings />
         </div>
       </tabContent>
@@ -103,7 +100,6 @@
         :current-tab="currentTab"
       >
         <div class="settings-pane uk-padding-small">
-          <h3>Camera settings</h3>
           <cameraSettings />
         </div>
       </tabContent>
@@ -114,7 +110,6 @@
         :current-tab="currentTab"
       >
         <div class="settings-pane uk-padding-small">
-          <h3>Camera/stage mapping settings</h3>
           <cameraStageMappingSettings />
         </div>
       </tabContent>

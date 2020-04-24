@@ -49,7 +49,7 @@
       <div v-else class="uk-margin">
         <button
           type="button"
-          class="uk-button uk-button-primary uk-form-small uk-width-1-1"
+          class="uk-button uk-button-primary uk-width-1-1"
           @click="newQuickRequest(formData)"
         >
           {{ submitLabel }}

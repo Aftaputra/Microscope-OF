@@ -36,7 +36,7 @@
             </div>
 
             <button
-              class="uk-button uk-button-default uk-form-small uk-margin uk-width-1-1"
+              class="uk-button uk-button-default uk-margin uk-width-1-1"
               @click="zeroRequest()"
             >
               Zero coordinates
@@ -91,7 +91,7 @@
               <p>
                 <button
                   type="submit"
-                  class="uk-button uk-button-default uk-form-small uk-float-right uk-width-1-1"
+                  class="uk-button uk-button-default uk-float-right uk-width-1-1"
                 >
                   Move
                 </button>
@@ -265,15 +265,17 @@ export default {
         // Lock move requests
         this.moveLock = true;
 
-        if (!this.moveInImageCoordinatesUri){
-          this.modalError("Moving in image coordinates is not supported - you will need to upgrade your microscope's software.");
+        if (!this.moveInImageCoordinatesUri) {
+          this.modalError(
+            "Moving in image coordinates is not supported - you will need to upgrade your microscope's software."
+          );
         }
 
         // Send move request
         axios
           .post(this.moveInImageCoordinatesUri, {
             x: y, // NB the coordinates are numpy/PIL style, meaning X and Y are swapped.
-            y: x,
+            y: x
           })
           .then(() => {
             this.updatePosition(); // Update the position in text boxes
@@ -340,7 +342,8 @@ export default {
           );
           if (foundExtension) {
             // Get plugin action link
-            this.moveInImageCoordinatesUri = foundExtension.links.move_in_image_coordinates.href;
+            this.moveInImageCoordinatesUri =
+              foundExtension.links.move_in_image_coordinates.href;
           }
         })
         .catch(error => {
