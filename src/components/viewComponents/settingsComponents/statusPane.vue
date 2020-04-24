@@ -1,5 +1,6 @@
 <template>
-  <div class="host-input uk-padding-small">
+  <div class="host-input">
+    <h3>Status</h3>
     <div v-if="configuration && $store.getters.ready">
       <div>
         <div class="uk-margin-small-bottom">
@@ -49,7 +50,7 @@
         <div>
           <button
             v-show="'shutdown' in systemActionLinks"
-            class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
+            class="uk-button uk-button-danger uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
             @click="shutdownRequest"
           >
             Shutdown
@@ -59,7 +60,7 @@
         <div>
           <button
             v-show="'reboot' in systemActionLinks"
-            class="uk-button uk-button-danger uk-form-small uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
+            class="uk-button uk-button-danger uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
             @click="rebootRequest"
           >
             Restart

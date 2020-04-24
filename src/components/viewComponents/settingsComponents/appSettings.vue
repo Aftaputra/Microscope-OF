@@ -1,5 +1,6 @@
 <template>
   <div id="appSettings">
+    <h3>Appearance</h3>
     <p>
       <label>
         Theme

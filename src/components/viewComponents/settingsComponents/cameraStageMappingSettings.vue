@@ -1,8 +1,11 @@
 <template>
   <div id="cameraStageMappingSettings">
+    <h3>Camera/stage mapping</h3>
+    <p>
+      Camera/stage mapping allows the stage to move relative to the camera view.
+      This enables functions like click-to-move, and more precise tile scans.
+    </p>
     <form @submit.prevent="applyConfigRequest">
-     
-
       <!--Show auto calibrate if default plugin is enabled-->
       <div v-if="'calibrate_xy' in recalibrationLinks" class="uk-margin-small">
         <taskSubmitter
@@ -61,7 +64,8 @@ export default {
       axios
         .get(this.settingsUri)
         .then(response => {
-          this.settings = response.data.extensions['org.openflexure.camera_stage_mapping'];
+          this.settings =
+            response.data.extensions["org.openflexure.camera_stage_mapping"];
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -82,7 +86,7 @@ export default {
             // Get plugin action link
             this.recalibrationLinks = foundExtension.links;
           } else {
-            this.recalibrationLinks = {}
+            this.recalibrationLinks = {};
           }
         })
         .catch(error => {

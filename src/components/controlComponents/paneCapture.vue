@@ -247,7 +247,7 @@
 
     <button
       v-else
-      class="uk-button uk-button-primary uk-form-small uk-margin uk-margin-remove-top uk-width-1-1"
+      class="uk-button uk-button-primary uk-margin uk-margin-remove-top uk-width-1-1"
       @click="handleCapture()"
     >
       Capture
