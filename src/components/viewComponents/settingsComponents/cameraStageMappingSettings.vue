@@ -9,6 +9,7 @@
       <!--Show auto calibrate if default plugin is enabled-->
       <div v-if="'calibrate_xy' in recalibrationLinks" class="uk-margin-small">
         <taskSubmitter
+          :button-primary="true"
           :can-terminate="false"
           :requires-confirmation="true"
           :confirmation-message="
@@ -21,6 +22,15 @@
         >
         </taskSubmitter>
       </div>
+      <button
+        v-if="'get_calibration' in recalibrationLinks"
+        v-show="dataAvailable"
+        type="button"
+        class="uk-button uk-button-default uk-width-1-1"
+        @click="getCalibrationData()"
+      >
+        Download calibration data
+      </button>
     </form>
   </div>
 </template>
@@ -41,7 +51,8 @@ export default {
     return {
       settings: null,
       recalibrationLinks: {},
-      isCalibrating: false
+      isCalibrating: false,
+      dataAvailable: false
     };
   },
 
@@ -61,6 +72,7 @@ export default {
 
   methods: {
     updateSettings: function() {
+      // Update links
       axios
         .get(this.settingsUri)
         .then(response => {
@@ -70,6 +82,44 @@ export default {
         .catch(error => {
           this.modalError(error); // Let mixin handle error
           this.settings = {};
+        });
+    },
+
+    updateCalibrationDataAvailability: function() {
+      if ("get_calibration" in this.recalibrationLinks) {
+        axios
+          .get(this.recalibrationLinks.get_calibration.href)
+          .then(response => {
+            console.log("CSM data:");
+            console.log(response.data);
+            if (Object.keys(response.data).length === 0) {
+              this.dataAvailable = false;
+            } else {
+              this.dataAvailable = true;
+            }
+          })
+          .catch(error => {
+            this.modalError(error); // Let mixin handle error
+          });
+      }
+    },
+
+    getCalibrationData: function() {
+      axios
+        .get(this.recalibrationLinks.get_calibration.href)
+        .then(response => {
+          if (response.data != {}) {
+            const data = JSON.stringify(response.data);
+            const url = window.URL.createObjectURL(new Blob([data]));
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", "csm_calibration.json");
+            document.body.appendChild(link);
+            link.click();
+          }
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
         });
     },
 
@@ -85,6 +135,8 @@ export default {
           if (foundExtension) {
             // Get plugin action link
             this.recalibrationLinks = foundExtension.links;
+            // Update whether calibration data is available
+            this.updateCalibrationDataAvailability();
           } else {
             this.recalibrationLinks = {};
           }
