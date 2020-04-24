@@ -1,5 +1,5 @@
 import logging
-from flask import abort, request, redirect, url_for, send_file, jsonify
+from flask import abort, request, redirect, url_for, send_file
 
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
 
@@ -185,7 +185,7 @@ class CaptureTags(View):
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        return jsonify(capture_obj.tags)
+        return capture_obj.tags
 
     def put(self, id):
         """
@@ -205,7 +205,7 @@ class CaptureTags(View):
 
         capture_obj.put_tags(data_dict)
 
-        return jsonify(capture_obj.tags)
+        return capture_obj.tags
 
     def delete(self, id):
         """
@@ -225,7 +225,7 @@ class CaptureTags(View):
         for tag in data_dict:
             capture_obj.delete_tag(str(tag))
 
-        return jsonify(capture_obj.tags)
+        return capture_obj.tags
 
 
 @Tag("captures")
@@ -240,7 +240,7 @@ class CaptureAnnotations(View):
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        return jsonify(capture_obj.annotations)
+        return capture_obj.annotations
 
     def put(self, id):
         """
@@ -260,4 +260,4 @@ class CaptureAnnotations(View):
 
         capture_obj.put_annotations(data_dict)
 
-        return jsonify(capture_obj.annotations)
+        return capture_obj.annotations

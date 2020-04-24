@@ -6,8 +6,6 @@ from openflexure_microscope.api.utilities.gui import build_gui
 
 import logging
 
-from flask import jsonify
-
 # Some value that will change over time
 # Here, we add 1 to it every time a GET request is made
 val_int = 0
@@ -81,7 +79,7 @@ class TestAPIView(View):
     def get(self):
         global val_int
         val_int += 1
-        return jsonify({"val": True})
+        return {"val": True}
 
 
 @ThingAction
@@ -89,7 +87,7 @@ class TestDoAPIView(View):
     def post(self):
         global val_int
         val_int += 1
-        return jsonify({"val": True})
+        return {"val": True}
 
 
 # Using the dynamic form

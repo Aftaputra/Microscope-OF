@@ -17,7 +17,7 @@ from openflexure_microscope.api.v2.views.captures import capture_schema
 
 import logging
 import io
-from flask import jsonify, request, abort, url_for, redirect, send_file
+from flask import request, abort, url_for, redirect, send_file
 
 
 @ThingAction
@@ -164,7 +164,7 @@ class GPUPreviewStartAPI(View):
         microscope.camera.start_preview(fullscreen=fullscreen, window=window)
 
         # TODO: Make schema for microscope state
-        return jsonify(microscope.state)
+        return microscope.state
 
 
 @ThingAction
@@ -176,4 +176,4 @@ class GPUPreviewStopAPI(View):
         microscope = find_component("org.openflexure.microscope")
         microscope.camera.stop_preview()
         # TODO: Make schema for microscope state
-        return jsonify(microscope.state)
+        return microscope.state

@@ -7,7 +7,7 @@ from labthings.server.view import View
 
 from labthings.server.decorators import ThingProperty, Tag, doc_response
 
-from flask import jsonify, request, abort
+from flask import request, abort
 import logging
 
 
@@ -18,7 +18,7 @@ class SettingsProperty(View):
         Current microscope settings, including camera and stage
         """
         microscope = find_component("org.openflexure.microscope")
-        return jsonify(microscope.read_settings())
+        return microscope.read_settings()
 
     def put(self):
         """
@@ -51,7 +51,7 @@ class NestedSettingsProperty(View):
         except KeyError:
             return abort(404)
 
-        return jsonify(value)
+        return value
 
     @doc_response(404, description="Settings key cannot be found")
     def put(self, route):
@@ -78,7 +78,7 @@ class StateProperty(View):
         Show current read-only state of the microscope
         """
         microscope = find_component("org.openflexure.microscope")
-        return jsonify(microscope.state)
+        return microscope.state
 
 
 @Tag("properties")
@@ -96,7 +96,7 @@ class NestedStateProperty(View):
         except KeyError:
             return abort(404)
 
-        return jsonify(value)
+        return value
 
 
 @ThingProperty
@@ -106,7 +106,7 @@ class ConfigurationProperty(View):
         Show current read-only state of the microscope
         """
         microscope = find_component("org.openflexure.microscope")
-        return jsonify(microscope.configuration)
+        return microscope.configuration
 
 
 @Tag("properties")
@@ -124,4 +124,4 @@ class NestedConfigurationProperty(View):
         except KeyError:
             return abort(404)
 
-        return jsonify(value)
+        return value

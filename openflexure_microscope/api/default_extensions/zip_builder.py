@@ -1,7 +1,6 @@
 from openflexure_microscope.devel import (
     JsonResponse,
     request,
-    jsonify,
     taskify,
     update_task_progress,
 )

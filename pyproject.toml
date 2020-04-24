@@ -25,7 +25,7 @@ license = "GPL-3.0"
 [tool.poetry.dependencies]
 python = "^3.6"
 Flask = "^1.0"
-numpy = "^1.17.0"
+numpy = "1.18.2"
 Pillow = "^5.4"
 scipy = "1.3.0" # Exact version until we can guarantee a wheel
 
@@ -36,7 +36,7 @@ pyserial = "^3.4" # Used for sangaboard (basic_serial_instrument) until we move 
 python-dateutil = "^2.8"
 psutil = "^5.6.7" # Autostorage extension
 opencv-python-headless = "4.1.0.25"
-labthings = "0.4.0"
+labthings = {path = "../python-labthings"}
 
 [tool.poetry.extras]
 rpi = ["picamera", "RPi.GPIO"]

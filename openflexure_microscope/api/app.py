@@ -8,7 +8,7 @@ import logging, logging.handlers
 import os
 import pkg_resources
 
-from flask import Flask, jsonify, send_file
+from flask import Flask, send_file
 
 from datetime import datetime
 
@@ -129,7 +129,7 @@ def routes():
     """
     List of all connected API routes
     """
-    return jsonify(list_routes(app))
+    return list_routes(app)
 
 
 @app.route("/log")
