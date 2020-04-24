@@ -78,10 +78,6 @@ export default {
         .then(response => {
           this.settings =
             response.data.extensions["org.openflexure.camera_stage_mapping"];
-          // Check if existing calibration data is available
-          if ("get_calibration" in this.recalibrationLinks) {
-            this.checkCalibrationData();
-          }
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -89,21 +85,23 @@ export default {
         });
     },
 
-    checkCalibrationData: function() {
-      axios
-        .get(this.recalibrationLinks.get_calibration.href)
-        .then(response => {
-          console.log("CSM data:");
-          console.log(response.data);
-          if (Object.keys(response.data).length === 0) {
-            this.dataAvailable = false;
-          } else {
-            this.dataAvailable = true;
-          }
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
+    updateCalibrationDataAvailability: function() {
+      if ("get_calibration" in this.recalibrationLinks) {
+        axios
+          .get(this.recalibrationLinks.get_calibration.href)
+          .then(response => {
+            console.log("CSM data:");
+            console.log(response.data);
+            if (Object.keys(response.data).length === 0) {
+              this.dataAvailable = false;
+            } else {
+              this.dataAvailable = true;
+            }
+          })
+          .catch(error => {
+            this.modalError(error); // Let mixin handle error
+          });
+      }
     },
 
     getCalibrationData: function() {
@@ -137,6 +135,8 @@ export default {
           if (foundExtension) {
             // Get plugin action link
             this.recalibrationLinks = foundExtension.links;
+            // Update whether calibration data is available
+            this.updateCalibrationDataAvailability();
           } else {
             this.recalibrationLinks = {};
           }
