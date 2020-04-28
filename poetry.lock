@@ -123,7 +123,7 @@ description = "Composable command line interface toolkit"
 name = "click"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-version = "7.1.1"
+version = "7.1.2"
 
 [[package]]
 category = "dev"
@@ -340,10 +340,23 @@ version = "1.18.2"
 [[package]]
 category = "main"
 description = "Wrapper package for OpenCV python bindings."
+marker = "python_version >= \"3.7\" and python_version < \"3.8\""
 name = "opencv-python-headless"
 optional = false
 python-versions = "*"
 version = "4.1.0.25"
+
+[package.dependencies]
+numpy = ">=1.11.1"
+
+[[package]]
+category = "main"
+description = "Wrapper package for OpenCV python bindings."
+marker = "python_version >= \"3.8\" and python_version < \"4.0\""
+name = "opencv-python-headless"
+optional = false
+python-versions = "*"
+version = "4.2.0.34"
 
 [package.dependencies]
 numpy = ">=1.11.1"
@@ -374,7 +387,7 @@ doc = ["sphinx"]
 test = ["pillow", "coverage", "mock", "numpy", "pytest"]
 
 [package.source]
-reference = "79177fa7f28d6d5c6eab5ba814b420b1785b6b24"
+reference = "e50a34826fc8691e9f8554c529a1700662724ade"
 type = "git"
 url = "https://github.com/rwb27/picamera.git"
 [[package]]
@@ -461,7 +474,7 @@ description = "World timezone definitions, modern and historical"
 name = "pytz"
 optional = false
 python-versions = "*"
-version = "2019.3"
+version = "2020.1"
 
 [[package]]
 category = "dev"
@@ -503,7 +516,7 @@ description = "SciPy: Scientific Library for Python"
 name = "scipy"
 optional = false
 python-versions = ">=3.5"
-version = "1.3.0"
+version = "1.4.1"
 
 [package.dependencies]
 numpy = ">=1.13.3"
@@ -722,7 +735,7 @@ ifaddr = "*"
 rpi = ["picamera", "RPi.GPIO"]
 
 [metadata]
-content-hash = "0d199a2b60763d46e7864814f8cb78037f358fdbf64d32c9f233ea6384449510"
+content-hash = "f880f4ec9bc5aacc0b508e234779c32fe418f96db56eb4bc805ab22cba695d7e"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -793,8 +806,8 @@ chardet = [
     {file = "chardet-3.0.4.tar.gz", hash = "sha256:84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae"},
 ]
 click = [
-    {file = "click-7.1.1-py2.py3-none-any.whl", hash = "sha256:e345d143d80bf5ee7534056164e5e112ea5e22716bbb1ce727941f4c8b471b9a"},
-    {file = "click-7.1.1.tar.gz", hash = "sha256:8a18b4ea89d8820c5d0c7da8a64b2c324b4dabb695804dbfea19b9be9d88c0cc"},
+    {file = "click-7.1.2-py2.py3-none-any.whl", hash = "sha256:dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc"},
+    {file = "click-7.1.2.tar.gz", hash = "sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a"},
 ]
 colorama = [
     {file = "colorama-0.4.3-py2.py3-none-any.whl", hash = "sha256:7d73d2a99753107a36ac6b455ee49046802e59d9d076ef8e47b61499fa29afff"},
@@ -1010,6 +1023,26 @@ opencv-python-headless = [
     {file = "opencv_python_headless-4.1.0.25-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:7709abc1c1341b831bf30d2b2afaa4877bdcab7dd775c94864608c08067e65b9"},
     {file = "opencv_python_headless-4.1.0.25-cp37-cp37m-win32.whl", hash = "sha256:3020c6a996cea3a8d36ef5c49c8641a8f32a2bb77944128749af756de2946d6e"},
     {file = "opencv_python_headless-4.1.0.25-cp37-cp37m-win_amd64.whl", hash = "sha256:5f1f5b0325cfd50cd58fc64bf66feed56238305e41450f04ab450092e18ee95b"},
+    {file = "opencv_python_headless-4.2.0.34-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:45f90a872bc2e3d3257e06508ea18b3e2d429cf1b20de1a8f5c57251cc39fae4"},
+    {file = "opencv_python_headless-4.2.0.34-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:1641d82b94ce496e6f3df8f2a337eae94cd608e0e61dbb4b697577438d88c258"},
+    {file = "opencv_python_headless-4.2.0.34-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:3aadcd93f1ad9a92dbfbfdeacb7ffca115f137aa2b07d36495fd141f2a553479"},
+    {file = "opencv_python_headless-4.2.0.34-cp35-cp35m-win32.whl", hash = "sha256:cef7e844f5fd73cb602b8ba3f048a68dc2c59b7abb55ca99cceee9f688e909a4"},
+    {file = "opencv_python_headless-4.2.0.34-cp35-cp35m-win_amd64.whl", hash = "sha256:70117cd51b158f7628cf2dab24805df40173c3794ca3dfeec22defb326ec0173"},
+    {file = "opencv_python_headless-4.2.0.34-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:4c3004573ecfbdf46785682a294923661903eb18e4c188106998ef5be255df1f"},
+    {file = "opencv_python_headless-4.2.0.34-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:64292b593367e5b37556900b132861d94c05f616d8569c5625b02be6d51e13f7"},
+    {file = "opencv_python_headless-4.2.0.34-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:ffe74fc421fc77b649f4b762e115fd2b9cea9ba86b4590f7939bd15f92f11f80"},
+    {file = "opencv_python_headless-4.2.0.34-cp36-cp36m-win32.whl", hash = "sha256:ed5c7d2fd8dc08ebcb9f8ed09883e3a083a5e0bc35f863ac280f61cec9560b09"},
+    {file = "opencv_python_headless-4.2.0.34-cp36-cp36m-win_amd64.whl", hash = "sha256:28b28e3462500dccf75ac5efb2b885494d050fb6444fee37b53f9f950bccca57"},
+    {file = "opencv_python_headless-4.2.0.34-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:4e9de88b1376f904158698c3335f184cbcdc68eda018eb8f751e27e7407dddd1"},
+    {file = "opencv_python_headless-4.2.0.34-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:edfaeea04982166a02c87b85ed5451b77485c86db7a4b216a42e6b686e1b5f1a"},
+    {file = "opencv_python_headless-4.2.0.34-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:aca7419cae1390a8f2d6776571d1d19db66dadbff2ded79e4ff4bad5d9df6633"},
+    {file = "opencv_python_headless-4.2.0.34-cp37-cp37m-win32.whl", hash = "sha256:1df0adfc1b893615ab8487cd207aae356936b0ba1823520e2292c928853c2930"},
+    {file = "opencv_python_headless-4.2.0.34-cp37-cp37m-win_amd64.whl", hash = "sha256:67c6ff682e413db759f49a206bafa5ebb8b01dfdefa5199df32741b58772c3d7"},
+    {file = "opencv_python_headless-4.2.0.34-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:904f0b4a358b3260d7572956026bf6a0fa0cda31d5a6afeed3e55341a3f36c8d"},
+    {file = "opencv_python_headless-4.2.0.34-cp38-cp38-manylinux1_i686.whl", hash = "sha256:f93bec89d943ca1877c38920e934ed1d6193cdc6ff09cb910c19c15643ee07df"},
+    {file = "opencv_python_headless-4.2.0.34-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:ca9a5f4b04f2b423892ef5934fdd685edd0bc458c77fc7e164156a50e6be0377"},
+    {file = "opencv_python_headless-4.2.0.34-cp38-cp38-win32.whl", hash = "sha256:06a96ec4866aa40c68c255042ea0ab8a96c07f2eb54f5b0dc6b8ac08b00c1b7e"},
+    {file = "opencv_python_headless-4.2.0.34-cp38-cp38-win_amd64.whl", hash = "sha256:20c450943acebd9aa04566fdef4a658b94eec80a0c39a8f480c9aa1696034fcb"},
 ]
 packaging = [
     {file = "packaging-20.3-py2.py3-none-any.whl", hash = "sha256:82f77b9bee21c1bafbf35a84905d604d5d1223801d639cf3ed140bd651c08752"},
@@ -1107,8 +1140,8 @@ python-dateutil = [
     {file = "python_dateutil-2.8.1-py2.py3-none-any.whl", hash = "sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a"},
 ]
 pytz = [
-    {file = "pytz-2019.3-py2.py3-none-any.whl", hash = "sha256:1c557d7d0e871de1f5ccd5833f60fb2550652da6be2693c1e02300743d21500d"},
-    {file = "pytz-2019.3.tar.gz", hash = "sha256:b02c06db6cf09c12dd25137e563b31700d3b80fcc4ad23abb7a315f2789819be"},
+    {file = "pytz-2020.1-py2.py3-none-any.whl", hash = "sha256:a494d53b6d39c3c6e44c3bec237336e14305e4f29bbf800b599253057fbb79ed"},
+    {file = "pytz-2020.1.tar.gz", hash = "sha256:c35965d010ce31b23eeb663ed3cc8c906275d6be1a34393a1d73a41febf4a048"},
 ]
 requests = [
     {file = "requests-2.23.0-py2.py3-none-any.whl", hash = "sha256:43999036bfa82904b6af1d99e4882b560e5e2c68e5c4b0aa03b655f3d7d73fee"},
@@ -1123,22 +1156,27 @@ rope = [
     {file = "RPi.GPIO-0.6.5.tar.gz", hash = "sha256:a4210ad63bfe844e43995286de0d3950dfacfa0f3799bb9392770ac54a7d2e47"},
 ]
 scipy = [
-    {file = "scipy-1.3.0-cp35-cp35m-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl", hash = "sha256:4907040f62b91c2e170359c3d36c000af783f0fa1516a83d6c1517cde0af5340"},
-    {file = "scipy-1.3.0-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:1db9f964ed9c52dc5bd6127f0dd90ac89791daa690a5665cc01eae185912e1ba"},
-    {file = "scipy-1.3.0-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:adadeeae5500de0da2b9e8dd478520d0a9945b577b2198f2462555e68f58e7ef"},
-    {file = "scipy-1.3.0-cp35-cp35m-win32.whl", hash = "sha256:03b1e0775edbe6a4c64effb05fff2ce1429b76d29d754aa5ee2d848b60033351"},
-    {file = "scipy-1.3.0-cp35-cp35m-win_amd64.whl", hash = "sha256:a7695a378c2ce402405ea37b12c7a338a8755e081869bd6b95858893ceb617ae"},
-    {file = "scipy-1.3.0-cp36-cp36m-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl", hash = "sha256:826b9f5fbb7f908a13aa1efd4b7321e36992f5868d5d8311c7b40cf9b11ca0e7"},
-    {file = "scipy-1.3.0-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:b283a76a83fe463c9587a2c88003f800e08c3929dfbeba833b78260f9c209785"},
-    {file = "scipy-1.3.0-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:db61a640ca20f237317d27bc658c1fc54c7581ff7f6502d112922dc285bdabee"},
-    {file = "scipy-1.3.0-cp36-cp36m-win32.whl", hash = "sha256:409846be9d6bdcbd78b9e5afe2f64b2da5a923dd7c1cd0615ce589489533fdbb"},
-    {file = "scipy-1.3.0-cp36-cp36m-win_amd64.whl", hash = "sha256:c19a7389ab3cd712058a8c3c9ffd8d27a57f3d84b9c91a931f542682bb3d269d"},
-    {file = "scipy-1.3.0-cp37-cp37m-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl", hash = "sha256:09d008237baabf52a5d4f5a6fcf9b3c03408f3f61a69c404472a16861a73917e"},
-    {file = "scipy-1.3.0-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:a84c31e8409b420c3ca57fd30c7589378d6fdc8d155d866a7f8e6e80dec6fd06"},
-    {file = "scipy-1.3.0-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:c5ea60ece0c0c1c849025bfc541b60a6751b491b6f11dd9ef37ab5b8c9041921"},
-    {file = "scipy-1.3.0-cp37-cp37m-win32.whl", hash = "sha256:6c0543f2fdd38dee631fb023c0f31c284a532d205590b393d72009c14847f5b1"},
-    {file = "scipy-1.3.0-cp37-cp37m-win_amd64.whl", hash = "sha256:10325f0ffac2400b1ec09537b7e403419dcd25d9fee602a44e8a32119af9079e"},
-    {file = "scipy-1.3.0.tar.gz", hash = "sha256:c3bb4bd2aca82fb498247deeac12265921fe231502a6bc6edea3ee7fe6c40a7a"},
+    {file = "scipy-1.4.1-cp35-cp35m-macosx_10_6_intel.whl", hash = "sha256:c5cac0c0387272ee0e789e94a570ac51deb01c796b37fb2aad1fb13f85e2f97d"},
+    {file = "scipy-1.4.1-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:a144811318853a23d32a07bc7fd5561ff0cac5da643d96ed94a4ffe967d89672"},
+    {file = "scipy-1.4.1-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:71eb180f22c49066f25d6df16f8709f215723317cc951d99e54dc88020ea57be"},
+    {file = "scipy-1.4.1-cp35-cp35m-win32.whl", hash = "sha256:770254a280d741dd3436919d47e35712fb081a6ff8bafc0f319382b954b77802"},
+    {file = "scipy-1.4.1-cp35-cp35m-win_amd64.whl", hash = "sha256:a1aae70d52d0b074d8121333bc807a485f9f1e6a69742010b33780df2e60cfe0"},
+    {file = "scipy-1.4.1-cp36-cp36m-macosx_10_6_intel.whl", hash = "sha256:bb517872058a1f087c4528e7429b4a44533a902644987e7b2fe35ecc223bc408"},
+    {file = "scipy-1.4.1-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:dba8306f6da99e37ea08c08fef6e274b5bf8567bb094d1dbe86a20e532aca088"},
+    {file = "scipy-1.4.1-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:386086e2972ed2db17cebf88610aab7d7f6e2c0ca30042dc9a89cf18dcc363fa"},
+    {file = "scipy-1.4.1-cp36-cp36m-win32.whl", hash = "sha256:8d3bc3993b8e4be7eade6dcc6fd59a412d96d3a33fa42b0fa45dc9e24495ede9"},
+    {file = "scipy-1.4.1-cp36-cp36m-win_amd64.whl", hash = "sha256:dc60bb302f48acf6da8ca4444cfa17d52c63c5415302a9ee77b3b21618090521"},
+    {file = "scipy-1.4.1-cp37-cp37m-macosx_10_6_intel.whl", hash = "sha256:787cc50cab3020a865640aba3485e9fbd161d4d3b0d03a967df1a2881320512d"},
+    {file = "scipy-1.4.1-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:0902a620a381f101e184a958459b36d3ee50f5effd186db76e131cbefcbb96f7"},
+    {file = "scipy-1.4.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:00af72998a46c25bdb5824d2b729e7dabec0c765f9deb0b504f928591f5ff9d4"},
+    {file = "scipy-1.4.1-cp37-cp37m-win32.whl", hash = "sha256:9508a7c628a165c2c835f2497837bf6ac80eb25291055f56c129df3c943cbaf8"},
+    {file = "scipy-1.4.1-cp37-cp37m-win_amd64.whl", hash = "sha256:a2d6df9eb074af7f08866598e4ef068a2b310d98f87dc23bd1b90ec7bdcec802"},
+    {file = "scipy-1.4.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:3092857f36b690a321a662fe5496cb816a7f4eecd875e1d36793d92d3f884073"},
+    {file = "scipy-1.4.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:8a07760d5c7f3a92e440ad3aedcc98891e915ce857664282ae3c0220f3301eb6"},
+    {file = "scipy-1.4.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:1e3190466d669d658233e8a583b854f6386dd62d655539b77b3fa25bfb2abb70"},
+    {file = "scipy-1.4.1-cp38-cp38-win32.whl", hash = "sha256:cc971a82ea1170e677443108703a2ec9ff0f70752258d0e9f5433d00dda01f59"},
+    {file = "scipy-1.4.1-cp38-cp38-win_amd64.whl", hash = "sha256:2cce3f9847a1a51019e8c5b47620da93950e58ebc611f13e0d11f4980ca5fecb"},
+    {file = "scipy-1.4.1.tar.gz", hash = "sha256:dee1bbf3a6c8f73b6b218cb28eed8dd13347ea2f87d572ce19b289d6fd3fbc59"},
 ]
 six = [
     {file = "six-1.14.0-py2.py3-none-any.whl", hash = "sha256:8f3cd2e254d8f793e7f3d6d9df77b92252b52637291d0f0da013c76ea2724b6c"},
