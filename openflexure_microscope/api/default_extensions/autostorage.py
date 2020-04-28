@@ -92,7 +92,7 @@ class AutostorageExtension(BaseExtension):
             description="Handle switching capture storage devices",
         )
 
-        # We'll store a reference to a camera object, who's capture paths will be modified
+        # We'll store a reference to a CaptureManager object, who's capture paths will be modified
         self.capture_manager = None
 
         self.initial_location = get_default_location()
@@ -103,10 +103,12 @@ class AutostorageExtension(BaseExtension):
     def on_microscope(self, microscope_obj):
         """Function to automatically call when the parent LabThing has a microscope attached."""
         logging.debug(f"Autostorage extension found microscope {microscope_obj}")
-        if hasattr(microscope_obj, "camera"):
-            logging.debug(f"Autostorage extension bound to camera {self.camera}")
+        if hasattr(microscope_obj, "captures"):
+            logging.debug(
+                f"Autostorage extension bound to CaptureManager {self.capture_manager}"
+            )
 
-            # Store a reference to the camera
+            # Store a reference to the CaptureManager
             self.capture_manager = microscope_obj.captures
             # Store the initial storage location
             self.initial_location = get_current_location(self.capture_manager)
@@ -128,13 +130,13 @@ class AutostorageExtension(BaseExtension):
             set_current_location(self.capture_manager, get_default_location())
 
     def get_locations(self):
-        if self.camera:
+        if self.capture_manager:
             locations = get_all_locations()
 
             current_location = get_current_location(self.capture_manager)
             if current_location not in locations.values():
                 locations.update({"Custom": current_location})
-            # Add location from the cameras settings file
+            # Add location from the CaptureManager settings file
             return locations
         else:
             return {}
