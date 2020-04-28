@@ -12,9 +12,11 @@ from numpy.linalg import norm
 from .camera_stage_tracker import Tracker, move_until_motion_detected
 import logging
 
+
 def displacements(positions):
     """Calculate the absolute distance of each point from the first point."""
-    return norm(positions - positions[0,:][np.newaxis,:], axis=1)
+    return norm(positions - positions[0, :][np.newaxis, :], axis=1)
+
 
 def direction_from_points(points):
     """Given an Nx2 array of points, figure out the principal component.
@@ -25,7 +27,8 @@ def direction_from_points(points):
     points = points.astype(np.float)
     points -= np.mean(points, axis=0)[np.newaxis, :]
     eigenvalues, eigenvectors = np.linalg.eig(np.cov(points.T))
-    return eigenvectors[:,np.argmax(eigenvalues)]
+    return eigenvectors[:, np.argmax(eigenvalues)]
+
 
 def apply_backlash(x, backlash=0, start_unwound=True):
     """Apply a basic model of backlash to a set of coordinates.
@@ -42,13 +45,14 @@ def apply_backlash(x, backlash=0, start_unwound=True):
         y[0] = x[0] + initial_direction * backlash
     else:
         y[0] = x[0]
-    for i in range(1,len(x)):
-        d = x[i] - y[i-1]
+    for i in range(1, len(x)):
+        d = x[i] - y[i - 1]
         if np.abs(d) >= backlash:
             y[i] = x[i] - np.sign(d) * backlash
         else:
-            y[i] = y[i-1]
+            y[i] = y[i - 1]
     return y
+
 
 def fit_backlash(moves):
     """Given a set of linear moves forwards and back, estimate backlash.
@@ -99,7 +103,7 @@ def fit_backlash(moves):
         residuals = yfit - (xfit_blsh * m + c)
         return m, c, np.std(residuals, ddof=3)
 
-    max_backlash = (np.max(xfit) - np.min(xfit))/3
+    max_backlash = (np.max(xfit) - np.min(xfit)) / 3
     backlash_values = []
     residual_values = []
     backlash = 0
@@ -107,18 +111,18 @@ def fit_backlash(moves):
         m, c, residual = fit_motion(xfit, yfit, backlash)
         residual_values.append(residual)
         backlash_values.append(backlash)
-        backlash += max(1, backlash/3)
+        backlash += max(1, backlash / 3)
 
     backlash = backlash_values[np.argmin(residual_values)]
     m, c, residual = fit_motion(xfit, yfit, backlash)
 
-    fractional_error = residual/norm(np.diff(yfit))
+    fractional_error = residual / norm(np.diff(yfit))
     if fractional_error > 0.1:
         raise ValueError("The fit didn't look successful")
 
     return {
-        "backlash": backlash, 
-        "pixels_per_step": m, 
+        "backlash": backlash,
+        "pixels_per_step": m,
         "fractional_error": fractional_error,
         "stage_direction": stage_direction,
         "image_direction": image_direction,
@@ -126,36 +130,42 @@ def fit_backlash(moves):
     }
 
 
-def calibrate_backlash_1d(tracker, move, direction=np.array([1,0,0])):
+def calibrate_backlash_1d(tracker, move, direction=np.array([1, 0, 0])):
     """Figure out reasonable step sizes for calibration, and estimate the backlash."""
-    try: # Ensure that the tracker has a template set
+    try:  # Ensure that the tracker has a template set
         _ = tracker.template
     except:
         tracker.acquire_template()
     assert tracker.stage_positions.shape[0] == 1
-    original_stage_pos = tracker.stage_positions[-1,:]
+    original_stage_pos = tracker.stage_positions[-1, :]
 
-    direction = direction / np.sum(direction**2)**0.5 # ensure "direction" is normalised
+    direction = (
+        direction / np.sum(direction ** 2) ** 0.5
+    )  # ensure "direction" is normalised
 
     logging.info("Moving the stage until we see motion...")
     # Move the stage until we can see a significant amount of motion
     i, m = move_until_motion_detected(
-        tracker, move, direction, threshold=tracker.max_safe_displacement * 0.2)
-    
+        tracker, move, direction, threshold=tracker.max_safe_displacement * 0.2
+    )
+
     logging.info("Moving the stage to the edge of the field of view...")
     i, m = move_until_motion_detected(
-        tracker, move, direction, 
+        tracker,
+        move,
+        direction,
         threshold=tracker.max_safe_displacement * 0.7,
-        multipliers=m/2.0 * np.arange(20),
-        detect_cumulative_motion=True)
+        multipliers=m / 2.0 * np.arange(20),
+        detect_cumulative_motion=True,
+    )
     exponential_moves = tracker.history
 
     # Include this final step, and make a rough estimate of the scaling from stage to image
     stage_pos, image_pos = tracker.history
     stage_step = stage_pos[-1, :] - stage_pos[-1 - i, :]
     image_step = image_pos[-1, :] - image_pos[-1 - i, :]
-    steps_per_pixel = norm(stage_step)/norm(image_step)
-    
+    steps_per_pixel = norm(stage_step) / norm(image_step)
+
     # Calculate a step that moves roughly 0.2 times the max. displacement (i.e. 0.1 times the FoV)
     sensible_step = direction * tracker.max_safe_displacement * 0.2 * steps_per_pixel
     tracker.reset_history()
@@ -167,27 +177,35 @@ def calibrate_backlash_1d(tracker, move, direction=np.array([1,0,0])):
     starting_stage_pos, starting_camera_pos = tracker.append_point()
     for i in range(15):
         move(starting_stage_pos - sensible_step * (i + 1))
-        #print(".", end="")
+        # print(".", end="")
         stage_pos, image_pos = tracker.append_point()
-        if (i > 3 and tracker.moving_away_from_centre 
-            and norm(image_pos) > 0.65 * tracker.max_safe_displacement):
-            break # Stop once we have moved far enough
+        if (
+            i > 3
+            and tracker.moving_away_from_centre
+            and norm(image_pos) > 0.65 * tracker.max_safe_displacement
+        ):
+            break  # Stop once we have moved far enough
 
     logging.info("Moving the stage forwards to measure backlash (2/2)")
     # Move forwards again, in 10 steps
     starting_stage_pos, starting_camera_pos = tracker.append_point()
     for i in range(15):
         move(starting_stage_pos + sensible_step * (i + 1))
-        #print(".", end="")
+        # print(".", end="")
         stage_pos, image_pos = tracker.append_point()
-        if (i > 3 and tracker.moving_away_from_centre 
-            and norm(image_pos) > 0.65 * tracker.max_safe_displacement):
-            break # Stop once we have moved far enough
+        if (
+            i > 3
+            and tracker.moving_away_from_centre
+            and norm(image_pos) > 0.65 * tracker.max_safe_displacement
+        ):
+            break  # Stop once we have moved far enough
     linear_moves = tracker.history
 
     try:
         res = fit_backlash(linear_moves)
-        backlash_correction = sensible_step / norm(sensible_step) * res["backlash"] * 1.5
+        backlash_correction = (
+            sensible_step / norm(sensible_step) * res["backlash"] * 1.5
+        )
 
         # Finally, move back to the starting position, doing backlash-corrected moves.
         logging.info("Moving back to the start, correcting for backlash...")
@@ -200,32 +218,39 @@ def calibrate_backlash_1d(tracker, move, direction=np.array([1,0,0])):
         backlash_corrected_moves = tracker.history
         move(original_stage_pos - backlash_correction)
     except ValueError:
-        return {"exponential_moves": exponential_moves, "linear_moves": linear_moves,}
+        return {"exponential_moves": exponential_moves, "linear_moves": linear_moves}
     finally:
         # Reset position
         move(original_stage_pos)
 
     logging.info(f"Estimated backlash {res['backlash']:.0f} steps")
-    logging.info(f"Stage-to-image ratio {np.abs(res['pixels_per_step']):.3f} pixels/step")
-    logging.info(f"Residuals were about {res['fractional_error']:.2f} times the step size")
+    logging.info(
+        f"Stage-to-image ratio {np.abs(res['pixels_per_step']):.3f} pixels/step"
+    )
+    logging.info(
+        f"Residuals were about {res['fractional_error']:.2f} times the step size"
+    )
 
-    res.update({
-        "exponential_moves": exponential_moves,
-        "linear_moves": linear_moves,
-        "backlash_corrected_moves": backlash_corrected_moves
-    })
+    res.update(
+        {
+            "exponential_moves": exponential_moves,
+            "linear_moves": linear_moves,
+            "backlash_corrected_moves": backlash_corrected_moves,
+        }
+    )
     return res
 
 
 def plot_1d_backlash_calibration(results):
     """Plot the results of a calibration run"""
     from matplotlib import pyplot as plt
-    f, ax = plt.subplots(1,2)
-    
+
+    f, ax = plt.subplots(1, 2)
+
     for k in ["exponential", "linear", "backlash_corrected"]:
-        moves = results[k+"_moves"]
+        moves = results[k + "_moves"]
         if moves is not None:
-            ax[0].plot(moves[1][:,0], moves[1][:,1], 'o-')
+            ax[0].plot(moves[1][:, 0], moves[1][:, 1], "o-")
     ax[0].set_aspect(1, adjustable="datalim")
 
     image_direction = results["image_direction"]
@@ -237,18 +262,19 @@ def plot_1d_backlash_calibration(results):
         image_1d = np.sum(image_pos * image_direction[np.newaxis, :], axis=1)
         return stage_1d, image_1d
 
-    ax[1].plot(*convert_moves(results["exponential_moves"]), 'o-')
-    
+    ax[1].plot(*convert_moves(results["exponential_moves"]), "o-")
+
     stage_pos, image_pos = convert_moves(results["linear_moves"])
     model = apply_backlash(stage_pos, results["backlash"])
     model *= results["pixels_per_step"]
     model += np.mean(image_pos) - np.mean(model)
-    ax[1].plot(stage_pos, model, '-')
-    ax[1].plot(stage_pos, image_pos, 'o')
+    ax[1].plot(stage_pos, model, "-")
+    ax[1].plot(stage_pos, image_pos, "o")
     if results["backlash_corrected_moves"] is not None:
-        ax[1].plot(*convert_moves(results["backlash_corrected_moves"]), '+')
+        ax[1].plot(*convert_moves(results["backlash_corrected_moves"]), "+")
 
     return f, ax
+
 
 def image_to_stage_displacement_from_1d(calibrations):
     """Combine X and Y calibrations
@@ -271,7 +297,9 @@ def image_to_stage_displacement_from_1d(calibrations):
         c_blash = np.abs(cal["backlash"] * cal["stage_direction"])
         backlash[backlash < c_blash] = c_blash[backlash < c_blash]
 
-    A, res, rank, s = np.linalg.lstsq(image_vectors, stage_vectors) # we solve image*A = stage
+    A, res, rank, s = np.linalg.lstsq(
+        image_vectors, stage_vectors
+    )  # we solve image*A = stage
     return {
         "image_to_stage_displacement": A,
         "backlash_vector": backlash,

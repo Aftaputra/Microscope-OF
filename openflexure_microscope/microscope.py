@@ -175,7 +175,12 @@ class Microscope:
         don't get removed from the settings file.
         """
 
-        settings_current = {"id": self.id, "name": self.name, "fov": self.fov, "extensions": self.extension_settings}
+        settings_current = {
+            "id": self.id,
+            "name": self.name,
+            "fov": self.fov,
+            "extensions": self.extension_settings,
+        }
 
         # If attached to a camera
         if self.camera:

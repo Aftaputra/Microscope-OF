@@ -199,7 +199,7 @@ def tile(
                     # Run slow autofocus. Client should provide dz ~ 50
                     autofocus_extension.autofocus(
                         microscope,
-                        range(-3 * autofocus_dz, 4 * autofocus_dz, autofocus_dz)
+                        range(-3 * autofocus_dz, 4 * autofocus_dz, autofocus_dz),
                     )
                     logging.debug("Finished autofocus")
                     time.sleep(1)

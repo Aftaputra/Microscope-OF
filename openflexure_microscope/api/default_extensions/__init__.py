@@ -2,6 +2,7 @@ import logging
 import traceback
 from contextlib import contextmanager
 
+
 @contextmanager
 def handle_extension_error(extension_name):
     """'gracefully' log an error if an extension fails to load."""
@@ -11,6 +12,7 @@ def handle_extension_error(extension_name):
         logging.error(
             f"Exception loading builtin extension picamera_autocalibrate: \n{traceback.format_exc()}"
         )
+
 
 with handle_extension_error("autofocus"):
     from .autofocus import autofocus_extension_v2

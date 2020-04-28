@@ -203,4 +203,3 @@ with open(DEFAULT_CONFIGURATION_FILE_PATH, "r") as default_configuration:
 user_configuration = OpenflexureSettingsFile(
     path=CONFIGURATION_FILE_PATH, defaults=DEFAULT_CONFIGURATION
 )
-
