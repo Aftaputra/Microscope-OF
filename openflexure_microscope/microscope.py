@@ -5,6 +5,9 @@ Defines a microscope object, binding a camera and stage with basic functionality
 import logging
 import pkg_resources
 import uuid
+from typing import Tuple
+
+from openflexure_microscope.captures import CaptureManager
 
 from openflexure_microscope.stage.mock import MissingStage
 from openflexure_microscope.camera.mock import MissingCamera
@@ -33,6 +36,8 @@ class Microscope:
         self.id = uuid.uuid4()
         self.name = self.id
 
+        self.captures = CaptureManager()
+
         self.fov = [0, 0]  #: Microscope field-of-view in stage motor steps
 
         # Store settings and configuration files
@@ -47,6 +52,7 @@ class Microscope:
 
         self.camera = None  #: Currently connected camera object
         self.stage = None  #: Currently connected stage object
+
         self.setup(self.configuration_file.load())  # Attach components
 
         # Apply settings loaded from file
@@ -75,6 +81,7 @@ class Microscope:
         """
 
         ### Detector
+        print("Creating camera")
         if configuration.get("camera"):
             camera_type = configuration["camera"].get("type")
             if camera_type in ("PiCamera", "PiCameraStreamer"):
@@ -85,6 +92,7 @@ class Microscope:
                     logging.warning("No compatible camera hardware found.")
 
         ### Stage
+        print("Creating stage")
         if configuration.get("stage"):
             stage_type = configuration["stage"].get("type")
             stage_port = configuration["stage"].get("port")
@@ -95,6 +103,7 @@ class Microscope:
                     logging.error(e)
                     logging.warning("No compatible Sangaboard hardware found.")
 
+        print("Handling fallbacks")
         ### Fallbacks
         if not self.camera:
             self.camera = MissingCamera()
@@ -102,6 +111,7 @@ class Microscope:
             self.stage = MissingStage()
 
         ### Locks
+        print("Creating locks")
         if hasattr(self.camera, "lock"):
             self.lock.locks.append(self.camera.lock)
         if hasattr(self.stage, "lock"):
@@ -144,11 +154,14 @@ class Microscope:
 
         # If attached to a camera
         if ("camera" in settings) and self.camera:
-            self.camera.update_settings(settings["camera"])
+            self.camera.update_settings(settings.get("camera", {}))
 
         # If attached to a stage
         if ("stage" in settings) and self.stage:
-            self.stage.update_settings(settings["stage"])
+            self.stage.update_settings(settings.get("stage", {}))
+
+        # Capture manager
+        self.captures.update_settings(settings.get("captures", {}))
 
         # Microscope settings
         if "id" in settings:
@@ -207,6 +220,10 @@ class Microscope:
             settings_current_stage = self.stage.read_settings()
             settings_current["stage"] = settings_current_stage
 
+        # Capture manager
+        settings_current_captures = self.captures.read_settings()
+        settings_current["captures"] = settings_current_captures
+
         settings_full = self.settings_file.merge(settings_current)
 
         if full:
@@ -260,3 +277,49 @@ class Microscope:
         }
 
         return system_metadata
+
+    def capture(
+        self,
+        filename: str = None,
+        folder: str = "",
+        temporary: bool = False,
+        use_video_port: bool = False,
+        resize: Tuple[int, int] = None,
+        bayer: bool = True,
+        fmt: str = "jpeg",
+        annotations: dict = None,
+        tags: list = None,
+        metadata: dict = None
+    ):
+        if not annotations:
+            annotations = {}
+        if not metadata:
+            metadata = {}
+        if not tags:
+            tags = []
+        
+        with self.camera.lock:
+            # Create output object
+            output = self.captures.new_image(
+                temporary=temporary, filename=filename, folder=folder, fmt=fmt
+            )
+
+            # Capture to output object
+            self.camera.capture(
+                output.file,
+                use_video_port=use_video_port,
+                resize=resize,
+                bayer=bayer,
+                fmt=fmt
+            )
+
+            # Inject system metadata
+            output.put_metadata({"instrument": self.metadata})
+            # Insert custom metadata
+            output.put_metadata(metadata)
+            # Insert custom metadata
+            output.put_annotations(annotations)
+            # Insert custom tags
+            output.put_tags(tags)
+
+        return output

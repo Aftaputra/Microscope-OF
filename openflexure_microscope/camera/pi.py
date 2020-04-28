@@ -41,7 +41,8 @@ import picamera.array
 # Type hinting
 from typing import Tuple
 
-from .base import BaseCamera, CaptureObject
+from openflexure_microscope.camera.base import BaseCamera
+from openflexure_microscope.captures import CaptureObject
 
 # Richard's fix gain
 from .set_picamera_gain import set_analog_gain, set_digital_gain

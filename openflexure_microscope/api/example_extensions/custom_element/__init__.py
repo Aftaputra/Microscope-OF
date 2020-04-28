@@ -7,8 +7,6 @@ from labthings.core.utilities import path_relative_to
 
 from openflexure_microscope.paths import settings_file_path, check_rw
 from openflexure_microscope.config import OpenflexureSettingsFile
-from openflexure_microscope.camera.base import BASE_CAPTURE_PATH
-from openflexure_microscope.camera.capture import build_captures_from_exif
 
 from openflexure_microscope.api.utilities.gui import build_gui
 

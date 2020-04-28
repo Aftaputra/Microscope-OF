@@ -17,7 +17,8 @@ import logging
 # Type hinting
 from typing import Tuple
 
-from openflexure_microscope.camera.base import BaseCamera, CaptureObject
+from openflexure_microscope.camera.base import BaseCamera
+from openflexure_microscope.captures import CaptureObject
 
 
 """

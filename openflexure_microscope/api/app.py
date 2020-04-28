@@ -57,6 +57,7 @@ logger.setLevel(logging.INFO)
 # Log server paths being used
 logging.info(f"Running with data path {OPENFLEXURE_VAR_PATH}")
 
+print("Creating app")
 # Create flask app
 app, labthing = create_app(
     __name__,
@@ -175,5 +176,6 @@ atexit.register(cleanup)
 if __name__ == "__main__":
     from labthings.server.wsgi import Server
 
+    print("Starting OpenFlexure Microscope Server...")
     server = Server(app)
     server.run(host="::", port=5000, debug=False, zeroconf=True)

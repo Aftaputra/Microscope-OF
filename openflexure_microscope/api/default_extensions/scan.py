@@ -85,26 +85,16 @@ def capture(
     filename = "{}_{}_{}_{}".format(basename, *microscope.stage.position)
     folder = "SCAN_{}".format(basename)
 
-    # Create output object
-    output = microscope.camera.new_image(
-        temporary=temporary, filename=filename, folder=folder
+    # Do capture
+    return microscope.capture(
+        filename=filename,
+        folder=folder,
+        temporary=temporary,
+        use_video_port=use_video_port, resize=resize, bayer=bayer,
+        annotations=annotations,
+        tags=tags,
+        metadata=metadata
     )
-
-    # Capture
-    microscope.camera.capture(
-        output.file, use_video_port=use_video_port, resize=resize, bayer=bayer
-    )
-
-    # Inject system metadata
-    output.put_metadata({"instrument": microscope.metadata})
-
-    # Insert custom metadata
-    output.put_metadata(metadata)
-
-    # Insert custom metadata
-    output.put_annotations(annotations)
-    # Insert custom tags
-    output.put_tags(tags)
 
 
 ### Scanning
