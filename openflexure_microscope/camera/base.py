@@ -79,12 +79,6 @@ class BaseCamera(metaclass=ABCMeta):
     def close(self):
         """Close the BaseCamera and all attached StreamObjects."""
         logging.info("Closing {}".format(self))
-        # Close all StreamObjects
-        for capture_list in [self.images.values(), self.videos.values()]:
-            for stream_object in capture_list:
-                stream_object.close()
-        # Empty temp directory
-        self.clear_tmp()
         # Stop worker thread
         self.stop_worker()
         logging.info("Closed {}".format(self))

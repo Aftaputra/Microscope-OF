@@ -52,6 +52,23 @@ class CaptureManager:
 
     # FILE MANAGEMENT
 
+    def __enter__(self):
+        """Create camera on context enter."""
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Close camera stream on context exit."""
+        self.close()
+
+    def close(self):
+        logging.info("Closing {}".format(self))
+        # Close all StreamObjects
+        for capture_list in [self.images.values(), self.videos.values()]:
+            for stream_object in capture_list:
+                stream_object.close()
+        # Empty temp directory
+        self.clear_tmp()
+
     def clear_tmp(self):
         """
         Removes all files in the temporary capture directories

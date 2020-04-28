@@ -73,6 +73,7 @@ class Microscope:
             self.camera.close()
         if self.stage:
             self.stage.close()
+        self.captures.close()
         logging.info("Closed {}".format(self))
 
     def setup(self, configuration):
