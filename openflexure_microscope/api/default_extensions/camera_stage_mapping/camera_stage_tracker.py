@@ -11,11 +11,6 @@ import time
 from numpy.linalg import norm
 import cv2
 from scipy import ndimage
-from collections import namedtuple
-import logging
-from fft_image_tracking import high_pass_fft_template, displacement_from_fft_template, TrackingError
-
-TrackerHistory = namedtuple("TrackerHistory", ["stage_positions", "image_positions"])
 
 def central_half(image):
     """Return the central 50% (in X and Y) of an image"""
@@ -30,8 +25,7 @@ def datum_pixel(image):
     except:
         return (np.array(image.shape[:2]) - 1) / 2.
 
-########## Cross-correlation based tracking ############
-def locate_feature_in_image(image, feature, margin=0, restrict=False, relative_to="top left"):
+def locate_feature_in_image(image, feature, margin=0, restrict=False):
     """Find the given feature (small image) and return the position of its datum (or centre) in the image's pixels.
 
     image : numpy.array
@@ -45,10 +39,6 @@ def locate_feature_in_image(image, feature, margin=0, restrict=False, relative_t
     restrict : bool (optional, default False)
         If set to true, restrict the search area to a square of (margin * 2 + 1) pixels centred on the pixel that most
         closely overlaps the datum points of the two images.
-    relative_to : string (optional, default "top left")
-        We return the position of the centre (or datum pixel, if it's got that metadata) of the feature, relative to
-        either the top left (i.e. 0,0) pixel in the image, or the central pixel - to do the latter, set ``relative_to``
-        to "centre" (or "center" if you must).
 
     The `image` must be larger than `feature` by a margin big enough to produce a meaningful search area.  We use the
     OpenCV `matchTemplate` method to find the feature.  The returned position is the position, relative to the corner of
@@ -79,54 +69,20 @@ def locate_feature_in_image(image, feature, margin=0, restrict=False, relative_t
     assert np.sum(corr) > 0, "Error: the correlation image doesn't have any nonzero pixels."
     peak = ndimage.measurements.center_of_mass(corr)  # take the centroid (NB this is of grayscale values, not binary)
     pos = np.array(peak) + image_shift + datum_pixel(feature) # return the position of the feature's datum point.
-    if relative_to in ["top left", None]:
-        return pos
-    if relative_to in ["centre", "center"]:
-        return pos - (np.array(image.shape[:2]) - 1)/2.
-    raise ValueError("An invalid value was specified for datum.")
-    
-######## FFT based tracking functions ###########
-# moved to fft_image_tracking.py
+    return pos
 
 class Tracker():
-    def __init__(self, grab_image, get_position, settle=None, method="direct", **kwargs):
+    def __init__(self, grab_image, get_position, settle=None):
         """A class to manage moving the stage and following motion in the image
         
         Constructor Arguments:
             grab_image: a function that returns the image as a numpy array
             get_position: a function that returns position as a numpy array
             settle: a function that waits and/or discards images
-            method: string, currently "direct" (default) or "fft"
-            Additional keyword arguments are passed to the tracking method.
-            
-        Tracking methods:
-            "direct": uses cross-correlation with the central half of the image.  
-                There are currently no options for this method.
-            "fft" uses FFT-based cross-correlation, after a high pass filter.  
-                Keyword arguments are accepted:
-                    pad: boolean, default=True
-                        Whether to zero-pad the FFT to remove ambiguity.  If 
-                        false, the answer is only unique modulo one field of
-                        view due to the periodic nature of FFTs.  Setting this
-                        option to False speeds up tracking by about 4x.
-                    sigma: floating point, default=10
-                        The standard deviation, in pixels, of a Gaussian filter
-                        used to smooth the image, before subtracting the smooth
-                        image from the original, in a low pass filter.  NB the
-                        standard deviation is given in pixels, but is applied
-                        in the Fourier domain (with appropriate transformation).
-                        The value of sigma does not affect computation speed.
             
         We accept functions because that seems like the easiest way to be
         compatible with many different cameras/stages.  Subclass and override
         ``__init__`` if you want to use a particular object instead.
-
-        # Subclassing notes
-        If you change the tracking method, you should override:
-            * track_image
-            * generate_template
-            * max_displacement
-            * min_displacement (optional - defaults to -max_displacment)
 
         NB the ``image_position`` that this class returns may be the negative of 
         what you might expect.  This is because normally we are looking for 
@@ -141,11 +97,7 @@ class Tracker():
         self._template = None
         self.margin = np.array([0, 0])
         self._template_position = np.array([0.0, 0.0])
-        self._last_point = None
         self.image_shape = None
-        self.method = method
-        #self.kwargs = {"error_threshold": 0.2}.update(kwargs)
-        self.kwargs = kwargs
     
     def get_position(self):
         """Get the position of the stage"""
@@ -186,85 +138,41 @@ class Tracker():
                 Whether to wait for the stage to settle before taking the template image
             reset_history: bool, default True
                 Whether to erase all the previously-stored positions
+            relative_positions: bool, default True
+                If true, we will define the first point (as read from the camera) to be [0,0]
+                and make all future measurements relative to this one.  NB this won't affect
+                the stage positions, which are always absolute.
         """
         if settle:
             self.settle()
         image = self._grab_image()
-        self.template = self.generate_template(image)
+        self.template = central_half(image)
         self.image_shape = image.shape
+        self.margin = np.array(image.shape)[:2] - np.array(self.template.shape)[:2]
         if reset_history:
             self.reset_history()
         self._template_position = np.array([0., 0.])
+        if relative_positions:
+            self._template_position = self.track_image(image) # Position should be zero initially
         self.append_point(settle=False)
-
-    def leapfrog(self):
-        """Replace the template but don't change position.
-
-        By default, this will replace the template with the image from the last
-        point we measured, but update _template_position so that the coordinates
-        returned don't change.
-        """
-        if self._last_point is None:
-            raise ValueError("Can't leapfrog until you have measured at least one point.")
-        image, image_pos = self._last_point
-        self.template = self.generate_template(image)
-        if np.any(self.image_shape != image.shape):
-            raise ValueError("Error: the image size seems to have changed!")
-        # Ensure that the position doesn't change.  NB this is nice and reliable because
-        # it actually runs self.track_image, but we could be much more efficient if we
-        # assumed that self.track_image(image) == 0, and we can certainly do the maths
-        # to make that work...
-        # TODO: eliminate the unnecessary correlation
-        self._template_position = np.array(image_pos)
-
-    def generate_template(self, image):
-        """Generate a template based on a supplied image.
-
-        This function is designed to be overridden in order to
-        change the tracking method.
-        """
-        if self.method == "direct":
-            return central_half(image)
-        if self.method == "fft":
-            kwargs = {k: v for k, v in self.kwargs.items() if k in ["pad", "sigma"]}
-            return high_pass_fft_template(image, calculate_peak=True, **kwargs)
-
         
     @property
     def max_displacement(self):
         """The highest position values that can be tracked"""
-        if self.method == "direct":
-            # TODO: if template_position is not central, should we alter this??
-            disp = (np.array(self.image_shape[:2]) - np.array(self.template.shape)[:2]) // 2
-        if self.method == "fft":
-            # FFT tracking does a real FFT to track the position, which is half as long in
-            # the last dimension.  If we didn't zero pad, the transform will have the same shape as
-            # the image in x, and half in y - so we return half the image size.  If we are zero
-            # padding, then both these dimensions double, and we return the image size.
-            disp = np.array(self.template.shape) // np.array([2,1])
-        return disp + self._template_position
+        return self.margin // 2 # TODO: be cleverer about non-trivial values of template_position
     
     @property
     def min_displacement(self):
         """The lowest position values that can be tracked"""
-        return self._template_position - self.max_displacement 
-        # TODO: be cleverer about tracking assymetry? Currently there is none...
+        return -self.max_displacement # TODO: be cleverer about non-trivial template_position values
     
     @property
     def max_safe_displacement(self):
         """The biggest displacement we can safely attempt to track without knowing direction."""
-        return np.min(np.concatenate([self.max_displacement - self._template_position, 
-                                     -self.min_displacement - self._template_position]))
-
-    def point_in_safe_range(self, point):
-        """Return True if a given point is within the safe range of the tracker."""
-        return np.all(point > self.min_displacement) and np.all(point < self.max_displacement)
+        return np.min(np.concatenate([self.max_displacement, -self.min_displacement]))
             
     def track_image(self, image):
         """Find the position of the image relative to the template
-        
-        This uses the method specified at initialisation time to
-        track motion of the sample.
         
         NB this class is intended to track motion of the sample - most of
         the time, we're interested in the motion of a (small) object that
@@ -274,11 +182,7 @@ class Tracker():
         a minus sign in front of `locate_feature_in_image` in the source
         code.
         """
-        if self.method=="direct":
-            return -locate_feature_in_image(image, self.template, relative_to="centre") + self._template_position
-        if self.method=="fft":
-            kwargs = {k: v for k, v in self.kwargs.items() if k in ["pad", "fractional_threshold", "error_threshold"]}
-            return -displacement_from_fft_template(self.template, image, **kwargs) + self._template_position
+        return - locate_feature_in_image(image, self.template) - self._template_position
     
     def append_point(self, settle=True, image=None):
         """Find the current position using both stage and image, and append it"""
@@ -290,7 +194,6 @@ class Tracker():
         stage_pos = self.get_position()
         self._image_positions.append(image_pos)
         self._stage_positions.append(stage_pos)
-        self._last_point = (image, image_pos)
         return stage_pos, image_pos
         
     @property
@@ -306,7 +209,7 @@ class Tracker():
     @property
     def history(self):
         """Return arrays of stage, image positions"""
-        return TrackerHistory(self.stage_positions, self.image_positions)
+        return self.stage_positions, self.image_positions
     
     def reset_history(self, leave_first_point=False):
         """Reset the positions and displacements recorded"""
@@ -383,3 +286,4 @@ def concatenate_tracker_histories(histories):
     """
     components = zip(*histories)
     return tuple(np.concatenate(c, axis=1) for c in components)
+    
