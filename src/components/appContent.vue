@@ -32,6 +32,15 @@
       <hr />
 
       <tabIcon
+        id="view-tab-icon"
+        tab-i-d="view"
+        :require-connection="true"
+        :current-tab="currentTab"
+        @set-tab="setTab"
+      >
+        <i class="material-icons">visibility</i>
+      </tabIcon>
+      <tabIcon
         id="navigate-tab-icon"
         tab-i-d="navigate"
         :require-connection="true"
@@ -95,6 +104,13 @@
         <galleryContent />
       </tabContent>
       <tabContent
+        tab-i-d="view"
+        :require-connection="true"
+        :current-tab="currentTab"
+      >
+        <viewContent />
+      </tabContent>
+      <tabContent
         tab-i-d="navigate"
         :require-connection="true"
         :current-tab="currentTab"
@@ -145,6 +161,7 @@ import tabContent from "./genericComponents/tabContent";
 import connectContent from "./tabContentComponents/connectContent.vue";
 import navigateContent from "./tabContentComponents/navigateContent.vue";
 import captureContent from "./tabContentComponents/captureContent.vue";
+import viewContent from "./tabContentComponents/viewContent.vue";
 import settingsContent from "./tabContentComponents/settingsContent.vue";
 import galleryContent from "./tabContentComponents/galleryContent.vue";
 import extensionContent from "./tabContentComponents/extensionContent.vue";
@@ -159,6 +176,7 @@ export default {
     connectContent,
     navigateContent,
     captureContent,
+    viewContent,
     settingsContent,
     galleryContent,
     extensionContent
