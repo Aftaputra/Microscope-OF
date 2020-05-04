@@ -58,7 +58,7 @@ def enabled_root_actions():
     return {k: v for k, v in _actions.items() if v["conditions"]}
 
 
-#@Tag("actions")
+# @Tag("actions")
 class ActionsView(View):
     def get(self):
         """

@@ -28,12 +28,7 @@ def ndarray_to_json(arr: np.ndarray):
         # This comes in very handy for the lens shading table.
         arr = np.array(arr)
     b64_string, dtype, shape = serialise_array_b64(arr)
-    return {
-        "@type": "ndarray",
-        "dtype": dtype,
-        "shape": shape,
-        "base64": b64_string
-    }
+    return {"@type": "ndarray", "dtype": dtype, "shape": shape, "base64": b64_string}
 
 
 def json_to_ndarray(json_dict: dict):
@@ -42,9 +37,10 @@ def json_to_ndarray(json_dict: dict):
     for required_param in ("dtype", "shape", "base64"):
         if not json_dict.get(required_param):
             raise KeyError(f"Missing required key {required_param}")
-    
-    return deserialise_array_b64(json_dict.get("base64"), json_dict.get("dtype"), json_dict.get("shape"))
 
+    return deserialise_array_b64(
+        json_dict.get("base64"), json_dict.get("dtype"), json_dict.get("shape")
+    )
 
 
 @contextmanager

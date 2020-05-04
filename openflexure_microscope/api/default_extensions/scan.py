@@ -5,7 +5,7 @@ import datetime
 from typing import Tuple
 from functools import reduce
 
-from openflexure_microscope.camera.base import generate_basename
+from openflexure_microscope.captures.capture_manager import generate_basename
 from labthings.server.find import find_component, find_extension
 from labthings.server.extensions import BaseExtension
 from labthings.server.decorators import marshal_task, use_args, ThingAction
@@ -85,26 +85,18 @@ def capture(
     filename = "{}_{}_{}_{}".format(basename, *microscope.stage.position)
     folder = "SCAN_{}".format(basename)
 
-    # Create output object
-    output = microscope.camera.new_image(
-        temporary=temporary, filename=filename, folder=folder
+    # Do capture
+    return microscope.capture(
+        filename=filename,
+        folder=folder,
+        temporary=temporary,
+        use_video_port=use_video_port,
+        resize=resize,
+        bayer=bayer,
+        annotations=annotations,
+        tags=tags,
+        metadata=metadata,
     )
-
-    # Capture
-    microscope.camera.capture(
-        output.file, use_video_port=use_video_port, resize=resize, bayer=bayer
-    )
-
-    # Inject system metadata
-    output.put_metadata({"instrument": microscope.metadata})
-
-    # Insert custom metadata
-    output.put_metadata(metadata)
-
-    # Insert custom metadata
-    output.put_annotations(annotations)
-    # Insert custom tags
-    output.put_tags(tags)
 
 
 ### Scanning
@@ -199,7 +191,7 @@ def tile(
                     # Run slow autofocus. Client should provide dz ~ 50
                     autofocus_extension.autofocus(
                         microscope,
-                        range(-3 * autofocus_dz, 4 * autofocus_dz, autofocus_dz)
+                        range(-3 * autofocus_dz, 4 * autofocus_dz, autofocus_dz),
                     )
                     logging.debug("Finished autofocus")
                     time.sleep(1)

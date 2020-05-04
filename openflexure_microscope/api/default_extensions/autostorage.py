@@ -6,8 +6,8 @@ from labthings.server.find import find_component
 
 from openflexure_microscope.paths import settings_file_path, check_rw
 from openflexure_microscope.config import OpenflexureSettingsFile
-from openflexure_microscope.camera.base import BASE_CAPTURE_PATH
-from openflexure_microscope.camera.capture import build_captures_from_exif
+from openflexure_microscope.captures.capture_manager import BASE_CAPTURE_PATH
+from openflexure_microscope.captures.capture import build_captures_from_exif
 
 from openflexure_microscope.api.utilities.gui import build_gui
 
@@ -37,17 +37,17 @@ def get_permissive_locations():
     ]
 
 
-def get_current_location(camera):
-    return camera.paths.get("default")
+def get_current_location(capture_manager):
+    return capture_manager.paths.get("default")
 
 
-def set_current_location(camera, location: str):
+def set_current_location(capture_manager, location: str):
     if not os.path.isdir(location):
         os.makedirs(location)
     logging.debug("Updating location...")
-    camera.paths.update({"default": location})
+    capture_manager.paths.update({"default": location})
     logging.debug("Rebuilding captures...")
-    camera.rebuild_captures()
+    capture_manager.rebuild_captures()
     logging.debug("Capture location changed successfully.")
 
 
@@ -92,8 +92,8 @@ class AutostorageExtension(BaseExtension):
             description="Handle switching capture storage devices",
         )
 
-        # We'll store a reference to a camera object, who's capture paths will be modified
-        self.camera = None
+        # We'll store a reference to a CaptureManager object, who's capture paths will be modified
+        self.capture_manager = None
 
         self.initial_location = get_default_location()
 
@@ -103,13 +103,15 @@ class AutostorageExtension(BaseExtension):
     def on_microscope(self, microscope_obj):
         """Function to automatically call when the parent LabThing has a microscope attached."""
         logging.debug(f"Autostorage extension found microscope {microscope_obj}")
-        if hasattr(microscope_obj, "camera"):
-            logging.debug(f"Autostorage extension bound to camera {self.camera}")
+        if hasattr(microscope_obj, "captures"):
+            logging.debug(
+                f"Autostorage extension bound to CaptureManager {self.capture_manager}"
+            )
 
-            # Store a reference to the camera
-            self.camera = microscope_obj.camera
+            # Store a reference to the CaptureManager
+            self.capture_manager = microscope_obj.captures
             # Store the initial storage location
-            self.initial_location = get_current_location(self.camera)
+            self.initial_location = get_current_location(self.capture_manager)
 
             # If preferred path does not exist, or cannot be written to
             self.check_location(self.initial_location)
@@ -118,29 +120,29 @@ class AutostorageExtension(BaseExtension):
 
     def check_location(self, location=None):
         if not location:
-            location = get_current_location(self.camera)
+            location = get_current_location(self.capture_manager)
         # If preferred path does not exist, or cannot be written to
         if not (os.path.isdir(location) and check_rw(location)):
             logging.error(
                 f"Preferred capture path {location} is missing or cannot be written to. Restoring defaults."
             )
             # Reset the storage location to default
-            set_current_location(self.camera, get_default_location())
+            set_current_location(self.capture_manager, get_default_location())
 
     def get_locations(self):
-        if self.camera:
+        if self.capture_manager:
             locations = get_all_locations()
 
-            current_location = get_current_location(self.camera)
+            current_location = get_current_location(self.capture_manager)
             if current_location not in locations.values():
                 locations.update({"Custom": current_location})
-            # Add location from the cameras settings file
+            # Add location from the CaptureManager settings file
             return locations
         else:
             return {}
 
     def get_preferred_key(self):
-        current = get_current_location(self.camera)
+        current = get_current_location(self.capture_manager)
         locations = self.get_locations()
 
         matches = [k for k, v in locations.items() if v == current]
@@ -157,7 +159,7 @@ class AutostorageExtension(BaseExtension):
             raise KeyError(f"No location named {new_path_key}")
 
         location = self.get_locations().get(new_path_key)
-        set_current_location(self.camera, location)
+        set_current_location(self.capture_manager, location)
 
     def key_to_title(self, path_key: str):
         if not path_key in self.get_locations().keys():

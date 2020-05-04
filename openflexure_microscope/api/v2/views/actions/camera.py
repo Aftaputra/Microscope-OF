@@ -63,26 +63,16 @@ class CaptureAPI(View):
 
         # Explicitally acquire lock (prevents empty files being created if lock is unavailable)
         with microscope.camera.lock:
-            output = microscope.camera.new_image(
-                temporary=args.get("temporary"), filename=args.get("filename")
-            )
-
-            microscope.camera.capture(
-                output.file,
+            return microscope.capture(
+                filename=args.get("filename"),
+                temporary=args.get("temporary"),
                 use_video_port=args.get("use_video_port"),
                 resize=resize,
                 bayer=args.get("bayer"),
+                annotations=args.get("annotations"),
+                tags=args.get("tags")
             )
 
-            # Inject system metadata
-            output.put_metadata({"instrument": microscope.metadata})
-
-            # Insert custom metadata
-            output.put_annotations(args.get("annotations"))
-            # Insert custom tags
-            output.put_tags(args.get("tags"))
-
-        return output
 
 
 @ThingAction

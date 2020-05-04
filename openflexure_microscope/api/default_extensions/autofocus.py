@@ -51,7 +51,9 @@ class JPEGSharpnessMonitor:
     def start(self):
         "Start monitoring sharpness by looking at JPEG size"
         if not self.camera.stream_active:
-            logging.warn("Autofocus sharpness monitor was started but the camera isn't streaming.  Attempting to start the stream...")
+            logging.warn(
+                "Autofocus sharpness monitor was started but the camera isn't streaming.  Attempting to start the stream..."
+            )
             self.camera.start_stream_recording()
         self.background_thread = Thread(target=self._measure_jpegs)
         self.background_thread.start()
@@ -106,7 +108,9 @@ class JPEGSharpnessMonitor:
             stop = np.argmax(jpeg_times > stage_times[1])
         except ValueError as e:
             if np.sum(jpeg_times > stage_times[0]) == 0:
-                raise ValueError("No images were captured during the move of the stage.  Perhaps the camera is not streaming images?")
+                raise ValueError(
+                    "No images were captured during the move of the stage.  Perhaps the camera is not streaming images?"
+                )
             else:
                 raise e
         if stop < 1:
@@ -120,7 +124,9 @@ class JPEGSharpnessMonitor:
         """Return the z position of the sharpest image on a given move"""
         jt, jz, js = self.move_data(index)
         if len(js) == 0:
-            raise ValueError("No images were captured during the move of the stage.  Perhaps the camera is not streaming images?")
+            raise ValueError(
+                "No images were captured during the move of the stage.  Perhaps the camera is not streaming images?"
+            )
         return jz[np.argmax(js)]
 
     def data_dict(self):
@@ -212,7 +218,9 @@ def move_and_find_focus(microscope, dz):
 
 def fast_autofocus(microscope, dz=2000, backlash=None):
     """Perform a down-up-down-up autofocus"""
-    with monitor_sharpness(microscope) as m, microscope.camera.lock, microscope.stage.lock:
+    with monitor_sharpness(
+        microscope
+    ) as m, microscope.camera.lock, microscope.stage.lock:
         i, z = m.focus_rel(-dz / 2)
         i, z = m.focus_rel(dz)
         fz = m.sharpest_z_on_move(i)
@@ -262,7 +270,9 @@ def fast_up_down_up_autofocus(
             might slightly hurt accuracy, but is unlikely to be a big issue.  Too big
             may cause you to overshoot, which is a problem.
     """
-    with monitor_sharpness(microscope) as m, microscope.camera.lock, microscope.stage.lock:
+    with monitor_sharpness(
+        microscope
+    ) as m, microscope.camera.lock, microscope.stage.lock:
         # Ensure the MJPEG stream has started
         microscope.camera.start_stream_recording()
 
@@ -372,7 +382,9 @@ class FastAutofocusAPI(View):
 
         if microscope.has_real_stage():
             logging.debug("Running autofocus...")
-            task = taskify(fast_up_down_up_autofocus)(microscope, dz=dz, mini_backlash=backlash)
+            task = taskify(fast_up_down_up_autofocus)(
+                microscope, dz=dz, mini_backlash=backlash
+            )
 
             # return a handle on the autofocus task
             return task
@@ -382,12 +394,15 @@ class FastAutofocusAPI(View):
 
 
 autofocus_extension_v2 = BaseExtension(
-    "org.openflexure.autofocus", version="2.0.0",
-    description="Actions to move the microscope in Z and pick the point with the sharpest image."
+    "org.openflexure.autofocus",
+    version="2.0.0",
+    description="Actions to move the microscope in Z and pick the point with the sharpest image.",
 )
 
 autofocus_extension_v2.add_method(fast_autofocus, "fast_autofocus")
-autofocus_extension_v2.add_method(fast_up_down_up_autofocus, "fast_up_down_up_autofocus")
+autofocus_extension_v2.add_method(
+    fast_up_down_up_autofocus, "fast_up_down_up_autofocus"
+)
 autofocus_extension_v2.add_method(autofocus, "autofocus")
 
 autofocus_extension_v2.add_view(MeasureSharpnessAPI, "/measure_sharpness")

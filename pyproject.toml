@@ -27,7 +27,7 @@ python = "^3.6"
 Flask = "^1.0"
 numpy = "1.18.2"
 Pillow = "^5.4"
-scipy = "1.4.1" # Exact version until we can guarantee a wheel
+scipy = "1.4.1" # Exact version so we can guarantee a wheel
 
 picamera = { git = "https://github.com/rwb27/picamera.git", branch = "master", optional = true }  # Lens shading requires >1.14 or RWB fork, lens-shading branch.
 "RPi.GPIO" = { version = "^0.6.5", optional = true }
