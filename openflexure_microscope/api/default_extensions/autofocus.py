@@ -405,6 +405,6 @@ autofocus_extension_v2.add_method(
 )
 autofocus_extension_v2.add_method(autofocus, "autofocus")
 
-autofocus_extension_v2.add_view(MeasureSharpnessAPI, "/measure_sharpness")
-autofocus_extension_v2.add_view(AutofocusAPI, "/autofocus")
-autofocus_extension_v2.add_view(FastAutofocusAPI, "/fast_autofocus")
+autofocus_extension_v2.add_view(MeasureSharpnessAPI, "/measure_sharpness", endpoint="measure_sharpness")
+autofocus_extension_v2.add_view(AutofocusAPI, "/autofocus", endpoint="autofocus")
+autofocus_extension_v2.add_view(FastAutofocusAPI, "/fast_autofocus", endpoint="fast_autofocus")

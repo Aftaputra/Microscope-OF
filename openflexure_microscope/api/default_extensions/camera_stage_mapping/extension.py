@@ -157,7 +157,7 @@ class Calibrate1DView(View):
         return task
 
 
-csm_extension.add_view(Calibrate1DView, "/calibrate_1d")
+csm_extension.add_view(Calibrate1DView, "/calibrate_1d", endpoint="calibrate_1d")
 
 
 @ThingAction
@@ -170,7 +170,7 @@ class CalibrateXYView(View):
         return task
 
 
-csm_extension.add_view(CalibrateXYView, "/calibrate_xy")
+csm_extension.add_view(CalibrateXYView, "/calibrate_xy", endpoint="calibrate_xy")
 
 
 @ThingAction
@@ -199,7 +199,7 @@ class MoveInImageCoordinatesView(View):
         return csm_extension.microscope.state["stage"]["position"]
 
 
-csm_extension.add_view(MoveInImageCoordinatesView, "/move_in_image_coordinates")
+csm_extension.add_view(MoveInImageCoordinatesView, "/move_in_image_coordinates", endpoint="move_in_image_coordinates")
 
 
 @ThingProperty
@@ -216,4 +216,4 @@ class GetCalibrationFile(View):
             return {}
 
 
-csm_extension.add_view(GetCalibrationFile, "/get_calibration")
+csm_extension.add_view(GetCalibrationFile, "/get_calibration", endpoint="get_calibration")

@@ -266,9 +266,9 @@ def dynamic_form():
     }
 
 
-autostorage_extension_v2.add_view(GetLocationsView, "list-locations")
-autostorage_extension_v2.add_view(PreferredLocationView, "location")
-autostorage_extension_v2.add_view(PreferredLocationGUIView, "location-from-title")
+autostorage_extension_v2.add_view(GetLocationsView, "/list-locations")
+autostorage_extension_v2.add_view(PreferredLocationView, "/location")
+autostorage_extension_v2.add_view(PreferredLocationGUIView, "/location-from-title")
 autostorage_extension_v2.add_meta(
     "gui", build_gui(dynamic_form, autostorage_extension_v2)
 )

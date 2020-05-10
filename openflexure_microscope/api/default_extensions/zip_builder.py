@@ -205,7 +205,7 @@ zip_extension_v2 = BaseExtension(
     description="Build and download capture collections as ZIP files",
 )
 
-zip_extension_v2.add_view(ZipGetterAPIView, "/get/<string:session_id>")
-zip_extension_v2.add_view(ZipListAPIView, "/get")
+zip_extension_v2.add_view(ZipGetterAPIView, "/get/<string:session_id>", endpoint="get_id")
+zip_extension_v2.add_view(ZipListAPIView, "/get", endpoint="get")
 
-zip_extension_v2.add_view(ZipBuilderAPIView, "/build")
+zip_extension_v2.add_view(ZipBuilderAPIView, "/build", endpoint="build")

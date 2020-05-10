@@ -349,4 +349,4 @@ class TileScanAPI(View):
 
 scan_extension_v2 = BaseExtension("org.openflexure.scan", version="2.0.0")
 
-scan_extension_v2.add_view(TileScanAPI, "/tile")
+scan_extension_v2.add_view(TileScanAPI, "/tile", endpoint="tile")
