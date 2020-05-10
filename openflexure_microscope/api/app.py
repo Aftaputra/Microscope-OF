@@ -177,5 +177,5 @@ if __name__ == "__main__":
     from labthings.server.wsgi import Server
 
     print("Starting OpenFlexure Microscope Server...")
-    server = Server(app)
+    server = Server(app, log=logger, error_log=logger)
     server.run(host="::", port=5000, debug=False, zeroconf=True)
