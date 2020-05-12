@@ -39,7 +39,7 @@ opencv-python-headless = [
     {version = "4.1.0.25", python = "~3.7"},  # PiWheels build for RPi running Py37
     {version = "4.2.0.34", python = "^3.8"}  # Latest for Py38 systems
 ]
-labthings = "0.5.3"
+labthings = "0.6.0"
 
 [tool.poetry.extras]
 rpi = ["picamera", "RPi.GPIO"]
