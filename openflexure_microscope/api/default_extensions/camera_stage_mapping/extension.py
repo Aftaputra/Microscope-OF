@@ -7,14 +7,12 @@ from labthings.server.view import View
 from labthings.server.find import find_component
 from labthings.server.extensions import BaseExtension
 from labthings.server.decorators import (
-    marshal_task,
     ThingAction,
     use_args,
     ThingProperty,
 )
 from labthings.server import fields
 
-from labthings.core.tasks import taskify
 from labthings.core.utilities import get_by_path, set_by_path, create_from_path
 
 
@@ -146,31 +144,25 @@ class Calibrate1DView(View):
     @use_args(
         {"direction": fields.List(fields.Float(), required=True, example=[1, 0, 0])}
     )
-    @marshal_task
     def post(self, args):
         """Calibrate one axis of the microscope stage against the camera."""
 
         direction = np.array(args.get("direction"))
 
-        task = taskify(csm_extension.calibrate_1d)(direction)
-
-        return task
+        return csm_extension.calibrate_1d(direction)
 
 
-csm_extension.add_view(Calibrate1DView, "/calibrate_1d")
+csm_extension.add_view(Calibrate1DView, "/calibrate_1d", endpoint="calibrate_1d")
 
 
 @ThingAction
 class CalibrateXYView(View):
-    @marshal_task
     def post(self):
         """Calibrate both axes of the microscope stage against the camera."""
-        task = taskify(csm_extension.calibrate_xy)()
-
-        return task
+        return csm_extension.calibrate_xy()
 
 
-csm_extension.add_view(CalibrateXYView, "/calibrate_xy")
+csm_extension.add_view(CalibrateXYView, "/calibrate_xy", endpoint="calibrate_xy")
 
 
 @ThingAction
@@ -199,7 +191,7 @@ class MoveInImageCoordinatesView(View):
         return csm_extension.microscope.state["stage"]["position"]
 
 
-csm_extension.add_view(MoveInImageCoordinatesView, "/move_in_image_coordinates")
+csm_extension.add_view(MoveInImageCoordinatesView, "/move_in_image_coordinates", endpoint="move_in_image_coordinates")
 
 
 @ThingProperty
@@ -216,4 +208,4 @@ class GetCalibrationFile(View):
             return {}
 
 
-csm_extension.add_view(GetCalibrationFile, "/get_calibration")
+csm_extension.add_view(GetCalibrationFile, "/get_calibration", endpoint="get_calibration")

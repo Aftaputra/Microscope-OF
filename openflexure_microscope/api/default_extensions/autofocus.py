@@ -1,9 +1,9 @@
 from labthings.server.find import find_component
 from labthings.server.extensions import BaseExtension
 from labthings.server.view import View
-from labthings.server.decorators import ThingAction, ThingProperty, marshal_task
+from labthings.server.decorators import ThingAction, ThingProperty
 
-from openflexure_microscope.devel import JsonResponse, request, taskify, abort
+from openflexure_microscope.devel import JsonResponse, request, abort
 from openflexure_microscope.utilities import set_properties
 
 import time
@@ -337,8 +337,6 @@ class AutofocusAPI(View):
     """
     Run a standard autofocus
     """
-
-    @marshal_task
     def post(self):
         payload = JsonResponse(request)
         microscope = find_component("org.openflexure.microscope")
@@ -351,10 +349,9 @@ class AutofocusAPI(View):
 
         if microscope.has_real_stage():
             logging.debug("Running autofocus...")
-            task = taskify(autofocus)(microscope, dz)
 
             # return a handle on the autofocus task
-            return task
+            return autofocus(microscope, dz)
 
         else:
             abort(503, "No stage connected. Unable to autofocus.")
@@ -365,8 +362,6 @@ class FastAutofocusAPI(View):
     """
     Run a fast autofocus
     """
-
-    @marshal_task
     def post(self):
         payload = JsonResponse(request)
         microscope = find_component("org.openflexure.microscope")
@@ -382,12 +377,11 @@ class FastAutofocusAPI(View):
 
         if microscope.has_real_stage():
             logging.debug("Running autofocus...")
-            task = taskify(fast_up_down_up_autofocus)(
-                microscope, dz=dz, mini_backlash=backlash
-            )
 
             # return a handle on the autofocus task
-            return task
+            return fast_up_down_up_autofocus(
+                microscope, dz=dz, mini_backlash=backlash
+            )
 
         else:
             abort(503, "No stage connected. Unable to autofocus.")
@@ -405,6 +399,6 @@ autofocus_extension_v2.add_method(
 )
 autofocus_extension_v2.add_method(autofocus, "autofocus")
 
-autofocus_extension_v2.add_view(MeasureSharpnessAPI, "/measure_sharpness")
-autofocus_extension_v2.add_view(AutofocusAPI, "/autofocus")
-autofocus_extension_v2.add_view(FastAutofocusAPI, "/fast_autofocus")
+autofocus_extension_v2.add_view(MeasureSharpnessAPI, "/measure_sharpness", endpoint="measure_sharpness")
+autofocus_extension_v2.add_view(AutofocusAPI, "/autofocus", endpoint="autofocus")
+autofocus_extension_v2.add_view(FastAutofocusAPI, "/fast_autofocus", endpoint="fast_autofocus")

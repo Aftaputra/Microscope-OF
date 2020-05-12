@@ -1,7 +1,6 @@
 from openflexure_microscope.devel import (
     JsonResponse,
     request,
-    taskify,
     update_task_progress,
 )
 
@@ -22,7 +21,6 @@ from labthings.server.utilities import description_from_view
 from labthings.server.decorators import (
     ThingAction,
     ThingProperty,
-    marshal_task,
     marshal_with,
     pre_dump,
 )
@@ -142,18 +140,15 @@ default_zip_manager = ZipManager()
 
 @ThingAction
 class ZipBuilderAPIView(View):
-    @marshal_task
     def post(self):
 
         ids = list(JsonResponse(request).json)
         microscope = find_component("org.openflexure.microscope")
 
-        task = taskify(default_zip_manager.marshaled_build_zip_from_capture_ids)(
+        # Return a handle on the autofocus task
+        return default_zip_manager.marshaled_build_zip_from_capture_ids(
             microscope, ids
         )
-
-        # Return a handle on the autofocus task
-        return task
 
 
 @ThingProperty
@@ -205,7 +200,7 @@ zip_extension_v2 = BaseExtension(
     description="Build and download capture collections as ZIP files",
 )
 
-zip_extension_v2.add_view(ZipGetterAPIView, "/get/<string:session_id>")
-zip_extension_v2.add_view(ZipListAPIView, "/get")
+zip_extension_v2.add_view(ZipGetterAPIView, "/get/<string:session_id>", endpoint="get_id")
+zip_extension_v2.add_view(ZipListAPIView, "/get", endpoint="get")
 
-zip_extension_v2.add_view(ZipBuilderAPIView, "/build")
+zip_extension_v2.add_view(ZipBuilderAPIView, "/build", endpoint="build")

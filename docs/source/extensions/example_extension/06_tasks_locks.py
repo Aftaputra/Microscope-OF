@@ -9,7 +9,6 @@ from labthings.server.decorators import (
     PropertySchema,
     ThingAction,
     doc_response,
-    marshal_task,
 )
 from labthings.server.schema import Schema
 from labthings.server import fields
@@ -70,10 +69,8 @@ def timelapse(microscope, n_images, t_between):
 @ThingAction
 class TimelapseAPI(View):
     """
-    Take a series of images in a timelapse, running as a background task
+    Take a series of images in a timelapse
     """
-
-    @marshal_task  # Shorthand for marshaling with a pre-made Task object schema
     @use_args(
         {
             "n_images": fields.Integer(
@@ -88,12 +85,10 @@ class TimelapseAPI(View):
         # Find our microscope component
         microscope = find_component("org.openflexure.microscope")
 
-        # Create and start "timelapse", running in a background task
-        task = taskify(timelapse)(
+        # Start "timelapse"
+        return timelapse(
             microscope, args.get("n_images"), args.get("t_between")
         )
-
-        return task
 
 
 ## Create extension

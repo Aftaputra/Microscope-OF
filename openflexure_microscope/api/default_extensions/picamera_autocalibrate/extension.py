@@ -1,9 +1,7 @@
 from labthings.server.view import View
 from labthings.server.find import find_component
 from labthings.server.extensions import BaseExtension
-from labthings.server.decorators import marshal_task, ThingAction
-
-from labthings.core.tasks import taskify
+from labthings.server.decorators import ThingAction
 
 from flask import abort
 
@@ -62,7 +60,6 @@ def recalibrate(microscope):
 
 @ThingAction
 class RecalibrateView(View):
-    @marshal_task
     def post(self):
         microscope = find_component("org.openflexure.microscope")
 
@@ -71,7 +68,7 @@ class RecalibrateView(View):
 
         logging.info("Starting microscope recalibration...")
 
-        return taskify(recalibrate)(microscope)
+        return recalibrate(microscope)
 
 
 @ThingAction
@@ -131,6 +128,6 @@ lst_extension_v2.add_method(
     recalibrate, "org.openflexure.calibration.picamera.recalibrate"
 )
 
-lst_extension_v2.add_view(RecalibrateView, "/recalibrate")
-lst_extension_v2.add_view(FlattenLSTView, "/flatten_lens_shading_table")
-lst_extension_v2.add_view(DeleteLSTView, "/delete_lens_shading_table")
+lst_extension_v2.add_view(RecalibrateView, "/recalibrate", endpoint="recalibrate")
+lst_extension_v2.add_view(FlattenLSTView, "/flatten_lens_shading_table", endpoint="flatten_lens_shading_table")
+lst_extension_v2.add_view(DeleteLSTView, "/delete_lens_shading_table", endpoint="delete_lens_shading_table")
