@@ -8,10 +8,10 @@ from functools import reduce
 from openflexure_microscope.captures.capture_manager import generate_basename
 from labthings.server.find import find_component, find_extension
 from labthings.server.extensions import BaseExtension
-from labthings.server.decorators import marshal_task, use_args, ThingAction
+from labthings.server.decorators import use_args, ThingAction
 from labthings.server import fields
 
-from openflexure_microscope.devel import taskify, abort, update_task_progress
+from openflexure_microscope.devel import abort, update_task_progress
 
 from labthings.server.view import View
 import time
@@ -309,7 +309,6 @@ class TileScanAPI(View):
             "resize": fields.Dict(missing=None),  # TODO: Validate keys
         }
     )
-    @marshal_task
     def post(self, args):
         microscope = find_component("org.openflexure.microscope")
 
@@ -327,7 +326,9 @@ class TileScanAPI(View):
                 abort(404)
 
         logging.info("Running tile scan...")
-        task = taskify(tile)(
+
+        # return a handle on the scan task
+        return tile(
             microscope,
             basename=args.get("filename"),
             temporary=args.get("temporary"),
@@ -342,9 +343,6 @@ class TileScanAPI(View):
             annotations=args.get("annotations"),
             tags=args.get("tags"),
         )
-
-        # return a handle on the scan task
-        return task
 
 
 scan_extension_v2 = BaseExtension("org.openflexure.scan", version="2.0.0")

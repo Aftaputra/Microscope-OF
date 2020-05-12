@@ -15,7 +15,7 @@ We get around these issues by making use of background tasks, and component lock
 Background tasks
 ----------------
 
-Tasks are introduced to manage long-running functions in a way that does not block HTTP requests. Any function can be offloaded to a background task, and this is done through the :py:meth:`labthings.tasks.taskify` function, by calling ``taskify(<long_running_function>)(*args, **kwargs)``. 
+Tasks are introduced to manage long-running functions in a way that does not block HTTP requests. Any API Action will automatically run as a background task (that is, any View that subclasses `ActionView`, or uses the `@ThingAction` decorator).
 
 Internally, the ``tasks`` submodule stores a list of all requested tasks, and their states. This state stores the running status of the task (if itis idle, running, error, or success), information about the start and end times, a unique task ID, and, upon completion, the return value of the long-running function. 
 
@@ -23,7 +23,7 @@ By using tasks, a function can be started in the background, and it's return val
 
 API routes have been created to allow checking the state of all tasks (GET ``/tasks``), a particular task by ID (GET ``/tasks/<task_id>``), and terminating or removing individual tasks (DELETE ``/tasks/<task_id>``).
 
-A special ``@marshal_task`` decorator provides shorthand for automatically returning a serialized representation of the task, when your POST request returns.
+All Actions will return a serialized representation of the task, when your POST request returns. If the task completes within a default timeout period (usually 1 second) then the completed Task representation will be returned. If the task is still running after this timeout period, the "in-progress" Task representation will be returned. The final output value can then be retrieved at a later time.
 
 An example of a long running task may look like:
 
@@ -31,15 +31,13 @@ An example of a long running task may look like:
 
     ...
     from labthings.tasks import taskify
-    from labthings.server.decorators import marshal_task
+    from labthings.server.decorators import ThingAction
 
+    @ThingAction
     class SlowAPI(View):
-        @marshal_task
         def post(self):
-            # Run the long-running function as a task
-            task = taskify(long_running_function)(function_argument_1, function_argument_2)
-            # Return the task object. Let @marshal_task handle serialization
-            return task
+            # Return the task object.
+            return long_running_function(function_argument_1, function_argument_2)
 
 After some time, once the task has completed, it could be retreived using:
 

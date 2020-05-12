@@ -12,7 +12,6 @@ from labthings.core.tasks import (
     current_task,
     update_task_progress,
     update_task_data,
-    taskify,
 )
 
 
@@ -24,7 +23,6 @@ __all__ = [
     "current_task",
     "update_task_progress",
     "update_task_data",
-    "taskify",
     "abort",
     "escape",
     "Response",
