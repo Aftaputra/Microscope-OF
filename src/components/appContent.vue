@@ -141,6 +141,7 @@
       >
         <extensionContent
           :forms="plugin.forms"
+          :frame="plugin.frame"
           :web-component="plugin.wc"
           :view-panel="plugin.viewPanel"
           @reloadForms="updatePlugins()"

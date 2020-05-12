@@ -4,6 +4,7 @@ import store from "./store";
 import UIkit from "uikit";
 import VueTour from "vue-tour";
 import LoadScript from "vue-plugin-load-script";
+import VueFriendlyIframe from "vue-friendly-iframe";
 
 require("vue-tour/dist/vue-tour.css");
 
@@ -15,6 +16,9 @@ Vue.use(LoadScript);
 
 // Use vue-tour module
 Vue.use(VueTour);
+
+// Use Friendly Iframe module
+Vue.use(VueFriendlyIframe);
 
 Vue.config.productionTip = false;
 
