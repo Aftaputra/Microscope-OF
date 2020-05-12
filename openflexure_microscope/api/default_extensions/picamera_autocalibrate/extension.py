@@ -128,6 +128,6 @@ lst_extension_v2.add_method(
     recalibrate, "org.openflexure.calibration.picamera.recalibrate"
 )
 
-lst_extension_v2.add_view(RecalibrateView, "/recalibrate")
-lst_extension_v2.add_view(FlattenLSTView, "/flatten_lens_shading_table")
-lst_extension_v2.add_view(DeleteLSTView, "/delete_lens_shading_table")
+lst_extension_v2.add_view(RecalibrateView, "/recalibrate", endpoint="recalibrate")
+lst_extension_v2.add_view(FlattenLSTView, "/flatten_lens_shading_table", endpoint="flatten_lens_shading_table")
+lst_extension_v2.add_view(DeleteLSTView, "/delete_lens_shading_table", endpoint="delete_lens_shading_table")
