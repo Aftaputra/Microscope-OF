@@ -15,7 +15,8 @@ export default new Vuex.Store({
       autoGpuPreview: false,
       trackWindow: true,
       appTheme: "system"
-    }
+    },
+    activeStreams: {}
   },
 
   mutations: {
@@ -41,6 +42,12 @@ export default new Vuex.Store({
     setError(state, msg) {
       state.waiting = false;
       state.error = msg;
+    },
+    addStream(state, id) {
+      state.activeStreams[id] = true;
+    },
+    removeStream(state, id) {
+      state.activeStreams[id] = false;
     }
   },
 
