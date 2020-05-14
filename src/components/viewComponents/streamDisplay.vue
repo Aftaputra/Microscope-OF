@@ -5,15 +5,16 @@
     class="stream-display uk-width-1-1 uk-height-1-1 scrollTarget"
   >
     <img
+      v-if="streamVisible"
       ref="click-frame"
       class="uk-align-center uk-margin-remove-bottom"
-      :hidden="!showStream"
+      :hidden="!streamEnabled"
       :src="streamImgUri"
       alt="Stream"
       @dblclick="clickMonitor"
     />
 
-    <div v-if="!showStream" class="uk-height-1-1">
+    <div v-if="!streamEnabled" class="uk-height-1-1">
       <div v-if="$store.state.waiting" class="uk-position-center">
         <div uk-spinner="ratio: 4.5"></div>
       </div>
@@ -50,11 +51,15 @@ export default {
   },
 
   computed: {
-    showStream: function() {
+    streamEnabled: function() {
       return (
         this.$store.getters.ready &&
         !this.$store.state.globalSettings.disableStream
       );
+    },
+    streamVisible: function() {
+      // Only a single MJPEG connection should be open at a time
+      return !(this.displaySize[0] == 0) && !(this.displaySize[1] == 0);
     },
     streamImgUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/streams/mjpeg`;
@@ -122,14 +127,20 @@ export default {
       let yCoordinate = event.offsetY;
 
       let xRelative =
-        (0.5 * event.target.offsetWidth - xCoordinate) /
-        event.target.offsetWidth * event.target.naturalWidth;
+        ((0.5 * event.target.offsetWidth - xCoordinate) /
+          event.target.offsetWidth) *
+        event.target.naturalWidth;
       let yRelative =
-        (0.5 * event.target.offsetHeight - yCoordinate) /
-        event.target.offsetHeight * event.target.naturalHeight;
+        ((0.5 * event.target.offsetHeight - yCoordinate) /
+          event.target.offsetHeight) *
+        event.target.naturalHeight;
 
       // Emit a signal to move, acted on by panelNavigate.vue
-      this.$root.$emit("globalMoveInImageCoordinatesEvent", -xRelative, -yRelative);
+      this.$root.$emit(
+        "globalMoveInImageCoordinatesEvent",
+        -xRelative,
+        -yRelative
+      );
     },
 
     handleResize: function() {
