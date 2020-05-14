@@ -197,7 +197,7 @@ export default {
           2. The requests leapfrog eachother, stopping the preview, in which case
           the follow-up request restarts the preview in the correct location.
           */
-          setTimeout(() => this.previewRequest(true), 1000);
+          setTimeout(() => this.previewRequest(true), 250);
         }
       }
     },
