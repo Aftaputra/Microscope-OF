@@ -176,8 +176,28 @@ export default {
         console.log(`STREAM ${this._uid} OPEN`);
         this.$store.commit("addStream", this._uid);
         if (this.$store.state.globalSettings.autoGpuPreview == true) {
-          // Reload preview
+          // Start the preview immediately
           this.previewRequest(true);
+          // Send another start preview request after 1 second
+          /*
+          The internal logic of this component means that a stop GPU preview
+          request will only ever be sent if ALL stream components are invisible.
+          However, when switching tabs, sometimes the previous component will
+          react to becoming invisible before the new tab has become visible.
+          This results in a stop-preview request being sent JUST before the new
+          start preview request is sent. In an ideal network, this is fine, however
+          due to network jitter, these requests will occasionally be recieved out
+          of order, causing the preview to start in the new location, and then 
+          quickly stop again.
+          Preventing this properly will involve some clever server-side logic
+          probably, however as a pit-stop solution, we always send another
+          start-preview request after 1 second. This means that either:
+          1. The initial requests happened in order, in which case this follow-up
+          request does nothing, or
+          2. The requests leapfrog eachother, stopping the preview, in which case
+          the follow-up request restarts the preview in the correct location.
+          */
+          setTimeout(() => this.previewRequest(true), 1000);
         }
       }
     },
