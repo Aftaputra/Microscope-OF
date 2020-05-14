@@ -59,7 +59,7 @@ export default {
       },
       set(value) {
         this.$store.commit("changeSetting", ["autoGpuPreview", value]);
-        this.$root.$emit("globalTogglePreview", value);
+        this.$root.$emit("globalSafeTogglePreview", value);
       }
     },
 

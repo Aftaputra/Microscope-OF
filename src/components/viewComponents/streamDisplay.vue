@@ -80,6 +80,9 @@ export default {
     this.$root.$on("globalTogglePreview", state => {
       this.previewRequest(state);
     });
+    this.$root.$on("globalSafeTogglePreview", state => {
+      this.safePreviewRequest(state);
+    });
     // A global signal listener to flash the stream element
     this.$root.$on("globalFlashStream", () => {
       this.flashStream();
@@ -98,7 +101,7 @@ export default {
   created: function() {
     console.log(`${this._uid} created`);
     // Send a request to start/stop GPU preview based on global setting
-    this.previewRequest(this.$store.state.globalSettings.autoGpuPreview);
+    this.safePreviewRequest(this.$store.state.globalSettings.autoGpuPreview);
     // Get FOV from settings
     this.updateFov();
   },
@@ -168,7 +171,7 @@ export default {
           var a = Object.values(this.$store.state.activeStreams);
           let allClosed = a.every(v => v === false);
           if (allClosed) {
-            this.previewRequest(false);
+            this.safePreviewRequest(false);
           }
         }
         // If resized to anything other than zero
@@ -177,7 +180,7 @@ export default {
         this.$store.commit("addStream", this._uid);
         if (this.$store.state.globalSettings.autoGpuPreview == true) {
           // Start the preview immediately
-          this.previewRequest(true);
+          this.safePreviewRequest(true);
           // Send another start preview request after 1 second
           /*
           The internal logic of this component means that a stop GPU preview
@@ -197,7 +200,7 @@ export default {
           2. The requests leapfrog eachother, stopping the preview, in which case
           the follow-up request restarts the preview in the correct location.
           */
-          setTimeout(() => this.previewRequest(true), 250);
+          setTimeout(() => this.safePreviewRequest(true), 250);
         }
       }
     },
@@ -226,7 +229,9 @@ export default {
       this.displayPosition = elementPositionOnDisplay;
     },
 
-    previewRequest: function(state) {
+    safePreviewRequest: function(state) {
+      // previewRequest, but only stopping preview if all streams are invisible
+      // and only starting preview if any stream is visible
       var a = Object.values(this.$store.state.activeStreams);
       let allClosed = a.every(v => v === false);
       // If all streams are closed, don't start GPU preview
@@ -237,6 +242,10 @@ export default {
       if (state === false && !allClosed) {
         return false;
       }
+      return this.previewRequest(state);
+    },
+
+    previewRequest: function(state) {
       // If requesting starting the stream, but this component is inactive, skip
       if (this.$store.getters.ready == true) {
         var requestUri = null;
