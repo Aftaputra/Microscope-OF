@@ -5,7 +5,7 @@
     class="stream-display uk-width-1-1 uk-height-1-1 scrollTarget"
   >
     <img
-      v-if="streamVisible"
+      v-if="thisStreamOpen"
       ref="click-frame"
       class="uk-align-center uk-margin-remove-bottom"
       :hidden="!streamEnabled"
@@ -45,7 +45,6 @@ export default {
       displaySize: [0, 0],
       displayPosition: [0, 0],
       fov: [0, 0],
-      GpuPreviewActive: false,
       resizeTimeoutId: setTimeout(this.doneResizing, 500)
     };
   },
@@ -57,7 +56,7 @@ export default {
         !this.$store.state.globalSettings.disableStream
       );
     },
-    streamVisible: function() {
+    thisStreamOpen: function() {
       // Only a single MJPEG connection should be open at a time
       return !(this.displaySize[0] == 0) && !(this.displaySize[1] == 0);
     },
@@ -76,9 +75,9 @@ export default {
   },
 
   mounted() {
+    console.log(`${this._uid} mounted`);
     // A global signal listener to change the GPU preview state
     this.$root.$on("globalTogglePreview", state => {
-      console.log(`Toggling preview to ${state}`);
       this.previewRequest(state);
     });
     // A global signal listener to flash the stream element
@@ -97,6 +96,7 @@ export default {
   },
 
   created: function() {
+    console.log(`${this._uid} created`);
     // Send a request to start/stop GPU preview based on global setting
     this.previewRequest(this.$store.state.globalSettings.autoGpuPreview);
     // Get FOV from settings
@@ -104,12 +104,15 @@ export default {
   },
 
   beforeDestroy: function() {
+    console.log(`${this._uid} being destroyed`);
     // Remove global signal listener to change the GPU preview state
     this.$root.$off("globalTogglePreview");
     // Remove global signal listener to flash the stream element
     this.$root.$off("globalFlashStream");
     // Disconnect the size observer
     this.sizeObserver.disconnect();
+    // Remove from the array of active streams
+    this.$store.commit("removeStream", this._uid);
   },
 
   methods: {
@@ -151,18 +154,56 @@ export default {
 
     handleDoneResize: function() {
       // Recalculate size
-      console.log("Recalculating frame size");
+      console.log(`Recalculating frame size for ${this._uid}`);
       this.recalculateSize();
-      if (
-        this.$store.state.globalSettings.autoGpuPreview == true &&
-        this.GpuPreviewActive == true
-      ) {
-        // Reload preview
-        this.$root.$emit("globalTogglePreview", true);
+      // Handle closed stream
+      if (this.displaySize[0] == 0 && this.displaySize[1] == 0) {
+        console.log(`${this._uid} is zero`);
+        // If this stream was previously active
+        if (this.$store.state.activeStreams[this._uid] == true) {
+          console.log(`${this._uid} was active`);
+          console.log(`STREAM ${this._uid} CLOSED`);
+          this.$store.commit("removeStream", this._uid);
+          // If all streams are closed, request the GPU preview close
+          var a = Object.values(this.$store.state.activeStreams);
+          let allClosed = a.every(v => v === false);
+          if (allClosed) {
+            this.previewRequest(false);
+          }
+        }
+        // If resized to anything other than zero
+      } else {
+        console.log(`STREAM ${this._uid} OPEN`);
+        this.$store.commit("addStream", this._uid);
+        if (this.$store.state.globalSettings.autoGpuPreview == true) {
+          // Start the preview immediately
+          this.previewRequest(true);
+          // Send another start preview request after 1 second
+          /*
+          The internal logic of this component means that a stop GPU preview
+          request will only ever be sent if ALL stream components are invisible.
+          However, when switching tabs, sometimes the previous component will
+          react to becoming invisible before the new tab has become visible.
+          This results in a stop-preview request being sent JUST before the new
+          start preview request is sent. In an ideal network, this is fine, however
+          due to network jitter, these requests will occasionally be recieved out
+          of order, causing the preview to start in the new location, and then 
+          quickly stop again.
+          Preventing this properly will involve some clever server-side logic
+          probably, however as a pit-stop solution, we always send another
+          start-preview request after 1 second. This means that either:
+          1. The initial requests happened in order, in which case this follow-up
+          request does nothing, or
+          2. The requests leapfrog eachother, stopping the preview, in which case
+          the follow-up request restarts the preview in the correct location.
+          */
+          setTimeout(() => this.previewRequest(true), 250);
+        }
       }
     },
 
     recalculateSize: function() {
+      // Calculate stream size
       let element = this.$refs.streamDisplay.parentNode;
       let bound = element.getBoundingClientRect();
 
@@ -183,20 +224,26 @@ export default {
 
       this.displaySize = elementSize;
       this.displayPosition = elementPositionOnDisplay;
-
-      console.log(`Size: ${this.displaySize}`);
-      console.log(`Position: ${this.displayPosition}`);
     },
 
     previewRequest: function(state) {
+      var a = Object.values(this.$store.state.activeStreams);
+      let allClosed = a.every(v => v === false);
+      // If all streams are closed, don't start GPU preview
+      if (state === true && allClosed) {
+        return false;
+      }
+      // If not all streams are closed, don't stop GPU preview
+      if (state === false && !allClosed) {
+        return false;
+      }
+      // If requesting starting the stream, but this component is inactive, skip
       if (this.$store.getters.ready == true) {
         var requestUri = null;
-        // Create URI and set this.GpuPreviewActive depending on if starting or stopping preview
+        // Create URI
         if (state == true) {
-          this.GpuPreviewActive = true;
           requestUri = this.startPreviewUri;
         } else {
-          this.GpuPreviewActive = false;
           requestUri = this.stopPreviewUri;
         }
 
@@ -220,6 +267,7 @@ export default {
         }
 
         // Send preview request
+        console.log(`${this._uid} toggled preview to ${state}`);
         axios
           .post(requestUri, payload)
           .then(() => {})
