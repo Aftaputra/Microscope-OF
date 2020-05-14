@@ -8,9 +8,9 @@
         <img
           class="uk-width-1-1"
           :data-src="snapshotSrc"
+          :src="snapshotSrc"
           width="300"
           height="225"
-          uk-img
         />
         <div
           v-if="!snapshotAvailable"
