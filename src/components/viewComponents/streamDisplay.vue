@@ -181,7 +181,7 @@ export default {
         if (this.$store.state.globalSettings.autoGpuPreview == true) {
           // Start the preview immediately
           this.safePreviewRequest(true);
-          // Send another start preview request after 1 second
+          // Send another start preview request after a timeout
           /*
           The internal logic of this component means that a stop GPU preview
           request will only ever be sent if ALL stream components are invisible.
