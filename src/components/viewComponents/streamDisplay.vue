@@ -207,10 +207,14 @@ export default {
     },
 
     previewRequest: function(state) {
-      // If all streams are closed, don't start GPU preview
       var a = Object.values(this.$store.state.activeStreams);
       let allClosed = a.every(v => v === false);
+      // If all streams are closed, don't start GPU preview
       if (state === true && allClosed) {
+        return false;
+      }
+      // If not all streams are closed, don't stop GPU preview
+      if (state === false && !allClosed) {
         return false;
       }
       // If requesting starting the stream, but this component is inactive, skip
