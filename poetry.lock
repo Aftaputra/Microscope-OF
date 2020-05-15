@@ -290,7 +290,7 @@ description = "Python implementation of LabThings, based on the Flask microframe
 name = "labthings"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "0.6.0"
+version = "0.6.1"
 
 [package.dependencies]
 Flask = ">=1.1.1,<2.0.0"
@@ -670,7 +670,7 @@ description = "Python Library for Tom's Obvious, Minimal Language"
 name = "toml"
 optional = false
 python-versions = "*"
-version = "0.10.0"
+version = "0.10.1"
 
 [[package]]
 category = "dev"
@@ -747,7 +747,7 @@ ifaddr = "*"
 rpi = ["picamera", "RPi.GPIO"]
 
 [metadata]
-content-hash = "0e7b3418cd280b51aee60e79b190927945d25251f81596629a5a4ee7f47977a7"
+content-hash = "7fbc27aa162c3acb7f1775b974ed87d3261e4038e0999904e9d1cf0f80ec98a2"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -916,8 +916,8 @@ jinja2 = [
     {file = "Jinja2-2.11.2.tar.gz", hash = "sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0"},
 ]
 labthings = [
-    {file = "labthings-0.6.0-py3-none-any.whl", hash = "sha256:e23aa61df3d76b14f8490a43a5343cd77b4927441c81c0e4e7777b95608915b5"},
-    {file = "labthings-0.6.0.tar.gz", hash = "sha256:fa1449d71780e555370ba92d6959740fcf5623127700bc81ddcb355ec10ab9bb"},
+    {file = "labthings-0.6.1-py3-none-any.whl", hash = "sha256:b5e7bbcb18508e9abd5bc392773ce09e93beabe360361289b43fbe2838b31fdb"},
+    {file = "labthings-0.6.1.tar.gz", hash = "sha256:77e52e7eb64bf00a1aa6a5dcbaf8e5bf791a5599ea330c5ab44acd8cd3931f1a"},
 ]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.4.3.tar.gz", hash = "sha256:f3900e8a5de27447acbf900b4750b0ddfd7ec1ea7fbaf11dfa911141bc522af0"},
@@ -1232,9 +1232,8 @@ sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib_serializinghtml-1.1.4-py2.py3-none-any.whl", hash = "sha256:f242a81d423f59617a8e5cf16f5d4d74e28ee9a66f9e5b637a18082991db5a9a"},
 ]
 toml = [
-    {file = "toml-0.10.0-py2.7.egg", hash = "sha256:f1db651f9657708513243e61e6cc67d101a39bad662eaa9b5546f789338e07a3"},
-    {file = "toml-0.10.0-py2.py3-none-any.whl", hash = "sha256:235682dd292d5899d361a811df37e04a8828a5b1da3115886b73cf81ebc9100e"},
-    {file = "toml-0.10.0.tar.gz", hash = "sha256:229f81c57791a41d65e399fc06bf0848bab550a9dfd5ed66df18ce5f05e73d5c"},
+    {file = "toml-0.10.1-py2.py3-none-any.whl", hash = "sha256:bda89d5935c2eac546d648028b9901107a595863cb36bae0c73ac804a9b4ce88"},
+    {file = "toml-0.10.1.tar.gz", hash = "sha256:926b612be1e5ce0634a2ca03470f95169cf16f939018233a670519cb4ac58b0f"},
 ]
 typed-ast = [
     {file = "typed_ast-1.4.1-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:73d785a950fc82dd2a25897d525d003f6378d1cb23ab305578394694202a58c3"},
