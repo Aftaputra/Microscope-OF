@@ -389,20 +389,19 @@ six = "*"
 category = "main"
 description = "A pure Python interface for the Raspberry Pi camera module."
 name = "picamera"
-optional = true
+optional = false
 python-versions = "*"
 version = "1.13.2b0"
 
 [package.extras]
 array = ["numpy"]
 doc = ["sphinx"]
-test = ["pillow", "coverage", "mock", "numpy", "pytest"]
+test = ["coverage", "pytest", "mock", "pillow", "numpy"]
 
 [package.source]
-reference = "e50a34826fc8691e9f8554c529a1700662724ade"
-type = "git"
-url = "https://github.com/rwb27/picamera.git"
-
+reference = ""
+type = "url"
+url = "https://github.com/rwb27/picamera/releases/download/v1.13.2b0/picamera-1.13.2b0-py3-none-any.whl"
 [[package]]
 category = "main"
 description = "Python Imaging Library (Fork)"
@@ -532,7 +531,7 @@ version = "0.14.0"
 category = "main"
 description = "A module to control Raspberry Pi GPIO channels"
 name = "rpi.gpio"
-optional = true
+optional = false
 python-versions = "*"
 version = "0.6.5"
 
@@ -757,11 +756,8 @@ version = "0.26.1"
 [package.dependencies]
 ifaddr = "*"
 
-[extras]
-rpi = ["picamera", "RPi.GPIO"]
-
 [metadata]
-content-hash = "ce051db85e0994205dbe3606291d049e975939481a85c13ec9d9ce8dc0e693e0"
+content-hash = "2d2cb1c884a9f873a5b7d2f617a54ddcbba60e42b6131a373b906849ff165d96"
 python-versions = "^3.6"
 
 [metadata.files]
