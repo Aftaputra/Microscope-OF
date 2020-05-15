@@ -402,6 +402,7 @@ test = ["pillow", "coverage", "mock", "numpy", "pytest"]
 reference = "e50a34826fc8691e9f8554c529a1700662724ade"
 type = "git"
 url = "https://github.com/rwb27/picamera.git"
+
 [[package]]
 category = "main"
 description = "Python Imaging Library (Fork)"
@@ -452,6 +453,19 @@ colorama = "*"
 isort = ">=4.2.5,<5"
 mccabe = ">=0.6,<0.7"
 toml = ">=0.7.1"
+
+[[package]]
+category = "main"
+description = "Python interface to your NPM and package.json."
+name = "pynpm"
+optional = false
+python-versions = "*"
+version = "0.1.2"
+
+[package.extras]
+all = ["Sphinx (>=1.5.1)", "check-manifest (>=0.25)", "coverage (>=4.0)", "isort (>=4.2.2)", "pydocstyle (>=1.0.0)", "pytest-cache (>=1.0)", "pytest-cov (>=1.8.0)", "pytest-pep8 (>=1.0.6)", "pytest (>=2.8.0)"]
+docs = ["Sphinx (>=1.5.1)"]
+tests = ["check-manifest (>=0.25)", "coverage (>=4.0)", "isort (>=4.2.2)", "pydocstyle (>=1.0.0)", "pytest-cache (>=1.0)", "pytest-cov (>=1.8.0)", "pytest-pep8 (>=1.0.6)", "pytest (>=2.8.0)"]
 
 [[package]]
 category = "dev"
@@ -747,7 +761,7 @@ ifaddr = "*"
 rpi = ["picamera", "RPi.GPIO"]
 
 [metadata]
-content-hash = "7fbc27aa162c3acb7f1775b974ed87d3261e4038e0999904e9d1cf0f80ec98a2"
+content-hash = "ce051db85e0994205dbe3606291d049e975939481a85c13ec9d9ce8dc0e693e0"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -1139,6 +1153,10 @@ pygments = [
 pylint = [
     {file = "pylint-2.5.2-py3-none-any.whl", hash = "sha256:dd506acce0427e9e08fb87274bcaa953d38b50a58207170dbf5b36cf3e16957b"},
     {file = "pylint-2.5.2.tar.gz", hash = "sha256:b95e31850f3af163c2283ed40432f053acbc8fc6eba6a069cb518d9dbf71848c"},
+]
+pynpm = [
+    {file = "pynpm-0.1.2-py2.py3-none-any.whl", hash = "sha256:3f03fbf667549f8b8b7e0419eef88d1b21833ce288f96de66fbb761b9f4c4061"},
+    {file = "pynpm-0.1.2.tar.gz", hash = "sha256:8a6d3f9423760cf3c142db3bf9bda5a075e8a91837e7d2e2b0a3de5be5e26da2"},
 ]
 pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},
