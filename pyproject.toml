@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "openflexure_microscope"
-version = "2.1.0-dev"
+version = "2.2.0-alpha"
 description = "Python module, and Flask-based web API, to run the OpenFlexure Microscope."
 
 authors = [
@@ -21,6 +21,8 @@ homepage = "https://www.openflexure.org"
 keywords = ['raspberry pi', 'arduino', 'microscope']
 
 license = "GPL-3.0"
+
+exclude = ["**/node_modules/"]
 
 [tool.poetry.dependencies]
 python = "^3.6"

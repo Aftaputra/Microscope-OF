@@ -66,7 +66,7 @@ app, labthing = create_app(
     description="Test LabThing-based API for OpenFlexure Microscope",
     types=["org.openflexure.microscope"],
     version=pkg_resources.get_distribution("openflexure_microscope").version,
-    flask_kwargs={"static_url_path": ""},
+    flask_kwargs={"static_url_path": "", "static_folder": "static/dist"},
 )
 
 # Enable CORS for some routes outside of LabThings
