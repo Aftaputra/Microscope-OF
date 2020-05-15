@@ -26,7 +26,7 @@ build:
   script:
     - $HOME/.poetry/bin/poetry install
     - $HOME/.poetry/bin/poetry run build_static
-    - $HOME/.poetry/bin/poetry run build
+    - $HOME/.poetry/bin/poetry build
 
   artifacts:
     name: "dist"
