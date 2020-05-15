@@ -10,6 +10,7 @@ Full developer documentation can be found on [**ReadTheDocs**](https://openflexu
 This includes installing the server in a mode better suited for active development.
 
 ## Installation
+* `git clone --recurse-submodules https://gitlab.com/openflexure/openflexure-microscope-server.git`
 * `poetry install`
 * `poetry run build`
 
