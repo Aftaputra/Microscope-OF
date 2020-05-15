@@ -22,9 +22,9 @@ build:
     - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
 
   script:
-    - poetry install
-    - poetry run build_static
-    - poetry run build
+    - $HOME/.poetry/bin/poetry install
+    - $HOME/.poetry/bin/poetry run build_static
+    - $HOME/.poetry/bin/poetry run build
 
   artifacts:
     name: "dist"
