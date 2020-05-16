@@ -3,6 +3,7 @@ node_modules
 .gitlab-ci.yml
 ./dist
 !openflexure_microscope/api/static/dist
+.tarignore
 
 # Pyenv files
 .python-version
