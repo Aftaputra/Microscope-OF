@@ -27,6 +27,7 @@ build:
     - $HOME/.poetry/bin/poetry install
     - $HOME/.poetry/bin/poetry run build_static
     - $HOME/.poetry/bin/poetry build
+    - $HOME/.poetry/bin/poetry export --without-hashes -f requirements.txt > dist/requirements.txt
 
   artifacts:
     name: "dist"
@@ -36,8 +37,7 @@ build:
 
   only:
     - merge_requests
-    - stable
-    - master
+    - tags
     - web
 
 
@@ -60,10 +60,11 @@ deploy:
     - 'which rsync || ( apt-get update -y && apt-get install rsync -y )'
     
     # Upload the builds folder to openflexure-microscope builds 
-    - rsync -hrvz -e ssh dist/ ci-user@openflexure.bath.ac.uk:/var/www/build/openflexure-microscope-server/
+    - rsync -hrvz -e ssh dist/ ci-user@openflexure.bath.ac.uk:/var/www/build/openflexure-microscope-server/${CI_COMMIT_REF_NAME} --delete
     
     # Run update-latest.py on the build server
     - ssh -t ci-user@openflexure.bath.ac.uk "/var/www/build/update-latest.py"
     
   only:
-    - stable
+    - tags
+    - web
