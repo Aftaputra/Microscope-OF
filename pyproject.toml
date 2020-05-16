@@ -36,7 +36,7 @@ Pillow = "^5.4"
 scipy = "1.4.1" # Exact version so we can guarantee a wheel
 
 "RPi.GPIO" = { version = "^0.6.5", optional = true }
-picamera = {url = "https://github.com/rwb27/picamera/releases/download/v1.13.2b0/picamera-1.13.2b0-py3-none-any.whl", optional = true }
+picamera = {url = "https://github.com/rwb27/picamera/releases/download/v1.13.2b0/picamera-1.13.2b0-py3-none-any.whl" }
 
 pyserial = "^3.4" # Used for sangaboard (basic_serial_instrument) until we move to sangaboard pip library
 
@@ -50,7 +50,7 @@ labthings = "0.6.1"
 pynpm = "^0.1.2"
 
 [tool.poetry.extras]
-rpi = ["picamera", "RPi.GPIO"]
+rpi = ["RPi.GPIO"]
 
 [tool.poetry.scripts]
 build_static = 'openflexure_microscope.install:build'
