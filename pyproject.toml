@@ -24,6 +24,10 @@ license = "GPL-3.0"
 
 exclude = ["**/node_modules/"]
 
+packages = [
+    { include = "openflexure_microscope" },
+]
+
 [tool.poetry.dependencies]
 python = "^3.6"
 Flask = "^1.0"
