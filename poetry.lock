@@ -531,7 +531,7 @@ version = "0.14.0"
 category = "main"
 description = "A module to control Raspberry Pi GPIO channels"
 name = "rpi.gpio"
-optional = false
+optional = true
 python-versions = "*"
 version = "0.6.5"
 
@@ -756,8 +756,11 @@ version = "0.26.1"
 [package.dependencies]
 ifaddr = "*"
 
+[extras]
+rpi = ["picamera", "RPi.GPIO"]
+
 [metadata]
-content-hash = "2d2cb1c884a9f873a5b7d2f617a54ddcbba60e42b6131a373b906849ff165d96"
+content-hash = "4e7a6bf95f6780d1f155ceecee8fccff5b5d44c3034907cbe2f8ed3e634cfdb1"
 python-versions = "^3.6"
 
 [metadata.files]
