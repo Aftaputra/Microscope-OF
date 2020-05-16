@@ -16,7 +16,8 @@ This includes installing the server in a mode better suited for active developme
 
 ### Distributing
 * `poetry run build`
-  * Dist files will then be in `/dist`
+* `poetry export --without-hashes -f requirements.txt > dist/requirements.txt`
+* Distribution files will then be in `/dist`
 
 ## Build-system
 As of 1.0.0b0, we're using [Poetry](https://github.com/sdispater/poetry) to manage dependencies, build, and distribute the package. All package information and dependencies are found in `pyproject.toml`, in line with [PEP 518](https://www.python.org/dev/peps/pep-0518/). If you're developing this package, make use of `poetry.lock` to ensure you're using the latest locked dependency list.
