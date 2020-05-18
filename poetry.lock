@@ -454,7 +454,7 @@ mccabe = ">=0.6,<0.7"
 toml = ">=0.7.1"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Python interface to your NPM and package.json."
 name = "pynpm"
 optional = false
@@ -760,7 +760,7 @@ ifaddr = "*"
 rpi = ["RPi.GPIO"]
 
 [metadata]
-content-hash = "e62efd90867a69b3385fb417a0cd0a9124fb4d23a36177ebef27903b4e78eb77"
+content-hash = "8874534b3ed4146a2da1884b8f69b639b4a06f41ab9d6ee17500513b2d76f1b9"
 python-versions = "^3.6"
 
 [metadata.files]

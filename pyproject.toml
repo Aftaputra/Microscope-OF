@@ -47,7 +47,6 @@ opencv-python-headless = [
     {version = "4.2.0.34", python = "^3.8"}  # Latest for Py38 systems
 ]
 labthings = "0.6.1"
-pynpm = "^0.1.2"
 
 [tool.poetry.extras]
 rpi = ["RPi.GPIO"]
@@ -56,6 +55,7 @@ rpi = ["RPi.GPIO"]
 build_static = 'openflexure_microscope.install:build'
 
 [tool.poetry.dev-dependencies]
+pynpm = "^0.1.2"
 sphinxcontrib-httpdomain = "^1.7"
 rope = "^0.14.0"
 pylint = "^2.3"
