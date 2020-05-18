@@ -349,18 +349,17 @@ export default {
             serverVersionMajor != clientVersionMajor
           ) {
             var versionWarning = `Client and microscope versions do not match.\
-            Consider updating your microscope software.\
-            Some functionality may currently be broken.<br><br> \
+            Please update your microscope software.\
             <b>Client version:</b> ${clientVersion}<br> \
             <b>Server version:</b> ${serverVersion}<br><br>`;
             if (serverVersion < 1.1) {
               versionWarning =
                 versionWarning +
-                "You may need to install a never server version on a clean SD card.";
+                "You will need to install a newer server version on a clean SD card.";
             } else {
               versionWarning =
                 versionWarning +
-                "Try running 'ofm upgrade' on your microscope.";
+                "Run <b><tt>ofm update</tt></b> and then <b><tt>ofm upgrade</tt></b> on your microscope.";
             }
             this.modalDialog("Version mismatch", versionWarning);
           }
