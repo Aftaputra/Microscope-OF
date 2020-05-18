@@ -210,6 +210,9 @@ export default {
   },
 
   created: function() {
+    if (this.$store.getters.ready) {
+      this.updatePlugins();
+    }
     // Watch for host 'ready', then update status
     this.unwatchStoreFunction = this.$store.watch(
       (state, getters) => {
