@@ -3,8 +3,8 @@ requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry]
-name = "openflexure_microscope"
-version = "2.1.0-dev"
+name = "openflexure-microscope-server"
+version = "2.1.0-beta"
 description = "Python module, and Flask-based web API, to run the OpenFlexure Microscope."
 
 authors = [
@@ -22,6 +22,12 @@ keywords = ['raspberry pi', 'arduino', 'microscope']
 
 license = "GPL-3.0"
 
+exclude = ["**/node_modules/"]
+
+packages = [
+    { include = "openflexure_microscope" },
+]
+
 [tool.poetry.dependencies]
 python = "^3.6"
 Flask = "^1.0"
@@ -29,8 +35,9 @@ numpy = "1.18.2"
 Pillow = "^5.4"
 scipy = "1.4.1" # Exact version so we can guarantee a wheel
 
-picamera = { git = "https://github.com/rwb27/picamera.git", branch = "master", optional = true }  # Lens shading requires >1.14 or RWB fork, lens-shading branch.
 "RPi.GPIO" = { version = "^0.6.5", optional = true }
+picamera = {url = "https://github.com/rwb27/picamera/releases/download/v1.13.2b0/picamera-1.13.2b0-py3-none-any.whl" }
+
 pyserial = "^3.4" # Used for sangaboard (basic_serial_instrument) until we move to sangaboard pip library
 
 python-dateutil = "^2.8"
@@ -40,9 +47,13 @@ opencv-python-headless = [
     {version = "4.2.0.34", python = "^3.8"}  # Latest for Py38 systems
 ]
 labthings = "0.6.1"
+pynpm = "^0.1.2"
 
 [tool.poetry.extras]
-rpi = ["picamera", "RPi.GPIO"]
+rpi = ["RPi.GPIO"]
+
+[tool.poetry.scripts]
+build_static = 'openflexure_microscope.install:build'
 
 [tool.poetry.dev-dependencies]
 sphinxcontrib-httpdomain = "^1.7"

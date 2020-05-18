@@ -15,7 +15,8 @@ from openflexure_microscope.stage.sanga import SangaStage
 
 try:
     from openflexure_microscope.camera.pi import PiCameraStreamer
-except ImportError:
+except Exception as e:
+    logging.error(e)
     logging.warning("Unable to import PiCameraStreamer")
 from openflexure_microscope.camera.mock import MissingCamera
 
