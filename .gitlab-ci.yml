@@ -36,9 +36,6 @@ build:
     - npm install
     # Create build directory
     - mkdir -p "release-builds"
-    # Build eV-Lite for microscope server
-    - npm run build:lite
-    - tar -czvf "./release-builds/openflexure-ev-lite-${CI_COMMIT_REF_NAME}.tar.gz" -C "./dist-lite" .
     # Build electron app
     - npm run build:app
     - if [ "$CI_COMMIT_REF_NAME" == "stable" ]; then npm run release; else npm run release:pre; fi
@@ -47,7 +44,6 @@ build:
     name: "dist"
     expire_in: 1 week
     paths:
-      - "./release-builds/*.tar.gz"
       - "./release-builds/*.AppImage"
       - "./release-builds/*.exe"
       - "./release-builds/*.exe.blockmap"
