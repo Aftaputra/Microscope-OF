@@ -55,11 +55,6 @@ export default {
       required: false,
       default: 0.5
     },
-    pollTimeout: {
-      type: Number,
-      required: false,
-      default: 1800
-    },
     submitLabel: {
       type: String,
       required: false,
@@ -138,11 +133,7 @@ export default {
           this.taskRunning = true;
           this.$emit("taskStarted", this.taskId);
           // Return the poll-task promise (starts polling the task)
-          return this.pollTask(
-            this.taskId,
-            this.pollTimeout,
-            this.pollInterval
-          );
+          return this.pollTask(this.taskId, this.pollInterval);
         })
         .then(response => {
           // Do something with the final response
@@ -170,8 +161,7 @@ export default {
         });
     },
 
-    pollTask: function(taskId, timeout, interval) {
-      var endTime = Number(new Date()) + (timeout * 1000 || 30000);
+    pollTask: function(taskId, interval) {
       interval = interval * 1000 || 500;
 
       var checkCondition = (resolve, reject) => {
@@ -200,16 +190,12 @@ export default {
               // Pass status string as error
               reject(new Error(result));
             }
-            // If the condition isn't met but the timeout hasn't elapsed, go again
-            else if (Number(new Date()) < endTime) {
+            // Didn't match and too much time, reject!
+            else {
               // Since the task is still running, we can update the progress bar
               this.progress = response.data.progress;
               // Check again after timeout
               setTimeout(checkCondition, interval, resolve, reject);
-            }
-            // Didn't match and too much time, reject!
-            else {
-              reject(new Error("Polling timed out"));
             }
           });
       };
