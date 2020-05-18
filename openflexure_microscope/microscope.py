@@ -248,9 +248,9 @@ class Microscope:
 
         current_configuration = {
             "application": {
-                "name": "openflexure_microscope",
+                "name": "openflexure-microscope-server",
                 "version": pkg_resources.get_distribution(
-                    "openflexure_microscope"
+                    "openflexure-microscope-server"
                 ).version,
             },
             "stage": {
