@@ -107,6 +107,7 @@
             v-if="'isScan' in item"
             :metadata="item.metadata"
             :thumbnail="item.thumbnail"
+            :captures="item.captures"
           />
           <captureCard v-else :capture-state="item" />
         </div>

@@ -24,6 +24,11 @@
         <div class="uk-margin-remove-top uk-padding-remove uk-width-expand">
           <b>{{ metadata.type || "Dataset" }}: </b> {{ metadata.image.name }}
         </div>
+        <div class="uk-margin-remove-top uk-padding-remove uk-width-auto">
+          <a href="#" class="uk-icon" @click="delAllConfirm()">
+            <i class="material-icons">delete</i>
+          </a>
+        </div>
       </div>
 
       <div
@@ -68,9 +73,11 @@
 </template>
 
 <script>
+import axios from "axios";
+
 // Export main app
 export default {
-  name: "CaptureCard",
+  name: "ScanCard",
 
   props: {
     metadata: {
@@ -79,6 +86,10 @@ export default {
     },
     thumbnail: {
       type: String,
+      required: true
+    },
+    captures: {
+      type: Array,
       required: true
     }
   },
@@ -95,12 +106,43 @@ export default {
     },
     metadataModalTarget: function() {
       return "#" + this.metadataModalID;
+    },
+    allURLs: function() {
+      var urls = [];
+      for (var capture of this.captures) {
+        urls.push(capture.links.self.href);
+      }
+      return urls;
     }
   },
 
   methods: {
     makeModalName: function(prefix) {
       return prefix + this.metadata.image.id;
+    },
+
+    delAllConfirm: function() {
+      var context = this;
+      this.modalConfirm(
+        "Permanantly delete all captures in this dataset?"
+      ).then(function() {
+        context.deleteAll();
+      });
+    },
+
+    deleteAll: function() {
+      axios
+        .all(this.allURLs.map(l => axios.delete(l)))
+        .then(
+          axios.spread(function(...res) {
+            // all requests are now complete
+            console.log(res);
+          })
+        )
+        .then(() => {
+          // Emit signal to update capture list
+          this.$root.$emit("globalUpdateCaptures");
+        });
     }
   }
 };
