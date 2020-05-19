@@ -133,12 +133,12 @@ export default {
     deleteAll: function() {
       axios
         .all(this.allURLs.map(l => axios.delete(l)))
-        .then(
-          axios.spread(function(...res) {
-            // all requests are now complete
-            console.log(res);
-          })
-        )
+        .then
+        //axios.spread(function(...res) {
+        // all requests are now complete
+        //console.log(res);
+        //})
+        ()
         .then(() => {
           // Emit signal to update capture list
           this.$root.$emit("globalUpdateCaptures");
