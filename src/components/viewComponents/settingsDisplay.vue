@@ -110,6 +110,12 @@
         :current-tab="currentTab"
       >
         <div class="settings-pane uk-padding-small">
+          <h3>Camera/stage mapping</h3>
+          <p>
+            Camera/stage mapping allows the stage to move relative to the camera
+            view. This enables functions like click-to-move, and more precise
+            tile scans.
+          </p>
           <cameraStageMappingSettings />
         </div>
       </tabContent>

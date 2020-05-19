@@ -32,7 +32,7 @@ Vue.mixin({
 
       var showModal = function(resolve, reject) {
         UIkit.modal
-          .confirm(modalText)
+          .confirm(modalText, { stack: true })
           .then(
             function() {
               resolve();
@@ -61,7 +61,8 @@ Vue.mixin({
     },
 
     modalDialog: function(title, message) {
-      UIkit.modal.dialog(`
+      UIkit.modal.dialog(
+        `
         <button class="uk-modal-close-default" type="button" uk-close></button>
         <div class="uk-modal-header">
           <h2 class="uk-modal-title">${title}</h2>
@@ -69,7 +70,9 @@ Vue.mixin({
         <div class="uk-modal-body">
           <p>${message}</p>
         </div>
-      `);
+      `,
+        { stack: true }
+      );
     },
 
     modalError: function(error) {
@@ -102,6 +105,14 @@ Vue.mixin({
         message: `${errormsg}`,
         status: "danger"
       });
+    },
+
+    showModalElement: function(element) {
+      UIkit.modal(element).show();
+    },
+
+    hideModalElement: function(element) {
+      UIkit.modal(element).hide();
     },
 
     getLocalStorageObj: function(keyName) {

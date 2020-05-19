@@ -1,10 +1,5 @@
 <template>
   <div id="cameraStageMappingSettings">
-    <h3>Camera/stage mapping</h3>
-    <p>
-      Camera/stage mapping allows the stage to move relative to the camera view.
-      This enables functions like click-to-move, and more precise tile scans.
-    </p>
     <form @submit.prevent="applyConfigRequest">
       <!--Show auto calibrate if default plugin is enabled-->
       <div v-if="'calibrate_xy' in recalibrationLinks" class="uk-margin-small">
@@ -24,7 +19,7 @@
       </div>
       <button
         v-if="'get_calibration' in recalibrationLinks"
-        v-show="dataAvailable"
+        v-show="dataAvailable && showExtraSettings"
         type="button"
         class="uk-button uk-button-default uk-width-1-1"
         @click="getCalibrationData()"
@@ -45,6 +40,14 @@ export default {
 
   components: {
     taskSubmitter
+  },
+
+  props: {
+    showExtraSettings: {
+      type: Boolean,
+      required: false,
+      default: true
+    }
   },
 
   data: function() {

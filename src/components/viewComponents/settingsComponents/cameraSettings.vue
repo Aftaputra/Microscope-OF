@@ -57,76 +57,37 @@
     </div>
 
     <!--Show auto calibrate if default plugin is enabled-->
-    <div v-if="'recalibrate' in recalibrationLinks" class="uk-margin-small">
-      <h3>Automatic calibration</h3>
-      <taskSubmitter
-        :can-terminate="false"
-        :requires-confirmation="true"
-        :confirmation-message="
-          'Start recalibration? This may take a while, and the microscope will be locked during this time.'
-        "
-        :submit-url="recalibrationLinks.recalibrate.href"
-        :submit-label="'Auto-Calibrate'"
-        @response="onRecalibrateResponse"
-        @error="onRecalibrateError"
-      >
-      </taskSubmitter>
-    </div>
-
-    <div class="uk-child-width-expand" uk-grid>
-      <div v-if="'flatten_lens_shading_table' in recalibrationLinks">
-        <button
-          class="uk-button uk-button-danger uk-width-1-1"
-          @click="flattenLensShadingTableRequest"
-        >
-          Disable flat-field correction
-        </button>
-      </div>
-
-      <div v-if="'delete_lens_shading_table' in recalibrationLinks">
-        <button
-          class="uk-button uk-button-danger uk-width-1-1"
-          @click="deleteLensShadingTableRequest"
-        >
-          Adaptive flat-field correction
-        </button>
-      </div>
-    </div>
+    <h3>Automatic calibration</h3>
+    <cameraCalibrationSettings></cameraCalibrationSettings>
   </div>
 </template>
 
 <script>
 import axios from "axios";
-import taskSubmitter from "../../genericComponents/taskSubmitter";
+import cameraCalibrationSettings from "./cameraCalibrationSettings.vue";
 
 // Export main app
 export default {
   name: "CameraSettings",
 
   components: {
-    taskSubmitter
+    cameraCalibrationSettings
   },
 
   data: function() {
     return {
-      settings: {},
-      recalibrationLinks: {},
-      isCalibrating: false
+      settings: {}
     };
   },
 
   computed: {
     settingsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/instrument/settings`;
-    },
-    pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/extensions`;
     }
   },
 
   mounted() {
     this.updateSettings();
-    this.updateRecalibrationLinks();
   },
 
   methods: {
@@ -135,27 +96,6 @@ export default {
         .get(this.settingsUri)
         .then(response => {
           this.settings = response.data.camera;
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
-    },
-
-    updateRecalibrationLinks: function() {
-      axios
-        .get(this.pluginsUri) // Get a list of plugins
-        .then(response => {
-          var plugins = response.data;
-          var foundExtension = plugins.find(
-            e => e.title === "org.openflexure.calibration.picamera"
-          );
-          // if AutocalibrationPlugin is enabled
-          if (foundExtension) {
-            // Get plugin action link
-            this.recalibrationLinks = foundExtension.links;
-          } else {
-            this.recalibrationLinks = {};
-          }
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -188,31 +128,9 @@ export default {
         .catch(error => {
           this.modalError(error); // Let mixin handle error
         });
-    },
-
-    onRecalibrateResponse: function() {
-      this.modalNotify("Finished recalibration.");
-      // Update local settings
-      this.updateSettings();
-    },
-
-    onRecalibrateError: function(error) {
-      this.modalError(error); // Let mixin handle error
-    },
-
-    flattenLensShadingTableRequest: function() {
-      axios.post(this.recalibrationLinks.flatten_lens_shading_table.href);
-    },
-    deleteLensShadingTableRequest: function() {
-      axios.post(this.recalibrationLinks.delete_lens_shading_table.href);
     }
   }
 };
 </script>
 
-<style lang="less">
-.center-spinner {
-  margin-left: auto;
-  margin-right: auto;
-}
-</style>
+<style lang="less"></style>

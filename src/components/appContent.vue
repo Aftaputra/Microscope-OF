@@ -4,6 +4,11 @@
     class="uk-margin-remove uk-padding-remove uk-height-1-1"
     uk-grid
   >
+    <!-- Initialisation modals -->
+    <calibrationModal
+      ref="calibrationModal"
+      :available-plugins="plugins"
+    ></calibrationModal>
     <!-- Vertical tab bar -->
     <div
       id="switcher-left"
@@ -167,9 +172,12 @@ import settingsContent from "./tabContentComponents/settingsContent.vue";
 import galleryContent from "./tabContentComponents/galleryContent.vue";
 import extensionContent from "./tabContentComponents/extensionContent.vue";
 
+// Import modal components for device initialisation
+import calibrationModal from "./modalComponents/calibrationModal.vue";
+
 // Export main app
 export default {
-  name: "PanelLeft",
+  name: "AppContent",
 
   components: {
     tabIcon,
@@ -180,7 +188,8 @@ export default {
     viewContent,
     settingsContent,
     galleryContent,
-    extensionContent
+    extensionContent,
+    calibrationModal
   },
 
   data: function() {
@@ -220,7 +229,11 @@ export default {
       },
       ready => {
         // Update plugins
-        this.updatePlugins();
+        this.updatePlugins().then(() => {
+          // Start initialisation modals
+          this.startModals();
+        });
+
         if (ready) {
           console.log("Left panel now ready");
         } else {
@@ -244,7 +257,7 @@ export default {
   methods: {
     updatePlugins: function() {
       console.log("Updating plugin forms");
-      axios
+      return axios
         .get(this.pluginsUri)
         .then(response => {
           console.log(response);
@@ -258,6 +271,9 @@ export default {
       if (!(this.currentTab == tab)) {
         this.currentTab = tab;
       }
+    },
+    startModals: function() {
+      this.$refs["calibrationModal"].show();
     }
   }
 };
