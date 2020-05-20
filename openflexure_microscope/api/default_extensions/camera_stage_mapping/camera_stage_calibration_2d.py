@@ -73,13 +73,13 @@ def calibrate_xy_grid(tracker, move, step=100, n_steps=4, backlash_compensation=
     transformed_image_positions = np.dot(image_positions, A)
     residuals = transformed_image_positions - stage_positions
     fractional_error = norm(residuals) / stage_positions.shape[0]
-    print(f"Ratio of residuals to displacement is {fractional_error})")
+    logging.debug(f"Ratio of residuals to displacement is {fractional_error})")
     if fractional_error > 0.05:  # Check it was a reasonably good fit
-        print(
+        logging.warning(
             "Warning: the error fitting measured displacements was %.1f%%"
             % (fractional_error * 100)
         )
-    print(
+    logging.info(
         f"Calibrated the pixel-location matrix.\nResiduals were {fractional_error*100:.1f}% of the shift."
     )
 

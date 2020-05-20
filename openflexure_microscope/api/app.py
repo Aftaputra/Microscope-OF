@@ -33,31 +33,42 @@ from openflexure_microscope.api.microscope import default_microscope as api_micr
 from openflexure_microscope.api.v2 import views
 
 # Handle logging
-DEFAULT_LOGFILE = logs_file_path("openflexure_microscope.log")
+ROOT_LOGFILE = logs_file_path("openflexure_microscope.log")
+ACCESS_LOGFILE = logs_file_path("openflexure_microscope.access.log")
 
-logger = logging.getLogger()
-
-error_formatter = logging.Formatter(
+# Basic log format
+formatter = logging.Formatter(
     "[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s"
 )
 
-rotating_logfile = logging.handlers.RotatingFileHandler(
-    DEFAULT_LOGFILE, maxBytes=1_000_000, backupCount=7
-)
 
-error_handlers = [rotating_logfile, logging.StreamHandler()]
-
-for handler in error_handlers:
-    handler.setFormatter(error_formatter)
-    logger.addHandler(handler)
-
+# Get root logger
+logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+# Create file handler
+fh = logging.handlers.RotatingFileHandler(
+    ROOT_LOGFILE, maxBytes=1_000_000, backupCount=5
+)
+fh.setFormatter(formatter)
+fh.setLevel(logging.INFO)
+fh.propagate = False
+
+# Create access log file handler
+afh = logging.handlers.RotatingFileHandler(
+    ACCESS_LOGFILE, maxBytes=1_000_000, backupCount=5
+)
+afh.setFormatter(formatter)
+afh.setLevel(logging.INFO)
+afh.propagate = False
+
+# Add file handler to root logger
+logger.addHandler(fh)
 
 # Log server paths being used
 logging.info(f"Running with data path {OPENFLEXURE_VAR_PATH}")
 
-print("Creating app")
+logging.info("Creating app")
 # Create flask app
 app, labthing = create_app(
     __name__,
@@ -176,6 +187,9 @@ atexit.register(cleanup)
 if __name__ == "__main__":
     from labthings.server.wsgi import Server
 
-    print("Starting OpenFlexure Microscope Server...")
-    server = Server(app, log=logger, error_log=logger)
+    # Block the access logs from propagating up to the root logger
+    logging.getLogger("labthings.server.wsgi.handler").propagate = False
+
+    logging.info("Starting OpenFlexure Microscope Server...")
+    server = Server(app, log=afh, error_log=None)
     server.run(host="::", port=5000, debug=False, zeroconf=True)
