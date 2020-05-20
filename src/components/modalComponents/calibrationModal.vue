@@ -1,5 +1,5 @@
 <template>
-  <div id="modal-example" ref="calibrationModalEl" uk-modal>
+  <div id="modal-example" ref="calibrationModalEl" uk-modal="bg-close: false;">
     <div v-if="ready" class="uk-modal-dialog uk-modal-body">
       <h2 class="uk-modal-title">Microscope Calibration</h2>
       <div v-show="stepValue == 0">
