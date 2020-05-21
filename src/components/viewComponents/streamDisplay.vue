@@ -132,14 +132,18 @@ export default {
       let xCoordinate = event.offsetX;
       let yCoordinate = event.offsetY;
 
+      // Simply scaling by naturalHeight/offsetHeight may give the wrong answer!
+      // because we use content-fit: contain in the stylesheet, the img element
+      // may be larger than the picture.  So, we must determine whether the
+      // width or height is setting the scaling factor, and use a uniform scale 
+      // factor.
+      let scale = Math.max(event.target.naturalWidth/event.target.offsetWidth,
+                           event.target.naturalHeight/event.target.offsetHeight);
+
       let xRelative =
-        ((0.5 * event.target.offsetWidth - xCoordinate) /
-          event.target.offsetWidth) *
-        event.target.naturalWidth;
+        (0.5 * event.target.offsetWidth - xCoordinate) * scale;
       let yRelative =
-        ((0.5 * event.target.offsetHeight - yCoordinate) /
-          event.target.offsetHeight) *
-        event.target.naturalHeight;
+        (0.5 * event.target.offsetHeight - yCoordinate) * scale;
 
       // Emit a signal to move, acted on by panelNavigate.vue
       this.$root.$emit(
