@@ -152,7 +152,7 @@ def err_log():
     """
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     return send_file(
-        DEFAULT_LOGFILE,
+        ROOT_LOGFILE,
         as_attachment=True,
         attachment_filename="openflexure_microscope_{}.log".format(timestamp),
     )
