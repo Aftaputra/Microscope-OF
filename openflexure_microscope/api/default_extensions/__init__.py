@@ -10,7 +10,7 @@ def handle_extension_error(extension_name):
         yield
     except Exception as e:
         logging.error(
-            f"Exception loading builtin extension picamera_autocalibrate: \n{traceback.format_exc()}"
+            f"Exception loading builtin extension {extension_name}: \n{traceback.format_exc()}"
         )
 
 
