@@ -9,7 +9,7 @@ import logging, logging.handlers
 import os
 import pkg_resources
 
-from flask import Flask, send_file
+from flask import Flask, send_file, abort
 
 from datetime import datetime
 
@@ -157,6 +157,10 @@ def err_log():
         attachment_filename="openflexure_microscope_{}.log".format(timestamp),
     )
 
+@app.route('/api/v1/', defaults={'path': ''})
+@app.route('/api/v1/<path:path>')
+def api_v1_catch_all(path):
+    abort(410, 'API v1 is no longer in use. Please upgrade your client.')
 
 # Automatically clean up microscope at exit
 def cleanup():
