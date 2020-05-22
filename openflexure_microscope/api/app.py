@@ -195,5 +195,5 @@ if __name__ == "__main__":
     logging.getLogger("labthings.server.wsgi.handler").propagate = False
 
     logging.info("Starting OpenFlexure Microscope Server...")
-    server = Server(app, log=afh, error_log=None)
+    server = Server(app, log=afh, error_log=logger)
     server.run(host="::", port=5000, debug=False, zeroconf=True)
