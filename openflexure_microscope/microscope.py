@@ -83,7 +83,7 @@ class Microscope:
         """
 
         ### Detector
-        print("Creating camera")
+        logging.info("Creating camera")
         if configuration.get("camera"):
             camera_type = configuration["camera"].get("type")
             if camera_type in ("PiCamera", "PiCameraStreamer"):
@@ -94,7 +94,7 @@ class Microscope:
                     logging.warning("No compatible camera hardware found.")
 
         ### Stage
-        print("Creating stage")
+        logging.info("Creating stage")
         if configuration.get("stage"):
             stage_type = configuration["stage"].get("type")
             stage_port = configuration["stage"].get("port")
@@ -105,7 +105,7 @@ class Microscope:
                     logging.error(e)
                     logging.warning("No compatible Sangaboard hardware found.")
 
-        print("Handling fallbacks")
+        logging.info("Handling fallbacks")
         ### Fallbacks
         if not self.camera:
             self.camera = MissingCamera()
@@ -113,7 +113,7 @@ class Microscope:
             self.stage = MissingStage()
 
         ### Locks
-        print("Creating locks")
+        logging.info("Creating locks")
         if hasattr(self.camera, "lock"):
             self.lock.locks.append(self.camera.lock)
         if hasattr(self.stage, "lock"):

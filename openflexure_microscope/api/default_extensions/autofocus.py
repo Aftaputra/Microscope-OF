@@ -62,7 +62,7 @@ class JPEGSharpnessMonitor:
     def stop(self):
         "Stop the background thread"
         self.stop_event.set()
-        print("Joining JPEG thread")
+        logging.info("Joining JPEG thread")
         self.background_thread.join()
 
     def _measure_jpegs(self):
@@ -75,7 +75,7 @@ class JPEGSharpnessMonitor:
             time_now = time.time()
             self.jpeg_sizes.append(size_now)
             self.jpeg_times.append(time_now)
-        print("Exited JPEG measure loop")
+        logging.info("Exited JPEG measure loop")
         if self.stop_event.is_set():
             logging.debug("Cleanly stopped sharpness measurement in background thread")
         if self.should_stop():

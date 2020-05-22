@@ -28,19 +28,19 @@ def flat_lens_shading_table(camera):
 
 def adjust_exposure_to_setpoint(camera, setpoint):
     """Adjust the camera's exposure time until the maximum pixel value is <setpoint>."""
-    print("Adjusting shutter speed to hit setpoint {}".format(setpoint), end="")
+    logging.info("Adjusting shutter speed to hit setpoint {}".format(setpoint), end="")
     for i in range(3):
         print(".", end="")
         camera.shutter_speed = int(
             camera.shutter_speed * setpoint / np.max(rgb_image(camera))
         )
         time.sleep(1)
-    print("done")
+    logging.info("done")
 
 
 def auto_expose_and_freeze_settings(camera):
     """Freeze the settings after auto-exposing to white illumination"""
-    print("Allowing the camera to auto-expose")
+    logging.info("Allowing the camera to auto-expose")
     camera.awb_mode = "auto"
     camera.exposure_mode = "auto"
     camera.iso = (
@@ -49,18 +49,18 @@ def auto_expose_and_freeze_settings(camera):
     for i in range(6):
         print(".", end="")
         time.sleep(0.5)
-    print("done")
+    logging.info("done")
 
-    print("Freezing the camera settings...")
+    logging.info("Freezing the camera settings...")
     camera.shutter_speed = camera.exposure_speed
-    print("Shutter speed = {}".format(camera.shutter_speed))
+    logging.info("Shutter speed = {}".format(camera.shutter_speed))
     camera.exposure_mode = "off"
-    print("Auto exposure disabled")
+    logging.info("Auto exposure disabled")
     g = camera.awb_gains
     camera.awb_mode = "off"
     camera.awb_gains = g
-    print("Auto white balance disabled, gains are {}".format(g))
-    print(
+    logging.info("Auto white balance disabled, gains are {}".format(g))
+    logging.info(
         "Analogue gain: {}, Digital gain: {}".format(
             camera.analog_gain, camera.digital_gain
         )
@@ -90,7 +90,7 @@ def lst_from_channels(channels):
     # lst_resolution = list(np.ceil(full_resolution / 64.0).astype(int))
     lst_resolution = [(r // 64) + 1 for r in full_resolution]
     # NB the size of the LST is 1/64th of the image, but rounded UP.
-    print("Generating a lens shading table at {}x{}".format(*lst_resolution))
+    logging.info("Generating a lens shading table at {}x{}".format(*lst_resolution))
     lens_shading = np.zeros([channels.shape[0]] + lst_resolution, dtype=np.float)
     for i in range(lens_shading.shape[0]):
         image_channel = channels[i, :, :]
@@ -107,7 +107,7 @@ def lst_from_channels(channels):
         padded_image_channel = np.pad(
             image_channel, [(0, lw * 32 - iw), (0, lh * 32 - ih)], mode="edge"
         )  # Pad image to the right and bottom
-        print(
+        logging.info(
             "Channel shape: {}x{}, shading table shape: {}x{}, after padding {}".format(
                 iw, ih, lw * 32, lh * 32, padded_image_channel.shape
             )
@@ -185,7 +185,7 @@ if __name__ == "__main__":
     with PiCamera() as camera:
         camera.start_preview()
         time.sleep(3)
-        print("Recalibrating...")
+        logging.info("Recalibrating...")
         recalibrate_camera(camera)
-        print("Done.")
+        logging.info("Done.")
         time.sleep(2)
