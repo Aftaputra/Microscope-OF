@@ -8,12 +8,12 @@ from functools import reduce
 from openflexure_microscope.captures.capture_manager import generate_basename
 from labthings.server.find import find_component, find_extension
 from labthings.server.extensions import BaseExtension
-from labthings.server.decorators import use_args, ThingAction
+from labthings.server.decorators import use_args
 from labthings.server import fields
 
 from openflexure_microscope.devel import abort, update_task_progress
 
-from labthings.server.view import View
+from labthings.server.view import View, ActionView
 import time
 
 
@@ -54,18 +54,6 @@ def flatten_grid(grid):
     return grid
 
 
-### Progress
-
-_images_to_be_captured: int = 1
-_images_captured_so_far: int = 0
-
-
-def progress():
-    progress = (_images_captured_so_far / _images_to_be_captured) * 100
-    logging.info(progress)
-    return progress
-
-
 ### Capturing
 
 
@@ -99,105 +87,177 @@ def capture(
     )
 
 
-### Scanning
+class ScanExtension(BaseExtension):
+    def __init__(self):
+        self._images_to_be_captured: int = 1
+        self._images_captured_so_far: int = 0
+        return BaseExtension.__init__(self, "org.openflexure.scan", version="2.0.0")
 
-
-def tile(
-    microscope,
-    basename: str = None,
-    temporary: bool = False,
-    stride_size: int = [2000, 1500, 100],
-    grid: list = [3, 3, 5],
-    style="raster",
-    autofocus_dz: int = 50,
-    use_video_port: bool = False,
-    resize: Tuple[int, int] = None,
-    bayer: bool = False,
-    fast_autofocus=False,
-    metadata: dict = {},
-    annotations: dict = {},
-    tags: list = [],
-):
-    global _images_to_be_captured
-    global _images_captured_so_far
-
-    # Keep task progress
-    _images_to_be_captured = reduce((lambda x, y: x * y), grid)
-    _images_captured_so_far = 0
-
-    # Generate a basename if none given
-    if not basename:
-        basename = generate_basename()
-
-    # Store initial position
-    initial_position = microscope.stage.position
-
-    # Add dataset metadata
-    dataset_d = {
-        "dataset": {
-            "id": uuid.uuid4(),
-            "type": "xyzScan",
-            "name": basename,
-            "acquisitionDate": datetime.datetime.now().isoformat(),
-            "strideSize": stride_size,
-            "grid": grid,
-            "style": style,
-            "autofocusDz": autofocus_dz,
-        }
-    }
-
-    # Check if autofocus is enabled
-    autofocus_extension = find_extension("org.openflexure.autofocus")
-    if (
-        autofocus_dz
-        and autofocus_extension
-        and microscope.has_real_stage()
-        and microscope.has_real_camera()
+    def progress(self):
+        progress = (self._images_captured_so_far / self._images_to_be_captured) * 100
+        logging.info(progress)
+        return progress
+        
+    ### Scanning
+    def tile(
+        self,
+        microscope,
+        basename: str = None,
+        temporary: bool = False,
+        stride_size: int = [2000, 1500, 100],
+        grid: list = [3, 3, 5],
+        style="raster",
+        autofocus_dz: int = 50,
+        use_video_port: bool = False,
+        resize: Tuple[int, int] = None,
+        bayer: bool = False,
+        fast_autofocus=False,
+        metadata: dict = {},
+        annotations: dict = {},
+        tags: list = [],
     ):
-        autofocus_enabled = True
-    else:
-        autofocus_enabled = False
+        # Keep task progress
+        self._images_to_be_captured = reduce((lambda x, y: x * y), grid)
+        self._images_captured_so_far = 0
 
-    # Construct an x-y grid (worry about z later)
-    x_y_grid = construct_grid(initial_position, stride_size[:2], grid[:2], style=style)
+        # Generate a basename if none given
+        if not basename:
+            basename = generate_basename()
 
-    # Keep the initial Z position the same as our current position
-    initial_z = initial_position[2]
-    next_z = initial_z  # Save this value for use in raster scans
+        # Store initial position
+        initial_position = microscope.stage.position
 
-    # Now step through each point in the x-y coordinate array
-    for line in x_y_grid:
-        # If rastering, rather than snake (or eventually spiral)
-        # Return focus to initial position
-        if style == "raster":
-            next_z = initial_z  # Reset z position at start of each new row
-            logging.debug("Returning to initial z position")
-            microscope.stage.move_abs(
-                [line[0][0], line[0][1], next_z]
-            )  # RWB: I think this line is redundant
+        # Add dataset metadata
+        dataset_d = {
+            "dataset": {
+                "id": uuid.uuid4(),
+                "type": "xyzScan",
+                "name": basename,
+                "acquisitionDate": datetime.datetime.now().isoformat(),
+                "strideSize": stride_size,
+                "grid": grid,
+                "style": style,
+                "autofocusDz": autofocus_dz,
+            }
+        }
 
-        for x_y in line:
-            # Move to new grid position without changing z
-            logging.debug("Moving to step {}".format([x_y[0], x_y[1], next_z]))
-            microscope.stage.move_abs([x_y[0], x_y[1], next_z])
-            # Refocus
-            if autofocus_enabled:
-                if fast_autofocus:
-                    # Run fast autofocus. Client should provide dz ~ 2000
-                    autofocus_extension.fast_up_down_up_autofocus(
-                        microscope, dz=autofocus_dz
-                    )
-                else:
-                    # Run slow autofocus. Client should provide dz ~ 50
-                    autofocus_extension.autofocus(
+        # Check if autofocus is enabled
+        autofocus_extension = find_extension("org.openflexure.autofocus")
+        if (
+            autofocus_dz
+            and autofocus_extension
+            and microscope.has_real_stage()
+            and microscope.has_real_camera()
+        ):
+            autofocus_enabled = True
+        else:
+            autofocus_enabled = False
+
+        # Construct an x-y grid (worry about z later)
+        x_y_grid = construct_grid(initial_position, stride_size[:2], grid[:2], style=style)
+
+        # Keep the initial Z position the same as our current position
+        initial_z = initial_position[2]
+        next_z = initial_z  # Save this value for use in raster scans
+
+        # Now step through each point in the x-y coordinate array
+        for line in x_y_grid:
+            # If rastering, rather than snake (or eventually spiral)
+            # Return focus to initial position
+            if style == "raster":
+                next_z = initial_z  # Reset z position at start of each new row
+                logging.debug("Returning to initial z position")
+                microscope.stage.move_abs(
+                    [line[0][0], line[0][1], next_z]
+                )  # RWB: I think this line is redundant
+
+            for x_y in line:
+                # Move to new grid position without changing z
+                logging.debug("Moving to step {}".format([x_y[0], x_y[1], next_z]))
+                microscope.stage.move_abs([x_y[0], x_y[1], next_z])
+                # Refocus
+                if autofocus_enabled:
+                    if fast_autofocus:
+                        # Run fast autofocus. Client should provide dz ~ 2000
+                        autofocus_extension.fast_up_down_up_autofocus(
+                            microscope, dz=autofocus_dz
+                        )
+                    else:
+                        # Run slow autofocus. Client should provide dz ~ 50
+                        autofocus_extension.autofocus(
+                            microscope,
+                            range(-3 * autofocus_dz, 4 * autofocus_dz, autofocus_dz),
+                        )
+                        logging.debug("Finished autofocus")
+                        time.sleep(1)
+
+                # If we're not doing a z-stack, just capture
+                if grid[2] <= 1:
+                    capture(
                         microscope,
-                        range(-3 * autofocus_dz, 4 * autofocus_dz, autofocus_dz),
+                        basename,
+                        temporary=temporary,
+                        use_video_port=use_video_port,
+                        resize=resize,
+                        bayer=bayer,
+                        metadata=dataset_d,
+                        annotations=annotations,
+                        tags=tags,
                     )
-                    logging.debug("Finished autofocus")
-                    time.sleep(1)
+                    # Update task progress
+                    self._images_captured_so_far += 1
+                    update_task_progress(self.progress())
+                else:
+                    logging.debug("Entering z-stack")
+                    self.stack(
+                        microscope=microscope,
+                        basename=basename,
+                        temporary=temporary,
+                        step_size=stride_size[2],
+                        steps=grid[2],
+                        use_video_port=use_video_port,
+                        resize=resize,
+                        bayer=bayer,
+                        metadata=dataset_d,
+                        annotations=annotations,
+                        tags=tags,
+                    )
+                # Make sure we use our current best estimate of focus (i.e. the current position) next point
+                next_z = microscope.stage.position[2]
 
-            # If we're not doing a z-stack, just capture
-            if grid[2] <= 1:
+        logging.debug("Returning to {}".format(initial_position))
+        microscope.stage.move_abs(initial_position)
+
+
+    def stack(
+        self,
+        microscope,
+        basename: str = None,
+        temporary: bool = False,
+        step_size: int = 100,
+        steps: int = 5,
+        return_to_start: bool = True,
+        use_video_port: bool = False,
+        resize: Tuple[int, int] = None,
+        bayer: bool = False,
+        metadata: dict = {},
+        annotations: dict = {},
+        tags: list = [],
+    ):
+
+        # Store initial position
+        initial_position = microscope.stage.position
+        logging.debug(f"Starting z-stack from position {microscope.stage.position}")
+
+        with microscope.lock:
+            # Move to center scan
+            logging.debug("Moving to z-stack starting position")
+            microscope.stage.move_rel([0, 0, int((-step_size * steps) / 2)])
+            logging.debug(f"Starting scan from position {microscope.stage.position}")
+
+            for i in range(steps):
+                time.sleep(0.1)
+                logging.debug(f"Capturing from position {microscope.stage.position}")
                 capture(
                     microscope,
                     basename,
@@ -205,92 +265,25 @@ def tile(
                     use_video_port=use_video_port,
                     resize=resize,
                     bayer=bayer,
-                    metadata=dataset_d,
+                    metadata=metadata,
                     annotations=annotations,
                     tags=tags,
                 )
                 # Update task progress
-                _images_captured_so_far += 1
-                update_task_progress(progress())
-            else:
-                logging.debug("Entering z-stack")
-                stack(
-                    microscope=microscope,
-                    basename=basename,
-                    temporary=temporary,
-                    step_size=stride_size[2],
-                    steps=grid[2],
-                    use_video_port=use_video_port,
-                    resize=resize,
-                    bayer=bayer,
-                    metadata=dataset_d,
-                    annotations=annotations,
-                    tags=tags,
-                )
-            # Make sure we use our current best estimate of focus (i.e. the current position) next point
-            next_z = microscope.stage.position[2]
+                self._images_captured_so_far += 1
+                update_task_progress(self.progress())
 
-    logging.debug("Returning to {}".format(initial_position))
-    microscope.stage.move_abs(initial_position)
+                if i != steps - 1:
+                    logging.debug("Moving z by {}".format(step_size))
+                    microscope.stage.move_rel([0, 0, step_size])
+            if return_to_start:
+                logging.debug("Returning to {}".format(initial_position))
+                microscope.stage.move_abs(initial_position)
 
 
-def stack(
-    microscope,
-    basename: str = None,
-    temporary: bool = False,
-    step_size: int = 100,
-    steps: int = 5,
-    return_to_start: bool = True,
-    use_video_port: bool = False,
-    resize: Tuple[int, int] = None,
-    bayer: bool = False,
-    metadata: dict = {},
-    annotations: dict = {},
-    tags: list = [],
-):
-    global _images_captured_so_far
+scan_extension_v2 = ScanExtension()
 
-    # Store initial position
-    initial_position = microscope.stage.position
-    logging.debug(f"Starting z-stack from position {microscope.stage.position}")
-
-    with microscope.lock:
-        # Move to center scan
-        logging.debug("Moving to z-stack starting position")
-        microscope.stage.move_rel([0, 0, int((-step_size * steps) / 2)])
-        logging.debug(f"Starting scan from position {microscope.stage.position}")
-
-        for i in range(steps):
-            time.sleep(0.1)
-            logging.debug(f"Capturing from position {microscope.stage.position}")
-            capture(
-                microscope,
-                basename,
-                temporary=temporary,
-                use_video_port=use_video_port,
-                resize=resize,
-                bayer=bayer,
-                metadata=metadata,
-                annotations=annotations,
-                tags=tags,
-            )
-            # Update task progress
-            _images_captured_so_far += 1
-            update_task_progress(progress())
-
-            if i != steps - 1:
-                logging.debug("Moving z by {}".format(step_size))
-                microscope.stage.move_rel([0, 0, step_size])
-        if return_to_start:
-            logging.debug("Returning to {}".format(initial_position))
-            microscope.stage.move_abs(initial_position)
-
-
-### Web views
-
-
-@ThingAction
-class TileScanAPI(View):
+class TileScanAPI(ActionView):
     @use_args(
         {
             "filename": fields.String(missing=None, example=None),
@@ -328,7 +321,7 @@ class TileScanAPI(View):
         logging.info("Running tile scan...")
 
         # return a handle on the scan task
-        return tile(
+        return scan_extension_v2.tile(
             microscope,
             basename=args.get("filename"),
             temporary=args.get("temporary"),
@@ -344,7 +337,5 @@ class TileScanAPI(View):
             tags=args.get("tags"),
         )
 
-
-scan_extension_v2 = BaseExtension("org.openflexure.scan", version="2.0.0")
 
 scan_extension_v2.add_view(TileScanAPI, "/tile", endpoint="tile")
