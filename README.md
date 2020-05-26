@@ -14,6 +14,12 @@ This includes installing the server in a mode better suited for active developme
 * `poetry install`
 * `poetry run build_static`
 
+### Node installation
+* Note, building the static interface will require a valid Node.js installation
+* To build on a Raspberry Pi:
+  * `curl -sL https://deb.nodesource.com/setup_10.x | sudo bash -`
+  * `sudo apt install nodejs`
+
 ### Distributing
 * `mkdir -p dist`
 * `tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-server.tar.gz .`
