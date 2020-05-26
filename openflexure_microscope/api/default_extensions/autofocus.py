@@ -1,6 +1,6 @@
 from labthings.server.find import find_component
 from labthings.server.extensions import BaseExtension
-from labthings.server.view import View
+from labthings.server.view import View, ActionView, PropertyView
 from labthings.server.decorators import ThingAction, ThingProperty
 
 from openflexure_microscope.devel import JsonResponse, request, abort
@@ -332,8 +332,7 @@ class MeasureSharpnessAPI(View):
         return {"sharpness": measure_sharpness(microscope)}
 
 
-@ThingAction
-class AutofocusAPI(View):
+class AutofocusAPI(ActionView):
     """
     Run a standard autofocus
     """
@@ -357,8 +356,7 @@ class AutofocusAPI(View):
             abort(503, "No stage connected. Unable to autofocus.")
 
 
-@ThingAction
-class FastAutofocusAPI(View):
+class FastAutofocusAPI(ActionView):
     """
     Run a fast autofocus
     """

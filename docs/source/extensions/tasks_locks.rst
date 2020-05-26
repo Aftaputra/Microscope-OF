@@ -15,7 +15,7 @@ We get around these issues by making use of background tasks, and component lock
 Background tasks
 ----------------
 
-Tasks are introduced to manage long-running functions in a way that does not block HTTP requests. Any API Action will automatically run as a background task (that is, any View that subclasses `ActionView`, or uses the `@ThingAction` decorator).
+Tasks are introduced to manage long-running functions in a way that does not block HTTP requests. Any API Action will automatically run as a background task (that is, any View that subclasses `ActionView`).
 
 Internally, the ``tasks`` submodule stores a list of all requested tasks, and their states. This state stores the running status of the task (if itis idle, running, error, or success), information about the start and end times, a unique task ID, and, upon completion, the return value of the long-running function. 
 
@@ -30,11 +30,9 @@ An example of a long running task may look like:
 .. code-block:: python
 
     ...
-    from labthings.tasks import taskify
-    from labthings.server.decorators import ThingAction
+    from labthings.server.view import ActionView
 
-    @ThingAction
-    class SlowAPI(View):
+    class SlowAPI(ActionView):
         def post(self):
             # Return the task object.
             return long_running_function(function_argument_1, function_argument_2)

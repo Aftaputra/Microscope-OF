@@ -1,5 +1,5 @@
 from labthings.server.extensions import BaseExtension
-from labthings.server.view import View
+from labthings.server.view import View, PropertyView
 from labthings.server.decorators import ThingProperty, PropertySchema, use_args
 from labthings.server import fields
 from labthings.server.find import find_component
@@ -190,8 +190,7 @@ class AutostorageExtension(BaseExtension):
 autostorage_extension_v2 = AutostorageExtension()
 
 
-@ThingProperty
-class GetLocationsView(View):
+class GetLocationsView(PropertyView):
     def get(self):
         global autostorage_extension_v2
 
@@ -199,9 +198,8 @@ class GetLocationsView(View):
         return autostorage_extension_v2.get_locations()
 
 
-@ThingProperty
 @PropertySchema(fields.String(required=True, example="Default"))
-class PreferredLocationView(View):
+class PreferredLocationView(PropertyView):
     def get(self):
         global autostorage_extension_v2
 

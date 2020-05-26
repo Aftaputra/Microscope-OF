@@ -3,14 +3,13 @@ from openflexure_microscope.api.utilities import gen, JsonResponse
 from labthings.core.utilities import get_by_path, set_by_path, create_from_path
 
 from labthings.server.find import find_component
-from labthings.server.view import View
+from labthings.server.view import View, PropertyView
 from labthings.server.decorators import doc_response, ThingProperty
 
 from flask import Response
 
 
-@ThingProperty
-class MjpegStream(View):
+class MjpegStream(PropertyView):
     """
     Real-time MJPEG stream from the microscope camera
     """
@@ -38,8 +37,7 @@ class MjpegStream(View):
         )
 
 
-@ThingProperty
-class SnapshotStream(View):
+class SnapshotStream(PropertyView):
     """
     Single JPEG snapshot from the camera stream
     """

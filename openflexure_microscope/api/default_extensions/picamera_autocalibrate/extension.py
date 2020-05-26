@@ -1,4 +1,4 @@
-from labthings.server.view import View
+from labthings.server.view import View, ActionView
 from labthings.server.find import find_component
 from labthings.server.extensions import BaseExtension
 from labthings.server.decorators import ThingAction
@@ -58,8 +58,7 @@ def recalibrate(microscope):
     microscope.save_settings()
 
 
-@ThingAction
-class RecalibrateView(View):
+class RecalibrateView(ActionView):
     def post(self):
         microscope = find_component("org.openflexure.microscope")
 
@@ -71,8 +70,7 @@ class RecalibrateView(View):
         return recalibrate(microscope)
 
 
-@ThingAction
-class FlattenLSTView(View):
+class FlattenLSTView(ActionView):
     def post(self):
         microscope = find_component("org.openflexure.microscope")
 
@@ -95,8 +93,7 @@ class FlattenLSTView(View):
             )
 
 
-@ThingAction
-class DeleteLSTView(View):
+class DeleteLSTView(ActionView):
     def post(self):
         microscope = find_component("org.openflexure.microscope")
 
