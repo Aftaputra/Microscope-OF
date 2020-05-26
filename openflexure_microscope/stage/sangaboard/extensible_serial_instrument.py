@@ -78,6 +78,7 @@ class ExtensibleSerialInstrument(object):
         then we don't warn when ports are opened multiple times.
         """
         with self.communications_lock:
+            logging.debug(f"Opening port {port}")
             if hasattr(self, "_ser") and self._ser.isOpen():
                 if not quiet:
                     logging.warning("Attempted to open an already-open port!")
@@ -133,9 +134,12 @@ class ExtensibleSerialInstrument(object):
             assert (
                 self._ser.isOpen()
             ), "Attempted to write to the serial port before it was opened.  Perhaps you need to call the 'open' method first?"
+            logging.debug("Encoding message...")
             data = query_string + self.termination_character
             data = data.encode()
+            logging.debug(f"Writing message: {data}")
             self._ser.write(data)
+            logging.debug("Write successful")
 
     def flush_input_buffer(self):
         """Make sure there's nothing waiting to be read, and clear the buffer if there is."""
@@ -145,6 +149,7 @@ class ExtensibleSerialInstrument(object):
 
     def readline(self, timeout=None):
         """Read one line from the serial port."""
+        self._ser.timeout = timeout
         with self.communications_lock:
             return (
                 self._ser.readline()
@@ -192,7 +197,9 @@ class ExtensibleSerialInstrument(object):
         """
         with self.communications_lock:
             self.flush_input_buffer()
+            logging.debug(f"Writing query: {queryString}")
             self.write(queryString)
+            logging.debug("Waiting for query response...")
             if self.ignore_echo == True:  # Needs Implementing for a multiline read!
                 first_line = self.readline(timeout).strip()
                 if first_line == queryString:
