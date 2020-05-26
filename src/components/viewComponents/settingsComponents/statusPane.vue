@@ -94,8 +94,7 @@ export default {
       configuration: null,
       settings: null,
       systemActionLinks: {},
-      clientVersion: process.env.PACKAGE.version,
-      liteMode: process.env.VUE_APP_LITEMODE == "true" ? true : false
+      clientVersion: process.env.PACKAGE.version
     };
   },
 
@@ -110,9 +109,7 @@ export default {
       return `${this.$store.getters.baseUri}/api/v2/actions`;
     },
     clientVersionName: function() {
-      const liteMode = process.env.VUE_APP_LITEMODE == "true" ? true : false;
-      const suffix = liteMode ? "-Lite" : "";
-      return `${process.env.PACKAGE.version}${suffix}`;
+      return `${process.env.PACKAGE.version}`;
     }
   },
 

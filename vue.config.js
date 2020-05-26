@@ -23,8 +23,6 @@ module.exports = {
   outputDir: (function() {
     if (process.env.VUE_APP_TARGET == "electron-renderer") {
       return "./app/dist";
-    } else if (process.env.VUE_APP_LITEMODE == "true") {
-      return "./dist-lite";
     } else {
       return "./dist";
     }

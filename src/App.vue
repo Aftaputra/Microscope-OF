@@ -48,7 +48,6 @@ export default {
       keysDown: {},
       systemDark: undefined,
       themeObserver: undefined,
-      liteMode: process.env.VUE_APP_LITEMODE == "true" ? true : false,
       isElectron: isElectron(),
       tourCallbacks: {
         onStop: () => {
@@ -95,18 +94,15 @@ export default {
             placement: "bottom"
           }
         },
-        ...(!this.liteMode
-          ? [
-              {
-                target: "#new-connection-card",
-                header: {
-                  title: "New connection"
-                },
-                content: `Connect locally if you're running on a microscope, \nor open a new remote connection to a microscope`
-              }
-            ]
-          : []),
-        ...(this.isElectron && !this.liteMode
+
+        {
+          target: "#new-connection-card",
+          header: {
+            title: "New connection"
+          },
+          content: `Connect locally if you're running on a microscope, \nor open a new remote connection to a microscope`
+        },
+        ...(this.isElectron
           ? [
               {
                 target: "#nearby-connections-grid",
@@ -117,17 +113,14 @@ export default {
               }
             ]
           : []),
-        ...(!this.liteMode
-          ? [
-              {
-                target: "#saved-connections-grid",
-                header: {
-                  title: "Saved microscopes"
-                },
-                content: `Connect to your saved microscopes for faster access`
-              }
-            ]
-          : []),
+
+        {
+          target: "#saved-connections-grid",
+          header: {
+            title: "Saved microscopes"
+          },
+          content: `Connect to your saved microscopes for faster access`
+        },
         {
           target: "#gallery-tab-icon",
           header: {
@@ -168,9 +161,6 @@ export default {
   },
 
   mounted() {
-    if (process.env.VUE_APP_LITEMODE == "true") {
-      console.log("Built lite-mode");
-    }
     // Query CSS dark theme preference
     var mql = window.matchMedia("(prefers-color-scheme: dark)");
     // Check for system dark theme when mounted

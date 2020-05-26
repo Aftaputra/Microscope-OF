@@ -26,6 +26,5 @@ files:
       - '!**/app/installers${/*}'
       - '!**/hooks${/*}'
       - '!**/platforms${/*}'
-      - '!**/dist-lite*${/*}'
       - '!**/release-builds${/*}'
       - '!src${/*}'

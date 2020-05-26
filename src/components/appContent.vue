@@ -15,7 +15,6 @@
       class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1 uk-text-center"
     >
       <tabIcon
-        v-show="!liteMode"
         id="connect-tab-icon"
         tab-i-d="connect"
         :require-connection="false"
@@ -196,8 +195,7 @@ export default {
     return {
       plugins: [],
       currentTab: "connect",
-      unwatchStoreFunction: null,
-      liteMode: process.env.VUE_APP_LITEMODE == "true" ? true : false
+      unwatchStoreFunction: null
     };
   },
 
