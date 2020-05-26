@@ -244,7 +244,16 @@ export default {
     );
   },
 
-  mounted: function() {},
+  mounted() {
+    // A global signal listener to switch tab
+    this.$root.$on("globalSwitchTab", tabID => {
+      this.currentTab = tabID;
+    });
+    // A global signal listener to the first primary tab
+    this.$root.$on("globalSwitchTabPrimary", () => {
+      this.currentTab = "view";
+    });
+  },
 
   beforeDestroy() {
     // Then we call that function here to unwatch
