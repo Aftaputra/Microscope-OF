@@ -9,12 +9,11 @@ Thing Actions "invoke a function of the Thing, which manipulates state (e.g., to
 
 Actions should be *triggered* with POST requests *only*. Ideally, a view corresponding to an action should only support POST requests.
 
-Like properties, we use a class decorator to identify a view as an action: ``@ThingAction``. For example, a view to perform a "quick-capture" action may look like:
+Like properties, we use a special view class to identify a view as an action: ``ActionView``. For example, a view to perform a "quick-capture" action may look like:
 
 .. code-block:: python
 
-    @ThingAction
-    class QuickCaptureAPI(View):
+    class QuickCaptureAPI(ActionView):
         """
         Take an image capture and return it without saving
         """
@@ -43,8 +42,6 @@ Like properties, we use a class decorator to identify a view as an action: ``@Th
                 return send_file(io.BytesIO(stream.read()), mimetype="image/jpeg")
 
 In this example, we are also making use of the ``@doc_response`` decorator, to document that our successful response (HTTP code 200) will return data with a mimetype ``image/jpeg``, as well as ``@use_args`` to accept optional parameters with POST requests.
-
-Again like properties, the ``@ThingAction`` decorator serves only to add documentation.
 
 Complete example
 ----------------

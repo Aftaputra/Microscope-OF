@@ -1,5 +1,5 @@
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
-from labthings.server.view import View
+from labthings.server.view import View, ActionView
 from labthings.server.find import find_component
 from labthings.server.decorators import (
     use_args,
@@ -20,8 +20,7 @@ import io
 from flask import request, abort, url_for, redirect, send_file
 
 
-@ThingAction
-class CaptureAPI(View):
+class CaptureAPI(ActionView):
     """
     Create a new image capture. 
     """
@@ -75,8 +74,7 @@ class CaptureAPI(View):
 
 
 
-@ThingAction
-class RAMCaptureAPI(View):
+class RAMCaptureAPI(ActionView):
     """
     Take a non-persistant image capture.
     """
@@ -124,8 +122,7 @@ class RAMCaptureAPI(View):
             return send_file(io.BytesIO(stream.getbuffer()), mimetype="image/jpeg")
 
 
-@ThingAction
-class GPUPreviewStartAPI(View):
+class GPUPreviewStartAPI(ActionView):
     """
     Start the onboard GPU preview.
     Optional "window" parameter can be passed to control the position and size of the preview window,
@@ -157,8 +154,7 @@ class GPUPreviewStartAPI(View):
         return microscope.state
 
 
-@ThingAction
-class GPUPreviewStopAPI(View):
+class GPUPreviewStopAPI(ActionView):
     def post(self):
         """
         Stop the onboard GPU preview.

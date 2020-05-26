@@ -3,7 +3,7 @@ from openflexure_microscope.api.utilities import JsonResponse
 from labthings.core.utilities import get_by_path, set_by_path, create_from_path
 
 from labthings.server.find import find_component
-from labthings.server.view import View
+from labthings.server.view import View, PropertyView
 
 from labthings.server.decorators import ThingProperty, Tag, doc_response
 
@@ -11,8 +11,7 @@ from flask import request, abort
 import logging
 
 
-@ThingProperty
-class SettingsProperty(View):
+class SettingsProperty(PropertyView):
     def get(self):
         """
         Current microscope settings, including camera and stage
@@ -71,8 +70,7 @@ class NestedSettingsProperty(View):
         return self.get(route)
 
 
-@ThingProperty
-class StateProperty(View):
+class StateProperty(PropertyView):
     def get(self):
         """
         Show current read-only state of the microscope
@@ -99,8 +97,7 @@ class NestedStateProperty(View):
         return value
 
 
-@ThingProperty
-class ConfigurationProperty(View):
+class ConfigurationProperty(PropertyView):
     def get(self):
         """
         Show current read-only state of the microscope

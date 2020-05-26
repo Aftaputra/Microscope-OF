@@ -5,7 +5,7 @@ from openflexure_microscope.api.utilities import get_bool, JsonResponse
 
 from labthings.server.schema import Schema
 from labthings.server import fields
-from labthings.server.view import View
+from labthings.server.view import View, PropertyView
 from labthings.server.utilities import description_from_view
 from labthings.server.decorators import marshal_with, doc_response, Tag, ThingProperty
 
@@ -91,9 +91,8 @@ capture_list_schema = CaptureSchema(many=True)
 from pprint import pprint
 
 
-@ThingProperty
 @Tag("captures")
-class CaptureList(View):
+class CaptureList(PropertyView):
     @marshal_with(CaptureSchema(many=True))
     def get(self):
         """

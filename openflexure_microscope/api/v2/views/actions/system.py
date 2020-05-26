@@ -1,4 +1,4 @@
-from labthings.server.view import View
+from labthings.server.view import View, ActionView
 import subprocess
 import os
 from sys import platform
@@ -14,8 +14,7 @@ def is_raspberrypi(raise_on_errors=False):
     return os.path.exists("/usr/bin/raspi-config")
 
 
-@ThingAction
-class ShutdownAPI(View):
+class ShutdownAPI(ActionView):
     """
     Attempt to shutdown the device 
     """
@@ -35,8 +34,7 @@ class ShutdownAPI(View):
         return {"out": out, "err": err}, 201
 
 
-@ThingAction
-class RebootAPI(View):
+class RebootAPI(ActionView):
     """
     Attempt to reboot the device 
     """

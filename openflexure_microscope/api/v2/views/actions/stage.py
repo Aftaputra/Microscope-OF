@@ -1,5 +1,5 @@
 from openflexure_microscope.api.utilities import JsonResponse
-from labthings.server.view import View
+from labthings.server.view import View, ActionView
 from labthings.server.find import find_component
 from labthings.server.decorators import use_args, marshal_with, doc, ThingAction
 from labthings.server import fields
@@ -11,8 +11,7 @@ from flask import Blueprint, request
 import logging
 
 
-@ThingAction
-class MoveStageAPI(View):
+class MoveStageAPI(ActionView):
     @use_args(
         {
             "absolute": fields.Boolean(
@@ -56,8 +55,7 @@ class MoveStageAPI(View):
         return microscope.state["stage"]["position"]
 
 
-@ThingAction
-class ZeroStageAPI(View):
+class ZeroStageAPI(ActionView):
     def post(self):
         """
         Zero the stage coordinates.

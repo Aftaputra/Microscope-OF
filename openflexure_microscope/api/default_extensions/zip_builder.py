@@ -13,7 +13,7 @@ import tempfile
 import logging
 
 from labthings.server.find import find_component
-from labthings.server.view import View
+from labthings.server.view import View, ActionView, PropertyView
 from labthings.server.schema import Schema
 from labthings.server import fields
 from labthings.server.extensions import BaseExtension
@@ -138,8 +138,7 @@ class ZipManager:
 default_zip_manager = ZipManager()
 
 
-@ThingAction
-class ZipBuilderAPIView(View):
+class ZipBuilderAPIView(ActionView):
     def post(self):
 
         ids = list(JsonResponse(request).json)
@@ -151,8 +150,7 @@ class ZipBuilderAPIView(View):
         )
 
 
-@ThingProperty
-class ZipListAPIView(View):
+class ZipListAPIView(PropertyView):
     @marshal_with(ZipObjectSchema(many=True))
     def get(self):
         return default_zip_manager.session_zips.values()

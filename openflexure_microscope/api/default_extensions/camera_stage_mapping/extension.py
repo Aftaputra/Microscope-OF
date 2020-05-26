@@ -3,7 +3,7 @@ API extension for stage calibration
 
 This file contains the HTTP API for camera/stage calibration.
 """
-from labthings.server.view import View
+from labthings.server.view import View, ActionView, PropertyView
 from labthings.server.find import find_component
 from labthings.server.extensions import BaseExtension
 from labthings.server.decorators import (
@@ -139,8 +139,7 @@ class CSMExtension(BaseExtension):
 csm_extension = CSMExtension()
 
 
-@ThingAction
-class Calibrate1DView(View):
+class Calibrate1DView(ActionView):
     @use_args(
         {"direction": fields.List(fields.Float(), required=True, example=[1, 0, 0])}
     )
@@ -155,8 +154,7 @@ class Calibrate1DView(View):
 csm_extension.add_view(Calibrate1DView, "/calibrate_1d", endpoint="calibrate_1d")
 
 
-@ThingAction
-class CalibrateXYView(View):
+class CalibrateXYView(ActionView):
     def post(self):
         """Calibrate both axes of the microscope stage against the camera."""
         return csm_extension.calibrate_xy()
@@ -165,8 +163,7 @@ class CalibrateXYView(View):
 csm_extension.add_view(CalibrateXYView, "/calibrate_xy", endpoint="calibrate_xy")
 
 
-@ThingAction
-class MoveInImageCoordinatesView(View):
+class MoveInImageCoordinatesView(ActionView):
     @use_args(
         {
             "x": fields.Float(
@@ -194,8 +191,7 @@ class MoveInImageCoordinatesView(View):
 csm_extension.add_view(MoveInImageCoordinatesView, "/move_in_image_coordinates", endpoint="move_in_image_coordinates")
 
 
-@ThingProperty
-class GetCalibrationFile(View):
+class GetCalibrationFile(PropertyView):
     def get(self):
         """Get the calibration data in JSON format."""
         datafile_name = CSM_DATAFILE_NAME

@@ -14,13 +14,12 @@ The property description for a view will be generated automatically from your av
 Defining Thing Properties
 -------------------------
 
-In order to register a view as a Thing property, we use the ``@ThingProperty`` decorator, like so:
+In order to register a view as a Thing property, we use the ``PropertyView`` class, like so:
 
 .. code-block:: python
 
     # Since we only have a GET method here, it'll register as a read-only property
-    @ThingProperty
-    class ExampleIdentifyView(View):
+    class ExampleIdentifyView(PropertyView):
         # Format our returned object using MicroscopeIdentifySchema
         @marshal_with(MicroscopeIdentifySchema())
         def get(self):
@@ -78,11 +77,10 @@ We will implement the ``@PropertySchema`` decorator in our ``ExampleRenameView``
 
 .. code-block:: python
 
-    @ThingProperty
     # We can use a single schema for all methods if the input and output will be formatted identically
     # Eg. Here, we will always expect a "name" string argument, and always return a "name" string attribute
     @PropertySchema({"name": fields.String(required=True, example="My Example Microscope")})
-    class ExampleRenameView(View):
+    class ExampleRenameView(PropertyView):
         def get(self):
             """
             Show the current microscope name

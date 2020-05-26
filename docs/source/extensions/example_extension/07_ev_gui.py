@@ -1,6 +1,6 @@
 from labthings.server.extensions import BaseExtension
 from labthings.server.find import find_component
-from labthings.server.view import View
+from labthings.server.view import View, ActionView
 
 from labthings.server.decorators import (
     use_args,
@@ -68,8 +68,7 @@ def timelapse(microscope, n_images, t_between):
 ## Extension views
 
 
-@ThingAction
-class TimelapseAPI(View):
+class TimelapseAPI(ActionView):
     """
     Take a series of images in a timelapse, running as a background task
     """
