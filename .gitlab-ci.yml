@@ -38,7 +38,7 @@ build:
     - mkdir -p "release-builds"
     # Build electron app
     - npm run build:app
-    - if [ "$CI_COMMIT_REF_NAME" == "stable" ]; then npm run release; else npm run release:pre; fi
+    - npm run release
 
   artifacts:
     name: "dist"
@@ -52,9 +52,9 @@ build:
 
   only:
     - merge_requests
-    - stable
     - master
     - web
+    - tags
 
 
 # Deploy to builds.openflexure.org
@@ -82,4 +82,4 @@ deploy:
     - ssh -t ci-user@openflexure.bath.ac.uk "/var/www/build/update-latest.py"
     
   only:
-    - stable
+    - tags
