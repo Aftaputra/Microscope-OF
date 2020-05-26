@@ -6,6 +6,11 @@ monkey.patch_all()
 import time
 import atexit
 import logging, logging.handlers
+
+# Set root logger level
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
 import os
 import pkg_resources
 
@@ -42,16 +47,12 @@ formatter = logging.Formatter(
 )
 
 
-# Get root logger
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
 # Create file handler
 fh = logging.handlers.RotatingFileHandler(
     ROOT_LOGFILE, maxBytes=1_000_000, backupCount=5
 )
 fh.setFormatter(formatter)
-fh.setLevel(logging.INFO)
+fh.setLevel(logging.DEBUG)
 fh.propagate = False
 
 # Create access log file handler
@@ -59,7 +60,7 @@ afh = logging.handlers.RotatingFileHandler(
     ACCESS_LOGFILE, maxBytes=1_000_000, backupCount=5
 )
 afh.setFormatter(formatter)
-afh.setLevel(logging.INFO)
+afh.setLevel(logging.DEBUG)
 afh.propagate = False
 
 # Add file handler to root logger
@@ -157,10 +158,12 @@ def err_log():
         attachment_filename="openflexure_microscope_{}.log".format(timestamp),
     )
 
-@app.route('/api/v1/', defaults={'path': ''})
-@app.route('/api/v1/<path:path>')
+
+@app.route("/api/v1/", defaults={"path": ""})
+@app.route("/api/v1/<path:path>")
 def api_v1_catch_all(path):
-    abort(410, 'API v1 is no longer in use. Please upgrade your client.')
+    abort(410, "API v1 is no longer in use. Please upgrade your client.")
+
 
 # Automatically clean up microscope at exit
 def cleanup():
