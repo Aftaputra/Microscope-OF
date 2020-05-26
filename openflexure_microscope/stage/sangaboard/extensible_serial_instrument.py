@@ -401,7 +401,7 @@ class OptionalModule(object):
         self._parent = parent
         assert (
             type(module_type) is str
-        ), "Option module type should be a string not a {}".format(type(module_typ))
+        ), "Option module type should be a string not a {}".format(type(module_type))
         self.module_type = module_type
         if available:
             assert (
