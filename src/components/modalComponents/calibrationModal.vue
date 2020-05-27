@@ -62,6 +62,14 @@
             >
           </p>
         </div>
+        <div v-else-if="!canCSMCalibrated">
+          <p>
+            <b
+              >No stage connected. Please skip this step, or connect a valid
+              stage, then reboot your microscope.</b
+            >
+          </p>
+        </div>
         <div v-else>
           <p>
             <b
@@ -164,13 +172,17 @@ export default {
     return {
       ready: false,
       stepValue: 0,
-      settings: {}
+      settings: {},
+      config: {}
     };
   },
 
   computed: {
     settingsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/instrument/settings`;
+    },
+    configUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2/instrument/configuration`;
     },
     availablePluginTitles: function() {
       return this.availablePlugins.map(a => a.title);
@@ -193,14 +205,24 @@ export default {
       }
     },
     canCSMCalibrated: function() {
-      return this.availablePluginTitles.includes(
+      // Assert CSM extension is enabled
+      var extensionEnabled = this.availablePluginTitles.includes(
         "org.openflexure.camera_stage_mapping"
       );
+      // Assert real stage is connected
+      var stageConnected = this.config.stage.type !== "MissingStage";
+      // Combine
+      return stageConnected && extensionEnabled;
     },
     canLSTCalibrated: function() {
-      return this.availablePluginTitles.includes(
+      // Assert LST extension is enabled
+      var extensionEnabled = this.availablePluginTitles.includes(
         "org.openflexure.calibration.picamera"
       );
+      // Assert real camera is connected
+      var cameraConnected = this.config.camera.type !== "MissingCamera";
+      // Combine
+      return cameraConnected && extensionEnabled;
     },
     isUseful: function() {
       var CSMUseful = this.canCSMCalibrated && !this.isCSMCalibrated;
@@ -212,17 +234,21 @@ export default {
   methods: {
     show: function() {
       // Get current settings
-      this.getSettings().then(() => {
-        // Check if this calibration wizard can actually do anything useful
-        console.log(this.isUseful);
-        if (this.isUseful) {
-          this.ready = true;
-          this.stepValue = 0;
-          // Show the modal
-          var el = this.$refs["calibrationModalEl"];
-          this.showModalElement(el); // Calls the mixin
-        }
-      });
+      this.getSettings()
+        .then(() => {
+          return this.getConfig();
+        })
+        .then(() => {
+          // Check if this calibration wizard can actually do anything useful
+          console.log(this.isUseful);
+          if (this.isUseful) {
+            this.ready = true;
+            this.stepValue = 0;
+            // Show the modal
+            var el = this.$refs["calibrationModalEl"];
+            this.showModalElement(el); // Calls the mixin
+          }
+        });
     },
 
     hide: function() {
@@ -237,6 +263,17 @@ export default {
         .get(this.settingsUri)
         .then(response => {
           this.settings = response.data;
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+    },
+
+    getConfig: function() {
+      return axios
+        .get(this.configUri)
+        .then(response => {
+          this.config = response.data;
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
