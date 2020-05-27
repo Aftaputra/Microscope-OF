@@ -1,4 +1,4 @@
-# OpenFlexure eV
+# OpenFlexure Microscope JS Client
 [![pipeline status](https://gitlab.com/openflexure/openflexure-microscope-jsclient/badges/master/pipeline.svg?style=flat-square)](https://gitlab.com/openflexure/openflexure-microscope-jsclient/commits/master)
 
 A user client for the OpenFlexure Microscope, written in Vue.js.
