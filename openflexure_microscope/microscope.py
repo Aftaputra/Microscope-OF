@@ -71,9 +71,15 @@ class Microscope:
         """Shut down the microscope hardware."""
         logging.info("Closing {}".format(self))
         if self.camera:
-            self.camera.close()
+            try:
+                self.camera.close()
+            except TimeoutError as e:
+                logging.error(e)
         if self.stage:
-            self.stage.close()
+            try:
+                self.stage.close()
+            except TimeoutError as e:
+                logging.error(e)
         self.captures.close()
         logging.info("Closed {}".format(self))
 
@@ -291,7 +297,7 @@ class Microscope:
         fmt: str = "jpeg",
         annotations: dict = None,
         tags: list = None,
-        metadata: dict = None
+        metadata: dict = None,
     ):
         if not annotations:
             annotations = {}
@@ -299,7 +305,7 @@ class Microscope:
             metadata = {}
         if not tags:
             tags = []
-        
+
         with self.camera.lock:
             # Create output object
             output = self.captures.new_image(
@@ -312,7 +318,7 @@ class Microscope:
                 use_video_port=use_video_port,
                 resize=resize,
                 bayer=bayer,
-                fmt=fmt
+                fmt=fmt,
             )
 
             # Inject system metadata
