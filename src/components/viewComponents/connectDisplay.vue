@@ -283,8 +283,6 @@ export default {
             this.$store.commit("setConnected");
             // Check client and server match
             this.checkServerVersion();
-            // Switch tab away from connect
-            this.$root.$emit("globalSwitchTabPrimary");
           } else {
             // Error and no-connect if API v2 is missing
             var ApiVersionError = `Your microscope is running an old API version.\
