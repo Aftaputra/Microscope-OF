@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import logging
 
 from picamera import PiCamera
 from picamera.array import PiRGBArray, PiBayerArray
