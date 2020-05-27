@@ -29,14 +29,14 @@ def flat_lens_shading_table(camera):
 
 def adjust_exposure_to_setpoint(camera, setpoint):
     """Adjust the camera's exposure time until the maximum pixel value is <setpoint>."""
-    logging.info("Adjusting shutter speed to hit setpoint {}".format(setpoint), end="")
+    print("Adjusting shutter speed to hit setpoint {}".format(setpoint), end="")
     for i in range(3):
         print(".", end="")
         camera.shutter_speed = int(
             camera.shutter_speed * setpoint / np.max(rgb_image(camera))
         )
         time.sleep(1)
-    logging.info("done")
+    print("done")
 
 
 def auto_expose_and_freeze_settings(camera):
