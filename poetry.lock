@@ -107,7 +107,7 @@ ipython = []
 ofmclient = []
 
 [package.source]
-reference = "297262362ae208f56847c823838c1d90675ef431"
+reference = "f1803f5f655b405a6a902f6c697c9f720f6a18da"
 type = "git"
 url = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git"
 [[package]]
@@ -591,7 +591,7 @@ description = "Python documentation generator"
 name = "sphinx"
 optional = false
 python-versions = ">=3.5"
-version = "3.0.3"
+version = "3.0.4"
 
 [package.dependencies]
 Jinja2 = ">=2.3"
@@ -774,7 +774,7 @@ description = "Pure Python Multicast DNS Service Discovery Library (Bonjour/Avah
 name = "zeroconf"
 optional = false
 python-versions = "*"
-version = "0.26.2"
+version = "0.26.3"
 
 [package.dependencies]
 ifaddr = "*"
@@ -910,23 +910,17 @@ flask-cors = [
 ]
 gevent = [
     {file = "gevent-20.5.1-cp27-cp27m-macosx_10_15_x86_64.whl", hash = "sha256:2504563f44bb188c1e48684e2ac7d2793f9f5b1e1cf119a8fdf8c36d2bf2eaf7"},
-    {file = "gevent-20.5.1-cp27-cp27m-manylinux2010_x86_64.whl", hash = "sha256:1c2ad11663597d785e06daa8b65978a1536347a42bc840cf32823b54a0209d15"},
     {file = "gevent-20.5.1-cp27-cp27m-win32.whl", hash = "sha256:29eefad2557138fb654ba5cedfb94055f959e6c9705f9983518195cbcf250cc6"},
     {file = "gevent-20.5.1-cp27-cp27m-win_amd64.whl", hash = "sha256:fe3ede0282c023b6ac1d0441402866488017b8f90f47691794441d0a18342a65"},
-    {file = "gevent-20.5.1-cp27-cp27mu-manylinux2010_x86_64.whl", hash = "sha256:42ff095288b1f335f7ea96a7812f378d843a034f4f0e604edc24a3dddb001106"},
-    {file = "gevent-20.5.1-cp35-cp35m-manylinux2010_x86_64.whl", hash = "sha256:1cf6ed4f66ecc432939e4be9434a20dffcf3207fb0ab6bc0343e7a9ea76d233b"},
     {file = "gevent-20.5.1-cp35-cp35m-win32.whl", hash = "sha256:f4a73e288fab042335b19f4b40407f8b44a40612626429943e37db23b40dd055"},
     {file = "gevent-20.5.1-cp35-cp35m-win_amd64.whl", hash = "sha256:765b39e502c76a1d77f743b821b7b1afe2a816848cf73a3606b1d5a91841cb9c"},
     {file = "gevent-20.5.1-cp36-cp36m-macosx_10_15_x86_64.whl", hash = "sha256:52567bdc3769bc6df4693c1ea5ed1d82f825a6066835b405676ece437caf3fb9"},
-    {file = "gevent-20.5.1-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:b53cf1a495c065df8b4b65d9f73a1cd7c5fa010955c0ed7bc5de196062099e41"},
     {file = "gevent-20.5.1-cp36-cp36m-win32.whl", hash = "sha256:7f1e339b6d51c354fa904ec8233b994b53c7c339b81c0743e07f2921b299d787"},
     {file = "gevent-20.5.1-cp36-cp36m-win_amd64.whl", hash = "sha256:8bea8dccb6ea671ecf00e1ba16d5275da8b78464082ac035e7391097513db777"},
     {file = "gevent-20.5.1-cp37-cp37m-macosx_10_15_x86_64.whl", hash = "sha256:28a71ac05cf8a80897a8402f3193dab89bd225a3f0d27042d7352ec37156ba6a"},
-    {file = "gevent-20.5.1-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:5c07973cd9f5a73480a386d1805b6a6b94e69aa906ee42f84a0cba02619a19e3"},
     {file = "gevent-20.5.1-cp37-cp37m-win32.whl", hash = "sha256:867c77a6da601b2f4600b71b7f8663cadb8f11c31f294b3a49025cdbaf406110"},
     {file = "gevent-20.5.1-cp37-cp37m-win_amd64.whl", hash = "sha256:71438390acb6aea432d5f853d5dcb16fa2a6d3c1d2299a0ebe32eed03ac81547"},
     {file = "gevent-20.5.1-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:1734f56ea545668780a4a283542a48d11298ab525c780a6001071f9d9d3c6880"},
-    {file = "gevent-20.5.1-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:3a1ec10c73fb70bd474cd778e4ab487c1375b7d93053c24db15acbda367e3734"},
     {file = "gevent-20.5.1-cp38-cp38-win32.whl", hash = "sha256:653ad83784b872e78204c7e049b650c41c2e7ccb956142d8edc23a72e57ff80c"},
     {file = "gevent-20.5.1-cp38-cp38-win_amd64.whl", hash = "sha256:ad01ef76f1d71cc7f2ce131cde6575ecc35d0a682a187a3229df3e977847f378"},
     {file = "gevent-20.5.1-pp27-pypy_73-win32.whl", hash = "sha256:7cb2fedafb0a692a3f1a14ddb13cbb3283863a1dfc3b536452f5ac6dfb88317a"},
@@ -1038,11 +1032,6 @@ markupsafe = [
     {file = "MarkupSafe-1.1.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:ba59edeaa2fc6114428f1637ffff42da1e311e29382d81b339c1817d37ec93c6"},
     {file = "MarkupSafe-1.1.1-cp37-cp37m-win32.whl", hash = "sha256:b00c1de48212e4cc9603895652c5c410df699856a2853135b3967591e4beebc2"},
     {file = "MarkupSafe-1.1.1-cp37-cp37m-win_amd64.whl", hash = "sha256:9bf40443012702a1d2070043cb6291650a0841ece432556f784f004937f0f32c"},
-    {file = "MarkupSafe-1.1.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:6788b695d50a51edb699cb55e35487e430fa21f1ed838122d722e0ff0ac5ba15"},
-    {file = "MarkupSafe-1.1.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:cdb132fc825c38e1aeec2c8aa9338310d29d337bebbd7baa06889d09a60a1fa2"},
-    {file = "MarkupSafe-1.1.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:13d3144e1e340870b25e7b10b98d779608c02016d5184cfb9927a9f10c689f42"},
-    {file = "MarkupSafe-1.1.1-cp38-cp38-win32.whl", hash = "sha256:596510de112c685489095da617b5bcbbac7dd6384aeebeda4df6025d0256a81b"},
-    {file = "MarkupSafe-1.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:e8313f01ba26fbbe36c7be1966a7b7424942f670f38e666995b88d012765b9be"},
     {file = "MarkupSafe-1.1.1.tar.gz", hash = "sha256:29872e92839765e546828bb7754a68c418d927cd064fd4708fab9fe9c8bb116b"},
 ]
 marshmallow = [
@@ -1272,8 +1261,8 @@ snowballstemmer = [
     {file = "snowballstemmer-2.0.0.tar.gz", hash = "sha256:df3bac3df4c2c01363f3dd2cfa78cce2840a79b9f1c2d2de9ce8d31683992f52"},
 ]
 sphinx = [
-    {file = "Sphinx-3.0.3-py3-none-any.whl", hash = "sha256:f5505d74cf9592f3b997380f9bdb2d2d0320ed74dd69691e3ee0644b956b8d83"},
-    {file = "Sphinx-3.0.3.tar.gz", hash = "sha256:62edfd92d955b868d6c124c0942eba966d54b5f3dcb4ded39e65f74abac3f572"},
+    {file = "Sphinx-3.0.4-py3-none-any.whl", hash = "sha256:779a519adbd3a70fc7c468af08c5e74829868b0a5b34587b33340e010291856c"},
+    {file = "Sphinx-3.0.4.tar.gz", hash = "sha256:ea64df287958ee5aac46be7ac2b7277305b0381d213728c3a49d8bb9b8415807"},
 ]
 sphinxcontrib-applehelp = [
     {file = "sphinxcontrib-applehelp-1.0.2.tar.gz", hash = "sha256:a072735ec80e7675e3f432fcae8610ecf509c5f1869d17e2eecff44389cdbc58"},
@@ -1346,8 +1335,8 @@ wrapt = [
     {file = "wrapt-1.12.1.tar.gz", hash = "sha256:b62ffa81fb85f4332a4f609cab4ac40709470da05643a082ec1eb88e6d9b97d7"},
 ]
 zeroconf = [
-    {file = "zeroconf-0.26.2-py3-none-any.whl", hash = "sha256:569c801e50891e0cc639c223e296e870dd9f6242a4f2b41d356666735b2a4264"},
-    {file = "zeroconf-0.26.2.tar.gz", hash = "sha256:bca127caa7d16217cbca78290dbee532b41d71e798b939548dc5a2c3a8f98e5e"},
+    {file = "zeroconf-0.26.3-py3-none-any.whl", hash = "sha256:ee2015ed0df56640626e0c636d1c9b1751c7b9632515b329b86ffa7f258dddab"},
+    {file = "zeroconf-0.26.3.tar.gz", hash = "sha256:43ad5006c00be2040cdca1fe768206f4a25356d3cc87eff8b66bd7ead2a82440"},
 ]
 "zope.event" = [
     {file = "zope.event-4.4-py2.py3-none-any.whl", hash = "sha256:d8e97d165fd5a0997b45f5303ae11ea3338becfe68c401dd88ffd2113fe5cae7"},
