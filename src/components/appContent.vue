@@ -8,6 +8,7 @@
     <calibrationModal
       ref="calibrationModal"
       :available-plugins="plugins"
+      @onClose="enterApp()"
     ></calibrationModal>
     <!-- Vertical tab bar -->
     <div
@@ -226,17 +227,12 @@ export default {
         return getters.ready;
       },
       ready => {
-        // Update plugins
-        this.updatePlugins().then(() => {
-          // Start initialisation modals
-          this.startModals();
-        });
-
         if (ready) {
-          console.log("Left panel now ready");
-        } else {
-          console.log("Right panel now disabled");
-          this.currentTab = "connect";
+          // Update plugins
+          this.updatePlugins().then(() => {
+            // Start initialisation modals
+            this.startModals();
+          });
         }
       }
     );
@@ -246,10 +242,6 @@ export default {
     // A global signal listener to switch tab
     this.$root.$on("globalSwitchTab", tabID => {
       this.currentTab = tabID;
-    });
-    // A global signal listener to the first primary tab
-    this.$root.$on("globalSwitchTabPrimary", () => {
-      this.currentTab = "view";
     });
   },
 
@@ -281,6 +273,11 @@ export default {
     },
     startModals: function() {
       this.$refs["calibrationModal"].show();
+    },
+    enterApp: function() {
+      // Stuff to do once connected and all init modals are finished
+      console.log("Entering main application");
+      this.currentTab = "view";
     }
   }
 };

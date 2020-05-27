@@ -231,6 +231,10 @@ export default {
     }
   },
 
+  mounted() {
+    this.$refs["calibrationModalEl"].addEventListener("hidden", this.onHide);
+  },
+
   methods: {
     show: function() {
       // Get current settings
@@ -256,6 +260,11 @@ export default {
       var el = this.$refs["calibrationModalEl"];
       this.hideModalElement(el); // Calls the mixin
       this.ready = false;
+    },
+
+    onHide: function() {
+      console.log("UIKit modal hidden");
+      this.$emit("onClose");
     },
 
     getSettings: function() {
