@@ -1,6 +1,6 @@
 {
   "name": "openflexure-ev",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "private": true,
   "description": "An electron-based user client for the OpenFlexure Microscope Server",
   "author": "OpenFlexure <contact@openflexure.org> (https://www.openflexure.org)",
@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^3.12.1",
-    "@vue/cli-service": "^4.3.1",
+    "@vue/cli-service": "^4.4.1",
     "axios": "^0.19.2",
     "babel-eslint": "^10.1.0",
     "css-loader": "^3.5.3",
