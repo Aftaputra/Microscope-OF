@@ -244,13 +244,15 @@ export default {
         })
         .then(() => {
           // Check if this calibration wizard can actually do anything useful
-          console.log(this.isUseful);
           if (this.isUseful) {
             this.ready = true;
             this.stepValue = 0;
             // Show the modal
             var el = this.$refs["calibrationModalEl"];
             this.showModalElement(el); // Calls the mixin
+          } else {
+            // If not useful, we just return the onClose event immediately
+            this.onHide();
           }
         });
     },
