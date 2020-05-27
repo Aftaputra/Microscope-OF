@@ -99,8 +99,6 @@ export default {
 
     onRecalibrateResponse: function() {
       this.modalNotify("Finished recalibration.");
-      // Update local settings
-      this.updateSettings();
     },
 
     onRecalibrateError: function(error) {
