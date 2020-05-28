@@ -9,7 +9,7 @@ import logging, logging.handlers
 
 # Set root logger level
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 import os
 import pkg_resources
