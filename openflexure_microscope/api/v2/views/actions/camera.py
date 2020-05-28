@@ -43,7 +43,6 @@ class CaptureAPI(ActionView):
         }
     )
     @marshal_with(capture_schema)
-    @doc_response(200, description="Capture successful")
     def post(self, args):
         """
         Create a new capture
