@@ -333,7 +333,7 @@ export default {
 
       // Resizing
       if (this.resizeCapture) {
-        payload.size = {
+        payload.resize = {
           width: this.resizeDims[0],
           height: this.resizeDims[1]
         };
@@ -347,6 +347,8 @@ export default {
       if (this.captureNotes) {
         payload.annotations["Notes"] = this.captureNotes;
       }
+
+      console.log(payload);
 
       return payload;
     },
