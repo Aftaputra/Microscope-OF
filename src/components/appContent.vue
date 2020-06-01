@@ -16,14 +16,15 @@
       class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1 uk-text-center"
     >
       <tabIcon
-        id="connect-tab-icon"
-        tab-i-d="connect"
-        :require-connection="false"
+        id="view-tab-icon"
+        tab-i-d="view"
+        :require-connection="true"
         :current-tab="currentTab"
         @set-tab="setTab"
       >
-        <i class="material-icons">bug_report</i>
+        <i class="material-icons">visibility</i>
       </tabIcon>
+
       <tabIcon
         id="gallery-tab-icon"
         tab-i-d="gallery"
@@ -36,15 +37,6 @@
 
       <hr />
 
-      <tabIcon
-        id="view-tab-icon"
-        tab-i-d="view"
-        :require-connection="true"
-        :current-tab="currentTab"
-        @set-tab="setTab"
-      >
-        <i class="material-icons">visibility</i>
-      </tabIcon>
       <tabIcon
         id="navigate-tab-icon"
         tab-i-d="navigate"
@@ -95,11 +87,11 @@
       class="uk-padding-remove uk-height-1-1 uk-width-expand"
     >
       <tabContent
-        tab-i-d="connect"
-        :require-connection="false"
+        tab-i-d="view"
+        :require-connection="true"
         :current-tab="currentTab"
       >
-        <connectContent />
+        <viewContent />
       </tabContent>
       <tabContent
         tab-i-d="gallery"
@@ -107,13 +99,6 @@
         :current-tab="currentTab"
       >
         <galleryContent />
-      </tabContent>
-      <tabContent
-        tab-i-d="view"
-        :require-connection="true"
-        :current-tab="currentTab"
-      >
-        <viewContent />
       </tabContent>
       <tabContent
         tab-i-d="navigate"
@@ -164,7 +149,6 @@ import tabIcon from "./genericComponents/tabIcon";
 import tabContent from "./genericComponents/tabContent";
 
 // Import new content components
-import connectContent from "./tabContentComponents/connectContent.vue";
 import navigateContent from "./tabContentComponents/navigateContent.vue";
 import captureContent from "./tabContentComponents/captureContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
@@ -182,7 +166,6 @@ export default {
   components: {
     tabIcon,
     tabContent,
-    connectContent,
     navigateContent,
     captureContent,
     viewContent,
@@ -195,7 +178,7 @@ export default {
   data: function() {
     return {
       plugins: [],
-      currentTab: "connect",
+      currentTab: "view",
       unwatchStoreFunction: null
     };
   },

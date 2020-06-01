@@ -2,34 +2,18 @@
   "name": "openflexure-ev",
   "version": "2.1.2",
   "private": true,
-  "description": "An electron-based user client for the OpenFlexure Microscope Server",
+  "description": "User client for the OpenFlexure Microscope Server",
   "author": "OpenFlexure <contact@openflexure.org> (https://www.openflexure.org)",
   "homepage": "https://gitlab.com/openflexure/openflexure-microscope-jsclient",
   "productName": "OpenFlexure eV",
   "publisher": "Bath Open Instrumentation Group",
   "displayName": "OpenFlexure eV",
   "license": "GNU General Public License v3.0 ",
-  "main": "./app/app.js",
   "scripts": {
-    "build:web": "vue-cli-service build --mode production.web",
-    "build:app": "vue-cli-service build --mode production.app",
-    "serve:web": "vue-cli-service serve  --mode development.web",
-    "start": "npm run build:app && electron app/app.js",
-    "dist:linux": "electron-builder --linux --config app/builder-config-x86_64.yaml",
-    "dist:raspi": "electron-builder --linux --config app/builder-config-raspi.yaml",
-    "dist:win": "electron-builder --win --config app/builder-config-x86_64.yaml",
-    "dist:dmg": "electron-builder --mac --config app/builder-config-x86_64.yaml",
-    "dist:appx": "electron-builder --win --config app/builder-config-appx.yaml",
-    "release": "electron-builder --linux --config app/builder-config-raspi.yaml & electron-builder --win --linux --config app/builder-config-x86_64.yaml",
-    "make-icons": "electron-icon-builder --input=./app/icons/icon_base.png --output=./app/"
+    "build": "vue-cli-service build --mode production",
+    "serve": "vue-cli-service serve  --mode development"
   },
   "dependencies": {
-    "about-window": "^1.13.2",
-    "custom-electron-titlebar": "^3.2.2",
-    "electron-context-menu": "^0.15.2",
-    "electron-progressbar": "^1.2.0",
-    "electron-store": "^5.1.1",
-    "electron-updater": "^4.3.1",
     "material-design-icons": "^3.0.1"
   },
   "devDependencies": {
@@ -38,9 +22,6 @@
     "axios": "^0.19.2",
     "babel-eslint": "^10.1.0",
     "css-loader": "^3.5.3",
-    "electron": "^6.1.12",
-    "electron-builder": "^21.2.0",
-    "electron-icon-builder": "^1.0.2",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-prettier": "^3.1.3",
@@ -55,9 +36,6 @@
     "vue-template-compiler": "^2.6.11",
     "vue-tour": "^1.3.1",
     "vuex": "^3.4.0"
-  },
-  "optionalDependencies": {
-    "electron-windows-store": "^2.1.0"
   },
   "postcss": {
     "plugins": {

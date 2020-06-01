@@ -76,7 +76,15 @@ Vue.mixin({
     },
 
     modalError: function(error) {
-      console.log(error);
+      var errormsg = this.getErrorMessage(error);
+      this.$store.commit("setErrorMessage", errormsg);
+      UIkit.notification({
+        message: `${errormsg}`,
+        status: "danger"
+      });
+    },
+
+    getErrorMessage: function(error) {
       var errormsg = "";
 
       // If a response was obtained
@@ -100,11 +108,7 @@ Vue.mixin({
         errormsg = `${error.message}`;
         console.log(errormsg);
       }
-      this.$store.commit("setError", errormsg);
-      UIkit.notification({
-        message: `${errormsg}`,
-        status: "danger"
-      });
+      return errormsg;
     },
 
     showModalElement: function(element) {
