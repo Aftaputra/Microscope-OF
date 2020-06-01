@@ -7,7 +7,9 @@
     ></div>
     <div v-if="$store.state.waiting" class="uk-align-center">Loading...</div>
     <i class="material-icons uk-align-center error-icon">error_outline</i>
-    <div v-if="$store.state.error" class="uk-align-center">{{ $store.state.error }}</div>
+    <div v-if="$store.state.error" class="uk-align-center">
+      {{ $store.state.error }}
+    </div>
     <div class="uk-align-center">
       <devTools></devTools>
     </div>
