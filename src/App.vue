@@ -8,7 +8,7 @@
     <div v-if="$store.getters.ready" id="tour-header"></div>
     <appContent v-if="$store.getters.ready" />
     <v-tour
-      v-if="$store.getters.ready"
+      v-show="$store.getters.ready"
       name="guidedTour"
       :steps="tourSteps"
       :callbacks="tourCallbacks"
