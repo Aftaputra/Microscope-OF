@@ -11,7 +11,7 @@
       {{ $store.state.error }}
     </div>
     <div class="uk-align-center">
-      <devTools></devTools>
+      <devTools class="uk-width-medium"></devTools>
     </div>
   </div>
 </template>

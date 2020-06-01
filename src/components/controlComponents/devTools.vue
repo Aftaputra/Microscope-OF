@@ -1,10 +1,7 @@
 <template>
   <div>
-    <form
-      class="uk-form-stacked uk-width-medium"
-      @submit.prevent="overrideAPIHost"
-    >
-      <label class="uk-form-label">API origin</label>
+    <form class="uk-form-stacked" @submit.prevent="overrideAPIHost">
+      <label class="uk-form-label">Override API origin</label>
       <input v-model="currentOrigin" class="uk-input" type="text" />
     </form>
   </div>

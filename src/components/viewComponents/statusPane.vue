@@ -1,12 +1,15 @@
 <template>
   <div class="host-input">
-    <h3>Status</h3>
-    <div v-if="configuration && $store.getters.ready">
+    <div v-if="configuration">
       <div>
         <div class="uk-margin-small-bottom">
-          <b>Host:</b>
+          <b>API origin:</b>
           <br />
-          {{ $store.state.host }}
+          {{ $store.state.origin }}
+          <br />
+          <b>API URL:</b>
+          <br />
+          {{ $store.getters.uriV2 }}
         </div>
       </div>
 
@@ -21,7 +24,7 @@
         {{ configuration.application.version }}
       </div>
       <div>
-        <b>OpenFlexure eV version:</b> <br />
+        <b>Client version:</b> <br />
         {{ clientVersionName }}
       </div>
 
@@ -69,7 +72,7 @@
       </div>
     </div>
     <div v-else-if="$store.state.waiting">
-      <progressBar></progressBar>
+      Loading...
     </div>
     <div v-else-if="$store.state.error">
       <b>Error:</b> {{ $store.state.error }}
@@ -80,14 +83,11 @@
 
 <script>
 import axios from "axios";
-import progressBar from "../../genericComponents/progressBar";
 
 export default {
   name: "StatusPane",
 
-  components: {
-    progressBar
-  },
+  components: {},
 
   data: function() {
     return {
@@ -113,18 +113,11 @@ export default {
     }
   },
 
-  created: function() {
+  mounted: function() {
     // Watch for host 'ready', then update configuration
-    this.$store.watch(
-      (state, getters) => {
-        return getters.ready;
-      },
-      () => {
-        this.updateConfiguration();
-        this.updateSettings();
-        this.updateSystemActions();
-      }
-    );
+    this.updateConfiguration();
+    this.updateSettings();
+    this.updateSystemActions();
   },
 
   methods: {

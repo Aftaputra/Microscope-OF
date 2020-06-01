@@ -79,6 +79,17 @@
       >
         <i class="material-icons">{{ plugin.icon || "extension" }}</i>
       </tabIcon>
+
+      <tabIcon
+        id="about-tab-icon"
+        class="uk-margin-auto-top"
+        tab-i-d="about"
+        :require-connection="false"
+        :current-tab="currentTab"
+        @set-tab="setTab"
+      >
+        <i class="material-icons">info</i>
+      </tabIcon>
     </div>
 
     <!-- Corresponding vertical tab content -->
@@ -137,6 +148,14 @@
           @reloadForms="updatePlugins()"
         />
       </tabContent>
+
+      <tabContent
+        tab-i-d="about"
+        :require-connection="false"
+        :current-tab="currentTab"
+      >
+        <aboutContent class="section-content" />
+      </tabContent>
     </div>
   </div>
 </template>
@@ -155,6 +174,7 @@ import viewContent from "./tabContentComponents/viewContent.vue";
 import settingsContent from "./tabContentComponents/settingsContent.vue";
 import galleryContent from "./tabContentComponents/galleryContent.vue";
 import extensionContent from "./tabContentComponents/extensionContent.vue";
+import aboutContent from "./tabContentComponents/aboutContent.vue";
 
 // Import modal components for device initialisation
 import calibrationModal from "./modalComponents/calibrationModal.vue";
@@ -172,7 +192,8 @@ export default {
     settingsContent,
     galleryContent,
     extensionContent,
-    calibrationModal
+    calibrationModal,
+    aboutContent
   },
 
   data: function() {

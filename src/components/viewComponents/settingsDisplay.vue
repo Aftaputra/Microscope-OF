@@ -6,19 +6,6 @@
         <li class="uk-nav-header">Application settings</li>
         <li>
           <tabIcon
-            id="settings-status-icon"
-            tab-i-d="status"
-            :show-title="false"
-            :show-tooltip="false"
-            :require-connection="false"
-            :current-tab="currentTab"
-            @set-tab="setTab"
-          >
-            Status
-          </tabIcon>
-        </li>
-        <li>
-          <tabIcon
             id="settings-display-icon"
             tab-i-d="display"
             :show-title="false"
@@ -74,16 +61,6 @@
     </div>
     <div class="view-component uk-width-expand uk-padding-small">
       <tabContent
-        tab-i-d="status"
-        :require-connection="false"
-        :current-tab="currentTab"
-      >
-        <div class="settings-pane uk-padding-small">
-          <statusPane />
-        </div>
-      </tabContent>
-
-      <tabContent
         tab-i-d="display"
         :require-connection="false"
         :current-tab="currentTab"
@@ -135,7 +112,6 @@
 </template>
 
 <script>
-import statusPane from "./settingsComponents/statusPane.vue";
 import streamSettings from "./settingsComponents/streamSettings.vue";
 import microscopeSettings from "./settingsComponents/microscopeSettings.vue";
 import cameraSettings from "./settingsComponents/cameraSettings.vue";
@@ -151,7 +127,6 @@ export default {
   name: "SettingsDisplay",
 
   components: {
-    statusPane,
     streamSettings,
     cameraSettings,
     microscopeSettings,
@@ -163,8 +138,8 @@ export default {
 
   data: function() {
     return {
-      selected: "status",
-      currentTab: "status"
+      selected: "display",
+      currentTab: "display"
     };
   },
 
