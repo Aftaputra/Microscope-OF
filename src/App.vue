@@ -4,9 +4,11 @@
     class="uk-height-1-1 uk-margin-remove uk-padding-remove"
     :class="handleTheme"
   >
-    <div id="tour-header"></div>
-    <appContent />
+    <loadingContent v-if="!$store.getters.ready" />
+    <div v-if="$store.getters.ready" id="tour-header"></div>
+    <appContent v-if="$store.getters.ready" />
     <v-tour
+      v-if="$store.getters.ready"
       name="guidedTour"
       :steps="tourSteps"
       :callbacks="tourCallbacks"
@@ -16,9 +18,11 @@
 </template>
 
 <script>
-import isElectron from "./modules/isElectron";
 // Import components
 import appContent from "./components/appContent.vue";
+import loadingContent from "./components/loadingContent.vue";
+
+import axios from "axios";
 
 // Key Codes
 const keyCodes = {
@@ -40,15 +44,16 @@ export default {
   name: "App",
 
   components: {
-    appContent
+    appContent,
+    loadingContent
   },
 
   data: function() {
     return {
+      appAvailable: false,
       keysDown: {},
       systemDark: undefined,
       themeObserver: undefined,
-      isElectron: isElectron(),
       tourCallbacks: {
         onStop: () => {
           this.setLocalStorageObj("completedTour", true);
@@ -93,33 +98,6 @@ export default {
           params: {
             placement: "bottom"
           }
-        },
-
-        {
-          target: "#new-connection-card",
-          header: {
-            title: "New connection"
-          },
-          content: `Connect locally if you're running on a microscope, \nor open a new remote connection to a microscope`
-        },
-        ...(this.isElectron
-          ? [
-              {
-                target: "#nearby-connections-grid",
-                header: {
-                  title: "Nearby microscopes"
-                },
-                content: `Connect to microscopes found on your network`
-              }
-            ]
-          : []),
-
-        {
-          target: "#saved-connections-grid",
-          header: {
-            title: "Saved microscopes"
-          },
-          content: `Connect to your saved microscopes for faster access`
         },
         {
           target: "#gallery-tab-icon",
@@ -175,8 +153,11 @@ export default {
         this.systemDark = false;
       }
     });
+    // Check connection to API
+    this.checkConnection();
     // Handle guided tour
     // If the user has already completed or skipped the guided tour
+    // TODO: Only run this if connected to the API
     var completedTour = this.getLocalStorageObj("completedTour") || false;
     if (!completedTour) {
       this.$tours["guidedTour"].start();
@@ -189,6 +170,16 @@ export default {
     window.addEventListener("keydown", this.keyDownMonitor);
     window.addEventListener("keyup", this.keyUpMonitor);
     window.addEventListener("wheel", this.wheelMonitor);
+    // Watch for origin changes
+    this.unwatchOriginFunction = this.$store.watch(
+      (state, getters) => {
+        return getters.uriV2;
+      },
+      uriV2 => {
+        this.checkConnection();
+        console.log(uriV2);
+      }
+    );
   },
 
   beforeDestroy: function() {
@@ -200,9 +191,28 @@ export default {
     window.removeEventListener("keydown", this.keyDownMonitor);
     window.removeEventListener("keyup", this.keyUpMonitor);
     window.removeEventListener("wheel", this.wheelMonitor);
+    // Remove origin watcher
+    this.unwatchOriginFunction();
   },
 
   methods: {
+    checkConnection: function() {
+      var uriV2 = this.$store.getters.uriV2;
+      this.$store.commit("changeWaiting", true);
+      axios
+        .get(uriV2)
+        .then(() => {
+          this.$store.commit("setConnected");
+          this.$store.commit("setErrorMessage", null);
+        })
+        .catch(error => {
+          this.$store.commit("setErrorMessage", error);
+        })
+        .finally(() => {
+          this.$store.commit("changeWaiting", false);
+        });
+    },
+
     handleExit: function() {
       console.log("Triggered beforeunload");
       this.$root.$emit("globalTogglePreview", false);

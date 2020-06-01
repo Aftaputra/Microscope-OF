@@ -5,8 +5,7 @@ Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
-    host: "",
-    port: 5000,
+    origin: window.location.origin,
     available: false,
     waiting: false,
     error: "",
@@ -20,9 +19,8 @@ export default new Vuex.Store({
   },
 
   mutations: {
-    changeHost(state, [host, port]) {
-      state.host = host;
-      state.port = port;
+    changeOrigin(state, origin) {
+      state.origin = origin;
     },
     changeWaiting(state, waiting) {
       state.waiting = waiting;
@@ -39,8 +37,7 @@ export default new Vuex.Store({
       state.waiting = false;
       state.available = true;
     },
-    setError(state, msg) {
-      state.waiting = false;
+    setErrorMessage(state, msg) {
       state.error = msg;
     },
     addStream(state, id) {
@@ -54,8 +51,8 @@ export default new Vuex.Store({
   actions: {},
 
   getters: {
-    uriV2: state => `http://${state.host}:${state.port}/api/v2`,
-    baseUri: state => `http://${state.host}:${state.port}`,
+    uriV2: state => `${state.origin}/api/v2`,
+    baseUri: state => state.origin,
     ready: state => state.available
   }
 });
