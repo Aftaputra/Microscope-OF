@@ -110,6 +110,7 @@ ofmclient = []
 reference = "f1803f5f655b405a6a902f6c697c9f720f6a18da"
 type = "git"
 url = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git"
+
 [[package]]
 category = "main"
 description = "Pure Python CBOR (de)serializer with extensive tag support"
@@ -204,6 +205,14 @@ version = "3.0.8"
 [package.dependencies]
 Flask = ">=0.9"
 Six = "*"
+
+[[package]]
+category = "main"
+description = "Clean single-source support for Python 3 and 2"
+name = "future"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+version = "0.18.2"
 
 [[package]]
 category = "main"
@@ -425,6 +434,7 @@ test = ["coverage", "pytest", "mock", "pillow", "numpy"]
 reference = ""
 type = "url"
 url = "https://github.com/rwb27/picamera/releases/download/v1.13.2b0/picamera-1.13.2b0-py3-none-any.whl"
+
 [[package]]
 category = "main"
 description = "Python Imaging Library (Fork)"
@@ -557,6 +567,19 @@ name = "rpi.gpio"
 optional = true
 python-versions = "*"
 version = "0.6.5"
+
+[[package]]
+category = "main"
+description = "Communication to the Sangaboard unipolar motor driver"
+name = "sangaboard"
+optional = false
+python-versions = "*"
+version = "0.2.0"
+
+[package.dependencies]
+future = "*"
+numpy = "*"
+pyserial = "*"
 
 [[package]]
 category = "main"
@@ -814,7 +837,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 rpi = ["RPi.GPIO"]
 
 [metadata]
-content-hash = "b7d729f575bc8438cc20864e1c899cbd456d8a452c8b809e95846abc974211c4"
+content-hash = "1c577dec4c5e870bacd76d24991f49cb0c7fed212ace179bea075e2849c91e00"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -907,6 +930,9 @@ flask = [
 flask-cors = [
     {file = "Flask-Cors-3.0.8.tar.gz", hash = "sha256:72170423eb4612f0847318afff8c247b38bd516b7737adfc10d1c2cdbb382d16"},
     {file = "Flask_Cors-3.0.8-py2.py3-none-any.whl", hash = "sha256:f4d97201660e6bbcff2d89d082b5b6d31abee04b1b3003ee073a6fd25ad1d69a"},
+]
+future = [
+    {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
 ]
 gevent = [
     {file = "gevent-20.5.1-cp27-cp27m-macosx_10_15_x86_64.whl", hash = "sha256:2504563f44bb188c1e48684e2ac7d2793f9f5b1e1cf119a8fdf8c36d2bf2eaf7"},
@@ -1239,6 +1265,10 @@ rope = [
 ]
 "rpi.gpio" = [
     {file = "RPi.GPIO-0.6.5.tar.gz", hash = "sha256:a4210ad63bfe844e43995286de0d3950dfacfa0f3799bb9392770ac54a7d2e47"},
+]
+sangaboard = [
+    {file = "sangaboard-0.2.0-py3-none-any.whl", hash = "sha256:510cb95a56e070ef7a9214f6a0673a92f2269e71e125c54b8bb1c16b1abfb095"},
+    {file = "sangaboard-0.2.0.tar.gz", hash = "sha256:3636203179e9748cd27a1856d44de2b1c7adf398d033a8d5d382748903a098f0"},
 ]
 scipy = [
     {file = "scipy-1.4.1-cp35-cp35m-macosx_10_6_intel.whl", hash = "sha256:c5cac0c0387272ee0e789e94a570ac51deb01c796b37fb2aad1fb13f85e2f97d"},

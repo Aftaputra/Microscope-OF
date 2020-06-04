@@ -2,7 +2,7 @@ import numpy as np
 import time
 import logging
 from collections.abc import Iterable
-from .sangaboard import Sangaboard
+from sangaboard import Sangaboard
 from openflexure_microscope.stage.base import BaseStage
 from openflexure_microscope.utilities import axes_to_array
 
