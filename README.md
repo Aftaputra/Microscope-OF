@@ -17,7 +17,7 @@ This includes installing the server in a mode better suited for active developme
 ### Node installation
 * Note, building the static interface will require a valid Node.js installation
 * To build on a Raspberry Pi:
-  * `curl -sL https://deb.nodesource.com/setup_10.x | sudo bash -`
+  * `curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -`
   * `sudo apt install nodejs`
 
 ### Distributing
