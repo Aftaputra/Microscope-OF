@@ -7,20 +7,9 @@
     <img
       ref="click-frame"
       class="uk-align-center uk-margin-remove-bottom"
-      :hidden="!streamEnabled"
       :src="streamImgUri"
       alt="Stream"
     />
-
-    <div v-if="!streamEnabled" class="uk-height-1-1">
-      <div v-if="$store.state.waiting" class="uk-position-center">
-        <div uk-spinner="ratio: 4.5"></div>
-      </div>
-
-      <div v-else class="uk-position-center position-relative text-center">
-        No active connection
-      </div>
-    </div>
   </div>
 </template>
 
@@ -34,12 +23,6 @@ export default {
   },
 
   computed: {
-    streamEnabled: function() {
-      return (
-        this.$store.getters.ready &&
-        !this.$store.state.globalSettings.disableStream
-      );
-    },
     streamImgUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/streams/mjpeg`;
     }
