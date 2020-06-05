@@ -9,7 +9,7 @@
           :component-name="webComponent.name"
         />
       </div>
-      <!-- Handle OpenFlexure eV Forms -->
+      <!-- Handle OpenFlexure Forms -->
       <div
         v-for="form in forms"
         v-else-if="forms"

@@ -92,9 +92,9 @@ export default {
         {
           target: "#tour-header", // We're using document.querySelector() under the hood
           header: {
-            title: "Welcome to OpenFlexure eV"
+            title: "Welcome to the OpenFlexure Microscope"
           },
-          content: `Click Next to learn how to use OpenFlexure eV`,
+          content: `Click Next to learn how to use your microscope`,
           params: {
             placement: "bottom"
           }
