@@ -223,6 +223,16 @@ export default {
 
   created: function() {
     if (this.$store.getters.ready) {
+      // Detect local connection
+      if (
+        ["localhost", "0.0.0.0", "127.0.0.1", "[::1]"].includes(
+          window.location.hostname
+        )
+      ) {
+        this.$store.commit("changeSetting", ["disableStream", true]);
+        this.$store.commit("changeSetting", ["autoGpuPreview", true]);
+        this.$store.commit("changeSetting", ["trackWindow", true]);
+      }
       // Update plugins
       this.updatePlugins().then(() => {
         // Start initialisation modals
