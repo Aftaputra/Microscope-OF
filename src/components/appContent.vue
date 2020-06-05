@@ -223,23 +223,12 @@ export default {
 
   created: function() {
     if (this.$store.getters.ready) {
-      this.updatePlugins();
+      // Update plugins
+      this.updatePlugins().then(() => {
+        // Start initialisation modals
+        this.startModals();
+      });
     }
-    // Watch for host 'ready', then update status
-    this.unwatchStoreFunction = this.$store.watch(
-      (state, getters) => {
-        return getters.ready;
-      },
-      ready => {
-        if (ready) {
-          // Update plugins
-          this.updatePlugins().then(() => {
-            // Start initialisation modals
-            this.startModals();
-          });
-        }
-      }
-    );
   },
 
   mounted() {
