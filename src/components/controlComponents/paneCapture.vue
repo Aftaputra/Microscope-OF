@@ -68,7 +68,7 @@
       </div>
     </div>
 
-    <ul uk-accordion="multiple: true; animation: false">
+    <ul uk-accordion="multiple: true">
       <li>
         <a class="uk-accordion-title" href="#">Notes</a>
         <div class="uk-accordion-content">
@@ -100,7 +100,7 @@
 
     <hr />
 
-    <ul uk-accordion="multiple: true; animation: false">
+    <ul uk-accordion="multiple: true">
       <!--Show stack and scan if scan plugin is enabled-->
       <li v-if="scanUri">
         <a class="uk-accordion-title" href="#">Stack and Scan</a>

@@ -11,6 +11,16 @@ require("vue-tour/dist/vue-tour.css");
 // Import MD icons
 import "material-design-icons/iconfont/material-icons.css";
 
+// UIKit overrides
+UIkit.mixin(
+  {
+    data: {
+      animation: false
+    }
+  },
+  "accordion"
+);
+
 // Use load-script module
 Vue.use(LoadScript);
 
