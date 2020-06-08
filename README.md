@@ -11,6 +11,7 @@ This includes installing the server in a mode better suited for active developme
 
 ## Installation
 * `git clone --recurse-submodules https://gitlab.com/openflexure/openflexure-microscope-server.git`
+* (If running on a microscope Pi) `ofm activate`
 * `poetry install`
 * `poetry run build_static`
 
