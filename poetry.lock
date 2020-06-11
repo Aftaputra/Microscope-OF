@@ -110,6 +110,7 @@ ofmclient = []
 reference = "f1803f5f655b405a6a902f6c697c9f720f6a18da"
 type = "git"
 url = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git"
+
 [[package]]
 category = "main"
 description = "Pure Python CBOR (de)serializer with extensive tag support"
@@ -433,6 +434,7 @@ test = ["coverage", "pytest", "mock", "pillow", "numpy"]
 reference = ""
 type = "url"
 url = "https://github.com/rwb27/picamera/releases/download/v1.13.2b0/picamera-1.13.2b0-py3-none-any.whl"
+
 [[package]]
 category = "main"
 description = "Python Imaging Library (Fork)"
@@ -572,7 +574,7 @@ description = "Communication to the Sangaboard unipolar motor driver"
 name = "sangaboard"
 optional = false
 python-versions = "*"
-version = "0.2.2"
+version = "0.2.3"
 
 [package.dependencies]
 future = "*"
@@ -835,7 +837,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 rpi = ["RPi.GPIO"]
 
 [metadata]
-content-hash = "3a1784c80eb8ed77b10f8921a16b2f9bda19a16c241e0d850b4330966dfb06a2"
+content-hash = "4075215b061f8236003e033b268d08a55b3c69445c09e3d5e9d33404414532bb"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -1261,8 +1263,8 @@ rope = [
     {file = "RPi.GPIO-0.6.5.tar.gz", hash = "sha256:a4210ad63bfe844e43995286de0d3950dfacfa0f3799bb9392770ac54a7d2e47"},
 ]
 sangaboard = [
-    {file = "sangaboard-0.2.2-py3-none-any.whl", hash = "sha256:f266b79b9397c39dd73c3098a4a994aa5130aec90a870935159bd59f5fbde879"},
-    {file = "sangaboard-0.2.2.tar.gz", hash = "sha256:5e6d99ce6801a58d48be0aae843eab84b521532f1a6fc3cb3a52098b7381c3bf"},
+    {file = "sangaboard-0.2.3-py3-none-any.whl", hash = "sha256:3791159d57a749571f89acdce70aa9c1de82afef71f5186d5e2845c7be44698c"},
+    {file = "sangaboard-0.2.3.tar.gz", hash = "sha256:ed0c5a9864f5901d11bed0ed2387da3b5555f75fef72a9f35997304447f9b08c"},
 ]
 scipy = [
     {file = "scipy-1.4.1-cp35-cp35m-macosx_10_6_intel.whl", hash = "sha256:c5cac0c0387272ee0e789e94a570ac51deb01c796b37fb2aad1fb13f85e2f97d"},
