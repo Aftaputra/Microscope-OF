@@ -288,7 +288,7 @@ class Microscope:
 
         return system_metadata
 
-    def add_metadata_to_capture(output, metadata, annotations, tags):
+    def add_metadata_to_capture(self, output, metadata, annotations, tags):
         logging.debug(f"Waiting for {output.file}")
         # Wait for the file to be written to disk
         output.file_ready.wait()
