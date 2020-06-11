@@ -159,7 +159,6 @@ class CaptureObject(object):
 
     def write(self, s):
         self.stream.write(s)
-        gevent.sleep()
 
     def _stream_to_file(self):
         logging.info(f"Writing to disk {self.file}")
@@ -168,12 +167,10 @@ class CaptureObject(object):
         self.stream.close()
         self.file_ready.set()
         logging.info(f"Finished writing to disk {self.file}")
-        gevent.sleep()
 
     def flush(self):
         logging.debug(f"Flushing {self.file}")
         gevent.get_hub().threadpool.spawn(self._stream_to_file)
-        gevent.sleep()
         logging.debug(f"Returning flushing {self.file}")
 
     def open(self, mode):
@@ -250,7 +247,6 @@ class CaptureObject(object):
 
     def save_metadata(self) -> None:
         gevent.get_hub().threadpool.spawn(self.synchronous_save_metadata)
-        gevent.sleep()
 
     def synchronous_save_metadata(self) -> None:
         """
