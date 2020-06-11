@@ -197,19 +197,14 @@ class MissingCamera(BaseCamera):
             bayer (bool): Store raw bayer data in capture
         """
 
-        if isinstance(output, CaptureObject):
-            target = output.file
-        else:
-            target = output
-
         with self.lock:
-            if isinstance(target, str):
-                target = open(target, "wb")
+            if isinstance(output, str):
+                output = open(output, "wb")
 
-            target.write(self.stream.getvalue())
+            output.write(self.stream.getvalue())
 
-            if isinstance(target, str):
-                target.close()
+            if isinstance(output, str):
+                output.close()
 
     # HANDLE STREAM FRAMES
 

@@ -7,6 +7,8 @@ import pkg_resources
 import uuid
 from typing import Tuple
 
+import gevent
+
 from openflexure_microscope.captures import CaptureManager
 
 from openflexure_microscope.stage.mock import MissingStage
@@ -299,6 +301,7 @@ class Microscope:
         tags: list = None,
         metadata: dict = None,
     ):
+        logging.debug(f"Microscope capturing to {filename}")
         if not annotations:
             annotations = {}
         if not metadata:
@@ -313,14 +316,22 @@ class Microscope:
             )
 
             # Capture to output object
+            logging.info("Starting microscope capture...")
             self.camera.capture(
-                output.file,
+                output,
                 use_video_port=use_video_port,
                 resize=resize,
                 bayer=bayer,
                 fmt=fmt,
             )
+            logging.info("Finished microscope capture...")
 
+
+        def inject_metadata():
+            logging.debug(f"Waiting for {output.file}")
+            # Wait for the file to be written to disk
+            output.file_ready.wait()
+            logging.info(f"Asynchronously injecting EXIF data into {output.file}")
             # Inject system metadata
             output.put_metadata({"instrument": self.metadata})
             # Insert custom metadata
@@ -329,5 +340,10 @@ class Microscope:
             output.put_annotations(annotations)
             # Insert custom tags
             output.put_tags(tags)
+            logging.info(f"Finished injecting EXIF data into {output.file}")
+
+        gevent.spawn(inject_metadata)
+
+        logging.debug(f"Finished capture to {output.file}")
 
         return output

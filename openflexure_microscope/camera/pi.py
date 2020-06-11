@@ -115,11 +115,6 @@ class PiCameraStreamer(BaseCamera):
             "picamera_lst.npy"
         )  #: str: Path of .npy lens shading table file
 
-        # Create an empty stream
-        self.stream = io.BytesIO()
-
-        # Start streaming
-        self.start_worker()
 
     @property
     def configuration(self):
@@ -520,12 +515,6 @@ class PiCameraStreamer(BaseCamera):
         Returns:
             output_object (str/BytesIO): Target object.
         """
-
-        if isinstance(output, CaptureObject):
-            target = output.file
-        else:
-            target = output
-
         with self.lock:
             logging.info("Capturing to {}".format(output))
 
@@ -535,20 +524,20 @@ class PiCameraStreamer(BaseCamera):
                 time.sleep(0.1)
 
             self.camera.capture(
-                target,
+                output,
                 format=fmt,
                 quality=100,
                 resize=resize,
                 bayer=(not use_video_port) and bayer,
                 use_video_port=use_video_port,
             )
-            time.sleep(0.1)
+            #time.sleep(0.1)
 
             # Set resolution and start stream recording if necessary
             if not use_video_port:
                 self.start_stream_recording()
 
-            return target
+            return output
 
     def yuv(
         self, use_video_port: bool = True, resize: Tuple[int, int] = None
