@@ -116,6 +116,8 @@ class ScanExtension(BaseExtension):
         annotations: dict = {},
         tags: list = [],
     ):
+        start = time.time()
+
         # Keep task progress
         self._images_to_be_captured = reduce((lambda x, y: x * y), grid)
         self._images_captured_so_far = 0
@@ -227,6 +229,9 @@ class ScanExtension(BaseExtension):
 
         logging.debug("Returning to {}".format(initial_position))
         microscope.stage.move_abs(initial_position)
+
+        end = time.time()
+        logging.info(f"Scan took {end - start} seconds")
 
 
     def stack(
