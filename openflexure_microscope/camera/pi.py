@@ -108,7 +108,8 @@ class PiCameraStreamer(BaseCamera):
             1312,
             976,
         )  #: tuple: Resolution for numpy array captures
-        self.jpeg_quality = 75  #: int: JPEG quality
+        self.jpeg_quality = 100  #: int: JPEG quality
+        self.mjpeg_quality = 75  #: int: MJPEG quality
 
         # Set default lens shading table path
         self.picamera_lst_path = settings_file_path(
@@ -154,6 +155,7 @@ class PiCameraStreamer(BaseCamera):
                 "image_resolution": self.image_resolution,
                 "numpy_resolution": self.numpy_resolution,
                 "jpeg_quality": self.jpeg_quality,
+                "mjpeg_quality": self.mjpeg_quality,
                 "picamera": {},
             }
         )
@@ -474,7 +476,7 @@ class PiCameraStreamer(BaseCamera):
                     self.camera.start_recording(
                         self.stream,
                         format="mjpeg",
-                        quality=self.jpeg_quality,
+                        quality=self.mjpeg_quality,
                         bitrate=-1,  # RWB: disable bitrate control
                         # (bitrate control makes JPEG size less good as a focus
                         # metric)
@@ -526,7 +528,7 @@ class PiCameraStreamer(BaseCamera):
             self.camera.capture(
                 output,
                 format=fmt,
-                quality=100,
+                quality=self.jpeg_quality,
                 resize=resize,
                 bayer=(not use_video_port) and bayer,
                 use_video_port=use_video_port,
