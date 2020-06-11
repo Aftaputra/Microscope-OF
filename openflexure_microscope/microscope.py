@@ -288,6 +288,21 @@ class Microscope:
 
         return system_metadata
 
+    def add_metadata_to_capture(output, metadata, annotations, tags):
+        logging.debug(f"Waiting for {output.file}")
+        # Wait for the file to be written to disk
+        output.file_ready.wait()
+        logging.info(f"Asynchronously injecting EXIF data into {output.file}")
+        # Inject system metadata
+        output.put_metadata({"instrument": self.metadata})
+        # Insert custom metadata
+        output.put_metadata(metadata)
+        # Insert custom metadata
+        output.put_annotations(annotations)
+        # Insert custom tags
+        output.put_tags(tags)
+        logging.info(f"Finished injecting EXIF data into {output.file}")
+
     def capture(
         self,
         filename: str = None,
@@ -324,26 +339,10 @@ class Microscope:
                 bayer=bayer,
                 fmt=fmt,
             )
-            logging.info("Finished microscope capture...")
 
+        # Gether metadata from hardware in a greenlet
+        gevent.spawn(self.add_metadata_to_capture, output, metadata, annotations, tags)
 
-        def inject_metadata():
-            logging.debug(f"Waiting for {output.file}")
-            # Wait for the file to be written to disk
-            output.file_ready.wait()
-            logging.info(f"Asynchronously injecting EXIF data into {output.file}")
-            # Inject system metadata
-            output.put_metadata({"instrument": self.metadata})
-            # Insert custom metadata
-            output.put_metadata(metadata)
-            # Insert custom metadata
-            output.put_annotations(annotations)
-            # Insert custom tags
-            output.put_tags(tags)
-            logging.info(f"Finished injecting EXIF data into {output.file}")
-
-        gevent.spawn(inject_metadata)
-
-        logging.debug(f"Finished capture to {output.file}")
+        logging.info(f"Finished capture to {output.file}")
 
         return output

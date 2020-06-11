@@ -12,6 +12,7 @@ import atexit
 
 from gevent.fileobject import FileObjectThread
 import gevent
+import threading
 
 from collections import OrderedDict
 
@@ -132,8 +133,6 @@ class CaptureObject(object):
         # Event to notify when the stream has finished writing to disk
         #self.file_ready = Event()
         self.file_ready = gevent.event.Event()
-        # Lock to control disk file access
-        self.file_lock = gevent.lock.BoundedSemaphore()
 
         # Store a nice ID
         self.id = uuid.uuid4()  #: str: Unique capture ID
@@ -164,7 +163,7 @@ class CaptureObject(object):
 
     def _stream_to_file(self):
         logging.info(f"Writing to disk {self.file}")
-        with FileObjectThread(open(self.file, "wb"), 'wb')  as outfile, self.file_lock:
+        with FileObjectThread(open(self.file, "wb"), 'wb')  as outfile:
             outfile.write(self.stream.getbuffer())
         self.stream.close()
         self.file_ready.set()
@@ -173,7 +172,7 @@ class CaptureObject(object):
 
     def flush(self):
         logging.debug(f"Flushing {self.file}")
-        gevent.spawn(self._stream_to_file)
+        gevent.get_hub().threadpool.spawn(self._stream_to_file)
         gevent.sleep()
         logging.debug(f"Returning flushing {self.file}")
 
@@ -250,8 +249,7 @@ class CaptureObject(object):
         self.save_metadata()
 
     def save_metadata(self) -> None:
-        #gevent.get_hub().threadpool.spawn(self.synchronous_save_metadata)
-        gevent.spawn(self.synchronous_save_metadata)
+        gevent.get_hub().threadpool.spawn(self.synchronous_save_metadata)
         gevent.sleep()
 
     def synchronous_save_metadata(self) -> None:
@@ -261,19 +259,18 @@ class CaptureObject(object):
         global EXIF_FORMATS
 
         if self.format.upper() in EXIF_FORMATS and self.exists:
-            with self.file_lock:
-                logging.debug("Writing exif data to capture file")
-                # Extract current Exif data
-                exif_dict = piexif.load(self.file)
-                # Serialize metadata
-                metadata_string = json.dumps(self.metadata, cls=JSONEncoder)
-                logging.debug(f"Saving metadata string to file: {metadata_string}")
-                # Insert metadata into exif_dict
-                exif_dict["Exif"][piexif.ExifIFD.UserComment] = metadata_string.encode()
-                # Convert new exif dict to exif bytes
-                exif_bytes = piexif.dump(exif_dict)
-                # Insert exif into file
-                piexif.insert(exif_bytes, self.file)
+            logging.debug("Writing exif data to capture file")
+            # Extract current Exif data
+            exif_dict = piexif.load(self.file)
+            # Serialize metadata
+            metadata_string = json.dumps(self.metadata, cls=JSONEncoder)
+            logging.debug(f"Saving metadata string to file: {metadata_string}")
+            # Insert metadata into exif_dict
+            exif_dict["Exif"][piexif.ExifIFD.UserComment] = metadata_string.encode()
+            # Convert new exif dict to exif bytes
+            exif_bytes = piexif.dump(exif_dict)
+            # Insert exif into file
+            piexif.insert(exif_bytes, self.file)
 
     @property
     def metadata(self) -> dict:
@@ -321,7 +318,7 @@ class CaptureObject(object):
 
         if self.exists:  # If data file exists
             logging.info("Opening from file {}".format(self.file))
-            with open(self.file, "rb") as f, self.file_lock:
+            with open(self.file, "rb") as f:
                 d = io.BytesIO(f.read())  # Load bytes from file
             d.seek(0)  # Rewind loaded bytestream
             # Create a copy of the bytestream bytes
