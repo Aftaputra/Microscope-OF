@@ -22,7 +22,7 @@ except Exception as e:
     logging.warning("Unable to import PiCameraStreamer")
 from openflexure_microscope.camera.mock import MissingCamera
 
-from openflexure_microscope.utilities import serialise_array_b64
+from openflexure_microscope.utilities import serialise_array_b64, Timer
 from openflexure_microscope.config import user_settings, user_configuration
 
 from labthings.core.lock import CompositeLock
@@ -282,11 +282,17 @@ class Microscope:
         """
         Microscope system metadata, to be applied to basically all captures
         """
+        with Timer("Reading settings:"):
+            settings = self.read_settings(full=False)
+        with Timer("Reading state:"):
+            state = self.state
+        with Timer("Reading configuration:"):
+            configuration = self.configuration
         system_metadata = {
             "id": self.id,
-            "settings": self.read_settings(full=False),
-            "state": self.state,
-            "configuration": self.configuration,
+            "settings": settings,
+            "state": state,
+            "configuration": configuration,
         }
 
         return system_metadata
@@ -294,16 +300,13 @@ class Microscope:
     def add_metadata_to_capture(self, output, metadata, annotations, tags):
         logging.debug(f"Waiting for {output.file}")
         # Wait for the file to be written to disk
-        output.file_ready.wait()
-        logging.info(f"Asynchronously injecting EXIF data into {output.file}")
-        # Inject system metadata
-        output.put_metadata({"instrument": self.metadata})
-        # Insert custom metadata
-        output.put_metadata(metadata)
-        # Insert custom metadata
-        output.put_annotations(annotations)
-        # Insert custom tags
-        output.put_tags(tags)
+        with Timer("Waiting for file:"):
+            output.file_ready.wait()
+        
+        with Timer("Building metadata"):
+            full_metadata = {"instrument": self.metadata, **metadata}
+        with Timer("Writing metadata to file"):
+            output.put_and_save(tags, annotations, full_metadata)
         logging.info(f"Finished injecting EXIF data into {output.file}")
 
     def capture(
@@ -344,7 +347,9 @@ class Microscope:
             )
 
         # Gether metadata from hardware in a greenlet
-        gevent.get_hub().threadpool.spawn(self.add_metadata_to_capture, output, metadata, annotations, tags)
+        #gevent.get_hub().threadpool.spawn(self.add_metadata_to_capture, output, metadata, annotations, tags)
+        gevent.spawn(self.add_metadata_to_capture, output, metadata, annotations, tags)
+        #self.add_metadata_to_capture(output, metadata, annotations, tags)
 
         logging.info(f"Finished capture to {output.file}")
 
