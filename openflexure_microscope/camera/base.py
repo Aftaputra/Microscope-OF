@@ -2,12 +2,10 @@
 import time
 import os
 import shutil
-import threading
 import datetime
 import logging
 
 import threading
-import gevent
 
 from abc import ABCMeta, abstractmethod
 
@@ -93,9 +91,10 @@ class BaseCamera(metaclass=ABCMeta):
         self.stop = False
 
         if not self.stream_active:
-            # Spawn a greenlet to handle stream
-            # start background frame thread
-            self.thread = gevent.spawn(self._thread)
+            # Start background frame thread
+            self.thread = threading.Thread(target=self._thread)
+            self.thread.daemon = True
+            self.thread.start()
 
             # wait until frames are available
             logging.info("Waiting for frames")
