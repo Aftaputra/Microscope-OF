@@ -23,7 +23,7 @@ class BaseCamera(metaclass=ABCMeta):
         self.thread = None
         self.camera = None
 
-        self.lock = StrictLock(timeout=1, name="Camera")
+        self.lock = StrictLock(name="Camera")
 
         self.frame = None
         self.last_access = 0
