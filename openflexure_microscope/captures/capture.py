@@ -247,9 +247,6 @@ class CaptureObject(object):
         self.save_metadata()
 
     def save_metadata(self) -> None:
-        gevent.spawn(self.synchronous_save_metadata)
-
-    def synchronous_save_metadata(self) -> None:
         """
         Save metadata to exif, if supported
         """
