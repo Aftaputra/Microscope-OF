@@ -12,7 +12,6 @@ import atexit
 
 from gevent.fileobject import FileObjectThread
 import gevent
-import threading
 
 from collections import OrderedDict
 
@@ -172,7 +171,7 @@ class CaptureObject(object):
 
     def flush(self):
         logging.debug(f"Flushing {self.file}")
-        gevent.get_hub().threadpool.spawn(self._stream_to_file)
+        gevent.spawn(self._stream_to_file)
         logging.debug(f"Returning flushing {self.file}")
 
     def open(self, mode):
