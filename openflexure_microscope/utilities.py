@@ -8,7 +8,6 @@ import logging
 from collections import abc
 from functools import reduce
 from contextlib import contextmanager
-import gevent
 
 
 def deserialise_array_b64(b64_string, dtype, shape):
