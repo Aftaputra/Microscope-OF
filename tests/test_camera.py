@@ -31,7 +31,7 @@ class TestCaptureMethods(unittest.TestCase):
                 with camera.new_image() as output:
 
                     camera.capture(
-                        output.file, use_video_port=use_video_port, resize=resize
+                        output, use_video_port=use_video_port, resize=resize
                     )
 
                     # Ensure file deletion fails and returns False

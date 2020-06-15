@@ -108,18 +108,14 @@ class PiCameraStreamer(BaseCamera):
             1312,
             976,
         )  #: tuple: Resolution for numpy array captures
-        self.jpeg_quality = 75  #: int: JPEG quality
+        self.jpeg_quality = 100  #: int: JPEG quality
+        self.mjpeg_quality = 75  #: int: MJPEG quality
 
         # Set default lens shading table path
         self.picamera_lst_path = settings_file_path(
             "picamera_lst.npy"
         )  #: str: Path of .npy lens shading table file
 
-        # Create an empty stream
-        self.stream = io.BytesIO()
-
-        # Start streaming
-        self.start_worker()
 
     @property
     def configuration(self):
@@ -159,6 +155,7 @@ class PiCameraStreamer(BaseCamera):
                 "image_resolution": self.image_resolution,
                 "numpy_resolution": self.numpy_resolution,
                 "jpeg_quality": self.jpeg_quality,
+                "mjpeg_quality": self.mjpeg_quality,
                 "picamera": {},
             }
         )
@@ -479,7 +476,7 @@ class PiCameraStreamer(BaseCamera):
                     self.camera.start_recording(
                         self.stream,
                         format="mjpeg",
-                        quality=self.jpeg_quality,
+                        quality=self.mjpeg_quality,
                         bitrate=-1,  # RWB: disable bitrate control
                         # (bitrate control makes JPEG size less good as a focus
                         # metric)
@@ -520,12 +517,6 @@ class PiCameraStreamer(BaseCamera):
         Returns:
             output_object (str/BytesIO): Target object.
         """
-
-        if isinstance(output, CaptureObject):
-            target = output.file
-        else:
-            target = output
-
         with self.lock:
             logging.info("Capturing to {}".format(output))
 
@@ -535,20 +526,20 @@ class PiCameraStreamer(BaseCamera):
                 time.sleep(0.1)
 
             self.camera.capture(
-                target,
+                output,
                 format=fmt,
-                quality=100,
+                quality=self.jpeg_quality,
                 resize=resize,
                 bayer=(not use_video_port) and bayer,
                 use_video_port=use_video_port,
             )
-            time.sleep(0.1)
+            #time.sleep(0.1)
 
             # Set resolution and start stream recording if necessary
             if not use_video_port:
                 self.start_stream_recording()
 
-            return target
+            return output
 
     def yuv(
         self, use_video_port: bool = True, resize: Tuple[int, int] = None

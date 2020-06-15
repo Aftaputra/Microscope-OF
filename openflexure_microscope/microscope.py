@@ -7,6 +7,8 @@ import pkg_resources
 import uuid
 from typing import Tuple
 
+import gevent
+
 from openflexure_microscope.captures import CaptureManager
 
 from openflexure_microscope.stage.mock import MissingStage
@@ -151,39 +153,41 @@ class Microscope:
         Return:
             dict: Dictionary containing complete microscope state
         """
-        state = {"camera": self.camera.state, "stage": self.stage.state}
-        return state
+        with self.lock:
+            state = {"camera": self.camera.state, "stage": self.stage.state}
+            return state
 
     def update_settings(self, settings: dict):
         """
         Applies a settings dictionary to the microscope. Missing parameters will be left untouched.
         """
-        logging.debug("Microscope: Applying settings: {}".format(settings))
+        with self.lock:
+            logging.debug("Microscope: Applying settings: {}".format(settings))
 
-        # If attached to a camera
-        if ("camera" in settings) and self.camera:
-            self.camera.update_settings(settings.get("camera", {}))
+            # If attached to a camera
+            if ("camera" in settings) and self.camera:
+                self.camera.update_settings(settings.get("camera", {}))
 
-        # If attached to a stage
-        if ("stage" in settings) and self.stage:
-            self.stage.update_settings(settings.get("stage", {}))
+            # If attached to a stage
+            if ("stage" in settings) and self.stage:
+                self.stage.update_settings(settings.get("stage", {}))
 
-        # Capture manager
-        self.captures.update_settings(settings.get("captures", {}))
+            # Capture manager
+            self.captures.update_settings(settings.get("captures", {}))
 
-        # Microscope settings
-        if "id" in settings:
-            self.id = settings["id"]
-        if "name" in settings:
-            self.name = settings["name"]
-        if "fov" in settings:
-            self.fov = settings["fov"]
+            # Microscope settings
+            if "id" in settings:
+                self.id = settings["id"]
+            if "name" in settings:
+                self.name = settings["name"]
+            if "fov" in settings:
+                self.fov = settings["fov"]
 
-        # Extension settings
-        if "extensions" in settings:
-            self.extension_settings.update(settings["extensions"])
+            # Extension settings
+            if "extensions" in settings:
+                self.extension_settings.update(settings["extensions"])
 
-        # TODO: warn if there are settings that we silently ignore
+            # TODO: warn if there are settings that we silently ignore
 
     def read_settings(self, full: bool = True):
         """
@@ -195,49 +199,50 @@ class Microscope:
         This is to ensure that settings for currently disconnected hardware
         don't get removed from the settings file.
         """
+        with self.lock:
 
-        settings_current = {
-            "id": self.id,
-            "name": self.name,
-            "fov": self.fov,
-            "extensions": self.extension_settings,
-        }
+            settings_current = {
+                "id": self.id,
+                "name": self.name,
+                "fov": self.fov,
+                "extensions": self.extension_settings,
+            }
 
-        # If attached to a camera
-        if self.camera:
-            settings_current_camera = self.camera.read_settings()
-            settings_current["camera"] = settings_current_camera
+            # If attached to a camera
+            if self.camera:
+                settings_current_camera = self.camera.read_settings()
+                settings_current["camera"] = settings_current_camera
 
-            # Store an encoded copy of the PiCamera lens shading table, if it exists
-            if hasattr(self.camera, "read_lens_shading_table"):
-                # Read LST. Returns None if no LST is active
-                lst_arr = self.camera.read_lens_shading_table()
+                # Store an encoded copy of the PiCamera lens shading table, if it exists
+                if hasattr(self.camera, "read_lens_shading_table"):
+                    # Read LST. Returns None if no LST is active
+                    lst_arr = self.camera.read_lens_shading_table()
 
-                if lst_arr is not None:
-                    b64_string, dtype, shape = serialise_array_b64(lst_arr)
+                    if lst_arr is not None:
+                        b64_string, dtype, shape = serialise_array_b64(lst_arr)
 
-                    settings_current["camera"]["lens_shading_table"] = {
-                        "@type": "ndarray",
-                        "b64_string": b64_string,
-                        "dtype": dtype,
-                        "shape": shape,
-                    }
+                        settings_current["camera"]["lens_shading_table"] = {
+                            "@type": "ndarray",
+                            "b64_string": b64_string,
+                            "dtype": dtype,
+                            "shape": shape,
+                        }
 
-        # If attached to a stage
-        if self.stage:
-            settings_current_stage = self.stage.read_settings()
-            settings_current["stage"] = settings_current_stage
+            # If attached to a stage
+            if self.stage:
+                settings_current_stage = self.stage.read_settings()
+                settings_current["stage"] = settings_current_stage
 
-        # Capture manager
-        settings_current_captures = self.captures.read_settings()
-        settings_current["captures"] = settings_current_captures
+            # Capture manager
+            settings_current_captures = self.captures.read_settings()
+            settings_current["captures"] = settings_current_captures
 
-        settings_full = self.settings_file.merge(settings_current)
+            settings_full = self.settings_file.merge(settings_current)
 
-        if full:
-            return settings_full
-        else:
-            return settings_current
+            if full:
+                return settings_full
+            else:
+                return settings_current
 
     def save_settings(self):
         """
@@ -286,6 +291,21 @@ class Microscope:
 
         return system_metadata
 
+    def add_metadata_to_capture(self, output, metadata, annotations, tags):
+        logging.debug(f"Waiting for {output.file}")
+        # Wait for the file to be written to disk
+        output.file_ready.wait()
+        logging.info(f"Asynchronously injecting EXIF data into {output.file}")
+        # Inject system metadata
+        output.put_metadata({"instrument": self.metadata})
+        # Insert custom metadata
+        output.put_metadata(metadata)
+        # Insert custom metadata
+        output.put_annotations(annotations)
+        # Insert custom tags
+        output.put_tags(tags)
+        logging.info(f"Finished injecting EXIF data into {output.file}")
+
     def capture(
         self,
         filename: str = None,
@@ -299,6 +319,7 @@ class Microscope:
         tags: list = None,
         metadata: dict = None,
     ):
+        logging.debug(f"Microscope capturing to {filename}")
         if not annotations:
             annotations = {}
         if not metadata:
@@ -313,21 +334,18 @@ class Microscope:
             )
 
             # Capture to output object
+            logging.info("Starting microscope capture...")
             self.camera.capture(
-                output.file,
+                output,
                 use_video_port=use_video_port,
                 resize=resize,
                 bayer=bayer,
                 fmt=fmt,
             )
 
-            # Inject system metadata
-            output.put_metadata({"instrument": self.metadata})
-            # Insert custom metadata
-            output.put_metadata(metadata)
-            # Insert custom metadata
-            output.put_annotations(annotations)
-            # Insert custom tags
-            output.put_tags(tags)
+        # Gether metadata from hardware in a greenlet
+        gevent.get_hub().threadpool.spawn(self.add_metadata_to_capture, output, metadata, annotations, tags)
+
+        logging.info(f"Finished capture to {output.file}")
 
         return output

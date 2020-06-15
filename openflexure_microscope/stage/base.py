@@ -11,7 +11,7 @@ class BaseStage(metaclass=ABCMeta):
     """
 
     def __init__(self):
-        self.lock = StrictLock(timeout=5)
+        self.lock = StrictLock(name="Stage")
 
     @abstractmethod
     def update_settings(self, config: dict):

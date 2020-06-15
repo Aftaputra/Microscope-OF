@@ -25,7 +25,7 @@ class MjpegStream(PropertyView):
         frame from the camera object, passed to the Flask response, and then repeats until
         the connection is closed.
 
-        Without monkey patching with gevent, or using a native threaded server, the stream
+        Without monkey patching, or using a native threaded server, the stream
         will block all proceeding requests.
         """
         microscope = find_component("org.openflexure.microscope")

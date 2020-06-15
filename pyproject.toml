@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "openflexure-microscope-server"
-version = "2.1.3"
+version = "2.2.0-beta.0"
 description = "Python module, and Flask-based web API, to run the OpenFlexure Microscope."
 
 authors = [
@@ -42,10 +42,11 @@ opencv-python-headless = [
     {version = "4.1.0.25", python = "~3.7"},  # PiWheels build for RPi running Py37
     {version = "4.2.0.34", python = "^3.8"}  # Latest for Py38 systems
 ]
-labthings = "0.6.4"
+labthings = "0.6.5"
 pynpm = "^0.1.2"
 camera-stage-mapping = {git = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git"}
-sangaboard = "^0.2.0"
+sangaboard = "^0.2"
+gevent = "20.6.0"  # Pinned version to guarantee piwheels wheel
 
 [tool.poetry.extras]
 rpi = ["RPi.GPIO"]

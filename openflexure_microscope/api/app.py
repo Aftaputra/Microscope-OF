@@ -3,13 +3,20 @@ from gevent import monkey
 
 monkey.patch_all()
 
+import sys
 import time
 import atexit
 import logging, logging.handlers
 
+# Look for debug flag
+if "-d" in sys.argv or "--debug" in sys.argv:
+    log_level = logging.DEBUG
+else:
+    log_level = logging.INFO
+
 # Set root logger level
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(log_level)
 
 import os
 import pkg_resources

@@ -10,6 +10,9 @@ from PIL import Image
 import dateutil.parser
 import atexit
 
+from gevent.fileobject import FileObjectThread
+import gevent
+
 from collections import OrderedDict
 
 from openflexure_microscope.camera import piexif
@@ -118,12 +121,18 @@ def capture_from_exif(path, exif_dict):
 
 class CaptureObject(object):
     """
-    StreamObject used to store and process on-disk capture data, and metadata.
+    File-like object used to store and process on-disk capture data, and metadata.
     Serves to simplify modifying properties of on-disk capture data.
     """
 
     def __init__(self, filepath) -> None:
         """Create a new StreamObject, to manage capture data."""
+        # Stream for buffering capture data
+        self.stream = io.BytesIO()
+        # Event to notify when the stream has finished writing to disk
+        self.file_ready = gevent.event.Event()
+        # Access lock for the disk file
+        self.lock = gevent.lock.BoundedSemaphore()
 
         # Store a nice ID
         self.id = uuid.uuid4()  #: str: Unique capture ID
@@ -147,6 +156,23 @@ class CaptureObject(object):
 
         # Thumbnail (populated only for PIL captures)
         self.thumb_bytes = None
+
+    def write(self, s):
+        self.stream.write(s)
+
+    def _stream_to_file(self):
+        with self.lock:
+            logging.info(f"Writing to disk {self.file}")
+            with FileObjectThread(open(self.file, "wb"), 'wb')  as outfile:
+                outfile.write(self.stream.getbuffer())
+            self.stream.close()
+            self.file_ready.set()
+            logging.info(f"Finished writing to disk {self.file}")
+
+    def flush(self):
+        logging.debug(f"Flushing {self.file}")
+        gevent.spawn(self._stream_to_file)
+        logging.debug(f"Returning flushing {self.file}")
 
     def open(self, mode):
         return open(self.file, mode)
@@ -227,18 +253,20 @@ class CaptureObject(object):
         global EXIF_FORMATS
 
         if self.format.upper() in EXIF_FORMATS and self.exists:
-            logging.debug("Writing exif data to capture file")
-            # Extract current Exif data
-            exif_dict = piexif.load(self.file)
-            # Serialize metadata
-            metadata_string = json.dumps(self.metadata, cls=JSONEncoder)
-            logging.debug(f"Saving metadata string to file: {metadata_string}")
-            # Insert metadata into exif_dict
-            exif_dict["Exif"][piexif.ExifIFD.UserComment] = metadata_string.encode()
-            # Convert new exif dict to exif bytes
-            exif_bytes = piexif.dump(exif_dict)
-            # Insert exif into file
-            piexif.insert(exif_bytes, self.file)
+            self.file_ready.wait()
+            with self.lock:
+                logging.debug("Writing exif data to capture file")
+                # Extract current Exif data
+                exif_dict = piexif.load(self.file)
+                # Serialize metadata
+                metadata_string = json.dumps(self.metadata, cls=JSONEncoder)
+                logging.debug(f"Saving metadata string to file: {metadata_string}")
+                # Insert metadata into exif_dict
+                exif_dict["Exif"][piexif.ExifIFD.UserComment] = metadata_string.encode()
+                # Convert new exif dict to exif bytes
+                exif_bytes = piexif.dump(exif_dict)
+                # Insert exif into file
+                piexif.insert(exif_bytes, self.file)
 
     @property
     def metadata(self) -> dict:

@@ -51,7 +51,8 @@ class SangaStage(BaseStage):
 
     @property
     def position(self):
-        return self.board.position
+        with self.lock:
+            return self.board.position
 
     @property
     def backlash(self):
@@ -108,6 +109,7 @@ class SangaStage(BaseStage):
         backlash: (default: True) whether to correct for backlash.
         """
         with self.lock:
+            logging.info(f"Moving sangaboard by {displacement}")
             if not backlash or self.backlash is None:
                 return self.board.move_rel(displacement, axis=axis)
 
@@ -145,6 +147,7 @@ class SangaStage(BaseStage):
         """Make an absolute move to a position
         """
         with self.lock:
+            logging.info(f"Moving sangaboard to {final}")
             self.board.move_abs(final, **kwargs)
 
     def zero_position(self):
