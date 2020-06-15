@@ -246,6 +246,28 @@ class CaptureObject(object):
         self._metadata.update(data)
         self.save_metadata()
 
+    def put_and_save(self, tags: list = None, annotations: dict = None, metadata: dict = None):
+        """
+        Batch-write tags, metadata, and annotations in a single disk operation
+        """
+        if not tags:
+            tags = []
+        if not annotations:
+            annotations = {}
+        if not metadata:
+            metadata = {}
+        
+        # Tags
+        for tag in tags:
+            if tag not in self.tags:
+                self.tags.append(tag)
+        # Annotations
+        self.annotations.update(annotations)
+        # Metadata
+        self._metadata.update(metadata)
+
+        self.save_metadata
+
     def save_metadata(self) -> None:
         """
         Save metadata to exif, if supported
