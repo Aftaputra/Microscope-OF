@@ -92,6 +92,7 @@ app, labthing = create_app(
 cors = CORS(app)
 
 # Use custom JSON encoder
+app.config['LABTHINGS_JSON_ENCODER'] = JSONEncoder
 app.json_encoder = JSONEncoder
 
 # Attach lab devices
