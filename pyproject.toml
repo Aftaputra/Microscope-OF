@@ -42,7 +42,7 @@ opencv-python-headless = [
     {version = "4.1.0.25", python = "~3.7"},  # PiWheels build for RPi running Py37
     {version = "4.2.0.34", python = "^3.8"}  # Latest for Py38 systems
 ]
-labthings = "0.6.6"
+labthings = "0.6.7"
 pynpm = "^0.1.2"
 camera-stage-mapping = {git = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git"}
 sangaboard = "^0.2"
