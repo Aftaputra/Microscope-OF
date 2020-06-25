@@ -95,7 +95,7 @@ description = ""
 name = "camera-stage-mapping"
 optional = false
 python-versions = "^3.6"
-version = "0.1.0"
+version = "0.1.1"
 
 [package.dependencies]
 numpy = "^1.17"
@@ -107,7 +107,7 @@ ipython = []
 ofmclient = []
 
 [package.source]
-reference = "9133e9781157e7d8be2ca0cbeefa7fca0c7dfbe0"
+reference = "0352e59fdfc9154652914a4c9373a741e10dfa25"
 type = "git"
 url = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git"
 [[package]]
