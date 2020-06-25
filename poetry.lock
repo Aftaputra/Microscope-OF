@@ -95,7 +95,7 @@ description = ""
 name = "camera-stage-mapping"
 optional = false
 python-versions = "^3.6"
-version = "0.1.0"
+version = "0.1.1"
 
 [package.dependencies]
 numpy = "^1.17"
@@ -107,7 +107,7 @@ ipython = []
 ofmclient = []
 
 [package.source]
-reference = "9133e9781157e7d8be2ca0cbeefa7fca0c7dfbe0"
+reference = "87a66aadbbea211b260dc279c0f009a8a2b8de51"
 type = "git"
 url = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git"
 [[package]]
@@ -321,7 +321,7 @@ description = "Python implementation of LabThings, based on the Flask microframe
 name = "labthings"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "0.6.6"
+version = "0.6.7"
 
 [package.dependencies]
 Flask = ">=1.1.1,<2.0.0"
@@ -835,7 +835,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 rpi = ["RPi.GPIO"]
 
 [metadata]
-content-hash = "fb0879e363a0914e4c44c8227e5e06bb3d61c048b7b5e17a9fe820d36433379d"
+content-hash = "ae04fc9fc87b8a1dd96e9fe8b442fb6261d2ded29aef1385dcb35beac5d8f467"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -1004,8 +1004,8 @@ jinja2 = [
     {file = "Jinja2-2.11.2.tar.gz", hash = "sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0"},
 ]
 labthings = [
-    {file = "labthings-0.6.6-py3-none-any.whl", hash = "sha256:c6a354f520fe28e0698891e56c59d2367b06b9121499486e39ce2d19b53afe92"},
-    {file = "labthings-0.6.6.tar.gz", hash = "sha256:bd3c517abd3467e6ecaaf64deb102419327fcaf71b0d6e4d08c556b0ad1d7833"},
+    {file = "labthings-0.6.7-py3-none-any.whl", hash = "sha256:c39d3de301cc2c0b21e44bee49c84bdc912be84ace0168de7c16dc4966b4397b"},
+    {file = "labthings-0.6.7.tar.gz", hash = "sha256:5c70fde942436a21764f0ba7e5a77c0f080e51270dc8b4c69917b5b23e253c7b"},
 ]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.4.3.tar.gz", hash = "sha256:f3900e8a5de27447acbf900b4750b0ddfd7ec1ea7fbaf11dfa911141bc522af0"},
