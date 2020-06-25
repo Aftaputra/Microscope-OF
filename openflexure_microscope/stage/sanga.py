@@ -51,7 +51,7 @@ class SangaStage(BaseStage):
 
     @property
     def position(self):
-        with self.lock:
+        with self.lock(timeout=None):
             return self.board.position
 
     @property
