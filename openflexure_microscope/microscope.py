@@ -153,7 +153,7 @@ class Microscope:
         Return:
             dict: Dictionary containing complete microscope state
         """
-        with self.lock:
+        with self.lock(timeout=None):
             state = {"camera": self.camera.state, "stage": self.stage.state}
             return state
 
@@ -161,7 +161,7 @@ class Microscope:
         """
         Applies a settings dictionary to the microscope. Missing parameters will be left untouched.
         """
-        with self.lock:
+        with self.lock(timeout=None):
             logging.debug("Microscope: Applying settings: {}".format(settings))
 
             # If attached to a camera
@@ -199,39 +199,38 @@ class Microscope:
         This is to ensure that settings for currently disconnected hardware
         don't get removed from the settings file.
         """
-        with self.lock:
+        settings_current = {
+            "id": self.id,
+            "name": self.name,
+            "fov": self.fov,
+            "extensions": self.extension_settings,
+        }
 
-            settings_current = {
-                "id": self.id,
-                "name": self.name,
-                "fov": self.fov,
-                "extensions": self.extension_settings,
-            }
-
+        with self.lock(timeout=None):
             # If attached to a camera
             if self.camera:
-                settings_current_camera = self.camera.read_settings()
-                settings_current["camera"] = settings_current_camera
+                    settings_current_camera = self.camera.read_settings()
+                    settings_current["camera"] = settings_current_camera
 
-                # Store an encoded copy of the PiCamera lens shading table, if it exists
-                if hasattr(self.camera, "read_lens_shading_table"):
-                    # Read LST. Returns None if no LST is active
-                    lst_arr = self.camera.read_lens_shading_table()
+                    # Store an encoded copy of the PiCamera lens shading table, if it exists
+                    if hasattr(self.camera, "read_lens_shading_table"):
+                        # Read LST. Returns None if no LST is active
+                        lst_arr = self.camera.read_lens_shading_table()
 
-                    if lst_arr is not None:
-                        b64_string, dtype, shape = serialise_array_b64(lst_arr)
+                        if lst_arr is not None:
+                            b64_string, dtype, shape = serialise_array_b64(lst_arr)
 
-                        settings_current["camera"]["lens_shading_table"] = {
-                            "@type": "ndarray",
-                            "b64_string": b64_string,
-                            "dtype": dtype,
-                            "shape": shape,
-                        }
+                            settings_current["camera"]["lens_shading_table"] = {
+                                "@type": "ndarray",
+                                "b64_string": b64_string,
+                                "dtype": dtype,
+                                "shape": shape,
+                            }
 
             # If attached to a stage
             if self.stage:
-                settings_current_stage = self.stage.read_settings()
-                settings_current["stage"] = settings_current_stage
+                    settings_current_stage = self.stage.read_settings()
+                    settings_current["stage"] = settings_current_stage
 
             # Capture manager
             settings_current_captures = self.captures.read_settings()
@@ -255,27 +254,28 @@ class Microscope:
 
     @property
     def configuration(self):
-        initial_configuration = self.configuration_file.load()
+        with self.lock(timeout=None):
+            initial_configuration = self.configuration_file.load()
 
-        current_configuration = {
-            "application": {
-                "name": "openflexure-microscope-server",
-                "version": pkg_resources.get_distribution(
-                    "openflexure-microscope-server"
-                ).version,
-            },
-            "stage": {
-                "type": self.stage.__class__.__name__,
-                **self.stage.configuration,
-            },
-            "camera": {
-                "type": self.camera.__class__.__name__,
-                **self.camera.configuration,
-            },
-        }
+            current_configuration = {
+                "application": {
+                    "name": "openflexure-microscope-server",
+                    "version": pkg_resources.get_distribution(
+                        "openflexure-microscope-server"
+                    ).version,
+                },
+                "stage": {
+                    "type": self.stage.__class__.__name__,
+                    **self.stage.configuration,
+                },
+                "camera": {
+                    "type": self.camera.__class__.__name__,
+                    **self.camera.configuration,
+                },
+            }
 
-        initial_configuration.update(current_configuration)
-        return initial_configuration
+            initial_configuration.update(current_configuration)
+            return initial_configuration
 
     @property
     def metadata(self):
