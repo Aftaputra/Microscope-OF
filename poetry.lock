@@ -107,7 +107,7 @@ ipython = []
 ofmclient = []
 
 [package.source]
-reference = "e6f1a8ade441064a0267a434692cd755aae33a8e"
+reference = "f5d0d8977a2511b20b47061ac203551f97b8b4ab"
 type = "git"
 url = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git"
 [[package]]
@@ -335,9 +335,10 @@ webargs = "^6.0.0"
 zeroconf = ">=0.24.5,<0.28.0"
 
 [package.source]
-reference = "b893cce91504a2e24c95f8ddb72d47b7a949411e"
+reference = "d7889d07dee0344b112a606caabc836e69bac63f"
 type = "git"
 url = "https://github.com/labthings/python-labthings.git"
+
 [[package]]
 category = "dev"
 description = "A fast and thorough lazy object proxy."
@@ -437,6 +438,7 @@ test = ["coverage", "pytest", "mock", "pillow", "numpy"]
 reference = ""
 type = "url"
 url = "https://github.com/rwb27/picamera/releases/download/v1.13.2b0/picamera-1.13.2b0-py3-none-any.whl"
+
 [[package]]
 category = "main"
 description = "Python Imaging Library (Fork)"
@@ -839,7 +841,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 rpi = ["RPi.GPIO"]
 
 [metadata]
-content-hash = "d6978ac9c76482b473689cd4a1e48348d7c93cbfcb823856f1bb3a6b46ed3283"
+content-hash = "0607e2b39e77ac530c84a4c2e1dfc14b373ca96322b634e52001cb0591b4b3e7"
 python-versions = "^3.6"
 
 [metadata.files]
