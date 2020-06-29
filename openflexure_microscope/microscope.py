@@ -212,21 +212,6 @@ class Microscope:
                     settings_current_camera = self.camera.read_settings()
                     settings_current["camera"] = settings_current_camera
 
-                    # Store an encoded copy of the PiCamera lens shading table, if it exists
-                    if hasattr(self.camera, "read_lens_shading_table"):
-                        # Read LST. Returns None if no LST is active
-                        lst_arr = self.camera.read_lens_shading_table()
-
-                        if lst_arr is not None:
-                            b64_string, dtype, shape = serialise_array_b64(lst_arr)
-
-                            settings_current["camera"]["lens_shading_table"] = {
-                                "@type": "ndarray",
-                                "b64_string": b64_string,
-                                "dtype": dtype,
-                                "shape": shape,
-                            }
-
             # If attached to a stage
             if self.stage:
                     settings_current_stage = self.stage.read_settings()
