@@ -325,22 +325,23 @@ class TileScanAPI(ActionView):
 
         logging.info("Running tile scan...")
 
-        # return a handle on the scan task
-        return scan_extension_v2.tile(
-            microscope,
-            basename=args.get("filename"),
-            temporary=args.get("temporary"),
-            stride_size=args.get("stride_size"),
-            grid=args.get("grid"),
-            style=args.get("style"),
-            autofocus_dz=args.get("autofocus_dz"),
-            use_video_port=args.get("use_video_port"),
-            resize=resize,
-            bayer=args.get("bayer"),
-            fast_autofocus=args.get("fast_autofocus"),
-            annotations=args.get("annotations"),
-            tags=args.get("tags"),
-        )
-
+        # Acquire microscope lock with 1s timeout
+        with microscope.lock(timeout=1):
+            # Run scan_extension_v2
+            return scan_extension_v2.tile(
+                microscope,
+                basename=args.get("filename"),
+                temporary=args.get("temporary"),
+                stride_size=args.get("stride_size"),
+                grid=args.get("grid"),
+                style=args.get("style"),
+                autofocus_dz=args.get("autofocus_dz"),
+                use_video_port=args.get("use_video_port"),
+                resize=resize,
+                bayer=args.get("bayer"),
+                fast_autofocus=args.get("fast_autofocus"),
+                annotations=args.get("annotations"),
+                tags=args.get("tags"),
+            )
 
 scan_extension_v2.add_view(TileScanAPI, "/tile", endpoint="tile")
