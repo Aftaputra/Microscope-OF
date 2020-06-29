@@ -153,7 +153,7 @@ class Microscope:
         Return:
             dict: Dictionary containing complete microscope state
         """
-        with self.lock(timeout=None):
+        with self.lock:
             state = {"camera": self.camera.state, "stage": self.stage.state}
             return state
 
@@ -161,7 +161,7 @@ class Microscope:
         """
         Applies a settings dictionary to the microscope. Missing parameters will be left untouched.
         """
-        with self.lock(timeout=None):
+        with self.lock:
             logging.debug("Microscope: Applying settings: {}".format(settings))
 
             # If attached to a camera
@@ -206,7 +206,7 @@ class Microscope:
             "extensions": self.extension_settings,
         }
 
-        with self.lock(timeout=None):
+        with self.lock:
             # If attached to a camera
             if self.camera:
                     settings_current_camera = self.camera.read_settings()
@@ -254,7 +254,7 @@ class Microscope:
 
     @property
     def configuration(self):
-        with self.lock(timeout=None):
+        with self.lock:
             initial_configuration = self.configuration_file.load()
 
             current_configuration = {
