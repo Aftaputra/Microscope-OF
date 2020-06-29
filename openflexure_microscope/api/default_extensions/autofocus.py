@@ -363,8 +363,8 @@ class FastAutofocusAPI(ActionView):
     Run a fast autofocus
     """
     args = {
-        "dz": fields.Int(default=2000),
-        "backlash": fields.Int(default=25, minimum=0)
+        "dz": fields.Int(missing=2000),
+        "backlash": fields.Int(missing=25, minimum=0)
     }
 
     def post(self, args):

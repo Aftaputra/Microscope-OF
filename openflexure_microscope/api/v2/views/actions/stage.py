@@ -13,11 +13,11 @@ import logging
 class MoveStageAPI(ActionView):
     args = {
         "absolute": fields.Boolean(
-            default=False, example=False, description="Move to an absolute position"
+            missing=False, example=False, description="Move to an absolute position"
         ),
-        "x": fields.Int(default=0, example=100),
-        "y": fields.Int(default=0, example=100),
-        "z": fields.Int(default=0, example=20),
+        "x": fields.Int(missing=0, example=100),
+        "y": fields.Int(missing=0, example=100),
+        "z": fields.Int(missing=0, example=20),
     }
 
     def post(self, args):
