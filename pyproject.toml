@@ -44,7 +44,7 @@ opencv-python-headless = [
 ]
 labthings = {git = "https://github.com/labthings/python-labthings.git", rev = "simpler-spec"}
 pynpm = "^0.1.2"
-camera-stage-mapping = {git = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git"}
+camera-stage-mapping = {git = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git", rev = "labthings-0.7"}
 sangaboard = "^0.2"
 gevent = "20.6.0"  # Pinned version to guarantee piwheels wheel
 
