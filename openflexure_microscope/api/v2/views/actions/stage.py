@@ -45,8 +45,8 @@ class MoveStageAPI(ActionView):
 
         # Move if stage exists
         if microscope.stage:
-            # Explicitally acquire lock
-            with microscope.stage.lock:
+            # Explicitally acquire lock with 1s timeout
+            with microscope.stage.lock(timeout=1):
                 microscope.stage.move_rel(position)
         else:
             logging.warning("Unable to move. No stage found.")
@@ -62,7 +62,9 @@ class ZeroStageAPI(ActionView):
         Does not move the stage, but rather makes the current position read as [0, 0, 0]
         """
         microscope = find_component("org.openflexure.microscope")
-        microscope.stage.zero_position()
+
+        with microscope.stage.lock(timeout=1):
+            microscope.stage.zero_position()
 
         # TODO: Make schema for microscope state
         return microscope.state["stage"]

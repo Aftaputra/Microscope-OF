@@ -109,7 +109,7 @@ class ZipManager:
                 # Add to ZIP file if it exists
                 file_path = capture_obj.file
                 rel_path = os.path.relpath(
-                    file_path, microscope.camera.paths["default"]
+                    file_path, microscope.captures.paths["default"]
                 )
                 zipObj.write(file_path, arcname=rel_path)
                 # Update task progress

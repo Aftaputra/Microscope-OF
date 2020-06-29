@@ -35,9 +35,9 @@ def pull_usercomment_dict(filepath):
     except InvalidImageDataError:
         logging.warning("Invalid data at {}. Skipping.".format(filepath))
         return None
-    if "Exif" in exif_dict and 37510 in exif_dict["Exif"]:
+    if "Exif" in exif_dict and piexif.ExifIFD.UserComment in exif_dict["Exif"]:
         try:
-            return json.loads(exif_dict["Exif"][37510].decode())
+            return json.loads(exif_dict["Exif"][piexif.ExifIFD.UserComment].decode())
         except json.decoder.JSONDecodeError:
             logging.error(
                 f"Capture {filepath} has old, corrupt, or missing OpenFlexure metadata. Unable to reload to server."
@@ -266,7 +266,7 @@ class CaptureObject(object):
         # Metadata
         self._metadata.update(metadata)
 
-        self.save_metadata
+        self.save_metadata()
 
     def save_metadata(self) -> None:
         """
@@ -289,6 +289,7 @@ class CaptureObject(object):
                 exif_bytes = piexif.dump(exif_dict)
                 # Insert exif into file
                 piexif.insert(exif_bytes, self.file)
+            logging.info(f"Finished saving metadata to {self.file}")
 
     @property
     def metadata(self) -> dict:

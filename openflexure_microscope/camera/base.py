@@ -55,7 +55,7 @@ class BaseCamera(metaclass=ABCMeta):
     @abstractmethod
     def update_settings(self, config: dict):
         """Update settings from a config dictionary"""
-        with self.lock:
+        with self.lock(timeout=None):
             # Apply valid config params to camera object
             for key, value in config.items():  # For each provided setting
                 if hasattr(self, key):  # If the instance has a matching property

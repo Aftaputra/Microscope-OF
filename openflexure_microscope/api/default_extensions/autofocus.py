@@ -376,10 +376,12 @@ class FastAutofocusAPI(ActionView):
         if microscope.has_real_stage():
             logging.debug("Running autofocus...")
 
-            # return a handle on the autofocus task
-            return fast_up_down_up_autofocus(
-                microscope, dz=dz, mini_backlash=backlash
-            )
+            # Acquire microscope lock with 1s timeout
+            with microscope.lock(timeout=1):
+                # Run fast_up_down_up_autofocus
+                return fast_up_down_up_autofocus(
+                    microscope, dz=dz, mini_backlash=backlash
+                )
 
         else:
             abort(503, "No stage connected. Unable to autofocus.")

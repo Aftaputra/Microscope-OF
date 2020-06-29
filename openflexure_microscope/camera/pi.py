@@ -195,7 +195,7 @@ class PiCameraStreamer(BaseCamera):
         logging.debug("PiCameraStreamer: Applying config:")
         logging.debug(config)
 
-        with self.lock:
+        with self.lock(timeout=None):
 
             # Apply valid config params to Picamera object
             if not self.record_active:  # If not recording a video
@@ -301,7 +301,7 @@ class PiCameraStreamer(BaseCamera):
         """
         Change the camera zoom, handling re-centering and scaling.
         """
-        with self.lock:
+        with self.lock(timeout=None):
             self.zoom_value = float(zoom_value)
             if self.zoom_value < 1:
                 self.zoom_value = 1
@@ -448,7 +448,7 @@ class PiCameraStreamer(BaseCamera):
             resolution ((int, int)): Resolution to set the camera to, before starting recording. 
                 Defaults to `self.stream_resolution`.
         """
-        with self.lock:
+        with self.lock(timeout=None):
             # If stream object was destroyed
             if not hasattr(self, "stream"):
                 self.stream = io.BytesIO()  # Create a stream object
