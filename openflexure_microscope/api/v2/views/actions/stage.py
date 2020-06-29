@@ -1,7 +1,6 @@
 from openflexure_microscope.api.utilities import JsonResponse
 from labthings.server.view import View, ActionView
 from labthings.server.find import find_component
-from labthings.server.decorators import use_args, marshal_with, doc, ThingAction
 from labthings.server import fields
 
 from openflexure_microscope.utilities import axes_to_array, filter_dict
@@ -12,16 +11,15 @@ import logging
 
 
 class MoveStageAPI(ActionView):
-    @use_args(
-        {
-            "absolute": fields.Boolean(
-                default=False, example=False, description="Move to an absolute position"
-            ),
-            "x": fields.Int(default=0, example=100),
-            "y": fields.Int(default=0, example=100),
-            "z": fields.Int(default=0, example=20),
-        }
-    )
+    args = {
+        "absolute": fields.Boolean(
+            default=False, example=False, description="Move to an absolute position"
+        ),
+        "x": fields.Int(default=0, example=100),
+        "y": fields.Int(default=0, example=100),
+        "z": fields.Int(default=0, example=20),
+    }
+
     def post(self, args):
         """
         Move the microscope stage in x, y, z

@@ -14,16 +14,10 @@ import logging
 
 from labthings.server.find import find_component
 from labthings.server.view import View, ActionView, PropertyView
-from labthings.server.schema import Schema
+from labthings.server.schema import Schema, pre_dump
 from labthings.server import fields
 from labthings.server.extensions import BaseExtension
 from labthings.server.utilities import description_from_view
-from labthings.server.decorators import (
-    ThingAction,
-    ThingProperty,
-    marshal_with,
-    pre_dump,
-)
 
 
 class ZipObjectSchema(Schema):
@@ -140,7 +134,6 @@ default_zip_manager = ZipManager()
 
 class ZipBuilderAPIView(ActionView):
     def post(self):
-
         ids = list(JsonResponse(request).json)
         microscope = find_component("org.openflexure.microscope")
 
@@ -151,7 +144,8 @@ class ZipBuilderAPIView(ActionView):
 
 
 class ZipListAPIView(PropertyView):
-    @marshal_with(ZipObjectSchema(many=True))
+    schema = ZipObjectSchema(many=True)
+
     def get(self):
         return default_zip_manager.session_zips.values()
 

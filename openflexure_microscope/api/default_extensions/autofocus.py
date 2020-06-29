@@ -1,7 +1,7 @@
 from labthings.server.find import find_component
 from labthings.server.extensions import BaseExtension
 from labthings.server.view import View, ActionView, PropertyView
-from labthings.server.decorators import ThingAction, ThingProperty
+from labthings.server import fields
 
 from openflexure_microscope.devel import JsonResponse, request, abort
 from openflexure_microscope.utilities import set_properties
@@ -336,7 +336,9 @@ class AutofocusAPI(ActionView):
     """
     Run a standard autofocus
     """
-    def post(self):
+    args = {"dz": fields.List(fields.Int())}
+
+    def post(self, args):
         payload = JsonResponse(request)
         microscope = find_component("org.openflexure.microscope")
 
@@ -344,7 +346,7 @@ class AutofocusAPI(ActionView):
             abort(503, "No microscope connected. Unable to autofocus.")
 
         # Figure out the range of z values to use
-        dz = payload.param("dz", default=np.linspace(-300, 300, 7), convert=np.array)
+        dz = np.array(args.get("dz", np.linspace(-300, 300, 7)))
 
         if microscope.has_real_stage():
             logging.debug("Running autofocus...")
@@ -360,18 +362,20 @@ class FastAutofocusAPI(ActionView):
     """
     Run a fast autofocus
     """
-    def post(self):
-        payload = JsonResponse(request)
+    args = {
+        "dz": fields.Int(default=2000),
+        "backlash": fields.Int(default=25, minimum=0)
+    }
+
+    def post(self, args):
         microscope = find_component("org.openflexure.microscope")
 
         if not microscope:
             abort(503, "No microscope connected. Unable to autofocus.")
 
         # Figure out the parameters to use
-        dz = payload.param("dz", default=2000, convert=int)
-        backlash = payload.param("backlash", default=25, convert=int)
-        if backlash < 0:
-            backlash = 0
+        dz = args.get("dz")
+        backlash = args.get("backlash")
 
         if microscope.has_real_stage():
             logging.debug("Running autofocus...")
