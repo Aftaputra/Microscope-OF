@@ -31,4 +31,4 @@ Swagger documentation
 
 At this point, it is useful to introduce the automatically generated Swagger documentation. From any web browser, go to ``http://microscope.local/api/v2/swagger-ui`` (or replace ``microscope.local`` with your microscope's IP address if ``microscope.local`` doesn't work for your system).
 
-This page uses `SwaggerUI <https://swagger.io/tools/swagger-ui/>`_ to provide visual, interactive API documentation. Find your extensions URL in the documentation under the ``extensions`` group. Basic documentation about the parameters required for your POST method should be visible, as well as an interactive example filled out with the example request given in ``@use_body``.
+This page uses `SwaggerUI <https://swagger.io/tools/swagger-ui/>`_ to provide visual, interactive API documentation. Find your extensions URL in the documentation under the ``extensions`` group. Basic documentation about the parameters required for your POST method should be visible, as well as an interactive example filled out with the example request given in the view ``schema``.

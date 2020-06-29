@@ -45,7 +45,7 @@ For example, if you are creating an API route, in which you expect parameters ``
         age = fields.Integer(required=True)
         job = fields.String(required=False, missing="Unknown")
 
-To inform your POST method to expect these arguments, use the ``@use_args`` decorator:
+To inform your POST method to expect these arguments, use the ``args`` class attribute:
 
 .. code-block:: python
 

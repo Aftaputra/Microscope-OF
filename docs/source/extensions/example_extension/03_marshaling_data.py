@@ -38,7 +38,7 @@ class ExampleIdentifyView(View):
         microscope = find_component("org.openflexure.microscope")
 
         # Return our microscope object,
-        # let @marshal_with handle formatting the output
+        # let schema handle formatting the output
         return microscope
 
 
@@ -59,7 +59,7 @@ class ExampleRenameView(View):
         rename(microscope, new_name)
 
         # Return our microscope object,
-        # let @marshal_with handle formatting the output
+        # let schema handle formatting the output
         return microscope
 
 
