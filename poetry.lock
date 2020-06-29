@@ -107,7 +107,7 @@ ipython = []
 ofmclient = []
 
 [package.source]
-reference = "87a66aadbbea211b260dc279c0f009a8a2b8de51"
+reference = "e6f1a8ade441064a0267a434692cd755aae33a8e"
 type = "git"
 url = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git"
 [[package]]
@@ -335,7 +335,7 @@ webargs = "^6.0.0"
 zeroconf = ">=0.24.5,<0.28.0"
 
 [package.source]
-reference = "c80e45f1a391c353b8cbe78a667f51c2e36ced76"
+reference = "b893cce91504a2e24c95f8ddb72d47b7a949411e"
 type = "git"
 url = "https://github.com/labthings/python-labthings.git"
 [[package]]
