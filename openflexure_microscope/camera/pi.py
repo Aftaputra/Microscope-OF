@@ -212,6 +212,18 @@ class PiCameraStreamer(BaseCamera):
                         config["picamera"], pause_for_effect=True
                     )
 
+                    # Handle lens shading if camera supports it
+                    if (
+                        hasattr(self.camera, "lens_shading_table")
+                        and "lens_shading_table" in config["picamera"]
+                    ):
+                        try:
+                            self.camera.lens_shading_table = json_to_ndarray(
+                                config["picamera"].get("lens_shading_table")
+                            )
+                        except KeyError as e:
+                            logging.error(e)
+
                 # PiCameraStreamer parameters
                 for key, value in config.items():  # For each provided setting
                     if (key != "picamera") and hasattr(self, key):
