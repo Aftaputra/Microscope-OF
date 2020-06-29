@@ -2,7 +2,6 @@ from labthings.server.extensions import BaseExtension
 from labthings.server.find import find_component
 from labthings.server.view import View
 
-from labthings.server.decorators import use_body
 from labthings.server import fields
 
 ## Extension methods
@@ -44,11 +43,13 @@ class ExampleIdentifyView(View):
 
 
 class ExampleRenameView(View):
-    # Expect a request parameter called "name", which is a string. Pass to argument "args".
-    @use_body(fields.String(required=True, example="My Example Microscope"))
-    def post(self, body):
+    # Expect a request parameter called "name", which is a string. 
+    # Passed to the argument "args".
+    args = fields.String(required=True, example="My Example Microscope")
+
+    def post(self, args):
         # Look for our new name in the request body
-        new_name = body
+        new_name = args
 
         # Find our microscope component
         microscope = find_component("org.openflexure.microscope")

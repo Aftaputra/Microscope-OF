@@ -2,7 +2,6 @@ from labthings.server.extensions import BaseExtension
 from labthings.server.find import find_component
 from labthings.server.view import View
 
-from labthings.server.decorators import use_args, marshal_with
 from labthings.server.schema import Schema
 from labthings.server import fields
 
@@ -30,10 +29,10 @@ def rename(microscope, new_name):
 
 ## Extension views
 
-
 class ExampleIdentifyView(View):
     # Format our returned object using MicroscopeIdentifySchema
-    @marshal_with(MicroscopeIdentifySchema())
+    schema = MicroscopeIdentifySchema()
+
     def get(self):
         # Find our microscope component
         microscope = find_component("org.openflexure.microscope")
@@ -45,9 +44,10 @@ class ExampleIdentifyView(View):
 
 class ExampleRenameView(View):
     # Format our returned object using MicroscopeIdentifySchema
-    @marshal_with(MicroscopeIdentifySchema())
+    schema = MicroscopeIdentifySchema()
     # Expect a request parameter called "name", which is a string. Pass to argument "args".
-    @use_args({"name": fields.String(required=True, example="My Example Microscope")})
+    args = {"name": fields.String(required=True, example="My Example Microscope")}
+
     def post(self, args):
         # Look for our "name" parameter in the request arguments
         new_name = args.get("name")

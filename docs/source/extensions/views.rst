@@ -18,13 +18,13 @@ In this case, our extension will have two new API views at `/identify` and `/ren
 Request arguments
 +++++++++++++++++
 
-For POST and PUT requests, data usually needs to be provided to the view in order to perform its function. In this example, our ``rename`` view requires a new microscope name to be passed. We make use of the ``@use_body`` decorator to provide this functionality.
+For POST and PUT requests, data usually needs to be provided to the view in order to perform its function. In this example, our ``rename`` view requires a new microscope name to be passed. We make use of the ``args`` class attribute to provide this functionality.
 
-``@use_body`` defines the type of data expected in the request body. In this example, we use ``String`` type data. The arguments of ``fields.String`` allow us to provide additional information, such as the parameter being required, and example values to appear in API documentation.
+``args`` defines the type of data expected in the request body. In this example, we use ``String`` type data. The arguments of ``fields.String`` allow us to provide additional information, such as the parameter being required, and example values to appear in API documentation.
 
 Adding additional fields, and the meaning of the field types, will be discussed further in the next section.
 
-When a POST request is made to our API view, the ``@use_body`` converts the body of the request into a ``String``, and passes it as a positional argument to our ``post`` function.
+When a POST request is made to our API view, the server converts the body of the request into a ``String``, and passes it as a positional argument to our ``post`` function.
 
 Swagger documentation
 +++++++++++++++++++++

@@ -17,11 +17,14 @@ Like properties, we use a special view class to identify a view as an action: ``
         """
         Take an image capture and return it without saving
         """
-
         # Expect a "use_video_port" boolean, which defaults to True if none is given
-        @use_args({"use_video_port": fields.Boolean(missing=True)})
+        args = {"use_video_port": fields.Boolean(missing=True)}
+
         # Our success response (200) returns an image (image/jpeg mimetype)
-        @doc_response(200, mimetype="image/jpeg")
+        responses = {
+            200: {"content_type": "image/jpeg"}
+        }
+
         def post(self, args):
             """
             Take a non-persistant image capture.
@@ -41,7 +44,7 @@ Like properties, we use a special view class to identify a view as an action: ``
                 # Return our image data using Flasks send_file function
                 return send_file(io.BytesIO(stream.read()), mimetype="image/jpeg")
 
-In this example, we are also making use of the ``@doc_response`` decorator, to document that our successful response (HTTP code 200) will return data with a mimetype ``image/jpeg``, as well as ``@use_args`` to accept optional parameters with POST requests.
+In this example, we are also making use of the ``responses`` attribute, to document that our successful response (HTTP code 200) will return data with a mimetype ``image/jpeg``, as well as ``args`` to accept optional parameters with POST requests.
 
 Complete example
 ----------------

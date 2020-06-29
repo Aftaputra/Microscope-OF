@@ -2,14 +2,6 @@ from labthings.server.extensions import BaseExtension
 from labthings.server.find import find_component
 from labthings.server.view import View, ActionView, PropertyView
 
-from labthings.server.decorators import (
-    use_args,
-    marshal_with,
-    ThingProperty,
-    PropertySchema,
-    ThingAction,
-    doc_response,
-)
 from labthings.server.schema import Schema
 from labthings.server import fields
 
@@ -43,7 +35,8 @@ def rename(microscope, new_name):
 # Since we only have a GET method here, it'll register as a read-only property
 class ExampleIdentifyView(PropertyView):
     # Format our returned object using MicroscopeIdentifySchema
-    @marshal_with(MicroscopeIdentifySchema())
+    schema = MicroscopeIdentifySchema()
+
     def get(self):
         """
         Show identifying information about the current microscope object
@@ -52,14 +45,16 @@ class ExampleIdentifyView(PropertyView):
         microscope = find_component("org.openflexure.microscope")
 
         # Return our microscope object,
-        # let @marshal_with handle formatting the output
+        # let schema handle formatting the output
         return microscope
 
 
-# We can use a single schema for all methods if the input and output will be formatted identically
-# Eg. Here, we will always expect a "name" string argument, and always return a "name" string attribute
-@PropertySchema({"name": fields.String(required=True, example="My Example Microscope")})
+
+# We can use a single schema as the input and output will be formatted identically
+# Eg. We always expect a "name" string argument, and always return a "name" string attribute
 class ExampleRenameView(PropertyView):
+    schema = {"name": fields.String(required=True, example="My Example Microscope")}
+
     def get(self):
         """
         Show the current microscope name
@@ -83,7 +78,7 @@ class ExampleRenameView(PropertyView):
         rename(microscope, new_name)
 
         # Return our microscope object,
-        # let @marshal_with handle formatting the output
+        # let schema handle formatting the output
         return microscope
 
 
@@ -91,11 +86,14 @@ class QuickCaptureAPI(ActionView):
     """
     Take an image capture and return it without saving
     """
-
     # Expect a "use_video_port" boolean, which defaults to True if none is given
-    @use_args({"use_video_port": fields.Boolean(missing=True)})
+    args = {"use_video_port": fields.Boolean(missing=True)}
+
     # Our success response (200) returns an image (image/jpeg mimetype)
-    @doc_response(200, mimetype="image/jpeg")
+    responses = {
+        200: {"content_type": "image/jpeg"}
+    }
+
     def post(self, args):
         """
         Take a non-persistant image capture.
