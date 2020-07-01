@@ -6,6 +6,7 @@ import logging
 import pkg_resources
 import uuid
 from typing import Tuple
+from expiringdict import ExpiringDict
 
 import gevent
 
@@ -60,6 +61,10 @@ class Microscope:
 
         # Apply settings loaded from file
         self.update_settings(self.settings_file.load())
+
+        # Data cache
+        self.configuration_cache = ExpiringDict(max_len=100, max_age_seconds=3600)
+        self.metadata_cache = ExpiringDict(max_len=100, max_age_seconds=3600)
 
     def __enter__(self):
         """Create microscope on context enter."""
@@ -252,8 +257,7 @@ class Microscope:
         # Save config to file
         self.settings_file.save(current_config, backup=True)
 
-    @property
-    def configuration(self):
+    def force_get_configuration(self):
         with self.lock:
             initial_configuration = self.configuration_file.load()
 
@@ -277,17 +281,28 @@ class Microscope:
             initial_configuration.update(current_configuration)
             return initial_configuration
 
+    def get_configuration(self, cache_key=None):
+        if cache_key:
+            cached_config = self.configuration_cache.get(cache_key, None)
+            if cached_config:
+                return cached_config
+            else:
+                full_config = self.force_get_configuration()
+                self.configuration_cache[cache_key] = full_config
+                return full_config
+        return self.force_get_configuration()
+
     @property
-    def metadata(self):
+    def configuration(self):
+        return self.get_configuration()
+
+    def force_get_metadata(self):
         """
         Microscope system metadata, to be applied to basically all captures
         """
-        with Timer("Reading settings:"):
-            settings = self.read_settings(full=False)
-        with Timer("Reading state:"):
-            state = self.state
-        with Timer("Reading configuration:"):
-            configuration = self.configuration
+        settings = self.read_settings(full=False)
+        state = self.state
+        configuration = self.configuration
         system_metadata = {
             "id": self.id,
             "settings": settings,
@@ -297,17 +312,23 @@ class Microscope:
 
         return system_metadata
 
-    def add_metadata_to_capture(self, output, metadata, annotations, tags):
-        logging.debug(f"Waiting for {output.file}")
-        # Wait for the file to be written to disk
-        with Timer("Waiting for file:"):
-            output.file_ready.wait()
-        
-        with Timer("Building metadata"):
-            full_metadata = {"instrument": self.metadata, **metadata}
-        with Timer("Writing metadata to file"):
-            output.put_and_save(tags, annotations, full_metadata)
-        logging.info(f"Finished injecting EXIF data into {output.file}")
+    def get_metadata(self, cache_key=None):
+        logging.debug(f"Looking for cache key {cache_key}")
+        if cache_key:
+            cached_metadata = self.metadata_cache.get(cache_key, None)
+            if cached_metadata:
+                logging.debug(f"Reusing cached microscope metadata: {cache_key}")
+                return cached_metadata
+            else:
+                full_metadata = self.force_get_metadata()
+                self.metadata_cache[cache_key] = full_metadata
+                return full_metadata
+        logging.debug("Generating full microscope metadata")
+        return self.force_get_metadata()
+
+    @property
+    def metadata(self):
+        return self.get_metadata()
 
     def capture(
         self,
@@ -321,6 +342,7 @@ class Microscope:
         annotations: dict = None,
         tags: list = None,
         metadata: dict = None,
+        cache_key: str = None
     ):
         logging.debug(f"Microscope capturing to {filename}")
         if not annotations:
@@ -337,7 +359,7 @@ class Microscope:
             )
 
             # Capture to output object
-            logging.info("Starting microscope capture...")
+            logging.info(f"Starting microscope capture {filename}")
             self.camera.capture(
                 output,
                 use_video_port=use_video_port,
@@ -347,10 +369,13 @@ class Microscope:
             )
 
         # Gether metadata from hardware in a greenlet
-        #gevent.get_hub().threadpool.spawn(self.add_metadata_to_capture, output, metadata, annotations, tags)
-        gevent.spawn(self.add_metadata_to_capture, output, metadata, annotations, tags)
-        #self.add_metadata_to_capture(output, metadata, annotations, tags)
+        logging.debug(f"Waiting for {output.file}")
+        # Wait for the file to be written to disk
+        output.file_ready.wait()
+        full_metadata = {"instrument": self.get_metadata(cache_key), **metadata}
+        output.put_and_save(tags, annotations, full_metadata)
+        logging.debug(f"Finished adding EXIF data to {output.file}")
 
-        logging.info(f"Finished capture to {output.file}")
+        logging.debug(f"Finished capture to {output.file}")
 
         return output
