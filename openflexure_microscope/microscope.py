@@ -360,6 +360,10 @@ class Microscope:
         if not tags:
             tags = []
 
+        # Read metadata for capture
+        full_metadata = {"instrument": self.get_metadata(cache_key), **metadata}
+
+        # Do capture
         with self.camera.lock:
             # Create output object
             output = self.captures.new_image(
@@ -376,14 +380,7 @@ class Microscope:
                 fmt=fmt,
             )
 
-        # Gether metadata from hardware in a greenlet
-        logging.debug(f"Waiting for {output.file}")
-        # Wait for the file to be written to disk
-        output.file_ready.wait()
-        full_metadata = {"instrument": self.get_metadata(cache_key), **metadata}
         output.put_and_save(tags, annotations, full_metadata)
-        logging.debug(f"Finished adding EXIF data to {output.file}")
-
         logging.debug(f"Finished capture to {output.file}")
 
         return output
