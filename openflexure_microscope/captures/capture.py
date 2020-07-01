@@ -210,7 +210,7 @@ class CaptureObject(object):
             if tag not in self.tags:
                 self.tags.append(tag)
 
-        self.save_metadata()
+        gevent.spawn(self.save_metadata)
 
     def delete_tag(self, tag: str):
         """
@@ -222,7 +222,7 @@ class CaptureObject(object):
         if tag in self.tags:
             self.tags = [new_tag for new_tag in self.tags if new_tag != tag]
 
-        self.save_metadata()
+        gevent.spawn(self.save_metadata)
 
     # HANDLE METADATA
 
@@ -234,7 +234,7 @@ class CaptureObject(object):
             data (dict): Dictionary of metadata to be added
         """
         self.annotations.update(data)
-        self.save_metadata()
+        gevent.spawn(self.save_metadata)
 
     def put_metadata(self, data: dict) -> None:
         """
@@ -244,7 +244,7 @@ class CaptureObject(object):
             data (dict): Dictionary of metadata to be added
         """
         self._metadata.update(data)
-        self.save_metadata()
+        gevent.spawn(self.save_metadata)
 
     def put_and_save(self, tags: list = None, annotations: dict = None, metadata: dict = None):
         """
@@ -266,7 +266,7 @@ class CaptureObject(object):
         # Metadata
         self._metadata.update(metadata)
 
-        self.save_metadata()
+        gevent.spawn(self.save_metadata)
 
     def save_metadata(self) -> None:
         """
