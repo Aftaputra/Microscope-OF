@@ -298,33 +298,41 @@ class Microscope:
 
     def force_get_metadata(self):
         """
-        Microscope system metadata, to be applied to basically all captures
+        Read cachable bits of microscope metadata.
+        Currently ID, settings, and configuration can be cached
         """
-        settings = self.read_settings(full=False)
-        state = self.state
-        configuration = self.configuration
         system_metadata = {
             "id": self.id,
-            "settings": settings,
-            "state": state,
-            "configuration": configuration,
+            "settings": self.read_settings(full=False),
+            "configuration": self.get_configuration(),
         }
 
         return system_metadata
 
     def get_metadata(self, cache_key=None):
-        logging.debug(f"Looking for cache key {cache_key}")
+        """
+        Read microscope metadata, with partial caching
+        """
+        metadata = {}
+
+        # Load cached bits of metadata
         if cache_key:
-            cached_metadata = self.metadata_cache.get(cache_key, None)
-            if cached_metadata:
-                logging.debug(f"Reusing cached microscope metadata: {cache_key}")
-                return cached_metadata
-            else:
-                full_metadata = self.force_get_metadata()
-                self.metadata_cache[cache_key] = full_metadata
-                return full_metadata
-        logging.debug("Generating full microscope metadata")
-        return self.force_get_metadata()
+            logging.debug(f"Reading cached microscope metadata: {cache_key}")
+            metadata = self.metadata_cache.get(cache_key, None)
+            if not metadata:
+                logging.debug(f"Building and caching microscope metadata: {cache_key}")
+                metadata = self.force_get_metadata()
+                self.metadata_cache[cache_key] = metadata
+        else:
+            logging.debug(f"Building microscope metadata: {cache_key}")
+            metadata = self.force_get_metadata()
+        
+        # Keys that should never be cached
+        metadata.update({
+            "state": self.state,
+        })
+
+        return metadata
 
     @property
     def metadata(self):
