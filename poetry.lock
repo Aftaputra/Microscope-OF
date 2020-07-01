@@ -107,10 +107,9 @@ ipython = []
 ofmclient = []
 
 [package.source]
-reference = "87a66aadbbea211b260dc279c0f009a8a2b8de51"
+reference = "20d25b498ebfc0fdbe17f8afc810ac48a69b7179"
 type = "git"
 url = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git"
-
 [[package]]
 category = "main"
 description = "Pure Python CBOR (de)serializer with extensive tag support"
@@ -445,7 +444,6 @@ test = ["coverage", "pytest", "mock", "pillow", "numpy"]
 reference = ""
 type = "url"
 url = "https://github.com/rwb27/picamera/releases/download/v1.13.2b0/picamera-1.13.2b0-py3-none-any.whl"
-
 [[package]]
 category = "main"
 description = "Python Imaging Library (Fork)"
