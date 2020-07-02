@@ -8,8 +8,6 @@ import uuid
 from typing import Tuple
 from expiringdict import ExpiringDict
 
-import gevent
-
 from openflexure_microscope.captures import CaptureManager
 
 from openflexure_microscope.stage.mock import MissingStage
