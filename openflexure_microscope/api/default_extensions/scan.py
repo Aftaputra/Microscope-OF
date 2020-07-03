@@ -83,6 +83,7 @@ def capture(
         annotations=annotations,
         tags=tags,
         metadata=metadata,
+        cache_key=folder
     )
 
 
