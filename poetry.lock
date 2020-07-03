@@ -105,17 +105,6 @@ all = ["opencv-python-headless (>=4.1,<5.0)", "scipy (>=1.4,<2.0)"]
 correlation = ["opencv-python-headless (>=4.1,<5.0)", "scipy (>=1.4,<2.0)"]
 
 [[package]]
-category = "main"
-description = "Pure Python CBOR (de)serializer with extensive tag support"
-name = "cbor2"
-optional = false
-python-versions = "*"
-version = "5.1.0"
-
-[package.extras]
-test = ["pytest", "pytest-cov"]
-
-[[package]]
 category = "dev"
 description = "Python package for providing Mozilla's CA Bundle."
 name = "certifi"
@@ -326,12 +315,11 @@ description = ""
 name = "labthings"
 optional = false
 python-versions = "^3.6"
-version = "0.7.0-beta.0"
+version = "0.7.0"
 
 [package.dependencies]
 Flask = "^1.1.1"
 apispec = "^3.2.0"
-cbor2 = "^5.1.0"
 flask-cors = "^3.0.8"
 gevent = ">=1.4,<21.0"
 gevent-websocket = "^0.10.1"
@@ -340,10 +328,9 @@ webargs = "^6.0.0"
 zeroconf = ">=0.24.5,<0.28.0"
 
 [package.source]
-reference = "d7889d07dee0344b112a606caabc836e69bac63f"
+reference = "b718258fe219fbdca7f82d3987c0680f7157e738"
 type = "git"
 url = "https://github.com/labthings/python-labthings.git"
-
 [[package]]
 category = "dev"
 description = "A fast and thorough lazy object proxy."
@@ -846,7 +833,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 rpi = ["RPi.GPIO"]
 
 [metadata]
-content-hash = "94e35da71817800c617a54e54dc937df62953fa95caa2e2e05f69b1163582c4c"
+content-hash = "fff0dba8c9a8ffe0a496148d68bedf1e12802e6700ab3e5f82788e10891eb774"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -881,9 +868,6 @@ black = [
 camera-stage-mapping = [
     {file = "camera-stage-mapping-0.1.2.tar.gz", hash = "sha256:0d1a6f93b3a60054bc8057359464adbb40488b4daeb93c672b90e4fe525e7b69"},
     {file = "camera_stage_mapping-0.1.2-py3-none-any.whl", hash = "sha256:3f3da3e95792e811e6808173c368be67ebb00e6f7d7e37d68cb36fa765d13da9"},
-]
-cbor2 = [
-    {file = "cbor2-5.1.0.tar.gz", hash = "sha256:43ce11e8c2fe4971d386d1a60cf83bfa0a4a667b97668ba76acbf5e6398821aa"},
 ]
 certifi = [
     {file = "certifi-2020.6.20-py2.py3-none-any.whl", hash = "sha256:8fc0819f1f30ba15bdb34cceffb9ef04d99f420f68eb75d901e9560b8749fc41"},
