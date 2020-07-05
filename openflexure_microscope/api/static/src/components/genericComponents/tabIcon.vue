@@ -93,7 +93,9 @@ export default {
 @import "../../assets/less/theme.less";
 
 .tabicon-active {
-  color: @global-primary-background !important;
+  color: #fff !important;
+  background-color: @global-primary-background !important;
+  box-shadow: @small-shadow;
 }
 
 .hook-inverse() {
