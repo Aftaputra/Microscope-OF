@@ -1,9 +1,5 @@
 <template>
-  <div
-    id="app"
-    class="uk-height-1-1 uk-margin-remove uk-padding-remove"
-    :class="handleTheme"
-  >
+  <div id="app" class="uk-height-1-1 uk-margin-remove uk-padding-remove" :class="handleTheme">
     <loadingContent v-if="!$store.getters.ready" />
     <div v-if="$store.getters.ready" id="tour-header"></div>
     <appContent v-if="$store.getters.ready" />
@@ -23,20 +19,26 @@ import appContent from "./components/appContent.vue";
 import loadingContent from "./components/loadingContent.vue";
 
 import axios from "axios";
+var Mousetrap = require("mousetrap");
 
-// Key Codes
-const keyCodes = {
-  pgup: 33,
-  pgdn: 34,
-  left: 37,
-  up: 38,
-  right: 39,
-  down: 40,
-  enter: 13,
-  esc: 27,
-  shift: 16,
-  alt: 18,
-  t: 84
+Mousetrap.prototype.stopCallback = function(e, element, combo) {
+  // if the element has the class "mousetrap" then no need to stop
+  if ((" " + element.className + " ").indexOf(" mousetrap ") > -1) {
+    return false;
+  }
+
+  // if we're in a lightbox, stop mousetrap
+  if (element.classList.contains("lightbox-link")) {
+    return true;
+  }
+
+  // stop for input, select, and textarea
+  return (
+    element.tagName == "INPUT" ||
+    element.tagName == "SELECT" ||
+    element.tagName == "TEXTAREA" ||
+    (element.contentEditable && element.contentEditable == "true")
+  );
 };
 
 // Export main app
@@ -52,6 +54,7 @@ export default {
     return {
       appAvailable: false,
       keysDown: {},
+      arrowKeysDown: {},
       systemDark: undefined,
       themeObserver: undefined,
       tourCallbacks: {
@@ -166,9 +169,7 @@ export default {
 
   created: function() {
     window.addEventListener("beforeunload", this.handleExit);
-    // Key events
-    window.addEventListener("keydown", this.keyDownMonitor);
-    window.addEventListener("keyup", this.keyUpMonitor);
+    // Scrollwheel listener
     window.addEventListener("wheel", this.wheelMonitor);
     // Watch for origin changes
     this.unwatchOriginFunction = this.$store.watch(
@@ -180,6 +181,48 @@ export default {
         console.log(uriV2);
       }
     );
+
+    // Keyboard shortcuts
+
+    // TODO: Shortcut guide
+    Mousetrap.bind("?", function() {
+      console.log("show shortcuts!");
+    });
+
+    // Arrow keys
+    Mousetrap.bind(
+      ["up", "down", "left", "right"],
+      event => {
+        this.arrowKeysDown[event.keyCode] = true; //Add key to array
+        this.navigateKeyHandler();
+      },
+      "keydown"
+    );
+    Mousetrap.bind(
+      ["up", "down", "left", "right"],
+      event => {
+        delete this.arrowKeysDown[event.keyCode]; //Remove key from array
+      },
+      "keyup"
+    );
+
+    // Focus keys
+    Mousetrap.bind("pageup", () => {
+      this.$root.$emit("globalMoveStepEvent", 0, 0, 1);
+    });
+    Mousetrap.bind("pagedown", () => {
+      this.$root.$emit("globalMoveStepEvent", 0, 0, -1);
+    });
+
+    // Capture
+    Mousetrap.bind("c", () => {
+      this.$root.$emit("globalCaptureEvent");
+    });
+
+    // Re-run tour
+    Mousetrap.bind("alt+t", () => {
+      this.$tours["guidedTour"].start();
+    });
   },
 
   beforeDestroy: function() {
@@ -187,12 +230,15 @@ export default {
     if (this.themeObserver) {
       this.themeObserver.disconnect();
     }
-    // Remove key listeners
-    window.removeEventListener("keydown", this.keyDownMonitor);
-    window.removeEventListener("keyup", this.keyUpMonitor);
+    // Remove scrollwheel listener
     window.removeEventListener("wheel", this.wheelMonitor);
     // Remove origin watcher
     this.unwatchOriginFunction();
+  },
+
+  destroyed: function() {
+    // Remove key listeners
+    Mousetrap.reset();
   },
 
   methods: {
@@ -231,84 +277,27 @@ export default {
       }
     },
 
-    // Handle global key press events to be associated with navigation
-    keyDownMonitor: function(event) {
-      this.keysDown[event.keyCode] = true; //Add key to array
-
-      // Convert keyCode dict into a list of key codes
-      var keyCodeList = Object.keys(keyCodes).map(function(key) {
-        return keyCodes[key];
-      });
-
-      if (
-        // If not inside an element we want to ignore
-        !(event.target instanceof HTMLInputElement) &&
-        !event.target.classList.contains("lightbox-link") &&
-        // If it's a recognised key
-        keyCodeList.includes(event.keyCode)
-      ) {
-        this.navigateKeyHandler(keyCodes);
-        this.captureKeyHandler(keyCodes);
-        this.letterKeyHandler(keyCodes);
+    navigateKeyHandler: function() {
+      // Calculate movement array
+      var x_rel = 0;
+      var y_rel = 0;
+      var z_rel = 0;
+      if (37 in this.arrowKeysDown) {
+        x_rel = x_rel + 1;
       }
-    },
-
-    keyUpMonitor: function(event) {
-      delete this.keysDown[event.keyCode]; //Remove key from array
-    },
-
-    navigateKeyHandler: function(keyCodes) {
-      const moveKeys = [
-        keyCodes.left,
-        keyCodes.right,
-        keyCodes.up,
-        keyCodes.down,
-        keyCodes.pgup,
-        keyCodes.pgdn
-      ];
-
-      if (
-        moveKeys.some(r => Object.keys(this.keysDown).includes(r.toString()))
-      ) {
-        // Calculate movement array
-        var x_rel = 0;
-        var y_rel = 0;
-        var z_rel = 0;
-        if (keyCodes.left in this.keysDown) {
-          x_rel = x_rel + 1;
-        }
-        if (keyCodes.right in this.keysDown) {
-          x_rel = x_rel - 1;
-        }
-        if (keyCodes.up in this.keysDown) {
-          y_rel = y_rel + 1;
-        }
-        if (keyCodes.down in this.keysDown) {
-          y_rel = y_rel - 1;
-        }
-        if (keyCodes.pgup in this.keysDown) {
-          z_rel = z_rel - 1;
-        }
-        if (keyCodes.pgdn in this.keysDown) {
-          z_rel = z_rel + 1;
-        }
-        // Make a position request
-        // Emit a signal to move, acted on by panelNavigate.vue
-        this.$root.$emit("globalMoveStepEvent", x_rel, y_rel, z_rel);
+      if (39 in this.arrowKeysDown) {
+        x_rel = x_rel - 1;
       }
-    },
-
-    captureKeyHandler: function(keyCodes) {
-      if (keyCodes.shift in this.keysDown && keyCodes.enter in this.keysDown) {
-        console.log("Capturing");
-        this.$root.$emit("globalCaptureEvent");
+      if (38 in this.arrowKeysDown) {
+        y_rel = y_rel + 1;
       }
-    },
-
-    letterKeyHandler: function(keyCodes) {
-      if (keyCodes.alt in this.keysDown && keyCodes.t in this.keysDown) {
-        this.$tours["guidedTour"].start();
+      if (40 in this.arrowKeysDown) {
+        y_rel = y_rel - 1;
       }
+      // Make a position request
+      // Emit a signal to move, acted on by panelNavigate.vue
+      this.$root.$emit("globalMoveStepEvent", x_rel, y_rel, z_rel);
+
     }
   }
 };
