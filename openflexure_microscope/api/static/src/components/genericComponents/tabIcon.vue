@@ -98,12 +98,6 @@ export default {
   box-shadow: @small-shadow;
 }
 
-.hook-inverse() {
-  .tabicon-active {
-    color: @inverse-primary-muted-color !important;
-  }
-}
-
 .tabtitle {
   max-width: 60px;
   overflow: hidden;
