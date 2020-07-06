@@ -115,7 +115,9 @@ class PiCameraStreamer(BaseCamera):
         self.picamera_lst_path = settings_file_path(
             "picamera_lst.npy"
         )  #: str: Path of .npy lens shading table file
-
+        
+        # Start the stream worker on init
+        self.start_worker()
 
     @property
     def configuration(self):

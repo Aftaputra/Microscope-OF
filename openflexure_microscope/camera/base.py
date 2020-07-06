@@ -30,14 +30,9 @@ class BaseCamera(metaclass=ABCMeta):
         self.event = ClientEvent()
         self.stop = False  # Used to indicate that the stream loop should break
 
-        self.stream_timeout = 20
-
         self.stream_active = False
         self.record_active = False
         self.preview_active = False
-
-        # Start the stream worker on init
-        self.start_worker()
 
     @property
     @abstractmethod
