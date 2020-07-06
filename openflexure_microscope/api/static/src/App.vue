@@ -7,6 +7,26 @@
     <loadingContent v-if="!$store.getters.ready" />
     <div v-if="$store.getters.ready" id="tour-header"></div>
     <appContent v-if="$store.getters.ready" />
+    <!-- Runtime modals -->
+    <div
+      id="modal-center"
+      ref="keyboardManualModal"
+      class="uk-flex-top"
+      uk-modal
+    >
+      <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+        <button class="uk-modal-close-default" type="button" uk-close></button>
+        <div
+          v-for="shortcut in keyboardManual"
+          :key="shortcut.shortcut"
+          class="uk-margin-small"
+          uk-grid
+        >
+          <div class="uk-width-small">{{ shortcut.shortcut }}</div>
+          <div class="uk-width-expand">{{ shortcut.description }}</div>
+        </div>
+      </div>
+    </div>
     <v-tour
       v-show="$store.getters.ready"
       name="guidedTour"
@@ -57,8 +77,8 @@ export default {
   data: function() {
     return {
       appAvailable: false,
-      keysDown: {},
       arrowKeysDown: {},
+      keyboardManual: [],
       systemDark: undefined,
       themeObserver: undefined,
       tourCallbacks: {
@@ -189,8 +209,9 @@ export default {
     // Keyboard shortcuts
 
     // TODO: Shortcut guide
-    Mousetrap.bind("?", function() {
-      console.log("show shortcuts!");
+    Mousetrap.bind("?", () => {
+      console.log(this.keyboardManual);
+      this.toggleModalElement(this.$refs["keyboardManualModal"]); // Calls the mixin
     });
 
     // Arrow keys
@@ -209,6 +230,10 @@ export default {
       },
       "keyup"
     );
+    this.keyboardManual.push({
+      shortcut: "←↑→↓",
+      description: "Move the microscope stage"
+    });
 
     // Focus keys
     Mousetrap.bind("pageup", () => {
@@ -217,15 +242,39 @@ export default {
     Mousetrap.bind("pagedown", () => {
       this.$root.$emit("globalMoveStepEvent", 0, 0, -1);
     });
+    this.keyboardManual.push({
+      shortcut: "pgup / pgdn",
+      description: "Move the microscope focus"
+    });
 
     // Capture
     Mousetrap.bind("c", () => {
       this.$root.$emit("globalCaptureEvent");
     });
+    this.keyboardManual.push({
+      shortcut: "c",
+      description: "Take a capture"
+    });
 
     // Autofocus
     Mousetrap.bind("a", () => {
       this.$root.$emit("globalFastAutofocusEvent");
+    });
+    this.keyboardManual.push({
+      shortcut: "a",
+      description: "Fast autofocus"
+    });
+
+    // Increment/decrement tab
+    Mousetrap.bind("shift+down", () => {
+      this.$root.$emit("globalIncrementTab");
+    });
+    Mousetrap.bind("shift+up", () => {
+      this.$root.$emit("globalDecrementTab");
+    });
+    this.keyboardManual.push({
+      shortcut: "shift+↑ / shift+↓",
+      description: "Switch tab"
     });
 
     // Re-run tour
