@@ -153,11 +153,11 @@ export default {
 };
 </script>
 
-<style lang="less">
+<style lang="less" scoped>
+// Custom UIkit CSS modifications
+@import "../../assets/less/theme.less";
+
 .settings-pane {
-  border-width: 0 1px 0 0;
-  border-style: solid;
-  border-color: rgba(180, 180, 180, 0.25);
 }
 
 .settings-nav {
@@ -169,5 +169,10 @@ export default {
   border-width: 0 1px 0 0;
   border-style: solid;
   border-color: rgba(180, 180, 180, 0.25);
+}
+
+.settings-nav li > a {
+  padding-left: 6px !important;
+  border-radius: @button-border-radius;
 }
 </style>

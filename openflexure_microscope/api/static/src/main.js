@@ -129,6 +129,10 @@ Vue.mixin({
       UIkit.modal(element).hide();
     },
 
+    toggleModalElement: function(element) {
+      UIkit.modal(element).toggle();
+    },
+
     getLocalStorageObj: function(keyName) {
       if (localStorage.getItem(keyName)) {
         try {
