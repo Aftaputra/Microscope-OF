@@ -35,6 +35,7 @@ class BaseCamera(metaclass=ABCMeta):
 
         self.stream_active = False
         self.record_active = False
+        self.preview_active = False
 
     @property
     @abstractmethod

@@ -3,8 +3,6 @@ import subprocess
 import os
 from sys import platform
 
-from labthings.server.decorators import ThingAction, doc_response
-
 
 def is_raspberrypi(raise_on_errors=False):
     """
@@ -19,7 +17,6 @@ class ShutdownAPI(ActionView):
     Attempt to shutdown the device 
     """
 
-    @doc_response(201)
     def post(self):
         """
         Attempt to shutdown the device
@@ -31,7 +28,7 @@ class ShutdownAPI(ActionView):
         )
 
         out, err = p.communicate()
-        return {"out": out, "err": err}, 201
+        return {"out": out, "err": err}
 
 
 class RebootAPI(ActionView):
@@ -39,7 +36,6 @@ class RebootAPI(ActionView):
     Attempt to reboot the device 
     """
 
-    @doc_response(201)
     def post(self):
         """
         Attempt to reboot the device
@@ -51,4 +47,4 @@ class RebootAPI(ActionView):
         )
 
         out, err = p.communicate()
-        return {"out": out, "err": err}, 201
+        return {"out": out, "err": err}

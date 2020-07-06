@@ -2,7 +2,6 @@ from labthings.server.extensions import BaseExtension
 from labthings.server.view import ActionView
 
 from labthings.server import fields
-from labthings.server.decorators import use_args, marshal_with
 
 import logging
 import time
@@ -12,12 +11,9 @@ class RaiseException(ActionView):
         raise Exception("The developer raised an exception")
 
 class SleepFor(ActionView):
-    @marshal_with({
-        "TimeAsleep": fields.Float()
-    })
-    @use_args({
-        "time": fields.Float(description="Time to sleep, in seconds", example=0.5)
-    })
+    schema = {"TimeAsleep": fields.Float()}
+    args = {"time": fields.Float(description="Time to sleep, in seconds", example=0.5)}
+
     def post(self, args):
         sleep_time = args.get("time")
         logging.info(f"Going to sleep for {sleep_time}...")

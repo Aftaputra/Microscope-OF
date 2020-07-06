@@ -4,17 +4,19 @@ from labthings.core.utilities import get_by_path, set_by_path, create_from_path
 
 from labthings.server.find import find_component
 from labthings.server.view import View, PropertyView
-from labthings.server.decorators import doc_response, ThingProperty
-
-from flask import Response
+from labthings.server.responses import Response
 
 
 class MjpegStream(PropertyView):
     """
     Real-time MJPEG stream from the microscope camera
     """
+    responses = {
+        200: {
+            "content_type": "multipart/x-mixed-replace"
+        }
+    }
 
-    @doc_response(200, mimetype="multipart/x-mixed-replace")
     def get(self):
         """
         MJPEG stream from the microscope camera.
@@ -42,7 +44,13 @@ class SnapshotStream(PropertyView):
     Single JPEG snapshot from the camera stream
     """
 
-    @doc_response(200, description="Snapshot taken", mimetype="image/jpeg")
+    responses = {
+        200: {
+            "content_type": "image/jpeg",
+            "description": "Snapshot taken"
+        }
+    }
+
     def get(self):
         """
         Single snapshot from the camera stream

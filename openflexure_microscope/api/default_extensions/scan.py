@@ -8,7 +8,6 @@ from functools import reduce
 from openflexure_microscope.captures.capture_manager import generate_basename
 from labthings.server.find import find_component, find_extension
 from labthings.server.extensions import BaseExtension
-from labthings.server.decorators import use_args
 from labthings.server import fields
 
 from openflexure_microscope.devel import abort, update_task_progress
@@ -92,7 +91,7 @@ class ScanExtension(BaseExtension):
     def __init__(self):
         self._images_to_be_captured: int = 1
         self._images_captured_so_far: int = 0
-        return BaseExtension.__init__(self, "org.openflexure.scan", version="2.0.0")
+        BaseExtension.__init__(self, "org.openflexure.scan", version="2.0.0")
 
     def progress(self):
         progress = (self._images_captured_so_far / self._images_to_be_captured) * 100
@@ -290,24 +289,23 @@ class ScanExtension(BaseExtension):
 scan_extension_v2 = ScanExtension()
 
 class TileScanAPI(ActionView):
-    @use_args(
-        {
-            "filename": fields.String(missing=None, example=None),
-            "temporary": fields.Boolean(missing=False),
-            "stride_size": fields.List(
-                fields.Integer, missing=[2000, 1500, 100], example=[2000, 1500, 100]
-            ),
-            "grid": fields.List(fields.Integer, missing=[3, 3, 3], example=[3, 3, 3]),
-            "style": fields.String(missing="raster"),
-            "autofocus_dz": fields.Integer(missing=50),
-            "fast_autofocus": fields.Boolean(missing=False),
-            "use_video_port": fields.Boolean(missing=False),
-            "bayer": fields.Boolean(missing=False),
-            "annotations": fields.Dict(missing={}, example={"Foo": "Bar"}),
-            "tags": fields.List(fields.String, missing=[]),
-            "resize": fields.Dict(missing=None),  # TODO: Validate keys
-        }
-    )
+    args = {
+        "filename": fields.String(missing=None, example=None),
+        "temporary": fields.Boolean(missing=False),
+        "stride_size": fields.List(
+            fields.Integer, missing=[2000, 1500, 100], example=[2000, 1500, 100]
+        ),
+        "grid": fields.List(fields.Integer, missing=[3, 3, 3], example=[3, 3, 3]),
+        "style": fields.String(missing="raster"),
+        "autofocus_dz": fields.Integer(missing=50),
+        "fast_autofocus": fields.Boolean(missing=False),
+        "use_video_port": fields.Boolean(missing=False),
+        "bayer": fields.Boolean(missing=False),
+        "annotations": fields.Dict(missing={}, example={"Foo": "Bar"}),
+        "tags": fields.List(fields.String, missing=[]),
+        "resize": fields.Dict(missing=None),  # TODO: Validate keys
+    }
+
     def post(self, args):
         microscope = find_component("org.openflexure.microscope")
 

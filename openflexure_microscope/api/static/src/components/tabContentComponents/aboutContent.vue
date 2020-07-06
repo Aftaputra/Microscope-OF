@@ -9,7 +9,7 @@
       <a
         class="uk-link"
         target="_blank"
-        href="https://gitlab.com/openflexure/openflexure-microscope-jsclient/-/issues"
+        href="https://gitlab.com/openflexure/openflexure-microscope-server/-/issues"
         >Report an issue</a
       >
     </div>

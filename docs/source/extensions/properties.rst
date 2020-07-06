@@ -21,7 +21,8 @@ In order to register a view as a Thing property, we use the ``PropertyView`` cla
     # Since we only have a GET method here, it'll register as a read-only property
     class ExampleIdentifyView(PropertyView):
         # Format our returned object using MicroscopeIdentifySchema
-        @marshal_with(MicroscopeIdentifySchema())
+        schema = MicroscopeIdentifySchema()
+
         def get(self):
             """
             Show identifying information about the current microscope object
@@ -30,12 +31,9 @@ In order to register a view as a Thing property, we use the ``PropertyView`` cla
             microscope = find_component("org.openflexure.microscope")
 
             # Return our microscope object,
-            # let @marshal_with handle formatting the output
+            # let schemah handle formatting the output
             return microscope
 
-This decorator serves only to add documentation: The view will be tagged with ``property`` in Swagger documentation, and will appear as a property in the microscopes Thing Description.
-
-However, the additional ``@PropertySchema`` decorator allows for simplified argument parsing and object marshaling.
 
 Property schema
 ---------------
@@ -71,16 +69,17 @@ This request would update the property, such that a GET request would *now* retu
         "job": "Landscape gardener"
     }
 
-The ``@PropertySchema`` decorator can be applied to your view *class*, and essentially acts as shorthand for applying ``@marshal_with`` to all methods, and ``@use_args`` to all POST and PUT methods (or ``@use_body`` if only a single field is given).
+In Property Views the ``schema`` class attribute acts as the schema for both marshalling responses *and* parsing arguments. This is because property requests and responses should be identically formatted.
 
-We will implement the ``@PropertySchema`` decorator in our ``ExampleRenameView`` view from our previous example:
+We will implement the ``schema`` attribute in our ``ExampleRenameView`` view from our previous example:
 
 .. code-block:: python
 
-    # We can use a single schema for all methods if the input and output will be formatted identically
-    # Eg. Here, we will always expect a "name" string argument, and always return a "name" string attribute
-    @PropertySchema({"name": fields.String(required=True, example="My Example Microscope")})
+    # We can use a single schema as the input and output will be formatted identically
+    # Eg. We always expect a "name" string argument, and always return a "name" string attribute
     class ExampleRenameView(PropertyView):
+        schema = {"name": fields.String(required=True, example="My Example Microscope")}
+    
         def get(self):
             """
             Show the current microscope name
@@ -104,7 +103,7 @@ We will implement the ``@PropertySchema`` decorator in our ``ExampleRenameView``
             rename(microscope, new_name)
 
             # Return our microscope object,
-            # let @marshal_with handle formatting the output
+            # let schema handle formatting the output
             return microscope
 
 Complete example

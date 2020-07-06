@@ -5,8 +5,6 @@ from labthings.core.utilities import get_by_path, set_by_path, create_from_path
 from labthings.server.find import find_component
 from labthings.server.view import View, PropertyView
 
-from labthings.server.decorators import ThingProperty, Tag, doc_response
-
 from flask import request, abort
 import logging
 
@@ -35,9 +33,12 @@ class SettingsProperty(PropertyView):
         return self.get()
 
 
-@Tag("properties")
 class NestedSettingsProperty(View):
-    @doc_response(404, description="Settings key cannot be found")
+    tags = ["properties"]
+    responses = {
+        404: {"description": "Settings key cannot be found"}
+    }
+
     def get(self, route):
         """
         Show a nested section of the current microscope settings
@@ -52,7 +53,6 @@ class NestedSettingsProperty(View):
 
         return value
 
-    @doc_response(404, description="Settings key cannot be found")
     def put(self, route):
         """
         Update a nested section of the current microscope settings
@@ -79,9 +79,12 @@ class StateProperty(PropertyView):
         return microscope.state
 
 
-@Tag("properties")
 class NestedStateProperty(View):
-    @doc_response(404, description="Status key cannot be found")
+    tags = ["properties"]
+    responses = {
+        404: {"description": "Status key cannot be found"}
+    }
+
     def get(self, route):
         """
         Show a nested section of the current microscope state
@@ -106,9 +109,12 @@ class ConfigurationProperty(PropertyView):
         return microscope.configuration
 
 
-@Tag("properties")
 class NestedConfigurationProperty(View):
-    @doc_response(404, description="Configuration key cannot be found")
+    tags = ["properties"]
+    responses = {
+        404: {"description": "Status key cannot be found"}
+    }
+
     def get(self, route):
         """
         Show a nested section of the current microscope state

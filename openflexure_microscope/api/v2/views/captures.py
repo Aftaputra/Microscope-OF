@@ -7,7 +7,6 @@ from labthings.server.schema import Schema
 from labthings.server import fields
 from labthings.server.view import View, PropertyView
 from labthings.server.utilities import description_from_view
-from labthings.server.decorators import marshal_with, doc_response, Tag, ThingProperty
 
 from labthings.server.find import find_component
 
@@ -84,16 +83,10 @@ class CaptureSchema(Schema):
         return data
 
 
-capture_schema = CaptureSchema()
-capture_list_schema = CaptureSchema(many=True)
-
-
-from pprint import pprint
-
-
-@Tag("captures")
 class CaptureList(PropertyView):
-    @marshal_with(CaptureSchema(many=True))
+    tags = ["captures"]
+    schema = CaptureSchema(many=True)
+
     def get(self):
         """
         List all image captures
@@ -103,9 +96,10 @@ class CaptureList(PropertyView):
         return image_list
 
 
-@Tag("captures")
 class CaptureView(View):
-    @marshal_with(CaptureSchema())
+    tags = ["captures"]
+    schema = CaptureSchema()
+
     def get(self, id):
         """
         Description of a single image capture
@@ -136,9 +130,14 @@ class CaptureView(View):
         return "", 204
 
 
-@Tag("captures")
 class CaptureDownload(View):
-    @doc_response(200, mimetype="image/jpeg")
+    tags = ["captures"]
+    responses = {
+        200: {
+            "content_type": "image/jpeg"
+        }
+    }
+
     def get(self, id, filename):
         """
         Image data for a single image capture
@@ -172,8 +171,9 @@ class CaptureDownload(View):
         return send_file(img, mimetype="image/jpeg")
 
 
-@Tag("captures")
 class CaptureTags(View):
+    tags = ["captures"]
+
     def get(self, id):
         """
         Get tags associated with a single image capture
@@ -227,8 +227,9 @@ class CaptureTags(View):
         return capture_obj.tags
 
 
-@Tag("captures")
 class CaptureAnnotations(View):
+    tags = ["captures"]
+
     def get(self, id):
         """
         Get annotations associated with a single image capture

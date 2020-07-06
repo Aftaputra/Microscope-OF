@@ -2,14 +2,6 @@ from labthings.server.extensions import BaseExtension
 from labthings.server.find import find_component
 from labthings.server.view import View, ActionView
 
-from labthings.server.decorators import (
-    use_args,
-    marshal_with,
-    ThingProperty,
-    PropertySchema,
-    ThingAction,
-    doc_response,
-)
 from labthings.server.schema import Schema
 from labthings.server import fields
 
@@ -18,10 +10,10 @@ import io  # Used in our capture action
 import time  # Used in our timelapse function
 
 # Used in our timelapse function
-from openflexure_microscope.camera.base import generate_basename
+from openflexure_microscope.captures.capture_manager import generate_basename
 
 # Used to run our timelapse in a background thread
-from labthings.core.tasks import taskify, update_task_progress
+from labthings.core.tasks import update_task_progress
 
 
 ## Extension methods
@@ -70,16 +62,15 @@ class TimelapseAPI(ActionView):
     """
     Take a series of images in a timelapse
     """
-    @use_args(
-        {
-            "n_images": fields.Integer(
-                required=True, example=5, description="Number of images"
-            ),
-            "t_between": fields.Number(
-                missing=1, example=1, description="Time (seconds) between images"
-            ),
-        }
-    )
+    args = {
+        "n_images": fields.Integer(
+            required=True, example=5, description="Number of images"
+        ),
+        "t_between": fields.Number(
+            missing=1, example=1, description="Time (seconds) between images"
+        ),
+    }
+
     def post(self, args):
         # Find our microscope component
         microscope = find_component("org.openflexure.microscope")

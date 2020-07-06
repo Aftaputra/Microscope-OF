@@ -60,6 +60,12 @@
 }
 
 //
+// Decorations
+//
+@small-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+@big-shadow: 0 14px 25px rgba(0, 0, 0, 0.16);
+
+//
 // Container
 //
 
@@ -148,6 +154,7 @@
 // Paper
 //
 @paper-border-radius: 4px;
+@button-border-radius: 3px;
 
 
 /* ========================================================================
@@ -187,9 +194,8 @@
 
 .uk-card {
     border-radius: @paper-border-radius;
-    border: 1px solid rgba(180, 180, 180, 0.25);
-    box-shadow: none;
-    -webkit-box-shabox-shadow: none;
+    //border: 1px solid rgba(180, 180, 180, 0.25);
+    box-shadow: @small-shadow;
 }
 
 .uk-card-media-top img {
@@ -228,7 +234,7 @@
  */
 .uk-modal-dialog {
     border-radius: @paper-border-radius;
-    box-shadow: 0 14px 25px rgba(0, 0, 0, 0.16);
+    box-shadow: @big-shadow;
     transition: 0.3s ease !important;
 }
 
@@ -245,7 +251,7 @@
  */
 .uk-notification-message {
     border-radius: @paper-border-radius;
-    box-shadow: 0 14px 25px rgba(0, 0, 0, 0.16);
+    box-shadow: @big-shadow;
 }
 
 .uk-notification-message-danger {
@@ -287,13 +293,19 @@ a:hover {
  * Buttons
  */
 .uk-button {
-    border-radius: 2px;
+    border-radius: @button-border-radius;
     padding: 0 8px;
 }
 
 .uk-button-default {
     background-color: rgba(180, 180, 180, 0.10);
     border-color: @global-border;
+}
+
+.uk-button-primary {
+    background-color: rgba(180, 180, 180, 0.10);
+    border-color: @global-primary-background;
+    color: @button-text-color;
 }
 
 .uk-button-danger {

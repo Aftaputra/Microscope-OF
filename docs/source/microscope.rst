@@ -7,5 +7,5 @@ The main microscope class handles microscope settings, passing these between the
    :maxdepth: 2
    :caption: Contents:
 
-.. automodule:: openflexure_microscope
-    :members:
+.. automodule:: openflexure_microscope.microscope
+   :members:

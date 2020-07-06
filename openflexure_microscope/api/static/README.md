@@ -10,21 +10,11 @@ To prevent the editor from interfering with ESLint, add to your project `setting
 {
     "editor.tabSize": 2,
     "cSpell.enabled": false,
-    "eslint.validate": [{
-            "language": "vue",
-            "autoFix": true
-        },
-        {
-            "language": "javascript",
-            "autoFix": true
-        },
-        {
-            "language": "javascriptreact",
-            "autoFix": true
-        }
-    ],
-    "eslint.autoFixOnSave": true,
+    "eslint.validate": ["vue","javascript", "javascriptreact"],
     "editor.formatOnSave": false,
-    "vetur.validation.template": false
+    "vetur.validation.template": false,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+    }
 }
 ```

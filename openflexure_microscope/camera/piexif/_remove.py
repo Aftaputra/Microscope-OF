@@ -40,8 +40,8 @@ def remove(src, new_file=None):
             new_data = _webp.remove(src_data)
         except ValueError:
             new_data = src_data
-        except e:
-            print(e.args)
+        except Exception as e:
+            print(e)
             raise ValueError("Error occurred.")
 
     if isinstance(new_file, io.BytesIO):

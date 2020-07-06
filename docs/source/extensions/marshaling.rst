@@ -14,7 +14,7 @@ The OpenFlexure Microscope Server makes use of the `Marshmallow library <https:/
     - **Deserialize** input data to app-level objects.
     - **Serialize** app-level objects to primitive Python types. The serialized objects can then be rendered to standard formats such as JSON for use in an HTTP API.
 
-When developing extensions, you are encouraged to make use of the ``@marshal_with`` and ``@use_args`` decorators, along with schemas, to handle serialisation of your API responses, and parsing of request parameters respectively.
+When developing extensions, you are encouraged to make use of your View ``schema`` and ``args`` class attributes to handle serialisation of your API responses, and parsing of request parameters respectively.
 
 Schemas and fields
 ++++++++++++++++++
@@ -31,7 +31,7 @@ A **schema** is a collection of keys and fields describing how an object should 
 Argument parsing
 ++++++++++++++++
 
-In the previous section we saw how to use fields and ``@use_body`` to get simple arguments from requests, in which a single parameter is required. By making use of Marshmallow schemas, and the `Webargs library <https://github.com/marshmallow-code/webargs>`_, we can allow for more complex requests containing many parameters of different types. The parsed request parameters are then passed to the view function as a positional argument (as before), in the form of a dictionary. 
+In the previous section we saw how to use fields and ``args`` to get simple arguments from requests, in which a single parameter is required. By making use of Marshmallow schemas, and the `Webargs library <https://github.com/marshmallow-code/webargs>`_, we can allow for more complex requests containing many parameters of different types. The parsed request parameters are then passed to the view function as a positional argument (as before), in the form of a dictionary. 
 
 For example, if you are creating an API route, in which you expect parameters ``name``, ``age``, and optionally, ``job``, your schema class may look like:
 
@@ -45,25 +45,29 @@ For example, if you are creating an API route, in which you expect parameters ``
         age = fields.Integer(required=True)
         job = fields.String(required=False, missing="Unknown")
 
-To inform your POST method to expect these arguments, use the ``@use_args`` decorator:
+To inform your POST method to expect these arguments, use the ``args`` class attribute:
 
 .. code-block:: python
 
-    @use_args(UserSchema())
-    def post(self, args):
+    class MyView(View):
+        args = UserSchema()
+
+        def post(self, args):
         ..
 
 Alternatively, if your schema is only used in a single location, it may be simpler to create a dictionary schema only where it is used, for example:
 
 .. code-block:: python
 
-    @use_args({
-        "name": fields.String(required=True),
-        "age": fields.Integer(required=True),
-        "job": fields.String(required=False, missing="Unknown")
-    })
-    def post(self, args):
-        ...
+    class MyView(View):
+        args = {
+            "name": fields.String(required=True),
+            "age": fields.Integer(required=True),
+            "job": fields.String(required=False, missing="Unknown")
+        }
+
+        def post(self, args):
+            ...
 
 A compatible request body, in JSON format, may look like:
 
@@ -80,15 +84,17 @@ This JSON data is the parsed, converted into a Python dictionary, and passed as 
 
 .. code-block:: python
 
-    @use_args({
-        "name": fields.String(required=True),
-        "age": fields.Integer(required=True),
-        "job": fields.String(required=False, missing="Unknown")
-    })
-    def post(self, args):
-        name = args.get("name")  # Returns "John Doe", type str
-        age = args.get("age")  # Returns 45, type int
-        job = args.get("job")  # Returns "Python developer", type str
+    class MyView(View):
+        args = {
+            "name": fields.String(required=True),
+            "age": fields.Integer(required=True),
+            "job": fields.String(required=False, missing="Unknown")
+        }
+
+        def post(self, args):
+            name = args.get("name")  # Returns "John Doe", type str
+            age = args.get("age")  # Returns 45, type int
+            job = args.get("job")  # Returns "Python developer", type str
 
 
 Object serialization
@@ -118,16 +124,17 @@ We use this new schema in our ``identify`` view like so:
 
     class ExampleIdentifyView(View):
         # Format our returned object using MicroscopeIdentifySchema
-        @marshal_with(MicroscopeIdentifySchema())
+        schema = MicroscopeIdentifySchema()
+
         def get(self):
             # Find our microscope component
             microscope = find_component("org.openflexure.microscope")
 
             # Return our microscope object,
-            # let @marshal_with handle formatting the output
+            # let schema handle formatting the output
             return microscope
 
-Note that our ``get`` method now returns the :py:class:`openflexure_microscope.Microscope` object itself. No formatting is done by the function, it is entirely handled by ``@marshal_with(MicroscopeIdentifySchema())``. Additionally, since we defined our schema as a class, it can be re-used elsewhere.
+Note that our ``get`` method now returns the :py:class:`openflexure_microscope.Microscope` object itself. No formatting is done by the function, it is entirely handled by the view class, and its `schema` attribute. Additionally, since we defined our schema as a class, it can be re-used elsewhere.
 
 For our ``rename`` view, we will use a simpler schema for our input arguments, defined by a dictionary (since we are only expecting a single parameter in, and it will likely not be re-used elsewhere). Our response, however, will use our ``MicroscopeIdentifySchema`` class. This means that the *response* of our ``identify`` and ``rename`` views will be identically formatted.
 
@@ -137,9 +144,10 @@ Our ``rename`` view class may now look like:
 
     class ExampleRenameView(View):
         # Format our returned object using MicroscopeIdentifySchema
-        @marshal_with(MicroscopeIdentifySchema())
+        schema = MicroscopeIdentifySchema()
         # Expect a request parameter called "name", which is a string. Pass to argument "args".
-        @use_args({"name": fields.String(required=True, example="My Example Microscope")})
+        args = {"name": fields.String(required=True, example="My Example Microscope")}
+
         def post(self, args):
             # Look for our "name" parameter in the request arguments
             new_name = args.get("name")
@@ -151,7 +159,7 @@ Our ``rename`` view class may now look like:
             rename(microscope, new_name)
 
             # Return our microscope object,
-            # let @marshal_with handle formatting the output
+            # let schema handle formatting the output
             return microscope
 
 

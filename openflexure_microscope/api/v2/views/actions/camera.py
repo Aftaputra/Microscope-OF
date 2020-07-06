@@ -1,19 +1,11 @@
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
 from labthings.server.view import View, ActionView
 from labthings.server.find import find_component
-from labthings.server.decorators import (
-    use_args,
-    marshal_with,
-    doc,
-    tag,
-    ThingAction,
-    doc_response,
-)
 
 from labthings.server import fields
 from openflexure_microscope.utilities import filter_dict
 
-from openflexure_microscope.api.v2.views.captures import capture_schema
+from openflexure_microscope.api.v2.views.captures import CaptureSchema
 
 import logging
 import io
@@ -25,24 +17,23 @@ class CaptureAPI(ActionView):
     Create a new image capture. 
     """
 
-    @use_args(
-        {
-            "filename": fields.String(example="MyFileName"),
-            "temporary": fields.Boolean(
-                missing=False, description="Delete capture on shutdown"
-            ),
-            "use_video_port": fields.Boolean(missing=False),
-            "bayer": fields.Boolean(
-                missing=False, description="Store raw bayer data in file"
-            ),
-            "annotations": fields.Dict(missing={}, example={"Client": "SwaggerUI"}),
-            "tags": fields.List(fields.String, missing=[], example=["docs"]),
-            "resize": fields.Dict(
-                missing=None, example={"width": 640, "height": 480}
-            ),  # TODO: Validate keys
-        }
-    )
-    @marshal_with(capture_schema)
+    args = {
+        "filename": fields.String(example="MyFileName"),
+        "temporary": fields.Boolean(
+            missing=False, description="Delete capture on shutdown"
+        ),
+        "use_video_port": fields.Boolean(missing=False),
+        "bayer": fields.Boolean(
+            missing=False, description="Store raw bayer data in file"
+        ),
+        "annotations": fields.Dict(missing={}, example={"Client": "SwaggerUI"}),
+        "tags": fields.List(fields.String, missing=[], example=["docs"]),
+        "resize": fields.Dict(
+            missing=None, example={"width": 640, "height": 480}
+        ),  # TODO: Validate keys
+    }
+    schema = CaptureSchema()
+
     def post(self, args):
         """
         Create a new capture
@@ -78,18 +69,22 @@ class RAMCaptureAPI(ActionView):
     Take a non-persistant image capture.
     """
 
-    @use_args(
-        {
-            "use_video_port": fields.Boolean(missing=True),
-            "bayer": fields.Boolean(
-                missing=False, description="Return with raw bayer data"
-            ),
-            "resize": fields.Dict(
-                missing=None, example={"width": 640, "height": 480}
-            ),  # TODO: Validate keys
+    args = {
+        "use_video_port": fields.Boolean(missing=True),
+        "bayer": fields.Boolean(
+            missing=False, description="Return with raw bayer data"
+        ),
+        "resize": fields.Dict(
+            missing=None, example={"width": 640, "height": 480}
+        ),  # TODO: Validate keys
+    }
+    
+    responses = {
+        200: {
+            "content_type": "image/jpeg"
         }
-    )
-    @doc_response(200, mimetype="image/jpeg")
+    }
+
     def post(self, args):
         """
         Take a non-persistant image capture.
@@ -128,9 +123,8 @@ class GPUPreviewStartAPI(ActionView):
     in the format ``[x, y, width, height]``.
     """
 
-    @use_args(
-        {"window": fields.List(fields.Integer, missing=[], example=[0, 0, 640, 480])}
-    )
+    args = {"window": fields.List(fields.Integer, missing=[], example=[0, 0, 640, 480])}
+
     def post(self, args):
         """
         Start the onboard GPU preview.

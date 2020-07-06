@@ -78,7 +78,12 @@ export default {
     buttonPrimary: {
       type: Boolean,
       required: false,
-      default: false
+      default: true
+    },
+    submitOnEvent: {
+      type: String,
+      required: false,
+      default: null
     }
   },
 
@@ -101,7 +106,20 @@ export default {
 
   created() {},
 
-  beforeDestroy() {},
+  mounted() {
+    // A global signal listener to perform a move action
+    if (this.submitOnEvent) {
+      this.$root.$on(this.submitOnEvent, () => {
+        this.bootstrapTask();
+      });
+    }
+  },
+
+  beforeDestroy() {
+    if (this.submitOnEvent) {
+      this.$root.$off(this.submitOnEvent);
+    }
+  },
 
   methods: {
     bootstrapTask: function() {

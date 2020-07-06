@@ -7,7 +7,6 @@ from . import camera, stage, system
 from labthings.server.view import View
 from labthings.server.find import current_labthing
 from labthings.server.utilities import description_from_view
-from labthings.server.decorators import Tag
 
 _actions = {
     "capture": {
@@ -58,7 +57,6 @@ def enabled_root_actions():
     return {k: v for k, v in _actions.items() if v["conditions"]}
 
 
-# @Tag("actions")
 class ActionsView(View):
     def get(self):
         """
