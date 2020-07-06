@@ -111,6 +111,8 @@
                   :submit-url="fastAutofocusUri"
                   :submit-data="{ dz: 2000 }"
                   :submit-label="'Fast'"
+                  :button-primary="false"
+                  :submit-on-event="'globalFastAutofocusEvent'"
                   @taskStarted="isAutofocusing = 1"
                   @finished="isAutofocusing = 0"
                 ></taskSubmitter>
@@ -122,6 +124,7 @@
                   :submit-url="normalAutofocusUri"
                   :submit-data="{ dz: [-60, -30, 0, 30, 60] }"
                   :submit-label="'Medium'"
+                  :button-primary="false"
                   @taskStarted="isAutofocusing = 2"
                   @finished="isAutofocusing = 0"
                 ></taskSubmitter>
@@ -133,6 +136,7 @@
                   :submit-url="normalAutofocusUri"
                   :submit-data="{ dz: [-20, -10, 0, 10, 20] }"
                   :submit-label="'Fine'"
+                  :button-primary="false"
                   @taskStarted="isAutofocusing = 3"
                   @finished="isAutofocusing = 0"
                 ></taskSubmitter>
@@ -201,6 +205,7 @@ export default {
     this.$root.$on("globalMoveInImageCoordinatesEvent", (x, y, absolute) => {
       this.moveInImageCoordinatesRequest(x, y, absolute);
     });
+    // A global signal listener to perform a move in multiples of a step size
     this.$root.$on("globalMoveStepEvent", (x_steps, y_steps, z_steps) => {
       this.moveRequest(
         x_steps * this.stepXy,
@@ -219,6 +224,8 @@ export default {
   beforeDestroy() {
     // Remove global signal listener to perform a move action
     this.$root.$off("globalMoveEvent");
+    this.$root.$off("globalMoveInImageCoordinatesEvent");
+    this.$root.$off("globalMoveStepEvent");
   },
 
   methods: {
