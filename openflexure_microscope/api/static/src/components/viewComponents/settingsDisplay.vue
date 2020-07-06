@@ -158,9 +158,6 @@ export default {
 @import "../../assets/less/theme.less";
 
 .settings-pane {
-  border-width: 0 1px 0 0;
-  border-style: solid;
-  border-color: rgba(180, 180, 180, 0.25);
 }
 
 .settings-nav {
