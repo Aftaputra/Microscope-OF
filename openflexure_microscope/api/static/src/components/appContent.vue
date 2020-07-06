@@ -218,6 +218,18 @@ export default {
         }
       }
       return pluginGuis;
+    },
+    tabOrder: function() {
+      // TODO: There must be a better way to do this, somehow reading the order of the HTML elements?
+      var ind = ["view", "gallery", "navigate", "capture", "settings"];
+      for (const plugin of this.pluginsGuiList) {
+        ind.push(plugin.id);
+      }
+      ind.push("about");
+      return ind;
+    },
+    currentTabIndex: function() {
+      return this.tabOrder.indexOf(this.currentTab);
     }
   },
 
@@ -246,6 +258,14 @@ export default {
     this.$root.$on("globalSwitchTab", tabID => {
       this.currentTab = tabID;
     });
+    // A global signal listener to increment tab
+    this.$root.$on("globalIncrementTab", () => {
+      this.incrementTabBy(1);
+    });
+    // A global signal listener to decrement tab
+    this.$root.$on("globalDecrementTab", () => {
+      this.incrementTabBy(-1);
+    });
   },
 
   beforeDestroy() {
@@ -273,6 +293,14 @@ export default {
       if (!(this.currentTab == tab)) {
         this.currentTab = tab;
       }
+    },
+    incrementTabBy: function(n) {
+      const newIndex =
+        (((this.currentTabIndex + n) % this.tabOrder.length) +
+          this.tabOrder.length) %
+        this.tabOrder.length;
+      const newId = this.tabOrder[newIndex];
+      this.currentTab = newId;
     },
     startModals: function() {
       this.$refs["calibrationModal"].show();
