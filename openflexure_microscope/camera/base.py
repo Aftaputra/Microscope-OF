@@ -31,11 +31,13 @@ class BaseCamera(metaclass=ABCMeta):
         self.stop = False  # Used to indicate that the stream loop should break
 
         self.stream_timeout = 20
-        self.stream_timeout_enabled = False
 
         self.stream_active = False
         self.record_active = False
         self.preview_active = False
+
+        # Start the stream worker on init
+        self.start_worker()
 
     @property
     @abstractmethod
@@ -153,17 +155,6 @@ class BaseCamera(metaclass=ABCMeta):
         for frame in self.frames_iterator:
             self.frame = frame
             self.event.set()  # send signal to clients
-
-            # Handle timeout
-            if (
-                self.stream_timeout_enabled
-                and (  # If using timeout
-                    time.time() - self.last_access > self.stream_timeout
-                )
-                and not self.preview_active  # And GPU preview is not active
-            ):
-                self.frames_iterator.close()
-                break
 
             try:
                 if self.stop is True:
