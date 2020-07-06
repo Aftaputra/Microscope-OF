@@ -1,5 +1,9 @@
 <template>
-  <div id="app" class="uk-height-1-1 uk-margin-remove uk-padding-remove" :class="handleTheme">
+  <div
+    id="app"
+    class="uk-height-1-1 uk-margin-remove uk-padding-remove"
+    :class="handleTheme"
+  >
     <loadingContent v-if="!$store.getters.ready" />
     <div v-if="$store.getters.ready" id="tour-header"></div>
     <appContent v-if="$store.getters.ready" />
@@ -219,6 +223,11 @@ export default {
       this.$root.$emit("globalCaptureEvent");
     });
 
+    // Autofocus
+    Mousetrap.bind("a", () => {
+      this.$root.$emit("globalFastAutofocusEvent");
+    });
+
     // Re-run tour
     Mousetrap.bind("alt+t", () => {
       this.$tours["guidedTour"].start();
@@ -234,10 +243,8 @@ export default {
     window.removeEventListener("wheel", this.wheelMonitor);
     // Remove origin watcher
     this.unwatchOriginFunction();
-  },
-
-  destroyed: function() {
     // Remove key listeners
+    console.log("Resetting Mousetrap");
     Mousetrap.reset();
   },
 
@@ -297,7 +304,6 @@ export default {
       // Make a position request
       // Emit a signal to move, acted on by panelNavigate.vue
       this.$root.$emit("globalMoveStepEvent", x_rel, y_rel, z_rel);
-
     }
   }
 };
