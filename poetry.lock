@@ -105,6 +105,17 @@ all = ["opencv-python-headless (>=4.1,<5.0)", "scipy (>=1.4,<2.0)"]
 correlation = ["opencv-python-headless (>=4.1,<5.0)", "scipy (>=1.4,<2.0)"]
 
 [[package]]
+category = "main"
+description = "Pure Python CBOR (de)serializer with extensive tag support"
+name = "cbor2"
+optional = false
+python-versions = "*"
+version = "5.1.1"
+
+[package.extras]
+test = ["pytest", "pytest-cov"]
+
+[[package]]
 category = "dev"
 description = "Python package for providing Mozilla's CA Bundle."
 name = "certifi"
@@ -311,26 +322,23 @@ i18n = ["Babel (>=0.8)"]
 
 [[package]]
 category = "main"
-description = ""
+description = "Python implementation of LabThings, based on the Flask microframework"
 name = "labthings"
 optional = false
-python-versions = "^3.6"
+python-versions = ">=3.6,<4.0"
 version = "0.7.0"
 
 [package.dependencies]
-Flask = "^1.1.1"
-apispec = "^3.2.0"
-flask-cors = "^3.0.8"
+Flask = ">=1.1.1,<2.0.0"
+apispec = ">=3.2.0,<4.0.0"
+cbor2 = ">=5.1.0,<6.0.0"
+flask-cors = ">=3.0.8,<4.0.0"
 gevent = ">=1.4,<21.0"
-gevent-websocket = "^0.10.1"
-marshmallow = "^3.4.0"
-webargs = "^6.0.0"
+gevent-websocket = ">=0.10.1,<0.11.0"
+marshmallow = ">=3.4.0,<4.0.0"
+webargs = ">=6.0.0,<7.0.0"
 zeroconf = ">=0.24.5,<0.28.0"
 
-[package.source]
-reference = "b718258fe219fbdca7f82d3987c0680f7157e738"
-type = "git"
-url = "https://github.com/labthings/python-labthings.git"
 [[package]]
 category = "dev"
 description = "A fast and thorough lazy object proxy."
@@ -833,7 +841,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 rpi = ["RPi.GPIO"]
 
 [metadata]
-content-hash = "fff0dba8c9a8ffe0a496148d68bedf1e12802e6700ab3e5f82788e10891eb774"
+content-hash = "b3ff2e517d9de0757baef60134e33457a6051173b1d6d88806889733c80c3215"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -868,6 +876,9 @@ black = [
 camera-stage-mapping = [
     {file = "camera-stage-mapping-0.1.2.tar.gz", hash = "sha256:0d1a6f93b3a60054bc8057359464adbb40488b4daeb93c672b90e4fe525e7b69"},
     {file = "camera_stage_mapping-0.1.2-py3-none-any.whl", hash = "sha256:3f3da3e95792e811e6808173c368be67ebb00e6f7d7e37d68cb36fa765d13da9"},
+]
+cbor2 = [
+    {file = "cbor2-5.1.1.tar.gz", hash = "sha256:09e9607ea50e2ebb718791d475f11620cb244b0cc3758ce2e76cf36e8372ad64"},
 ]
 certifi = [
     {file = "certifi-2020.6.20-py2.py3-none-any.whl", hash = "sha256:8fc0819f1f30ba15bdb34cceffb9ef04d99f420f68eb75d901e9560b8749fc41"},
@@ -1010,7 +1021,10 @@ jinja2 = [
     {file = "Jinja2-2.11.2-py2.py3-none-any.whl", hash = "sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035"},
     {file = "Jinja2-2.11.2.tar.gz", hash = "sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0"},
 ]
-labthings = []
+labthings = [
+    {file = "labthings-0.7.0-py3-none-any.whl", hash = "sha256:4ade7c6547bd0b35fbfdffe7cbe4c56a6e4a4e3790b9432b74ae9eb5ce480ff3"},
+    {file = "labthings-0.7.0.tar.gz", hash = "sha256:3a8d662027b9a5024f83fa34fbf1023da0e6c90050ca200a38a3dd94ccbdc537"},
+]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.4.3.tar.gz", hash = "sha256:f3900e8a5de27447acbf900b4750b0ddfd7ec1ea7fbaf11dfa911141bc522af0"},
     {file = "lazy_object_proxy-1.4.3-cp27-cp27m-macosx_10_13_x86_64.whl", hash = "sha256:a2238e9d1bb71a56cd710611a1614d1194dc10a175c1e08d75e1a7bcc250d442"},
