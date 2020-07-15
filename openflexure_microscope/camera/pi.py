@@ -327,32 +327,35 @@ class PiCameraStreamer(BaseCamera):
         """Start the on board GPU camera preview."""
         logging.info("Starting the GPU preview")
 
-        try:
-            if not self.camera.preview:
-                logging.debug("Starting preview")
-                self.camera.start_preview(fullscreen=fullscreen, window=window)
-            else:
-                logging.debug("Resizing preview")
-                if window:
-                    self.camera.preview.window = window
-                if fullscreen:
-                    self.camera.preview.fullscreen = fullscreen
-            self.preview_active = True
-        except picamera.exc.PiCameraMMALError as e:
-            logging.error(
-                "Suppressed a MMALError in start_preview. Exception: {}".format(e)
-            )
-        except picamera.exc.PiCameraValueError as e:
-            logging.error(
-                "Suppressed a ValueError exception in start_preview. Exception: {}".format(
-                    e
+        with self.lock():
+            try:
+                if not self.camera.preview:
+                    logging.debug("Starting preview")
+                    self.camera.start_preview(fullscreen=fullscreen, window=window)
+                else:
+                    logging.debug("Resizing preview")
+                    if window:
+                        self.camera.preview.window = window
+                    if fullscreen:
+                        self.camera.preview.fullscreen = fullscreen
+                self.preview_active = True
+            except picamera.exc.PiCameraMMALError as e:
+                logging.error(
+                    "Suppressed a MMALError in start_preview. Exception: {}".format(e)
                 )
+            except picamera.exc.PiCameraValueError as e:
+                logging.error(
+                    "Suppressed a ValueError exception in start_preview. Exception: {}".format(
+                        e
+                    )
             )
 
     def stop_preview(self):
         """Stop the on board GPU camera preview."""
-        self.camera.stop_preview()
-        self.preview_active = False
+        with self.lock():
+            if self.camera.preview:
+                self.camera.stop_preview()
+                self.preview_active = False
 
     def start_recording(self, output, fmt: str = "h264", quality: int = 15):
         """Start recording.
