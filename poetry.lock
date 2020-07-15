@@ -285,7 +285,7 @@ webargs = "^6.0.0"
 zeroconf = ">=0.24.5,<0.29.0"
 
 [package.source]
-reference = "286cdb6f247a66bef727b457796790d81f8f3e90"
+reference = "8ebfddfba73af76d2ec233e14d5c8a47bb03a36c"
 type = "git"
 url = "https://github.com/labthings/python-labthings.git"
 [[package]]
