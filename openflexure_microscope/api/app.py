@@ -15,8 +15,8 @@ else:
     log_level = logging.INFO
 
 # Set root logger level
-logger = logging.getLogger()
-logger.setLevel(log_level)
+root_log = logging.getLogger()
+root_log.setLevel(log_level)
 
 import os
 import pkg_resources
@@ -45,6 +45,10 @@ from openflexure_microscope.api.microscope import default_microscope as api_micr
 from openflexure_microscope.api.v2 import views
 
 # Handle logging
+access_log = logging.getLogger('werkzeug')
+# Block the access logs from propagating up to the root logger
+access_log.propagate = False
+
 ROOT_LOGFILE = logs_file_path("openflexure_microscope.log")
 ACCESS_LOGFILE = logs_file_path("openflexure_microscope.access.log")
 
@@ -71,7 +75,8 @@ afh.setLevel(logging.DEBUG)
 afh.propagate = False
 
 # Add file handler to root logger
-logger.addHandler(fh)
+root_log.addHandler(fh)
+access_log.addHandler(afh)
 
 # Log server paths being used
 logging.info(f"Running with data path {OPENFLEXURE_VAR_PATH}")
@@ -201,10 +206,6 @@ atexit.register(cleanup)
 # Start the app
 if __name__ == "__main__":
     from labthings.server.wsgi import Server
-
-    # Block the access logs from propagating up to the root logger
-    logging.getLogger("labthings.server.wsgi.handler").propagate = False
-
     logging.info("Starting OpenFlexure Microscope Server...")
-    server = Server(app, log=afh, error_log=logger)
+    server = Server(app)
     server.run(host="::", port=5000, debug=False, zeroconf=True)
