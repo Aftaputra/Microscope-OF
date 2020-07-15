@@ -9,6 +9,7 @@ from openflexure_microscope.captures.capture_manager import generate_basename
 from labthings.server.find import find_component, find_extension
 from labthings.server.extensions import BaseExtension
 from labthings.server import fields
+from labthings.tasks import current_task_stopped
 
 from openflexure_microscope.devel import abort, update_task_progress
 
@@ -224,6 +225,8 @@ class ScanExtension(BaseExtension):
                         annotations=annotations,
                         tags=tags,
                     )
+                if current_task_stopped():
+                    return
                 # Make sure we use our current best estimate of focus (i.e. the current position) next point
                 next_z = microscope.stage.position[2]
 
@@ -277,6 +280,8 @@ class ScanExtension(BaseExtension):
                 # Update task progress
                 self._images_captured_so_far += 1
                 update_task_progress(self.progress())
+                if current_task_stopped():
+                    return
 
                 if i != steps - 1:
                     logging.debug("Moving z by {}".format(step_size))
