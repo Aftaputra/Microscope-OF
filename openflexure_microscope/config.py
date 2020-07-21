@@ -8,7 +8,7 @@ from uuid import UUID
 import numpy as np
 from fractions import Fraction
 
-from labthings.server.representations import LabThingsJSONEncoder
+from labthings.json import LabThingsJSONEncoder
 
 from .paths import (
     SETTINGS_FILE_PATH,
