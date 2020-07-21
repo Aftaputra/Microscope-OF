@@ -4,9 +4,9 @@ Top-level representation of enabled actions
 from flask import url_for
 from . import camera, stage, system
 
-from labthings.server.view import View
-from labthings.server.find import current_labthing
-from labthings.server.utilities import description_from_view
+from labthings import current_labthing
+from labthings.views import View
+from labthings.utilities import description_from_view
 
 _actions = {
     "capture": {

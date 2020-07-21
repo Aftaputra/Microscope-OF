@@ -24,7 +24,7 @@ from openflexure_microscope.camera.mock import MissingCamera
 from openflexure_microscope.utilities import serialise_array_b64, Timer
 from openflexure_microscope.config import user_settings, user_configuration
 
-from labthings.core.lock import CompositeLock
+from labthings import CompositeLock
 
 
 class Microscope:
@@ -49,7 +49,7 @@ class Microscope:
         self.extension_settings = {}
 
         # Initialise with an empty composite lock
-        #: :py:class:`labthings.lock.CompositeLock`: Composite lock for locking both camera and stage
+        #: :py:class:`labthings.CompositeLock`: Composite lock for locking both camera and stage
         self.lock = CompositeLock([])
 
         self.camera = None  #: Currently connected camera object

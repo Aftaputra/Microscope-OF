@@ -1,7 +1,6 @@
 from openflexure_microscope.api.utilities import JsonResponse
-from labthings.server.view import View, ActionView
-from labthings.server.find import find_component
-from labthings.server import fields
+from labthings.views import View, ActionView
+from labthings import find_component, fields
 
 from openflexure_microscope.utilities import axes_to_array, filter_dict
 

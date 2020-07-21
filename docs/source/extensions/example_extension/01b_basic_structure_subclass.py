@@ -1,5 +1,5 @@
-from labthings.server.extensions import BaseExtension
-from labthings.server.find import find_component
+from labthings.extensions import BaseExtension
+from labthings import find_component
 
 
 # Create the extension class

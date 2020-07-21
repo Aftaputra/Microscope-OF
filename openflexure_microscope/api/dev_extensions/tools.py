@@ -1,7 +1,6 @@
-from labthings.server.extensions import BaseExtension
-from labthings.server.view import ActionView
-
-from labthings.server import fields
+from labthings import fields
+from labthings.extensions import BaseExtension
+from labthings.views import ActionView
 
 import logging
 import time

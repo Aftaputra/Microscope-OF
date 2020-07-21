@@ -1,4 +1,4 @@
-from labthings.server.view import View, ActionView
+from labthings.views import View, ActionView
 import subprocess
 import os
 from sys import platform

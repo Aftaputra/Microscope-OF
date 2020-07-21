@@ -1,5 +1,5 @@
-Tasks and Locks
-===============
+Threads and Locks
+=================
 
 Introduction
 ------------
@@ -10,20 +10,22 @@ This introduces a couple of problems. Firstly, a request that triggers a long fu
 
 Similarly, if your functionality takes a long time, it may be possible for other requests to interfere with your function. For example, in our hypothetical timelapse extension, while the timelapse is running, another user could open a connection and start moving the stage around, ruining the timelapse.
 
-We get around these issues by making use of background tasks, and component locks.
+We get around these issues by making use of action threads, and component locks.
 
-Background tasks
-----------------
+Action threads
+--------------
 
-Tasks are introduced to manage long-running functions in a way that does not block HTTP requests. Any API Action will automatically run as a background task (that is, any View that subclasses `ActionView`).
+Action threads are introduced to manage long-running functions in a way that does not block HTTP requests. Any API Action will automatically run as a background thread.
 
-Internally, the ``tasks`` submodule stores a list of all requested tasks, and their states. This state stores the running status of the task (if itis idle, running, error, or success), information about the start and end times, a unique task ID, and, upon completion, the return value of the long-running function. 
+Internally, the :class:`labthings.LabThing` object stores a list of all requested actions, and their states. This state stores the running status of the action (if itis idle, running, error, or success), information about the start and end times, a unique ID, and, upon completion, the return value of the long-running function. 
 
-By using tasks, a function can be started in the background, and it's return value fetched at a later time once it has reported success. If a long-running task is started by some client, it should note the ID returned in the task state JSON, and use this to periodically check on the status of that particular task. 
+By using threads, a function can be started in the background, and it's return value fetched at a later time once it has reported success. If a long-running action is started by some client, it should note the ID returned in the action state JSON, and use this to periodically check on the status of that particular action. 
 
-API routes have been created to allow checking the state of all tasks (GET ``/tasks``), a particular task by ID (GET ``/tasks/<task_id>``), and terminating or removing individual tasks (DELETE ``/tasks/<task_id>``).
+API routes have been created to allow checking the state of all actions (GET ``/actions``), a particular action by ID (GET ``/actions/<action_id>``), and terminating or removing individual actions (DELETE ``/actions/<action_id>``).
 
-All Actions will return a serialized representation of the task, when your POST request returns. If the task completes within a default timeout period (usually 1 second) then the completed Task representation will be returned. If the task is still running after this timeout period, the "in-progress" Task representation will be returned. The final output value can then be retrieved at a later time.
+All actions will return a serialized representation of the action state when your POST request returns. If the action completes within a default timeout period (usually 1 second) then the completed action representation will be returned. If the action is still running after this timeout period, the "in-progress" action representation will be returned. The final output value can then be retrieved at a later time.
+
+Most users will not need to create instances of this class. Instead, they will be created automatically when a function is started by an API Action view.
 
 An example of a long running task may look like:
 
@@ -42,21 +44,21 @@ After some time, once the task has completed, it could be retreived using:
 .. code-block:: python
 
     ...
-    from labthings import tasks
+    from labthings import current_labthing
 
-    def get_result(task_id):
-        matching_task = tasks.dict.get(task_id)
-        return matching_task.state
+    def get_result(action_id):
+        matching_action = current_labthing().actions.get(task_id)
+        return matching_action.state
 
 or by making GET requests to the ``http://microscope.local/api/v2/tasks/<task_id>`` view.
 
 
-Updating task progress
-++++++++++++++++++++++
+Updating action progress
+++++++++++++++++++++++++
 
-Some applications such as OpenFlexure eV are able to display progress bars showing the progress of a background task. Implementing progress updates in your extension is made easy with the :py:meth:`labthings.tasks.update_task_progress` function. This function takes a single argument, which is the task progress as an integer percent (0 - 100).
+Some applications such as OpenFlexure eV are able to display progress bars showing the progress of an action thread. Implementing progress updates in your extension is made easy with the :py:meth:`labthings.update_action_progress` function. This function takes a single argument, which is the action progress as an integer percent (0 - 100).
 
-If your long running function was started within a background task, this function will update the state of the corresponding task object. If your function is called outside of a long-running task (e.g. by another extension, directly), then this function will silently do nothing.
+If your long running function was started within a background thread, this function will update the state of the corresponding action thread object. If your function is called outside of a long-running task (e.g. by another extension, directly), then this function will silently do nothing.
 
 An example of task progress is included in the example later on this page.
 
@@ -64,11 +66,11 @@ An example of task progress is included in the example later on this page.
 Component Locks
 ---------------
 
-Locks have been implemented to solve a distinct issue, most obvious when considering long-running tasks. During a long task such as a tile-scan or autofocus, it is absolutely necesarry to block any completing interaction with the microscope hardware. For example, even if the stage is not actively moving (for example during a capture phase within a tile scan), another user should not be able to move the microscope, interrupting the task. Thread locks act to prevent this.
+Locks have been implemented to solve a distinct issue, most obvious when considering long-running actions. During a long action such as a tile-scan or autofocus, it is absolutely necesarry to block any completing interaction with the microscope hardware. For example, even if the stage is not actively moving (for example during a capture phase within a tile scan), another user should not be able to move the microscope, interrupting the action. Thread locks act to prevent this.
 
 The camera and stage both contain an instance of :py:class:`labthings.lock.StrictLock`, named ``lock``. Built-in functions such as capture and move will always acquire this lock for the duration of the function. This ensures that, for example, simultaneous attemps to move do not occur.
 
-More importantly, however, tasks can hold on to these locks for longer periods of time, blocking any other calls to the hardware.
+More importantly, however, threads can hold on to these locks for longer periods of time, blocking any other calls to the hardware.
 
 Locks are acquired using context managers, i.e. ``with component.lock: ...``
 
@@ -76,7 +78,7 @@ Locks are acquired using context managers, i.e. ``with component.lock: ...``
 Complete example
 ----------------
 
-Implementing both tasks and locks in a new timelapse extension may look like:
+Implementing both action threads and locks in a new timelapse extension may look like:
 
 .. literalinclude:: ./example_extension/06_tasks_locks.py
 

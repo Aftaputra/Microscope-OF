@@ -1,9 +1,6 @@
-from labthings.server.extensions import BaseExtension
-from labthings.server.find import find_component
-from labthings.server.view import View, ActionView
-
-from labthings.server.schema import Schema
-from labthings.server import fields
+from labthings.extensions import BaseExtension
+from labthings import find_component, Schema, fields, update_action_progress
+from labthings.views import View, ActionView, PropertyView
 
 from flask import send_file  # Used to send images from our server
 import io  # Used in our capture action
@@ -11,9 +8,6 @@ import time  # Used in our timelapse function
 
 # Used in our timelapse function
 from openflexure_microscope.captures.capture_manager import generate_basename
-
-# Used to run our timelapse in a background thread
-from labthings.core.tasks import update_task_progress
 
 # Used to convert our GUI dictionary into a complete eV extension GUI
 from openflexure_microscope.api.utilities.gui import build_gui
@@ -51,7 +45,7 @@ def timelapse(microscope, n_images, t_between):
 
             # Update task progress (only does anyting if the function is running in a LabThings task)
             progress_pct = ((n + 1) / n_images) * 100  # Progress, in percent
-            update_task_progress(progress_pct)
+            update_action_progress(progress_pct)
 
             # Wait for the specified time
             time.sleep(t_between)

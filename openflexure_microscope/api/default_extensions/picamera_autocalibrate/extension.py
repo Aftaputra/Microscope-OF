@@ -1,6 +1,6 @@
-from labthings.server.view import View, ActionView
-from labthings.server.find import find_component
-from labthings.server.extensions import BaseExtension
+from labthings import find_component
+from labthings.views import View, ActionView
+from labthings.extensions import BaseExtension
 
 from flask import abort
 

@@ -8,10 +8,10 @@ as well as some Flask imports to simplify API route development
 from openflexure_microscope.api.utilities import JsonResponse
 
 # Task management
-from labthings.core.tasks import (
-    current_task,
-    update_task_progress,
-    update_task_data,
+from labthings import (
+    current_action as current_task,
+    update_action_progress as update_task_progress,
+    update_action_data as update_task_data,
 )
 
 

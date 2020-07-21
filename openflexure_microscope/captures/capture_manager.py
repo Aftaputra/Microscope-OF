@@ -4,7 +4,7 @@ import shutil
 import logging
 from collections import OrderedDict
 
-from labthings.core.lock import StrictLock
+from labthings import StrictLock
 
 from openflexure_microscope.utilities import entry_by_uuid
 from openflexure_microscope.paths import data_file_path

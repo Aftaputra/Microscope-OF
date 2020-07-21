@@ -1,7 +1,6 @@
-from labthings.server.find import find_component
-from labthings.server.extensions import BaseExtension
-from labthings.server.view import View, ActionView, PropertyView
-from labthings.server import fields
+from labthings import fields, find_component
+from labthings.extensions import BaseExtension
+from labthings.views import View, ActionView, PropertyView
 
 from openflexure_microscope.devel import JsonResponse, request, abort
 from openflexure_microscope.utilities import set_properties

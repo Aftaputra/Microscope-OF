@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from labthings.server import monkey
-
-monkey.patch_all()
-
 import sys
 import time
 import atexit
@@ -37,8 +33,8 @@ from openflexure_microscope.paths import (
     logs_file_path,
 )
 
-from labthings.server.quick import create_app
-from labthings.server.extensions import find_extensions
+from labthings import create_app
+from labthings.extensions import find_extensions
 
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
 
@@ -205,7 +201,7 @@ atexit.register(cleanup)
 
 # Start the app
 if __name__ == "__main__":
-    from labthings.server.wsgi import Server
+    from labthings import Server
     logging.info("Starting OpenFlexure Microscope Server...")
     server = Server(app)
     server.run(host="::", port=5000, debug=False, zeroconf=True)

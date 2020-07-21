@@ -9,9 +9,7 @@ import threading
 
 from abc import ABCMeta, abstractmethod
 
-
-from labthings.core.lock import StrictLock
-from labthings.core.event import ClientEvent
+from labthings import StrictLock, ClientEvent
 
 
 class BaseCamera(metaclass=ABCMeta):

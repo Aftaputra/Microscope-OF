@@ -1,7 +1,6 @@
 from openflexure_microscope.devel import (
     JsonResponse,
     request,
-    update_task_progress,
 )
 
 from flask import send_file, abort, url_for
@@ -12,12 +11,11 @@ import zipfile
 import tempfile
 import logging
 
-from labthings.server.find import find_component
-from labthings.server.view import View, ActionView, PropertyView
-from labthings.server.schema import Schema, pre_dump
-from labthings.server import fields
-from labthings.server.extensions import BaseExtension
-from labthings.server.utilities import description_from_view
+from labthings import fields, find_component, update_action_progress
+from labthings.views import View, ActionView, PropertyView
+from labthings.schema import Schema, pre_dump
+from labthings.extensions import BaseExtension
+from labthings.utilities import description_from_view
 
 
 class ZipObjectSchema(Schema):
@@ -107,7 +105,7 @@ class ZipManager:
                 )
                 zipObj.write(file_path, arcname=rel_path)
                 # Update task progress
-                update_task_progress(int((index / n_files) * 100))
+                update_action_progress(int((index / n_files) * 100))
 
         session_id = str(uuid.uuid4())
         session_description = ZipObjectDescription(

@@ -1,7 +1,6 @@
-from labthings.server.extensions import BaseExtension
-from labthings.server.view import View, PropertyView
-from labthings.server import fields
-from labthings.server.find import find_component
+from labthings.extensions import BaseExtension
+from labthings.views import View, PropertyView
+from labthings import fields, find_component
 
 from openflexure_microscope.paths import settings_file_path, check_rw
 from openflexure_microscope.config import OpenflexureSettingsFile

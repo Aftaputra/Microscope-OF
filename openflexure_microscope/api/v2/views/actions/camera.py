@@ -1,8 +1,7 @@
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
-from labthings.server.view import View, ActionView
-from labthings.server.find import find_component
+from labthings.views import View, ActionView
+from labthings import find_component, fields
 
-from labthings.server import fields
 from openflexure_microscope.utilities import filter_dict
 
 from openflexure_microscope.api.v2.views.captures import CaptureSchema

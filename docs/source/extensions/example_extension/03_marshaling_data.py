@@ -1,9 +1,6 @@
-from labthings.server.extensions import BaseExtension
-from labthings.server.find import find_component
-from labthings.server.view import View
-
-from labthings.server.schema import Schema
-from labthings.server import fields
+from labthings.extensions import BaseExtension
+from labthings import find_component, Schema, fields
+from labthings.views import View
 
 ## Extension methods
 

@@ -6,14 +6,13 @@ from typing import Tuple
 from functools import reduce
 
 from openflexure_microscope.captures.capture_manager import generate_basename
-from labthings.server.find import find_component, find_extension
-from labthings.server.extensions import BaseExtension
-from labthings.server import fields
-from labthings.actions import current_action
 
-from openflexure_microscope.devel import abort, update_task_progress
+from labthings import fields, find_component, find_extension, current_action, update_action_progress
+from labthings.views import View, ActionView
+from labthings.extensions import BaseExtension
 
-from labthings.server.view import View, ActionView
+from openflexure_microscope.devel import abort
+
 import time
 
 
@@ -209,7 +208,7 @@ class ScanExtension(BaseExtension):
                     )
                     # Update task progress
                     self._images_captured_so_far += 1
-                    update_task_progress(self.progress())
+                    update_action_progress(self.progress())
                 else:
                     logging.debug("Entering z-stack")
                     self.stack(
@@ -279,7 +278,7 @@ class ScanExtension(BaseExtension):
                 )
                 # Update task progress
                 self._images_captured_so_far += 1
-                update_task_progress(self.progress())
+                update_action_progress(self.progress())
                 if current_action() and current_action().stopped:
                     return
 
