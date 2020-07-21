@@ -3,12 +3,10 @@ from flask import abort, request, redirect, url_for, send_file
 
 from openflexure_microscope.api.utilities import get_bool, JsonResponse
 
-from labthings.server.schema import Schema
-from labthings.server import fields
-from labthings.server.view import View, PropertyView
-from labthings.server.utilities import description_from_view
-
-from labthings.server.find import find_component
+from labthings import Schema, fields, find_component
+from labthings.views import View, PropertyView
+from labthings.utilities import description_from_view
+from labthings.views.marshalling import marshal_with
 
 from marshmallow import pre_dump
 
@@ -98,8 +96,8 @@ class CaptureList(PropertyView):
 
 class CaptureView(View):
     tags = ["captures"]
-    schema = CaptureSchema()
 
+    @marshal_with(CaptureSchema())
     def get(self, id):
         """
         Description of a single image capture
