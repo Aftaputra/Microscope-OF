@@ -1,6 +1,6 @@
 {
   "name": "openflexure-microscope-jsclient",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "private": true,
   "description": "User client for the OpenFlexure Microscope Server",
   "author": "OpenFlexure <contact@openflexure.org> (https://www.openflexure.org)",
