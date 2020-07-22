@@ -310,6 +310,10 @@ class TileScanAPI(ActionView):
         "resize": fields.Dict(missing=None),  # TODO: Validate keys
     }
 
+    # Allow 10 seconds to stop upon DELETE request
+    # Gives fast-autofocus time to finish if it's running
+    default_stop_timeout = 10
+
     def post(self, args):
         microscope = find_component("org.openflexure.microscope")
 
