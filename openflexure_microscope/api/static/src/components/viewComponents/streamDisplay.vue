@@ -125,6 +125,9 @@ export default {
       element.classList.remove("uk-animation-fade");
       element.offsetHeight; /* trigger reflow */
       element.classList.add("uk-animation-fade");
+      setTimeout(function() {
+        element.classList.remove("uk-animation-fade");
+      }, 800);
     },
 
     clickMonitor: function(event) {
