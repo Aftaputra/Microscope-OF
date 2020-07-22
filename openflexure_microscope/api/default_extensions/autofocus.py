@@ -1,4 +1,4 @@
-from labthings import fields, find_component
+from labthings import fields, find_component, current_action
 from labthings.extensions import BaseExtension
 from labthings.views import View, ActionView, PropertyView
 
@@ -188,6 +188,8 @@ def autofocus(microscope, dz, settle=0.5, metric_fn=sharpness_sum_lap2):
         camera.annotate_text = ""
 
         for _ in stage.scan_z(dz, return_to_start=False):
+            if current_action() and current_action().stopped:
+                return
             positions.append(stage.position[2])
             time.sleep(settle)
             sharpnesses.append(measure_sharpness(microscope, metric_fn))
