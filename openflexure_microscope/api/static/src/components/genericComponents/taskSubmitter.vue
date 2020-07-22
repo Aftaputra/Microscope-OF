@@ -1,6 +1,6 @@
 <template>
   <div class="uk-margin-remove uk-padding-remove">
-    <div v-if="taskRunning" ref="isPollingElement">
+    <div v-if="taskStarted" ref="isPollingElement">
       <div class="progress uk-margin-small">
         <div
           v-if="progress"
@@ -11,7 +11,7 @@
       </div>
 
       <button
-        v-if="canTerminate"
+        v-if="canTerminate && taskRunning"
         type="button"
         class="uk-button uk-button-danger uk-margin-remove uk-float-right uk-width-1-1"
         @click="terminateTask()"
@@ -23,7 +23,7 @@
     <div>
       <button
         type="button"
-        :hidden="taskRunning"
+        :hidden="taskStarted"
         class="uk-button uk-margin-remove uk-width-1-1"
         :class="[buttonPrimary ? 'uk-button-primary' : 'uk-button-default']"
         @click="bootstrapTask()"
@@ -92,6 +92,7 @@ export default {
       taskId: null,
       polling: null,
       progress: null,
+      taskStarted: false,
       taskRunning: false
     };
   },
@@ -140,6 +141,8 @@ export default {
       this.$emit("submit", this.submitData);
       // Send a request to start a task
       console.log("Submitting to ", this.submitUrl);
+      this.taskStarted = true;
+      this.$emit("taskStarted", this.taskId);
       axios
         .post(this.submitUrl, this.submitData)
         // Get the returned Task ID
@@ -149,9 +152,12 @@ export default {
           this.taskId = response.data.id;
           // Start the store polling TaskId for success
           this.taskRunning = true;
-          this.$emit("taskStarted", this.taskId);
+          this.$emit("taskRunning", this.taskId);
           // Return the poll-task promise (starts polling the task)
           return this.pollTask(this.taskId, this.pollInterval);
+        })
+        .catch(() => {
+          this.taskStarted = false;
         })
         .then(response => {
           // Do something with the final response
@@ -171,6 +177,7 @@ export default {
           console.log("Cleaning up after task.");
           // Reset taskRunning and taskId
           this.taskRunning = false;
+          this.taskStarted = false;
           this.taskId = null;
           // Update the form data if we're self-updating
           if (this.selfUpdate) {
