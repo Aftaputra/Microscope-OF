@@ -383,6 +383,7 @@ test = ["coverage", "pytest", "mock", "pillow", "numpy"]
 reference = ""
 type = "url"
 url = "https://github.com/rwb27/picamera/releases/download/v1.13.2b0/picamera-1.13.2b0-py3-none-any.whl"
+
 [[package]]
 category = "main"
 description = "Python Imaging Library (Fork)"
@@ -503,9 +504,9 @@ version = "0.14.0"
 category = "main"
 description = "A module to control Raspberry Pi GPIO channels"
 name = "rpi.gpio"
-optional = true
+optional = false
 python-versions = "*"
-version = "0.6.5"
+version = "0.7.0"
 
 [[package]]
 category = "main"
@@ -745,7 +746,7 @@ ifaddr = ">=0.1.7"
 rpi = ["RPi.GPIO"]
 
 [metadata]
-content-hash = "c3a9450c996c054438856e6fb2a5da9afb05990018cb70a54661b0e125e50918"
+content-hash = "446a192e461cdf5d1f12697f3c23d2a1b3cd9250cd6e14ccc884a14d674f8f19"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -898,11 +899,6 @@ markupsafe = [
     {file = "MarkupSafe-1.1.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:ba59edeaa2fc6114428f1637ffff42da1e311e29382d81b339c1817d37ec93c6"},
     {file = "MarkupSafe-1.1.1-cp37-cp37m-win32.whl", hash = "sha256:b00c1de48212e4cc9603895652c5c410df699856a2853135b3967591e4beebc2"},
     {file = "MarkupSafe-1.1.1-cp37-cp37m-win_amd64.whl", hash = "sha256:9bf40443012702a1d2070043cb6291650a0841ece432556f784f004937f0f32c"},
-    {file = "MarkupSafe-1.1.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:6788b695d50a51edb699cb55e35487e430fa21f1ed838122d722e0ff0ac5ba15"},
-    {file = "MarkupSafe-1.1.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:cdb132fc825c38e1aeec2c8aa9338310d29d337bebbd7baa06889d09a60a1fa2"},
-    {file = "MarkupSafe-1.1.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:13d3144e1e340870b25e7b10b98d779608c02016d5184cfb9927a9f10c689f42"},
-    {file = "MarkupSafe-1.1.1-cp38-cp38-win32.whl", hash = "sha256:596510de112c685489095da617b5bcbbac7dd6384aeebeda4df6025d0256a81b"},
-    {file = "MarkupSafe-1.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:e8313f01ba26fbbe36c7be1966a7b7424942f670f38e666995b88d012765b9be"},
     {file = "MarkupSafe-1.1.1.tar.gz", hash = "sha256:29872e92839765e546828bb7754a68c418d927cd064fd4708fab9fe9c8bb116b"},
 ]
 marshmallow = [
@@ -1094,7 +1090,7 @@ rope = [
     {file = "rope-0.14.0.tar.gz", hash = "sha256:c5c5a6a87f7b1a2095fb311135e2a3d1f194f5ecb96900fdd0a9100881f48aaf"},
 ]
 "rpi.gpio" = [
-    {file = "RPi.GPIO-0.6.5.tar.gz", hash = "sha256:a4210ad63bfe844e43995286de0d3950dfacfa0f3799bb9392770ac54a7d2e47"},
+    {file = "RPi.GPIO-0.7.0.tar.gz", hash = "sha256:7424bc6c205466764f30f666c18187a0824077daf20b295c42f08aea2cb87d3f"},
 ]
 sangaboard = [
     {file = "sangaboard-0.2.3-py3-none-any.whl", hash = "sha256:3791159d57a749571f89acdce70aa9c1de82afef71f5186d5e2845c7be44698c"},
