@@ -35,7 +35,7 @@ class Microscope:
     """
 
     def __init__(self, settings=user_settings, configuration=user_configuration):
-        self.id = uuid.uuid4()
+        self.id = f"openflexure:microscope:{uuid.uuid4()}"
         self.name = self.id
 
         self.captures = CaptureManager()
