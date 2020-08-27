@@ -1,207 +1,190 @@
 #!/usr/bin/env python
-
+import sys
 import time
 import atexit
-import logging
-import sys
+import logging, logging.handlers
+
+# Look for debug flag
+if "-d" in sys.argv or "--debug" in sys.argv:
+    log_level = logging.DEBUG
+else:
+    log_level = logging.INFO
+
+
+# Set root logger level
+root_log = logging.getLogger()
+root_log.setLevel(log_level)
+
+
 import os
+import pkg_resources
 
-from flask import (
-    Flask, jsonify, send_file)
+from flask import Flask, send_file, abort
 
-from serial import SerialException
 from datetime import datetime
 
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 
-from openflexure_microscope.api.exceptions import JSONExceptionHandler
-from openflexure_microscope.api.utilities import list_routes
+from openflexure_microscope.api.utilities import list_routes, init_default_extensions
 
-from openflexure_microscope import Microscope
+from openflexure_microscope.config import JSONEncoder
+from openflexure_microscope.paths import (
+    OPENFLEXURE_VAR_PATH,
+    OPENFLEXURE_EXTENSIONS_PATH,
+    settings_file_path,
+    logs_file_path,
+)
 
-from openflexure_microscope.camera.capture import build_captures_from_exif
-from openflexure_microscope.config import USER_CONFIG_DIR
-from openflexure_microscope.api.v1 import blueprints
+from labthings import create_app
+from labthings.extensions import find_extensions
 
-# Import device modules
-# NB this will eventually be handled by the RC file, so you can choose what device
-# class should be attached.
-try:
-    from openflexure_microscope.camera.pi import PiCameraStreamer
-except ImportError:
-    logging.warning("Unable to import PiCameraStreamer")
-from openflexure_microscope.camera.mock import MockStreamer
+from openflexure_microscope.api.microscope import default_microscope as api_microscope
 
-from openflexure_microscope.stage.sanga import SangaStage, SangaDeltaStage
-from openflexure_microscope.stage.mock import MockStage
-
+from openflexure_microscope.api.v2 import views
 
 # Handle logging
-is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
+access_log = logging.getLogger('werkzeug')
+# Block the access logs from propagating up to the root logger
+access_log.propagate = False
 
-DEFAULT_LOGFILE = os.path.join(USER_CONFIG_DIR, 'openflexure_microscope.log')
+ROOT_LOGFILE = logs_file_path("openflexure_microscope.log")
+ACCESS_LOGFILE = logs_file_path("openflexure_microscope.access.log")
 
-if (__name__ == "__main__") or (not is_gunicorn):
-    # If imported, but not by gunicorn
-    print("Letting sys handle logs")
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-else:
-    # Direct standard Python logging to file and console
-    root = logging.getLogger()
-    error_formatter = logging.Formatter("[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s")
-
-    rotating_logfile = logging.handlers.RotatingFileHandler(
-        DEFAULT_LOGFILE, 
-        maxBytes=1000000, 
-        backupCount=7
-    )
-
-    error_handlers = [
-        rotating_logfile,
-        logging.StreamHandler()
-    ]
-
-    for handler in error_handlers:
-        handler.setFormatter(error_formatter)
-        root.addHandler(handler)
-
-    root.setLevel(logging.getLogger("gunicorn.error").level)
-
-# Create a dummy microscope object, with no hardware attachments
-api_microscope = Microscope()
-
-# Rebuild the capture list
-# TODO: Offload to a thread?
-stored_image_list = build_captures_from_exif()
+# Basic log format
+formatter = logging.Formatter(
+    "[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s"
+)
 
 
-# Generate API URI based on version from filename
-def uri(suffix, api_version, base=None):
-    if not base:
-        base = "/api/{}".format(api_version)
-    return_uri = base + suffix
-    logging.debug("Created app route: {}".format(return_uri))
-    return return_uri
+# Create file handler
+fh = logging.handlers.RotatingFileHandler(
+    ROOT_LOGFILE, maxBytes=1_000_000, backupCount=5
+)
+fh.setFormatter(formatter)
+fh.setLevel(logging.DEBUG)
+fh.propagate = False
 
+# Create access log file handler
+afh = logging.handlers.RotatingFileHandler(
+    ACCESS_LOGFILE, maxBytes=1_000_000, backupCount=5
+)
+afh.setFormatter(formatter)
+afh.setLevel(logging.DEBUG)
+afh.propagate = False
 
+# Add file handler to root logger
+root_log.addHandler(fh)
+access_log.addHandler(afh)
+
+# Log server paths being used
+logging.info(f"Running with data path {OPENFLEXURE_VAR_PATH}")
+
+logging.info("Creating app")
 # Create flask app
-app = Flask(__name__)
-app.url_map.strict_slashes = False
+app, labthing = create_app(
+    __name__,
+    prefix="/api/v2",
+    title=f"OpenFlexure Microscope {api_microscope.name}",
+    description="Test LabThing-based API for OpenFlexure Microscope",
+    types=["org.openflexure.microscope"],
+    version=pkg_resources.get_distribution("openflexure-microscope-server").version,
+    flask_kwargs={"static_url_path": "", "static_folder": "static/dist"},
+)
 
-CORS(app, resources=r'/api/*')
+# Enable CORS for some routes outside of LabThings
+cors = CORS(app)
 
-# Make errors more API friendly
-handler = JSONExceptionHandler(app)
+# Use custom JSON encoder
+labthing.json_encoder = JSONEncoder
+app.json_encoder = JSONEncoder
 
+# Attach lab devices
+labthing.add_component(api_microscope, "org.openflexure.microscope")
 
-# After app starts, but before first request, attach hardware to global microscope
-@app.before_first_request
-def attach_microscope():
-    # Create the microscope object globally (common to all spawned server threads)
-    global api_microscope, stored_image_list
-    logging.debug("First request made. Populating microscope with hardware...")
+# Attach extensions
+if not os.path.isfile(OPENFLEXURE_EXTENSIONS_PATH):
+    init_default_extensions(OPENFLEXURE_EXTENSIONS_PATH)
+for extension in find_extensions(OPENFLEXURE_EXTENSIONS_PATH):
+    labthing.register_extension(extension)
 
-    # Initialise camera
-    logging.debug("Creating camera object...")
-    try:
-        api_camera = PiCameraStreamer()
-    except Exception as e:
-        logging.error(e)
-        logging.warning("No valid camera hardware found. Falling back to mock camera!")
-        api_camera = MockStreamer()
+# Attach captures resources
+labthing.add_view(views.CaptureList, f"/captures")
+labthing.add_root_link(views.CaptureList, "captures")
 
-    # Initialise stage
-    logging.debug("Creating stage object...")
-    try:
-        api_stage = SangaDeltaStage()
-    except Exception as e:
-        logging.error(e)
-        logging.warning("No valid stage hardware found. Falling back to mock stage!")
-        api_stage = MockStage()
+labthing.add_view(views.CaptureView, f"/captures/<id>")
+labthing.add_view(views.CaptureDownload, f"/captures/<id>/download/<filename>")
+labthing.add_view(views.CaptureTags, f"/captures/<id>/tags")
+labthing.add_view(views.CaptureAnnotations, f"/captures/<id>/annotations")
 
-    # Attach devices to microscope
-    logging.debug("Attaching devices to microscope...")
-    api_microscope.attach(
-        api_camera,
-        api_stage
-    )
-
-    # Restore loaded capture array to camera object
-    logging.debug("Restoring captures...")
-    if stored_image_list:
-        api_microscope.camera.images = stored_image_list
-
-    logging.debug("Microscope successfully attached!")
-
-
-# WEBAPP ROUTES
-
-# API ROUTES
-
-# Base routes
-base_blueprint = blueprints.base.construct_blueprint(api_microscope)
-app.register_blueprint(base_blueprint, url_prefix=uri('', 'v1'))
-
-# Stage routes
-stage_blueprint = blueprints.stage.construct_blueprint(api_microscope)
-app.register_blueprint(stage_blueprint, url_prefix=uri('/stage', 'v1'))
-
-# Camera routes
-camera_blueprint = blueprints.camera.construct_blueprint(api_microscope)
-app.register_blueprint(camera_blueprint, url_prefix=uri('/camera', 'v1'))
-
-# Plugin routes
-plugin_blueprint = blueprints.plugins.construct_blueprint(api_microscope)
-app.register_blueprint(plugin_blueprint, url_prefix=uri('/plugin', 'v1'))
-
-# Task routes
-task_blueprint = blueprints.task.construct_blueprint(api_microscope)
-app.register_blueprint(task_blueprint, url_prefix=uri('/task', 'v1'))
+# Attach settings and state resources
+labthing.add_view(views.SettingsProperty, f"/instrument/settings")
+labthing.add_root_link(views.SettingsProperty, "instrumentSettings")
+labthing.add_view(views.NestedSettingsProperty, "/instrument/settings/<path:route>")
+labthing.add_view(views.StateProperty, "/instrument/state")
+labthing.add_view(views.NestedStateProperty, "/instrument/state/<path:route>")
+labthing.add_root_link(views.StateProperty, "instrumentState")
+labthing.add_view(views.ConfigurationProperty, "/instrument/configuration")
+labthing.add_view(
+    views.NestedConfigurationProperty, "/instrument/configuration/<path:route>"
+)
+labthing.add_root_link(views.ConfigurationProperty, "instrumentConfiguration")
 
 
-@app.route('/routes')
+# Attach streams resources
+labthing.add_view(views.MjpegStream, f"/streams/mjpeg")
+labthing.add_view(views.SnapshotStream, f"/streams/snapshot")
+
+# Attach microscope action resources
+labthing.add_view(views.actions.ActionsView, "/actions")
+labthing.add_root_link(views.actions.ActionsView, "actions")
+for name, action in views.enabled_root_actions().items():
+    view_class = action["view_class"]
+    rule = action["rule"]
+    labthing.add_view(view_class, f"/actions{rule}")
+
+
+@app.route("/")
+def openflexure_ev():
+    return app.send_static_file("index.html")
+
+
+@app.route("/routes")
+@cross_origin()
 def routes():
     """
     List of all connected API routes
-
-    .. :quickref: System; Routes
-
-    :>header Accept: application/json
-    :>header Content-Type: application/json
-    :status 200: stream active
     """
-    return jsonify(list_routes(app))
+    return list_routes(app)
 
 
-@app.route('/log')
+@app.route("/log")
 def err_log():
     """
     Most recent 1mb of log output
-
-    .. :quickref: System; Log
-
-    :>header Accept: application/json
-    :>header Content-Type: application/json
-    :status 200: stream active
     """
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     return send_file(
-        DEFAULT_LOGFILE, 
-        as_attachment=True, 
-        attachment_filename='openflexure_microscope_{}.log'.format(timestamp)
+        ROOT_LOGFILE,
+        as_attachment=True,
+        attachment_filename="openflexure_microscope_{}.log".format(timestamp),
     )
+
+
+@app.route("/api/v1/", defaults={"path": ""})
+@app.route("/api/v1/<path:path>")
+def api_v1_catch_all(path):
+    abort(410, "API v1 is no longer in use. Please upgrade your client.")
 
 
 # Automatically clean up microscope at exit
 def cleanup():
-    global api_microscope
     logging.debug("App teardown started...")
     logging.debug("Settling...")
     time.sleep(0.5)
 
     # Save config
     logging.debug("Saving config for teardown...")
-    api_microscope.save_config(backup=True)
+    api_microscope.save_settings()
 
     logging.debug("Settling...")
     time.sleep(0.5)
@@ -218,5 +201,9 @@ def cleanup():
 
 atexit.register(cleanup)
 
+# Start the app
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port="5000", threaded=True, debug=True, use_reloader=False)
+    from labthings import Server
+    logging.info("Starting OpenFlexure Microscope Server...")
+    server = Server(app)
+    server.run(host="::", port=5000, debug=False, zeroconf=True)

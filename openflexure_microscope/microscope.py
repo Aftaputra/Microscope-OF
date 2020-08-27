@@ -5,59 +5,64 @@ Defines a microscope object, binding a camera and stage with basic functionality
 import logging
 import pkg_resources
 import uuid
+from typing import Tuple
+from expiringdict import ExpiringDict
 
-from .stage.base import BaseStage
+from openflexure_microscope.captures import CaptureManager
 
-from .camera.base import BaseCamera
+from openflexure_microscope.stage.mock import MissingStage
+from openflexure_microscope.camera.mock import MissingCamera
+from openflexure_microscope.stage.sanga import SangaStage
 
-from .plugins import PluginMount
-from .utilities import axes_to_array
-from .task import TaskOrchestrator
-from .lock import CompositeLock
-from .config import OpenflexureSettingsFile, settings_to_json
+try:
+    from openflexure_microscope.camera.pi import PiCameraStreamer
+except Exception as e:
+    logging.error(e)
+    logging.warning("Unable to import PiCameraStreamer")
+from openflexure_microscope.camera.mock import MissingCamera
+
+from openflexure_microscope.utilities import serialise_array_b64, Timer
+from openflexure_microscope.config import user_settings, user_configuration
+
+from labthings import CompositeLock
 
 
 class Microscope:
     """
     A basic microscope object.
 
-    The camera and stage should already be initialised, and passed as arguments.
-
-    Attributes:
-        settings_file (:py:class:`openflexure_microscope.config.OpenflexureSettingsFile`): Runtime-config object,
-            automatically created if None.
-        lock (:py:class:`openflexure_microscope.lock.CompositeLock`): Composite lock controlling thread access
-            to multiple pieces of hardware.
-        camera (:py:class:`openflexure_microscope.camera.base.BaseCamera`): Camera object
-        stage (:py:class:`openflexure_microscope.stage.base.BaseStage`): Stage object
-        task: (:py:class:`openflexure_microscope.task.TaskOrchestrator`): Threaded ask orchestrator for managing
-            background tasks using microscope hardware
-        plugin (:py:class:`openflexure_microscope.plugins.PluginMount`): Mounting point for all microscope plugins
+    The camera and stage objects may already be initialised, and can be passed as arguments.
     """
 
-    def __init__(self):
-        # Initial attributes
-        self.id = uuid.uuid4().hex
+    def __init__(self, settings=user_settings, configuration=user_configuration):
+        self.id = f"openflexure:microscope:{uuid.uuid4()}"
         self.name = self.id
-        self.fov = [0, 0]
-        self.plugin_maps = []
-        self.camera = None
-        self.stage = None
+
+        self.captures = CaptureManager()
+
+        self.fov = [0, 0]  #: Microscope field-of-view in stage motor steps
+
+        # Store settings and configuration files
+        self.settings_file = settings
+        self.configuration_file = configuration
+
+        self.extension_settings = {}
 
         # Initialise with an empty composite lock
+        #: :py:class:`labthings.CompositeLock`: Composite lock for locking both camera and stage
         self.lock = CompositeLock([])
 
-        # Create a task orchestrator
-        self.task = TaskOrchestrator()
+        self.camera = None  #: Currently connected camera object
+        self.stage = None  #: Currently connected stage object
 
-        # Attach to a settings file
-        self.settings_file = OpenflexureSettingsFile(expand=True)
+        self.setup(self.configuration_file.load())  # Attach components
+
         # Apply settings loaded from file
-        self.apply_config(self.settings_file.load())
+        self.update_settings(self.settings_file.load())
 
-        # Create plugin mount-point and attach plugins from maps
-        self.plugin = PluginMount(self)
-        self.attach_plugins(self.plugin_maps)
+        # Data cache
+        self.configuration_cache = ExpiringDict(max_len=100, max_age_seconds=3600)
+        self.metadata_cache = ExpiringDict(max_len=100, max_age_seconds=3600)
 
     def __enter__(self):
         """Create microscope on context enter."""
@@ -71,73 +76,77 @@ class Microscope:
         """Shut down the microscope hardware."""
         logging.info("Closing {}".format(self))
         if self.camera:
-            self.camera.close()
+            try:
+                self.camera.close()
+            except TimeoutError as e:
+                logging.error(e)
         if self.stage:
-            self.stage.close()
+            try:
+                self.stage.close()
+            except TimeoutError as e:
+                logging.error(e)
+        self.captures.close()
         logging.info("Closed {}".format(self))
 
-    def attach(self, camera: BaseCamera, stage: BaseStage):
+    def setup(self, configuration):
         """
-        Retroactively attaches a camera and stage to the microscope object.
-
-        Allows the microscope to be created as a "dummy", with hardware communications
-        opened at a later time.
-
-        Args:
-            camera (:py:class:`openflexure_microscope.camera.base.BaseCamera`): camera object
-            stage (:py:class:`openflexure_microscope.stage.base.BaseStage`): stage object
+        Attach microscope components based on initially passed configuration file
         """
 
-        settings_full = self.read_config()
+        ### Detector
+        logging.info("Creating camera")
+        if configuration.get("camera"):
+            camera_type = configuration["camera"].get("type")
+            if camera_type in ("PiCamera", "PiCameraStreamer"):
+                try:
+                    self.camera = PiCameraStreamer()
+                except Exception as e:
+                    logging.error(e)
+                    logging.warning("No compatible camera hardware found.")
 
-        # TODO: Actually attach dummy hardware!
-        # Maybe even attach dummy hardware at __init__, and replace with real hardware if it exists
+        ### Stage
+        logging.info("Creating stage")
+        if configuration.get("stage"):
+            stage_type = configuration["stage"].get("type")
+            stage_port = configuration["stage"].get("port")
+            if stage_type in ("SangaBoard", "SangaStage"):
+                try:
+                    self.stage = SangaStage(port=stage_port)
+                except Exception as e:
+                    logging.error(e)
+                    logging.warning("No compatible Sangaboard hardware found.")
 
-        logging.debug("Attaching camera...")
-        self.camera = camera  #: :py:class:`openflexure_microscope.camera.base.BaseCamera`: Picamera object
+        logging.info("Handling fallbacks")
+        ### Fallbacks
         if not self.camera:
-            logging.info("No camera attached.")
-        else:
-            logging.info("Attached camera {}".format(camera))
-
-            if hasattr(self.camera, 'lock'):  # If camera has a lock
-                logging.info("Attaching {} to composite lock.".format(self.camera.lock))
-                # Add the lock to the microscope composite lock
-                self.lock.locks.append(self.camera.lock)
-
-        logging.debug("Attaching stage...")
-        self.stage = stage  #: :py:class:`openflexure_microscope.stage.base.BaseStage`: OpenFlexure stage object
+            self.camera = MissingCamera()
         if not self.stage:
-            logging.info("No stage attached.")
+            self.stage = MissingStage()
+
+        ### Locks
+        logging.info("Creating locks")
+        if hasattr(self.camera, "lock"):
+            self.lock.locks.append(self.camera.lock)
+        if hasattr(self.stage, "lock"):
+            self.lock.locks.append(self.stage.lock)
+
+    def has_real_stage(self) -> bool:
+        """
+        Check if a real (non-mock) stage is currently attached.
+        """
+        if hasattr(self, "stage") and not isinstance(self.stage, MissingStage):
+            return True
         else:
-            logging.info("Attached stage {}".format(stage))
+            return False
 
-            if hasattr(self.stage, 'lock'):  # If stage object has a lock
-                logging.info("Attaching lock {} to composite lock.".format(self.stage.lock))
-                # Add the lock to the microscope composite lock
-                self.lock.locks.append(self.stage.lock)
-
-        logging.info("Reapplying settings to newly attached devices")
-        self.apply_config(settings_full)
-
-    def attach_plugins(self, plugin_maps: list):
+    def has_real_camera(self):
         """
-        Automatically search for plugin maps in config, and attach.
+        Check if a real (non-mock) camera is currently attached.
         """
-        if plugin_maps:
-            for plugin_map in plugin_maps:
-                self.plugin.attach(plugin_map)
+        if hasattr(self, "camera") and not isinstance(self.camera, MissingCamera):
+            return True
         else:
-            logging.warning("No plugins specified. Skipping.")
-
-    def reload_plugins(self):
-        """
-        Empty the plugin mount and re-attach from config.
-        """
-        logging.info("Tearing down existing PluginMount...")
-        self.plugin = PluginMount(self)
-        logging.info("Repopulating PluginMount...")
-        self.attach_plugins(self.plugin_maps)
+            return False
 
     # Create unified state
     @property
@@ -145,42 +154,45 @@ class Microscope:
         """Dictionary of the basic microscope state.
 
         Return:
-            dict: Dictionary containing position data, 
-                and :py:attr:`openflexure_microscope.camera.base.BaseCamera.state`
+            dict: Dictionary containing complete microscope state
         """
-        state = {
-            'camera': self.camera.state,
-            'stage': self.stage.state,
-            'plugin': self.plugin.state,
-            'version': pkg_resources.get_distribution('openflexure_microscope').version
-        }
-        return state
+        with self.lock:
+            state = {"camera": self.camera.state, "stage": self.stage.state}
+            return state
 
-    def apply_config(self, config: dict):
+    def update_settings(self, settings: dict):
         """
-        Applies a config dictionary. Missing parameters will be left untouched.
+        Applies a settings dictionary to the microscope. Missing parameters will be left untouched.
         """
-        logging.debug("Microscope: Applying config: {}".format(config))
+        with self.lock:
+            logging.debug("Microscope: Applying settings: {}".format(settings))
 
-        # If attached to a camera
-        if ('camera_settings' in config) and self.camera:
-            self.camera.apply_config(config['camera_settings'])
+            # If attached to a camera
+            if ("camera" in settings) and self.camera:
+                self.camera.update_settings(settings.get("camera", {}))
 
-        # If attached to a stage
-        if ('stage_settings' in config) and self.stage:
-            self.stage.apply_config(config['stage_settings'])
+            # If attached to a stage
+            if ("stage" in settings) and self.stage:
+                self.stage.update_settings(settings.get("stage", {}))
 
-        # Todo: tidy up with some loopy goodness
-        if 'id' in config:
-            self.id = config['id']
-        if 'name' in config:
-            self.name = config['name']
-        if 'fov' in config:
-            self.fov = config['fov']
-        if 'plugins' in config:
-            self.plugin_maps = config['plugins']
+            # Capture manager
+            self.captures.update_settings(settings.get("captures", {}))
 
-    def read_config(self, json_safe=False):
+            # Microscope settings
+            if "id" in settings:
+                self.id = settings["id"]
+            if "name" in settings:
+                self.name = settings["name"]
+            if "fov" in settings:
+                self.fov = settings["fov"]
+
+            # Extension settings
+            if "extensions" in settings:
+                self.extension_settings.update(settings["extensions"])
+
+            # TODO: warn if there are settings that we silently ignore
+
+    def read_settings(self, full: bool = True):
         """
         Get an updated settings dictionary.
 
@@ -190,54 +202,168 @@ class Microscope:
         This is to ensure that settings for currently disconnected hardware
         don't get removed from the settings file.
         """
-
         settings_current = {
-            'id': self.id,
-            'name': self.name,
-            'fov': self.fov,
-            'plugins': self.plugin_maps
+            "id": self.id,
+            "name": self.name,
+            "fov": self.fov,
+            "extensions": self.extension_settings,
         }
 
-        # If attached to a camera
-        if self.camera:
-            settings_current_camera = self.camera.read_config()
-            settings_current['camera_settings'] = settings_current_camera
+        with self.lock:
+            # If attached to a camera
+            if self.camera:
+                    settings_current_camera = self.camera.read_settings()
+                    settings_current["camera"] = settings_current_camera
 
-        # If attached to a stage
-        if self.stage:
-            settings_current_stage = self.stage.read_config()
-            settings_current['stage_settings'] = settings_current_stage
+            # If attached to a stage
+            if self.stage:
+                    settings_current_stage = self.stage.read_settings()
+                    settings_current["stage"] = settings_current_stage
 
-        settings_full = self.settings_file.merge(settings_current)
+            # Capture manager
+            settings_current_captures = self.captures.read_settings()
+            settings_current["captures"] = settings_current_captures
 
-        if json_safe:
-            settings_full = settings_to_json(settings_full, clean_keys=True)
+            settings_full = self.settings_file.merge(settings_current)
 
-        return settings_full
+            if full:
+                return settings_full
+            else:
+                return settings_current
 
-    def save_config(self, backup: bool = True):
+    def save_settings(self):
         """
         Merges the current settings back to disk
         """
         # Read curent config
-        current_config = self.read_config()
-        # Merge in server version responsible for saving the config file
-        current_config['server_version'] = pkg_resources.get_distribution('openflexure_microscope').version
+        current_config = self.read_settings()
         # Save config to file
         self.settings_file.save(current_config, backup=True)
 
-    @property
-    def config(self) -> dict:
-        logging.warn(
-            "Reading microscope through config property is deprecated.\
-            Please use read_config method instead."
-        )
-        return self.read_config()
+    def force_get_configuration(self):
+        with self.lock:
+            initial_configuration = self.configuration_file.load()
 
-    @config.setter
-    def config(self, config: dict) -> None:
-        logging.warn(
-            "Setting microscope through config property is deprecated.\
-            Please use apply_config method instead."
-        )
-        self.apply_config(config)
+            current_configuration = {
+                "application": {
+                    "name": "openflexure-microscope-server",
+                    "version": pkg_resources.get_distribution(
+                        "openflexure-microscope-server"
+                    ).version,
+                },
+                "stage": {
+                    "type": self.stage.__class__.__name__,
+                    **self.stage.configuration,
+                },
+                "camera": {
+                    "type": self.camera.__class__.__name__,
+                    **self.camera.configuration,
+                },
+            }
+
+            initial_configuration.update(current_configuration)
+            return initial_configuration
+
+    def get_configuration(self, cache_key=None):
+        if cache_key:
+            cached_config = self.configuration_cache.get(cache_key, None)
+            if cached_config:
+                return cached_config
+            else:
+                full_config = self.force_get_configuration()
+                self.configuration_cache[cache_key] = full_config
+                return full_config
+        return self.force_get_configuration()
+
+    @property
+    def configuration(self):
+        return self.get_configuration()
+
+    def force_get_metadata(self):
+        """
+        Read cachable bits of microscope metadata.
+        Currently ID, settings, and configuration can be cached
+        """
+        system_metadata = {
+            "id": self.id,
+            "settings": self.read_settings(full=False),
+            "configuration": self.get_configuration(),
+        }
+
+        return system_metadata
+
+    def get_metadata(self, cache_key=None):
+        """
+        Read microscope metadata, with partial caching
+        """
+        metadata = {}
+
+        # Load cached bits of metadata
+        if cache_key:
+            logging.debug(f"Reading cached microscope metadata: {cache_key}")
+            metadata = self.metadata_cache.get(cache_key, None)
+            if not metadata:
+                logging.debug(f"Building and caching microscope metadata: {cache_key}")
+                metadata = self.force_get_metadata()
+                self.metadata_cache[cache_key] = metadata
+        else:
+            logging.debug(f"Building microscope metadata: {cache_key}")
+            metadata = self.force_get_metadata()
+        
+        # Keys that should never be cached
+        metadata.update({
+            "state": self.state,
+        })
+
+        return metadata
+
+    @property
+    def metadata(self):
+        return self.get_metadata()
+
+    def capture(
+        self,
+        filename: str = None,
+        folder: str = "",
+        temporary: bool = False,
+        use_video_port: bool = False,
+        resize: Tuple[int, int] = None,
+        bayer: bool = True,
+        fmt: str = "jpeg",
+        annotations: dict = None,
+        tags: list = None,
+        metadata: dict = None,
+        cache_key: str = None
+    ):
+        logging.debug(f"Microscope capturing to {filename}")
+        if not annotations:
+            annotations = {}
+        if not metadata:
+            metadata = {}
+        if not tags:
+            tags = []
+
+        # Read metadata for capture
+        full_metadata = {"instrument": self.get_metadata(cache_key), **metadata}
+
+        # Do capture
+        with self.camera.lock:
+            # Create output object
+            output = self.captures.new_image(
+                temporary=temporary, filename=filename, folder=folder, fmt=fmt
+            )
+
+            # Capture to output object
+            logging.info(f"Starting microscope capture {filename}")
+            self.camera.capture(
+                output,
+                use_video_port=use_video_port,
+                resize=resize,
+                bayer=bayer,
+                fmt=fmt,
+            )
+
+        output.put_and_save(tags, annotations, full_metadata)
+        logging.debug(f"Finished capture to {output.file}")
+
+        return output
