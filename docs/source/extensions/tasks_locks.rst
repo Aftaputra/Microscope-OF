@@ -32,7 +32,7 @@ An example of a long running task may look like:
 .. code-block:: python
 
     ...
-    from labthings.server.view import ActionView
+    from labthings import ActionView
 
     class SlowAPI(ActionView):
         def post(self):

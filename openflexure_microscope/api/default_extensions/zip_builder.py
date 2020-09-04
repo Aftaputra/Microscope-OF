@@ -47,7 +47,8 @@ class ZipObjectDescription:
     def close(self):
         logging.debug(self.fp.name)
         self.fp.close()
-        os.unlink(self.fp.name)
+        if os.path.exists(self.fp.name):
+            os.unlink(self.fp.name)
 
         assert not os.path.exists(self.fp.name)
 

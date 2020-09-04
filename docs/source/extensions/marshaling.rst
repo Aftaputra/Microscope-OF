@@ -37,8 +37,8 @@ For example, if you are creating an API route, in which you expect parameters ``
 
 .. code-block:: python
 
-    from labthings.server.schema import Schema
-    from labthings.server import fields
+    from labthings.schema import Schema
+    from labthings import fields
 
     class UserSchema(Schema):
         name = fields.String(required=True)

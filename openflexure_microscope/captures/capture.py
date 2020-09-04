@@ -129,7 +129,7 @@ class CaptureObject(object):
 
         # Store a nice ID
         self.id = uuid.uuid4()  #: str: Unique capture ID
-        logging.debug("Created StreamObject {}".format(self.id))
+        logging.debug("Created CaptureObject {}".format(self.id))
         self.datetime = datetime.datetime.now()
 
         # Create file name. Default to UUID
@@ -151,6 +151,7 @@ class CaptureObject(object):
         self.thumb_bytes = None
 
     def write(self, s):
+        logging.debug(f"Writing to {self}")
         self.stream.write(s)
 
     def flush(self):

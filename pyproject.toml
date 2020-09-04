@@ -45,8 +45,8 @@ opencv-python-headless = [
 pynpm = "^0.1.2"
 sangaboard = "^0.2"
 expiringdict = "^1.2.1"
-camera-stage-mapping = "^0.1.2"
-labthings = "0.8.0"
+labthings = {git = "https://github.com/labthings/python-labthings.git"}
+camera-stage-mapping = {git = "https://gitlab.com/openflexure/microscope-extensions/camera-stage-mapping.git", rev = "updated-labthings-imports"}
 
 [tool.poetry.extras]
 rpi = ["RPi.GPIO"]
