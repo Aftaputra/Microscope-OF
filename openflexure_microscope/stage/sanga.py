@@ -108,10 +108,6 @@ class SangaStage(BaseStage):
         axis: None (for 3-axis moves) or one of 'x','y','z'
         backlash: (default: True) whether to correct for backlash.
         """
-
-        if axis is not None:
-            displacement = self.steps_to_array(displacement, axis)
-
         with self.lock:
             logging.debug(f"Moving sangaboard by {displacement}")
             if not backlash or self.backlash is None:
@@ -193,7 +189,6 @@ class SangaStage(BaseStage):
             print("Move completed, raising exception...")
             raise value  # Propagate the exception
 
-
 class SangaDeltaStage(SangaStage):
     def __init__(self, port=None, flex_h=80, flex_a=50, flex_b=50, camera_angle=0, **kwargs):
         self.flex_h = flex_h
@@ -208,13 +203,15 @@ class SangaDeltaStage(SangaStage):
             [0, 0, 1]
         ])
 
+        logging.debug(self.R_camera)
+
         # Transformation matrix converting delta into cartesian
         x_fac = -1 * np.multiply(np.divide(2, np.sqrt(3)), np.divide(self.flex_b, self.flex_h))
         y_fac = -1 * np.divide(self.flex_b, self.flex_h)
         z_fac = np.multiply(np.divide(1, 3), np.divide(self.flex_b, self.flex_a))
 
         self.Tvd = np.array([
-            [x_fac, -x_fac, 0],
+            [-x_fac, x_fac, 0],
             [0.5 * y_fac, 0.5 * y_fac, -y_fac],
             [z_fac, z_fac, z_fac]
         ])
@@ -234,8 +231,6 @@ class SangaDeltaStage(SangaStage):
         return [int(p) for p in position]
 
     def move_rel(self, displacement, axis=None, backlash=True):
-        if axis is not None:
-            displacement = self.steps_to_array(displacement, axis)
 
         # Transform into camera coordinates
         displacement = np.dot(self.R_camera, displacement)
