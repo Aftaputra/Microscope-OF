@@ -12,15 +12,33 @@ description = "A pluggable API specification generator. Currently supports the O
 name = "apispec"
 optional = false
 python-versions = ">=3.5"
-version = "3.3.1"
+version = "3.3.2"
 
 [package.extras]
-dev = ["PyYAML (>=3.10)", "prance (>=0.11)", "marshmallow (>=2.19.2)", "pytest", "mock", "flake8 (3.8.2)", "flake8-bugbear (20.1.4)", "pre-commit (>=2.4,<3.0)", "tox"]
-docs = ["marshmallow (>=2.19.2)", "pyyaml (5.3.1)", "sphinx (3.0.4)", "sphinx-issues (1.2.0)", "sphinx-rtd-theme (0.4.3)"]
-lint = ["flake8 (3.8.2)", "flake8-bugbear (20.1.4)", "pre-commit (>=2.4,<3.0)"]
+dev = ["PyYAML (>=3.10)", "prance (>=0.11)", "marshmallow (>=2.19.2)", "pytest", "mock", "flake8 (3.8.3)", "flake8-bugbear (20.1.4)", "pre-commit (>=2.4,<3.0)", "tox"]
+docs = ["marshmallow (>=2.19.2)", "pyyaml (5.3.1)", "sphinx (3.2.1)", "sphinx-issues (1.2.0)", "sphinx-rtd-theme (0.5.0)"]
+lint = ["flake8 (3.8.3)", "flake8-bugbear (20.1.4)", "pre-commit (>=2.4,<3.0)"]
 tests = ["PyYAML (>=3.10)", "prance (>=0.11)", "marshmallow (>=2.19.2)", "pytest", "mock"]
 validation = ["prance (>=0.11)"]
 yaml = ["PyYAML (>=3.10)"]
+
+[[package]]
+category = "main"
+description = "Web framework plugins for apispec."
+name = "apispec-webframeworks"
+optional = false
+python-versions = ">=3.6"
+version = "0.5.2"
+
+[package.dependencies]
+[package.dependencies.apispec]
+extras = ["yaml"]
+version = ">=2.0.0"
+
+[package.extras]
+dev = ["pytest", "mock", "Flask (1.1.1)", "tornado", "bottle (0.12.17)", "flake8 (3.7.9)", "flake8-bugbear (19.8.0)", "pre-commit (>=1.18,<2.0)", "tox"]
+lint = ["flake8 (3.7.9)", "flake8-bugbear (19.8.0)", "pre-commit (>=1.18,<2.0)"]
+tests = ["pytest", "mock", "Flask (1.1.1)", "tornado", "bottle (0.12.17)"]
 
 [[package]]
 category = "dev"
@@ -53,13 +71,12 @@ description = "Classes Without Boilerplate"
 name = "attrs"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "19.3.0"
+version = "20.1.0"
 
 [package.extras]
-azure-pipelines = ["coverage", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface", "pytest-azurepipelines"]
-dev = ["coverage", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface", "sphinx", "pre-commit"]
-docs = ["sphinx", "zope.interface"]
-tests = ["coverage", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface"]
+dev = ["coverage (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface", "sphinx", "sphinx-rtd-theme", "pre-commit"]
+docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
+tests = ["coverage (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface"]
 
 [[package]]
 category = "dev"
@@ -95,7 +112,7 @@ description = "Calibration and mapping between stage and camera coordinates in a
 name = "camera-stage-mapping"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "0.1.3"
+version = "0.1.4"
 
 [package.dependencies]
 numpy = ">=1.17,<2.0"
@@ -181,23 +198,11 @@ description = "A Flask extension adding a decorator for CORS support"
 name = "flask-cors"
 optional = false
 python-versions = "*"
-version = "3.0.8"
+version = "3.0.9"
 
 [package.dependencies]
 Flask = ">=0.9"
 Six = "*"
-
-[[package]]
-category = "main"
-description = "Barebones websocket extension for Flask, using Pythonthreading for low-traffic concurrency"
-name = "flask-threaded-sockets"
-optional = false
-python-versions = ">=3.6,<4.0"
-version = "0.2.0"
-
-[package.dependencies]
-flask = ">=1.1.2,<2.0.0"
-werkzeug = ">=1.0.1,<2.0.0"
 
 [[package]]
 category = "main"
@@ -236,14 +241,13 @@ category = "dev"
 description = "A Python utility / library to sort Python imports."
 name = "isort"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "4.3.21"
+python-versions = ">=3.6,<4.0"
+version = "5.5.1"
 
 [package.extras]
-pipfile = ["pipreqs", "requirementslib"]
-pyproject = ["toml"]
-requirements = ["pipreqs", "pip-api"]
-xdg_home = ["appdirs (>=1.4.0)"]
+colors = ["colorama (>=0.4.3,<0.5.0)"]
+pipfile_deprecated_finder = ["pipreqs", "requirementslib"]
+requirements_deprecated_finder = ["pipreqs", "pip-api"]
 
 [[package]]
 category = "main"
@@ -269,21 +273,25 @@ i18n = ["Babel (>=0.8)"]
 
 [[package]]
 category = "main"
-description = "Python implementation of LabThings, based on the Flask microframework"
+description = ""
 name = "labthings"
 optional = false
-python-versions = ">=3.6,<4.0"
+python-versions = "^3.6"
 version = "0.8.0"
 
 [package.dependencies]
-Flask = ">=1.1.1,<2.0.0"
-apispec = ">=3.2.0,<4.0.0"
-flask-cors = ">=3.0.8,<4.0.0"
-flask-threaded-sockets = ">=0.2.0,<0.3.0"
-marshmallow = ">=3.4.0,<4.0.0"
-webargs = ">=6.0.0,<7.0.0"
+Flask = "^1.1.1"
+apispec = "^3.2.0"
+apispec_webframeworks = "^0.5.2"
+flask-cors = "^3.0.8"
+marshmallow = "^3.4.0"
+webargs = "^6.0.0"
 zeroconf = ">=0.24.5,<0.29.0"
 
+[package.source]
+reference = "47e56e688c89c713299071350e910f612e03cd8d"
+type = "git"
+url = "https://github.com/labthings/python-labthings.git"
 [[package]]
 category = "dev"
 description = "A fast and thorough lazy object proxy."
@@ -417,12 +425,12 @@ description = "python code static checker"
 name = "pylint"
 optional = false
 python-versions = ">=3.5.*"
-version = "2.5.3"
+version = "2.6.0"
 
 [package.dependencies]
 astroid = ">=2.4.0,<=2.5"
 colorama = "*"
-isort = ">=4.2.5,<5"
+isort = ">=4.2.5,<6"
 mccabe = ">=0.6,<0.7"
 toml = ">=0.7.1"
 
@@ -504,7 +512,7 @@ version = "0.14.0"
 category = "main"
 description = "A module to control Raspberry Pi GPIO channels"
 name = "rpi.gpio"
-optional = false
+optional = true
 python-versions = "*"
 version = "0.7.0"
 
@@ -554,7 +562,7 @@ description = "Python documentation generator"
 name = "sphinx"
 optional = false
 python-versions = ">=3.5"
-version = "3.1.2"
+version = "3.2.1"
 
 [package.dependencies]
 Jinja2 = ">=2.3"
@@ -737,7 +745,7 @@ description = "Pure Python Multicast DNS Service Discovery Library (Bonjour/Avah
 name = "zeroconf"
 optional = false
 python-versions = "*"
-version = "0.28.0"
+version = "0.28.3"
 
 [package.dependencies]
 ifaddr = ">=0.1.7"
@@ -746,7 +754,7 @@ ifaddr = ">=0.1.7"
 rpi = ["RPi.GPIO"]
 
 [metadata]
-content-hash = "446a192e461cdf5d1f12697f3c23d2a1b3cd9250cd6e14ccc884a14d674f8f19"
+content-hash = "d0f4d810c1471b2ae746648270dec87d93602fed201236d2109f63afc98de300"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -755,8 +763,12 @@ alabaster = [
     {file = "alabaster-0.7.12.tar.gz", hash = "sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02"},
 ]
 apispec = [
-    {file = "apispec-3.3.1-py2.py3-none-any.whl", hash = "sha256:b65063e11968a8c26dbbe9b4100ee24026a41cc358dd204df279bdedd7d8dea2"},
-    {file = "apispec-3.3.1.tar.gz", hash = "sha256:f5244ccca33f7a81309f6b3c9d458e33e869050c2d861b9f8cee24b3ad739d2b"},
+    {file = "apispec-3.3.2-py2.py3-none-any.whl", hash = "sha256:a1df9ec6b2cd0edf45039ef025abd7f0660808fa2edf737d3ba1cf5ef1a4625b"},
+    {file = "apispec-3.3.2.tar.gz", hash = "sha256:d23ebd5b71e541e031b02a19db10b5e6d5ef8452c552833e3e1afc836b40b1ad"},
+]
+apispec-webframeworks = [
+    {file = "apispec-webframeworks-0.5.2.tar.gz", hash = "sha256:0db35b267914b3f8c562aca0261957dbcb4176f255eacc22520277010818dcf3"},
+    {file = "apispec_webframeworks-0.5.2-py2.py3-none-any.whl", hash = "sha256:482c563abbcc2a261439476cb3f1a7c7284cc997c322c574d48c111643e9c04e"},
 ]
 appdirs = [
     {file = "appdirs-1.4.4-py2.py3-none-any.whl", hash = "sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128"},
@@ -767,8 +779,8 @@ astroid = [
     {file = "astroid-2.4.2.tar.gz", hash = "sha256:2f4078c2a41bf377eea06d71c9d2ba4eb8f6b1af2135bec27bbbb7d8f12bb703"},
 ]
 attrs = [
-    {file = "attrs-19.3.0-py2.py3-none-any.whl", hash = "sha256:08a96c641c3a74e44eb59afb61a24f2cb9f4d7188748e76ba4bb5edfa3cb7d1c"},
-    {file = "attrs-19.3.0.tar.gz", hash = "sha256:f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72"},
+    {file = "attrs-20.1.0-py2.py3-none-any.whl", hash = "sha256:2867b7b9f8326499ab5b0e2d12801fa5c98842d2cbd22b35112ae04bf85b4dff"},
+    {file = "attrs-20.1.0.tar.gz", hash = "sha256:0ef97238856430dcf9228e07f316aefc17e8939fc8507e18c6501b761ef1a42a"},
 ]
 babel = [
     {file = "Babel-2.8.0-py2.py3-none-any.whl", hash = "sha256:d670ea0b10f8b723672d3a6abeb87b565b244da220d76b4dba1b66269ec152d4"},
@@ -779,8 +791,8 @@ black = [
     {file = "black-18.9b0.tar.gz", hash = "sha256:e030a9a28f542debc08acceb273f228ac422798e5215ba2a791a6ddeaaca22a5"},
 ]
 camera-stage-mapping = [
-    {file = "camera-stage-mapping-0.1.3.tar.gz", hash = "sha256:048dfd465ca04b9baa7714b4ce8d53a97eecaa41781cf07e4bd8649e6d4d97d0"},
-    {file = "camera_stage_mapping-0.1.3-py3-none-any.whl", hash = "sha256:16d77f550067aa3e6bcf9de3f39d0ba2a4581927aa729d83e5f0e46ac6c81d5d"},
+    {file = "camera-stage-mapping-0.1.4.tar.gz", hash = "sha256:02a409bd2cb193b20d9eb015ca31400bd3e1721ec5d702e1b96de54608ff5a8f"},
+    {file = "camera_stage_mapping-0.1.4-py3-none-any.whl", hash = "sha256:d39c3afebb59ec865fb1247dfd951d7090c159ab0cf3e4291e0869d3be33776c"},
 ]
 certifi = [
     {file = "certifi-2020.6.20-py2.py3-none-any.whl", hash = "sha256:8fc0819f1f30ba15bdb34cceffb9ef04d99f420f68eb75d901e9560b8749fc41"},
@@ -810,12 +822,8 @@ flask = [
     {file = "Flask-1.1.2.tar.gz", hash = "sha256:4efa1ae2d7c9865af48986de8aeb8504bf32c7f3d6fdc9353d34b21f4b127060"},
 ]
 flask-cors = [
-    {file = "Flask-Cors-3.0.8.tar.gz", hash = "sha256:72170423eb4612f0847318afff8c247b38bd516b7737adfc10d1c2cdbb382d16"},
-    {file = "Flask_Cors-3.0.8-py2.py3-none-any.whl", hash = "sha256:f4d97201660e6bbcff2d89d082b5b6d31abee04b1b3003ee073a6fd25ad1d69a"},
-]
-flask-threaded-sockets = [
-    {file = "flask_threaded_sockets-0.2.0-py3-none-any.whl", hash = "sha256:e3fc55ccf7f22e801b967f15efd4d30ae8627c1fdc3c27e0195ba1bd369e32e1"},
-    {file = "flask_threaded_sockets-0.2.0.tar.gz", hash = "sha256:e9d2ee66ae1c9c2ac86373510c2a4295e0230109130b7bc6d2499f5cd4140361"},
+    {file = "Flask-Cors-3.0.9.tar.gz", hash = "sha256:6bcfc100288c5d1bcb1dbb854babd59beee622ffd321e444b05f24d6d58466b8"},
+    {file = "Flask_Cors-3.0.9-py2.py3-none-any.whl", hash = "sha256:cee4480aaee421ed029eaa788f4049e3e26d15b5affb6a880dade6bafad38324"},
 ]
 future = [
     {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
@@ -833,8 +841,8 @@ imagesize = [
     {file = "imagesize-1.2.0.tar.gz", hash = "sha256:b1f6b5a4eab1f73479a50fb79fcf729514a900c341d8503d62a62dbc4127a2b1"},
 ]
 isort = [
-    {file = "isort-4.3.21-py2.py3-none-any.whl", hash = "sha256:6e811fcb295968434526407adb8796944f1988c5b65e8139058f2014cbe100fd"},
-    {file = "isort-4.3.21.tar.gz", hash = "sha256:54da7e92468955c4fceacd0c86bd0ec997b0e1ee80d97f67c35a78b719dccab1"},
+    {file = "isort-5.5.1-py3-none-any.whl", hash = "sha256:a200d47b7ee8b7f7d0a9646650160c4a51b6a91a9413fd31b1da2c4de789f5d3"},
+    {file = "isort-5.5.1.tar.gz", hash = "sha256:92533892058de0306e51c88f22ece002a209dc8e80288aa3cec6d443060d584f"},
 ]
 itsdangerous = [
     {file = "itsdangerous-1.1.0-py2.py3-none-any.whl", hash = "sha256:b12271b2047cb23eeb98c8b5622e2e5c5e9abd9784a153e9d8ef9cb4dd09d749"},
@@ -844,10 +852,7 @@ jinja2 = [
     {file = "Jinja2-2.11.2-py2.py3-none-any.whl", hash = "sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035"},
     {file = "Jinja2-2.11.2.tar.gz", hash = "sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0"},
 ]
-labthings = [
-    {file = "labthings-0.8.0-py3-none-any.whl", hash = "sha256:133eb1480dc6ea851faa9a16bcf34d075d513935eac82f8da492e6dc5e336b6c"},
-    {file = "labthings-0.8.0.tar.gz", hash = "sha256:3c440c1bb9547858f2dbe6a85746174c6050016a0a86d773d986ca83fbf89874"},
-]
+labthings = []
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.4.3.tar.gz", hash = "sha256:f3900e8a5de27447acbf900b4750b0ddfd7ec1ea7fbaf11dfa911141bc522af0"},
     {file = "lazy_object_proxy-1.4.3-cp27-cp27m-macosx_10_13_x86_64.whl", hash = "sha256:a2238e9d1bb71a56cd710611a1614d1194dc10a175c1e08d75e1a7bcc250d442"},
@@ -899,6 +904,11 @@ markupsafe = [
     {file = "MarkupSafe-1.1.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:ba59edeaa2fc6114428f1637ffff42da1e311e29382d81b339c1817d37ec93c6"},
     {file = "MarkupSafe-1.1.1-cp37-cp37m-win32.whl", hash = "sha256:b00c1de48212e4cc9603895652c5c410df699856a2853135b3967591e4beebc2"},
     {file = "MarkupSafe-1.1.1-cp37-cp37m-win_amd64.whl", hash = "sha256:9bf40443012702a1d2070043cb6291650a0841ece432556f784f004937f0f32c"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:6788b695d50a51edb699cb55e35487e430fa21f1ed838122d722e0ff0ac5ba15"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:cdb132fc825c38e1aeec2c8aa9338310d29d337bebbd7baa06889d09a60a1fa2"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:13d3144e1e340870b25e7b10b98d779608c02016d5184cfb9927a9f10c689f42"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-win32.whl", hash = "sha256:596510de112c685489095da617b5bcbbac7dd6384aeebeda4df6025d0256a81b"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:e8313f01ba26fbbe36c7be1966a7b7424942f670f38e666995b88d012765b9be"},
     {file = "MarkupSafe-1.1.1.tar.gz", hash = "sha256:29872e92839765e546828bb7754a68c418d927cd064fd4708fab9fe9c8bb116b"},
 ]
 marshmallow = [
@@ -1057,8 +1067,8 @@ pygments = [
     {file = "Pygments-2.6.1.tar.gz", hash = "sha256:647344a061c249a3b74e230c739f434d7ea4d8b1d5f3721bc0f3558049b38f44"},
 ]
 pylint = [
-    {file = "pylint-2.5.3-py3-none-any.whl", hash = "sha256:d0ece7d223fe422088b0e8f13fa0a1e8eb745ebffcb8ed53d3e95394b6101a1c"},
-    {file = "pylint-2.5.3.tar.gz", hash = "sha256:7dd78437f2d8d019717dbf287772d0b2dbdfd13fc016aa7faa08d67bccc46adc"},
+    {file = "pylint-2.6.0-py3-none-any.whl", hash = "sha256:bfe68f020f8a0fece830a22dd4d5dddb4ecc6137db04face4c3420a46a52239f"},
+    {file = "pylint-2.6.0.tar.gz", hash = "sha256:bb4a908c9dadbc3aac18860550e870f58e1a02c9f2c204fdf5693d73be061210"},
 ]
 pynpm = [
     {file = "pynpm-0.1.2-py2.py3-none-any.whl", hash = "sha256:3f03fbf667549f8b8b7e0419eef88d1b21833ce288f96de66fbb761b9f4c4061"},
@@ -1128,8 +1138,8 @@ snowballstemmer = [
     {file = "snowballstemmer-2.0.0.tar.gz", hash = "sha256:df3bac3df4c2c01363f3dd2cfa78cce2840a79b9f1c2d2de9ce8d31683992f52"},
 ]
 sphinx = [
-    {file = "Sphinx-3.1.2-py3-none-any.whl", hash = "sha256:97dbf2e31fc5684bb805104b8ad34434ed70e6c588f6896991b2fdfd2bef8c00"},
-    {file = "Sphinx-3.1.2.tar.gz", hash = "sha256:b9daeb9b39aa1ffefc2809b43604109825300300b987a24f45976c001ba1a8fd"},
+    {file = "Sphinx-3.2.1-py3-none-any.whl", hash = "sha256:ce6fd7ff5b215af39e2fcd44d4a321f6694b4530b6f2b2109b64d120773faea0"},
+    {file = "Sphinx-3.2.1.tar.gz", hash = "sha256:321d6d9b16fa381a5306e5a0b76cd48ffbc588e6340059a729c6fdd66087e0e8"},
 ]
 sphinxcontrib-applehelp = [
     {file = "sphinxcontrib-applehelp-1.0.2.tar.gz", hash = "sha256:a072735ec80e7675e3f432fcae8610ecf509c5f1869d17e2eecff44389cdbc58"},
@@ -1202,6 +1212,6 @@ wrapt = [
     {file = "wrapt-1.12.1.tar.gz", hash = "sha256:b62ffa81fb85f4332a4f609cab4ac40709470da05643a082ec1eb88e6d9b97d7"},
 ]
 zeroconf = [
-    {file = "zeroconf-0.28.0-py3-none-any.whl", hash = "sha256:8c448ad37ed074ce8811c9eb2765c01714a93f977a1c04fc39fbf6f516b0566f"},
-    {file = "zeroconf-0.28.0.tar.gz", hash = "sha256:881da2ed3d7c8e0ab59fb1cc8b02b53134351941c4d8d3f3553a96700f257a03"},
+    {file = "zeroconf-0.28.3-py3-none-any.whl", hash = "sha256:9ae1d9fbb53e1e5b0965a1e60873f99568f0424a03eb28ce793e75c999a8fc50"},
+    {file = "zeroconf-0.28.3.tar.gz", hash = "sha256:1a160082ef198884331b04b636132a243a06d3155f6664e96704b6984cbf485c"},
 ]
