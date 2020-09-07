@@ -31,7 +31,7 @@ class Mock(MagicMock):
         return MagicMock()
 
 
-mock_imports = ["picamera", "picamera.array", "picamera.mmalobj"]
+mock_imports = ["picamerax", "picamerax.array", "picamerax.mmalobj"]
 
 sys.modules.update((mod_name, Mock()) for mod_name in mock_imports)
 
@@ -224,7 +224,7 @@ epub_exclude_files = ["search.html"]
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     "openflexure_stage": ("https://openflexure-stage.readthedocs.io/en/latest/", None),
-    "picamera": ("https://picamera.readthedocs.io/en/release-1.13/", None),
+    "picamerax": ("https://picamerax.readthedocs.io/en/latest//", None),
     "marshmallow": ("https://marshmallow.readthedocs.io/en/stable/", None),
     "webargs": ("https://webargs.readthedocs.io/en/latest/", None),
 }

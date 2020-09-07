@@ -4,7 +4,7 @@ Introduction
 Extensions allow functionality to be added to the OpenFlexure Microscope web API without having to modify the base code.
 They have full access to the :py:class:`openflexure_microscope.Microscope` object, 
 including direct access to any attached :py:class:`openflexure_microscope.camera.base.BaseCamera` and :py:class:`openflexure_stage.stage.OpenFlexureStage` objects.
-This also allows access to the :py:class:`picamera.PiCamera` object.
+This also allows access to the :py:class:`picamerax.PiCamera` object.
 
 Extensions can either be loaded from a single Python file, or as a Python package installed to the environment being used. 
 

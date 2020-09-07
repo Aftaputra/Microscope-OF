@@ -35,7 +35,6 @@ numpy = "1.18.2"
 Pillow = "^5.4"
 scipy = "1.4.1" # Exact version so we can guarantee a wheel
 "RPi.GPIO" = { version = "^0.7.0", optional = true }
-picamera = {url = "https://github.com/rwb27/picamera/releases/download/v1.13.2b0/picamera-1.13.2b0-py3-none-any.whl" }
 python-dateutil = "^2.8"
 psutil = "^5.6.7" # Autostorage extension
 opencv-python-headless = [
@@ -46,7 +45,8 @@ pynpm = "^0.1.2"
 sangaboard = "^0.2"
 expiringdict = "^1.2.1"
 camera-stage-mapping = "0.1.4"
-labthings = "0.8.0"
+picamerax = ">=20.9.1"
+labthings = {git = "https://github.com/labthings/python-labthings.git"}
 
 [tool.poetry.extras]
 rpi = ["RPi.GPIO"]

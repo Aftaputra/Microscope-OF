@@ -1,8 +1,8 @@
 from __future__ import print_function
 
-import picamera
-from picamera import mmal, mmalobj, exc
-from picamera.mmalobj import to_rational
+import picamerax
+from picamerax import mmal, mmalobj, exc
+from picamerax.mmalobj import to_rational
 import time
 import logging
 
@@ -13,7 +13,7 @@ MMAL_PARAMETER_DIGITAL_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A
 def set_gain(camera, gain, value):
     """Set the analog gain of a PiCamera.
 
-    camera: the picamera.PiCamera() instance you are configuring
+    camera: the picamerax.PiCamera() instance you are configuring
     gain: either MMAL_PARAMETER_ANALOG_GAIN or MMAL_PARAMETER_DIGITAL_GAIN
     value: a numeric value that can be converted to a rational number.
     """
@@ -42,7 +42,7 @@ def set_digital_gain(camera, value):
 
 
 if __name__ == "__main__":
-    with picamera.PiCamera() as cam:
+    with picamerax.PiCamera() as cam:
         cam.start_preview(fullscreen=False, window=(0, 50, 640, 480))
         time.sleep(2)
 

@@ -2,8 +2,8 @@ import numpy as np
 import time
 import logging
 
-from picamera import PiCamera
-from picamera.array import PiRGBArray, PiBayerArray
+from picamerax import PiCamera
+from picamerax.array import PiRGBArray, PiBayerArray
 
 
 def rgb_image(camera, resize=None, **kwargs):

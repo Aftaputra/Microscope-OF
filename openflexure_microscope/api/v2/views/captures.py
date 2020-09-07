@@ -6,7 +6,7 @@ from openflexure_microscope.api.utilities import get_bool, JsonResponse
 from labthings import Schema, fields, find_component
 from labthings.views import View, PropertyView
 from labthings.utilities import description_from_view
-from labthings.views.marshalling import marshal_with
+from labthings.marshalling import marshal_with
 
 from marshmallow import pre_dump
 

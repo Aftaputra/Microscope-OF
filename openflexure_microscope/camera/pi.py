@@ -35,8 +35,8 @@ import os
 import logging
 
 # Pi camera
-import picamera
-import picamera.array
+import picamerax
+import picamerax.array
 
 # Type hinting
 from typing import Tuple
@@ -87,8 +87,8 @@ class PiCameraStreamer(BaseCamera):
         BaseCamera.__init__(self)
         # Attach to Pi camera
         self.camera = (
-            picamera.PiCamera()
-        )  #: :py:class:`picamera.PiCamera`: Picamera object
+            picamerax.PiCamera()
+        )  #: :py:class:`picamerax.PiCamera`: Picamera object
 
         # Store state of PiCameraStreamer
         self.preview_active = False
@@ -247,7 +247,7 @@ class PiCameraStreamer(BaseCamera):
         """
 
         Args:
-            settings_dict (dict): Dictionary of properties to apply to the :py:class:`picamera.PiCamera`: object
+            settings_dict (dict): Dictionary of properties to apply to the :py:class:`picamerax.PiCamera`: object
             pause_for_effect (bool): Pause tactically to reduce risk of timing issues
         """
         # Set exposure mode
@@ -339,11 +339,11 @@ class PiCameraStreamer(BaseCamera):
                     if fullscreen:
                         self.camera.preview.fullscreen = fullscreen
                 self.preview_active = True
-            except picamera.exc.PiCameraMMALError as e:
+            except picamerax.exc.PiCameraMMALError as e:
                 logging.error(
                     "Suppressed a MMALError in start_preview. Exception: {}".format(e)
                 )
-            except picamera.exc.PiCameraValueError as e:
+            except picamerax.exc.PiCameraValueError as e:
                 logging.error(
                     "Suppressed a ValueError exception in start_preview. Exception: {}".format(
                         e
@@ -427,7 +427,7 @@ class PiCameraStreamer(BaseCamera):
             # Stop the camera video recording on port 1
             try:
                 self.camera.stop_recording(splitter_port=splitter_port)
-            except picamera.exc.PiCameraNotRecording:
+            except picamerax.exc.PiCameraNotRecording:
                 logging.info("Not recording on splitter_port {}".format(splitter_port))
             else:
                 logging.info(
@@ -467,7 +467,7 @@ class PiCameraStreamer(BaseCamera):
             # Reduce the resolution for video streaming
             try:
                 self.camera._check_recording_stopped()
-            except picamera.exc.PiCameraRuntimeError:
+            except picamerax.exc.PiCameraRuntimeError:
                 logging.info(
                     "Error while changing resolution: Recording already running."
                 )
@@ -487,7 +487,7 @@ class PiCameraStreamer(BaseCamera):
                         # metric)
                         splitter_port=splitter_port,
                     )
-                except picamera.exc.PiCameraAlreadyRecording:
+                except picamerax.exc.PiCameraAlreadyRecording:
                     logging.info(
                         "Error while starting preview: Recording already running."
                     )
@@ -573,7 +573,7 @@ class PiCameraStreamer(BaseCamera):
                 self.stop_stream_recording(resolution=resolution)
 
             logging.debug("Creating PiYUVArray")
-            with picamera.array.PiYUVArray(self.camera, size=size) as output:
+            with picamerax.array.PiYUVArray(self.camera, size=size) as output:
 
                 logging.info("Capturing to {}".format(output))
 
@@ -613,7 +613,7 @@ class PiCameraStreamer(BaseCamera):
             self.stop_stream_recording(resolution=resolution)
 
             logging.debug("Creating PiRGBArray")
-            with picamera.array.PiRGBArray(self.camera, size=size) as output:
+            with picamerax.array.PiRGBArray(self.camera, size=size) as output:
 
                 logging.info("Capturing to {}".format(output))
 

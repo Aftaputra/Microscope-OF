@@ -204,4 +204,4 @@ if __name__ == "__main__":
     from labthings import Server
     logging.info("Starting OpenFlexure Microscope Server...")
     server = Server(app)
-    server.run(host="::", port=5000, debug=False, zeroconf=True)
+    server.run(host="0.0.0.0", port=5000, debug=False, zeroconf=True)
