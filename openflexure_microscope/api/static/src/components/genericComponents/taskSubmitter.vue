@@ -90,6 +90,7 @@ export default {
   data: function() {
     return {
       taskId: null,
+      taskUrl: null,
       polling: null,
       progress: null,
       taskStarted: false,
@@ -150,6 +151,7 @@ export default {
           // Fetch the task ID
           console.log("Task ID: " + response.data.id);
           this.taskId = response.data.id;
+          this.taskUrl = response.data.href;
           // Start the store polling TaskId for success
           this.taskRunning = true;
           this.$emit("taskRunning", this.taskId);
@@ -192,12 +194,12 @@ export default {
       var checkCondition = (resolve, reject) => {
         // If the condition is met, we're done!
         axios
-          .get(`${this.$store.getters.uriV2}/tasks/${taskId}`)
+          .get(this.taskUrl)
           .then(response => {
             console.log(response.data.status);
             var result = response.data.status;
             // If the task ends with success
-            if (result == "success") {
+            if (result == "completed") {
               resolve(response.data);
             }
             // If task ends with an error
@@ -206,16 +208,10 @@ export default {
               reject(new Error(response.data.return));
             }
             // If task ends with termination
-            else if (result == "terminated") {
+            else if (result == "cancelled") {
               // Pass a generic termination error back with reject
-              reject(new Error("Task terminated"));
+              reject(new Error("Task cancelled"));
             }
-            // If task ends in any other way
-            else if (result != "running") {
-              // Pass status string as error
-              reject(new Error(result));
-            }
-            // Didn't match and too much time, reject!
             else {
               // Since the task is still running, we can update the progress bar
               this.progress = response.data.progress;
@@ -232,7 +228,7 @@ export default {
       console.log("Starting progress polling");
 
       axios
-        .get(`${this.$store.getters.uriV2}/tasks/${this.taskId}`)
+        .get(this.taskUrl)
         .then(response => {
           console.log("PROGRESS RESPONSE: ", response.data.progress);
           this.progress = response.data.progress;
@@ -241,7 +237,7 @@ export default {
 
     terminateTask: function() {
       axios
-        .delete(`${this.$store.getters.uriV2}/tasks/${this.taskId}`)
+        .delete(this.taskUrl)
         .then(response => {
           console.log("TERMINATION RESPONSE: ", response.data);
         });

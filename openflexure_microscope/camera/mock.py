@@ -204,6 +204,8 @@ class MissingCamera(BaseCamera):
 
             if isinstance(output, str):
                 output.close()
+            else:
+                output.flush()
 
     # HANDLE STREAM FRAMES
 
