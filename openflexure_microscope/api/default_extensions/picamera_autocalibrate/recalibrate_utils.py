@@ -42,7 +42,12 @@ def adjust_exposure_to_setpoint(camera, setpoint):
 def auto_expose_and_freeze_settings(camera):
     """Freeze the settings after auto-exposing to white illumination"""
     logging.info("Allowing the camera to auto-expose")
-    camera.awb_mode = "auto"
+    if "greyworld" in camera.AWB_MODES:
+        print("Calibrating with greyworld AWB")
+        camera.awb_mode = "greyworld"
+    else:
+        print("Calibrating with auto AWB")
+        camera.awb_mode = "auto"
     camera.exposure_mode = "auto"
     camera.iso = (
         0
