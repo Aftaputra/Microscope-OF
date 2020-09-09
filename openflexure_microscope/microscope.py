@@ -12,7 +12,7 @@ from openflexure_microscope.captures import CaptureManager
 
 from openflexure_microscope.stage.mock import MissingStage
 from openflexure_microscope.camera.mock import MissingCamera
-from openflexure_microscope.stage.sanga import SangaStage
+from openflexure_microscope.stage.sanga import SangaStage, SangaDeltaStage
 
 try:
     from openflexure_microscope.camera.pi import PiCameraStreamer
@@ -111,10 +111,18 @@ class Microscope:
             stage_port = configuration["stage"].get("port")
             if stage_type in ("SangaBoard", "SangaStage"):
                 try:
+                    logging.info("Trying SangaStage")
                     self.stage = SangaStage(port=stage_port)
                 except Exception as e:
                     logging.error(e)
                     logging.warning("No compatible Sangaboard hardware found.")
+            elif stage_type in ("SangaDeltaStage"):
+                try:
+                    logging.info("Trying SangaDeltaStage")
+                    self.stage = SangaDeltaStage(port=stage_port)
+                except Exception as e:
+                    logging.error(e)
+                    logging.warning("No compatible Sangaboard hardware found.")                    
 
         logging.info("Handling fallbacks")
         ### Fallbacks

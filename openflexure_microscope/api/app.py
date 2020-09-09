@@ -10,9 +10,11 @@ if "-d" in sys.argv or "--debug" in sys.argv:
 else:
     log_level = logging.INFO
 
+
 # Set root logger level
 root_log = logging.getLogger()
 root_log.setLevel(log_level)
+
 
 import os
 import pkg_resources

@@ -112,7 +112,6 @@ class SangaStage(BaseStage):
             logging.debug(f"Moving sangaboard by {displacement}")
             if not backlash or self.backlash is None:
                 return self.board.move_rel(displacement, axis=axis)
-
             if axis is not None:
                 # backlash correction is easier if we're always in 3D
                 # so this code just converts single-axis moves into all-axis moves.
@@ -189,3 +188,69 @@ class SangaStage(BaseStage):
                 )
             print("Move completed, raising exception...")
             raise value  # Propagate the exception
+
+class SangaDeltaStage(SangaStage):
+    def __init__(self, port=None, flex_h=80, flex_a=50, flex_b=50, camera_angle=0, **kwargs):
+        self.flex_h = flex_h
+        self.flex_a = flex_a
+        self.flex_b = flex_b
+
+        # Set up camera rotation relative to stage
+        camera_theta = (camera_angle/180)*np.pi
+        self.R_camera = np.array([
+            [np.cos(camera_theta), -np.sin(camera_theta), 0],
+            [np.sin(camera_theta), np.cos(camera_theta), 0],
+            [0, 0, 1]
+        ])
+
+        logging.debug(self.R_camera)
+
+        # Transformation matrix converting delta into cartesian
+        x_fac = -1 * np.multiply(np.divide(2, np.sqrt(3)), np.divide(self.flex_b, self.flex_h))
+        y_fac = -1 * np.divide(self.flex_b, self.flex_h)
+        z_fac = np.multiply(np.divide(1, 3), np.divide(self.flex_b, self.flex_a))
+
+        self.Tvd = np.array([
+            [-x_fac, x_fac, 0],
+            [0.5 * y_fac, 0.5 * y_fac, -y_fac],
+            [z_fac, z_fac, z_fac]
+        ])
+        logging.debug(self.Tvd)
+
+        self.Tdv = np.linalg.inv(self.Tvd)
+        logging.debug(self.Tdv)
+
+        SangaStage.__init__(self, port=port, **kwargs)
+    
+    @property
+    def position(self):
+        # TODO: Account for camera rotation
+        position = np.dot(self.Tvd, self.board.position)
+
+        position = np.dot(np.linalg.inv(self.R_camera), position)
+        return [int(p) for p in position]
+
+    def move_rel(self, displacement, axis=None, backlash=True):
+
+        # Transform into camera coordinates
+        displacement = np.dot(self.R_camera, displacement)
+
+        # Transform into delta coordinates
+        displacement = np.dot(self.Tdv, displacement)
+
+        logging.debug("Delta displacement: {}".format(displacement))
+
+        # Do the move
+        SangaStage.move_rel(self, displacement, axis=None, backlash=backlash)
+
+    def move_abs(self, final, **kwargs):
+        # Transform into camera coordinates
+        final = np.dot(self.R_camera, final)
+
+        # Transform into delta coordinates
+        final = np.dot(self.Tdv, final)
+
+        logging.debug("Delta final: {}".format(final))
+
+        # Do the move
+        SangaStage.move_abs(self, final, **kwargs)
