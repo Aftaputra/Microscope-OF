@@ -66,7 +66,7 @@
           :current-tab="currentTab"
           @set-tab="setTab"
         >
-          <i class="material-icons">camera_alt</i>
+          <i class="material-icons">settings_overscan</i>
         </tabIcon>
       </template>
 
@@ -140,13 +140,17 @@
       >
         <captureContent />
       </tabContent>
-      <tabContent
-        tab-i-d="slidescan"
-        :require-connection="true"
-        :current-tab="currentTab"
-      >
-        <slideScanContent />
-      </tabContent>
+
+      <template v-if="$store.state.globalSettings.IHIEnabled">
+        <tabContent
+          tab-i-d="slidescan"
+          :require-connection="true"
+          :current-tab="currentTab"
+        >
+          <slideScanContent />
+        </tabContent>
+      </template>
+
       <tabContent
         tab-i-d="settings"
         :require-connection="false"
