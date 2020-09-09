@@ -290,7 +290,7 @@ description = ""
 name = "labthings"
 optional = false
 python-versions = "^3.6"
-version = "0.8.0"
+version = "1.0.0-beta.1"
 
 [package.dependencies]
 Flask = "^1.1.1"
@@ -302,7 +302,7 @@ webargs = "^6.0.0"
 zeroconf = ">=0.24.5,<0.29.0"
 
 [package.source]
-reference = "bf41b5009e8e0e465222399f38c0cd2104dbd0b7"
+reference = "2a3db00d533cb48ed0cad7ccd24d63c92abd090e"
 type = "git"
 url = "https://github.com/labthings/python-labthings.git"
 [[package]]
