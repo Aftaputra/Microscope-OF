@@ -5,7 +5,7 @@
 A general user-guide on setting up your microscope can be found [**here on our website**](https://www.openflexure.org/projects/microscope/).
 This includes basic installation instructions suitable for most users.
 
-Full developer documentation can be found on [**ReadTheDocs**](https://openflexure-microscope-software.readthedocs.io/en/stable/). 
+Full developer documentation can be found on [**ReadTheDocs**](https://openflexure-microscope-software.readthedocs.io/). 
 This includes installing the server in a mode better suited for active development.
 
 ## Installation
