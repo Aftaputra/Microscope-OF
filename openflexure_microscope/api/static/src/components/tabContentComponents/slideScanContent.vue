@@ -15,7 +15,7 @@ import paneSlideScan from "../controlComponents/paneSlideScan";
 import streamDisplay from "../viewComponents/streamDisplay.vue";
 
 export default {
-  name: "NavigateContent",
+  name: "SlideScanContent",
 
   components: {
     paneSlideScan,

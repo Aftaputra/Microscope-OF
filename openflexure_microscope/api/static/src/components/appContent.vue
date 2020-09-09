@@ -55,24 +55,20 @@
       >
         <i class="material-icons">camera_alt</i>
       </tabIcon>
-      <tabIcon
-        id="slidescan-tab-icon"
-        tab-i-d="slidescan"
-        :require-connection="true"
-        :current-tab="currentTab"
-        @set-tab="setTab"
-      >
-        <i class="material-icons">camera_alt</i>
-      </tabIcon>
-      <tabIcon
-        id="settings-tab-icon"
-        tab-i-d="settings"
-        :require-connection="false"
-        :current-tab="currentTab"
-        @set-tab="setTab"
-      >
-        <i class="material-icons">settings</i>
-      </tabIcon>
+
+      <template v-if="$store.state.globalSettings.IHIEnabled">
+        <hr id="extension-tab-divider" />
+
+        <tabIcon
+          id="slidescan-tab-icon"
+          tab-i-d="slidescan"
+          :require-connection="true"
+          :current-tab="currentTab"
+          @set-tab="setTab"
+        >
+          <i class="material-icons">camera_alt</i>
+        </tabIcon>
+      </template>
 
       <hr id="extension-tab-divider" />
 
@@ -90,8 +86,18 @@
       </tabIcon>
 
       <tabIcon
-        id="about-tab-icon"
+        id="settings-tab-icon"
         class="uk-margin-auto-top"
+        tab-i-d="settings"
+        :require-connection="false"
+        :current-tab="currentTab"
+        @set-tab="setTab"
+      >
+        <i class="material-icons">settings</i>
+      </tabIcon>
+
+      <tabIcon
+        id="about-tab-icon"
         tab-i-d="about"
         :require-connection="false"
         :current-tab="currentTab"
@@ -205,6 +211,7 @@ export default {
     tabContent,
     navigateContent,
     captureContent,
+    slideScanContent,
     viewContent,
     settingsContent,
     galleryContent,

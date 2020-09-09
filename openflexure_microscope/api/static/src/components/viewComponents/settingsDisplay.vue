@@ -17,6 +17,19 @@
             Display
           </tabIcon>
         </li>
+        <li>
+          <tabIcon
+            id="settings-features-icon"
+            tab-i-d="features"
+            :show-title="false"
+            :show-tooltip="false"
+            :require-connection="false"
+            :current-tab="currentTab"
+            @set-tab="setTab"
+          >
+            Features
+          </tabIcon>
+        </li>
         <li class="uk-nav-header">Microscope settings</li>
         <li>
           <tabIcon
@@ -72,6 +85,16 @@
       </tabContent>
 
       <tabContent
+        tab-i-d="features"
+        :require-connection="false"
+        :current-tab="currentTab"
+      >
+        <div class="settings-pane uk-padding-small">
+          <featuresSettings />
+        </div>
+      </tabContent>
+
+      <tabContent
         tab-i-d="camera"
         :require-connection="true"
         :current-tab="currentTab"
@@ -116,6 +139,7 @@ import streamSettings from "./settingsComponents/streamSettings.vue";
 import microscopeSettings from "./settingsComponents/microscopeSettings.vue";
 import cameraSettings from "./settingsComponents/cameraSettings.vue";
 import appSettings from "./settingsComponents/appSettings.vue";
+import featuresSettings from "./settingsComponents/featuresSettings.vue";
 import cameraStageMappingSettings from "./settingsComponents/cameraStageMappingSettings.vue";
 
 // Import generic components
@@ -132,6 +156,7 @@ export default {
     microscopeSettings,
     cameraStageMappingSettings,
     appSettings,
+    featuresSettings,
     tabIcon,
     tabContent
   },
@@ -156,9 +181,6 @@ export default {
 <style lang="less" scoped>
 // Custom UIkit CSS modifications
 @import "../../assets/less/theme.less";
-
-.settings-pane {
-}
 
 .settings-nav {
   overflow-y: auto;
