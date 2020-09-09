@@ -16,7 +16,7 @@
         class="uk-button uk-button-danger uk-margin-remove uk-float-right uk-width-1-1"
         @click="terminateTask()"
       >
-        Terminate
+        Cancel
       </button>
     </div>
 
@@ -193,32 +193,29 @@ export default {
 
       var checkCondition = (resolve, reject) => {
         // If the condition is met, we're done!
-        axios
-          .get(this.taskUrl)
-          .then(response => {
-            console.log(response.data.status);
-            var result = response.data.status;
-            // If the task ends with success
-            if (result == "completed") {
-              resolve(response.data);
-            }
-            // If task ends with an error
-            else if (result == "error") {
-              // Pass the error string back with reject
-              reject(new Error(response.data.return));
-            }
-            // If task ends with termination
-            else if (result == "cancelled") {
-              // Pass a generic termination error back with reject
-              reject(new Error("Task cancelled"));
-            }
-            else {
-              // Since the task is still running, we can update the progress bar
-              this.progress = response.data.progress;
-              // Check again after timeout
-              setTimeout(checkCondition, interval, resolve, reject);
-            }
-          });
+        axios.get(this.taskUrl).then(response => {
+          console.log(response.data.status);
+          var result = response.data.status;
+          // If the task ends with success
+          if (result == "completed") {
+            resolve(response.data);
+          }
+          // If task ends with an error
+          else if (result == "error") {
+            // Pass the error string back with reject
+            reject(new Error(response.data.return));
+          }
+          // If task ends with termination
+          else if (result == "cancelled") {
+            // Pass a generic termination error back with reject
+            reject(new Error("Task cancelled"));
+          } else {
+            // Since the task is still running, we can update the progress bar
+            this.progress = response.data.progress;
+            // Check again after timeout
+            setTimeout(checkCondition, interval, resolve, reject);
+          }
+        });
       };
 
       return new Promise(checkCondition);
@@ -227,20 +224,16 @@ export default {
     pollProgress: function() {
       console.log("Starting progress polling");
 
-      axios
-        .get(this.taskUrl)
-        .then(response => {
-          console.log("PROGRESS RESPONSE: ", response.data.progress);
-          this.progress = response.data.progress;
-        });
+      axios.get(this.taskUrl).then(response => {
+        console.log("PROGRESS RESPONSE: ", response.data.progress);
+        this.progress = response.data.progress;
+      });
     },
 
     terminateTask: function() {
-      axios
-        .delete(this.taskUrl)
-        .then(response => {
-          console.log("TERMINATION RESPONSE: ", response.data);
-        });
+      axios.delete(this.taskUrl).then(response => {
+        console.log("TERMINATION RESPONSE: ", response.data);
+      });
     }
   }
 };

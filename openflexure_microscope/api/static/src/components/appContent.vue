@@ -55,15 +55,20 @@
       >
         <i class="material-icons">camera_alt</i>
       </tabIcon>
-      <tabIcon
-        id="settings-tab-icon"
-        tab-i-d="settings"
-        :require-connection="false"
-        :current-tab="currentTab"
-        @set-tab="setTab"
-      >
-        <i class="material-icons">settings</i>
-      </tabIcon>
+
+      <template v-if="$store.state.globalSettings.IHIEnabled">
+        <hr id="extension-tab-divider" />
+
+        <tabIcon
+          id="slidescan-tab-icon"
+          tab-i-d="slidescan"
+          :require-connection="true"
+          :current-tab="currentTab"
+          @set-tab="setTab"
+        >
+          <i class="material-icons">settings_overscan</i>
+        </tabIcon>
+      </template>
 
       <hr id="extension-tab-divider" />
 
@@ -81,8 +86,18 @@
       </tabIcon>
 
       <tabIcon
-        id="about-tab-icon"
+        id="settings-tab-icon"
         class="uk-margin-auto-top"
+        tab-i-d="settings"
+        :require-connection="false"
+        :current-tab="currentTab"
+        @set-tab="setTab"
+      >
+        <i class="material-icons">settings</i>
+      </tabIcon>
+
+      <tabIcon
+        id="about-tab-icon"
         tab-i-d="about"
         :require-connection="false"
         :current-tab="currentTab"
@@ -125,6 +140,17 @@
       >
         <captureContent />
       </tabContent>
+
+      <template v-if="$store.state.globalSettings.IHIEnabled">
+        <tabContent
+          tab-i-d="slidescan"
+          :require-connection="true"
+          :current-tab="currentTab"
+        >
+          <slideScanContent />
+        </tabContent>
+      </template>
+
       <tabContent
         tab-i-d="settings"
         :require-connection="false"
@@ -170,6 +196,7 @@ import tabContent from "./genericComponents/tabContent";
 // Import new content components
 import navigateContent from "./tabContentComponents/navigateContent.vue";
 import captureContent from "./tabContentComponents/captureContent.vue";
+import slideScanContent from "./tabContentComponents/slideScanContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
 import settingsContent from "./tabContentComponents/settingsContent.vue";
 import galleryContent from "./tabContentComponents/galleryContent.vue";
@@ -188,6 +215,7 @@ export default {
     tabContent,
     navigateContent,
     captureContent,
+    slideScanContent,
     viewContent,
     settingsContent,
     galleryContent,

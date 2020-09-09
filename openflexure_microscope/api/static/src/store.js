@@ -13,6 +13,7 @@ export default new Vuex.Store({
       disableStream: false,
       autoGpuPreview: false,
       trackWindow: true,
+      IHIEnabled: false,
       appTheme: "system"
     },
     activeStreams: {}
