@@ -10,7 +10,7 @@
   "license": "GNU General Public License v3.0 ",
   "scripts": {
     "build": "vue-cli-service build --mode production",
-    "serve": "vue-cli-service serve  --mode development"
+    "serve": "vue-cli-service serve --mode development"
   },
   "dependencies": {
     "material-design-icons": "^3.0.1",

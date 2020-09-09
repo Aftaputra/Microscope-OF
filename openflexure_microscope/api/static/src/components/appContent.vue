@@ -56,6 +56,15 @@
         <i class="material-icons">camera_alt</i>
       </tabIcon>
       <tabIcon
+        id="slidescan-tab-icon"
+        tab-i-d="slidescan"
+        :require-connection="true"
+        :current-tab="currentTab"
+        @set-tab="setTab"
+      >
+        <i class="material-icons">camera_alt</i>
+      </tabIcon>
+      <tabIcon
         id="settings-tab-icon"
         tab-i-d="settings"
         :require-connection="false"
@@ -126,6 +135,13 @@
         <captureContent />
       </tabContent>
       <tabContent
+        tab-i-d="slidescan"
+        :require-connection="true"
+        :current-tab="currentTab"
+      >
+        <slideScanContent />
+      </tabContent>
+      <tabContent
         tab-i-d="settings"
         :require-connection="false"
         :current-tab="currentTab"
@@ -170,6 +186,7 @@ import tabContent from "./genericComponents/tabContent";
 // Import new content components
 import navigateContent from "./tabContentComponents/navigateContent.vue";
 import captureContent from "./tabContentComponents/captureContent.vue";
+import slideScanContent from "./tabContentComponents/slideScanContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
 import settingsContent from "./tabContentComponents/settingsContent.vue";
 import galleryContent from "./tabContentComponents/galleryContent.vue";
