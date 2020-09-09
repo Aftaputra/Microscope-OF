@@ -1,17 +1,16 @@
 <template>
-  <div class="medscan">
+  <div class="uk-padding-small">
     <div v-show="!scanUri">No scan extension found</div>
     <div v-show="scanUri">
-      <h1>Sample Scan Wizard</h1>
-
       <form @submit.prevent @keyup.enter="increment()">
         <div v-show="stepValue == 0" id="step-user">
-          <h2>User information (1/4)</h2>
+          <h3>User information (1/4)</h3>
 
           <label for="username">Your name:</label>
           <input
             id="username"
             v-model="username"
+            class="uk-input"
             type="text"
             name="username"
             required
@@ -21,18 +20,20 @@
           <input
             id="currentTime"
             v-model="currentTimeForm"
+            class="uk-input"
             type="datetime-local"
             name="currentTime"
           />
         </div>
 
         <div v-show="stepValue == 1" id="step-patient">
-          <h2>Patient information (2/4)</h2>
+          <h3>Patient information (2/4)</h3>
 
           <label for="patientID">Patient ID:</label>
           <input
             id="patientID"
             v-model="patientID"
+            class="uk-input"
             type="text"
             name="patientID"
             required
@@ -41,16 +42,23 @@
         </div>
 
         <div v-show="stepValue == 2" id="step-sample">
-          <h2>Sample information (3/4)</h2>
+          <h3>Sample information (3/4)</h3>
 
           <label>Sample type:</label>
           <br />
-          <input id="typeThin" v-model="sampleType" type="radio" value="thin" />
+          <input
+            id="typeThin"
+            v-model="sampleType"
+            class="uk-radio"
+            type="radio"
+            value="thin"
+          />
           <label for="typeThin">Thin smear</label>
           <br />
           <input
             id="typeThick"
             v-model="sampleType"
+            class="uk-radio"
             type="radio"
             value="thick"
           />
@@ -59,7 +67,7 @@
         </div>
 
         <div v-show="stepValue == 3" id="step-scan">
-          <h2>Start scan (4/4)</h2>
+          <h3>Start scan (4/4)</h3>
 
           <label>Check details:</label>
           <p>
@@ -82,7 +90,6 @@
         <taskSubmitter
           v-if="scanUri"
           v-show="stepValue == 3"
-          :base-url="baseURL"
           :submit-url="scanUri"
           :submit-data="payload"
           submit-label="Start scan"
@@ -92,16 +99,18 @@
         ></taskSubmitter>
         <br />
 
-        <div class="grid-container">
+        <div v-show="!scanRunning" class="grid-container">
           <button
-            :disabled="stepValue <= 0 || scanRunning"
+            class="uk-button uk-button-primary"
+            :disabled="stepValue <= 0"
             type="button"
             @click="decrement()"
           >
             Previous
           </button>
           <button
-            :disabled="stepValue >= 3 || scanRunning"
+            class="uk-button uk-button-primary"
+            :disabled="stepValue >= 3"
             type="button"
             @click="increment()"
           >
@@ -110,7 +119,8 @@
         </div>
         <p>
           <button
-            v-show="stepValue == 3"
+            v-show="stepValue == 3 && !scanRunning"
+            class="uk-button uk-button-danger uk-width-1-1"
             :disabled="scanRunning"
             type="button"
             @click="restart()"
@@ -138,12 +148,19 @@ export default {
       stepValue: 0,
       hostDeviceName: null,
       message: null,
+      // Scan info
       username: "",
       currentTime: this.getLocalDatetimeString(),
       patientID: "",
       sampleType: "thin",
       scanRunning: false,
-      baseURL: `${window.location.origin}/api/v2`
+      // Scan settings
+      bayer: false,
+      grid: [10, 10, 9],
+      stride_size: [800, 600, 10],
+      fast_autofocus: true,
+      autofocus_dz: 2000,
+      use_video_port: false
     };
   },
 
@@ -176,39 +193,25 @@ export default {
         return {
           filename: `${this.patientID}_${this.sampleType}`,
           temporary: false,
-          bayer: false,
-          grid: [10, 10, 9],
-          stride_size: [800, 600, 10],
-          fast_autofocus: true,
-          autofocus_dz: 2000,
-          use_video_port: false,
+          bayer: this.bayer,
+          grid: this.grid,
+          stride_size: this.stride_size,
+          fast_autofocus: this.fast_autofocus,
+          autofocus_dz: this.autofocus_dz,
+          use_video_port: this.use_video_port,
           annotations: {
             patientID: this.patientID,
             username: this.username,
             clientDatetime: this.currentTime
           },
-          tags: ["medscan"]
+          tags: ["slidescan"]
         };
       }
     }
   },
 
-  watch: {
-    baseURL: function(val) {
-      if (this.baseURL) {
-        this.updateScanUri();
-      } else {
-        this.message = "No baseURL given";
-      }
-    }
-  },
-
   mounted: function() {
-    if (this.baseURL) {
-      this.updateScanUri();
-    } else {
-      this.message = "No baseURL given";
-    }
+    this.updateScanUri();
   },
 
   methods: {
@@ -296,12 +299,6 @@ export default {
 </script>
 
 <style>
-.medscan {
-  font-family: sans-serif;
-  color: #444;
-  text-align: left;
-}
-
 .grid-container {
   display: grid;
   grid-template-columns: auto auto;
