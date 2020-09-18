@@ -26,7 +26,8 @@ build:
     # Build distribution archive
     - mkdir -p dist
     - tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz .
-    - sha256sum dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz > dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256
+    - cd dist/
+    - sha256sum openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz > openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256
 
   artifacts:
     name: "dist"
