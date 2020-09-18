@@ -1,9 +1,9 @@
 Distribution archive rules
 node_modules
 .gitlab-ci.yml
+.gitlab/
 ./dist
 !openflexure_microscope/api/static/dist
-.tarignore
 
 # Pyenv files
 .python-version
