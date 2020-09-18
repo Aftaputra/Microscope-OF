@@ -27,6 +27,11 @@ This includes installing the server in a mode better suited for active developme
 * `mkdir -p dist`
 * `tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-server.tar.gz .`
 
+#### Docker
+
+We don't use docker to distribute the server application due to the number of system-level permissions it would need, and the fact that docker mounts break the autostorage extension. If you really want to use docker though, after building the image on your pi you need to start the container with the following flags:
+* `docker run --privileged  -v /opt/vc:/opt/vc --env LD_LIBRARY_PATH=/opt/vc/lib --device /dev/vchiq --publish 5000:5000`
+
 ## Build-system
 
 As of 1.0.0b0, we're using [Poetry](https://github.com/sdispater/poetry) to manage dependencies, build, and distribute the package. All package information and dependencies are found in `pyproject.toml`, in line with [PEP 518](https://www.python.org/dev/peps/pep-0518/). If you're developing this package, make use of `poetry.lock` to ensure you're using the latest locked dependency list.
