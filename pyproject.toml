@@ -47,7 +47,7 @@ expiringdict = "^1.2.1"
 camera-stage-mapping = "0.1.4"
 picamerax = ">=20.9.1"
 pyyaml = "^5.3.1"
-labthings = "1.0.0"
+labthings = "1.1.0"
 
 [tool.poetry.extras]
 rpi = ["RPi.GPIO"]
