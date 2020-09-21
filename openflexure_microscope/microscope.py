@@ -363,7 +363,6 @@ class Microscope:
 
             # Capture to output object
             logging.info(f"Starting microscope capture {output.file}")
-            print(output)
             self.camera.capture(
                 output,
                 use_video_port=use_video_port,
