@@ -2,9 +2,11 @@
   <div
     id="stream-display"
     ref="streamDisplay"
+    v-observe-visibility="visibilityChanged"
     class="stream-display uk-width-1-1 uk-height-1-1 scrollTarget"
   >
     <img
+      v-if="isVisible"
       ref="click-frame"
       class="uk-align-center uk-margin-remove-bottom"
       :src="streamImgUri"
@@ -19,7 +21,9 @@ export default {
   name: "MiniStreamDisplay",
 
   data: function() {
-    return {};
+    return {
+      isVisible: false
+    };
   },
 
   computed: {
@@ -27,7 +31,11 @@ export default {
       return `${this.$store.getters.baseUri}/api/v2/streams/mjpeg`;
     }
   },
-  methods: {}
+  methods: {
+    visibilityChanged(isVisible) {
+      this.isVisible = isVisible;
+    }
+  }
 };
 </script>
 

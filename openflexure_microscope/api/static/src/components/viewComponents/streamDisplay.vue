@@ -2,10 +2,11 @@
   <div
     id="stream-display"
     ref="streamDisplay"
+    v-observe-visibility="visibilityChanged"
     class="stream-display uk-width-1-1 uk-height-1-1 scrollTarget"
   >
     <img
-      v-if="thisStreamOpen"
+      v-if="isVisible"
       ref="click-frame"
       class="uk-align-center uk-margin-remove-bottom"
       :hidden="!streamEnabled"
@@ -42,6 +43,7 @@ export default {
 
   data: function() {
     return {
+      isVisible: false,
       displaySize: [0, 0],
       displayPosition: [0, 0],
       fov: [0, 0],
@@ -119,6 +121,9 @@ export default {
   },
 
   methods: {
+    visibilityChanged(isVisible) {
+      this.isVisible = isVisible;
+    },
     flashStream: function() {
       // Run an animation that flashes the stream (for capture feedback)
       let element = this.$refs.streamDisplay;

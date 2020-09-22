@@ -5,6 +5,7 @@ import UIkit from "uikit";
 import VueTour from "vue-tour";
 import LoadScript from "vue-plugin-load-script";
 import VueFriendlyIframe from "vue-friendly-iframe";
+import VueObserveVisibility from "vue-observe-visibility";
 
 require("vue-tour/dist/vue-tour.css");
 
@@ -29,6 +30,9 @@ Vue.use(VueTour);
 
 // Use Friendly Iframe module
 Vue.use(VueFriendlyIframe);
+
+// Use visibility observer
+Vue.use(VueObserveVisibility);
 
 Vue.config.productionTip = false;
 

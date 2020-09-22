@@ -59,19 +59,25 @@
     <!--Show auto calibrate if default plugin is enabled-->
     <h3>Automatic calibration</h3>
     <cameraCalibrationSettings></cameraCalibrationSettings>
+
+    <div id="mini-stream">
+      <miniStreamDisplay />
+    </div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
 import cameraCalibrationSettings from "./cameraCalibrationSettings.vue";
+import miniStreamDisplay from "../miniStreamDisplay.vue";
 
 // Export main app
 export default {
   name: "CameraSettings",
 
   components: {
-    cameraCalibrationSettings
+    cameraCalibrationSettings,
+    miniStreamDisplay
   },
 
   data: function() {
@@ -133,4 +139,13 @@ export default {
 };
 </script>
 
-<style lang="less"></style>
+<style lang="less">
+#mini-stream {
+  width: 500px;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 50px;
+  border: 1px solid #555;
+}
+</style>
