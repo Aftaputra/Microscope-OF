@@ -23,10 +23,6 @@
         <b>Server version:</b> <br />
         {{ configuration.application.version }}
       </div>
-      <div>
-        <b>Client version:</b> <br />
-        {{ clientVersionName }}
-      </div>
 
       <hr />
 
@@ -93,8 +89,7 @@ export default {
     return {
       configuration: null,
       settings: null,
-      systemActionLinks: {},
-      clientVersion: process.env.PACKAGE.version
+      systemActionLinks: {}
     };
   },
 
@@ -107,9 +102,6 @@ export default {
     },
     actionsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/actions`;
-    },
-    clientVersionName: function() {
-      return `${process.env.PACKAGE.version}`;
     }
   },
 
