@@ -43,6 +43,7 @@ export default {
 .stream-display img {
   text-align: center;
   object-fit: contain;
+  border: 1px solid #555;
 }
 
 .stream-display {

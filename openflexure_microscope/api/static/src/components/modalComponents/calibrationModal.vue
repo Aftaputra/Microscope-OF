@@ -313,6 +313,5 @@ export default {
   width: 75%;
   margin-left: auto;
   margin-right: auto;
-  border: 1px solid #555;
 }
 </style>

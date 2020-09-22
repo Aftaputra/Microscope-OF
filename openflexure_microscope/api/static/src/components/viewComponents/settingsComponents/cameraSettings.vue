@@ -146,6 +146,5 @@ export default {
   margin-left: auto;
   margin-right: auto;
   margin-top: 50px;
-  border: 1px solid #555;
 }
 </style>

@@ -27,19 +27,25 @@
         Download calibration data
       </button>
     </form>
+
+    <div id="mini-stream">
+      <miniStreamDisplay />
+    </div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
 import taskSubmitter from "../../genericComponents/taskSubmitter";
+import miniStreamDisplay from "../miniStreamDisplay.vue";
 
 // Export main app
 export default {
   name: "CameraStageMappingSettings",
 
   components: {
-    taskSubmitter
+    taskSubmitter,
+    miniStreamDisplay
   },
 
   props: {
@@ -166,5 +172,12 @@ export default {
 .center-spinner {
   margin-left: auto;
   margin-right: auto;
+}
+#mini-stream {
+  width: 500px;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 50px;
 }
 </style>
