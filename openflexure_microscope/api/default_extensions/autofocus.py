@@ -345,7 +345,7 @@ class MoveAndMeasureAPI(ActionView):
     Move the stage and measure dynamic sharpness
     """
 
-    args = {"dz": fields.List(fields.Int(), required=True)}
+    args = {"dz": fields.Int(required=True)}
 
     def post(self, args):
         microscope = find_component("org.openflexure.microscope")
