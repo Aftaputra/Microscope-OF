@@ -39,6 +39,11 @@ _actions = {
         "view_class": stage.ZeroStageAPI,
         "conditions": True,
     },
+    "setStage": {
+        "rule" : "/stage/set/",
+        "view_class": stage.SetStageAPI,
+        "conditions": True,
+    },
     "shutdown": {
         "rule": "/system/shutdown/",
         "view_class": system.ShutdownAPI,

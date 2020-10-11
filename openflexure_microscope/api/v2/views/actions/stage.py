@@ -65,3 +65,18 @@ class ZeroStageAPI(ActionView):
 
         # TODO: Make schema for microscope state
         return microscope.state["stage"]
+
+class SetStageAPI(ActionView):
+    args = {
+        "stage_type": fields.String(missing = None, example = "SangaStage", description = "The stage geometry [SangaStage, SangaDeltaStage]")
+    }
+    def post(self,args):
+        """
+        Set the stage geometry.
+        """
+        microscope = find_component("org.openflexure.microscope")
+        microscope.set_stage(stage_type=args.get("stage_type"))
+        
+        # TODO: Make schema for microscope state
+        return microscope.state["stage"]
+
