@@ -40,8 +40,8 @@ _actions = {
         "conditions": True,
     },
     "setStage": {
-        "rule" : "/stage/set/",
-        "view_class": stage.SetStageAPI,
+        "rule" : "/stage/type/",
+        "view_class": stage.StageTypeAPI,
         "conditions": True,
     },
     "shutdown": {
