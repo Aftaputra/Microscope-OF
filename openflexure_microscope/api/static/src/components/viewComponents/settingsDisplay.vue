@@ -46,6 +46,19 @@
         </li>
         <li>
           <tabIcon
+            id="settings-stage-icon"
+            tab-i-d="stage"
+            :show-title="false"
+            :show-tooltip="false"
+            :require-connection="true"
+            :current-tab="currentTab"
+            @set-tab="setTab"
+          >
+            Stage
+          </tabIcon>
+        </li>
+        <li>
+          <tabIcon
             id="settings-mapping-icon"
             tab-i-d="mapping"
             :show-title="false"
@@ -105,6 +118,16 @@
       </tabContent>
 
       <tabContent
+        tab-i-d="stage"
+        :require-connection="true"
+        :current-tab="currentTab"
+      >
+        <div class="settings-pane uk-padding-small">
+          <stageSettings />
+        </div>
+      </tabContent>
+
+      <tabContent
         tab-i-d="mapping"
         :require-connection="true"
         :current-tab="currentTab"
@@ -141,7 +164,7 @@ import cameraSettings from "./settingsComponents/cameraSettings.vue";
 import appSettings from "./settingsComponents/appSettings.vue";
 import featuresSettings from "./settingsComponents/featuresSettings.vue";
 import cameraStageMappingSettings from "./settingsComponents/cameraStageMappingSettings.vue";
-
+import stageSettings from "./settingsComponents/stageSettings.vue";
 // Import generic components
 import tabIcon from "../genericComponents/tabIcon";
 import tabContent from "../genericComponents/tabContent";
@@ -153,6 +176,7 @@ export default {
   components: {
     streamSettings,
     cameraSettings,
+    stageSettings,
     microscopeSettings,
     cameraStageMappingSettings,
     appSettings,
