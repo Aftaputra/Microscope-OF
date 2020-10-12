@@ -76,14 +76,12 @@ class StageTypeAPI(ActionView):
         """
         microscope = find_component("org.openflexure.microscope")
         microscope.set_stage(stage_type=args.get("stage_type"))
-        
-        # TODO: Make schema for microscope state
-        return microscope.configuration["stage"]["type"]
+        return {"stage_type": microscope.configuration["stage"]["type"]}
 
     def get(self):
         """
         Get the stage geometry.
         """
         microscope = find_component("org.openflexure.microscope")
-        return microscope.configuration["stage"]["type"]
+        return {"stage_type": microscope.configuration["stage"]["type"]}
 
