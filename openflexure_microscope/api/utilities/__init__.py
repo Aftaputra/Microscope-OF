@@ -1,8 +1,9 @@
+import errno
 import logging
 import os
-import errno
+
+from flask import Blueprint, current_app, url_for
 from werkzeug.exceptions import BadRequest
-from flask import url_for, Blueprint, current_app
 
 from . import gui
 

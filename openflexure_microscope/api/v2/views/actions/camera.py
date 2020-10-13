@@ -1,14 +1,13 @@
-from openflexure_microscope.api.utilities import get_bool, JsonResponse
-from labthings.views import View, ActionView
-from labthings import find_component, fields
-
-from openflexure_microscope.utilities import filter_dict
-
-from openflexure_microscope.api.v2.views.captures import CaptureSchema
-
-import logging
 import io
-from flask import request, abort, url_for, redirect, send_file
+import logging
+
+from flask import abort, redirect, request, send_file, url_for
+from labthings import fields, find_component
+from labthings.views import ActionView, View
+
+from openflexure_microscope.api.utilities import JsonResponse, get_bool
+from openflexure_microscope.api.v2.views.captures import CaptureSchema
+from openflexure_microscope.utilities import filter_dict
 
 
 class CaptureAPI(ActionView):
@@ -58,9 +57,8 @@ class CaptureAPI(ActionView):
                 resize=resize,
                 bayer=args.get("bayer"),
                 annotations=args.get("annotations"),
-                tags=args.get("tags")
+                tags=args.get("tags"),
             )
-
 
 
 class RAMCaptureAPI(ActionView):
@@ -77,12 +75,8 @@ class RAMCaptureAPI(ActionView):
             missing=None, example={"width": 640, "height": 480}
         ),  # TODO: Validate keys
     }
-    
-    responses = {
-        200: {
-            "content_type": "image/jpeg"
-        }
-    }
+
+    responses = {200: {"content_type": "image/jpeg"}}
 
     def post(self, args):
         """

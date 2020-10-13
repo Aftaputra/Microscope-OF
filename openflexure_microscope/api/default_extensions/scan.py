@@ -1,20 +1,23 @@
+import datetime
 import itertools
 import logging
+import time
 import uuid
-import datetime
-from typing import Tuple
 from functools import reduce
+from typing import Tuple
+
+from labthings import (
+    current_action,
+    fields,
+    find_component,
+    find_extension,
+    update_action_progress,
+)
+from labthings.extensions import BaseExtension
+from labthings.views import ActionView, View
 
 from openflexure_microscope.captures.capture_manager import generate_basename
-
-from labthings import fields, find_component, find_extension, current_action, update_action_progress
-from labthings.views import View, ActionView
-from labthings.extensions import BaseExtension
-
 from openflexure_microscope.devel import abort
-
-import time
-
 
 ### Grid construction
 
@@ -56,9 +59,6 @@ def flatten_grid(grid):
 ### Capturing
 
 
-
-
-
 class ScanExtension(BaseExtension):
     def __init__(self):
         self._images_to_be_captured: int = 1
@@ -83,7 +83,12 @@ class ScanExtension(BaseExtension):
         if namemode == "coordinates":
             filename = "{}_{}_{}_{}".format(basename, *microscope.stage.position)
         else:
-            filename = "{}_{}".format(basename, str(self._images_captured_so_far).zfill(len(str(self._images_to_be_captured))))
+            filename = "{}_{}".format(
+                basename,
+                str(self._images_captured_so_far).zfill(
+                    len(str(self._images_to_be_captured))
+                ),
+            )
         folder = "SCAN_{}".format(basename)
 
         # Do capture
@@ -97,14 +102,14 @@ class ScanExtension(BaseExtension):
             annotations=annotations,
             tags=tags,
             metadata=metadata,
-            cache_key=folder
+            cache_key=folder,
         )
 
     def progress(self):
         progress = (self._images_captured_so_far / self._images_to_be_captured) * 100
         logging.info(progress)
         return progress
-        
+
     ### Scanning
     def tile(
         self,
@@ -164,7 +169,9 @@ class ScanExtension(BaseExtension):
             autofocus_enabled = False
 
         # Construct an x-y grid (worry about z later)
-        x_y_grid = construct_grid(initial_position, stride_size[:2], grid[:2], style=style)
+        x_y_grid = construct_grid(
+            initial_position, stride_size[:2], grid[:2], style=style
+        )
 
         # Keep the initial Z position the same as our current position
         initial_z = initial_position[2]
@@ -245,7 +252,6 @@ class ScanExtension(BaseExtension):
         end = time.time()
         logging.info(f"Scan took {end - start} seconds")
 
-
     def stack(
         self,
         microscope,
@@ -303,6 +309,7 @@ class ScanExtension(BaseExtension):
 
 
 scan_extension_v2 = ScanExtension()
+
 
 class TileScanAPI(ActionView):
     args = {
@@ -364,5 +371,6 @@ class TileScanAPI(ActionView):
                 annotations=args.get("annotations"),
                 tags=args.get("tags"),
             )
+
 
 scan_extension_v2.add_view(TileScanAPI, "/tile", endpoint="tile")

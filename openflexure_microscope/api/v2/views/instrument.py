@@ -1,11 +1,11 @@
-from openflexure_microscope.api.utilities import JsonResponse
-
-from labthings import find_component
-from labthings.views import View, PropertyView
-from labthings.utilities import get_by_path, set_by_path, create_from_path
-
-from flask import request, abort
 import logging
+
+from flask import abort, request
+from labthings import find_component
+from labthings.utilities import create_from_path, get_by_path, set_by_path
+from labthings.views import PropertyView, View
+
+from openflexure_microscope.api.utilities import JsonResponse
 
 
 class SettingsProperty(PropertyView):
@@ -34,9 +34,7 @@ class SettingsProperty(PropertyView):
 
 class NestedSettingsProperty(View):
     tags = ["properties"]
-    responses = {
-        404: {"description": "Settings key cannot be found"}
-    }
+    responses = {404: {"description": "Settings key cannot be found"}}
 
     def get(self, route):
         """
@@ -80,9 +78,7 @@ class StateProperty(PropertyView):
 
 class NestedStateProperty(View):
     tags = ["properties"]
-    responses = {
-        404: {"description": "Status key cannot be found"}
-    }
+    responses = {404: {"description": "Status key cannot be found"}}
 
     def get(self, route):
         """
@@ -110,9 +106,7 @@ class ConfigurationProperty(PropertyView):
 
 class NestedConfigurationProperty(View):
     tags = ["properties"]
-    responses = {
-        404: {"description": "Status key cannot be found"}
-    }
+    responses = {404: {"description": "Status key cannot be found"}}
 
     def get(self, route):
         """

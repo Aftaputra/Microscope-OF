@@ -1,17 +1,15 @@
 #!/usr/bin/env python
-from openflexure_microscope.camera.pi import PiCameraStreamer, CaptureObject
-
-import os
 import io
+import logging
+import os
+import sys
 import time
-import numpy as np
-
-from PIL import Image
-
 import unittest
 
-import logging
-import sys
+import numpy as np
+from PIL import Image
+
+from openflexure_microscope.camera.pi import CaptureObject, PiCameraStreamer
 
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
@@ -30,9 +28,7 @@ class TestCaptureMethods(unittest.TestCase):
                 # Capture to a context (auto-deletes files when done)
                 with camera.new_image() as output:
 
-                    camera.capture(
-                        output, use_video_port=use_video_port, resize=resize
-                    )
+                    camera.capture(output, use_video_port=use_video_port, resize=resize)
 
                     # Ensure file deletion fails and returns False
                     self.assertFalse(output.delete_file())

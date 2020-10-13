@@ -1,14 +1,13 @@
 import logging
-from flask import abort, request, redirect, url_for, send_file
 
-from openflexure_microscope.api.utilities import get_bool, JsonResponse
-
+from flask import abort, redirect, request, send_file, url_for
 from labthings import Schema, fields, find_component
-from labthings.views import View, PropertyView
-from labthings.utilities import description_from_view
 from labthings.marshalling import marshal_with
-
+from labthings.utilities import description_from_view
+from labthings.views import PropertyView, View
 from marshmallow import pre_dump
+
+from openflexure_microscope.api.utilities import JsonResponse, get_bool
 
 
 class InstrumentSchema(Schema):
@@ -130,11 +129,7 @@ class CaptureView(View):
 
 class CaptureDownload(View):
     tags = ["captures"]
-    responses = {
-        200: {
-            "content_type": "image/jpeg"
-        }
-    }
+    responses = {200: {"content_type": "image/jpeg"}}
 
     def get(self, id, filename):
         """

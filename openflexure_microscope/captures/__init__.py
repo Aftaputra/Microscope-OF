@@ -1,3 +1,3 @@
-from .capture_manager import CaptureManager
+from . import capture, capture_manager
 from .capture import CaptureObject
-from . import capture_manager, capture
+from .capture_manager import CaptureManager

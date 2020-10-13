@@ -20,8 +20,8 @@
 # */5 * * * * /root/bin/monitor_service.py prosody > /dev/null 2>&1
 #
 
-import sys
 import subprocess
+import sys
 
 
 class ServiceMonitor(object):

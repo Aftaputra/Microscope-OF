@@ -1,21 +1,18 @@
-from labthings.extensions import BaseExtension
-from labthings.views import View, PropertyView
-from labthings import fields, find_component
-
-from openflexure_microscope.paths import settings_file_path, check_rw
-from openflexure_microscope.config import OpenflexureSettingsFile
-from openflexure_microscope.captures.capture_manager import BASE_CAPTURE_PATH
-from openflexure_microscope.captures.capture import build_captures_from_exif
-
-from openflexure_microscope.api.utilities.gui import build_gui
-
-from flask import abort
 import logging
 import os
-import psutil
-
 from sys import platform
 
+import psutil
+from flask import abort
+from labthings import fields, find_component
+from labthings.extensions import BaseExtension
+from labthings.views import PropertyView, View
+
+from openflexure_microscope.api.utilities.gui import build_gui
+from openflexure_microscope.captures.capture import build_captures_from_exif
+from openflexure_microscope.captures.capture_manager import BASE_CAPTURE_PATH
+from openflexure_microscope.config import OpenflexureSettingsFile
+from openflexure_microscope.paths import check_rw, settings_file_path
 
 AS_SETTINGS_PATH = settings_file_path("autostorage_settings.json")
 

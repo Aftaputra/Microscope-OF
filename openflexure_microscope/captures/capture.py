@@ -1,16 +1,16 @@
-import uuid
-import io
-import os
-import shutil
-import glob
+import atexit
 import datetime
+import glob
+import io
 import json
 import logging
-from PIL import Image
-import dateutil.parser
-import atexit
-
+import os
+import shutil
+import uuid
 from collections import OrderedDict
+
+import dateutil.parser
+from PIL import Image
 
 from openflexure_microscope.camera import piexif
 from openflexure_microscope.camera.piexif._exceptions import InvalidImageDataError
@@ -156,7 +156,7 @@ class CaptureObject(object):
 
     def flush(self):
         logging.info(f"Writing to disk {self.file}")
-        with open(self.file, "wb")  as outfile:
+        with open(self.file, "wb") as outfile:
             outfile.write(self.stream.getbuffer())
         self.stream.close()
         logging.info(f"Finished writing to disk {self.file}")
@@ -233,7 +233,9 @@ class CaptureObject(object):
         self._metadata.update(data)
         self.save_metadata()
 
-    def put_and_save(self, tags: list = None, annotations: dict = None, metadata: dict = None):
+    def put_and_save(
+        self, tags: list = None, annotations: dict = None, metadata: dict = None
+    ):
         """
         Batch-write tags, metadata, and annotations in a single disk operation
         """
@@ -243,7 +245,7 @@ class CaptureObject(object):
             annotations = {}
         if not metadata:
             metadata = {}
-        
+
         # Tags
         for tag in tags:
             if tag not in self.tags:

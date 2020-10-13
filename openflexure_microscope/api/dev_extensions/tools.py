@@ -1,13 +1,15 @@
+import logging
+import time
+
 from labthings import fields
 from labthings.extensions import BaseExtension
 from labthings.views import ActionView
 
-import logging
-import time
 
 class RaiseException(ActionView):
     def post(self):
         raise Exception("The developer raised an exception")
+
 
 class SleepFor(ActionView):
     schema = {"TimeAsleep": fields.Float()}
@@ -21,6 +23,7 @@ class SleepFor(ActionView):
         end = time.time()
         logging.info("Waking up!")
         return {"TimeAsleep": (end - start)}
+
 
 devtools_extension_v2 = BaseExtension(
     "org.openflexure.dev.tools",

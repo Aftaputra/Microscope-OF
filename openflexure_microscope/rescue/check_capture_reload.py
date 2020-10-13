@@ -1,9 +1,9 @@
-from openflexure_microscope.rescue.monitor_timeout import launch_timeout_test_process
-from openflexure_microscope.captures.capture_manager import BASE_CAPTURE_PATH
-from openflexure_microscope.captures.capture import build_captures_from_exif
-from openflexure_microscope.config import user_settings
-
 import logging
+
+from openflexure_microscope.captures.capture import build_captures_from_exif
+from openflexure_microscope.captures.capture_manager import BASE_CAPTURE_PATH
+from openflexure_microscope.config import user_settings
+from openflexure_microscope.rescue.monitor_timeout import launch_timeout_test_process
 
 
 def check_capture_rebuild(timeout=10):

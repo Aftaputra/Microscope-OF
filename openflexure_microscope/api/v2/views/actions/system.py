@@ -1,7 +1,8 @@
-from labthings.views import View, ActionView
-import subprocess
 import os
+import subprocess
 from sys import platform
+
+from labthings.views import ActionView, View
 
 
 def is_raspberrypi(raise_on_errors=False):

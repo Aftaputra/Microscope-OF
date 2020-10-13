@@ -1,22 +1,26 @@
-import re
-import copy
-import operator
 import base64
-from uuid import UUID
-import numpy as np
+import copy
 import logging
+import operator
+import re
 import time
 from collections import abc
-from functools import reduce
 from contextlib import contextmanager
+from functools import reduce
+from uuid import UUID
+
+import numpy as np
+
 
 class Timer(object):
     def __init__(self, name):
         self.name = name
         self.start = None
         self.end = None
+
     def __enter__(self):
         self.start = time.time()
+
     def __exit__(self, type, value, traceback):
         self.end = time.time()
         logging.debug(f"{self.name} time: {self.end - self.start}")

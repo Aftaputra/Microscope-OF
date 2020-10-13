@@ -5,7 +5,6 @@ import struct
 from ._common import *
 from ._exif import *
 
-
 TIFF_HEADER_LENGTH = 8
 
 

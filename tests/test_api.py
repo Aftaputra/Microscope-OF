@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-from api_client import APIconnection
-
-import numpy as np
-import unittest
-
 import logging
 import sys
+import unittest
+
+import numpy as np
+from api_client import APIconnection
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 

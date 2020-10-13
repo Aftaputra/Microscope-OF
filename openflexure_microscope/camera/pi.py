@@ -29,30 +29,30 @@ to temporarily increase the capture resolution.
 from __future__ import division
 
 import io
-import time
-import numpy as np
-import os
 import logging
+import os
+import time
+
+# Type hinting
+from typing import Tuple
+
+import numpy as np
 
 # Pi camera
 import picamerax
 import picamerax.array
 
-# Type hinting
-from typing import Tuple
-
 from openflexure_microscope.camera.base import BaseCamera
 from openflexure_microscope.captures import CaptureObject
+from openflexure_microscope.paths import settings_file_path
+from openflexure_microscope.utilities import (
+    json_to_ndarray,
+    ndarray_to_json,
+    serialise_array_b64,
+)
 
 # Richard's fix gain
 from .set_picamera_gain import set_analog_gain, set_digital_gain
-
-from openflexure_microscope.paths import settings_file_path
-from openflexure_microscope.utilities import (
-    serialise_array_b64,
-    ndarray_to_json,
-    json_to_ndarray,
-)
 
 
 # MAIN CLASS
@@ -115,7 +115,7 @@ class PiCameraStreamer(BaseCamera):
         self.picamera_lst_path = settings_file_path(
             "picamera_lst.npy"
         )  #: str: Path of .npy lens shading table file
-        
+
         # Start the stream worker on init
         self.start_worker()
 
@@ -348,7 +348,7 @@ class PiCameraStreamer(BaseCamera):
                     "Suppressed a ValueError exception in start_preview. Exception: {}".format(
                         e
                     )
-            )
+                )
 
     def stop_preview(self):
         """Stop the on board GPU camera preview."""
@@ -538,7 +538,7 @@ class PiCameraStreamer(BaseCamera):
                 bayer=(not use_video_port) and bayer,
                 use_video_port=use_video_port,
             )
-            #time.sleep(0.1)
+            # time.sleep(0.1)
 
             # Set resolution and start stream recording if necessary
             if not use_video_port:

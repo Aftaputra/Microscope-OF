@@ -1,9 +1,9 @@
-from labthings.extensions import BaseExtension
-from labthings import find_component, Schema, fields
-from labthings.views import View, ActionView, PropertyView
+import io  # Used in our capture action
 
 from flask import send_file  # Used to send images from our server
-import io  # Used in our capture action
+from labthings import Schema, fields, find_component
+from labthings.extensions import BaseExtension
+from labthings.views import ActionView, PropertyView, View
 
 ## Extension methods
 
@@ -46,7 +46,6 @@ class ExampleIdentifyView(PropertyView):
         return microscope
 
 
-
 # We can use a single schema as the input and output will be formatted identically
 # Eg. We always expect a "name" string argument, and always return a "name" string attribute
 class ExampleRenameView(PropertyView):
@@ -83,13 +82,12 @@ class QuickCaptureAPI(ActionView):
     """
     Take an image capture and return it without saving
     """
+
     # Expect a "use_video_port" boolean, which defaults to True if none is given
     args = {"use_video_port": fields.Boolean(missing=True)}
 
     # Our success response (200) returns an image (image/jpeg mimetype)
-    responses = {
-        200: {"content_type": "image/jpeg"}
-    }
+    responses = {200: {"content_type": "image/jpeg"}}
 
     def post(self, args):
         """

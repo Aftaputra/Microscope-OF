@@ -1,20 +1,20 @@
-import json
-import flask
-import os
 import errno
+import json
 import logging
+import os
 import shutil
-from uuid import UUID
-import numpy as np
 from fractions import Fraction
+from uuid import UUID
 
+import flask
+import numpy as np
 from labthings.json import LabThingsJSONEncoder
 
 from .paths import (
-    SETTINGS_FILE_PATH,
-    DEFAULT_SETTINGS_FILE_PATH,
     CONFIGURATION_FILE_PATH,
     DEFAULT_CONFIGURATION_FILE_PATH,
+    DEFAULT_SETTINGS_FILE_PATH,
+    SETTINGS_FILE_PATH,
 )
 
 

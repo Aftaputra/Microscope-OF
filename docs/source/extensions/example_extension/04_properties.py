@@ -1,6 +1,6 @@
+from labthings import Schema, fields, find_component
 from labthings.extensions import BaseExtension
-from labthings import find_component, Schema, fields
-from labthings.views import View, PropertyView
+from labthings.views import PropertyView, View
 
 ## Extension methods
 

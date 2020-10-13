@@ -2,11 +2,11 @@
 Top-level representation of enabled actions
 """
 from flask import url_for
-from . import camera, stage, system
-
 from labthings import current_labthing
-from labthings.views import View
 from labthings.utilities import description_from_view
+from labthings.views import View
+
+from . import camera, stage, system
 
 _actions = {
     "capture": {

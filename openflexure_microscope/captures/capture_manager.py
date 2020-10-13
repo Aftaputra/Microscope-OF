@@ -1,13 +1,13 @@
-import os
 import datetime
-import shutil
 import logging
+import os
+import shutil
 from collections import OrderedDict
 
 from labthings import StrictLock
 
-from openflexure_microscope.utilities import entry_by_uuid
 from openflexure_microscope.paths import data_file_path
+from openflexure_microscope.utilities import entry_by_uuid
 
 from .capture import CaptureObject, build_captures_from_exif
 

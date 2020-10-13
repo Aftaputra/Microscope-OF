@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-from openflexure_microscope.camera.pi import PiCameraStreamer
-from openflexure_stage import OpenFlexureStage
-from openflexure_microscope import Microscope, config
-
 import atexit
-
+import logging
+import sys
 import unittest
 
-import logging, sys
+from openflexure_stage import OpenFlexureStage
+
+from openflexure_microscope import Microscope, config
+from openflexure_microscope.camera.pi import PiCameraStreamer
 
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 

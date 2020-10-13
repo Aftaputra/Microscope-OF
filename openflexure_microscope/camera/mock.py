@@ -6,19 +6,18 @@
 from __future__ import division
 
 import io
-import time
-import numpy as np
-from PIL import Image, ImageFont, ImageDraw
-from datetime import datetime
-
 import logging
+import time
+from datetime import datetime
 
 # Type hinting
 from typing import Tuple
 
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
 from openflexure_microscope.camera.base import BaseCamera
 from openflexure_microscope.captures import CaptureObject
-
 
 """
 PIL spams the logger with debug-level information. This is a pain when debugging api.app.

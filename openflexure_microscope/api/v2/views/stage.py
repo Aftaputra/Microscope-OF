@@ -1,7 +1,7 @@
-from labthings import find_component, fields, schema
-from labthings.views import PropertyView
-
 import logging
+
+from labthings import fields, find_component, schema
+from labthings.views import PropertyView
 
 
 class StageTypeProperty(PropertyView):

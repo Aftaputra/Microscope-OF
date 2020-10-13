@@ -5,19 +5,15 @@ Here we include some classes used frequently in plugin development,
 as well as some Flask imports to simplify API route development
 """
 
-from openflexure_microscope.api.utilities import JsonResponse
+# Flask things
+from flask import Response, abort, escape, request
 
 # Task management
-from labthings import (
-    current_action as current_task,
-    update_action_progress as update_task_progress,
-    update_action_data as update_task_data,
-)
+from labthings import current_action as current_task
+from labthings import update_action_data as update_task_data
+from labthings import update_action_progress as update_task_progress
 
-
-# Flask things
-from flask import abort, escape, Response, request
-
+from openflexure_microscope.api.utilities import JsonResponse
 
 __all__ = [
     "current_task",

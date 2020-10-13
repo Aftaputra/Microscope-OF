@@ -1,18 +1,16 @@
-from labthings import fields, find_component, current_action
-from labthings.extensions import BaseExtension
-from labthings.views import View, ActionView, PropertyView
-
-from openflexure_microscope.devel import JsonResponse, request, abort
-from openflexure_microscope.utilities import set_properties
-
-import time
-import numpy as np
-
 import logging
-from scipy import ndimage
+import time
 from contextlib import contextmanager
+from threading import Event, Thread
 
-from threading import Thread, Event
+import numpy as np
+from labthings import current_action, fields, find_component
+from labthings.extensions import BaseExtension
+from labthings.views import ActionView, PropertyView, View
+from scipy import ndimage
+
+from openflexure_microscope.devel import JsonResponse, abort, request
+from openflexure_microscope.utilities import set_properties
 
 ### Autofocus utilities
 
@@ -447,4 +445,3 @@ autofocus_extension_v2.add_view(
 autofocus_extension_v2.add_view(
     MoveAndMeasureAPI, "/move_and_measure", endpoint="move_and_measure"
 )
-

@@ -1,21 +1,17 @@
-from openflexure_microscope.devel import (
-    JsonResponse,
-    request,
-)
-
-from flask import send_file, abort, url_for
-
-import uuid
-import os
-import zipfile
-import tempfile
 import logging
+import os
+import tempfile
+import uuid
+import zipfile
 
+from flask import abort, send_file, url_for
 from labthings import fields, find_component, update_action_progress
-from labthings.views import View, ActionView, PropertyView
-from labthings.schema import Schema, pre_dump
 from labthings.extensions import BaseExtension
+from labthings.schema import Schema, pre_dump
 from labthings.utilities import description_from_view
+from labthings.views import ActionView, PropertyView, View
+
+from openflexure_microscope.devel import JsonResponse, request
 
 
 class ZipObjectSchema(Schema):
@@ -137,9 +133,7 @@ class ZipBuilderAPIView(ActionView):
         microscope = find_component("org.openflexure.microscope")
 
         # Return a handle on the autofocus task
-        return default_zip_manager.marshaled_build_zip_from_capture_ids(
-            microscope, ids
-        )
+        return default_zip_manager.marshaled_build_zip_from_capture_ids(microscope, ids)
 
 
 class ZipListAPIView(PropertyView):
@@ -191,7 +185,9 @@ zip_extension_v2 = BaseExtension(
     description="Build and download capture collections as ZIP files",
 )
 
-zip_extension_v2.add_view(ZipGetterAPIView, "/get/<string:session_id>", endpoint="get_id")
+zip_extension_v2.add_view(
+    ZipGetterAPIView, "/get/<string:session_id>", endpoint="get_id"
+)
 zip_extension_v2.add_view(ZipListAPIView, "/get", endpoint="get")
 
 zip_extension_v2.add_view(ZipBuilderAPIView, "/build", endpoint="build")

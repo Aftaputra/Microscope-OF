@@ -1,19 +1,18 @@
-from labthings import find_component
-from labthings.views import View, ActionView
-from labthings.extensions import BaseExtension
-
-from flask import abort
-
-from contextlib import contextmanager
 import logging
+from contextlib import contextmanager
 
 # Type hinting
 from typing import Tuple
 
+from flask import abort
+from labthings import find_component
+from labthings.extensions import BaseExtension
+from labthings.views import ActionView, View
+
 from .recalibrate_utils import (
-    recalibrate_camera,
     auto_expose_and_freeze_settings,
     flat_lens_shading_table,
+    recalibrate_camera,
 )
 
 
@@ -125,5 +124,9 @@ lst_extension_v2.add_method(
 )
 
 lst_extension_v2.add_view(RecalibrateView, "/recalibrate", endpoint="recalibrate")
-lst_extension_v2.add_view(FlattenLSTView, "/flatten_lens_shading_table", endpoint="flatten_lens_shading_table")
-lst_extension_v2.add_view(DeleteLSTView, "/delete_lens_shading_table", endpoint="delete_lens_shading_table")
+lst_extension_v2.add_view(
+    FlattenLSTView, "/flatten_lens_shading_table", endpoint="flatten_lens_shading_table"
+)
+lst_extension_v2.add_view(
+    DeleteLSTView, "/delete_lens_shading_table", endpoint="delete_lens_shading_table"
+)

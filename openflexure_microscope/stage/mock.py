@@ -1,10 +1,11 @@
+import logging
+import time
+from collections.abc import Iterable
+
+import numpy as np
+
 from openflexure_microscope.stage.base import BaseStage
 from openflexure_microscope.utilities import axes_to_array
-
-from collections.abc import Iterable
-import numpy as np
-import time
-import logging
 
 
 class MissingStage(BaseStage):

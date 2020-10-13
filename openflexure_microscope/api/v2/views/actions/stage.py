@@ -1,12 +1,11 @@
-from openflexure_microscope.api.utilities import JsonResponse
-from labthings.views import View, ActionView
-from labthings import find_component, fields
-
-from openflexure_microscope.utilities import axes_to_array, filter_dict
+import logging
 
 from flask import Blueprint, request
+from labthings import fields, find_component
+from labthings.views import ActionView, View
 
-import logging
+from openflexure_microscope.api.utilities import JsonResponse
+from openflexure_microscope.utilities import axes_to_array, filter_dict
 
 
 class MoveStageAPI(ActionView):
@@ -65,5 +64,3 @@ class ZeroStageAPI(ActionView):
 
         # TODO: Make schema for microscope state
         return microscope.state["stage"]
-
-

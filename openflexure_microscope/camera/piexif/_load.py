@@ -1,10 +1,10 @@
 import struct
 import sys
 
+from . import _webp
 from ._common import *
 from ._exceptions import InvalidImageDataError
 from ._exif import *
-from . import _webp
 
 LITTLE_ENDIAN = b"\x49\x49"
 

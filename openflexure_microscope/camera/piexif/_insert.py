@@ -2,9 +2,9 @@ import io
 import struct
 import sys
 
+from . import _webp
 from ._common import *
 from ._exceptions import InvalidImageDataError
-from . import _webp
 
 
 def insert(exif, image, new_file=None):

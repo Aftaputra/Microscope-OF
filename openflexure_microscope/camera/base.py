@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
-import time
-import os
-import shutil
 import datetime
 import logging
-
+import os
+import shutil
 import threading
-
+import time
 from abc import ABCMeta, abstractmethod
 
-from labthings import StrictLock, ClientEvent
+from labthings import ClientEvent, StrictLock
 
 
 class BaseCamera(metaclass=ABCMeta):

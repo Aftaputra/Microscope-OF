@@ -1,8 +1,9 @@
 #!/usr/bin/env python
+import atexit
+import logging
+import logging.handlers
 import sys
 import time
-import atexit
-import logging, logging.handlers
 
 # Look for debug flag
 if "-d" in sys.argv or "--debug" in sys.argv:
@@ -17,33 +18,27 @@ root_log.setLevel(log_level)
 
 
 import os
-import pkg_resources
-
-from flask import Flask, send_file, abort
-
 from datetime import datetime
 
+import pkg_resources
+from flask import Flask, abort, send_file
 from flask_cors import CORS, cross_origin
-
-from openflexure_microscope.api.utilities import list_routes, init_default_extensions
-
-from openflexure_microscope.config import JSONEncoder
-from openflexure_microscope.paths import (
-    OPENFLEXURE_VAR_PATH,
-    OPENFLEXURE_EXTENSIONS_PATH,
-    settings_file_path,
-    logs_file_path,
-)
-
 from labthings import create_app
 from labthings.extensions import find_extensions
 
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
-
+from openflexure_microscope.api.utilities import init_default_extensions, list_routes
 from openflexure_microscope.api.v2 import views
+from openflexure_microscope.config import JSONEncoder
+from openflexure_microscope.paths import (
+    OPENFLEXURE_EXTENSIONS_PATH,
+    OPENFLEXURE_VAR_PATH,
+    logs_file_path,
+    settings_file_path,
+)
 
 # Handle logging
-access_log = logging.getLogger('werkzeug')
+access_log = logging.getLogger("werkzeug")
 # Block the access logs from propagating up to the root logger
 access_log.propagate = False
 
@@ -207,6 +202,7 @@ atexit.register(cleanup)
 # Start the app
 if __name__ == "__main__":
     from labthings import Server
+
     logging.info("Starting OpenFlexure Microscope Server...")
     server = Server(app)
     server.run(host="0.0.0.0", port=5000, debug=False, zeroconf=True)

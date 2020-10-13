@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-from openflexure_stage import OpenFlexureStage
-
-import numpy as np
-
-import unittest
-
 import logging
 import sys
+import unittest
+
+import numpy as np
+from openflexure_stage import OpenFlexureStage
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 

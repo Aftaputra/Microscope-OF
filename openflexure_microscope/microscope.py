@@ -3,28 +3,27 @@
 Defines a microscope object, binding a camera and stage with basic functionality.
 """
 import logging
-import pkg_resources
 import uuid
 from typing import Tuple
+
+import pkg_resources
 from expiringdict import ExpiringDict
 
-from openflexure_microscope.captures import CaptureManager
-
-from openflexure_microscope.stage.mock import MissingStage
 from openflexure_microscope.camera.mock import MissingCamera
-from openflexure_microscope.stage.sanga import SangaStage, SangaDeltaStage
+from openflexure_microscope.captures import CaptureManager
+from openflexure_microscope.stage.mock import MissingStage
+from openflexure_microscope.stage.sanga import SangaDeltaStage, SangaStage
 
 try:
     from openflexure_microscope.camera.pi import PiCameraStreamer
 except Exception as e:
     logging.error(e)
     logging.warning("Unable to import PiCameraStreamer")
-from openflexure_microscope.camera.mock import MissingCamera
-
-from openflexure_microscope.utilities import serialise_array_b64, Timer
-from openflexure_microscope.config import user_settings, user_configuration
-
 from labthings import CompositeLock
+
+from openflexure_microscope.camera.mock import MissingCamera
+from openflexure_microscope.config import user_configuration, user_settings
+from openflexure_microscope.utilities import Timer, serialise_array_b64
 
 
 class Microscope:
@@ -106,7 +105,6 @@ class Microscope:
 
         ### Stage
         self.set_stage(configuration=configuration)
-                 
 
         logging.info("Handling fallbacks")
         ### Fallbacks
@@ -131,20 +129,19 @@ class Microscope:
 
         if stage_type:
             if stage_type == configuration["stage"].get("type"):
-                    logging.info("Stage already set to that stage type")
-                    return
+                logging.info("Stage already set to that stage type")
+                return
         else:
             stage_type = configuration["stage"].get("type")
-        
+
         ### Close any existing stages
         if self.stage:
-                stage_port = self.stage.port
-                self.stage.close()
-
+            stage_port = self.stage.port
+            self.stage.close()
 
         logging.info("Setting stage")
-        stage_port = configuration["stage"].get("port")             
-                    
+        stage_port = configuration["stage"].get("port")
+
         if stage_type in ("SangaBoard", "SangaStage"):
             try:
                 logging.info("Trying SangaStage")
@@ -156,17 +153,17 @@ class Microscope:
             try:
                 logging.info("Trying SangaDeltaStage")
                 self.stage = SangaDeltaStage(port=stage_port)
-                
+
             except Exception as e:
                 logging.error(e)
                 logging.warning("No compatible Sangaboard hardware found.")
         else:
-            logging.warning("The stage type is incorrectly defined.")   
+            logging.warning("The stage type is incorrectly defined.")
 
         logging.info("Saving new stage type configuration")
         configuration["stage"]["type"] = stage_type
         self.configuration_file.save(configuration)
-        
+
     def has_real_stage(self) -> bool:
         """
         Check if a real (non-mock) stage is currently attached.
@@ -249,13 +246,13 @@ class Microscope:
         with self.lock:
             # If attached to a camera
             if self.camera:
-                    settings_current_camera = self.camera.read_settings()
-                    settings_current["camera"] = settings_current_camera
+                settings_current_camera = self.camera.read_settings()
+                settings_current["camera"] = settings_current_camera
 
             # If attached to a stage
             if self.stage:
-                    settings_current_stage = self.stage.read_settings()
-                    settings_current["stage"] = settings_current_stage
+                settings_current_stage = self.stage.read_settings()
+                settings_current["stage"] = settings_current_stage
 
             # Capture manager
             settings_current_captures = self.captures.read_settings()
@@ -346,11 +343,9 @@ class Microscope:
         else:
             logging.debug(f"Building microscope metadata: {cache_key}")
             metadata = self.force_get_metadata()
-        
+
         # Keys that should never be cached
-        metadata.update({
-            "state": self.state,
-        })
+        metadata.update({"state": self.state})
 
         return metadata
 
@@ -370,7 +365,7 @@ class Microscope:
         annotations: dict = None,
         tags: list = None,
         metadata: dict = None,
-        cache_key: str = None
+        cache_key: str = None,
     ):
         logging.debug(f"Microscope capturing to {filename}")
         if not annotations:

@@ -1,5 +1,5 @@
-from labthings.extensions import BaseExtension
 from labthings import find_component
+from labthings.extensions import BaseExtension
 
 
 def identify():

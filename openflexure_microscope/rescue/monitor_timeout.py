@@ -1,6 +1,7 @@
-import multiprocessing
 import logging
+import multiprocessing
 import time
+
 
 # bar
 def test_long_fn():

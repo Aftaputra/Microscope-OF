@@ -1,5 +1,5 @@
+from labthings import fields, find_component
 from labthings.extensions import BaseExtension
-from labthings import find_component, fields
 from labthings.views import View
 
 ## Extension methods
@@ -41,7 +41,7 @@ class ExampleIdentifyView(View):
 
 
 class ExampleRenameView(View):
-    # Expect a request parameter called "name", which is a string. 
+    # Expect a request parameter called "name", which is a string.
     # Passed to the argument "args".
     args = fields.String(required=True, example="My Example Microscope")
 

@@ -1,5 +1,5 @@
+from labthings import Schema, fields, find_component
 from labthings.extensions import BaseExtension
-from labthings import find_component, Schema, fields
 from labthings.views import View
 
 ## Extension methods
@@ -25,6 +25,7 @@ def rename(microscope, new_name):
 
 
 ## Extension views
+
 
 class ExampleIdentifyView(View):
     # Format our returned object using MicroscopeIdentifySchema

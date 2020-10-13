@@ -1,14 +1,19 @@
-from labthings.extensions import BaseExtension
-from labthings import find_component, Schema, fields, update_action_progress, current_action
-from labthings.views import View, ActionView, PropertyView
-
-from flask import send_file  # Used to send images from our server
 import io  # Used in our capture action
 import time  # Used in our timelapse function
 
+from flask import send_file  # Used to send images from our server
+from labthings import (
+    Schema,
+    current_action,
+    fields,
+    find_component,
+    update_action_progress,
+)
+from labthings.extensions import BaseExtension
+from labthings.views import ActionView, PropertyView, View
+
 # Used in our timelapse function
 from openflexure_microscope.captures.capture_manager import generate_basename
-
 
 ## Extension methods
 
@@ -59,6 +64,7 @@ class TimelapseAPI(ActionView):
     """
     Take a series of images in a timelapse
     """
+
     args = {
         "n_images": fields.Integer(
             required=True, example=5, description="Number of images"
@@ -73,9 +79,7 @@ class TimelapseAPI(ActionView):
         microscope = find_component("org.openflexure.microscope")
 
         # Start "timelapse"
-        return timelapse(
-            microscope, args.get("n_images"), args.get("t_between")
-        )
+        return timelapse(microscope, args.get("n_images"), args.get("t_between"))
 
 
 ## Create extension

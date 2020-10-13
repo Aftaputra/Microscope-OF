@@ -1,21 +1,17 @@
-from openflexure_microscope.api.utilities import gen, JsonResponse
-
-from labthings import find_component
-from labthings.utilities import get_by_path, set_by_path, create_from_path
-from labthings.views import View, PropertyView
-
 from flask import Response
+from labthings import find_component
+from labthings.utilities import create_from_path, get_by_path, set_by_path
+from labthings.views import PropertyView, View
+
+from openflexure_microscope.api.utilities import JsonResponse, gen
 
 
 class MjpegStream(PropertyView):
     """
     Real-time MJPEG stream from the microscope camera
     """
-    responses = {
-        200: {
-            "content_type": "multipart/x-mixed-replace"
-        }
-    }
+
+    responses = {200: {"content_type": "multipart/x-mixed-replace"}}
 
     def get(self):
         """
@@ -44,12 +40,7 @@ class SnapshotStream(PropertyView):
     Single JPEG snapshot from the camera stream
     """
 
-    responses = {
-        200: {
-            "content_type": "image/jpeg",
-            "description": "Snapshot taken"
-        }
-    }
+    responses = {200: {"content_type": "image/jpeg", "description": "Snapshot taken"}}
 
     def get(self):
         """

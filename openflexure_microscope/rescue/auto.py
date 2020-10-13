@@ -1,11 +1,12 @@
+import logging
+import os
+
 from openflexure_microscope.paths import (
     FALLBACK_OPENFLEXURE_VAR_PATH,
     PREFERRED_OPENFLEXURE_VAR_PATH,
 )
-import logging
-import os
 
-from . import check_settings, check_capture_reload
+from . import check_capture_reload, check_settings
 
 # Paths for suggestions
 LOGS_PATHS = [

@@ -1,7 +1,6 @@
-from openflexure_microscope.microscope import Microscope
-
 import logging
 
+from openflexure_microscope.microscope import Microscope
 
 default_microscope = Microscope()
 
