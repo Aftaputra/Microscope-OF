@@ -130,7 +130,7 @@ labthing.add_view(
 labthing.add_root_link(views.ConfigurationProperty, "instrumentConfiguration")
 
 # Attach stage resources
-labthing.add_view(views.StageTypeProperty, "/properties/stage/type")
+labthing.add_view(views.StageTypeProperty, "/instrument/stage/type")
 
 
 # Attach streams resources
