@@ -6,7 +6,7 @@
                 <label>
                     Stage Type
                     <div v-if="this.stageType != 'MissingStage'">
-                        <form>
+                        <form @submit.prevent="setStageType">
                             <div>
                                 <select v-model="stageType" class="uk-select">
                                     <option value="SangaStage">SangaStage (Standard)</option>
@@ -14,14 +14,9 @@
                                 </select>
                             </div>
                             <div>
-                                <taskSubmitter
-                                    :can-terminate="false"
-                                    :submit-url= "this.stageTypeUri"
-                                    :submit-data="{'stage_type' : this.stageType}"
-                                    :submit-label="'Change stage type'"
-                                    @response="onStageTypeResponse"
-                                    @error="onStageTypeError"
-                                >
+                            <button type="submit" class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1">
+                                Change stage type
+                            </button>
                             </div>
                         </form>   
                     </div>
@@ -52,7 +47,7 @@ export default {
     
     computed: {
         stageTypeUri: function() {
-        return `${this.$store.getters.baseUri}/api/v2/actions/stage/type`;
+        return `${this.$store.getters.baseUri}/api/v2/properties/stage/type`;
         },
     },
 
@@ -66,21 +61,25 @@ export default {
             axios
                 .get(this.stageTypeUri)
                 .then(response => {
-                    console.log("Stage type is " + response.data.stage_type)
-                    this.stageType = response.data.stage_type;
+                    console.log("Stage type is  "+ response.data);
+                    this.stageType = response.data;
                 })
                 .catch(error => {
                     this.modalError(error);
                 });
         },
-        onStageTypeResponse: function(response) {
-            this.modalNotify("Stage type changed.");
-            console.log("Stage type changed to " + response.output.stage_type)
-            this.stageType = response.output.stage_type
-        },
-
-        onStageTypeError: function(error) {
-        this.modalError(error); // Let mixin handle error
+        setStageType: function(){
+            console.log("Setting stage type")
+            axios
+                .put(this.stageTypeUri,this.stageType)
+                .then(response => {
+                    this.stageType = response.data;
+                    console.log("Stage type set to " + this.stageType);
+                    this.modalNotify("Stage type changed.");
+                })
+                .catch(error => {
+                    this.modalError(error);
+                });
         }
     }
 }
