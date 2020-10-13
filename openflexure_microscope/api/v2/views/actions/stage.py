@@ -65,3 +65,5 @@ class ZeroStageAPI(ActionView):
 
         # TODO: Make schema for microscope state
         return microscope.state["stage"]
+
+

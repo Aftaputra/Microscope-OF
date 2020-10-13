@@ -105,24 +105,8 @@ class Microscope:
                     logging.warning("No compatible camera hardware found.")
 
         ### Stage
-        logging.info("Creating stage")
-        if configuration.get("stage"):
-            stage_type = configuration["stage"].get("type")
-            stage_port = configuration["stage"].get("port")
-            if stage_type in ("SangaBoard", "SangaStage"):
-                try:
-                    logging.info("Trying SangaStage")
-                    self.stage = SangaStage(port=stage_port)
-                except Exception as e:
-                    logging.error(e)
-                    logging.warning("No compatible Sangaboard hardware found.")
-            elif stage_type in ("SangaDeltaStage"):
-                try:
-                    logging.info("Trying SangaDeltaStage")
-                    self.stage = SangaDeltaStage(port=stage_port)
-                except Exception as e:
-                    logging.error(e)
-                    logging.warning("No compatible Sangaboard hardware found.")                    
+        self.set_stage(configuration=configuration)
+                 
 
         logging.info("Handling fallbacks")
         ### Fallbacks
@@ -138,6 +122,51 @@ class Microscope:
         if hasattr(self.stage, "lock"):
             self.lock.locks.append(self.stage.lock)
 
+    def set_stage(self, configuration=None, stage_type=None):
+        """
+        Set or change the stage geometry
+        """
+        if not configuration:
+            configuration = self.configuration
+
+        if stage_type:
+            if stage_type == configuration["stage"].get("type"):
+                    logging.info("Stage already set to that stage type")
+                    return
+        else:
+            stage_type = configuration["stage"].get("type")
+        
+        ### Close any existing stages
+        if self.stage:
+                stage_port = self.stage.port
+                self.stage.close()
+
+
+        logging.info("Setting stage")
+        stage_port = configuration["stage"].get("port")             
+                    
+        if stage_type in ("SangaBoard", "SangaStage"):
+            try:
+                logging.info("Trying SangaStage")
+                self.stage = SangaStage(port=stage_port)
+            except Exception as e:
+                logging.error(e)
+                logging.warning("No compatible Sangaboard hardware found.")
+        elif stage_type in ("SangaDeltaStage"):
+            try:
+                logging.info("Trying SangaDeltaStage")
+                self.stage = SangaDeltaStage(port=stage_port)
+                
+            except Exception as e:
+                logging.error(e)
+                logging.warning("No compatible Sangaboard hardware found.")
+        else:
+            logging.warning("The stage type is incorrectly defined.")   
+
+        logging.info("Saving new stage type configuration")
+        configuration["stage"]["type"] = stage_type
+        self.configuration_file.save(configuration)
+        
     def has_real_stage(self) -> bool:
         """
         Check if a real (non-mock) stage is currently attached.
@@ -363,6 +392,7 @@ class Microscope:
 
             # Capture to output object
             logging.info(f"Starting microscope capture {output.file}")
+            print(output)
             self.camera.capture(
                 output,
                 use_video_port=use_video_port,
