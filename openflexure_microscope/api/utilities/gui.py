@@ -12,9 +12,10 @@ def clean_rule(rule: str):
 def build_gui_from_dict(gui_description, extension_object):
     # Make a working copy of GUI description
     api_gui = copy.deepcopy(gui_description)
-
-    logging.debug(extension_object)
-    logging.debug(extension_object._rules)
+    # Grab the extensions rules dictionary
+    # NOTE: The LabThings extension object should probably have a non-private
+    # way to get the rules dictionary. For now we need to ignore pylint W0212
+    ext_rules = extension_object._rules  # pylint: disable=W0212
 
     # Expand shorthand routes into full relative URLs
     if "forms" in gui_description and isinstance(api_gui["forms"], list):
@@ -23,12 +24,10 @@ def build_gui_from_dict(gui_description, extension_object):
             if "route" in form:
                 form["route"] = clean_rule(form["route"])
             # Match rule in extension object
-            if "route" in form and form["route"] in extension_object._rules.keys():
-                form["route"] = extension_object._rules[form["route"]]["urls"][0]
+            if "route" in form and form["route"] in ext_rules.keys():
+                form["route"] = ext_rules[form["route"]]["urls"][0]
             else:
-                logging.warn(
-                    "No valid expandable route found for {}".format(form["route"])
-                )
+                logging.warning("No valid expandable route found for %s", form["route"])
 
     # Inject extension information
     api_gui["id"] = extension_object.name

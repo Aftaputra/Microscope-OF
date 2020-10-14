@@ -46,8 +46,8 @@ class UserComment:
                 cls._JIS_PREFIX: cls._JIS,
                 cls._UNICODE_PREFIX: cls._UNICODE,
             }[prefix]
-        except KeyError:
-            raise ValueError("unable to determine appropriate encoding")
+        except KeyError as e:
+            raise ValueError("unable to determine appropriate encoding") from e
         return body.decode(encoding, errors="replace")
 
     @classmethod

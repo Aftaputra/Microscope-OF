@@ -1,13 +1,11 @@
 import io
 import logging
 
-from flask import abort, redirect, request, send_file, url_for
+from flask import abort, send_file
 from labthings import fields, find_component
-from labthings.views import ActionView, View
+from labthings.views import ActionView
 
-from openflexure_microscope.api.utilities import JsonResponse, get_bool
 from openflexure_microscope.api.v2.views.captures import CaptureSchema
-from openflexure_microscope.utilities import filter_dict
 
 
 class CaptureAPI(ActionView):

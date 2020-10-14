@@ -21,7 +21,7 @@ class ZipObjectSchema(Schema):
     links = fields.Dict()
 
     @pre_dump
-    def generate_links(self, data, **kwargs):
+    def generate_links(self, data, **_):
         data.links = {
             "download": {
                 "href": url_for(
@@ -34,8 +34,8 @@ class ZipObjectSchema(Schema):
 
 
 class ZipObjectDescription:
-    def __init__(self, id, file_pointer, data_size=None):
-        self.id = id
+    def __init__(self, id_, file_pointer, data_size=None):
+        self.id = id_
         self.fp = file_pointer
         self.data_size = data_size
         self.zip_size = os.path.getsize(self.fp.name) * 1e-6
@@ -155,7 +155,7 @@ class ZipGetterAPIView(View):
         if not session_id in default_zip_manager.session_zips:
             return abort(404)  # 404 Not Found
 
-        logging.info(f"Session ID: {session_id}")
+        logging.info("Session ID: %s", session_id)
 
         return send_file(
             default_zip_manager.zip_fp_from_id(session_id).name,

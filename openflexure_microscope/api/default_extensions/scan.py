@@ -14,7 +14,7 @@ from labthings import (
     update_action_progress,
 )
 from labthings.extensions import BaseExtension
-from labthings.views import ActionView, View
+from labthings.views import ActionView
 
 from openflexure_microscope.captures.capture_manager import generate_basename
 from openflexure_microscope.devel import abort
@@ -74,10 +74,13 @@ class ScanExtension(BaseExtension):
         use_video_port: bool = False,
         resize: Tuple[int, int] = None,
         bayer: bool = False,
-        metadata: dict = {},
-        annotations: dict = {},
-        tags: list = [],
+        metadata: dict = None,
+        annotations: dict = None,
+        tags: list = None,
     ):
+        metadata = metadata or {}
+        annotations = annotations or {}
+        tags = tags or []
 
         # Construct a tile filename
         if namemode == "coordinates":
@@ -117,18 +120,22 @@ class ScanExtension(BaseExtension):
         basename: str = None,
         namemode: str = "coordinates",
         temporary: bool = False,
-        stride_size: int = [2000, 1500, 100],
-        grid: list = [3, 3, 5],
+        stride_size: list = (2000, 1500, 100),
+        grid: list = (3, 3, 5),
         style="raster",
         autofocus_dz: int = 50,
         use_video_port: bool = False,
         resize: Tuple[int, int] = None,
         bayer: bool = False,
         fast_autofocus=False,
-        metadata: dict = {},
-        annotations: dict = {},
-        tags: list = [],
+        metadata: dict = None,
+        annotations: dict = None,
+        tags: list = None,
     ):
+        metadata = metadata or {}
+        annotations = annotations or {}
+        tags = tags or []
+
         start = time.time()
 
         # Keep task progress
@@ -210,7 +217,7 @@ class ScanExtension(BaseExtension):
 
                 # If we're not doing a z-stack, just capture
                 if grid[2] <= 1:
-                    capture(
+                    self.capture(
                         microscope,
                         basename,
                         namemode=namemode,
@@ -250,7 +257,7 @@ class ScanExtension(BaseExtension):
         microscope.stage.move_abs(initial_position)
 
         end = time.time()
-        logging.info(f"Scan took {end - start} seconds")
+        logging.info("Scan took %s seconds", end - start)
 
     def stack(
         self,
@@ -264,24 +271,27 @@ class ScanExtension(BaseExtension):
         use_video_port: bool = False,
         resize: Tuple[int, int] = None,
         bayer: bool = False,
-        metadata: dict = {},
-        annotations: dict = {},
-        tags: list = [],
+        metadata: dict = None,
+        annotations: dict = None,
+        tags: list = None,
     ):
+        metadata = metadata or {}
+        annotations = annotations or {}
+        tags = tags or []
 
         # Store initial position
         initial_position = microscope.stage.position
-        logging.debug(f"Starting z-stack from position {microscope.stage.position}")
+        logging.debug("Starting z-stack from position %s", microscope.stage.position)
 
         with microscope.lock:
             # Move to center scan
             logging.debug("Moving to z-stack starting position")
             microscope.stage.move_rel([0, 0, int((-step_size * steps) / 2)])
-            logging.debug(f"Starting scan from position {microscope.stage.position}")
+            logging.debug("Starting scan from position %s", microscope.stage.position)
 
             for i in range(steps):
                 time.sleep(0.1)
-                logging.debug(f"Capturing from position {microscope.stage.position}")
+                logging.debug("Capturing from position %s", microscope.stage.position)
                 self.capture(
                     microscope,
                     basename,

@@ -8,9 +8,11 @@ def handle_extension_error(extension_name):
     """'gracefully' log an error if an extension fails to load."""
     try:
         yield
-    except Exception as e:
+    except Exception:  # pylint: disable=W0703
         logging.error(
-            f"Exception loading builtin extension {extension_name}: \n{traceback.format_exc()}"
+            "Exception loading builtin extension %s: \n%s",
+            extension_name,
+            traceback.format_exc(),
         )
 
 

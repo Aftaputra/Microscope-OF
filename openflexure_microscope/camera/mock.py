@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-"""
-"""
-
 from __future__ import division
 
 import io
@@ -11,18 +8,13 @@ import time
 from datetime import datetime
 
 # Type hinting
-from typing import Tuple
-
-import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 from openflexure_microscope.camera.base import BaseCamera
-from openflexure_microscope.captures import CaptureObject
 
-"""
-PIL spams the logger with debug-level information. This is a pain when debugging api.app.
-We override the logging settings in api.app by setting a level for PIL here.
-"""
+# PIL spams the logger with debug-level information. This is a pain when debugging api.app.
+# We override the logging settings in api.app by setting a level for PIL here.
+
 pil_logger = logging.getLogger("PIL")
 pil_logger.setLevel(logging.INFO)
 
@@ -79,7 +71,6 @@ class MissingCamera(BaseCamera):
 
     def initialisation(self):
         """Run any initialisation code when the frame iterator starts."""
-        pass
 
     def close(self):
         """Close the Raspberry Pi PiCameraStreamer."""
@@ -134,7 +125,7 @@ class MissingCamera(BaseCamera):
                     "Cannot update camera config while recording is active."
                 )
 
-    def set_zoom(self, zoom_value: float = 1.0) -> None:
+    def set_zoom(self, *_) -> None:
         """
         Change the camera zoom, handling re-centering and scaling.
         """
@@ -142,7 +133,7 @@ class MissingCamera(BaseCamera):
 
     # LAUNCH ACTIONS
 
-    def start_preview(self, fullscreen=True, window=None):
+    def start_preview(self, *_):
         """Start the on board GPU camera preview."""
         logging.warning("GPU preview not implemented in mock camera")
 
@@ -150,7 +141,7 @@ class MissingCamera(BaseCamera):
         """Stop the on board GPU camera preview."""
         logging.warning("GPU preview not implemented in mock camera")
 
-    def start_recording(self, output, fmt: str = "h264", quality: int = 15):
+    def start_recording(self, *_):
         """Start recording.
 
         Start a new video recording, writing to a output object.
@@ -173,14 +164,7 @@ class MissingCamera(BaseCamera):
         with self.lock:
             logging.warning("Recording not implemented in mock camera")
 
-    def capture(
-        self,
-        output,
-        fmt: str = "jpeg",
-        use_video_port: bool = False,
-        resize: Tuple[int, int] = None,
-        bayer: bool = True,
-    ):
+    def capture(self, output, *_):
         """
         Capture a still image to a StreamObject.
 
@@ -189,10 +173,6 @@ class MissingCamera(BaseCamera):
 
         Args:
             output: String or file-like object to write capture data to
-            use_video_port (bool): Capture from the video port used for streaming. Lower resolution, faster.
-            fmt (str): Format of the capture.
-            resize ((int, int)): Resize the captured image.
-            bayer (bool): Store raw bayer data in capture
         """
 
         with self.lock:

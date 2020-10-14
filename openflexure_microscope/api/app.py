@@ -21,7 +21,7 @@ import os
 from datetime import datetime
 
 import pkg_resources
-from flask import Flask, abort, send_file
+from flask import abort, send_file
 from flask_cors import CORS, cross_origin
 from labthings import create_app
 from labthings.extensions import find_extensions
@@ -34,7 +34,6 @@ from openflexure_microscope.paths import (
     OPENFLEXURE_EXTENSIONS_PATH,
     OPENFLEXURE_VAR_PATH,
     logs_file_path,
-    settings_file_path,
 )
 
 # Handle logging
@@ -72,7 +71,7 @@ root_log.addHandler(fh)
 access_log.addHandler(afh)
 
 # Log server paths being used
-logging.info(f"Running with data path {OPENFLEXURE_VAR_PATH}")
+logging.info("Running with data path %s", OPENFLEXURE_VAR_PATH)
 
 logging.info("Creating app")
 # Create flask app
@@ -103,16 +102,16 @@ for extension in find_extensions(OPENFLEXURE_EXTENSIONS_PATH):
     labthing.register_extension(extension)
 
 # Attach captures resources
-labthing.add_view(views.CaptureList, f"/captures")
+labthing.add_view(views.CaptureList, "/captures")
 labthing.add_root_link(views.CaptureList, "captures")
 
-labthing.add_view(views.CaptureView, f"/captures/<id>")
-labthing.add_view(views.CaptureDownload, f"/captures/<id>/download/<filename>")
-labthing.add_view(views.CaptureTags, f"/captures/<id>/tags")
-labthing.add_view(views.CaptureAnnotations, f"/captures/<id>/annotations")
+labthing.add_view(views.CaptureView, "/captures/<id>")
+labthing.add_view(views.CaptureDownload, "/captures/<id>/download/<filename>")
+labthing.add_view(views.CaptureTags, "/captures/<id>/tags")
+labthing.add_view(views.CaptureAnnotations, "/captures/<id>/annotations")
 
 # Attach settings and state resources
-labthing.add_view(views.SettingsProperty, f"/instrument/settings")
+labthing.add_view(views.SettingsProperty, "/instrument/settings")
 labthing.add_root_link(views.SettingsProperty, "instrumentSettings")
 labthing.add_view(views.NestedSettingsProperty, "/instrument/settings/<path:route>")
 labthing.add_view(views.StateProperty, "/instrument/state")
@@ -129,8 +128,8 @@ labthing.add_view(views.StageTypeProperty, "/instrument/stage/type")
 
 
 # Attach streams resources
-labthing.add_view(views.MjpegStream, f"/streams/mjpeg")
-labthing.add_view(views.SnapshotStream, f"/streams/snapshot")
+labthing.add_view(views.MjpegStream, "/streams/mjpeg")
+labthing.add_view(views.SnapshotStream, "/streams/snapshot")
 
 # Attach microscope action resources
 labthing.add_view(views.actions.ActionsView, "/actions")
@@ -170,7 +169,7 @@ def err_log():
 
 @app.route("/api/v1/", defaults={"path": ""})
 @app.route("/api/v1/<path:path>")
-def api_v1_catch_all(path):
+def api_v1_catch_all(path):  # pylint: disable=W0613
     abort(410, "API v1 is no longer in use. Please upgrade your client.")
 
 

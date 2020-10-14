@@ -9,7 +9,7 @@ from openflexure_microscope.utilities import axes_to_array
 
 
 class MissingStage(BaseStage):
-    def __init__(self, port=None, **kwargs):
+    def __init__(self, *args, **kwargs):  # pylint: disable=unused-argument
         BaseStage.__init__(self)
         self._position = [0, 0, 0]
         self._n_axis = 3
@@ -66,11 +66,8 @@ class MissingStage(BaseStage):
         else:
             self._backlash = np.array([int(blsh)] * self.n_axes, dtype=np.int)
 
-    def move_rel(
-        self, displacement: list, axis=None, backlash=True, simulate_time: bool = True
-    ):
-        if simulate_time:
-            time.sleep(0.5)
+    def move_rel(self, displacement: list, axis=None, backlash=True):
+        time.sleep(0.5)
         if axis is not None:
             assert axis in self.axis_names, "axis must be one of {}".format(
                 self.axis_names
@@ -83,14 +80,13 @@ class MissingStage(BaseStage):
 
         self._position = list(np.array(self._position) + np.array(initial_move))
         logging.debug(np.array(self._position) + np.array(initial_move))
-        logging.debug(f"New position: {self._position}")
+        logging.debug("New position: %s", self._position)
 
-    def move_abs(self, final, simulate_time: bool = True, **kwargs):
-        if simulate_time:
-            time.sleep(0.5)
+    def move_abs(self, final, **kwargs):
+        time.sleep(0.5)
 
         self._position = list(final)
-        logging.debug(f"New position: {self._position}")
+        logging.debug("New position: %s", self._position)
 
     def zero_position(self):
         """Set the current position to zero"""

@@ -1,11 +1,10 @@
 import os
 import subprocess
-from sys import platform
 
-from labthings.views import ActionView, View
+from labthings.views import ActionView
 
 
-def is_raspberrypi(raise_on_errors=False):
+def is_raspberrypi():
     """
     Checks if Raspberry Pi.
     """

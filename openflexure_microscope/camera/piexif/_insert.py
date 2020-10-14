@@ -3,7 +3,7 @@ import struct
 import sys
 
 from . import _webp
-from ._common import *
+from ._common import merge_segments, split_into_segments
 from ._exceptions import InvalidImageDataError
 
 

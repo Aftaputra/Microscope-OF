@@ -16,14 +16,12 @@ from openflexure_microscope.stage.sanga import SangaDeltaStage, SangaStage
 
 try:
     from openflexure_microscope.camera.pi import PiCameraStreamer
-except Exception as e:
+except Exception as e:  # pylint: disable=W0703
     logging.error(e)
     logging.warning("Unable to import PiCameraStreamer")
 from labthings import CompositeLock
 
-from openflexure_microscope.camera.mock import MissingCamera
 from openflexure_microscope.config import user_configuration, user_settings
-from openflexure_microscope.utilities import Timer, serialise_array_b64
 
 
 class Microscope:
@@ -99,7 +97,7 @@ class Microscope:
             if camera_type in ("PiCamera", "PiCameraStreamer"):
                 try:
                     self.camera = PiCameraStreamer()
-                except Exception as e:
+                except Exception as e:  # pylint: disable=W0703
                     logging.error(e)
                     logging.warning("No compatible camera hardware found.")
 
@@ -146,7 +144,7 @@ class Microscope:
             try:
                 logging.info("Trying SangaStage")
                 self.stage = SangaStage(port=stage_port)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=W0703
                 logging.error(e)
                 logging.warning("No compatible Sangaboard hardware found.")
         elif stage_type in ("SangaDeltaStage"):
@@ -154,7 +152,7 @@ class Microscope:
                 logging.info("Trying SangaDeltaStage")
                 self.stage = SangaDeltaStage(port=stage_port)
 
-            except Exception as e:
+            except Exception as e:  # pylint: disable=W0703
                 logging.error(e)
                 logging.warning("No compatible Sangaboard hardware found.")
         else:
@@ -334,14 +332,14 @@ class Microscope:
 
         # Load cached bits of metadata
         if cache_key:
-            logging.debug(f"Reading cached microscope metadata: {cache_key}")
+            logging.debug("Reading cached microscope metadata: %s", cache_key)
             metadata = self.metadata_cache.get(cache_key, None)
             if not metadata:
-                logging.debug(f"Building and caching microscope metadata: {cache_key}")
+                logging.debug("Building and caching microscope metadata: %s", cache_key)
                 metadata = self.force_get_metadata()
                 self.metadata_cache[cache_key] = metadata
         else:
-            logging.debug(f"Building microscope metadata: {cache_key}")
+            logging.debug("Building microscope metadata: %s", cache_key)
             metadata = self.force_get_metadata()
 
         # Keys that should never be cached
@@ -367,7 +365,7 @@ class Microscope:
         metadata: dict = None,
         cache_key: str = None,
     ):
-        logging.debug(f"Microscope capturing to {filename}")
+        logging.debug("Microscope capturing to %s", filename)
         if not annotations:
             annotations = {}
         if not metadata:
@@ -386,8 +384,7 @@ class Microscope:
             )
 
             # Capture to output object
-            logging.info(f"Starting microscope capture {output.file}")
-            print(output)
+            logging.info("Starting microscope capture %s", output.file)
             self.camera.capture(
                 output,
                 use_video_port=use_video_port,
@@ -397,6 +394,6 @@ class Microscope:
             )
 
         output.put_and_save(tags, annotations, full_metadata)
-        logging.debug(f"Finished capture to {output.file}")
+        logging.debug("Finished capture to %s", output.file)
 
         return output

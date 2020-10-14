@@ -6,10 +6,10 @@ from threading import Event, Thread
 import numpy as np
 from labthings import current_action, fields, find_component
 from labthings.extensions import BaseExtension
-from labthings.views import ActionView, PropertyView, View
+from labthings.views import ActionView, View
 from scipy import ndimage
 
-from openflexure_microscope.devel import JsonResponse, abort, request
+from openflexure_microscope.devel import abort
 from openflexure_microscope.utilities import set_properties
 
 ### Autofocus utilities
@@ -36,19 +36,15 @@ class JPEGSharpnessMonitor:
             return self.background_thread.is_alive()
 
     def should_stop(self):
-        import time
-
         return time.time() - self.kept_alive > self.timeout
 
     def keep_alive(self):
-        import time
-
         self.kept_alive = time.time()
 
     def start(self):
         "Start monitoring sharpness by looking at JPEG size"
         if not self.camera.stream_active:
-            logging.warn(
+            logging.warning(
                 "Autofocus sharpness monitor was started but the camera isn't streaming.  Attempting to start the stream..."
             )
             self.camera.start_stream_recording()
@@ -66,7 +62,7 @@ class JPEGSharpnessMonitor:
         "Function that runs in a background thread to record sharpness"
         logging.debug("Starting sharpness measurement in background thread")
         self.keep_alive()
-        logging.debug(f"_measure_jpegs stop_event: {self.stop_event.is_set()}")
+        logging.debug("_measure_jpegs stop_event: %s", self.stop_event.is_set())
         while not self.stop_event.is_set() and not self.should_stop():
             size_now = self.jpeg_size()
             time_now = time.time()
@@ -107,7 +103,7 @@ class JPEGSharpnessMonitor:
             if np.sum(jpeg_times > stage_times[0]) == 0:
                 raise ValueError(
                     "No images were captured during the move of the stage.  Perhaps the camera is not streaming images?"
-                )
+                ) from e
             else:
                 raise e
         if stop < 1:
@@ -119,7 +115,7 @@ class JPEGSharpnessMonitor:
 
     def sharpest_z_on_move(self, index):
         """Return the z position of the sharpest image on a given move"""
-        jt, jz, js = self.move_data(index)
+        _, jz, js = self.move_data(index)
         if len(js) == 0:
             raise ValueError(
                 "No images were captured during the move of the stage.  Perhaps the camera is not streaming images?"
@@ -226,7 +222,7 @@ def fast_autofocus(microscope, dz=2000, backlash=None):
     """Perform a down-up-down-up autofocus"""
     with monitor_sharpness(
         microscope
-    ) as m, microscope.camera.lock, microscope.stage.lock:
+    ) as m, microscope.camera.lock as _, microscope.stage.lock as _:
         i, z = m.focus_rel(-dz / 2)
         i, z = m.focus_rel(dz)
         fz = m.sharpest_z_on_move(i)
@@ -278,7 +274,7 @@ def fast_up_down_up_autofocus(
     """
     with monitor_sharpness(
         microscope
-    ) as m, microscope.camera.lock, microscope.stage.lock:
+    ) as m, microscope.camera.lock as _, microscope.stage.lock as _:
         # Ensure the MJPEG stream has started
         microscope.camera.start_stream_recording()
 
@@ -291,12 +287,8 @@ def fast_up_down_up_autofocus(
         i, z = m.focus_rel(-df)
         # now inspect where the sharpest point is, and estimate the sharpness
         # (JPEG size) that we should find at the start of the Z stack
-        logging.debug("Get target_s")
-        jt, jz, js = m.move_data(i)
+        _, jz, js = m.move_data(i)
         best_z = jz[np.argmax(js)]
-        target_s = np.interp(
-            [best_z + target_z], jz[::-1], js[::-1]
-        )  # NB jz is decreasing
 
         # now move to the start of the z stack
         logging.debug("Move to the start of the z stack")

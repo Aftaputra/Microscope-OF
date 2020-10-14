@@ -1,6 +1,5 @@
 import logging
 import os
-from sys import platform
 
 import psutil
 from flask import abort
@@ -9,9 +8,7 @@ from labthings.extensions import BaseExtension
 from labthings.views import PropertyView, View
 
 from openflexure_microscope.api.utilities.gui import build_gui
-from openflexure_microscope.captures.capture import build_captures_from_exif
 from openflexure_microscope.captures.capture_manager import BASE_CAPTURE_PATH
-from openflexure_microscope.config import OpenflexureSettingsFile
 from openflexure_microscope.paths import check_rw, settings_file_path
 
 AS_SETTINGS_PATH = settings_file_path("autostorage_settings.json")
@@ -97,10 +94,10 @@ class AutostorageExtension(BaseExtension):
 
     def on_microscope(self, microscope_obj):
         """Function to automatically call when the parent LabThing has a microscope attached."""
-        logging.debug(f"Autostorage extension found microscope {microscope_obj}")
+        logging.debug("Autostorage extension found microscope %s", microscope_obj)
         if hasattr(microscope_obj, "captures"):
             logging.debug(
-                f"Autostorage extension bound to CaptureManager {self.capture_manager}"
+                "Autostorage extension bound to CaptureManager %s", self.capture_manager
             )
 
             # Store a reference to the CaptureManager
@@ -119,7 +116,8 @@ class AutostorageExtension(BaseExtension):
         # If preferred path does not exist, or cannot be written to
         if not (os.path.isdir(location) and check_rw(location)):
             logging.error(
-                f"Preferred capture path {location} is missing or cannot be written to. Restoring defaults."
+                "Preferred capture path %s is missing or cannot be written to. Restoring defaults.",
+                location,
             )
             # Reset the storage location to default
             set_current_location(self.capture_manager, get_default_location())
@@ -187,8 +185,6 @@ autostorage_extension_v2 = AutostorageExtension()
 
 class GetLocationsView(PropertyView):
     def get(self):
-        global autostorage_extension_v2
-
         autostorage_extension_v2.check_location()
         return autostorage_extension_v2.get_locations()
 
@@ -197,13 +193,10 @@ class PreferredLocationView(PropertyView):
     schema = fields.String(required=True, example="Default")
 
     def get(self):
-        global autostorage_extension_v2
-
         autostorage_extension_v2.check_location()
         return autostorage_extension_v2.get_preferred_key()
 
     def post(self, new_path_key):
-        global autostorage_extension_v2
         microscope = find_component("org.openflexure.microscope")
 
         if not microscope:
@@ -218,13 +211,11 @@ class PreferredLocationGUIView(View):
     args = {"new_path_title": fields.String(required=True)}
 
     def post(self, args):
-        global autostorage_extension_v2
-
         new_path_title = args.get("new_path_title")
         logging.debug(new_path_title)
 
         new_path_key = autostorage_extension_v2.title_to_key(new_path_title)
-        logging.debug(f"{new_path_key}")
+        logging.debug(new_path_key)
 
         autostorage_extension_v2.check_location()
         autostorage_extension_v2.set_preferred_key(new_path_key)
@@ -233,7 +224,6 @@ class PreferredLocationGUIView(View):
 
 
 def dynamic_form():
-    global autostorage_extension_v2
     autostorage_extension_v2.check_location()
     return {
         "icon": "sd_storage",

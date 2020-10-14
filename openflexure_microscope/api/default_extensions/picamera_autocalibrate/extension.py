@@ -7,7 +7,7 @@ from typing import Tuple
 from flask import abort
 from labthings import find_component
 from labthings.extensions import BaseExtension
-from labthings.views import ActionView, View
+from labthings.views import ActionView
 
 from .recalibrate_utils import (
     auto_expose_and_freeze_settings,
@@ -78,17 +78,10 @@ class FlattenLSTView(ActionView):
                 "No microscope connected. Unable to flatten the lens shading table.",
             )
 
-        try:
-            with pause_stream(microscope.camera) as scamera:
-                flat_lst = flat_lens_shading_table(scamera.camera)
-                scamera.camera.lens_shading_table = flat_lst
-            microscope.save_settings()
-        except:
-            logging.exception("Error flattening the lens shading table.")
-            abort(
-                503,
-                "Couldn't flatten the lens shading table - do you have the forked PiCamera library installed?",
-            )
+        with pause_stream(microscope.camera) as scamera:
+            flat_lst = flat_lens_shading_table(scamera.camera)
+            scamera.camera.lens_shading_table = flat_lst
+        microscope.save_settings()
 
 
 class DeleteLSTView(ActionView):
@@ -101,16 +94,9 @@ class DeleteLSTView(ActionView):
                 "No microscope connected. Unable to flatten the lens shading table.",
             )
 
-        try:
-            with pause_stream(microscope.camera) as scamera:
-                scamera.camera.lens_shading_table = None
-            microscope.save_settings()
-        except:
-            logging.exception("Error deleting the lens shading table.")
-            abort(
-                503,
-                "Couldn't flatten the lens shading table - do you have the forked PiCamera library installed?",
-            )
+        with pause_stream(microscope.camera) as scamera:
+            scamera.camera.lens_shading_table = None
+        microscope.save_settings()
 
 
 lst_extension_v2 = BaseExtension(

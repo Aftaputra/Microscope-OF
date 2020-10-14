@@ -158,7 +158,8 @@ class CaptureManager:
 
         # Update capture list
         capture_key = str(output.id)
-        logging.debug(f"Adding image {output} with key {capture_key}")
+        logging.debug("Adding image %s with key %s", output, capture_key)
+
         self.images[capture_key] = output
 
         return output
@@ -204,7 +205,7 @@ class CaptureManager:
 
         # Update capture list
         capture_key = str(output.id)
-        logging.debug(f"Adding video {output} with key {capture_key}")
+        logging.debug("Adding video %s with key %s", output, capture_key)
         self.videos[capture_key] = output
 
         return output

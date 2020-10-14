@@ -21,7 +21,6 @@
 #
 
 import subprocess
-import sys
 
 
 class ServiceMonitor(object):

@@ -24,13 +24,15 @@ def flat_lens_shading_table(camera):
         raise ImportError(
             "This program requires the forked picamera library with lens shading support"
         )
-    return np.zeros(camera._lens_shading_table_shape(), dtype=np.uint8) + 32
+    return (
+        np.zeros(camera._lens_shading_table_shape(), dtype=np.uint8) + 32
+    )  # pylint: disable=W0212
 
 
 def adjust_exposure_to_setpoint(camera, setpoint):
     """Adjust the camera's exposure time until the maximum pixel value is <setpoint>."""
     print("Adjusting shutter speed to hit setpoint {}".format(setpoint), end="")
-    for i in range(3):
+    for _ in range(3):
         print(".", end="")
         camera.shutter_speed = int(
             camera.shutter_speed * setpoint / np.max(rgb_image(camera))
@@ -50,9 +52,9 @@ def auto_expose_and_freeze_settings(camera):
         camera.awb_mode = "auto"
     camera.exposure_mode = "auto"
     camera.iso = (
-        0
-    )  # This is important, if it's on a fixed ISO, gain might not set properly.
-    for i in range(6):
+        0  # This is important, if it's on a fixed ISO, gain might not set properly.
+    )
+    for _ in range(6):
         print(".", end="")
         time.sleep(0.5)
     logging.info("done")
@@ -188,10 +190,10 @@ def recalibrate_camera(camera):
 
 
 if __name__ == "__main__":
-    with PiCamera() as camera:
-        camera.start_preview()
+    with PiCamera() as main_camera:
+        main_camera.start_preview()
         time.sleep(3)
         logging.info("Recalibrating...")
-        recalibrate_camera(camera)
+        recalibrate_camera(main_camera)
         logging.info("Done.")
         time.sleep(2)

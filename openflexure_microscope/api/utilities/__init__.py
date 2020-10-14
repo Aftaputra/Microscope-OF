@@ -116,7 +116,6 @@ def create_file(config_path):
 
 
 def init_default_extensions(extension_dir):
-    global _DEFAULT_EXTENSION_INIT
     os.makedirs(extension_dir, exist_ok=True)
 
     default_ext_path = os.path.join(extension_dir, "defaults.py")

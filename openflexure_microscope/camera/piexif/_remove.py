@@ -1,7 +1,7 @@
 import io
 
 from . import _webp
-from ._common import *
+from ._common import get_exif_seg, split_into_segments
 
 
 def remove(src, new_file=None):
@@ -42,7 +42,7 @@ def remove(src, new_file=None):
             new_data = src_data
         except Exception as e:
             print(e)
-            raise ValueError("Error occurred.")
+            raise ValueError("Error occurred.") from e
 
     if isinstance(new_file, io.BytesIO):
         new_file.write(new_data)

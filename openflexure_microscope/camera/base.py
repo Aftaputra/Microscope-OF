@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-import datetime
 import logging
-import os
-import shutil
 import threading
 import time
 from abc import ABCMeta, abstractmethod
@@ -21,6 +18,7 @@ class BaseCamera(metaclass=ABCMeta):
 
         self.lock = StrictLock(name="Camera", timeout=None)
 
+        self.frames_iterator = None
         self.frame = None
         self.last_access = 0
         self.event = ClientEvent()
@@ -34,13 +32,11 @@ class BaseCamera(metaclass=ABCMeta):
     @abstractmethod
     def configuration(self):
         """The current camera configuration."""
-        pass
 
     @property
     @abstractmethod
     def state(self):
         """The current read-only camera state."""
-        pass
 
     @property
     def settings(self):
@@ -132,7 +128,6 @@ class BaseCamera(metaclass=ABCMeta):
     @abstractmethod
     def frames(self):
         """Create generator that returns frames from the camera."""
-        pass
 
     # WORKER THREAD
 
