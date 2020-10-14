@@ -29,9 +29,11 @@ class SangaStage(BaseStage):
         self.board = Sangaboard(port, **kwargs)
 
         self._backlash = (
-            None
-        )  # Initialise backlash storage, used by property setter/getter
+            None  # Initialise backlash storage, used by property setter/getter
+        )
         self.axis_names = ["x", "y", "z"]  # Assume all sangaboards are 3 axis
+
+        self._position_on_enter = None
 
     @property
     def state(self):
@@ -111,7 +113,7 @@ class SangaStage(BaseStage):
         backlash: (default: True) whether to correct for backlash.
         """
         with self.lock:
-            logging.debug(f"Moving sangaboard by {displacement}")
+            logging.debug("Moving sangaboard by %s", displacement)
             if not backlash or self.backlash is None:
                 return self.board.move_rel(displacement, axis=axis)
             if axis is not None:
@@ -148,7 +150,7 @@ class SangaStage(BaseStage):
         """Make an absolute move to a position
         """
         with self.lock:
-            logging.debug(f"Moving sangaboard to {final}")
+            logging.debug("Moving sangaboard to %s", final)
             self.board.move_abs(final, **kwargs)
 
     def zero_position(self):
@@ -171,12 +173,12 @@ class SangaStage(BaseStage):
         self._position_on_enter = self.position
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type_, value, traceback):
         """The end of the with statement.  Reset position if it went wrong.
         NB the instrument is closed when the object is deleted, so we don't
         need to worry about that here.
         """
-        if type is not None:
+        if type_ is not None:
             print(
                 "An exception occurred inside a with block, resetting position \
                 to its value at the start of the with block"
@@ -184,7 +186,7 @@ class SangaStage(BaseStage):
             try:
                 time.sleep(0.5)
                 self.move_abs(self._position_on_enter)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=W0703
                 print(
                     "A further exception occurred when resetting position: {}".format(e)
                 )

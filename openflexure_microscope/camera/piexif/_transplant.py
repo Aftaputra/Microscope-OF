@@ -1,6 +1,6 @@
 import io
 
-from ._common import *
+from ._common import get_exif_seg, merge_segments, split_into_segments
 
 
 def transplant(exif_src, image, new_file=None):

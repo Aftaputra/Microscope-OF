@@ -1,9 +1,8 @@
 from flask import Response
 from labthings import find_component
-from labthings.utilities import create_from_path, get_by_path, set_by_path
-from labthings.views import PropertyView, View
+from labthings.views import PropertyView
 
-from openflexure_microscope.api.utilities import JsonResponse, gen
+from openflexure_microscope.api.utilities import gen
 
 
 class MjpegStream(PropertyView):

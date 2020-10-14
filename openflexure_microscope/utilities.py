@@ -2,7 +2,6 @@ import base64
 import copy
 import logging
 import operator
-import re
 import time
 from collections import abc
 from contextlib import contextmanager
@@ -21,9 +20,9 @@ class Timer(object):
     def __enter__(self):
         self.start = time.time()
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type_, value, traceback):
         self.end = time.time()
-        logging.debug(f"{self.name} time: {self.end - self.start}")
+        logging.debug("%s time: %s", self.name, self.end - self.start)
 
 
 def deserialise_array_b64(b64_string, dtype, shape):

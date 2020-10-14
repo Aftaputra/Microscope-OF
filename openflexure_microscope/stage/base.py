@@ -17,36 +17,30 @@ class BaseStage(metaclass=ABCMeta):
     @abstractmethod
     def update_settings(self, config: dict):
         """Update settings from a config dictionary"""
-        pass
 
     @abstractmethod
     def read_settings(self):
         """Return the current settings as a dictionary"""
-        pass
 
     @property
     @abstractmethod
     def state(self):
         """The general state dictionary of the board."""
-        pass
 
     @property
     @abstractmethod
     def configuration(self):
         """The general stage configuration."""
-        pass
 
     @property
     @abstractmethod
     def n_axes(self):
         """The number of axes this stage has."""
-        pass
 
     @property
     @abstractmethod
     def position(self):
         """The current position, as a list"""
-        pass
 
     @property
     def position_map(self):
@@ -56,36 +50,30 @@ class BaseStage(metaclass=ABCMeta):
     @abstractmethod
     def backlash(self):
         """Get the distance used for backlash compensation."""
-        pass
 
     @backlash.setter
     @abstractmethod
     def backlash(self):
         """Set the distance used for backlash compensation."""
-        pass
 
     @abstractmethod
-    def move_rel(self, displacement, backlash=True):
+    def move_rel(self, displacement: list, axis=None, backlash=True):
         """Make a relative move, optionally correcting for backlash.
         displacement: integer or array/list of 3 integers
         backlash: (default: True) whether to correct for backlash.
         """
-        pass
 
     @abstractmethod
     def move_abs(self, final, **kwargs):
         """Make an absolute move to a position"""
-        pass
 
     @abstractmethod
     def zero_position(self):
         """Set the current position to zero"""
-        pass
 
     @abstractmethod
     def close(self):
         """Cleanly close communication with the stage"""
-        pass
 
     def scan_linear(self, rel_positions, backlash=True, return_to_start=True):
         """

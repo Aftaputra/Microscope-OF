@@ -1,11 +1,9 @@
-import atexit
 import datetime
 import glob
 import io
 import json
 import logging
 import os
-import shutil
 import uuid
 from collections import OrderedDict
 
@@ -37,7 +35,8 @@ def pull_usercomment_dict(filepath):
             return json.loads(exif_dict["Exif"][piexif.ExifIFD.UserComment].decode())
         except json.decoder.JSONDecodeError:
             logging.error(
-                f"Capture {filepath} has old, corrupt, or missing OpenFlexure metadata. Unable to reload to server."
+                "Capture %s has old, corrupt, or missing OpenFlexure metadata. Unable to reload to server.",
+                filepath,
             )
     else:
         return None
@@ -56,8 +55,6 @@ def make_file_list(directory, formats):
 
 
 def build_captures_from_exif(capture_path):
-    global EXIF_FORMATS
-
     logging.debug("Reloading captures from {}...".format(capture_path))
     files = make_file_list(capture_path, EXIF_FORMATS)
     captures = OrderedDict()
@@ -97,9 +94,9 @@ def capture_from_exif(path, exif_dict):
     # Image metadata
     try:
         image_metadata = exif_dict.pop("image")
-    except KeyError as e:
+    except KeyError:
         logging.error(
-            f"Unable to obtain valid 2.0 OpenFlexure metadata from file {path}"
+            "Unable to obtain valid 2.0 OpenFlexure metadata from file %s", path
         )
         return None
 
@@ -111,7 +108,7 @@ def capture_from_exif(path, exif_dict):
     capture.annotations = image_metadata.get("annotations")
 
     # Since we popped the "image" key, we dump whatever is left in _metadata
-    capture._metadata = exif_dict
+    capture.set_metadata(exif_dict)
 
     return capture
 
@@ -133,6 +130,7 @@ class CaptureObject(object):
         self.datetime = datetime.datetime.now()
 
         # Create file name. Default to UUID
+        self.format = None
         self.file = filepath
         self.split_file_path(self.file)
 
@@ -151,15 +149,15 @@ class CaptureObject(object):
         self.thumb_bytes = None
 
     def write(self, s):
-        logging.debug(f"Writing to {self}")
+        logging.debug("Writing to %s", self)
         self.stream.write(s)
 
     def flush(self):
-        logging.info(f"Writing to disk {self.file}")
+        logging.info("Writing to disk %s", self.file)
         with open(self.file, "wb") as outfile:
             outfile.write(self.stream.getbuffer())
         self.stream.close()
-        logging.info(f"Finished writing to disk {self.file}")
+        logging.info("Finished writing to disk %s", self.file)
 
     def open(self, mode):
         return open(self.file, mode)
@@ -233,6 +231,15 @@ class CaptureObject(object):
         self._metadata.update(data)
         self.save_metadata()
 
+    def set_metadata(self, data: dict) -> None:
+        """
+        Write root metadata from a passed dictionary into the capture metadata.
+
+        Args:
+            data (dict): Dictionary of metadata to be added
+        """
+        self._metadata = data
+
     def put_and_save(
         self, tags: list = None, annotations: dict = None, metadata: dict = None
     ):
@@ -261,22 +268,20 @@ class CaptureObject(object):
         """
         Save metadata to exif, if supported
         """
-        global EXIF_FORMATS
-
         if self.format.upper() in EXIF_FORMATS and self.exists:
             logging.debug("Writing exif data to capture file")
             # Extract current Exif data
             exif_dict = piexif.load(self.file)
             # Serialize metadata
             metadata_string = json.dumps(self.metadata, cls=JSONEncoder)
-            logging.debug(f"Saving metadata string to file: {metadata_string}")
+            logging.debug("Saving metadata string to file: %s", metadata_string)
             # Insert metadata into exif_dict
             exif_dict["Exif"][piexif.ExifIFD.UserComment] = metadata_string.encode()
             # Convert new exif dict to exif bytes
             exif_bytes = piexif.dump(exif_dict)
             # Insert exif into file
             piexif.insert(exif_bytes, self.file)
-            logging.info(f"Finished saving metadata to {self.file}")
+            logging.info("Finished saving metadata to %s", self.file)
 
     @property
     def metadata(self) -> dict:
@@ -344,7 +349,6 @@ class CaptureObject(object):
         """
         Returns a thumbnail of the capture data, for supported image formats.
         """
-        global THUMBNAIL_SIZE
         # If no thumbnail exists, try and make one
         if not self.thumb_bytes:
             logging.info("Building thumbnail")

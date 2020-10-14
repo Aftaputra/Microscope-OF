@@ -30,7 +30,6 @@ from __future__ import division
 
 import io
 import logging
-import os
 import time
 
 # Type hinting
@@ -43,13 +42,8 @@ import picamerax
 import picamerax.array
 
 from openflexure_microscope.camera.base import BaseCamera
-from openflexure_microscope.captures import CaptureObject
 from openflexure_microscope.paths import settings_file_path
-from openflexure_microscope.utilities import (
-    json_to_ndarray,
-    ndarray_to_json,
-    serialise_array_b64,
-)
+from openflexure_microscope.utilities import json_to_ndarray, ndarray_to_json
 
 # Richard's fix gain
 from .set_picamera_gain import set_analog_gain, set_digital_gain
@@ -117,6 +111,7 @@ class PiCameraStreamer(BaseCamera):
         )  #: str: Path of .npy lens shading table file
 
         # Start the stream worker on init
+        self.stream = None
         self.start_worker()
 
     @property
@@ -131,7 +126,6 @@ class PiCameraStreamer(BaseCamera):
 
     def initialisation(self):
         """Run any initialisation code when the frame iterator starts."""
-        pass
 
     def close(self):
         """Close the Raspberry Pi PiCameraStreamer."""
@@ -466,7 +460,7 @@ class PiCameraStreamer(BaseCamera):
 
             # Reduce the resolution for video streaming
             try:
-                self.camera._check_recording_stopped()
+                self.camera._check_recording_stopped()  # pylint: disable=W0212
             except picamerax.exc.PiCameraRuntimeError:
                 logging.info(
                     "Error while changing resolution: Recording already running."

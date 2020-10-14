@@ -1,6 +1,4 @@
-import logging
-
-from labthings import fields, find_component, schema
+from labthings import fields, find_component
 from labthings.views import PropertyView
 
 

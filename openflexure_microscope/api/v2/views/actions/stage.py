@@ -1,11 +1,9 @@
 import logging
 
-from flask import Blueprint, request
 from labthings import fields, find_component
-from labthings.views import ActionView, View
+from labthings.views import ActionView
 
-from openflexure_microscope.api.utilities import JsonResponse
-from openflexure_microscope.utilities import axes_to_array, filter_dict
+from openflexure_microscope.utilities import axes_to_array
 
 
 class MoveStageAPI(ActionView):

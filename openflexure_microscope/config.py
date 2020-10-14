@@ -6,7 +6,6 @@ import shutil
 from fractions import Fraction
 from uuid import UUID
 
-import flask
 import numpy as np
 from labthings.json import LabThingsJSONEncoder
 
@@ -27,8 +26,8 @@ class OpenflexureSettingsFile:
         expand (bool): Expand paths to valid auxillary config files.
     """
 
-    def __init__(self, path: str, defaults: dict = {}):
-        global DEFAULT_SETTINGS
+    def __init__(self, path: str, defaults: dict = None):
+        defaults = defaults or {}
 
         # Set arguments
         self.path = path
@@ -84,7 +83,7 @@ class JSONEncoder(LabThingsJSONEncoder):
     A custom JSON encoder, with type conversions for PiCamera fractions, Numpy integers, and Numpy arrays
     """
 
-    def default(self, o, markers=None):
+    def default(self, o):
         if isinstance(o, UUID):
             return str(o)
         # PiCamera fractions

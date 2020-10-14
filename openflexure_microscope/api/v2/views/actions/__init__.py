@@ -53,7 +53,6 @@ _actions = {
 
 
 def enabled_root_actions():
-    global _actions
     return {k: v for k, v in _actions.items() if v["conditions"]}
 
 
@@ -65,8 +64,6 @@ class ActionsView(View):
         This list does not include any actions added by LabThings extensions, only
         those part of the default OpenFlexure Microscope API.
         """
-        global _actions
-
         actions = {}
         for name, action in enabled_root_actions().items():
             d = {

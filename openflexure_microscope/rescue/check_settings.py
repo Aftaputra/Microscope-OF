@@ -16,7 +16,7 @@ def trace_config_exceptions():
         default_config = json.load(DEFAULT_CONFIGURATION_FILE_PATH)
         if not default_config:
             error_sources.append("default_config_empty")
-    except Exception as e:
+    except Exception as e:  # pylint: disable=W0703
         logging.error("Error parsing config:")
         logging.error(e)
         error_sources.append("default_config_error")
@@ -25,7 +25,7 @@ def trace_config_exceptions():
         default_settings = json.load(SETTINGS_FILE_PATH)
         if not default_settings:
             error_sources.append("default_settings_empty")
-    except Exception as e:
+    except Exception as e:  # pylint: disable=W0703
         logging.error("Error parsing settings:")
         logging.error(e)
         error_sources.append("default_settings_error")
@@ -37,8 +37,8 @@ def main():
     error_sources = []
     logging.info("Attempting default settings and config import...")
     try:
-        from openflexure_microscope import config
-    except Exception as e:
+        from openflexure_microscope import config as _
+    except Exception as e:  # pylint: disable=W0703
         error_sources.append("config_settings_import_error")
         logging.error("Error importing config:")
         logging.error(e)

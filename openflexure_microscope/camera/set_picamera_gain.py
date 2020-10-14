@@ -4,7 +4,7 @@ import logging
 import time
 
 import picamerax
-from picamerax import exc, mmal, mmalobj
+from picamerax import exc, mmal
 from picamerax.mmalobj import to_rational
 
 MMAL_PARAMETER_ANALOG_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x59
@@ -21,7 +21,7 @@ def set_gain(camera, gain, value):
     if gain not in [MMAL_PARAMETER_ANALOG_GAIN, MMAL_PARAMETER_DIGITAL_GAIN]:
         raise ValueError("The gain parameter was not valid")
     ret = mmal.mmal_port_parameter_set_rational(
-        camera._camera.control._port, gain, to_rational(value)
+        camera._camera.control._port, gain, to_rational(value)  # pylint: disable=W0212
     )
     if ret == 4:
         raise exc.PiCameraMMALError(

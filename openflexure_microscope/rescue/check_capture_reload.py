@@ -6,12 +6,12 @@ from openflexure_microscope.config import user_settings
 from openflexure_microscope.rescue.monitor_timeout import launch_timeout_test_process
 
 
-def check_capture_rebuild(timeout=10):
+def check_capture_rebuild():
     logging.info("Loading user settings...")
     settings = user_settings.load()
 
     cap_path = str(settings.get("captures", {}).get("paths", {}).get("default"))
-    logging.info(f"Capture path found: {cap_path}")
+    logging.info("Capture path found: %s", cap_path)
     if not cap_path:
         logging.error(
             "No capture path defined in settings. This is unusual for anything other than a first-run. \nFalling back to default path."

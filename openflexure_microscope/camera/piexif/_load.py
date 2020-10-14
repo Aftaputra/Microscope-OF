@@ -2,9 +2,9 @@ import struct
 import sys
 
 from . import _webp
-from ._common import *
+from ._common import get_exif_seg, read_exif_from_file, split_into_segments
 from ._exceptions import InvalidImageDataError
-from ._exif import *
+from ._exif import ExifIFD, ImageIFD, TAGS, TYPES
 
 LITTLE_ENDIAN = b"\x49\x49"
 
@@ -108,6 +108,8 @@ class _ExifReader(object):
                     self.tiftag = _webp.get_exif(file_data)
                 else:
                     raise InvalidImageDataError("Given file is neither JPEG nor TIFF.")
+
+        self.endian_mark = None
 
     def get_ifd_dict(self, pointer, ifd_name, read_unknown=False):
         ifd_dict = {}

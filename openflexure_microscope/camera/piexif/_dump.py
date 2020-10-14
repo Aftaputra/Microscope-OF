@@ -2,8 +2,8 @@ import copy
 import numbers
 import struct
 
-from ._common import *
-from ._exif import *
+from ._common import split_into_segments
+from ._exif import ExifIFD, ImageIFD, TAGS, TYPES
 
 TIFF_HEADER_LENGTH = 8
 
@@ -243,11 +243,11 @@ def _value_to_bytes(raw_value, value_type, offset):
     elif value_type == TYPES.Ascii:
         try:
             new_value = raw_value.encode("latin1") + b"\x00"
-        except:
+        except:  # pylint: disable=W0702
             try:
                 new_value = raw_value + b"\x00"
-            except TypeError:
-                raise ValueError("Got invalid type to convert.")
+            except TypeError as e:
+                raise ValueError("Got invalid type to convert.") from e
         length = len(new_value)
         if length > 4:
             value_str = struct.pack(">I", offset)
@@ -262,7 +262,7 @@ def _value_to_bytes(raw_value, value_type, offset):
         elif isinstance(raw_value[0], tuple):
             length = len(raw_value)
             new_value = b""
-            for n, val in enumerate(raw_value):
+            for _, val in enumerate(raw_value):
                 num, den = val
                 new_value += struct.pack(">L", num) + struct.pack(">L", den)
         value_str = struct.pack(">I", offset)
@@ -275,7 +275,7 @@ def _value_to_bytes(raw_value, value_type, offset):
         elif isinstance(raw_value[0], tuple):
             length = len(raw_value)
             new_value = b""
-            for n, val in enumerate(raw_value):
+            for _, val in enumerate(raw_value):
                 num, den = val
                 new_value += struct.pack(">l", num) + struct.pack(">l", den)
         value_str = struct.pack(">I", offset)
@@ -286,13 +286,13 @@ def _value_to_bytes(raw_value, value_type, offset):
             value_str = struct.pack(">I", offset)
             try:
                 four_bytes_over = b"" + raw_value
-            except TypeError:
-                raise ValueError("Got invalid type to convert.")
+            except TypeError as e:
+                raise ValueError("Got invalid type to convert.") from e
         else:
             try:
                 value_str = raw_value + b"\x00" * (4 - length)
-            except TypeError:
-                raise ValueError("Got invalid type to convert.")
+            except TypeError as e:
+                raise ValueError("Got invalid type to convert.") from e
     elif value_type == TYPES.SByte:  # Signed Byte
         length = len(raw_value)
         if length <= 4:
@@ -333,7 +333,7 @@ def _dict_to_bytes(ifd_dict, ifd, ifd_offset):
     entries = b""
     values = b""
 
-    for n, key in enumerate(sorted(ifd_dict)):
+    for _, key in enumerate(sorted(ifd_dict)):
         if (ifd == "0th") and (key in (ImageIFD.ExifTag, ImageIFD.GPSTag)):
             continue
         elif (ifd == "Exif") and (key == ExifIFD.InteroperabilityTag):
@@ -358,11 +358,11 @@ def _dict_to_bytes(ifd_dict, ifd, ifd_offset):
             length_str, value_str, four_bytes_over = _value_to_bytes(
                 raw_value, value_type, offset
             )
-        except ValueError:
+        except ValueError as e:
             raise ValueError(
                 '"dump" got wrong type of exif value.\n'
                 + "{0} in {1} IFD. Got as {2}.".format(key, ifd, type(ifd_dict[key]))
-            )
+            ) from e
 
         entries += key_str + type_str + length_str + value_str
         values += four_bytes_over
