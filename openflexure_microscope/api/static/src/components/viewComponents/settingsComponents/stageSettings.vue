@@ -3,11 +3,11 @@
     <div>
       <h3>Stage settings</h3>
       <p>
-        <label>
-          Stage Type
-          <div v-if="this.stageType != 'MissingStage'">
+        <label class="uk-form-label">
+          Stage Geometry
+          <div v-if="stageType != 'MissingStage'">
             <form @submit.prevent="setStageType">
-              <div>
+              <div class="uk-margin-small">
                 <select v-model="stageType" class="uk-select">
                   <option value="SangaStage">SangaStage (Standard)</option>
                   <option value="SangaDeltaStage"> SangaStage (Delta)</option>
@@ -16,7 +16,7 @@
               <div>
                 <button
                   type="submit"
-                  class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1"
+                  class="uk-button uk-button-primary uk-width-1-1"
                 >
                   Change stage type
                 </button>
@@ -32,14 +32,11 @@
 
 <script>
 import axios from "axios";
-import taskSubmitter from "../../genericComponents/taskSubmitter";
 
 export default {
   name: "StageSettings",
 
-  components: {
-    taskSubmitter
-  },
+  components: {},
 
   data: function() {
     return {
