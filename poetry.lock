@@ -290,7 +290,7 @@ description = "Python implementation of LabThings, based on the Flask microframe
 name = "labthings"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "1.1.0"
+version = "1.1.1"
 
 [package.dependencies]
 Flask = ">=1.1.1,<2.0.0"
@@ -769,7 +769,8 @@ ifaddr = ">=0.1.7"
 rpi = ["RPi.GPIO"]
 
 [metadata]
-content-hash = "2cf6e68a4ea5c8420957c7228e93bf8dae70b917d7ae62350d528e6d2a500252"
+content-hash = "31b48ef5e5fd26b351db5a383e6b72818e9a96167cc82c0d234921cb6cafcd91"
+lock-version = "1.0"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -872,8 +873,8 @@ jinja2 = [
     {file = "Jinja2-2.11.2.tar.gz", hash = "sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0"},
 ]
 labthings = [
-    {file = "labthings-1.1.0-py3-none-any.whl", hash = "sha256:6334b61688dc639dce9a08fb65cac84d95d0c0ebf8c5b3cc665a7c8db777fec9"},
-    {file = "labthings-1.1.0.tar.gz", hash = "sha256:07d9be1b7162455eec9eb1024d5d50bd3176828e293f4ebca24039f9d88879e2"},
+    {file = "labthings-1.1.1-py3-none-any.whl", hash = "sha256:d85f09d156a7025a42fff5a8af9d91ff1fe218af4bd8bb92ce110ee748dd501f"},
+    {file = "labthings-1.1.1.tar.gz", hash = "sha256:1bce535201444b64d61f76ad642708dac39455f757eb7bb9222edf8b38d41cf8"},
 ]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.4.3.tar.gz", hash = "sha256:f3900e8a5de27447acbf900b4750b0ddfd7ec1ea7fbaf11dfa911141bc522af0"},
@@ -926,6 +927,11 @@ markupsafe = [
     {file = "MarkupSafe-1.1.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:ba59edeaa2fc6114428f1637ffff42da1e311e29382d81b339c1817d37ec93c6"},
     {file = "MarkupSafe-1.1.1-cp37-cp37m-win32.whl", hash = "sha256:b00c1de48212e4cc9603895652c5c410df699856a2853135b3967591e4beebc2"},
     {file = "MarkupSafe-1.1.1-cp37-cp37m-win_amd64.whl", hash = "sha256:9bf40443012702a1d2070043cb6291650a0841ece432556f784f004937f0f32c"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:6788b695d50a51edb699cb55e35487e430fa21f1ed838122d722e0ff0ac5ba15"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:cdb132fc825c38e1aeec2c8aa9338310d29d337bebbd7baa06889d09a60a1fa2"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:13d3144e1e340870b25e7b10b98d779608c02016d5184cfb9927a9f10c689f42"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-win32.whl", hash = "sha256:596510de112c685489095da617b5bcbbac7dd6384aeebeda4df6025d0256a81b"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:e8313f01ba26fbbe36c7be1966a7b7424942f670f38e666995b88d012765b9be"},
     {file = "MarkupSafe-1.1.1.tar.gz", hash = "sha256:29872e92839765e546828bb7754a68c418d927cd064fd4708fab9fe9c8bb116b"},
 ]
 marshmallow = [
