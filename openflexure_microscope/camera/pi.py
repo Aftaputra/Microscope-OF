@@ -111,7 +111,7 @@ class PiCameraStreamer(BaseCamera):
         )  #: str: Path of .npy lens shading table file
 
         # Start the stream worker on init
-        self.stream = None
+        self.stream = io.BytesIO()  # Create a stream object
         self.start_worker()
 
     @property
