@@ -40,7 +40,7 @@
 
 <script>
 import axios from "axios";
-import taskSubmitter from "../../genericComponents/taskSubmitter";
+import taskSubmitter from "../../../genericComponents/taskSubmitter";
 
 // Export main app
 export default {

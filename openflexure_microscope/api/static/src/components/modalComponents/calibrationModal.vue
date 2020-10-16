@@ -92,9 +92,9 @@
 
           <p>Once you're ready, click auto-calibrate.</p>
 
-          <cameraStageMappingSettings
+          <CSMCalibrationSettings
             :show-extra-settings="false"
-          ></cameraStageMappingSettings>
+          ></CSMCalibrationSettings>
         </div>
       </div>
 
@@ -148,8 +148,8 @@
 <script>
 import axios from "axios";
 
-import cameraCalibrationSettings from "../viewComponents/settingsComponents/cameraCalibrationSettings.vue";
-import cameraStageMappingSettings from "../viewComponents/settingsComponents/cameraStageMappingSettings.vue";
+import cameraCalibrationSettings from "../viewComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
+import CSMCalibrationSettings from "../viewComponents/settingsComponents/CSMSettingsComponents/CSMCalibrationSettings.vue";
 import miniStreamDisplay from "../viewComponents/miniStreamDisplay.vue";
 
 export default {
@@ -157,7 +157,7 @@ export default {
 
   components: {
     cameraCalibrationSettings,
-    cameraStageMappingSettings,
+    CSMCalibrationSettings,
     miniStreamDisplay
   },
 

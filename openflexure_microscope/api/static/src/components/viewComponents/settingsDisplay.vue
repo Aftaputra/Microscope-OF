@@ -139,7 +139,7 @@
             view. This enables functions like click-to-move, and more precise
             tile scans.
           </p>
-          <cameraStageMappingSettings />
+          <CSMSettings />
         </div>
       </tabContent>
 
@@ -163,7 +163,7 @@ import microscopeSettings from "./settingsComponents/microscopeSettings.vue";
 import cameraSettings from "./settingsComponents/cameraSettings.vue";
 import appSettings from "./settingsComponents/appSettings.vue";
 import featuresSettings from "./settingsComponents/featuresSettings.vue";
-import cameraStageMappingSettings from "./settingsComponents/cameraStageMappingSettings.vue";
+import CSMSettings from "./settingsComponents/CSMSettings.vue";
 import stageSettings from "./settingsComponents/stageSettings.vue";
 // Import generic components
 import tabIcon from "../genericComponents/tabIcon";
@@ -178,7 +178,7 @@ export default {
     cameraSettings,
     stageSettings,
     microscopeSettings,
-    cameraStageMappingSettings,
+    CSMSettings,
     appSettings,
     featuresSettings,
     tabIcon,
