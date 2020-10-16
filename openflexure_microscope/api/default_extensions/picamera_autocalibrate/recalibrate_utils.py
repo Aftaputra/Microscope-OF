@@ -25,8 +25,10 @@ def flat_lens_shading_table(camera):
             "This program requires the forked picamera library with lens shading support"
         )
     return (
-        np.zeros(camera._lens_shading_table_shape(), dtype=np.uint8) + 32
-    )  # pylint: disable=W0212
+        # pylint: disable=W0212
+        np.zeros(camera._lens_shading_table_shape(), dtype=np.uint8)
+        + 32
+    )
 
 
 def adjust_exposure_to_setpoint(camera, setpoint):
