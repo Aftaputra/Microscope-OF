@@ -105,10 +105,10 @@ for extension in find_extensions(OPENFLEXURE_EXTENSIONS_PATH):
 labthing.add_view(views.CaptureList, "/captures")
 labthing.add_root_link(views.CaptureList, "captures")
 
-labthing.add_view(views.CaptureView, "/captures/<id>")
-labthing.add_view(views.CaptureDownload, "/captures/<id>/download/<filename>")
-labthing.add_view(views.CaptureTags, "/captures/<id>/tags")
-labthing.add_view(views.CaptureAnnotations, "/captures/<id>/annotations")
+labthing.add_view(views.CaptureView, "/captures/<id_>")
+labthing.add_view(views.CaptureDownload, "/captures/<id_>/download/<filename>")
+labthing.add_view(views.CaptureTags, "/captures/<id_>/tags")
+labthing.add_view(views.CaptureAnnotations, "/captures/<id_>/annotations")
 
 # Attach settings and state resources
 labthing.add_view(views.SettingsProperty, "/instrument/settings")

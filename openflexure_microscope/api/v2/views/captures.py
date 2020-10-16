@@ -49,18 +49,18 @@ class CaptureSchema(Schema):
     def generate_links(self, data, **_):
         data.links = {
             "self": {
-                "href": url_for(CaptureView.endpoint, id=data.id, _external=True),
+                "href": url_for(CaptureView.endpoint, id_=data.id, _external=True),
                 "mimetype": "application/json",
                 **description_from_view(CaptureView),
             },
             "tags": {
-                "href": url_for(CaptureTags.endpoint, id=data.id, _external=True),
+                "href": url_for(CaptureTags.endpoint, id_=data.id, _external=True),
                 "mimetype": "application/json",
                 **description_from_view(CaptureTags),
             },
             "annotations": {
                 "href": url_for(
-                    CaptureAnnotations.endpoint, id=data.id, _external=True
+                    CaptureAnnotations.endpoint, id_=data.id, _external=True
                 ),
                 "mimetype": "application/json",
                 **description_from_view(CaptureAnnotations),
@@ -68,7 +68,7 @@ class CaptureSchema(Schema):
             "download": {
                 "href": url_for(
                     CaptureDownload.endpoint,
-                    id=data.id,
+                    id_=data.id,
                     filename=data.name,
                     _external=True,
                 ),
