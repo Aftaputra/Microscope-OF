@@ -451,6 +451,9 @@ autofocus_extension_v2.add_view(AutofocusAPI, "/autofocus", endpoint="autofocus"
 autofocus_extension_v2.add_view(
     FastAutofocusAPI, "/fast_autofocus", endpoint="fast_autofocus"
 )
+autofocus_extension_v2.add_view(
+    UpDownUpAutofocusAPI, "/updownup_autofocus", endpoint="updownup_autofocus"
+)
 
 autofocus_extension_v2.add_view(
     MoveAndMeasureAPI, "/move_and_measure", endpoint="move_and_measure"
