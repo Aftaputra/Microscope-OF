@@ -80,13 +80,19 @@ class JPEGSharpnessMonitor:
 
     def focus_rel(self, dz, backlash=False, **kwargs):
         self.keep_alive()
+        # Start time and position
         self.stage_times.append(time.time())
         self.stage_positions.append(self.stage.position)
+        # Main move
         self.stage.move_rel([0, 0, dz], backlash=backlash, **kwargs)
+        # End time and position
         self.stage_times.append(time.time())
         self.stage_positions.append(self.stage.position)
-        i = len(self.stage_positions) - 2
-        return i, self.stage_positions[-1][2]
+        # Index of the data for this movement
+        data_index = len(self.stage_positions) - 2
+        # Final z position after move
+        final_z_position = self.stage_positions[-1][2]
+        return data_index, final_z_position
 
     def move_data(self, istart, istop=None):
         "Extract sharpness as a function of (interpolated) z"
@@ -222,11 +228,21 @@ def fast_autofocus(microscope, dz=2000):
     """Perform a down-up-down-up autofocus"""
     with microscope.camera.lock, microscope.stage.lock:
         with monitor_sharpness(microscope) as m:
-            i, z = m.focus_rel(-dz / 2)
+            # Move to (-dz / 2) 
+            m.focus_rel(-dz / 2)
+            # Move to dz while monitoring sharpness
+            # i: Sharpness monitor index for this move
+            # z: Final z position after move
             i, z = m.focus_rel(dz)
+            # Get the z position with highest sharpness from the previous move (index i)
             fz = m.sharpest_z_on_move(i)
-            i, z = m.focus_rel(-dz)  # move all the way to the start so it's consistent
+            # Move all the way to the start so it's consistent
+            # Store final absolute z position from this return move 
+            i, z = m.focus_rel(-dz)  
+            # Move to the target position fz
+            # Can't do absolute move here yet so move by (fz - z)
             m.focus_rel(fz - z)
+            # Return all focus data
             return m.data_dict()
 
 
@@ -378,7 +394,7 @@ class FastAutofocusAPI(ActionView):
     Run a fast autofocus
     """
 
-    args = {"dz": fields.Int(missing=2000)}
+    args = {"dz": fields.Int(missing=2000, example=2000)}
 
     def post(self, args):
         microscope = find_component("org.openflexure.microscope")
@@ -403,7 +419,7 @@ class UpDownUpAutofocusAPI(ActionView):
     """
 
     args = {
-        "dz": fields.Int(missing=2000),
+        "dz": fields.Int(missing=2000, example=2000),
         "backlash": fields.Int(missing=25, minimum=0),
     }
 
