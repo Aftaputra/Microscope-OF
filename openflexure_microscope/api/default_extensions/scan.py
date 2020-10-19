@@ -203,9 +203,7 @@ class ScanExtension(BaseExtension):
                 if autofocus_enabled:
                     if fast_autofocus:
                         # Run fast autofocus. Client should provide dz ~ 2000
-                        autofocus_extension.fast_autofocus(
-                            microscope, dz=autofocus_dz
-                        )
+                        autofocus_extension.fast_autofocus(microscope, dz=autofocus_dz)
                     else:
                         # Run slow autofocus. Client should provide dz ~ 50
                         autofocus_extension.autofocus(

@@ -228,7 +228,7 @@ def fast_autofocus(microscope, dz=2000):
     """Perform a down-up-down-up autofocus"""
     with microscope.camera.lock, microscope.stage.lock:
         with monitor_sharpness(microscope) as m:
-            # Move to (-dz / 2) 
+            # Move to (-dz / 2)
             m.focus_rel(-dz / 2)
             # Move to dz while monitoring sharpness
             # i: Sharpness monitor index for this move
@@ -237,8 +237,8 @@ def fast_autofocus(microscope, dz=2000):
             # Get the z position with highest sharpness from the previous move (index i)
             fz = m.sharpest_z_on_move(i)
             # Move all the way to the start so it's consistent
-            # Store final absolute z position from this return move 
-            i, z = m.focus_rel(-dz)  
+            # Store final absolute z position from this return move
+            i, z = m.focus_rel(-dz)
             # Move to the target position fz
             # Can't do absolute move here yet so move by (fz - z)
             m.focus_rel(fz - z)
