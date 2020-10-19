@@ -218,20 +218,16 @@ def move_and_measure(microscope, dz):
         return m.data_dict()
 
 
-def fast_autofocus(microscope, dz=2000, backlash=None):
+def fast_autofocus(microscope, dz=2000):
     """Perform a down-up-down-up autofocus"""
-    with monitor_sharpness(
-        microscope
-    ) as m, microscope.camera.lock as _, microscope.stage.lock as _:
-        i, z = m.focus_rel(-dz / 2)
-        i, z = m.focus_rel(dz)
-        fz = m.sharpest_z_on_move(i)
-        if backlash is None:
+    with microscope.camera.lock, microscope.stage.lock:
+        with monitor_sharpness(microscope) as m:
+            i, z = m.focus_rel(-dz / 2)
+            i, z = m.focus_rel(dz)
+            fz = m.sharpest_z_on_move(i)
             i, z = m.focus_rel(-dz)  # move all the way to the start so it's consistent
-        else:
-            i, z = m.focus_rel(fz - z - backlash)
-        m.focus_rel(fz - z)
-        return m.data_dict()
+            m.focus_rel(fz - z)
+            return m.data_dict()
 
 
 def fast_up_down_up_autofocus(
@@ -272,52 +268,51 @@ def fast_up_down_up_autofocus(
             might slightly hurt accuracy, but is unlikely to be a big issue.  Too big
             may cause you to overshoot, which is a problem.
     """
-    with monitor_sharpness(
-        microscope
-    ) as m, microscope.camera.lock as _, microscope.stage.lock as _:
-        # Ensure the MJPEG stream has started
-        microscope.camera.start_stream_recording()
+    with microscope.camera.lock, microscope.stage.lock:
+        with monitor_sharpness(microscope) as m:
+            # Ensure the MJPEG stream has started
+            microscope.camera.start_stream_recording()
 
-        df = dz  # TODO: refactor so I actually use dz in the code below!
-        logging.debug("Initial move")
-        if initial_move_up:
-            m.focus_rel(df / 2)
-        # move down
-        logging.debug("Move down")
-        i, z = m.focus_rel(-df)
-        # now inspect where the sharpest point is, and estimate the sharpness
-        # (JPEG size) that we should find at the start of the Z stack
-        _, jz, js = m.move_data(i)
-        best_z = jz[np.argmax(js)]
+            df = dz  # TODO: refactor so I actually use dz in the code below!
+            logging.debug("Initial move")
+            if initial_move_up:
+                m.focus_rel(df / 2)
+            # move down
+            logging.debug("Move down")
+            i, z = m.focus_rel(-df)
+            # now inspect where the sharpest point is, and estimate the sharpness
+            # (JPEG size) that we should find at the start of the Z stack
+            _, jz, js = m.move_data(i)
+            best_z = jz[np.argmax(js)]
 
-        # now move to the start of the z stack
-        logging.debug("Move to the start of the z stack")
-        i, z = m.focus_rel(
-            best_z + target_z - z + mini_backlash
-        )  # takes us to the start of the stack
+            # now move to the start of the z stack
+            logging.debug("Move to the start of the z stack")
+            i, z = m.focus_rel(
+                best_z + target_z - z + mini_backlash
+            )  # takes us to the start of the stack
 
-        # We've deliberately undershot - figure out how much further we should move based on the curve
-        logging.debug("Calculate remining movement")
-        current_js = m.jpeg_size()
-        imax = np.argmax(js)  # we want to crop out just the bit below the peak
-        js = js[imax:]  # NB z is in DECREASING order
-        jz = jz[imax:]
-        inow = np.argmax(
-            js < current_js
-        )  # use the curve we recorded to estimate our position
-        # TODO: fancy interpolation stuff
+            # We've deliberately undershot - figure out how much further we should move based on the curve
+            logging.debug("Calculate remining movement")
+            current_js = m.jpeg_size()
+            imax = np.argmax(js)  # we want to crop out just the bit below the peak
+            js = js[imax:]  # NB z is in DECREASING order
+            jz = jz[imax:]
+            inow = np.argmax(
+                js < current_js
+            )  # use the curve we recorded to estimate our position
+            # TODO: fancy interpolation stuff
 
-        # So, the Z position corresponding to our current sharpness value is zs[inow]
-        # That means we should move forwards, by best_z - zs[inow]
-        logging.debug("Correction move")
-        correction_move = best_z + target_z - jz[inow]
-        logging.debug(
-            "Fast autofocus scan: correcting backlash by moving {} steps".format(
-                correction_move
+            # So, the Z position corresponding to our current sharpness value is zs[inow]
+            # That means we should move forwards, by best_z - zs[inow]
+            logging.debug("Correction move")
+            correction_move = best_z + target_z - jz[inow]
+            logging.debug(
+                "Fast autofocus scan: correcting backlash by moving {} steps".format(
+                    correction_move
+                )
             )
-        )
-        m.focus_rel(correction_move)
-        return m.data_dict()
+            m.focus_rel(correction_move)
+            return m.data_dict()
 
 
 class MeasureSharpnessAPI(View):
@@ -346,7 +341,6 @@ class MoveAndMeasureAPI(ActionView):
         if microscope.has_real_stage():
             # Acquire microscope lock with 1s timeout
             with microscope.lock(timeout=1):
-                # Run fast_up_down_up_autofocus
                 return move_and_measure(microscope, dz=args.get("dz"))
 
         else:
@@ -382,6 +376,30 @@ class AutofocusAPI(ActionView):
 class FastAutofocusAPI(ActionView):
     """
     Run a fast autofocus
+    """
+
+    args = {"dz": fields.Int(missing=2000)}
+
+    def post(self, args):
+        microscope = find_component("org.openflexure.microscope")
+
+        if not microscope:
+            abort(503, "No microscope connected. Unable to autofocus.")
+
+        if microscope.has_real_stage():
+            logging.debug("Running autofocus...")
+            # Acquire microscope lock with 1s timeout
+            with microscope.lock(timeout=1):
+                # Run fast_autofocus
+                return fast_autofocus(microscope, dz=args.get("dz"))
+
+        else:
+            abort(503, "No stage connected. Unable to autofocus.")
+
+
+class UpDownUpAutofocusAPI(ActionView):
+    """
+    Run a fast up-down-up autofocus
     """
 
     args = {
