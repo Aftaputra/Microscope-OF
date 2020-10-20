@@ -95,7 +95,6 @@ export default {
 .tabicon-active {
   color: #fff !important;
   background-color: @global-primary-background !important;
-  box-shadow: @small-shadow;
 }
 
 .tabtitle {
