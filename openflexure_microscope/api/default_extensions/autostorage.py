@@ -6,6 +6,7 @@ from flask import abort
 from labthings import fields, find_component
 from labthings.extensions import BaseExtension
 from labthings.views import PropertyView, View
+from labthings.marshalling import use_args
 
 from openflexure_microscope.api.utilities.gui import build_gui
 from openflexure_microscope.captures.capture_manager import BASE_CAPTURE_PATH
@@ -208,8 +209,7 @@ class PreferredLocationView(PropertyView):
 
 
 class PreferredLocationGUIView(View):
-    args = {"new_path_title": fields.String(required=True)}
-
+    @use_args({"new_path_title": fields.String(required=True)})
     def post(self, args):
         new_path_title = args.get("new_path_title")
         logging.debug(new_path_title)
