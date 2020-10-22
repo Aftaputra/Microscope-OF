@@ -4,7 +4,7 @@ import sys
 from . import _webp
 from ._common import get_exif_seg, read_exif_from_file, split_into_segments
 from ._exceptions import InvalidImageDataError
-from ._exif import ExifIFD, ImageIFD, TAGS, TYPES
+from ._exif import TAGS, TYPES, ExifIFD, ImageIFD
 
 LITTLE_ENDIAN = b"\x49\x49"
 

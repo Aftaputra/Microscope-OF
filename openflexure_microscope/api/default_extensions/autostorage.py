@@ -5,8 +5,8 @@ import psutil
 from flask import abort
 from labthings import fields, find_component
 from labthings.extensions import BaseExtension
-from labthings.views import PropertyView, View
 from labthings.marshalling import use_args
+from labthings.views import PropertyView, View
 
 from openflexure_microscope.api.utilities.gui import build_gui
 from openflexure_microscope.captures.capture_manager import BASE_CAPTURE_PATH

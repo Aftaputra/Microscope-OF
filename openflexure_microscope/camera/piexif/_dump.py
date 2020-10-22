@@ -3,7 +3,7 @@ import numbers
 import struct
 
 from ._common import split_into_segments
-from ._exif import ExifIFD, ImageIFD, TAGS, TYPES
+from ._exif import TAGS, TYPES, ExifIFD, ImageIFD
 
 TIFF_HEADER_LENGTH = 8
 
