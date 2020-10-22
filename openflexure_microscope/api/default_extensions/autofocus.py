@@ -1,7 +1,7 @@
 import logging
 import time
+from collections import namedtuple
 from contextlib import contextmanager
-from threading import Event, Thread
 
 import numpy as np
 from labthings import current_action, fields, find_component
@@ -14,80 +14,100 @@ from openflexure_microscope.utilities import set_properties
 
 ### Autofocus utilities
 
+# Class to store a frames metadata
+TrackerFrame = namedtuple("TrackerFrame", ["size", "time"])
+
+
+class FrameTracker(object):
+    """
+    A file-like object used to analyse MJPEG frames.
+
+    Instead of analysing a load of real MJPEG frames 
+    after they've been stored in a BytesIO stream,
+    we tell the camera to write frames to this class instead.
+
+    We then do analysis as the frames are written, and discard the heavier
+    image data.
+    """
+
+    def __init__(self):
+        # Array of TrackerFrame objects
+        self.frames = []
+        self.last = None
+
+    def write(self, s):
+        # Store the incoming frame metadata
+        # Discards the actual frame image data
+        # NOTE: This could be used for smarter processing
+        # E.g. different sharpness metrics
+        frame = TrackerFrame(size=len(s), time=time.time())
+        self.frames.append(frame)
+        self.last = frame
+
+    def flush(self):
+        # Called at end of recording
+        pass
+
 
 class JPEGSharpnessMonitor:
-    def __init__(self, microscope, timeout=60):
+    def __init__(self, microscope):
         self.microscope = microscope
         self.camera = microscope.camera
         self.stage = microscope.stage
-        self.jpeg_sizes = []
-        self.jpeg_times = []
+
+        self.recording_start_time = None
+
         self.stage_positions = []
         self.stage_times = []
-        self.stop_event = Event()
-        self.timeout = timeout
-        self.keep_alive()
-        self.background_thread = None
+        self.jpeg_times = []
+        self.jpeg_sizes = []
 
-    def is_alive(self):
-        if self.background_thread is None:
-            return False
-        else:
-            return self.background_thread.is_alive()
+        # Splitter port 3 is reserved for autofocus
+        self.splitter_port = 3
+        self.stream = FrameTracker()
 
-    def should_stop(self):
-        return time.time() - self.kept_alive > self.timeout
-
-    def keep_alive(self):
-        self.kept_alive = time.time()
+    def stop_recording(self):
+        logging.info("Stopping recording for autofocus...")
+        self.camera.camera.stop_recording(splitter_port=self.splitter_port)
+        logging.info("Stopped recording for autofocus!")
 
     def start(self):
-        "Start monitoring sharpness by looking at JPEG size"
-        if not self.camera.stream_active:
-            logging.warning(
-                "Autofocus sharpness monitor was started but the camera isn't streaming.  Attempting to start the stream..."
-            )
-            self.camera.start_stream_recording()
-        self.background_thread = Thread(target=self._measure_jpegs)
-        self.background_thread.start()
-        return self
+        # Log the recording start time
+        self.recording_start_time = time.time()
+        # Start the stream recording
+        self.camera.camera.start_recording(
+            self.stream,
+            format="mjpeg",
+            quality=100,  # Use best quality (we don't store the frames anyway!)
+            bitrate=-1,  # RWB: disable bitrate control
+            # (bitrate control makes JPEG size less good as a focus
+            # metric)
+            splitter_port=self.splitter_port,
+        )
+        logging.info("Started recording for autofocus")
 
     def stop(self):
-        "Stop the background thread"
-        self.stop_event.set()
-        logging.info("Joining JPEG thread")
-        self.background_thread.join()
-
-    def _measure_jpegs(self):
-        "Function that runs in a background thread to record sharpness"
-        logging.debug("Starting sharpness measurement in background thread")
-        self.keep_alive()
-        logging.debug("_measure_jpegs stop_event: %s", self.stop_event.is_set())
-        while not self.stop_event.is_set() and not self.should_stop():
-            size_now = self.jpeg_size()
-            time_now = time.time()
-            self.jpeg_sizes.append(size_now)
-            self.jpeg_times.append(time_now)
-        logging.info("Exited JPEG measure loop")
-        if self.stop_event.is_set():
-            logging.debug("Cleanly stopped sharpness measurement in background thread")
-        if self.should_stop():
-            logging.debug("Sharpness measurement timed out and has stopped")
-
-    def jpeg_size(self):
-        """Return the size of a frame from the MJPEG stream"""
-        return len(self.camera.get_frame())
+        self.stop_recording()
+        logging.info("Stopped recording for autofocus")
 
     def focus_rel(self, dz, backlash=False, **kwargs):
-        self.keep_alive()
-        # Start time and position
+        # Store the start time and position
         self.stage_times.append(time.time())
         self.stage_positions.append(self.stage.position)
+
         # Main move
         self.stage.move_rel([0, 0, dz], backlash=backlash, **kwargs)
-        # End time and position
+
+        # Store the end time and position
         self.stage_times.append(time.time())
         self.stage_positions.append(self.stage.position)
+
+        # Retrieve frame data
+        for frame in self.stream.frames:
+            # Make timestamp absolute Unix time
+            self.jpeg_times.append(frame.time)
+            self.jpeg_sizes.append(frame.size)
+
         # Index of the data for this movement
         data_index = len(self.stage_positions) - 2
         # Final z position after move
@@ -309,7 +329,7 @@ def fast_up_down_up_autofocus(
 
             # We've deliberately undershot - figure out how much further we should move based on the curve
             logging.debug("Calculate remining movement")
-            current_js = m.jpeg_size()
+            current_js = m.stream.last.size
             imax = np.argmax(js)  # we want to crop out just the bit below the peak
             js = js[imax:]  # NB z is in DECREASING order
             jz = jz[imax:]
