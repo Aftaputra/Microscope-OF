@@ -2,9 +2,55 @@
 import logging
 import threading
 import time
+import io
 from abc import ABCMeta, abstractmethod
+from collections import namedtuple
 
 from labthings import ClientEvent, StrictLock
+
+# Class to store a frames metadata
+TrackerFrame = namedtuple("TrackerFrame", ["size", "time"])
+
+
+class FrameStream(io.BytesIO):
+    """
+    A file-like object used to analyse MJPEG frames.
+
+    Instead of analysing a load of real MJPEG frames 
+    after they've been stored in a BytesIO stream,
+    we tell the camera to write frames to this class instead.
+
+    We then do analysis as the frames are written, and discard the heavier
+    image data.
+    """
+
+    def __init__(self, *args, **kwargs):
+        # Array of TrackerFrame objects
+        io.BytesIO.__init__(self, *args, **kwargs)
+        self.frames = []
+        self.last = None
+
+        self.tracking = False
+
+    def start_tracking(self):
+        if not self.tracking:
+            logging.info("Started tracking frame data")
+            self.tracking = True
+
+    def stop_tracking(self):
+        if self.tracking:
+            logging.info("Stopped tracking frame data")
+            self.tracking = False
+
+    def reset_tracking(self):
+        self.frames = []
+
+    def write(self, s):
+        if self.tracking:
+            frame = TrackerFrame(size=len(s), time=time.time())
+            self.frames.append(frame)
+            self.last = frame
+        io.BytesIO.write(self, s)
 
 
 class BaseCamera(metaclass=ABCMeta):
@@ -18,6 +64,7 @@ class BaseCamera(metaclass=ABCMeta):
 
         self.lock = StrictLock(name="Camera", timeout=None)
 
+        self.stream = FrameStream()
         self.frames_iterator = None
         self.frame = None
         self.last_access = 0

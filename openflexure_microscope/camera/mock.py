@@ -2,7 +2,6 @@
 
 from __future__ import division
 
-import io
 import logging
 import time
 from datetime import datetime
@@ -31,9 +30,6 @@ class MissingCamera(BaseCamera):
         self.numpy_resolution = (1312, 976)
         self.jpeg_quality = 75
         self.framerate = 10
-
-        # Create an empty stream
-        self.stream = io.BytesIO()
 
         # Generate an initial dummy image
         self.generate_new_dummy_image()
