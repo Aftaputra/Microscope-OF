@@ -29,19 +29,36 @@ def construct_grid(initial, step_sizes, n_steps, style="raster"):
     """
     arr = []
 
-    for i in range(n_steps[0]):  # x axis
-        arr.append([])
-        for j in range(n_steps[1]):  # y axis
-            # Create a coordinate array
-            coord = [initial[ax] + [i, j][ax] * step_sizes[ax] for ax in range(2)]
-            # Append coordinate array to position grid
-            arr[i].append(tuple(coord))
+    if style == "spiral":
+        # deal with the centre image immediately
+        coord = initial
+        arr.append(initial)
+        # for spiral, n_steps is the number of shells, and so only requires n_steps[0]
+        for i in range(2, n_steps[0]+1):
+            arr.append([])
+            side_length = (2 * i) - 1
 
-    # Style modifiers
-    if style == "snake":
-        for i, line in enumerate(arr):
-            if i % 2 != 0:
-                line.reverse()
+            # iteratively generate the next location to append
+            coord = [coord[ax] + [-1,1][ax] * step_sizes[ax] for ax in range(2)]
+            for direction in ([1,0],[0,-1],[-1,0],[0,1]):
+                for edge_images in range(side_length-1):
+                    coord = [coord[ax] + direction[ax] * step_sizes[ax] for ax in range(2)]
+                    arr[i-1].append(tuple(coord))
+
+    else:
+        for i in range(n_steps[0]):  # x axis
+            arr.append([])
+            for j in range(n_steps[1]):  # y axis
+                # Create a coordinate array
+                coord = [initial[ax] + [i, j][ax] * step_sizes[ax] for ax in range(2)]
+                # Append coordinate array to position grid
+                arr[i].append(tuple(coord))
+
+        # Style modifiers
+        if style == "snake":
+            for i, line in enumerate(arr):
+                if i % 2 != 0:
+                    line.reverse()
 
     return arr
 
