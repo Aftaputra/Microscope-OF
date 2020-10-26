@@ -54,6 +54,8 @@ class JPEGSharpnessMonitor:
             # Make timestamp absolute Unix time
             self.jpeg_times.append(frame.time)
             self.jpeg_sizes.append(frame.size)
+        # Clear frame data for this move from the stream
+        self.camera.stream.reset_tracking()
 
         # Index of the data for this movement
         data_index = len(self.stage_positions) - 2
@@ -62,7 +64,7 @@ class JPEGSharpnessMonitor:
         return data_index, final_z_position
 
     def move_data(self, istart, istop=None):
-        "Extract sharpness as a function of (interpolated) z"
+        """Extract sharpness as a function of (interpolated) z"""
         if istop is None:
             istop = istart + 2
         jpeg_times = np.array(self.jpeg_times)
