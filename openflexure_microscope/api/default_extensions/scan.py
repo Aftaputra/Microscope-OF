@@ -34,16 +34,18 @@ def construct_grid(initial, step_sizes, n_steps, style="raster"):
         coord = initial
         arr.append(initial)
         # for spiral, n_steps is the number of shells, and so only requires n_steps[0]
-        for i in range(2, n_steps[0]+1):
+        for i in range(2, n_steps[0] + 1):
             arr.append([])
             side_length = (2 * i) - 1
 
             # iteratively generate the next location to append
-            coord = [coord[ax] + [-1,1][ax] * step_sizes[ax] for ax in range(2)]
-            for direction in ([1,0],[0,-1],[-1,0],[0,1]):
-                for edge_images in range(side_length-1):
-                    coord = [coord[ax] + direction[ax] * step_sizes[ax] for ax in range(2)]
-                    arr[i-1].append(tuple(coord))
+            coord = [coord[ax] + [-1, 1][ax] * step_sizes[ax] for ax in range(2)]
+            for direction in ([1, 0], [0, -1], [-1, 0], [0, 1]):
+                for _ in range(side_length - 1):
+                    coord = [
+                        coord[ax] + direction[ax] * step_sizes[ax] for ax in range(2)
+                    ]
+                    arr[i - 1].append(tuple(coord))
 
     else:
         for i in range(n_steps[0]):  # x axis
