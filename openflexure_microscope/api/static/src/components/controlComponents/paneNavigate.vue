@@ -122,7 +122,7 @@
                 <taskSubmitter
                   v-if="normalAutofocusUri"
                   :submit-url="normalAutofocusUri"
-                  :submit-data="{ dz: [-60, -30, 0, 30, 60] }"
+                  :submit-data="{ dz: [-90, -60, -30, 0, 30, 60, 90] }"
                   :submit-label="'Medium'"
                   :button-primary="false"
                   @taskStarted="isAutofocusing = 2"
@@ -134,7 +134,7 @@
                 <taskSubmitter
                   v-if="normalAutofocusUri"
                   :submit-url="normalAutofocusUri"
-                  :submit-data="{ dz: [-20, -10, 0, 10, 20] }"
+                  :submit-data="{ dz: [-30, -20, -10, 0, 10, 20, 30] }"
                   :submit-label="'Fine'"
                   :button-primary="false"
                   @taskStarted="isAutofocusing = 3"

@@ -1,6 +1,5 @@
 import logging
 import time
-from collections import namedtuple
 from contextlib import contextmanager
 
 import numpy as np
@@ -13,40 +12,6 @@ from openflexure_microscope.devel import abort
 from openflexure_microscope.utilities import set_properties
 
 ### Autofocus utilities
-
-# Class to store a frames metadata
-TrackerFrame = namedtuple("TrackerFrame", ["size", "time"])
-
-
-class FrameTracker(object):
-    """
-    A file-like object used to analyse MJPEG frames.
-
-    Instead of analysing a load of real MJPEG frames 
-    after they've been stored in a BytesIO stream,
-    we tell the camera to write frames to this class instead.
-
-    We then do analysis as the frames are written, and discard the heavier
-    image data.
-    """
-
-    def __init__(self):
-        # Array of TrackerFrame objects
-        self.frames = []
-        self.last = None
-
-    def write(self, s):
-        # Store the incoming frame metadata
-        # Discards the actual frame image data
-        # NOTE: This could be used for smarter processing
-        # E.g. different sharpness metrics
-        frame = TrackerFrame(size=len(s), time=time.time())
-        self.frames.append(frame)
-        self.last = frame
-
-    def flush(self):
-        # Called at end of recording
-        pass
 
 
 class JPEGSharpnessMonitor:
@@ -62,36 +27,17 @@ class JPEGSharpnessMonitor:
         self.jpeg_times = []
         self.jpeg_sizes = []
 
-        # Splitter port 3 is reserved for autofocus
-        self.splitter_port = 3
-        self.stream = FrameTracker()
-
-    def stop_recording(self):
-        logging.info("Stopping recording for autofocus...")
-        self.camera.camera.stop_recording(splitter_port=self.splitter_port)
-        logging.info("Stopped recording for autofocus!")
-
     def start(self):
         # Log the recording start time
         self.recording_start_time = time.time()
-        # Start the stream recording
-        self.camera.camera.start_recording(
-            self.stream,
-            format="mjpeg",
-            quality=100,  # Use best quality (we don't store the frames anyway!)
-            bitrate=-1,  # RWB: disable bitrate control
-            # (bitrate control makes JPEG size less good as a focus
-            # metric)
-            splitter_port=self.splitter_port,
-        )
-        logging.info("Started recording for autofocus")
 
     def stop(self):
-        self.stop_recording()
-        logging.info("Stopped recording for autofocus")
+        self.camera.stream.stop_tracking()
+        self.camera.stream.reset_tracking()
 
     def focus_rel(self, dz, backlash=False, **kwargs):
         # Store the start time and position
+        self.camera.stream.start_tracking()
         self.stage_times.append(time.time())
         self.stage_positions.append(self.stage.position)
 
@@ -99,14 +45,17 @@ class JPEGSharpnessMonitor:
         self.stage.move_rel([0, 0, dz], backlash=backlash, **kwargs)
 
         # Store the end time and position
+        self.camera.stream.stop_tracking()
         self.stage_times.append(time.time())
         self.stage_positions.append(self.stage.position)
 
         # Retrieve frame data
-        for frame in self.stream.frames:
+        for frame in self.camera.stream.frames:
             # Make timestamp absolute Unix time
             self.jpeg_times.append(frame.time)
             self.jpeg_sizes.append(frame.size)
+        # Clear frame data for this move from the stream
+        self.camera.stream.reset_tracking()
 
         # Index of the data for this movement
         data_index = len(self.stage_positions) - 2
@@ -115,7 +64,7 @@ class JPEGSharpnessMonitor:
         return data_index, final_z_position
 
     def move_data(self, istart, istop=None):
-        "Extract sharpness as a function of (interpolated) z"
+        """Extract sharpness as a function of (interpolated) z"""
         if istop is None:
             istop = istart + 2
         jpeg_times = np.array(self.jpeg_times)
@@ -329,7 +278,7 @@ def fast_up_down_up_autofocus(
 
             # We've deliberately undershot - figure out how much further we should move based on the curve
             logging.debug("Calculate remining movement")
-            current_js = m.stream.last.size
+            current_js = m.camera.stream.last.size
             imax = np.argmax(js)  # we want to crop out just the bit below the peak
             js = js[imax:]  # NB z is in DECREASING order
             jz = jz[imax:]
