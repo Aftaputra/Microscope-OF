@@ -34,12 +34,12 @@ class FrameStream(io.BytesIO):
 
     def start_tracking(self):
         if not self.tracking:
-            logging.info("Started tracking frame data")
+            logging.debug("Started tracking frame data")
             self.tracking = True
 
     def stop_tracking(self):
         if self.tracking:
-            logging.info("Stopped tracking frame data")
+            logging.debug("Stopped tracking frame data")
             self.tracking = False
 
     def reset_tracking(self):
