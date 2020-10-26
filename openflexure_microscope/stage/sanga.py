@@ -31,6 +31,7 @@ class SangaStage(BaseStage):
         self._backlash = (
             None  # Initialise backlash storage, used by property setter/getter
         )
+        self.settle_time = 0.2  # Default move settle time
         self.axis_names = ["x", "y", "z"]  # Assume all sangaboards are 3 axis
 
         self._position_on_enter = None
@@ -98,11 +99,16 @@ class SangaStage(BaseStage):
             # Construct backlash array
             backlash = axes_to_array(config["backlash"], ["x", "y", "z"], [0, 0, 0])
             self.backlash = backlash
+        if "settle_time" in config:
+            self.settle_time = config.get("settle_time")
 
     def read_settings(self) -> dict:
         """Return the current settings as a dictionary"""
         blsh = self.backlash.tolist()
-        config = {"backlash": {"x": blsh[0], "y": blsh[1], "z": blsh[2]}}
+        config = {
+            "backlash": {"x": blsh[0], "y": blsh[1], "z": blsh[2]},
+            "settle_time": self.settle_time,
+        }
 
         return config
 
@@ -145,6 +151,9 @@ class SangaStage(BaseStage):
                 # If backlash correction has kicked in and made us overshoot, move
                 # to the correct end position (i.e. the move we were asked to make)
                 self.board.move_rel(displacement - initial_move)
+        # Settle outside of the stage lock so that another move request
+        # can just take over before settling
+        time.sleep(self.settle_time)
 
     def move_abs(self, final, **kwargs):
         """Make an absolute move to a position
@@ -152,6 +161,9 @@ class SangaStage(BaseStage):
         with self.lock:
             logging.debug("Moving sangaboard to %s", final)
             self.board.move_abs(final, **kwargs)
+        # Settle outside of the stage lock so that another move request
+        # can just take over before settling
+        time.sleep(self.settle_time)
 
     def zero_position(self):
         """Set the current position to zero"""
