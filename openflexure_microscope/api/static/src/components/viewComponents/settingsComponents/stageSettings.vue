@@ -72,7 +72,7 @@ export default {
       axios
         .put(this.stageTypeUri, this.stageType,{
           headers: {
-              'Content-Type': 'text/plain',
+              'Content-Type': 'application/json',
           }
         })
         .then(response => {
