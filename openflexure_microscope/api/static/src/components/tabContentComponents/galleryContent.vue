@@ -85,11 +85,7 @@
         v-if="galleryFolder"
         class="gallery-folder-heading uk-flex uk-flex-middle"
       >
-        <a
-          class="uk-icon uk-margin-remove"
-          href="#"
-          @click="galleryFolder = ''"
-        >
+        <a class="uk-icon uk-margin-remove" href="#" @click="galleryBack()">
           <i class="material-icons">arrow_back</i>
         </a>
         <div class="uk-margin-left">
@@ -102,25 +98,38 @@
 
       <!-- Gallery capture cards -->
       <div class="gallery-grid">
-        <div v-for="item in sortedItems" :key="item.metadata.id">
+        <div v-for="item in pagedItems" :key="item.metadata.id">
           <scanCard
             v-if="'isScan' in item"
-            :captures="item.captures"
-            :metadata="item.metadata"
-            :thumbnail="item.thumbnail"
+            :scan-state="item"
+            @selectFolder="selectFolder"
           />
           <captureCard v-else :capture-state="item" />
         </div>
       </div>
+
+      <Paginate
+        v-model="page"
+        :page-count="numberOfPages"
+        :page-range="3"
+        :margin-pages="1"
+        :container-class="'uk-pagination uk-flex-center'"
+        :prev-text="'Prev'"
+        :next-text="'Next'"
+        :page-class="'page-item'"
+        :disabled-class="'uk-disabled'"
+      >
+      </Paginate>
     </div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
+import Paginate from "vuejs-paginate";
+
 import captureCard from "./galleryComponents/captureCard.vue";
 import scanCard from "./galleryComponents/scanCard.vue";
-
 import ZipDownloader from "./galleryComponents/zipDownloader";
 
 // Export main app
@@ -130,7 +139,8 @@ export default {
   components: {
     captureCard,
     scanCard,
-    ZipDownloader
+    ZipDownloader,
+    Paginate
   },
 
   data: function() {
@@ -140,7 +150,9 @@ export default {
       sortDescending: true,
       galleryFolder: "",
       scanTag: "scan",
-      unwatchStoreFunction: null
+      unwatchStoreFunction: null,
+      maxitems: 10,
+      page: 1
     };
   },
 
@@ -241,7 +253,6 @@ export default {
       // If galleryFolder (ie inside a scan folder), show scan captures
       // Otherwise, show root captures and scan cards
       if (this.galleryFolder) {
-        console.log(this.allScans[this.galleryFolder].captures);
         return this.allScans[this.galleryFolder].captures;
       } else {
         return this.noScanCaptures.concat(this.scanList);
@@ -275,6 +286,15 @@ export default {
     sortedItems: function() {
       // Sort filteredItems using sortCaptures function
       return this.sortCaptures(this.filteredItems);
+    },
+
+    pagedItems: function() {
+      let startIndex = (this.page - 1) * this.maxitems;
+      return this.sortedItems.slice(startIndex, startIndex + this.maxitems);
+    },
+
+    numberOfPages: function() {
+      return Math.floor(this.sortedItems.length / this.maxitems);
     }
   },
 
@@ -284,10 +304,6 @@ export default {
     // A global signal listener to perform a gallery refresh
     this.$root.$on("globalUpdateCaptures", () => {
       this.updateCaptures();
-    });
-    // A global signal listener to set the gallery folder
-    this.$root.$on("globalUpdateCaptureFolder", folder => {
-      this.galleryFolder = folder;
     });
   },
 
@@ -312,8 +328,6 @@ export default {
   beforeDestroy() {
     // Remove global signal listener to perform a gallery refresh
     this.$root.$off("globalUpdateCaptures");
-    // Remove global signal listener to set the gallery folder
-    this.$root.$off("globalUpdateCaptureFolder");
     // Then we call that function here to unwatch
     if (this.unwatchStoreFunction) {
       this.unwatchStoreFunction();
@@ -375,6 +389,16 @@ export default {
       } else {
         return list.sort(compare);
       }
+    },
+
+    galleryBack: function() {
+      this.galleryFolder = "";
+      this.page = 1;
+    },
+
+    selectFolder: function(folderID) {
+      console.log(folderID);
+      this.galleryFolder = folderID;
     }
   }
 };
@@ -396,6 +420,7 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fill, 320px);
   justify-content: center;
+  overflow-y: auto;
 }
 
 .gallery-grid > div {
