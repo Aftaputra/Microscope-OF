@@ -4,7 +4,7 @@
       <h3>Stage settings</h3>
       <p>
         <label class="uk-form-label">
-          Stage Geometry
+          Stage geometry
           <div v-if="stageType != 'MissingStage'">
             <form @submit.prevent="setStageType">
               <div class="uk-margin-small">
@@ -18,7 +18,7 @@
                   type="submit"
                   class="uk-button uk-button-primary uk-width-1-1"
                 >
-                  Change stage type
+                  Change stage geometry
                 </button>
               </div>
             </form>
@@ -70,11 +70,15 @@ export default {
     setStageType: function() {
       console.log("Setting stage type");
       axios
-        .put(this.stageTypeUri, this.stageType)
+        .put(this.stageTypeUri, this.stageType,{
+          headers: {
+              'Content-Type': 'application/json',
+          }
+        })
         .then(response => {
           this.stageType = response.data;
           console.log("Stage type set to " + this.stageType);
-          this.modalNotify("Stage type changed.");
+          this.modalNotify("Stage geometry changed.");
         })
         .catch(error => {
           this.modalError(error);
