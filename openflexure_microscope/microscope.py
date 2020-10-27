@@ -163,7 +163,6 @@ class Microscope:
         else:
             logging.warning("The stage type is incorrectly defined.")
 
-
     def has_real_stage(self) -> bool:
         """
         Check if a real (non-mock) stage is currently attached.
