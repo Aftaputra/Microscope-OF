@@ -8,13 +8,11 @@ import uuid
 from collections import OrderedDict
 
 import dateutil.parser
-from PIL import Image
 
 from openflexure_microscope.camera import piexif
 from openflexure_microscope.camera.piexif._exceptions import InvalidImageDataError
 from openflexure_microscope.config import JSONEncoder
 
-PIL_FORMATS = ["JPG", "JPEG", "PNG", "TIF", "TIFF"]
 EXIF_FORMATS = ["JPG", "JPEG", "TIF", "TIFF"]
 
 
