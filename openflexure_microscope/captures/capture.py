@@ -16,7 +16,6 @@ from openflexure_microscope.config import JSONEncoder
 
 PIL_FORMATS = ["JPG", "JPEG", "PNG", "TIF", "TIFF"]
 EXIF_FORMATS = ["JPG", "JPEG", "TIF", "TIFF"]
-THUMBNAIL_SIZE = (200, 150)
 
 
 def pull_usercomment_dict(filepath):
@@ -144,9 +143,6 @@ class CaptureObject(object):
         self.annotations = {}
         # List for storing tags
         self.tags = []
-
-        # Thumbnail (populated only for PIL captures)
-        self.thumb_bytes = None
 
     def write(self, s):
         logging.debug("Writing to %s", self)
@@ -349,21 +345,12 @@ class CaptureObject(object):
         """
         Returns a thumbnail of the capture data, for supported image formats.
         """
-        # If no thumbnail exists, try and make one
-        if not self.thumb_bytes:
-            logging.info("Building thumbnail")
-            self.thumb_bytes = io.BytesIO()
-            if self.format.upper() in PIL_FORMATS:
-                im = Image.open(self.data)
-                im.thumbnail(THUMBNAIL_SIZE)
-                im.save(self.thumb_bytes, self.format)
-                self.thumb_bytes.seek(0)
-        else:
-            self.thumb_bytes.seek(0)
-
-        # Copy the buffer, to avoid closing the file
-        data = io.BytesIO(self.thumb_bytes.getbuffer())
-        return data
+        exif_dict = piexif.load(self.file)
+        thumbnail = exif_dict.pop("thumbnail")
+        if thumbnail:
+            return io.BytesIO(thumbnail)
+        # If no thumbnail exists, serve the full image
+        return self.data.getvalue()
 
     def save(self) -> None:
         """Write stream to file, and save/update metadata file"""
