@@ -237,7 +237,6 @@
                 <option>Number</option>
               </select>
             </div>
-
           </div>
         </div>
       </li>

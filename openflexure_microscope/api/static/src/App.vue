@@ -45,7 +45,7 @@ import loadingContent from "./components/loadingContent.vue";
 import axios from "axios";
 var Mousetrap = require("mousetrap");
 
-Mousetrap.prototype.stopCallback = function(e, element, combo) {
+Mousetrap.prototype.stopCallback = function(e, element) {
   // if the element has the class "mousetrap" then no need to stop
   if ((" " + element.className + " ").indexOf(" mousetrap ") > -1) {
     return false;
