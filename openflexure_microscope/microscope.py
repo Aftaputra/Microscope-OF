@@ -384,6 +384,9 @@ class Microscope:
             )
 
             # Capture to output object
+            extras = {}
+            if fmt == "jpeg":
+                extras["thumbnail"] = (200, 150, 85)
             logging.info("Starting microscope capture %s", output.file)
             self.camera.capture(
                 output,
@@ -391,6 +394,7 @@ class Microscope:
                 resize=resize,
                 bayer=bayer,
                 fmt=fmt,
+                **extras,
             )
 
         output.put_and_save(tags, annotations, full_metadata)

@@ -349,7 +349,7 @@ export default {
 }
 
 #container-left {
-  overflow: hidden;
+  overflow: auto;
   background-color: rgba(180, 180, 180, 0.025);
   width: 100%;
   height: 100%;

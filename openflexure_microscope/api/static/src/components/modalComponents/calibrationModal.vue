@@ -148,9 +148,9 @@
 <script>
 import axios from "axios";
 
-import cameraCalibrationSettings from "../viewComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
-import CSMCalibrationSettings from "../viewComponents/settingsComponents/CSMSettingsComponents/CSMCalibrationSettings.vue";
-import miniStreamDisplay from "../viewComponents/miniStreamDisplay.vue";
+import cameraCalibrationSettings from "../tabContentComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
+import CSMCalibrationSettings from "../tabContentComponents/settingsComponents/CSMSettingsComponents/CSMCalibrationSettings.vue";
+import miniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
 
 export default {
   name: "CalibrationModal",

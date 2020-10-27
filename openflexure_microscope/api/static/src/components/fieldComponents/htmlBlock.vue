@@ -1,5 +1,6 @@
 <template>
   <div>
+    <!-- eslint-disable-next-line vue/no-v-html -->
     <p v-html="content"></p>
   </div>
 </template>

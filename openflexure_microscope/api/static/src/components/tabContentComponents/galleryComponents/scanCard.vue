@@ -6,12 +6,12 @@
       <a href="#">
         <img
           class="uk-width-1-1"
-          :data-src="thumbnail"
-          :alt="metadata.image.id"
+          :data-src="scanState.thumbnail"
+          :alt="scanState.metadata.image.id"
           width="300"
           height="225"
           uk-img
-          @click="$root.$emit('globalUpdateCaptureFolder', metadata.image.id)"
+          @click="onClick"
         />
       </a>
     </div>
@@ -22,7 +22,8 @@
         uk-grid
       >
         <div class="uk-margin-remove-top uk-padding-remove uk-width-expand">
-          <b>{{ metadata.type || "Dataset" }}: </b> {{ metadata.image.name }}
+          <b>{{ scanState.metadata.type || "Dataset" }}: </b>
+          {{ scanState.metadata.image.name }}
         </div>
         <div class="uk-margin-remove-top uk-padding-remove uk-width-auto">
           <a href="#" class="uk-icon" @click="delAllConfirm()">
@@ -34,7 +35,7 @@
       <div
         class="uk-text-meta uk-margin-remove-top uk-padding-remove uk-width-expand"
       >
-        <time>{{ metadata.image.acquisitionDate }}</time>
+        <time>{{ scanState.metadata.image.acquisitionDate }}</time>
       </div>
       <div
         class="uk-text-meta uk-margin-remove-top uk-padding-remove uk-width-auto"
@@ -45,7 +46,7 @@
 
     <div class="uk-card-footer uk-padding-small">
       <span
-        v-for="tag in metadata.image.tags"
+        v-for="tag in scanState.metadata.image.tags"
         :key="tag"
         class="uk-label uk-margin-small-right deletable-label"
       >
@@ -56,13 +57,16 @@
     <div :id="metadataModalID" uk-modal>
       <div class="uk-modal-dialog uk-modal-body">
         <button class="uk-modal-close-default" type="button" uk-close></button>
-        <h2 class="uk-modal-title">{{ metadata.image.name }}</h2>
-        <p><b>Time: </b>{{ metadata.image.acquisitionDate }}</p>
-        <p><b>ID: </b>{{ metadata.image.id }}</p>
+        <h2 class="uk-modal-title">{{ scanState.metadata.image.name }}</h2>
+        <p><b>Time: </b>{{ scanState.metadata.image.acquisitionDate }}</p>
+        <p><b>ID: </b>{{ scanState.metadata.image.id }}</p>
 
         <hr />
 
-        <div v-for="(value, key) in metadata.image.annotations" :key="key">
+        <div
+          v-for="(value, key) in scanState.metadata.image.annotations"
+          :key="key"
+        >
           <p>
             <b>{{ key }}: </b>{{ value }}
           </p>
@@ -80,16 +84,8 @@ export default {
   name: "ScanCard",
 
   props: {
-    metadata: {
+    scanState: {
       type: Object,
-      required: true
-    },
-    thumbnail: {
-      type: String,
-      required: true
-    },
-    captures: {
-      type: Array,
       required: true
     }
   },
@@ -109,7 +105,7 @@ export default {
     },
     allURLs: function() {
       var urls = [];
-      for (var capture of this.captures) {
+      for (var capture of this.scanState.captures) {
         urls.push(capture.links.self.href);
       }
       return urls;
@@ -117,8 +113,12 @@ export default {
   },
 
   methods: {
+    onClick: function() {
+      this.$emit("selectFolder", this.scanState.metadata.image.id);
+    },
+
     makeModalName: function(prefix) {
-      return prefix + this.metadata.image.id;
+      return prefix + this.scanState.metadata.image.id;
     },
 
     delAllConfirm: function() {
@@ -131,18 +131,10 @@ export default {
     },
 
     deleteAll: function() {
-      axios
-        .all(this.allURLs.map(l => axios.delete(l)))
-        .then
-        //axios.spread(function(...res) {
-        // all requests are now complete
-        //console.log(res);
-        //})
-        ()
-        .then(() => {
-          // Emit signal to update capture list
-          this.$root.$emit("globalUpdateCaptures");
-        });
+      axios.all(this.allURLs.map(l => axios.delete(l))).then(() => {
+        // Emit signal to update capture list
+        this.$root.$emit("globalUpdateCaptures");
+      });
     }
   }
 };

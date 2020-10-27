@@ -17,7 +17,7 @@
 </template>
 
 <script>
-import devTools from "./controlComponents/devTools.vue";
+import devTools from "./tabContentComponents/aboutComponents/devTools.vue";
 
 // Export main app
 export default {

@@ -28,8 +28,8 @@
       </div>
     </div>
     <div class="view-component uk-width-expand">
-      <galleryDisplay v-if="viewPanel == 'gallery'" />
-      <settingsDisplay v-else-if="viewPanel == 'settings'" />
+      <galleryContent v-if="viewPanel == 'gallery'" />
+      <settingsContent v-else-if="viewPanel == 'settings'" />
       <streamDisplay v-else />
     </div>
   </div>
@@ -38,9 +38,9 @@
 <script>
 import JsonForm from "../pluginComponents/JsonForm";
 import WebComponentLoader from "../pluginComponents/WebComponentLoader";
-import streamDisplay from "../viewComponents/streamDisplay.vue";
-import galleryDisplay from "../viewComponents/galleryDisplay.vue";
-import settingsDisplay from "../viewComponents/settingsDisplay.vue";
+import streamDisplay from "./streamContent.vue";
+import galleryContent from "../tabContentComponents/galleryContent.vue";
+import settingsContent from "../tabContentComponents/settingsContent.vue";
 
 export default {
   name: "ExtensionContent",
@@ -49,8 +49,8 @@ export default {
     JsonForm,
     WebComponentLoader,
     streamDisplay,
-    galleryDisplay,
-    settingsDisplay
+    galleryContent,
+    settingsContent
   },
 
   props: {

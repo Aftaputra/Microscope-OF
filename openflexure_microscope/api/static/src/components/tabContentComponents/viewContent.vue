@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import streamDisplay from "../viewComponents/streamDisplay.vue";
+import streamDisplay from "./streamContent.vue";
 
 export default {
   name: "ViewContent",
