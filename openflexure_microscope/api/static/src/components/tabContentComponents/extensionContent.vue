@@ -39,8 +39,8 @@
 import JsonForm from "../pluginComponents/JsonForm";
 import WebComponentLoader from "../pluginComponents/WebComponentLoader";
 import streamDisplay from "./streamContent.vue";
-import galleryDisplay from "../tabContentComponents/galleryContent.vue";
-import settingsDisplay from "../tabContentComponents/settingsContent.vue";
+import galleryContent from "../tabContentComponents/galleryContent.vue";
+import settingsContent from "../tabContentComponents/settingsContent.vue";
 
 export default {
   name: "ExtensionContent",
