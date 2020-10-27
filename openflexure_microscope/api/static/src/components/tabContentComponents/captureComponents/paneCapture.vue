@@ -269,10 +269,10 @@
 <script>
 import axios from "axios";
 
-import tagList from "../fieldComponents/tagList";
-import keyvalList from "../fieldComponents/keyvalList";
+import tagList from "../../fieldComponents/tagList";
+import keyvalList from "../../fieldComponents/keyvalList";
 
-import taskSubmitter from "../genericComponents/taskSubmitter";
+import taskSubmitter from "../../genericComponents/taskSubmitter";
 
 // Export main app
 export default {

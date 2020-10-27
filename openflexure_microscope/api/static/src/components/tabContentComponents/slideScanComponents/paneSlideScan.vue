@@ -135,7 +135,7 @@
 
 <script>
 import axios from "axios";
-import taskSubmitter from "../genericComponents/taskSubmitter";
+import taskSubmitter from "../../genericComponents/taskSubmitter";
 
 export default {
   components: {

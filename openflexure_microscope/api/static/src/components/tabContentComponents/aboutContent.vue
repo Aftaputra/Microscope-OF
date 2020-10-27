@@ -21,8 +21,8 @@
 </template>
 
 <script>
-import devTools from "../controlComponents/devTools.vue";
-import statusPane from "../viewComponents/statusPane.vue";
+import devTools from "./aboutComponents/devTools.vue";
+import statusPane from "./aboutComponents/statusPane.vue";
 
 export default {
   name: "AboutContent",

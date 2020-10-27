@@ -10,7 +10,7 @@
 <script>
 import axios from "axios";
 import CSMCalibrationSettings from "./CSMSettingsComponents/CSMCalibrationSettings.vue";
-import miniStreamDisplay from "../miniStreamDisplay.vue";
+import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
 
 // Export main app
 export default {

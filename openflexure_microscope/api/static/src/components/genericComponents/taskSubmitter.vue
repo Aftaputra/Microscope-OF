@@ -200,13 +200,13 @@ export default {
           // If task ends with an error
           else if (result == "error") {
             // Pass the error string back with reject
-            console.log("Rejecting pollTask due to error")
+            console.log("Rejecting pollTask due to error");
             reject(new Error(response.data.output));
           }
           // If task ends with termination
           else if (result == "cancelled") {
             // Pass a generic termination error back with reject
-            console.log("Rejecting pollTask due to cancellation")
+            console.log("Rejecting pollTask due to cancellation");
             reject(new Error("Task cancelled"));
           } else {
             // Since the task is still running, we can update the progress bar
