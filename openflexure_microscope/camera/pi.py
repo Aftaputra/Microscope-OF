@@ -484,6 +484,7 @@ class PiCameraStreamer(BaseCamera):
         use_video_port: bool = False,
         resize: Tuple[int, int] = None,
         bayer: bool = True,
+        thumbnail: tuple = None
     ):
         """
         Capture a still image to a StreamObject.
@@ -515,6 +516,7 @@ class PiCameraStreamer(BaseCamera):
                 resize=resize,
                 bayer=(not use_video_port) and bayer,
                 use_video_port=use_video_port,
+                thumbnail=thumbnail
             )
 
             # Set resolution and start stream recording if necessary
