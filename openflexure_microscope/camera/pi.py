@@ -315,8 +315,6 @@ class PiCameraStreamer(BaseCamera):
 
     def start_preview(self, fullscreen=True, window=None):
         """Start the on board GPU camera preview."""
-        logging.info("Starting the GPU preview")
-
         with self.lock():
             try:
                 if not self.camera.preview:
