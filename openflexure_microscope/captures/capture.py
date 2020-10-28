@@ -348,7 +348,7 @@ class CaptureObject(object):
         if thumbnail:
             return io.BytesIO(thumbnail)
         # If no thumbnail exists, serve the full image
-        return self.data.getvalue()
+        return self.data
 
     def save(self) -> None:
         """Write stream to file, and save/update metadata file"""
