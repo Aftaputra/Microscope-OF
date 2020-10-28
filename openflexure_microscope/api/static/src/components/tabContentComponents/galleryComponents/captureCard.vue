@@ -212,8 +212,9 @@ export default {
   },
 
   created: function() {
-    this.getTagRequest();
-    this.getAnnotationsRequest();
+    // Get initial metadata from prop
+    this.tags = this.captureState.metadata.image.tags;
+    this.annotations = this.captureState.metadata.annotations;
   },
 
   methods: {

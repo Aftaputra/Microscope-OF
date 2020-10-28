@@ -69,7 +69,7 @@
 <script>
 import axios from "axios";
 import cameraCalibrationSettings from "./cameraSettingsComponents/cameraCalibrationSettings.vue";
-import miniStreamDisplay from "../miniStreamDisplay.vue";
+import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
 
 // Export main app
 export default {

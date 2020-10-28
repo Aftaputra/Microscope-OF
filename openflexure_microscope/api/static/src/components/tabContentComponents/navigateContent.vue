@@ -11,8 +11,8 @@
 </template>
 
 <script>
-import paneNavigate from "../controlComponents/paneNavigate";
-import streamDisplay from "../viewComponents/streamDisplay.vue";
+import paneNavigate from "./navigateComponents/paneNavigate";
+import streamDisplay from "./streamContent.vue";
 
 export default {
   name: "NavigateContent",

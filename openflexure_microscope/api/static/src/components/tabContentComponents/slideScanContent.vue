@@ -11,8 +11,8 @@
 </template>
 
 <script>
-import paneSlideScan from "../controlComponents/paneSlideScan";
-import streamDisplay from "../viewComponents/streamDisplay.vue";
+import paneSlideScan from "./slideScanComponents/paneSlideScan";
+import streamDisplay from "./streamContent.vue";
 
 export default {
   name: "SlideScanContent",

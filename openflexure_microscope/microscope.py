@@ -144,6 +144,9 @@ class Microscope:
             try:
                 logging.info("Trying SangaStage")
                 self.stage = SangaStage(port=stage_port)
+                logging.info("Saving new SangaStage type configuration")
+                configuration["stage"]["type"] = stage_type
+                self.configuration_file.save(configuration)
             except Exception as e:  # pylint: disable=W0703
                 logging.error(e)
                 logging.warning("No compatible Sangaboard hardware found.")
@@ -151,16 +154,14 @@ class Microscope:
             try:
                 logging.info("Trying SangaDeltaStage")
                 self.stage = SangaDeltaStage(port=stage_port)
-
+                logging.info("Saving new SangaDeltaStage type configuration")
+                configuration["stage"]["type"] = stage_type
+                self.configuration_file.save(configuration)
             except Exception as e:  # pylint: disable=W0703
                 logging.error(e)
                 logging.warning("No compatible Sangaboard hardware found.")
         else:
             logging.warning("The stage type is incorrectly defined.")
-
-        logging.info("Saving new stage type configuration")
-        configuration["stage"]["type"] = stage_type
-        self.configuration_file.save(configuration)
 
     def has_real_stage(self) -> bool:
         """
@@ -384,6 +385,9 @@ class Microscope:
             )
 
             # Capture to output object
+            extras = {}
+            if fmt == "jpeg":
+                extras["thumbnail"] = (200, 150, 85)
             logging.info("Starting microscope capture %s", output.file)
             self.camera.capture(
                 output,
@@ -391,6 +395,7 @@ class Microscope:
                 resize=resize,
                 bayer=bayer,
                 fmt=fmt,
+                **extras,
             )
 
         output.put_and_save(tags, annotations, full_metadata)
