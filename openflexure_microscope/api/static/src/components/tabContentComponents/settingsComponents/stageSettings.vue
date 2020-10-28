@@ -70,9 +70,9 @@ export default {
     setStageType: function() {
       console.log("Setting stage type");
       axios
-        .put(this.stageTypeUri, this.stageType,{
+        .put(this.stageTypeUri, this.stageType, {
           headers: {
-              'Content-Type': 'application/json',
+            "Content-Type": "application/json"
           }
         })
         .then(response => {
