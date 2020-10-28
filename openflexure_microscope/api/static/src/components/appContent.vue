@@ -11,100 +11,112 @@
       @onClose="enterApp()"
     ></calibrationModal>
     <!-- Vertical tab bar -->
-    <div
-      id="switcher-left"
-      class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1 uk-text-center"
-    >
-      <tabIcon
-        id="view-tab-icon"
-        tab-i-d="view"
-        :require-connection="true"
-        :current-tab="currentTab"
-        @set-tab="setTab"
+    <div id="switcher-left-container">
+      <div
+        id="switcher-left"
+        class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1 uk-text-center"
       >
-        <i class="material-icons">visibility</i>
-      </tabIcon>
-
-      <tabIcon
-        id="gallery-tab-icon"
-        tab-i-d="gallery"
-        :require-connection="true"
-        :current-tab="currentTab"
-        @set-tab="setTab"
-      >
-        <i class="material-icons">photo_library</i>
-      </tabIcon>
-
-      <hr />
-
-      <tabIcon
-        id="navigate-tab-icon"
-        tab-i-d="navigate"
-        :require-connection="true"
-        :current-tab="currentTab"
-        @set-tab="setTab"
-      >
-        <i class="material-icons">gamepad</i>
-      </tabIcon>
-      <tabIcon
-        id="capture-tab-icon"
-        tab-i-d="capture"
-        :require-connection="true"
-        :current-tab="currentTab"
-        @set-tab="setTab"
-      >
-        <i class="material-icons">camera_alt</i>
-      </tabIcon>
-
-      <template v-if="$store.state.globalSettings.IHIEnabled">
-        <hr id="extension-tab-divider" />
-
         <tabIcon
-          id="slidescan-tab-icon"
-          tab-i-d="slidescan"
+          id="view-tab-icon"
+          tab-i-d="view"
           :require-connection="true"
           :current-tab="currentTab"
           @set-tab="setTab"
         >
-          <i class="material-icons">settings_overscan</i>
+          <i class="material-icons">visibility</i>
         </tabIcon>
-      </template>
 
-      <hr id="extension-tab-divider" />
+        <tabIcon
+          id="gallery-tab-icon"
+          tab-i-d="gallery"
+          :require-connection="true"
+          :current-tab="currentTab"
+          @set-tab="setTab"
+        >
+          <i class="material-icons">photo_library</i>
+        </tabIcon>
 
-      <tabIcon
-        v-for="plugin in pluginsGuiList"
-        :key="plugin.id"
-        :tab-i-d="plugin.id"
-        :title="plugin.title"
-        :require-connection="plugin.requiresConnection"
-        :current-tab="currentTab"
-        :click-callback="updatePlugins"
-        @set-tab="setTab"
-      >
-        <i class="material-icons">{{ plugin.icon || "extension" }}</i>
-      </tabIcon>
+        <hr />
 
-      <tabIcon
-        id="settings-tab-icon"
-        class="uk-margin-auto-top"
-        tab-i-d="settings"
-        :require-connection="false"
-        :current-tab="currentTab"
-        @set-tab="setTab"
-      >
-        <i class="material-icons">settings</i>
-      </tabIcon>
+        <tabIcon
+          id="navigate-tab-icon"
+          tab-i-d="navigate"
+          :require-connection="true"
+          :current-tab="currentTab"
+          @set-tab="setTab"
+        >
+          <i class="material-icons">gamepad</i>
+        </tabIcon>
+        <tabIcon
+          id="capture-tab-icon"
+          tab-i-d="capture"
+          :require-connection="true"
+          :current-tab="currentTab"
+          @set-tab="setTab"
+        >
+          <i class="material-icons">camera_alt</i>
+        </tabIcon>
 
-      <tabIcon
-        id="about-tab-icon"
-        tab-i-d="about"
-        :require-connection="false"
-        :current-tab="currentTab"
-        @set-tab="setTab"
-      >
-        <i class="material-icons">info</i>
-      </tabIcon>
+        <template v-if="$store.state.globalSettings.IHIEnabled">
+          <hr id="extension-tab-divider" />
+
+          <tabIcon
+            id="slidescan-tab-icon"
+            tab-i-d="slidescan"
+            :require-connection="true"
+            :current-tab="currentTab"
+            @set-tab="setTab"
+          >
+            <i class="material-icons">settings_overscan</i>
+          </tabIcon>
+        </template>
+
+        <hr id="extension-tab-divider" />
+
+        <tabIcon
+          v-for="plugin in pluginsGuiList"
+          :key="plugin.id"
+          :tab-i-d="plugin.id"
+          :title="plugin.title"
+          :require-connection="plugin.requiresConnection"
+          :current-tab="currentTab"
+          :click-callback="updatePlugins"
+          @set-tab="setTab"
+        >
+          <i class="material-icons">{{ plugin.icon || "extension" }}</i>
+        </tabIcon>
+
+        <tabIcon
+          id="settings-tab-icon"
+          class="uk-margin-auto-top"
+          tab-i-d="settings"
+          :require-connection="false"
+          :current-tab="currentTab"
+          @set-tab="setTab"
+        >
+          <i class="material-icons">settings</i>
+        </tabIcon>
+
+        <tabIcon
+          id="logging-tab-icon"
+          tab-i-d="logging"
+          :require-connection="false"
+          :current-tab="currentTab"
+          @set-tab="setTab"
+        >
+          <i class="material-icons">assignment_late</i>
+        </tabIcon>
+
+        <tabIcon
+          id="about-tab-icon"
+          tab-i-d="about"
+          :require-connection="false"
+          :current-tab="currentTab"
+          @set-tab="setTab"
+        >
+          <i class="material-icons">info</i>
+        </tabIcon>
+      </div>
     </div>
 
     <!-- Corresponding vertical tab content -->
@@ -160,6 +172,22 @@
       </tabContent>
 
       <tabContent
+        tab-i-d="logging"
+        :require-connection="false"
+        :current-tab="currentTab"
+      >
+        <loggingContent />
+      </tabContent>
+
+      <tabContent
+        tab-i-d="about"
+        :require-connection="false"
+        :current-tab="currentTab"
+      >
+        <aboutContent class="section-content" />
+      </tabContent>
+
+      <tabContent
         v-for="plugin in pluginsGuiList"
         :key="plugin.id"
         :tab-i-d="plugin.id"
@@ -173,14 +201,6 @@
           :view-panel="plugin.viewPanel"
           @reloadForms="updatePlugins()"
         />
-      </tabContent>
-
-      <tabContent
-        tab-i-d="about"
-        :require-connection="false"
-        :current-tab="currentTab"
-      >
-        <aboutContent class="section-content" />
       </tabContent>
     </div>
   </div>
@@ -202,6 +222,7 @@ import settingsContent from "./tabContentComponents/settingsContent.vue";
 import galleryContent from "./tabContentComponents/galleryContent.vue";
 import extensionContent from "./tabContentComponents/extensionContent.vue";
 import aboutContent from "./tabContentComponents/aboutContent.vue";
+import loggingContent from "./tabContentComponents/loggingContent.vue";
 
 // Import modal components for device initialisation
 import calibrationModal from "./modalComponents/calibrationModal.vue";
@@ -221,7 +242,8 @@ export default {
     galleryContent,
     extensionContent,
     calibrationModal,
-    aboutContent
+    aboutContent,
+    loggingContent
   },
 
   data: function() {
@@ -359,15 +381,20 @@ export default {
   border-width: 0 1px 0 0;
   border-style: solid;
   border-color: rgba(180, 180, 180, 0.25);
+  width: 75px;
+  background-color: rgba(180, 180, 180, 0.1);
+  padding-top: 2px !important;
+}
+
+#switcher-left-container {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: 100%;
 }
 
 #switcher-left a {
   padding: 10px 8px;
-}
-
-#switcher-left {
-  width: 75px;
-  background-color: rgba(180, 180, 180, 0.1);
-  padding-top: 2px !important;
 }
 </style>
