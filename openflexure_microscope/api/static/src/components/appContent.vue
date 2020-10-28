@@ -86,6 +86,8 @@
           <i class="material-icons">{{ plugin.icon || "extension" }}</i>
         </tabIcon>
 
+        <hr id="extension-tab-divider" />
+
         <tabIcon
           id="settings-tab-icon"
           class="uk-margin-auto-top"
