@@ -6,6 +6,7 @@ import logging
 import os
 import uuid
 from collections import OrderedDict
+from PIL import Image
 
 import dateutil.parser
 
@@ -14,6 +15,7 @@ from openflexure_microscope.camera.piexif._exceptions import InvalidImageDataErr
 from openflexure_microscope.config import JSONEncoder
 
 EXIF_FORMATS = ["JPG", "JPEG", "TIF", "TIFF"]
+THUMBNAIL_SIZE = (200, 150)
 
 
 def pull_usercomment_dict(filepath):
@@ -347,8 +349,16 @@ class CaptureObject(object):
         thumbnail = exif_dict.pop("thumbnail")
         if thumbnail:
             return io.BytesIO(thumbnail)
-        # If no thumbnail exists, serve the full image
-        return self.data
+        # If no thumbnail exists, make and save one
+        thumb_bytes = io.BytesIO()
+        thumb_im = Image.open(self.data)
+        thumb_im.thumbnail(THUMBNAIL_SIZE)
+        thumb_im.save(thumb_bytes, "jpeg")
+        thumbnail = thumb_bytes.getvalue()
+        exif_dict["thumbnail"] = thumbnail
+        exif_bytes = piexif.dump(exif_dict)
+        piexif.insert(exif_bytes, self.file)
+        return io.BytesIO(thumbnail)
 
     def save(self) -> None:
         """Write stream to file, and save/update metadata file"""
