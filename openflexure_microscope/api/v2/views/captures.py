@@ -47,20 +47,27 @@ class CaptureSchema(Schema):
 
     @pre_dump
     def generate_links(self, data, **_):
-        data.links = {
+        if isinstance(data, dict):
+            capture_id = data.get("id")
+            capture_name = data.get("name")
+        else:
+            capture_id = data.id
+            capture_name = data.name
+
+        links = {
             "self": {
-                "href": url_for(CaptureView.endpoint, id_=data.id, _external=True),
+                "href": url_for(CaptureView.endpoint, id_=capture_id, _external=True),
                 "mimetype": "application/json",
                 **description_from_view(CaptureView),
             },
             "tags": {
-                "href": url_for(CaptureTags.endpoint, id_=data.id, _external=True),
+                "href": url_for(CaptureTags.endpoint, id_=capture_id, _external=True),
                 "mimetype": "application/json",
                 **description_from_view(CaptureTags),
             },
             "annotations": {
                 "href": url_for(
-                    CaptureAnnotations.endpoint, id_=data.id, _external=True
+                    CaptureAnnotations.endpoint, id_=capture_id, _external=True
                 ),
                 "mimetype": "application/json",
                 **description_from_view(CaptureAnnotations),
@@ -68,14 +75,20 @@ class CaptureSchema(Schema):
             "download": {
                 "href": url_for(
                     CaptureDownload.endpoint,
-                    id_=data.id,
-                    filename=data.name,
+                    id_=capture_id,
+                    filename=capture_name,
                     _external=True,
                 ),
                 "mimetype": "image/jpeg",
                 **description_from_view(CaptureDownload),
             },
         }
+
+        if isinstance(data, dict):
+            data["links"] = links
+        else:
+            data.links = links
+
         return data
 
 
