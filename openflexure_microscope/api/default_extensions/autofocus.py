@@ -325,7 +325,7 @@ class MoveAndMeasureAPI(ActionView):
 
         if microscope.has_real_stage():
             # Acquire microscope lock with 1s timeout
-            with microscope.lock(timeout=1):
+            with microscope.camera.lock, microscope.stage.lock:
                 return move_and_measure(microscope, dz=args.get("dz"))
 
         else:
