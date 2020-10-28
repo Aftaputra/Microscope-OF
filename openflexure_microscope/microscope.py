@@ -10,7 +10,7 @@ import pkg_resources
 from expiringdict import ExpiringDict
 
 from openflexure_microscope.camera.mock import MissingCamera
-from openflexure_microscope.captures import CaptureManager
+from openflexure_microscope.captures import CaptureManager, THUMBNAIL_SIZE
 from openflexure_microscope.stage.mock import MissingStage
 from openflexure_microscope.stage.sanga import SangaDeltaStage, SangaStage
 
@@ -387,7 +387,7 @@ class Microscope:
             # Capture to output object
             extras = {}
             if fmt == "jpeg":
-                extras["thumbnail"] = (200, 150, 85)
+                extras["thumbnail"] = (*THUMBNAIL_SIZE, 85)
             logging.info("Starting microscope capture %s", output.file)
             self.camera.capture(
                 output,
