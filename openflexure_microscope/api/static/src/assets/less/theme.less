@@ -266,6 +266,43 @@
     border: 1px solid @notification-message-success-color
 }
 
+
+/*
+ * Alert
+ */
+.uk-alert {
+    position: relative;
+    margin-bottom: 20px;
+    padding: 15px 29px 15px 15px;
+    border-radius: @paper-border-radius;
+    border: 1px solid @global-border
+}
+
+.uk-alert-danger {
+    border: 1px solid @notification-message-danger-color
+}
+
+.uk-alert-warning {
+    border: 1px solid @notification-message-warning-color
+}
+
+.hook-inverse() {
+    .uk-alert {
+        background-color: rgba(180, 180, 180, 0.15);
+        color: @inverse-global-color;
+        border-color: @inverse-global-color;
+    }
+    .uk-alert-danger {
+        color: @notification-message-danger-color;
+        border-color: @notification-message-danger-color
+    }
+    
+    .uk-alert-warning {
+        color: @notification-message-warning-color;
+        border-color: @notification-message-warning-color
+    }
+}
+
 /*
  * Links
  */
@@ -371,4 +408,17 @@ a:hover {
         background-color: #fff;
     }
 
+}
+
+/*
+ * Pagination
+ */
+
+.uk-pagination > * > :hover, .uk-pagination > * > :focus {
+    color: @global-primary-background;
+    text-decoration: none;
+}
+
+.uk-pagination > .uk-active > * {
+    color: @global-primary-background;
 }
