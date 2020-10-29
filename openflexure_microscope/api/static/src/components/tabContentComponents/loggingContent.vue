@@ -26,7 +26,7 @@
             </button>
           </div>
           <div>
-            <a class="uk-button uk-button-default" :href="logFileURI"
+            <a class="uk-button uk-button-default" :href="logFileURI" download
               >Download Log File</a
             >
           </div>
