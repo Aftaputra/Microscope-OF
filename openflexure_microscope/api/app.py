@@ -151,7 +151,10 @@ class LogFileView(View):
             as_attachment=True,
             attachment_filename="openflexure_microscope_{}.log".format(timestamp),
         )
+
+
 labthing.add_view(LogFileView, "/log")
+
 
 @app.route("/")
 def openflexure_ev():
@@ -165,6 +168,7 @@ def routes():
     List of all connected API routes
     """
     return list_routes(app)
+
 
 @app.route("/api/v1/", defaults={"path": ""})
 @app.route("/api/v1/<path:path>")
