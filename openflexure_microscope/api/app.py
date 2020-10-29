@@ -23,7 +23,8 @@ from datetime import datetime
 import pkg_resources
 from flask import abort, send_file
 from flask_cors import CORS, cross_origin
-from labthings import create_app, View
+from labthings import create_app
+from labthings.views import View
 from labthings.extensions import find_extensions
 
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
