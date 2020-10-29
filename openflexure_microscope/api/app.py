@@ -23,7 +23,7 @@ from datetime import datetime
 import pkg_resources
 from flask import abort, send_file
 from flask_cors import CORS, cross_origin
-from labthings import create_app
+from labthings import create_app, View
 from labthings.extensions import find_extensions
 
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
@@ -139,6 +139,19 @@ for name, action in views.enabled_root_actions().items():
     rule = action["rule"]
     labthing.add_view(view_class, f"/actions{rule}")
 
+# Add log file view
+class LogFileView(View):
+    def get(self):
+        """
+        Most recent 1mb of log output
+        """
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        return send_file(
+            ROOT_LOGFILE,
+            as_attachment=True,
+            attachment_filename="openflexure_microscope_{}.log".format(timestamp),
+        )
+labthing.add_view(LogFileView, "/log")
 
 @app.route("/")
 def openflexure_ev():
@@ -152,20 +165,6 @@ def routes():
     List of all connected API routes
     """
     return list_routes(app)
-
-
-@app.route("/log")
-def err_log():
-    """
-    Most recent 1mb of log output
-    """
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    return send_file(
-        ROOT_LOGFILE,
-        as_attachment=True,
-        attachment_filename="openflexure_microscope_{}.log".format(timestamp),
-    )
-
 
 @app.route("/api/v1/", defaults={"path": ""})
 @app.route("/api/v1/<path:path>")
