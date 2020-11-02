@@ -60,11 +60,9 @@ def build_captures_from_exif(capture_path):
 
     for f in files:
         logging.debug("Reloading capture {}...".format(f))
-        exif = pull_usercomment_dict(f)
-        if exif:
-            capture = capture_from_exif(f, exif)
-            if capture:
-                captures[capture.id] = capture
+        capture = capture_from_path(f)
+        if capture:
+            captures[capture.id] = capture
         else:
             logging.error("Invalid data at {}. Skipping.".format(f))
 
@@ -73,43 +71,39 @@ def build_captures_from_exif(capture_path):
     return captures
 
 
-def capture_from_exif(path, exif_dict):
-    """
-    Creates an instance of CaptureObject from a dictionary of capture information.
-    This is used when reloading the API server, to restore captures created in the 
-    previous session.
+def capture_from_path(path):
+    exif_dict = pull_usercomment_dict(path)
+    if exif_dict:
+        # Create a placeholder capture
+        capture = CaptureObject(filepath=path)
 
-    Args:
-        path (str): Path to image file
-        exif_dict (dict): Dictionary containing capture information
-    """
+        # Build file path information
+        capture.split_file_path(capture.file)
 
-    # Create a placeholder capture
-    capture = CaptureObject(filepath=path)
+        # Image metadata
+        try:
+            image_metadata = exif_dict.pop("image")
+        except KeyError:
+            logging.error(
+                "Unable to obtain valid 2.0 OpenFlexure metadata from file %s", path
+            )
+            return None
 
-    # Build file path information
-    capture.split_file_path(capture.file)
-
-    # Image metadata
-    try:
-        image_metadata = exif_dict.pop("image")
-    except KeyError:
-        logging.error(
-            "Unable to obtain valid 2.0 OpenFlexure metadata from file %s", path
+        # Populate capture parameters
+        capture.id = image_metadata.get("id")
+        capture.datetime = dateutil.parser.isoparse(
+            image_metadata.get("acquisitionDate")
         )
+        capture.format = image_metadata.get("format")
+        capture.tags = image_metadata.get("tags")
+        capture.annotations = image_metadata.get("annotations")
+
+        # Since we popped the "image" key, we dump whatever is left in _metadata
+        capture.set_metadata(exif_dict)
+
+        return capture
+    else:
         return None
-
-    # Populate capture parameters
-    capture.id = image_metadata.get("id")
-    capture.datetime = dateutil.parser.isoparse(image_metadata.get("acquisitionDate"))
-    capture.format = image_metadata.get("format")
-    capture.tags = image_metadata.get("tags")
-    capture.annotations = image_metadata.get("annotations")
-
-    # Since we popped the "image" key, we dump whatever is left in _metadata
-    capture.set_metadata(exif_dict)
-
-    return capture
 
 
 class CaptureObject(object):
