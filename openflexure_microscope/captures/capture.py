@@ -91,8 +91,8 @@ def capture_from_path(path):
 
         # Populate capture parameters
         capture.id = image_metadata.get("id")
-        capture.datetime = dateutil.parser.isoparse(
-            image_metadata.get("acquisitionDate")
+        capture.time = dateutil.parser.isoparse(
+            image_metadata.get("time") or image_metadata.get("acquisitionDate")
         )
         capture.format = image_metadata.get("format")
         capture.tags = image_metadata.get("tags")
@@ -120,7 +120,7 @@ class CaptureObject(object):
         # Store a nice ID
         self.id = uuid.uuid4()  #: str: Unique capture ID
         logging.debug("Created CaptureObject {}".format(self.id))
-        
+
         self.time = datetime.datetime.now()
 
         # Create file name. Default to UUID
@@ -177,7 +177,6 @@ class CaptureObject(object):
         else:
             return False
 
-
     @property
     def dataset(self) -> str:
         """
@@ -190,7 +189,7 @@ class CaptureObject(object):
         return {
             "id": dataset.get("id"),
             "name": dataset.get("name"),
-            "type": dataset.get("type")
+            "type": dataset.get("type"),
         }
 
     # HANDLE TAGS
