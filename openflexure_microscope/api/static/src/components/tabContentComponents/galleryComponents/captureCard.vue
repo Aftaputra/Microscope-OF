@@ -4,11 +4,11 @@
     :class="{ 'uk-card-secondary': $store.state.globalSettings.darkMode }"
   >
     <div class="uk-card-media-top">
-      <a class="lightbox-link" :href="imgURL" :data-caption="fileName">
+      <a class="lightbox-link" :href="imgURL" :data-caption="name">
         <img
           class="uk-width-1-1"
           :data-src="thumbURL"
-          :alt="captureState.metadata.image.id"
+          :alt="id"
           width="300"
           height="225"
           uk-img
@@ -22,7 +22,7 @@
         uk-grid
       >
         <div class="uk-margin-remove-top uk-padding-remove uk-width-expand">
-          {{ fileName }}
+          {{ name }}
         </div>
         <div class="uk-margin-remove-top uk-padding-remove uk-width-auto">
           <a href="#" class="uk-icon" @click="delCaptureConfirm()">
@@ -34,7 +34,7 @@
       <div
         class="uk-text-meta uk-margin-remove-top uk-padding-remove uk-width-expand"
       >
-        <time>{{ captureState.metadata.image.acquisitionDate }}</time>
+        <time>{{ time }}</time>
       </div>
       <div
         class="uk-text-meta uk-margin-remove-top uk-padding-remove uk-width-auto"
@@ -75,11 +75,11 @@
         }"
       >
         <button class="uk-modal-close-default" type="button" uk-close></button>
-        <h2 class="uk-modal-title">{{ fileName }}</h2>
-        <p><b>Path: </b>{{ captureState.path }}</p>
-        <p><b>Time: </b>{{ captureState.metadata.image.acquisitionDate }}</p>
-        <p><b>ID: </b>{{ captureState.metadata.image.id }}</p>
-        <p><b>Format: </b>{{ captureState.metadata.image.format }}</p>
+        <h2 class="uk-modal-title">{{ name }}</h2>
+        <p><b>Path: </b>{{ path }}</p>
+        <p><b>Time: </b>{{ time }}</p>
+        <p><b>ID: </b>{{ id }}</p>
+        <p><b>Format: </b>{{ format }}</p>
 
         <hr />
 
@@ -161,27 +161,54 @@ export default {
   },
 
   props: {
-    captureState: {
+    id: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    time: {
+      type: String,
+      required: true
+    },
+    path: {
+      type: String,
+      required: true
+    },
+    format: {
+      type: String,
+      required: true
+    },
+    links: {
       type: Object,
       required: true
+    },
+    tags: {
+      type: Array,
+      required: false,
+      default: function() {
+        return [];
+      }
+    },
+    annotations: {
+      type: Object,
+      required: false,
+      default: function() {
+        return {};
+      }
     }
   },
 
   data: function() {
     return {
-      tags: [],
       newTag: "",
-      annotations: {},
       newAnnotations: {}
     };
   },
 
   computed: {
-    fileName: function() {
-      return this.captureState.name // If this.captureState.filename exists
-        ? this.captureState.name // Use this.captureState.filename
-        : this.captureState.metadata.filename; // Otherwise use old this.captureState.metadata.filename
-    },
     tagModalID: function() {
       return this.makeModalName("tag-modal-");
     },
@@ -195,29 +222,41 @@ export default {
       return "#" + this.metadataModalID;
     },
     thumbURL: function() {
-      return `${this.captureState.links.download.href}?thumbnail=true`;
+      return `${this.links.download.href}?thumbnail=true`;
     },
     imgURL: function() {
-      return this.captureState.links.download.href;
+      return this.links.download.href;
     },
     tagsURL: function() {
-      return this.captureState.links.tags.href;
+      return this.links.tags.href;
     },
     annotationsURL: function() {
-      return this.captureState.links.annotations.href;
+      return this.links.annotations.href;
     },
     captureURL: function() {
-      return this.captureState.links.self.href;
+      return this.links.self.href;
     }
   },
 
-  created: function() {
-    // Get initial metadata from prop
-    this.tags = this.captureState.metadata.image.tags;
-    this.annotations = this.captureState.metadata.annotations;
-  },
+  created: function() {},
 
   methods: {
+    getMetadata: function() {
+      // Send metadata request
+      console.log("Loading capture metadata...");
+      axios
+        .get(this.captureURL)
+        .then(response => {
+          this.$emit("update:tags", response.data.metadata.image.tags);
+          this.$emit(
+            "update:annotations",
+            response.data.metadata.image.annotations
+          );
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+    },
     handleTagSubmit: function(event) {
       if (this.newTag !== "") {
         this.newTagRequest(this.newTag);
@@ -303,7 +342,8 @@ export default {
       axios
         .get(this.tagsURL)
         .then(response => {
-          this.tags = response.data;
+          // Pass the update tag array to the parent
+          this.$emit("update:tags", response.data);
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -315,7 +355,8 @@ export default {
       axios
         .get(this.annotationsURL)
         .then(response => {
-          this.annotations = response.data;
+          // Pass the update annotation array to the parent
+          this.$emit("update:annotations", response.data);
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
@@ -323,7 +364,7 @@ export default {
     },
 
     makeModalName: function(prefix) {
-      return prefix + this.captureState.metadata.image.id;
+      return prefix + this.id;
     }
   }
 };

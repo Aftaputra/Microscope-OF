@@ -360,7 +360,7 @@ export default {
     enterApp: function() {
       // Stuff to do once connected and all init modals are finished
       console.log("Entering main application");
-      this.currentTab = "view";
+      //this.currentTab = "view";
     }
   }
 };

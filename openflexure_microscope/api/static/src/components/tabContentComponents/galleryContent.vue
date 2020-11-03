@@ -91,20 +91,37 @@
         <div class="uk-margin-left">
           <h3 class="uk-margin-remove uk-margin-left">
             <b>SCAN</b>
-            {{ allScans[galleryFolder].metadata.image.name }}
+            {{ allScans[galleryFolder].name }}
           </h3>
         </div>
       </div>
 
       <!-- Gallery capture cards -->
       <div class="gallery-grid">
-        <div v-for="item in pagedItems" :key="item.metadata.id">
+        <div v-for="item in pagedItems" :key="item.id">
           <scanCard
             v-if="'isScan' in item"
-            :scan-state="item"
+            :id="item.id"
+            :name="item.name"
+            :time="item.time"
+            :tags="item.tags"
+            :type="item.type"
+            :thumbnail="item.thumbnail"
             @selectFolder="selectFolder"
           />
-          <captureCard v-else :capture-state="item" />
+          <captureCard
+            v-else
+            :id="item.id"
+            :links="item.links"
+            :name="item.name"
+            :format="item.format"
+            :path="item.path"
+            :time="item.time"
+            :tags="item.tags"
+            :annotations="item.annotations"
+            @update:tags="item.tags = $event"
+            @update:annotations="item.annotations = $event"
+          />
         </div>
       </div>
 
@@ -164,7 +181,7 @@ export default {
       // Return an array of unique tags across all captures
       var tags = [];
       for (var capture of this.captures) {
-        for (var tag of capture.metadata.image.tags) {
+        for (var tag of capture.tags) {
           if (!tags.includes(tag)) {
             tags.push(tag);
           }
@@ -178,7 +195,7 @@ export default {
       var captures = [];
       for (var capture of this.captures) {
         // Add to capture list if matched
-        if (!capture.metadata.dataset) {
+        if (!capture.dataset) {
           captures.push(capture);
         }
       }
@@ -191,9 +208,7 @@ export default {
       var scans = {};
 
       for (var capture of this.captures) {
-        var annotations = capture.metadata.image.annotations;
-        var tags = capture.metadata.image.tags;
-        var dataset = capture.metadata.dataset;
+        var dataset = capture.dataset;
 
         if (dataset) {
           var id = dataset["id"];
@@ -201,34 +216,22 @@ export default {
           // If this scan ID hasn't been seen before
           if (!(id in scans)) {
             scans[id] = {};
+            scans[id].id = id;
+            scans[id].name = dataset.name;
+            scans[id].type = dataset.type;
+            // Use time of first found capture in dataset
+            scans[id].time = capture.time;
             scans[id].isScan = true;
             scans[id].captures = [];
-            scans[id].metadata = {
-              image: {
-                name: dataset.name,
-                acquisitionDate: dataset.acquisitionDate,
-                id: dataset.id,
-                tags: [],
-                annotations: {}
-              },
-              type: dataset.type
-            };
+            scans[id].tags = [];
           }
-
           // Add the capture object to the scan
           scans[id].captures.push(capture);
 
-          // Add missing scan metadata, prioritising first capture
-          for (var key of Object.keys(annotations)) {
-            if (!(key in scans[id].metadata.image.annotations)) {
-              scans[id].metadata.image.annotations[key] = annotations[key];
-            }
-          }
-
           // Append missing tags
-          for (var tag of tags) {
-            if (!scans[id].metadata.image.tags.includes(tag)) {
-              scans[id].metadata.image.tags.push(tag);
+          for (var tag of capture.tags) {
+            if (!scans[id].tags.includes(tag)) {
+              scans[id].tags.push(tag);
             }
           }
 
@@ -272,11 +275,11 @@ export default {
         if ("captures" in item) {
           for (var capture of item.captures) {
             // Get the ID of each capture in the set
-            captures[capture.metadata.image.id] = capture;
+            captures[capture.id] = capture;
           }
         } else {
           // If it's a single capture, get the ID of the capture
-          captures[item.metadata.image.id] = item;
+          captures[item.id] = item;
         }
       }
 
@@ -360,7 +363,7 @@ export default {
         var includeCapture = false;
 
         // Filter by selected tags
-        var tags = capture.metadata.image.tags;
+        var tags = capture.tags;
         let checker = (arr, target) => target.every(v => arr.includes(v));
         // True if all tags match
         includeCapture = checker(tags, filterTags);
@@ -377,10 +380,8 @@ export default {
     sortCaptures: function(list) {
       // Sort a list of captures by metadata time
       function compare(a, b) {
-        if (a.metadata.image.acquisitionDate < b.metadata.image.acquisitionDate)
-          return -1;
-        if (a.metadata.image.acquisitionDate > b.metadata.image.acquisitionDate)
-          return 1;
+        if (a.time < b.time) return -1;
+        if (a.time > b.time) return 1;
         return 0;
       }
 
@@ -397,7 +398,6 @@ export default {
     },
 
     selectFolder: function(folderID) {
-      console.log(folderID);
       this.galleryFolder = folderID;
     }
   }
