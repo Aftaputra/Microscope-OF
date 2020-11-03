@@ -40,6 +40,7 @@ class CaptureSchema(ImageSchema):
     for interacting with a capture. Additional attributes
     are returned by using FullCaptureSchema 
     """
+
     dataset = fields.Dict()  # TODO: Make schema
     file = fields.String(
         data_key="path", description="Path of file on microscope device"
@@ -92,12 +93,14 @@ class CaptureSchema(ImageSchema):
 
         return data
 
+
 class FullCaptureSchema(CaptureSchema):
     """
     Capture schema including metadata. We exclude this by default
     since it can become huge due to complex settings including
     lens shading tables and CSM matrices.
     """
+
     metadata = fields.Nested(CaptureMetadataSchema())
 
 
