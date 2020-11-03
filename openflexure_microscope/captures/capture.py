@@ -120,7 +120,8 @@ class CaptureObject(object):
         # Store a nice ID
         self.id = uuid.uuid4()  #: str: Unique capture ID
         logging.debug("Created CaptureObject {}".format(self.id))
-        self.datetime = datetime.datetime.now()
+        
+        self.time = datetime.datetime.now()
 
         # Create file name. Default to UUID
         self.format = None
@@ -130,12 +131,15 @@ class CaptureObject(object):
         if not os.path.exists(self.filefolder):
             os.makedirs(self.filefolder)
 
-        # Dictionary for adding top-level metadata (cannmot be accessed through web API)
+        # Dictionary for adding top-level metadata
+        # This can ONLY be modified by the server application
+        # Top level metadata cannot be modified via the web API
         self._metadata = {}
-
         # Dictionary for storing custom annotations
+        # Can be modified via the web API
         self.annotations = {}
         # List for storing tags
+        # Can be modified via the web API
         self.tags = []
 
     def write(self, s):
@@ -173,6 +177,22 @@ class CaptureObject(object):
         else:
             return False
 
+
+    @property
+    def dataset(self) -> str:
+        """
+        If capture is part of a dataset, return basic dataset info.
+        Otherwise return None
+        """
+        dataset = self.metadata.get("dataset")
+        if not dataset:
+            return None
+        return {
+            "id": dataset.get("id"),
+            "name": dataset.get("name"),
+            "type": dataset.get("type")
+        }
+
     # HANDLE TAGS
     def put_tags(self, tags: list):
         """
@@ -199,7 +219,7 @@ class CaptureObject(object):
 
         self.save_metadata()
 
-    # HANDLE METADATA
+    # HANDLE ANNOTATIONS
 
     def put_annotations(self, data: dict) -> None:
         """
@@ -210,6 +230,13 @@ class CaptureObject(object):
         """
         self.annotations.update(data)
         self.save_metadata()
+
+    def delete_annotation(self, key: str) -> None:
+        if key in self.annotations:
+            del self.annotations[key]
+        self.save_metadata()
+
+    # HANDLE METADATA
 
     def put_metadata(self, data: dict) -> None:
         """
@@ -229,6 +256,8 @@ class CaptureObject(object):
             data (dict): Dictionary of metadata to be added
         """
         self._metadata = data
+
+    # BULK OPERATIONS
 
     def put_and_save(
         self, tags: list = None, annotations: dict = None, metadata: dict = None
@@ -273,6 +302,8 @@ class CaptureObject(object):
             piexif.insert(exif_bytes, self.file)
             logging.info("Finished saving metadata to %s", self.file)
 
+    # PROPERTIES
+
     @property
     def metadata(self) -> dict:
         """
@@ -283,7 +314,7 @@ class CaptureObject(object):
             "image": {
                 "id": self.id,
                 "name": self.name,
-                "acquisitionDate": self.datetime.isoformat(),
+                "time": self.time.isoformat(),
                 "format": self.format,
                 "tags": self.tags,
                 "annotations": self.annotations,
@@ -353,6 +384,8 @@ class CaptureObject(object):
         exif_bytes = piexif.dump(exif_dict)
         piexif.insert(exif_bytes, self.file)
         return io.BytesIO(thumbnail)
+
+    # FILE MANAGEMENT
 
     def save(self) -> None:
         """Write stream to file, and save/update metadata file"""

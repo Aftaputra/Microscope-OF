@@ -17,9 +17,9 @@ class InstrumentSchema(Schema):
     state = fields.Dict()
 
 
-class CaptureMetadataImageSchema(Schema):
+class ImageSchema(Schema):
     id = fields.UUID()
-    acquisitionDate = fields.String(format="date")
+    time = fields.String(format="date")
     format = fields.String()
     name = fields.String()
     tags = fields.List(fields.String())
@@ -30,19 +30,20 @@ class CaptureMetadataSchema(Schema):
     experimenter = fields.Dict()  # TODO: Make schema
     experimenterGroup = fields.Dict()  # TODO: Make schema
     dataset = fields.Dict()  # TODO: Make schema
-    image = fields.Nested(CaptureMetadataImageSchema())
+    image = fields.Nested(ImageSchema())
     instrument = fields.Nested(InstrumentSchema())
 
 
-class CaptureSchema(Schema):
-    id = fields.String()
+class CaptureSchema(ImageSchema):
+    """
+    Schema containing only basic attributes required
+    for interacting with a capture. Additional attributes
+    are returned by using FullCaptureSchema 
+    """
+    dataset = fields.Dict()  # TODO: Make schema
     file = fields.String(
         data_key="path", description="Path of file on microscope device"
     )
-    exists = fields.Bool(data_key="available")
-    name = fields.String()
-    metadata = fields.Nested(CaptureMetadataSchema())
-
     links = fields.Dict()
 
     @pre_dump
@@ -91,6 +92,14 @@ class CaptureSchema(Schema):
 
         return data
 
+class FullCaptureSchema(CaptureSchema):
+    """
+    Capture schema including metadata. We exclude this by default
+    since it can become huge due to complex settings including
+    lens shading tables and CSM matrices.
+    """
+    metadata = fields.Nested(CaptureMetadataSchema())
+
 
 class CaptureList(PropertyView):
     tags = ["captures"]
@@ -108,7 +117,7 @@ class CaptureList(PropertyView):
 class CaptureView(View):
     tags = ["captures"]
 
-    @marshal_with(CaptureSchema())
+    @marshal_with(FullCaptureSchema())
     def get(self, id_):
         """
         Description of a single image capture
