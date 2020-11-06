@@ -9,7 +9,7 @@ from openflexure_microscope.paths import (
     PREFERRED_OPENFLEXURE_VAR_PATH,
 )
 
-from . import check_capture_reload, check_settings, check_picamera, check_sangaboard
+from . import check_capture_reload, check_settings, check_picamera, check_sangaboard, check_system
 
 # Paths for suggestions
 LOGS_PATHS = [
@@ -43,6 +43,7 @@ if __name__ == "__main__":
 
     error_sources = []
 
+    error_sources.extend(check_system.main())
     error_sources.extend(check_settings.main())
     error_sources.extend(check_picamera.main())
     error_sources.extend(check_capture_reload.main())
