@@ -24,10 +24,10 @@ class Source:
 class WarningSource(Source):
     @property
     def message(self):
-        return bcolors.WARNING + self._message + bcolors.ENDC
+        return "[!] " + bcolors.WARNING + self._message + bcolors.ENDC
 
 
 class ErrorSource(Source):
     @property
     def message(self):
-        return bcolors.FAIL + self._message + bcolors.ENDC
+        return "[X] " + bcolors.FAIL + self._message + bcolors.ENDC
