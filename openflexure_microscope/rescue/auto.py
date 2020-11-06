@@ -9,7 +9,13 @@ from openflexure_microscope.paths import (
     PREFERRED_OPENFLEXURE_VAR_PATH,
 )
 
-from . import check_capture_reload, check_settings, check_picamera, check_sangaboard, check_system
+from . import (
+    check_capture_reload,
+    check_settings,
+    check_picamera,
+    check_sangaboard,
+    check_system,
+)
 
 # Paths for suggestions
 LOGS_PATHS = [
@@ -35,11 +41,24 @@ if "-d" in sys.argv or "--debug" in sys.argv:
     logger.setLevel(logging.DEBUG)
     logging.debug("Testing debug logger. One two one two.")
 else:
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.WARNING)
 
 
 if __name__ == "__main__":
     spoof = False
+
+    print()
+    print(bcolors.HEADER + "OpenFlexure Rescue" + bcolors.ENDC)
+    print()
+    print(
+        "This script attempts to identify common issues for a microscope not working properly."
+    )
+    print(
+        "It is not designed to identify bugs in the code, but rather configuration or setup issues."
+    )
+    print()
+    print("Any identified warnings [?] or errors [!] will be reported.")
+    print()
 
     error_sources = []
 
@@ -51,7 +70,7 @@ if __name__ == "__main__":
 
     if not error_sources:
         print()
-        print(bcolors.OKGREEN + "No errors found!" + bcolors.ENDC)
+        print(bcolors.OKGREEN + "No issues found!" + bcolors.ENDC)
         print(
             "That's not to say everything is fine, only that our automatic diagnostics couldn't find much."
         )
