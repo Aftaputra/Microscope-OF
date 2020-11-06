@@ -1,5 +1,6 @@
 import logging
 
+
 def main():
     error_sources = []
     logging.info("Attempting to import picamera...")

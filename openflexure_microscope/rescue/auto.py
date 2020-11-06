@@ -31,15 +31,7 @@ logger.setLevel(logging.DEBUG)
 logging.debug("Testing debug logger. One two one two.")
 
 
-class bcolors:
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
+
 
 
 error_keys = {
@@ -49,7 +41,7 @@ error_keys = {
     "default_config_error": f"The default configuration file could not be parsed. To fix, consider backing up and deleting your configuration files from {CONFIG_PATHS} to reset the configuration.",
     "default_settings_error": f"The default settings file could not be parsed. To fix, consider backing up and deleting your configuration files from {SETTINGS_PATHS} to reset the configuration.",
     "capture_rebuild_timeout": f"Capture database rebuilding took a long time. This may not cause catastrophic errors, but rather will cause the server to hang for a while. To fix, consider moving your captures from {DATA_PATHS} to another location.",
-    "picamera_import_error": "Picamera module could not be imported. Check physical connections to the camera as it may be damaged."
+    "picamera_import_error": "Picamera module could not be imported. Check physical connections to the camera as it may be damaged.",
 }
 
 if __name__ == "__main__":
@@ -62,7 +54,7 @@ if __name__ == "__main__":
 
     error_sources.extend(check_settings.main())
     error_sources.extend(check_picamera.main())
-    #error_sources.extend(check_capture_reload.main())
+    # error_sources.extend(check_capture_reload.main())
 
     if not error_sources:
 
