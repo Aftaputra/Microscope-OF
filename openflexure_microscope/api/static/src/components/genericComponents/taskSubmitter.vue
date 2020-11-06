@@ -94,7 +94,6 @@ export default {
     return {
       taskId: null,
       taskUrl: null,
-      polling: null,
       progress: null,
       taskStarted: false,
       taskRunning: false
@@ -182,38 +181,40 @@ export default {
     },
 
     startPolling: function(taskId, taskUrl) {
-      // Starts polling an existing Action task
-      this.taskId = taskId;
-      this.taskUrl = taskUrl;
-      // Start the store polling TaskId for success
-      this.taskRunning = true;
-      this.$emit("taskRunning", this.taskId);
-      this.pollTask(this.taskId, this.pollInterval)
-        .then(response => {
-          // Do something with the final response
-          console.log("Emitting onResponse: ", response);
-          this.$emit("response", response);
-          this.$emit("finished");
-        })
-        .catch(error => {
-          if (!error) {
-            error = Error("Unknown error");
-          }
-          console.log("Emitting onError: ", error);
-          this.$emit("error", error);
-          this.$emit("finished");
-        })
-        .finally(() => {
-          console.log("Cleaning up after task.");
-          // Reset taskRunning and taskId
-          this.taskRunning = false;
-          this.taskStarted = false;
-          this.taskId = null;
-          // Update the form data if we're self-updating
-          if (this.selfUpdate) {
-            this.getFormData();
-          }
-        });
+      if (this.taskRunning != true) {
+        // Starts polling an existing Action task
+        this.taskId = taskId;
+        this.taskUrl = taskUrl;
+        // Start the store polling TaskId for success
+        this.taskRunning = true;
+        this.$emit("taskRunning", this.taskId);
+        this.pollTask(this.taskId, this.pollInterval)
+          .then(response => {
+            // Do something with the final response
+            console.log("Emitting onResponse: ", response);
+            this.$emit("response", response);
+            this.$emit("finished");
+          })
+          .catch(error => {
+            if (!error) {
+              error = Error("Unknown error");
+            }
+            console.log("Emitting onError: ", error);
+            this.$emit("error", error);
+            this.$emit("finished");
+          })
+          .finally(() => {
+            console.log("Cleaning up after task.");
+            // Reset taskRunning and taskId
+            this.taskRunning = false;
+            this.taskStarted = false;
+            this.taskId = null;
+            // Update the form data if we're self-updating
+            if (this.selfUpdate) {
+              this.getFormData();
+            }
+          });
+      }
     },
 
     pollTask: function(taskId, interval) {
