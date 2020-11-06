@@ -34,9 +34,9 @@ def main():
 
     # Check number of captures being restored
     files = make_file_list(cap_path, EXIF_FORMATS)
-    if len(files) >= 2000:
+    if len(files) >= 10000:
         error_sources.append(WarningSource(
-            ("Over 2000 captures are being restored. This may slow down server startup.",
+            ("Over 10000 captures are being restored. This may slow down server startup.",
             f"Consider moving your captures from {cap_path} to another location.")
         ))
 
