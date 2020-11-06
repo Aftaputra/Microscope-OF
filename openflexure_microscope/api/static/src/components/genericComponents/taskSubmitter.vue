@@ -1,5 +1,8 @@
 <template>
-  <div class="uk-margin-remove uk-padding-remove">
+  <div
+    v-observe-visibility="visibilityChanged"
+    class="uk-margin-remove uk-padding-remove"
+  >
     <div v-if="taskStarted" ref="isPollingElement">
       <div class="progress uk-margin-small">
         <div
@@ -109,7 +112,11 @@ export default {
   created() {},
 
   mounted() {
-    // A global signal listener to perform a move action
+    // Check for already running tasks
+    if (this.taskStarted != true) {
+      this.checkExistingTasks();
+    }
+    // A global signal listener to perform the action
     if (this.submitOnEvent) {
       this.$root.$on(this.submitOnEvent, () => {
         this.bootstrapTask();
@@ -124,7 +131,27 @@ export default {
   },
 
   methods: {
+    visibilityChanged(isVisible) {
+      if (isVisible && this.taskStarted != true) {
+        this.checkExistingTasks();
+      }
+    },
+
+    checkExistingTasks: function() {
+      axios.get(this.submitUrl).then(response => {
+        console.log(response.data);
+        for (const task of response.data) {
+          if (task.status == "pending" || task.status == "running") {
+            this.taskStarted = true;
+            this.$emit("taskStarted", this.taskId);
+            this.startPolling(task.id, task.links.self.href);
+          }
+        }
+      });
+    },
+
     bootstrapTask: function() {
+      // Starts the process of creating a new Actiont ask
       if (this.requiresConfirmation) {
         this.modalConfirm(this.confirmationMessage).then(
           () => {
@@ -138,6 +165,7 @@ export default {
     },
 
     startTask: function() {
+      // Starts a new Action task
       console.log("Task start clicked");
       this.$emit("submit", this.submitData);
       // Send a request to start a task
@@ -148,16 +176,19 @@ export default {
         .post(this.submitUrl, this.submitData)
         // Get the returned Task ID
         .then(response => {
-          // Fetch the task ID
-          console.log("Task ID: " + response.data.id);
-          this.taskId = response.data.id;
-          this.taskUrl = response.data.href;
           // Start the store polling TaskId for success
-          this.taskRunning = true;
-          this.$emit("taskRunning", this.taskId);
-          // Return the poll-task promise (starts polling the task)
-          return this.pollTask(this.taskId, this.pollInterval);
-        })
+          this.startPolling(response.data.id, response.data.href);
+        });
+    },
+
+    startPolling: function(taskId, taskUrl) {
+      // Starts polling an existing Action task
+      this.taskId = taskId;
+      this.taskUrl = taskUrl;
+      // Start the store polling TaskId for success
+      this.taskRunning = true;
+      this.$emit("taskRunning", this.taskId);
+      this.pollTask(this.taskId, this.pollInterval)
         .then(response => {
           // Do something with the final response
           console.log("Emitting onResponse: ", response);
@@ -230,6 +261,7 @@ export default {
     },
 
     terminateTask: function() {
+      console.log("Terminating task...");
       axios.delete(this.taskUrl).then(response => {
         console.log("TERMINATION RESPONSE: ", response.data);
       });
