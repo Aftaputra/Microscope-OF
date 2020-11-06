@@ -1,4 +1,4 @@
-from .error_sources import ErrorSource, WarningSource
+from .error_sources import ErrorSource
 
 from openflexure_microscope.config import user_configuration
 
