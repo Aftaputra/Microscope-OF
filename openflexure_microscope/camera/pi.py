@@ -315,7 +315,7 @@ class PiCameraStreamer(BaseCamera):
 
     def start_preview(self, fullscreen=True, window=None):
         """Start the on board GPU camera preview."""
-        with self.lock():
+        with self.lock(timeout=1):
             try:
                 if not self.camera.preview:
                     logging.debug("Starting preview")
@@ -340,7 +340,7 @@ class PiCameraStreamer(BaseCamera):
 
     def stop_preview(self):
         """Stop the on board GPU camera preview."""
-        with self.lock():
+        with self.lock(timeout=1):
             if self.camera.preview:
                 self.camera.stop_preview()
                 self.preview_active = False
@@ -359,7 +359,7 @@ class PiCameraStreamer(BaseCamera):
             output_object (str/BytesIO): Target object.
 
         """
-        with self.lock:
+        with self.lock(timeout=5):
             # Start recording method only if a current recording is not running
             if not self.record_active:
 
@@ -388,7 +388,7 @@ class PiCameraStreamer(BaseCamera):
 
     def stop_recording(self):
         """Stop the last started video recording on splitter port 2."""
-        with self.lock:
+        with self.lock(timeout=5):
             # Stop the camera video recording on port 2
             logging.info("Stopping recording")
             self.camera.stop_recording(splitter_port=2)

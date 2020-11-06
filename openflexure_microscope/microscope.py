@@ -189,9 +189,7 @@ class Microscope:
         Return:
             dict: Dictionary containing complete microscope state
         """
-        with self.lock:
-            state = {"camera": self.camera.state, "stage": self.stage.state}
-            return state
+        return {"camera": self.camera.state, "stage": self.stage.state}
 
     def update_settings(self, settings: dict):
         """
@@ -242,27 +240,26 @@ class Microscope:
             "extensions": self.extension_settings,
         }
 
-        with self.lock:
-            # If attached to a camera
-            if self.camera:
-                settings_current_camera = self.camera.read_settings()
-                settings_current["camera"] = settings_current_camera
+        # If attached to a camera
+        if self.camera:
+            settings_current_camera = self.camera.read_settings()
+            settings_current["camera"] = settings_current_camera
 
-            # If attached to a stage
-            if self.stage:
-                settings_current_stage = self.stage.read_settings()
-                settings_current["stage"] = settings_current_stage
+        # If attached to a stage
+        if self.stage:
+            settings_current_stage = self.stage.read_settings()
+            settings_current["stage"] = settings_current_stage
 
-            # Capture manager
-            settings_current_captures = self.captures.read_settings()
-            settings_current["captures"] = settings_current_captures
+        # Capture manager
+        settings_current_captures = self.captures.read_settings()
+        settings_current["captures"] = settings_current_captures
 
-            settings_full = self.settings_file.merge(settings_current)
+        settings_full = self.settings_file.merge(settings_current)
 
-            if full:
-                return settings_full
-            else:
-                return settings_current
+        if full:
+            return settings_full
+        else:
+            return settings_current
 
     def save_settings(self):
         """
@@ -274,28 +271,27 @@ class Microscope:
         self.settings_file.save(current_config, backup=True)
 
     def force_get_configuration(self):
-        with self.lock:
-            initial_configuration = self.configuration_file.load()
+        initial_configuration = self.configuration_file.load()
 
-            current_configuration = {
-                "application": {
-                    "name": "openflexure-microscope-server",
-                    "version": pkg_resources.get_distribution(
-                        "openflexure-microscope-server"
-                    ).version,
-                },
-                "stage": {
-                    "type": self.stage.__class__.__name__,
-                    **self.stage.configuration,
-                },
-                "camera": {
-                    "type": self.camera.__class__.__name__,
-                    **self.camera.configuration,
-                },
-            }
+        current_configuration = {
+            "application": {
+                "name": "openflexure-microscope-server",
+                "version": pkg_resources.get_distribution(
+                    "openflexure-microscope-server"
+                ).version,
+            },
+            "stage": {
+                "type": self.stage.__class__.__name__,
+                **self.stage.configuration,
+            },
+            "camera": {
+                "type": self.camera.__class__.__name__,
+                **self.camera.configuration,
+            },
+        }
 
-            initial_configuration.update(current_configuration)
-            return initial_configuration
+        initial_configuration.update(current_configuration)
+        return initial_configuration
 
     def get_configuration(self, cache_key=None):
         if cache_key:
