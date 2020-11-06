@@ -40,8 +40,6 @@ def build_captures_from_exif(capture_path):
         capture = capture_from_path(f)
         if capture:
             captures[capture.id] = capture
-        else:
-            logging.error("Invalid data at {}. Skipping.".format(f))
 
     logging.info("{} capture files successfully reloaded".format(len(captures)))
 
@@ -60,7 +58,7 @@ def capture_from_path(path):
         capture.sync_basic_metadata()
         return capture
     except (InvalidImageDataError, json.decoder.JSONDecodeError):
-        logging.error("Invalid metadata at {}. Skipping.".format(path))
+        logging.error("Invalid metadata at {}.".format(path))
         return None
 
 
