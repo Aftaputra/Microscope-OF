@@ -11,7 +11,10 @@ class bcolors:
 
 class Source:
     def __init__(self, message):
-        self._message = message
+        if isinstance(message, tuple):
+            self._message = " ".join(message)
+        else:
+            self._message = message
 
     @property
     def message(self):
