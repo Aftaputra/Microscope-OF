@@ -6,7 +6,7 @@ from openflexure_microscope.config import user_settings
 from openflexure_microscope.rescue.monitor_timeout import launch_timeout_test_process
 
 
-def check_capture_rebuild():
+def check_capture_reload():
     logging.info("Loading user settings...")
     settings = user_settings.load()
 
@@ -18,9 +18,9 @@ def check_capture_rebuild():
         )
         cap_path = BASE_CAPTURE_PATH
 
-    logging.info("Starting capture reload with a 10 second timeout...")
+    logging.info("Starting capture reload with a 60 second timeout...")
     passed_timeout_test = launch_timeout_test_process(
-        build_captures_from_exif, args=(cap_path,)
+        build_captures_from_exif, args=(cap_path,), timeout=60
     )
 
     return passed_timeout_test
@@ -28,7 +28,7 @@ def check_capture_rebuild():
 
 def main():
     error_sources = []
-    passed_timeout = check_capture_rebuild()
+    passed_timeout = check_capture_reload()
     if not passed_timeout:
         error_sources.append("capture_rebuild_timeout")
     return error_sources
