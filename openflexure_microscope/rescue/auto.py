@@ -1,6 +1,8 @@
 import logging
 import os
 import sys
+import platform
+import pkg_resources
 
 from .error_sources import bcolors
 
@@ -67,6 +69,14 @@ if __name__ == "__main__":
     error_sources.extend(check_picamera.main())
     error_sources.extend(check_capture_reload.main())
     error_sources.extend(check_sangaboard.main())
+
+    dist = pkg_resources.get_distribution("openflexure-microscope-server")
+
+    print()
+    print(f"Server Version: {dist.version}")
+    print(f"Server Location: {dist.location}")
+    print(f"Platform: {platform.platform()}")
+    print(f"Python: {sys.version}")
 
     if not error_sources:
         print()
