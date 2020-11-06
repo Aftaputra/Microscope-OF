@@ -15,17 +15,11 @@ def main():
         stage_type = configuration["stage"].get("type")
         stage_port = configuration["stage"].get("port")
 
-        error_sources.append(
-            WarningSource(
-                "Stage serial port is not specified in configuration. Application will scan ports for a Sangaboard."
-            )
-        )
-
         # If any Sangaboard-based stage is configured for use
         if stage_type in ("SangaBoard", "SangaStage", "SangaDeltaStage"):
             # Try connecting on the specified port
             try:
-                _ = Sangaboard(stage_port)
+                stage = Sangaboard(stage_port)
             except FileNotFoundError as e:
                 if stage_port:
                     error_sources.append(
@@ -39,6 +33,8 @@ def main():
                             f"No {stage_type} device was found during port scanning."
                         )
                     )
+            else:
+                stage.close()
         else:
             error_sources.append(
                 ErrorSource(
