@@ -74,9 +74,7 @@ if __name__ == "__main__":
 
     print()
     print(f"Server Version: {dist.version}")
-    print(f"Server Location: {dist.location}")
     print(f"Platform: {platform.platform()}")
-    print(f"Python: {sys.version}")
 
     if not error_sources:
         print()
