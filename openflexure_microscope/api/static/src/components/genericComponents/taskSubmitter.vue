@@ -56,7 +56,7 @@ export default {
     pollInterval: {
       type: Number,
       required: false,
-      default: 0.5
+      default: 1
     },
     submitLabel: {
       type: String,
