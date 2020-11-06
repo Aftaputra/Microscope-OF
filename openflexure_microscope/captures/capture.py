@@ -18,29 +18,6 @@ EXIF_FORMATS = ["JPG", "JPEG", "TIF", "TIFF"]
 THUMBNAIL_SIZE = (200, 150)
 
 
-def pull_usercomment_dict(filepath):
-    """
-    Reads UserComment Exif data from a file, and returns the contained bytes as a dictionary.
-    Args:
-        filepath: Path to the Exif-containing file
-    """
-    try:
-        exif_dict = piexif.load(filepath)
-    except InvalidImageDataError:
-        logging.warning("Invalid data at {}. Skipping.".format(filepath))
-        return None
-    if "Exif" in exif_dict and piexif.ExifIFD.UserComment in exif_dict["Exif"]:
-        try:
-            return json.loads(exif_dict["Exif"][piexif.ExifIFD.UserComment].decode())
-        except json.decoder.JSONDecodeError:
-            logging.error(
-                "Capture %s has old, corrupt, or missing OpenFlexure metadata. Unable to reload to server.",
-                filepath,
-            )
-    else:
-        return None
-
-
 def make_file_list(directory, formats):
     files = []
     for fmt in formats:
@@ -72,37 +49,18 @@ def build_captures_from_exif(capture_path):
 
 
 def capture_from_path(path):
-    exif_dict = pull_usercomment_dict(path)
-    if exif_dict:
-        # Create a placeholder capture
-        capture = CaptureObject(filepath=path)
+    # Create a placeholder capture
+    capture = CaptureObject(filepath=path)
 
-        # Build file path information
-        capture.split_file_path(capture.file)
+    # Build file path information
+    capture.split_file_path(capture.file)
 
-        # Image metadata
-        try:
-            image_metadata = exif_dict.pop("image")
-        except KeyError:
-            logging.error(
-                "Unable to obtain valid 2.0 OpenFlexure metadata from file %s", path
-            )
-            return None
-
-        # Populate capture parameters
-        capture.id = image_metadata.get("id")
-        capture.time = dateutil.parser.isoparse(
-            image_metadata.get("time") or image_metadata.get("acquisitionDate")
-        )
-        capture.format = image_metadata.get("format")
-        capture.tags = image_metadata.get("tags")
-        capture.annotations = image_metadata.get("annotations")
-
-        # Since we popped the "image" key, we dump whatever is left in _metadata
-        capture.set_metadata(exif_dict)
-
+    # Check and sync basic metadata
+    try:
+        capture.sync_basic_metadata()
         return capture
-    else:
+    except (InvalidImageDataError, json.decoder.JSONDecodeError):
+        logging.error("Invalid metadata at {}. Skipping.".format(path))
         return None
 
 
@@ -131,10 +89,8 @@ class CaptureObject(object):
         if not os.path.exists(self.filefolder):
             os.makedirs(self.filefolder)
 
-        # Dictionary for adding top-level metadata
-        # This can ONLY be modified by the server application
-        # Top level metadata cannot be modified via the web API
-        self._metadata = {}
+        # Dataset information
+        self._dataset = None
         # Dictionary for storing custom annotations
         # Can be modified via the web API
         self.annotations = {}
@@ -147,10 +103,12 @@ class CaptureObject(object):
         self.stream.write(s)
 
     def flush(self):
-        logging.info("Writing to disk %s", self.file)
+        logging.info("Writing image data to disk %s", self.file)
         with open(self.file, "wb") as outfile:
             outfile.write(self.stream.getbuffer())
         self.stream.close()
+        logging.info("Writing metadata to disk %s", self.file)
+        self._init_metadata()
         logging.info("Finished writing to disk %s", self.file)
 
     def open(self, mode):
@@ -169,6 +127,65 @@ class CaptureObject(object):
         self.basename = os.path.splitext(self.name)[0]
         self.format = self.name.split(".")[-1]
 
+    def _read_exif(self):
+        return piexif.load(self.file)
+
+    def _decode_usercomment(self, exif_dict: dict):
+        if "Exif" not in exif_dict:
+            raise InvalidImageDataError
+        if piexif.ExifIFD.UserComment not in exif_dict["Exif"]:
+            return {}
+        return json.loads(exif_dict["Exif"][piexif.ExifIFD.UserComment].decode())
+
+    def _init_metadata(self):
+        self.put_and_save(
+            metadata={
+                "image": {
+                    "id": self.id,
+                    "name": self.name,
+                    "time": self.time.isoformat(),
+                    "format": self.format,
+                    "tags": self.tags,
+                    "annotations": self.annotations,
+                }
+            }
+        )
+
+    def sync_basic_metadata(self):
+        exif_dict = self._read_exif()
+
+        metadata_dict = self._decode_usercomment(exif_dict) or {}
+        image_metadata = metadata_dict.get("image")
+
+        if not image_metadata:
+            raise InvalidImageDataError("No capture metadata found")
+
+        self.id = image_metadata.get("id")
+        self.format = image_metadata.get("format")
+        self.time = dateutil.parser.isoparse(
+            image_metadata.get("time") or image_metadata.get("acquisitionDate")
+        )
+        self.tags = image_metadata.get("tags")
+        self.annotations = image_metadata.get("annotations")
+
+        dataset = metadata_dict.get("dataset")
+        if dataset:
+            self._dataset = {
+                "id": dataset.get("id"),
+                "name": dataset.get("name"),
+                "type": dataset.get("type"),
+            }
+
+    def read_full_metadata(self):
+        logging.info("Reading full capture metadata from %s...", self.file)
+        exif_dict = self._read_exif()
+        return self._decode_usercomment(exif_dict)
+
+    @property
+    def dataset(self):
+        """Read-only dataset property"""
+        return self._dataset
+
     @property
     def exists(self) -> bool:
         """Check if capture data file exists on disk."""
@@ -176,21 +193,6 @@ class CaptureObject(object):
             return True
         else:
             return False
-
-    @property
-    def dataset(self) -> str:
-        """
-        If capture is part of a dataset, return basic dataset info.
-        Otherwise return None
-        """
-        dataset = self.metadata.get("dataset")
-        if not dataset:
-            return None
-        return {
-            "id": dataset.get("id"),
-            "name": dataset.get("name"),
-            "type": dataset.get("type"),
-        }
 
     # HANDLE TAGS
     def put_tags(self, tags: list):
@@ -200,11 +202,7 @@ class CaptureObject(object):
         Args:
             tags (list): List of tags to be added
         """
-        for tag in tags:
-            if tag not in self.tags:
-                self.tags.append(tag)
-
-        self.save_metadata()
+        self.put_and_save(tags=tags)
 
     def delete_tag(self, tag: str):
         """
@@ -213,10 +211,12 @@ class CaptureObject(object):
         Args:
             tag (str): Tag to be removed
         """
+        # Update in-memory tag list
         if tag in self.tags:
             self.tags = [new_tag for new_tag in self.tags if new_tag != tag]
 
-        self.save_metadata()
+        # Write in-memory metadata to file
+        self.put_and_save()
 
     # HANDLE ANNOTATIONS
 
@@ -227,13 +227,15 @@ class CaptureObject(object):
         Args:
             data (dict): Dictionary of metadata to be added
         """
-        self.annotations.update(data)
-        self.save_metadata()
+        self.put_and_save(annotations=data)
 
     def delete_annotation(self, key: str) -> None:
+        # Update in-memory annotations list
         if key in self.annotations:
             del self.annotations[key]
-        self.save_metadata()
+
+        # Write in-memory metadata to file
+        self.put_and_save()
 
     # HANDLE METADATA
 
@@ -244,17 +246,7 @@ class CaptureObject(object):
         Args:
             data (dict): Dictionary of metadata to be added
         """
-        self._metadata.update(data)
-        self.save_metadata()
-
-    def set_metadata(self, data: dict) -> None:
-        """
-        Write root metadata from a passed dictionary into the capture metadata.
-
-        Args:
-            data (dict): Dictionary of metadata to be added
-        """
-        self._metadata = data
+        self.put_and_save(metadata=data)
 
     # BULK OPERATIONS
 
@@ -271,35 +263,42 @@ class CaptureObject(object):
         if not metadata:
             metadata = {}
 
-        # Tags
+        # Update in-memory tags array
         for tag in tags:
             if tag not in self.tags:
                 self.tags.append(tag)
-        # Annotations
+
+        # Update in-memory annotations dictionary
         self.annotations.update(annotations)
-        # Metadata
-        self._metadata.update(metadata)
 
-        self.save_metadata()
-
-    def save_metadata(self) -> None:
-        """
-        Save metadata to exif, if supported
-        """
+        # Write new data to file EXIF, if supported
         if self.format.upper() in EXIF_FORMATS and self.exists:
-            logging.debug("Writing exif data to capture file")
+            logging.info("Writing Exif data to %s", self.file)
+
             # Extract current Exif data
-            exif_dict = piexif.load(self.file)
+            exif_dict = self._read_exif()
+            metadata_dict = self._decode_usercomment(exif_dict) or {}
+
+            # Add new tags to exif dictionary
+            metadata_dict.get("image", {})["tags"] = self.tags
+            # Add new annotations to exif dictionary
+            metadata_dict.get("image", {})["annotations"] = self.annotations
+            # Add new custom metadata to exif dictionary
+            metadata_dict.update(metadata)
+
             # Serialize metadata
-            metadata_string = json.dumps(self.metadata, cls=JSONEncoder)
+            metadata_string = json.dumps(metadata_dict, cls=JSONEncoder)
             logging.debug("Saving metadata string to file: %s", metadata_string)
+
             # Insert metadata into exif_dict
             exif_dict["Exif"][piexif.ExifIFD.UserComment] = metadata_string.encode()
+
             # Convert new exif dict to exif bytes
             exif_bytes = piexif.dump(exif_dict)
+
             # Insert exif into file
             piexif.insert(exif_bytes, self.file)
-            logging.info("Finished saving metadata to %s", self.file)
+            logging.info("Finished writing Exif data to %s", self.file)
 
     # PROPERTIES
 
@@ -309,42 +308,13 @@ class CaptureObject(object):
         Create basic metadata dictionary from basic capture data, 
         and any added custom metadata and tags.
         """
-        d = {
-            "image": {
-                "id": self.id,
-                "name": self.name,
-                "time": self.time.isoformat(),
-                "format": self.format,
-                "tags": self.tags,
-                "annotations": self.annotations,
-            },
-            **self._metadata,
-        }
-
         # Add custom metadata to dictionary
-        return d
-
-    @property
-    def state(self) -> dict:
-        """
-        Return a dictionary of objects full state, including metadata.
-        """
-
-        # Create basic state dictionary
-        d = {"path": self.file, "name": self.name, "metadata": self.metadata}
-
-        # Combined availability of data
-        if self.exists:
-            d["available"] = True
-        else:
-            d["available"] = False
-
-        return d
+        return self.read_full_metadata()
 
     @property
     def data(self) -> io.BytesIO:
         """
-        Return a byte string of the capture data.
+        Return a BytesIO object of the capture data.
         """
 
         if self.exists:  # If data file exists
@@ -390,7 +360,7 @@ class CaptureObject(object):
         """Write stream to file, and save/update metadata file"""
         # If a stream OR file exists, save the metadata file
         if self.exists:
-            self.save_metadata()
+            self.put_and_save()
 
     def delete(self) -> bool:
         """If the StreamObject has been saved, delete the file."""
