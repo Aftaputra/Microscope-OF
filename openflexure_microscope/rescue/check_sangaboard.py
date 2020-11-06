@@ -8,37 +8,42 @@ def main():
 
     try:
         from sangaboard import Sangaboard
-    except Exception as e:  # pylint: disable=W0703
-        error_sources.append(ErrorSource(
-            "Sangaboard module could not be imported."
-        ))
+    except ImportError as e:
+        error_sources.append(ErrorSource(str(e)))
     else:
         configuration = user_configuration.load()
         stage_type = configuration["stage"].get("type")
         stage_port = configuration["stage"].get("port")
 
-        error_sources.append(WarningSource(
-            "Stage serial port is not specified in configuration. Application will scan ports for a Sangaboard."
-        ))
-
+        error_sources.append(
+            WarningSource(
+                "Stage serial port is not specified in configuration. Application will scan ports for a Sangaboard."
+            )
+        )
 
         # If any Sangaboard-based stage is configured for use
         if stage_type in ("SangaBoard", "SangaStage", "SangaDeltaStage"):
             # Try connecting on the specified port
             try:
                 _ = Sangaboard(stage_port)
-            except FileNotFoundError as e:  # pylint: disable=W0703
+            except FileNotFoundError as e:
                 if stage_port:
-                    error_sources.append(ErrorSource(
-                        f"No {stage_type} device was found on the configured port {stage_port}."
-                    ))
+                    error_sources.append(
+                        ErrorSource(
+                            f"No {stage_type} device was found on the configured port {stage_port}."
+                        )
+                    )
                 else:
-                    error_sources.append(ErrorSource(
-                        f"No {stage_type} device was found during port scanning."
-                    ))
+                    error_sources.append(
+                        ErrorSource(
+                            f"No {stage_type} device was found during port scanning."
+                        )
+                    )
         else:
-            error_sources.append(ErrorSource(
-                f"Invalid stage type {stage_type} specified in configuration file."
-            ))
+            error_sources.append(
+                ErrorSource(
+                    f"Invalid stage type {stage_type} specified in configuration file."
+                )
+            )
 
     return error_sources
