@@ -121,7 +121,7 @@ class MissingCamera(BaseCamera):
                     "Cannot update camera config while recording is active."
                 )
 
-    def set_zoom(self, *_) -> None:
+    def set_zoom(self, *_, **__) -> None:
         """
         Change the camera zoom, handling re-centering and scaling.
         """
@@ -129,7 +129,7 @@ class MissingCamera(BaseCamera):
 
     # LAUNCH ACTIONS
 
-    def start_preview(self, *_):
+    def start_preview(self, *_, **__):
         """Start the on board GPU camera preview."""
         logging.warning("GPU preview not implemented in mock camera")
 
@@ -137,7 +137,7 @@ class MissingCamera(BaseCamera):
         """Stop the on board GPU camera preview."""
         logging.warning("GPU preview not implemented in mock camera")
 
-    def start_recording(self, *_):
+    def start_recording(self, *_, **__):
         """Start recording.
 
         Start a new video recording, writing to a output object.
@@ -160,7 +160,7 @@ class MissingCamera(BaseCamera):
         with self.lock:
             logging.warning("Recording not implemented in mock camera")
 
-    def capture(self, output, *_):
+    def capture(self, output, *_, **__):
         """
         Capture a still image to a StreamObject.
 
