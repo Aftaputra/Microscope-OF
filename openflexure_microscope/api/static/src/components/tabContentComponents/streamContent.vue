@@ -259,7 +259,10 @@ export default {
 
     previewRequest: function(state) {
       // If requesting starting the stream, but this component is inactive, skip
-      if (this.$store.getters.ready == true) {
+      if (
+        this.$store.getters.ready == true &&
+        this.$store.state.globalSettings.autoGpuPreview == true
+      ) {
         var requestUri = null;
         // Create URI
         if (state == true) {
