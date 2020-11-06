@@ -18,19 +18,13 @@ class Source:
         return self._message
 
 
-class WarningSource:
-    def __init__(self, message):
-        self.message = message
-
+class WarningSource(Source):
     @property
     def message(self):
-        print(bcolors.WARNING + self._message + bcolors.ENDC)
+        return bcolors.WARNING + self._message + bcolors.ENDC
 
 
-class ErrorSource:
-    def __init__(self, message):
-        self.message = message
-
+class ErrorSource(Source):
     @property
     def message(self):
-        print(bcolors.FAIL + self._message + bcolors.ENDC)
+        return bcolors.FAIL + self._message + bcolors.ENDC
