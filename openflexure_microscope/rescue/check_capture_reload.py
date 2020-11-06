@@ -1,7 +1,10 @@
 import logging
-from logging import error
 
-from openflexure_microscope.captures.capture import build_captures_from_exif, make_file_list, EXIF_FORMATS
+from openflexure_microscope.captures.capture import (
+    build_captures_from_exif,
+    make_file_list,
+    EXIF_FORMATS,
+)
 from openflexure_microscope.captures.capture_manager import BASE_CAPTURE_PATH
 from openflexure_microscope.config import user_settings
 from openflexure_microscope.rescue.monitor_timeout import launch_timeout_test_process
@@ -35,17 +38,25 @@ def main():
     # Check number of captures being restored
     files = make_file_list(cap_path, EXIF_FORMATS)
     if len(files) >= 10000:
-        error_sources.append(WarningSource(
-            ("Over 10000 captures are being restored. This may slow down server startup.",
-            f"Consider moving your captures from {cap_path} to another location.")
-        ))
+        error_sources.append(
+            WarningSource(
+                (
+                    "Over 10000 captures are being restored. This may slow down server startup.",
+                    f"Consider moving your captures from {cap_path} to another location.",
+                )
+            )
+        )
 
     # Check restore time of captures
     passed_timeout = check_capture_reload(cap_path)
     if not passed_timeout:
-        error_sources.append(ErrorSource(
-            ("Capture database rebuilding took a long time. This may not cause catastrophic errors, but rather will cause the server to hang for a while.",
-            f"To fix, consider moving your captures from {cap_path} to another location.")
-        ))
+        error_sources.append(
+            ErrorSource(
+                (
+                    "Capture database rebuilding took a long time. This may not cause catastrophic errors, but rather will cause the server to hang for a while.",
+                    f"To fix, consider moving your captures from {cap_path} to another location.",
+                )
+            )
+        )
 
     return error_sources

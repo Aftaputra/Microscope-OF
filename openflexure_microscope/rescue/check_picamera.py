@@ -3,8 +3,10 @@ import logging
 from .error_sources import ErrorSource
 
 picamera_import_error = ErrorSource(
-    ("Picamera module could not be imported.",
-    "Check physical connections to the camera as it may be damaged or disconnected.")
+    (
+        "Picamera module could not be imported.",
+        "Check physical connections to the camera as it may be damaged or disconnected.",
+    )
 )
 
 
