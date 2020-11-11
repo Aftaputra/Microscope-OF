@@ -134,7 +134,9 @@
         :prev-text="'Prev'"
         :next-text="'Next'"
         :page-class="'page-item'"
+        :active-class="'uk-active'"
         :disabled-class="'uk-disabled'"
+        :click-handler="scrollToTop()"
       >
       </Paginate>
     </div>
@@ -339,6 +341,10 @@ export default {
   },
 
   methods: {
+    scrollToTop() {
+      document.querySelector("#container-left").scrollTop = 0;
+    },
+
     updateCaptures: function() {
       if (this.$store.state.available) {
         console.log("Updating capture list...");
