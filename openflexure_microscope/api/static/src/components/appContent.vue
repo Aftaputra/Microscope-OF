@@ -380,11 +380,7 @@ export default {
 }
 
 #switcher-left {
-  border-width: 0 1px 0 0;
-  border-style: solid;
-  border-color: rgba(180, 180, 180, 0.25);
   width: 75px;
-  background-color: rgba(180, 180, 180, 0.1);
   padding-top: 2px !important;
 }
 
@@ -394,6 +390,10 @@ export default {
   overflow-x: hidden;
   overflow-y: auto;
   height: 100%;
+  background-color: rgba(180, 180, 180, 0.1);
+  border-width: 0 1px 0 0;
+  border-style: solid;
+  border-color: rgba(180, 180, 180, 0.25);
 }
 
 #switcher-left a {
