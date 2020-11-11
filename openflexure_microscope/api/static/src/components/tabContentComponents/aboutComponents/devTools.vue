@@ -3,6 +3,9 @@
     <form class="uk-form-stacked" @submit.prevent="overrideAPIHost">
       <label class="uk-form-label">Override API origin</label>
       <input v-model="currentOrigin" class="uk-input" type="text" />
+      <button class="uk-button uk-button-default uk-margin-small">
+        Apply
+      </button>
     </form>
   </div>
 </template>
