@@ -200,28 +200,30 @@ class Microscope:
 
             # If attached to a camera
             if ("camera" in settings) and self.camera:
-                self.camera.update_settings(settings.get("camera", {}))
+                self.camera.update_settings(settings.pop("camera", {}))
 
             # If attached to a stage
             if ("stage" in settings) and self.stage:
-                self.stage.update_settings(settings.get("stage", {}))
+                self.stage.update_settings(settings.pop("stage", {}))
 
             # Capture manager
-            self.captures.update_settings(settings.get("captures", {}))
+            self.captures.update_settings(settings.pop("captures", {}))
 
             # Microscope settings
             if "id" in settings:
-                self.id = settings["id"]
+                self.id = settings.pop("id")
             if "name" in settings:
-                self.name = settings["name"]
+                self.name = settings.pop("name")
             if "fov" in settings:
-                self.fov = settings["fov"]
+                self.fov = settings.pop("fov")
 
             # Extension settings
             if "extensions" in settings:
-                self.extension_settings.update(settings["extensions"])
+                self.extension_settings.update(settings.pop("extensions"))
 
-            # TODO: warn if there are settings that we silently ignore
+            # Warn about any superfluous keys
+            for key in settings.keys():
+                logging.warning("Key %s is unused and was ignored", key)
 
     def read_settings(self, full: bool = True):
         """
