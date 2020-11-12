@@ -1,5 +1,3 @@
-import logging
-
 from flask import abort, redirect, request, send_file, url_for
 from labthings import Schema, fields, find_component
 from labthings.marshalling import marshal_with, use_args

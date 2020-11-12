@@ -38,6 +38,7 @@ def logs_file_path(filename: str):
         os.makedirs(logs_dir)
     return os.path.join(logs_dir, filename)
 
+
 # BASE PATHS
 
 if os.name == "nt":
