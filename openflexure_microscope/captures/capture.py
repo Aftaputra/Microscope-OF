@@ -10,8 +10,8 @@ from PIL import Image
 
 import dateutil.parser
 
-from openflexure_microscope.camera import piexif
-from openflexure_microscope.camera.piexif._exceptions import InvalidImageDataError
+from openflexure_microscope.captures import piexif
+from openflexure_microscope.captures.piexif import InvalidImageDataError
 from openflexure_microscope.json import JSONEncoder
 
 EXIF_FORMATS = ["JPG", "JPEG", "TIF", "TIFF"]
