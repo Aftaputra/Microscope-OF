@@ -25,6 +25,8 @@ The simplest way to ensure this works is to install pre-commits into your global
 
 Alternatively, you can work within the Poetry project's virtual environment where pre-commit will already be installed as a developer dependency.
 
+Finally, to run all analysis within installing pre-commits to Git, you can run `pre-commit run`.
+
 ### Node installation
 
 * Note, building the static interface will require a valid Node.js installation
