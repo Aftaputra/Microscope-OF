@@ -11,8 +11,6 @@ from labthings.schema import Schema, pre_dump
 from labthings.utilities import description_from_view
 from labthings.views import ActionView, PropertyView, View
 
-from openflexure_microscope.devel import JsonResponse, request
-
 
 class ZipObjectSchema(Schema):
     id = fields.String()
@@ -128,12 +126,15 @@ default_zip_manager = ZipManager()
 
 
 class ZipBuilderAPIView(ActionView):
-    def post(self):
-        ids = list(JsonResponse(request).json)
+    args = fields.List(fields.String(), required=True)
+
+    def post(self, args):
         microscope = find_component("org.openflexure.microscope")
 
         # Return a handle on the autofocus task
-        return default_zip_manager.marshaled_build_zip_from_capture_ids(microscope, ids)
+        return default_zip_manager.marshaled_build_zip_from_capture_ids(
+            microscope, args
+        )
 
 
 class ZipListAPIView(PropertyView):

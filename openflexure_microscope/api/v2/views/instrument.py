@@ -1,11 +1,10 @@
 import logging
 
 from flask import abort, request
-from labthings import find_component
+from labthings import find_component, fields
+from labthings.marshalling import use_args
 from labthings.utilities import create_from_path, get_by_path, set_by_path
 from labthings.views import PropertyView, View
-
-from openflexure_microscope.api.utilities import JsonResponse
 
 
 class SettingsProperty(PropertyView):
@@ -16,17 +15,17 @@ class SettingsProperty(PropertyView):
         microscope = find_component("org.openflexure.microscope")
         return microscope.read_settings()
 
-    def put(self):
+    @use_args(fields.Dict())
+    def put(self, args):
         """
         Update current microscope settings, including camera and stage
         """
         microscope = find_component("org.openflexure.microscope")
-        payload = JsonResponse(request)
 
         logging.debug("Updating settings from PUT request:")
-        logging.debug(payload.json)
+        logging.debug(args)
 
-        microscope.update_settings(payload.json)
+        microscope.update_settings(args)
         microscope.save_settings()
 
         return self.get()
@@ -50,16 +49,16 @@ class NestedSettingsProperty(View):
 
         return value
 
-    def put(self, route):
+    @use_args(fields.Dict())
+    def put(self, args, route):
         """
         Update a nested section of the current microscope settings
         """
         microscope = find_component("org.openflexure.microscope")
         keys = route.split("/")
-        payload = JsonResponse(request)
 
         dictionary = create_from_path(keys)
-        set_by_path(dictionary, keys, payload.json)
+        set_by_path(dictionary, keys, args)
 
         microscope.update_settings(dictionary)
         microscope.save_settings()

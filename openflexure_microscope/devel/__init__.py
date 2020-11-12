@@ -13,8 +13,6 @@ from labthings import current_action as current_task
 from labthings import update_action_data as update_task_data
 from labthings import update_action_progress as update_task_progress
 
-from openflexure_microscope.api.utilities import JsonResponse
-
 __all__ = [
     "current_task",
     "update_task_progress",

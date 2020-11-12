@@ -2,12 +2,12 @@ import logging
 
 from flask import abort, redirect, request, send_file, url_for
 from labthings import Schema, fields, find_component
-from labthings.marshalling import marshal_with
+from labthings.marshalling import marshal_with, use_args
 from labthings.utilities import description_from_view
 from labthings.views import PropertyView, View
 from marshmallow import pre_dump
 
-from openflexure_microscope.api.utilities import JsonResponse, get_bool
+from openflexure_microscope.api.utilities import get_bool
 
 
 class InstrumentSchema(Schema):
@@ -203,7 +203,8 @@ class CaptureTags(View):
 
         return capture_obj.tags
 
-    def put(self, id_):
+    @use_args(fields.List(fields.String(), required=True))
+    def put(self, args, id_):
         """
         Add tags to a single image capture
         """
@@ -213,17 +214,12 @@ class CaptureTags(View):
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        # TODO: Replace with normal Flask request JSON thing
-        data_dict = JsonResponse(request).json
-
-        if type(data_dict) != list:
-            return abort(400)
-
-        capture_obj.put_tags(data_dict)
+        capture_obj.put_tags(args)
 
         return capture_obj.tags
 
-    def delete(self, id_):
+    @use_args(fields.List(fields.String(), required=True))
+    def delete(self, args, id_):
         """
         Delete tags from a single image capture
         """
@@ -233,12 +229,7 @@ class CaptureTags(View):
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        data_dict = JsonResponse(request).json
-
-        if type(data_dict) != list:
-            return abort(400)
-
-        for tag in data_dict:
+        for tag in args:
             capture_obj.delete_tag(str(tag))
 
         return capture_obj.tags
@@ -259,7 +250,8 @@ class CaptureAnnotations(View):
 
         return capture_obj.annotations
 
-    def put(self, id_):
+    @use_args(fields.Dict())
+    def put(self, args, id_):
         """
         Update metadata for a single image capture
         """
@@ -269,12 +261,6 @@ class CaptureAnnotations(View):
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        data_dict = JsonResponse(request).json
-        logging.debug(data_dict)
-
-        if type(data_dict) != dict:
-            return abort(400)
-
-        capture_obj.put_annotations(data_dict)
+        capture_obj.put_annotations(args)
 
         return capture_obj.annotations
