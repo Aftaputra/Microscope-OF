@@ -3,18 +3,9 @@ import json
 import logging
 import os
 import shutil
-from fractions import Fraction
-from uuid import UUID
 
-import numpy as np
-from labthings.json import LabThingsJSONEncoder
-
-from .paths import (
-    CONFIGURATION_FILE_PATH,
-    DEFAULT_CONFIGURATION_FILE_PATH,
-    DEFAULT_SETTINGS_FILE_PATH,
-    SETTINGS_FILE_PATH,
-)
+from .json import JSONEncoder
+from .paths import CONFIGURATION_FILE_PATH, SETTINGS_FILE_PATH
 
 
 class OpenflexureSettingsFile:
@@ -33,7 +24,12 @@ class OpenflexureSettingsFile:
         self.path = path
 
         # Initialise basic config file with defaults if it doesn't exist
-        initialise_file(self.path, populate=defaults)
+        initialise_file(
+            self.path,
+            # Populate with default dictionary, or empty JSON if empty
+            populate=json.dumps(defaults, cls=JSONEncoder, indent=2, sort_keys=True)
+            or "{}\n",
+        )
 
     def load(self) -> dict:
         """
@@ -76,32 +72,6 @@ class OpenflexureSettingsFile:
         settings.update(config)
 
         return settings
-
-
-class JSONEncoder(LabThingsJSONEncoder):
-    """
-    A custom JSON encoder, with type conversions for PiCamera fractions, Numpy integers, and Numpy arrays
-    """
-
-    def default(self, o):
-        if isinstance(o, UUID):
-            return str(o)
-        # PiCamera fractions
-        elif isinstance(o, Fraction):
-            return float(o)
-        # Numpy integers
-        elif isinstance(o, np.integer):
-            return int(o)
-        # Numpy arrays
-        elif isinstance(o, np.ndarray):
-            return o.tolist()
-        # UUIDs
-        elif isinstance(o, UUID):
-            return str(o)
-        else:
-            # call base class implementation which takes care of
-            # raising exceptions for unsupported types
-            return LabThingsJSONEncoder.default(self, o)
 
 
 # HANDLE BASIC LOADING AND SAVING OF SETTINGS FILES
@@ -184,21 +154,14 @@ def initialise_file(config_path, populate: str = "{}\n"):
             outfile.write(populate)
 
 
-# Load the default settings
-with open(DEFAULT_SETTINGS_FILE_PATH, "r") as default_settings:
-    DEFAULT_SETTINGS = default_settings.read()
-
 #: Default user settings object
-user_settings = OpenflexureSettingsFile(
-    path=SETTINGS_FILE_PATH, defaults=DEFAULT_SETTINGS
-)
-
-
-# Load the default configuration
-with open(DEFAULT_CONFIGURATION_FILE_PATH, "r") as default_configuration:
-    DEFAULT_CONFIGURATION = default_configuration.read()
+user_settings = OpenflexureSettingsFile(path=SETTINGS_FILE_PATH)
 
 #: Default user settings object
 user_configuration = OpenflexureSettingsFile(
-    path=CONFIGURATION_FILE_PATH, defaults=DEFAULT_CONFIGURATION
+    path=CONFIGURATION_FILE_PATH,
+    defaults={
+        "camera": {"type": "PiCamera"},
+        "stage": {"type": "SangaStage", "port": None},
+    },
 )

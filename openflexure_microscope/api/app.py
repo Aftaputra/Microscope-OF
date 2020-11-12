@@ -30,7 +30,7 @@ from labthings.extensions import find_extensions
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
 from openflexure_microscope.api.utilities import init_default_extensions, list_routes
 from openflexure_microscope.api.v2 import views
-from openflexure_microscope.config import JSONEncoder
+from openflexure_microscope.json import JSONEncoder
 from openflexure_microscope.paths import (
     OPENFLEXURE_EXTENSIONS_PATH,
     OPENFLEXURE_VAR_PATH,
