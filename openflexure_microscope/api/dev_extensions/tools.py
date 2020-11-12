@@ -17,7 +17,7 @@ class SleepFor(ActionView):
 
     def post(self, args):
         sleep_time = args.get("time")
-        logging.info("Going to sleep for {}...", sleep_time)
+        logging.info("Going to sleep for %s...", sleep_time)
         start = time.time()
         time.sleep(sleep_time)
         end = time.time()

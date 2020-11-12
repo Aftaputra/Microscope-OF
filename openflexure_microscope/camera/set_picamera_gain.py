@@ -55,7 +55,7 @@ if __name__ == "__main__":
         # fix the shutter speed
         cam.shutter_speed = cam.exposure_speed
 
-        logging.info("Current a/d gains: {}, {}", cam.analog_gain, cam.digital_gain)
+        logging.info("Current a/d gains: %s, %s", cam.analog_gain, cam.digital_gain)
 
         logging.info("Attempting to set analogue gain to 1")
         set_analog_gain(cam, 1)
@@ -65,7 +65,7 @@ if __name__ == "__main__":
         try:
             while True:
                 logging.info(
-                    "Current a/d gains: {}, {}", cam.analog_gain, cam.digital_gain
+                    "Current a/d gains: %s, %s", cam.analog_gain, cam.digital_gain
                 )
                 time.sleep(1)
         except KeyboardInterrupt:

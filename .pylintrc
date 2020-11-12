@@ -2,7 +2,3 @@
 
 disable=fixme,C,R
 max-line-length = 88
-
-[LOGGING]
-
-logging-format-style=new

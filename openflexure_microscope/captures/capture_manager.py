@@ -61,7 +61,7 @@ class CaptureManager:
         self.close()
 
     def close(self):
-        logging.info("Closing {}", (self))
+        logging.info("Closing %s", (self))
         # Close all StreamObjects
         for capture_list in [self.images.values(), self.videos.values()]:
             for stream_object in capture_list:
@@ -75,9 +75,9 @@ class CaptureManager:
         """
 
         if os.path.isdir(self.paths["temp"]):
-            logging.info("Clearing {}...", (self.paths["temp"]))
+            logging.info("Clearing %s...", (self.paths["temp"]))
             shutil.rmtree(self.paths["temp"])
-            logging.debug("Cleared {}.", (self.paths["temp"]))
+            logging.debug("Cleared %s.", (self.paths["temp"]))
 
     def rebuild_captures(self):
         self.images = build_captures_from_exif(self.paths["default"])
@@ -158,7 +158,7 @@ class CaptureManager:
 
         # Update capture list
         capture_key = str(output.id)
-        logging.debug("Adding image {} with key {}", output, capture_key)
+        logging.debug("Adding image %s with key %s", output, capture_key)
 
         self.images[capture_key] = output
 
@@ -205,7 +205,7 @@ class CaptureManager:
 
         # Update capture list
         capture_key = str(output.id)
-        logging.debug("Adding video {} with key {}", output, capture_key)
+        logging.debug("Adding video %s with key %s", output, capture_key)
         self.videos[capture_key] = output
 
         return output

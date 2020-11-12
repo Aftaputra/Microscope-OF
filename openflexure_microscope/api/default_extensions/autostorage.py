@@ -95,10 +95,10 @@ class AutostorageExtension(BaseExtension):
 
     def on_microscope(self, microscope_obj):
         """Function to automatically call when the parent LabThing has a microscope attached."""
-        logging.debug("Autostorage extension found microscope {}", microscope_obj)
+        logging.debug("Autostorage extension found microscope %s", microscope_obj)
         if hasattr(microscope_obj, "captures"):
             logging.debug(
-                "Autostorage extension bound to CaptureManager {}", self.capture_manager
+                "Autostorage extension bound to CaptureManager %s", self.capture_manager
             )
 
             # Store a reference to the CaptureManager
@@ -117,7 +117,7 @@ class AutostorageExtension(BaseExtension):
         # If preferred path does not exist, or cannot be written to
         if not (os.path.isdir(location) and check_rw(location)):
             logging.error(
-                "Preferred capture path {} is missing or cannot be written to. Restoring defaults.",
+                "Preferred capture path %s is missing or cannot be written to. Restoring defaults.",
                 location,
             )
             # Reset the storage location to default

@@ -25,11 +25,11 @@ class MoveStageAPI(ActionView):
         # Handle absolute positioning (calculate a relative move from current position and target)
         if (args.get("absolute")) and (microscope.stage):  # Only if stage exists
             target_position = axes_to_array(args, ["x", "y", "z"])
-            logging.debug("TARGET: {}", (target_position))
+            logging.debug("TARGET: %s", (target_position))
             position = [
                 target_position[i] - microscope.stage.position[i] for i in range(3)
             ]
-            logging.debug("DELTA: {}", (position))
+            logging.debug("DELTA: %s", (position))
 
         else:
             # Get coordinates from payload

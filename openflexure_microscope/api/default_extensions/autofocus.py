@@ -83,7 +83,7 @@ class JPEGSharpnessMonitor:
                 raise e
         if stop < 1:
             stop = len(jpeg_times)
-            logging.debug("changing stop to {}", (stop))
+            logging.debug("changing stop to %s", (stop))
         jpeg_times = jpeg_times[start:stop]
         jpeg_zs = np.interp(jpeg_times, stage_times, stage_zs)
         return jpeg_times, jpeg_zs, jpeg_sizes[start:stop]
@@ -258,13 +258,12 @@ def fast_up_down_up_autofocus(
             # Ensure the MJPEG stream has started
             microscope.camera.start_stream_recording()
 
-            df = dz  # TODO: refactor so I actually use dz in the code below!
             logging.debug("Initial move")
             if initial_move_up:
-                m.focus_rel(df / 2)
+                m.focus_rel(dz / 2)
             # move down
             logging.debug("Move down")
-            i, z = m.focus_rel(-df)
+            i, z = m.focus_rel(-dz)
             # now inspect where the sharpest point is, and estimate the sharpness
             # (JPEG size) that we should find at the start of the Z stack
             _, jz, js = m.move_data(i)
@@ -285,14 +284,13 @@ def fast_up_down_up_autofocus(
             inow = np.argmax(
                 js < current_js
             )  # use the curve we recorded to estimate our position
-            # TODO: fancy interpolation stuff
 
             # So, the Z position corresponding to our current sharpness value is zs[inow]
             # That means we should move forwards, by best_z - zs[inow]
             logging.debug("Correction move")
             correction_move = best_z + target_z - jz[inow]
             logging.debug(
-                "Fast autofocus scan: correcting backlash by moving {} steps",
+                "Fast autofocus scan: correcting backlash by moving %s steps",
                 (correction_move),
             )
             m.focus_rel(correction_move)

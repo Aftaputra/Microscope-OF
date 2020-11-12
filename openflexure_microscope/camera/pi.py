@@ -156,10 +156,10 @@ class PiCameraStreamer(BaseCamera):
         for key in PiCameraStreamer.picamera_settings_keys:
             try:
                 value = getattr(self.camera, key)
-                logging.debug("Reading PiCamera().{}: {}", key, value)
+                logging.debug("Reading PiCamera().%s: %s", key, value)
                 conf_dict["picamera"][key] = value
             except AttributeError:
-                logging.debug("Unable to read PiCamera attribute {}", (key))
+                logging.debug("Unable to read PiCamera attribute %s", (key))
 
         # Include a serialised lens shading table
         if (
@@ -243,22 +243,22 @@ class PiCameraStreamer(BaseCamera):
         # Set exposure mode
         if "exposure_mode" in settings_dict:
             logging.debug(
-                "Applying exposure_mode: {}", (settings_dict["exposure_mode"])
+                "Applying exposure_mode: %s", (settings_dict["exposure_mode"])
             )
             self.camera.exposure_mode = settings_dict["exposure_mode"]
 
         # Apply gains and let them settle
         if "analog_gain" in settings_dict:
-            logging.debug("Applying analog_gain: {}", (settings_dict["analog_gain"]))
+            logging.debug("Applying analog_gain: %s", (settings_dict["analog_gain"]))
             set_analog_gain(self.camera, float(settings_dict["analog_gain"]))
         if "digital_gain" in settings_dict:
-            logging.debug("Applying digital_gain: {}", (settings_dict["digital_gain"]))
+            logging.debug("Applying digital_gain: %s", (settings_dict["digital_gain"]))
             set_digital_gain(self.camera, float(settings_dict["digital_gain"]))
 
         # Apply shutter speed
         if "shutter_speed" in settings_dict:
             logging.debug(
-                "Applying shutter_speed: {}", (settings_dict["shutter_speed"])
+                "Applying shutter_speed: %s", (settings_dict["shutter_speed"])
             )
             self.camera.shutter_speed = int(settings_dict["shutter_speed"])
 
@@ -268,17 +268,17 @@ class PiCameraStreamer(BaseCamera):
         if "awb_gains" in settings_dict:
             logging.debug("Applying awb_mode: off")
             self.camera.awb_mode = "off"
-            logging.debug("Applying awb_gains: {}", (settings_dict["awb_gains"]))
+            logging.debug("Applying awb_gains: %s", (settings_dict["awb_gains"]))
             self.camera.awb_gains = settings_dict["awb_gains"]
         elif "awb_mode" in settings_dict:
-            logging.debug("Applying awb_mode: {}", (settings_dict["awb_mode"]))
+            logging.debug("Applying awb_mode: %s", (settings_dict["awb_mode"]))
             self.camera.awb_mode = settings_dict["awb_mode"]
 
         # Handle some properties that can be quickly applied
         batched_keys = ["framerate", "saturation"]
         for key in batched_keys:
             if (key in settings_dict) and hasattr(self.camera, key):
-                logging.debug("Applying {}: {}", key, settings_dict[key])
+                logging.debug("Applying %s: %s", key, settings_dict[key])
                 setattr(self.camera, key, settings_dict[key])
 
         # Final optional pause to settle
@@ -303,7 +303,7 @@ class PiCameraStreamer(BaseCamera):
             for i in range(2):
                 if np.abs(centre[i] - 0.5) + size / 2 > 0.5:
                     centre[i] = 0.5 + (1.0 - size) / 2 * np.sign(centre[i] - 0.5)
-            logging.info("setting zoom, centre {}, size {}", centre, size)
+            logging.info("setting zoom, centre %s, size %s", centre, size)
             new_fov = (centre[0] - size / 2, centre[1] - size / 2, size, size)
             self.camera.zoom = new_fov
 
@@ -325,11 +325,11 @@ class PiCameraStreamer(BaseCamera):
                 self.preview_active = True
             except picamerax.exc.PiCameraMMALError as e:
                 logging.error(
-                    "Suppressed a MMALError in start_preview. Exception: {}", (e)
+                    "Suppressed a MMALError in start_preview. Exception: %s", (e)
                 )
             except picamerax.exc.PiCameraValueError as e:
                 logging.error(
-                    "Suppressed a ValueError exception in start_preview. Exception: {}",
+                    "Suppressed a ValueError exception in start_preview. Exception: %s",
                     (e),
                 )
 
@@ -359,7 +359,7 @@ class PiCameraStreamer(BaseCamera):
             if not self.record_active:
 
                 # Start the camera video recording on port 2
-                logging.info("Recording to {}", (output))
+                logging.info("Recording to %s", (output))
 
                 self.camera.start_recording(
                     output,
@@ -401,17 +401,17 @@ class PiCameraStreamer(BaseCamera):
         """
         for k in kwargs.keys():
             logging.warning(
-                "Warning, kwarg {} is invalid for stop_stream_recording.", k
+                "Warning, kwarg %s is invalid for stop_stream_recording.", k
             )
         with self.lock:
             # Stop the camera video recording on port 1
             try:
                 self.camera.stop_recording(splitter_port=splitter_port)
             except picamerax.exc.PiCameraNotRecording:
-                logging.info("Not recording on splitter_port {}", (splitter_port))
+                logging.info("Not recording on splitter_port %s", (splitter_port))
             else:
                 logging.info(
-                    "Stopped MJPEG stream on port {}. Switching to {}.",
+                    "Stopped MJPEG stream on port %s. Switching to %s.",
                     splitter_port,
                     self.image_resolution,
                 )
@@ -431,7 +431,7 @@ class PiCameraStreamer(BaseCamera):
         """
         for k in kwargs.keys():
             logging.warning(
-                "Warning, kwarg {} is invalid for stop_stream_recording.", k
+                "Warning, kwarg %s is invalid for stop_stream_recording.", k
             )
         with self.lock(timeout=None):
             # Reduce the resolution for video streaming
@@ -465,7 +465,7 @@ class PiCameraStreamer(BaseCamera):
                     )
                 else:
                     logging.debug(
-                        "Started MJPEG stream at {} on port {}",
+                        "Started MJPEG stream at %s on port %s",
                         self.stream_resolution,
                         splitter_port,
                     )
@@ -496,7 +496,7 @@ class PiCameraStreamer(BaseCamera):
             output_object (str/BytesIO): Target object.
         """
         with self.lock:
-            logging.info("Capturing to {}", (output))
+            logging.info("Capturing to %s", (output))
 
             # Set resolution and stop stream recording if necessary
             if not use_video_port:
@@ -532,7 +532,7 @@ class PiCameraStreamer(BaseCamera):
             logging.debug("Creating PiRGBArray")
             with picamerax.array.PiRGBArray(self.camera) as output:
 
-                logging.info("Capturing to {}", (output))
+                logging.info("Capturing to %s", (output))
 
                 self.camera.capture(output, format="rgb", use_video_port=True)
 

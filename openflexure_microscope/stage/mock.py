@@ -80,13 +80,13 @@ class MissingStage(BaseStage):
 
         self._position = list(np.array(self._position) + np.array(initial_move))
         logging.debug(np.array(self._position) + np.array(initial_move))
-        logging.debug("New position: {}", self._position)
+        logging.debug("New position: %s", self._position)
 
     def move_abs(self, final, **kwargs):
         time.sleep(0.5)
 
         self._position = list(final)
-        logging.debug("New position: {}", self._position)
+        logging.debug("New position: %s", self._position)
 
     def zero_position(self):
         """Set the current position to zero"""

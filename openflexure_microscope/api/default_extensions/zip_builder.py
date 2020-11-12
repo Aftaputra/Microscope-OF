@@ -156,7 +156,7 @@ class ZipGetterAPIView(View):
         if not session_id in default_zip_manager.session_zips:
             return abort(404)  # 404 Not Found
 
-        logging.info("Session ID: {}", session_id)
+        logging.info("Session ID: %s", session_id)
 
         return send_file(
             default_zip_manager.zip_fp_from_id(session_id).name,

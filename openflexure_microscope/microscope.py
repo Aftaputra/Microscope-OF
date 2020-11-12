@@ -71,7 +71,7 @@ class Microscope:
 
     def close(self):
         """Shut down the microscope hardware."""
-        logging.info("Closing {}", (self))
+        logging.info("Closing %s", (self))
         if self.camera:
             try:
                 self.camera.close()
@@ -83,7 +83,7 @@ class Microscope:
             except TimeoutError as e:
                 logging.error(e)
         self.captures.close()
-        logging.info("Closed {}", (self))
+        logging.info("Closed %s", (self))
 
     def setup(self, configuration):
         """
@@ -196,7 +196,7 @@ class Microscope:
         Applies a settings dictionary to the microscope. Missing parameters will be left untouched.
         """
         with self.lock:
-            logging.debug("Microscope: Applying settings: {}", (settings))
+            logging.debug("Microscope: Applying settings: %s", (settings))
 
             # If attached to a camera
             if ("camera" in settings) and self.camera:
@@ -329,14 +329,14 @@ class Microscope:
 
         # Load cached bits of metadata
         if cache_key:
-            logging.debug("Reading cached microscope metadata: {}", cache_key)
+            logging.debug("Reading cached microscope metadata: %s", cache_key)
             metadata = self.metadata_cache.get(cache_key, None)
             if not metadata:
-                logging.debug("Building and caching microscope metadata: {}", cache_key)
+                logging.debug("Building and caching microscope metadata: %s", cache_key)
                 metadata = self.force_get_metadata()
                 self.metadata_cache[cache_key] = metadata
         else:
-            logging.debug("Building microscope metadata: {}", cache_key)
+            logging.debug("Building microscope metadata: %s", cache_key)
             metadata = self.force_get_metadata()
 
         # Keys that should never be cached
@@ -362,7 +362,7 @@ class Microscope:
         metadata: dict = None,
         cache_key: str = None,
     ):
-        logging.debug("Microscope capturing to {}", filename)
+        logging.debug("Microscope capturing to %s", filename)
         if not annotations:
             annotations = {}
         if not metadata:
@@ -384,7 +384,7 @@ class Microscope:
             extras = {}
             if fmt == "jpeg":
                 extras["thumbnail"] = (*THUMBNAIL_SIZE, 85)
-            logging.info("Starting microscope capture {}", output.file)
+            logging.info("Starting microscope capture %s", output.file)
             self.camera.capture(
                 output,
                 use_video_port=use_video_port,
@@ -395,6 +395,6 @@ class Microscope:
             )
 
         output.put_and_save(tags, annotations, full_metadata)
-        logging.debug("Finished capture to {}", output.file)
+        logging.debug("Finished capture to %s", output.file)
 
         return output

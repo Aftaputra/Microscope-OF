@@ -25,23 +25,23 @@ def make_file_list(directory, formats):
             glob.glob("{}/**/*.{}".format(directory, fmt.lower()), recursive=True)
         )
 
-    logging.info("{} capture files found on disk", (len(files)))
+    logging.info("%s capture files found on disk", (len(files)))
 
     return files
 
 
 def build_captures_from_exif(capture_path):
-    logging.debug("Reloading captures from {}...", (capture_path))
+    logging.debug("Reloading captures from %s...", (capture_path))
     files = make_file_list(capture_path, EXIF_FORMATS)
     captures = OrderedDict()
 
     for f in files:
-        logging.debug("Reloading capture {}...", (f))
+        logging.debug("Reloading capture %s...", (f))
         capture = capture_from_path(f)
         if capture:
             captures[capture.id] = capture
 
-    logging.info("{} capture files successfully reloaded", (len(captures)))
+    logging.info("%s capture files successfully reloaded", (len(captures)))
 
     return captures
 
@@ -58,7 +58,7 @@ def capture_from_path(path):
         capture.sync_basic_metadata()
         return capture
     except (InvalidImageDataError, json.decoder.JSONDecodeError):
-        logging.error("Invalid metadata at {}.", (path))
+        logging.error("Invalid metadata at %s.", (path))
         return None
 
 
@@ -75,7 +75,7 @@ class CaptureObject(object):
 
         # Store a nice ID
         self.id = uuid.uuid4()  #: str: Unique capture ID
-        logging.debug("Created CaptureObject {}", (self.id))
+        logging.debug("Created CaptureObject %s", (self.id))
 
         self.time = datetime.datetime.now()
 
@@ -97,17 +97,17 @@ class CaptureObject(object):
         self.tags = []
 
     def write(self, s):
-        logging.debug("Writing to {}", self)
+        logging.debug("Writing to %s", self)
         self.stream.write(s)
 
     def flush(self):
-        logging.info("Writing image data to disk {}", self.file)
+        logging.info("Writing image data to disk %s", self.file)
         with open(self.file, "wb") as outfile:
             outfile.write(self.stream.getbuffer())
         self.stream.close()
-        logging.info("Writing metadata to disk {}", self.file)
+        logging.info("Writing metadata to disk %s", self.file)
         self._init_metadata()
-        logging.info("Finished writing to disk {}", self.file)
+        logging.info("Finished writing to disk %s", self.file)
 
     def open(self, mode):
         return open(self.file, mode)
@@ -175,7 +175,7 @@ class CaptureObject(object):
             }
 
     def read_full_metadata(self):
-        logging.info("Reading full capture metadata from {}...", self.file)
+        logging.info("Reading full capture metadata from %s...", self.file)
         exif_dict = self._read_exif()
         return self._decode_usercomment(exif_dict)
 
@@ -271,7 +271,7 @@ class CaptureObject(object):
 
         # Write new data to file EXIF, if supported
         if self.format.upper() in EXIF_FORMATS and self.exists:
-            logging.info("Writing Exif data to {}", self.file)
+            logging.info("Writing Exif data to %s", self.file)
 
             # Extract current Exif data
             exif_dict = self._read_exif()
@@ -286,7 +286,7 @@ class CaptureObject(object):
 
             # Serialize metadata
             metadata_string = json.dumps(metadata_dict, cls=JSONEncoder)
-            logging.debug("Saving metadata string to file: {}", metadata_string)
+            logging.debug("Saving metadata string to file: %s", metadata_string)
 
             # Insert metadata into exif_dict
             exif_dict["Exif"][piexif.ExifIFD.UserComment] = metadata_string.encode()
@@ -296,7 +296,7 @@ class CaptureObject(object):
 
             # Insert exif into file
             piexif.insert(exif_bytes, self.file)
-            logging.info("Finished writing Exif data to {}", self.file)
+            logging.info("Finished writing Exif data to %s", self.file)
 
     # PROPERTIES
 
@@ -316,7 +316,7 @@ class CaptureObject(object):
         """
 
         if self.exists:  # If data file exists
-            logging.info("Opening from file {}", (self.file))
+            logging.info("Opening from file %s", (self.file))
             with open(self.file, "rb") as f:
                 d = io.BytesIO(f.read())  # Load bytes from file
             d.seek(0)  # Rewind loaded bytestream
@@ -364,7 +364,7 @@ class CaptureObject(object):
         """If the StreamObject has been saved, delete the file."""
 
         if os.path.isfile(self.file):
-            logging.info("Deleting file {}", (self.file))
+            logging.info("Deleting file %s", (self.file))
             os.remove(self.file)
 
             return True
