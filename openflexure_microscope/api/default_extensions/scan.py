@@ -16,6 +16,7 @@ from labthings import (
 from labthings.extensions import BaseExtension
 from labthings.views import ActionView
 
+from openflexure_microscope.api.v2.views.actions.camera import FullCaptureArgs
 from openflexure_microscope.captures.capture_manager import generate_basename
 from openflexure_microscope.devel import abort
 
@@ -338,24 +339,19 @@ class ScanExtension(BaseExtension):
 scan_extension_v2 = ScanExtension()
 
 
+class TileScanArgs(FullCaptureArgs):
+    namemode = fields.String(missing="coordinates", example="coordinates")
+    grid = fields.List(fields.Integer, missing=[3, 3, 3], example=[3, 3, 3])
+    style = fields.String(missing="raster")
+    autofocus_dz = fields.Integer(missing=50)
+    fast_autofocus = fields.Boolean(missing=False)
+    stride_size = fields.List(
+        fields.Integer, missing=[2000, 1500, 100], example=[2000, 1500, 100]
+    )
+
+
 class TileScanAPI(ActionView):
-    args = {
-        "filename": fields.String(missing=None, example=None),
-        "namemode": fields.String(missing="coordinates", example="coordinates"),
-        "temporary": fields.Boolean(missing=False),
-        "stride_size": fields.List(
-            fields.Integer, missing=[2000, 1500, 100], example=[2000, 1500, 100]
-        ),
-        "grid": fields.List(fields.Integer, missing=[3, 3, 3], example=[3, 3, 3]),
-        "style": fields.String(missing="raster"),
-        "autofocus_dz": fields.Integer(missing=50),
-        "fast_autofocus": fields.Boolean(missing=False),
-        "use_video_port": fields.Boolean(missing=False),
-        "bayer": fields.Boolean(missing=False),
-        "annotations": fields.Dict(missing={}, example={"Foo": "Bar"}),
-        "tags": fields.List(fields.String, missing=[]),
-        "resize": fields.Dict(missing=None),  # TODO: Validate keys
-    }
+    args = TileScanArgs()
 
     # Allow 10 seconds to stop upon DELETE request
     # Gives fast-autofocus time to finish if it's running
