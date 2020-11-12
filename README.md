@@ -14,6 +14,17 @@ This includes installing the server in a mode better suited for active developme
 * `poetry install`
 * `poetry run build_static`
 
+### Pre-commit hooks
+
+We make use of pre-commit hooks to run code analysis before committing to the codebase.
+
+The simplest way to ensure this works is to install pre-commits into your global Python environment:
+
+* `pip3 install pre-commit`
+* `pre-commit install`
+
+Alternatively, you can work within the Poetry project's virtual environment where pre-commit will already be installed as a developer dependency.
+
 ### Node installation
 
 * Note, building the static interface will require a valid Node.js installation
