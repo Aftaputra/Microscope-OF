@@ -51,6 +51,7 @@ rpi = ["RPi.GPIO"]
 
 [tool.poetry.scripts]
 build_static = 'openflexure_microscope.install:build'
+rescue = 'openflexure_microscope.rescue.auto:main'
 
 [tool.poetry.dev-dependencies]
 pynpm = "^0.1.2"

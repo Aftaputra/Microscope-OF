@@ -46,9 +46,7 @@ else:
     logger.setLevel(logging.WARNING)
 
 
-if __name__ == "__main__":
-    spoof = False
-
+def main():
     print()
     print(bcolors.HEADER + "OpenFlexure Rescue" + bcolors.ENDC)
     print()
@@ -88,3 +86,7 @@ if __name__ == "__main__":
         print()
         for err in error_sources:
             print(err.message)
+
+
+if __name__ == "__main__":
+    main()
