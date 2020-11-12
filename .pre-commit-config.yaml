@@ -14,6 +14,5 @@ repos:
       - id: pylint
         name: pylint
         entry: poetry run pylint
-        files: "./openflexure_microscope/"
         language: system
         types: [python]

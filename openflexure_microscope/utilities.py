@@ -22,7 +22,7 @@ class Timer(object):
 
     def __exit__(self, type_, value, traceback):
         self.end = time.time()
-        logging.debug("%s time: %s", self.name, self.end - self.start)
+        logging.debug("{} time: {}", self.name, self.end - self.start)
 
 
 def deserialise_array_b64(b64_string, dtype, shape):

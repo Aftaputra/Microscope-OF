@@ -72,7 +72,7 @@ root_log.addHandler(fh)
 access_log.addHandler(afh)
 
 # Log server paths being used
-logging.info("Running with data path %s", OPENFLEXURE_VAR_PATH)
+logging.info("Running with data path {}", OPENFLEXURE_VAR_PATH)
 
 logging.info("Creating app")
 # Create flask app

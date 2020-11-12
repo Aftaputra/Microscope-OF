@@ -83,7 +83,7 @@ class JPEGSharpnessMonitor:
                 raise e
         if stop < 1:
             stop = len(jpeg_times)
-            logging.debug("changing stop to {}".format(stop))
+            logging.debug("changing stop to {}", (stop))
         jpeg_times = jpeg_times[start:stop]
         jpeg_zs = np.interp(jpeg_times, stage_times, stage_zs)
         return jpeg_times, jpeg_zs, jpeg_sizes[start:stop]
@@ -292,9 +292,8 @@ def fast_up_down_up_autofocus(
             logging.debug("Correction move")
             correction_move = best_z + target_z - jz[inow]
             logging.debug(
-                "Fast autofocus scan: correcting backlash by moving {} steps".format(
-                    correction_move
-                )
+                "Fast autofocus scan: correcting backlash by moving {} steps",
+                (correction_move),
             )
             m.focus_rel(correction_move)
             return m.data_dict()

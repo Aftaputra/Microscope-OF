@@ -27,7 +27,7 @@ def main():
     logging.info("Loading user settings...")
     settings = user_settings.load()
     cap_path = str(settings.get("captures", {}).get("paths", {}).get("default"))
-    logging.info("Capture path found: %s", cap_path)
+    logging.info("Capture path found: {}", cap_path)
 
     if not cap_path:
         logging.error(

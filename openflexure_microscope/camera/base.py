@@ -113,10 +113,10 @@ class BaseCamera(metaclass=ABCMeta):
 
     def close(self):
         """Close the BaseCamera and all attached StreamObjects."""
-        logging.info("Closing {}".format(self))
+        logging.info("Closing {}", (self))
         # Stop worker thread
         self.stop_worker()
-        logging.info("Closed {}".format(self))
+        logging.info("Closed {}", (self))
 
     # START AND STOP WORKER THREAD
 

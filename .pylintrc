@@ -1,4 +1,8 @@
 [MESSAGES CONTROL]
 
-disable=C0330,C0326,W1202,W0511,C,R
+disable=fixme,C,R
 max-line-length = 88
+
+[LOGGING]
+
+logging-format-style=new

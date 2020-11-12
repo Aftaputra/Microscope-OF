@@ -55,26 +55,17 @@ if __name__ == "__main__":
         # fix the shutter speed
         cam.shutter_speed = cam.exposure_speed
 
-        logging.info(
-            "Current a/d gains: {}, {}".format(cam.analog_gain, cam.digital_gain)
-        )
+        logging.info("Current a/d gains: {}, {}", cam.analog_gain, cam.digital_gain)
 
         logging.info("Attempting to set analogue gain to 1")
         set_analog_gain(cam, 1)
         logging.info("Attempting to set digital gain to 1")
         set_digital_gain(cam, 1)
-        # The old code is left in here in case it is a useful example...
-        # ret = mmal.mmal_port_parameter_set_rational(cam._camera.control._port,
-        #                                            MMAL_PARAMETER_DIGITAL_GAIN,
-        #                                            to_rational(1))
-        # print("Return code: {}".format(ret))
 
         try:
             while True:
                 logging.info(
-                    "Current a/d gains: {}, {}".format(
-                        cam.analog_gain, cam.digital_gain
-                    )
+                    "Current a/d gains: {}, {}", cam.analog_gain, cam.digital_gain
                 )
                 time.sleep(1)
         except KeyboardInterrupt:

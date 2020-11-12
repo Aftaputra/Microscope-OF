@@ -63,17 +63,15 @@ def auto_expose_and_freeze_settings(camera):
 
     logging.info("Freezing the camera settings...")
     camera.shutter_speed = camera.exposure_speed
-    logging.info("Shutter speed = {}".format(camera.shutter_speed))
+    logging.info("Shutter speed = {}", (camera.shutter_speed))
     camera.exposure_mode = "off"
     logging.info("Auto exposure disabled")
     g = camera.awb_gains
     camera.awb_mode = "off"
     camera.awb_gains = g
-    logging.info("Auto white balance disabled, gains are {}".format(g))
+    logging.info("Auto white balance disabled, gains are {}", (g))
     logging.info(
-        "Analogue gain: {}, Digital gain: {}".format(
-            camera.analog_gain, camera.digital_gain
-        )
+        "Analogue gain: {}, Digital gain: {}", camera.analog_gain, camera.digital_gain
     )
     adjust_exposure_to_setpoint(camera, 215)
 
@@ -100,7 +98,7 @@ def lst_from_channels(channels):
     # lst_resolution = list(np.ceil(full_resolution / 64.0).astype(int))
     lst_resolution = [(r // 64) + 1 for r in full_resolution]
     # NB the size of the LST is 1/64th of the image, but rounded UP.
-    logging.info("Generating a lens shading table at {}x{}".format(*lst_resolution))
+    logging.info("Generating a lens shading table at {}x{}", *lst_resolution)
     lens_shading = np.zeros([channels.shape[0]] + lst_resolution, dtype=np.float)
     for i in range(lens_shading.shape[0]):
         image_channel = channels[i, :, :]
@@ -118,9 +116,12 @@ def lst_from_channels(channels):
             image_channel, [(0, lw * 32 - iw), (0, lh * 32 - ih)], mode="edge"
         )  # Pad image to the right and bottom
         logging.info(
-            "Channel shape: {}x{}, shading table shape: {}x{}, after padding {}".format(
-                iw, ih, lw * 32, lh * 32, padded_image_channel.shape
-            )
+            "Channel shape: {}x{}, shading table shape: {}x{}, after padding {}",
+            iw,
+            ih,
+            lw * 32,
+            lh * 32,
+            padded_image_channel.shape,
         )
         # Next, fill the shading table (except edge pixels).  Please excuse the
         # for loop - I know it's not fast but this code needn't be!

@@ -216,7 +216,7 @@ class ScanExtension(BaseExtension):
 
             for x_y in line:
                 # Move to new grid position without changing z
-                logging.debug("Moving to step {}".format([x_y[0], x_y[1], next_z]))
+                logging.debug("Moving to step {}", ([x_y[0], x_y[1], next_z]))
                 microscope.stage.move_abs([x_y[0], x_y[1], next_z])
                 # Refocus
                 if autofocus_enabled:
@@ -270,11 +270,11 @@ class ScanExtension(BaseExtension):
                 # Make sure we use our current best estimate of focus (i.e. the current position) next point
                 next_z = microscope.stage.position[2]
 
-        logging.debug("Returning to {}".format(initial_position))
+        logging.debug("Returning to {}", (initial_position))
         microscope.stage.move_abs(initial_position)
 
         end = time.time()
-        logging.info("Scan took %s seconds", end - start)
+        logging.info("Scan took {} seconds", end - start)
 
     def stack(
         self,
@@ -298,17 +298,17 @@ class ScanExtension(BaseExtension):
 
         # Store initial position
         initial_position = microscope.stage.position
-        logging.debug("Starting z-stack from position %s", microscope.stage.position)
+        logging.debug("Starting z-stack from position {}", microscope.stage.position)
 
         with microscope.lock:
             # Move to center scan
             logging.debug("Moving to z-stack starting position")
             microscope.stage.move_rel([0, 0, int((-step_size * steps) / 2)])
-            logging.debug("Starting scan from position %s", microscope.stage.position)
+            logging.debug("Starting scan from position {}", microscope.stage.position)
 
             for i in range(steps):
                 time.sleep(0.1)
-                logging.debug("Capturing from position %s", microscope.stage.position)
+                logging.debug("Capturing from position {}", microscope.stage.position)
                 self.capture(
                     microscope,
                     basename,
@@ -328,10 +328,10 @@ class ScanExtension(BaseExtension):
                     return
 
                 if i != steps - 1:
-                    logging.debug("Moving z by {}".format(step_size))
+                    logging.debug("Moving z by {}", (step_size))
                     microscope.stage.move_rel([0, 0, step_size])
             if return_to_start:
-                logging.debug("Returning to {}".format(initial_position))
+                logging.debug("Returning to {}", (initial_position))
                 microscope.stage.move_abs(initial_position)
 
 

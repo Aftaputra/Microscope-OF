@@ -10,7 +10,7 @@ def handle_extension_error(extension_name):
         yield
     except Exception:  # pylint: disable=W0703
         logging.error(
-            "Exception loading builtin extension %s: \n%s",
+            "Exception loading builtin extension {}: \n{}",
             extension_name,
             traceback.format_exc(),
         )

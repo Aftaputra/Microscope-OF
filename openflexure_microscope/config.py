@@ -86,7 +86,7 @@ def load_json_file(config_path) -> dict:
     """
     config_path = os.path.expanduser(config_path)
 
-    logging.info("Loading {}...".format(config_path))
+    logging.info("Loading {}...", config_path)
 
     with open(config_path) as config_file:
         try:
@@ -109,7 +109,7 @@ def save_json_file(config_path: str, config_dict: dict):
     """
     config_path = os.path.expanduser(config_path)
 
-    logging.info("Saving {}...".format(config_path))
+    logging.info("Saving {}...", config_path)
     logging.debug(config_dict)
 
     with open(config_path, "w") as outfile:
@@ -142,14 +142,14 @@ def initialise_file(config_path, populate: str = "{}\n"):
     """
     config_path = os.path.expanduser(config_path)
 
-    logging.debug("Initialising {}".format(config_path))
-    logging.debug("Exists: {}".format(os.path.exists(config_path)))
+    logging.debug("Initialising {}", (config_path))
+    logging.debug("Exists: {}", (os.path.exists(config_path)))
 
     if not os.path.exists(config_path):  # If user config file doesn't exist
-        logging.warning("No config file found at {}. Creating...".format(config_path))
+        logging.warning("No config file found at {}. Creating...", (config_path))
         create_file(config_path)
 
-        logging.info("Populating {}...".format(config_path))
+        logging.info("Populating {}...", (config_path))
         with open(config_path, "w") as outfile:
             outfile.write(populate)
 

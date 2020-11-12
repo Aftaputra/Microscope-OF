@@ -73,12 +73,10 @@ def init_default_extensions(extension_dir):
     default_ext_path = os.path.join(extension_dir, "defaults.py")
 
     if not os.path.isfile(default_ext_path):  # If user extensions file doesn't exist
-        logging.warning(
-            "No extension file found at {}. Creating...".format(extension_dir)
-        )
+        logging.warning("No extension file found at {}. Creating...", (extension_dir))
         create_file(default_ext_path)
 
-        logging.info("Populating {}...".format(default_ext_path))
+        logging.info("Populating {}...", (default_ext_path))
         with open(default_ext_path, "w") as outfile:
             outfile.write(_DEFAULT_EXTENSION_INIT)
 

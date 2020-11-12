@@ -24,7 +24,7 @@ def launch_timeout_test_process(target, args=(), kwargs=None, timeout=10):
     # If thread is still active
     if p.is_alive():
         logging.error(
-            "Function %s reached timeout after %s seconds. Terminating.",
+            "Function {} reached timeout after {} seconds. Terminating.",
             target,
             timeout,
         )

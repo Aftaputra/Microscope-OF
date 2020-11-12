@@ -27,7 +27,7 @@ def build_gui_from_dict(gui_description, extension_object):
             if "route" in form and form["route"] in ext_rules.keys():
                 form["route"] = ext_rules[form["route"]]["urls"][0]
             else:
-                logging.warning("No valid expandable route found for %s", form["route"])
+                logging.warning("No valid expandable route found for {}", form["route"])
 
     # Inject extension information
     api_gui["id"] = extension_object.name
