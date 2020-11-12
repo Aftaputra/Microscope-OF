@@ -1,7 +1,7 @@
 import logging
 
 from flask import abort
-from labthings import find_component, fields
+from labthings import fields, find_component
 from labthings.marshalling import use_args
 from labthings.utilities import create_from_path, get_by_path, set_by_path
 from labthings.views import PropertyView, View

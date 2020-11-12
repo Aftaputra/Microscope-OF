@@ -24,8 +24,8 @@ import pkg_resources
 from flask import abort, send_file
 from flask_cors import CORS, cross_origin
 from labthings import create_app
-from labthings.views import View
 from labthings.extensions import find_extensions
+from labthings.views import View
 
 from openflexure_microscope.api.microscope import default_microscope as api_microscope
 from openflexure_microscope.api.utilities import init_default_extensions, list_routes

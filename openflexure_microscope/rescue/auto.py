@@ -1,10 +1,9 @@
 import logging
 import os
-import sys
 import platform
-import pkg_resources
+import sys
 
-from .error_sources import bcolors
+import pkg_resources
 
 from openflexure_microscope.paths import (
     FALLBACK_OPENFLEXURE_VAR_PATH,
@@ -13,11 +12,12 @@ from openflexure_microscope.paths import (
 
 from . import (
     check_capture_reload,
-    check_settings,
     check_picamera,
     check_sangaboard,
+    check_settings,
     check_system,
 )
+from .error_sources import bcolors
 
 # Paths for suggestions
 LOGS_PATHS = [

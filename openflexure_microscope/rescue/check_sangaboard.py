@@ -1,6 +1,6 @@
-from .error_sources import ErrorSource
-
 from openflexure_microscope.config import user_configuration
+
+from .error_sources import ErrorSource
 
 
 def main():

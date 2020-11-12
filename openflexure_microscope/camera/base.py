@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
+import io
 import logging
 import threading
 import time
-import io
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 

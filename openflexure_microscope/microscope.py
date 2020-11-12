@@ -10,7 +10,7 @@ import pkg_resources
 from expiringdict import ExpiringDict
 
 from openflexure_microscope.camera.mock import MissingCamera
-from openflexure_microscope.captures import CaptureManager, THUMBNAIL_SIZE
+from openflexure_microscope.captures import THUMBNAIL_SIZE, CaptureManager
 from openflexure_microscope.stage.mock import MissingStage
 from openflexure_microscope.stage.sanga import SangaDeltaStage, SangaStage
 

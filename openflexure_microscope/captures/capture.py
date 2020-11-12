@@ -6,9 +6,9 @@ import logging
 import os
 import uuid
 from collections import OrderedDict
-from PIL import Image
 
 import dateutil.parser
+from PIL import Image
 
 from openflexure_microscope.captures import piexif
 from openflexure_microscope.captures.piexif import InvalidImageDataError
