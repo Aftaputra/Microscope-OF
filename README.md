@@ -18,14 +18,12 @@ This includes installing the server in a mode better suited for active developme
 
 We make use of pre-commit hooks to run code analysis before committing to the codebase.
 
-The simplest way to ensure this works is to install pre-commits into your global Python environment:
+The simplest way to ensure this works is to install pre-commits into your current Python environment:
 
 * `pip3 install pre-commit`
 * `pre-commit install`
 
-Alternatively, you can work within the Poetry project's virtual environment where pre-commit will already be installed as a developer dependency.
-
-Finally, to run all analysis within installing pre-commits to Git, you can run `pre-commit run`.
+To run pre-commit analysis manually, you can run `pre-commit run`.
 
 ### Node installation
 
