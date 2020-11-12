@@ -9,10 +9,3 @@ repos:
       - id: isort
         additional_dependencies: [toml]
         exclude: ^.*/?setup\.py$
-  - repo: local
-    hooks:
-      - id: pylint
-        name: pylint
-        entry: poetry run pylint
-        language: system
-        types: [python]
