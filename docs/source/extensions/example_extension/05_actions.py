@@ -3,7 +3,7 @@ import io  # Used in our capture action
 from flask import send_file  # Used to send images from our server
 from labthings import Schema, fields, find_component
 from labthings.extensions import BaseExtension
-from labthings.views import ActionView, PropertyView, View
+from labthings.views import ActionView, PropertyView
 
 ## Extension methods
 

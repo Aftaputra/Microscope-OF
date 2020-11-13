@@ -39,17 +39,6 @@ def logs_file_path(filename: str):
     return os.path.join(logs_dir, filename)
 
 
-# HANDLE DEFAULTS FILES STORED IN THIS APPLICATION
-
-HERE = os.path.abspath(os.path.dirname(__file__))
-
-#: Path of default (first-run) microscope settings
-DEFAULT_SETTINGS_FILE_PATH = os.path.join(HERE, "microscope_settings.default.json")
-#: Path of default (first-run) microscope configuration
-DEFAULT_CONFIGURATION_FILE_PATH = os.path.join(
-    HERE, "microscope_configuration.default.json"
-)
-
 # BASE PATHS
 
 if os.name == "nt":

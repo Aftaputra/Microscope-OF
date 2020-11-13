@@ -1,11 +1,31 @@
 import io
 import logging
 
-from flask import abort, send_file
-from labthings import fields, find_component
+from flask import send_file
+from labthings import Schema, fields, find_component
 from labthings.views import ActionView
 
 from openflexure_microscope.api.v2.views.captures import CaptureSchema
+
+
+class CaptureResizeSchema(Schema):
+    width = fields.Integer(example=640, required=True)
+    height = fields.Integer(example=480, required=True)
+
+
+class BasicCaptureArgs(Schema):
+    use_video_port = fields.Boolean(missing=False)
+    bayer = fields.Boolean(
+        missing=False, description="Include raw bayer data in capture"
+    )
+    resize = fields.Nested(CaptureResizeSchema(), required=False)
+
+
+class FullCaptureArgs(BasicCaptureArgs):
+    filename = fields.String(example="MyFileName")
+    temporary = fields.Boolean(missing=False, description="Delete capture on shutdown")
+    annotations = fields.Dict(missing={}, example={"Client": "SwaggerUI"})
+    tags = fields.List(fields.String, missing=[], example=["docs"])
 
 
 class CaptureAPI(ActionView):
@@ -13,21 +33,7 @@ class CaptureAPI(ActionView):
     Create a new image capture. 
     """
 
-    args = {
-        "filename": fields.String(example="MyFileName"),
-        "temporary": fields.Boolean(
-            missing=False, description="Delete capture on shutdown"
-        ),
-        "use_video_port": fields.Boolean(missing=False),
-        "bayer": fields.Boolean(
-            missing=False, description="Store raw bayer data in file"
-        ),
-        "annotations": fields.Dict(missing={}, example={"Client": "SwaggerUI"}),
-        "tags": fields.List(fields.String, missing=[], example=["docs"]),
-        "resize": fields.Dict(
-            missing=None, example={"width": 640, "height": 480}
-        ),  # TODO: Validate keys
-    }
+    args = FullCaptureArgs()
     schema = CaptureSchema()
 
     def post(self, args):
@@ -38,13 +44,10 @@ class CaptureAPI(ActionView):
 
         resize = args.get("resize", None)
         if resize:
-            if ("width" in resize) and ("height" in resize):
-                resize = (
-                    int(resize["width"]),
-                    int(resize["height"]),
-                )  # Convert dict to tuple
-            else:
-                abort(404)
+            resize = (
+                int(resize["width"]),
+                int(resize["height"]),
+            )  # Convert dict to tuple
 
         # Explicitally acquire lock (prevents empty files being created if lock is unavailable)
         with microscope.camera.lock:
@@ -64,16 +67,7 @@ class RAMCaptureAPI(ActionView):
     Take a non-persistant image capture.
     """
 
-    args = {
-        "use_video_port": fields.Boolean(missing=True),
-        "bayer": fields.Boolean(
-            missing=False, description="Return with raw bayer data"
-        ),
-        "resize": fields.Dict(
-            missing=None, example={"width": 640, "height": 480}
-        ),  # TODO: Validate keys
-    }
-
+    args = BasicCaptureArgs()
     responses = {200: {"content_type": "image/jpeg"}}
 
     def post(self, args):
@@ -84,13 +78,10 @@ class RAMCaptureAPI(ActionView):
 
         resize = args.get("resize", None)
         if resize:
-            if ("width" in resize) and ("height" in resize):
-                resize = (
-                    int(resize["width"]),
-                    int(resize["height"]),
-                )  # Convert dict to tuple
-            else:
-                abort(404)
+            resize = (
+                int(resize["width"]),
+                int(resize["height"]),
+            )  # Convert dict to tuple
 
         # Open a BytesIO stream to be destroyed once request has returned
         with microscope.camera.lock, io.BytesIO() as stream:
@@ -133,8 +124,6 @@ class GPUPreviewStartAPI(ActionView):
             window = [int(w) for w in window]
 
         microscope.camera.start_preview(fullscreen=fullscreen, window=window)
-
-        # TODO: Make schema for microscope state
         return microscope.state
 
 
@@ -145,5 +134,4 @@ class GPUPreviewStopAPI(ActionView):
         """
         microscope = find_component("org.openflexure.microscope")
         microscope.camera.stop_preview()
-        # TODO: Make schema for microscope state
         return microscope.state

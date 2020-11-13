@@ -1,9 +1,9 @@
 import logging
 
 from openflexure_microscope.captures.capture import (
+    EXIF_FORMATS,
     build_captures_from_exif,
     make_file_list,
-    EXIF_FORMATS,
 )
 from openflexure_microscope.captures.capture_manager import BASE_CAPTURE_PATH
 from openflexure_microscope.config import user_settings

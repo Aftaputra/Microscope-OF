@@ -81,7 +81,7 @@ class SangaStage(BaseStage):
 
     @backlash.setter
     def backlash(self, blsh):
-        logging.debug("Setting backlash to {}".format(blsh))
+        logging.debug("Setting backlash to %s", (blsh))
         if blsh is None:
             self._backlash = None
         elif isinstance(blsh, Iterable):
@@ -262,7 +262,7 @@ class SangaDeltaStage(SangaStage):
         # Transform into delta coordinates
         displacement = np.dot(self.Tdv, displacement)
 
-        logging.debug("Delta displacement: {}".format(displacement))
+        logging.debug("Delta displacement: %s", (displacement))
 
         # Do the move
         SangaStage.move_rel(self, displacement, axis=None, backlash=backlash)
@@ -274,7 +274,7 @@ class SangaDeltaStage(SangaStage):
         # Transform into delta coordinates
         final = np.dot(self.Tdv, final)
 
-        logging.debug("Delta final: {}".format(final))
+        logging.debug("Delta final: %s", (final))
 
         # Do the move
         SangaStage.move_abs(self, final, **kwargs)

@@ -1,9 +1,0 @@
-{
-  "camera": {
-    "type": "PiCamera"
-  },
-  "stage": {
-    "type": "SangaStage",
-    "port": null
-  }
-}

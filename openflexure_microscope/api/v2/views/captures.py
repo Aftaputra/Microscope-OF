@@ -1,13 +1,13 @@
-import logging
-
 from flask import abort, redirect, request, send_file, url_for
 from labthings import Schema, fields, find_component
-from labthings.marshalling import marshal_with
+from labthings.marshalling import marshal_with, use_args
 from labthings.utilities import description_from_view
 from labthings.views import PropertyView, View
 from marshmallow import pre_dump
 
-from openflexure_microscope.api.utilities import JsonResponse, get_bool
+from openflexure_microscope.api.utilities import get_bool
+
+# SCHEMAS
 
 
 class InstrumentSchema(Schema):
@@ -23,15 +23,23 @@ class ImageSchema(Schema):
     format = fields.String()
     name = fields.String()
     tags = fields.List(fields.String())
-    annotations = fields.Dict()
+    annotations = fields.Dict(keys=fields.Str(), values=fields.Str())
 
 
 class CaptureMetadataSchema(Schema):
-    experimenter = fields.Dict()  # TODO: Make schema
-    experimenterGroup = fields.Dict()  # TODO: Make schema
-    dataset = fields.Dict()  # TODO: Make schema
+    # Full dataset dictionary will change depending on the type of
+    # dataset, so we can't make a specific schema in this case.
+    dataset = fields.Dict()
+    # Nested schema for Image data
     image = fields.Nested(ImageSchema())
+    # Nested schema for instrument data
     instrument = fields.Nested(InstrumentSchema())
+
+
+class BasicDatasetSchema(Schema):
+    id = fields.UUID()
+    name = fields.String()
+    type = fields.String()
 
 
 class CaptureSchema(ImageSchema):
@@ -41,10 +49,15 @@ class CaptureSchema(ImageSchema):
     are returned by using FullCaptureSchema 
     """
 
-    dataset = fields.Dict()  # TODO: Make schema
+    # We need dataset information in the capture array
+    # so that client applications can sort data into folders
+    # without the server having to do a tonne of file IO
+    dataset = fields.Nested(BasicDatasetSchema())
     file = fields.String(
         data_key="path", description="Path of file on microscope device"
     )
+    # No need to make a schema for links as we only ever
+    # create the dictionary right here in `generate_links`
     links = fields.Dict()
 
     @pre_dump
@@ -102,6 +115,9 @@ class FullCaptureSchema(CaptureSchema):
     """
 
     metadata = fields.Nested(CaptureMetadataSchema())
+
+
+# VIEWS
 
 
 class CaptureList(PropertyView):
@@ -203,7 +219,8 @@ class CaptureTags(View):
 
         return capture_obj.tags
 
-    def put(self, id_):
+    @use_args(fields.List(fields.String(), required=True))
+    def put(self, args, id_):
         """
         Add tags to a single image capture
         """
@@ -213,17 +230,12 @@ class CaptureTags(View):
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        # TODO: Replace with normal Flask request JSON thing
-        data_dict = JsonResponse(request).json
-
-        if type(data_dict) != list:
-            return abort(400)
-
-        capture_obj.put_tags(data_dict)
+        capture_obj.put_tags(args)
 
         return capture_obj.tags
 
-    def delete(self, id_):
+    @use_args(fields.List(fields.String(), required=True))
+    def delete(self, args, id_):
         """
         Delete tags from a single image capture
         """
@@ -233,12 +245,7 @@ class CaptureTags(View):
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        data_dict = JsonResponse(request).json
-
-        if type(data_dict) != list:
-            return abort(400)
-
-        for tag in data_dict:
+        for tag in args:
             capture_obj.delete_tag(str(tag))
 
         return capture_obj.tags
@@ -259,7 +266,8 @@ class CaptureAnnotations(View):
 
         return capture_obj.annotations
 
-    def put(self, id_):
+    @use_args(fields.Dict())
+    def put(self, args, id_):
         """
         Update metadata for a single image capture
         """
@@ -269,12 +277,6 @@ class CaptureAnnotations(View):
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        data_dict = JsonResponse(request).json
-        logging.debug(data_dict)
-
-        if type(data_dict) != dict:
-            return abort(400)
-
-        capture_obj.put_annotations(data_dict)
+        capture_obj.put_annotations(args)
 
         return capture_obj.annotations

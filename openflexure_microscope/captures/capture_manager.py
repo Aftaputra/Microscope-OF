@@ -61,7 +61,7 @@ class CaptureManager:
         self.close()
 
     def close(self):
-        logging.info("Closing {}".format(self))
+        logging.info("Closing %s", (self))
         # Close all StreamObjects
         for capture_list in [self.images.values(), self.videos.values()]:
             for stream_object in capture_list:
@@ -75,9 +75,9 @@ class CaptureManager:
         """
 
         if os.path.isdir(self.paths["temp"]):
-            logging.info("Clearing {}...".format(self.paths["temp"]))
+            logging.info("Clearing %s...", (self.paths["temp"]))
             shutil.rmtree(self.paths["temp"])
-            logging.debug("Cleared {}.".format(self.paths["temp"]))
+            logging.debug("Cleared %s.", (self.paths["temp"]))
 
     def rebuild_captures(self):
         self.images = build_captures_from_exif(self.paths["default"])
@@ -118,25 +118,7 @@ class CaptureManager:
 
     # CREATING NEW CAPTURES
 
-    def new_image(
-        self,
-        temporary: bool = True,
-        filename: str = None,
-        folder: str = "",
-        fmt: str = "jpeg",
-    ):
-
-        """
-        Create a new image capture object.
-
-        Args:
-            temporary (bool): Should the data be deleted after session ends. 
-                Creating the capture with a content manager sets this to true.
-            filename (str): Name of the stored file. Defaults to timestamp.
-            folder (str): Name of the folder in which to store the capture.
-            fmt (str): Format of the capture.
-        """
-
+    def _new_output(self, temporary, filename, folder, fmt):
         # Generate file name
         if not filename:
             filename = generate_numbered_basename(self.images.values())
@@ -156,10 +138,32 @@ class CaptureManager:
         if temporary:
             output.put_tags(["temporary"])
 
+        return output
+
+    def new_image(
+        self,
+        temporary: bool = True,
+        filename: str = None,
+        folder: str = "",
+        fmt: str = "jpeg",
+    ):
+
+        """
+        Create a new image capture object.
+
+        Args:
+            temporary (bool): Should the data be deleted after session ends. 
+                Creating the capture with a content manager sets this to true.
+            filename (str): Name of the stored file. Defaults to timestamp.
+            folder (str): Name of the folder in which to store the capture.
+            fmt (str): Format of the capture.
+        """
+        # Create a new output object
+        output = self._new_output(temporary, filename, folder, fmt)
+
         # Update capture list
         capture_key = str(output.id)
         logging.debug("Adding image %s with key %s", output, capture_key)
-
         self.images[capture_key] = output
 
         return output
@@ -182,26 +186,8 @@ class CaptureManager:
             folder (str): Name of the folder in which to store the capture.
             fmt (str): Format of the capture.
         """
-        # TODO: Remove the redundancy here
-
-        # Generate file name
-        if not filename:
-            filename = generate_numbered_basename(self.videos.values())
-            logging.debug(filename)
-        filename = "{}.{}".format(filename, fmt)
-
-        # Generate folder
-        base_folder = self.paths["temp"] if temporary else self.paths["default"]
-        folder = os.path.join(base_folder, folder)
-
-        # Generate file path
-        filepath = os.path.join(folder, filename)
-
-        # Create capture object
-        output = CaptureObject(filepath=filepath)
-        # Insert a temporary tag if temporary
-        if temporary:
-            output.put_tags(["temporary"])
+        # Create a new output object
+        output = self._new_output(temporary, filename, folder, fmt)
 
         # Update capture list
         capture_key = str(output.id)

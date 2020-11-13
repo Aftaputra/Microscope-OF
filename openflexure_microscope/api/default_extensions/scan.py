@@ -16,6 +16,7 @@ from labthings import (
 from labthings.extensions import BaseExtension
 from labthings.views import ActionView
 
+from openflexure_microscope.api.v2.views.actions.camera import FullCaptureArgs
 from openflexure_microscope.captures.capture_manager import generate_basename
 from openflexure_microscope.devel import abort
 
@@ -216,7 +217,7 @@ class ScanExtension(BaseExtension):
 
             for x_y in line:
                 # Move to new grid position without changing z
-                logging.debug("Moving to step {}".format([x_y[0], x_y[1], next_z]))
+                logging.debug("Moving to step %s", ([x_y[0], x_y[1], next_z]))
                 microscope.stage.move_abs([x_y[0], x_y[1], next_z])
                 # Refocus
                 if autofocus_enabled:
@@ -270,7 +271,7 @@ class ScanExtension(BaseExtension):
                 # Make sure we use our current best estimate of focus (i.e. the current position) next point
                 next_z = microscope.stage.position[2]
 
-        logging.debug("Returning to {}".format(initial_position))
+        logging.debug("Returning to %s", (initial_position))
         microscope.stage.move_abs(initial_position)
 
         end = time.time()
@@ -328,34 +329,29 @@ class ScanExtension(BaseExtension):
                     return
 
                 if i != steps - 1:
-                    logging.debug("Moving z by {}".format(step_size))
+                    logging.debug("Moving z by %s", (step_size))
                     microscope.stage.move_rel([0, 0, step_size])
             if return_to_start:
-                logging.debug("Returning to {}".format(initial_position))
+                logging.debug("Returning to %s", (initial_position))
                 microscope.stage.move_abs(initial_position)
 
 
 scan_extension_v2 = ScanExtension()
 
 
+class TileScanArgs(FullCaptureArgs):
+    namemode = fields.String(missing="coordinates", example="coordinates")
+    grid = fields.List(fields.Integer, missing=[3, 3, 3], example=[3, 3, 3])
+    style = fields.String(missing="raster")
+    autofocus_dz = fields.Integer(missing=50)
+    fast_autofocus = fields.Boolean(missing=False)
+    stride_size = fields.List(
+        fields.Integer, missing=[2000, 1500, 100], example=[2000, 1500, 100]
+    )
+
+
 class TileScanAPI(ActionView):
-    args = {
-        "filename": fields.String(missing=None, example=None),
-        "namemode": fields.String(missing="coordinates", example="coordinates"),
-        "temporary": fields.Boolean(missing=False),
-        "stride_size": fields.List(
-            fields.Integer, missing=[2000, 1500, 100], example=[2000, 1500, 100]
-        ),
-        "grid": fields.List(fields.Integer, missing=[3, 3, 3], example=[3, 3, 3]),
-        "style": fields.String(missing="raster"),
-        "autofocus_dz": fields.Integer(missing=50),
-        "fast_autofocus": fields.Boolean(missing=False),
-        "use_video_port": fields.Boolean(missing=False),
-        "bayer": fields.Boolean(missing=False),
-        "annotations": fields.Dict(missing={}, example={"Foo": "Bar"}),
-        "tags": fields.List(fields.String, missing=[]),
-        "resize": fields.Dict(missing=None),  # TODO: Validate keys
-    }
+    args = TileScanArgs()
 
     # Allow 10 seconds to stop upon DELETE request
     # Gives fast-autofocus time to finish if it's running

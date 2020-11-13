@@ -1,5 +1,6 @@
-from urllib.request import urlopen
 from urllib.error import URLError
+from urllib.request import urlopen
+
 import psutil
 
 from .error_sources import WarningSource

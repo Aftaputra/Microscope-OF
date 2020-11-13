@@ -6,13 +6,13 @@ import logging
 import os
 import uuid
 from collections import OrderedDict
-from PIL import Image
 
 import dateutil.parser
+from PIL import Image
 
-from openflexure_microscope.camera import piexif
-from openflexure_microscope.camera.piexif._exceptions import InvalidImageDataError
-from openflexure_microscope.config import JSONEncoder
+from openflexure_microscope.captures import piexif
+from openflexure_microscope.captures.piexif import InvalidImageDataError
+from openflexure_microscope.json import JSONEncoder
 
 EXIF_FORMATS = ["JPG", "JPEG", "TIF", "TIFF"]
 THUMBNAIL_SIZE = (200, 150)
@@ -25,23 +25,23 @@ def make_file_list(directory, formats):
             glob.glob("{}/**/*.{}".format(directory, fmt.lower()), recursive=True)
         )
 
-    logging.info("{} capture files found on disk".format(len(files)))
+    logging.info("%s capture files found on disk", (len(files)))
 
     return files
 
 
 def build_captures_from_exif(capture_path):
-    logging.debug("Reloading captures from {}...".format(capture_path))
+    logging.debug("Reloading captures from %s...", (capture_path))
     files = make_file_list(capture_path, EXIF_FORMATS)
     captures = OrderedDict()
 
     for f in files:
-        logging.debug("Reloading capture {}...".format(f))
+        logging.debug("Reloading capture %s...", (f))
         capture = capture_from_path(f)
         if capture:
             captures[capture.id] = capture
 
-    logging.info("{} capture files successfully reloaded".format(len(captures)))
+    logging.info("%s capture files successfully reloaded", (len(captures)))
 
     return captures
 
@@ -58,7 +58,7 @@ def capture_from_path(path):
         capture.sync_basic_metadata()
         return capture
     except (InvalidImageDataError, json.decoder.JSONDecodeError):
-        logging.error("Invalid metadata at {}.".format(path))
+        logging.error("Invalid metadata at %s.", (path))
         return None
 
 
@@ -75,7 +75,7 @@ class CaptureObject(object):
 
         # Store a nice ID
         self.id = uuid.uuid4()  #: str: Unique capture ID
-        logging.debug("Created CaptureObject {}".format(self.id))
+        logging.debug("Created CaptureObject %s", (self.id))
 
         self.time = datetime.datetime.now()
 
@@ -316,7 +316,7 @@ class CaptureObject(object):
         """
 
         if self.exists:  # If data file exists
-            logging.info("Opening from file {}".format(self.file))
+            logging.info("Opening from file %s", (self.file))
             with open(self.file, "rb") as f:
                 d = io.BytesIO(f.read())  # Load bytes from file
             d.seek(0)  # Rewind loaded bytestream
@@ -364,7 +364,7 @@ class CaptureObject(object):
         """If the StreamObject has been saved, delete the file."""
 
         if os.path.isfile(self.file):
-            logging.info("Deleting file {}".format(self.file))
+            logging.info("Deleting file %s", (self.file))
             os.remove(self.file)
 
             return True

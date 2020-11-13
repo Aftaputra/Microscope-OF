@@ -1,16 +1,8 @@
-import io  # Used in our capture action
 import time  # Used in our timelapse function
 
-from flask import send_file  # Used to send images from our server
-from labthings import (
-    Schema,
-    current_action,
-    fields,
-    find_component,
-    update_action_progress,
-)
+from labthings import current_action, fields, find_component, update_action_progress
 from labthings.extensions import BaseExtension
-from labthings.views import ActionView, PropertyView, View
+from labthings.views import ActionView
 
 # Used in our timelapse function
 from openflexure_microscope.captures.capture_manager import generate_basename

@@ -25,11 +25,11 @@ class MoveStageAPI(ActionView):
         # Handle absolute positioning (calculate a relative move from current position and target)
         if (args.get("absolute")) and (microscope.stage):  # Only if stage exists
             target_position = axes_to_array(args, ["x", "y", "z"])
-            logging.debug("TARGET: {}".format(target_position))
+            logging.debug("TARGET: %s", (target_position))
             position = [
                 target_position[i] - microscope.stage.position[i] for i in range(3)
             ]
-            logging.debug("DELTA: {}".format(position))
+            logging.debug("DELTA: %s", (position))
 
         else:
             # Get coordinates from payload
@@ -45,7 +45,6 @@ class MoveStageAPI(ActionView):
         else:
             logging.warning("Unable to move. No stage found.")
 
-        # TODO: Make schema for microscope state
         return microscope.state["stage"]["position"]
 
 
@@ -60,5 +59,4 @@ class ZeroStageAPI(ActionView):
         with microscope.stage.lock(timeout=1):
             microscope.stage.zero_position()
 
-        # TODO: Make schema for microscope state
         return microscope.state["stage"]

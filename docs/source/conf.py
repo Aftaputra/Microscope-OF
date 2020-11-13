@@ -38,7 +38,7 @@ sys.modules.update((mod_name, Mock()) for mod_name in mock_imports)
 # -- Project information -----------------------------------------------------
 
 project = "OpenFlexure Microscope Software"
-copyright = "2018, Bath Open Instrumentation Group"
+copyright = "2018, Bath Open Instrumentation Group"  # pylint: disable=redefined-builtin
 author = "Bath Open Instrumentation Group"
 
 # The short X.Y version
