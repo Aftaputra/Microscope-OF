@@ -58,6 +58,9 @@ class Microscope:
         self.update_settings(self.settings_file.load())
 
         # Data cache
+        # Sometimes, like when doing large scans, we don't need to read the hardware
+        # state for every single capture. We can get the data once at the start,
+        # cache it, and reuse that to save on IO. Cached data is stored here.
         self.configuration_cache = ExpiringDict(max_len=100, max_age_seconds=3600)
         self.metadata_cache = ExpiringDict(max_len=100, max_age_seconds=3600)
 
