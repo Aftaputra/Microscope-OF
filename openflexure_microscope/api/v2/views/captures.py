@@ -7,6 +7,8 @@ from marshmallow import pre_dump
 
 from openflexure_microscope.api.utilities import get_bool
 
+# SCHEMAS
+
 
 class InstrumentSchema(Schema):
     id = fields.UUID()
@@ -21,15 +23,23 @@ class ImageSchema(Schema):
     format = fields.String()
     name = fields.String()
     tags = fields.List(fields.String())
-    annotations = fields.Dict()
+    annotations = fields.Dict(keys=fields.Str(), values=fields.Str())
 
 
 class CaptureMetadataSchema(Schema):
-    experimenter = fields.Dict()  # TODO: Make schema
-    experimenterGroup = fields.Dict()  # TODO: Make schema
-    dataset = fields.Dict()  # TODO: Make schema
+    # Full dataset dictionary will change depending on the type of
+    # dataset, so we can't make a specific schema in this case.
+    dataset = fields.Dict()
+    # Nested schema for Image data
     image = fields.Nested(ImageSchema())
+    # Nested schema for instrument data
     instrument = fields.Nested(InstrumentSchema())
+
+
+class BasicDatasetSchema(Schema):
+    id = fields.UUID()
+    name = fields.String()
+    type = fields.String()
 
 
 class CaptureSchema(ImageSchema):
@@ -39,10 +49,15 @@ class CaptureSchema(ImageSchema):
     are returned by using FullCaptureSchema 
     """
 
-    dataset = fields.Dict()  # TODO: Make schema
+    # We need dataset information in the capture array
+    # so that client applications can sort data into folders
+    # without the server having to do a tonne of file IO
+    dataset = fields.Nested(BasicDatasetSchema())
     file = fields.String(
         data_key="path", description="Path of file on microscope device"
     )
+    # No need to make a schema for links as we only ever
+    # create the dictionary right here in `generate_links`
     links = fields.Dict()
 
     @pre_dump
@@ -100,6 +115,9 @@ class FullCaptureSchema(CaptureSchema):
     """
 
     metadata = fields.Nested(CaptureMetadataSchema())
+
+
+# VIEWS
 
 
 class CaptureList(PropertyView):
