@@ -45,7 +45,6 @@ class MoveStageAPI(ActionView):
         else:
             logging.warning("Unable to move. No stage found.")
 
-        # TODO: Make schema for microscope state
         return microscope.state["stage"]["position"]
 
 
@@ -60,5 +59,4 @@ class ZeroStageAPI(ActionView):
         with microscope.stage.lock(timeout=1):
             microscope.stage.zero_position()
 
-        # TODO: Make schema for microscope state
         return microscope.state["stage"]

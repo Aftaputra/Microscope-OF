@@ -184,7 +184,6 @@ export default {
     this.checkConnection();
     // Handle guided tour
     // If the user has already completed or skipped the guided tour
-    // TODO: Only run this if connected to the API
     var completedTour = this.getLocalStorageObj("completedTour") || false;
     if (!completedTour) {
       this.$tours["guidedTour"].start();
@@ -207,8 +206,6 @@ export default {
     );
 
     // Keyboard shortcuts
-
-    // TODO: Shortcut guide
     Mousetrap.bind("?", () => {
       console.log(this.keyboardManual);
       this.toggleModalElement(this.$refs["keyboardManualModal"]); // Calls the mixin

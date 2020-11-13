@@ -124,8 +124,6 @@ class GPUPreviewStartAPI(ActionView):
             window = [int(w) for w in window]
 
         microscope.camera.start_preview(fullscreen=fullscreen, window=window)
-
-        # TODO: Make schema for microscope state
         return microscope.state
 
 
@@ -136,5 +134,4 @@ class GPUPreviewStopAPI(ActionView):
         """
         microscope = find_component("org.openflexure.microscope")
         microscope.camera.stop_preview()
-        # TODO: Make schema for microscope state
         return microscope.state
