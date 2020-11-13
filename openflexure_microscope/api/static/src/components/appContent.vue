@@ -16,63 +16,27 @@
         id="switcher-left"
         class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1 uk-text-center"
       >
-        <tabIcon
-          id="view-tab-icon"
-          tab-i-d="view"
-          :require-connection="true"
-          :current-tab="currentTab"
-          @set-tab="setTab"
-        >
-          <i class="material-icons">visibility</i>
-        </tabIcon>
-
-        <tabIcon
-          id="gallery-tab-icon"
-          tab-i-d="gallery"
-          :require-connection="true"
-          :current-tab="currentTab"
-          @set-tab="setTab"
-        >
-          <i class="material-icons">photo_library</i>
-        </tabIcon>
-
-        <hr />
-
-        <tabIcon
-          id="navigate-tab-icon"
-          tab-i-d="navigate"
-          :require-connection="true"
-          :current-tab="currentTab"
-          @set-tab="setTab"
-        >
-          <i class="material-icons">gamepad</i>
-        </tabIcon>
-        <tabIcon
-          id="capture-tab-icon"
-          tab-i-d="capture"
-          :require-connection="true"
-          :current-tab="currentTab"
-          @set-tab="setTab"
-        >
-          <i class="material-icons">camera_alt</i>
-        </tabIcon>
-
-        <template v-if="$store.state.globalSettings.IHIEnabled">
-          <hr id="extension-tab-divider" />
-
+        <!-- For each top tab -->
+        <template v-for="(item, index) in enabledTopTabs">
+          <!-- Render the tab icon -->
           <tabIcon
-            id="slidescan-tab-icon"
-            tab-i-d="slidescan"
+            :id="item.id + '-tab-icon'"
+            :key="item.id + '-tab-icon'"
+            :tab-i-d="item.id"
             :require-connection="true"
             :current-tab="currentTab"
+            :class="item.class"
             @set-tab="setTab"
           >
-            <i class="material-icons">settings_overscan</i>
+            <i class="material-icons">{{ item.icon }}</i>
           </tabIcon>
+          <!-- Add a divider if item.divide is true -->
+          <hr v-if="item.divide" :key="'tab-divider-' + index" />
         </template>
 
         <hr id="extension-tab-divider" />
 
+        <!-- For each plugin tab -->
         <tabIcon
           v-for="plugin in pluginsGuiList"
           :key="plugin.id"
@@ -88,36 +52,23 @@
 
         <hr id="extension-tab-divider" />
 
-        <tabIcon
-          id="settings-tab-icon"
-          class="uk-margin-auto-top"
-          tab-i-d="settings"
-          :require-connection="false"
-          :current-tab="currentTab"
-          @set-tab="setTab"
-        >
-          <i class="material-icons">settings</i>
-        </tabIcon>
-
-        <tabIcon
-          id="logging-tab-icon"
-          tab-i-d="logging"
-          :require-connection="false"
-          :current-tab="currentTab"
-          @set-tab="setTab"
-        >
-          <i class="material-icons">assignment_late</i>
-        </tabIcon>
-
-        <tabIcon
-          id="about-tab-icon"
-          tab-i-d="about"
-          :require-connection="false"
-          :current-tab="currentTab"
-          @set-tab="setTab"
-        >
-          <i class="material-icons">info</i>
-        </tabIcon>
+        <!-- For each bottom tab -->
+        <template v-for="(item, index) in bottomTabs">
+          <!-- Render the tab icon -->
+          <tabIcon
+            :id="item.id + '-tab-icon'"
+            :key="item.id + '-tab-icon'"
+            :tab-i-d="item.id"
+            :require-connection="true"
+            :current-tab="currentTab"
+            :class="item.class"
+            @set-tab="setTab"
+          >
+            <i class="material-icons">{{ item.icon }}</i>
+          </tabIcon>
+          <!-- Add a divider if item.divide is true -->
+          <hr v-if="item.divide" :key="'tab-divider-' + index" />
+        </template>
       </div>
     </div>
 
@@ -127,66 +78,14 @@
       class="uk-padding-remove uk-height-1-1 uk-width-expand"
     >
       <tabContent
-        tab-i-d="view"
+        v-for="item in enabledTopTabs"
+        :id="item.id + '-tab-content'"
+        :key="item.id + '-tab-content'"
+        :tab-i-d="item.id"
         :require-connection="true"
         :current-tab="currentTab"
       >
-        <viewContent />
-      </tabContent>
-      <tabContent
-        tab-i-d="gallery"
-        :require-connection="false"
-        :current-tab="currentTab"
-      >
-        <galleryContent />
-      </tabContent>
-      <tabContent
-        tab-i-d="navigate"
-        :require-connection="true"
-        :current-tab="currentTab"
-      >
-        <navigateContent />
-      </tabContent>
-      <tabContent
-        tab-i-d="capture"
-        :require-connection="true"
-        :current-tab="currentTab"
-      >
-        <captureContent />
-      </tabContent>
-
-      <template v-if="$store.state.globalSettings.IHIEnabled">
-        <tabContent
-          tab-i-d="slidescan"
-          :require-connection="true"
-          :current-tab="currentTab"
-        >
-          <slideScanContent />
-        </tabContent>
-      </template>
-
-      <tabContent
-        tab-i-d="settings"
-        :require-connection="false"
-        :current-tab="currentTab"
-      >
-        <settingsContent class="section-content" />
-      </tabContent>
-
-      <tabContent
-        tab-i-d="logging"
-        :require-connection="false"
-        :current-tab="currentTab"
-      >
-        <loggingContent />
-      </tabContent>
-
-      <tabContent
-        tab-i-d="about"
-        :require-connection="false"
-        :current-tab="currentTab"
-      >
-        <aboutContent class="section-content" />
+        <component :is="item.component"></component>
       </tabContent>
 
       <tabContent
@@ -203,6 +102,17 @@
           :view-panel="plugin.viewPanel"
           @reloadForms="updatePlugins()"
         />
+      </tabContent>
+
+      <tabContent
+        v-for="item in bottomTabs"
+        :id="item.id + '-tab-content'"
+        :key="item.id + '-tab-content'"
+        :tab-i-d="item.id"
+        :require-connection="true"
+        :current-tab="currentTab"
+      >
+        <component :is="item.component"></component>
       </tabContent>
     </div>
   </div>
@@ -252,14 +162,69 @@ export default {
     return {
       plugins: [],
       currentTab: "view",
-      unwatchStoreFunction: null
+      unwatchStoreFunction: null,
+      topTabs: [
+        {
+          id: "view",
+          icon: "visibility",
+          component: viewContent
+        },
+        {
+          id: "gallery",
+          icon: "photo_library",
+          component: galleryContent,
+          divide: true // Add a divider after this tab icon
+        },
+        {
+          id: "navigate",
+          icon: "gamepad",
+          component: navigateContent
+        },
+        {
+          id: "capture",
+          icon: "camera_alt",
+          component: captureContent,
+          divide: true // Add a divider after this tab icon
+        }
+      ],
+      bottomTabs: [
+        {
+          id: "settings",
+          icon: "settings",
+          component: settingsContent,
+          class: "uk-margin-auto-top"
+        },
+        {
+          id: "logging",
+          icon: "assignment_late",
+          component: loggingContent
+        },
+        {
+          id: "about",
+          icon: "info",
+          component: aboutContent
+        }
+      ]
     };
   },
 
   computed: {
+    enabledTopTabs: function() {
+      var enabledTabs = this.topTabs;
+      if (this.$store.state.globalSettings.IHIEnabled) {
+        enabledTabs.push({
+          id: "slidescan",
+          icon: "settings_overscan",
+          component: slideScanContent
+        });
+      }
+      return enabledTabs;
+    },
+
     pluginsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/extensions`;
     },
+
     pluginsGuiList: function() {
       // List of plugin GUIs, obtained from this.plugins values
       console.log("Recalculating plugins");
@@ -271,15 +236,21 @@ export default {
       }
       return pluginGuis;
     },
+
     tabOrder: function() {
-      // TODO: There must be a better way to do this, somehow reading the order of the HTML elements?
-      var ind = ["view", "gallery", "navigate", "capture", "settings"];
+      var ind = [];
+      for (const tab of this.enabledTopTabs) {
+        ind.push(tab.id);
+      }
       for (const plugin of this.pluginsGuiList) {
         ind.push(plugin.id);
       }
-      ind.push("about");
+      for (const tab of this.bottomTabs) {
+        ind.push(tab.id);
+      }
       return ind;
     },
+
     currentTabIndex: function() {
       return this.tabOrder.indexOf(this.currentTab);
     }
