@@ -77,6 +77,7 @@
       id="container-left"
       class="uk-padding-remove uk-height-1-1 uk-width-expand"
     >
+      <!-- For each top tab -->
       <tabContent
         v-for="item in enabledTopTabs"
         :id="item.id + '-tab-content'"
@@ -88,6 +89,7 @@
         <component :is="item.component"></component>
       </tabContent>
 
+      <!-- For each plugin tab -->
       <tabContent
         v-for="plugin in pluginsGuiList"
         :key="plugin.id"
@@ -104,6 +106,7 @@
         />
       </tabContent>
 
+      <!-- For each bottom tab -->
       <tabContent
         v-for="item in bottomTabs"
         :id="item.id + '-tab-content'"
