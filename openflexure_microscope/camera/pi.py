@@ -518,7 +518,7 @@ class PiCameraStreamer(BaseCamera):
 
             return output
 
-    def array(self) -> np.ndarray:
+    def array(self, use_video_port=True) -> np.ndarray:
         """Capture an uncompressed still RGB image to a Numpy array.
 
         Args:
@@ -531,11 +531,8 @@ class PiCameraStreamer(BaseCamera):
         with self.lock:
             logging.debug("Creating PiRGBArray")
             with picamerax.array.PiRGBArray(self.camera) as output:
-
                 logging.info("Capturing to %s", (output))
-
-                self.camera.capture(output, format="rgb", use_video_port=True)
-
+                self.camera.capture(output, format="rgb", use_video_port=use_video_port)
                 return output.array
 
     # HANDLE STREAM FRAMES
