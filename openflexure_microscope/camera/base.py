@@ -27,10 +27,16 @@ class FrameStream(io.BytesIO):
     def __init__(self, *args, **kwargs):
         # Array of TrackerFrame objects
         io.BytesIO.__init__(self, *args, **kwargs)
+        # Array of TrackerFramer objects
         self.frames = []
+        # Last acquired TrackerFramer object
         self.last = None
 
+        # Are we currently tracking frame sizes?
         self.tracking = False
+
+        # Event to track if a new frame is available since the last getvalue() call
+        self.new_frame = threading.Event()
 
     def start_tracking(self):
         if not self.tracking:
@@ -46,11 +52,36 @@ class FrameStream(io.BytesIO):
         self.frames = []
 
     def write(self, s):
+        """
+        Write a new frame to the FrameStream. Does a few things:
+        1. If tracking frame size, store the size in self.frames
+        2. Rewind and truncate the stream (delete previous frame)
+        3. Store the new frame image
+        4. Set the new_frame event
+        """
         if self.tracking:
             frame = TrackerFrame(size=len(s), time=time.time())
             self.frames.append(frame)
             self.last = frame
-        io.BytesIO.write(self, s)
+        # Reset the stream for the next frame
+        super().seek(0)
+        super().truncate()
+        # Write the new frame
+        super().write(s)
+        # Set the new frame event
+        self.new_frame.set()
+
+    def getvalue(self) -> bytes:
+        """
+        Clear tne new_frame event and return frame data
+        """
+        self.new_frame.clear()
+        return super().getvalue()
+
+    def getframe(self) -> bytes:
+        """Wait for a new frame to be available, then return it"""
+        self.new_frame.wait()
+        return self.getvalue()
 
 
 class BaseCamera(metaclass=ABCMeta):
@@ -65,7 +96,10 @@ class BaseCamera(metaclass=ABCMeta):
         self.lock = StrictLock(name="Camera", timeout=None)
 
         self.stream = FrameStream()
+
+        # Iterator function that yields new frames as they are acquired
         self.frames_iterator = None
+
         self.frame = None
         self.last_access = 0
         self.event = ClientEvent()
@@ -180,13 +214,18 @@ class BaseCamera(metaclass=ABCMeta):
 
     def _thread(self):
         """Camera background thread."""
+        # Set the camera object's frame iterator
         self.frames_iterator = self.frames()
         logging.debug("Entering worker thread.")
 
         self.stream_active = True
 
         for frame in self.frames_iterator:
+            # Store most recent frame
             self.frame = frame
+            # Signal to clients that a new frame is available
+            # We use this event because each client could be
+            # reading frames slower than we're acquiring them.
             self.event.set()  # send signal to clients
 
             try:

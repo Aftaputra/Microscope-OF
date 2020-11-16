@@ -198,20 +198,10 @@ class MissingCamera(BaseCamera):
         try:
             while True:
                 time.sleep(1)  # Only serve frames at 1fps
-                # Reset stream
-                self.stream.seek(0)
-                self.stream.truncate()
-
-                # Generate new dumm image
+                # Generate new dummy image
                 self.generate_new_dummy_image()
-                # Get frame data
-                frame = self.stream.getvalue()
-
-                # ensure the size of package is right
-                if len(frame) == 0:
-                    pass
-                else:
-                    yield frame
+                # Wait for the next frame and then yield it
+                yield self.stream.getframe()
 
         # When GeneratorExit or StopIteration raised, run cleanup code
         finally:

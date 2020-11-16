@@ -565,24 +565,8 @@ class PiCameraStreamer(BaseCamera):
         # While the iterator is not closed
         try:
             while True:
-                # Reset the stream for the next frame
-                self.stream.seek(0)
-                self.stream.truncate()
-                # Sleep for the approximate camera framerate
-                time.sleep(1 / self.camera.framerate * 0.1)
-                # Get the latest frame data from the stream
-                frame = self.stream.getvalue()
-
-                # This loop iterates faster than the PiCamera will collect
-                # frames. On iterations between frames, the buffer will be
-                # empty (because we truncated it earlier). In these cases
-                # we just pass and loop again until a frame is actually present.
-                # This also means that the size of FrameStream is always 1 frame,
-                # since we truncate it here before a new frame can be appended.
-                if len(frame) == 0:
-                    pass
-                else:
-                    yield frame
+                # Wait for the next frame and then yield it
+                yield self.stream.getframe()
         # When GeneratorExit or StopIteration raised, run cleanup code
         finally:
             # Stop stream recording (and set resolution)
