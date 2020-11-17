@@ -100,8 +100,8 @@ export default {
     configurationUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/instrument/configuration`;
     },
-    actionsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/actions`;
+    rootUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2`;
     }
   },
 
@@ -135,22 +135,22 @@ export default {
     },
     updateSystemActions: function() {
       axios
-        .get(this.actionsUri)
+        .get(this.rootUri)
         .then(response => {
-          if ("reboot" in response.data) {
+          if ("RebootAPI" in response.data.actions) {
             this.$set(
               this.systemActionLinks,
               "reboot",
-              response.data.reboot.links.self.href
+              `${this.$store.getters.baseUri}/api/v2/actions/system/reboot/`
             );
           } else {
             delete this.systemActionLinks.reboot;
           }
-          if ("shutdown" in response.data) {
+          if ("ShutdownAPI" in response.data.actions) {
             this.$set(
               this.systemActionLinks,
               "shutdown",
-              response.data.shutdown.links.self.href
+              `${this.$store.getters.baseUri}/api/v2/actions/system/shutdown/`
             );
           } else {
             delete this.systemActionLinks.shutdown;
