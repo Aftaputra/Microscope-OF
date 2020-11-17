@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import io
 import logging
-import threading
 import time
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
@@ -36,7 +35,8 @@ class FrameStream(io.BytesIO):
         self.tracking = False
 
         # Event to track if a new frame is available since the last getvalue() call
-        self.new_frame = threading.Event()
+        # We use a ClientEvent so that each thread can call getvalue() independantly
+        self.new_frame = ClientEvent()
 
     def start_tracking(self):
         if not self.tracking:
@@ -90,17 +90,11 @@ class BaseCamera(metaclass=ABCMeta):
     """
 
     def __init__(self):
-        self.thread = None
         self.camera = None
 
         self.lock = StrictLock(name="Camera", timeout=None)
 
         self.stream = FrameStream()
-
-        self.frame = None
-        self.last_access = 0
-        self.event = ClientEvent()
-        self.stop = False  # Used to indicate that the stream loop should break
 
         self.stream_active = False
         self.record_active = False
@@ -144,96 +138,4 @@ class BaseCamera(metaclass=ABCMeta):
 
     def close(self):
         """Close the BaseCamera and all attached StreamObjects."""
-        logging.info("Closing %s", (self))
-        # Stop worker thread
-        self.stop_worker()
         logging.info("Closed %s", (self))
-
-    # START AND STOP WORKER THREAD
-
-    def start_worker(self, timeout: int = 5) -> bool:
-        """Start the background camera thread if it isn't running yet."""
-        timeout_time = time.time() + timeout
-
-        self.last_access = time.time()
-        self.stop = False
-
-        if not self.stream_active:
-            # Start background frame thread
-            self.thread = threading.Thread(target=self._thread)
-            self.thread.daemon = True
-            self.thread.start()
-
-            # wait until frames are available
-            logging.info("Waiting for frames")
-            while self.get_frame() is None:
-                if time.time() > timeout_time:
-                    raise TimeoutError("Timeout waiting for frames.")
-                else:
-                    time.sleep(0.1)
-        return True
-
-    def stop_worker(self, timeout: int = 5) -> bool:
-        """Flag worker thread for stop. Waits for thread close or timeout."""
-        logging.debug("Stopping worker thread")
-        timeout_time = time.time() + timeout
-
-        if self.stream_active:
-            self.stop = True
-            self.thread.join()  # Wait for stream thread to exit
-            logging.debug("Waiting for stream thread to exit.")
-
-        while self.stream_active:
-            if time.time() > timeout_time:
-                logging.debug("Timeout waiting for worker thread close.")
-                raise TimeoutError("Timeout waiting for worker thread close.")
-            else:
-                time.sleep(0.1)
-        return True
-
-    # HANDLE STREAM FRAMES
-
-    def get_frame(self):
-        """Return the current camera frame."""
-        self.last_access = time.time()
-
-        # wait for a signal from the camera thread
-        self.event.wait()
-        self.event.clear()
-
-        return self.frame
-
-    @abstractmethod
-    def frames(self):
-        """Create generator that returns frames from the camera."""
-
-    # WORKER THREAD
-
-    def _thread(self):
-        """Camera background thread."""
-        # Set the camera object's frame iterator
-        frames_iterator = self.frames()
-        logging.debug("Entering worker thread.")
-
-        self.stream_active = True
-
-        for frame in frames_iterator:
-            # Store most recent frame
-            self.frame = frame
-            # Signal to clients that a new frame is available
-            # We use this event because each client could be
-            # reading frames slower than we're acquiring them.
-            self.event.set()  # send signal to clients
-
-            try:
-                if self.stop is True:
-                    logging.debug("Worker thread flagged for stop.")
-                    frames_iterator.close()
-                    break
-
-            except AttributeError:
-                pass
-
-        logging.debug("BaseCamera worker thread exiting...")
-        # Set stream_activate state
-        self.stream_active = False

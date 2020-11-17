@@ -3,6 +3,7 @@
 from __future__ import division
 
 import logging
+import threading
 import time
 from datetime import datetime
 
@@ -35,7 +36,11 @@ class MissingCamera(BaseCamera):
         self.generate_new_dummy_image()
 
         # Start streaming
+        self.stop = False  # Used to indicate that the stream loop should break
         self.start_worker()
+        # Wait until frames are available
+        logging.info("Waiting for frames")
+        self.stream.new_frame.wait()
 
     def generate_new_dummy_image(self):
         # Create a dummy image to serve in the stream
@@ -55,6 +60,60 @@ class MissingCamera(BaseCamera):
 
         image.save(self.stream, format="JPEG")
 
+    def start_worker(self, **_) -> bool:
+        """Start the background camera thread if it isn't running yet."""
+        self.stop = False
+
+        if not self.stream_active:
+            # Start background frame thread
+            self.thread = threading.Thread(target=self._thread)
+            self.thread.daemon = True
+            self.thread.start()
+        return True
+
+    def stop_worker(self, timeout: int = 5) -> bool:
+        """Flag worker thread for stop. Waits for thread close or timeout."""
+        logging.debug("Stopping worker thread")
+        timeout_time = time.time() + timeout
+
+        if self.stream_active:
+            self.stop = True
+            self.thread.join()  # Wait for stream thread to exit
+            logging.debug("Waiting for stream thread to exit.")
+
+        while self.stream_active:
+            if time.time() > timeout_time:
+                logging.debug("Timeout waiting for worker thread close.")
+                raise TimeoutError("Timeout waiting for worker thread close.")
+            else:
+                time.sleep(0.1)
+        return True
+
+    def _thread(self):
+        """Camera background thread."""
+        # Set the camera object's frame iterator
+        logging.debug("Entering worker thread.")
+
+        self.stream_active = True
+
+        while True:
+            # Only serve frames at 1fps
+            time.sleep(1)
+            # Generate new dummy image
+            self.generate_new_dummy_image()
+
+            try:
+                if self.stop is True:
+                    logging.debug("Worker thread flagged for stop.")
+                    break
+
+            except AttributeError:
+                pass
+
+        logging.debug("BaseCamera worker thread exiting...")
+        # Set stream_activate state
+        self.stream_active = False
+
     @property
     def configuration(self):
         """The current camera configuration."""
@@ -64,9 +123,6 @@ class MissingCamera(BaseCamera):
     def state(self):
         """The current read-only camera state."""
         return {}
-
-    def initialisation(self):
-        """Run any initialisation code when the frame iterator starts."""
 
     def close(self):
         """Close the Raspberry Pi PiCameraStreamer."""
@@ -181,28 +237,3 @@ class MissingCamera(BaseCamera):
                 output.close()
             else:
                 output.flush()
-
-    # HANDLE STREAM FRAMES
-
-    def frames(self):
-        """
-        Create generator that returns frames from the camera.
-        """
-        # Run this initialisation method
-        self.initialisation()
-
-        # Update state
-        logging.debug("STREAM ACTIVE")
-
-        # While the iterator is not closed
-        try:
-            while True:
-                time.sleep(1)  # Only serve frames at 1fps
-                # Generate new dummy image
-                self.generate_new_dummy_image()
-                # Wait for the next frame and then yield it
-                yield self.stream.getframe()
-
-        # When GeneratorExit or StopIteration raised, run cleanup code
-        finally:
-            logging.debug("FRAME ITERATOR END")
