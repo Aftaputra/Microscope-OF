@@ -2,7 +2,14 @@ from flask import Response
 from labthings import find_component
 from labthings.views import PropertyView
 
-from openflexure_microscope.api.utilities import gen
+
+def gen(camera):
+    """Video streaming generator function."""
+    while True:
+        # the obtained frame is a jpeg
+        frame = camera.get_frame()
+
+        yield (b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n")
 
 
 class MjpegStream(PropertyView):
