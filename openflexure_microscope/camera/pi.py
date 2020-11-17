@@ -39,7 +39,6 @@ import picamerax
 import picamerax.array
 
 from openflexure_microscope.camera.base import BaseCamera
-from openflexure_microscope.paths import settings_file_path
 from openflexure_microscope.utilities import json_to_ndarray, ndarray_to_json
 
 # Richard's fix gain
@@ -76,10 +75,9 @@ class PiCameraStreamer(BaseCamera):
     def __init__(self):
         # Run BaseCamera init
         BaseCamera.__init__(self)
-        # Attach to Pi camera
-        self.camera = (
-            picamerax.PiCamera()
-        )  #: :py:class:`picamerax.PiCamera`: Picamera object
+
+        #: :py:class:`picamerax.PiCamera`: Attached Picamera object
+        self.camera = picamerax.PiCamera()
 
         # Store state of PiCameraStreamer
         self.preview_active = False
@@ -87,18 +85,13 @@ class PiCameraStreamer(BaseCamera):
         # Reset variable states
         self.set_zoom(1.0)
 
-        # Set default settings
-        self.image_resolution = tuple(
-            self.camera.MAX_RESOLUTION
-        )  #: tuple: Resolution for image captures
-        self.stream_resolution = (
-            832,
-            624,
-        )  #: tuple: Resolution for stream and video captures
-        self.numpy_resolution = (
-            1312,
-            976,
-        )  #: tuple: Resolution for numpy array captures
+        #: tuple: Resolution for image captures
+        self.image_resolution = tuple(self.camera.MAX_RESOLUTION)
+        #: tuple: Resolution for stream and video captures
+        self.stream_resolution = (832, 624)
+        #: tuple: Resolution for numpy array captures
+        self.numpy_resolution = (1312, 976)
+
         self.jpeg_quality = 100  #: int: JPEG quality
         self.mjpeg_quality = 75  #: int: MJPEG quality
 

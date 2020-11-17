@@ -13,14 +13,14 @@ TrackerFrame = namedtuple("TrackerFrame", ["size", "time"])
 
 class FrameStream(io.BytesIO):
     """
-    A file-like object used to analyse MJPEG frames.
+    A file-like object used to analyse and stream MJPEG frames.
 
     Instead of analysing a load of real MJPEG frames 
     after they've been stored in a BytesIO stream,
     we tell the camera to write frames to this class instead.
 
-    We then do analysis as the frames are written, and discard the heavier
-    image data.
+    We then do analysis as the frames are written, and discard 
+    old frames as each new frame is written.
     """
 
     def __init__(self, *args, **kwargs):
@@ -39,16 +39,19 @@ class FrameStream(io.BytesIO):
         self.new_frame = ClientEvent()
 
     def start_tracking(self):
+        """Start tracking frame sizes"""
         if not self.tracking:
             logging.debug("Started tracking frame data")
             self.tracking = True
 
     def stop_tracking(self):
+        """Stop tracking frame sizes"""
         if self.tracking:
             logging.debug("Stopped tracking frame data")
             self.tracking = False
 
     def reset_tracking(self):
+        """Empty the array of tracked frame sizes"""
         self.frames = []
 
     def write(self, s):
@@ -72,9 +75,7 @@ class FrameStream(io.BytesIO):
         self.new_frame.set()
 
     def getvalue(self) -> bytes:
-        """
-        Clear tne new_frame event and return frame data
-        """
+        """Clear tne new_frame event and return frame data"""
         self.new_frame.clear()
         return super().getvalue()
 
@@ -90,10 +91,9 @@ class BaseCamera(metaclass=ABCMeta):
     """
 
     def __init__(self):
-        self.camera = None
-
+        #: :py:class:`labthings.StrictLock`: Access lock for the camera
         self.lock = StrictLock(name="Camera", timeout=None)
-
+        #: :py:class:`FrameStream`: Streaming and analysis frame buffer
         self.stream = FrameStream()
 
         self.stream_active = False
