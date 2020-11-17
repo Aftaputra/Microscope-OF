@@ -7,8 +7,10 @@ import time
 
 # Look for debug flag
 if "-d" in sys.argv or "--debug" in sys.argv:
+    debug_app = True
     log_level = logging.DEBUG
 else:
+    debug_app = False
     log_level = logging.INFO
 
 
@@ -208,4 +210,4 @@ if __name__ == "__main__":
 
     logging.info("Starting OpenFlexure Microscope Server...")
     server = Server(app)
-    server.run(host="0.0.0.0", port=5000, debug=False, zeroconf=True)
+    server.run(host="0.0.0.0", port=5000, debug=debug_app, zeroconf=True)

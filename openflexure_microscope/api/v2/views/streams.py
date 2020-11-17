@@ -7,7 +7,7 @@ def gen(camera):
     """Video streaming generator function."""
     while True:
         # the obtained frame is a jpeg
-        frame = camera.get_frame()
+        frame = camera.stream.getframe()
 
         yield (b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n")
 
@@ -33,8 +33,6 @@ class MjpegStream(PropertyView):
         will block all proceeding requests.
         """
         microscope = find_component("org.openflexure.microscope")
-        # Restart stream worker thread
-        microscope.camera.start_worker()
 
         return Response(
             gen(microscope.camera), mimetype="multipart/x-mixed-replace; boundary=frame"
@@ -53,7 +51,5 @@ class SnapshotStream(PropertyView):
         Single snapshot from the camera stream
         """
         microscope = find_component("org.openflexure.microscope")
-        # Restart stream worker thread
-        microscope.camera.start_worker()
 
-        return Response(microscope.camera.get_frame(), mimetype="image/jpeg")
+        return Response(microscope.camera.stream.getframe(), mimetype="image/jpeg")

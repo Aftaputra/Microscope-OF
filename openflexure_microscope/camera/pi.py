@@ -107,8 +107,14 @@ class PiCameraStreamer(BaseCamera):
             "picamera_lst.npy"
         )  #: str: Path of .npy lens shading table file
 
-        # Start the stream worker on init
-        self.start_worker()
+        # Run this initialisation method
+        self._wait_for_camera()
+        # Start stream recording (and set resolution)
+        self.start_stream_recording()
+        # Wait until frames are available
+        logging.info("Waiting for frames")
+        self.stream.new_frame.wait()
+        logging.info("Frames incoming!")
 
     @property
     def configuration(self):
@@ -120,16 +126,24 @@ class PiCameraStreamer(BaseCamera):
         """The current read-only camera state."""
         return {}
 
-    def initialisation(self):
-        """Run any initialisation code when the frame iterator starts."""
-
     def close(self):
         """Close the Raspberry Pi PiCameraStreamer."""
+        # Stop stream recording
+        self.stop_stream_recording()
         # Run BaseCamera close method
-        BaseCamera.close(self)
+        super().close()
         # Detach Pi camera
         if self.camera:
             self.camera.close()
+
+    def _wait_for_camera(self, timeout=5):
+        """Wait for camera object, with 5 second timeout."""
+        timeout_time = time.time() + timeout
+        while not self.camera:
+            if time.time() > timeout_time:
+                raise TimeoutError("Timeout waiting for camera")
+            else:
+                pass
 
     # HANDLE SETTINGS
     def read_settings(self) -> dict:
@@ -392,36 +406,6 @@ class PiCameraStreamer(BaseCamera):
             # Update state
             self.record_active = False
 
-    def stop_stream_recording(self, splitter_port: int = 1, **kwargs) -> None:
-        """
-        Sets the camera resolution to the still-image resolution, and stops recording if the stream is active.
-
-        Args:
-            splitter_port (int): Splitter port to stop recording on
-        """
-        for k in kwargs.keys():
-            logging.warning(
-                "Warning, kwarg %s is invalid for stop_stream_recording.", k
-            )
-        with self.lock:
-            # Stop the camera video recording on port 1
-            try:
-                self.camera.stop_recording(splitter_port=splitter_port)
-            except picamerax.exc.PiCameraNotRecording:
-                logging.info("Not recording on splitter_port %s", (splitter_port))
-            else:
-                logging.info(
-                    "Stopped MJPEG stream on port %s. Switching to %s.",
-                    splitter_port,
-                    self.image_resolution,
-                )
-
-            # Increase the resolution for taking an image
-            time.sleep(
-                0.2
-            )  # Sprinkled a sleep to prevent camera getting confused by rapid commands
-            self.camera.resolution = self.image_resolution
-
     def start_stream_recording(self, splitter_port: int = 1, **kwargs) -> None:
         """
         Sets the camera resolution to the video/stream resolution, and starts recording if the stream should be active.
@@ -447,28 +431,57 @@ class PiCameraStreamer(BaseCamera):
                 time.sleep(0.2)
 
             # If the stream should be active
-            if self.stream_active:
-                try:
-                    # Start recording on stream port
-                    self.camera.start_recording(
-                        self.stream,
-                        format="mjpeg",
-                        quality=self.mjpeg_quality,
-                        bitrate=-1,  # RWB: disable bitrate control
-                        # (bitrate control makes JPEG size less good as a focus
-                        # metric)
-                        splitter_port=splitter_port,
-                    )
-                except picamerax.exc.PiCameraAlreadyRecording:
-                    logging.info(
-                        "Error while starting preview: Recording already running."
-                    )
-                else:
-                    logging.debug(
-                        "Started MJPEG stream at %s on port %s",
-                        self.stream_resolution,
-                        splitter_port,
-                    )
+            try:
+                # Start recording on stream port
+                self.camera.start_recording(
+                    self.stream,
+                    format="mjpeg",
+                    quality=self.mjpeg_quality,
+                    bitrate=-1,  # RWB: disable bitrate control
+                    # (bitrate control makes JPEG size less good as a focus
+                    # metric)
+                    splitter_port=splitter_port,
+                )
+            except picamerax.exc.PiCameraAlreadyRecording:
+                logging.info("Error while starting preview: Recording already running.")
+            else:
+                self.stream_active = True
+                logging.debug(
+                    "Started MJPEG stream at %s on port %s",
+                    self.stream_resolution,
+                    splitter_port,
+                )
+
+    def stop_stream_recording(self, splitter_port: int = 1, **kwargs) -> None:
+        """
+        Sets the camera resolution to the still-image resolution, and stops recording if the stream is active.
+
+        Args:
+            splitter_port (int): Splitter port to stop recording on
+        """
+        for k in kwargs.keys():
+            logging.warning(
+                "Warning, kwarg %s is invalid for stop_stream_recording.", k
+            )
+        with self.lock:
+            # Stop the camera video recording on port 1
+            try:
+                self.camera.stop_recording(splitter_port=splitter_port)
+            except picamerax.exc.PiCameraNotRecording:
+                logging.info("Not recording on splitter_port %s", (splitter_port))
+            else:
+                self.stream_active = False
+                logging.info(
+                    "Stopped MJPEG stream on port %s. Switching to %s.",
+                    splitter_port,
+                    self.image_resolution,
+                )
+
+            # Increase the resolution for taking an image
+            time.sleep(
+                0.2
+            )  # Sprinkled a sleep to prevent camera getting confused by rapid commands
+            self.camera.resolution = self.image_resolution
 
     def capture(
         self,
@@ -534,42 +547,3 @@ class PiCameraStreamer(BaseCamera):
                 logging.info("Capturing to %s", (output))
                 self.camera.capture(output, format="rgb", use_video_port=use_video_port)
                 return output.array
-
-    # HANDLE STREAM FRAMES
-
-    def wait_for_camera(self, timeout=5):
-        """Wait for camera object, with 5 second timeout."""
-        timeout_time = time.time() + timeout
-        while not self.camera:
-            if time.time() > timeout_time:
-                raise TimeoutError("Timeout waiting for camera")
-            else:
-                pass
-
-    def frames(self):
-        """
-        Create generator that returns frames from the camera.
-
-        Records video from port 1 to a byte stream,
-        and iterates sequential frames.
-        """
-        # Run this initialisation method
-        self.initialisation()
-        self.wait_for_camera()
-
-        # Start stream recording (and set resolution)
-        self.start_stream_recording()
-
-        logging.debug("STREAM ACTIVE")
-
-        # While the iterator is not closed
-        try:
-            while True:
-                # Wait for the next frame and then yield it
-                yield self.stream.getframe()
-        # When GeneratorExit or StopIteration raised, run cleanup code
-        finally:
-            # Stop stream recording (and set resolution)
-            self.stop_stream_recording()
-
-            logging.debug("FRAME ITERATOR END")
