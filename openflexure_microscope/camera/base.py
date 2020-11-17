@@ -97,9 +97,6 @@ class BaseCamera(metaclass=ABCMeta):
 
         self.stream = FrameStream()
 
-        # Iterator function that yields new frames as they are acquired
-        self.frames_iterator = None
-
         self.frame = None
         self.last_access = 0
         self.event = ClientEvent()
@@ -215,12 +212,12 @@ class BaseCamera(metaclass=ABCMeta):
     def _thread(self):
         """Camera background thread."""
         # Set the camera object's frame iterator
-        self.frames_iterator = self.frames()
+        frames_iterator = self.frames()
         logging.debug("Entering worker thread.")
 
         self.stream_active = True
 
-        for frame in self.frames_iterator:
+        for frame in frames_iterator:
             # Store most recent frame
             self.frame = frame
             # Signal to clients that a new frame is available
@@ -231,7 +228,7 @@ class BaseCamera(metaclass=ABCMeta):
             try:
                 if self.stop is True:
                     logging.debug("Worker thread flagged for stop.")
-                    self.frames_iterator.close()
+                    frames_iterator.close()
                     break
 
             except AttributeError:
