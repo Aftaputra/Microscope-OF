@@ -54,30 +54,3 @@ _actions = {
 
 def enabled_root_actions():
     return {k: v for k, v in _actions.items() if v["conditions"]}
-
-
-class ActionsView(View):
-    def get(self):
-        """
-        List of enabled default API actions.
-
-        This list does not include any actions added by LabThings extensions, only
-        those part of the default OpenFlexure Microscope API.
-        """
-        actions = {}
-        for name, action in enabled_root_actions().items():
-            d = {
-                "links": {
-                    "self": {
-                        "href": url_for(action["view_class"].endpoint, _external=True),
-                        "mimetype": "application/json",
-                        **description_from_view(action["view_class"]),
-                    }
-                },
-                "rule": action["rule"],
-                "view_class": str(action["view_class"]),
-            }
-
-            actions[name] = d
-
-        return actions
