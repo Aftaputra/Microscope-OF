@@ -102,19 +102,12 @@ class PiCameraStreamer(BaseCamera):
         self.jpeg_quality = 100  #: int: JPEG quality
         self.mjpeg_quality = 75  #: int: MJPEG quality
 
-        # Set default lens shading table path
-        self.picamera_lst_path = settings_file_path(
-            "picamera_lst.npy"
-        )  #: str: Path of .npy lens shading table file
-
-        # Run this initialisation method
-        self._wait_for_camera()
         # Start stream recording (and set resolution)
         self.start_stream_recording()
         # Wait until frames are available
-        logging.info("Waiting for frames")
+        logging.debug("Waiting for frames...")
         self.stream.new_frame.wait()
-        logging.info("Frames incoming!")
+        logging.debug("Camera initialised")
 
     @property
     def configuration(self):
@@ -135,15 +128,6 @@ class PiCameraStreamer(BaseCamera):
         # Detach Pi camera
         if self.camera:
             self.camera.close()
-
-    def _wait_for_camera(self, timeout=5):
-        """Wait for camera object, with 5 second timeout."""
-        timeout_time = time.time() + timeout
-        while not self.camera:
-            if time.time() > timeout_time:
-                raise TimeoutError("Timeout waiting for camera")
-            else:
-                pass
 
     # HANDLE SETTINGS
     def read_settings(self) -> dict:
