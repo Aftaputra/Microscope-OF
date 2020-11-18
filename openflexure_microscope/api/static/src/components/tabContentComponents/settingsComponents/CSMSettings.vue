@@ -1,6 +1,18 @@
 <template>
-  <div id="CSMSettings">
-    <CSMCalibrationSettings />
+  <div
+    id="CSMSettings"
+    class="uk-grid uk-grid-divider uk-child-width-expand"
+    uk-grid
+  >
+    <div class="uk-width-large">
+      <h3>Camera/stage mapping</h3>
+      <p>
+        Camera/stage mapping allows the stage to move relative to the camera
+        view. This enables functions like click-to-move, and more precise tile
+        scans.
+      </p>
+      <CSMCalibrationSettings />
+    </div>
     <div id="mini-stream">
       <miniStreamDisplay />
     </div>
@@ -147,7 +159,8 @@ export default {
   margin-right: auto;
 }
 #mini-stream {
-  width: 500px;
+  min-width: 300px;
+  max-width: 600px;
   text-align: center;
   margin-left: auto;
   margin-right: auto;

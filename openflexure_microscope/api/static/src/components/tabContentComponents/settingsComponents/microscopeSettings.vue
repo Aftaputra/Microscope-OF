@@ -1,5 +1,5 @@
 <template>
-  <div v-if="settings" id="microscopeSettings">
+  <div v-if="settings" id="microscopeSettings" class="uk-width-large">
     <form @submit.prevent="applyConfigRequest">
       <label class="uk-form-label" for="form-stacked-text"
         >Backlash compensation</label

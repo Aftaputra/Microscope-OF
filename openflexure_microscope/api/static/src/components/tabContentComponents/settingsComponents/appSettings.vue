@@ -1,5 +1,5 @@
 <template>
-  <div id="appSettings">
+  <div id="appSettings" class="uk-width-large">
     <h3>Appearance</h3>
     <p>
       <label>

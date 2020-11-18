@@ -16,24 +16,31 @@
       </taskSubmitter>
     </div>
 
-    <div v-show="showExtraSettings" class="uk-child-width-expand" uk-grid>
-      <div v-if="'flatten_lens_shading_table' in recalibrationLinks">
-        <button
-          class="uk-button uk-button-danger uk-width-1-1"
-          @click="flattenLensShadingTableRequest"
-        >
-          Disable flat-field correction
-        </button>
-      </div>
+    <div v-show="showExtraSettings" class="uk-child-width-expand">
+      <button
+        v-if="'flatten_lens_shading_table' in recalibrationLinks"
+        class="uk-button uk-button-danger uk-width-1-1"
+        @click="flattenLensShadingTableRequest"
+      >
+        Disable flat-field correction
+      </button>
 
-      <div v-if="'delete_lens_shading_table' in recalibrationLinks">
-        <button
-          class="uk-button uk-button-danger uk-width-1-1"
-          @click="deleteLensShadingTableRequest"
-        >
-          Adaptive flat-field correction
-        </button>
-      </div>
+      <button
+        v-if="'delete_lens_shading_table' in recalibrationLinks"
+        class="uk-button uk-button-danger uk-margin-small-top uk-width-1-1"
+        @click="deleteLensShadingTableRequest"
+      >
+        Adaptive flat-field correction
+      </button>
+    </div>
+
+    <div v-if="LstDownloadEnabled">
+      <a
+        class="uk-button uk-button-default uk-width-large uk-margin-small-top uk-align-center"
+        :href="LstDownloadUri"
+        download
+        >Download Lens-Shading Table</a
+      >
     </div>
   </div>
 </template>
@@ -61,18 +68,23 @@ export default {
   data: function() {
     return {
       recalibrationLinks: {},
-      isCalibrating: false
+      isCalibrating: false,
+      LstDownloadEnabled: false
     };
   },
 
   computed: {
     pluginsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/extensions`;
+    },
+    LstDownloadUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2/instrument/camera/lst`;
     }
   },
 
   mounted() {
     this.updateRecalibrationLinks();
+    this.checkLstDownload();
   },
 
   methods: {
@@ -90,6 +102,21 @@ export default {
             this.recalibrationLinks = foundExtension.links;
           } else {
             this.recalibrationLinks = {};
+          }
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+    },
+
+    checkLstDownload: function() {
+      axios
+        .get(this.LstDownloadUri) // Get a list of plugins
+        .then(response => {
+          if (response.status === 200) {
+            this.LstDownloadEnabled = true;
+          } else {
+            this.LstDownloadEnabled = false;
           }
         })
         .catch(error => {
