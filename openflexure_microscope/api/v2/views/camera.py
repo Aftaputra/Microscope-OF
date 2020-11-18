@@ -1,0 +1,47 @@
+import logging
+from io import BytesIO
+
+import numpy as np
+from flask import Response
+from labthings import find_component
+from labthings.views import PropertyView
+from PIL import Image
+
+
+class LSTImageProperty(PropertyView):
+    """Gets the lens-shading table as an image"""
+
+    responses = {
+        200: {
+            "content_type": "image/png",
+            "description": "Lens-shading table in RGB format",
+        }
+    }
+
+    def get(self):
+        """
+        Get the stage geometry.
+        """
+        microscope = find_component("org.openflexure.microscope")
+
+        # Return intentionally empty response if no LST is available
+        if microscope.get_configuration()["camera"]["type"] != "PiCameraStreamer":
+            logging.warning("Requested an LST from a non-PiCameraStreamer camera")
+            return ("", 204)
+        # Return intentionally empty response if we have a valid PiCamera but no LST
+        elif getattr(microscope.camera.camera, "lens_shading_table") is None:
+            logging.warning("PiCamera.lens_shading_table returned as None")
+            return ("", 204)
+        else:
+            lst = np.asarray(microscope.camera.camera.lens_shading_table)
+            # R next to G1
+            top = np.concatenate(lst[:2], axis=1)
+            # G2 next to B
+            bottom = np.concatenate(lst[2:], axis=1)
+            # Combined into a 2x2 grid of greyscale images
+            all_channels = np.concatenate((top, bottom), axis=0)
+            # Create a PNG
+            img_bytes = BytesIO()
+            Image.fromarray(np.uint8(all_channels), "L").save(img_bytes, "PNG")
+            # Return the image
+            return Response(img_bytes.getvalue(), mimetype="image/png")
