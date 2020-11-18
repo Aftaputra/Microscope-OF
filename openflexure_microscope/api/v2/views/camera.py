@@ -1,8 +1,8 @@
 import logging
 from io import BytesIO
-
+import datetime
 import numpy as np
-from flask import Response
+from flask import send_file
 from labthings import find_component
 from labthings.views import PropertyView
 from PIL import Image
@@ -43,5 +43,8 @@ class LSTImageProperty(PropertyView):
             # Create a PNG
             img_bytes = BytesIO()
             Image.fromarray(np.uint8(all_channels), "L").save(img_bytes, "PNG")
+            img_bytes.seek(0)
             # Return the image
-            return Response(img_bytes.getvalue(), mimetype="image/png")
+            #return Response(img_bytes.getvalue(), mimetype="image/png")
+            fname = f"lst-{datetime.date.today().isoformat()}.png"
+            return send_file(img_bytes, as_attachment=True, attachment_filename=fname)
