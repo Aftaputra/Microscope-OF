@@ -1,5 +1,5 @@
 <template>
-  <div id="appSettings">
+  <div id="appSettings" class="uk-width-large">
     <h3>Additional features</h3>
     <p class="uk-margin-small">
       <label
@@ -7,7 +7,7 @@
         Enable IHI Slide Scan</label
       >
     </p>
-    <p class="uk-margin-small uk-width-xlarge">
+    <p class="uk-margin-small">
       Enabling IHI Slide Scan will add a new tab designed to simplify acquiring
       blood smear tile scans. <br />
       While this may be useful for other applications, it is primarily designed

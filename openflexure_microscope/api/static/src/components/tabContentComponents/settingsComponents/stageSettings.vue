@@ -1,5 +1,5 @@
 <template>
-  <div id="stageSettings">
+  <div id="stageSettings" class="uk-width-large">
     <div>
       <h3>Stage settings</h3>
       <p>

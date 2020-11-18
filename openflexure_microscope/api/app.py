@@ -29,10 +29,10 @@ from labthings import create_app
 from labthings.extensions import find_extensions
 from labthings.views import View
 
-from openflexure_microscope.microscope import Microscope
 from openflexure_microscope.api.utilities import init_default_extensions, list_routes
 from openflexure_microscope.api.v2 import views
 from openflexure_microscope.json import JSONEncoder
+from openflexure_microscope.microscope import Microscope
 from openflexure_microscope.paths import (
     OPENFLEXURE_EXTENSIONS_PATH,
     OPENFLEXURE_VAR_PATH,
@@ -134,6 +134,9 @@ labthing.add_root_link(views.ConfigurationProperty, "instrumentConfiguration")
 
 # Attach stage resources
 labthing.add_view(views.StageTypeProperty, "/instrument/stage/type")
+
+# Attach camera resources
+labthing.add_view(views.LSTImageProperty, "/instrument/camera/lst")
 
 # Attach streams resources
 labthing.add_view(views.MjpegStream, "/streams/mjpeg")

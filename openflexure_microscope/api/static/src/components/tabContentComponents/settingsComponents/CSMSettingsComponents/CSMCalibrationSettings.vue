@@ -167,11 +167,4 @@ export default {
   margin-left: auto;
   margin-right: auto;
 }
-#mini-stream {
-  width: 500px;
-  text-align: center;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 50px;
-}
 </style>

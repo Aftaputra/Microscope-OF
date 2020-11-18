@@ -1,11 +1,14 @@
 <template>
-  <div id="streamSettings">
+  <div id="streamSettings" class="uk-width-large">
     <div>
       <h3>Stream settings</h3>
       <label
         ><input v-model="disableStream" class="uk-checkbox" type="checkbox" />
-        Disable live stream</label
+        Disable web stream</label
       >
+      <p class="uk-margin-small">
+        This will disable the embedded web stream of the camera.
+      </p>
     </div>
 
     <br />
@@ -30,6 +33,18 @@
           >
         </div>
       </div>
+      <p>
+        Enable GPU preview turns on a low-latency camera preview drawn directly
+        to the Raspberry Pi display output.
+      </p>
+      <p class="uk-margin-small">
+        <b
+          >Content, such as your mouse, won't be visible behind this preview.</b
+        >
+        Track Window will attempt to resize the GPU preview based on the current
+        window size, however this is often imperfect and cannot track window
+        movement.
+      </p>
     </div>
   </div>
 </template>
