@@ -12,7 +12,6 @@ cache:
 pylint:
   stage: analysis
   image: python:3.7
-  allow_failure: false
   retry: 1
 
   before_script:
@@ -33,7 +32,6 @@ pylint:
 black:
   stage: analysis
   image: python:3.7
-  allow_failure: true
   retry: 1
 
   before_script:
