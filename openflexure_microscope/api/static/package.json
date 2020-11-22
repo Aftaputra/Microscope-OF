@@ -7,7 +7,7 @@
   "scripts": {
     "serve": "vue-cli-service serve --mode development",
     "build": "vue-cli-service build --mode production",
-    "lint": "vue-cli-service lint --no-fix",
+    "lint": "vue-cli-service lint",
     "lint:fix": "vue-cli-service lint --fix"
   },
   "dependencies": {
@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^3.12.1",
-    "@vue/cli-plugin-eslint": "^4.5.8",
+    "@vue/cli-plugin-eslint": "^4.5.9",
     "@vue/cli-service": "^4.5.8",
     "@vue/eslint-config-prettier": "^6.0.0",
     "axios": "^0.19.2",
