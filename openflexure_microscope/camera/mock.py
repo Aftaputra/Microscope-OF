@@ -136,17 +136,13 @@ class MissingCamera(BaseCamera):
         """
 
         # Get config items from the base class
-        conf_dict = BaseCamera.read_settings(self)
+        conf_dict = {
+            "stream_resolution": self.stream_resolution,
+            "image_resolution": self.image_resolution,
+            "numpy_resolution": self.numpy_resolution,
+            "jpeg_quality": self.jpeg_quality,
+        }
 
-        # Include device-specific config items
-        conf_dict.update(
-            {
-                "stream_resolution": self.stream_resolution,
-                "image_resolution": self.image_resolution,
-                "numpy_resolution": self.numpy_resolution,
-                "jpeg_quality": self.jpeg_quality,
-            }
-        )
 
         return conf_dict
 
