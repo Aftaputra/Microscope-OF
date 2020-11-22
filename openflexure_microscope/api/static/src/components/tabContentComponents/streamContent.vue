@@ -21,7 +21,7 @@
       </div>
 
       <div
-        v-else-if="$store.state.globalSettings.disableStream"
+        v-else-if="$store.state.disableStream"
         class="uk-position-center position-relative text-center"
       >
         Stream preview disabled
@@ -52,10 +52,7 @@ export default {
 
   computed: {
     streamEnabled: function() {
-      return (
-        this.$store.getters.ready &&
-        !this.$store.state.globalSettings.disableStream
-      );
+      return this.$store.getters.ready && !this.$store.state.disableStream;
     },
     thisStreamOpen: function() {
       // Only a single MJPEG connection should be open at a time
@@ -102,7 +99,7 @@ export default {
   created: function() {
     console.log(`${this._uid} created`);
     // Send a request to start/stop GPU preview based on global setting
-    this.safePreviewRequest(this.$store.state.globalSettings.autoGpuPreview);
+    this.safePreviewRequest(this.$store.state.autoGpuPreview);
   },
 
   beforeDestroy: function() {
@@ -187,7 +184,7 @@ export default {
       } else {
         console.log(`STREAM ${this._uid} OPEN`);
         this.$store.commit("addStream", this._uid);
-        if (this.$store.state.globalSettings.autoGpuPreview == true) {
+        if (this.$store.state.autoGpuPreview == true) {
           // Start the preview immediately
           this.safePreviewRequest(true);
           // Send another start preview request after a timeout
@@ -258,7 +255,7 @@ export default {
       // If requesting starting the stream, but this component is inactive, skip
       if (
         this.$store.getters.ready == true &&
-        this.$store.state.globalSettings.autoGpuPreview == true
+        this.$store.state.autoGpuPreview == true
       ) {
         var requestUri = null;
         // Create URI
@@ -270,10 +267,7 @@ export default {
 
         // Generate payload if tracking window position
         var payload = {};
-        if (
-          this.$store.state.globalSettings.trackWindow == true &&
-          state == true
-        ) {
+        if (this.$store.state.trackWindow == true && state == true) {
           // Recalculate frame dimensions and position
           this.recalculateSize();
           // Copy data into payload array

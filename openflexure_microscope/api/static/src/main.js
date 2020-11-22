@@ -3,7 +3,6 @@ import App from "./App.vue";
 import store from "./store";
 import UIkit from "uikit";
 import VueTour from "vue-tour";
-import LoadScript from "vue-plugin-load-script";
 import VueFriendlyIframe from "vue-friendly-iframe";
 import VueObserveVisibility from "vue-observe-visibility";
 
@@ -21,9 +20,6 @@ UIkit.mixin(
   },
   "accordion"
 );
-
-// Use load-script module
-Vue.use(LoadScript);
 
 // Use vue-tour module
 Vue.use(VueTour);
@@ -58,7 +54,7 @@ Vue.mixin({
           .finally(function() {
             // Reenable the GPU preview, if it was active before the modal
             console.log("Re-enabling GPU preview");
-            if (context.$store.state.globalSettings.autoGpuPreview) {
+            if (context.$store.state.autoGpuPreview) {
               console.log("Re-enabling preview");
               context.$root.$emit("globalTogglePreview", true);
             }

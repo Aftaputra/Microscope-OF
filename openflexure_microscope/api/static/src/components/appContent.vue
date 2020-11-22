@@ -214,7 +214,7 @@ export default {
   computed: {
     enabledTopTabs: function() {
       var enabledTabs = this.topTabs;
-      if (this.$store.state.globalSettings.IHIEnabled) {
+      if (this.$store.state.IHIEnabled) {
         enabledTabs.push({
           id: "slidescan",
           icon: "settings_overscan",

@@ -308,7 +308,7 @@ export default {
       resizeDims: [640, 480],
       tags: [],
       annotations: {
-        Client: `${process.env.PACKAGE.name}.${process.env.PACKAGE.version}`
+        Client: "openflexure-microscope-jsclient:builtin"
       },
       scanUri: null
     };

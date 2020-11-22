@@ -111,7 +111,10 @@ export default {
 
   methods: {
     scrollToTop() {
-      document.querySelector("#container-left").scrollTop = 0;
+      const el = document.querySelector("#container-left");
+      if (el) {
+        el.scrollTop = 0;
+      }
     },
     visibilityChanged(isVisible) {
       if (isVisible) {
