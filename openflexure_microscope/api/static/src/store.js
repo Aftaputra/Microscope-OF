@@ -9,13 +9,11 @@ export default new Vuex.Store({
     available: false,
     waiting: false,
     error: "",
-    globalSettings: {
-      disableStream: false,
-      autoGpuPreview: false,
-      trackWindow: true,
-      IHIEnabled: false,
-      appTheme: "system"
-    },
+    disableStream: false,
+    autoGpuPreview: false,
+    trackWindow: true,
+    IHIEnabled: false,
+    appTheme: "system",
     activeStreams: {}
   },
 
@@ -26,8 +24,20 @@ export default new Vuex.Store({
     changeWaiting(state, waiting) {
       state.waiting = waiting;
     },
-    changeSetting(state, [key, value]) {
-      state.globalSettings[key] = value;
+    changeDisableStream(state, disabled) {
+      state.disableStream = disabled;
+    },
+    changeAutoGpuPreview(state, enabled) {
+      state.autoGpuPreview = enabled;
+    },
+    changeTrackWindow(state, enabled) {
+      state.trackWindow = enabled;
+    },
+    changeAppTheme(state, theme) {
+      state.appTheme = theme;
+    },
+    changeIHIEnabled(state, enabled) {
+      state.IHIEnabled = enabled;
     },
     resetState(state) {
       state.waiting = false;

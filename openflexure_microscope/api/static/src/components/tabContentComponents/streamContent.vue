@@ -46,7 +46,6 @@ export default {
       isVisible: false,
       displaySize: [0, 0],
       displayPosition: [0, 0],
-      fov: [0, 0],
       resizeTimeoutId: setTimeout(this.doneResizing, 500)
     };
   },
@@ -104,8 +103,6 @@ export default {
     console.log(`${this._uid} created`);
     // Send a request to start/stop GPU preview based on global setting
     this.safePreviewRequest(this.$store.state.globalSettings.autoGpuPreview);
-    // Get FOV from settings
-    this.updateFov();
   },
 
   beforeDestroy: function() {
@@ -136,7 +133,7 @@ export default {
     },
 
     clickMonitor: function(event) {
-      // Calculate steps from event coordinates and store config FOV
+      // Calculate steps from event coordinates
       let xCoordinate = event.offsetX;
       let yCoordinate = event.offsetY;
 
@@ -299,21 +296,6 @@ export default {
             this.modalError(error); // Let mixin handle error
           });
       }
-    },
-
-    updateFov: function() {
-      console.log("Updating FOV");
-      // Get the current field-of-view setting from the server
-      axios
-        .get(`${this.settingsUri}/fov`)
-        .then(response => {
-          if (response.data) {
-            this.fov = response.data;
-          }
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
     }
   }
 };

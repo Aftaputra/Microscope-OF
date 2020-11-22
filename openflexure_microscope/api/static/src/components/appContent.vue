@@ -267,9 +267,9 @@ export default {
           window.location.hostname
         )
       ) {
-        this.$store.commit("changeSetting", ["disableStream", true]);
-        this.$store.commit("changeSetting", ["autoGpuPreview", true]);
-        this.$store.commit("changeSetting", ["trackWindow", true]);
+        this.$store.commit("changeDisableStream", true);
+        this.$store.commit("changeAutoGpuPreview", true);
+        this.$store.commit("changeTrackWindow", true);
       }
       // Update plugins
       this.updatePlugins().then(() => {

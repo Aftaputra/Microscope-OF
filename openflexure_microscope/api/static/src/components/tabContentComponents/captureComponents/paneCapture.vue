@@ -242,7 +242,7 @@
       </li>
     </ul>
 
-    <div v-if="scanCapture" class="uk-margin uk-margin-remove-top ">
+    <div v-if="scanCapture" class="uk-margin uk-margin-remove-top">
       <taskSubmitter
         :submit-url="scanUri"
         :submit-data="scanPayload"
@@ -296,9 +296,9 @@ export default {
       scanStyle: "Raster",
       namingStyle: "Coordinates",
       scanStepSize: {
-        x: 0,
-        y: 0,
-        z: 0
+        x: 800,
+        y: 640,
+        z: 50
       },
       scanSteps: {
         x: 3,
@@ -325,9 +325,6 @@ export default {
     },
     pluginsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/extensions`;
-    },
-    settingsFovUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/instrument/settings/fov`;
     },
     basePayload: function() {
       var payload = {};
@@ -395,7 +392,6 @@ export default {
 
   mounted() {
     this.updateScanUri();
-    this.updateScanStepSize();
     // A global signal listener to perform a capture action
     this.$root.$on("globalCaptureEvent", () => {
       this.handleCapture();
@@ -433,21 +429,6 @@ export default {
             // Get plugin action link
             this.scanUri = foundExtension.links.tile.href;
           }
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
-    },
-
-    updateScanStepSize: function() {
-      axios
-        .get(this.settingsFovUri) // Get the microscope FOV
-        .then(response => {
-          this.scanStepSize = {
-            x: parseInt(0.5 * response.data[0]),
-            y: parseInt(0.5 * response.data[1]),
-            z: 50
-          };
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
