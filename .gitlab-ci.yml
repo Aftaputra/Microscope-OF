@@ -1,26 +1,39 @@
 stages:
   - analysis
   - build
+  - package
   - deploy
 
-# Cache modules in between jobs
-cache:
-  key: ${CI_COMMIT_REF_SLUG}
-  paths:
-    - node_modules/
+# Re-usable block to install (and cache) Poetry and openflexure-microscope-server
+.poetry-install-template: &poetry-install
+  before_script:
+    - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+    - $HOME/.poetry/bin/poetry config virtualenvs.in-project true
+    - $HOME/.poetry/bin/poetry install -vv
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .cache/pip
+      - .venv
+
+# Re-usable block to install (and cache) openflexure-microscope-server static app
+.node-install-template: &node-install
+  before_script:
+    - cd openflexure_microscope/api/static/
+    - npm install
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}"
+    paths:
+      - openflexure_microscope/api/static/node_modules
 
 pylint:
   stage: analysis
   image: python:3.7
   retry: 1
 
-  before_script:
-    - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+  <<: *poetry-install
 
   script:
-    # Install server
-    - $HOME/.poetry/bin/poetry install
-    # Run static build script
     - $HOME/.poetry/bin/poetry run pylint ./openflexure_microscope/
 
   only:
@@ -34,12 +47,9 @@ black:
   image: python:3.7
   retry: 1
 
-  before_script:
-    - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+  <<: *poetry-install
 
   script:
-    # Install server
-    - $HOME/.poetry/bin/poetry install
     # Run static build script
     - $HOME/.poetry/bin/poetry run black --check .
 
@@ -49,24 +59,32 @@ black:
     - tags
     - web
 
-# Electron app build
-build:
-  stage: build
-  image: nikolaik/python-nodejs:python3.7-nodejs14
+# Lint JS app
+eslint:
+  stage: analysis
+  image: node:15
 
-  before_script:
-    - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+  <<: *node-install
 
   script:
-    # Install server
-    - $HOME/.poetry/bin/poetry install
-    # Run static build script
-    - $HOME/.poetry/bin/poetry run build_static
-    # Build distribution archive
-    - mkdir -p dist
-    - tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz .
-    - cd dist/
-    - sha256sum openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz > openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256
+    # Build JS application for production
+    - npm run lint
+
+  only:
+    - merge_requests
+    - tags
+    - web
+
+# Build JS app
+build:
+  stage: build
+  image: node:15
+
+  <<: *node-install
+
+  script:
+    # Build JS application for production
+    - npm run build
 
   artifacts:
     name: "dist"
@@ -79,11 +97,38 @@ build:
     - tags
     - web
 
+# Package
+package:
+  stage: package
+
+  dependencies:
+    - build
+
+  script:
+    # Build distribution archive
+    - mkdir -p dist
+    - tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz .
+    - cd dist/
+    - sha256sum openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz > openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256
+
+  artifacts:
+    name: "dist"
+    expire_in: 1 week
+    paths:
+      - "./dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz"
+      - "./dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256"
+
+  only:
+    - merge_requests
+    - tags
+    - web
+
 # Deploy to builds.openflexure.org
 deploy:
   stage: deploy
   dependencies:
-    - build
+    - package
+
   image: ubuntu:latest
 
   before_script:
