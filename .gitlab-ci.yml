@@ -8,8 +8,9 @@ stages:
 .poetry-install-template: &poetry-install
   before_script:
     - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-    - $HOME/.poetry/bin/poetry config virtualenvs.in-project true
-    - $HOME/.poetry/bin/poetry install -vv
+    - source $HOME/.poetry/env
+    - poetry config virtualenvs.in-project true
+    - poetry install -vv
   cache:
     key: "${CI_COMMIT_REF_SLUG}"
     paths:
@@ -34,7 +35,7 @@ pylint:
   <<: *poetry-install
 
   script:
-    - $HOME/.poetry/bin/poetry run pylint ./openflexure_microscope/
+    - poetry run pylint ./openflexure_microscope/
 
   only:
     - branches
@@ -51,7 +52,7 @@ black:
 
   script:
     # Run static build script
-    - $HOME/.poetry/bin/poetry run black --check .
+    - poetry run black --check .
 
   only:
     - branches
@@ -119,7 +120,6 @@ package:
       - "./dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256"
 
   only:
-    - merge_requests
     - tags
     - web
 
