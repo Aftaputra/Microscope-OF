@@ -143,7 +143,6 @@ class MissingCamera(BaseCamera):
             "jpeg_quality": self.jpeg_quality,
         }
 
-
         return conf_dict
 
     def update_settings(self, config: dict):
