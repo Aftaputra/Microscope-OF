@@ -27,6 +27,7 @@ stages:
     paths:
       - openflexure_microscope/api/static/node_modules
 
+# Python static analysis with PyLint
 pylint:
   stage: analysis
   image: python:3.7
@@ -43,6 +44,7 @@ pylint:
     - tags
     - web
 
+# Python style analysis with Black
 black:
   stage: analysis
   image: python:3.7
@@ -60,7 +62,7 @@ black:
     - tags
     - web
 
-# Lint JS app
+# JavaScript linting with ESLint (via Vue CLI)
 eslint:
   stage: analysis
   image: node:15
@@ -98,7 +100,7 @@ build:
     - tags
     - web
 
-# Package
+# Package application into distribution tarball
 package:
   stage: package
   dependencies:
