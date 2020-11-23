@@ -5,33 +5,66 @@
         <li>
           <a class="uk-accordion-title" href="#">Configure</a>
           <div class="uk-accordion-content">
-            <div class="uk-child-width-1-2" uk-grid>
+            <b>STEP SIZE</b>
+            <div class="uk-grid-small uk-child-width-1-3" uk-grid>
               <div>
-                <label class="uk-form-label" for="form-stacked-text"
-                  >x-y step size</label
-                >
+                <label class="uk-form-label" for="form-stacked-text">x</label>
                 <div class="uk-form-controls">
                   <input
-                    v-model="stepXy"
-                    class="uk-input uk-form-width-medium uk-form-small"
+                    v-model="stepSize.x"
+                    class="uk-input uk-form-small"
                     type="number"
                     name="inputStepXy"
                   />
                 </div>
+                <label class="uk-margin-small-right"
+                  ><input
+                    v-model="invert.x"
+                    class="uk-checkbox"
+                    type="checkbox"
+                  />
+                  Invert x</label
+                >
               </div>
 
               <div>
-                <label class="uk-form-label" for="form-stacked-text"
-                  >z step size</label
-                >
+                <label class="uk-form-label" for="form-stacked-text">y</label>
                 <div class="uk-form-controls">
                   <input
-                    v-model="stepZz"
-                    class="uk-input uk-form-width-medium uk-form-small"
+                    v-model="stepSize.y"
+                    class="uk-input uk-form-small"
+                    type="number"
+                    name="inputStepY"
+                  />
+                </div>
+                <label class="uk-margin-small-right"
+                  ><input
+                    v-model="invert.y"
+                    class="uk-checkbox"
+                    type="checkbox"
+                  />
+                  Invert y</label
+                >
+              </div>
+
+              <div>
+                <label class="uk-form-label" for="form-stacked-text">z</label>
+                <div class="uk-form-controls">
+                  <input
+                    v-model="stepSize.z"
+                    class="uk-input uk-form-small"
                     type="number"
                     name="inputStepZz"
                   />
                 </div>
+                <label
+                  ><input
+                    v-model="invert.z"
+                    class="uk-checkbox"
+                    type="checkbox"
+                  />
+                  Invert z</label
+                >
               </div>
             </div>
 
@@ -172,6 +205,16 @@ export default {
     return {
       stepXy: 200,
       stepZz: 50,
+      stepSize: {
+        x: 200,
+        y: 200,
+        z: 50
+      },
+      invert: {
+        x: false,
+        y: false,
+        z: false
+      },
       setPosition: null,
       isAutofocusing: 0,
       moveLock: false,
@@ -196,7 +239,26 @@ export default {
     }
   },
 
+  watch: {
+    stepSize: {
+      deep: true,
+      handler() {
+        this.setLocalStorageObj("navigation_stepSize", this.stepSize);
+      }
+    },
+    invert: {
+      deep: true,
+      handler() {
+        this.setLocalStorageObj("navigation_invert", this.invert);
+      }
+    }
+  },
+
   mounted() {
+    // Reload saved settings
+    this.stepSize =
+      this.getLocalStorageObj("navigation_stepSize") || this.stepSize;
+    this.invert = this.getLocalStorageObj("navigation_invert") || this.invert;
     // A global signal listener to perform a move action
     this.$root.$on("globalMoveEvent", (x, y, z, absolute) => {
       this.moveRequest(x, y, z, absolute);
@@ -208,9 +270,9 @@ export default {
     // A global signal listener to perform a move in multiples of a step size
     this.$root.$on("globalMoveStepEvent", (x_steps, y_steps, z_steps) => {
       this.moveRequest(
-        x_steps * this.stepXy,
-        y_steps * this.stepXy,
-        z_steps * this.stepZz,
+        x_steps * this.stepSize.x * (this.invert.x ? -1 : 1),
+        y_steps * this.stepSize.y * (this.invert.y ? -1 : 1),
+        z_steps * this.stepSize.z * (this.invert.z ? -1 : 1),
         false
       );
     });
