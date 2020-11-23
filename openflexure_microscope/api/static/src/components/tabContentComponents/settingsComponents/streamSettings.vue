@@ -61,29 +61,29 @@ export default {
   computed: {
     disableStream: {
       get() {
-        return this.$store.state.globalSettings.disableStream;
+        return this.$store.state.disableStream;
       },
       set(value) {
-        this.$store.commit("changeSetting", ["disableStream", value]);
+        this.$store.commit("changeDisableStream", value);
       }
     },
 
     autoGpuPreview: {
       get() {
-        return this.$store.state.globalSettings.autoGpuPreview;
+        return this.$store.state.autoGpuPreview;
       },
       set(value) {
-        this.$store.commit("changeSetting", ["autoGpuPreview", value]);
+        this.$store.commit("changeAutoGpuPreview", value);
         this.$root.$emit("globalSafeTogglePreview", value);
       }
     },
 
     trackWindow: {
       get() {
-        return this.$store.state.globalSettings.trackWindow;
+        return this.$store.state.trackWindow;
       },
       set(value) {
-        this.$store.commit("changeSetting", ["trackWindow", value]);
+        this.$store.commit("changeTrackWindow", value);
       }
     }
   }

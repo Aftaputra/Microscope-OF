@@ -21,7 +21,7 @@
       </div>
 
       <div
-        v-else-if="$store.state.globalSettings.disableStream"
+        v-else-if="$store.state.disableStream"
         class="uk-position-center position-relative text-center"
       >
         Stream preview disabled
@@ -46,17 +46,13 @@ export default {
       isVisible: false,
       displaySize: [0, 0],
       displayPosition: [0, 0],
-      fov: [0, 0],
       resizeTimeoutId: setTimeout(this.doneResizing, 500)
     };
   },
 
   computed: {
     streamEnabled: function() {
-      return (
-        this.$store.getters.ready &&
-        !this.$store.state.globalSettings.disableStream
-      );
+      return this.$store.getters.ready && !this.$store.state.disableStream;
     },
     thisStreamOpen: function() {
       // Only a single MJPEG connection should be open at a time
@@ -77,7 +73,6 @@ export default {
   },
 
   mounted() {
-    console.log(`${this._uid} mounted`);
     // A global signal listener to change the GPU preview state
     this.$root.$on("globalTogglePreview", state => {
       this.previewRequest(state);
@@ -101,15 +96,11 @@ export default {
   },
 
   created: function() {
-    console.log(`${this._uid} created`);
     // Send a request to start/stop GPU preview based on global setting
-    this.safePreviewRequest(this.$store.state.globalSettings.autoGpuPreview);
-    // Get FOV from settings
-    this.updateFov();
+    this.safePreviewRequest(this.$store.state.autoGpuPreview);
   },
 
   beforeDestroy: function() {
-    console.log(`${this._uid} being destroyed`);
     // Remove global signal listener to change the GPU preview state
     this.$root.$off("globalTogglePreview");
     // Remove global signal listener to flash the stream element
@@ -136,7 +127,7 @@ export default {
     },
 
     clickMonitor: function(event) {
-      // Calculate steps from event coordinates and store config FOV
+      // Calculate steps from event coordinates
       let xCoordinate = event.offsetX;
       let yCoordinate = event.offsetY;
 
@@ -169,15 +160,12 @@ export default {
 
     handleDoneResize: function() {
       // Recalculate size
-      console.log(`Recalculating frame size for ${this._uid}`);
+
       this.recalculateSize();
       // Handle closed stream
       if (this.displaySize[0] == 0 && this.displaySize[1] == 0) {
-        console.log(`${this._uid} is zero`);
         // If this stream was previously active
         if (this.$store.state.activeStreams[this._uid] == true) {
-          console.log(`${this._uid} was active`);
-          console.log(`STREAM ${this._uid} CLOSED`);
           this.$store.commit("removeStream", this._uid);
           // If all streams are closed, request the GPU preview close
           var a = Object.values(this.$store.state.activeStreams);
@@ -188,9 +176,8 @@ export default {
         }
         // If resized to anything other than zero
       } else {
-        console.log(`STREAM ${this._uid} OPEN`);
         this.$store.commit("addStream", this._uid);
-        if (this.$store.state.globalSettings.autoGpuPreview == true) {
+        if (this.$store.state.autoGpuPreview == true) {
           // Start the preview immediately
           this.safePreviewRequest(true);
           // Send another start preview request after a timeout
@@ -261,7 +248,7 @@ export default {
       // If requesting starting the stream, but this component is inactive, skip
       if (
         this.$store.getters.ready == true &&
-        this.$store.state.globalSettings.autoGpuPreview == true
+        this.$store.state.autoGpuPreview == true
       ) {
         var requestUri = null;
         // Create URI
@@ -273,10 +260,7 @@ export default {
 
         // Generate payload if tracking window position
         var payload = {};
-        if (
-          this.$store.state.globalSettings.trackWindow == true &&
-          state == true
-        ) {
+        if (this.$store.state.trackWindow == true && state == true) {
           // Recalculate frame dimensions and position
           this.recalculateSize();
           // Copy data into payload array
@@ -291,7 +275,7 @@ export default {
         }
 
         // Send preview request
-        console.log(`${this._uid} toggled preview to ${state}`);
+
         axios
           .post(requestUri, payload)
           .then(() => {})
@@ -299,21 +283,6 @@ export default {
             this.modalError(error); // Let mixin handle error
           });
       }
-    },
-
-    updateFov: function() {
-      console.log("Updating FOV");
-      // Get the current field-of-view setting from the server
-      axios
-        .get(`${this.settingsUri}/fov`)
-        .then(response => {
-          if (response.data) {
-            this.fov = response.data;
-          }
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
     }
   }
 };

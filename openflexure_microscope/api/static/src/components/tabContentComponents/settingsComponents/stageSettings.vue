@@ -56,11 +56,9 @@ export default {
 
   methods: {
     getStageType: function() {
-      console.log("Getting stage type");
       axios
         .get(this.stageTypeUri)
         .then(response => {
-          console.log("Stage type is  " + response.data);
           this.stageType = response.data;
         })
         .catch(error => {
@@ -68,7 +66,6 @@ export default {
         });
     },
     setStageType: function() {
-      console.log("Setting stage type");
       axios
         .put(this.stageTypeUri, this.stageType, {
           headers: {
@@ -77,7 +74,7 @@ export default {
         })
         .then(response => {
           this.stageType = response.data;
-          console.log("Stage type set to " + this.stageType);
+
           this.modalNotify("Stage geometry changed.");
         })
         .catch(error => {

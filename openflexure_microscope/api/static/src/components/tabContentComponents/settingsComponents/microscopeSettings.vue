@@ -108,8 +108,6 @@ export default {
         }
       };
 
-      console.log(payload);
-
       // Send request to update config
       axios
         .put(this.settingsUri, payload)

@@ -29,10 +29,10 @@ export default {
   computed: {
     IHIEnabled: {
       get() {
-        return this.$store.state.globalSettings.IHIEnabled;
+        return this.$store.state.IHIEnabled;
       },
       set(value) {
-        this.$store.commit("changeSetting", ["IHIEnabled", value]);
+        this.$store.commit("changeIHIEnabled", value);
         this.$root.$emit("globalSafeTogglePreview", value);
       }
     }
@@ -40,7 +40,6 @@ export default {
 
   watch: {
     IHIEnabled() {
-      console.log("Saving IHIEnabled setting");
       this.setLocalStorageObj("IHIEnabled", this.IHIEnabled);
     }
   },

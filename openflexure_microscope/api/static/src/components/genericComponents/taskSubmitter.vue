@@ -138,7 +138,6 @@ export default {
 
     checkExistingTasks: function() {
       axios.get(this.submitUrl).then(response => {
-        console.log(response.data);
         for (const task of response.data) {
           if (task.status == "pending" || task.status == "running") {
             this.taskStarted = true;
@@ -165,10 +164,10 @@ export default {
 
     startTask: function() {
       // Starts a new Action task
-      console.log("Task start clicked");
+
       this.$emit("submit", this.submitData);
       // Send a request to start a task
-      console.log("Submitting to ", this.submitUrl);
+
       this.taskStarted = true;
       this.$emit("taskStarted", this.taskId);
       axios
@@ -191,7 +190,7 @@ export default {
         this.pollTask(this.taskId, this.pollInterval)
           .then(response => {
             // Do something with the final response
-            console.log("Emitting onResponse: ", response);
+
             this.$emit("response", response);
             this.$emit("finished");
           })
@@ -199,12 +198,11 @@ export default {
             if (!error) {
               error = Error("Unknown error");
             }
-            console.log("Emitting onError: ", error);
+
             this.$emit("error", error);
             this.$emit("finished");
           })
           .finally(() => {
-            console.log("Cleaning up after task.");
             // Reset taskRunning and taskId
             this.taskRunning = false;
             this.taskStarted = false;
@@ -223,7 +221,6 @@ export default {
       var checkCondition = (resolve, reject) => {
         // If the condition is met, we're done!
         axios.get(this.taskUrl).then(response => {
-          console.log(response.data.status);
           var result = response.data.status;
           // If the task ends with success
           if (result == "completed") {
@@ -232,13 +229,13 @@ export default {
           // If task ends with an error
           else if (result == "error") {
             // Pass the error string back with reject
-            console.log("Rejecting pollTask due to error");
+
             reject(new Error(response.data.output));
           }
           // If task ends with termination
           else if (result == "cancelled") {
             // Pass a generic termination error back with reject
-            console.log("Rejecting pollTask due to cancellation");
+
             reject(new Error("Task cancelled"));
           } else {
             // Since the task is still running, we can update the progress bar
@@ -253,19 +250,13 @@ export default {
     },
 
     pollProgress: function() {
-      console.log("Starting progress polling");
-
       axios.get(this.taskUrl).then(response => {
-        console.log("PROGRESS RESPONSE: ", response.data.progress);
         this.progress = response.data.progress;
       });
     },
 
     terminateTask: function() {
-      console.log("Terminating task...");
-      axios.delete(this.taskUrl).then(response => {
-        console.log("TERMINATION RESPONSE: ", response.data);
-      });
+      axios.delete(this.taskUrl);
     }
   }
 };

@@ -3,7 +3,6 @@ import App from "./App.vue";
 import store from "./store";
 import UIkit from "uikit";
 import VueTour from "vue-tour";
-import LoadScript from "vue-plugin-load-script";
 import VueFriendlyIframe from "vue-friendly-iframe";
 import VueObserveVisibility from "vue-observe-visibility";
 
@@ -21,9 +20,6 @@ UIkit.mixin(
   },
   "accordion"
 );
-
-// Use load-script module
-Vue.use(LoadScript);
 
 // Use vue-tour module
 Vue.use(VueTour);
@@ -57,9 +53,7 @@ Vue.mixin({
           )
           .finally(function() {
             // Reenable the GPU preview, if it was active before the modal
-            console.log("Re-enabling GPU preview");
-            if (context.$store.state.globalSettings.autoGpuPreview) {
-              console.log("Re-enabling preview");
+            if (context.$store.state.autoGpuPreview) {
               context.$root.$emit("globalTogglePreview", true);
             }
           });
@@ -106,21 +100,17 @@ Vue.mixin({
         // If the response is a nicely formatted JSON response from the server
         if (error.response.data.message) {
           errormsg = `${error.response.status}: ${error.response.data.message}`;
-          console.log(errormsg);
         }
         // If the response is just some generic error response
         else {
           errormsg = `${error.response.status}: ${error.response.data}`;
-          console.log(errormsg);
         }
         // If the error occured during the request
       } else if (error.request) {
         errormsg = `${error.message}`;
-        console.log(errormsg);
         // Everything else
       } else {
         errormsg = `${error.message}`;
-        console.log(errormsg);
       }
       return errormsg;
     },
@@ -142,7 +132,6 @@ Vue.mixin({
         try {
           return JSON.parse(localStorage.getItem(keyName));
         } catch (e) {
-          console.log("Malformed entry. Removing from localStorage");
           localStorage.removeItem(keyName);
           return null;
         }

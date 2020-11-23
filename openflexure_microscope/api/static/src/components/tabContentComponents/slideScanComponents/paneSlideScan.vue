@@ -174,7 +174,6 @@ export default {
         return this.currentTime.substr(0, 19);
       },
       set(val) {
-        console.log(val);
         // Get timezone
         var dt = new Date();
         var tzo = -dt.getTimezoneOffset(),

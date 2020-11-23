@@ -17,7 +17,7 @@ Please note we have a working flow, and a code of conduct. Please follow it in a
 
 * Once we've merged a few things in and want to make a release, we tag it on master.
 * Not every commit on master will get a tag, we'll accumulate a few changes before making a release, unless there's a reason to release straight away.
-* Once we're confident that the tagged release is building and stable, we merge it into the stable branch.
+* Once the tagged release passes checks, it is deployed to the build server.
 
 ## Code of Conduct
 

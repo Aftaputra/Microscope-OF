@@ -26,17 +26,16 @@ export default {
   computed: {
     appTheme: {
       get() {
-        return this.$store.state.globalSettings.appTheme;
+        return this.$store.state.appTheme;
       },
       set(value) {
-        this.$store.commit("changeSetting", ["appTheme", value]);
+        this.$store.commit("changeAppTheme", value);
       }
     }
   },
 
   watch: {
     appTheme() {
-      console.log("Saving appTheme setting");
       this.setLocalStorageObj("appTheme", this.appTheme);
     }
   },

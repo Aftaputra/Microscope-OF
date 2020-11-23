@@ -110,7 +110,6 @@ export default {
     },
 
     applyConfigRequest: function() {
-      console.log("Applying config to the microscope");
       var payload = {
         camera: {
           picamera: {

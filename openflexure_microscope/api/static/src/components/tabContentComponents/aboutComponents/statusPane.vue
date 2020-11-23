@@ -165,9 +165,8 @@ export default {
         () => {
           if ("shutdown" in this.systemActionLinks) {
             this.$store.commit("resetState");
-            axios.post(this.systemActionLinks.shutdown).catch(error => {
-              console.log(error); // Be quiet when empty response is recieved
-            });
+            // Post and silence errors
+            axios.post(this.systemActionLinks.shutdown).catch(() => {});
           }
         },
         () => {}
@@ -178,9 +177,8 @@ export default {
         () => {
           if ("reboot" in this.systemActionLinks) {
             this.$store.commit("resetState");
-            axios.post(this.systemActionLinks.reboot).catch(error => {
-              console.log(error); // Be quiet when empty response is recieved
-            });
+            // Post and silence errors
+            axios.post(this.systemActionLinks.reboot).catch(() => {});
           }
         },
         () => {}

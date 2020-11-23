@@ -24,8 +24,7 @@
             <a href="#">Filter</a>
             <div
               :class="{
-                'uk-light uk-background-secondary':
-                  $store.state.globalSettings.darkMode
+                'uk-light uk-background-secondary': $store.state.darkMode
               }"
               class="uk-navbar-dropdown"
             >
@@ -342,12 +341,14 @@ export default {
 
   methods: {
     scrollToTop() {
-      document.querySelector("#container-left").scrollTop = 0;
+      const el = document.querySelector("#container-left");
+      if (el) {
+        el.scrollTop = 0;
+      }
     },
 
     updateCaptures: function() {
       if (this.$store.state.available) {
-        console.log("Updating capture list...");
         axios
           .get(this.capturesUri)
           .then(response => {
@@ -356,8 +357,6 @@ export default {
           .catch(error => {
             this.modalError(error); // Let mixin handle error
           });
-      } else {
-        console.log("Delaying capture update until connection is available");
       }
     },
 
