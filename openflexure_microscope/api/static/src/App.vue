@@ -199,15 +199,13 @@ export default {
       (state, getters) => {
         return getters.uriV2;
       },
-      uriV2 => {
+      () => {
         this.checkConnection();
-        console.log(uriV2);
       }
     );
 
     // Keyboard shortcuts
     Mousetrap.bind("?", () => {
-      console.log(this.keyboardManual);
       this.toggleModalElement(this.$refs["keyboardManualModal"]); // Calls the mixin
     });
 
@@ -290,7 +288,6 @@ export default {
     // Remove origin watcher
     this.unwatchOriginFunction();
     // Remove key listeners
-    console.log("Resetting Mousetrap");
     Mousetrap.reset();
   },
 
@@ -313,7 +310,6 @@ export default {
     },
 
     handleExit: function() {
-      console.log("Triggered beforeunload");
       this.$root.$emit("globalTogglePreview", false);
     },
 

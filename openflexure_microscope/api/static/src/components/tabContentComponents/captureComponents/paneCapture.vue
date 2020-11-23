@@ -356,8 +356,6 @@ export default {
         payload.annotations["Notes"] = this.captureNotes;
       }
 
-      console.log(payload);
-
       return payload;
     },
 
@@ -437,8 +435,7 @@ export default {
 
     onScanSubmit: function() {},
 
-    onScanResponse: function(responseData) {
-      console.log("Scan finished with response data: ", responseData);
+    onScanResponse: function() {
       this.modalNotify("Finished scan.");
     },
 

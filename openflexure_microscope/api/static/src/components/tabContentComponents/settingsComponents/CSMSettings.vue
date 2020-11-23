@@ -84,8 +84,6 @@ export default {
         axios
           .get(this.recalibrationLinks.get_calibration.href)
           .then(response => {
-            console.log("CSM data:");
-            console.log(response.data);
             if (Object.keys(response.data).length === 0) {
               this.dataAvailable = false;
             } else {

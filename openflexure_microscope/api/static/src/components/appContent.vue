@@ -230,7 +230,6 @@ export default {
 
     pluginsGuiList: function() {
       // List of plugin GUIs, obtained from this.plugins values
-      console.log("Recalculating plugins");
       var pluginGuis = [];
       for (let plugin of Object.values(this.plugins)) {
         if (plugin.meta.gui) {
@@ -304,11 +303,9 @@ export default {
 
   methods: {
     updatePlugins: function() {
-      console.log("Updating plugin forms");
       return axios
         .get(this.pluginsUri)
         .then(response => {
-          console.log(response);
           this.plugins = response.data;
         })
         .catch(error => {
@@ -333,8 +330,6 @@ export default {
     },
     enterApp: function() {
       // Stuff to do once connected and all init modals are finished
-      console.log("Entering main application");
-      //this.currentTab = "view";
     }
   }
 };

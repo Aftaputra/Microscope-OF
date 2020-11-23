@@ -40,7 +40,6 @@ export default {
 
   watch: {
     IHIEnabled() {
-      console.log("Saving IHIEnabled setting");
       this.setLocalStorageObj("IHIEnabled", this.IHIEnabled);
     }
   },

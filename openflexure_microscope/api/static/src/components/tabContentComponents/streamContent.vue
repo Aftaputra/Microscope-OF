@@ -73,7 +73,6 @@ export default {
   },
 
   mounted() {
-    console.log(`${this._uid} mounted`);
     // A global signal listener to change the GPU preview state
     this.$root.$on("globalTogglePreview", state => {
       this.previewRequest(state);
@@ -97,13 +96,11 @@ export default {
   },
 
   created: function() {
-    console.log(`${this._uid} created`);
     // Send a request to start/stop GPU preview based on global setting
     this.safePreviewRequest(this.$store.state.autoGpuPreview);
   },
 
   beforeDestroy: function() {
-    console.log(`${this._uid} being destroyed`);
     // Remove global signal listener to change the GPU preview state
     this.$root.$off("globalTogglePreview");
     // Remove global signal listener to flash the stream element
@@ -163,15 +160,12 @@ export default {
 
     handleDoneResize: function() {
       // Recalculate size
-      console.log(`Recalculating frame size for ${this._uid}`);
+
       this.recalculateSize();
       // Handle closed stream
       if (this.displaySize[0] == 0 && this.displaySize[1] == 0) {
-        console.log(`${this._uid} is zero`);
         // If this stream was previously active
         if (this.$store.state.activeStreams[this._uid] == true) {
-          console.log(`${this._uid} was active`);
-          console.log(`STREAM ${this._uid} CLOSED`);
           this.$store.commit("removeStream", this._uid);
           // If all streams are closed, request the GPU preview close
           var a = Object.values(this.$store.state.activeStreams);
@@ -182,7 +176,6 @@ export default {
         }
         // If resized to anything other than zero
       } else {
-        console.log(`STREAM ${this._uid} OPEN`);
         this.$store.commit("addStream", this._uid);
         if (this.$store.state.autoGpuPreview == true) {
           // Start the preview immediately
@@ -282,7 +275,7 @@ export default {
         }
 
         // Send preview request
-        console.log(`${this._uid} toggled preview to ${state}`);
+
         axios
           .post(requestUri, payload)
           .then(() => {})

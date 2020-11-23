@@ -53,9 +53,7 @@ Vue.mixin({
           )
           .finally(function() {
             // Reenable the GPU preview, if it was active before the modal
-            console.log("Re-enabling GPU preview");
             if (context.$store.state.autoGpuPreview) {
-              console.log("Re-enabling preview");
               context.$root.$emit("globalTogglePreview", true);
             }
           });
@@ -102,21 +100,17 @@ Vue.mixin({
         // If the response is a nicely formatted JSON response from the server
         if (error.response.data.message) {
           errormsg = `${error.response.status}: ${error.response.data.message}`;
-          console.log(errormsg);
         }
         // If the response is just some generic error response
         else {
           errormsg = `${error.response.status}: ${error.response.data}`;
-          console.log(errormsg);
         }
         // If the error occured during the request
       } else if (error.request) {
         errormsg = `${error.message}`;
-        console.log(errormsg);
         // Everything else
       } else {
         errormsg = `${error.message}`;
-        console.log(errormsg);
       }
       return errormsg;
     },
@@ -138,7 +132,6 @@ Vue.mixin({
         try {
           return JSON.parse(localStorage.getItem(keyName));
         } catch (e) {
-          console.log("Malformed entry. Removing from localStorage");
           localStorage.removeItem(keyName);
           return null;
         }

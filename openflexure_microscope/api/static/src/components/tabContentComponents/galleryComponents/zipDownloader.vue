@@ -17,7 +17,6 @@
         :submit-url="zipBuilderUri"
         :submit-label="'Create ZIP'"
         :submit-data="captureIds"
-        @submit="onSubmit"
         @response="onResponse"
         @error="onError"
       >
@@ -155,25 +154,15 @@ export default {
     },
 
     deleteLastZip() {
-      axios
-        .delete(this.downloadUrl)
-        .then(response => {
-          console.log(response);
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
+      axios.delete(this.downloadUrl).catch(error => {
+        this.modalError(error); // Let mixin handle error
+      });
     },
 
     onResponse: function(response) {
       this.lastSessionId = response.output.id;
       this.downloadUrl = `${this.zipGetterUri}/${this.lastSessionId}`;
       this.downloadReady = true;
-    },
-
-    onSubmit: function(submitData) {
-      console.log("SUBMITTED");
-      console.log(submitData);
     },
 
     onError: function(error) {

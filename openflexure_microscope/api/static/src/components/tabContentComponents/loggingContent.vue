@@ -122,7 +122,6 @@ export default {
       }
     },
     updateLogs: function() {
-      console.log("Updating logs...");
       axios
         .get(this.loggingUri)
         .then(response => {

@@ -201,8 +201,6 @@ export default {
     },
 
     updateForm() {
-      // Trigger a plugin form update
-      console.log("Emitting reloadForms");
       this.$emit("reloadForms");
     },
 
@@ -214,14 +212,10 @@ export default {
     },
 
     newQuickRequest: function(params) {
-      console.log(this.submitApiUri);
-      console.log(params);
       // Send a quick request
       axios
         .post(this.submitApiUri, params)
-        .then(response => {
-          // Do something with the response
-          console.log(response);
+        .then(() => {
           // Do all the finished request stuff
           this.onSubmissionCompleted();
         })
@@ -232,8 +226,7 @@ export default {
 
     onTaskSubmit: function() {},
 
-    onTaskResponse: function(responseData) {
-      console.log("Task finished with response data: ", responseData);
+    onTaskResponse: function() {
       // Do all the finished request stuff
       this.onSubmissionCompleted();
     },

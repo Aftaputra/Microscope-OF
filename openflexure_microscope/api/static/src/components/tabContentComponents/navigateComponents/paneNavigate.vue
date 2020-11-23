@@ -239,7 +239,6 @@ export default {
     },
 
     moveRequest: function(x, y, z, absolute) {
-      console.log(`Sending move request of ${x}, ${y}, ${z}`);
       // If not movement-locked
       if (!this.moveLock) {
         // Lock move requests
@@ -266,7 +265,6 @@ export default {
     },
 
     moveInImageCoordinatesRequest: function(x, y) {
-      console.log(`Sending move request in image coordinates: ${x}, ${y}`);
       // If not movement-locked
       if (!this.moveLock) {
         // Lock move requests

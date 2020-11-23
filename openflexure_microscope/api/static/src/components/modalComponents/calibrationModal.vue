@@ -265,7 +265,6 @@ export default {
     },
 
     onHide: function() {
-      console.log("UIKit modal hidden");
       this.$emit("onClose");
     },
 

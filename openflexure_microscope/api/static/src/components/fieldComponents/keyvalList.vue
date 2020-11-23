@@ -111,11 +111,6 @@ export default {
       this.$delete(newSelected, key);
 
       this.$emit("input", newSelected);
-    },
-
-    modifyValue: function(e, v) {
-      console.log(e);
-      console.log(v);
     }
   }
 };

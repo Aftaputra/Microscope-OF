@@ -241,7 +241,6 @@ export default {
   methods: {
     getMetadata: function() {
       // Send metadata request
-      console.log("Loading capture metadata...");
       axios
         .get(this.captureURL)
         .then(response => {
@@ -322,7 +321,6 @@ export default {
     },
 
     delTagRequest: function(tagString) {
-      console.log(tagString);
       // Send tag DELETE request
       axios
         .delete(this.tagsURL, { data: [tagString] })
