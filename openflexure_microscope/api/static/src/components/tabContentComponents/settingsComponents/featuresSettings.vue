@@ -39,7 +39,7 @@ export default {
   },
 
   watch: {
-    IHIEnabled() {
+    IHIEnabled: function() {
       this.setLocalStorageObj("IHIEnabled", this.IHIEnabled);
     }
   },

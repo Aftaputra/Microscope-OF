@@ -35,7 +35,7 @@ export default {
   },
 
   watch: {
-    appTheme() {
+    appTheme: function() {
       this.setLocalStorageObj("appTheme", this.appTheme);
     }
   },
