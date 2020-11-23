@@ -91,7 +91,7 @@ build:
     name: "dist"
     expire_in: 1 week
     paths:
-      - "./dist/*"
+      - "./openflexure_microscope/api/static/dist/"
 
   only:
     - merge_requests
@@ -101,9 +101,10 @@ build:
 # Package
 package:
   stage: package
-
   dependencies:
     - build
+
+  image: ubuntu:latest
 
   script:
     # Build distribution archive
@@ -120,6 +121,7 @@ package:
       - "./dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256"
 
   only:
+    - merge_requests
     - tags
     - web
 
