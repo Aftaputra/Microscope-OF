@@ -1,31 +1,32 @@
 <template>
-  <div v-if="settings" id="cameraSettings">
+  <div id="cameraSettings">
     <div class="uk-grid uk-grid-divider uk-child-width-expand" uk-grid>
       <div class="uk-width-large">
         <h3>Manual camera settings</h3>
-        <form @submit.prevent="applyConfigRequest">
-          <div v-if="settings.picamera">
+        <form @submit.prevent="applySettingsRequest">
+          <div class="uk-margin-small-bottom">
+            <h4>Raspberry Pi Camera</h4>
             <!--PiCamera settings block-->
-            <div v-if="settings.picamera.shutter_speed !== undefined">
+            <div v-if="picamera.shutter_speed !== undefined">
               <label class="uk-form-label" for="form-stacked-text"
                 >Exposure time</label
               >
               <div class="uk-form-controls">
                 <input
-                  v-model="settings.picamera.shutter_speed"
+                  v-model="picamera.shutter_speed"
                   class="uk-input uk-form-small"
                   type="number"
                 />
               </div>
             </div>
 
-            <div v-if="settings.picamera.analog_gain !== undefined">
+            <div v-if="picamera.analog_gain !== undefined">
               <label class="uk-form-label" for="form-stacked-text"
                 >Analogue gain</label
               >
               <div class="uk-form-controls">
                 <input
-                  v-model="settings.picamera.analog_gain"
+                  v-model="picamera.analog_gain"
                   class="uk-input uk-form-small"
                   type="number"
                   step="0.000001"
@@ -33,17 +34,51 @@
               </div>
             </div>
 
-            <div v-if="settings.picamera.digital_gain !== undefined">
+            <div v-if="picamera.digital_gain !== undefined">
               <label class="uk-form-label" for="form-stacked-text"
                 >Digital gain</label
               >
               <div class="uk-form-controls">
                 <input
-                  v-model="settings.picamera.digital_gain"
+                  v-model="picamera.digital_gain"
                   class="uk-input uk-form-small"
                   type="number"
                   step="0.000001"
                 />
+              </div>
+            </div>
+          </div>
+
+          <div class="uk-margin-small-bottom">
+            <h4>Image quality</h4>
+
+            <div class="uk-child-width-1-2" uk-grid>
+              <div v-if="mjpeg_quality !== undefined">
+                <label class="uk-form-label" for="form-stacked-text"
+                  >Web stream quality (%)</label
+                >
+                <div class="uk-form-controls">
+                  <input
+                    v-model="mjpeg_quality"
+                    class="uk-input uk-form-small"
+                    type="number"
+                    step="1"
+                  />
+                </div>
+              </div>
+
+              <div v-if="jpeg_quality !== undefined">
+                <label class="uk-form-label" for="form-stacked-text"
+                  >JPEG capture quality (%)</label
+                >
+                <div class="uk-form-controls">
+                  <input
+                    v-model="jpeg_quality"
+                    class="uk-input uk-form-small"
+                    type="number"
+                    step="1"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -83,7 +118,13 @@ export default {
 
   data: function() {
     return {
-      settings: {}
+      picamera: {
+        shutter_speed: undefined,
+        analog_gain: undefined,
+        digital_gain: undefined
+      },
+      mjpeg_quality: undefined,
+      jpeg_quality: undefined
     };
   },
 
@@ -102,24 +143,37 @@ export default {
       axios
         .get(this.settingsUri)
         .then(response => {
-          this.settings = response.data.camera;
+          const cameraSettings = response.data.camera;
+          // Get base camera settings
+          this.mjpeg_quality = cameraSettings.mjpeg_quality;
+          this.jpeg_quality = cameraSettings.jpeg_quality;
+          // Get Pi Camera settings if they exist
+          if (cameraSettings.picamera) {
+            this.picamera.analog_gain = cameraSettings.picamera.analog_gain;
+            this.picamera.digital_gain = cameraSettings.picamera.digital_gain;
+            this.picamera.shutter_speed = cameraSettings.picamera.shutter_speed;
+          }
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
         });
     },
 
-    applyConfigRequest: function() {
+    applySettingsRequest: function() {
+      // We have to use parseInt/parseFloat because JS sometimes seems to
+      // make the numbers be strings... TypeScript would solve this...
       var payload = {
         camera: {
+          mjpeg_quality: parseInt(this.mjpeg_quality),
+          jpeg_quality: parseInt(this.jpeg_quality),
           picamera: {
-            shutter_speed: this.settings.picamera.shutter_speed,
-            analog_gain: this.settings.picamera.analog_gain,
-            digital_gain: this.settings.picamera.digital_gain
+            shutter_speed: parseFloat(this.picamera.shutter_speed),
+            analog_gain: parseFloat(this.picamera.analog_gain),
+            digital_gain: parseFloat(this.picamera.digital_gain)
           }
         }
       };
-
+      console.log(payload);
       // Send request
       axios
         .put(this.settingsUri, payload)

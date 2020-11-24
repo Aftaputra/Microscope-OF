@@ -1,32 +1,30 @@
 <template>
   <div id="CSMCalibrationSettings">
-    <form @submit.prevent="applyConfigRequest">
-      <!--Show auto calibrate if default plugin is enabled-->
-      <div v-if="'calibrate_xy' in recalibrationLinks" class="uk-margin-small">
-        <taskSubmitter
-          :button-primary="true"
-          :can-terminate="false"
-          :requires-confirmation="true"
-          :confirmation-message="
-            'Start recalibration of the stage to the camera? This may take a while, and the microscope will be locked during this time.'
-          "
-          :submit-url="recalibrationLinks.calibrate_xy.href"
-          :submit-label="'Auto-Calibrate using camera'"
-          @response="onRecalibrateResponse"
-          @error="onRecalibrateError"
-        >
-        </taskSubmitter>
-      </div>
-      <button
-        v-if="'get_calibration' in recalibrationLinks"
-        v-show="dataAvailable && showExtraSettings"
-        type="button"
-        class="uk-button uk-button-default uk-width-1-1"
-        @click="getCalibrationData()"
+    <!--Show auto calibrate if default plugin is enabled-->
+    <div v-if="'calibrate_xy' in recalibrationLinks" class="uk-margin-small">
+      <taskSubmitter
+        :button-primary="true"
+        :can-terminate="false"
+        :requires-confirmation="true"
+        :confirmation-message="
+          'Start recalibration of the stage to the camera? This may take a while, and the microscope will be locked during this time.'
+        "
+        :submit-url="recalibrationLinks.calibrate_xy.href"
+        :submit-label="'Auto-Calibrate using camera'"
+        @response="onRecalibrateResponse"
+        @error="onRecalibrateError"
       >
-        Download calibration data
-      </button>
-    </form>
+      </taskSubmitter>
+    </div>
+    <button
+      v-if="'get_calibration' in recalibrationLinks"
+      v-show="dataAvailable && showExtraSettings"
+      type="button"
+      class="uk-button uk-button-default uk-width-1-1"
+      @click="getCalibrationData()"
+    >
+      Download calibration data
+    </button>
   </div>
 </template>
 

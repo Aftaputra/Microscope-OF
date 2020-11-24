@@ -1,46 +1,6 @@
 <template>
   <div v-if="settings" id="microscopeSettings" class="uk-width-large">
-    <form @submit.prevent="applyConfigRequest">
-      <label class="uk-form-label" for="form-stacked-text"
-        >Backlash compensation</label
-      >
-      <div class="uk-grid-small uk-child-width-1-3" uk-grid>
-        <div>
-          <label class="uk-form-label" for="form-stacked-text">x</label>
-          <div class="uk-form-controls">
-            <input
-              v-model="settings.stage.backlash.x"
-              class="uk-input uk-form-small"
-              type="number"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label class="uk-form-label" for="form-stacked-text">y</label>
-          <div class="uk-form-controls">
-            <input
-              v-model="settings.stage.backlash.y"
-              class="uk-input uk-form-small"
-              type="number"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label class="uk-form-label" for="form-stacked-text">z</label>
-          <div class="uk-form-controls">
-            <input
-              v-model="settings.stage.backlash.z"
-              class="uk-input uk-form-small"
-              type="number"
-            />
-          </div>
-        </div>
-      </div>
-
-      <br />
-
+    <form @submit.prevent="applySettingsRequest">
       <div>
         <label class="uk-form-label" for="form-stacked-text"
           >Microscope name</label
@@ -57,7 +17,7 @@
 
       <button
         type="submit"
-        class="uk-button uk-button-primary uk-form-small uk-float-right uk-margin-small uk-width-1-1"
+        class="uk-button uk-button-primary uk-margin-small uk-width-1-1"
       >
         Apply Settings
       </button>
@@ -100,12 +60,9 @@ export default {
         });
     },
 
-    applyConfigRequest: function() {
+    applySettingsRequest: function() {
       var payload = {
-        name: this.settings.name,
-        stage: {
-          backlash: this.settings.stage.backlash
-        }
+        name: this.settings.name
       };
 
       // Send request to update config

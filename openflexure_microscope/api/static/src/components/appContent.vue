@@ -17,7 +17,7 @@
         class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1 uk-text-center"
       >
         <!-- For each top tab -->
-        <template v-for="(item, index) in enabledTopTabs">
+        <template v-for="(item, index) in topTabs">
           <!-- Render the tab icon -->
           <tabIcon
             :id="item.id + '-tab-icon'"
@@ -33,8 +33,6 @@
           <!-- Add a divider if item.divide is true -->
           <hr v-if="item.divide" :key="'tab-divider-' + index" />
         </template>
-
-        <hr id="extension-tab-divider" />
 
         <!-- For each plugin tab -->
         <tabIcon
@@ -79,7 +77,7 @@
     >
       <!-- For each top tab -->
       <tabContent
-        v-for="item in enabledTopTabs"
+        v-for="item in topTabs"
         :id="item.id + '-tab-content'"
         :key="item.id + '-tab-content'"
         :tab-i-d="item.id"
@@ -212,18 +210,6 @@ export default {
   },
 
   computed: {
-    enabledTopTabs: function() {
-      var enabledTabs = this.topTabs;
-      if (this.$store.state.IHIEnabled) {
-        enabledTabs.push({
-          id: "slidescan",
-          icon: "settings_overscan",
-          component: slideScanContent
-        });
-      }
-      return enabledTabs;
-    },
-
     pluginsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/extensions`;
     },
@@ -241,7 +227,7 @@ export default {
 
     tabOrder: function() {
       var ind = [];
-      for (const tab of this.enabledTopTabs) {
+      for (const tab of this.topTabs) {
         ind.push(tab.id);
       }
       for (const plugin of this.pluginsGuiList) {
@@ -270,12 +256,24 @@ export default {
         this.$store.commit("changeAutoGpuPreview", true);
         this.$store.commit("changeTrackWindow", true);
       }
+      // Update top tabs
+      this.updateTopTabs(this.$store.state.IHIEnabled);
       // Update plugins
       this.updatePlugins().then(() => {
         // Start initialisation modals
         this.startModals();
       });
     }
+
+    // Watch for host 'ready', then update status
+    this.unwatchStoreFunction = this.$store.watch(
+      state => {
+        return state.IHIEnabled;
+      },
+      IHIEnabled => {
+        this.updateTopTabs(IHIEnabled);
+      }
+    );
   },
 
   mounted() {
@@ -302,6 +300,19 @@ export default {
   },
 
   methods: {
+    updateTopTabs: function(IHIEnabled) {
+      if (IHIEnabled) {
+        this.topTabs.push({
+          id: "slidescan",
+          icon: "settings_overscan",
+          component: slideScanContent,
+          divide: true
+        });
+      } else {
+        // If the connection is now disconnected, empty capture list
+        this.topTabs = this.topTabs.filter(tab => tab.id != "slidescan");
+      }
+    },
     updatePlugins: function() {
       return axios
         .get(this.pluginsUri)
