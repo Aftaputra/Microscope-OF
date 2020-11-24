@@ -49,10 +49,14 @@ The simplest way to ensure this works is to install pre-commits into your curren
 
 To run pre-commit analysis manually, you can run `pre-commit run`.
 
-
 ## Build-system
 
 As of 1.0.0b0, we're using [Poetry](https://github.com/sdispater/poetry) to manage dependencies, build, and distribute the package. All package information and dependencies are found in `pyproject.toml`, in line with [PEP 518](https://www.python.org/dev/peps/pep-0518/). If you're developing this package, make use of `poetry.lock` to ensure you're using the latest locked dependency list.
+
+## Changelog generation
+
+* `npm install -g conventional-changelog-cli`
+* `conventional-changelog -r 1 --config ./changelog.config.js -i CHANGELOG.md -s`
 
 ## Microscope extensions
 
