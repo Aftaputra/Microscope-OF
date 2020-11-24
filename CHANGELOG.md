@@ -1,0 +1,182 @@
+# [](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.8.0...v) (2020-11-24)
+
+
+* Added .pre-commit-config.yaml to tarignore ([7b4e7fe](https://gitlab.com/openflexure/openflexure-microscope-server/commit/7b4e7fe))
+* Added API route to convert LST to PNG ([4d40e81](https://gitlab.com/openflexure/openflexure-microscope-server/commit/4d40e81))
+* Added better developer notes ([a3b1b8a](https://gitlab.com/openflexure/openflexure-microscope-server/commit/a3b1b8a))
+* Added changelog generator ([f5acb25](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f5acb25))
+* Added eslint and cache to CI ([f5012cd](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f5012cd))
+* Added job explanation comments ([c1e17de](https://gitlab.com/openflexure/openflexure-microscope-server/commit/c1e17de))
+* Added options to invert navigation steps ([d49b34e](https://gitlab.com/openflexure/openflexure-microscope-server/commit/d49b34e))
+* Added poetry to script environment ([3814e7d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3814e7d))
+* Allow code quality jobs to retry ([f15a5c7](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f15a5c7))
+* Cleaned up code layout ([da62126](https://gitlab.com/openflexure/openflexure-microscope-server/commit/da62126))
+* Cleaned up main app setup ([e464086](https://gitlab.com/openflexure/openflexure-microscope-server/commit/e464086))
+* Cleaned up store and removed unused FoV setting ([a1ae947](https://gitlab.com/openflexure/openflexure-microscope-server/commit/a1ae947))
+* Code formatting ([dd81640](https://gitlab.com/openflexure/openflexure-microscope-server/commit/dd81640))
+* Common watch format ([3e783c5](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3e783c5))
+* Don't allow Black to fail ([0d4fdf0](https://gitlab.com/openflexure/openflexure-microscope-server/commit/0d4fdf0))
+* Fixed camera settings read ([25d3b15](https://gitlab.com/openflexure/openflexure-microscope-server/commit/25d3b15))
+* Fixed global state and scrolltotop ([ef9f257](https://gitlab.com/openflexure/openflexure-microscope-server/commit/ef9f257))
+* Fixed JS artifact path ([3a90a42](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3a90a42))
+* Fixed release notes ([3c2b5f5](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3c2b5f5))
+* Fixed retry ([94bc49c](https://gitlab.com/openflexure/openflexure-microscope-server/commit/94bc49c))
+* Moved frames_iterator scope ([3058c67](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3058c67))
+* Moved gen() into streams.py ([c9c29a7](https://gitlab.com/openflexure/openflexure-microscope-server/commit/c9c29a7))
+* Rearranged settings and added LST download ([f0a3127](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f0a3127))
+* Remove separate camera stream thread ([021745d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/021745d))
+* Removed old console logs ([2e34722](https://gitlab.com/openflexure/openflexure-microscope-server/commit/2e34722))
+* Removed old picamera_lst_path attribute ([85f77fa](https://gitlab.com/openflexure/openflexure-microscope-server/commit/85f77fa))
+* Removed pointless abstract method implementations ([6d1f019](https://gitlab.com/openflexure/openflexure-microscope-server/commit/6d1f019))
+* Removed unneeded plugin:vue/essential ([358d441](https://gitlab.com/openflexure/openflexure-microscope-server/commit/358d441))
+* Removed unused commented line ([65df702](https://gitlab.com/openflexure/openflexure-microscope-server/commit/65df702))
+* Removed unused webcomponent support ([f187a3a](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f187a3a))
+* Replace top-level actions View with builtin LabThings ([421a2e3](https://gitlab.com/openflexure/openflexure-microscope-server/commit/421a2e3))
+* Return LST as a file ([aba3eb3](https://gitlab.com/openflexure/openflexure-microscope-server/commit/aba3eb3))
+* Updated Vue ESLint plugin ([52942d5](https://gitlab.com/openflexure/openflexure-microscope-server/commit/52942d5))
+
+
+# [2.8.0](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.8.0-beta.3b...v2.8.0) (2020-11-16)
+
+
+* 2.8.0 ([729f101](https://gitlab.com/openflexure/openflexure-microscope-server/commit/729f101))
+* Added documentation comments ([3eb2aa8](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3eb2aa8))
+* Added frame iterator explanation comment ([90ccd0b](https://gitlab.com/openflexure/openflexure-microscope-server/commit/90ccd0b))
+* Added use_video_port argument back to array() ([f51d4ff](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f51d4ff))
+* Move stream frame management into FrameStream class ([f765540](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f765540))
+
+
+# [2.8.0-beta.3b](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.8.0-beta.3...v2.8.0-beta.3b) (2020-11-13)
+
+
+* 2.8.0-beta.3 ([73eda10](https://gitlab.com/openflexure/openflexure-microscope-server/commit/73eda10))
+* Add pre-commit ([5119e2c](https://gitlab.com/openflexure/openflexure-microscope-server/commit/5119e2c))
+* Added full TileScanArgs schema ([3451b8a](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3451b8a))
+* Added note on manually running pre-commit ([36e837d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/36e837d))
+* Added note on pre-commit ([0647a03](https://gitlab.com/openflexure/openflexure-microscope-server/commit/0647a03))
+* Added rescue to Poetry scripts ([1f0b90c](https://gitlab.com/openflexure/openflexure-microscope-server/commit/1f0b90c))
+* Cleaned up Capture schemas ([84dcf4f](https://gitlab.com/openflexure/openflexure-microscope-server/commit/84dcf4f))
+* Data-driven tab layout ([c645804](https://gitlab.com/openflexure/openflexure-microscope-server/commit/c645804))
+* Extra comments ([c48c6d8](https://gitlab.com/openflexure/openflexure-microscope-server/commit/c48c6d8))
+* Formatting ([6644819](https://gitlab.com/openflexure/openflexure-microscope-server/commit/6644819))
+* Improved args schema for captures ([f681800](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f681800))
+* Moved piexif into captures submodule ([7c450b6](https://gitlab.com/openflexure/openflexure-microscope-server/commit/7c450b6))
+* Moved PyLint config back to pyproject.toml ([527bfeb](https://gitlab.com/openflexure/openflexure-microscope-server/commit/527bfeb))
+* Removed default JSON files and submoduled JSON encoder class ([4a9d1c5](https://gitlab.com/openflexure/openflexure-microscope-server/commit/4a9d1c5))
+* Removed duplicated code ([004ba0b](https://gitlab.com/openflexure/openflexure-microscope-server/commit/004ba0b))
+* Removed now-redundant TODO comments ([c0f9f34](https://gitlab.com/openflexure/openflexure-microscope-server/commit/c0f9f34))
+* Removed old JSONResponse class ([b350f62](https://gitlab.com/openflexure/openflexure-microscope-server/commit/b350f62))
+* Removed pre-commit from Poetry dependencies ([00d30d8](https://gitlab.com/openflexure/openflexure-microscope-server/commit/00d30d8))
+* Removed PyLint from pre-commit ([cb4afba](https://gitlab.com/openflexure/openflexure-microscope-server/commit/cb4afba))
+* Removed unused files from root ([e25c23c](https://gitlab.com/openflexure/openflexure-microscope-server/commit/e25c23c))
+* Reverted logging style ([6fb61e1](https://gitlab.com/openflexure/openflexure-microscope-server/commit/6fb61e1))
+* Style and linting ([f4b123c](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f4b123c))
+* Updated all log strings to new format ([9f52521](https://gitlab.com/openflexure/openflexure-microscope-server/commit/9f52521))
+* Updated to LabThings 1.1.3 ([738f527](https://gitlab.com/openflexure/openflexure-microscope-server/commit/738f527))
+* Warn about unused settings when updating ([1e273be](https://gitlab.com/openflexure/openflexure-microscope-server/commit/1e273be))
+
+
+# [2.8.0-beta.2](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.8.0-beta.1...v2.8.0-beta.2) (2020-11-11)
+
+
+* 2.8.0-beta.2 ([8c180ca](https://gitlab.com/openflexure/openflexure-microscope-server/commit/8c180ca))
+* Added submit button to API origin override form ([1e8978d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/1e8978d))
+* Fixed tab switcher background height ([3387c27](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3387c27))
+* Scroll to top when pagination switches ([fa909db](https://gitlab.com/openflexure/openflexure-microscope-server/commit/fa909db))
+
+
+# [2.8.0-beta.1](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.8.0-beta.0...v2.8.0-beta.1) (2020-11-09)
+
+
+* 2.8.0-beta.1 ([64aa565](https://gitlab.com/openflexure/openflexure-microscope-server/commit/64aa565))
+* Added capture count warning ([9e887c0](https://gitlab.com/openflexure/openflexure-microscope-server/commit/9e887c0))
+* Added classes for error sources ([7043721](https://gitlab.com/openflexure/openflexure-microscope-server/commit/7043721))
+* Added internet, RAM, and storage checkers ([5afff59](https://gitlab.com/openflexure/openflexure-microscope-server/commit/5afff59))
+* Added newline symbols ([121afb4](https://gitlab.com/openflexure/openflexure-microscope-server/commit/121afb4))
+* Added picamera import checker ([013aebd](https://gitlab.com/openflexure/openflexure-microscope-server/commit/013aebd))
+* Added platform info to output ([8349b37](https://gitlab.com/openflexure/openflexure-microscope-server/commit/8349b37))
+* Added stage tests and tidied up rescue ([0989a50](https://gitlab.com/openflexure/openflexure-microscope-server/commit/0989a50))
+* Allow running tasks to be resumed ([ac382b7](https://gitlab.com/openflexure/openflexure-microscope-server/commit/ac382b7))
+* Changed default pollInterval to 1s ([5a32e8a](https://gitlab.com/openflexure/openflexure-microscope-server/commit/5a32e8a))
+* Changed newline symbols ([061618d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/061618d))
+* Changed reload to 60s timeout ([b98522a](https://gitlab.com/openflexure/openflexure-microscope-server/commit/b98522a))
+* Fixed duplicated polling timers ([fcd9fa4](https://gitlab.com/openflexure/openflexure-microscope-server/commit/fcd9fa4))
+* Fixed GPU preview requests happening regardless of settings ([5feba6a](https://gitlab.com/openflexure/openflexure-microscope-server/commit/5feba6a))
+* Fixed ignored kwargs ([eae3124](https://gitlab.com/openflexure/openflexure-microscope-server/commit/eae3124))
+* Formatting and linting ([e416563](https://gitlab.com/openflexure/openflexure-microscope-server/commit/e416563))
+* Formatting and linting ([cd61ad3](https://gitlab.com/openflexure/openflexure-microscope-server/commit/cd61ad3))
+* Reduced long-term lock usage ([4c61f0c](https://gitlab.com/openflexure/openflexure-microscope-server/commit/4c61f0c))
+* Removed in-memory full metadata from CaptureObject ([9dab242](https://gitlab.com/openflexure/openflexure-microscope-server/commit/9dab242))
+* Removed port scanning warning ([5319beb](https://gitlab.com/openflexure/openflexure-microscope-server/commit/5319beb))
+* Removed unused import ([cbea2f5](https://gitlab.com/openflexure/openflexure-microscope-server/commit/cbea2f5))
+* Removed unused output ([471ee5e](https://gitlab.com/openflexure/openflexure-microscope-server/commit/471ee5e))
+* Style and linting ([de135ab](https://gitlab.com/openflexure/openflexure-microscope-server/commit/de135ab))
+* Support tuple-split strings as error messages ([f12671f](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f12671f))
+* Tidied up logging ([06fb81e](https://gitlab.com/openflexure/openflexure-microscope-server/commit/06fb81e))
+* Upped capture count warning to 10000 ([0647acd](https://gitlab.com/openflexure/openflexure-microscope-server/commit/0647acd))
+
+
+# [2.8.0-beta.0](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.7.0...v2.8.0-beta.0) (2020-11-03)
+
+
+* 2.8.0-beta.0 ([368f86c](https://gitlab.com/openflexure/openflexure-microscope-server/commit/368f86c))
+* Fixed reloading timestamp in new format ([86732b8](https://gitlab.com/openflexure/openflexure-microscope-server/commit/86732b8))
+* Formatting ([32cf2de](https://gitlab.com/openflexure/openflexure-microscope-server/commit/32cf2de))
+* Removed full capture metadata from top-level resource list ([b69c903](https://gitlab.com/openflexure/openflexure-microscope-server/commit/b69c903))
+* Simplified build_captures_from_exif ([6c51da5](https://gitlab.com/openflexure/openflexure-microscope-server/commit/6c51da5))
+* Updated client to simplify capture data ([982154c](https://gitlab.com/openflexure/openflexure-microscope-server/commit/982154c))
+
+
+# [2.7.0](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.6.5...v2.7.0) (2020-10-30)
+
+
+* 2.7.0 ([c58827a](https://gitlab.com/openflexure/openflexure-microscope-server/commit/c58827a))
+* Add header to put request to ensure string is sent ([97ff8d4](https://gitlab.com/openflexure/openflexure-microscope-server/commit/97ff8d4))
+* Added API LogFileView ([f1d0ea5](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f1d0ea5))
+* Added download attribute to log file downloader ([3ba9718](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3ba9718))
+* Added extra divider ([46120ea](https://gitlab.com/openflexure/openflexure-microscope-server/commit/46120ea))
+* Added logger tab ([21b150b](https://gitlab.com/openflexure/openflexure-microscope-server/commit/21b150b))
+* Added pagination to gallery ([e1cca30](https://gitlab.com/openflexure/openflexure-microscope-server/commit/e1cca30))
+* Always use builtin JPEG thumbnails ([10d264c](https://gitlab.com/openflexure/openflexure-microscope-server/commit/10d264c))
+* Code formatting ([ee8a2fc](https://gitlab.com/openflexure/openflexure-microscope-server/commit/ee8a2fc))
+* Code formatting ([7f53ff2](https://gitlab.com/openflexure/openflexure-microscope-server/commit/7f53ff2))
+* Code formatting ([76094b2](https://gitlab.com/openflexure/openflexure-microscope-server/commit/76094b2))
+* Code formatting and linting ([250fd07](https://gitlab.com/openflexure/openflexure-microscope-server/commit/250fd07))
+* Explicit JPEG thumbnail on capture ([09849ce](https://gitlab.com/openflexure/openflexure-microscope-server/commit/09849ce))
+* Fixed capture link generator when passed a dict ([353450d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/353450d))
+* Fixed gallery overflow ([e3a45b8](https://gitlab.com/openflexure/openflexure-microscope-server/commit/e3a45b8))
+* Fixed incorrect import ([89b1f9d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/89b1f9d))
+* Fixed node_modules exclusion from Black ([13b4c84](https://gitlab.com/openflexure/openflexure-microscope-server/commit/13b4c84))
+* Fixed tab bar scrolling ([279cc03](https://gitlab.com/openflexure/openflexure-microscope-server/commit/279cc03))
+* Fixed thumbnail data fallback ([32ec2b4](https://gitlab.com/openflexure/openflexure-microscope-server/commit/32ec2b4))
+* Fixed thumbnail generation for video_port captures ([1f12154](https://gitlab.com/openflexure/openflexure-microscope-server/commit/1f12154))
+* Fixed View import ([37c5e20](https://gitlab.com/openflexure/openflexure-microscope-server/commit/37c5e20))
+* Only save configuration if successfully load new stage type ([b111a4e](https://gitlab.com/openflexure/openflexure-microscope-server/commit/b111a4e))
+* Properly set up ESLint ([81ca64e](https://gitlab.com/openflexure/openflexure-microscope-server/commit/81ca64e))
+* Rearranged main components ([eff03bf](https://gitlab.com/openflexure/openflexure-microscope-server/commit/eff03bf))
+* Removed pointless GPU preview log ([3cfbb40](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3cfbb40))
+* Separated move_and_measure locks ([da490fd](https://gitlab.com/openflexure/openflexure-microscope-server/commit/da490fd))
+* Upgraded to LabThings 1.1.2 ([654f722](https://gitlab.com/openflexure/openflexure-microscope-server/commit/654f722))
+* Use `application/json` for put ([2f08bd3](https://gitlab.com/openflexure/openflexure-microscope-server/commit/2f08bd3))
+
+
+## [2.6.5](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.6.4...v2.6.5) (2020-10-26)
+
+
+* 2.6.5 ([9ff0aa3](https://gitlab.com/openflexure/openflexure-microscope-server/commit/9ff0aa3))
+* Close #186 ([729e473](https://gitlab.com/openflexure/openflexure-microscope-server/commit/729e473)), closes [#186](https://gitlab.com/openflexure/openflexure-microscope-server/issues/186)
+
+
+## [2.6.4](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.6.3...v2.6.4) (2020-10-26)
+
+
+* 2.6.4 ([7a12dfb](https://gitlab.com/openflexure/openflexure-microscope-server/commit/7a12dfb))
+* Added a settle time to all stage moves ([58f7686](https://gitlab.com/openflexure/openflexure-microscope-server/commit/58f7686))
+* Added a spiral scan option ([ad8fd54](https://gitlab.com/openflexure/openflexure-microscope-server/commit/ad8fd54))
+* Changed frame tracker logging level to debug ([9b4031f](https://gitlab.com/openflexure/openflexure-microscope-server/commit/9b4031f))
+* Close #148 ([a258b63](https://gitlab.com/openflexure/openflexure-microscope-server/commit/a258b63)), closes [#148](https://gitlab.com/openflexure/openflexure-microscope-server/issues/148)
+* Code formatting ([601e51d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/601e51d))
+* Fast AF use normal stream ([574f4a6](https://gitlab.com/openflexure/openflexure-microscope-server/commit/574f4a6))
+* Reset tracker frames after each mode ([459a8dc](https://gitlab.com/openflexure/openflexure-microscope-server/commit/459a8dc))
+
+
