@@ -14,11 +14,13 @@ This includes installing the server in a mode better suited for active developme
 
 * `git clone https://gitlab.com/openflexure/openflexure-microscope-server.git`
 * `poetry install`
-* `poetry run build_static`
   * Building the static interface will require a valid Node.js installation
   * To build on a Raspberry Pi:
     * `curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -`
     * `sudo apt install nodejs`
+    * `cd openflexure_microscope/api/static`
+    * `npm install`
+    * `npm run build`
 
 ## Formatting and linting
 
