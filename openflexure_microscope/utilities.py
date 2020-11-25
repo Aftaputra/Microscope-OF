@@ -26,7 +26,7 @@ class Timer(object):
 
 
 def deserialise_array_b64(b64_string, dtype, shape):
-    flat_arr = np.fromstring(base64.b64decode(b64_string), dtype)
+    flat_arr = np.frombuffer(base64.b64decode(b64_string), dtype)
     return flat_arr.reshape(shape)
 
 
@@ -106,16 +106,6 @@ def axes_to_array(
     return base_array
 
 
-def filter_dict(dictionary: dict, keys: list):
-    # Get value by recursively applying getitem
-    val = reduce(operator.getitem, keys, dictionary)
-
-    # Create new dictionary by running reduce on key, val pairs
-    out = reduce(lambda x, y: {y: x}, reversed(keys), val)
-
-    return out
-
-
 def entry_by_uuid(entry_id: str, object_list: list):
     """Return an object from a list, if <object>.id matches id argument."""
     found = None
@@ -132,26 +122,3 @@ def entry_by_uuid(entry_id: str, object_list: list):
         if converter(o.id) == converter(entry_id):
             found = o
     return found
-
-
-def recursively_apply(data, func):
-    """
-    Recursively apply a function to a dictionary, list, array, or tuple
-
-    Args:
-        data: Input iterable data
-        func: Function to apply to all non-iterable values
-    """
-    # If the object is a dictionary
-    if isinstance(data, abc.Mapping):
-        return {key: recursively_apply(val, func) for key, val in data.items()}
-    # If the object is iterable but NOT a dictionary or a string
-    elif (
-        isinstance(data, abc.Iterable)
-        and not isinstance(data, abc.Mapping)
-        and not isinstance(data, str)
-    ):
-        return [recursively_apply(x, func) for x in data]
-    # if the object is neither a map nor iterable
-    else:
-        return func(data)
