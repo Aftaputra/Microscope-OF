@@ -33,7 +33,7 @@ def construct_grid(initial, step_sizes, n_steps, style="raster"):
     if style == "spiral":
         # deal with the centre image immediately
         coord = initial
-        arr.append(initial)
+        arr.append([initial])
         # for spiral, n_steps is the number of shells, and so only requires n_steps[0]
         for i in range(2, n_steps[0] + 1):
             arr.append([])
@@ -64,16 +64,6 @@ def construct_grid(initial, step_sizes, n_steps, style="raster"):
                     line.reverse()
 
     return arr
-
-
-def flatten_grid(grid):
-    """
-    Convert a 3D list of scan positions into a flat list
-    of sequential positions. 
-    """
-
-    grid = list(itertools.chain(*grid))
-    return grid
 
 
 ### Capturing
