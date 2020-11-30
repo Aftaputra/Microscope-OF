@@ -8,20 +8,20 @@ python-versions = "*"
 
 [[package]]
 name = "apispec"
-version = "3.3.2"
+version = "4.0.0"
 description = "A pluggable API specification generator. Currently supports the OpenAPI Specification (f.k.a. the Swagger specification)."
 category = "main"
 optional = false
-python-versions = ">=3.5"
+python-versions = ">=3.6"
 
 [package.dependencies]
 PyYAML = {version = ">=3.10", optional = true, markers = "extra == \"yaml\""}
 
 [package.extras]
-dev = ["PyYAML (>=3.10)", "prance[osv] (>=0.11)", "marshmallow (>=2.19.2)", "pytest", "mock", "flake8 (==3.8.3)", "flake8-bugbear (==20.1.4)", "pre-commit (>=2.4,<3.0)", "tox"]
-docs = ["marshmallow (>=2.19.2)", "pyyaml (==5.3.1)", "sphinx (==3.2.1)", "sphinx-issues (==1.2.0)", "sphinx-rtd-theme (==0.5.0)"]
+dev = ["PyYAML (>=3.10)", "prance[osv] (>=0.11)", "marshmallow (>=3.0.0)", "pytest", "mock", "flake8 (==3.8.3)", "flake8-bugbear (==20.1.4)", "pre-commit (>=2.4,<3.0)", "tox"]
+docs = ["marshmallow (>=3.0.0)", "pyyaml (==5.3.1)", "sphinx (==3.2.1)", "sphinx-issues (==1.2.0)", "sphinx-rtd-theme (==0.5.0)"]
 lint = ["flake8 (==3.8.3)", "flake8-bugbear (==20.1.4)", "pre-commit (>=2.4,<3.0)"]
-tests = ["PyYAML (>=3.10)", "prance[osv] (>=0.11)", "marshmallow (>=2.19.2)", "pytest", "mock"]
+tests = ["PyYAML (>=3.10)", "prance[osv] (>=0.11)", "marshmallow (>=3.0.0)", "pytest", "mock"]
 validation = ["prance[osv] (>=0.11)"]
 yaml = ["PyYAML (>=3.10)"]
 
@@ -336,27 +336,20 @@ i18n = ["Babel (>=0.8)"]
 
 [[package]]
 name = "labthings"
-version = "1.1.5"
+version = "1.1.6"
 description = "Python implementation of LabThings, based on the Flask microframework"
 category = "main"
 optional = false
-python-versions = "^3.6"
-develop = true
+python-versions = ">=3.6,<4.0"
 
 [package.dependencies]
-apispec = "^3.2.0"
-apispec_webframeworks = "^0.5.2"
-Flask = "^1.1.1"
-flask-cors = "^3.0.8"
-marshmallow = "^3.4.0"
-webargs = "^6.0.0"
+apispec = ">=3.2,<5.0"
+apispec_webframeworks = ">=0.5.2,<0.6.0"
+Flask = ">=1.1.1,<2.0.0"
+flask-cors = ">=3.0.8,<4.0.0"
+marshmallow = ">=3.4.0,<4.0.0"
+webargs = ">=6.0.0,<7.0.0"
 zeroconf = ">=0.24.5,<0.29.0"
-
-[package.source]
-type = "git"
-url = "https://github.com/labthings/python-labthings"
-reference = "master"
-resolved_reference = "e9ed2444c08e3854ebefdadaa753700401392c97"
 
 [[package]]
 name = "lazy-object-proxy"
@@ -956,7 +949,7 @@ rpi = ["RPi.GPIO"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.3"
-content-hash = "e2f1011751b49fc5837f475f5304822216724a89f877ee5daf9c281cd8830673"
+content-hash = "6309f2d5e874193ed420e2b7a4b399be69c82c7d2ee1eaaad8634706daa3422e"
 
 [metadata.files]
 alabaster = [
@@ -964,8 +957,8 @@ alabaster = [
     {file = "alabaster-0.7.12.tar.gz", hash = "sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02"},
 ]
 apispec = [
-    {file = "apispec-3.3.2-py2.py3-none-any.whl", hash = "sha256:a1df9ec6b2cd0edf45039ef025abd7f0660808fa2edf737d3ba1cf5ef1a4625b"},
-    {file = "apispec-3.3.2.tar.gz", hash = "sha256:d23ebd5b71e541e031b02a19db10b5e6d5ef8452c552833e3e1afc836b40b1ad"},
+    {file = "apispec-4.0.0-py2.py3-none-any.whl", hash = "sha256:20d271f7c8d130719be223fdb122af391ff8d59fb24958c793f632305b87f8ed"},
+    {file = "apispec-4.0.0.tar.gz", hash = "sha256:360e28e5e84a4d7023b16de2b897327fe3da63ddc8e01f9165b9113b7fe1c48a"},
 ]
 apispec-webframeworks = [
     {file = "apispec-webframeworks-0.5.2.tar.gz", hash = "sha256:0db35b267914b3f8c562aca0261957dbcb4176f255eacc22520277010818dcf3"},
@@ -1109,7 +1102,10 @@ jinja2 = [
     {file = "Jinja2-2.11.2-py2.py3-none-any.whl", hash = "sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035"},
     {file = "Jinja2-2.11.2.tar.gz", hash = "sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0"},
 ]
-labthings = []
+labthings = [
+    {file = "labthings-1.1.6-py3-none-any.whl", hash = "sha256:ca3c906b29f7b7ba86ee11d858ecf05d7a34f2d277f3e87af8a255d5825b3992"},
+    {file = "labthings-1.1.6.tar.gz", hash = "sha256:30901ea6b1fb1f7468c92a0ebfc5a138e324a2886928720ace1a58761f369ab8"},
+]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.4.3.tar.gz", hash = "sha256:f3900e8a5de27447acbf900b4750b0ddfd7ec1ea7fbaf11dfa911141bc522af0"},
     {file = "lazy_object_proxy-1.4.3-cp27-cp27m-macosx_10_13_x86_64.whl", hash = "sha256:a2238e9d1bb71a56cd710611a1614d1194dc10a175c1e08d75e1a7bcc250d442"},
