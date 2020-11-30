@@ -2,6 +2,7 @@ from labthings import Schema, fields, find_component
 from labthings.extensions import BaseExtension
 from labthings.views import PropertyView
 
+
 # Create the extension class
 class MyExtension(BaseExtension):
     def __init__(self):

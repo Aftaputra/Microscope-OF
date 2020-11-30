@@ -4,11 +4,11 @@ from labthings import current_action, fields, find_component, update_action_prog
 from labthings.extensions import BaseExtension
 from labthings.views import ActionView
 
-# Used in our timelapse function
-from openflexure_microscope.captures.capture_manager import generate_basename
-
 # Used to convert our GUI dictionary into a complete eV extension GUI
 from openflexure_microscope.api.utilities.gui import build_gui
+
+# Used in our timelapse function
+from openflexure_microscope.captures.capture_manager import generate_basename
 
 
 # Create the extension class
