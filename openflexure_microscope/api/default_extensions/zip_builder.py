@@ -131,8 +131,18 @@ class ZipManager:
             zd.close()
 
 
-# Create a global ZIP manager
-default_zip_manager = ZipManager()
+class ZipBuilderExtension(BaseExtension):
+    def __init__(self):
+        super().__init__(
+            "org.openflexure.zipbuilder",
+            version="2.0.0",
+            description="Build and download capture collections as ZIP files",
+        )
+        self.manager = ZipManager()
+
+        self.add_view(ZipGetterAPIView, "/get/<string:session_id>", endpoint="get_id")
+        self.add_view(ZipListAPIView, "/get", endpoint="get")
+        self.add_view(ZipBuilderAPIView, "/build", endpoint="build")
 
 
 class ZipBuilderAPIView(ActionView):
@@ -142,7 +152,7 @@ class ZipBuilderAPIView(ActionView):
         microscope = find_component("org.openflexure.microscope")
 
         # Return a handle on the autofocus task
-        return default_zip_manager.marshaled_build_zip_from_capture_ids(
+        return self.extension.manager.marshaled_build_zip_from_capture_ids(
             microscope, args
         )
 
@@ -151,7 +161,7 @@ class ZipListAPIView(PropertyView):
     schema = ZipObjectSchema(many=True)
 
     def get(self):
-        return default_zip_manager.session_zips.values()
+        return self.extension.manager.session_zips.values()
 
 
 class ZipGetterAPIView(View):
@@ -163,13 +173,13 @@ class ZipGetterAPIView(View):
         """
         Download a particular capture collection ZIP file
         """
-        if not session_id in default_zip_manager.session_zips:
+        if not session_id in self.extension.manager.session_zips:
             return abort(404)  # 404 Not Found
 
         logging.info("Session ID: %s", session_id)
 
         return send_file(
-            default_zip_manager.zip_fp_from_id(session_id).name,
+            self.extension.manager.zip_fp_from_id(session_id).name,
             mimetype="application/zip",
             as_attachment=True,
             attachment_filename=f"{session_id}.zip",
@@ -179,26 +189,12 @@ class ZipGetterAPIView(View):
         """
         Close and delete a particular capture collection ZIP file
         """
-        if not session_id in default_zip_manager.session_zips:
+        if not session_id in self.extension.manager.session_zips:
             return abort(404)  # 404 Not Found
 
         # Close the file
-        default_zip_manager.session_zips[session_id].close()
+        self.extension.manager.session_zips[session_id].close()
         # Delete the file reference
-        del default_zip_manager.session_zips[session_id]
+        del self.extension.manager.session_zips[session_id]
 
         return {"return": session_id}
-
-
-zip_extension_v2 = BaseExtension(
-    "org.openflexure.zipbuilder",
-    version="2.0.0",
-    description="Build and download capture collections as ZIP files",
-)
-
-zip_extension_v2.add_view(
-    ZipGetterAPIView, "/get/<string:session_id>", endpoint="get_id"
-)
-zip_extension_v2.add_view(ZipListAPIView, "/get", endpoint="get")
-
-zip_extension_v2.add_view(ZipBuilderAPIView, "/build", endpoint="build")

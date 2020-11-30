@@ -42,23 +42,43 @@ def pause_stream(scamera: BaseCamera):
                 scamera.start_stream()
 
 
-def recalibrate(microscope: Microscope):
-    """Reset the camera's settings.
+class LSTExtension(BaseExtension):
+    def __init__(self) -> None:
+        super().__init__(
+            "org.openflexure.calibration.picamera",
+            version="2.0.0-beta.1",
+            description="Routines to perform flat-field correction on the camera.",
+        )
 
-    This generates new gains, exposure time, and lens shading
-    table such that the background is as uniform as possible
-    with a gray level of 230.  It takes a little while to run.
-    """
-    with pause_stream(microscope.camera) as scamera:
-        if hasattr(scamera, "picamera"):
-            picamera_obj: picamerax.PiCamera = getattr(scamera, "picamera")
-            auto_expose_and_freeze_settings(picamera_obj)
-            recalibrate_camera(picamera_obj)
-            microscope.save_settings()
-        else:
-            raise RuntimeError(
-                "Recalibrate can only be used with a Raspberry Pi camera"
-            )
+        self.add_view(RecalibrateView, "/recalibrate", endpoint="recalibrate")
+        self.add_view(
+            FlattenLSTView,
+            "/flatten_lens_shading_table",
+            endpoint="flatten_lens_shading_table",
+        )
+        self.add_view(
+            DeleteLSTView,
+            "/delete_lens_shading_table",
+            endpoint="delete_lens_shading_table",
+        )
+
+    def recalibrate(self, microscope: Microscope):
+        """Reset the camera's settings.
+
+        This generates new gains, exposure time, and lens shading
+        table such that the background is as uniform as possible
+        with a gray level of 230.  It takes a little while to run.
+        """
+        with pause_stream(microscope.camera) as scamera:
+            if hasattr(scamera, "picamera"):
+                picamera_obj: picamerax.PiCamera = getattr(scamera, "picamera")
+                auto_expose_and_freeze_settings(picamera_obj)
+                recalibrate_camera(picamera_obj)
+                microscope.save_settings()
+            else:
+                raise RuntimeError(
+                    "Recalibrate can only be used with a Raspberry Pi camera"
+                )
 
 
 class RecalibrateView(ActionView):
@@ -70,7 +90,7 @@ class RecalibrateView(ActionView):
 
         logging.info("Starting microscope recalibration...")
 
-        return recalibrate(microscope)
+        return self.extension.recalibrate(microscope)
 
 
 class FlattenLSTView(ActionView):
@@ -102,22 +122,3 @@ class DeleteLSTView(ActionView):
         with pause_stream(microscope.camera) as scamera:
             scamera.camera.lens_shading_table = None
         microscope.save_settings()
-
-
-lst_extension_v2 = BaseExtension(
-    "org.openflexure.calibration.picamera",
-    version="2.0.0-beta.1",
-    description="Routines to perform flat-field correction on the camera.",
-)
-
-lst_extension_v2.add_method(
-    recalibrate, "org.openflexure.calibration.picamera.recalibrate"
-)
-
-lst_extension_v2.add_view(RecalibrateView, "/recalibrate", endpoint="recalibrate")
-lst_extension_v2.add_view(
-    FlattenLSTView, "/flatten_lens_shading_table", endpoint="flatten_lens_shading_table"
-)
-lst_extension_v2.add_view(
-    DeleteLSTView, "/delete_lens_shading_table", endpoint="delete_lens_shading_table"
-)

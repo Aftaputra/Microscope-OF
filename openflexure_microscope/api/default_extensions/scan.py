@@ -99,9 +99,12 @@ def construct_grid(
 
 class ScanExtension(BaseExtension):
     def __init__(self):
+        BaseExtension.__init__(self, "org.openflexure.scan", version="2.0.0")
+
         self._images_to_be_captured: int = 1
         self._images_captured_so_far: int = 0
-        BaseExtension.__init__(self, "org.openflexure.scan", version="2.0.0")
+
+        self.add_view(TileScanAPI, "/tile", endpoint="tile")
 
     def capture(
         self,
@@ -356,9 +359,6 @@ class ScanExtension(BaseExtension):
                 microscope.stage.move_abs(initial_position)
 
 
-scan_extension_v2 = ScanExtension()
-
-
 class TileScanArgs(FullCaptureArgs):
     namemode = fields.String(missing="coordinates", example="coordinates")
     grid = fields.List(fields.Integer, missing=[3, 3, 3], example=[3, 3, 3])
@@ -398,7 +398,7 @@ class TileScanAPI(ActionView):
         # Acquire microscope lock with 1s timeout
         with microscope.lock(timeout=1):
             # Run scan_extension_v2
-            return scan_extension_v2.tile(
+            return self.extension.scan_extension_v2.tile(
                 microscope,
                 basename=args.get("filename"),
                 namemode=args.get("namemode"),
@@ -414,6 +414,3 @@ class TileScanAPI(ActionView):
                 annotations=args.get("annotations"),
                 tags=args.get("tags"),
             )
-
-
-scan_extension_v2.add_view(TileScanAPI, "/tile", endpoint="tile")

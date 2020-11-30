@@ -93,11 +93,42 @@ class AutostorageExtension(BaseExtension):
 
         # We'll store a reference to a CaptureManager object, who's capture paths will be modified
         self.capture_manager: Optional[CaptureManager] = None
-
         self.initial_location: str = get_default_location()
 
         # Register the on_microscope function to run when the microscope is attached
         self.on_component("org.openflexure.microscope", self.on_microscope)
+
+        self.add_view(GetLocationsView, "/list-locations")
+        self.add_view(PreferredLocationView, "/location")
+        self.add_view(PreferredLocationGUIView, "/location-from-title")
+        self.add_meta("gui", build_gui(self.dynamic_form, self))
+
+    def dynamic_form(self):
+        self.check_location()
+        return {
+            "icon": "sd_storage",
+            "title": "Storage",
+            "viewPanel": "gallery",
+            "forms": [
+                {
+                    "name": "Autostorage",
+                    "isCollapsible": False,
+                    "isTask": False,
+                    "route": "/location-from-title",
+                    "emitOnResponse": "globalUpdateCaptures",
+                    "submitLabel": "Set path",
+                    "schema": [
+                        {
+                            "fieldType": "selectList",
+                            "name": "new_path_title",
+                            "label": "Capture storage path",
+                            "options": self.get_titles(),
+                            "value": self.get_preferred_title(),
+                        }
+                    ],
+                }
+            ],
+        }
 
     def on_microscope(self, microscope_obj: Microscope):
         """Function to automatically call when the parent LabThing has a microscope attached."""
@@ -204,12 +235,9 @@ class AutostorageExtension(BaseExtension):
         return self.key_to_title(self.get_preferred_key())
 
 
-autostorage_extension_v2 = AutostorageExtension()
-
-
 class GetLocationsView(PropertyView):
     def get(self):
-        autostorage_extension_v2.check_location()
+        self.extension.check_location()
         return autostorage_extension_v2.get_locations()
 
 
@@ -217,8 +245,8 @@ class PreferredLocationView(PropertyView):
     schema = fields.String(required=True, example="Default")
 
     def get(self):
-        autostorage_extension_v2.check_location()
-        return autostorage_extension_v2.get_preferred_key()
+        self.extension.check_location()
+        return self.extension.get_preferred_key()
 
     def post(self, new_path_key):
         microscope = find_component("org.openflexure.microscope")
@@ -226,8 +254,8 @@ class PreferredLocationView(PropertyView):
         if not microscope:
             abort(503, "No microscope connected. Unable to autofocus.")
 
-        autostorage_extension_v2.check_location()
-        autostorage_extension_v2.set_preferred_key(new_path_key)
+        self.extension.check_location()
+        self.extension.set_preferred_key(new_path_key)
         microscope.save_settings()
 
 
@@ -237,46 +265,11 @@ class PreferredLocationGUIView(View):
         new_path_title = args.get("new_path_title")
         logging.debug(new_path_title)
 
-        new_path_key = autostorage_extension_v2.title_to_key(new_path_title)
+        new_path_key = self.extension.title_to_key(new_path_title)
         logging.debug(new_path_key)
 
-        autostorage_extension_v2.check_location()
-        autostorage_extension_v2.set_preferred_key(new_path_key)
+        self.extension.check_location()
+        self.extension.set_preferred_key(new_path_key)
 
         return new_path_title
 
-
-def dynamic_form():
-    autostorage_extension_v2.check_location()
-    return {
-        "icon": "sd_storage",
-        "title": "Storage",
-        "viewPanel": "gallery",
-        "forms": [
-            {
-                "name": "Autostorage",
-                "isCollapsible": False,
-                "isTask": False,
-                "route": "/location-from-title",
-                "emitOnResponse": "globalUpdateCaptures",
-                "submitLabel": "Set path",
-                "schema": [
-                    {
-                        "fieldType": "selectList",
-                        "name": "new_path_title",
-                        "label": "Capture storage path",
-                        "options": autostorage_extension_v2.get_titles(),
-                        "value": autostorage_extension_v2.get_preferred_title(),
-                    }
-                ],
-            }
-        ],
-    }
-
-
-autostorage_extension_v2.add_view(GetLocationsView, "/list-locations")
-autostorage_extension_v2.add_view(PreferredLocationView, "/location")
-autostorage_extension_v2.add_view(PreferredLocationGUIView, "/location-from-title")
-autostorage_extension_v2.add_meta(
-    "gui", build_gui(dynamic_form, autostorage_extension_v2)
-)
