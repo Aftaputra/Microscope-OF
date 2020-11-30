@@ -1,8 +1,10 @@
 import logging
 import traceback
 from contextlib import contextmanager
+from labthings.extensions import BaseExtension
+from typing import List, Type
 
-LABTHINGS_EXTENSIONS = []
+LABTHINGS_EXTENSIONS: List[Type[BaseExtension]] = []
 
 
 @contextmanager
