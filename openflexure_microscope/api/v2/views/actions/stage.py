@@ -1,4 +1,5 @@
 import logging
+from typing import List, Tuple
 
 from labthings import fields, find_component
 from labthings.views import ActionView
@@ -24,11 +25,11 @@ class MoveStageAPI(ActionView):
 
         # Handle absolute positioning (calculate a relative move from current position and target)
         if (args.get("absolute")) and (microscope.stage):  # Only if stage exists
-            target_position = axes_to_array(args, ["x", "y", "z"])
+            target_position: List[int] = axes_to_array(args, ["x", "y", "z"])
             logging.debug("TARGET: %s", (target_position))
-            position = [
+            position: Tuple[int, int, int] = (
                 target_position[i] - microscope.stage.position[i] for i in range(3)
-            ]
+            )
             logging.debug("DELTA: %s", (position))
 
         else:

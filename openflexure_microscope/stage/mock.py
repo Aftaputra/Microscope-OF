@@ -1,8 +1,10 @@
 import logging
 import time
 from collections.abc import Iterable
+from typing import Optional, Tuple, Union
 
 import numpy as np
+from typing_extensions import Literal
 
 from openflexure_microscope.stage.base import BaseStage
 from openflexure_microscope.utilities import axes_to_array
@@ -14,8 +16,6 @@ class MissingStage(BaseStage):
         self._position = [0, 0, 0]
         self._n_axis = 3
         self._backlash = None
-
-        self.axis_names = ["x", "y", "z"]  # Assume all sangaboards are 3 axis
 
     @property
     def state(self):
@@ -66,14 +66,27 @@ class MissingStage(BaseStage):
         else:
             self._backlash = np.array([int(blsh)] * self.n_axes, dtype=np.int)
 
-    def move_rel(self, displacement: list, axis=None, backlash=True):
+    def move_rel(
+        self,
+        displacement: Union[int, Tuple[int, int, int]],
+        axis: Optional[Literal["x", "y", "z"]] = None,
+        backlash: bool = True,
+    ):
         time.sleep(0.5)
-        if axis is not None:
-            assert axis in self.axis_names, "axis must be one of {}".format(
-                self.axis_names
+        if axis:
+            # Displacement MUST be an integer if axis name is specified
+            if not isinstance(displacement, int):
+                raise TypeError(
+                    "Displacement must be an integer when axis is specified"
+                )
+            # Axis name MUST be x, y, or z
+            if axis not in ("x", "y", "z"):
+                raise ValueError("axis must be one of x, y, or z")
+            move = (
+                displacement if axis == "x" else 0,
+                displacement if axis == "y" else 0,
+                displacement if axis == "z" else 0,
             )
-            move = np.zeros(self.n_axes, dtype=np.int)
-            move[np.argmax(np.array(self.axis_names) == axis)] = int(displacement)
             displacement = move
 
         initial_move = np.array(displacement, dtype=np.int)

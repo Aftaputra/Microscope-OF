@@ -1,3 +1,7 @@
+from io import BytesIO
+from typing import List, Optional, Union
+from uuid import UUID
+
 from flask import abort, redirect, request, send_file, url_for
 from labthings import Schema, fields, find_component
 from labthings.marshalling import marshal_with, use_args
@@ -6,6 +10,7 @@ from labthings.views import PropertyView, View
 from marshmallow import pre_dump
 
 from openflexure_microscope.api.utilities import get_bool
+from openflexure_microscope.captures import CaptureObject
 
 # SCHEMAS
 
@@ -61,10 +66,10 @@ class CaptureSchema(ImageSchema):
     links = fields.Dict()
 
     @pre_dump
-    def generate_links(self, data, **_):
+    def generate_links(self, data: Union[dict, CaptureObject], **_):
         if isinstance(data, dict):
-            capture_id = data.get("id")
-            capture_name = data.get("name")
+            capture_id: Optional[Union[str, UUID]] = data.get("id")
+            capture_name: Optional[str] = data.get("name")
         else:
             capture_id = data.id
             capture_name = data.name
@@ -102,7 +107,7 @@ class CaptureSchema(ImageSchema):
         if isinstance(data, dict):
             data["links"] = links
         else:
-            data.links = links
+            setattr(data, "links", links)
 
         return data
 
@@ -129,7 +134,7 @@ class CaptureList(PropertyView):
         List all image captures
         """
         microscope = find_component("org.openflexure.microscope")
-        image_list = microscope.captures.images.values()
+        image_list: List[CaptureObject] = microscope.captures.images.values()
         return image_list
 
 
@@ -142,7 +147,7 @@ class CaptureView(View):
         Description of a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.captures.images.get(id_)
+        capture_obj: Optional[CaptureObject] = microscope.captures.images.get(id_)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -154,7 +159,7 @@ class CaptureView(View):
         Delete a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.captures.images.get(id_)
+        capture_obj: Optional[CaptureObject] = microscope.captures.images.get(id_)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -171,17 +176,17 @@ class CaptureDownload(View):
     tags = ["captures"]
     responses = {200: {"content_type": "image/jpeg"}}
 
-    def get(self, id_, filename):
+    def get(self, id_, filename: Optional[str]):
         """
         Image data for a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.captures.images.get(id_)
+        capture_obj: Optional[CaptureObject] = microscope.captures.images.get(id_)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
 
-        thumbnail = get_bool(request.args.get("thumbnail"))
+        thumbnail: bool = get_bool(request.args.get("thumbnail", ""))
 
         # If no filename is specified, redirect to the capture's currently set filename
         if not filename:
@@ -189,7 +194,7 @@ class CaptureDownload(View):
                 url_for(
                     "DownloadAPI",
                     id=id_,
-                    filename=capture_obj.filename,
+                    filename=capture_obj.name,
                     thumbnail=thumbnail,
                 ),
                 code=307,
@@ -197,9 +202,13 @@ class CaptureDownload(View):
 
         # Download the image data using the requested filename
         if thumbnail:
-            img = capture_obj.thumbnail
+            img: Optional[BytesIO] = capture_obj.thumbnail
         else:
             img = capture_obj.data
+
+        # If we can't get any data, return 404
+        if not img:
+            return abort(404)  # 404 Not Found
 
         return send_file(img, mimetype="image/jpeg")
 
@@ -212,7 +221,7 @@ class CaptureTags(View):
         Get tags associated with a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.captures.images.get(id_)
+        capture_obj: Optional[CaptureObject] = microscope.captures.images.get(id_)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -225,7 +234,7 @@ class CaptureTags(View):
         Add tags to a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.captures.images.get(id_)
+        capture_obj: Optional[CaptureObject] = microscope.captures.images.get(id_)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -240,7 +249,7 @@ class CaptureTags(View):
         Delete tags from a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.captures.images.get(id_)
+        capture_obj: Optional[CaptureObject] = microscope.captures.images.get(id_)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found
@@ -259,7 +268,7 @@ class CaptureAnnotations(View):
         Get annotations associated with a single image capture
         """
         microscope = find_component("org.openflexure.microscope")
-        capture_obj = microscope.captures.images.get(id_)
+        capture_obj: Optional[CaptureObject] = microscope.captures.images.get(id_)
 
         if not capture_obj:
             return abort(404)  # 404 Not Found

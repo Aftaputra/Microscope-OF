@@ -8,6 +8,8 @@ import time
 from datetime import datetime
 
 # Type hinting
+from typing import BinaryIO, Optional, Tuple, Union
+
 from PIL import Image, ImageDraw
 
 from openflexure_microscope.camera.base import BaseCamera
@@ -26,17 +28,17 @@ class MissingCamera(BaseCamera):
         BaseCamera.__init__(self)
 
         # Update config properties
-        self.image_resolution = (1312, 976)
-        self.stream_resolution = (640, 480)
-        self.numpy_resolution = (1312, 976)
-        self.jpeg_quality = 75
-        self.framerate = 10
+        self.image_resolution: Tuple[int, int] = (1312, 976)
+        self.stream_resolution: Tuple[int, int] = (640, 480)
+        self.numpy_resolution: Tuple[int, int] = (1312, 976)
+        self.jpeg_quality: int = 75
+        self.framerate: int = 10
 
         # Generate an initial dummy image
         self.generate_new_dummy_image()
 
         # Start streaming
-        self.stop = False  # Used to indicate that the stream loop should break
+        self.stop: bool = False  # Used to indicate that the stream loop should break
         self.start_worker()
         # Wait until frames are available
         logging.info("Waiting for frames")
@@ -178,7 +180,11 @@ class MissingCamera(BaseCamera):
         """
         logging.warning("Zoom not implemented in mock camera")
 
-    # LAUNCH ACTIONS
+    def start_stream(self):
+        pass
+
+    def stop_stream(self):
+        pass
 
     def start_preview(self, *_, **__):
         """Start the on board GPU camera preview."""
@@ -211,7 +217,15 @@ class MissingCamera(BaseCamera):
         with self.lock:
             logging.warning("Recording not implemented in mock camera")
 
-    def capture(self, output, *_, **__):
+    def capture(
+        self,
+        output: Union[str, BinaryIO],
+        fmt: str = "jpeg",
+        use_video_port: bool = False,
+        resize: Optional[Tuple[int, int]] = None,
+        bayer: bool = True,
+        thumbnail: Optional[Tuple[int, int, int]] = None,
+    ):
         """
         Capture a still image to a StreamObject.
 

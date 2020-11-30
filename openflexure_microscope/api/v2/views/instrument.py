@@ -1,4 +1,5 @@
 import logging
+from typing import Any, List
 
 from flask import abort
 from labthings import fields, find_component
@@ -35,29 +36,29 @@ class NestedSettingsProperty(View):
     tags = ["properties"]
     responses = {404: {"description": "Settings key cannot be found"}}
 
-    def get(self, route):
+    def get(self, route: str):
         """
         Show a nested section of the current microscope settings
         """
         microscope = find_component("org.openflexure.microscope")
-        keys = route.split("/")
+        keys: List[str] = route.split("/")
 
         try:
-            value = get_by_path(microscope.read_settings(), keys)
+            value: Any = get_by_path(microscope.read_settings(), keys)
         except KeyError:
             return abort(404)
 
         return value
 
     @use_args(fields.Dict())
-    def put(self, args, route):
+    def put(self, args: Any, route: str):
         """
         Update a nested section of the current microscope settings
         """
         microscope = find_component("org.openflexure.microscope")
-        keys = route.split("/")
+        keys: List[str] = route.split("/")
 
-        dictionary = create_from_path(keys)
+        dictionary: dict = create_from_path(keys)
         set_by_path(dictionary, keys, args)
 
         microscope.update_settings(dictionary)
@@ -84,10 +85,10 @@ class NestedStateProperty(View):
         Show a nested section of the current microscope state
         """
         microscope = find_component("org.openflexure.microscope")
-        keys = route.split("/")
+        keys: List[str] = route.split("/")
 
         try:
-            value = get_by_path(microscope.state, keys)
+            value: Any = get_by_path(microscope.state, keys)
         except KeyError:
             return abort(404)
 
@@ -112,10 +113,10 @@ class NestedConfigurationProperty(View):
         Show a nested section of the current microscope state
         """
         microscope = find_component("org.openflexure.microscope")
-        keys = route.split("/")
+        keys: List[str] = route.split("/")
 
         try:
-            value = get_by_path(microscope.configuration, keys)
+            value: Any = get_by_path(microscope.configuration, keys)
         except KeyError:
             return abort(404)
 

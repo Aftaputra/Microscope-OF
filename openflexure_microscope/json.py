@@ -4,6 +4,8 @@ from uuid import UUID
 import numpy as np
 from labthings.json import LabThingsJSONEncoder
 
+__all__ = ["JSONEncoder", "LabThingsJSONEncoder"]
+
 
 class JSONEncoder(LabThingsJSONEncoder):
     """
@@ -19,12 +21,12 @@ class JSONEncoder(LabThingsJSONEncoder):
         # Numpy integers
         elif isinstance(o, np.integer):
             return int(o)
+        # Numpy floats
+        elif isinstance(o, np.float):
+            return float(o)
         # Numpy arrays
         elif isinstance(o, np.ndarray):
             return o.tolist()
-        # UUIDs
-        elif isinstance(o, UUID):
-            return str(o)
         else:
             # call base class implementation which takes care of
             # raising exceptions for unsupported types

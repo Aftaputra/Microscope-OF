@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Dict, List, Optional, Tuple
 
 import psutil
 from flask import abort
@@ -9,32 +10,43 @@ from labthings.marshalling import use_args
 from labthings.views import PropertyView, View
 
 from openflexure_microscope.api.utilities.gui import build_gui
-from openflexure_microscope.captures.capture_manager import BASE_CAPTURE_PATH
+from openflexure_microscope.captures.capture_manager import (
+    BASE_CAPTURE_PATH,
+    CaptureManager,
+)
+from openflexure_microscope.microscope import Microscope
 from openflexure_microscope.paths import check_rw, settings_file_path
 
 AS_SETTINGS_PATH = settings_file_path("autostorage_settings.json")
 
 
-def get_partitions():
+def get_partitions() -> List[str]:
     return [disk.mountpoint for disk in psutil.disk_partitions() if "rw" in disk.opts]
 
 
-def get_permissive_partitions():
+def get_permissive_partitions() -> List[str]:
     return [partition for partition in get_partitions() if check_rw(partition)]
 
 
-def get_permissive_locations():
+def get_permissive_locations() -> List[Tuple[str, str]]:
     return [
         (partition, os.path.join(partition, "openflexure", "data", "micrographs"))
         for partition in get_permissive_partitions()
     ]
 
 
-def get_current_location(capture_manager):
-    return capture_manager.paths.get("default")
+def get_current_location(capture_manager: Optional[CaptureManager]) -> str:
+    if capture_manager:
+        return capture_manager.paths.get("default", BASE_CAPTURE_PATH)
+    return BASE_CAPTURE_PATH
 
 
-def set_current_location(capture_manager, location: str):
+def set_current_location(capture_manager: Optional[CaptureManager], location: str):
+    if not capture_manager:
+        logging.warning(
+            "Cannot set_current_location of a missing capture_manager. Skipping."
+        )
+        return
     if not os.path.isdir(location):
         os.makedirs(location)
     logging.debug("Updating location...")
@@ -44,12 +56,12 @@ def set_current_location(capture_manager, location: str):
     logging.debug("Capture location changed successfully.")
 
 
-def get_default_location():
+def get_default_location() -> str:
     return BASE_CAPTURE_PATH
 
 
-def get_all_locations():
-    locations = {}
+def get_all_locations() -> Dict[str, str]:
+    locations: Dict[str, str] = {}
     # If default is not already listed (e.g. if it's currently set)
     if get_default_location() not in locations.values():
         locations["Default"] = get_default_location()
@@ -71,29 +83,23 @@ def get_all_locations():
     return {k: v for k, v in locations.items() if v}
 
 
-class CaptureStorageLocation:
-    def __init__(self, mountpoint):
-        pass
-
-
 class AutostorageExtension(BaseExtension):
     def __init__(self):
-        BaseExtension.__init__(
-            self,
+        super().__init__(
             "org.openflexure.autostorage",
             version="2.0.0",
             description="Handle switching capture storage devices",
         )
 
         # We'll store a reference to a CaptureManager object, who's capture paths will be modified
-        self.capture_manager = None
+        self.capture_manager: Optional[CaptureManager] = None
 
-        self.initial_location = get_default_location()
+        self.initial_location: str = get_default_location()
 
         # Register the on_microscope function to run when the microscope is attached
         self.on_component("org.openflexure.microscope", self.on_microscope)
 
-    def on_microscope(self, microscope_obj):
+    def on_microscope(self, microscope_obj: Microscope):
         """Function to automatically call when the parent LabThing has a microscope attached."""
         logging.debug("Autostorage extension found microscope %s", microscope_obj)
         if hasattr(microscope_obj, "captures"):
@@ -110,10 +116,15 @@ class AutostorageExtension(BaseExtension):
             self.check_location(self.initial_location)
 
             logging.debug(self.get_locations())
+        else:
+            raise RuntimeError(
+                "Attached a microscope with no `captures` capture manager. Skipping extension."
+            )
 
-    def check_location(self, location=None):
+    def check_location(self, location: Optional[str] = None) -> bool:
+        location = location or get_current_location(self.capture_manager)
         if not location:
-            location = get_current_location(self.capture_manager)
+            return False
         # If preferred path does not exist, or cannot be written to
         if not (os.path.isdir(location) and check_rw(location)):
             logging.error(
@@ -122,8 +133,9 @@ class AutostorageExtension(BaseExtension):
             )
             # Reset the storage location to default
             set_current_location(self.capture_manager, get_default_location())
+        return True
 
-    def get_locations(self):
+    def get_locations(self) -> Dict[str, str]:
         if self.capture_manager:
             locations = get_all_locations()
 
@@ -135,7 +147,7 @@ class AutostorageExtension(BaseExtension):
         else:
             return {}
 
-    def get_preferred_key(self):
+    def get_preferred_key(self) -> Optional[str]:
         current = get_current_location(self.capture_manager)
         locations = self.get_locations()
 
@@ -146,22 +158,28 @@ class AutostorageExtension(BaseExtension):
                 "Multiple path matches found. Weird, but carrying on using zeroth."
             )
 
-        return matches[0]
+        if matches:
+            return matches[0]
+        else:
+            logging.warning("No matches found. Skipping.")
+            return None
 
     def set_preferred_key(self, new_path_key: str):
         if not new_path_key in self.get_locations().keys():
             raise KeyError(f"No location named {new_path_key}")
 
         location = self.get_locations().get(new_path_key)
-        set_current_location(self.capture_manager, location)
+        if location:
+            set_current_location(self.capture_manager, location)
 
-    def key_to_title(self, path_key: str):
+    def key_to_title(self, path_key: Optional[str]) -> Optional[str]:
+        if not path_key:
+            return None
         if not path_key in self.get_locations().keys():
             raise KeyError(f"No location named {path_key}")
-
         return f"{path_key} ({self.get_locations().get(path_key)})"
 
-    def title_to_key(self, path_title: str):
+    def title_to_key(self, path_title: str) -> str:
         matches = []
         for loc_key in self.get_locations().keys():
             if path_title.startswith(loc_key):
@@ -174,10 +192,15 @@ class AutostorageExtension(BaseExtension):
 
         return matches[0]
 
-    def get_titles(self):
-        return [self.key_to_title(key) for key in self.get_locations().keys()]
+    def get_titles(self) -> List[str]:
+        titles: List[str] = []
+        for key in self.get_locations().keys():
+            title: Optional[str] = self.key_to_title(key)
+            if title:
+                titles.append(title)
+        return titles
 
-    def get_preferred_title(self):
+    def get_preferred_title(self) -> Optional[str]:
         return self.key_to_title(self.get_preferred_key())
 
 

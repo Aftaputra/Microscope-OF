@@ -1,5 +1,6 @@
 stages:
   - analysis
+  - testing
   - build
   - package
   - deploy
@@ -36,7 +37,24 @@ pylint:
   <<: *poetry-install
 
   script:
-    - poetry run pylint ./openflexure_microscope/
+    - poetry run poe pylint
+
+  only:
+    - branches
+    - merge_requests
+    - tags
+    - web
+
+# Python type checking with Mypy
+mypy:
+  stage: analysis
+  image: python:3.7
+  retry: 1
+
+  <<: *poetry-install
+
+  script:
+    - poetry run poe mypy
 
   only:
     - branches
@@ -49,12 +67,30 @@ black:
   stage: analysis
   image: python:3.7
   retry: 1
+  allow_failure: true
 
   <<: *poetry-install
 
   script:
     # Run static build script
-    - poetry run black --check .
+    - poetry run poe black_check
+
+  only:
+    - branches
+    - merge_requests
+    - tags
+    - web
+
+# Python unit tests with PyTest
+pytest:
+  stage: testing
+  image: python:3.7
+  retry: 1
+
+  <<: *poetry-install
+
+  script:
+    - poetry run poe test
 
   only:
     - branches

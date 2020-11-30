@@ -6,12 +6,13 @@ import logging
 import os
 import uuid
 from collections import OrderedDict
+from typing import Callable, Dict, List, Optional
 
 import dateutil.parser
+import piexif
+from piexif import InvalidImageDataError
 from PIL import Image
 
-from openflexure_microscope.captures import piexif
-from openflexure_microscope.captures.piexif import InvalidImageDataError
 from openflexure_microscope.json import JSONEncoder
 
 EXIF_FORMATS = ["JPG", "JPEG", "TIF", "TIFF"]
@@ -39,7 +40,7 @@ def build_captures_from_exif(capture_path):
         logging.debug("Reloading capture %s...", (f))
         capture = capture_from_path(f)
         if capture:
-            captures[capture.id] = capture
+            captures[str(capture.id)] = capture
 
     logging.info("%s capture files successfully reloaded", (len(captures)))
 
@@ -68,33 +69,42 @@ class CaptureObject(object):
     Serves to simplify modifying properties of on-disk capture data.
     """
 
-    def __init__(self, filepath) -> None:
+    def __init__(self, filepath: str) -> None:
         """Create a new StreamObject, to manage capture data."""
         # Stream for buffering capture data
-        self.stream = io.BytesIO()
+        self.stream: io.BytesIO = io.BytesIO()
 
         # Store a nice ID
-        self.id = uuid.uuid4()  #: str: Unique capture ID
+        self.id: uuid.UUID = uuid.uuid4()  #: str: Unique capture ID
         logging.debug("Created CaptureObject %s", (self.id))
 
-        self.time = datetime.datetime.now()
+        self.time: datetime.datetime = datetime.datetime.now()
 
         # Create file name. Default to UUID
-        self.format = None
-        self.file = filepath
+        self.file: str = filepath
+        # Placeholders for split file info
+        self.format: str = ""
+        self.basename: str = ""
+        self.filefolder: str = ""
+        self.name: str = ""
+        # Replace placeholders with actual split file info
         self.split_file_path(self.file)
 
         if not os.path.exists(self.filefolder):
             os.makedirs(self.filefolder)
 
         # Dataset information
-        self._dataset = None
+        self.dataset: Dict[str, str] = {}
+
         # Dictionary for storing custom annotations
         # Can be modified via the web API
-        self.annotations = {}
+        self.annotations: Dict[str, str] = {}
         # List for storing tags
         # Can be modified via the web API
-        self.tags = []
+        self.tags: List[str] = []
+
+        # On-delete callback
+        self.on_delete: Optional[Callable] = None
 
     def write(self, s):
         logging.debug("Writing to %s", self)
@@ -112,7 +122,7 @@ class CaptureObject(object):
     def open(self, mode):
         return open(self.file, mode)
 
-    def split_file_path(self, filepath):
+    def split_file_path(self, filepath: str):
         """
         Take a full file path, and split it into separated class properties.
 
@@ -125,10 +135,10 @@ class CaptureObject(object):
         self.basename = os.path.splitext(self.name)[0]
         self.format = self.name.split(".")[-1]
 
-    def _read_exif(self):
+    def _read_exif(self) -> dict:
         return piexif.load(self.file)
 
-    def _decode_usercomment(self, exif_dict: dict):
+    def _decode_usercomment(self, exif_dict: dict) -> dict:
         if "Exif" not in exif_dict:
             raise InvalidImageDataError
         if piexif.ExifIFD.UserComment not in exif_dict["Exif"]:
@@ -150,15 +160,17 @@ class CaptureObject(object):
         )
 
     def sync_basic_metadata(self):
-        exif_dict = self._read_exif()
+        exif_dict: dict = self._read_exif()
 
-        metadata_dict = self._decode_usercomment(exif_dict) or {}
-        image_metadata = metadata_dict.get("image")
+        metadata_dict: dict = self._decode_usercomment(exif_dict) or {}
+        self.dataset = metadata_dict.get("dataset")
+
+        image_metadata: Optional[dict] = metadata_dict.get("image")
 
         if not image_metadata:
             raise InvalidImageDataError("No capture metadata found")
 
-        self.id = image_metadata.get("id")
+        self.id = uuid.UUID(image_metadata.get("id"))
         self.format = image_metadata.get("format")
         self.time = dateutil.parser.isoparse(
             image_metadata.get("time") or image_metadata.get("acquisitionDate")
@@ -166,23 +178,10 @@ class CaptureObject(object):
         self.tags = image_metadata.get("tags")
         self.annotations = image_metadata.get("annotations")
 
-        dataset = metadata_dict.get("dataset")
-        if dataset:
-            self._dataset = {
-                "id": dataset.get("id"),
-                "name": dataset.get("name"),
-                "type": dataset.get("type"),
-            }
-
-    def read_full_metadata(self):
+    def read_full_metadata(self) -> dict:
         logging.info("Reading full capture metadata from %s...", self.file)
         exif_dict = self._read_exif()
         return self._decode_usercomment(exif_dict)
-
-    @property
-    def dataset(self):
-        """Read-only dataset property"""
-        return self._dataset
 
     @property
     def exists(self) -> bool:
@@ -193,7 +192,7 @@ class CaptureObject(object):
             return False
 
     # HANDLE TAGS
-    def put_tags(self, tags: list):
+    def put_tags(self, tags: List[str]):
         """
         Add a new tag to the ``tags`` list attribute.
 
@@ -218,7 +217,7 @@ class CaptureObject(object):
 
     # HANDLE ANNOTATIONS
 
-    def put_annotations(self, data: dict) -> None:
+    def put_annotations(self, data: Dict[str, str]):
         """
         Merge annotations from a passed dictionary into the capture metadata, and saves.
 
@@ -227,7 +226,7 @@ class CaptureObject(object):
         """
         self.put_and_save(annotations=data)
 
-    def delete_annotation(self, key: str) -> None:
+    def delete_annotation(self, key: str):
         # Update in-memory annotations list
         if key in self.annotations:
             del self.annotations[key]
@@ -237,7 +236,7 @@ class CaptureObject(object):
 
     # HANDLE METADATA
 
-    def put_metadata(self, data: dict) -> None:
+    def put_metadata(self, data: dict):
         """
         Merge root metadata from a passed dictionary into the capture metadata, and saves.
 
@@ -246,10 +245,19 @@ class CaptureObject(object):
         """
         self.put_and_save(metadata=data)
 
+    # HANDLE DATASET
+
+    def put_dataset(self, data: dict):
+        self.put_and_save(dataset=data)
+
     # BULK OPERATIONS
 
     def put_and_save(
-        self, tags: list = None, annotations: dict = None, metadata: dict = None
+        self,
+        tags: Optional[List[str]] = None,
+        annotations: Optional[Dict[str, str]] = None,
+        dataset: Optional[Dict[str, str]] = None,
+        metadata: Optional[dict] = None,
     ):
         """
         Batch-write tags, metadata, and annotations in a single disk operation
@@ -258,6 +266,8 @@ class CaptureObject(object):
             tags = []
         if not annotations:
             annotations = {}
+        if not dataset:
+            dataset = {}
         if not metadata:
             metadata = {}
 
@@ -268,6 +278,9 @@ class CaptureObject(object):
 
         # Update in-memory annotations dictionary
         self.annotations.update(annotations)
+
+        # Update in-memory dataset dictionary
+        self.dataset.update(dataset)
 
         # Write new data to file EXIF, if supported
         if self.format.upper() in EXIF_FORMATS and self.exists:
@@ -281,6 +294,8 @@ class CaptureObject(object):
             metadata_dict.get("image", {})["tags"] = self.tags
             # Add new annotations to exif dictionary
             metadata_dict.get("image", {})["annotations"] = self.annotations
+            # Set new dataset info in exif dictionary
+            metadata_dict["dataset"] = self.dataset
             # Add new custom metadata to exif dictionary
             metadata_dict.update(metadata)
 
@@ -310,7 +325,7 @@ class CaptureObject(object):
         return self.read_full_metadata()
 
     @property
-    def data(self) -> io.BytesIO:
+    def data(self) -> Optional[io.BytesIO]:
         """
         Return a BytesIO object of the capture data.
         """
@@ -321,16 +336,17 @@ class CaptureObject(object):
                 d = io.BytesIO(f.read())  # Load bytes from file
             d.seek(0)  # Rewind loaded bytestream
             # Create a copy of the bytestream bytes
-            data = io.BytesIO(d.getbuffer())
+            return io.BytesIO(d.getbuffer())
         else:
-            data = None
-
-        return data  # Read and return bytes data
+            return None
 
     @property
-    def binary(self) -> bytes:
+    def binary(self) -> Optional[bytes]:
         """Return a byte string of the capture data."""
-        return self.data.getvalue()
+        if self.data:
+            return self.data.getvalue()
+        else:
+            return None
 
     @property
     def thumbnail(self) -> io.BytesIO:
@@ -354,7 +370,7 @@ class CaptureObject(object):
 
     # FILE MANAGEMENT
 
-    def save(self) -> None:
+    def save(self):
         """Write stream to file, and save/update metadata file"""
         # If a stream OR file exists, save the metadata file
         if self.exists:
@@ -366,6 +382,9 @@ class CaptureObject(object):
         if os.path.isfile(self.file):
             logging.info("Deleting file %s", (self.file))
             os.remove(self.file)
+
+            if self.on_delete:
+                self.on_delete(self, self.id)
 
             return True
         else:

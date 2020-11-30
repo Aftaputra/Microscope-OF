@@ -3,6 +3,7 @@ import os
 import tempfile
 import uuid
 import zipfile
+from typing import IO, List, Optional
 
 from flask import abort, send_file, url_for
 from labthings import fields, find_component, update_action_progress
@@ -10,6 +11,9 @@ from labthings.extensions import BaseExtension
 from labthings.schema import Schema, pre_dump
 from labthings.utilities import description_from_view
 from labthings.views import ActionView, PropertyView, View
+
+from openflexure_microscope.captures import CaptureObject
+from openflexure_microscope.microscope import Microscope
 
 
 class ZipObjectSchema(Schema):
@@ -32,11 +36,13 @@ class ZipObjectSchema(Schema):
 
 
 class ZipObjectDescription:
-    def __init__(self, id_, file_pointer, data_size=None):
-        self.id = id_
-        self.fp = file_pointer
-        self.data_size = data_size
-        self.zip_size = os.path.getsize(self.fp.name) * 1e-6
+    def __init__(
+        self, id_: str, file_pointer: IO[bytes], data_size: Optional[float] = None
+    ):
+        self.id: str = id_
+        self.fp: IO[bytes] = file_pointer
+        self.data_size: Optional[float] = data_size
+        self.zip_size: float = os.path.getsize(self.fp.name) * 1e-6
 
     def close(self):
         logging.debug(self.fp.name)
@@ -60,22 +66,26 @@ class ZipManager:
 
         self.session_zips = {}
 
-    def build_zip_from_capture_ids(self, microscope, capture_id_list):
+    def build_zip_from_capture_ids(
+        self, microscope: Microscope, capture_id_list: List[str]
+    ):
         logging.debug(capture_id_list)
 
         # Get array of captures from IDs
-        capture_list = [
+        optional_capture_list: List[Optional[CaptureObject]] = [
             microscope.captures.images.get(capture_id) for capture_id in capture_id_list
         ]
         # Remove Nones from list (missing/invalid captures)
-        capture_list = [capture for capture in capture_list if capture]
+        capture_list: List[CaptureObject] = [
+            capture for capture in optional_capture_list if capture
+        ]
 
         # Get size (in bytes) of each capture
-        capture_sizes = [
+        capture_sizes: List[float] = [
             os.path.getsize(capture_obj.file) for capture_obj in capture_list
         ]
         # Calculate size of input data in megabytes
-        data_size_megabytes = sum(capture_sizes) * 1e-6
+        data_size_megabytes: float = sum(capture_sizes) * 1e-6
 
         # If more than 1GB
         if data_size_megabytes > 1000:
@@ -85,10 +95,10 @@ class ZipManager:
             )
 
         # Number of files to add (used for task progress)
-        n_files = len(capture_id_list)
+        n_files: int = len(capture_id_list)
 
         # Create temporary file
-        fp = tempfile.NamedTemporaryFile(delete=False)
+        fp: IO[bytes] = tempfile.NamedTemporaryFile(delete=False)
 
         # Open temp file as a ZIP file
         with zipfile.ZipFile(fp, "w") as zipObj:
@@ -102,8 +112,8 @@ class ZipManager:
                 # Update task progress
                 update_action_progress(int((index / n_files) * 100))
 
-        session_id = str(uuid.uuid4())
-        session_description = ZipObjectDescription(
+        session_id: str = str(uuid.uuid4())
+        session_description: ZipObjectDescription = ZipObjectDescription(
             session_id, fp, data_size=data_size_megabytes
         )
         self.session_zips[session_id] = session_description
@@ -113,7 +123,7 @@ class ZipManager:
     def marshaled_build_zip_from_capture_ids(self, *args, **kwargs):
         return ZipObjectSchema().dump(self.build_zip_from_capture_ids(*args, **kwargs))
 
-    def zip_fp_from_id(self, session_id):
+    def zip_fp_from_id(self, session_id: str):
         return self.session_zips[session_id].fp
 
     def __del__(self):

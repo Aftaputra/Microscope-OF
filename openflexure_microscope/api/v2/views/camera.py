@@ -34,17 +34,18 @@ class LSTImageProperty(PropertyView):
             logging.warning("PiCamera.lens_shading_table returned as None")
             return ("", 204)
         else:
+            # Get the LST Numpy array from the camera's memoryview
             lst = np.asarray(microscope.camera.camera.lens_shading_table)
-            # R next to G1
+            # Create array of R next to G1
             top = np.concatenate(lst[:2], axis=1)
-            # G2 next to B
+            # Create array of G2 next to B
             bottom = np.concatenate(lst[2:], axis=1)
-            # Combined into a 2x2 grid of greyscale images
+            # Create combined array of 2x2 grid of greyscale images
             all_channels = np.concatenate((top, bottom), axis=0)
             # Create a PNG
-            img_bytes = BytesIO()
+            img_bytes: BytesIO = BytesIO()
             Image.fromarray(np.uint8(all_channels), "L").save(img_bytes, "PNG")
             img_bytes.seek(0)
             # Return the image
-            fname = f"lst-{datetime.date.today().isoformat()}.png"
+            fname: str = f"lst-{datetime.date.today().isoformat()}.png"
             return send_file(img_bytes, as_attachment=True, attachment_filename=fname)

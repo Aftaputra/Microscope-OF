@@ -3,7 +3,7 @@ import copy
 import logging
 import time
 from contextlib import contextmanager
-from uuid import UUID
+from typing import Dict, List, Optional
 
 import numpy as np
 
@@ -22,12 +22,12 @@ class Timer(object):
         logging.debug("%s time: %s", self.name, self.end - self.start)
 
 
-def deserialise_array_b64(b64_string, dtype, shape):
+def deserialise_array_b64(b64_string: str, dtype: str, shape: List[int]):
     flat_arr = np.frombuffer(base64.b64decode(b64_string), dtype)
     return flat_arr.reshape(shape)
 
 
-def serialise_array_b64(npy_arr):
+def serialise_array_b64(npy_arr: np.ndarray):
     b64_string = base64.b64encode(npy_arr).decode("ascii")
     dtype = str(npy_arr.dtype)
     shape = npy_arr.shape
@@ -50,9 +50,14 @@ def json_to_ndarray(json_dict: dict):
         if not json_dict.get(required_param):
             raise KeyError(f"Missing required key {required_param}")
 
-    return deserialise_array_b64(
-        json_dict.get("base64"), json_dict.get("dtype"), json_dict.get("shape")
-    )
+    b64_string: Optional[str] = json_dict.get("base64")
+    dtype: Optional[str] = json_dict.get("dtype")
+    shape: Optional[List[int]] = json_dict.get("shape")
+
+    if b64_string and dtype and shape:
+        return deserialise_array_b64(b64_string, dtype, shape)
+    else:
+        raise ValueError("Required parameters for decoding are missing")
 
 
 @contextmanager
@@ -82,8 +87,11 @@ def set_properties(obj, **kwargs):
 
 
 def axes_to_array(
-    coordinate_dictionary, axis_keys=("x", "y", "z"), base_array=None, asint=True
-):
+    coordinate_dictionary: Dict[str, int],
+    axis_keys=("x", "y", "z"),
+    base_array: Optional[List[int]] = None,
+    asint: bool = True,
+) -> List[int]:
     """Takes key-value pairs of a JSON value, and maps onto an array"""
     # If no base array is given
     if not base_array:
@@ -101,21 +109,3 @@ def axes_to_array(
             )
 
     return base_array
-
-
-def entry_by_uuid(entry_id: str, object_list: list):
-    """Return an object from a list, if <object>.id matches id argument."""
-    found = None
-    if type(entry_id) == str:
-        converter = str
-    elif type(entry_id) == int:
-        converter = int
-    elif isinstance(entry_id, UUID):
-        converter = int
-    else:
-        raise TypeError("Argument entry_id must be a string, integer, or UUID object.")
-    for o in object_list:
-        # Convert to strings (in case of UUID objects, for example)
-        if converter(o.id) == converter(entry_id):
-            found = o
-    return found

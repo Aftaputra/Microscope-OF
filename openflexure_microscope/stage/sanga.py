@@ -1,9 +1,11 @@
 import logging
 import time
 from collections.abc import Iterable
+from typing import Optional, Tuple, Union
 
 import numpy as np
 from sangaboard import Sangaboard
+from typing_extensions import Literal
 
 from openflexure_microscope.stage.base import BaseStage
 from openflexure_microscope.utilities import axes_to_array
@@ -32,7 +34,6 @@ class SangaStage(BaseStage):
             None  # Initialise backlash storage, used by property setter/getter
         )
         self.settle_time = 0.2  # Default move settle time
-        self.axis_names = ["x", "y", "z"]  # Assume all sangaboards are 3 axis
 
         self._position_on_enter = None
 
@@ -52,7 +53,7 @@ class SangaStage(BaseStage):
     @property
     def n_axes(self):
         """The number of axes this stage has."""
-        return len(self.board.axis_names)
+        return 3
 
     @property
     def position(self):
@@ -111,7 +112,12 @@ class SangaStage(BaseStage):
 
         return config
 
-    def move_rel(self, displacement: list, axis=None, backlash=True):
+    def move_rel(
+        self,
+        displacement: Union[int, Tuple[int, int, int]],
+        axis: Optional[Literal["x", "y", "z"]] = None,
+        backlash: bool = True,
+    ):
         """Make a relative move, optionally correcting for backlash.
         displacement: integer or array/list of 3 integers
         axis: None (for 3-axis moves) or one of 'x','y','z'
@@ -121,14 +127,21 @@ class SangaStage(BaseStage):
             logging.debug("Moving sangaboard by %s", displacement)
             if not backlash or self.backlash is None:
                 return self.board.move_rel(displacement, axis=axis)
-            if axis is not None:
-                # backlash correction is easier if we're always in 3D
-                # so this code just converts single-axis moves into all-axis moves.
-                assert axis in self.axis_names, "axis must be one of {}".format(
-                    self.axis_names
+            # If we specify an axis name and a displacement int, convert to a displacement tuple
+            if axis:
+                # Displacement MUST be an integer if axis name is specified
+                if not isinstance(displacement, int):
+                    raise TypeError(
+                        "Displacement must be an integer when axis is specified"
+                    )
+                # Axis name MUST be x, y, or z
+                if axis not in ("x", "y", "z"):
+                    raise ValueError("axis must be one of x, y, or z")
+                move = (
+                    displacement if axis == "x" else 0,
+                    displacement if axis == "y" else 0,
+                    displacement if axis == "z" else 0,
                 )
-                move = np.zeros(self.n_axes, dtype=np.int)
-                move[np.argmax(np.array(self.axis_names) == axis)] = int(displacement)
                 displacement = move
 
             initial_move = np.array(displacement, dtype=np.int)
@@ -154,7 +167,7 @@ class SangaStage(BaseStage):
         # can just take over before settling
         time.sleep(self.settle_time)
 
-    def move_abs(self, final, **kwargs):
+    def move_abs(self, final: Tuple[int, int, int], **kwargs):
         """Make an absolute move to a position
         """
         with self.lock:

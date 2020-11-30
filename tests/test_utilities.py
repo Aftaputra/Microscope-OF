@@ -5,7 +5,7 @@ from openflexure_microscope import utilities
 
 def test_serialise_array_b64():
     shape_in = (3, 2)
-    arr_in = np.random.randint(100, size=shape_in, dtype=np.int)
+    arr_in = np.random.randint(100, size=shape_in, dtype=np.int32)
 
     b64_string, dtype, shape = utilities.serialise_array_b64(arr_in)
     assert b64_string
@@ -18,7 +18,7 @@ def test_serialise_array_b64():
 
 def test_ndarray_to_json():
     shape_in = (3, 2)
-    arr_in = np.random.randint(100, size=shape_in, dtype=np.int)
+    arr_in = np.random.randint(100, size=shape_in, dtype=np.int32)
 
     json_out = utilities.ndarray_to_json(arr_in)
 

@@ -1,5 +1,6 @@
 import io
 import logging
+from typing import Dict, Optional, Tuple
 
 from flask import send_file
 from labthings import Schema, fields, find_component
@@ -42,12 +43,14 @@ class CaptureAPI(ActionView):
         """
         microscope = find_component("org.openflexure.microscope")
 
-        resize = args.get("resize", None)
-        if resize:
-            resize = (
-                int(resize["width"]),
-                int(resize["height"]),
+        resize_dict: Optional[Dict[str, int]] = args.get("resize", None)
+        if resize_dict:
+            resize: Optional[Tuple[int, int]] = (
+                int(resize_dict["width"]),
+                int(resize_dict["height"]),
             )  # Convert dict to tuple
+        else:
+            resize = None
 
         # Explicitally acquire lock (prevents empty files being created if lock is unavailable)
         with microscope.camera.lock:
@@ -76,12 +79,14 @@ class RAMCaptureAPI(ActionView):
         """
         microscope = find_component("org.openflexure.microscope")
 
-        resize = args.get("resize", None)
-        if resize:
-            resize = (
-                int(resize["width"]),
-                int(resize["height"]),
+        resize_dict: Optional[Dict[str, int]] = args.get("resize", None)
+        if resize_dict:
+            resize: Optional[Tuple[int, int]] = (
+                int(resize_dict["width"]),
+                int(resize_dict["height"]),
             )  # Convert dict to tuple
+        else:
+            resize = None
 
         # Open a BytesIO stream to be destroyed once request has returned
         with microscope.camera.lock, io.BytesIO() as stream:
@@ -113,15 +118,18 @@ class GPUPreviewStartAPI(ActionView):
         """
         microscope = find_component("org.openflexure.microscope")
 
-        window = args.get("window")
-        logging.debug(window)
+        # Get window argument from request
+        window_arg = args.get("window")
+        logging.debug(window_arg)
 
-        if len(window) != 4:
-            fullscreen = True
-            window = None
-        else:
+        # Default to no window
+        fullscreen: bool = True
+        window: Optional[Tuple[int, int, int, int]] = None
+
+        # If request argument is well formed, use that
+        if len(window_arg) == 4:
             fullscreen = False
-            window = [int(w) for w in window]
+            window = (int(w) for w in window_arg)
 
         microscope.camera.start_preview(fullscreen=fullscreen, window=window)
         return microscope.state

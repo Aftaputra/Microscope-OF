@@ -16,7 +16,7 @@ class SleepFor(ActionView):
     args = {"time": fields.Float(description="Time to sleep, in seconds", example=0.5)}
 
     def post(self, args):
-        sleep_time = args.get("time")
+        sleep_time: int = args.get("time", 0)
         logging.info("Going to sleep for %s...", sleep_time)
         start = time.time()
         time.sleep(sleep_time)

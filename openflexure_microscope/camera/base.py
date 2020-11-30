@@ -4,6 +4,8 @@ import logging
 import time
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
+from types import TracebackType
+from typing import BinaryIO, List, Optional, Tuple, Type, Union
 
 from labthings import ClientEvent, StrictLock
 
@@ -27,16 +29,29 @@ class FrameStream(io.BytesIO):
         # Array of TrackerFrame objects
         io.BytesIO.__init__(self, *args, **kwargs)
         # Array of TrackerFramer objects
-        self.frames = []
+        self.frames: List[TrackerFrame] = []
         # Last acquired TrackerFramer object
-        self.last = None
+        self.last: Optional[TrackerFrame] = None
 
         # Are we currently tracking frame sizes?
-        self.tracking = False
+        self.tracking: bool = False
 
         # Event to track if a new frame is available since the last getvalue() call
         # We use a ClientEvent so that each thread can call getvalue() independantly
-        self.new_frame = ClientEvent()
+        self.new_frame: ClientEvent = ClientEvent()
+
+    def __enter__(self):
+        self.start_tracking()
+        return super().__enter__()
+
+    def __exit__(
+        self,
+        t: Optional[Type[BaseException]],
+        value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> Optional[bool]:
+        self.stop_tracking()
+        return super().__exit__(t, value, traceback)
 
     def start_tracking(self):
         """Start tracking frame sizes"""
@@ -92,13 +107,16 @@ class BaseCamera(metaclass=ABCMeta):
 
     def __init__(self):
         #: :py:class:`labthings.StrictLock`: Access lock for the camera
-        self.lock = StrictLock(name="Camera", timeout=None)
+        self.lock: StrictLock = StrictLock(name="Camera", timeout=None)
         #: :py:class:`FrameStream`: Streaming and analysis frame buffer
-        self.stream = FrameStream()
+        self.stream: FrameStream = FrameStream()
 
-        self.stream_active = False
-        self.record_active = False
-        self.preview_active = False
+        self.stream_active: bool = False
+        self.record_active: bool = False
+        self.preview_active: bool = False
+
+        self.image_resolution: Tuple[int, int] = (1312, 976)
+        self.stream_resolution: Tuple[int, int] = (640, 480)
 
     @property
     @abstractmethod
@@ -115,12 +133,42 @@ class BaseCamera(metaclass=ABCMeta):
         return self.read_settings()
 
     @abstractmethod
+    def start_stream(self):
+        """Ensure the frame stream is actively running"""
+
+    @abstractmethod
+    def stop_stream(self):
+        """Stop the active stream, if possible"""
+
+    @abstractmethod
     def update_settings(self, config: dict):
         """Update settings from a config dictionary"""
 
     @abstractmethod
     def read_settings(self) -> dict:
         """Return the current settings as a dictionary"""
+
+    @abstractmethod
+    def capture(
+        self,
+        output: Union[str, BinaryIO],
+        fmt: str = "jpeg",
+        use_video_port: bool = False,
+        resize: Optional[Tuple[int, int]] = None,
+        bayer: bool = True,
+        thumbnail: Optional[Tuple[int, int, int]] = None,
+    ):
+        """
+        Perform a basic capture to output
+        
+        Args:
+            output: String or file-like object to write capture data to
+            fmt: Format of the capture.
+            use_video_port: Capture from the video port used for streaming. Lower resolution, faster.
+            resize: Resize the captured image.
+            bayer: Store raw bayer data in capture
+            thumbnail: Dimensions and quality (x, y, quality) of a thumbnail to generate, if supported
+        """
 
     def __enter__(self):
         """Create camera on context enter."""

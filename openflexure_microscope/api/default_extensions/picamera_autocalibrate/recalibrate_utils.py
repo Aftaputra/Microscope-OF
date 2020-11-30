@@ -1,19 +1,21 @@
 import logging
 import time
+from fractions import Fraction
+from typing import List, Optional, Tuple
 
 import numpy as np
 from picamerax import PiCamera
 from picamerax.array import PiBayerArray, PiRGBArray
 
 
-def rgb_image(camera, resize=None, **kwargs):
+def rgb_image(camera: PiCamera, resize: Optional[Tuple[int, int]] = None, **kwargs):
     """Capture an image and return an RGB numpy array"""
     with PiRGBArray(camera, size=resize) as output:
         camera.capture(output, format="rgb", resize=resize, **kwargs)
         return output.array
 
 
-def flat_lens_shading_table(camera):
+def flat_lens_shading_table(camera: PiCamera):
     """Return a flat (i.e. unity gain) lens shading table.
     
     This is mostly useful because it makes it easy to get the size
@@ -24,14 +26,11 @@ def flat_lens_shading_table(camera):
         raise ImportError(
             "This program requires the forked picamera library with lens shading support"
         )
-    return (
-        # pylint: disable=W0212
-        np.zeros(camera._lens_shading_table_shape(), dtype=np.uint8)
-        + 32
-    )
+    # pylint: disable=protected-access
+    return np.zeros(camera._lens_shading_table_shape(), dtype=np.uint8) + 32
 
 
-def adjust_exposure_to_setpoint(camera, setpoint):
+def adjust_exposure_to_setpoint(camera: PiCamera, setpoint: int):
     """Adjust the camera's exposure time until the maximum pixel value is <setpoint>."""
     print("Adjusting shutter speed to hit setpoint {}".format(setpoint), end="")
     for _ in range(3):
@@ -43,7 +42,7 @@ def adjust_exposure_to_setpoint(camera, setpoint):
     print("done")
 
 
-def auto_expose_and_freeze_settings(camera):
+def auto_expose_and_freeze_settings(camera: PiCamera):
     """Freeze the settings after auto-exposing to white illumination"""
     logging.info("Allowing the camera to auto-expose")
     if "greyworld" in camera.AWB_MODES:
@@ -66,7 +65,7 @@ def auto_expose_and_freeze_settings(camera):
     logging.info("Shutter speed = %s", (camera.shutter_speed))
     camera.exposure_mode = "off"
     logging.info("Auto exposure disabled")
-    g = camera.awb_gains
+    g: Tuple[Fraction, Fraction] = camera.awb_gains
     camera.awb_mode = "off"
     camera.awb_gains = g
     logging.info("Auto white balance disabled, gains are %s", (g))
@@ -76,10 +75,10 @@ def auto_expose_and_freeze_settings(camera):
     adjust_exposure_to_setpoint(camera, 215)
 
 
-def channels_from_bayer_array(bayer_array):
+def channels_from_bayer_array(bayer_array: np.ndarray) -> np.ndarray:
     """Given the 'array' from a PiBayerArray, return the 4 channels."""
-    bayer_pattern = [(i // 2, i % 2) for i in range(4)]
-    channels = np.zeros(
+    bayer_pattern: List[Tuple[int, int]] = [(0, 0), (0, 1), (1, 0), (1, 1)]
+    channels: np.ndarray = np.zeros(
         (4, bayer_array.shape[0] // 2, bayer_array.shape[1] // 2),
         dtype=bayer_array.dtype,
     )
@@ -92,14 +91,19 @@ def channels_from_bayer_array(bayer_array):
     return channels
 
 
-def lst_from_channels(channels):
+def lst_from_channels(channels: np.ndarray) -> np.ndarray:
     """Given the 4 Bayer colour channels from a white image, generate a LST."""
-    full_resolution = np.array(channels.shape[1:]) * 2  # channels have been binned
-    # lst_resolution = list(np.ceil(full_resolution / 64.0).astype(int))
-    lst_resolution = [(r // 64) + 1 for r in full_resolution]
-    # NB the size of the LST is 1/64th of the image, but rounded UP.
+    full_resolution: np.ndarray = np.array(
+        channels.shape[1:]
+    ) * 2  # channels have been binned
+
+    # NOTE: the size of the LST is 1/64th of the image, but rounded UP.
+    lst_resolution: List[int] = [(r // 64) + 1 for r in full_resolution]
+
     logging.info("Generating a lens shading table at %sx%s", *lst_resolution)
-    lens_shading = np.zeros([channels.shape[0]] + lst_resolution, dtype=np.float)
+    lens_shading: np.ndarray = np.zeros(
+        [channels.shape[0]] + lst_resolution, dtype=np.float
+    )
     for i in range(lens_shading.shape[0]):
         image_channel = channels[i, :, :]
         iw, ih = image_channel.shape
@@ -153,7 +157,7 @@ def lst_from_channels(channels):
     return lens_shading_table[::-1, :, :].copy()
 
 
-def recalibrate_camera(camera):
+def recalibrate_camera(camera: PiCamera):
     """Reset the lens shading table and exposure settings.
 
     This method first resets to a flat lens shading table, then auto-exposes,

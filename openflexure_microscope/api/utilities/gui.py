@@ -1,6 +1,9 @@
 import copy
 import logging
 from functools import wraps
+from typing import Callable, Union
+
+from labthings.extensions import BaseExtension
 
 
 def clean_rule(rule: str):
@@ -9,13 +12,12 @@ def clean_rule(rule: str):
     return f"{rule}"
 
 
-def build_gui_from_dict(gui_description, extension_object):
+def build_gui_from_dict(gui_description: dict, extension_object: BaseExtension):
     # Make a working copy of GUI description
     api_gui = copy.deepcopy(gui_description)
     # Grab the extensions rules dictionary
-    # NOTE: The LabThings extension object should probably have a non-private
-    # way to get the rules dictionary. For now we need to ignore pylint W0212
-    ext_rules = extension_object._rules  # pylint: disable=W0212
+    # TODO: Public property should be added to LabThings
+    ext_rules = extension_object._rules  # pylint: disable=protected-access
 
     # Expand shorthand routes into full relative URLs
     if "forms" in gui_description and isinstance(api_gui["forms"], list):
@@ -35,7 +37,7 @@ def build_gui_from_dict(gui_description, extension_object):
     return api_gui
 
 
-def build_gui_from_func(func, extension_object):
+def build_gui_from_func(func: Callable, extension_object: BaseExtension):
     @wraps(func)
     def wrapped(*args, **kwargs):
         return build_gui_from_dict(func(*args, **kwargs), extension_object)
@@ -43,7 +45,7 @@ def build_gui_from_func(func, extension_object):
     return wrapped
 
 
-def build_gui(gui_description, extension_object):
+def build_gui(gui_description: Union[dict, Callable], extension_object: BaseExtension):
     # If given a function that generates a GUI dictionary
     if callable(gui_description):
         # Wrap in the route expander

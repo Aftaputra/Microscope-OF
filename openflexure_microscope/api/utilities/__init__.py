@@ -1,38 +1,51 @@
 import errno
 import logging
 import os
+from typing import Union
 
-from flask import Blueprint, current_app, url_for
-from werkzeug.exceptions import BadRequest
+from flask import Blueprint, Flask, current_app, url_for
+from flask.views import View
 
 from . import gui
 
+__all__ = [
+    "gui",
+    "view_class_from_endpoint",
+    "blueprint_for_module",
+    "get_bool",
+    "list_routes",
+    "create_file",
+    "init_default_extensions",
+]
 
-def view_class_from_endpoint(endpoint: str):
+
+def view_class_from_endpoint(endpoint: str) -> View:
     return current_app.view_functions[endpoint].view_class
 
 
-def blueprint_for_module(module_name, api_ver=2, suffix=""):
+def blueprint_for_module(module_name: str, api_ver: int = 2, suffix: str = ""):
     return Blueprint(
         blueprint_name_for_module(module_name, api_ver=api_ver, suffix=suffix),
         module_name,
     )
 
 
-def blueprint_name_for_module(module_name, api_ver=2, suffix=""):
+def blueprint_name_for_module(module_name: str, api_ver: int = 2, suffix: str = ""):
     bp_name = module_name.split(".")[-1]
     return f"v{api_ver}_{bp_name}_blueprint{suffix}"
 
 
-def get_bool(get_arg):
+def get_bool(get_arg: Union[bool, str]):
     """Convert GET request argument string to a Python bool"""
-    if get_arg == "true" or get_arg == "True" or get_arg == "1":
+    if isinstance(get_arg, bool):
+        return get_arg
+    elif get_arg == "true" or get_arg == "True" or get_arg == "1":
         return True
     else:
         return False
 
 
-def list_routes(app):
+def list_routes(app: Flask):
     output = {}
     for rule in app.url_map.iter_rules():
 
@@ -49,7 +62,7 @@ def list_routes(app):
     return output
 
 
-def create_file(config_path):
+def create_file(config_path: str):
     if not os.path.exists(os.path.dirname(config_path)):
         try:
             os.makedirs(os.path.dirname(config_path))
@@ -58,7 +71,7 @@ def create_file(config_path):
                 raise
 
 
-def init_default_extensions(extension_dir):
+def init_default_extensions(extension_dir: str):
     os.makedirs(extension_dir, exist_ok=True)
 
     default_ext_path = os.path.join(extension_dir, "defaults.py")

@@ -7,7 +7,7 @@ def gen(camera):
     """Video streaming generator function."""
     while True:
         # the obtained frame is a jpeg
-        frame = camera.stream.getframe()
+        frame: bytes = camera.stream.getframe()
 
         yield (b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n")
 

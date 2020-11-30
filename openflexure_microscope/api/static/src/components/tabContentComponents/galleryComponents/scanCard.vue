@@ -80,6 +80,10 @@ export default {
       type: String,
       required: true
     },
+    captures: {
+      type: Array,
+      required: true
+    },
     tags: {
       type: Array,
       required: false,
@@ -92,7 +96,7 @@ export default {
   computed: {
     allURLs: function() {
       var urls = [];
-      for (var capture of this.scanState.captures) {
+      for (var capture of this.captures) {
         urls.push(capture.links.self.href);
       }
       return urls;
@@ -115,6 +119,7 @@ export default {
 
     deleteAll: function() {
       axios.all(this.allURLs.map(l => axios.delete(l))).then(() => {
+        console.log("Delete finished")
         // Emit signal to update capture list
         this.$root.$emit("globalUpdateCaptures");
       });
