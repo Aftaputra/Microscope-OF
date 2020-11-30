@@ -22,7 +22,7 @@ try:
 except Exception as e:  # pylint: disable=W0703
     logging.error(e)
     logging.warning("Unable to import PiCameraStreamer")
-from labthings import CompositeLock, StrictLock
+from labthings import CompositeLock
 
 from openflexure_microscope.config import user_configuration, user_settings
 
