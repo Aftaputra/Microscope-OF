@@ -105,6 +105,7 @@
             :time="item.time"
             :tags="item.tags"
             :type="item.type"
+            :captures="item.captures"
             :thumbnail="item.thumbnail"
             @selectFolder="selectFolder"
           />

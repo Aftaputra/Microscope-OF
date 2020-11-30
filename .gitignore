@@ -60,9 +60,8 @@ docs/_build/
 target/
 
 #Big-o files
-capture/
-record/
 *.data
+tests/images/out/
 
 #IDE files
 .vscode/

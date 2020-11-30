@@ -1,9 +1,10 @@
 import json
 import logging
+from typing import List
 
 from .error_sources import ErrorSource
 
-ERROR_SOURCES = []
+ERROR_SOURCES: List[ErrorSource] = []
 
 
 def trace_config_exceptions():

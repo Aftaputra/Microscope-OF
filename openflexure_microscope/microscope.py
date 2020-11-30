@@ -4,13 +4,16 @@ Defines a microscope object, binding a camera and stage with basic functionality
 """
 import logging
 import uuid
-from typing import Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import pkg_resources
 from expiringdict import ExpiringDict
 
+from openflexure_microscope.camera.base import BaseCamera
 from openflexure_microscope.camera.mock import MissingCamera
 from openflexure_microscope.captures import THUMBNAIL_SIZE, CaptureManager
+from openflexure_microscope.config import OpenflexureSettingsFile
+from openflexure_microscope.stage.base import BaseStage
 from openflexure_microscope.stage.mock import MissingStage
 from openflexure_microscope.stage.sanga import SangaDeltaStage, SangaStage
 
@@ -19,7 +22,7 @@ try:
 except Exception as e:  # pylint: disable=W0703
     logging.error(e)
     logging.warning("Unable to import PiCameraStreamer")
-from labthings import CompositeLock
+from labthings import CompositeLock, StrictLock
 
 from openflexure_microscope.config import user_configuration, user_settings
 
@@ -32,23 +35,23 @@ class Microscope:
     """
 
     def __init__(self, settings=user_settings, configuration=user_configuration):
-        self.id = f"openflexure:microscope:{uuid.uuid4()}"
-        self.name = self.id
+        self.id: str = f"openflexure:microscope:{uuid.uuid4()}"
+        self.name: str = self.id
 
-        self.captures = CaptureManager()
+        self.captures: CaptureManager = CaptureManager()
 
         # Store settings and configuration files
-        self.settings_file = settings
-        self.configuration_file = configuration
+        self.settings_file: OpenflexureSettingsFile = settings
+        self.configuration_file: OpenflexureSettingsFile = configuration
 
-        self.extension_settings = {}
+        self.extension_settings: dict = {}
 
         # Initialise with an empty composite lock
         #: :py:class:`labthings.CompositeLock`: Composite lock for locking both camera and stage
-        self.lock = CompositeLock([])
+        self.lock: Union[CompositeLock, StrictLock] = CompositeLock([])
 
-        self.camera = None  #: Currently connected camera object
-        self.stage = None  #: Currently connected stage object
+        self.camera: BaseCamera = None  #: Currently connected camera object
+        self.stage: BaseStage = None  #: Currently connected stage object
 
         self.setup(self.configuration_file.load())  # Attach components
 
@@ -59,8 +62,12 @@ class Microscope:
         # Sometimes, like when doing large scans, we don't need to read the hardware
         # state for every single capture. We can get the data once at the start,
         # cache it, and reuse that to save on IO. Cached data is stored here.
-        self.configuration_cache = ExpiringDict(max_len=100, max_age_seconds=3600)
-        self.metadata_cache = ExpiringDict(max_len=100, max_age_seconds=3600)
+        self.configuration_cache: Union[dict, ExpiringDict] = ExpiringDict(
+            max_len=100, max_age_seconds=3600
+        )
+        self.metadata_cache: Union[dict, ExpiringDict] = ExpiringDict(
+            max_len=100, max_age_seconds=3600
+        )
 
     def __enter__(self):
         """Create microscope on context enter."""
@@ -86,7 +93,7 @@ class Microscope:
         self.captures.close()
         logging.info("Closed %s", (self))
 
-    def setup(self, configuration):
+    def setup(self, configuration: dict):
         """
         Attach microscope components based on initially passed configuration file
         """
@@ -119,12 +126,13 @@ class Microscope:
         if hasattr(self.stage, "lock"):
             self.lock.locks.append(self.stage.lock)
 
-    def set_stage(self, configuration=None, stage_type=None):
+    def set_stage(
+        self, configuration: Optional[dict] = None, stage_type: Optional[str] = None
+    ):
         """
         Set or change the stage geometry
         """
-        if not configuration:
-            configuration = self.configuration
+        configuration = configuration or self.configuration
 
         if stage_type:
             if stage_type == configuration["stage"].get("type"):
@@ -135,7 +143,7 @@ class Microscope:
 
         ### Close any existing stages
         if self.stage:
-            stage_port = self.stage.port
+            stage_port = getattr(self.stage, "port")
             self.stage.close()
 
         logging.info("Setting stage")
@@ -151,7 +159,7 @@ class Microscope:
             except Exception as e:  # pylint: disable=W0703
                 logging.error(e)
                 logging.warning("No compatible Sangaboard hardware found.")
-        elif stage_type in ("SangaDeltaStage"):
+        elif stage_type in ("SangaDeltaStage",):
             try:
                 logging.info("Trying SangaDeltaStage")
                 self.stage = SangaDeltaStage(port=stage_port)
@@ -173,7 +181,7 @@ class Microscope:
         else:
             return False
 
-    def has_real_camera(self):
+    def has_real_camera(self) -> bool:
         """
         Check if a real (non-mock) camera is currently attached.
         """
@@ -184,7 +192,7 @@ class Microscope:
 
     # Create unified state
     @property
-    def state(self):
+    def state(self) -> dict:
         """Dictionary of the basic microscope state.
 
         Return:
@@ -224,7 +232,7 @@ class Microscope:
             for key in settings.keys():
                 logging.warning("Key %s is unused and was ignored", key)
 
-    def read_settings(self, full: bool = True):
+    def read_settings(self, full: bool = True) -> dict:
         """
         Get an updated settings dictionary.
 
@@ -270,7 +278,7 @@ class Microscope:
         # Save config to file
         self.settings_file.save(current_config, backup=True)
 
-    def force_get_configuration(self):
+    def force_get_configuration(self) -> dict:
         initial_configuration = self.configuration_file.load()
 
         current_configuration = {
@@ -293,7 +301,7 @@ class Microscope:
         initial_configuration.update(current_configuration)
         return initial_configuration
 
-    def get_configuration(self, cache_key=None):
+    def get_configuration(self, cache_key: Optional[str] = None) -> dict:
         if cache_key:
             cached_config = self.configuration_cache.get(cache_key, None)
             if cached_config:
@@ -308,7 +316,7 @@ class Microscope:
     def configuration(self):
         return self.get_configuration()
 
-    def force_get_metadata(self):
+    def force_get_metadata(self) -> dict:
         """
         Read cachable bits of microscope metadata.
         Currently ID, settings, and configuration can be cached
@@ -321,7 +329,7 @@ class Microscope:
 
         return system_metadata
 
-    def get_metadata(self, cache_key=None):
+    def get_metadata(self, cache_key: Optional[str] = None):
         """
         Read microscope metadata, with partial caching
         """
@@ -345,22 +353,23 @@ class Microscope:
         return metadata
 
     @property
-    def metadata(self):
+    def metadata(self) -> dict:
         return self.get_metadata()
 
     def capture(
         self,
-        filename: str = None,
+        filename: Optional[str] = None,
         folder: str = "",
         temporary: bool = False,
         use_video_port: bool = False,
         resize: Tuple[int, int] = None,
         bayer: bool = True,
         fmt: str = "jpeg",
-        annotations: dict = None,
-        tags: list = None,
-        metadata: dict = None,
-        cache_key: str = None,
+        annotations: Optional[Dict[str, str]] = None,
+        tags: Optional[List[str]] = None,
+        dataset: Optional[Dict[str, str]] = None,
+        metadata: Optional[dict] = None,
+        cache_key: Optional[str] = None,
     ):
         logging.debug("Microscope capturing to %s", filename)
         if not annotations:
@@ -381,9 +390,6 @@ class Microscope:
             )
 
             # Capture to output object
-            extras = {}
-            if fmt == "jpeg":
-                extras["thumbnail"] = (*THUMBNAIL_SIZE, 85)
             logging.info("Starting microscope capture %s", output.file)
             self.camera.capture(
                 output,
@@ -391,10 +397,10 @@ class Microscope:
                 resize=resize,
                 bayer=bayer,
                 fmt=fmt,
-                **extras,
+                thumbnail=(*THUMBNAIL_SIZE, 85),
             )
 
-        output.put_and_save(tags, annotations, full_metadata)
+        output.put_and_save(tags, annotations, dataset, full_metadata)
         logging.debug("Finished capture to %s", output.file)
 
         return output

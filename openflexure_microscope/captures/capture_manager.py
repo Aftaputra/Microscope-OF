@@ -3,11 +3,12 @@ import logging
 import os
 import shutil
 from collections import OrderedDict
+from typing import Dict, List, MutableMapping, Optional, Union, ValuesView
+from uuid import UUID
 
 from labthings import StrictLock
 
 from openflexure_microscope.paths import data_file_path
-from openflexure_microscope.utilities import entry_by_uuid
 
 from .capture import CaptureObject, build_captures_from_exif
 
@@ -15,40 +16,18 @@ BASE_CAPTURE_PATH = data_file_path("micrographs")
 TEMP_CAPTURE_PATH = os.path.join(BASE_CAPTURE_PATH, "tmp")
 
 
-def last_entry(object_list: list):
-    """Return the last entry of a list, if the list contains items."""
-    if object_list:  # If any images have been captured
-        return object_list[-1]  # Return the latest captured image
-    else:
-        return None
-
-
-def generate_basename():
-    """Return a default filename based on the capture datetime"""
-    return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-
-def generate_numbered_basename(obj_list: list) -> str:
-    initial_basename = generate_basename()
-    basename = initial_basename
-    # Handle clashing
-    iterator = 1
-    while basename in [obj.basename for obj in obj_list]:
-        basename = initial_basename + "_{}".format(iterator)
-        iterator += 1
-
-    return basename
-
-
 class CaptureManager:
     def __init__(self):
-        self.paths = {"default": BASE_CAPTURE_PATH, "temp": TEMP_CAPTURE_PATH}
+        self.paths: Dict[str, str] = {
+            "default": BASE_CAPTURE_PATH,
+            "temp": TEMP_CAPTURE_PATH,
+        }
 
-        self.lock = StrictLock(timeout=1, name="Captures")
+        self.lock: StrictLock = StrictLock(timeout=1, name="Captures")
 
         # Capture data
-        self.images = OrderedDict()
-        self.videos = OrderedDict()
+        self.images: MutableMapping[str, CaptureObject] = OrderedDict()
+        self.videos: MutableMapping[str, CaptureObject] = OrderedDict()
 
     # FILE MANAGEMENT
 
@@ -96,41 +75,28 @@ class CaptureManager:
 
     # RETURNING CAPTURES
 
-    @property
-    def image(self):
-        """Return the latest captured image."""
-        return last_entry(self.images.values())
-
-    @property
-    def video(self):
-        """Return the latest recorded video."""
-        return last_entry(self.videos.values())
-
-    def image_from_id(self, image_id):
+    def image_from_id(self, image_id: Union[str, int, UUID]) -> Optional[CaptureObject]:
         """Return an image StreamObject with a matching ID."""
         logging.warning("image_from_id is deprecated. Access captures as a dictionary.")
-        return entry_by_uuid(image_id, self.images.values())
+        return entry_by_uuid(image_id, self.images)
 
-    def video_from_id(self, video_id):
+    def video_from_id(self, video_id: Union[str, int, UUID]) -> Optional[CaptureObject]:
         """Return a video StreamObject with a matching ID."""
         logging.warning("video_from_id is deprecated. Access captures as a dictionary.")
-        return entry_by_uuid(video_id, self.videos.values())
+        return entry_by_uuid(video_id, self.videos)
 
     # CREATING NEW CAPTURES
 
-    def _new_output(self, temporary, filename, folder, fmt):
-        # Generate file name
-        if not filename:
-            filename = generate_numbered_basename(self.images.values())
-            logging.debug(filename)
+    def _new_output(self, temporary: bool, filename: str, folder: str, fmt: str):
+
         filename = "{}.{}".format(filename, fmt)
 
         # Generate folder
-        base_folder = self.paths["temp"] if temporary else self.paths["default"]
+        base_folder: str = self.paths["temp"] if temporary else self.paths["default"]
         folder = os.path.join(base_folder, folder)
 
         # Generate file path
-        filepath = os.path.join(folder, filename)
+        filepath: str = os.path.join(folder, filename)
 
         # Create capture object
         output = CaptureObject(filepath=filepath)
@@ -143,7 +109,7 @@ class CaptureManager:
     def new_image(
         self,
         temporary: bool = True,
-        filename: str = None,
+        filename: Optional[str] = None,
         folder: str = "",
         fmt: str = "jpeg",
     ):
@@ -158,23 +124,28 @@ class CaptureManager:
             folder (str): Name of the folder in which to store the capture.
             fmt (str): Format of the capture.
         """
+        # Generate file name
+        if not filename:
+            filename = generate_numbered_basename(self.images.values())
+
         # Create a new output object
         output = self._new_output(temporary, filename, folder, fmt)
+        # Add an on-delete callback
+        output.on_delete = self.remove_image
 
         # Update capture list
-        capture_key = str(output.id)
-        logging.debug("Adding image %s with key %s", output, capture_key)
-        self.images[capture_key] = output
+        logging.debug("Adding image %s with key %s", output, output.id)
+        self.images[str(output.id)] = output
 
         return output
 
     def new_video(
         self,
         temporary: bool = False,
-        filename: str = None,
+        filename: Optional[str] = None,
         folder: str = "",
         fmt: str = "h264",
-    ):
+    ) -> CaptureObject:
 
         """
         Create a new video capture object.
@@ -186,12 +157,72 @@ class CaptureManager:
             folder (str): Name of the folder in which to store the capture.
             fmt (str): Format of the capture.
         """
+        # Generate file name
+        if not filename:
+            filename = generate_numbered_basename(self.videos.values())
+
         # Create a new output object
         output = self._new_output(temporary, filename, folder, fmt)
+        # Add an on-delete callback
+        output.on_delete = self.remove_video
 
         # Update capture list
-        capture_key = str(output.id)
-        logging.debug("Adding video %s with key %s", output, capture_key)
-        self.videos[capture_key] = output
+        logging.debug("Adding video %s with key %s", output, output.id)
+        self.videos[str(output.id)] = output
 
         return output
+
+    def remove_image(self, capture_obj: CaptureObject, capture_id: str):
+        logging.info("Deleting capture %s", capture_id)
+        if capture_id in self.images:
+            logging.info("Deleting capture object %s", capture_obj)
+            del self.images[capture_id]
+
+    def remove_video(self, capture_obj: CaptureObject, capture_id: str):
+        logging.info("Deleting capture %s", capture_id)
+        if capture_id in self.images:
+            logging.info("Deleting capture object %s", capture_obj)
+            del self.videos[capture_id]
+
+
+def entry_by_uuid(
+    entry_id: Union[str, int, UUID], object_dict: MutableMapping[str, CaptureObject]
+) -> Optional[CaptureObject]:
+    """Return an object from a list, if <object>.id matches id argument."""
+    if isinstance(entry_id, str):
+        key: str = entry_id
+    elif isinstance(entry_id, UUID):
+        key = str(entry_id)
+    elif isinstance(entry_id, int):
+        key = str(UUID(int=entry_id))
+    else:
+        raise TypeError("Argument entry_id must be a string, integer, or UUID object.")
+
+    return object_dict.get(key)
+
+
+def generate_basename() -> str:
+    """Return a default filename based on the capture datetime"""
+    return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def generate_numbered_basename(
+    obj_list: Union[ValuesView[CaptureObject], List[CaptureObject]]
+) -> str:
+    """
+    This function prevents rapid captures from having clashing generated names.
+
+    Our generated names are a datetime string going as far as seconds,
+    so if you create 2 captures within 1 second then they would have a name
+    clash. This method handles appending sequential integers to names
+    that would clash.
+    """
+    initial_basename = generate_basename()
+    basename = initial_basename
+    # Handle clashing
+    iterator = 1
+    while basename in [obj.basename for obj in obj_list]:
+        basename = initial_basename + "_{}".format(iterator)
+        iterator += 1
+
+    return basename

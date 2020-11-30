@@ -1,6 +1,7 @@
 import logging
 import time
 from contextlib import contextmanager
+from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 from labthings import current_action, fields, find_component
@@ -8,24 +9,27 @@ from labthings.extensions import BaseExtension
 from labthings.views import ActionView, View
 from scipy import ndimage
 
+from openflexure_microscope.camera.base import BaseCamera
 from openflexure_microscope.devel import abort
+from openflexure_microscope.microscope import Microscope
+from openflexure_microscope.stage.base import BaseStage
 from openflexure_microscope.utilities import set_properties
 
 ### Autofocus utilities
 
 
 class JPEGSharpnessMonitor:
-    def __init__(self, microscope):
-        self.microscope = microscope
-        self.camera = microscope.camera
-        self.stage = microscope.stage
+    def __init__(self, microscope: Microscope):
+        self.microscope: Microscope = microscope
+        self.camera: BaseCamera = microscope.camera
+        self.stage: BaseStage = microscope.stage
 
-        self.recording_start_time = None
+        self.recording_start_time: Optional[float] = None
 
-        self.stage_positions = []
-        self.stage_times = []
-        self.jpeg_times = []
-        self.jpeg_sizes = []
+        self.stage_positions: List[Tuple[int, int, int]] = []
+        self.stage_times: List[float] = []
+        self.jpeg_times: List[float] = []
+        self.jpeg_sizes: List[int] = []
 
     def start(self):
         # Log the recording start time
@@ -35,14 +39,14 @@ class JPEGSharpnessMonitor:
         self.camera.stream.stop_tracking()
         self.camera.stream.reset_tracking()
 
-    def focus_rel(self, dz, backlash=False, **kwargs):
+    def focus_rel(self, dz: int, backlash: bool = False, **kwargs):
         # Store the start time and position
         self.camera.stream.start_tracking()
         self.stage_times.append(time.time())
         self.stage_positions.append(self.stage.position)
 
         # Main move
-        self.stage.move_rel([0, 0, dz], backlash=backlash, **kwargs)
+        self.stage.move_rel((0, 0, dz), backlash=backlash, **kwargs)
 
         # Store the end time and position
         self.camera.stream.stop_tracking()
@@ -63,7 +67,7 @@ class JPEGSharpnessMonitor:
         final_z_position = self.stage_positions[-1][2]
         return data_index, final_z_position
 
-    def move_data(self, istart, istop=None):
+    def move_data(self, istart: int, istop: Optional[int] = None):
         """Extract sharpness as a function of (interpolated) z"""
         if istop is None:
             istop = istart + 2
@@ -88,7 +92,7 @@ class JPEGSharpnessMonitor:
         jpeg_zs = np.interp(jpeg_times, stage_times, stage_zs)
         return jpeg_times, jpeg_zs, jpeg_sizes[start:stop]
 
-    def sharpest_z_on_move(self, index):
+    def sharpest_z_on_move(self, index: int):
         """Return the z position of the sharpest image on a given move"""
         _, jz, js = self.move_data(index)
         if len(js) == 0:
@@ -105,23 +109,14 @@ class JPEGSharpnessMonitor:
         return data
 
 
-def decimate_to(shape, image):
-    """Decimate an image to reduce its size if it's too big."""
-    decimation = np.max(
-        np.ceil(np.array(image.shape, dtype=np.float)[: len(shape)] / np.array(shape))
-    )
-    return image[:: int(decimation), :: int(decimation), ...]
-
-
-def sharpness_sum_lap2(rgb_image):
+def sharpness_sum_lap2(rgb_image: np.ndarray):
     """Return an image sharpness metric: sum(laplacian(image)**")"""
-    # image_bw=np.mean(decimate_to((1000,1000), rgb_image),2)
     image_bw = np.mean(rgb_image, 2)
     image_lap = ndimage.filters.laplace(image_bw)
     return np.mean(image_lap.astype(np.float) ** 4)
 
 
-def sharpness_edge(image):
+def sharpness_edge(image: np.ndarray):
     """Return a sharpness metric optimised for vertical lines"""
     gray = np.mean(image.astype(float), 2)
     n = 20
@@ -134,13 +129,23 @@ def sharpness_edge(image):
 ### Autofocus extension
 
 
-def measure_sharpness(microscope, metric_fn=sharpness_sum_lap2):
+def measure_sharpness(microscope: Microscope, metric_fn: Callable = sharpness_sum_lap2):
     """Measure the sharpness of the camera's current view."""
-    if hasattr(microscope.camera, "array"):
-        return metric_fn(microscope.camera.array(use_video_port=True))
+
+    if hasattr(microscope.camera, "array") and callable(
+        getattr(microscope.camera, "array")
+    ):
+        return metric_fn(getattr(microscope.camera, "array")(use_video_port=True))
+    else:
+        raise RuntimeError(f"Object {microscope.camera} has no method `array`")
 
 
-def autofocus(microscope, dz, settle=0.5, metric_fn=sharpness_sum_lap2):
+def autofocus(
+    microscope: Microscope,
+    dz: List[int],
+    settle: float = 0.5,
+    metric_fn: Callable = sharpness_sum_lap2,
+):
     """Perform a simple autofocus routine.
     The stage is moved to z positions (relative to current position) in dz,
     and at each position an image is captured and the sharpness function 
@@ -154,7 +159,10 @@ def autofocus(microscope, dz, settle=0.5, metric_fn=sharpness_sum_lap2):
     with set_properties(stage, backlash=256), stage.lock, camera.lock:
         sharpnesses = []
         positions = []
-        camera.annotate_text = ""
+
+        # Some cameras may not have annotate_text. Reset if it does
+        if getattr(camera, "annotate_text"):
+            setattr(camera, "annotate_text", "")
 
         for _ in stage.scan_z(dz, return_to_start=False):
             if current_action() and current_action().stopped:
@@ -164,13 +172,13 @@ def autofocus(microscope, dz, settle=0.5, metric_fn=sharpness_sum_lap2):
             sharpnesses.append(measure_sharpness(microscope, metric_fn))
 
         newposition = positions[np.argmax(sharpnesses)]
-        stage.move_rel([0, 0, newposition - stage.position[2]])
+        stage.move_rel((0, 0, newposition - stage.position[2]))
 
     return positions, sharpnesses
 
 
 @contextmanager
-def monitor_sharpness(microscope):
+def monitor_sharpness(microscope: Microscope):
     m = JPEGSharpnessMonitor(microscope)
     m.start()
     try:
@@ -179,21 +187,21 @@ def monitor_sharpness(microscope):
         m.stop()
 
 
-def move_and_find_focus(microscope, dz):
+def move_and_find_focus(microscope: Microscope, dz: int):
     """Make a relative Z move and return the peak sharpness position"""
     with monitor_sharpness(microscope) as m:
         m.focus_rel(dz)
         return m.sharpest_z_on_move(0)
 
 
-def move_and_measure(microscope, dz):
+def move_and_measure(microscope: Microscope, dz: int):
     """Make a relative Z move and return the sharpness data"""
     with monitor_sharpness(microscope) as m:
         m.focus_rel(dz)
         return m.data_dict()
 
 
-def fast_autofocus(microscope, dz=2000):
+def fast_autofocus(microscope: Microscope, dz: int = 2000):
     """Perform a down-up-down-up autofocus"""
     with microscope.camera.lock, microscope.stage.lock:
         with monitor_sharpness(microscope) as m:
@@ -216,7 +224,11 @@ def fast_autofocus(microscope, dz=2000):
 
 
 def fast_up_down_up_autofocus(
-    microscope, dz=2000, target_z=0, initial_move_up=True, mini_backlash=25
+    microscope: Microscope,
+    dz: int = 2000,
+    target_z: int = 0,
+    initial_move_up: bool = True,
+    mini_backlash: int = 25,
 ):
     """Autofocus by measuring on the way down, and moving back up with feedback.
 
@@ -256,7 +268,7 @@ def fast_up_down_up_autofocus(
     with microscope.camera.lock, microscope.stage.lock:
         with monitor_sharpness(microscope) as m:
             # Ensure the MJPEG stream has started
-            microscope.camera.start_stream_recording()
+            microscope.camera.start_stream()
 
             logging.debug("Initial move")
             if initial_move_up:

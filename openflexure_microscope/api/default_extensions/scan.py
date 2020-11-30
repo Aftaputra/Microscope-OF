@@ -3,7 +3,7 @@ import logging
 import time
 import uuid
 from functools import reduce
-from typing import Tuple
+from typing import Dict, List, Optional, Tuple
 
 from labthings import (
     current_action,
@@ -14,20 +14,32 @@ from labthings import (
 )
 from labthings.extensions import BaseExtension
 from labthings.views import ActionView
+from typing_extensions import Literal
 
 from openflexure_microscope.api.v2.views.actions.camera import FullCaptureArgs
 from openflexure_microscope.captures.capture_manager import generate_basename
 from openflexure_microscope.devel import abort
+from openflexure_microscope.microscope import Microscope
+
+# Type alias for convenience
+XyCoordinate = Tuple[int, int]
+XyzCoordinate = Tuple[int, int, int]
+
 
 ### Grid construction
 
 
-def construct_grid(initial, step_sizes, n_steps, style="raster"):
+def construct_grid(
+    initial: XyCoordinate,
+    step_sizes: XyCoordinate,
+    n_steps: XyCoordinate,
+    style: Literal["raster", "snake", "spiral"] = "raster",
+):
     """
     Given an initial position, step sizes, and number of steps,
     construct a 2-dimensional list of scan x-y positions.
     """
-    arr = []
+    arr: List[List[XyCoordinate]] = []  # 2D array of coordinates
 
     if style == "spiral":
         # deal with the centre image immediately
@@ -35,31 +47,48 @@ def construct_grid(initial, step_sizes, n_steps, style="raster"):
         arr.append([initial])
         # for spiral, n_steps is the number of shells, and so only requires n_steps[0]
         for i in range(2, n_steps[0] + 1):
-            arr.append([])
+            arr.append([])  # Append new shell holder
             side_length = (2 * i) - 1
 
-            # iteratively generate the next location to append
-            coord = [coord[ax] + [-1, 1][ax] * step_sizes[ax] for ax in range(2)]
+            # Iteratively generate the next location to append
+
+            # Start coordinate of the shell
+            # We create a copy of coord so that the new value of coord doesn't depend on itself
+            # Otherwise we create a generator, not a tuple, which makes type checking angry
+            last_coordinate: XyCoordinate = coord
+            coord = (
+                last_coordinate[0] + [-1, 1][0] * step_sizes[0],
+                last_coordinate[1] + [-1, 1][1] * step_sizes[1],
+            )
             for direction in ([1, 0], [0, -1], [-1, 0], [0, 1]):
                 for _ in range(side_length - 1):
-                    coord = [
-                        coord[ax] + direction[ax] * step_sizes[ax] for ax in range(2)
-                    ]
-                    arr[i - 1].append(tuple(coord))
+                    last_coordinate = coord
+                    coord = (
+                        last_coordinate[0] + direction[0] * step_sizes[0],
+                        last_coordinate[1] + direction[1] * step_sizes[1],
+                    )
+                    arr[i - 1].append(coord)
 
+    # If raster or snake
     else:
         for i in range(n_steps[0]):  # x axis
             arr.append([])
             for j in range(n_steps[1]):  # y axis
-                # Create a coordinate array
-                coord = [initial[ax] + [i, j][ax] * step_sizes[ax] for ax in range(2)]
+                # Create a coordinate tuple
+                coord = (
+                    initial[0] + [i, j][0] * step_sizes[0],
+                    initial[1] + [i, j][1] * step_sizes[1],
+                )
                 # Append coordinate array to position grid
-                arr[i].append(tuple(coord))
+                arr[i].append(coord)
 
         # Style modifiers
         if style == "snake":
+            # For each line (row) in the coordinate array
             for i, line in enumerate(arr):
+                # If it's an odd row
                 if i % 2 != 0:
+                    # Reverse the list of coordinates
                     line.reverse()
 
     return arr
@@ -76,16 +105,17 @@ class ScanExtension(BaseExtension):
 
     def capture(
         self,
-        microscope,
-        basename,
+        microscope: Microscope,
+        basename: Optional[str],
         namemode: str = "coordinates",
         temporary: bool = False,
         use_video_port: bool = False,
-        resize: Tuple[int, int] = None,
+        resize: Optional[Tuple[int, int]] = None,
         bayer: bool = False,
-        metadata: dict = None,
-        annotations: dict = None,
-        tags: list = None,
+        metadata: Optional[dict] = None,
+        annotations: Optional[Dict[str, str]] = None,
+        tags: Optional[List[str]] = None,
+        dataset: Optional[Dict[str, str]] = None,
     ):
         metadata = metadata or {}
         annotations = annotations or {}
@@ -113,6 +143,7 @@ class ScanExtension(BaseExtension):
             bayer=bayer,
             annotations=annotations,
             tags=tags,
+            dataset=dataset,
             metadata=metadata,
             cache_key=folder,
         )
@@ -125,21 +156,21 @@ class ScanExtension(BaseExtension):
     ### Scanning
     def tile(
         self,
-        microscope,
-        basename: str = None,
+        microscope: Microscope,
+        basename: Optional[str] = None,
         namemode: str = "coordinates",
         temporary: bool = False,
-        stride_size: list = (2000, 1500, 100),
-        grid: list = (3, 3, 5),
+        stride_size: XyzCoordinate = (2000, 1500, 100),
+        grid: XyzCoordinate = (3, 3, 5),
         style="raster",
         autofocus_dz: int = 50,
         use_video_port: bool = False,
-        resize: Tuple[int, int] = None,
+        resize: Optional[Tuple[int, int]] = None,
         bayer: bool = False,
-        fast_autofocus=False,
-        metadata: dict = None,
-        annotations: dict = None,
-        tags: list = None,
+        fast_autofocus: bool = False,
+        metadata: Optional[dict] = None,
+        annotations: Optional[Dict[str, str]] = None,
+        tags: Optional[List[str]] = None,
     ):
         metadata = metadata or {}
         annotations = annotations or {}
@@ -160,16 +191,14 @@ class ScanExtension(BaseExtension):
 
         # Add dataset metadata
         dataset_d = {
-            "dataset": {
-                "id": uuid.uuid4(),
-                "type": "xyzScan",
-                "name": basename,
-                "acquisitionDate": datetime.datetime.now().isoformat(),
-                "strideSize": stride_size,
-                "grid": grid,
-                "style": style,
-                "autofocusDz": autofocus_dz,
-            }
+            "id": uuid.uuid4(),
+            "type": "xyzScan",
+            "name": basename,
+            "acquisitionDate": datetime.datetime.now().isoformat(),
+            "strideSize": stride_size,
+            "grid": grid,
+            "style": style,
+            "autofocusDz": autofocus_dz,
         }
 
         # Check if autofocus is enabled
@@ -186,7 +215,7 @@ class ScanExtension(BaseExtension):
 
         # Construct an x-y grid (worry about z later)
         x_y_grid = construct_grid(
-            initial_position, stride_size[:2], grid[:2], style=style
+            initial_position[:2], stride_size[:2], grid[:2], style=style
         )
 
         # Keep the initial Z position the same as our current position
@@ -201,13 +230,13 @@ class ScanExtension(BaseExtension):
                 next_z = initial_z  # Reset z position at start of each new row
                 logging.debug("Returning to initial z position")
                 microscope.stage.move_abs(
-                    [line[0][0], line[0][1], next_z]
+                    (line[0][0], line[0][1], next_z)
                 )  # RWB: I think this line is redundant
 
             for x_y in line:
                 # Move to new grid position without changing z
                 logging.debug("Moving to step %s", ([x_y[0], x_y[1], next_z]))
-                microscope.stage.move_abs([x_y[0], x_y[1], next_z])
+                microscope.stage.move_abs((x_y[0], x_y[1], next_z))
                 # Refocus
                 if autofocus_enabled:
                     if fast_autofocus:
@@ -232,7 +261,7 @@ class ScanExtension(BaseExtension):
                         use_video_port=use_video_port,
                         resize=resize,
                         bayer=bayer,
-                        metadata=dataset_d,
+                        dataset=dataset_d,
                         annotations=annotations,
                         tags=tags,
                     )
@@ -251,7 +280,7 @@ class ScanExtension(BaseExtension):
                         use_video_port=use_video_port,
                         resize=resize,
                         bayer=bayer,
-                        metadata=dataset_d,
+                        dataset=dataset_d,
                         annotations=annotations,
                         tags=tags,
                     )
@@ -268,19 +297,20 @@ class ScanExtension(BaseExtension):
 
     def stack(
         self,
-        microscope,
-        basename: str = None,
+        microscope: Microscope,
+        basename: Optional[str] = None,
         namemode: str = "coordinates",
         temporary: bool = False,
         step_size: int = 100,
         steps: int = 5,
         return_to_start: bool = True,
         use_video_port: bool = False,
-        resize: Tuple[int, int] = None,
+        resize: Optional[Tuple[int, int]] = None,
         bayer: bool = False,
-        metadata: dict = None,
-        annotations: dict = None,
-        tags: list = None,
+        metadata: Optional[dict] = None,
+        annotations: Optional[Dict[str, str]] = None,
+        dataset: Optional[Dict[str, str]] = None,
+        tags: Optional[List[str]] = None,
     ):
         metadata = metadata or {}
         annotations = annotations or {}
@@ -293,7 +323,7 @@ class ScanExtension(BaseExtension):
         with microscope.lock:
             # Move to center scan
             logging.debug("Moving to z-stack starting position")
-            microscope.stage.move_rel([0, 0, int((-step_size * steps) / 2)])
+            microscope.stage.move_rel((0, 0, int((-step_size * steps) / 2)))
             logging.debug("Starting scan from position %s", microscope.stage.position)
 
             for i in range(steps):
@@ -309,6 +339,7 @@ class ScanExtension(BaseExtension):
                     bayer=bayer,
                     metadata=metadata,
                     annotations=annotations,
+                    dataset=dataset,
                     tags=tags,
                 )
                 # Update task progress
@@ -319,7 +350,7 @@ class ScanExtension(BaseExtension):
 
                 if i != steps - 1:
                     logging.debug("Moving z by %s", (step_size))
-                    microscope.stage.move_rel([0, 0, step_size])
+                    microscope.stage.move_rel((0, 0, step_size))
             if return_to_start:
                 logging.debug("Returning to %s", (initial_position))
                 microscope.stage.move_abs(initial_position)

@@ -4,7 +4,7 @@ import subprocess
 from labthings.views import ActionView
 
 
-def is_raspberrypi():
+def is_raspberrypi() -> bool:
     """
     Checks if Raspberry Pi.
     """

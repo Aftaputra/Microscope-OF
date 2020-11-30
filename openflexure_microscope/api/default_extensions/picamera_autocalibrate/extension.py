@@ -1,13 +1,14 @@
 import logging
 from contextlib import contextmanager
 
-# Type hinting
-from typing import Tuple
-
+import picamerax
 from flask import abort
 from labthings import find_component
 from labthings.extensions import BaseExtension
 from labthings.views import ActionView
+
+from openflexure_microscope.camera.base import BaseCamera
+from openflexure_microscope.microscope import Microscope
 
 from .recalibrate_utils import (
     auto_expose_and_freeze_settings,
@@ -17,7 +18,7 @@ from .recalibrate_utils import (
 
 
 @contextmanager
-def pause_stream(scamera, resolution: Tuple[int, int] = None):
+def pause_stream(scamera: BaseCamera):
     """This context manager locks a streaming camera, and pauses the stream.
 
     The stream is re-enabled, with the original resolution, once the with
@@ -28,20 +29,20 @@ def pause_stream(scamera, resolution: Tuple[int, int] = None):
             not scamera.record_active
         ), "We can't pause the camera's video stream while a recording is in progress."
         streaming = scamera.stream_active
-        old_resolution = scamera.camera.resolution
+        old_resolution = scamera.stream_resolution
         if streaming:
             logging.info("Stopping stream in pause_stream context manager")
-            scamera.stop_stream_recording(resolution=resolution)
+            scamera.stop_stream()
         try:
             yield scamera
         finally:
-            scamera.camera.resolution = old_resolution
+            scamera.stream_resolution = old_resolution
             if streaming:
                 logging.info("Restarting stream in pause_stream context manager")
-                scamera.start_stream_recording()
+                scamera.start_stream()
 
 
-def recalibrate(microscope):
+def recalibrate(microscope: Microscope):
     """Reset the camera's settings.
 
     This generates new gains, exposure time, and lens shading
@@ -49,11 +50,15 @@ def recalibrate(microscope):
     with a gray level of 230.  It takes a little while to run.
     """
     with pause_stream(microscope.camera) as scamera:
-        auto_expose_and_freeze_settings(
-            scamera.camera
-        )  # scamera.camera is the PiCamera object
-        recalibrate_camera(scamera.camera)
-    microscope.save_settings()
+        if hasattr(scamera, "picamera"):
+            picamera_obj: picamerax.PiCamera = getattr(scamera, "picamera")
+            auto_expose_and_freeze_settings(picamera_obj)
+            recalibrate_camera(picamera_obj)
+            microscope.save_settings()
+        else:
+            raise RuntimeError(
+                "Recalibrate can only be used with a Raspberry Pi camera"
+            )
 
 
 class RecalibrateView(ActionView):

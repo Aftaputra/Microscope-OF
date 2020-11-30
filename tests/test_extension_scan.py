@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from openflexure_microscope.api.default_extensions import scan
 
 

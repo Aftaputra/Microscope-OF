@@ -2,16 +2,17 @@ from __future__ import print_function
 
 import logging
 import time
+from typing import Union
 
 import picamerax
 from picamerax import exc, mmal
 from picamerax.mmalobj import to_rational
 
-MMAL_PARAMETER_ANALOG_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x59
-MMAL_PARAMETER_DIGITAL_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A
+MMAL_PARAMETER_ANALOG_GAIN: int = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x59
+MMAL_PARAMETER_DIGITAL_GAIN: int = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A
 
 
-def set_gain(camera, gain, value):
+def set_gain(camera: picamerax.PiCamera, gain: int, value: Union[int, float]):
     """Set the analog gain of a PiCamera.
 
     camera: the picamerax.PiCamera() instance you are configuring
@@ -32,12 +33,12 @@ def set_gain(camera, gain, value):
         raise exc.PiCameraMMALError(ret)
 
 
-def set_analog_gain(camera, value):
+def set_analog_gain(camera: picamerax.PiCamera, value: Union[int, float]):
     """Set the gain of a PiCamera object to a given value."""
     set_gain(camera, MMAL_PARAMETER_ANALOG_GAIN, value)
 
 
-def set_digital_gain(camera, value):
+def set_digital_gain(camera: picamerax.PiCamera, value: Union[int, float]):
     """Set the digital gain of a PiCamera object to a given value."""
     set_gain(camera, MMAL_PARAMETER_DIGITAL_GAIN, value)
 

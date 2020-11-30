@@ -39,14 +39,34 @@ from openflexure_microscope.paths import (
     logs_file_path,
 )
 
+
+# Custom RotatingFileHandler subclass
+class CustomRotatingFileHandler(logging.handlers.RotatingFileHandler):
+    """
+    A custom class for a rotating file log handler, with defaults we like.
+    1MB per file, maximum of 5 historic files.
+    Non-propagating logs (so we can separate access logs from error logs)
+    Optional debugging level.
+    """
+
+    def __init__(self, filename: str, debug: bool = False) -> None:
+        super().__init__(filename, maxBytes=1_000_000, backupCount=5)
+        # Set formatter
+        self.setFormatter(
+            logging.Formatter(
+                "[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s"
+            )
+        )
+        # Never propagate
+        self.propagate = False
+        # Conditionally enable debugging
+        if debug:
+            self.setLevel(logging.DEBUG)
+
+
 # Log files
 ROOT_LOGFILE = logs_file_path("openflexure_microscope.log")
 ACCESS_LOGFILE = logs_file_path("openflexure_microscope.access.log")
-
-# Basic log format
-formatter = logging.Formatter(
-    "[%(asctime)s] [%(threadName)s] [%(levelname)s] %(message)s"
-)
 
 # Our WSGI server uses Werkzeug, so use that for the access log
 access_log = logging.getLogger("werkzeug")
@@ -54,21 +74,9 @@ access_log = logging.getLogger("werkzeug")
 access_log.propagate = False
 
 # Create error log file handler
-fh = logging.handlers.RotatingFileHandler(
-    ROOT_LOGFILE, maxBytes=1_000_000, backupCount=5
-)
-fh.setFormatter(formatter)
-fh.setLevel(logging.DEBUG)
-fh.propagate = False
-
+fh = CustomRotatingFileHandler(ROOT_LOGFILE, debug=debug_app)
 # Create access log file handler
-afh = logging.handlers.RotatingFileHandler(
-    ACCESS_LOGFILE, maxBytes=1_000_000, backupCount=5
-)
-afh.setFormatter(formatter)
-afh.setLevel(logging.DEBUG)
-afh.propagate = False
-
+afh = CustomRotatingFileHandler(ACCESS_LOGFILE, debug=debug_app)
 # Add file handler to root logger
 root_log.addHandler(fh)
 access_log.addHandler(afh)

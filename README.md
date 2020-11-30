@@ -22,34 +22,48 @@ This includes installing the server in a mode better suited for active developme
     * `npm install`
     * `npm run build`
 
-## Formatting and linting
+## Formatting, linting, and tests
 
-We use 3 main code analysis and formatting libraries in this project. **Please run all of these before submitting a merge request.** 
+### Tl;dr
+
+**Before committing**
+
+Run `poetry run poe format`
+
+Auto-formats the code
+
+**Before submitting a merge request/merging**
+
+Run `poetry run poe check`
+
+Formats code, lints, runs static analysis, and runs unit tests.
+### Details
+
+We use several code analysis and formatting libraries in this project. **Please run all of these before submitting a merge request.** 
 
 Our CI will check each of these automatically, so ensuring they pass locally will save you time.
 
 * **Black** - Code formatting with minimal configuration.
   * While sometimes it's not perfect, its fine 90% of the time and prevents arguments about formatting. 
   * Automatically formats your code
-  * `poetry run black .`
-* **Isort** - Import sorting
-  * Automatically organises your imports to stop things getting out of hand
-  * `poetry run isort .`
+  * `poetry run poe black`
 * **Pylint** - Static code analysis
   * Analyses your code, failing if issues are detected.
   * We've disabled some less severe warnings, so _if anything fails your merge request will be blocked_
-  * `poetry run pylint openflexure_microscope`
+  * `poetry run poe pylint`
+* **Mypy** - Type checking
+  * Analyses your type hints and annotations to flag up potential bugs
+  * Where possible, use type hints in your code. Even if dependencies don't support it, it'll help identify issues.
+  * `poetry run poe mypy`
+* **Pytest** - Unit testing
+  * While unit testing is of limited use due to our dependence on real hardware, some simple isolated functions can (and should) be unit tested.
+  * `poetry run poe test`
 
-### Pre-commit hooks
+Though not in the CI, our `format` script also runs isort:
 
-We support pre-commit hooks to run code formatting before committing to the codebase.
-
-The simplest way to ensure this works is to install pre-commits into your current Python environment:
-
-* `pip3 install pre-commit`
-* `pre-commit install`
-
-To run pre-commit analysis manually, you can run `pre-commit run`.
+* **Isort** - Import sorting
+  * Automatically organises your imports to stop things getting out of hand
+  * `poetry run isort .`
 
 ## Build-system
 

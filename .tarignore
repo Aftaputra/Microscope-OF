@@ -2,6 +2,7 @@ node_modules
 .gitlab-ci.yml
 .gitlab
 ./dist
+tests/
 !openflexure_microscope/api/static/dist
 
 # VCS files
