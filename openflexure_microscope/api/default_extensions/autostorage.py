@@ -238,7 +238,7 @@ class AutostorageExtension(BaseExtension):
 class GetLocationsView(PropertyView):
     def get(self):
         self.extension.check_location()
-        return autostorage_extension_v2.get_locations()
+        return self.extension.get_locations()
 
 
 class PreferredLocationView(PropertyView):
@@ -272,4 +272,3 @@ class PreferredLocationGUIView(View):
         self.extension.set_preferred_key(new_path_key)
 
         return new_path_title
-
