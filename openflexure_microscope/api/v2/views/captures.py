@@ -79,19 +79,25 @@ class CaptureSchema(ImageSchema):
                 "href": url_for(CaptureView.endpoint, id_=capture_id, _external=True),
                 "mimetype": "application/json",
                 **description_from_view(CaptureView),
-            },
+            }
+            if CaptureView.endpoint
+            else {},
             "tags": {
                 "href": url_for(CaptureTags.endpoint, id_=capture_id, _external=True),
                 "mimetype": "application/json",
                 **description_from_view(CaptureTags),
-            },
+            }
+            if CaptureTags.endpoint
+            else {},
             "annotations": {
                 "href": url_for(
                     CaptureAnnotations.endpoint, id_=capture_id, _external=True
                 ),
                 "mimetype": "application/json",
                 **description_from_view(CaptureAnnotations),
-            },
+            }
+            if CaptureAnnotations.endpoint
+            else {},
             "download": {
                 "href": url_for(
                     CaptureDownload.endpoint,
@@ -101,7 +107,9 @@ class CaptureSchema(ImageSchema):
                 ),
                 "mimetype": "image/jpeg",
                 **description_from_view(CaptureDownload),
-            },
+            }
+            if CaptureDownload.endpoint
+            else {},
         }
 
         if isinstance(data, dict):
