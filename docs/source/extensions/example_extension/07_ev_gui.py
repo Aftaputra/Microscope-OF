@@ -4,60 +4,97 @@ from labthings import current_action, fields, find_component, update_action_prog
 from labthings.extensions import BaseExtension
 from labthings.views import ActionView
 
-# Used to convert our GUI dictionary into a complete eV extension GUI
-from openflexure_microscope.api.utilities.gui import build_gui
-
 # Used in our timelapse function
 from openflexure_microscope.captures.capture_manager import generate_basename
 
-## Extension methods
+# Used to convert our GUI dictionary into a complete eV extension GUI
+from openflexure_microscope.api.utilities.gui import build_gui
 
 
-def timelapse(microscope, n_images, t_between):
-    """
-    Save a set of images in a timelapse
+# Create the extension class
+class TimelapseExtension(BaseExtension):
+    def __init__(self):
+        # Superclass init function
+        super().__init__("org.openflexure.timelapse-extension", version="0.0.0")
 
-    Args:
-        microscope: Microscope object
-        n_images (int): Number of images to take
-        t_between (int/float): Time, in seconds, between sequential captures
-    """
-    base_file_name = generate_basename()
-    folder = "TIMELAPSE_{}".format(base_file_name)
+        # Add our API views
+        self.add_view(TimelapseAPIView, "/timelapse")
 
-    # Take exclusive control over both the camera and stage
-    with microscope.camera.lock, microscope.stage.lock:
-        for n in range(n_images):
-            # Elegantly handle action cancellation
-            if current_action() and current_action().stopped:
-                return
-            # Generate a filename
-            filename = f"{base_file_name}_image{n}"
-            # Create a file to save the image to
-            output = microscope.camera.new_image(
-                filename=filename, folder=folder, temporary=False
-            )
+        # Add our GUI description
+        gui_description = {
+            "icon": "timelapse",  # Name of an icon from https://material.io/resources/icons/
+            "forms": [  # List of forms. Each form is a collapsible accordion panel
+                {
+                    "name": "Start a timelapse",  # Form title
+                    "route": "/timelapse",  # The URL rule (as given by "add_view") of your submission view
+                    "isTask": True,  # This forms submission starts a background task
+                    "isCollapsible": False,  # This form cannot be collapsed into an accordion
+                    "submitLabel": "Start",  # Label for the form submit button
+                    "schema": [  # List of dictionaries. Each element is a form component.
+                        {
+                            "fieldType": "numberInput",
+                            "name": "n_images",  # Name of the view arg this value corresponds to
+                            "label": "Number of images",
+                            "min": 1,  # HTML number input attribute
+                            "default": 5,  # HTML number input attribute
+                        },
+                        {
+                            "fieldType": "numberInput",
+                            "name": "t_between",
+                            "label": "Time (seconds) between images",
+                            "min": 0.1,  # HTML number input attribute
+                            "step": 0.1,  # HTML number input attribute
+                            "default": 1,  # HTML number input attribute
+                        },
+                    ],
+                }
+            ],
+        }
+        self.add_meta("gui", build_gui(gui_description, self))
 
-            # Capture
-            microscope.camera.capture(output)
+    def timelapse(self, microscope, n_images, t_between):
+        """
+        Save a set of images in a timelapse
 
-            # Add system metadata
-            output.put_metadata(microscope.metadata, system=True)
+        Args:
+            microscope: Microscope object
+            n_images (int): Number of images to take
+            t_between (int/float): Time, in seconds, between sequential captures
+        """
+        base_file_name = generate_basename()
+        folder = "TIMELAPSE_{}".format(base_file_name)
 
-            # Update task progress (only does anyting if the function is running in a LabThings task)
-            progress_pct = ((n + 1) / n_images) * 100  # Progress, in percent
-            update_action_progress(progress_pct)
+        # Take exclusive control over both the camera and stage
+        with microscope.camera.lock, microscope.stage.lock:
+            for n in range(n_images):
+                # Elegantly handle action cancellation
+                if current_action() and current_action().stopped:
+                    return
+                # Generate a filename
+                filename = f"{base_file_name}_image{n}"
+                # Create a file to save the image to
+                output = microscope.camera.new_image(
+                    filename=filename, folder=folder, temporary=False
+                )
 
-            # Wait for the specified time
-            time.sleep(t_between)
+                # Capture
+                microscope.camera.capture(output)
+
+                # Add system metadata
+                output.put_metadata(microscope.metadata, system=True)
+
+                # Update task progress (only does anyting if the function is running in a LabThings task)
+                progress_pct = ((n + 1) / n_images) * 100  # Progress, in percent
+                update_action_progress(progress_pct)
+
+                # Wait for the specified time
+                time.sleep(t_between)
 
 
 ## Extension views
-
-
-class TimelapseAPI(ActionView):
+class TimelapseAPIView(ActionView):
     """
-    Take a series of images in a timelapse, running as a background task
+    Take a series of images in a timelapse
     """
 
     args = {
@@ -73,53 +110,10 @@ class TimelapseAPI(ActionView):
         # Find our microscope component
         microscope = find_component("org.openflexure.microscope")
 
-        # Create and start "timelapse", running in a background task
-        return timelapse(microscope, args.get("n_images"), args.get("t_between"))
+        # Start "timelapse"
+        return self.extension.timelapse(
+            microscope, args.get("n_images"), args.get("t_between")
+        )
 
 
-## Extension GUI (OpenFlexure eV)
-# Alternate form without any dynamic parts
-extension_gui = {
-    "icon": "timelapse",  # Name of an icon from https://material.io/resources/icons/
-    "forms": [  # List of forms. Each form is a collapsible accordion panel
-        {
-            "name": "Start a timelapse",  # Form title
-            "route": "/timelapse",  # The URL rule (as given by "add_view") of your submission view
-            "isTask": True,  # This forms submission starts a background task
-            "isCollapsible": False,  # This form cannot be collapsed into an accordion
-            "submitLabel": "Start",  # Label for the form submit button
-            "schema": [  # List of dictionaries. Each element is a form component.
-                {
-                    "fieldType": "numberInput",
-                    "name": "n_images",  # Name of the view arg this value corresponds to
-                    "label": "Number of images",
-                    "min": 1,  # HTML number input attribute
-                    "default": 5,  # HTML number input attribute
-                },
-                {
-                    "fieldType": "numberInput",
-                    "name": "t_between",
-                    "label": "Time (seconds) between images",
-                    "min": 0.1,  # HTML number input attribute
-                    "step": 0.1,  # HTML number input attribute
-                    "default": 1,  # HTML number input attribute
-                },
-            ],
-        }
-    ],
-}
-
-
-## Create extension
-
-# Create your extension object
-my_extension = BaseExtension("com.myname.timelapse-extension", version="0.0.0")
-
-# Add methods to your extension
-my_extension.add_method(timelapse, "timelapse")
-
-# Add API views to your extension
-my_extension.add_view(TimelapseAPI, "/timelapse")
-
-# Add OpenFlexure eV GUI to your extension
-my_extension.add_meta("gui", build_gui(extension_gui, my_extension))
+LABTHINGS_EXTENSIONS = (TimelapseExtension,)

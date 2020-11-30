@@ -1,6 +1,14 @@
 Adding web API views
 ====================
 
+Key terminology
+---------------
+
+API View (or View)
+++++++++++++++++++
+
+*"A view function is the code you write to respond to requests to your application [...] For RESTful APIs it’s especially helpful to execute a different function for each HTTP method. With the [View class] you can easily do that. Each HTTP method maps to a function with the same name (just in lowercase)"* -  `Flask documentation <https://flask.palletsprojects.com/en/1.1.x/views/>`_
+
 Introduction
 ------------
 Extensions can create views to expose extension functionality via the web API. Creating API views for your extension is strongly recommended, as this is the primary way we encourage interaction with the microscope device.
@@ -12,6 +20,8 @@ Continuing our example on the previous page, and discussed below, adding API vie
 .. literalinclude:: ./example_extension/02_adding_views.py
 
 Note that we are now passing our microscope object as an argument to our API methods. Finding the microscope component is performed by the API view at request-time, and passed onto the functions.
+
+Your extension functions can be accessed from within an API View by using ``self.extension``. Once your view has been added to your extension, this will point to the extension object, allowing your API views to use your extension functionality.
 
 In this case, our extension will have two new API views at `/identify` and `/rename`. The `/identify` view only accepts GET requests, and the `/rename` view only accepts POST requests.
 

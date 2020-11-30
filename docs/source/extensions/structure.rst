@@ -1,8 +1,10 @@
 Basic extension structure
 =========================
 
-An extension starts as a simple instance of :py:class:`labthings.extensions.BaseExtension`. 
+An extension starts as a subclass of :py:class:`labthings.extensions.BaseExtension`. 
 Each extension is described by a single ``BaseExtension`` instance, containing any number of methods, API views, and additional hardware components. 
+
+You will build your extension by subclassing :py:class:`labthings.extensions.BaseExtension`, and adding the class to a top-level `LABTHINGS_EXTENSIONS` list.
 
 In order to access the currently running microscope object, use the :py:func:`labthings.find_component` function, with the argument ``"org.openflexure.microscope"``. Likewise, any new components attached by other extensions can be found using their full name, as above.
 
@@ -24,13 +26,3 @@ Once this extension is loaded, any other extensions will have access to your met
         # Call a function from your extension
         if my_found_extension:
             my_found_extension.identify()
-
-
-Subclassing ``BaseExtension``
--------------------------------
-
-The syntax used above allows novice programmers to easily start building extensions, without having to deal with subclassing. However, for more complex extensions which require persistent state, subclassing :py:class:`labthings.extensions.BaseExtension` is recommended.
-
-The same simple extension as seen above can be written using subclassing:
-
-.. literalinclude:: ./example_extension/01b_basic_structure_subclass.py
