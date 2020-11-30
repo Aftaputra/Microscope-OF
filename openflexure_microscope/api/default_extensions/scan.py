@@ -398,7 +398,7 @@ class TileScanAPI(ActionView):
         # Acquire microscope lock with 1s timeout
         with microscope.lock(timeout=1):
             # Run scan_extension_v2
-            return self.extension.scan_extension_v2.tile(
+            return self.extension.tile(
                 microscope,
                 basename=args.get("filename"),
                 namemode=args.get("namemode"),
