@@ -170,6 +170,20 @@ class BaseCamera(metaclass=ABCMeta):
             thumbnail: Dimensions and quality (x, y, quality) of a thumbnail to generate, if supported
         """
 
+    def start_worker(self, **_) -> bool:
+        """Start the background camera thread if it isn't running yet."""
+        logging.debug(
+            "`start_worker` method has been deprecated and is no longer required. Please avoid calling this method."
+        )
+        return True
+
+    def get_frame(self):
+        """Return the current camera frame."""
+        logging.debug(
+            "`camera.get_frame` method has been deprecated. Please use `camera.stream.getframe()."
+        )
+        return self.stream.getframe()
+
     def __enter__(self):
         """Create camera on context enter."""
         return self
