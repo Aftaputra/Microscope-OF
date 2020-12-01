@@ -336,7 +336,7 @@ i18n = ["Babel (>=0.8)"]
 
 [[package]]
 name = "labthings"
-version = "1.2.0"
+version = "1.2.1"
 description = "Python implementation of LabThings, based on the Flask microframework"
 category = "main"
 optional = false
@@ -948,7 +948,7 @@ rpi = ["RPi.GPIO"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.3"
-content-hash = "faa770c6eb6028fe292d4ad1d81a81afa45f79b4d2794c1ac0086c19be5740df"
+content-hash = "ec95ce987cd855cbcbdc4d7689dcbee7ca1f0154a60f5dddc3cecc02c92ddc75"
 
 [metadata.files]
 alabaster = [
@@ -1102,8 +1102,8 @@ jinja2 = [
     {file = "Jinja2-2.11.2.tar.gz", hash = "sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0"},
 ]
 labthings = [
-    {file = "labthings-1.2.0-py3-none-any.whl", hash = "sha256:3d5997cadb176706f0c079273211b61de267b2914cdae97f0dece46df347f779"},
-    {file = "labthings-1.2.0.tar.gz", hash = "sha256:54f6cac8ceb24db9e61306ecc66961d31be735d8dd14c99867e54f33f2e12b76"},
+    {file = "labthings-1.2.1-py3-none-any.whl", hash = "sha256:0b4bf4b7348cab8638bc9ec6028a48197f201410e352c866d131618a9877acbc"},
+    {file = "labthings-1.2.1.tar.gz", hash = "sha256:f5f0fe319ef7aa2697e06f5969eb47dc834e7981c3726eab29472ee4f34c01ea"},
 ]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.4.3.tar.gz", hash = "sha256:f3900e8a5de27447acbf900b4750b0ddfd7ec1ea7fbaf11dfa911141bc522af0"},
