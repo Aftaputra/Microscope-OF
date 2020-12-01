@@ -30,11 +30,9 @@ class SangaStage(BaseStage):
         self.port = port
         self.board = Sangaboard(port, **kwargs)
 
-        self._backlash = (
-            None  # Initialise backlash storage, used by property setter/getter
-        )
+        # Initialise backlash storage, used by property setter/getter
+        self._backlash = None  
         self.settle_time = 0.2  # Default move settle time
-
         self._position_on_enter = None
 
     @property
@@ -75,13 +73,16 @@ class SangaStage(BaseStage):
         back by ``backlash[i]``.  This is computed per-axis, so if some axes are moving
         in the same direction as ``backlash``, they won't do two moves.
         """
-        if self._backlash is not None:
+        if isinstance(self._backlash, (list, np.ndarray)):
             return self._backlash
+        elif isinstance(self._backlash, int):
+            return np.array([self._backlash] * self.n_axes)
         else:
             return np.array([0] * self.n_axes)
+            
 
     @backlash.setter
-    def backlash(self, blsh):
+    def backlash(self, blsh) -> Optional[np.ndarray]:
         logging.debug("Setting backlash to %s", (blsh))
         if blsh is None:
             self._backlash = None
@@ -122,11 +123,23 @@ class SangaStage(BaseStage):
         displacement: integer or array/list of 3 integers
         axis: None (for 3-axis moves) or one of 'x','y','z'
         backlash: (default: True) whether to correct for backlash.
+
+        Backlash Correction:
+        This backlash correction strategy ensures we're always approaching the
+        end point from the same direction, while minimising the amount of extra
+        motion.  It's a good option if you're scanning in a line, for example,
+        as it will kick in when moving to the start of the line, but not for each
+        point on the line.
+        For each axis where we're moving in the *opposite*
+        direction to self.backlash, we deliberately overshoot:
+
         """
         with self.lock:
             logging.debug("Moving sangaboard by %s", displacement)
+
             if not backlash or self.backlash is None:
                 return self.board.move_rel(displacement, axis=axis)
+    
             # If we specify an axis name and a displacement int, convert to a displacement tuple
             if axis:
                 # Displacement MUST be an integer if axis name is specified
@@ -137,32 +150,32 @@ class SangaStage(BaseStage):
                 # Axis name MUST be x, y, or z
                 if axis not in ("x", "y", "z"):
                     raise ValueError("axis must be one of x, y, or z")
-                move = (
+
+                # Create the displacement array
+                displacement_array: np.ndarray = np.array([
                     displacement if axis == "x" else 0,
                     displacement if axis == "y" else 0,
                     displacement if axis == "z" else 0,
-                )
-                displacement = move
+                ])
 
-            initial_move = np.array(displacement, dtype=np.int)
-            # Backlash Correction
-            # This backlash correction strategy ensures we're always approaching the
-            # end point from the same direction, while minimising the amount of extra
-            # motion.  It's a good option if you're scanning in a line, for example,
-            # as it will kick in when moving to the start of the line, but not for each
-            # point on the line.
-            # For each axis where we're moving in the *opposite*
-            # direction to self.backlash, we deliberately overshoot:
+            else:
+                # Convert our displacement tuple/generator into a numpy array
+                displacement_array = np.array(list(displacement))
+
+            # Calculate main movement
+            initial_move: np.ndarray = displacement_array
             initial_move -= np.where(
-                self.backlash * displacement < 0,
+                self.backlash * displacement_array < 0,
                 self.backlash,
                 np.zeros(self.n_axes, dtype=self.backlash.dtype),
             )
+            # Make the main movement
             self.board.move_rel(initial_move)
-            if np.any(displacement - initial_move != 0):
+            # Handle backlash if required
+            if np.any(displacement_array - initial_move != 0):
                 # If backlash correction has kicked in and made us overshoot, move
                 # to the correct end position (i.e. the move we were asked to make)
-                self.board.move_rel(displacement - initial_move)
+                self.board.move_rel(displacement_array - initial_move)
         # Settle outside of the stage lock so that another move request
         # can just take over before settling
         time.sleep(self.settle_time)
