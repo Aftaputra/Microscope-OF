@@ -1,6 +1,7 @@
 import logging
 import time
 from collections.abc import Iterable
+from types import GeneratorType
 from typing import Optional, Tuple, Union
 
 import numpy as np
@@ -31,7 +32,7 @@ class SangaStage(BaseStage):
         self.board = Sangaboard(port, **kwargs)
 
         # Initialise backlash storage, used by property setter/getter
-        self._backlash = None  
+        self._backlash = None
         self.settle_time = 0.2  # Default move settle time
         self._position_on_enter = None
 
@@ -58,7 +59,7 @@ class SangaStage(BaseStage):
         return self.board.position
 
     @property
-    def backlash(self):
+    def backlash(self) -> np.ndarray:
         """The distance used for backlash compensation.
         Software backlash compensation is enabled by setting this property to a value
         other than `None`.  The value can either be an array-like object (list, tuple,
@@ -73,16 +74,17 @@ class SangaStage(BaseStage):
         back by ``backlash[i]``.  This is computed per-axis, so if some axes are moving
         in the same direction as ``backlash``, they won't do two moves.
         """
-        if isinstance(self._backlash, (list, np.ndarray)):
+        if isinstance(self._backlash, np.ndarray):
             return self._backlash
+        elif isinstance(self._backlash, list):
+            return np.array(self._backlash)
         elif isinstance(self._backlash, int):
             return np.array([self._backlash] * self.n_axes)
         else:
             return np.array([0] * self.n_axes)
-            
 
     @backlash.setter
-    def backlash(self, blsh) -> Optional[np.ndarray]:
+    def backlash(self, blsh):
         logging.debug("Setting backlash to %s", (blsh))
         if blsh is None:
             self._backlash = None
@@ -105,7 +107,10 @@ class SangaStage(BaseStage):
 
     def read_settings(self) -> dict:
         """Return the current settings as a dictionary"""
-        blsh = self.backlash.tolist()
+        if self.backlash is not None:
+            blsh = self.backlash.tolist()
+        else:
+            blsh = None
         config = {
             "backlash": {"x": blsh[0], "y": blsh[1], "z": blsh[2]},
             "settle_time": self.settle_time,
@@ -139,7 +144,7 @@ class SangaStage(BaseStage):
 
             if not backlash or self.backlash is None:
                 return self.board.move_rel(displacement, axis=axis)
-    
+
             # If we specify an axis name and a displacement int, convert to a displacement tuple
             if axis:
                 # Displacement MUST be an integer if axis name is specified
@@ -152,15 +157,21 @@ class SangaStage(BaseStage):
                     raise ValueError("axis must be one of x, y, or z")
 
                 # Create the displacement array
-                displacement_array: np.ndarray = np.array([
-                    displacement if axis == "x" else 0,
-                    displacement if axis == "y" else 0,
-                    displacement if axis == "z" else 0,
-                ])
+                displacement_array: np.ndarray = np.array(
+                    [
+                        displacement if axis == "x" else 0,
+                        displacement if axis == "y" else 0,
+                        displacement if axis == "z" else 0,
+                    ]
+                )
 
-            else:
+            elif isinstance(displacement, np.ndarray):
+                displacement_array = displacement
+            elif isinstance(displacement, (list, tuple, GeneratorType)):
                 # Convert our displacement tuple/generator into a numpy array
                 displacement_array = np.array(list(displacement))
+            else:
+                raise TypeError(f"Unsupported displacement type {type(displacement)}")
 
             # Calculate main movement
             initial_move: np.ndarray = displacement_array
