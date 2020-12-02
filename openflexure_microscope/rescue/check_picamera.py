@@ -32,7 +32,7 @@ def main():
         error_sources.append(picamera_import_error)
     else:
         try:
-            cam = picamerax.PiCamera()
+            _ = picamerax.PiCamera()
         except picamerax.PiCameraError as e:
             if e.args[0] in picamera_errors:
                 error_sources.append(ErrorSource(e.args[0]))
