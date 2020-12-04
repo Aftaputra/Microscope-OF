@@ -8,14 +8,16 @@ from picamerax import PiCamera
 from picamerax.array import PiBayerArray, PiRGBArray
 
 
-def rgb_image(camera: PiCamera, resize: Optional[Tuple[int, int]] = None, **kwargs):
+def rgb_image(
+    camera: PiCamera, resize: Optional[Tuple[int, int]] = None, **kwargs
+) -> PiRGBArray:
     """Capture an image and return an RGB numpy array"""
     with PiRGBArray(camera, size=resize) as output:
         camera.capture(output, format="rgb", resize=resize, **kwargs)
         return output.array
 
 
-def flat_lens_shading_table(camera: PiCamera):
+def flat_lens_shading_table(camera: PiCamera) -> np.ndarray:
     """Return a flat (i.e. unity gain) lens shading table.
     
     This is mostly useful because it makes it easy to get the size
@@ -107,9 +109,13 @@ def lst_from_channels(channels: np.ndarray) -> np.ndarray:
         [channels.shape[0]] + lst_resolution, dtype=np.float
     )
     for i in range(lens_shading.shape[0]):
-        image_channel = channels[i, :, :]
+        image_channel: np.ndarray = channels[i, :, :]
+        iw: int
+        ih: int
         iw, ih = image_channel.shape
-        ls_channel = lens_shading[i, :, :]
+        ls_channel: np.ndarray = lens_shading[i, :, :]
+        lw: int
+        lh: int
         lw, lh = ls_channel.shape
         # The lens shading table is rounded **up** in size to 1/64th of the size of
         # the image.  Rather than handle edge images separately, I'm just going to
@@ -118,7 +124,7 @@ def lst_from_channels(channels: np.ndarray) -> np.ndarray:
         # half the size of the full image - remember the Bayer pattern...  This
         # should give results very close to 6by9's solution, albeit considerably
         # less computationally efficient!
-        padded_image_channel = np.pad(
+        padded_image_channel: np.ndarray = np.pad(
             image_channel, [(0, lw * 32 - iw), (0, lh * 32 - ih)], mode="edge"
         )  # Pad image to the right and bottom
         logging.info(
@@ -131,7 +137,7 @@ def lst_from_channels(channels: np.ndarray) -> np.ndarray:
         )
         # Next, fill the shading table (except edge pixels).  Please excuse the
         # for loop - I know it's not fast but this code needn't be!
-        box = 3  # We average together a square of this side length for each pixel.
+        box: int = 3  # We average together a square of this side length for each pixel.
         # NB this isn't quite what 6by9's program does - it averages 3 pixels
         # horizontally, but not vertically.
         for dx in np.arange(box) - box // 2:
@@ -152,10 +158,10 @@ def lst_from_channels(channels: np.ndarray) -> np.ndarray:
 
     # What we actually want to calculate is the gains needed to compensate for the
     # lens shading - that's 1/lens_shading_table_float as we currently have it.
-    gains = 32.0 / lens_shading  # 32 is unity gain
+    gains: np.ndarray = 32.0 / lens_shading  # 32 is unity gain
     gains[gains > 255] = 255  # clip at 255, maximum gain is 255/32
     gains[gains < 32] = 32  # clip at 32, minimum gain is 1 (is this necessary?)
-    lens_shading_table = gains.astype(np.uint8)
+    lens_shading_table: np.ndarray = gains.astype(np.uint8)
     return lens_shading_table[::-1, :, :].copy()
 
 
