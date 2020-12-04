@@ -24,7 +24,7 @@
             <a href="#">Filter</a>
             <div
               :class="{
-                'uk-light uk-background-secondary': $store.state.darkMode,
+                'uk-light uk-background-secondary': $store.state.darkMode
               }"
               class="uk-navbar-dropdown"
             >
@@ -159,10 +159,10 @@ export default {
     captureCard,
     scanCard,
     ZipDownloader,
-    Paginate,
+    Paginate
   },
 
-  data: function () {
+  data: function() {
     return {
       captures: [],
       checkedTags: [],
@@ -171,15 +171,15 @@ export default {
       scanTag: "scan",
       unwatchStoreFunction: null,
       maxitems: 10,
-      page: 1,
+      page: 1
     };
   },
 
   computed: {
-    capturesUri: function () {
+    capturesUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/captures`;
     },
-    allTags: function () {
+    allTags: function() {
       // Return an array of unique tags across all captures
       var tags = [];
       for (var capture of this.captures) {
@@ -192,16 +192,12 @@ export default {
       return tags.sort();
     },
 
-    noScanCaptures: function () {
+    noScanCaptures: function() {
       // List of captures that are not part of a scan
       var captures = [];
       for (var capture of this.captures) {
         // Add to capture list if matched
-        if (
-          !capture.dataset || // If no dataset key
-          (capture.dataset.constructor === Object && // Or dataset is an object...
-            Object.keys(capture.dataset).length === 0) // ...but it's empty
-        ) {
+        if (!this.isDatasetPopulated(capture.dataset)) {
           captures.push(capture);
         }
       }
@@ -209,14 +205,14 @@ export default {
       return captures;
     },
 
-    allScans: function () {
+    allScans: function() {
       // List of scans as capture-like objects
       var scans = {};
 
       for (var capture of this.captures) {
         var dataset = capture.dataset;
 
-        if (dataset) {
+        if (this.isDatasetPopulated(dataset)) {
           var id = dataset["id"];
 
           // If this scan ID hasn't been seen before
@@ -252,12 +248,12 @@ export default {
       return scans;
     },
 
-    scanList: function () {
+    scanList: function() {
       // List of scans, obtained from this.allScans values
       return Object.values(this.allScans);
     },
 
-    itemList: function () {
+    itemList: function() {
       // Get list of current items to show
       // If galleryFolder (ie inside a scan folder), show scan captures
       // Otherwise, show root captures and scan cards
@@ -268,12 +264,12 @@ export default {
       }
     },
 
-    filteredItems: function () {
+    filteredItems: function() {
       // Filter itemList by checkedTags
       return this.filterCaptures(this.itemList, this.checkedTags);
     },
 
-    filteredCaptures: function () {
+    filteredCaptures: function() {
       var captures = {};
 
       for (var item of this.filteredItems) {
@@ -292,19 +288,19 @@ export default {
       return captures;
     },
 
-    sortedItems: function () {
+    sortedItems: function() {
       // Sort filteredItems using sortCaptures function
       return this.sortCaptures(this.filteredItems);
     },
 
-    pagedItems: function () {
+    pagedItems: function() {
       let startIndex = (this.page - 1) * this.maxitems;
       return this.sortedItems.slice(startIndex, startIndex + this.maxitems);
     },
 
-    numberOfPages: function () {
+    numberOfPages: function() {
       return Math.floor(this.sortedItems.length / this.maxitems);
-    },
+    }
   },
 
   mounted() {
@@ -316,13 +312,13 @@ export default {
     });
   },
 
-  created: function () {
+  created: function() {
     // Watch for host 'ready', then update status
     this.unwatchStoreFunction = this.$store.watch(
       (state, getters) => {
         return getters.ready;
       },
-      (ready) => {
+      ready => {
         if (ready) {
           // If the connection is now ready, update capture list
           this.updateCaptures();
@@ -352,20 +348,32 @@ export default {
       }
     },
 
-    updateCaptures: function () {
+    updateCaptures: function() {
       if (this.$store.state.available) {
         axios
           .get(this.capturesUri)
-          .then((response) => {
+          .then(response => {
             this.captures = response.data;
           })
-          .catch((error) => {
+          .catch(error => {
             this.modalError(error); // Let mixin handle error
           });
       }
     },
 
-    filterCaptures: function (list, filterTags) {
+    isDatasetPopulated: function(dataset) {
+      if (
+        !dataset || // If no dataset key
+        (dataset.constructor === Object && // Or dataset is an object...
+          Object.keys(dataset).length === 0) // ...but it's empty
+      ) {
+        return false;
+      } else {
+        return true;
+      }
+    },
+
+    filterCaptures: function(list, filterTags) {
       // Filter a list of captures by an array of tags
       var result = [];
       for (var capture of list) {
@@ -374,7 +382,7 @@ export default {
 
         // Filter by selected tags
         var tags = capture.tags;
-        let checker = (arr, target) => target.every((v) => arr.includes(v));
+        let checker = (arr, target) => target.every(v => arr.includes(v));
         // True if all tags match
         includeCapture = checker(tags, filterTags);
 
@@ -387,7 +395,7 @@ export default {
       return result;
     },
 
-    sortCaptures: function (list) {
+    sortCaptures: function(list) {
       // Sort a list of captures by metadata time
       function compare(a, b) {
         if (a.time < b.time) return -1;
@@ -402,15 +410,15 @@ export default {
       }
     },
 
-    galleryBack: function () {
+    galleryBack: function() {
       this.galleryFolder = "";
       this.page = 1;
     },
 
-    selectFolder: function (folderID) {
+    selectFolder: function(folderID) {
       this.galleryFolder = folderID;
-    },
-  },
+    }
+  }
 };
 </script>
 
