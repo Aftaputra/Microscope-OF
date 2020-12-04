@@ -44,6 +44,6 @@ with handle_extension_error("lens shading calibration"):
     LABTHINGS_EXTENSIONS.append(LSTExtension)
 
 with handle_extension_error("camera stage mapping"):
-    from camera_stage_mapping.ofm_extension import csm_extension
+    from .camera_stage_mapping import CSMExtension
 
-    LABTHINGS_EXTENSIONS.append(csm_extension)
+    LABTHINGS_EXTENSIONS.append(CSMExtension)
