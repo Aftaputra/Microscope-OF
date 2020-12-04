@@ -1,18 +1,25 @@
 import base64
 import copy
 import logging
+import sys
 import time
 from contextlib import contextmanager
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
 
+# TypedDict was added to typing in 3.8. Use typing_extensions for <3.8
+if sys.version_info >= (3, 8):
+    from typing import TypedDict  # pylint: disable=no-name-in-module
+else:
+    from typing_extensions import TypedDict
+
 
 class Timer(object):
-    def __init__(self, name):
-        self.name = name
-        self.start = None
-        self.end = None
+    def __init__(self, name: str):
+        self.name: str = name
+        self.start: Optional[float] = None
+        self.end: Optional[float] = None
 
     def __enter__(self):
         self.start = time.time()
@@ -22,19 +29,27 @@ class Timer(object):
         logging.debug("%s time: %s", self.name, self.end - self.start)
 
 
-def deserialise_array_b64(b64_string: str, dtype: str, shape: List[int]):
-    flat_arr = np.frombuffer(base64.b64decode(b64_string), dtype)
+JSONArrayType = TypedDict(
+    "JSONArrayType",
+    {"@type": str, "base64": str, "dtype": str, "shape": Tuple[int, ...]},
+)
+
+
+def deserialise_array_b64(
+    b64_string: str, dtype: Union[Type[np.dtype], str], shape: Tuple[int, ...]
+):
+    flat_arr: np.ndarray = np.frombuffer(base64.b64decode(b64_string), dtype)
     return flat_arr.reshape(shape)
 
 
-def serialise_array_b64(npy_arr: np.ndarray):
-    b64_string = base64.b64encode(npy_arr).decode("ascii")
-    dtype = str(npy_arr.dtype)
-    shape = npy_arr.shape
+def serialise_array_b64(npy_arr: np.ndarray) -> Tuple[str, str, Tuple[int, ...]]:
+    b64_string: str = base64.b64encode(npy_arr.tobytes()).decode("ascii")
+    dtype: str = str(npy_arr.dtype)
+    shape: Tuple[int, ...] = npy_arr.shape
     return b64_string, dtype, shape
 
 
-def ndarray_to_json(arr: np.ndarray):
+def ndarray_to_json(arr: np.ndarray) -> JSONArrayType:
     if isinstance(arr, memoryview):
         # We can transparently convert memoryview objects to arrays
         # This comes in very handy for the lens shading table.
@@ -43,7 +58,7 @@ def ndarray_to_json(arr: np.ndarray):
     return {"@type": "ndarray", "dtype": dtype, "shape": shape, "base64": b64_string}
 
 
-def json_to_ndarray(json_dict: dict):
+def json_to_ndarray(json_dict: JSONArrayType):
     if not json_dict.get("@type") != "ndarray":
         logging.warning("No valid @type attribute found. Conversion may fail.")
     for required_param in ("dtype", "shape", "base64"):
@@ -52,7 +67,7 @@ def json_to_ndarray(json_dict: dict):
 
     b64_string: Optional[str] = json_dict.get("base64")
     dtype: Optional[str] = json_dict.get("dtype")
-    shape: Optional[List[int]] = json_dict.get("shape")
+    shape: Optional[Tuple[int, ...]] = json_dict.get("shape")
 
     if b64_string and dtype and shape:
         return deserialise_array_b64(b64_string, dtype, shape)

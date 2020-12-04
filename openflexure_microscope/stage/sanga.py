@@ -101,7 +101,7 @@ class SangaStage(BaseStage):
         if "backlash" in config:
             # Construct backlash array
             backlash = axes_to_array(config["backlash"], ["x", "y", "z"], [0, 0, 0])
-            self.backlash = backlash
+            self.backlash = np.array(backlash)
         if "settle_time" in config:
             self.settle_time = config.get("settle_time")
 

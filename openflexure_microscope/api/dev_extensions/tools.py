@@ -6,6 +6,17 @@ from labthings.extensions import BaseExtension
 from labthings.views import ActionView
 
 
+class DevToolsExtension(BaseExtension):
+    def __init__(self) -> None:
+        super().__init__(
+            "org.openflexure.dev.tools",
+            version="0.1.0",
+            description="Actions to cause various traumatic events in the microscope, used for testing.",
+        )
+        self.add_view(RaiseException, "/raise")
+        self.add_view(SleepFor, "/sleep")
+
+
 class RaiseException(ActionView):
     def post(self):
         raise Exception("The developer raised an exception")
@@ -23,13 +34,3 @@ class SleepFor(ActionView):
         end = time.time()
         logging.info("Waking up!")
         return {"TimeAsleep": (end - start)}
-
-
-devtools_extension_v2 = BaseExtension(
-    "org.openflexure.dev.tools",
-    version="0.1.0",
-    description="Actions to cause various traumatic events in the microscope, used for testing.",
-)
-
-devtools_extension_v2.add_view(RaiseException, "/raise")
-devtools_extension_v2.add_view(SleepFor, "/sleep")

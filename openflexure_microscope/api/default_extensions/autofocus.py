@@ -1,7 +1,7 @@
 import logging
 import time
 from contextlib import contextmanager
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 from labthings import current_action, fields, find_component
@@ -39,7 +39,7 @@ class JPEGSharpnessMonitor:
         self.camera.stream.stop_tracking()
         self.camera.stream.reset_tracking()
 
-    def focus_rel(self, dz: int, backlash: bool = False, **kwargs):
+    def focus_rel(self, dz: int, backlash: bool = False, **kwargs) -> Tuple[int, int]:
         # Store the start time and position
         self.camera.stream.start_tracking()
         self.stage_times.append(time.time())
@@ -62,22 +62,28 @@ class JPEGSharpnessMonitor:
         self.camera.stream.reset_tracking()
 
         # Index of the data for this movement
-        data_index = len(self.stage_positions) - 2
+        data_index: int = len(self.stage_positions) - 2
         # Final z position after move
-        final_z_position = self.stage_positions[-1][2]
+        final_z_position: int = self.stage_positions[-1][2]
         return data_index, final_z_position
 
-    def move_data(self, istart: int, istop: Optional[int] = None):
+    def move_data(
+        self, istart: int, istop: Optional[int] = None
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Extract sharpness as a function of (interpolated) z"""
         if istop is None:
             istop = istart + 2
-        jpeg_times = np.array(self.jpeg_times)
-        jpeg_sizes = np.array(self.jpeg_sizes)
-        stage_times = np.array(self.stage_times)[istart:istop]
-        stage_zs = np.array(self.stage_positions)[istart:istop, 2]
+        jpeg_times: np.ndarray = np.array(self.jpeg_times)  # np.ndarray[float]
+        jpeg_sizes: np.ndarray = np.array(self.jpeg_sizes)  # np.ndarray[int]
+        stage_times: np.ndarray = np.array(self.stage_times)[
+            istart:istop
+        ]  # np.ndarray[float]
+        stage_zs: np.ndarray = np.array(self.stage_positions)[
+            istart:istop, 2
+        ]  # np.ndarray[int]
         try:
-            start = np.argmax(jpeg_times > stage_times[0])
-            stop = np.argmax(jpeg_times > stage_times[1])
+            start: int = int(np.argmax(jpeg_times > stage_times[0]))
+            stop: int = int(np.argmax(jpeg_times > stage_times[1]))
         except ValueError as e:
             if np.sum(jpeg_times > stage_times[0]) == 0:
                 raise ValueError(
@@ -89,10 +95,12 @@ class JPEGSharpnessMonitor:
             stop = len(jpeg_times)
             logging.debug("changing stop to %s", (stop))
         jpeg_times = jpeg_times[start:stop]
-        jpeg_zs = np.interp(jpeg_times, stage_times, stage_zs)
+        jpeg_zs: np.ndarray = np.interp(
+            jpeg_times, stage_times, stage_zs
+        )  # np.ndarray[float]
         return jpeg_times, jpeg_zs, jpeg_sizes[start:stop]
 
-    def sharpest_z_on_move(self, index: int):
+    def sharpest_z_on_move(self, index: int) -> int:
         """Return the z position of the sharpest image on a given move"""
         _, jz, js = self.move_data(index)
         if len(js) == 0:
@@ -101,7 +109,7 @@ class JPEGSharpnessMonitor:
             )
         return jz[np.argmax(js)]
 
-    def data_dict(self):
+    def data_dict(self) -> Dict[str, np.ndarray]:
         """Return the gathered data as a single convenient dictionary"""
         data = {}
         for k in ["jpeg_times", "jpeg_sizes", "stage_times", "stage_positions"]:
@@ -111,7 +119,7 @@ class JPEGSharpnessMonitor:
 
 @contextmanager
 def monitor_sharpness(microscope: Microscope):
-    m = JPEGSharpnessMonitor(microscope)
+    m: JPEGSharpnessMonitor = JPEGSharpnessMonitor(microscope)
     m.start()
     try:
         yield m
@@ -119,18 +127,18 @@ def monitor_sharpness(microscope: Microscope):
         m.stop()
 
 
-def sharpness_sum_lap2(rgb_image: np.ndarray):
+def sharpness_sum_lap2(rgb_image: np.ndarray) -> np.float:
     """Return an image sharpness metric: sum(laplacian(image)**")"""
-    image_bw = np.mean(rgb_image, 2)
-    image_lap = ndimage.filters.laplace(image_bw)
+    image_bw: np.float = np.mean(rgb_image, 2)
+    image_lap: np.float = ndimage.filters.laplace(image_bw)
     return np.mean(image_lap.astype(np.float) ** 4)
 
 
-def sharpness_edge(image: np.ndarray):
+def sharpness_edge(image: np.ndarray) -> np.float:
     """Return a sharpness metric optimised for vertical lines"""
-    gray = np.mean(image.astype(float), 2)
-    n = 20
-    edge = np.array([[-1] * n + [1] * n])
+    gray: np.float = np.mean(image.astype(float), 2)
+    n: int = 20
+    edge: np.ndarray = np.array([[-1] * n + [1] * n])
     return np.sum(
         [np.sum(ndimage.filters.convolve(gray, W) ** 2) for W in [edge, edge.T]]
     )
@@ -161,7 +169,7 @@ class AutofocusExtension(BaseExtension):
 
     def measure_sharpness(
         self, microscope: Microscope, metric_fn: Callable = sharpness_sum_lap2
-    ):
+    ) -> np.float:
         """Measure the sharpness of the camera's current view."""
 
         if hasattr(microscope.camera, "array") and callable(
@@ -177,7 +185,7 @@ class AutofocusExtension(BaseExtension):
         dz: List[int],
         settle: float = 0.5,
         metric_fn: Callable = sharpness_sum_lap2,
-    ):
+    ) -> Tuple[List[int], List[np.float]]:
         """Perform a simple autofocus routine.
         The stage is moved to z positions (relative to current position) in dz,
         and at each position an image is captured and the sharpness function 
@@ -185,12 +193,12 @@ class AutofocusExtension(BaseExtension):
         highest.  No interpolation is performed.
         dz is assumed to be in ascending order (starting at -ve values)
         """
-        camera = microscope.camera
-        stage = microscope.stage
+        camera: BaseCamera = microscope.camera
+        stage: BaseStage = microscope.stage
 
         with set_properties(stage, backlash=256), stage.lock, camera.lock:
-            sharpnesses = []
-            positions = []
+            sharpnesses: List[np.float] = []
+            positions: List[int] = []
 
             # Some cameras may not have annotate_text. Reset if it does
             if getattr(camera, "annotate_text"):
@@ -198,29 +206,33 @@ class AutofocusExtension(BaseExtension):
 
             for _ in stage.scan_z(dz, return_to_start=False):
                 if current_action() and current_action().stopped:
-                    return
+                    return [], []
                 positions.append(stage.position[2])
                 time.sleep(settle)
                 sharpnesses.append(self.measure_sharpness(microscope, metric_fn))
 
-            newposition = positions[np.argmax(sharpnesses)]
+            newposition: int = positions[int(np.argmax(sharpnesses))]
             stage.move_rel((0, 0, newposition - stage.position[2]))
 
         return positions, sharpnesses
 
-    def move_and_find_focus(self, microscope: Microscope, dz: int):
+    def move_and_find_focus(self, microscope: Microscope, dz: int) -> int:
         """Make a relative Z move and return the peak sharpness position"""
         with monitor_sharpness(microscope) as m:
             m.focus_rel(dz)
             return m.sharpest_z_on_move(0)
 
-    def move_and_measure(self, microscope: Microscope, dz: int):
+    def move_and_measure(
+        self, microscope: Microscope, dz: int
+    ) -> Dict[str, np.ndarray]:
         """Make a relative Z move and return the sharpness data"""
         with monitor_sharpness(microscope) as m:
             m.focus_rel(dz)
             return m.data_dict()
 
-    def fast_autofocus(self, microscope: Microscope, dz: int = 2000):
+    def fast_autofocus(
+        self, microscope: Microscope, dz: int = 2000
+    ) -> Dict[str, np.ndarray]:
         """Perform a down-up-down-up autofocus"""
         with microscope.camera.lock, microscope.stage.lock:
             with monitor_sharpness(microscope) as m:
@@ -231,7 +243,7 @@ class AutofocusExtension(BaseExtension):
                 # z: Final z position after move
                 i, z = m.focus_rel(dz)
                 # Get the z position with highest sharpness from the previous move (index i)
-                fz = m.sharpest_z_on_move(i)
+                fz: int = m.sharpest_z_on_move(i)
                 # Move all the way to the start so it's consistent
                 # Store final absolute z position from this return move
                 i, z = m.focus_rel(-dz)
@@ -248,7 +260,7 @@ class AutofocusExtension(BaseExtension):
         target_z: int = 0,
         initial_move_up: bool = True,
         mini_backlash: int = 25,
-    ):
+    ) -> Dict[str, np.ndarray]:
         """Autofocus by measuring on the way down, and moving back up with feedback.
 
         This autofocus method is very efficient, as it only passes the peak once.
@@ -294,11 +306,15 @@ class AutofocusExtension(BaseExtension):
                     m.focus_rel(dz / 2)
                 # move down
                 logging.debug("Move down")
+                i: int
+                z: int
                 i, z = m.focus_rel(-dz)
                 # now inspect where the sharpest point is, and estimate the sharpness
                 # (JPEG size) that we should find at the start of the Z stack
+                jz: np.ndarray  # np.ndarray[float]
+                js: np.ndarray  # np.ndarray[float]
                 _, jz, js = m.move_data(i)
-                best_z = jz[np.argmax(js)]
+                best_z: int = jz[np.argmax(js)]
 
                 # now move to the start of the z stack
                 logging.debug("Move to the start of the z stack")
@@ -309,17 +325,19 @@ class AutofocusExtension(BaseExtension):
                 # We've deliberately undershot - figure out how much further we should move based on the curve
                 logging.debug("Calculate remining movement")
                 current_js = m.camera.stream.last.size
-                imax = np.argmax(js)  # we want to crop out just the bit below the peak
+                imax: int = int(
+                    np.argmax(js)
+                )  # we want to crop out just the bit below the peak
                 js = js[imax:]  # NB z is in DECREASING order
                 jz = jz[imax:]
-                inow = np.argmax(
-                    js < current_js
+                inow: int = int(
+                    np.argmax(js < current_js)
                 )  # use the curve we recorded to estimate our position
 
                 # So, the Z position corresponding to our current sharpness value is zs[inow]
                 # That means we should move forwards, by best_z - zs[inow]
                 logging.debug("Correction move")
-                correction_move = best_z + target_z - jz[inow]
+                correction_move: int = best_z + target_z - jz[inow]
                 logging.debug(
                     "Fast autofocus scan: correcting backlash by moving %s steps",
                     (correction_move),
