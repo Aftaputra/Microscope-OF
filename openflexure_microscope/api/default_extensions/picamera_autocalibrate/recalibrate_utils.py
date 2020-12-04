@@ -78,10 +78,12 @@ def auto_expose_and_freeze_settings(camera: PiCamera):
 def channels_from_bayer_array(bayer_array: np.ndarray) -> np.ndarray:
     """Given the 'array' from a PiBayerArray, return the 4 channels."""
     bayer_pattern: List[Tuple[int, int]] = [(0, 0), (0, 1), (1, 0), (1, 1)]
-    channels: np.ndarray = np.zeros(
-        (4, bayer_array.shape[0] // 2, bayer_array.shape[1] // 2),
-        dtype=bayer_array.dtype,
+    channels_shape: Tuple[int, ...] = (
+        4,
+        bayer_array.shape[0] // 2,
+        bayer_array.shape[1] // 2,
     )
+    channels: np.ndarray = np.zeros(channels_shape, dtype=bayer_array.dtype)
     for i, offset in enumerate(bayer_pattern):
         # We simplify life by dealing with only one channel at a time.
         channels[i, :, :] = np.sum(

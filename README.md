@@ -10,9 +10,15 @@ This includes installing the server in a mode better suited for active developme
 
 # Developer guidelines
 
+The Raspberry Pi image we use currently ships with Python 3.7.3. For local development, please use PyEnv or similar to make sure you're running on this version. For example, Windows users can use [Scoop](https://scoop.sh/) to install specific Python versions.
 ## Installation
 
 * `git clone https://gitlab.com/openflexure/openflexure-microscope-server.git`
+* `cd openflexure-microscope-server`
+* (Optional) Set local Python version
+  * `pyenv init`
+  * `pyenv install 3.7.3`
+  * `pyenv local 3.7.3`
 * `poetry install`
   * Building the static interface will require a valid Node.js installation
   * To build on a Raspberry Pi:
