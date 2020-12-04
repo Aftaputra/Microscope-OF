@@ -11,7 +11,11 @@
       <!-- Left side controls -->
       <div
         class="uk-navbar-left uk-padding-remove-top uk-padding-remove-bottom"
-      ></div>
+      >
+        <select v-model="filterLevel" class="uk-select">
+          <option v-for="level in allLevels" :key="level">{{ level }}</option>
+        </select>
+      </div>
 
       <!-- Right side buttons -->
       <div class="uk-navbar-right">
@@ -40,15 +44,14 @@
         v-for="item in pagedItems"
         :key="item.timestamp"
         uk-alert
+        class="logging-entry"
         :class="{
           'uk-alert-warning uk-alert': item.data.levelname == 'WARNING',
           'uk-alert-danger uk-alert': item.data.levelname == 'ERROR'
         }"
       >
-        <p>
-          <b>{{ formatDateTime(item.data.created) }}</b>
-        </p>
-        {{ item.data.levelname }}: {{ item.data.message }}
+        <b>{{ formatDateTime(item.data.created) }}</b>
+        <div class="logging-message">{{ formatMessage(item) }}</div>
       </div>
 
       <Paginate
@@ -84,11 +87,28 @@ export default {
     return {
       maxitems: 20,
       page: 1,
-      logs: []
+      logs: [],
+      allLevels: ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+      filterLevel: "WARNING"
     };
   },
 
   computed: {
+    filteredLevels: function() {
+      let cutoffIndex = this.allLevels.indexOf(this.filterLevel);
+      return this.allLevels.slice(cutoffIndex, -1);
+    },
+    filteredItems: function() {
+      var items = [];
+      for (var item of this.logs) {
+        // Add to capture list if matched
+        if (this.filteredLevels.includes(item.data.levelname)) {
+          items.push(item);
+        }
+      }
+
+      return items;
+    },
     loggingUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/events/logging`;
     },
@@ -97,10 +117,10 @@ export default {
     },
     pagedItems: function() {
       let startIndex = (this.page - 1) * this.maxitems;
-      return this.logs.slice(startIndex, startIndex + this.maxitems);
+      return this.filteredItems.slice(startIndex, startIndex + this.maxitems);
     },
     numberOfPages: function() {
-      return Math.floor(this.logs.length / this.maxitems);
+      return Math.floor(this.filteredItems.length / this.maxitems);
     }
   },
 
@@ -134,6 +154,9 @@ export default {
     formatDateTime: function(isoDateTimeString) {
       let date = new Date(isoDateTimeString);
       return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    },
+    formatMessage: function(item) {
+      return item.data.levelname + ": " + item.data.message;
     }
   }
 };
@@ -146,5 +169,11 @@ export default {
   border-color: rgba(180, 180, 180, 0.25);
   margin-bottom: 30px;
   height: 80px;
+}
+.logging-entry {
+  white-space: break-spaces;
+}
+.logging-message {
+  font-family: monospace;
 }
 </style>
