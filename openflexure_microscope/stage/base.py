@@ -5,6 +5,8 @@ import numpy as np
 from labthings import StrictLock
 from typing_extensions import Literal
 
+CoordinateType = Tuple[int, int, int]
+
 
 class BaseStage(metaclass=ABCMeta):
     """
@@ -41,7 +43,7 @@ class BaseStage(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def position(self) -> Tuple[int, int, int]:
+    def position(self) -> CoordinateType:
         """The current position, as a list"""
 
     @property
@@ -64,7 +66,7 @@ class BaseStage(metaclass=ABCMeta):
     @abstractmethod
     def move_rel(
         self,
-        displacement: Union[int, Tuple[int, int, int]],
+        displacement: Union[int, CoordinateType],
         axis: Optional[Literal["x", "y", "z"]] = None,
         backlash: bool = True,
     ):
@@ -74,7 +76,7 @@ class BaseStage(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def move_abs(self, final: Tuple[int, int, int], **kwargs):
+    def move_abs(self, final: CoordinateType, **kwargs):
         """Make an absolute move to a position"""
 
     @abstractmethod
@@ -87,7 +89,7 @@ class BaseStage(metaclass=ABCMeta):
 
     def scan_linear(
         self,
-        rel_positions: List[Tuple[int, int, int]],
+        rel_positions: List[CoordinateType],
         backlash: bool = True,
         return_to_start: bool = True,
     ):

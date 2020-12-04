@@ -15,7 +15,7 @@ import json
 import logging
 import os
 import time
-from typing import List, NamedTuple, Tuple
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
 
 import numpy as np
 import PIL
@@ -33,15 +33,19 @@ from labthings.utilities import create_from_path, get_by_path, set_by_path
 from labthings.views import ActionView, PropertyView
 
 from openflexure_microscope.config import JSONEncoder
+from openflexure_microscope.microscope import Microscope
 from openflexure_microscope.paths import data_file_path
 
 CSM_DATAFILE_NAME = "csm_calibration.json"
 CSM_DATAFILE_PATH = data_file_path(CSM_DATAFILE_NAME)
 
+CoordinateType = Tuple[float, float, float]
+XYCoordinateType = Tuple[float, float]
+
 
 class MoveHistory(NamedTuple):
     times: List[float]
-    stage_positions: List[Tuple[int, int, int]]
+    stage_positions: List[CoordinateType]
 
 
 class LoggingMoveWrapper:
@@ -55,12 +59,12 @@ class LoggingMoveWrapper:
     so we can estimate how long moves will take.
     """
 
-    def __init__(self, move_function):
-        self._move_function = move_function
-        self._current_position = None
+    def __init__(self, move_function: Callable):
+        self._move_function: Callable = move_function
+        self._current_position: Optional[CoordinateType] = None
         self.clear_history()
 
-    def __call__(self, new_position, *args, **kwargs):
+    def __call__(self, new_position: CoordinateType, *args, **kwargs):
         """Move to a new position, and record it"""
         self._history.append((time.time(), self._current_position))
         self._move_function(new_position, *args, **kwargs)
@@ -68,15 +72,15 @@ class LoggingMoveWrapper:
         self._history.append((time.time(), self._current_position))
 
     @property
-    def history(self):
+    def history(self) -> MoveHistory:
         """The history, as a numpy array of times and another of positions"""
-        times = np.array([t for t, p in self._history])
-        positions = np.array([p for t, p in self._history])
+        times: List[float] = [t for t, p in self._history if p is not None]
+        positions: List[CoordinateType] = [p for t, p in self._history if p is not None]
         return MoveHistory(times, positions)
 
     def clear_history(self):
         """Reset our history to be an empty list"""
-        self._history = []
+        self._history: List[Tuple[float, Optional[CoordinateType]]] = []
 
 
 class CSMExtension(BaseExtension):
@@ -108,7 +112,7 @@ class CSMExtension(BaseExtension):
             GetCalibrationFile, "/get_calibration", endpoint="get_calibration"
         )
 
-    _microscope = None
+    _microscope: Optional[Microscope] = None
 
     @property
     def microscope(self):
@@ -119,59 +123,64 @@ class CSMExtension(BaseExtension):
 
     def update_settings(self, settings):
         """Update the stored extension settings dictionary"""
-        keys = ["extensions", self.name]
-        dictionary = create_from_path(keys)
+        keys: List[str] = ["extensions", self.name]
+        dictionary: dict = create_from_path(keys)
         set_by_path(dictionary, keys, settings)
         logging.info("Updating settings with %s", dictionary)
         self.microscope.update_settings(dictionary)
         self.microscope.save_settings()
 
-    def get_settings(self):
+    def get_settings(self) -> Dict[str, Any]:
         """Retrieve the settings for this extension"""
-        keys = ["extensions", self.name]
+        keys: List[str] = ["extensions", self.name]
         return get_by_path(self.microscope.read_settings(), keys)
 
-    def camera_stage_functions(self):
+    def camera_stage_functions(self) -> Tuple[Callable, Callable, Callable, Callable]:
         """Return functions that allow us to interface with the microscope"""
-        self.microscope.camera.start_worker()  # ensure the worker thread is running, so there is an MJPEG stream
 
         def grab_image():
-            jpeg = self.microscope.camera.get_frame()
+            jpeg: bytes = self.microscope.camera.get_frame()
             return np.array(PIL.Image.open(io.BytesIO(jpeg)))
 
-        def get_position():
+        def get_position() -> CoordinateType:
             return self.microscope.stage.position
 
-        move = self.microscope.stage.move_abs
+        move: Callable = self.microscope.stage.move_abs
 
         def wait():
             time.sleep(0.2)
 
         return grab_image, get_position, move, wait
 
-    def calibrate_1d(self, direction):
+    def calibrate_1d(self, direction: Tuple[float, float, float]) -> dict:
         """Move a microscope's stage in 1D, and figure out the relationship with the camera"""
+        grab_image: Callable
+        get_position: Callable
+        move: Callable
+        wait: Callable
         grab_image, get_position, move, wait = self.camera_stage_functions()
         move = LoggingMoveWrapper(move)  # log positions and times for stage calibration
 
         tracker = Tracker(grab_image, get_position, settle=wait)
 
-        result = calibrate_backlash_1d(tracker, move, direction)
+        direction_array: np.ndarray = np.array(direction)
+
+        result: dict = calibrate_backlash_1d(tracker, move, direction_array)
         result["move_history"] = move.history
         return result
 
-    def calibrate_xy(self):
+    def calibrate_xy(self) -> Dict[str, dict]:
         """Move the microscope's stage in X and Y, to calibrate its relationship to the camera"""
         logging.info("Calibrating X axis:")
-        cal_x = self.calibrate_1d(np.array([1, 0, 0]))
+        cal_x: dict = self.calibrate_1d((1, 0, 0))
         logging.info("Calibrating Y axis:")
-        cal_y = self.calibrate_1d(np.array([0, 1, 0]))
+        cal_y: dict = self.calibrate_1d((0, 1, 0))
 
         # Combine X and Y calibrations to make a 2D calibration
-        cal_xy = image_to_stage_displacement_from_1d([cal_x, cal_y])
+        cal_xy: dict = image_to_stage_displacement_from_1d([cal_x, cal_y])
         self.update_settings(cal_xy)
 
-        data = {
+        data: Dict[str, dict] = {
             "camera_stage_mapping_calibration": cal_xy,
             "linear_calibration_x": cal_x,
             "linear_calibration_y": cal_y,
@@ -183,31 +192,38 @@ class CSMExtension(BaseExtension):
         return data
 
     @property
-    def image_to_stage_displacement_matrix(self):
+    def image_to_stage_displacement_matrix(self) -> np.ndarray:  # 2x2 integer array
         """A 2x2 matrix that converts displacement in image coordinates to stage coordinates."""
-        try:
-            settings = self.get_settings()
-            return settings["image_to_stage_displacement"]
-        except KeyError as e:
-            raise ValueError("The microscope has not yet been calibrated.") from e
+        displacement_matrix = self.get_settings().get("image_to_stage_displacement")
+        if not displacement_matrix:
+            raise ValueError("The microscope has not yet been calibrated.")
+        return np.array(displacement_matrix)
 
-    def move_in_image_coordinates(self, displacement_in_pixels):
+    def move_in_image_coordinates(self, displacement_in_pixels: XYCoordinateType):
         """Move by a given number of pixels on the camera"""
-        p = np.array(displacement_in_pixels)
-        relative_move = np.dot(p, self.image_to_stage_displacement_matrix)
+        relative_move: np.ndarray = np.dot(
+            np.array(displacement_in_pixels), self.image_to_stage_displacement_matrix
+        )
         self.microscope.stage.move_rel([relative_move[0], relative_move[1], 0])
 
-    def closed_loop_move_in_image_coordinates(self, displacement_in_pixels, **kwargs):
+    def closed_loop_move_in_image_coordinates(
+        self, displacement_in_pixels: XYCoordinateType, **kwargs
+    ):
         """Move by a given number of pixels on the camera, using the camera as an encoder."""
         grab_image, get_position, _, wait = self.camera_stage_functions()
 
         tracker = Tracker(grab_image, get_position, settle=wait)
         tracker.acquire_template()
         closed_loop_move(
-            tracker, self.move_in_image_coordinates, displacement_in_pixels, **kwargs
+            tracker,
+            self.move_in_image_coordinates,
+            np.array(displacement_in_pixels),
+            **kwargs
         )
 
-    def closed_loop_scan(self, scan_path, **kwargs):
+    def closed_loop_scan(
+        self, scan_path: List[XYCoordinateType], **kwargs
+    ) -> List[CoordinateType]:
         """Perform closed-loop moves to each point defined in scan_path.
 
         This returns a generator, which will move the stage to each point in
@@ -219,7 +235,7 @@ class CSMExtension(BaseExtension):
             for i, pos in self.extension.closed_loop_scan(scan_path):
                 capture_image(f"image_{i}.jpg")
 
-        ``scan_path`` should be an Nx2 numpy array defining
+        ``scan_path`` should be an Nx2 array defining
         the points to visit in pixels relative to the current position.
 
         If an exception occurs during the scan, we automatically return to the
@@ -235,11 +251,13 @@ class CSMExtension(BaseExtension):
             tracker, self.move_in_image_coordinates, move, np.array(scan_path), **kwargs
         )
 
-    def test_closed_loop_spiral_scan(self, step_size, N, **kwargs):
+    def test_closed_loop_spiral_scan(
+        self, step_size: Tuple[int, int], N: int, **kwargs
+    ):
         """Move the microscope in a spiral scan, and return the positions."""
-        scan_path = ordered_spiral(0, 0, N, *step_size)
+        scan_path: List[XYCoordinateType] = ordered_spiral(0, 0, N, *step_size)
 
-        for _ in self.closed_loop_scan(np.array(scan_path), **kwargs):
+        for _ in self.closed_loop_scan(scan_path, **kwargs):
             pass
 
 
@@ -249,7 +267,7 @@ class Calibrate1DView(ActionView):
     def post(self, args):
         """Calibrate one axis of the microscope stage against the camera."""
 
-        direction = np.array(args.get("direction"))
+        direction: Tuple[float, float, float] = args.get("direction")
 
         return self.extension.calibrate_1d(direction)
 
@@ -273,9 +291,7 @@ class MoveInImageCoordinatesView(ActionView):
     def post(self, args):
         """Move the microscope stage, such that we move by a given number of pixels on the camera"""
         logging.debug("moving in pixels")
-        self.extension.move_in_image_coordinates(
-            np.array([args.get("x"), args.get("y")])
-        )
+        self.extension.move_in_image_coordinates((args.get("x"), args.get("y")))
 
         return self.extension.microscope.state["stage"]["position"]
 
@@ -294,7 +310,7 @@ class ClosedLoopMoveInImageCoordinatesView(ActionView):
         """Move the microscope stage, such that we move by a given number of pixels on the camera"""
         logging.debug("moving in pixels")
         self.extension.closed_loop_move_in_image_coordinates(
-            np.array([args.get("x"), args.get("y")])
+            (args.get("x"), args.get("y"))
         )
 
         return self.extension.microscope.state["stage"]["position"]
@@ -319,7 +335,7 @@ class TestClosedLoopSpiralScanView(ActionView):
         """Move the microscope stage, such that we move by a given number of pixels on the camera"""
         logging.debug("moving in pixels")
         return self.extension.test_closed_loop_spiral_scan(
-            np.array([args.get("x"), args.get("y")]), args.get("N")
+            (args.get("x"), args.get("y")), args.get("N")
         )
 
 

@@ -179,7 +179,7 @@ class BaseCamera(metaclass=ABCMeta):
         )
         return True
 
-    def get_frame(self):
+    def get_frame(self) -> bytes:
         """
         Return the current camera frame.
 
