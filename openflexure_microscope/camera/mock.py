@@ -178,7 +178,7 @@ class MissingCamera(BaseCamera):
         """
         Change the camera zoom, handling re-centering and scaling.
         """
-        logging.warning("Zoom not implemented in mock camera")
+        logging.info("Zoom not implemented in mock camera")
 
     def start_stream(self):
         pass
@@ -188,11 +188,11 @@ class MissingCamera(BaseCamera):
 
     def start_preview(self, *_, **__):
         """Start the on board GPU camera preview."""
-        logging.warning("GPU preview not implemented in mock camera")
+        logging.info("GPU preview not implemented in mock camera")
 
     def stop_preview(self):
         """Stop the on board GPU camera preview."""
-        logging.warning("GPU preview not implemented in mock camera")
+        logging.info("GPU preview not implemented in mock camera")
 
     def start_recording(self, *_, **__):
         """Start recording.
