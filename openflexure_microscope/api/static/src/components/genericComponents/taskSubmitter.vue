@@ -198,7 +198,6 @@ export default {
             if (!error) {
               error = Error("Unknown error");
             }
-
             this.$emit("error", error);
             this.$emit("finished");
           })

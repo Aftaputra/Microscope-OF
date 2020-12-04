@@ -119,7 +119,6 @@ export default {
 
     deleteAll: function() {
       axios.all(this.allURLs.map(l => axios.delete(l))).then(() => {
-        console.log("Delete finished")
         // Emit signal to update capture list
         this.$root.$emit("globalUpdateCaptures");
       });

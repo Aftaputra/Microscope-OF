@@ -18,7 +18,7 @@
         :submit-label="'Create ZIP'"
         :submit-data="captureIds"
         @response="onResponse"
-        @error="onError"
+        @error="modalError"
       >
       </taskSubmitter>
     </div>
@@ -163,10 +163,6 @@ export default {
       this.lastSessionId = response.output.id;
       this.downloadUrl = `${this.zipGetterUri}/${this.lastSessionId}`;
       this.downloadReady = true;
-    },
-
-    onError: function(error) {
-      this.modalError(error); // Let mixin handle error
     }
   }
 };

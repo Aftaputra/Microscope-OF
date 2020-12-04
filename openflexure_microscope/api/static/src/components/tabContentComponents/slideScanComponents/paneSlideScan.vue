@@ -95,7 +95,7 @@
           submit-label="Start scan"
           @submit="scanRunning = true"
           @response="scanRunning = false"
-          @error="scanRunning = false"
+          @error="onScanError"
         ></taskSubmitter>
         <br />
 
@@ -293,6 +293,11 @@ export default {
         pad(tzo % 60)
       );
     }
+  },
+
+  onScanError: function(error) {
+    this.scanRunning = false;
+    this.modalError(error);
   }
 };
 </script>
