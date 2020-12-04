@@ -3,14 +3,16 @@ import io
 import logging
 import time
 from abc import ABCMeta, abstractmethod
-from collections import namedtuple
 from types import TracebackType
-from typing import BinaryIO, List, Optional, Tuple, Type, Union
+from typing import BinaryIO, List, NamedTuple, Optional, Tuple, Type, Union
 
 from labthings import ClientEvent, StrictLock
 
+
 # Class to store a frames metadata
-TrackerFrame = namedtuple("TrackerFrame", ["size", "time"])
+class TrackerFrame(NamedTuple):
+    size: int
+    time: float
 
 
 class FrameStream(io.BytesIO):
