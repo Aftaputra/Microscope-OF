@@ -233,6 +233,11 @@ export default {
         });
     },
 
+    onScanError: function(error) {
+      this.scanRunning = false;
+      this.modalError(error);
+    },
+
     decrement: function() {
       if (this.stepValue > 0) {
         this.stepValue = this.stepValue - 1;
@@ -293,11 +298,6 @@ export default {
         pad(tzo % 60)
       );
     }
-  },
-
-  onScanError: function(error) {
-    this.scanRunning = false;
-    this.modalError(error);
   }
 };
 </script>
