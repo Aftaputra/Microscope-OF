@@ -22,7 +22,7 @@ try:
 except Exception as e:  # pylint: disable=W0703
     logging.error(e)
     logging.warning("Unable to import PiCameraStreamer")
-from labthings import CompositeLock, StrictLock
+from labthings import CompositeLock
 
 from openflexure_microscope.config import user_configuration, user_settings
 
@@ -48,7 +48,7 @@ class Microscope:
 
         # Initialise with an empty composite lock
         #: :py:class:`labthings.CompositeLock`: Composite lock for locking both camera and stage
-        self.lock: Union[CompositeLock, StrictLock] = CompositeLock([])
+        self.lock: CompositeLock = CompositeLock([])
 
         self.camera: BaseCamera = None  #: Currently connected camera object
         self.stage: BaseStage = None  #: Currently connected stage object

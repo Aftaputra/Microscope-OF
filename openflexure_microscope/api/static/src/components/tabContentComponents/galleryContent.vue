@@ -197,7 +197,7 @@ export default {
       var captures = [];
       for (var capture of this.captures) {
         // Add to capture list if matched
-        if (!capture.dataset) {
+        if (!this.isDatasetPopulated(capture.dataset)) {
           captures.push(capture);
         }
       }
@@ -212,7 +212,7 @@ export default {
       for (var capture of this.captures) {
         var dataset = capture.dataset;
 
-        if (dataset) {
+        if (this.isDatasetPopulated(dataset)) {
           var id = dataset["id"];
 
           // If this scan ID hasn't been seen before
@@ -358,6 +358,18 @@ export default {
           .catch(error => {
             this.modalError(error); // Let mixin handle error
           });
+      }
+    },
+
+    isDatasetPopulated: function(dataset) {
+      if (
+        !dataset || // If no dataset key
+        (dataset.constructor === Object && // Or dataset is an object...
+          Object.keys(dataset).length === 0) // ...but it's empty
+      ) {
+        return false;
+      } else {
+        return true;
       }
     },
 

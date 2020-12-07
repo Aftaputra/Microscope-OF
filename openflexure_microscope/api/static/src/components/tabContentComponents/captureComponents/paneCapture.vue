@@ -248,9 +248,8 @@
         :submit-data="scanPayload"
         :submit-label="'Start Scan'"
         :button-primary="true"
-        @submit="onScanSubmit"
         @response="onScanResponse"
-        @error="onScanError"
+        @error="modalError"
       >
       </taskSubmitter>
     </div>
@@ -433,14 +432,10 @@ export default {
         });
     },
 
-    onScanSubmit: function() {},
-
     onScanResponse: function() {
       this.modalNotify("Finished scan.");
-    },
-
-    onScanError: function(error) {
-      this.modalError(error);
+      // Emit signal to update capture list
+      this.$root.$emit("globalUpdateCaptures");
     }
   }
 };

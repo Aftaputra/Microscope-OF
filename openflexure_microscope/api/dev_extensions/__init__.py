@@ -1,1 +1,3 @@
-from .tools import devtools_extension_v2
+from .tools import DevToolsExtension
+
+LABTHINGS_EXTENSIONS = [DevToolsExtension]

@@ -148,6 +148,7 @@
                   :submit-on-event="'globalFastAutofocusEvent'"
                   @taskStarted="isAutofocusing = 1"
                   @finished="isAutofocusing = 0"
+                  @error="modalError"
                 ></taskSubmitter>
               </div>
 
@@ -160,6 +161,7 @@
                   :button-primary="false"
                   @taskStarted="isAutofocusing = 2"
                   @finished="isAutofocusing = 0"
+                  @error="modalError"
                 ></taskSubmitter>
               </div>
 
@@ -172,6 +174,7 @@
                   :button-primary="false"
                   @taskStarted="isAutofocusing = 3"
                   @finished="isAutofocusing = 0"
+                  @error="modalError"
                 ></taskSubmitter>
               </div>
             </div>

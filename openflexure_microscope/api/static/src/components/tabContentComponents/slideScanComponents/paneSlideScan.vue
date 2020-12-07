@@ -95,7 +95,7 @@
           submit-label="Start scan"
           @submit="scanRunning = true"
           @response="scanRunning = false"
-          @error="scanRunning = false"
+          @error="onScanError"
         ></taskSubmitter>
         <br />
 
@@ -231,6 +231,11 @@ export default {
         .catch(error => {
           this.modalError(error); // Let mixin handle error
         });
+    },
+
+    onScanError: function(error) {
+      this.scanRunning = false;
+      this.modalError(error);
     },
 
     decrement: function() {

@@ -16,6 +16,15 @@ Package extensions
 ------------------
 Generally, for adding anything other than very simple functionality, extensions should be written as `package distributions <https://packaging.python.org/tutorials/packaging-projects/>`_. This has the advantage of allowing relative imports, so functionality can be easily split over several files. For example, class definitions associated with API routes can be separated from class definitions associated with the microscope extension.
 
-Your module must be a folder within the extensions folder (by default ``/var/openflexure/extensions/microscope_extensions``), and include a top-level ``__init__.py`` file which includes (or imports) all of your extension objects.
+Your module must be a folder within the extensions folder (by default ``/var/openflexure/extensions/microscope_extensions``), and include a top-level ``__init__.py`` file which includes (or imports) all of your extension classes, and includes them in a global constant `LABTHINGS_EXTENSIONS` list.
+
+For example, if your extension classes are defined in a file ``my_extension.py``, your adjascent ``__init__.py`` file may look like:
+
+.. code-block:: python
+
+    from .my_extension import MyExtensionClass, MyOtherExtensionClass
+
+    LABTHINGS_EXTENSIONS = (MyExtensionClass, MyOtherExtensionClass)
+
 
 In order to enable a globally installed, packaged extension, create a file in the applications extensions directory (by default ``/var/openflexure/extensions/microscope_extensions``) which imports your extension object(s) from your module.

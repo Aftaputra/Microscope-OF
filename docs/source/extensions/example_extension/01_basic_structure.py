@@ -2,35 +2,35 @@ from labthings import find_component
 from labthings.extensions import BaseExtension
 
 
-def identify():
-    """
-    Demonstrate access to Microscope.camera, and Microscope.stage
-    """
-    microscope = find_component("org.openflexure.microscope")
+# Create the extension class
+class MyExtension(BaseExtension):
+    def __init__(self):
+        # Superclass init function
+        super().__init__("com.myname.myextension", version="0.0.0")
 
-    response = (
-        f"My name is {microscope.name}. "
-        f"My parent camera is {microscope.camera}, "
-        f"and my parent stage is {microscope.stage}."
-    )
+    def identify(self):
+        """
+        Demonstrate access to Microscope.camera, and Microscope.stage
+        """
+        microscope = find_component("org.openflexure.microscope")
 
-    return response
+        response = (
+            f"My name is {microscope.name}. "
+            f"My parent camera is {microscope.camera}, "
+            f"and my parent stage is {microscope.stage}."
+        )
+
+        return response
+
+    def rename(self, new_name):
+        """
+        Rename the microscope
+        """
+
+        microscope = find_component("org.openflexure.microscope")
+
+        microscope.name = new_name
+        microscope.save_settings()
 
 
-def rename(new_name):
-    """
-    Rename the microscope
-    """
-
-    microscope = find_component("org.openflexure.microscope")
-
-    microscope.name = new_name
-    microscope.save_settings()
-
-
-# Create your extension object
-my_extension = BaseExtension("com.myname.myextension", version="0.0.0")
-
-# Add methods to your extension
-my_extension.add_method(identify, "identify")
-my_extension.add_method(rename, "rename")
+LABTHINGS_EXTENSIONS = (MyExtension,)

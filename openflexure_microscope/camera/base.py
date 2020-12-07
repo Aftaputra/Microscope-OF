@@ -3,14 +3,16 @@ import io
 import logging
 import time
 from abc import ABCMeta, abstractmethod
-from collections import namedtuple
 from types import TracebackType
-from typing import BinaryIO, List, Optional, Tuple, Type, Union
+from typing import BinaryIO, List, NamedTuple, Optional, Tuple, Type, Union
 
 from labthings import ClientEvent, StrictLock
 
+
 # Class to store a frames metadata
-TrackerFrame = namedtuple("TrackerFrame", ["size", "time"])
+class TrackerFrame(NamedTuple):
+    size: int
+    time: float
 
 
 class FrameStream(io.BytesIO):
@@ -169,6 +171,21 @@ class BaseCamera(metaclass=ABCMeta):
             bayer: Store raw bayer data in capture
             thumbnail: Dimensions and quality (x, y, quality) of a thumbnail to generate, if supported
         """
+
+    def start_worker(self, **_) -> bool:
+        """Start the background camera thread if it isn't running yet."""
+        logging.warning(
+            "`start_worker` method has been deprecated and is no longer required. Please avoid calling this method."
+        )
+        return True
+
+    def get_frame(self) -> bytes:
+        """
+        Return the current camera frame.
+
+        Just an alias of self.stream.getframe()
+        """
+        return self.stream.getframe()
 
     def __enter__(self):
         """Create camera on context enter."""

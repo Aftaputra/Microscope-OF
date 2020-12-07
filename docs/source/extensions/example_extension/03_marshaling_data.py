@@ -2,7 +2,23 @@ from labthings import Schema, fields, find_component
 from labthings.extensions import BaseExtension
 from labthings.views import View
 
-## Extension methods
+
+# Create the extension class
+class MyExtension(BaseExtension):
+    def __init__(self):
+        # Superclass init function
+        super().__init__("com.myname.myextension", version="0.0.0")
+
+        # Add our API Views (defined below MyExtension)
+        self.add_view(ExampleIdentifyView, "/identify")
+        self.add_view(ExampleRenameView, "/rename")
+
+    def rename(self, microscope, new_name):
+        """
+        Rename the microscope
+        """
+        microscope.name = new_name
+        microscope.save_settings()
 
 
 # Define which properties of a Microscope object we care about,
@@ -15,18 +31,7 @@ class MicroscopeIdentifySchema(Schema):
     stage = fields.String()  # Stage object (represented as a string)
 
 
-def rename(microscope, new_name):
-    """
-    Rename the microscope
-    """
-
-    microscope.name = new_name
-    microscope.save_settings()
-
-
 ## Extension views
-
-
 class ExampleIdentifyView(View):
     # Format our returned object using MicroscopeIdentifySchema
     schema = MicroscopeIdentifySchema()
@@ -54,21 +59,11 @@ class ExampleRenameView(View):
         microscope = find_component("org.openflexure.microscope")
 
         # Pass microscope and new name to our rename function
-        rename(microscope, new_name)
+        self.extension.rename(microscope, new_name)
 
         # Return our microscope object,
         # let schema handle formatting the output
         return microscope
 
 
-## Create extension
-
-# Create your extension object
-my_extension = BaseExtension("com.myname.myextension", version="0.0.0")
-
-# Add methods to your extension
-my_extension.add_method(rename, "rename")
-
-# Add API views to your extension
-my_extension.add_view(ExampleIdentifyView, "/identify")
-my_extension.add_view(ExampleRenameView, "/rename")
+LABTHINGS_EXTENSIONS = (MyExtension,)

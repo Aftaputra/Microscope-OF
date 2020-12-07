@@ -12,7 +12,7 @@
         :submit-url="recalibrationLinks.calibrate_xy.href"
         :submit-label="'Auto-Calibrate using camera'"
         @response="onRecalibrateResponse"
-        @error="onRecalibrateError"
+        @error="modalError"
       >
       </taskSubmitter>
     </div>
@@ -149,10 +149,6 @@ export default {
       this.modalNotify("Finished stage-to-camera calibration.");
       // Update local settings
       this.updateSettings();
-    },
-
-    onRecalibrateError: function(error) {
-      this.modalError(error); // Let mixin handle error
     }
   }
 };

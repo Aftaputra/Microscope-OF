@@ -11,7 +11,7 @@
         :submit-url="recalibrationLinks.recalibrate.href"
         :submit-label="'Auto-Calibrate'"
         @response="onRecalibrateResponse"
-        @error="onRecalibrateError"
+        @error="modalError"
       >
       </taskSubmitter>
     </div>
@@ -126,10 +126,6 @@ export default {
 
     onRecalibrateResponse: function() {
       this.modalNotify("Finished recalibration.");
-    },
-
-    onRecalibrateError: function(error) {
-      this.modalError(error); // Let mixin handle error
     },
 
     flattenLensShadingTableRequest: function() {
