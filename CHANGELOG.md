@@ -1,39 +1,119 @@
-# [](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.8.0...v) (2020-11-24)
+# [v2.9.0](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.8.0...v2.9.0) (2020-12-07)
+
+## Developer changes
+
+### Extension loader
+
+* **Updated default extensions to subclass structure ([8d0759e](https://gitlab.com/openflexure/openflexure-microscope-server/commit/8d0759e))**
+  * Updated documentation to subclass-based extensions ([bacc111](https://gitlab.com/openflexure/openflexure-microscope-server/commit/bacc111))
+  * Added type information to LABTHINGS_EXTENSIONS ([b8354d3](https://gitlab.com/openflexure/openflexure-microscope-server/commit/b8354d3))
+  * Clarified LABTHINGS_EXTENSIONS in docs ([f849afd](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f849afd))
+
+### Testing
+* Added basic unit tests of non-integrated functions ([5137d1b](https://gitlab.com/openflexure/openflexure-microscope-server/commit/5137d1b))
+
+### Static analysis
+
+* Added extra type hints ([7ba3f44](https://gitlab.com/openflexure/openflexure-microscope-server/commit/7ba3f44))
+* Added numpy types ([63b633b](https://gitlab.com/openflexure/openflexure-microscope-server/commit/63b633b))
+* Added type hints to CSM extension ([311366c](https://gitlab.com/openflexure/openflexure-microscope-server/commit/311366c))
+* Fixed types in move_rel method ([ac667c3](https://gitlab.com/openflexure/openflexure-microscope-server/commit/ac667c3))
+* Static type analysis ([7866ec0](https://gitlab.com/openflexure/openflexure-microscope-server/commit/7866ec0))
+* Stricter runtime type checks ([f2a2d88](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f2a2d88))
 
 
-* Added .pre-commit-config.yaml to tarignore ([7b4e7fe](https://gitlab.com/openflexure/openflexure-microscope-server/commit/7b4e7fe))
-* Added API route to convert LST to PNG ([4d40e81](https://gitlab.com/openflexure/openflexure-microscope-server/commit/4d40e81))
+### Documentation
+
 * Added better developer notes ([a3b1b8a](https://gitlab.com/openflexure/openflexure-microscope-server/commit/a3b1b8a))
-* Added changelog generator ([f5acb25](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f5acb25))
+* Added changelog generator ([de6dbe4](https://gitlab.com/openflexure/openflexure-microscope-server/commit/de6dbe4))
+
+### CI/CD
 * Added eslint and cache to CI ([f5012cd](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f5012cd))
 * Added job explanation comments ([c1e17de](https://gitlab.com/openflexure/openflexure-microscope-server/commit/c1e17de))
-* Added options to invert navigation steps ([d49b34e](https://gitlab.com/openflexure/openflexure-microscope-server/commit/d49b34e))
 * Added poetry to script environment ([3814e7d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3814e7d))
 * Allow code quality jobs to retry ([f15a5c7](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f15a5c7))
+* Fixed JS artifact path ([3a90a42](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3a90a42))
+
+## API functionality
+
+* Added API route to convert LST to PNG ([4d40e81](https://gitlab.com/openflexure/openflexure-microscope-server/commit/4d40e81))
+
+## JS Client
+
+### New functionality
+
+* Added log level filter ([4d1d0a1](https://gitlab.com/openflexure/openflexure-microscope-server/commit/4d1d0a1))
+* Added options to invert navigation steps ([d49b34e](https://gitlab.com/openflexure/openflexure-microscope-server/commit/d49b34e))
+* Added backlash and settle time settings ([c0fcd22](https://gitlab.com/openflexure/openflexure-microscope-server/commit/c0fcd22))
+* Added stream and capture quality settings ([0f7cecb](https://gitlab.com/openflexure/openflexure-microscope-server/commit/0f7cecb))
+
+### Fixes
+
+* Fixed global state and scrolltotop ([ef9f257](https://gitlab.com/openflexure/openflexure-microscope-server/commit/ef9f257))
+* Fixed individual captures creating 'undefined' dataset ([213dec3](https://gitlab.com/openflexure/openflexure-microscope-server/commit/213dec3))
+* Fixed onError propagation ([08f6532](https://gitlab.com/openflexure/openflexure-microscope-server/commit/08f6532))
+* Fixed onScanError ([1de6b2a](https://gitlab.com/openflexure/openflexure-microscope-server/commit/1de6b2a))
+* globalUpdateCaptures after scan ([599c315](https://gitlab.com/openflexure/openflexure-microscope-server/commit/599c315))
+* Handle missing this.$refs.textboxKey ref ([9d04842](https://gitlab.com/openflexure/openflexure-microscope-server/commit/9d04842))
+* Fixed IHI tab icon duplication bug ([e17366d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/e17366d))
+
+### Design/style
+
+* Added custom h4 formatting ([4ba4403](https://gitlab.com/openflexure/openflexure-microscope-server/commit/4ba4403))
+* Rearranged element layout ([455b868](https://gitlab.com/openflexure/openflexure-microscope-server/commit/455b868))
+* Rearranged settings and added LST download ([f0a3127](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f0a3127))
+### Internal cleanup
+
+* Common watch format ([3e783c5](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3e783c5))
+* Removed unneeded plugin:vue/essential ([358d441](https://gitlab.com/openflexure/openflexure-microscope-server/commit/358d441))
+* Removed unused webcomponent support ([f187a3a](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f187a3a))
+* * Moved backlash settings ([a2f8158](https://gitlab.com/openflexure/openflexure-microscope-server/commit/a2f8158))
+
+
+## Server
+
+### Features
+
+* Added API route to convert LST to PNG ([4d40e81](https://gitlab.com/openflexure/openflexure-microscope-server/commit/4d40e81))
+  * Return LST as a file ([aba3eb3](https://gitlab.com/openflexure/openflexure-microscope-server/commit/aba3eb3))
+
+### Fixes
+
+* Fixed "classic" autofocus 'PiCameraStreamer' object has no attribute 'annotate_text' error ([58b2967](https://gitlab.com/openflexure/openflexure-microscope-server/commit/58b2967))
+* Fixed broken dataset rendering if key exists but is empty ([fd42e2e](https://gitlab.com/openflexure/openflexure-microscope-server/commit/fd42e2e))
+* Fixed camera settings read ([25d3b15](https://gitlab.com/openflexure/openflexure-microscope-server/commit/25d3b15))
+* Fixed get_locations method reference ([d288484](https://gitlab.com/openflexure/openflexure-microscope-server/commit/d288484))
+* Fixed SangaDeltaStage type annotations ([9659c45](https://gitlab.com/openflexure/openflexure-microscope-server/commit/9659c45))
+* Fixed tile method reference ([18a0eed](https://gitlab.com/openflexure/openflexure-microscope-server/commit/18a0eed))
+* Handle missing endpoints ([bc39277](https://gitlab.com/openflexure/openflexure-microscope-server/commit/bc39277))
+
+
+### Internal API changes
+
+* Deprecated camera `start_worker` and `get_frame` methods
+  * Added `start_worker` and `get_frame` aliases for compatibility ([bc9b80d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/bc9b80d))
+* Replace top-level actions View with builtin LabThings ([421a2e3](https://gitlab.com/openflexure/openflexure-microscope-server/commit/421a2e3))
+* Updated to LabThings 1.2.1 ([249e301](https://gitlab.com/openflexure/openflexure-microscope-server/commit/249e301))
+
+### Internal cleanup
+
+* **Remove separate camera stream thread ([021745d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/021745d))**
 * Cleaned up code layout ([da62126](https://gitlab.com/openflexure/openflexure-microscope-server/commit/da62126))
 * Cleaned up main app setup ([e464086](https://gitlab.com/openflexure/openflexure-microscope-server/commit/e464086))
 * Cleaned up store and removed unused FoV setting ([a1ae947](https://gitlab.com/openflexure/openflexure-microscope-server/commit/a1ae947))
 * Code formatting ([dd81640](https://gitlab.com/openflexure/openflexure-microscope-server/commit/dd81640))
-* Common watch format ([3e783c5](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3e783c5))
-* Don't allow Black to fail ([0d4fdf0](https://gitlab.com/openflexure/openflexure-microscope-server/commit/0d4fdf0))
-* Fixed camera settings read ([25d3b15](https://gitlab.com/openflexure/openflexure-microscope-server/commit/25d3b15))
-* Fixed global state and scrolltotop ([ef9f257](https://gitlab.com/openflexure/openflexure-microscope-server/commit/ef9f257))
-* Fixed JS artifact path ([3a90a42](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3a90a42))
-* Fixed release notes ([3c2b5f5](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3c2b5f5))
-* Fixed retry ([94bc49c](https://gitlab.com/openflexure/openflexure-microscope-server/commit/94bc49c))
+* Fixed unused imports ([b2192b2](https://gitlab.com/openflexure/openflexure-microscope-server/commit/b2192b2))
+* Integrated CSMExtension ([9203545](https://gitlab.com/openflexure/openflexure-microscope-server/commit/9203545))
 * Moved frames_iterator scope ([3058c67](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3058c67))
 * Moved gen() into streams.py ([c9c29a7](https://gitlab.com/openflexure/openflexure-microscope-server/commit/c9c29a7))
-* Rearranged settings and added LST download ([f0a3127](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f0a3127))
-* Remove separate camera stream thread ([021745d](https://gitlab.com/openflexure/openflexure-microscope-server/commit/021745d))
+* Only use CompositeLock for microscope lock ([e433a89](https://gitlab.com/openflexure/openflexure-microscope-server/commit/e433a89))
+* Reduced logging level of some mock camera notices ([8eff136](https://gitlab.com/openflexure/openflexure-microscope-server/commit/8eff136))
 * Removed old console logs ([2e34722](https://gitlab.com/openflexure/openflexure-microscope-server/commit/2e34722))
 * Removed old picamera_lst_path attribute ([85f77fa](https://gitlab.com/openflexure/openflexure-microscope-server/commit/85f77fa))
 * Removed pointless abstract method implementations ([6d1f019](https://gitlab.com/openflexure/openflexure-microscope-server/commit/6d1f019))
-* Removed unneeded plugin:vue/essential ([358d441](https://gitlab.com/openflexure/openflexure-microscope-server/commit/358d441))
-* Removed unused commented line ([65df702](https://gitlab.com/openflexure/openflexure-microscope-server/commit/65df702))
-* Removed unused webcomponent support ([f187a3a](https://gitlab.com/openflexure/openflexure-microscope-server/commit/f187a3a))
-* Replace top-level actions View with builtin LabThings ([421a2e3](https://gitlab.com/openflexure/openflexure-microscope-server/commit/421a2e3))
-* Return LST as a file ([aba3eb3](https://gitlab.com/openflexure/openflexure-microscope-server/commit/aba3eb3))
-* Updated Vue ESLint plugin ([52942d5](https://gitlab.com/openflexure/openflexure-microscope-server/commit/52942d5))
+* Removed unused pynpm package ([6819ded](https://gitlab.com/openflexure/openflexure-microscope-server/commit/6819ded))
+* Tweaked deprecation warnings ([a844efc](https://gitlab.com/openflexure/openflexure-microscope-server/commit/a844efc))
+* Updated dependencies ([3c3ecd7](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3c3ecd7))
 
 
 # [2.8.0](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.8.0-beta.3b...v2.8.0) (2020-11-16)
