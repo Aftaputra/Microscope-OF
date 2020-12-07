@@ -53,18 +53,19 @@
             <h4>Image quality</h4>
 
             <div class="uk-child-width-1-2" uk-grid>
-              <div v-if="mjpeg_quality !== undefined">
+              <div v-if="mjpeg_bitrate !== undefined">
                 <label class="uk-form-label" for="form-stacked-text"
-                  >Web stream quality (%)</label
+                  >Web stream bitrate</label
                 >
-                <div class="uk-form-controls">
-                  <input
-                    v-model="mjpeg_quality"
-                    class="uk-input uk-form-small"
-                    type="number"
-                    step="1"
-                  />
-                </div>
+                <select v-model="mjpeg_bitrate" class="uk-select uk-form-small">
+                  <option
+                    v-for="option in bitrateOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.text }}
+                  </option>
+                </select>
               </div>
 
               <div v-if="jpeg_quality !== undefined">
@@ -81,6 +82,16 @@
                 </div>
               </div>
             </div>
+
+            <span
+              v-if="
+                mjpeg_bitrate !== undefined &&
+                  mjpeg_bitrate < 17000000 &&
+                  mjpeg_bitrate != -1
+              "
+              class="uk-text-danger uk-margin-top-small"
+              >This stream bitrate may impact fast autofocus performance</span
+            >
           </div>
 
           <button
@@ -123,8 +134,15 @@ export default {
         analog_gain: undefined,
         digital_gain: undefined
       },
-      mjpeg_quality: undefined,
-      jpeg_quality: undefined
+      mjpeg_bitrate: undefined,
+      jpeg_quality: undefined,
+      bitrateOptions: [
+        { text: "Maximum", value: -1 },
+        { text: "High", value: 25000000 },
+        { text: "Normal", value: 17000000 },
+        { text: "Low", value: 5000000 },
+        { text: "Very low", value: 2500000 }
+      ]
     };
   },
 
@@ -145,7 +163,7 @@ export default {
         .then(response => {
           const cameraSettings = response.data.camera;
           // Get base camera settings
-          this.mjpeg_quality = cameraSettings.mjpeg_quality;
+          this.mjpeg_bitrate = cameraSettings.mjpeg_bitrate;
           this.jpeg_quality = cameraSettings.jpeg_quality;
           // Get Pi Camera settings if they exist
           if (cameraSettings.picamera) {
@@ -164,7 +182,7 @@ export default {
       // make the numbers be strings... TypeScript would solve this...
       var payload = {
         camera: {
-          mjpeg_quality: parseInt(this.mjpeg_quality),
+          mjpeg_bitrate: parseInt(this.mjpeg_bitrate),
           jpeg_quality: parseInt(this.jpeg_quality),
           picamera: {
             shutter_speed: parseFloat(this.picamera.shutter_speed),
