@@ -102,7 +102,6 @@ class PiCameraStreamer(BaseCamera):
         # 5000000: Low (may impact fast AF)
         # 2500000: Very low (may impact fast AF)
 
-
         # Start stream recording (and set resolution)
         self.start_stream()
         # Wait until frames are available
