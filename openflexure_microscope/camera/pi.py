@@ -94,6 +94,14 @@ class PiCameraStreamer(BaseCamera):
 
         self.jpeg_quality: int = 100  #: int: JPEG quality
         self.mjpeg_quality: int = 75  #: int: MJPEG quality
+        self.mjpeg_bitrate: int = -1  #: int: MJPEG quality
+        # Solid bitrate options:
+        # -1: Maximum
+        # 25000000: High
+        # 17000000: Normal
+        # 5000000: Low (may impact fast AF)
+        # 2500000: Very low (may impact fast AF)
+
 
         # Start stream recording (and set resolution)
         self.start_stream()
@@ -140,6 +148,7 @@ class PiCameraStreamer(BaseCamera):
             "numpy_resolution": self.numpy_resolution,
             "jpeg_quality": self.jpeg_quality,
             "mjpeg_quality": self.mjpeg_quality,
+            "mjpeg_bitrate": self.mjpeg_bitrate,
             "picamera": {},
         }
 
@@ -409,7 +418,7 @@ class PiCameraStreamer(BaseCamera):
                     self.stream,
                     format="mjpeg",
                     quality=self.mjpeg_quality,
-                    bitrate=-1,  # RWB: disable bitrate control
+                    bitrate=self.mjpeg_bitrate,  # RWB: disable bitrate control
                     # (bitrate control makes JPEG size less good as a focus
                     # metric)
                     splitter_port=1,
