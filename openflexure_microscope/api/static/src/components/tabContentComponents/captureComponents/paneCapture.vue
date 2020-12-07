@@ -434,6 +434,8 @@ export default {
 
     onScanResponse: function() {
       this.modalNotify("Finished scan.");
+      // Emit signal to update capture list
+      this.$root.$emit("globalUpdateCaptures");
     }
   }
 };
