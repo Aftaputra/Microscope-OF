@@ -98,7 +98,9 @@ export default {
       this.$emit("input", newSelected);
 
       // Move focus back to key textbox
-      this.$refs.textboxKey.focus();
+      if (this.$refs.textboxKey) {
+        this.$refs.textboxKey.focus();
+      }
     },
 
     delMetadataKey: function(key) {
