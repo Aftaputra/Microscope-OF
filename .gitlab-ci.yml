@@ -110,6 +110,7 @@ eslint:
     - npm run lint
 
   only:
+    - branches
     - merge_requests
     - tags
     - web
