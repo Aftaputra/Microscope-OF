@@ -12,6 +12,19 @@ from openflexure_microscope.stage.base import BaseStage
 from openflexure_microscope.utilities import axes_to_array
 
 
+def _displacement_to_array(
+    displacement: int, axis: Literal["x", "y", "z"]
+) -> np.ndarray:
+    # Create the displacement array
+    return np.array(
+        [
+            displacement if axis == "x" else 0,
+            displacement if axis == "y" else 0,
+            displacement if axis == "z" else 0,
+        ]
+    )
+
+
 class SangaStage(BaseStage):
     """
     Sangaboard v0.2 and v0.3 powered Stage object
@@ -55,7 +68,7 @@ class SangaStage(BaseStage):
         return 3
 
     @property
-    def position(self):
+    def position(self) -> Tuple[int, int, int]:
         return self.board.position
 
     @property
@@ -120,7 +133,7 @@ class SangaStage(BaseStage):
 
     def move_rel(
         self,
-        displacement: Union[int, Tuple[int, int, int]],
+        displacement: Union[int, Tuple[int, int, int], np.ndarray],
         axis: Optional[Literal["x", "y", "z"]] = None,
         backlash: bool = True,
     ):
@@ -141,10 +154,6 @@ class SangaStage(BaseStage):
         """
         with self.lock:
             logging.debug("Moving sangaboard by %s", displacement)
-
-            if not backlash or self.backlash is None:
-                return self.board.move_rel(displacement, axis=axis)
-
             # If we specify an axis name and a displacement int, convert to a displacement tuple
             if axis:
                 # Displacement MUST be an integer if axis name is specified
@@ -155,16 +164,10 @@ class SangaStage(BaseStage):
                 # Axis name MUST be x, y, or z
                 if axis not in ("x", "y", "z"):
                     raise ValueError("axis must be one of x, y, or z")
-
-                # Create the displacement array
-                displacement_array: np.ndarray = np.array(
-                    [
-                        displacement if axis == "x" else 0,
-                        displacement if axis == "y" else 0,
-                        displacement if axis == "z" else 0,
-                    ]
+                # Calculate displacement array
+                displacement_array: np.ndarray = _displacement_to_array(
+                    displacement, axis
                 )
-
             elif isinstance(displacement, np.ndarray):
                 displacement_array = displacement
             elif isinstance(displacement, (list, tuple, GeneratorType)):
@@ -173,6 +176,11 @@ class SangaStage(BaseStage):
             else:
                 raise TypeError(f"Unsupported displacement type {type(displacement)}")
 
+            # Handle simple case, no backlash
+            if not backlash or self.backlash is None:
+                return self.board.move_rel(displacement_array)
+
+            # Handle move with backlash correction
             # Calculate main movement
             initial_move: np.ndarray = displacement_array
             initial_move -= np.where(
@@ -191,7 +199,7 @@ class SangaStage(BaseStage):
         # can just take over before settling
         time.sleep(self.settle_time)
 
-    def move_abs(self, final: Tuple[int, int, int], **kwargs):
+    def move_abs(self, final: Union[Tuple[int, int, int], np.ndarray], **kwargs):
         """Make an absolute move to a position
         """
         with self.lock:
@@ -244,15 +252,21 @@ class SangaStage(BaseStage):
 
 class SangaDeltaStage(SangaStage):
     def __init__(
-        self, port=None, flex_h=80, flex_a=50, flex_b=50, camera_angle=0, **kwargs
+        self,
+        port: Optional[str] = None,
+        flex_h: int = 80,
+        flex_a: int = 50,
+        flex_b: int = 50,
+        camera_angle: float = 0,
+        **kwargs,
     ):
-        self.flex_h = flex_h
-        self.flex_a = flex_a
-        self.flex_b = flex_b
+        self.flex_h: int = flex_h
+        self.flex_a: int = flex_a
+        self.flex_b: int = flex_b
 
         # Set up camera rotation relative to stage
-        camera_theta = (camera_angle / 180) * np.pi
-        self.R_camera = np.array(
+        camera_theta: float = (camera_angle / 180) * np.pi
+        self.R_camera: np.ndarray = np.array(
             [
                 [np.cos(camera_theta), -np.sin(camera_theta), 0],
                 [np.sin(camera_theta), np.cos(camera_theta), 0],
@@ -263,13 +277,15 @@ class SangaDeltaStage(SangaStage):
         logging.debug(self.R_camera)
 
         # Transformation matrix converting delta into cartesian
-        x_fac = -1 * np.multiply(
+        x_fac: np.float = -1 * np.multiply(
             np.divide(2, np.sqrt(3)), np.divide(self.flex_b, self.flex_h)
         )
-        y_fac = -1 * np.divide(self.flex_b, self.flex_h)
-        z_fac = np.multiply(np.divide(1, 3), np.divide(self.flex_b, self.flex_a))
+        y_fac: np.float = -1 * np.divide(self.flex_b, self.flex_h)
+        z_fac: np.float = np.multiply(
+            np.divide(1, 3), np.divide(self.flex_b, self.flex_a)
+        )
 
-        self.Tvd = np.array(
+        self.Tvd: np.ndarray = np.array(
             [
                 [-x_fac, x_fac, 0],
                 [0.5 * y_fac, 0.5 * y_fac, -y_fac],
@@ -278,40 +294,76 @@ class SangaDeltaStage(SangaStage):
         )
         logging.debug(self.Tvd)
 
-        self.Tdv = np.linalg.inv(self.Tvd)
+        self.Tdv: np.ndarray = np.linalg.inv(self.Tvd)
         logging.debug(self.Tdv)
 
         SangaStage.__init__(self, port=port, **kwargs)
 
     @property
+    def raw_position(self) -> Tuple[int, int, int]:
+        return self.board.position
+
+    @property
     def position(self):
         # TODO: Account for camera rotation
-        position = np.dot(self.Tvd, self.board.position)
+        position: np.ndarray = np.dot(self.Tvd, self.raw_position)
 
-        position = np.dot(np.linalg.inv(self.R_camera), position)
+        position: np.ndarray = np.dot(np.linalg.inv(self.R_camera), position)
         return [int(p) for p in position]
 
-    def move_rel(self, displacement, axis=None, backlash=True):
+    def move_rel(
+        self,
+        displacement: Union[int, Tuple[int, int, int], np.ndarray],
+        axis: Optional[Literal["x", "y", "z"]] = None,
+        backlash: bool = True,
+    ):
+        # If we specify an axis name and a displacement int, convert to a displacement tuple
+        if axis:
+            # Displacement MUST be an integer if axis name is specified
+            if not isinstance(displacement, int):
+                raise TypeError(
+                    "Displacement must be an integer when axis is specified"
+                )
+            # Axis name MUST be x, y, or z
+            if axis not in ("x", "y", "z"):
+                raise ValueError("axis must be one of x, y, or z")
+            # Calculate displacement array
+            cartesian_displacement_array: np.ndarray = _displacement_to_array(
+                displacement, axis
+            )
+        elif isinstance(displacement, np.ndarray):
+            cartesian_displacement_array = displacement
+        elif isinstance(displacement, (list, tuple, GeneratorType)):
+            # Convert our displacement tuple/generator into a numpy array
+            cartesian_displacement_array = np.array(list(displacement))
+        else:
+            raise TypeError(f"Unsupported displacement type {type(displacement)}")
 
         # Transform into camera coordinates
-        displacement = np.dot(self.R_camera, displacement)
+        camera_displacement_array: np.ndarray = np.dot(
+            self.R_camera, cartesian_displacement_array
+        )
 
         # Transform into delta coordinates
-        displacement = np.dot(self.Tdv, displacement)
+        delta_displacement_array: np.ndarray = np.dot(
+            self.Tdv, camera_displacement_array
+        )
 
-        logging.debug("Delta displacement: %s", (displacement))
+        logging.debug("Delta displacement: %s", (delta_displacement_array))
 
         # Do the move
-        SangaStage.move_rel(self, displacement, axis=None, backlash=backlash)
+        SangaStage.move_rel(
+            self, delta_displacement_array, axis=None, backlash=backlash
+        )
 
-    def move_abs(self, final, **kwargs):
+    def move_abs(self, final: Union[Tuple[int, int, int], np.ndarray], **kwargs):
         # Transform into camera coordinates
-        final = np.dot(self.R_camera, final)
+        camera_final_array: np.ndarray = np.dot(self.R_camera, final)
 
         # Transform into delta coordinates
-        final = np.dot(self.Tdv, final)
+        delta_final_array: np.ndarray = np.dot(self.Tdv, camera_final_array)
 
         logging.debug("Delta final: %s", (final))
 
         # Do the move
-        SangaStage.move_abs(self, final, **kwargs)
+        SangaStage.move_abs(self, delta_final_array, **kwargs)
