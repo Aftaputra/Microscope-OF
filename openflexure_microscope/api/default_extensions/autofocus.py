@@ -201,7 +201,7 @@ class AutofocusExtension(BaseExtension):
             positions: List[int] = []
 
             # Some cameras may not have annotate_text. Reset if it does
-            if getattr(camera, "annotate_text"):
+            if getattr(camera, "annotate_text", None):
                 setattr(camera, "annotate_text", "")
 
             for _ in stage.scan_z(dz, return_to_start=False):
