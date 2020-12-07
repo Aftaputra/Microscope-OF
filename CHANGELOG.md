@@ -1,3 +1,10 @@
+# [v2.9.1](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.9.0...v2.9.1) (2020-12-07)
+
+
+* Server: Added mjpeg bitrate to settings ([3e2f876](https://gitlab.com/openflexure/openflexure-microscope-server/commit/3e2f876))
+* JS Client: Replaced MJPEG quality setting with MJPEG bitrate ([42e0dfd](https://gitlab.com/openflexure/openflexure-microscope-server/commit/42e0dfd))
+
+
 # [v2.9.0](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.8.0...v2.9.0) (2020-12-07)
 
 ## Developer changes
