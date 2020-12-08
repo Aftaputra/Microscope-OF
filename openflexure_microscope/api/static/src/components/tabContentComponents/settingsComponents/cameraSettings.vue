@@ -5,93 +5,154 @@
         <h3>Manual camera settings</h3>
         <form @submit.prevent="applySettingsRequest">
           <div class="uk-margin-small-bottom">
-            <h4>Raspberry Pi Camera</h4>
-            <!--PiCamera settings block-->
-            <div v-if="picamera.shutter_speed !== undefined">
-              <label class="uk-form-label" for="form-stacked-text"
-                >Exposure time</label
-              >
-              <div class="uk-form-controls">
-                <input
-                  v-model="picamera.shutter_speed"
-                  class="uk-input uk-form-small"
-                  type="number"
-                />
-              </div>
-            </div>
+            <ul uk-accordion="multiple: true">
+              <li class="uk-open">
+                <a class="uk-accordion-title" href="#">Pi Camera Settings</a>
+                <div class="uk-accordion-content">
+                  <div v-if="picamera.shutter_speed !== undefined">
+                    <label class="uk-form-label" for="form-stacked-text"
+                      >Exposure time</label
+                    >
+                    <div class="uk-form-controls">
+                      <input
+                        v-model="picamera.shutter_speed"
+                        class="uk-input uk-form-small"
+                        type="number"
+                      />
+                    </div>
+                  </div>
 
-            <div v-if="picamera.analog_gain !== undefined">
-              <label class="uk-form-label" for="form-stacked-text"
-                >Analogue gain</label
-              >
-              <div class="uk-form-controls">
-                <input
-                  v-model="picamera.analog_gain"
-                  class="uk-input uk-form-small"
-                  type="number"
-                  step="0.000001"
-                />
-              </div>
-            </div>
+                  <div v-if="picamera.analog_gain !== undefined">
+                    <label class="uk-form-label" for="form-stacked-text"
+                      >Analogue gain</label
+                    >
+                    <div class="uk-form-controls">
+                      <input
+                        v-model="picamera.analog_gain"
+                        class="uk-input uk-form-small"
+                        type="number"
+                        step="0.000001"
+                      />
+                    </div>
+                  </div>
 
-            <div v-if="picamera.digital_gain !== undefined">
-              <label class="uk-form-label" for="form-stacked-text"
-                >Digital gain</label
-              >
-              <div class="uk-form-controls">
-                <input
-                  v-model="picamera.digital_gain"
-                  class="uk-input uk-form-small"
-                  type="number"
-                  step="0.000001"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="uk-margin-small-bottom">
-            <h4>Image quality</h4>
-
-            <div class="uk-child-width-1-2" uk-grid>
-              <div v-if="mjpeg_bitrate !== undefined">
-                <label class="uk-form-label" for="form-stacked-text"
-                  >Web stream bitrate</label
-                >
-                <select v-model="mjpeg_bitrate" class="uk-select uk-form-small">
-                  <option
-                    v-for="option in bitrateOptions"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.text }}
-                  </option>
-                </select>
-              </div>
-
-              <div v-if="jpeg_quality !== undefined">
-                <label class="uk-form-label" for="form-stacked-text"
-                  >JPEG capture quality (%)</label
-                >
-                <div class="uk-form-controls">
-                  <input
-                    v-model="jpeg_quality"
-                    class="uk-input uk-form-small"
-                    type="number"
-                    step="1"
-                  />
+                  <div v-if="picamera.digital_gain !== undefined">
+                    <label class="uk-form-label" for="form-stacked-text"
+                      >Digital gain</label
+                    >
+                    <div class="uk-form-controls">
+                      <input
+                        v-model="picamera.digital_gain"
+                        class="uk-input uk-form-small"
+                        type="number"
+                        step="0.000001"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </li>
 
-            <span
-              v-if="
-                mjpeg_bitrate !== undefined &&
-                  mjpeg_bitrate < 17000000 &&
-                  mjpeg_bitrate != -1
-              "
-              class="uk-text-danger uk-margin-top-small"
-              >This stream bitrate may impact fast autofocus performance</span
-            >
+              <li class="uk-open">
+                <a class="uk-accordion-title" href="#">Image Quality</a>
+                <div class="uk-accordion-content">
+                  <div class="uk-child-width-1-2" uk-grid>
+                    <div v-if="jpeg_quality !== undefined">
+                      <label class="uk-form-label" for="form-stacked-text"
+                        >JPEG capture quality (%)</label
+                      >
+                      <div class="uk-form-controls">
+                        <input
+                          v-model="jpeg_quality"
+                          class="uk-input uk-form-small"
+                          type="number"
+                          step="1"
+                        />
+                      </div>
+                    </div>
+
+                    <div v-if="stream_resolution !== undefined">
+                      <label class="uk-form-label" for="form-stacked-text"
+                        >Stream resolution</label
+                      >
+                      <select
+                        v-model="stream_resolution"
+                        class="uk-select uk-form-small"
+                      >
+                        <option
+                          v-for="option in resolutionOptions"
+                          :key="option.value[0]"
+                          :value="option.value"
+                        >
+                          {{ option.text }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              <li>
+                <a class="uk-accordion-title" href="#">Advanced</a>
+                <div class="uk-accordion-content">
+                  <div v-if="mjpeg_bitrate !== undefined">
+                    <label class="uk-form-label" for="form-stacked-text"
+                      >Camera bitrate</label
+                    >
+                    <select
+                      v-model="mjpeg_bitrate"
+                      class="uk-select uk-form-small"
+                    >
+                      <option
+                        v-for="option in bitrateOptions"
+                        :key="option.value"
+                        :value="option.value"
+                      >
+                        {{ option.text }}
+                      </option>
+                    </select>
+                    <p class="uk-margin-remove">
+                      This option sets the target bitrate for camera
+                      recordings.<br />
+                      <b
+                        >Limiting bitrate may impact fast-autofocus
+                        reliability.</b
+                      >
+                      However is guaranteed to fix the live stream disappearing
+                      for some highly detailed samples.
+                    </p>
+                  </div>
+
+                  <div
+                    v-if="picamera.framerate !== undefined"
+                    class="uk-margin-top"
+                  >
+                    <label class="uk-form-label" for="form-stacked-text"
+                      >Camera framerate</label
+                    >
+                    <select
+                      v-model="picamera.framerate"
+                      class="uk-select uk-form-small"
+                    >
+                      <option
+                        v-for="option in framerateOptions"
+                        :key="option.value"
+                        :value="option.value"
+                      >
+                        {{ option.text }}
+                      </option>
+                    </select>
+                    <p class="uk-margin-remove">
+                      This option sets the framerate of the Pi Camera video
+                      encoder. The actual stream framerate is determined by
+                      network speed, and is limited by the encoder framerate.<br />
+                      <b
+                        >Lowering framerate may impact fast-autofocus
+                        accuracy.</b
+                      >
+                    </p>
+                  </div>
+                </div>
+              </li>
+            </ul>
           </div>
 
           <button
@@ -132,16 +193,27 @@ export default {
       picamera: {
         shutter_speed: undefined,
         analog_gain: undefined,
-        digital_gain: undefined
+        digital_gain: undefined,
+        framerate: undefined
       },
       mjpeg_bitrate: undefined,
+      stream_resolution: undefined,
       jpeg_quality: undefined,
       bitrateOptions: [
-        { text: "Maximum", value: -1 },
-        { text: "High", value: 25000000 },
-        { text: "Normal", value: 17000000 },
-        { text: "Low", value: 5000000 },
-        { text: "Very low", value: 2500000 }
+        { text: "Maximum (unlimited)", value: -1 },
+        { text: "High (25Mbps)", value: 25000000 },
+        { text: "Normal (17Mbps)", value: 17000000 },
+        { text: "Low (5Mbps)", value: 5000000 },
+        { text: "Very low (2.5Mbps)", value: 2500000 }
+      ],
+      resolutionOptions: [
+        { text: "Higher (832, 624)", value: [832, 624] },
+        { text: "Normal (640, 480)", value: [640, 480] }
+      ],
+      framerateOptions: [
+        { text: "Normal (30fps)", value: 30 },
+        { text: "Low (15fps)", value: 15 },
+        { text: "Very low (10fps)", value: 10 }
       ]
     };
   },
@@ -165,11 +237,13 @@ export default {
           // Get base camera settings
           this.mjpeg_bitrate = cameraSettings.mjpeg_bitrate;
           this.jpeg_quality = cameraSettings.jpeg_quality;
+          this.stream_resolution = cameraSettings.stream_resolution;
           // Get Pi Camera settings if they exist
           if (cameraSettings.picamera) {
             this.picamera.analog_gain = cameraSettings.picamera.analog_gain;
             this.picamera.digital_gain = cameraSettings.picamera.digital_gain;
             this.picamera.shutter_speed = cameraSettings.picamera.shutter_speed;
+            this.picamera.framerate = cameraSettings.picamera.framerate;
           }
         })
         .catch(error => {
@@ -184,10 +258,12 @@ export default {
         camera: {
           mjpeg_bitrate: parseInt(this.mjpeg_bitrate),
           jpeg_quality: parseInt(this.jpeg_quality),
+          stream_resolution: this.stream_resolution,
           picamera: {
             shutter_speed: parseFloat(this.picamera.shutter_speed),
             analog_gain: parseFloat(this.picamera.analog_gain),
-            digital_gain: parseFloat(this.picamera.digital_gain)
+            digital_gain: parseFloat(this.picamera.digital_gain),
+            framerate: parseInt(this.picamera.framerate)
           }
         }
       };
