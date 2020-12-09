@@ -1,8 +1,20 @@
 # OpenFlexure Microscope JS Client
 
-## Developer notes
+## Key info
 
-### VS Code and ESLint
+* Vue.js web application providing a graphical interface for the OFM
+* Once built, will be served by the API server from the host root on port 5000
+
+* See [openflexure-microscope-server/README.md](https://gitlab.com/openflexure/openflexure-microscope-server/-/blob/master/README.md) for details on local installation and building
+
+# Developer guidelines
+
+## Creating releases
+
+* JS client is coupled to the API, and so are no longer separately built and deployed.
+* See [openflexure-microscope-server/README.md](https://gitlab.com/openflexure/openflexure-microscope-server/-/blob/master/README.md) for details on creating new releases
+
+## VS Code and ESLint
 
 To prevent the editor from interfering with ESLint, add to your project `settings.json`:
 
