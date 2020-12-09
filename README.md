@@ -13,13 +13,13 @@ This includes installing the server in a mode better suited for active developme
 ## Creating releases
 
 * Update the applications internal version number
-	* `poetry version X.y.z` (replace X.y.z with a semantic version number)
-	* or `poetry version {patch/minor/major}` (see https://python-poetry.org/docs/cli/#version)
-	* Git commit and git push
+    * `poetry version X.y.z` (replace X.y.z with a semantic version number)
+    * or `poetry version {patch/minor/major}` (see https://python-poetry.org/docs/cli/#version)
+    * Git commit and git push
 * Create a new version tag on GitLab (e.g. V2.6.11)
-	* Make sure you prefix a lower case 'v', otherwise it won't be recognised as a release!
-	* This tagging will trigger a CI pipeline that builds the JS client, tarballs up the server, and deploys it
-    * Note: This also updates the build servers nginx redirect map file
+    * Make sure you prefix a lower case 'v', otherwise it won't be recognised as a release!
+    * This tagging will trigger a CI pipeline that builds the JS client, tarballs up the server, and deploys it
+        * Note: This also updates the build servers nginx redirect map file
 
 ## Local installation
 
