@@ -8,6 +8,7 @@ from typing import BinaryIO, List, NamedTuple, Optional, Tuple, Type, Union
 
 from labthings import ClientEvent, StrictLock
 
+JPEG_END_BYTES: bytes = b"\xff\xd9"
 
 # Class to store a frames metadata
 class TrackerFrame(NamedTuple):
@@ -41,6 +42,8 @@ class FrameStream(io.BytesIO):
         # Event to track if a new frame is available since the last getvalue() call
         # We use a ClientEvent so that each thread can call getvalue() independantly
         self.new_frame: ClientEvent = ClientEvent()
+
+        self._bad_frame: bool = False
 
     def __enter__(self):
         self.start_tracking()
@@ -79,6 +82,20 @@ class FrameStream(io.BytesIO):
         3. Store the new frame image
         4. Set the new_frame event
         """
+        # If we get a bad frame, and the last frame was good
+        if s[-2:] != JPEG_END_BYTES and not self._bad_frame:
+            # TODO: Handle this more cleverly. Automatically lower bitrate to compensate?
+            # Log error
+            logging.error(
+                "Incomplete frame data recieved. Camera bandwidth may have been exceeded. Consider lowing resolution, framerate, or target bitrate."
+            )
+            # Record that last frame was bad
+            self._bad_frame = True
+        # If the last frame was bad, but this frame was good
+        elif self._bad_frame and s[-2:] == JPEG_END_BYTES:
+            # Clear the bad frame record
+            self._bad_frame = False
+        # If we're tracking frame size
         if self.tracking:
             frame = TrackerFrame(size=len(s), time=time.time())
             self.frames.append(frame)
