@@ -10,8 +10,20 @@ This includes installing the server in a mode better suited for active developme
 
 # Developer guidelines
 
+## Creating releases
+
+* Update the applications internal version number
+	* `poetry version X.y.z` (replace X.y.z with a semantic version number)
+	* or `poetry version {patch/minor/major}` (see https://python-poetry.org/docs/cli/#version)
+	* Git commit and git push
+* Create a new version tag on GitLab (e.g. V2.6.11)
+	* Make sure you prefix a lower case 'v', otherwise it won't be recognised as a release!
+	* This tagging will trigger a CI pipeline that builds the JS client, tarballs up the server, and deploys it
+    * Note: This also updates the build servers nginx redirect map file
+
+## Local installation
+
 The Raspberry Pi image we use currently ships with Python 3.7.3. For local development, please use PyEnv or similar to make sure you're running on this version. For example, Windows users can use [Scoop](https://scoop.sh/) to install specific Python versions.
-## Installation
 
 * `git clone https://gitlab.com/openflexure/openflexure-microscope-server.git`
 * `cd openflexure-microscope-server`
@@ -83,13 +95,3 @@ As of 1.0.0b0, we're using [Poetry](https://github.com/sdispater/poetry) to mana
 ## Microscope extensions
 
 The Microscope module, and Flask app, both support plugins for extending lower-level functionality not well suited to web API calls. The current documentation can be found [here](https://openflexure-microscope-software.readthedocs.io/en/latest/plugins.html).
-
-# Credits
-
-## Piexif
-
-The microscope server includes a forked copy of hMatoba's [Piexif](https://github.com/hMatoba/Piexif), licensed under the MIT License.
-
-## Video streaming
-
-Camera streaming was initially based on supporting code for the article [video streaming with Flask](http://blog.miguelgrinberg.com/post/video-streaming-with-flask) and its follow-up [Flask Video Streaming Revisited](http://blog.miguelgrinberg.com/post/flask-video-streaming-revisited).
