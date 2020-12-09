@@ -8,6 +8,24 @@ This includes basic installation instructions suitable for most users.
 Full developer documentation can be found on [**ReadTheDocs**](https://openflexure-microscope-software.readthedocs.io/). 
 This includes installing the server in a mode better suited for active development.
 
+## Key info
+
+* Responsible for actually controlling microscope hardware, data management, and creating the API server.
+Also now includes the web client, which is served from the server root.
+* Server starts on port 5000 by default.
+* Runs on [Python-LabThings](https://github.com/labthings/python-labthings/), and so basically all non-microscope functionality is handled by that library.
+
+### Server settings
+
+https://openflexure-microscope-software.readthedocs.io/en/master/config.html
+
+There are 2 important settings files:
+* `/var/openflexure/settings/microscope_configuration.json`
+    * Boot-time microscope configuration. Things like the type of camera connected, the stage board, geometry etc.
+    *Anything that needs to be loaded once as the server starts, and usually doesn't need to be re-written while the server is running
+* `/var/openflexure/settings/microscope_settings.json`
+    * Every other persistent setting. Camera settings, calibration data, default capture settings, stream resolution etc.
+
 # Developer guidelines
 
 ## Creating releases
