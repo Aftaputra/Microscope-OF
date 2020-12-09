@@ -1,3 +1,9 @@
+# [v2.9.2](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.9.1...v2.9.2) (2020-12-09)
+
+
+* Added more Advanced bitrate controls ([d2488c5](https://gitlab.com/openflexure/openflexure-microscope-server/commit/d2488c5))
+* Watch for broken frames using JPEG end bytes, and log error ([6838038](https://gitlab.com/openflexure/openflexure-microscope-server/commit/6838038))
+
 # [v2.9.1](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.9.0...v2.9.1) (2020-12-07)
 
 
