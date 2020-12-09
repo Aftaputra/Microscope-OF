@@ -99,7 +99,7 @@ Though not in the CI, our `format` script also runs isort:
 
 * **Isort** - Import sorting
   * Automatically organises your imports to stop things getting out of hand
-  * `poetry run isort .`
+  * `poetry run poe isort`
 
 ## Build-system
 
