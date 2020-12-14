@@ -182,7 +182,7 @@ class SangaStage(BaseStage):
 
             # Handle move with backlash correction
             # Calculate main movement
-            initial_move: np.ndarray = displacement_array
+            initial_move: np.ndarray = np.copy(displacement_array)
             initial_move -= np.where(
                 self.backlash * displacement_array < 0,
                 self.backlash,
