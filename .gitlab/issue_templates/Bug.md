@@ -30,4 +30,3 @@ To access your microscope log, either:
 (Anything else you think might be relevant to mention)
 
 /label ~bug
-/cc @jtc42
