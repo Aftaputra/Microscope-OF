@@ -17,4 +17,3 @@ I'm using:
 (Anything else you think might be relevant to mention)
 
 /label ~feature
-/cc @jtc42
