@@ -225,6 +225,7 @@
               <select v-model="scanStyle" class="uk-select">
                 <option>Raster</option>
                 <option>Snake</option>
+                <option>Spiral</option>
               </select>
             </div>
 
