@@ -2,20 +2,22 @@ import logging
 
 from .error_sources import ErrorSource
 
-picamera_import_error = ErrorSource(
+# Error/exception messages we have enumerated and expect
+PICAMERA_ERROR_MAP = {
+    "Camera is not enabled. Try running 'sudo raspi-config' and ensure that the camera has been enabled.": ErrorSource(
+        "Camera is not enabled. Try running 'sudo raspi-config' and ensure that the camera has been enabled."
+    ),
+    "Failed to enable connection: Out of resources": ErrorSource(
+        "Camera already in use by another application. Please reboot your microscope."
+    ),
+}
+
+# Basic import error. Usually damaged or disconnected camera
+PICAMERA_IMPORT_ERROR = ErrorSource(
     (
-        "Picamera module could not be imported.",
-        "Check physical connections to the camera as it may be damaged or disconnected.",
+        "Picamera module could not be imported. Check physical connections to the camera as it may be damaged or disconnected.",
     )
 )
-
-picamera_errors = (
-    "Camera is not enabled. Try running 'sudo raspi-config' and ensure that the camera has been enabled.",
-)
-
-picamera_mmal_errors = {
-    "Failed to enable connection: Out of resources": "Camera already in use by another application."
-}
 
 
 def main():
@@ -25,20 +27,15 @@ def main():
     try:
         import picamerax
     except Exception as e:  # pylint: disable=W0703
-        # TODO: Parse exception object for a few different issues, and append
-        # different error sources E.g. pi with camera already in use,
-        # disconnected, unsupported OS, etc
-        logging.error(e)
-        error_sources.append(picamera_import_error)
+        error_sources.append(PICAMERA_IMPORT_ERROR)
     else:
         try:
             _ = picamerax.PiCamera()
         except picamerax.PiCameraError as e:
-            if e.args[0] in picamera_errors:
-                error_sources.append(ErrorSource(e.args[0]))
-            elif e.args[0] in picamera_mmal_errors:
-                error_sources.append(ErrorSource(picamera_mmal_errors[e.args[0]]))
+            msg = e.args[0]
+            if msg in PICAMERA_ERROR_MAP:
+                error_sources.append(PICAMERA_ERROR_MAP[msg])
             else:
-                error_sources.append(ErrorSource(e.args[0]))
+                error_sources.append(ErrorSource("Unenumerated exception: " + msg))
 
     return error_sources
