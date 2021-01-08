@@ -56,7 +56,6 @@ rpi = ["RPi.GPIO"]
 rescue = 'openflexure_microscope.rescue.auto:main'
 
 [tool.poetry.dev-dependencies]
-pynpm = "^0.1.2"
 sphinxcontrib-httpdomain = "^1.7"
 rope = "^0.14.0"
 pylint = "^2.3"
