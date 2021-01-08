@@ -56,6 +56,10 @@ mypy:
   script:
     - poetry run poe mypy
 
+  artifacts:
+    reports:
+      cobertura: openflexure_microscope/cobertura.xml
+
   only:
     - branches
     - merge_requests
