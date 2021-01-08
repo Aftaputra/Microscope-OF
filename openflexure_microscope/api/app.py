@@ -15,7 +15,7 @@ else:
 
 
 # Set root logger level
-root_log = logging.getLogger()
+root_log: logging.Logger = logging.getLogger()
 root_log.setLevel(log_level)
 
 
@@ -58,25 +58,25 @@ class CustomRotatingFileHandler(logging.handlers.RotatingFileHandler):
             )
         )
         # Never propagate
-        self.propagate = False
+        self.propagate: bool = False
         # Conditionally enable debugging
         if debug:
             self.setLevel(logging.DEBUG)
 
 
 # Log files
-ROOT_LOGFILE = logs_file_path("openflexure_microscope.log")
-ACCESS_LOGFILE = logs_file_path("openflexure_microscope.access.log")
+ROOT_LOGFILE: str = logs_file_path("openflexure_microscope.log")
+ACCESS_LOGFILE: str = logs_file_path("openflexure_microscope.access.log")
 
 # Our WSGI server uses Werkzeug, so use that for the access log
-access_log = logging.getLogger("werkzeug")
+access_log: logging.Logger = logging.getLogger("werkzeug")
 # Block the access logs from propagating up to the root logger
 access_log.propagate = False
 
 # Create error log file handler
-fh = CustomRotatingFileHandler(ROOT_LOGFILE, debug=debug_app)
+fh: logging.Handler = CustomRotatingFileHandler(ROOT_LOGFILE, debug=debug_app)
 # Create access log file handler
-afh = CustomRotatingFileHandler(ACCESS_LOGFILE, debug=debug_app)
+afh: logging.Handler = CustomRotatingFileHandler(ACCESS_LOGFILE, debug=debug_app)
 # Add file handler to root logger
 root_log.addHandler(fh)
 access_log.addHandler(afh)
@@ -85,7 +85,7 @@ access_log.addHandler(afh)
 logging.info("Running with data path %s", OPENFLEXURE_VAR_PATH)
 
 # Create the microscope object
-api_microscope = Microscope()
+api_microscope: Microscope = Microscope()
 logging.debug("Restoring captures...")
 api_microscope.captures.rebuild_captures()
 logging.debug("Microscope successfully attached!")
@@ -103,7 +103,7 @@ app, labthing = create_app(
 )
 
 # Enable CORS for some routes outside of LabThings
-cors = CORS(app)
+cors: CORS = CORS(app)
 
 # Use custom JSON encoder
 labthing.json_encoder = JSONEncoder
@@ -223,5 +223,5 @@ if __name__ == "__main__":
     from labthings import Server
 
     logging.info("Starting OpenFlexure Microscope Server...")
-    server = Server(app)
+    server: Server = Server(app)
     server.run(host="0.0.0.0", port=5000, debug=debug_app, zeroconf=True)
