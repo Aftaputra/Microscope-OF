@@ -160,6 +160,7 @@ export default {
       stride_size: [800, 600, 10],
       fast_autofocus: true,
       autofocus_dz: 2000,
+      style: "raster",
       use_video_port: false
     };
   },
