@@ -169,6 +169,14 @@ class Microscope:
             except Exception as e:  # pylint: disable=W0703
                 logging.error(e)
                 logging.warning("No compatible Sangaboard hardware found.")
+        elif stage_type in ("MissingStage",):
+            logging.warning(
+                "The stage is set to MissingStage in "
+                "configuration, which disables any physical stage."
+            )
+            self.stage = MissingStage()
+            configuration["stage"]["type"] = "MissingStage"
+            self.configuration_file.save(configuration)
         else:
             logging.warning("The stage type is incorrectly defined.")
 
