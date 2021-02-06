@@ -115,6 +115,14 @@ export default {
       };
     },
     tourSteps: function() {
+      let tabPopperParams = {
+        modifiers: {
+          preventOverflow: {
+            boundariesElement: "window"
+          }
+        },
+        placement: "right"
+      };
       return [
         {
           target: "#tour-header", // We're using document.querySelector() under the hood
@@ -131,35 +139,40 @@ export default {
           header: {
             title: "Capture gallery"
           },
-          content: `View and download your microscope images from the gallery tab`
+          content: `View and download your microscope images from the gallery tab`,
+          params: tabPopperParams
         },
         {
           target: "#navigate-tab-icon",
           header: {
             title: "Navigate around your sample"
           },
-          content: `Move your microscope stage and perform autofocus from the navigate tab`
+          content: `Move your microscope stage and perform autofocus from the navigate tab`,
+          params: tabPopperParams
         },
         {
           target: "#capture-tab-icon",
           header: {
             title: "Capture microscope images"
           },
-          content: `Take images and simple tile scans from the capture tab`
+          content: `Take images and simple tile scans from the capture tab`,
+          params: tabPopperParams
         },
         {
           target: "#settings-tab-icon",
           header: {
             title: "Change settings"
           },
-          content: `Change app and microscope settings, including microscope calibration, from the settings tab`
+          content: `Change app and microscope settings, including microscope calibration, from the settings tab`,
+          params: tabPopperParams
         },
         {
           target: "#extension-tab-divider",
           header: {
             title: "Microscope extensions"
           },
-          content: `Extensions installed on your microscope will appear below this line`
+          content: `Extensions installed on your microscope will appear below this line`,
+          params: tabPopperParams
         }
       ];
     }
