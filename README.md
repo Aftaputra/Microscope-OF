@@ -37,26 +37,43 @@ There are 2 important settings files:
 * Create a new version tag on GitLab (e.g. V2.6.11)
     * Make sure you prefix a lower case 'v', otherwise it won't be recognised as a release!
     * This tagging will trigger a CI pipeline that builds the JS client, tarballs up the server, and deploys it
-        * Note: This also updates the build servers nginx redirect map file
+        * Note: This also updates the build server's nginx redirect map file
 
 ## Local installation
 
 The Raspberry Pi image we use currently ships with Python 3.7.3. For local development, please use PyEnv or similar to make sure you're running on this version. For example, Windows users can use [Scoop](https://scoop.sh/) to install specific Python versions.
 
+### Clone the repository
 * `git clone https://gitlab.com/openflexure/openflexure-microscope-server.git`
 * `cd openflexure-microscope-server`
-* (Optional) Set local Python version
-  * `pyenv init`
+
+### Set up the Python environment and run a test server
+* (Optional) Set local Python version to match what is available on the Pi
+  * `pyenv init` (this may or may not be required, depending on how you installed `pyenv`)
   * `pyenv install 3.7.3`
   * `pyenv local 3.7.3`
-* `poetry install`
-  * Building the static interface will require a valid Node.js installation
-  * To build on a Raspberry Pi:
+* Ensure you have a working installation of `poetry` (see the [Poetry website](https://python-poetry.org/)).
+* We usually set up `poetry` to place virtual environments in the project directory, as this is more easily detected by editors, including VSCode.  To do this, you can run:
+  * ``poetry config virtualenvs.in-project true`` will use a folder called ``.venv`` rather than keeping your environments in a central location.
+* `poetry install` will install the server, and all dependencies, into the virtual environment.  This step can take a while, especially on the Pi, bring a cup of tea!
+* Finally, run the server:
+  * You can use `ofm serve` or `ofm restart` on the Raspberry Pi to manage the server.
+  * To run the server locally, with dummy hardware, you can use ``poetry run python -m openflexure_microscope.api.app`` to start a development-mode Flask server on ``localhost:5000``
+
+### Set up the Javascript environment and build
+* The Flask web application, written in Python, serves a web application written in ``Vue.js``.  This is distributed as part of the built version of the server, hosted on our [build server](https://build.openflexure.org/openflexure-microscope-server/).
+* You could extract the pre-built web app from this tarball, which saves you having to set up Node.js.  However, it also means you're not able to change the interface, and it's possible your interface will get out of sync with your server.
+* Building the web interface will require a valid Node.js installation.  If you don't have Node.js (including ``npm``) the [Node.js website](https://nodejs.org/en/) offers downloads for all platforms, though see the instructions below for Raspberry Pi.
+  * To install Node.js on a Raspberry Pi:
     * `curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -`
     * `sudo apt install nodejs`
-    * `cd openflexure_microscope/api/static`
-    * `npm install`
-    * `npm run build`
+* To build the web application (this produces a set of static files, that are served by the Flask webserver)
+  * `cd openflexure_microscope/api/static`
+  * `npm install`
+  * `npm run build`
+* To create a Node.js development server (this will help various development tools to display more information, and auto-rebuilds when you change the source files) 
+  * `npm run serve`
+  * You access the development server on a different port (it's printed on the command line when you run the above command).  This means that when it starts up you will need to tell it where the microscope server is, using the "override API origin" field in the page that pops up.  If you are running a test server on your computer, this is most likely ``http://localhost:5000/``.
 
 ## Formatting, linting, and tests
 
@@ -64,15 +81,22 @@ The Raspberry Pi image we use currently ships with Python 3.7.3. For local devel
 
 **Before committing**
 
-Run `poetry run poe format`
+* To auto-format the Python code run `poetry run poe format`
+* To auto-format the Javascript code, run
+  * ``cd openflexure_microscope/api/static``
+  * ``npm run lint``
 
 Auto-formats the code
 
 **Before submitting a merge request/merging**
 
-Run `poetry run poe check`
+* To auto-format and type-check the Python code run `poetry run poe check`
+* To auto-format the Javascript code, run
+  * ``cd openflexure_microscope/api/static``
+  * ``npm run lint``
 
 Formats code, lints, runs static analysis, and runs unit tests.
+
 ### Details
 
 We use several code analysis and formatting libraries in this project. **Please run all of these before submitting a merge request.** 
