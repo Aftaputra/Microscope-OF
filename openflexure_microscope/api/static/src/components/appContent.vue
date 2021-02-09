@@ -48,6 +48,15 @@
           <i class="material-icons">{{ plugin.icon || "extension" }}</i>
         </tabIcon>
 
+        <tabIcon
+          tab-i-d="ImJoy"
+          title="ImJoy"
+          :require-connection="false"
+          :current-tab="currentTab"
+          @set-tab="setTab"
+        >
+          <img src="https://cloud.monostable.co.uk/imjoy-icon-material.svg" />
+        </tabIcon>
         <hr id="extension-tab-divider" />
 
         <!-- For each bottom tab -->
@@ -104,6 +113,14 @@
         />
       </tabContent>
 
+      <tabContent
+        tab-i-d="ImJoy"
+        :require-connection="false"
+        :current-tab="currentTab"
+      >
+        <ImJoyContent />
+      </tabContent>
+
       <!-- For each bottom tab -->
       <tabContent
         v-for="item in bottomTabs"
@@ -136,9 +153,11 @@ import galleryContent from "./tabContentComponents/galleryContent.vue";
 import extensionContent from "./tabContentComponents/extensionContent.vue";
 import aboutContent from "./tabContentComponents/aboutContent.vue";
 import loggingContent from "./tabContentComponents/loggingContent.vue";
+import ImJoyContent from "./tabContentComponents/imjoyContent.vue"
 
 // Import modal components for device initialisation
 import calibrationModal from "./modalComponents/calibrationModal.vue";
+import TabIcon from "./genericComponents/tabIcon.vue";
 
 // Export main app
 export default {
@@ -156,9 +175,10 @@ export default {
     extensionContent,
     calibrationModal,
     aboutContent,
-    loggingContent
+    loggingContent,
+    TabIcon,
+    ImJoyContent,
   },
-
   data: function() {
     return {
       plugins: [],

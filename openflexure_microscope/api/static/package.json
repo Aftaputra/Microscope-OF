@@ -11,6 +11,7 @@
     "lint:fix": "vue-cli-service lint --fix"
   },
   "dependencies": {
+    "imjoy-core": "^0.13.60",
     "material-design-icons": "^3.0.1",
     "mousetrap": "^1.6.5",
     "vue-observe-visibility": "^0.4.6"
