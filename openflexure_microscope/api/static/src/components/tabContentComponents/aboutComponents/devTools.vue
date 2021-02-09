@@ -2,7 +2,7 @@
   <div>
     <form class="uk-form-stacked" @submit.prevent="overrideAPIHost">
       <label class="uk-form-label">Override API origin</label>
-      <input v-model="currentOrigin" class="uk-input" type="text" />
+      <input v-model="newOrigin" class="uk-input" type="text" />
       <button class="uk-button uk-button-default uk-margin-small">
         Apply
       </button>
@@ -19,19 +19,22 @@ export default {
 
   data: function() {
     return {
-      currentOrigin: this.$store.state.origin
+      newOrigin: this.$store.state.origin
     };
   },
 
   mounted() {
-    if (!this.$store.getters.ready) {
-      this.currentOrigin = "http://microscope.local:5000";
+    if (localStorage.overrideOrigin){
+      this.newOrigin = localStorage.overrideOrigin;
+    }else{
+      this.newOrigin = "http://microscope.local:5000";
     }
   },
 
   methods: {
     overrideAPIHost: function() {
-      this.$store.commit("changeOrigin", this.currentOrigin);
+      this.$store.commit("changeOrigin", this.newOrigin);
+      localStorage.overrideOrigin = this.newOrigin
     }
   }
 };
