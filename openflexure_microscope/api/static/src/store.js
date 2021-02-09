@@ -14,7 +14,8 @@ export default new Vuex.Store({
     trackWindow: true,
     IHIEnabled: false,
     appTheme: "system",
-    activeStreams: {}
+    activeStreams: {},
+    openInImjoyMenuItems: []
   },
 
   mutations: {
@@ -56,7 +57,10 @@ export default new Vuex.Store({
     },
     removeStream(state, id) {
       state.activeStreams[id] = false;
-    }
+    },
+    addOpenInImjoyMenuItem(state, newItem) {
+      state.openInImjoyMenuItems.push(newItem);
+    } // TODO: add a mutation to remove items when plugins are unloaded
   },
 
   actions: {},
