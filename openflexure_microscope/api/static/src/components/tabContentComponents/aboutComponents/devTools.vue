@@ -24,9 +24,9 @@ export default {
   },
 
   mounted() {
-    if (localStorage.overrideOrigin){
+    if (localStorage.overrideOrigin) {
       this.newOrigin = localStorage.overrideOrigin;
-    }else{
+    } else {
       this.newOrigin = "http://microscope.local:5000";
     }
   },
@@ -34,7 +34,7 @@ export default {
   methods: {
     overrideAPIHost: function() {
       this.$store.commit("changeOrigin", this.newOrigin);
-      localStorage.overrideOrigin = this.newOrigin
+      localStorage.overrideOrigin = this.newOrigin;
     }
   }
 };
