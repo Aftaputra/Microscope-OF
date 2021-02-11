@@ -2,8 +2,6 @@ import logging
 from contextlib import contextmanager
 
 import labthings.fields as fields
-import numpy as np
-import picamerax
 from flask import abort
 from labthings import find_component
 from labthings.extensions import BaseExtension
@@ -13,12 +11,10 @@ from openflexure_microscope.camera.base import BaseCamera
 from openflexure_microscope.microscope import Microscope
 
 from .recalibrate_utils import (
-    auto_expose_and_freeze_settings,
-    flat_lens_shading_table,
-    get_channel_percentiles,
-    recalibrate_camera,
     adjust_shutter_and_gain_from_raw,
     adjust_white_balance_from_raw,
+    flat_lens_shading_table,
+    get_channel_percentiles,
     lst_from_camera,
 )
 
@@ -82,11 +78,9 @@ class LSTExtension(BaseExtension):
             "/auto_white_balance_from_raw",
             endpoint="auto_white_balance_from_raw",
         )
-        
-                
 
 
-def find_microscope():
+def find_microscope() -> Microscope:
     """Locate the microscope and raise a sensible error if it's missing."""
     microscope = find_component("org.openflexure.microscope")
 
@@ -96,9 +90,7 @@ def find_microscope():
         )
 
     if not hasattr(microscope.camera, "picamera"):
-        abort(
-            503, "The PiCamera calibration plugin requires a Raspberry Pi camera."
-        )
+        abort(503, "The PiCamera calibration plugin requires a Raspberry Pi camera.")
 
     return microscope
 
@@ -106,10 +98,15 @@ def find_microscope():
 class RecalibrateView(ActionView):
     args = {
         "skip_auto_exposure": fields.Bool(
-            missing=False, 
-            description="Whether to "
+            missing=False,
+            description=(
+                "By default we perform an auto-exposure and AWB "
+                "step before updating the lens shading table.  Set "
+                "this argument to True to disable those steps."
+            ),
         )
     }
+
     def post(self, args):
         """Reset the camera's settings.
 
@@ -184,8 +181,7 @@ class AutoExposureFromRawView(ActionView):
     def post(self, args):
         camera = find_component("org.openflexure.microscope").camera.picamera
         adjust_shutter_and_gain_from_raw(
-            camera,
-            **args  # I'm relying on the schema to fill in missing values
+            camera, **args  # I'm relying on the schema to fill in missing values
         )
 
 
@@ -206,8 +202,7 @@ class AutoWhiteBalanceFromRawView(ActionView):
     def post(self, args):
         camera = find_component("org.openflexure.microscope").camera.picamera
         adjust_white_balance_from_raw(
-            camera,
-            **args  # I'm relying on the schema to fill in missing values
+            camera, **args  # I'm relying on the schema to fill in missing values
         )
 
 

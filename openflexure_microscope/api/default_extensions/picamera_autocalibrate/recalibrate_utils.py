@@ -7,6 +7,12 @@ import numpy as np
 from picamerax import PiCamera
 from picamerax.array import PiBayerArray, PiRGBArray
 
+# I have used f strings throughout, for readability.
+# The performance implication of using them in logging statements
+# really doesn't matter here - also, loglevel is usually set to
+# INFO to report progress via the LabThings action API
+# pylint: disable=logging-fstring-interpolation
+
 
 def rgb_image(
     camera: PiCamera, resize: Optional[Tuple[int, int]] = None, **kwargs
@@ -66,6 +72,12 @@ def adjust_exposure_and_gain(
     iterations = 0
     while True:
         iterations += 1
+        if iterations > max_iterations:
+            logging.warning(
+                f"Auto exposure is stopping after {max_iterations} "
+                "but it has not converged."
+            )
+            break
 
         with PiBayerArray(camera) as a:
             camera.capture(a, format="jpeg", bayer=True)
@@ -86,7 +98,7 @@ def adjust_exposure_and_gain(
             f"{previous_shutter_speed} to {current_shutter_speed}"
         )
         if current_shutter_speed == previous_shutter_speed:
-            logging.info(f"Shutter speed has saturated, stopping.")
+            logging.info("Shutter speed has saturated, stopping.")
             break
 
     if max_brightness > target_white_level:
@@ -153,7 +165,6 @@ def adjust_shutter_and_gain_from_raw(
     # until either the brightness is high enough, or we can't increase the
     # shutter speed any more.
     iterations = 0
-    shutter_speed_maximised = False
     shutter_speed_increments = [10, 2, None]
     shutter_speed_increment = shutter_speed_increments.pop(0)
     while iterations < max_iterations:
@@ -202,14 +213,9 @@ def adjust_shutter_and_gain_from_raw(
         if current_shutter_speed == tested_shutter_speed:
             camera.analog_gain *= 2
             if camera.analog_gain == tested_analog_gain:
-                logging.info(f"Shutter speed and gain are both maxed out.  Giving up!")
+                logging.info("Shutter speed and gain are both maxed out.  Giving up!")
                 break
-            logging.info(
-                f"Shutter speed has maxed out at {current_shutter_speed}, doubled gain."
-            )
-
-    max_brightness = np.max(get_channel_percentiles(camera, percentile))
-    logging.info(f"Brightness {max_brightness} after {iterations} tries.")
+            logging.info("Shutter speed has maxed out, doubled gain to compensate.")
     return max_brightness
 
 
@@ -330,6 +336,7 @@ def lst_from_channels(channels: np.ndarray) -> np.ndarray:
     lens_shading_table: np.ndarray = gains.astype(np.uint8)
     return lens_shading_table[::-1, :, :].copy()
 
+
 def lst_from_camera(camera: PiCamera) -> np.ndarray:
     """Acquire a raw image and use it to calculate a lens shading table."""
     with PiBayerArray(camera) as a:
@@ -342,6 +349,7 @@ def lst_from_camera(camera: PiCamera) -> np.ndarray:
     # channels, 1/2 for green because there's twice as many green pixels).
     channels = channels_from_bayer_array(raw_image)
     return lst_from_channels(channels)
+
 
 def recalibrate_camera(camera: PiCamera):
     """Reset the lens shading table and exposure settings.
