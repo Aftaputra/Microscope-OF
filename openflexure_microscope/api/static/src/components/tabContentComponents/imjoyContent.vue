@@ -27,6 +27,24 @@
           class="uk-nav-divider"
         ></li>
         <li>
+          <a href="#" @click="startImageJ()"
+            ><img
+              alt="ImageJ.JS icon"
+              style="width:20px;"
+              src="https://ij.imjoy.io/assets/icons/chrome/chrome-installprocess-128-128.png"
+            />&nbsp;ImageJ.JS</a
+          >
+        </li>
+        <li>
+          <a href="#" @click="startKaibu()"
+            ><img
+              alt="Kaibu icon"
+              style="width:20px;"
+              src="https://kaibu.org/static/img/kaibu-icon.svg"
+            />&nbsp;Kaibu</a
+          >
+        </li>
+        <li>
           <a
             v-for="(p, name) in loadedPlugins"
             :key="p.id"
@@ -53,6 +71,15 @@
       <h4 class="window-title">{{ w.name }}</h4>
       <div :id="w.window_id" class="window-container"></div>
     </div>
+    <div
+      v-if="!activeWindow || windows.length <= 0"
+      class="uk-position-center position-relative text-center"
+    >
+      <img
+        style="width:80px;"
+        src="https://imjoy.io/static/img/imjoy-icon.svg"
+      />
+    </div>
 
     <div v-show="loading" class="progress uk-margin-small">
       <div class="indeterminate"></div>
@@ -69,7 +96,7 @@ export default {
   components: {},
   data() {
     return {
-      windows: {},
+      windows: [],
       loading: false,
       loadedPlugins: {},
       activeWindow: null,
@@ -95,16 +122,48 @@ export default {
     closeActiveWindow() {
       if (this.activeWindow) {
         this.activeWindow.api.close();
-        this.activeWindow = null;
+        const index = this.windows.indexOf(this.activeWindow);
+        if (index > -1) {
+          this.windows.splice(index, 1);
+        }
+        if (this.windows.length > 0) {
+          this.activeWindow = this.windows[this.windows.length - 1];
+        } else {
+          this.activeWindow = null;
+        }
       }
     },
     selectWindow(name) {
-      for (let w of Object.values(this.windows)) {
+      for (let w of this.windows) {
         if (w.name === name) {
           this.activeWindow = w;
           break;
         }
       }
+    },
+    async startKaibu() {
+      this.viewers.kaibu = await this.imjoy.pm.createWindow(null, {
+        name: "Kaibu",
+        src: "https://kaibu.org/#/app"
+      });
+      this.viewers.kaibu.on("close", () => {
+        delete this.viewers.kaibu;
+      });
+      this.selectWindow("Kaibu");
+    },
+    async startImageJ() {
+      this.viewers.imagej = await this.imjoy.pm.createWindow(null, {
+        name: "ImageJ.JS",
+        src: "https://ij.imjoy.io"
+      });
+      this.viewers.imagej.on("close", () => {
+        delete this.viewers.imagej;
+      });
+      // load the ITK/VTK viewer for imagej.js
+      this.loadPlugin(
+        "https://gist.githubusercontent.com/oeway/e5c980fbf6582f25fde795262a7e33ec/raw/itk-vtk-viewer-imagej.imjoy.html"
+      );
+      this.selectWindow("ImageJ.JS");
     },
     async setupViewers() {
       this.loading = true;
@@ -116,13 +175,13 @@ export default {
       // And this can be used for render our "Open In ImJoy" menu
       try {
         const self = this;
-        this.viewers.kaibu = await this.imjoy.pm.createWindow(null, {
-          name: "Kaibu",
-          src: "https://kaibu.org/#/app"
-        });
+
         this.$store.commit("addOpenInImjoyMenuItem", {
           title: "Kaibu",
           async callback(name, imageUrl) {
+            if (!self.viewers.kaibu) {
+              await self.startKaibu();
+            }
             self.selectWindow("Kaibu");
             const viewer = self.viewers.kaibu;
             viewer.set_mode("full");
@@ -130,15 +189,13 @@ export default {
             await viewer.add_shapes([]);
           }
         });
-        this.viewers.imagej = await this.imjoy.pm.createWindow(null, {
-          name: "ImageJ.JS",
-          src: "https://ij.imjoy.io"
-        });
-        // load the ITK/VTK viewer for imagej.js
-        this.loadPlugin("https://gist.githubusercontent.com/oeway/e5c980fbf6582f25fde795262a7e33ec/raw/itk-vtk-viewer-imagej.imjoy.html");
+
         this.$store.commit("addOpenInImjoyMenuItem", {
           title: "ImageJ.JS",
           async callback(name, imageUrl) {
+            if (!self.viewers.imagej) {
+              await self.startImageJ();
+            }
             self.selectWindow("ImageJ.JS");
             const viewer = self.viewers.imagej;
             const response = await fetch(imageUrl);
@@ -155,8 +212,8 @@ export default {
       }
     },
     addWindow(w) {
-      this.windows = this.windows || {};
-      this.windows[w.window_id] = w;
+      this.windows = this.windows || [];
+      this.windows.push(w);
       this.activeWindow = w;
       this.$forceUpdate();
     },
