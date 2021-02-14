@@ -134,6 +134,8 @@ export default {
           name: "ImageJ.JS",
           src: "https://ij.imjoy.io"
         });
+        // load the ITK/VTK viewer for imagej.js
+        this.loadPlugin("https://gist.githubusercontent.com/oeway/e5c980fbf6582f25fde795262a7e33ec/raw/itk-vtk-viewer-imagej.imjoy.html");
         this.$store.commit("addOpenInImjoyMenuItem", {
           title: "ImageJ.JS",
           async callback(name, imageUrl) {
