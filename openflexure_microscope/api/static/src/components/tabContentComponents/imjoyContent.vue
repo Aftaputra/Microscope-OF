@@ -119,18 +119,19 @@ export default {
         },
         async showSnackbar(plugin, msg, duration) {
           duration = duration || 5;
+          UIkit.notification.closeAll();
           UIkit.notification({
-            message: msg,
+            message: msg.slice(0, 100),
             status: "primary",
             pos: "bottom-center",
             timeout: duration * 1000
           });
         },
         async showMessage(plugin, msg) {
-          imjoy.imjoy_api.showSnackbar(plugin, msg, 7);
+          imjoy.imjoy_api.showSnackbar(plugin, msg, 5);
         },
         async showStatus(plugin, status) {
-          imjoy.imjoy_api.showSnackbar(plugin, status, 7);
+          imjoy.imjoy_api.showSnackbar(plugin, status, 5);
         },
         async showProgress(plugin, p) {
           p = p || 0;
@@ -157,10 +158,52 @@ export default {
       this.loadPlugin(
         "https://gist.githubusercontent.com/oeway/7a9dcb49c51b1f99b2c3619f470fe35c/raw/OpenFlexureScriptEditor.imjoy.html"
       );
+      this.setupPluginEngine();
     });
     this.imjoy = imjoy;
   },
   methods: {
+    setupPluginEngine() {
+      // setup a plugin engine for Python plugins
+      this.imjoy.pm
+        .reloadPluginRecursively({
+          uri:
+            "https://imjoy-team.github.io/jupyter-engine-manager/Jupyter-Engine-Manager.imjoy.html"
+        })
+        .then(enginePlugin => {
+          const queryString = window.location.search;
+          const urlParams = new URLSearchParams(queryString);
+          const engine = urlParams.get("engine");
+          const spec = urlParams.get("spec");
+          if (engine) {
+            enginePlugin.api
+              .createEngine({
+                name: "MyCustomEngine",
+                nbUrl: engine,
+                url: engine.split("?")[0]
+              })
+              .then(() => {
+                console.log("Jupyter Engine connected!");
+              })
+              .catch(e => {
+                console.error("Failed to connect to Jupyter Engine", e);
+              });
+          } else {
+            enginePlugin.api
+              .createEngine({
+                name: "MyBinder Engine",
+                url: "https://mybinder.org",
+                spec: spec || "oeway/imjoy-binder-image/master"
+              })
+              .then(() => {
+                console.log("Binder Engine connected!");
+              })
+              .catch(e => {
+                console.error("Failed to connect to MyBinder Engine", e);
+              });
+          }
+        });
+    },
     setupMicroscopeAPI() {
       // Here we register a set of API for controlling the microscope as an service
       // For interoperatability, it might be good to reuse a subset of the function names defined in MicroManager
