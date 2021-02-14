@@ -171,6 +171,7 @@ export default {
             "https://imjoy-team.github.io/jupyter-engine-manager/Jupyter-Engine-Manager.imjoy.html"
         })
         .then(enginePlugin => {
+          // TODO: currently the url query  are not preserved for ImJoy
           const queryString = window.location.search;
           const urlParams = new URLSearchParams(queryString);
           const engine = urlParams.get("engine");
