@@ -105,8 +105,11 @@ export default {
   },
   mounted() {
     const imjoy = new imjoyCore.ImJoy({
-      imjoy_api: {}
-      //imjoy config
+      imjoy_api: {
+        async showDialog(plugin, config, exta_config) {
+          return await imjoy.pm.createWindow(plugin, config, exta_config);
+        }
+      }
     });
 
     imjoy.start({ workspace: "default" }).then(() => {
@@ -114,11 +117,38 @@ export default {
       imjoy.event_bus.on("add_window", w => {
         this.addWindow(w);
       });
+      this.setupMicroscopeAPI();
       this.setupViewers();
+      // load the script editor for testing ImJoy plugins
+      this.loadPlugin(
+        "https://gist.githubusercontent.com/oeway/9c78d23c101f468e723888d05b6fac6d/raw/ImageJScriptEditor.imjoy.html"
+      );
     });
     this.imjoy = imjoy;
   },
   methods: {
+    setupMicroscopeAPI() {
+      // Here we register a set of API for controlling the microscope as an service
+      // For interoperatability, it might be good to reuse a subset of the function names defined in MicroManager
+      // See here: https://valelab4.ucsf.edu/~MM/doc/MMCore/html/class_c_m_m_core.html
+      const service = {
+        type: "_microscope-control",
+        name: "OpenFlexure",
+        snapImage() {
+          alert("Not implemented");
+        },
+        getImage() {
+          alert("Not implemented");
+        },
+        setPoisition() {
+          alert("Not implemented");
+        },
+        getPoisition() {
+          alert("Not implemented");
+        }
+      };
+      this.imjoy.pm.registerService({ name: "openflexure" }, service);
+    },
     closeActiveWindow() {
       if (this.activeWindow) {
         this.activeWindow.api.close();
@@ -149,6 +179,7 @@ export default {
       this.viewers.kaibu.on("close", () => {
         delete this.viewers.kaibu;
       });
+      this.viewers.kaibu.set_mode("full");
       this.selectWindow("Kaibu");
     },
     async startImageJ() {
@@ -184,7 +215,6 @@ export default {
             }
             self.selectWindow("Kaibu");
             const viewer = self.viewers.kaibu;
-            viewer.set_mode("full");
             await viewer.view_image(imageUrl, { type: "2d-image", name });
             await viewer.add_shapes([]);
           }
