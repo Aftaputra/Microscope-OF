@@ -127,10 +127,10 @@ export default {
           });
         },
         async showMessage(plugin, msg) {
-          imjoy.imjoy_api.showSnackbar(plugin, msg, 7000);
+          imjoy.imjoy_api.showSnackbar(plugin, msg, 7);
         },
         async showStatus(plugin, status) {
-          imjoy.imjoy_api.showSnackbar(plugin, status, 7000);
+          imjoy.imjoy_api.showSnackbar(plugin, status, 7);
         },
         async showProgress(plugin, p) {
           p = p || 0;
