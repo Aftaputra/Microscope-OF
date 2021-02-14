@@ -1,11 +1,31 @@
 <template>
   <!-- Grid managing tab content -->
   <div class="uk-height-1-1 view-component">
-    <button class="uk-button uk-button-default" type="button">Plugins</button>
+    <button
+      v-if="activeWindow"
+      class="uk-button uk-button-default close-button"
+      type="button"
+      @click="closeActiveWindow()"
+    >
+      <i class="material-icons">close</i>
+    </button>
+    <button class="uk-button uk-button-default plugins-button" type="button">
+      <img
+        style="width:18px;"
+        src="https://imjoy.io/static/img/imjoy-icon.svg"
+      />&nbsp;Plugins
+    </button>
     <div uk-dropdown>
       <ul class="uk-nav uk-dropdown-nav">
-        <li><a href="#" @click="loadPluginDialog()">Load Plugin</a></li>
-        <li class="uk-nav-divider"></li>
+        <li>
+          <a href="#" @click="loadPluginDialog()">
+            <i class="material-icons">add</i>&nbsp; Load Plugin</a
+          >
+        </li>
+        <li
+          v-if="Object.keys(loadedPlugins).length > 0"
+          class="uk-nav-divider"
+        ></li>
         <li>
           <a
             v-for="(p, name) in loadedPlugins"
@@ -18,7 +38,7 @@
         <li class="uk-nav-divider"></li>
         <li>
           <a v-for="w in windows" :key="w.id" href="#" @click="activeWindow = w"
-            ><i class="material-icons">launch</i>{{ w.name }}</a
+            ><i class="material-icons">filter_none</i>&nbsp;{{ w.name }}</a
           >
         </li>
       </ul>
@@ -28,9 +48,9 @@
       v-for="w in windows"
       v-show="w === activeWindow"
       :key="w.id"
-      class="uk-card uk-card-body imjoy-container-card"
+      style="height: 100%;"
     >
-      <h3 class="uk-card-title">{{ w.name }}</h3>
+      <h4 class="window-title">{{ w.name }}</h4>
       <div :id="w.window_id" class="window-container"></div>
     </div>
 
@@ -52,7 +72,8 @@ export default {
       windows: {},
       loading: false,
       loadedPlugins: {},
-      activeWindow: null
+      activeWindow: null,
+      viewers: {}
     };
   },
   mounted() {
@@ -61,16 +82,76 @@ export default {
       //imjoy config
     });
 
-    imjoy.start({ workspace: "default" }).then(async () => {
+    imjoy.start({ workspace: "default" }).then(() => {
       console.log("ImJoy started");
-      imjoy.event_bus.on("add_window", async w => {
+      imjoy.event_bus.on("add_window", w => {
         this.addWindow(w);
       });
-      await this.loadPlugin("https://kaibu.org/#/app");
+      this.setupViewers();
     });
     this.imjoy = imjoy;
   },
   methods: {
+    closeActiveWindow() {
+      if (this.activeWindow) {
+        this.activeWindow.api.close();
+        this.activeWindow = null;
+      }
+    },
+    selectWindow(name) {
+      for (let w of Object.values(this.windows)) {
+        if (w.name === name) {
+          this.activeWindow = w;
+          break;
+        }
+      }
+    },
+    async setupViewers() {
+      this.loading = true;
+      // TODO: improve this using the ImJoy `api.getServices`
+      // See here: https://imjoy.io/docs/#/api?id=apigetservices
+      // The idea is that plugins can register custom services via `api.registerService`
+      // For example, we can have a image visualization service
+      // Then other plugins can use `api.getServices` to get a list of services
+      // And this can be used for render our "Open In ImJoy" menu
+      try {
+        const self = this;
+        this.viewers.kaibu = await this.imjoy.pm.createWindow(null, {
+          name: "Kaibu",
+          src: "https://kaibu.org/#/app"
+        });
+        this.$store.commit("addOpenInImjoyMenuItem", {
+          title: "Kaibu",
+          async callback(name, imageUrl) {
+            self.selectWindow("Kaibu");
+            const viewer = self.viewers.kaibu;
+            viewer.set_mode("full");
+            await viewer.view_image(imageUrl, { type: "2d-image", name });
+            await viewer.add_shapes([]);
+          }
+        });
+        this.viewers.imagej = await this.imjoy.pm.createWindow(null, {
+          name: "ImageJ.JS",
+          src: "https://ij.imjoy.io"
+        });
+        this.$store.commit("addOpenInImjoyMenuItem", {
+          title: "ImageJ.JS",
+          async callback(name, imageUrl) {
+            self.selectWindow("ImageJ.JS");
+            const viewer = self.viewers.imagej;
+            const response = await fetch(imageUrl);
+            const buffer = await response.arrayBuffer();
+            await viewer.viewImage(buffer, {
+              name: name.replace(".jpeg", ".jpg")
+            });
+          }
+        });
+      } catch (e) {
+        alert(`Failed to setup viewers, error: ${e}`);
+      } finally {
+        this.loading = false;
+      }
+    },
     addWindow(w) {
       this.windows = this.windows || {};
       this.windows[w.window_id] = w;
@@ -78,54 +159,33 @@ export default {
       this.$forceUpdate();
     },
     loadPlugin(uri) {
-      this.loading = true;
-      this.imjoy.pm
-        .reloadPluginRecursively({
-          uri
-        })
-        .then(async plugin => {
-          this.loadedPlugins[plugin.name] = plugin;
-          this.registerOpenInImJoy(plugin);
-          this.loading = false;
-        })
-        .catch(e => {
-          console.error(e);
-          this.loading = false;
-          alert(`failed to load the plugin, error: ${e}`);
-        });
-    },
-    registerOpenInImJoy(plugin) {
-      let item;
-      // TODO: improve this using the ImJoy `api.getServices`
-      // See here: https://imjoy.io/docs/#/api?id=apigetservices
-      // The idea is that plugins can register custom services via `api.registerService`
-      // For example, we can have a image visualization service
-      // Then other plugins can use `api.getServices` to get a list of services
-      // And this can be used for render our "Open In ImJoy" menu
-      if (plugin.name === "Kaibu") {
-        item = {
-          title: "Kaibu",
-          async callback(name, imageUrl) {
-            const viewer = await plugin.api.run();
-            viewer.set_mode('full');
-            await viewer.view_image(imageUrl, {type: '2d-image', name});
-          }
-        };
-      } else if (plugin.name === "ImageJ.JS") {
-        item = {
-          title: "ImageJ.JS",
-          async callback(name, imageUrl) { // eslint-disable-line
-            alert("not implemented");
-          }
-        };
-      }
-      if (item) this.$store.commit("addOpenInImjoyMenuItem", item);
+      return new Promise((resolve, reject) => {
+        this.loading = true;
+        this.imjoy.pm
+          .reloadPluginRecursively({
+            uri
+          })
+          .then(async plugin => {
+            this.loadedPlugins[plugin.name] = plugin;
+            this.loading = false;
+            resolve(plugin);
+          })
+          .catch(e => {
+            console.error(e);
+            this.loading = false;
+            reject(e);
+            alert(`failed to load the plugin, error: ${e}`);
+          });
+      });
     },
     async runPlugin(plugin) {
       await plugin.api.run();
     },
     loadPluginDialog() {
-      const uri = prompt("Paste the ImJoy plugin url here");
+      const uri = prompt(
+        "Paste the ImJoy plugin url here",
+        "imjoy-team/imjoy-plugins:Welcome"
+      );
       if (uri) {
         this.loadPlugin(uri);
       }
@@ -142,5 +202,27 @@ export default {
 .imjoy-container-card {
   width: 100%;
   height: 100%;
+}
+
+.window-title {
+  height: 26px;
+  text-align: center;
+  font-size: 1.2rem;
+  background-color: #efefef;
+  color: #482727;
+  font-weight: 500;
+}
+
+.plugins-button {
+  position: absolute;
+  right: 1px;
+  height: 26px;
+  line-height: 11px;
+}
+
+.close-button {
+  position: absolute;
+  right: 100px;
+  height: 26px;
 }
 </style>

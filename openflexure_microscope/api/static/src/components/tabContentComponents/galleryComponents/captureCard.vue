@@ -41,16 +41,25 @@
       >
         <a :href="metadataModalTarget" uk-toggle>More...</a>
       </div>
-      <ul>
-        <li v-for="item in openInImjoyMenuItems" :key="item">
-          <a href="#" @click="item.callback(name, imgURL)"
-            ><i class="material-icons">launch</i>{{ item.title }}</a
-          >
-        </li>
-      </ul>
     </div>
 
     <div class="uk-card-footer uk-padding-small">
+      <button class="uk-icon" type="button">
+        <img
+          style="width:25px;"
+          src="https://imjoy.io/static/img/imjoy-icon.svg"
+        />
+      </button>
+      <div uk-dropdown="pos: top-center">
+        <ul class="uk-nav uk-dropdown-nav">
+          <li v-for="item in openInImjoyMenuItems" :key="item.name">
+            <a href="#" @click="item.callback(name, imgURL)"
+              ><i class="material-icons">launch</i>{{ item.title }}</a
+            >
+          </li>
+        </ul>
+      </div>
+      &nbsp;
       <div v-for="tag in tags" :key="tag" class="uk-display-inline">
         <span
           v-if="tag === 'temporary'"
@@ -215,7 +224,7 @@ export default {
 
   computed: {
     openInImjoyMenuItems: function() {
-      return this.$store.state.openInImjoyMenuItems
+      return this.$store.state.openInImjoyMenuItems;
     },
     tagModalID: function() {
       return this.makeModalName("tag-modal-");

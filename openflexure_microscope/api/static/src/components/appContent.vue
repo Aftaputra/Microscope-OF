@@ -55,7 +55,10 @@
           :current-tab="currentTab"
           @set-tab="setTab"
         >
-          <img src="https://cloud.monostable.co.uk/imjoy-icon-material.svg" />
+          <img
+            style="filter: grayscale(100%);width: 22px;margin-top: 5px;margin-bottom: 8px;"
+            src="https://imjoy.io/static/img/imjoy-icon.svg"
+          />
         </tabIcon>
         <hr id="extension-tab-divider" />
 
@@ -153,7 +156,7 @@ import galleryContent from "./tabContentComponents/galleryContent.vue";
 import extensionContent from "./tabContentComponents/extensionContent.vue";
 import aboutContent from "./tabContentComponents/aboutContent.vue";
 import loggingContent from "./tabContentComponents/loggingContent.vue";
-import ImJoyContent from "./tabContentComponents/imjoyContent.vue"
+import ImJoyContent from "./tabContentComponents/imjoyContent.vue";
 
 // Import modal components for device initialisation
 import calibrationModal from "./modalComponents/calibrationModal.vue";
@@ -177,7 +180,7 @@ export default {
     aboutContent,
     loggingContent,
     TabIcon,
-    ImJoyContent,
+    ImJoyContent
   },
   data: function() {
     return {
