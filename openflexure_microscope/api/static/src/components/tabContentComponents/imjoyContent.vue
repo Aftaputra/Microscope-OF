@@ -1,6 +1,12 @@
 <template>
   <!-- Grid managing tab content -->
   <div class="uk-height-1-1 view-component">
+    <progress
+      ref="imjoyProgressbar"
+      style="height: 4px; margin-bottom:0!important"
+      class="uk-progress"
+      max="100"
+    ></progress>
     <button
       v-if="activeWindow"
       class="uk-button uk-button-default close-button"
@@ -89,6 +95,7 @@
 
 <script>
 import * as imjoyCore from "imjoy-core";
+import UIkit from "uikit";
 
 export default {
   name: "ImJoyContent",
@@ -104,10 +111,37 @@ export default {
     };
   },
   mounted() {
+    const self = this;
     const imjoy = new imjoyCore.ImJoy({
       imjoy_api: {
         async showDialog(plugin, config, exta_config) {
           return await imjoy.pm.createWindow(plugin, config, exta_config);
+        },
+        async showSnackbar(plugin, msg, duration) {
+          duration = duration || 5;
+          UIkit.notification({
+            message: msg,
+            status: "primary",
+            pos: "bottom-center",
+            timeout: duration * 1000
+          });
+        },
+        async showMessage(plugin, msg) {
+          imjoy.imjoy_api.showSnackbar(plugin, msg, 7000);
+        },
+        async showStatus(plugin, status) {
+          imjoy.imjoy_api.showSnackbar(plugin, status, 7000);
+        },
+        async showProgress(plugin, p) {
+          p = p || 0;
+          if (p < 1.0) p = p * 100;
+          if (p > 100) p = 100;
+          if (p) {
+            self.$refs.imjoyProgressbar.style.display = "block";
+            self.$refs.imjoyProgressbar.value = parseInt(p);
+          } else {
+            self.$refs.imjoyProgressbar.style.display = "none";
+          }
         }
       }
     });
@@ -119,9 +153,9 @@ export default {
       });
       this.setupMicroscopeAPI();
       this.setupViewers();
-      // load the script editor for testing ImJoy plugins
+      // load the script editor for openflexure
       this.loadPlugin(
-        "https://gist.githubusercontent.com/oeway/9c78d23c101f468e723888d05b6fac6d/raw/ImageJScriptEditor.imjoy.html"
+        "https://gist.githubusercontent.com/oeway/7a9dcb49c51b1f99b2c3619f470fe35c/raw/OpenFlexureScriptEditor.imjoy.html"
       );
     });
     this.imjoy = imjoy;
