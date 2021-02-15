@@ -3,7 +3,7 @@
     <div class="uk-grid uk-grid-divider uk-child-width-expand" uk-grid>
       <div class="uk-width-large">
         <h3>Manual camera settings</h3>
-        <form @submit.prevent="applySettingsRequest">
+        <form @submit.prevent="applySettingsRequest" >
           <div class="uk-margin-small-bottom">
             <ul uk-accordion="multiple: true">
               <li class="uk-open">
@@ -31,7 +31,7 @@
                         v-model="picamera.analog_gain"
                         class="uk-input uk-form-small"
                         type="number"
-                        step="0.000001"
+                        step="0.0000000000000001"
                       />
                     </div>
                   </div>
@@ -45,7 +45,29 @@
                         v-model="picamera.digital_gain"
                         class="uk-input uk-form-small"
                         type="number"
-                        step="0.000001"
+                        step="0.0000000000000001"
+                      />
+                    </div>
+                  </div>
+
+                  <div v-if="picamera.awb_gains !== undefined">
+                    <label class="uk-form-label" for="form-stacked-text" >
+                      White Balance gains
+                    </label>
+                    <div class="uk-form-controls">
+                      <label class="uk-form-label" >R:</label>
+                      <input
+                        v-model="picamera.awb_gains[0]"
+                        class="uk-input uk-form-small"
+                        type="number"
+                        step="0.0000000000000001"
+                      />
+                      <label class="uk-form-label" >B:</label>
+                      <input
+                        v-model="picamera.awb_gains[1]"
+                        class="uk-input uk-form-small"
+                        type="number"
+                        step="0.0000000000000001"
                       />
                     </div>
                   </div>
@@ -194,7 +216,8 @@ export default {
         shutter_speed: undefined,
         analog_gain: undefined,
         digital_gain: undefined,
-        framerate: undefined
+        framerate: undefined,
+        awb_gains: undefined
       },
       mjpeg_bitrate: undefined,
       stream_resolution: undefined,
@@ -244,6 +267,7 @@ export default {
             this.picamera.digital_gain = cameraSettings.picamera.digital_gain;
             this.picamera.shutter_speed = cameraSettings.picamera.shutter_speed;
             this.picamera.framerate = cameraSettings.picamera.framerate;
+            this.picamera.awb_gains = cameraSettings.picamera.awb_gains;
           }
         })
         .catch(error => {
@@ -263,7 +287,11 @@ export default {
             shutter_speed: parseFloat(this.picamera.shutter_speed),
             analog_gain: parseFloat(this.picamera.analog_gain),
             digital_gain: parseFloat(this.picamera.digital_gain),
-            framerate: parseInt(this.picamera.framerate)
+            framerate: parseInt(this.picamera.framerate),
+            awb_gains: [
+              parseFloat(this.picamera.awb_gains[0]),
+              parseFloat(this.picamera.awb_gains[1]),
+            ],
           }
         }
       };
