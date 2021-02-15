@@ -1,11 +1,55 @@
 <template>
   <!-- Grid managing tab content -->
   <div class="uk-height-1-1 view-component">
-    <button class="uk-button uk-button-default" type="button">Plugins</button>
+    <progress
+      ref="imjoyProgressbar"
+      style="height: 4px; margin-bottom:0!important"
+      class="uk-progress"
+      max="100"
+    ></progress>
+    <button
+      v-if="activeWindow"
+      class="uk-button uk-button-default close-button"
+      type="button"
+      @click="closeActiveWindow()"
+    >
+      <i class="material-icons">close</i>
+    </button>
+    <button class="uk-button uk-button-default plugins-button" type="button">
+      <img
+        style="width:18px;"
+        src="https://imjoy.io/static/img/imjoy-icon.svg"
+      />&nbsp;Plugins
+    </button>
     <div uk-dropdown>
       <ul class="uk-nav uk-dropdown-nav">
-        <li><a href="#" @click="loadPluginDialog()">Load Plugin</a></li>
-        <li class="uk-nav-divider"></li>
+        <li>
+          <a href="#" @click="loadPluginDialog()">
+            <i class="material-icons">add</i>&nbsp; Load Plugin</a
+          >
+        </li>
+        <li
+          v-if="Object.keys(loadedPlugins).length > 0"
+          class="uk-nav-divider"
+        ></li>
+        <li>
+          <a href="#" @click="startImageJ()"
+            ><img
+              alt="ImageJ.JS icon"
+              style="width:20px;"
+              src="https://ij.imjoy.io/assets/icons/chrome/chrome-installprocess-128-128.png"
+            />&nbsp;ImageJ.JS</a
+          >
+        </li>
+        <li>
+          <a href="#" @click="startKaibu()"
+            ><img
+              alt="Kaibu icon"
+              style="width:20px;"
+              src="https://kaibu.org/static/img/kaibu-icon.svg"
+            />&nbsp;Kaibu</a
+          >
+        </li>
         <li>
           <a
             v-for="(p, name) in loadedPlugins"
@@ -18,7 +62,7 @@
         <li class="uk-nav-divider"></li>
         <li>
           <a v-for="w in windows" :key="w.id" href="#" @click="activeWindow = w"
-            ><i class="material-icons">launch</i>{{ w.name }}</a
+            ><i class="material-icons">filter_none</i>&nbsp;{{ w.name }}</a
           >
         </li>
       </ul>
@@ -28,10 +72,19 @@
       v-for="w in windows"
       v-show="w === activeWindow"
       :key="w.id"
-      class="uk-card uk-card-body imjoy-container-card"
+      style="height: 100%;"
     >
-      <h3 class="uk-card-title">{{ w.name }}</h3>
+      <h4 class="window-title">{{ w.name }}</h4>
       <div :id="w.window_id" class="window-container"></div>
+    </div>
+    <div
+      v-if="!activeWindow || windows.length <= 0"
+      class="uk-position-center position-relative text-center"
+    >
+      <img
+        style="width:80px;"
+        src="https://imjoy.io/static/img/imjoy-icon.svg"
+      />
     </div>
 
     <div v-show="loading" class="progress uk-margin-small">
@@ -42,6 +95,7 @@
 
 <script>
 import * as imjoyCore from "imjoy-core";
+import UIkit from "uikit";
 
 export default {
   name: "ImJoyContent",
@@ -49,83 +103,256 @@ export default {
   components: {},
   data() {
     return {
-      windows: {},
+      windows: [],
       loading: false,
       loadedPlugins: {},
-      activeWindow: null
+      activeWindow: null,
+      viewers: {}
     };
   },
   mounted() {
+    const self = this;
     const imjoy = new imjoyCore.ImJoy({
-      imjoy_api: {}
-      //imjoy config
+      imjoy_api: {
+        async showDialog(plugin, config, exta_config) {
+          return await imjoy.pm.createWindow(plugin, config, exta_config);
+        },
+        async showSnackbar(plugin, msg, duration) {
+          duration = duration || 5;
+          UIkit.notification.closeAll();
+          UIkit.notification({
+            message: msg.slice(0, 100),
+            status: "primary",
+            pos: "bottom-center",
+            timeout: duration * 1000
+          });
+        },
+        async showMessage(plugin, msg) {
+          imjoy.imjoy_api.showSnackbar(plugin, msg, 5);
+        },
+        async showStatus(plugin, status) {
+          imjoy.imjoy_api.showSnackbar(plugin, status, 5);
+        },
+        async showProgress(plugin, p) {
+          p = p || 0;
+          if (p < 1.0) p = p * 100;
+          if (p > 100) p = 100;
+          if (p) {
+            self.$refs.imjoyProgressbar.style.display = "block";
+            self.$refs.imjoyProgressbar.value = parseInt(p);
+          } else {
+            self.$refs.imjoyProgressbar.style.display = "none";
+          }
+        }
+      }
     });
 
-    imjoy.start({ workspace: "default" }).then(async () => {
+    imjoy.start({ workspace: "default" }).then(() => {
       console.log("ImJoy started");
-      imjoy.event_bus.on("add_window", async w => {
+      imjoy.event_bus.on("add_window", w => {
         this.addWindow(w);
       });
-      await this.loadPlugin("https://kaibu.org/#/app");
+      this.setupMicroscopeAPI();
+      this.setupViewers();
+      // load the script editor for openflexure
+      this.loadPlugin(
+        "https://gist.githubusercontent.com/oeway/7a9dcb49c51b1f99b2c3619f470fe35c/raw/OpenFlexureScriptEditor.imjoy.html"
+      );
+      this.setupPluginEngine();
     });
     this.imjoy = imjoy;
   },
   methods: {
-    addWindow(w) {
-      this.windows = this.windows || {};
-      this.windows[w.window_id] = w;
-      this.activeWindow = w;
-      this.$forceUpdate();
-    },
-    loadPlugin(uri) {
-      this.loading = true;
+    setupPluginEngine() {
+      // setup a plugin engine for Python plugins
       this.imjoy.pm
         .reloadPluginRecursively({
-          uri
+          uri:
+            "https://imjoy-team.github.io/jupyter-engine-manager/Jupyter-Engine-Manager.imjoy.html"
         })
-        .then(async plugin => {
-          this.loadedPlugins[plugin.name] = plugin;
-          this.registerOpenInImJoy(plugin);
-          this.loading = false;
-        })
-        .catch(e => {
-          console.error(e);
-          this.loading = false;
-          alert(`failed to load the plugin, error: ${e}`);
+        .then(enginePlugin => {
+          // TODO: currently the url query  are not preserved for ImJoy
+          const queryString = window.location.search;
+          const urlParams = new URLSearchParams(queryString);
+          const engine = urlParams.get("engine");
+          const spec = urlParams.get("spec");
+          if (engine) {
+            enginePlugin.api
+              .createEngine({
+                name: "MyCustomEngine",
+                nbUrl: engine,
+                url: engine.split("?")[0]
+              })
+              .then(() => {
+                console.log("Jupyter Engine connected!");
+              })
+              .catch(e => {
+                console.error("Failed to connect to Jupyter Engine", e);
+              });
+          } else {
+            enginePlugin.api
+              .createEngine({
+                name: "MyBinder Engine",
+                url: "https://mybinder.org",
+                spec: spec || "oeway/imjoy-binder-image/master"
+              })
+              .then(() => {
+                console.log("Binder Engine connected!");
+              })
+              .catch(e => {
+                console.error("Failed to connect to MyBinder Engine", e);
+              });
+          }
         });
     },
-    registerOpenInImJoy(plugin) {
-      let item;
+    setupMicroscopeAPI() {
+      // Here we register a set of API for controlling the microscope as an service
+      // For interoperatability, it might be good to reuse a subset of the function names defined in MicroManager
+      // See here: https://valelab4.ucsf.edu/~MM/doc/MMCore/html/class_c_m_m_core.html
+      const service = {
+        type: "_microscope-control",
+        name: "OpenFlexure",
+        snapImage() {
+          alert("Not implemented");
+        },
+        getImage() {
+          alert("Not implemented");
+        },
+        setPoisition() {
+          alert("Not implemented");
+        },
+        getPoisition() {
+          alert("Not implemented");
+        }
+      };
+      this.imjoy.pm.registerService({ name: "openflexure" }, service);
+    },
+    closeActiveWindow() {
+      if (this.activeWindow) {
+        this.activeWindow.api.close();
+        const index = this.windows.indexOf(this.activeWindow);
+        if (index > -1) {
+          this.windows.splice(index, 1);
+        }
+        if (this.windows.length > 0) {
+          this.activeWindow = this.windows[this.windows.length - 1];
+        } else {
+          this.activeWindow = null;
+        }
+      }
+    },
+    selectWindow(name) {
+      for (let w of this.windows) {
+        if (w.name === name) {
+          this.activeWindow = w;
+          break;
+        }
+      }
+    },
+    async startKaibu() {
+      this.viewers.kaibu = await this.imjoy.pm.createWindow(null, {
+        name: "Kaibu",
+        src: "https://kaibu.org/#/app"
+      });
+      this.viewers.kaibu.on("close", () => {
+        delete this.viewers.kaibu;
+      });
+      this.viewers.kaibu.set_mode("full");
+      this.selectWindow("Kaibu");
+    },
+    async startImageJ() {
+      this.viewers.imagej = await this.imjoy.pm.createWindow(null, {
+        name: "ImageJ.JS",
+        src: "https://ij.imjoy.io"
+      });
+      this.viewers.imagej.on("close", () => {
+        delete this.viewers.imagej;
+      });
+      // load the ITK/VTK viewer for imagej.js
+      this.loadPlugin(
+        "https://gist.githubusercontent.com/oeway/e5c980fbf6582f25fde795262a7e33ec/raw/itk-vtk-viewer-imagej.imjoy.html"
+      );
+      this.selectWindow("ImageJ.JS");
+    },
+    async setupViewers() {
+      this.loading = true;
       // TODO: improve this using the ImJoy `api.getServices`
       // See here: https://imjoy.io/docs/#/api?id=apigetservices
       // The idea is that plugins can register custom services via `api.registerService`
       // For example, we can have a image visualization service
       // Then other plugins can use `api.getServices` to get a list of services
       // And this can be used for render our "Open In ImJoy" menu
-      if (plugin.name === "Kaibu") {
-        item = {
+      try {
+        const self = this;
+
+        this.$store.commit("addOpenInImjoyMenuItem", {
           title: "Kaibu",
           async callback(name, imageUrl) {
-            const viewer = await plugin.api.run();
-            viewer.set_mode('full');
-            await viewer.view_image(imageUrl, {type: '2d-image', name});
+            if (!self.viewers.kaibu) {
+              await self.startKaibu();
+            }
+            self.selectWindow("Kaibu");
+            const viewer = self.viewers.kaibu;
+            await viewer.view_image(imageUrl, { type: "2d-image", name });
+            await viewer.add_shapes([]);
           }
-        };
-      } else if (plugin.name === "ImageJ.JS") {
-        item = {
+        });
+
+        this.$store.commit("addOpenInImjoyMenuItem", {
           title: "ImageJ.JS",
-          async callback(name, imageUrl) { // eslint-disable-line
-            alert("not implemented");
+          async callback(name, imageUrl) {
+            if (!self.viewers.imagej) {
+              await self.startImageJ();
+            }
+            self.selectWindow("ImageJ.JS");
+            const viewer = self.viewers.imagej;
+            const response = await fetch(imageUrl);
+            const buffer = await response.arrayBuffer();
+            await viewer.viewImage(buffer, {
+              name: name.replace(".jpeg", ".jpg")
+            });
           }
-        };
+        });
+      } catch (e) {
+        alert(`Failed to setup viewers, error: ${e}`);
+      } finally {
+        this.loading = false;
       }
-      if (item) this.$store.commit("addOpenInImjoyMenuItem", item);
+    },
+    addWindow(w) {
+      this.windows = this.windows || [];
+      this.windows.push(w);
+      this.activeWindow = w;
+      this.$forceUpdate();
+    },
+    loadPlugin(uri) {
+      return new Promise((resolve, reject) => {
+        this.loading = true;
+        this.imjoy.pm
+          .reloadPluginRecursively({
+            uri
+          })
+          .then(async plugin => {
+            this.loadedPlugins[plugin.name] = plugin;
+            this.loading = false;
+            resolve(plugin);
+          })
+          .catch(e => {
+            console.error(e);
+            this.loading = false;
+            reject(e);
+            alert(`failed to load the plugin, error: ${e}`);
+          });
+      });
     },
     async runPlugin(plugin) {
       await plugin.api.run();
     },
     loadPluginDialog() {
-      const uri = prompt("Paste the ImJoy plugin url here");
+      const uri = prompt(
+        "Paste the ImJoy plugin url here",
+        "imjoy-team/imjoy-plugins:Welcome"
+      );
       if (uri) {
         this.loadPlugin(uri);
       }
@@ -142,5 +369,27 @@ export default {
 .imjoy-container-card {
   width: 100%;
   height: 100%;
+}
+
+.window-title {
+  height: 26px;
+  text-align: center;
+  font-size: 1.2rem;
+  background-color: #efefef;
+  color: #482727;
+  font-weight: 500;
+}
+
+.plugins-button {
+  position: absolute;
+  right: 1px;
+  height: 26px;
+  line-height: 11px;
+}
+
+.close-button {
+  position: absolute;
+  right: 100px;
+  height: 26px;
 }
 </style>
