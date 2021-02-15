@@ -221,7 +221,7 @@ def adjust_shutter_and_gain_from_raw(
 
 def adjust_white_balance_from_raw(
     camera: PiCamera, percentile: float = 99
-) -> (float, float):
+) -> Tuple[float, float]:
     """Adjust the white balance in a single shot, based on the raw image.
     
     NB if ``channels_from_raw_image`` is broken, this will go haywire.
