@@ -117,13 +117,14 @@ class RecalibrateView(ActionView):
         microscope = find_microscope()
         logging.info("Starting microscope recalibration...")
         picamera = microscope.camera.picamera
-        if not args.get("skip_auto_exposure"):
-            adjust_shutter_and_gain_from_raw(picamera)
-            adjust_white_balance_from_raw(picamera)
-        lst = lst_from_camera(picamera)
-        with pause_stream(microscope.camera) as scamera:
-            scamera.picamera.lens_shading_table = lst
-        microscope.save_settings()
+        with microscope.camera.lock:
+            if not args.get("skip_auto_exposure"):
+                adjust_shutter_and_gain_from_raw(picamera)
+                adjust_white_balance_from_raw(picamera)
+            lst = lst_from_camera(picamera)
+            with pause_stream(microscope.camera) as scamera:
+                scamera.picamera.lens_shading_table = lst
+            microscope.save_settings()
 
 
 class FlattenLSTView(ActionView):
@@ -179,10 +180,12 @@ class AutoExposureFromRawView(ActionView):
     }
 
     def post(self, args):
-        camera = find_component("org.openflexure.microscope").camera.picamera
-        adjust_shutter_and_gain_from_raw(
-            camera, **args  # I'm relying on the schema to fill in missing values
-        )
+        camera = find_component("org.openflexure.microscope").camera
+
+        with camera.lock:
+            adjust_shutter_and_gain_from_raw(
+                camera.picamera, **args  # I'm relying on the schema to fill in missing values
+            )
 
 
 class AutoWhiteBalanceFromRawView(ActionView):
