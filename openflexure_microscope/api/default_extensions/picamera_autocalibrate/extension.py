@@ -106,9 +106,7 @@ def find_picamera() -> Tuple[PiCamera, BaseCamera, Microscope]:
 
 
 class RecalibrateView(ActionView):
-    args = {}
-
-    def post(self, args):
+    def post(self):
         """Reset the camera's settings.
 
         This generates new gains, exposure time, and lens shading
@@ -135,9 +133,7 @@ class RecalibrateView(ActionView):
             microscope.save_settings()
 
 class AutoLensShadingTableView(ActionView):
-    args = {}
-
-    def post(self, args):
+    def post(self):
         """Perform flat-field correction
 
         This routine acquires a new image (which should be an
