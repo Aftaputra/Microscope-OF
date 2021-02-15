@@ -37,6 +37,21 @@
       >
       </taskSubmitter>
     </div>
+    <div v-if="'auto_lens_shading_table' in recalibrationLinks" class="uk-margin-small">
+      <taskSubmitter
+        :can-terminate="false"
+        :requires-confirmation="true"
+        :confirmation-message="
+          'Is the microscope looking at an evenly illuminated, empty field of view? ' +
+          'If not, the current image will show through in any images captured afterwards.'
+        "
+        :submit-url="recalibrationLinks.auto_lens_shading_table.href"
+        :submit-label="'Auto flat field correction'"
+        @response="onRecalibrateResponse"
+        @error="modalError"
+      >
+      </taskSubmitter>
+    </div>
 
     <div v-show="showExtraSettings" class="uk-child-width-expand">
       <button
@@ -44,7 +59,7 @@
         class="uk-button uk-button-danger uk-width-1-1"
         @click="flattenLensShadingTableRequest"
       >
-        Disable flat-field correction
+        Disable flat field correction
       </button>
     </div>
 
