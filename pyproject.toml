@@ -99,6 +99,7 @@ isort = "isort ."
 pylint = "pylint openflexure_microscope"
 mypy = "mypy --cobertura-xml-report openflexure_microscope openflexure_microscope"
 test = "pytest ."
+serve = "python -m openflexure_microscope.api.app"
 
 format = ["black", "isort"]
 lint = ["pylint", "mypy"]
