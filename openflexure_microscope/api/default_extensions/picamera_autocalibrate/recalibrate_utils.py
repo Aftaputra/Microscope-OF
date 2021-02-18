@@ -50,97 +50,6 @@ def adjust_exposure_to_setpoint(camera: PiCamera, setpoint: int):
     print("done")
 
 
-def adjust_exposure_and_gain(
-    camera: PiCamera, target_white_level: int = 700, max_iterations: int = 99
-):
-    """Adjust exposure and analog gain based on raw images.
-    
-    This routine is slow but effective.  It uses raw images, so we
-    are not affected by white balance or digital gain.
-    """
-    # Start by setting fully manual exposure.
-    camera.exposure_mode = "off"
-    camera.iso = 0  # We must set ISO=0 (auto) or we can't set gain
-    camera.analog_gain = 1
-    camera.digital_gain = 1
-    camera.shutter_speed = 1  # This is not valid - we'll get the minimum
-    time.sleep(0.5)
-
-    # We start with very low exposure settings and work up in coarse steps
-    # until either the brightness is high enough, or we can't increase the
-    # shutter speed any more.
-    iterations = 0
-    while True:
-        iterations += 1
-        if iterations > max_iterations:
-            logging.warning(
-                f"Auto exposure is stopping after {max_iterations} "
-                "but it has not converged."
-            )
-            break
-
-        with PiBayerArray(camera) as a:
-            camera.capture(a, format="jpeg", bayer=True)
-            max_brightness = np.max(a.array)
-
-        if max_brightness > target_white_level:
-            break
-
-        previous_shutter_speed = camera.shutter_speed
-        camera.shutter_speed = previous_shutter_speed * 2
-        time.sleep(0.5)
-        current_shutter_speed = camera.shutter_speed
-        # NB we save this in a variable in case it changes between
-        # here and the next loop
-        logging.info(
-            f"Max brightness {max_brightness} < {target_white_level}. "
-            f"Attempting to double exposure from "
-            f"{previous_shutter_speed} to {current_shutter_speed}"
-        )
-        if current_shutter_speed == previous_shutter_speed:
-            logging.info("Shutter speed has saturated, stopping.")
-            break
-
-    if max_brightness > target_white_level:
-        logging.info("Brightness is high enough, fine-tuning")
-        camera.shutter_speed = int(
-            current_shutter_speed * target_white_level / max_brightness
-        )
-
-
-def auto_expose_and_freeze_settings(camera: PiCamera):
-    """Freeze the settings after auto-exposing to white illumination"""
-    logging.info("Allowing the camera to auto-expose")
-    if "greyworld" in camera.AWB_MODES:
-        logging.info("Calibrating with greyworld AWB")
-        camera.awb_mode = "greyworld"
-    else:
-        logging.warning("Calibrating with auto AWB as greyworld is missing")
-        camera.awb_mode = "auto"
-    camera.exposure_mode = "auto"
-    camera.iso = (
-        0  # This is important, if it's on a fixed ISO, gain might not set properly.
-    )
-    for _ in range(6):
-        print(".", end="")
-        time.sleep(0.5)
-    logging.info("done")
-
-    logging.info("Freezing the camera settings...")
-    camera.shutter_speed = camera.exposure_speed
-    logging.info("Shutter speed = %s", (camera.shutter_speed))
-    camera.exposure_mode = "off"
-    logging.info("Auto exposure disabled")
-    g: Tuple[Fraction, Fraction] = camera.awb_gains
-    camera.awb_mode = "off"
-    camera.awb_gains = g
-    logging.info("Auto white balance disabled, gains are %s", (g))
-    logging.info(
-        "Analogue gain: %s, Digital gain: %s", camera.analog_gain, camera.digital_gain
-    )
-    adjust_exposure_to_setpoint(camera, 215)
-
-
 def adjust_shutter_and_gain_from_raw(
     camera: PiCamera,
     target_white_level: int = 700,
@@ -152,6 +61,26 @@ def adjust_shutter_and_gain_from_raw(
     
     This routine is slow but effective.  It uses raw images, so we
     are not affected by white balance or digital gain.
+
+    
+    Arguments:
+        target_white_level: 
+            The raw, 10-bit value we aim for.  The brightest pixels 
+            should be approximately this bright.  Maximum possible 
+            is 1023, 700 is reasonable.
+        max_iterations:
+            We will terminate once we perform this many iterations,
+            whether or not we converge.  More than 10 shouldn't happen.
+        tolerance: 
+            How close to the target value we consider "done".  Expressed
+            as a fraction of the ``target_white_level`` so 0.05 means
+            +/- 5%
+        percentile:
+            Rather then use the maximum value for each channel, we
+            calculate a percentile.  This makes us robust to single
+            pixels that are bright/noisy.  99.9% still picks the top
+            of the brightness range, but seems much more reliable
+            than just ``np.max()``.
     """
     # Start by setting fully manual exposure.
     camera.exposure_mode = "off"
