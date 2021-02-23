@@ -1,10 +1,24 @@
 <template>
   <div>
-    <form class="uk-form-stacked" @submit.prevent="overrideAPIHost">
+    <form 
+      class="uk-form-stacked" 
+      @submit="overrideAPIHost"
+      action=""
+      method="GET">
       <label class="uk-form-label">Override API origin</label>
-      <input v-model="newOrigin" class="uk-input" type="text" />
+      <input v-model="newOrigin" name="overrideOrigin" class="uk-input" type="text" />
+      <label class="uk-form-label" >
+        <input v-model="reloadWhenOverridingOrigin" class="uk-input uk-checkbox" type="checkbox" />
+        Reload web app with new origin
+      </label>
       <button class="uk-button uk-button-default uk-margin-small">
         Apply
+      </button>
+    </form>
+    <form class="uk-form-stacked" @submit.prevent="resetTour">
+      <label class="uk-form-label">Re-run tour on next load</label>
+      <button class="uk-button uk-button-default uk-margin-small">
+        Reset
       </button>
     </form>
   </div>
@@ -19,7 +33,8 @@ export default {
 
   data: function() {
     return {
-      newOrigin: this.$store.state.origin
+      newOrigin: this.$store.state.origin,
+      reloadWhenOverridingOrigin: true
     };
   },
 
@@ -32,9 +47,21 @@ export default {
   },
 
   methods: {
-    overrideAPIHost: function() {
-      this.$store.commit("changeOrigin", this.newOrigin);
+    overrideAPIHost: function(event) {
+      // Save the origin override, so that if we reload the web app, you can easily
       localStorage.overrideOrigin = this.newOrigin;
+      
+      // If we have elected not to reload the interface, just update the origin
+      // in the store.  Otherwise, the form's default action will do the job for us.
+      // TODO: preserve other query parameters when reloading
+      if(!this.reloadWhenOverridingOrigin){
+        this.$store.commit("changeOrigin", this.newOrigin);
+        event.preventDefault();
+      }
+    },
+    resetTour: function() {
+      // Make the introduction tour run next time the app loads
+      this.setLocalStorageObj("completedTour", false);
     }
   }
 };
