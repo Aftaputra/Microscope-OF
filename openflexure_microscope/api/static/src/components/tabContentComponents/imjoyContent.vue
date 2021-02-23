@@ -310,6 +310,7 @@ export default {
         this.$store.commit("addOpenInImjoyMenuItem", {
           title: "Kaibu",
           async callback(name, imageUrl) {
+            self.$root.$emit("globalSwitchTab", "ImJoy");
             if (!self.viewers.kaibu) {
               await self.startKaibu();
             }
@@ -323,6 +324,7 @@ export default {
         this.$store.commit("addOpenInImjoyMenuItem", {
           title: "ImageJ.JS",
           async callback(name, imageUrl) {
+            self.$root.$emit("globalSwitchTab", "ImJoy")
             if (!self.viewers.imagej) {
               await self.startImageJ();
             }
