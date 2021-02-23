@@ -95,6 +95,7 @@
 
 <script>
 import * as imjoyCore from "imjoy-core";
+import axios from "axios";
 import UIkit from "uikit";
 
 export default {
@@ -109,6 +110,14 @@ export default {
       activeWindow: null,
       viewers: {}
     };
+  },
+  computed: {
+    captureActionUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2/actions/camera/capture`;
+    },
+    snapshotStreamUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2/streams/snapshot`;
+    },
   },
   mounted() {
     const self = this;
@@ -209,19 +218,32 @@ export default {
       // Here we register a set of API for controlling the microscope as an service
       // For interoperatability, it might be good to reuse a subset of the function names defined in MicroManager
       // See here: https://valelab4.ucsf.edu/~MM/doc/MMCore/html/class_c_m_m_core.html
+      const snapshotUri = this.snapshotStreamUri
+      const modalError = this.modalError
       const service = {
         type: "_microscope-control",
         name: "OpenFlexure",
         snapImage() {
-          alert("Not implemented");
+          // The "proper" capture method is more involved - this one pulls a frame out of the preview stream
+          // TODO: allow the full capture API to be used - via temporary or "ram" capture
+          // TODO: split into snapImage and getImage (so snapImage is a POST request to capture and
+          // getImage returns the latest capture)
+          // Problem: the above split might return images you didn't capture, as there's no link from
+          // one to the other.  We could use internal state in this component to manage that.
+          return axios
+            .get(snapshotUri)
+            .then(response => {
+              return response.data;
+            })
+            .catch(modalError);
         },
         getImage() {
           alert("Not implemented");
         },
-        setPoisition() {
+        setPosition() {
           alert("Not implemented");
         },
-        getPoisition() {
+        getPosition() {
           alert("Not implemented");
         }
       };
