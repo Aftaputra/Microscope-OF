@@ -227,11 +227,6 @@ export default {
         lastSnapResponse: null,
         snapPreviewImage() {
           // The "proper" capture method is more involved - this one pulls a frame out of the preview stream
-          // TODO: allow the full capture API to be used - via temporary or "ram" capture
-          // TODO: split into snapImage and getImage (so snapImage is a POST request to capture and
-          // getImage returns the latest capture)
-          // Problem: the above split might return images you didn't capture, as there's no link from
-          // one to the other.  We could use internal state in this component to manage that.
           return axios
             .get(snapshotUri)
             .then(response => {
