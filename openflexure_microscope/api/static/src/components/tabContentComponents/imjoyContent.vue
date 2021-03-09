@@ -117,7 +117,7 @@ export default {
     },
     snapshotStreamUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/streams/snapshot`;
-    },
+    }
   },
   mounted() {
     const self = this;
@@ -218,12 +218,14 @@ export default {
       // Here we register a set of API for controlling the microscope as an service
       // For interoperatability, it might be good to reuse a subset of the function names defined in MicroManager
       // See here: https://valelab4.ucsf.edu/~MM/doc/MMCore/html/class_c_m_m_core.html
-      const snapshotUri = this.snapshotStreamUri
-      const modalError = this.modalError
+      const snapshotUri = this.snapshotStreamUri;
+      const captureActionUri = this.captureActionUri;
+      const modalError = this.modalError;
       const service = {
         type: "_microscope-control",
         name: "OpenFlexure",
-        snapImage() {
+        lastSnapResponse: null,
+        snapPreviewImage() {
           // The "proper" capture method is more involved - this one pulls a frame out of the preview stream
           // TODO: allow the full capture API to be used - via temporary or "ram" capture
           // TODO: split into snapImage and getImage (so snapImage is a POST request to capture and
@@ -237,8 +239,44 @@ export default {
             })
             .catch(modalError);
         },
-        getImage() {
-          alert("Not implemented");
+        snapImage() {
+          // Do capture
+          return axios.post(captureActionUri, {}).then(response => {
+            service.lastSnapResponse = response;
+            // TODO: send the events to flash the stream and update captures
+            // Flash the stream (capture animation)
+            //this.$root.$emit("globalFlashStream");
+            // Update the global capture list
+            //this.$root.$emit("globalUpdateCaptures");
+          });
+          //.catch(modalError);
+        },
+        async getImage() {
+          // FIXME: this could be an infinite loop if the task is cancelled/errored
+          // FIXME: handle nicely getImage() being called before snapImage()
+          while (service.lastSnapResponse.data.status != "completed") {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            service.lastSnapResponse = await axios.get(
+              service.lastSnapResponse.data.href
+            );
+          }
+          // TODO: better error handling for the task not completing
+          let capture = service.lastSnapResponse.data.output;
+          // TODO: check links.download.href exists and is JPEG
+          let jpeg = await axios
+            .get(capture.links.download.href, {
+              responseType: "arraybuffer",
+              headers: {
+                "Content-Type": "image/jpeg"
+              }
+            })
+            .then(r => r.data);
+          console.log(
+            "Downloaded ",
+            jpeg.byteLength,
+            " bytes of JPEG image data"
+          );
+          return jpeg; //TODO: what is the expected output format???
         },
         setPosition() {
           alert("Not implemented");
@@ -324,7 +362,7 @@ export default {
         this.$store.commit("addOpenInImjoyMenuItem", {
           title: "ImageJ.JS",
           async callback(name, imageUrl) {
-            self.$root.$emit("globalSwitchTab", "ImJoy")
+            self.$root.$emit("globalSwitchTab", "ImJoy");
             if (!self.viewers.imagej) {
               await self.startImageJ();
             }
