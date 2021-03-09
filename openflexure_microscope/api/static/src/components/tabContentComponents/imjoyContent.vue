@@ -221,6 +221,19 @@ export default {
       const snapshotUri = this.snapshotStreamUri;
       const captureActionUri = this.captureActionUri;
       const modalError = this.modalError;
+      async function pollUntilComplete(response) {
+        // Poll an action until its status is completed
+        // TODO: raise an error if it fails or is cancelled
+        // For ease, this accepts and returns a response object from
+        // axios.get
+        // FIXME: this could be an infinite loop if the task is cancelled/errored
+        let r = response;
+        while (r.data.status != "completed") {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          r = await axios.get(r.data.href);
+        }
+        return r;
+      }
       const service = {
         type: "_microscope-control",
         name: "OpenFlexure",
@@ -247,15 +260,11 @@ export default {
           //.catch(modalError);
         },
         async getImage() {
-          // FIXME: this could be an infinite loop if the task is cancelled/errored
           // FIXME: handle nicely getImage() being called before snapImage()
-          while (service.lastSnapResponse.data.status != "completed") {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            service.lastSnapResponse = await axios.get(
-              service.lastSnapResponse.data.href
-            );
-          }
-          // TODO: better error handling for the task not completing
+          // Wait until the capture has completed and we can retrieve it
+          service.lastSnapResponse = await pollUntilComplete(
+            service.lastSnapResponse
+          );
           let capture = service.lastSnapResponse.data.output;
           // TODO: check links.download.href exists and is JPEG
           let jpeg = await axios
@@ -274,9 +283,17 @@ export default {
           return jpeg; //TODO: what is the expected output format???
         },
         setPosition() {
+          // The C api suggests this defaults to just Z, and can accept a "label" to
+          // select the stage.
           alert("Not implemented");
         },
         getPosition() {
+          alert("Not implemented");
+        },
+        setXYPosition() {
+          alert("Not implemented");
+        },
+        getXYPosition() {
           alert("Not implemented");
         }
       };
