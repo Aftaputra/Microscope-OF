@@ -40,14 +40,12 @@ def flat_lens_shading_table(camera: PiCamera) -> np.ndarray:
 
 def adjust_exposure_to_setpoint(camera: PiCamera, setpoint: int):
     """Adjust the camera's exposure time until the maximum pixel value is <setpoint>."""
-    print("Adjusting shutter speed to hit setpoint {}".format(setpoint), end="")
+    logging.info("Adjusting shutter speed to hit setpoint {}".format(setpoint))
     for _ in range(3):
-        print(".", end="")
         camera.shutter_speed = int(
             camera.shutter_speed * setpoint / np.max(rgb_image(camera))
         )
         time.sleep(1)
-    print("done")
 
 
 def adjust_shutter_and_gain_from_raw(
