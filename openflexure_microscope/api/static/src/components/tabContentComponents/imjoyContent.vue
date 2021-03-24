@@ -236,7 +236,7 @@ export default {
         // axios.get
         // FIXME: this could be an infinite loop if the task is cancelled/errored
         let r = response;
-        while (r.data.status == "active") {
+        while (r.data.status == "running" | r.data.status == "pending") {
           await new Promise(resolve => setTimeout(resolve, 100));
           r = await axios.get(r.data.href);
         }
