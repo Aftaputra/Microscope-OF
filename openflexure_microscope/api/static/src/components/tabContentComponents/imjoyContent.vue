@@ -117,6 +117,12 @@ export default {
     },
     snapshotStreamUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/streams/snapshot`;
+    },
+    getPositionUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2/instrument/state/stage/position`;
+    },
+    moveActionUri: function() {
+      return `${this.$store.getters.baseUri}/api/v2/actions/stage/move`;
     }
   },
   mounted() {
@@ -220,6 +226,8 @@ export default {
       // See here: https://valelab4.ucsf.edu/~MM/doc/MMCore/html/class_c_m_m_core.html
       const snapshotUri = this.snapshotStreamUri;
       const captureActionUri = this.captureActionUri;
+      const getPositionUri = this.getPositionUri;
+      const moveActionUri = this.moveActionUri;
       const modalError = this.modalError;
       async function pollUntilComplete(response) {
         // Poll an action until its status is completed
@@ -228,7 +236,7 @@ export default {
         // axios.get
         // FIXME: this could be an infinite loop if the task is cancelled/errored
         let r = response;
-        while (r.data.status != "completed") {
+        while (r.data.status == "active") {
           await new Promise(resolve => setTimeout(resolve, 100));
           r = await axios.get(r.data.href);
         }
@@ -282,19 +290,38 @@ export default {
           );
           return jpeg; //TODO: what is the expected output format???
         },
-        setPosition() {
+        setPosition(z) {
           // The C api suggests this defaults to just Z, and can accept a "label" to
           // select the stage.
-          alert("Not implemented");
+          return service.setXYZPosition({
+            "z": z,
+            "absolute": true,
+          });
         },
-        getPosition() {
-          alert("Not implemented");
+        async getPosition() {
+          const pos = await service.getXYZPosition();
+          return pos.z;
         },
-        setXYPosition() {
-          alert("Not implemented");
+        async setXYPosition(x, y) {
+          return service.setXYZPosition({
+            "x": x,
+            "y": y,
+            "absolute": true,
+          });
         },
-        getXYPosition() {
-          alert("Not implemented");
+        async getXYPosition() {
+          const pos = await service.getXYZPosition();
+          return [pos.x, pos.y];
+        },
+        async getXYZPosition() {
+          return axios
+            .get(getPositionUri)
+            .then(r => r.data)
+        },
+        async setXYZPosition(payload) {
+          return axios
+            .post(moveActionUri, payload)
+            .then(pollUntilComplete)
         }
       };
       this.imjoy.pm.registerService({ name: "openflexure" }, service);
