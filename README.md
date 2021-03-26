@@ -52,10 +52,11 @@ The Raspberry Pi image we use currently ships with Python 3.7.3. For local devel
   * `pyenv init` (this may or may not be required, depending on how you installed `pyenv`)
   * `pyenv install 3.7.3`
   * `pyenv local 3.7.3`
-* Ensure you have a working installation of `poetry` (see the [Poetry website](https://python-poetry.org/)).
-* We usually set up `poetry` to place virtual environments in the project directory, as this is more easily detected by editors, including VSCode.  To do this, you can run:
-  * ``poetry config virtualenvs.in-project true`` will use a folder called ``.venv`` rather than keeping your environments in a central location.
-* `poetry install` will install the server, and all dependencies, into the virtual environment.  This step can take a while, especially on the Pi, bring a cup of tea!
+* Create a virtual environment and activate it:
+  * `python -m venv .venv`
+  * `source .venv/bin/activate` (on Linux) or `.venv/Scripts/activate` (on Windows)
+  * `pip install pipenv`
+  * `pipenv install`
 * Finally, run the server:
   * You can use `ofm serve` or `ofm restart` on the Raspberry Pi to manage the server.
   * To run the server locally, with dummy hardware, you can use ``poetry run python -m openflexure_microscope.api.app`` to start a development-mode Flask server on ``localhost:5000``
