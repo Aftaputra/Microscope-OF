@@ -11,7 +11,7 @@ stages:
     - python3 -m venv .venv        # NB this does not overwrite an existing cached venv
     - source .venv/bin/activate 
     - pip install pipenv           # Should be cached after first run
-    - pipenv install               # Should be cached after first run - will just check packages are present
+    - pipenv install --dev         # Should be cached after first run - will just check packages are present
   cache:
     key: "${CI_COMMIT_REF_SLUG}"
     paths:
@@ -37,7 +37,7 @@ pylint:
   <<: *python-install
 
   script:
-    - poetry run poe pylint
+    - poe pylint
 
   only:
     - branches
@@ -54,7 +54,7 @@ mypy:
   <<: *python-install
 
   script:
-    - poetry run poe mypy
+    - poe mypy
 
   artifacts:
     reports:
@@ -77,7 +77,7 @@ black:
 
   script:
     # Run static build script
-    - poetry run poe black_check
+    - poe black_check
 
   only:
     - branches
@@ -94,7 +94,7 @@ pytest:
   <<: *python-install
 
   script:
-    - poetry run poe test
+    - poe test
 
   only:
     - branches
@@ -153,8 +153,10 @@ package:
     # Build distribution archive
     - mkdir -p dist
     - tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz .
+    - tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz ./openflexure_microscope/api/static/dist/
     - cd dist/
     - sha256sum openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz > openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256
+    - sha256sum openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz > openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz.sha256
 
   artifacts:
     name: "dist"
@@ -162,6 +164,8 @@ package:
     paths:
       - "./dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz"
       - "./dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256"
+      - "./dist/openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz"
+      - "./dist/openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz.sha256"
 
   only:
     - merge_requests
