@@ -12,9 +12,7 @@ name = "piwheels"
 python_version = '3.7'
 
 [packages]
-#openflexure-microscope-server = {path = "."}
-#TODO: decide if we want dev dependencies here or in setup.py
 openflexure-microscope-server = {editable = true, path = "."}
 
 [dev-packages]
-#openflexure-microscope-server = {path = ".", editable=true, extras=["dev"]}
+openflexure-microscope-server = {editable = true, path = ".", extras = ["dev"]}
