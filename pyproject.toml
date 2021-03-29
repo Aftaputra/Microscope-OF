@@ -21,6 +21,10 @@ line_length = 88
 disable = "fixme,C,R"
 max-line-length = 88
 
+[tool.poe.executor]
+type = "virtualenv"
+location = ".venv"
+
 [tool.poe.tasks]
 black = "black ."
 black_check = "black --check ."
