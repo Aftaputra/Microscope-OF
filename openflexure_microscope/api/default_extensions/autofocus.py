@@ -127,16 +127,16 @@ def monitor_sharpness(microscope: Microscope):
         m.stop()
 
 
-def sharpness_sum_lap2(rgb_image: np.ndarray) -> np.float:
+def sharpness_sum_lap2(rgb_image: np.ndarray) -> float:
     """Return an image sharpness metric: sum(laplacian(image)**")"""
-    image_bw: np.float = np.mean(rgb_image, 2)
-    image_lap: np.float = ndimage.filters.laplace(image_bw)
-    return np.mean(image_lap.astype(np.float) ** 4)
+    image_bw: float = np.mean(rgb_image, 2)
+    image_lap: float = ndimage.filters.laplace(image_bw)
+    return np.mean(image_lap.astype(float) ** 4)
 
 
-def sharpness_edge(image: np.ndarray) -> np.float:
+def sharpness_edge(image: np.ndarray) -> float:
     """Return a sharpness metric optimised for vertical lines"""
-    gray: np.float = np.mean(image.astype(float), 2)
+    gray: float = np.mean(image.astype(float), 2)
     n: int = 20
     edge: np.ndarray = np.array([[-1] * n + [1] * n])
     return np.sum(
@@ -169,7 +169,7 @@ class AutofocusExtension(BaseExtension):
 
     def measure_sharpness(
         self, microscope: Microscope, metric_fn: Callable = sharpness_sum_lap2
-    ) -> np.float:
+    ) -> float:
         """Measure the sharpness of the camera's current view."""
 
         if hasattr(microscope.camera, "array") and callable(
@@ -185,7 +185,7 @@ class AutofocusExtension(BaseExtension):
         dz: List[int],
         settle: float = 0.5,
         metric_fn: Callable = sharpness_sum_lap2,
-    ) -> Tuple[List[int], List[np.float]]:
+    ) -> Tuple[List[int], List[float]]:
         """Perform a simple autofocus routine.
         The stage is moved to z positions (relative to current position) in dz,
         and at each position an image is captured and the sharpness function 
@@ -197,7 +197,7 @@ class AutofocusExtension(BaseExtension):
         stage: BaseStage = microscope.stage
 
         with set_properties(stage, backlash=256), stage.lock, camera.lock:
-            sharpnesses: List[np.float] = []
+            sharpnesses: List[float] = []
             positions: List[int] = []
 
             # Some cameras may not have annotate_text. Reset if it does
