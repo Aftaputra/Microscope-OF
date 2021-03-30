@@ -129,18 +129,21 @@ def monitor_sharpness(microscope: Microscope):
 
 def sharpness_sum_lap2(rgb_image: np.ndarray) -> float:
     """Return an image sharpness metric: sum(laplacian(image)**")"""
-    image_bw: float = np.mean(rgb_image, 2)
-    image_lap: float = ndimage.filters.laplace(image_bw)
-    return np.mean(image_lap.astype(float) ** 4)
+    image_bw = np.mean(rgb_image, 2)
+    image_lap = ndimage.filters.laplace(image_bw)
+    return float(np.mean(image_lap.astype(float) ** 4))
 
 
 def sharpness_edge(image: np.ndarray) -> float:
     """Return a sharpness metric optimised for vertical lines"""
-    gray: float = np.mean(image.astype(float), 2)
+    gray = np.mean(image.astype(float), 2)
     n: int = 20
     edge: np.ndarray = np.array([[-1] * n + [1] * n])
-    return np.sum(
-        [np.sum(ndimage.filters.convolve(gray, W) ** 2) for W in [edge, edge.T]]
+    return float(
+        np.sum(
+            [np.sum(ndimage.filters.convolve(gray, W) ** 2) 
+            for W in [edge, edge.T]]
+        )
     )
 
 
