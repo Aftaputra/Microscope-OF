@@ -110,7 +110,7 @@ setup(
             "poethepoet ~= 0.10.0",
             "freezegun ~= 1.0.0",
             "lxml ~= 4.6",
-            "black == 18.3a0",
+            "black == 18.9b0",
         ]
     },  # Optional
     # If there are data files included in your packages that need to be
