@@ -17,9 +17,9 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 # Fields marked as "Optional" may be commented out.
 
 setup(
-    name = "openflexure-microscope-server",
-    version = "2.9.3",
-    description = "Python module, and Flask-based web API, to run the OpenFlexure Microscope.",
+    name="openflexure-microscope-server",
+    version="2.9.3",
+    description="Python module, and Flask-based web API, to run the OpenFlexure Microscope.",
     long_description=long_description,  # Optional, read from README.md
     # Denotes that our long_description is in Markdown; valid values are
     long_description_content_type="text/markdown",  # Optional (see note above)
@@ -38,33 +38,35 @@ setup(
     #
     # For a list of valid classifiers, see https://pypi.org/classifiers/
     classifiers=[  # Optional
-#        # How mature is this project? Common values are
-#        #   3 - Alpha
-#        #   4 - Beta
-#        #   5 - Production/Stable
-#        "Development Status :: 3 - Alpha",
-#        # Indicate who your project is intended for
-#        "Intended Audience :: Developers",
-#        "Topic :: Software Development :: Build Tools",
-#        # Pick your license as you wish
+        #        # How mature is this project? Common values are
+        #        #   3 - Alpha
+        #        #   4 - Beta
+        #        #   5 - Production/Stable
+        #        "Development Status :: 3 - Alpha",
+        #        # Indicate who your project is intended for
+        #        "Intended Audience :: Developers",
+        #        "Topic :: Software Development :: Build Tools",
+        #        # Pick your license as you wish
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-#        # Specify the Python versions you support here. In particular, ensure
-#        # that you indicate whether you support Python 2, Python 3 or both.
-#        # These classifiers are *not* checked by 'pip install'. See instead
-#        # 'python_requires' below.
-#        "Programming Language :: Python :: 2",
-#        "Programming Language :: Python :: 2.7",
-#        "Programming Language :: Python :: 3",
-#        "Programming Language :: Python :: 3.5",
-#        "Programming Language :: Python :: 3.6",
-#        "Programming Language :: Python :: 3.7",
+        #        # Specify the Python versions you support here. In particular, ensure
+        #        # that you indicate whether you support Python 2, Python 3 or both.
+        #        # These classifiers are *not* checked by 'pip install'. See instead
+        #        # 'python_requires' below.
+        #        "Programming Language :: Python :: 2",
+        #        "Programming Language :: Python :: 2.7",
+        #        "Programming Language :: Python :: 3",
+        #        "Programming Language :: Python :: 3.5",
+        #        "Programming Language :: Python :: 3.6",
+        #        "Programming Language :: Python :: 3.7",
     ],
     # This field adds keywords for your project which will appear on the
     # project page. What does your project relate to?
     #
     # Note that this is a string of words separated by whitespace, not a list.
     keywords="raspberry pi arduino microscope",  # Optional
-    packages=find_packages(exclude=["contrib", "docs", "tests", "*node_modules*"]),  # Required
+    packages=find_packages(
+        exclude=["contrib", "docs", "tests", "*node_modules*"]
+    ),  # Required
     # Specify which Python versions you support
     python_requires="== 3.7.*",
     # This field lists other packages that your project depends on to run.
@@ -79,7 +81,7 @@ setup(
         "numpy ~= 1.20",
         "scipy ~= 1.6.1",
         "python-dateutil ~= 2.8",
-        "psutil ~= 5.6.7", # Autostorage extension
+        "psutil ~= 5.6.7",  # Autostorage extension
         "opencv-python-headless ~= 4.5.1",
         "sangaboard ~= 0.2",
         "expiringdict ~= 1.2.1",
@@ -156,6 +158,6 @@ setup(
     # maintainers, and where to support the project financially. The key is
     # what's used to render the link text on PyPI.
     project_urls={  # Optional
-        "Source": "https://gitlab.com/openflexure/openflexure-microscope-server",
+        "Source": "https://gitlab.com/openflexure/openflexure-microscope-server"
     },
 )

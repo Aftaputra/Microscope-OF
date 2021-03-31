@@ -140,10 +140,7 @@ def sharpness_edge(image: np.ndarray) -> float:
     n: int = 20
     edge: np.ndarray = np.array([[-1] * n + [1] * n])
     return float(
-        np.sum(
-            [np.sum(ndimage.filters.convolve(gray, W) ** 2) 
-            for W in [edge, edge.T]]
-        )
+        np.sum([np.sum(ndimage.filters.convolve(gray, W) ** 2) for W in [edge, edge.T]])
     )
 
 

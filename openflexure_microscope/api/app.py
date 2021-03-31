@@ -218,6 +218,7 @@ def cleanup():
 
 atexit.register(cleanup)
 
+
 def ofm_serve():
     # Start a debug server
     from labthings import Server
@@ -225,6 +226,7 @@ def ofm_serve():
     logging.info("Starting OpenFlexure Microscope Server...")
     server: Server = Server(app)
     server.run(host="0.0.0.0", port=5000, debug=debug_app, zeroconf=True)
+
 
 # Start the app if the module is run directly
 if __name__ == "__main__":
