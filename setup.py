@@ -18,7 +18,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="openflexure-microscope-server",
-    version="2.9.3",
+    version="2.10.0b0",
     description="Python module, and Flask-based web API, to run the OpenFlexure Microscope.",
     long_description=long_description,  # Optional, read from README.md
     # Denotes that our long_description is in Markdown; valid values are
