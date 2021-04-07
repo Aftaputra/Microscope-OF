@@ -127,7 +127,7 @@ export default {
       // however, some browser features won't work (e.g. webrtc)
       // unless we explicitly set `base_frame` in the plugin to
       // https://lib.imjoy.io/default_base_frame.html
-      default_base_frame: '/http_base_frame.html',
+      default_base_frame: 'http://lib.imjoy.io/default_base_frame.html',
       imjoy_api: {
         async showDialog(plugin, config, exta_config) {
           return await imjoy.pm.createWindow(plugin, config, exta_config);
