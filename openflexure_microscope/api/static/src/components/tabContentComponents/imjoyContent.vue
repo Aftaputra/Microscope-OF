@@ -122,6 +122,12 @@ export default {
   mounted() {
     const self = this;
     const imjoy = new imjoyCore.ImJoy({
+      // We will load the ImJoy plugin base frame via http (instead of https)
+      // such that imjoy plugins can access insecured urls
+      // however, some browser features won't work (e.g. webrtc)
+      // unless we explicitly set `base_frame` in the plugin to
+      // https://lib.imjoy.io/default_base_frame.html
+      default_base_frame: '/http_base_frame.html',
       imjoy_api: {
         async showDialog(plugin, config, exta_config) {
           return await imjoy.pm.createWindow(plugin, config, exta_config);
