@@ -1,5 +1,6 @@
 import logging
 from contextlib import contextmanager
+from typing import Tuple
 
 import labthings.fields as fields
 from flask import abort
@@ -7,7 +8,6 @@ from labthings import find_component
 from labthings.extensions import BaseExtension
 from labthings.views import ActionView
 from picamerax import PiCamera
-from typing import Tuple
 
 from openflexure_microscope.camera.base import BaseCamera
 from openflexure_microscope.microscope import Microscope
@@ -86,6 +86,7 @@ class LSTExtension(BaseExtension):
             endpoint="auto_lens_shading_table",
         )
 
+
 @contextmanager
 def find_picamera() -> Tuple[PiCamera, BaseCamera, Microscope]:
     """Locate the microscope and raise a sensible error if it's missing."""
@@ -132,6 +133,7 @@ class RecalibrateView(ActionView):
                 picamera.lens_shading_table = lst
             microscope.save_settings()
 
+
 class AutoLensShadingTableView(ActionView):
     def post(self):
         """Perform flat-field correction
@@ -148,6 +150,7 @@ class AutoLensShadingTableView(ActionView):
             with pause_stream(scamera):
                 picamera.lens_shading_table = lst
             microscope.save_settings()
+
 
 class FlattenLSTView(ActionView):
     def post(self):
