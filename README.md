@@ -118,7 +118,13 @@ Though not in the CI, our `format` script also runs isort:
 
 ## Python environment, build, and dependencies
 
-As of `2.10.0b0` we have switched to using `pipenv` for managing dependencies, and a standard `setuptools` based build system.  See "local installation" above for instructions on how to install the project.  Earlier versions of the project used `poetry` but we moved away because of [difficulties](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/124) getting it to work both on the Raspberry Pi and in our CI pipeline.
+As of `2.10.0b0` we have switched to using `pipenv` for managing dependencies, and a standard `setuptools` based build system.  See "local installation" above for instructions on how to install the project.  Earlier versions of the project used `poetry` but we moved away because of [difficulties](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/124) getting it to work both on the Raspberry Pi and in our CI pipeline.  The new arrangement for configuration files is:
+
+* Dependencies, and dev-dependencies, are specified in `setup.py` in the usual way (using `install_requires` and `extra_requires[dev]`).
+* Package metadata is specified in `setup.py` in the usual way.
+* `pyproject.toml` is retained, but *no longer includes package metadata or dependencies* and does not have a `[tool.poetry]` table.  It does define the build system as per PEP517, which is `setuptools`, and it also contains settings for `black`, `poe` and `isort`.
+* `Pipfile` is very minimal, and only declares dependencies on the current module, i.e. the dependencies declared in `setup.py`.  It also specifies the Python version.  This allows us to single-source dependency information from `setup.py` but use the dependency resolution/locking functionality of `pipenv`
+* `Pipfile.lock` locks the dependency versions in the same way as `poetry.lock` used to, i.e. it specifies exact versions of everything, derived from the looser specifications in `setup.py`.
 
 ## Creating releases
 
