@@ -1,46 +1,40 @@
 # OpenFlexure Microscope Software
 
-## Quickstart
+The "server" is the main component of the OpenFlexure Microscope's software.  It is responsible for controlling microscope hardware, data management, and allowing it to be controlled locally and over a network.
+This repository now includes the web client, which is served from the root of the Python web server.
+This software runs on [Python-LabThings](https://github.com/labthings/python-labthings/), and so most non-microscope functionality is handled by that library.
+
+## Getting started
 
 A general user-guide on setting up your microscope can be found [**here on our website**](https://www.openflexure.org/projects/microscope/).
 This includes basic installation instructions suitable for most users.
+The simplest way to set up a microscope is to download the pre-built Raspberry Pi SD card image, which has this server already installed, along with all of its dependencies.
+There are instructions on how to [use the microscope](https://openflexure.org/projects/microscope/control) once you have installed the software, either from OpenFlexure Connect, or through a web browser.
+The web server starts on port 5000 by default, and the microscope SD image uses the hostname "microscope" so you can usually access the web interface at <http://microscope.local:5000/>.
 
-Full developer documentation can be found on [**ReadTheDocs**](https://openflexure-microscope-software.readthedocs.io/). 
-This includes installing the server in a mode better suited for active development.
+Full developer documentation can be found on [**ReadTheDocs**](https://openflexure-microscope-software.readthedocs.io/), including some installation notes.
+More information is also available in the [handbook](https://gitlab.com/openflexure/microscope-handbook/), and in the "development instructions" below.
 
-## Key info
+## Settings
 
-* Responsible for actually controlling microscope hardware, data management, and creating the API server.
-Also now includes the web client, which is served from the server root.
-* Server starts on port 5000 by default.
-* Runs on [Python-LabThings](https://github.com/labthings/python-labthings/), and so basically all non-microscope functionality is handled by that library.
-
-### Server settings
-
-https://openflexure-microscope-software.readthedocs.io/en/master/config.html
-
-There are 2 important settings files:
+There are 2 important settings files, described in the [docs](https://openflexure-microscope-software.readthedocs.io/en/master/config.html).  The paths given below are for the Raspberry Pi installation on our pre-built SD card, and will change if you run on another system:
 * `/var/openflexure/settings/microscope_configuration.json`
     * Boot-time microscope configuration. Things like the type of camera connected, the stage board, geometry etc.
-    *Anything that needs to be loaded once as the server starts, and usually doesn't need to be re-written while the server is running
+    * Anything that needs to be loaded once as the server starts, and usually doesn't need to be re-written while the server is running
+    * This configuration file does not change often, and usually only needs to be updated when you change the physical hardware.
 * `/var/openflexure/settings/microscope_settings.json`
     * Every other persistent setting. Camera settings, calibration data, default capture settings, stream resolution etc.
+    * This file changes very regularly, and if you need to reset your settings, it's usually this file that you should remove or reset.
 
 # Developer guidelines
 
-## Creating releases
-
-* Update the applications internal version number
-    * Edit `setup.py` to update the version number
-    * Git commit and git push
-* Create a new version tag on GitLab (e.g. `v2.6.11`)
-    * Make sure you prefix a lower case 'v', otherwise it won't be recognised as a release!
-    * This tagging will trigger a CI pipeline that builds the JS client, tarballs up the server, and deploys it
-        * Note: This also updates the build server's nginx redirect map file
-
 ## Local installation
 
-The Raspberry Pi image we use currently ships with Python 3.7.3. For local development, please use PyEnv or similar to make sure you're running on this version. For example, Windows users can use [Scoop](https://scoop.sh/) to install specific Python versions.
+The Raspberry Pi image we use currently ships with Python 3.7.3. For local development on a different platform, please use PyEnv or similar to make sure you're running on this version. For example, Windows users can use [Scoop](https://scoop.sh/) to install specific Python versions.  This repository contains two closely related parts; a web server written in Python, that handles hardware control, and a web application using Vue.js that provides a graphical control interface.  It is possible to work on either of these in isolation, but bear in mind that if you only set up Python development, you will need to host the web application elsewhere.
+
+Most of our core team don't run the Javascript development on the Raspberry Pi, as npm can be quite slow to build the application.  Instead, we set up the Python part of the project on a Raspberry Pi, and run the Javascript part on your development machine.  You can then connect to the web application served from your local machine, and enter the address of the Raspberry Pi when the interface first loads.
+
+To set up a development version of the software (most likely using emulated camera and stage if you're not running on a Raspberry Pi):
 
 ### Clone the repository
 * `git clone https://gitlab.com/openflexure/openflexure-microscope-server.git`
@@ -78,25 +72,20 @@ The Raspberry Pi image we use currently ships with Python 3.7.3. For local devel
 ## Formatting, linting, and tests
 All of the commands below assume that you are running in the OFM virtual environment, i.e. you have run `ofm activate` on an OpenFlexure SD card, or `source .venv/bin/activate` on Linux, or `.venv/Scripts/activate`on Windows.
 
-### Tl;dr
-
-**Before committing**
+**Before committing** you should auto-format your code:
 
 * To auto-format the Python code run `poe format`
 * To auto-format the Javascript code, run
   * `cd openflexure_microscope/api/static`
   * `npm run lint`
 
-Auto-formats the code
-
-**Before submitting a merge request/merging**
+**Before submitting a merge request/merging** please auto-format your code and also run the quality checks (linting, static analysis, and unit tests)
 
 * To auto-format and type-check the Python code run `poe check`
 * To auto-format the Javascript code, run
   * `cd openflexure_microscope/api/static`
   * `npm run lint`
 
-Formats code, lints, runs static analysis, and runs unit tests.
 
 ### Details
 
@@ -127,9 +116,19 @@ Though not in the CI, our `format` script also runs isort:
   * Automatically organises your imports to stop things getting out of hand
   * `poe isort`
 
-## Build-system
+## Python environment, build, and dependencies
 
-As of `2.10.0b0` we have switched to using `pipenv` for managing dependencies, and a standard `setuptools` based build system.  See "local installation" above for instructions on how to install the project.
+As of `2.10.0b0` we have switched to using `pipenv` for managing dependencies, and a standard `setuptools` based build system.  See "local installation" above for instructions on how to install the project.  Earlier versions of the project used `poetry` but we moved away because of [difficulties](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/124) getting it to work both on the Raspberry Pi and in our CI pipeline.
+
+## Creating releases
+
+* Update the application's internal version number
+    * Edit `setup.py` to update the version number
+    * Git commit and git push
+* Create a new version tag on GitLab (e.g. `v2.6.11`)
+    * Make sure you prefix a lower case 'v', otherwise it won't be recognised as a release!
+    * This tagging will trigger a CI pipeline that builds the JS client, tarballs up the server, and deploys it
+        * Note: This also updates the build server's nginx redirect map file
 
 ## Changelog generation
 
@@ -139,3 +138,4 @@ As of `2.10.0b0` we have switched to using `pipenv` for managing dependencies, a
 ## Microscope extensions
 
 The Microscope module, and Flask app, both support plugins for extending lower-level functionality not well suited to web API calls. The current documentation can be found [here](https://openflexure-microscope-software.readthedocs.io/en/latest/plugins.html).
+If you want to add functions to the microscope software, this is probably the best mechanism to use if it works for you.
