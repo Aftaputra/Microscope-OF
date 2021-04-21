@@ -205,7 +205,7 @@ def lst_from_channels(channels: np.ndarray) -> np.ndarray:
 
     logging.info("Generating a lens shading table at %sx%s", *lst_resolution)
     lens_shading: np.ndarray = np.zeros(
-        [channels.shape[0]] + lst_resolution, dtype=np.float
+        [channels.shape[0]] + lst_resolution, dtype=float
     )
     for i in range(lens_shading.shape[0]):
         image_channel: np.ndarray = channels[i, :, :]
@@ -297,7 +297,7 @@ def recalibrate_camera(camera: PiCamera):
     _ = rgb_image(camera)
 
     # Fix the AWB gains so the image is neutral
-    channel_means = np.mean(np.mean(rgb_image(camera), axis=0, dtype=np.float), axis=0)
+    channel_means = np.mean(np.mean(rgb_image(camera), axis=0, dtype=float), axis=0)
     old_gains = camera.awb_gains
     camera.awb_gains = (
         channel_means[1] / channel_means[0] * old_gains[0],
