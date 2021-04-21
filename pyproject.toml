@@ -2,9 +2,16 @@
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
-
+# The [tool.poetry] metadata has been removed from this file, because 
+# we have switched to Pipenv for dependency management and setuptools
+# for the build system.  All metadata has been moved either to
+# Pipfile or setup.py.
+# The one key that doesn't map over nicely is the exclusion of 
+# the node_modules folder, i.e. the line below:
 #exclude = ["**/node_modules/"] # I've tried to put this in the "packages" key but not sure it works.
-
+# I have left it here in case we ever switch back to Poetry, but I 
+# don't believe it's critical at present, because we don't use 
+# the Python package - we distribute a tarball directly.
 
 [tool.black]
 exclude = '(\.eggs|\.git|\.venv|\venv|node_modules/)'
