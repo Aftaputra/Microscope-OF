@@ -205,7 +205,7 @@ class AutoExposureFromRawView(ActionView):
     }
 
     def post(self, args):
-        with find_picamera() as (picamera, scamera, microscope):
+        with find_picamera() as (picamera, _, _):
             adjust_shutter_and_gain_from_raw(picamera, **args)
 
 
@@ -224,7 +224,7 @@ class AutoWhiteBalanceFromRawView(ActionView):
     }
 
     def post(self, args):
-        with find_picamera() as (picamera, scamera, microscope):
+        with find_picamera() as (picamera, _, _):
             adjust_white_balance_from_raw(picamera, **args)
 
 
@@ -238,5 +238,5 @@ class GetRawChannelPercentilesView(ActionView):
     schema = fields.List(fields.Integer)
 
     def post(self, args):
-        with find_picamera() as (picamera, scamera, microscope):
+        with find_picamera() as (picamera, _, _):
             return get_channel_percentiles(picamera, args["percentile"])

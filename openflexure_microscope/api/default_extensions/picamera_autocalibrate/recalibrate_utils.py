@@ -1,6 +1,5 @@
 import logging
 import time
-from fractions import Fraction
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -40,7 +39,7 @@ def flat_lens_shading_table(camera: PiCamera) -> np.ndarray:
 
 def adjust_exposure_to_setpoint(camera: PiCamera, setpoint: int):
     """Adjust the camera's exposure time until the maximum pixel value is <setpoint>."""
-    logging.info("Adjusting shutter speed to hit setpoint {}".format(setpoint))
+    logging.info(f"Adjusting shutter speed to hit setpoint {setpoint}")
     for _ in range(3):
         camera.shutter_speed = int(
             camera.shutter_speed * setpoint / np.max(rgb_image(camera))
