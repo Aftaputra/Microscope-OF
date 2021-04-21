@@ -1,6 +1,6 @@
 import logging
 from contextlib import contextmanager
-from typing import Tuple
+from typing import Tuple, Generator
 
 import labthings.fields as fields
 from flask import abort
@@ -88,7 +88,7 @@ class LSTExtension(BaseExtension):
 
 
 @contextmanager
-def find_picamera() -> Tuple[PiCamera, BaseCamera, Microscope]:
+def find_picamera() -> Generator[Tuple[PiCamera, BaseCamera, Microscope], None, None]:
     """Locate the microscope and raise a sensible error if it's missing."""
     microscope = find_component("org.openflexure.microscope")
 
