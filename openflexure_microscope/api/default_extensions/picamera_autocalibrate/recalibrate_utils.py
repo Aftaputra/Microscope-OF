@@ -33,7 +33,7 @@ picamera.lens_shading_table = lst
 
 import logging
 import time
-from typing import List, Optional, Tuple, NamedTuple
+from typing import List, NamedTuple, Optional, Tuple
 
 import numpy as np
 from picamerax import PiCamera
@@ -77,9 +77,7 @@ def adjust_exposure_to_setpoint(camera: PiCamera, setpoint: int):
         time.sleep(1)
 
 
-def set_minimum_exposure(
-    camera: PiCamera
-):
+def set_minimum_exposure(camera: PiCamera):
     """Enable manual exposure, with low gain and shutter speed
     
     We set exposure mode to manual, analog and digital gain
@@ -96,17 +94,16 @@ def set_minimum_exposure(
     camera.shutter_speed = 1
     time.sleep(0.5)
 
+
 class ExposureTest(NamedTuple):
     """Record the results of testing the camera's current exposure settings"""
+
     level: int
     shutter_speed: int
     analog_gain: float
 
 
-def test_exposure_settings(
-    camera: PiCamera,
-    percentile: float
-) -> ExposureTest:
+def test_exposure_settings(camera: PiCamera, percentile: float) -> ExposureTest:
     """Evaluate current exposure settings using a raw image
 
     We will acquire a raw image and calculate the given percentile
@@ -133,6 +130,7 @@ def test_exposure_settings(
         f"Shutter: {shutter_speed: >7.0f}"
     )
     return ExposureTest(max_brightness, shutter_speed, analog_gain)
+
 
 def check_convergence(test: ExposureTest, target: int, tolerance: float):
     """Check whether the brightness is within the specified target range"""
@@ -173,8 +171,12 @@ def adjust_shutter_and_gain_from_raw(
             than just ``np.max()``.
     """
     if target_white_level * (tolerance + 1) >= 959:
-        raise ValueError("The target level is too high - a saturated image would be considered successful.  target_white_level * (tolerance + 1) must be less than 959.")
-    
+        raise ValueError(
+            "The target level is too high - a saturated image would be "
+            "considered successful.  target_white_level * (tolerance + 1) "
+            "must be less than 959."
+        )
+
     set_minimum_exposure(camera)
 
     # We start with very low exposure settings and work up
@@ -215,11 +217,9 @@ def adjust_shutter_and_gain_from_raw(
         if camera.analog_gain == test.analog_gain:
             logging.info("Gain has maxed out.")
             break
-    
+
     if check_convergence(test, target_white_level, tolerance):
-        logging.info(
-            f"Brightness has converged to within {tolerance * 100 :.0f}%."
-        )
+        logging.info(f"Brightness has converged to within {tolerance * 100 :.0f}%.")
     else:
         logging.warning(
             f"Failed to reach target brightness of {target_white_level}."

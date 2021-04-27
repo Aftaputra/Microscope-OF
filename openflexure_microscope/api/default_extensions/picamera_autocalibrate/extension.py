@@ -1,6 +1,6 @@
 import logging
 from contextlib import contextmanager
-from typing import Tuple, Iterator
+from typing import Iterator, Tuple
 
 import labthings.fields as fields
 from flask import abort
