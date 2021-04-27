@@ -12,39 +12,39 @@ class MoveStageAPI(ActionView):
         "absolute": fields.Boolean(
             missing=False, example=False, description="Move to an absolute position"
         ),
-        "x": fields.Int(missing=0, example=100),
-        "y": fields.Int(missing=0, example=100),
-        "z": fields.Int(missing=0, example=20),
+        "x": fields.Int(missing=None, example=100),
+        "y": fields.Int(missing=None, example=100),
+        "z": fields.Int(missing=None, example=20),
     }
 
     def post(self, args):
         """
         Move the microscope stage in x, y, z
+
+        Any axes that are not specifed will not move.
         """
         microscope = find_component("org.openflexure.microscope")
 
-        # Handle absolute positioning (calculate a relative move from current position and target)
-        if (args.get("absolute")) and (microscope.stage):  # Only if stage exists
-            target_position: List[int] = axes_to_array(args, ["x", "y", "z"])
-            logging.debug("TARGET: %s", (target_position))
-            position: Tuple[int, int, int] = (
-                target_position[i] - microscope.stage.position[i] for i in range(3)
-            )
-            logging.debug("DELTA: %s", (position))
-
-        else:
-            # Get coordinates from payload
-            position = axes_to_array(args, ["x", "y", "z"], [0, 0, 0])
-
-        logging.debug(position)
-
-        # Move if stage exists
-        if microscope.stage:
-            # Explicitally acquire lock with 1s timeout
-            with microscope.stage.lock(timeout=1):
-                microscope.stage.move_rel(position)
-        else:
+        if not microscope.stage:
             logging.warning("Unable to move. No stage found.")
+            return microscope.state["stage"]["position"]
+
+        absolute_move = args.get("absolute")
+        move = [0, 0, 0]  # Default to no motion
+        for i, axis in enumerate(["x", "y", "z"]):
+            if axis in args and args[axis] is not None:
+                if absolute_move:
+                    # We emulate absolute moves by calculating a relative move that
+                    # will take us to the right position.
+                    move[i] = args[axis] - microscope.stage.position[i]
+                else:
+                    move[i] = args[axis]
+
+        logging.debug(f"Moving stage by {move}, request was {args}")
+
+        # Explicitly acquire lock with 1s timeout
+        with microscope.stage.lock(timeout=1):
+            microscope.stage.move_rel(move)
 
         return microscope.state["stage"]["position"]
 
