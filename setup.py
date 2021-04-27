@@ -6,9 +6,10 @@ https://packaging.python.org/guides/distributing-packages-using-setuptools/
 
 """
 
-# the following imports, from the guide above, prefer `setuptools` to `distutils`
-from setuptools import setup, find_packages
 from os import path
+
+# the following imports, from the guide above, prefer `setuptools` to `distutils`
+from setuptools import find_packages, setup
 
 here = path.abspath(path.dirname(__file__))
 
