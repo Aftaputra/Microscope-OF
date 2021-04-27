@@ -73,8 +73,11 @@ export default {
         return this.$store.state.autoGpuPreview;
       },
       set(value) {
+        // NB the stream viewer watches the store, and is
+        // responsible for making the request that switches
+        // GPU preview on/off
+        // see streamContent.vue
         this.$store.commit("changeAutoGpuPreview", value);
-        this.$root.$emit("globalSafeTogglePreview", value);
       }
     },
 
@@ -84,6 +87,42 @@ export default {
       },
       set(value) {
         this.$store.commit("changeTrackWindow", value);
+      }
+    }
+  },
+
+  watch: {
+    // Cache the stream settings to local storage for persistence
+    // (the next 3 functions all relate to this)
+    disableStream: function(newValue) {
+      console.log(`disableStream updated to ${newValue} and saved in local storage`);
+    },
+    autoGpuPreview: function(newValue) {
+      console.log(`GPU preview updated to ${newValue} and saved in local storage`);
+    },
+    trackWindow: function(newValue) {
+      console.log(`trackWindow updated to ${newValue} and saved in local storage`);
+    }
+  },
+
+  created() {
+    // Apply sensible defaults for stream settings, depending on
+    // whether we're connecting locally or remotely, respecting
+    // the settings that were cached previously.
+    const localMode = ["localhost", "0.0.0.0", "127.0.0.1", "[::1]"].includes(
+      window.location.hostname
+    );
+    const localDefaults = {
+      disableStream: true,
+      autoGpuPreview: true,
+      trackWindow: true
+    };
+    for (let k in localDefaults) {
+      if (localStorage.getItem(k) !== null) {
+        this[k] = this.getLocalStorageObj(k);
+      } else if (localMode) {
+        console.log(`${k} set to default value for a local connection`);
+        this[k] = localDefaults[k];
       }
     }
   }
