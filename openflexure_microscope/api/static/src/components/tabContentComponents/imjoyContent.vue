@@ -263,6 +263,7 @@ export default {
       const setPositionAsObject = this.setStagePosition;
 
       const service = {
+        _rintf: true, // this will make sure the function can be called multiple times
         type: "_microscope-control",
         name: "OpenFlexure",
         lastSnapResponse: null,
