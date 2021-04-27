@@ -1,16 +1,43 @@
+"""
+Functions to set up a Raspberry Pi Camera v2 for scientific use
+
+This module provides slower, simpler functions to set the
+gain, exposure, and white balance of a Raspberry Pi camera, using
+`picamerax` (a fork of `picamera`) to get as-manual-as-possible
+control over the camera.  It's mostly used by the OpenFlexure
+Microscope, though it deliberately has no hard dependencies on
+said software, so that it's useful on its own.
+
+There are three main calibration steps:
+
+* Setting exposure time and gain to get a reasonably bright
+  image.
+* Fixing the white balance to get a neutral image
+* Taking a uniform white image and using it to calibrate
+  the Lens Shading Table
+
+The most reliable way to do this, avoiding any issues relating
+to "memory" or nonlinearities in the camera's image processing
+pipeline, is to use raw images.  This is quite slow, but very
+reliable.  The three steps above can be accomplished by:
+
+```
+picamera = picamerax.PiCamera()
+
+adjust_shutter_and_gain_from_raw(picamera)
+adjust_white_balance_from_raw(picamera)
+lst = lst_from_camera(picamera)
+picamera.lens_shading_table = lst
+```
+"""
+
 import logging
 import time
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, NamedTuple
 
 import numpy as np
 from picamerax import PiCamera
 from picamerax.array import PiBayerArray, PiRGBArray
-
-# I have used f strings throughout, for readability.
-# The performance implication of using them in logging statements
-# really doesn't matter here - also, loglevel is usually set to
-# INFO to report progress via the LabThings action API
-# pylint: disable=logging-fstring-interpolation
 
 
 def rgb_image(
@@ -38,13 +65,79 @@ def flat_lens_shading_table(camera: PiCamera) -> np.ndarray:
 
 
 def adjust_exposure_to_setpoint(camera: PiCamera, setpoint: int):
-    """Adjust the camera's exposure time until the maximum pixel value is <setpoint>."""
+    """Adjust the camera's exposure time until the maximum pixel value is <setpoint>.
+    
+    NB this method uses RGB images (i.e. processed ones) not raw images.
+    """
     logging.info(f"Adjusting shutter speed to hit setpoint {setpoint}")
     for _ in range(3):
         camera.shutter_speed = int(
             camera.shutter_speed * setpoint / np.max(rgb_image(camera))
         )
         time.sleep(1)
+
+
+def set_minimum_exposure(
+    camera: PiCamera
+):
+    """Enable manual exposure, with low gain and shutter speed
+    
+    We set exposure mode to manual, analog and digital gain
+    to 1, and shutter speed to the minimum (8us for Pi Camera v2)
+    NB ISO is left at auto, because this is needed for the gains
+    to be set correctly.
+    """
+    camera.exposure_mode = "off"
+    camera.iso = 0  # We must set ISO=0 (auto) or we can't set gain
+    camera.analog_gain = 1
+    camera.digital_gain = 1
+    # Setting the shutter speed to 1us will result in it being set
+    # to the minimum possible, which is probably 8us for PiCamera v2
+    camera.shutter_speed = 1
+    time.sleep(0.5)
+
+class ExposureTest(NamedTuple):
+    """Record the results of testing the camera's current exposure settings"""
+    level: int
+    shutter_speed: int
+    analog_gain: float
+
+
+def test_exposure_settings(
+    camera: PiCamera,
+    percentile: float
+) -> ExposureTest:
+    """Evaluate current exposure settings using a raw image
+
+    We will acquire a raw image and calculate the given percentile
+    of the pixel values.  We return a dictionary containing the
+    percentile (which will be compared to the target), as well as
+    the camera's shutter and gain values.
+    """
+    max_brightness = np.max(get_channel_percentiles(camera, percentile))
+    # The reported brightness can, theoretically, be negative or zero
+    # because of black level compensation.  The line below forces a
+    # minimum value of 1 which will keep things well-behaved!
+    if max_brightness < 1:
+        logging.warning(
+            f"Measured brightness of {max_brightness}. "
+            "This should normally be >= 1, and may indicate the "
+            "camera's black level compensation has gone wrong."
+        )
+        max_brightness = 1
+    shutter_speed = float(camera.shutter_speed)
+    analog_gain = float(camera.analog_gain)
+    logging.info(
+        f"Brightness: {max_brightness: >5.0f}, "
+        f"Gain: {analog_gain: >4.1f}, "
+        f"Shutter: {shutter_speed: >7.0f}"
+    )
+    return ExposureTest(max_brightness, shutter_speed, analog_gain)
+
+def check_convergence(test: ExposureTest, target: int, tolerance: float):
+    """Check whether the brightness is within the specified target range"""
+    converged = abs(test.level - target) < target * tolerance
+    return converged
 
 
 def adjust_shutter_and_gain_from_raw(
@@ -64,7 +157,7 @@ def adjust_shutter_and_gain_from_raw(
         target_white_level: 
             The raw, 10-bit value we aim for.  The brightest pixels 
             should be approximately this bright.  Maximum possible 
-            is 1023, 700 is reasonable.
+            is about 900, 700 is reasonable.
         max_iterations:
             We will terminate once we perform this many iterations,
             whether or not we converge.  More than 10 shouldn't happen.
@@ -79,70 +172,61 @@ def adjust_shutter_and_gain_from_raw(
             of the brightness range, but seems much more reliable
             than just ``np.max()``.
     """
-    # Start by setting fully manual exposure.
-    camera.exposure_mode = "off"
-    camera.iso = 0  # We must set ISO=0 (auto) or we can't set gain
-    camera.analog_gain = 1
-    camera.digital_gain = 1
-    camera.shutter_speed = 1  # This is not valid - we'll get the minimum
-    time.sleep(0.5)
+    if target_white_level * (tolerance + 1) >= 959:
+        raise ValueError("The target level is too high - a saturated image would be considered successful.  target_white_level * (tolerance + 1) must be less than 959.")
+    
+    set_minimum_exposure(camera)
 
-    # We start with very low exposure settings and work up in coarse steps
+    # We start with very low exposure settings and work up
     # until either the brightness is high enough, or we can't increase the
     # shutter speed any more.
     iterations = 0
-    shutter_speed_increments = [10, 2, None]
-    shutter_speed_increment = shutter_speed_increments.pop(0)
     while iterations < max_iterations:
-        iterations += 1
-        max_brightness = np.max(get_channel_percentiles(camera, percentile))
-        tested_shutter_speed = camera.shutter_speed
-        tested_analog_gain = camera.analog_gain
-        logging.info(
-            f"Brightness: {max_brightness: >5.0f}, "
-            f"Target: {target_white_level: >5.0f}, "
-            f"Gain: {float(tested_analog_gain): >4.1f}, "
-            f"Shutter: {float(tested_shutter_speed): >7.0f}"
-        )
+        test = test_exposure_settings(camera, percentile)
 
-        if abs(max_brightness - target_white_level) < target_white_level * tolerance:
-            logging.info(
-                f"Brightness has converged to within {tolerance * 100 :.0f}% "
-                f"after {iterations} iterations."
-            )
+        if check_convergence(test, target_white_level, tolerance):
             break
+        iterations += 1
 
-        # if not shutter_speed_maximised:  # Start by adjusting shutter speed
-        if max_brightness > target_white_level // 2:
-            shutter_speed_increment = (
-                None
-            )  # If we're within a factor of 2, trigger fine-tuning
-        if shutter_speed_increment is None:
-            logging.info("Fine-tuning shutter speed")
-            new_shutter_speed = int(
-                tested_shutter_speed * target_white_level / max_brightness
-            )
-            camera.shutter_speed = new_shutter_speed
-        else:
-            if max_brightness > target_white_level:
-                logging.info("Reducing shutter speed")
-                camera.shutter_speed = int(
-                    tested_shutter_speed / shutter_speed_increment
-                )
-            else:
-                logging.info("Increasing shutter speed")
-                camera.shutter_speed = tested_shutter_speed * shutter_speed_increment
+        # Adjust shutter speed so that the brightness approximates the target
+        # NB we put a maximum of 32 on this, to stop it increasing too quickly.
+        camera.shutter_speed = int(
+            test.shutter_speed * min(target_white_level / test.level, 32)
+        )
         time.sleep(0.5)
 
         # Check whether the shutter speed is still going up - if not, we've hit a maximum
-        current_shutter_speed = camera.shutter_speed
-        if current_shutter_speed == tested_shutter_speed:
-            camera.analog_gain *= 2
-            if camera.analog_gain == tested_analog_gain:
-                logging.info("Shutter speed and gain are both maxed out.  Giving up!")
-                break
-            logging.info("Shutter speed has maxed out, doubled gain to compensate.")
-    return max_brightness
+        if camera.shutter_speed == test.shutter_speed:
+            logging.info("Shutter speed has maxed out.")
+            break
+
+    # Now, if we've not converged, increase gain until we converge or run out of options.
+    while iterations < max_iterations:
+        test = test_exposure_settings(camera, percentile)
+        if check_convergence(test, target_white_level, tolerance):
+            break
+        iterations += 1
+
+        # Adjust gain to make the white level hit the target, again with a maximum
+        camera.analog_gain *= min(target_white_level / test.level, 2)
+        time.sleep(0.5)
+
+        # Check the gain is still changing - if not, we have probably hit the maximum
+        if camera.analog_gain == test.analog_gain:
+            logging.info("Gain has maxed out.")
+            break
+    
+    if check_convergence(test, target_white_level, tolerance):
+        logging.info(
+            f"Brightness has converged to within {tolerance * 100 :.0f}%."
+        )
+    else:
+        logging.warning(
+            f"Failed to reach target brightness of {target_white_level}."
+            f"Brightness reached {test.level} after {iterations} iterations."
+        )
+
+    return test.level
 
 
 def adjust_white_balance_from_raw(
@@ -186,11 +270,18 @@ def channels_from_bayer_array(bayer_array: np.ndarray) -> np.ndarray:
 
 
 def get_channel_percentiles(camera: PiCamera, percentile: float) -> np.ndarray:
-    """Calculate the brightness percentile of the pixels in each channel"""
+    """Calculate the brightness percentile of the pixels in each channel
+    
+    This is a number between -64 and 959 for each channel, because the
+    camera takes 10-bit images (maximum=1023) and its zero level is set
+    at 64 for denoising purposes (there's black level compensation built
+    in, and to avoid skewing the noise, the black level is set as 64 to
+    leave some room for negative values.
+    """
     with PiBayerArray(camera) as output:
         camera.capture(output, format="jpeg", bayer=True)
         channels = channels_from_bayer_array(output.array)
-        return np.percentile(channels, percentile, axis=(1, 2))
+        return np.percentile(channels, percentile, axis=(1, 2)) - 64
 
 
 def lst_from_channels(channels: np.ndarray) -> np.ndarray:
