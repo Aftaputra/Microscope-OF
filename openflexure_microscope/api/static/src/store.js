@@ -3,15 +3,15 @@ import Vuex from "vuex";
 
 Vue.use(Vuex);
 
-function getOriginFromLocation(){
+function getOriginFromLocation() {
   // This will default to the same origin that's serving
   // the web app - but can be overridden by the URL.
   // See also devTools.vue which can change the origin.
   let url = new URL(window.location.href);
   let origin = url.searchParams.get("overrideOrigin");
-  if(origin){
+  if (origin) {
     return origin;
-  }else{
+  } else {
     return url.origin;
   }
 }
