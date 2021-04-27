@@ -4,7 +4,7 @@ import logging
 import sys
 import time
 from contextlib import contextmanager
-from typing import Dict, List, Optional, Tuple, Type, Union, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple, Type, Union
 
 import numpy as np
 

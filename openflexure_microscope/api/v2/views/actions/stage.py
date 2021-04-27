@@ -1,10 +1,7 @@
 import logging
-from typing import List, Tuple
 
 from labthings import fields, find_component
 from labthings.views import ActionView
-
-from openflexure_microscope.utilities import axes_to_array
 
 
 class MoveStageAPI(ActionView):
