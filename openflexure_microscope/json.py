@@ -21,8 +21,8 @@ class JSONEncoder(LabThingsJSONEncoder):
         # Numpy integers
         elif isinstance(o, np.integer):
             return int(o)
-        # Numpy floats
-        elif isinstance(o, np.float):
+        # Numpy floats are just Python floats
+        elif isinstance(o, float):
             return float(o)
         # Numpy arrays
         elif isinstance(o, np.ndarray):

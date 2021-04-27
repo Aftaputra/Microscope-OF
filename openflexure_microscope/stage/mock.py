@@ -89,7 +89,7 @@ class MissingStage(BaseStage):
             )
             displacement = move
 
-        initial_move = np.array(displacement, dtype=np.int)
+        initial_move = np.array(displacement, dtype=np.integer)
 
         self._position = list(np.array(self._position) + np.array(initial_move))
         logging.debug(np.array(self._position) + np.array(initial_move))

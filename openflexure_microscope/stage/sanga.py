@@ -277,13 +277,11 @@ class SangaDeltaStage(SangaStage):
         logging.debug(self.R_camera)
 
         # Transformation matrix converting delta into cartesian
-        x_fac: np.float = -1 * np.multiply(
+        x_fac: float = -1 * np.multiply(
             np.divide(2, np.sqrt(3)), np.divide(self.flex_b, self.flex_h)
         )
-        y_fac: np.float = -1 * np.divide(self.flex_b, self.flex_h)
-        z_fac: np.float = np.multiply(
-            np.divide(1, 3), np.divide(self.flex_b, self.flex_a)
-        )
+        y_fac: float = -1 * np.divide(self.flex_b, self.flex_h)
+        z_fac: float = np.multiply(np.divide(1, 3), np.divide(self.flex_b, self.flex_a))
 
         self.Tvd: np.ndarray = np.array(
             [
