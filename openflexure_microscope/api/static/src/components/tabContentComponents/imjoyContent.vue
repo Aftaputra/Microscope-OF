@@ -98,6 +98,21 @@ import * as imjoyCore from "imjoy-core";
 import axios from "axios";
 import UIkit from "uikit";
 
+// TODO: move this to a module or something...
+async function pollAction(response) {
+  // Poll an action until its status is completed
+  // TODO: raise an error if it fails or is cancelled
+  // For ease, this accepts and returns a response object from
+  // axios.get
+  // FIXME: this could be an infinite loop if the task is cancelled/errored
+  let r = response;
+  while ((r.data.status == "running") | (r.data.status == "pending")) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    r = await axios.get(r.data.href);
+  }
+  return r;
+}
+
 export default {
   name: "ImJoyContent",
 
@@ -123,6 +138,9 @@ export default {
     },
     moveActionUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/actions/stage/move`;
+    },
+    baseUri: function() {
+      return this.$store.getters.baseUri;
     }
   },
   mounted() {
@@ -168,7 +186,7 @@ export default {
       }
     });
 
-    imjoy.start({ workspace: "default" }).then(() => {
+    imjoy.start({ workspace: "default" }).then(async () => {
       console.log("ImJoy started");
       imjoy.event_bus.on("add_window", w => {
         this.addWindow(w);
@@ -176,8 +194,16 @@ export default {
       this.setupMicroscopeAPI();
       this.setupViewers();
       // load the script editor for openflexure
-      this.loadPlugin(
-        "https://gist.githubusercontent.com/oeway/7a9dcb49c51b1f99b2c3619f470fe35c/raw/OpenFlexureScriptEditor.imjoy.html"
+      await this.loadPlugin(
+        `${window.location.origin}/OpenFlexureScriptEditor.imjoy.html`
+      );
+      // Load the snap image template
+      await this.loadPlugin(
+        `${window.location.origin}/OpenFlexureSnapImageTemplate.imjoy.html`
+      );
+      // Load the snap image template
+      await this.loadPlugin(
+        `${window.location.origin}/OpenFlexureTestMoveStage.imjoy.html`
       );
       this.setupPluginEngine();
     });
@@ -232,22 +258,10 @@ export default {
       // See here: https://valelab4.ucsf.edu/~MM/doc/MMCore/html/class_c_m_m_core.html
       const snapshotUri = this.snapshotStreamUri;
       const captureActionUri = this.captureActionUri;
-      const getPositionUri = this.getPositionUri;
-      const moveActionUri = this.moveActionUri;
       const modalError = this.modalError;
-      async function pollUntilComplete(response) {
-        // Poll an action until its status is completed
-        // TODO: raise an error if it fails or is cancelled
-        // For ease, this accepts and returns a response object from
-        // axios.get
-        // FIXME: this could be an infinite loop if the task is cancelled/errored
-        let r = response;
-        while (r.data.status == "running" | r.data.status == "pending") {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          r = await axios.get(r.data.href);
-        }
-        return r;
-      }
+      const getPositionAsObject = this.getStagePosition;
+      const setPositionAsObject = this.setStagePosition;
+
       const service = {
         type: "_microscope-control",
         name: "OpenFlexure",
@@ -276,9 +290,7 @@ export default {
         async getImage() {
           // FIXME: handle nicely getImage() being called before snapImage()
           // Wait until the capture has completed and we can retrieve it
-          service.lastSnapResponse = await pollUntilComplete(
-            service.lastSnapResponse
-          );
+          service.lastSnapResponse = await pollAction(service.lastSnapResponse);
           let capture = service.lastSnapResponse.data.output;
           // TODO: check links.download.href exists and is JPEG
           let jpeg = await axios
@@ -299,35 +311,37 @@ export default {
         setPosition(z) {
           // The C api suggests this defaults to just Z, and can accept a "label" to
           // select the stage.
-          return service.setXYZPosition({
-            "z": z,
-            "absolute": true,
+          return setPositionAsObject({
+            z: z,
+            absolute: true
           });
         },
         async getPosition() {
-          const pos = await service.getXYZPosition();
-          return pos.z;
+          const {z} = await getPositionAsObject();
+          return z;
         },
         async setXYPosition(x, y) {
-          return service.setXYZPosition({
-            "x": x,
-            "y": y,
-            "absolute": true,
+          return setPositionAsObject({
+            x: x,
+            y: y,
+            absolute: true
           });
         },
         async getXYPosition() {
-          const pos = await service.getXYZPosition();
-          return [pos.x, pos.y];
+          const {x, y} = await getPositionAsObject();
+          return [x, y];
         },
         async getXYZPosition() {
-          return axios
-            .get(getPositionUri)
-            .then(r => r.data)
+          const {x, y, z} = await getPositionAsObject();
+          return [x, y, z];
         },
-        async setXYZPosition(payload) {
-          return axios
-            .post(moveActionUri, payload)
-            .then(pollUntilComplete)
+        async setXYZPosition(x, y, z) {
+          return setPositionAsObject({
+            x: x,
+            y: y,
+            z: z,
+            absolute: true
+          });
         }
       };
       this.imjoy.pm.registerService({ name: "openflexure" }, service);
@@ -463,6 +477,29 @@ export default {
       if (uri) {
         this.loadPlugin(uri);
       }
+    } /*
+    async getPosition() {
+          const pos = await service.getXYZPosition();
+          return pos.z;
+        },
+        async setXYPosition(x, y) {
+          return service.setXYZPosition({
+            "x": x,
+            "y": y,
+            "absolute": true,
+          });
+        },
+        async getXYPosition() {
+          const pos = await service.getXYZPosition();
+          return [pos.x, pos.y];
+        },*/,
+    async getStagePosition() {
+      return axios.get(this.getPositionUri).then(r => r.data);
+    },
+    async setStagePosition(payload) {
+      return axios
+        .post(this.moveActionUri, payload)
+        .then(pollAction)
     }
   }
 };
