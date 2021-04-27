@@ -122,7 +122,7 @@ def test_exposure_settings(camera: PiCamera, percentile: float) -> ExposureTest:
             "camera's black level compensation has gone wrong."
         )
         max_brightness = 1
-    shutter_speed = float(camera.shutter_speed)
+    shutter_speed = int(camera.shutter_speed)
     analog_gain = float(camera.analog_gain)
     logging.info(
         f"Brightness: {max_brightness: >5.0f}, "
