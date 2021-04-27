@@ -25,7 +25,13 @@ ensure_newline_before_comments = true
 line_length = 88
 
 [tool.pylint.'MESSAGES CONTROL']
-disable = "fixme,C,R"
+# W1203 warns about using f strings in logging statements.
+# I'm really not concerned about the performance implications of this,
+# particularly as we often have the log level set quite high.  I think
+# for our current purposes, using f strings in logging statements is
+# more readable and thus a good idea in many places - I've disabled
+# this warning code globally for that reason.
+disable = "fixme,C,R,W1203"
 max-line-length = 88
 
 [tool.poe.executor]
