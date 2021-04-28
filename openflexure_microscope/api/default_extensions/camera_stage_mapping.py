@@ -194,10 +194,11 @@ class CSMExtension(BaseExtension):
     @property
     def image_to_stage_displacement_matrix(self) -> np.ndarray:  # 2x2 integer array
         """A 2x2 matrix that converts displacement in image coordinates to stage coordinates."""
-        displacement_matrix = self.get_settings().get("image_to_stage_displacement")
-        if not displacement_matrix:
+        settings = self.get_settings()
+        try:
+            return np.array(settings["image_to_stage_displacement"])
+        except KeyError:
             raise ValueError("The microscope has not yet been calibrated.")
-        return np.array(displacement_matrix)
 
     def move_in_image_coordinates(self, displacement_in_pixels: XYCoordinateType):
         """Move by a given number of pixels on the camera"""
