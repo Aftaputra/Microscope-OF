@@ -197,8 +197,8 @@ class CSMExtension(BaseExtension):
         settings = self.get_settings()
         try:
             return np.array(settings["image_to_stage_displacement"])
-        except KeyError:
-            raise ValueError("The microscope has not yet been calibrated.")
+        except KeyError as exc:
+            raise ValueError("The microscope has not yet been calibrated.") from exc
 
     def move_in_image_coordinates(self, displacement_in_pixels: XYCoordinateType):
         """Move by a given number of pixels on the camera"""
