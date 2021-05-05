@@ -83,6 +83,15 @@ class LoggingMoveWrapper:
         self._history: List[Tuple[float, Optional[CoordinateType]]] = []
 
 
+class CSMUncalibratedError(RuntimeError):
+    """A calibrated camera stage mapper is required, but this one is not calibrated.
+
+    The camera stage mapper requires calibration information to relate image pixels
+    to stage coordinates.  If a method attempts to retrieve this calibration before
+    it exists, we raise this exception.
+    """
+
+
 class CSMExtension(BaseExtension):
     """
     Use the camera as an encoder, so we can relate camera and stage coordinates
@@ -133,7 +142,12 @@ class CSMExtension(BaseExtension):
     def get_settings(self) -> Dict[str, Any]:
         """Retrieve the settings for this extension"""
         keys: List[str] = ["extensions", self.name]
-        return get_by_path(self.microscope.read_settings(), keys)
+        try:
+            return get_by_path(self.microscope.read_settings(), keys)
+        except KeyError as exc:
+            raise CSMUncalibratedError(
+                "Camera stage mapping calibration data is missing"
+            ) from exc
 
     def camera_stage_functions(self) -> Tuple[Callable, Callable, Callable, Callable]:
         """Return functions that allow us to interface with the microscope"""
@@ -198,7 +212,9 @@ class CSMExtension(BaseExtension):
         try:
             return np.array(settings["image_to_stage_displacement"])
         except KeyError as exc:
-            raise ValueError("The microscope has not yet been calibrated.") from exc
+            raise CSMUncalibratedError(
+                "The microscope has not yet been calibrated."
+            ) from exc
 
     def move_in_image_coordinates(self, displacement_in_pixels: XYCoordinateType):
         """Move by a given number of pixels on the camera"""
