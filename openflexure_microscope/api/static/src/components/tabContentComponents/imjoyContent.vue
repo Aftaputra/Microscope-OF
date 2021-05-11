@@ -113,6 +113,64 @@ async function pollAction(response) {
   return r;
 }
 
+/**
+ * Create a new Image element and wait for it to load.
+ *
+ * This returns a Promise, so you can "await" the image
+ * element rather than needing to add a callback.
+ */
+function loadImageFromUrl(src) {
+  // Create an Image, and return it once it has loaded
+  // see https://stackoverflow.com/a/66180709
+  // no need to declare async, as it returns a Promise
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    // We must set crossOrigin="anonymous" in order
+    // to avoid security errors when we get the pixel
+    // data
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+/**
+ * Retrieve an image from a URL, and return the RGB data
+ * in a format that can be cast to an ndarray
+ *
+ * This follows a slightly convoluted recipe, where we
+ * "draw" the image, and then extract the pixels from the
+ * 2D canvas.
+ */
+async function imageUrlToNdarray(url) {
+  // see https://stackoverflow.com/questions/934012/get-image-data-url-in-javascript
+  const img = await loadImageFromUrl(url);
+  const canvas = document.createElement("canvas");
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, img.width, img.height);
+  const imageData = ctx.getImageData(0, 0, img.width, img.height);
+  const rgbaData = imageData.data; // This gets the RGBA values as an ArrayBuffer
+  // convert RGBA to RGB
+  const rgbData = new Uint8Array(new ArrayBuffer(img.height * img.width * 3));
+  for (let i = 0; i < img.height; i++) {
+    for (let j = 0; j < img.width; j++) {
+      const pos = i * img.width + j;
+      rgbData[pos * 3] = rgbaData[pos * 4];
+      rgbData[pos * 3 + 1] = rgbaData[pos * 4 + 1];
+      rgbData[pos * 3 + 2] = rgbaData[pos * 4 + 2];
+    }
+  }
+  return {
+    _rtype: "ndarray",
+    _rdtype: "uint8",
+    _rshape: [img.height, img.width, 3],
+    _rvalue: rgbData.buffer
+  };
+}
+
 export default {
   name: "ImJoyContent",
 
@@ -151,7 +209,7 @@ export default {
       // however, some browser features won't work (e.g. webrtc)
       // unless we explicitly set `base_frame` in the plugin to
       // https://lib.imjoy.io/default_base_frame.html
-      default_base_frame: 'http://lib.imjoy.io/default_base_frame.html',
+      default_base_frame: "http://lib.imjoy.io/default_base_frame.html",
       imjoy_api: {
         async showDialog(plugin, config, exta_config) {
           return await imjoy.pm.createWindow(plugin, config, exta_config);
@@ -318,7 +376,7 @@ export default {
           });
         },
         async getPosition() {
-          const {z} = await getPositionAsObject();
+          const { z } = await getPositionAsObject();
           return z;
         },
         async setXYPosition(x, y) {
@@ -329,11 +387,11 @@ export default {
           });
         },
         async getXYPosition() {
-          const {x, y} = await getPositionAsObject();
+          const { x, y } = await getPositionAsObject();
           return [x, y];
         },
         async getXYZPosition() {
-          const {x, y, z} = await getPositionAsObject();
+          const { x, y, z } = await getPositionAsObject();
           return [x, y, z];
         },
         async setXYZPosition(x, y, z) {
@@ -405,6 +463,15 @@ export default {
       try {
         const self = this;
 
+        /*async function obtainImageJ() {
+          self.$root.$emit("globalSwitchTab", "ImJoy");
+          if(!self.viewers.imagej) {
+            await self.startImageJ();
+          }
+          self.selectWindow("ImageJ.JS");
+          return self.viewers.imagej;
+        }*/
+
         this.$store.commit("addOpenInImjoyMenuItem", {
           title: "Kaibu",
           async callback(name, imageUrl) {
@@ -432,6 +499,68 @@ export default {
             const buffer = await response.arrayBuffer();
             await viewer.viewImage(buffer, {
               name: name.replace(".jpeg", ".jpg")
+            });
+          }
+        });
+        this.$store.commit("addOpenInImjoyMenuItem", {
+          title: "ImageJ.JS [ndarray]",
+          async callback(name, imageUrl) {
+            self.$root.$emit("globalSwitchTab", "ImJoy");
+            if (!self.viewers.imagej) {
+              await self.startImageJ();
+            }
+            self.selectWindow("ImageJ.JS");
+            const viewer = self.viewers.imagej;
+            const ndarray = await imageUrlToNdarray(imageUrl);
+            await viewer.viewImage(ndarray, {
+              name: name.replace(".jpeg", "")
+            });
+          }
+        });
+        this.$store.commit("addOpenScanInImjoyMenuItem", {
+          title: "ImageJ.JS",
+          async callback(name, allURLs) {
+            self.$root.$emit("globalSwitchTab", "ImJoy");
+            if (!self.viewers.imagej) {
+              await self.startImageJ();
+            }
+            self.selectWindow("ImageJ.JS");
+            const viewer = self.viewers.imagej;
+            // allURLs is a list of URLs for *capture objects*, so
+            // first we need to retrieve them, then extract image URLs
+            // and finally turn image URLs into "numpy arrays" (RGB data).
+            const imagesAsNdarrays = await Promise.all(
+              allURLs.map(async url => {
+                const r = await axios.get(url);
+                return imageUrlToNdarray(r.data.links.download.href);
+              })
+            );
+            // Construct an array to hold all the images, based on the first image
+            // TODO: assert that _rdtype is uint8, _rshape is the same, _rtype is ndarray
+            const shape = imagesAsNdarrays[0]._rshape;
+            const totalSize = imagesAsNdarrays.reduce(
+              (total, image) => total + image._rvalue.byteLength,
+              0
+            );
+            const stackData = new Uint8Array(new ArrayBuffer(totalSize));
+            const transferredBytes = imagesAsNdarrays.reduce((total, image) => {
+              console.log(`inserting image at ${total} bytes`);
+              // TODO: is it bad to populate stackData as a "side effect"?
+              stackData.set(image._rvalue, total);
+              //assert image._rshape == shape;
+              return total + image._rvalue.byteLength;
+            }, 0);
+            const stackNdarray = {
+              _rtype: "ndarray",
+              _rdtype: "uint8",
+              _rshape: [imagesAsNdarrays.length, shape[0], shape[1], shape[2]],
+              _rdata: stackData
+            };
+            console.log(
+              `Stack is ${transferredBytes} and will have shape: ${stackNdarray._rshape}`
+            );
+            await viewer.viewImage(stackNdarray, {
+              name: "ScanImages"
             });
           }
         });
@@ -498,9 +627,7 @@ export default {
       return axios.get(this.getPositionUri).then(r => r.data);
     },
     async setStagePosition(payload) {
-      return axios
-        .post(this.moveActionUri, payload)
-        .then(pollAction)
+      return axios.post(this.moveActionUri, payload).then(pollAction);
     }
   }
 };

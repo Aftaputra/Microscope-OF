@@ -15,7 +15,8 @@ export default new Vuex.Store({
     IHIEnabled: false,
     appTheme: "system",
     activeStreams: {},
-    openInImjoyMenuItems: []
+    openInImjoyMenuItems: [],
+    openScanInImjoyMenuItems: []
   },
 
   mutations: {
@@ -60,6 +61,9 @@ export default new Vuex.Store({
     },
     addOpenInImjoyMenuItem(state, newItem) {
       state.openInImjoyMenuItems.push(newItem);
+    }, // TODO: add a mutation to remove items when plugins are unloaded
+    addOpenScanInImjoyMenuItem(state, newItem) {
+      state.openScanInImjoyMenuItems.push(newItem);
     } // TODO: add a mutation to remove items when plugins are unloaded
   },
 
