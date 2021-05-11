@@ -55,7 +55,7 @@
           <li v-for="item in openScanInImjoyMenuItems" :key="item.name">
             <a
               href="#"
-              class="uk-text-emphasis"
+              style="color:black"
               @click="item.callback(name, allURLs)"
               ><i class="material-icons">launch</i>{{ item.title }}</a
             >
