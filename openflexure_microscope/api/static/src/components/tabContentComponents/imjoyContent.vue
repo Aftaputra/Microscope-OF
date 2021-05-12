@@ -452,6 +452,28 @@ export default {
       );
       this.selectWindow("ImageJ.JS");
     },
+    /**
+     * Switch to the ImageJ window, starting it if necessary.
+     */
+    async openImageJ() {
+      this.$root.$emit("globalSwitchTab", "ImJoy");
+      if (!this.viewers.imagej) {
+        await this.startImageJ();
+      }
+      this.selectWindow("ImageJ.JS");
+      return this.viewers.imagej;
+    },
+    /**
+     * Switch to the Kaibu window, starting it if necessary.
+     */
+    async openKaibu() {
+      this.$root.$emit("globalSwitchTab", "ImJoy");
+      if (!this.viewers.kaibu) {
+        await this.startKaibu();
+      }
+      this.selectWindow("Kaibu");
+      return this.viewers.kaibu;
+    },
     async setupViewers() {
       this.loading = true;
       // TODO: improve this using the ImJoy `api.getServices`
@@ -475,12 +497,7 @@ export default {
         this.$store.commit("addOpenInImjoyMenuItem", {
           title: "Kaibu",
           async callback(name, imageUrl) {
-            self.$root.$emit("globalSwitchTab", "ImJoy");
-            if (!self.viewers.kaibu) {
-              await self.startKaibu();
-            }
-            self.selectWindow("Kaibu");
-            const viewer = self.viewers.kaibu;
+            const viewer = await self.openKaibu();
             await viewer.view_image(imageUrl, { type: "2d-image", name });
             await viewer.add_shapes([]);
           }
@@ -489,12 +506,7 @@ export default {
         this.$store.commit("addOpenInImjoyMenuItem", {
           title: "ImageJ.JS",
           async callback(name, imageUrl) {
-            self.$root.$emit("globalSwitchTab", "ImJoy");
-            if (!self.viewers.imagej) {
-              await self.startImageJ();
-            }
-            self.selectWindow("ImageJ.JS");
-            const viewer = self.viewers.imagej;
+            const viewer = await self.openImageJ();
             const response = await fetch(imageUrl);
             const buffer = await response.arrayBuffer();
             await viewer.viewImage(buffer, {
@@ -505,12 +517,7 @@ export default {
         this.$store.commit("addOpenInImjoyMenuItem", {
           title: "ImageJ.JS [ndarray]",
           async callback(name, imageUrl) {
-            self.$root.$emit("globalSwitchTab", "ImJoy");
-            if (!self.viewers.imagej) {
-              await self.startImageJ();
-            }
-            self.selectWindow("ImageJ.JS");
-            const viewer = self.viewers.imagej;
+            const viewer = await self.openImageJ();
             const ndarray = await imageUrlToNdarray(imageUrl);
             await viewer.viewImage(ndarray, {
               name: name.replace(".jpeg", "")
@@ -520,12 +527,7 @@ export default {
         this.$store.commit("addOpenScanInImjoyMenuItem", {
           title: "ImageJ.JS",
           async callback(name, allURLs) {
-            self.$root.$emit("globalSwitchTab", "ImJoy");
-            if (!self.viewers.imagej) {
-              await self.startImageJ();
-            }
-            self.selectWindow("ImageJ.JS");
-            const viewer = self.viewers.imagej;
+            const viewer = await self.openImageJ();
             // allURLs is a list of URLs for *capture objects*, so
             // first we need to retrieve them, then extract image URLs
             // and finally turn image URLs into "numpy arrays" (RGB data).
@@ -562,6 +564,26 @@ export default {
             await viewer.viewImage(stackNdarray, {
               name: "ScanImages"
             });
+          }
+        });
+        this.$store.commit("addOpenScanInImjoyMenuItem", {
+          title: "ImageJ.JS [JPEGs]",
+          async callback(name, allURLs) {
+            const viewer = await self.openImageJ();
+            // allURLs is a list of URLs for *capture objects*, so
+            // first we need to retrieve them, then extract image URLs
+            // and finally turn image URLs into "numpy arrays" (RGB data).
+            await Promise.all(
+              allURLs.map(async url => {
+                const r = await axios.get(url);
+                const ndarray = await imageUrlToNdarray(
+                  r.data.links.download.href
+                );
+                return viewer.viewImage(ndarray, {
+                  name: r.data.name.replace(".jpeg", "")
+                });
+              })
+            );
           }
         });
       } catch (e) {
