@@ -106,7 +106,7 @@ app, labthing = create_app(
 cors: CORS = CORS(app)
 
 # Enable correct handling of Marshmallow/Webargs validation errors
-# Return validation errors as JSON 
+# Return validation errors as JSON
 # (see  https://webargs.readthedocs.io/en/latest/framework_support.html)
 @app.errorhandler(422)
 @app.errorhandler(400)
@@ -117,6 +117,7 @@ def handle_error(err):
         return jsonify({"errors": messages}), err.code, headers
     else:
         return jsonify({"errors": messages}), err.code
+
 
 # Use custom JSON encoder
 labthing.json_encoder = JSONEncoder
