@@ -44,7 +44,11 @@
     </div>
 
     <div class="uk-card-footer uk-padding-small">
-      <button class="uk-icon" type="button">
+      <button
+        v-if="openInImjoyMenuItems.length != 0"
+        class="uk-icon"
+        type="button"
+      >
         <img
           style="width:25px;"
           src="https://imjoy.io/static/img/imjoy-icon.svg"
@@ -163,6 +167,7 @@
 <script>
 import UIkit from "uikit";
 import axios from "axios";
+import { mapState } from "vuex";
 
 import keyvalList from "../../fieldComponents/keyvalList";
 
@@ -223,9 +228,6 @@ export default {
   },
 
   computed: {
-    openInImjoyMenuItems: function() {
-      return this.$store.state.openInImjoyMenuItems;
-    },
     tagModalID: function() {
       return this.makeModalName("tag-modal-");
     },
@@ -252,7 +254,8 @@ export default {
     },
     captureURL: function() {
       return this.links.self.href;
-    }
+    },
+    ...mapState("imjoy", { openInImjoyMenuItems: "openImageMenu" })
   },
 
   created: function() {},

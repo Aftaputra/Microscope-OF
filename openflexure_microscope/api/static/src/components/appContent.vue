@@ -60,6 +60,26 @@
             src="https://imjoy.io/static/img/imjoy-icon.svg"
           />
         </tabIcon>
+
+        <tabIcon
+          v-for="imjoyTab in imjoyTabs"
+          :key="imjoyTab.id"
+          :tab-i-d="'ImJoy-Plugin-' + imjoyTab.id"
+          :title="imjoyTab.name"
+          :require-connection="false"
+          :current-tab="currentTab"
+          @set-tab="setTab"
+        >
+          <img
+            v-if="imjoyTab.iconURL"
+            style="filter: grayscale(100%);width: 22px;margin-top: 5px;margin-bottom: 8px;"
+            :src="imjoyTab.iconURL"
+          />
+          <i v-if="!imjoyTab.iconURL" class="material-icons">
+            {{ imjoyTab.iconName || "extension" }}
+          </i>
+        </tabIcon>
+
         <hr id="extension-tab-divider" />
 
         <!-- For each bottom tab -->
@@ -124,6 +144,16 @@
         <ImJoyContent />
       </tabContent>
 
+      <tabContent
+        v-for="imjoyTab in imjoyTabs"
+        :key="imjoyTab.id"
+        :tab-i-d="'ImJoy-Plugin-' + imjoyTab.id"
+        :require-connection="false"
+        :current-tab="currentTab"
+      >
+        <div :id="imjoyTab.window_id" class="window-container">Loading...</div>
+      </tabContent>
+
       <!-- For each bottom tab -->
       <tabContent
         v-for="item in bottomTabs"
@@ -141,6 +171,7 @@
 
 <script>
 import axios from "axios";
+import { mapState } from "vuex";
 
 // Import generic components
 import tabIcon from "./genericComponents/tabIcon";
@@ -264,7 +295,9 @@ export default {
 
     currentTabIndex: function() {
       return this.tabOrder.indexOf(this.currentTab);
-    }
+    },
+
+    ...mapState("imjoy", { imjoyTabs: "tabs" })
   },
 
   created: function() {
@@ -370,6 +403,10 @@ export default {
 </script>
 
 <style scoped lang="less">
+.window-container {
+  width: 100%;
+  height: 100%;
+}
 #component-left {
   width: 100%;
   height: 100%;

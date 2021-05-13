@@ -3,7 +3,65 @@ import Vuex from "vuex";
 
 Vue.use(Vuex);
 
+const moduleImjoy = {
+  namespaced: true,
+  state: () => ({
+    tabs: [],
+    openImageMenu: [],
+    openScanMenu: []
+  }),
+  mutations: {
+    addOpenImageItem(state, newItem) {
+      state.openImageMenu.push(newItem);
+    }, // TODO: add a mutation to remove items when plugins are unloaded
+    addOpenScanItem(state, newItem) {
+      state.openScanMenu.push(newItem);
+    }, // TODO: add a mutation to remove items when plugins are unloaded
+    clearMenus(state) {
+      // This is primarily useful to reset the state in hot-reloads of
+      // imjoyContent.vue
+      state.openImageMenu = [];
+      state.openScanMenu = [];
+    },
+    addTab(state, newItem) {
+      // Add a tab to the list of ImJoy tabs
+      state.tabs.push(newItem);
+    },
+    removeTab(state, tabToRemove) {
+      const index = state.tabs.indexOf(tabToRemove);
+      if (index > -1) {
+        state.tabs.splice(index, 1);
+      } else {
+        console.warn(
+          `Attempted to remove a non-existing ImJoy tab ${tabToRemove}`
+        );
+      }
+    },
+    /**
+     * Set a parameter on any matching tab objects
+     */
+    setTabProperty(state, payload) {
+      let tab = payload.tab;
+      let key = payload.key;
+      let value = payload.value;
+      for (let i = 0; i < state.tabs.length; i++) {
+        let t = state.tabs[i];
+        if ((t === tab) | (t.name === tab) | (t.id === tab)) {
+          t[key] = value;
+        }
+        state.tabs.splice(i, 1, t); // This should work nicely with reactive stuff
+      }
+      //state.tabs = tablist; // This should force an update
+    }
+  },
+  actions: {},
+  getters: {}
+};
+
 export default new Vuex.Store({
+  modules: {
+    imjoy: moduleImjoy
+  },
   state: {
     origin: window.location.origin,
     available: false,
@@ -14,9 +72,7 @@ export default new Vuex.Store({
     trackWindow: true,
     IHIEnabled: false,
     appTheme: "system",
-    activeStreams: {},
-    openInImjoyMenuItems: [],
-    openScanInImjoyMenuItems: []
+    activeStreams: {}
   },
 
   mutations: {
@@ -58,13 +114,7 @@ export default new Vuex.Store({
     },
     removeStream(state, id) {
       state.activeStreams[id] = false;
-    },
-    addOpenInImjoyMenuItem(state, newItem) {
-      state.openInImjoyMenuItems.push(newItem);
-    }, // TODO: add a mutation to remove items when plugins are unloaded
-    addOpenScanInImjoyMenuItem(state, newItem) {
-      state.openScanInImjoyMenuItems.push(newItem);
-    } // TODO: add a mutation to remove items when plugins are unloaded
+    }
   },
 
   actions: {},

@@ -41,7 +41,7 @@
 
     <div class="uk-card-footer uk-padding-small">
       <button
-        v-if="openScanInImjoyMenuItemsPresent"
+        v-if="openInImjoyMenuItems.length != 0"
         class="uk-icon"
         type="button"
       >
@@ -52,7 +52,7 @@
       </button>
       <div uk-dropdown="pos: top-center">
         <ul class="uk-nav uk-dropdown-nav">
-          <li v-for="item in openScanInImjoyMenuItems" :key="item.name">
+          <li v-for="item in openInImjoyMenuItems" :key="item.name">
             <a
               href="#"
               style="color:black"
@@ -125,10 +125,7 @@ export default {
       }
       return urls;
     },
-    openScanInImjoyMenuItemsPresent: function() {
-      return this.openScanInImjoyMenuItems.length > 0;
-    },
-    ...mapState(["openScanInImjoyMenuItems"])
+    ...mapState("imjoy", { openInImjoyMenuItems: "openScanMenu" })
   },
 
   methods: {

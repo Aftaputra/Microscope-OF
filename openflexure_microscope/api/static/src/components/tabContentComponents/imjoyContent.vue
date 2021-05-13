@@ -7,83 +7,31 @@
       class="uk-progress"
       max="100"
     ></progress>
-    <button
-      v-if="activeWindow"
-      class="uk-button uk-button-default close-button"
-      type="button"
-      @click="closeActiveWindow()"
-    >
-      <i class="material-icons">close</i>
-    </button>
-    <button class="uk-button uk-button-default plugins-button" type="button">
-      <img
-        style="width:18px;"
-        src="https://imjoy.io/static/img/imjoy-icon.svg"
-      />&nbsp;Plugins
-    </button>
-    <div uk-dropdown>
-      <ul class="uk-nav uk-dropdown-nav">
-        <li>
-          <a href="#" @click="loadPluginDialog()">
-            <i class="material-icons">add</i>&nbsp; Load Plugin</a
-          >
-        </li>
-        <li
-          v-if="Object.keys(loadedPlugins).length > 0"
-          class="uk-nav-divider"
-        ></li>
-        <li>
-          <a href="#" @click="startImageJ()"
-            ><img
-              alt="ImageJ.JS icon"
-              style="width:20px;"
-              src="https://ij.imjoy.io/assets/icons/chrome/chrome-installprocess-128-128.png"
-            />&nbsp;ImageJ.JS</a
-          >
-        </li>
-        <li>
-          <a href="#" @click="startKaibu()"
-            ><img
-              alt="Kaibu icon"
-              style="width:20px;"
-              src="https://kaibu.org/static/img/kaibu-icon.svg"
-            />&nbsp;Kaibu</a
-          >
-        </li>
-        <li>
-          <a
-            v-for="(p, name) in loadedPlugins"
-            :key="p.id"
-            href="#"
-            @click="runPlugin(p)"
-            ><i class="material-icons">extension</i>{{ name }}</a
-          >
-        </li>
-        <li class="uk-nav-divider"></li>
-        <li>
-          <a v-for="w in windows" :key="w.id" href="#" @click="activeWindow = w"
-            ><i class="material-icons">filter_none</i>&nbsp;{{ w.name }}</a
-          >
-        </li>
-      </ul>
-    </div>
 
-    <div
-      v-for="w in windows"
-      v-show="w === activeWindow"
-      :key="w.id"
-      style="height: 100%;"
-    >
-      <h4 class="window-title">{{ w.name }}</h4>
-      <div :id="w.window_id" class="window-container"></div>
-    </div>
-    <div
-      v-if="!activeWindow || windows.length <= 0"
-      class="uk-position-center position-relative text-center"
-    >
-      <img
-        style="width:80px;"
-        src="https://imjoy.io/static/img/imjoy-icon.svg"
+    <div class="uk-child-width-1-3@m uk-grid-match" uk-grid>
+      <imjoy-plugin-card
+        name="New"
+        icon-u-r-l="https://imjoy.io/static/img/imjoy-icon.svg"
+        @click="loadPluginDialog()"
+      >
+        Load plugin from URL
+      </imjoy-plugin-card>
+      <imjoy-plugin-card
+        name="ImageJ.JS"
+        icon-u-r-l="https://ij.imjoy.io/assets/icons/chrome/chrome-installprocess-128-128.png"
+        @click="openImageJ()"
+      />
+      <imjoy-plugin-card
+        name="Kaibu"
+        icon-u-r-l="https://kaibu.org/static/img/kaibu-icon.svg"
+        @click="startKaibu()"
+      />
+      <imjoy-plugin-card
+        v-for="(p, name) in loadedPlugins"
+        :key="p.id"
+        :name="name"
+        icon-name="extension"
+        @click="runPlugin(p)"
       />
     </div>
 
@@ -97,6 +45,8 @@
 import * as imjoyCore from "imjoy-core";
 import axios from "axios";
 import UIkit from "uikit";
+import { mapState } from "vuex";
+import ImjoyPluginCard from "./imjoyComponents/imjoyPluginCard.vue";
 
 // TODO: move this to a module or something...
 async function pollAction(response) {
@@ -174,13 +124,11 @@ async function imageUrlToNdarray(url) {
 export default {
   name: "ImJoyContent",
 
-  components: {},
+  components: { ImjoyPluginCard },
   data() {
     return {
-      windows: [],
       loading: false,
       loadedPlugins: {},
-      activeWindow: null,
       viewers: {}
     };
   },
@@ -199,7 +147,8 @@ export default {
     },
     baseUri: function() {
       return this.$store.getters.baseUri;
-    }
+    },
+    ...mapState("imjoy", { windows: "tabs" })
   },
   mounted() {
     const self = this;
@@ -405,27 +354,30 @@ export default {
       };
       this.imjoy.pm.registerService({ name: "openflexure" }, service);
     },
-    closeActiveWindow() {
-      if (this.activeWindow) {
-        this.activeWindow.api.close();
-        const index = this.windows.indexOf(this.activeWindow);
-        if (index > -1) {
-          this.windows.splice(index, 1);
-        }
-        if (this.windows.length > 0) {
-          this.activeWindow = this.windows[this.windows.length - 1];
-        } else {
-          this.activeWindow = null;
-        }
+    closeWindow(w) {
+      if (w) {
+        w.api.close();
+        this.$store.commit("imjoy/removeTab", w);
       }
     },
-    selectWindow(name) {
+    /**
+     * Activate a window - you can pass the window object, its name, or its id.
+     */
+    selectWindow(window) {
       for (let w of this.windows) {
-        if (w.name === name) {
-          this.activeWindow = w;
+        if ((w === window) | (w.name === window) | (w.id === window)) {
+          // Make the relevant window visible by switching to its tab
+          this.$root.$emit("globalSwitchTab", `ImJoy-Plugin-${w.id}`);
           break;
         }
       }
+    },
+    setWindowIconUrl(window, iconURL) {
+      this.$store.commit("imjoy/setTabProperty", {
+        tab: window,
+        key: "iconURL",
+        value: iconURL
+      });
     },
     async startKaibu() {
       this.viewers.kaibu = await this.imjoy.pm.createWindow(null, {
@@ -435,8 +387,11 @@ export default {
       this.viewers.kaibu.on("close", () => {
         delete this.viewers.kaibu;
       });
+      this.setWindowIconUrl(
+        "Kaibu",
+        "https://kaibu.org/static/img/kaibu-icon.svg"
+      );
       this.viewers.kaibu.set_mode("full");
-      this.selectWindow("Kaibu");
     },
     async startImageJ() {
       this.viewers.imagej = await this.imjoy.pm.createWindow(null, {
@@ -446,17 +401,19 @@ export default {
       this.viewers.imagej.on("close", () => {
         delete this.viewers.imagej;
       });
+      this.setWindowIconUrl(
+        "ImageJ.JS",
+        "https://ij.imjoy.io/assets/icons/chrome/chrome-installprocess-128-128.png"
+      );
       // load the ITK/VTK viewer for imagej.js
       this.loadPlugin(
         "https://gist.githubusercontent.com/oeway/e5c980fbf6582f25fde795262a7e33ec/raw/itk-vtk-viewer-imagej.imjoy.html"
       );
-      this.selectWindow("ImageJ.JS");
     },
     /**
      * Switch to the ImageJ window, starting it if necessary.
      */
     async openImageJ() {
-      this.$root.$emit("globalSwitchTab", "ImJoy");
       if (!this.viewers.imagej) {
         await this.startImageJ();
       }
@@ -467,11 +424,10 @@ export default {
      * Switch to the Kaibu window, starting it if necessary.
      */
     async openKaibu() {
-      this.$root.$emit("globalSwitchTab", "ImJoy");
       if (!this.viewers.kaibu) {
         await this.startKaibu();
       }
-      this.selectWindow("Kaibu");
+      this.selectWindow("Kaibu"); // TODO: make this behave more nicely when we have multiple Kaibu windows
       return this.viewers.kaibu;
     },
     async setupViewers() {
@@ -485,16 +441,7 @@ export default {
       try {
         const self = this;
 
-        /*async function obtainImageJ() {
-          self.$root.$emit("globalSwitchTab", "ImJoy");
-          if(!self.viewers.imagej) {
-            await self.startImageJ();
-          }
-          self.selectWindow("ImageJ.JS");
-          return self.viewers.imagej;
-        }*/
-
-        this.$store.commit("addOpenInImjoyMenuItem", {
+        this.$store.commit("imjoy/addOpenImageItem", {
           title: "Kaibu",
           async callback(name, imageUrl) {
             const viewer = await self.openKaibu();
@@ -503,7 +450,7 @@ export default {
           }
         });
 
-        this.$store.commit("addOpenInImjoyMenuItem", {
+        this.$store.commit("imjoy/addOpenImageItem", {
           title: "ImageJ.JS",
           async callback(name, imageUrl) {
             const viewer = await self.openImageJ();
@@ -514,7 +461,7 @@ export default {
             });
           }
         });
-        this.$store.commit("addOpenInImjoyMenuItem", {
+        this.$store.commit("imjoy/addOpenImageItem", {
           title: "ImageJ.JS [ndarray]",
           async callback(name, imageUrl) {
             const viewer = await self.openImageJ();
@@ -524,7 +471,7 @@ export default {
             });
           }
         });
-        this.$store.commit("addOpenScanInImjoyMenuItem", {
+        this.$store.commit("imjoy/addOpenScanItem", {
           title: "ImageJ.JS",
           async callback(name, allURLs) {
             const viewer = await self.openImageJ();
@@ -566,7 +513,7 @@ export default {
             });
           }
         });
-        this.$store.commit("addOpenScanInImjoyMenuItem", {
+        this.$store.commit("imjoy/addOpenScanItem", {
           title: "ImageJ.JS [JPEGs]",
           async callback(name, allURLs) {
             const viewer = await self.openImageJ();
@@ -592,11 +539,11 @@ export default {
         this.loading = false;
       }
     },
-    addWindow(w) {
-      this.windows = this.windows || [];
-      this.windows.push(w);
-      this.activeWindow = w;
-      this.$forceUpdate();
+    async addWindow(w) {
+      this.$store.commit("imjoy/addTab", w);
+      await this.$nextTick();
+      //this.$forceUpdate();
+      this.selectWindow(w);
     },
     loadPlugin(uri) {
       return new Promise((resolve, reject) => {
@@ -629,22 +576,7 @@ export default {
       if (uri) {
         this.loadPlugin(uri);
       }
-    } /*
-    async getPosition() {
-          const pos = await service.getXYZPosition();
-          return pos.z;
-        },
-        async setXYPosition(x, y) {
-          return service.setXYZPosition({
-            "x": x,
-            "y": y,
-            "absolute": true,
-          });
-        },
-        async getXYPosition() {
-          const pos = await service.getXYZPosition();
-          return [pos.x, pos.y];
-        },*/,
+    },
     async getStagePosition() {
       return axios.get(this.getPositionUri).then(r => r.data);
     },
