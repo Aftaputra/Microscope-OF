@@ -503,7 +503,7 @@ export default {
               _rtype: "ndarray",
               _rdtype: "uint8",
               _rshape: [imagesAsNdarrays.length, shape[0], shape[1], shape[2]],
-              _rdata: stackData.buffer
+              _rvalue: stackData.buffer
             };
             console.log(
               `Stack is ${transferredBytes} and will have shape: ${stackNdarray._rshape}`
@@ -545,7 +545,7 @@ export default {
               _rtype: "ndarray",
               _rdtype: "uint8",
               _rshape: [imagesAsNdarrays.length, shape[0], shape[1], shape[2]],
-              _rdata: stackData
+              _rvalue: stackData
             };
             console.log(
               `Stack is ${transferredBytes} and will have shape: ${stackNdarray._rshape}`
