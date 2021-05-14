@@ -352,7 +352,7 @@ export default {
           });
         }
       };
-      this.imjoy.pm.registerService({ name: "openflexure" }, service);
+      this.imjoy.pm.registerService({ name: "#openflexure" }, service);
     },
     closeWindow(w) {
       if (w) {
@@ -481,6 +481,48 @@ export default {
             const imagesAsNdarrays = await Promise.all(
               allURLs.map(async url => {
                 const r = await axios.get(url);
+                return await imageUrlToNdarray(r.data.links.download.href);
+              })
+            );
+            // Construct an array to hold all the images, based on the first image
+            // TODO: assert that _rdtype is uint8, _rshape is the same, _rtype is ndarray
+            const shape = imagesAsNdarrays[0]._rshape;
+            const totalSize = imagesAsNdarrays.reduce(
+              (total, image) => total + image._rvalue.byteLength,
+              0
+            );
+            const stackData = new Uint8Array(new ArrayBuffer(totalSize));
+            const transferredBytes = imagesAsNdarrays.reduce((total, image) => {
+              console.log(`inserting image at ${total} bytes`);
+              // TODO: is it bad to populate stackData as a "side effect"?
+              stackData.set(new Uint8Array(image._rvalue), total);
+              //assert image._rshape == shape;
+              return total + image._rvalue.byteLength;
+            }, 0);
+            const stackNdarray = {
+              _rtype: "ndarray",
+              _rdtype: "uint8",
+              _rshape: [imagesAsNdarrays.length, shape[0], shape[1], shape[2]],
+              _rdata: stackData.buffer
+            };
+            console.log(
+              `Stack is ${transferredBytes} and will have shape: ${stackNdarray._rshape}`
+            );
+            await viewer.viewImage(stackNdarray, {
+              name: "ScanImages"
+            });
+          }
+        });
+        this.$store.commit("imjoy/addOpenScanItem", {
+          title: "ImageJ.JS [JPEGs]",
+          async callback(name, allURLs) {
+            const viewer = await self.openImageJ();
+            // allURLs is a list of URLs for *capture objects*, so
+            // first we need to retrieve them, then extract image URLs
+            // and finally turn image URLs into "numpy arrays" (RGB data).
+            const imagesAsNdarrays = await Promise.all(
+              allURLs.map(async url => {
+                const r = await axios.get(url);
                 return imageUrlToNdarray(r.data.links.download.href);
               })
             );
@@ -509,28 +551,8 @@ export default {
               `Stack is ${transferredBytes} and will have shape: ${stackNdarray._rshape}`
             );
             await viewer.viewImage(stackNdarray, {
-              name: "ScanImages"
+              name: "ScanImages" //TODO: fix the name
             });
-          }
-        });
-        this.$store.commit("imjoy/addOpenScanItem", {
-          title: "ImageJ.JS [JPEGs]",
-          async callback(name, allURLs) {
-            const viewer = await self.openImageJ();
-            // allURLs is a list of URLs for *capture objects*, so
-            // first we need to retrieve them, then extract image URLs
-            // and finally turn image URLs into "numpy arrays" (RGB data).
-            await Promise.all(
-              allURLs.map(async url => {
-                const r = await axios.get(url);
-                const ndarray = await imageUrlToNdarray(
-                  r.data.links.download.href
-                );
-                return viewer.viewImage(ndarray, {
-                  name: r.data.name.replace(".jpeg", "")
-                });
-              })
-            );
           }
         });
       } catch (e) {
