@@ -509,7 +509,7 @@ export default {
               `Stack is ${transferredBytes} and will have shape: ${stackNdarray._rshape}`
             );
             await viewer.viewImage(stackNdarray, {
-              name: "ScanImages"
+              name
             });
           }
         });
