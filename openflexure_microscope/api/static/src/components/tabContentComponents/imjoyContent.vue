@@ -562,6 +562,7 @@ export default {
       }
     },
     async addWindow(w) {
+      // Here we can add check w.standalone if we want to allow the plugin to decide whether to open in a new tab.
       this.$store.commit("imjoy/addTab", w);
       await this.$nextTick();
       //this.$forceUpdate();
