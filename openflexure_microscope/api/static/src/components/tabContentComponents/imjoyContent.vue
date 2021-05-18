@@ -271,8 +271,8 @@ export default {
 
       const service = {
         _rintf: true, // this will make sure the function can be called multiple times
-        type: "_microscope-control",
-        name: "OpenFlexure",
+        type: "#_microscope-control",
+        name: "#openflexure",
         lastSnapResponse: null,
         snapPreviewImage() {
           // The "proper" capture method is more involved - this one pulls a frame out of the preview stream
