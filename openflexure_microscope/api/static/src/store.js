@@ -38,20 +38,23 @@ const moduleImjoy = {
       }
     },
     /**
-     * Set a parameter on any matching tab objects
+     * Set a parameter on the tab with a given id
+     * 
+     * Payload should contain:
+     *   tab: ID of the tab to modify (not window_id)
+     *   key: name of the property to add/change
+     *   value: value of the property to add/change
      */
     setTabProperty(state, payload) {
       let tab = payload.tab;
       let key = payload.key;
       let value = payload.value;
-      for (let i = 0; i < state.tabs.length; i++) {
-        let t = state.tabs[i];
-        if ((t === tab) | (t.name === tab) | (t.id === tab)) {
+      state.tabs = state.tabs.map(t => {
+        if (t.id === tab) {
           t[key] = value;
         }
-        state.tabs.splice(i, 1, t); // This should work nicely with reactive stuff
-      }
-      //state.tabs = tablist; // This should force an update
+        return t;
+      });
     }
   },
   actions: {},
