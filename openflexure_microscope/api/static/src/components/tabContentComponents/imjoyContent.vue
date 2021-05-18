@@ -388,7 +388,7 @@ export default {
         delete this.viewers.kaibu;
       });
       this.setWindowIconUrl(
-        "Kaibu",
+        this.viewers.kaibu.config.id,
         "https://kaibu.org/static/img/kaibu-icon.svg"
       );
       this.viewers.kaibu.set_mode("full");
@@ -402,7 +402,7 @@ export default {
         delete this.viewers.imagej;
       });
       this.setWindowIconUrl(
-        "ImageJ.JS",
+        this.viewers.imagej.config.id,
         "https://ij.imjoy.io/assets/icons/chrome/chrome-installprocess-128-128.png"
       );
       // load the ITK/VTK viewer for imagej.js
