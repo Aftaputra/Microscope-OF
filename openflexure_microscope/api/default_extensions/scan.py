@@ -2,6 +2,7 @@ import datetime
 import logging
 import time
 import uuid
+import marshmallow
 from functools import reduce
 from typing import Dict, List, Optional, Tuple
 
@@ -361,7 +362,11 @@ class ScanExtension(BaseExtension):
 
 class TileScanArgs(FullCaptureArgs):
     namemode = fields.String(missing="coordinates", example="coordinates")
-    grid = fields.List(fields.Integer, missing=[3, 3, 3], example=[3, 3, 3])
+    grid = fields.List(
+        fields.Integer(validate=marshmallow.validate.Range(min=1)),
+        missing=[3, 3, 3],
+        example=[3, 3, 3],
+    )
     style = fields.String(missing="raster")
     autofocus_dz = fields.Integer(missing=50)
     fast_autofocus = fields.Boolean(missing=False)
