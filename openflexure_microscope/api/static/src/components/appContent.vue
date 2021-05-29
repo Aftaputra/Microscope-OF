@@ -194,6 +194,8 @@ import loggingContent from "./tabContentComponents/loggingContent.vue";
 import calibrationModal from "./modalComponents/calibrationModal.vue";
 import TabIcon from "./genericComponents/tabIcon.vue";
 
+import { mapState } from "vuex";
+
 // Export main app
 export default {
   name: "AppContent",
@@ -302,21 +304,22 @@ export default {
       return process.env.VUE_APP_ENABLE_IMJOY === "true";
     },
 
-    ...mapState("imjoy", { imjoyTabs: "tabs" })
+    // Map the tabs from ImJoy's store module so we can display them
+    ...mapState("imjoy", { imjoyTabs: "tabs" }),
+
+    // Map the setting for IHI's interface so we can watch it
+    ...mapState(["IHIEnabled"])
+  },
+
+  watch: {
+    // Update the interface when the IHI interface is enabled/disabled
+    IHIEnabled: function(newValue) {
+      this.updateTopTabs(newValue);
+    }
   },
 
   created: function() {
     if (this.$store.getters.ready) {
-      // Detect local connection
-      if (
-        ["localhost", "0.0.0.0", "127.0.0.1", "[::1]"].includes(
-          window.location.hostname
-        )
-      ) {
-        this.$store.commit("changeDisableStream", true);
-        this.$store.commit("changeAutoGpuPreview", true);
-        this.$store.commit("changeTrackWindow", true);
-      }
       // Update top tabs
       this.updateTopTabs(this.$store.state.IHIEnabled);
       // Update plugins
@@ -325,16 +328,6 @@ export default {
         this.startModals();
       });
     }
-
-    // Watch for host 'ready', then update status
-    this.unwatchStoreFunction = this.$store.watch(
-      state => {
-        return state.IHIEnabled;
-      },
-      IHIEnabled => {
-        this.updateTopTabs(IHIEnabled);
-      }
-    );
   },
 
   mounted() {
@@ -350,14 +343,6 @@ export default {
     this.$root.$on("globalDecrementTab", () => {
       this.incrementTabBy(-1);
     });
-  },
-
-  beforeDestroy() {
-    // Then we call that function here to unwatch
-    if (this.unwatchStoreFunction) {
-      this.unwatchStoreFunction();
-      this.unwatchStoreFunction = null;
-    }
   },
 
   methods: {

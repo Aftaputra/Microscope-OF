@@ -9,7 +9,44 @@
           'Start recalibration? This may take a while, and the microscope will be locked during this time.'
         "
         :submit-url="recalibrationLinks.recalibrate.href"
-        :submit-label="'Auto-Calibrate'"
+        :submit-label="'Full Auto-Calibrate'"
+        @response="onRecalibrateResponse"
+        @error="modalError"
+      >
+      </taskSubmitter>
+    </div>
+    <div v-if="'auto_exposure_from_raw' in recalibrationLinks" class="uk-margin-small">
+      <taskSubmitter
+        :can-terminate="false"
+        :requires-confirmation="false"
+        :submit-url="recalibrationLinks.auto_exposure_from_raw.href"
+        :submit-label="'Auto gain &amp; shutter speed'"
+        @response="onRecalibrateResponse"
+        @error="modalError"
+      >
+      </taskSubmitter>
+    </div>
+    <div v-if="'auto_white_balance_from_raw' in recalibrationLinks" class="uk-margin-small">
+      <taskSubmitter
+        :can-terminate="false"
+        :requires-confirmation="false"
+        :submit-url="recalibrationLinks.auto_white_balance_from_raw.href"
+        :submit-label="'Auto white balance'"
+        @response="onRecalibrateResponse"
+        @error="modalError"
+      >
+      </taskSubmitter>
+    </div>
+    <div v-if="'auto_lens_shading_table' in recalibrationLinks" class="uk-margin-small">
+      <taskSubmitter
+        :can-terminate="false"
+        :requires-confirmation="true"
+        :confirmation-message="
+          'Is the microscope looking at an evenly illuminated, empty field of view? ' +
+          'If not, the current image will show through in any images captured afterwards.'
+        "
+        :submit-url="recalibrationLinks.auto_lens_shading_table.href"
+        :submit-label="'Auto flat field correction'"
         @response="onRecalibrateResponse"
         @error="modalError"
       >
@@ -22,15 +59,7 @@
         class="uk-button uk-button-danger uk-width-1-1"
         @click="flattenLensShadingTableRequest"
       >
-        Disable flat-field correction
-      </button>
-
-      <button
-        v-if="'delete_lens_shading_table' in recalibrationLinks"
-        class="uk-button uk-button-danger uk-margin-small-top uk-width-1-1"
-        @click="deleteLensShadingTableRequest"
-      >
-        Adaptive flat-field correction
+        Disable flat field correction
       </button>
     </div>
 

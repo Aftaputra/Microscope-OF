@@ -61,12 +61,25 @@ const moduleImjoy = {
   getters: {}
 };
 
+function getOriginFromLocation() {
+  // This will default to the same origin that's serving
+  // the web app - but can be overridden by the URL.
+  // See also devTools.vue which can change the origin.
+  let url = new URL(window.location.href);
+  let origin = url.searchParams.get("overrideOrigin");
+  if (origin) {
+    return origin;
+  } else {
+    return url.origin;
+  }
+}
+
 export default new Vuex.Store({
   modules: {
     imjoy: moduleImjoy
   },
   state: {
-    origin: window.location.origin,
+    origin: getOriginFromLocation(),
     available: false,
     waiting: false,
     error: "",

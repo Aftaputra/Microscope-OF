@@ -155,7 +155,7 @@
                     v-model="scanStepSize.z"
                     class="uk-input uk-form-small"
                     type="number"
-                    name="inputPositionZx"
+                    name="inputPositionZ"
                   />
                 </div>
               </div>
@@ -172,6 +172,7 @@
                     class="uk-input uk-form-small"
                     type="number"
                     name="inputPositionX"
+                    min="1"
                   />
                 </div>
               </div>
@@ -186,6 +187,7 @@
                     class="uk-input uk-form-small"
                     type="number"
                     name="inputPositionY"
+                    min="1"
                   />
                 </div>
               </div>
@@ -199,7 +201,8 @@
                     v-model="scanSteps.z"
                     class="uk-input uk-form-small"
                     type="number"
-                    name="inputPositionZx"
+                    name="inputPositionZ"
+                    min="1"
                   />
                 </div>
               </div>

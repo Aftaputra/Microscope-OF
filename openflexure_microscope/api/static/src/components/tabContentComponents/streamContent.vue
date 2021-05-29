@@ -69,6 +69,16 @@ export default {
     },
     settingsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/instrument/settings`;
+    },
+    autoGpuPreview: function() {
+      return this.$store.state.autoGpuPreview;
+    }
+  },
+
+  watch: {
+    autoGpuPreview: function(newValue) {
+      // When the GPU preview setting in the store changes, update the server
+      this.safePreviewRequest(newValue);
     }
   },
 
@@ -76,9 +86,6 @@ export default {
     // A global signal listener to change the GPU preview state
     this.$root.$on("globalTogglePreview", state => {
       this.previewRequest(state);
-    });
-    this.$root.$on("globalSafeTogglePreview", state => {
-      this.safePreviewRequest(state);
     });
     // A global signal listener to flash the stream element
     this.$root.$on("globalFlashStream", () => {
@@ -97,7 +104,7 @@ export default {
 
   created: function() {
     // Send a request to start/stop GPU preview based on global setting
-    this.safePreviewRequest(this.$store.state.autoGpuPreview);
+    this.safePreviewRequest(this.autoGpuPreview);
   },
 
   beforeDestroy: function() {
