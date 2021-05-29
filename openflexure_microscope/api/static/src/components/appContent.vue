@@ -49,6 +49,7 @@
         </tabIcon>
 
         <tabIcon
+          v-if="imjoyEnabled"
           tab-i-d="ImJoy"
           title="ImJoy"
           :require-connection="false"
@@ -137,6 +138,7 @@
       </tabContent>
 
       <tabContent
+        v-if="imjoyEnabled"
         tab-i-d="ImJoy"
         :require-connection="false"
         :current-tab="currentTab"
@@ -187,7 +189,6 @@ import galleryContent from "./tabContentComponents/galleryContent.vue";
 import extensionContent from "./tabContentComponents/extensionContent.vue";
 import aboutContent from "./tabContentComponents/aboutContent.vue";
 import loggingContent from "./tabContentComponents/loggingContent.vue";
-import ImJoyContent from "./tabContentComponents/imjoyContent.vue";
 
 // Import modal components for device initialisation
 import calibrationModal from "./modalComponents/calibrationModal.vue";
@@ -211,7 +212,7 @@ export default {
     aboutContent,
     loggingContent,
     TabIcon,
-    ImJoyContent
+    ImJoyContent: () => import(/* webpackChunkName: "imjoy" */"./tabContentComponents/imjoyContent.vue")
   },
   data: function() {
     return {
@@ -295,6 +296,10 @@ export default {
 
     currentTabIndex: function() {
       return this.tabOrder.indexOf(this.currentTab);
+    },
+
+    imjoyEnabled: function() {
+      return process.env.VUE_APP_ENABLE_IMJOY === "true";
     },
 
     ...mapState("imjoy", { imjoyTabs: "tabs" })
