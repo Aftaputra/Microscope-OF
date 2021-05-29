@@ -208,7 +208,7 @@ export default {
       await this.loadPlugin(
         `${window.location.origin}/OpenFlexureSnapImageTemplate.imjoy.html`
       );
-      // Load the snap image template
+      // Load the move stage template
       await this.loadPlugin(
         `${window.location.origin}/OpenFlexureTestMoveStage.imjoy.html`
       );
@@ -260,7 +260,7 @@ export default {
         });
     },
     setupMicroscopeAPI() {
-      // Here we register a set of API for controlling the microscope as an service
+      // Here we register a set of API for controlling the microscope as a service
       // For interoperatability, it might be good to reuse a subset of the function names defined in MicroManager
       // See here: https://valelab4.ucsf.edu/~MM/doc/MMCore/html/class_c_m_m_core.html
       const snapshotUri = this.snapshotStreamUri;
@@ -268,10 +268,13 @@ export default {
       const modalError = this.modalError;
       const getPositionAsObject = this.getStagePosition;
       const setPositionAsObject = this.setStagePosition;
+      const getInstrumentSettings = this.getInstrumentSettings;
+      const setInstrumentSettings = this.setInstrumentSettings;
+      const runAutofocus = this.runAutofocus;
 
       const service = {
         _rintf: true, // this will make sure the function can be called multiple times
-        type: "#_microscope-control",
+        type: "#microscope-control",
         name: "#openflexure",
         lastSnapResponse: null,
         snapPreviewImage() {
@@ -350,9 +353,31 @@ export default {
             z: z,
             absolute: true
           });
+        },
+        async getExposure() {
+          const settings = await getInstrumentSettings();
+          if(settings.camera.picamera){
+            if(settings.camera.picamera.shutter_speed){
+              return settings.camera.picamera.shutter_speed/1000;
+            }
+          }
+          return -1;
+        },
+        async setExposure(exposure) {
+          setInstrumentSettings({
+            camera: {
+              picamera: {
+                shutter_speed: exposure * 1000
+              }
+            }
+          });
+        },
+        async fullFocus(){
+          return runAutofocus();
         }
       };
       this.imjoy.pm.registerService({ name: "#openflexure" }, service);
+      console.log("registered service");
     },
     closeWindow(w) {
       if (w) {
@@ -563,6 +588,17 @@ export default {
     },
     async setStagePosition(payload) {
       return axios.post(this.moveActionUri, payload).then(pollAction);
+    },
+    async getInstrumentSettings() {
+      return axios.get(`${this.baseUri}/api/v2/instrument/settings/`).then(r => r.data);
+    },
+    async setInstrumentSettings(payload) {
+      return axios.put(`${this.baseUri}/api/v2/instrument/settings/`, payload);
+    },
+    runAutofocus() {
+      // This mechanism is also used by the keybinding for autofocus.
+      // It means we don't have a way to poll, but that's not a problem.
+      this.$root.$emit("globalFastAutofocusEvent");
     }
   }
 };
