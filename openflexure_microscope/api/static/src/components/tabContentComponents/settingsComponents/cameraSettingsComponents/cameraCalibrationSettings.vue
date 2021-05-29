@@ -15,7 +15,10 @@
       >
       </taskSubmitter>
     </div>
-    <div v-if="'auto_exposure_from_raw' in recalibrationLinks" class="uk-margin-small">
+    <div
+      v-if="'auto_exposure_from_raw' in recalibrationLinks"
+      class="uk-margin-small"
+    >
       <taskSubmitter
         :can-terminate="false"
         :requires-confirmation="false"
@@ -26,7 +29,10 @@
       >
       </taskSubmitter>
     </div>
-    <div v-if="'auto_white_balance_from_raw' in recalibrationLinks" class="uk-margin-small">
+    <div
+      v-if="'auto_white_balance_from_raw' in recalibrationLinks"
+      class="uk-margin-small"
+    >
       <taskSubmitter
         :can-terminate="false"
         :requires-confirmation="false"
@@ -37,13 +43,16 @@
       >
       </taskSubmitter>
     </div>
-    <div v-if="'auto_lens_shading_table' in recalibrationLinks" class="uk-margin-small">
+    <div
+      v-if="'auto_lens_shading_table' in recalibrationLinks"
+      class="uk-margin-small"
+    >
       <taskSubmitter
         :can-terminate="false"
         :requires-confirmation="true"
         :confirmation-message="
           'Is the microscope looking at an evenly illuminated, empty field of view? ' +
-          'If not, the current image will show through in any images captured afterwards.'
+            'If not, the current image will show through in any images captured afterwards.'
         "
         :submit-url="recalibrationLinks.auto_lens_shading_table.href"
         :submit-label="'Auto flat field correction'"
