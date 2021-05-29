@@ -14,6 +14,28 @@
       for use in clinics acquiring blood smear samples using a 100x
       oil-immersion objective, with a Raspberry Pi Camera v2.
     </p>
+    <p class="uk-margin-small">
+      <label
+        ><input v-model="imjoyEnabled" class="uk-checkbox" type="checkbox" />
+        Enable ImJoy plugin engine</label
+      >
+    </p>
+    <p class="uk-margin-small">
+      <a href="https://imjoy.io/">ImJoy</a> enables integration with a wide
+      variety of microscopy and image analysis applications, including ImageJ.JS
+      and Kaibu. Support for ImJoy within the OFM software is currently
+      experimental, and it may slow down loading of the application.
+    </p>
+    <p class="uk-margin-small">
+      <label
+        ><input v-model="galleryEnabled" class="uk-checkbox" type="checkbox" />
+        Enable Gallery</label
+      >
+    </p>
+    <p class="uk-margin-small">
+      The "gallery" tab can cause performance issues; un-tick the box above to
+      disable it.
+    </p>
   </div>
 </template>
 
@@ -34,18 +56,44 @@ export default {
       set(value) {
         this.$store.commit("changeIHIEnabled", value);
       }
+    },
+    imjoyEnabled: {
+      get() {
+        return this.$store.state.imjoyEnabled;
+      },
+      set(value) {
+        this.$store.commit("changeImjoyEnabled", value);
+      }
+    },
+    galleryEnabled: {
+      get() {
+        return this.$store.state.galleryEnabled;
+      },
+      set(value) {
+        this.$store.commit("changeGalleryEnabled", value);
+      }
     }
   },
 
   watch: {
     IHIEnabled: function() {
       this.setLocalStorageObj("IHIEnabled", this.IHIEnabled);
+    },
+    imjoyEnabled: function() {
+      this.setLocalStorageObj("imjoyEnabled", this.imjoyEnabled);
+    },
+    galleryEnabled: function() {
+      this.setLocalStorageObj("galleryEnabled", this.galleryEnabled);
     }
   },
 
   mounted() {
     // Try loading settings from localStorage. If null, don't change.
     this.IHIEnabled = this.getLocalStorageObj("IHIEnabled") || this.IHIEnabled;
+    this.imjoyEnabled =
+      this.getLocalStorageObj("imjoyEnabled") || this.imjoyEnabled;
+    this.galleryEnabled =
+      this.getLocalStorageObj("galleryEnabled") || this.galleryEnabled;
   }
 };
 </script>

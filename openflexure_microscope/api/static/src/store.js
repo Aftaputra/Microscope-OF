@@ -39,7 +39,7 @@ const moduleImjoy = {
     },
     /**
      * Set a parameter on the tab with a given id
-     * 
+     *
      * Payload should contain:
      *   tab: ID of the tab to modify (not window_id)
      *   key: name of the property to add/change
@@ -87,6 +87,8 @@ export default new Vuex.Store({
     autoGpuPreview: false,
     trackWindow: true,
     IHIEnabled: false,
+    imjoyEnabled: false,
+    galleryEnabled: true,
     appTheme: "system",
     activeStreams: {}
   },
@@ -112,6 +114,12 @@ export default new Vuex.Store({
     },
     changeIHIEnabled(state, enabled) {
       state.IHIEnabled = enabled;
+    },
+    changeImjoyEnabled(state, enabled) {
+      state.imjoyEnabled = enabled;
+    },
+    changeGalleryEnabled(state, enabled) {
+      state.galleryEnabled = enabled;
     },
     resetState(state) {
       state.waiting = false;
