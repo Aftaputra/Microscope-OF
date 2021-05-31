@@ -200,18 +200,16 @@ export default {
       });
       this.setupMicroscopeAPI();
       this.setupViewers();
-      // load the script editor for openflexure
-      await this.loadPlugin(
-        `${window.location.origin}/OpenFlexureScriptEditor.imjoy.html`
-      );
-      // Load the snap image template
-      await this.loadPlugin(
-        `${window.location.origin}/OpenFlexureSnapImageTemplate.imjoy.html`
-      );
-      // Load the move stage template
-      await this.loadPlugin(
-        `${window.location.origin}/OpenFlexureTestMoveStage.imjoy.html`
-      );
+      const origin = window.location.origin;
+      const localPlugins = [
+        "OpenFlexureSnapImageTemplate",
+        "OpenFlexureScriptEditor",
+        "OpenFlexureTestMoveStage",
+        "ListServices"
+      ];
+      for(let fname of localPlugins){
+        await this.loadPlugin(`${origin}/${fname}.imjoy.html`);
+      }
       this.setupPluginEngine();
     });
     this.imjoy = imjoy;
@@ -259,7 +257,7 @@ export default {
           }
         });
     },
-    setupMicroscopeAPI() {
+    async setupMicroscopeAPI() {
       // Here we register a set of API for controlling the microscope as a service
       // For interoperatability, it might be good to reuse a subset of the function names defined in MicroManager
       // See here: https://valelab4.ucsf.edu/~MM/doc/MMCore/html/class_c_m_m_core.html
@@ -275,7 +273,7 @@ export default {
       const service = {
         _rintf: true, // this will make sure the function can be called multiple times
         type: "#microscope-control",
-        name: "#openflexure",
+        name: "OpenFlexure",
         lastSnapResponse: null,
         snapPreviewImage() {
           // The "proper" capture method is more involved - this one pulls a frame out of the preview stream
@@ -376,8 +374,12 @@ export default {
           return runAutofocus();
         }
       };
-      this.imjoy.pm.registerService({ name: "#openflexure" }, service);
+      const ref = await this.imjoy.pm.registerService(
+        {type: "#microscope-control", name: "OpenFlexure"},
+        service
+      );
       console.log("registered service");
+      console.log(ref);
     },
     closeWindow(w) {
       if (w) {

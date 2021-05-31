@@ -41,6 +41,8 @@ class ImJoyPlugin {
     console.log(`Moved Z to ${await ofm.getPosition()}`);
     await ofm.setPosition(start[2]);
     console.log(`Moved Z to ${await ofm.getPosition()}`);
+    await ofm.fullFocus();
+    console.log("Ran a full autofocus");
     }
 }
 
