@@ -175,7 +175,7 @@ import loggingContent from "./tabContentComponents/loggingContent.vue";
 // ImJoy and the gallery are loaded asynchronously to allow them to be disabled if needed
 const galleryContent = () =>
   import(
-    /* webpackChunkName: "gallery") */ "./tabContentComponents/galleryContent.vue"
+    /* webpackChunkName: "gallery" */ "./tabContentComponents/galleryContent.vue"
   );
 const imjoyContent = () =>
   import(
