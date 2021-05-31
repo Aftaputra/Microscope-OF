@@ -8,13 +8,13 @@
       max="100"
     ></progress>
 
-    <div class="uk-child-width-1-3@m uk-grid-match" uk-grid>
+    <div class="uk-flex uk-flex-column uk-margin uk-margin-left uk-margin-right">
       <imjoy-plugin-card
-        name="New"
+        name="Load From URL"
         icon-u-r-l="https://imjoy.io/static/img/imjoy-icon.svg"
         @click="loadPluginDialog()"
       >
-        Load plugin from URL
+        <template v-slot:buttonText>Open</template>
       </imjoy-plugin-card>
       <imjoy-plugin-card
         name="ImageJ.JS"
