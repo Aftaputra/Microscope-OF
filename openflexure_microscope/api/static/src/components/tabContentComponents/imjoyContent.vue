@@ -8,7 +8,9 @@
       max="100"
     ></progress>
 
-    <div class="uk-flex uk-flex-column uk-margin uk-margin-left uk-margin-right">
+    <div
+      class="uk-flex uk-flex-column uk-margin uk-margin-left uk-margin-right"
+    >
       <imjoy-plugin-card
         name="Load From URL"
         icon-u-r-l="https://imjoy.io/static/img/imjoy-icon.svg"
@@ -207,7 +209,7 @@ export default {
         "OpenFlexureTestMoveStage",
         "ListServices"
       ];
-      for(let fname of localPlugins){
+      for (let fname of localPlugins) {
         await this.loadPlugin(`${origin}/${fname}.imjoy.html`);
       }
       this.setupPluginEngine();
@@ -354,9 +356,9 @@ export default {
         },
         async getExposure() {
           const settings = await getInstrumentSettings();
-          if(settings.camera.picamera){
-            if(settings.camera.picamera.shutter_speed){
-              return settings.camera.picamera.shutter_speed/1000;
+          if (settings.camera.picamera) {
+            if (settings.camera.picamera.shutter_speed) {
+              return settings.camera.picamera.shutter_speed / 1000;
             }
           }
           return -1;
@@ -370,12 +372,12 @@ export default {
             }
           });
         },
-        async fullFocus(){
+        async fullFocus() {
           return runAutofocus();
         }
       };
       const ref = await this.imjoy.pm.registerService(
-        {type: "#microscope-control", name: "OpenFlexure"},
+        { type: "#microscope-control", name: "OpenFlexure" },
         service
       );
       console.log("registered service");
@@ -592,7 +594,9 @@ export default {
       return axios.post(this.moveActionUri, payload).then(pollAction);
     },
     async getInstrumentSettings() {
-      return axios.get(`${this.baseUri}/api/v2/instrument/settings/`).then(r => r.data);
+      return axios
+        .get(`${this.baseUri}/api/v2/instrument/settings/`)
+        .then(r => r.data);
     },
     async setInstrumentSettings(payload) {
       return axios.put(`${this.baseUri}/api/v2/instrument/settings/`, payload);

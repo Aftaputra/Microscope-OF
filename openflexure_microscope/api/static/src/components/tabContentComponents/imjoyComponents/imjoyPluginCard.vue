@@ -18,11 +18,15 @@
           </i>
         </div>
         <div class="uk-width-expand">
-            <h3 class="uk-card-title uk-margin-remove-bottom">{{name}}</h3>
-            <p class="uk-text-meta uk-margin-remove-top"><time datetime="2016-04-01T19:00">April 01, 2016</time></p>
+          <h3 class="uk-card-title uk-margin-remove-bottom">{{ name }}</h3>
+          <p class="uk-text-meta uk-margin-remove-top">
+            <slot name="subtitle"></slot>
+          </p>
         </div>
         <div class="uk-width-auto">
-          <button class="uk-button" @click="$emit('click')"><slot name="buttonText">Launch</slot></button>
+          <button class="uk-button" @click="$emit('click')">
+            <slot name="buttonText">Launch</slot>
+          </button>
         </div>
       </div>
       <slot></slot>
