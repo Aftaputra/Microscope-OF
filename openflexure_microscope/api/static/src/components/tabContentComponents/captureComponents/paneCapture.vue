@@ -276,6 +276,9 @@ import keyvalList from "../../fieldComponents/keyvalList";
 import taskSubmitter from "../../genericComponents/taskSubmitter";
 import { syncDataWithLocalStorage } from "../../../syncDataWithLocalStorage";
 
+/**
+ * The capture settings that should persist in local storage are these ones
+ */
 function defaultCaptureSettings() {
   return {
     filename: "",
@@ -284,7 +287,6 @@ function defaultCaptureSettings() {
     storeBayer: false,
     resizeCapture: false,
     captureNotes: "",
-    scanCapture: false,
     scanDeltaZ: "Fast",
     scanStyle: "Raster",
     namingStyle: "Coordinates",
@@ -318,9 +320,10 @@ export default {
   },
 
   data: function() {
-    // I've split this out so I can use the keys elsewhere, and to allow
-    // for some data in the future that isn't in defaultCaptureSettings();
-    return defaultCaptureSettings();
+    return {
+      ...defaultCaptureSettings(),
+      scanCapture: false // Don't remember the "scan" tickbox in local storage.
+    };
   },
 
   computed: {
