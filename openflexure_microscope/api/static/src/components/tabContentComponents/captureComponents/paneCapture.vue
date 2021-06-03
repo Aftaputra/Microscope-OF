@@ -102,7 +102,7 @@
 
     <ul uk-accordion="multiple: true">
       <!--Show stack and scan if scan plugin is enabled-->
-      <li v-if="scanUri">
+      <li v-if="scanUri" :class="{ 'uk-open': scanCapture }">
         <a class="uk-accordion-title" href="#">Stack and Scan</a>
         <div class="uk-accordion-content">
           <div class="uk-margin">
