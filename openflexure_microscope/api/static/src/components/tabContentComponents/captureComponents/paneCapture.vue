@@ -273,8 +273,39 @@ import axios from "axios";
 
 import tagList from "../../fieldComponents/tagList";
 import keyvalList from "../../fieldComponents/keyvalList";
-
 import taskSubmitter from "../../genericComponents/taskSubmitter";
+import { syncDataWithLocalStorage } from "../../../syncDataWithLocalStorage";
+
+function defaultCaptureSettings() {
+  return {
+    filename: "",
+    temporary: false,
+    fullResolution: false,
+    storeBayer: false,
+    resizeCapture: false,
+    captureNotes: "",
+    scanCapture: false,
+    scanDeltaZ: "Fast",
+    scanStyle: "Raster",
+    namingStyle: "Coordinates",
+    scanStepSize: {
+      x: 800,
+      y: 640,
+      z: 50
+    },
+    scanSteps: {
+      x: 3,
+      y: 3,
+      z: 5
+    },
+    resizeDims: [640, 480],
+    tags: [],
+    annotations: {
+      Client: "openflexure-microscope-jsclient:builtin"
+    },
+    scanUri: null
+  };
+}
 
 // Export main app
 export default {
@@ -287,34 +318,9 @@ export default {
   },
 
   data: function() {
-    return {
-      filename: "",
-      temporary: false,
-      fullResolution: false,
-      storeBayer: false,
-      resizeCapture: false,
-      captureNotes: "",
-      scanCapture: false,
-      scanDeltaZ: "Fast",
-      scanStyle: "Raster",
-      namingStyle: "Coordinates",
-      scanStepSize: {
-        x: 800,
-        y: 640,
-        z: 50
-      },
-      scanSteps: {
-        x: 3,
-        y: 3,
-        z: 5
-      },
-      resizeDims: [640, 480],
-      tags: [],
-      annotations: {
-        Client: "openflexure-microscope-jsclient:builtin"
-      },
-      scanUri: null
-    };
+    // I've split this out so I can use the keys elsewhere, and to allow
+    // for some data in the future that isn't in defaultCaptureSettings();
+    return defaultCaptureSettings();
   },
 
   computed: {
@@ -393,6 +399,9 @@ export default {
 
   mounted() {
     this.updateScanUri();
+    // Load settings if they have been saved, and set up watchers to sync with local storage
+    syncDataWithLocalStorage("captureSettings", this, defaultCaptureSettings());
+
     // A global signal listener to perform a capture action
     this.$root.$on("globalCaptureEvent", () => {
       this.handleCapture();
