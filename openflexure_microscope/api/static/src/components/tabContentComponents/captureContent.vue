@@ -15,7 +15,7 @@ import paneCapture from "./captureComponents/paneCapture";
 import streamDisplay from "./streamContent.vue";
 
 export default {
-  name: "NavigateContent",
+  name: "CaptureContent",
 
   components: {
     paneCapture,
