@@ -312,21 +312,9 @@ export default {
       return this.tabOrder.indexOf(this.currentTab);
     },
 
-    imjoyEnabled: function() {
-      // Enable the ImJoy tab (and associated code) only if it is
-      // enabled client-side, and at build time.
-      // This means that the medical version of the microscope can
-      // disable the plugin architecture by setting the environment
-      // variable VUE_APP_ENABLE_IMJOY=false
-      if (process.env.VUE_APP_ENABLE_IMJOY === "true") {
-        return this.$store.state.imjoyEnabled;
-      } else {
-        return false;
-      }
-    },
-
     // Map the tabs from ImJoy's store module so we can display them
-    ...mapState("imjoy", { imjoyTabs: "tabs" })
+    ...mapState("imjoy", { imjoyTabs: "tabs" }),
+    ...mapState({ imjoyEnabled: "imjoyEnabled" })
   },
 
   created: function() {
