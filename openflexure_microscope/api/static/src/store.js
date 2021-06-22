@@ -116,7 +116,15 @@ export default new Vuex.Store({
       state.IHIEnabled = enabled;
     },
     changeImjoyEnabled(state, enabled) {
-      state.imjoyEnabled = enabled;
+      if (process.env.VUE_APP_ENABLE_IMJOY === "true") {
+        state.imjoyEnabled = enabled;
+      } else {
+        state.imjoyEnabled = false;
+        if (enabled)
+          console.warn(
+            "Attempted to enable ImJoy, but it's disabled by VUE_APP_ENABLE_IMJOY."
+          );
+      }
     },
     changeGalleryEnabled(state, enabled) {
       state.galleryEnabled = enabled;
