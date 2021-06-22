@@ -3,7 +3,7 @@
     <div class="uk-grid uk-grid-divider uk-child-width-expand" uk-grid>
       <div class="uk-width-large">
         <h3>Manual camera settings</h3>
-        <form @submit.prevent="applySettingsRequest" >
+        <form @submit.prevent="applySettingsRequest">
           <div class="uk-margin-small-bottom">
             <ul uk-accordion="multiple: true">
               <li class="uk-open">
@@ -51,18 +51,18 @@
                   </div>
 
                   <div v-if="picamera.awb_gains !== undefined">
-                    <label class="uk-form-label" for="form-stacked-text" >
+                    <label class="uk-form-label" for="form-stacked-text">
                       White Balance gains
                     </label>
                     <div class="uk-form-controls">
-                      <label class="uk-form-label" >R:</label>
+                      <label class="uk-form-label">R:</label>
                       <input
                         v-model="picamera.awb_gains[0]"
                         class="uk-input uk-form-small"
                         type="number"
                         step="0.0000000000000001"
                       />
-                      <label class="uk-form-label" >B:</label>
+                      <label class="uk-form-label">B:</label>
                       <input
                         v-model="picamera.awb_gains[1]"
                         class="uk-input uk-form-small"
@@ -290,8 +290,8 @@ export default {
             framerate: parseInt(this.picamera.framerate),
             awb_gains: [
               parseFloat(this.picamera.awb_gains[0]),
-              parseFloat(this.picamera.awb_gains[1]),
-            ],
+              parseFloat(this.picamera.awb_gains[1])
+            ]
           }
         }
       };

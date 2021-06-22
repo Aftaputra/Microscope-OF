@@ -102,7 +102,7 @@
 
     <ul uk-accordion="multiple: true">
       <!--Show stack and scan if scan plugin is enabled-->
-      <li v-if="scanUri">
+      <li v-if="scanUri" :class="{ 'uk-open': scanCapture }">
         <a class="uk-accordion-title" href="#">Stack and Scan</a>
         <div class="uk-accordion-content">
           <div class="uk-margin">
@@ -273,8 +273,41 @@ import axios from "axios";
 
 import tagList from "../../fieldComponents/tagList";
 import keyvalList from "../../fieldComponents/keyvalList";
-
 import taskSubmitter from "../../genericComponents/taskSubmitter";
+import { syncDataWithLocalStorage } from "../../../syncDataWithLocalStorage";
+
+/**
+ * The capture settings that should persist in local storage are these ones
+ */
+function defaultCaptureSettings() {
+  return {
+    filename: "",
+    temporary: false,
+    fullResolution: false,
+    storeBayer: false,
+    resizeCapture: false,
+    captureNotes: "",
+    scanDeltaZ: "Fast",
+    scanStyle: "Raster",
+    namingStyle: "Coordinates",
+    scanStepSize: {
+      x: 800,
+      y: 640,
+      z: 50
+    },
+    scanSteps: {
+      x: 3,
+      y: 3,
+      z: 5
+    },
+    resizeDims: [640, 480],
+    tags: [],
+    annotations: {
+      Client: "openflexure-microscope-jsclient:builtin"
+    },
+    scanUri: null
+  };
+}
 
 // Export main app
 export default {
@@ -288,32 +321,8 @@ export default {
 
   data: function() {
     return {
-      filename: "",
-      temporary: false,
-      fullResolution: false,
-      storeBayer: false,
-      resizeCapture: false,
-      captureNotes: "",
-      scanCapture: false,
-      scanDeltaZ: "Fast",
-      scanStyle: "Raster",
-      namingStyle: "Coordinates",
-      scanStepSize: {
-        x: 800,
-        y: 640,
-        z: 50
-      },
-      scanSteps: {
-        x: 3,
-        y: 3,
-        z: 5
-      },
-      resizeDims: [640, 480],
-      tags: [],
-      annotations: {
-        Client: "openflexure-microscope-jsclient:builtin"
-      },
-      scanUri: null
+      ...defaultCaptureSettings(),
+      scanCapture: false // Don't remember the "scan" tickbox in local storage.
     };
   },
 
@@ -393,6 +402,9 @@ export default {
 
   mounted() {
     this.updateScanUri();
+    // Load settings if they have been saved, and set up watchers to sync with local storage
+    syncDataWithLocalStorage("captureSettings", this, defaultCaptureSettings());
+
     // A global signal listener to perform a capture action
     this.$root.$on("globalCaptureEvent", () => {
       this.handleCapture();
