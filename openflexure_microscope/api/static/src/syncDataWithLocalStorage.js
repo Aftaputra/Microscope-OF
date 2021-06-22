@@ -21,7 +21,6 @@ export function syncDataWithLocalStorage(keyName, syncedObject, syncedData) {
   }
 
   // This function will update local storage with current values
-  //const context = this;
   let updateStoredValues = function() {
     let newData = {};
     for (const item of syncedKeys) {
