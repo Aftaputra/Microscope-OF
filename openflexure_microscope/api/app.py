@@ -153,6 +153,8 @@ labthing.add_view(
     views.NestedConfigurationProperty, "/instrument/configuration/<path:route>"
 )
 labthing.add_root_link(views.ConfigurationProperty, "instrumentConfiguration")
+labthing.add_view(views.APISpecJSONView, "/docs/swagger.json")
+labthing.add_view(views.APISpecYAMLView, "/docs/swagger.yaml")
 
 # Attach stage resources
 labthing.add_view(views.StageTypeProperty, "/instrument/stage/type")

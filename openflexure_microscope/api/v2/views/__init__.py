@@ -4,3 +4,4 @@ from .captures import *
 from .instrument import *
 from .stage import *
 from .streams import *
+from .docs import *
