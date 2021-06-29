@@ -95,21 +95,12 @@ export default {
     // Cache the stream settings to local storage for persistence
     // (the next 3 functions all relate to this)
     disableStream: function(newValue) {
-      console.log(
-        `disableStream updated to ${newValue} and saved in local storage`
-      );
       this.setLocalStorageObj("disableStream", newValue);
     },
     autoGpuPreview: function(newValue) {
-      console.log(
-        `GPU preview updated to ${newValue} and saved in local storage`
-      );
       this.setLocalStorageObj("autoGpuPreview", newValue);
     },
     trackWindow: function(newValue) {
-      console.log(
-        `trackWindow updated to ${newValue} and saved in local storage`
-      );
       this.setLocalStorageObj("trackWindow", newValue);
     }
   },

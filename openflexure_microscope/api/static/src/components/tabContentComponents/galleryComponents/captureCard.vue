@@ -44,6 +44,26 @@
     </div>
 
     <div class="uk-card-footer uk-padding-small">
+      <button
+        v-if="openInImjoyMenuItems.length != 0"
+        class="uk-icon"
+        type="button"
+      >
+        <img
+          style="width:25px;"
+          src="https://imjoy.io/static/img/imjoy-icon.svg"
+        />
+      </button>
+      <div uk-dropdown="pos: top-center">
+        <ul class="uk-nav uk-dropdown-nav">
+          <li v-for="item in openInImjoyMenuItems" :key="item.name">
+            <a href="#" @click="item.callback(name, imgURL)"
+              ><i class="material-icons">launch</i>{{ item.title }}</a
+            >
+          </li>
+        </ul>
+      </div>
+      &nbsp;
       <div v-for="tag in tags" :key="tag" class="uk-display-inline">
         <span
           v-if="tag === 'temporary'"
@@ -147,6 +167,7 @@
 <script>
 import UIkit from "uikit";
 import axios from "axios";
+import { mapState } from "vuex";
 
 import keyvalList from "../../fieldComponents/keyvalList";
 
@@ -233,7 +254,8 @@ export default {
     },
     captureURL: function() {
       return this.links.self.href;
-    }
+    },
+    ...mapState("imjoy", { openInImjoyMenuItems: "openImageMenu" })
   },
 
   created: function() {},

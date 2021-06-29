@@ -40,6 +40,29 @@
     </div>
 
     <div class="uk-card-footer uk-padding-small">
+      <button
+        v-if="openInImjoyMenuItems.length != 0"
+        class="uk-icon"
+        type="button"
+      >
+        <img
+          style="width:25px;"
+          src="https://imjoy.io/static/img/imjoy-icon.svg"
+        />
+      </button>
+      <div uk-dropdown="pos: top-center">
+        <ul class="uk-nav uk-dropdown-nav">
+          <li v-for="item in openInImjoyMenuItems" :key="item.name">
+            <a
+              href="#"
+              style="color:black"
+              @click="item.callback(name, allURLs)"
+              ><i class="material-icons">launch</i>{{ item.title }}</a
+            >
+          </li>
+        </ul>
+      </div>
+      &nbsp;
       <span
         v-for="tag in tags"
         :key="tag"
@@ -53,6 +76,7 @@
 
 <script>
 import axios from "axios";
+import { mapState } from "vuex";
 
 // Export main app
 export default {
@@ -100,7 +124,8 @@ export default {
         urls.push(capture.links.self.href);
       }
       return urls;
-    }
+    },
+    ...mapState("imjoy", { openInImjoyMenuItems: "openScanMenu" })
   },
 
   methods: {

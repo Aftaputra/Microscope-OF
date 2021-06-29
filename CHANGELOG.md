@@ -1,3 +1,7 @@
+# Unreleased
+* Added support for ImJoy
+* Added a setting to disable the gallery
+
 # [v2.10.0b0](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.9.3...v2.10.0b0) (2021-05-18)
 
 ## New features

@@ -28,7 +28,14 @@
             :class="item.class"
             @set-tab="setTab"
           >
-            <i class="material-icons">{{ item.icon }}</i>
+            <img
+              v-if="item.iconURL"
+              style="filter: grayscale(100%);width: 22px;margin-top: 5px;margin-bottom: 8px;"
+              :src="item.iconURL"
+            />
+            <i v-if="!item.iconURL" class="material-icons">
+              {{ item.icon }}
+            </i>
           </tabIcon>
           <!-- Add a divider if item.divide is true -->
           <hr v-if="item.divide" :key="'tab-divider-' + index" />
@@ -46,6 +53,25 @@
           @set-tab="setTab"
         >
           <i class="material-icons">{{ plugin.icon || "extension" }}</i>
+        </tabIcon>
+
+        <tabIcon
+          v-for="imjoyTab in imjoyTabs"
+          :key="imjoyTab.id"
+          :tab-i-d="'ImJoy-Plugin-' + imjoyTab.id"
+          :title="imjoyTab.name"
+          :require-connection="false"
+          :current-tab="currentTab"
+          @set-tab="setTab"
+        >
+          <img
+            v-if="imjoyTab.iconURL"
+            style="filter: grayscale(100%);width: 22px;margin-top: 5px;margin-bottom: 8px;"
+            :src="imjoyTab.iconURL"
+          />
+          <i v-if="!imjoyTab.iconURL" class="material-icons">
+            {{ imjoyTab.iconName || "extension" }}
+          </i>
         </tabIcon>
 
         <hr id="extension-tab-divider" />
@@ -104,6 +130,16 @@
         />
       </tabContent>
 
+      <tabContent
+        v-for="imjoyTab in imjoyTabs"
+        :key="imjoyTab.id"
+        :tab-i-d="'ImJoy-Plugin-' + imjoyTab.id"
+        :require-connection="false"
+        :current-tab="currentTab"
+      >
+        <div :id="imjoyTab.window_id" class="window-container">Loading...</div>
+      </tabContent>
+
       <!-- For each bottom tab -->
       <tabContent
         v-for="item in bottomTabs"
@@ -121,6 +157,7 @@
 
 <script>
 import axios from "axios";
+import { mapState } from "vuex";
 
 // Import generic components
 import tabIcon from "./genericComponents/tabIcon";
@@ -132,15 +169,22 @@ import captureContent from "./tabContentComponents/captureContent.vue";
 import slideScanContent from "./tabContentComponents/slideScanContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
 import settingsContent from "./tabContentComponents/settingsContent.vue";
-import galleryContent from "./tabContentComponents/galleryContent.vue";
 import extensionContent from "./tabContentComponents/extensionContent.vue";
 import aboutContent from "./tabContentComponents/aboutContent.vue";
 import loggingContent from "./tabContentComponents/loggingContent.vue";
+// ImJoy and the gallery are loaded asynchronously to allow them to be disabled if needed
+const galleryContent = () =>
+  import(
+    /* webpackChunkName: "gallery" */ "./tabContentComponents/galleryContent.vue"
+  );
+const imjoyContent = () =>
+  import(
+    /* webpackChunkName: "imjoy" */ "./tabContentComponents/imjoyContent.vue"
+  );
 
 // Import modal components for device initialisation
 import calibrationModal from "./modalComponents/calibrationModal.vue";
-
-import { mapState } from "vuex";
+import TabIcon from "./genericComponents/tabIcon.vue";
 
 // Export main app
 export default {
@@ -158,38 +202,14 @@ export default {
     extensionContent,
     calibrationModal,
     aboutContent,
-    loggingContent
+    loggingContent,
+    TabIcon,
+    imjoyContent
   },
-
   data: function() {
     return {
       plugins: [],
       currentTab: "view",
-      unwatchStoreFunction: null,
-      topTabs: [
-        {
-          id: "view",
-          icon: "visibility",
-          component: viewContent
-        },
-        {
-          id: "gallery",
-          icon: "photo_library",
-          component: galleryContent,
-          divide: true // Add a divider after this tab icon
-        },
-        {
-          id: "navigate",
-          icon: "gamepad",
-          component: navigateContent
-        },
-        {
-          id: "capture",
-          icon: "camera_alt",
-          component: captureContent,
-          divide: true // Add a divider after this tab icon
-        }
-      ],
       bottomTabs: [
         {
           id: "settings",
@@ -241,25 +261,64 @@ export default {
       return ind;
     },
 
+    topTabs: function() {
+      let tabs = [
+        {
+          id: "view",
+          icon: "visibility",
+          component: viewContent
+        },
+        {
+          id: "gallery",
+          icon: "photo_library",
+          component: galleryContent,
+          divide: true // Add a divider after this tab icon
+        },
+        {
+          id: "navigate",
+          icon: "gamepad",
+          component: navigateContent
+        },
+        {
+          id: "capture",
+          icon: "camera_alt",
+          component: captureContent,
+          divide: true // Add a divider after this tab icon
+        }
+      ];
+      if (!this.$store.state.galleryEnabled) {
+        tabs = tabs.filter(tab => tab.id != "gallery");
+      }
+      if (this.$store.state.IHIEnabled) {
+        tabs.push({
+          id: "slidescan",
+          icon: "settings_overscan",
+          component: slideScanContent,
+          divide: true
+        });
+      }
+      if (this.$store.state.imjoyEnabled) {
+        tabs.push({
+          id: "imjoy",
+          iconURL: "https://imjoy.io/static/img/imjoy-icon.svg",
+          component: imjoyContent,
+          divide: true
+        });
+      }
+      return tabs;
+    },
+
     currentTabIndex: function() {
       return this.tabOrder.indexOf(this.currentTab);
     },
 
-    // Map the setting for IHI's interface so we can watch it
-    ...mapState(["IHIEnabled"])
-  },
-
-  watch: {
-    // Update the interface when the IHI interface is enabled/disabled
-    IHIEnabled: function(newValue) {
-      this.updateTopTabs(newValue);
-    }
+    // Map the tabs from ImJoy's store module so we can display them
+    ...mapState("imjoy", { imjoyTabs: "tabs" }),
+    ...mapState({ imjoyEnabled: "imjoyEnabled" })
   },
 
   created: function() {
     if (this.$store.getters.ready) {
-      // Update top tabs
-      this.updateTopTabs(this.$store.state.IHIEnabled);
       // Update plugins
       this.updatePlugins().then(() => {
         // Start initialisation modals
@@ -284,19 +343,6 @@ export default {
   },
 
   methods: {
-    updateTopTabs: function(IHIEnabled) {
-      if (IHIEnabled) {
-        this.topTabs.push({
-          id: "slidescan",
-          icon: "settings_overscan",
-          component: slideScanContent,
-          divide: true
-        });
-      } else {
-        // If the connection is now disconnected, empty capture list
-        this.topTabs = this.topTabs.filter(tab => tab.id != "slidescan");
-      }
-    },
     updatePlugins: function() {
       return axios
         .get(this.pluginsUri)
@@ -331,6 +377,10 @@ export default {
 </script>
 
 <style scoped lang="less">
+.window-container {
+  width: 100%;
+  height: 100%;
+}
 #component-left {
   width: 100%;
   height: 100%;
