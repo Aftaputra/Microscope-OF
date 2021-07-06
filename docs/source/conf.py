@@ -15,12 +15,15 @@
 import os
 import sys
 
-# Load module from relative imports
+# Load module from relative imports by modifying the path
 
 module_path = os.path.abspath("../..")
 sys.path.insert(0, module_path)
 
 # Handle mock imports for non-platform-agnostic modules
+# This allows modules to load that depend on hardware that's not present, e.g.
+# the `picamera` related modules.  They won't *work* but if they load, we can
+# extract the docstrings, which is what we care about here.
 
 from unittest.mock import MagicMock
 
@@ -41,6 +44,7 @@ project = "OpenFlexure Microscope Software"
 copyright = "2018, Bath Open Instrumentation Group"  # pylint: disable=redefined-builtin
 author = "Bath Open Instrumentation Group"
 
+#TODO: extract version from ../setup.py
 # The short X.Y version
 version = ""
 # The full version, including alpha/beta/rc tags
@@ -64,9 +68,11 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "sphinx.ext.ifconfig",
-    "sphinxcontrib.httpdomain",
-    "sphinxcontrib.autohttp.flask",
-    "sphinxcontrib.autohttp.flaskqref",
+    #"sphinxcontrib.httpdomain",
+    #"sphinxcontrib.autohttp.flask",
+    #"sphinxcontrib.autohttp.flaskqref",
+    "sphinxcontrib.openapi",
+    "sphinxcontrib.redoc"
 ]
 
 # Override ordering
@@ -222,6 +228,7 @@ epub_exclude_files = ["search.html"]
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
+#TODO: update with pysangaboard?
 intersphinx_mapping = {
     "openflexure_stage": ("https://openflexure-stage.readthedocs.io/en/latest/", None),
     "picamerax": ("https://picamerax.readthedocs.io/en/latest//", None),
@@ -233,3 +240,13 @@ intersphinx_mapping = {
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+# -- Options for redoc extension ---------------------------------------------
+redoc = [
+    {
+        'name': 'OpenFlexure Microscope HTTP API',
+        'page': 'api_redoc',
+        'spec': '../build/swagger.yaml',
+        'embed': True,
+    }
+]

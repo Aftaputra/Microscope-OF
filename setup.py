@@ -67,7 +67,9 @@ setup(
     # them to specific versions to enable consistent builds and testing.
     extras_require={
         "dev": [
-            "sphinxcontrib-httpdomain ~= 1.7",
+            "sphinx < 4.0", # Currently httpdomain isn't ready for 4.0
+            "sphinxcontrib-openapi ~= 0.7",
+            "sphinx_rtd_theme ~=0.5.2",
             "rope ~= 0.14.0",
             "pylint ~= 2.3",
             "pytest ~= 6.1.2",
@@ -87,6 +89,7 @@ setup(
         "console_scripts": [
             "ofm-serve=openflexure_microscope.api.app:ofm_serve",
             "ofm-rescue=openflexure_microscope.rescue.auto:main",
+            "ofm-generate-openapi=openflexure_microscope.api.app:generate_openapi"
         ]
     },
     project_urls={

@@ -16,9 +16,9 @@ help:
 openapi: $(BUILDDIR)/swagger.yaml
 
 $(BUILDDIR)/swagger.yaml: Makefile
-	curl http://localhost:5000/api/v2/docs/swagger.yaml > $@
+	ofm-generate-openapi -o $@
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%: Makefile
+html dirhtml singlehtml json htmlhelp epub latex latexpdf text changes xml linkcheck doctest coverage clean: openapi Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
