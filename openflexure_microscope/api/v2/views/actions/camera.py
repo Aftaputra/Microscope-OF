@@ -66,12 +66,15 @@ class CaptureAPI(ActionView):
 
 
 class RAMCaptureAPI(ActionView):
-    """
-    Take a non-persistant image capture.
-    """
+    """Take a non-persistent image capture."""
 
     args = BasicCaptureArgs()
-    responses = {200: {"content_type": "image/jpeg"}}
+    responses = {
+        200: {
+            "content_type": "image/jpeg",
+            "description": "A JPEG image, representing the capture"
+        }
+    }
 
     def post(self, args):
         """
