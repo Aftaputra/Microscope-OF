@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import argparse
 import atexit
 import logging
 import logging.handlers
@@ -242,6 +243,27 @@ def ofm_serve():
     logging.info("Starting OpenFlexure Microscope Server...")
     server: Server = Server(app)
     server.run(host="0.0.0.0", port=5000, debug=debug_app, zeroconf=True)
+
+def generate_openapi():
+    parser = argparse.ArgumentParser("Generate an OpenAPI specification document")
+    parser.add_argument(
+        '-o', 
+        dest='output', 
+        default="openapi.yaml",
+        help=(
+            'Specify the output filename.  If it ends in .json, we output JSON.'
+            'Use .yml or .yaml for YAML (which is the default'
+        )
+    )
+    args = parser.parse_args()
+    fname = args.output
+    if fname.endswith(".json"):
+        import json
+        with open(fname, 'w') as fd:
+            json.dump(labthing.spec.to_dict(), fd)
+    else:
+        with open(fname, 'w') as fd:
+            fd.write(labthing.spec.to_yaml())
 
 
 # Start the app if the module is run directly
