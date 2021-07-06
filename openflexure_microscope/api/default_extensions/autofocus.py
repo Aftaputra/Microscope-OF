@@ -1,3 +1,4 @@
+import inspect
 import logging
 import time
 from contextlib import contextmanager
@@ -14,6 +15,7 @@ from openflexure_microscope.devel import abort
 from openflexure_microscope.microscope import Microscope
 from openflexure_microscope.stage.base import BaseStage
 from openflexure_microscope.utilities import set_properties
+from labthings.utilities import get_docstring, get_summary
 
 ### Autofocus utilities
 
@@ -144,6 +146,117 @@ def sharpness_edge(image: np.ndarray) -> float:
     )
 
 
+def find_microscope() -> dict:
+    """Find the microscope component or raise an exception.
+    
+    This function will fail with HTTPError extensions if it can't 
+    find the appropriate hardware.
+
+    It is returned as a dictionary with one key, "microscope".
+    This means it can be easily merged into an arguments dictionary.
+    """
+    microscope = find_component("org.openflexure.microscope")
+
+    if not microscope:
+        abort(503, "No microscope connected. Unable to autofocus.")
+
+    return {"microscope": microscope}
+
+def find_microscope_with_real_stage() -> dict:
+    """Find the microscope and ensure it has a real stage.
+    
+    This function wraps `find_microscope()` and additionally asserts
+    that there is a real stage, raising a `503` code if not.
+    """
+    args = find_microscope()
+
+    if not args["microscope"].has_real_stage():
+        abort(503, "No stage connected. Unable to autofocus.")
+
+    return args
+
+
+def extension_action(args=None, extra_args_functions=None):
+    """A decorator to auto-create an Action endpoint for a method
+    
+    Use this decorator on any method of an extension (`BaseExtension` subclass)
+    and it will automatically be added to the API.  At present it is deliberately
+    basic, and the plan is to expand the options in the future.
+    
+    Currently, you may specify `args` (which is a Marshmallow-format schema
+    or dictionary, determining the datatype of the arguments, which will be
+    taken from the JSON payload of the POST request initiating the action).
+    
+    It is also possible to specify a list of functions, which will be executed
+    in order, and their results will be added to the arguments.  This allows,
+    for example, hardware components to be injected into the arguments.  This
+    feature is experimental and should not be relied upon.
+    
+    The parsed arguments dictionary is expanded as the function arguments,
+    i.e. we call `decorated_method(self, **kwargs).  This means that any
+    unused arguments will cause an error, which is probably good practice...
+
+    NB this decorator does **not** replace the function with a `View` or 
+    register it with the parent `Extension`.  It adds the created `View` as 
+    a property of the function, `flask_view`.  The parent `Extension` is
+    responsible for collating and adding the views in its `__init__` method.
+    """
+    supplied_args = args
+    def decorator(func):
+        class_docstring = f"""Manage actions for {func.__name__}.
+        
+        This `View` class will return a list of `Action` objects representing
+        each time {func.__name__} has been run in response to a `GET` request,
+        and will start a new `Action` in response to a `POST` request.
+        """
+        class ActionViewWrapper(ActionView):
+            __doc__ = class_docstring
+            args = supplied_args
+
+            def post(self, args):
+                # Inject arguments, if functions are supplied (TODO: I don't love this...)
+                if extra_args_functions:
+                    for f in extra_args_functions:
+                        args.update(f())
+                # Run the action
+                return func(**args)
+
+            def get(self, *args, **kwargs):
+                # Explicitly wrap the `get` method to allow us to add a docstring
+                return super().get(*args, **kwargs)
+
+        # Create a nice docstring.  NB because the source function and this docstring
+        # aren't guaranteed to have the same leading whitespace, we just make sure
+        # both docstrings are stripped of leading indent, using `inspect.cleandoc()`
+        ActionViewWrapper.post.description = (
+            get_docstring(func, remove_newlines=False) + 
+            "\n\n" +
+            inspect.cleandoc(
+                """
+                This `POST` request starts an Action, i.e. the hardware will do something
+                that may continue after the HTTP request has been responded to.  The 
+                response will always be an Action object, that details the current 
+                status of the action and provides an interface to poll for completion.
+                
+                If the action completes within a specified timeout, we will return
+                an HTTP status code of `200` and the return value will include any
+                output from the action.  If it does not complete, we will return a
+                `201` response code, and the action's endpoint may be polled to follow
+                its progress.
+                """
+            )
+        )
+        ActionViewWrapper.post.summary = get_summary(func)
+        ActionViewWrapper.post.__doc__ = ActionViewWrapper.post.description
+        ActionViewWrapper.__name__ = func.__name__
+        ActionViewWrapper.get.summary = f"List running and completed `{func.__name__}` actions."
+
+        func.flask_view = ActionViewWrapper
+        return func
+    return decorator
+
+
+
 ### Autofocus extension
 
 
@@ -157,21 +270,30 @@ class AutofocusExtension(BaseExtension):
         self.add_view(
             MeasureSharpnessAPI, "/measure_sharpness", endpoint="measure_sharpness"
         )
-        self.add_view(AutofocusAPI, "/autofocus", endpoint="autofocus")
-        self.add_view(FastAutofocusAPI, "/fast_autofocus", endpoint="fast_autofocus")
-        self.add_view(
-            UpDownUpAutofocusAPI, "/updownup_autofocus", endpoint="updownup_autofocus"
-        )
+        self.add_decorated_method_views()
 
-        self.add_view(
-            MoveAndMeasureAPI, "/move_and_measure", endpoint="move_and_measure"
-        )
+    def add_decorated_method_views(self):
+        """Add views from any methods that have been decorated
+        
+        Using the decorators `@extension_action()` et al will add a
+        property to the decorated method, `method_view`.  If this is
+        present, this function will add the views to the extension.
+        """
+        for k in dir(self):
+            obj = getattr(self, k)
+            if hasattr(obj, "flask_view"):
+                name = obj.__name__
+                self.add_view(obj.flask_view, f"/{name}", name)
 
     def measure_sharpness(
         self, microscope: Microscope, metric_fn: Callable = sharpness_sum_lap2
     ) -> float:
-        """Measure the sharpness of the camera's current view."""
-
+        """Measure the sharpness from the MJPEG stream
+        
+        Take a JPEG snapshot from the camera (extracted from the live preview stream)
+        and return its size.  This is the sharpness metric used by the fast autofocus
+        method.
+        """
         if hasattr(microscope.camera, "array") and callable(
             getattr(microscope.camera, "array")
         ):
@@ -179,14 +301,19 @@ class AutofocusExtension(BaseExtension):
         else:
             raise RuntimeError(f"Object {microscope.camera} has no method `array`")
 
+    @extension_action(
+        args = {"dz": fields.List(fields.Int())},
+        extra_args_functions = [find_microscope_with_real_stage],
+    )
     def autofocus(
         self,
         microscope: Microscope,
-        dz: List[int],
+        dz: Optional[List[int]] = None,
         settle: float = 0.5,
         metric_fn: Callable = sharpness_sum_lap2,
     ) -> Tuple[List[int], List[float]]:
         """Perform a simple autofocus routine.
+
         The stage is moved to z positions (relative to current position) in dz,
         and at each position an image is captured and the sharpness function 
         evaulated.  We then move back to the position where the sharpness was
@@ -195,6 +322,8 @@ class AutofocusExtension(BaseExtension):
         """
         camera: BaseCamera = microscope.camera
         stage: BaseStage = microscope.stage
+        if not dz:
+            dz = np.linspace(-300, 300, 7)
 
         with set_properties(stage, backlash=256), stage.lock, camera.lock:
             sharpnesses: List[float] = []
@@ -221,20 +350,96 @@ class AutofocusExtension(BaseExtension):
         with monitor_sharpness(microscope) as m:
             m.focus_rel(dz)
             return m.sharpest_z_on_move(0)
-
+    
+    @extension_action(
+        args={"dz": fields.Int(required=True)},
+        extra_args_functions=[find_microscope_with_real_stage],
+    )
     def move_and_measure(
         self, microscope: Microscope, dz: int
     ) -> Dict[str, np.ndarray]:
-        """Make a relative Z move and return the sharpness data"""
+        """Make a relative move in Z and measure dynamic sharpness
+
+        This accesses the underlying method used by the fast autofocus routines, to
+        move the stage while monitoring the sharpness, as reported by the size of
+        each JPEG frame in the preview stream.  It returns a dictionary with
+        stage position vs time and image size (i.e. sharpness) vs time.
+        """
         with monitor_sharpness(microscope) as m:
             m.focus_rel(dz)
             return m.data_dict()
 
+    @extension_action(
+        args={"dz": fields.Int(missing=2000, example=2000)},
+        extra_args_functions=[find_microscope_with_real_stage],
+    )
     def fast_autofocus(
         self, microscope: Microscope, dz: int = 2000
     ) -> Dict[str, np.ndarray]:
-        """Perform a down-up-down-up autofocus"""
-        with microscope.camera.lock, microscope.stage.lock:
+        """Perform a fast down-up-down-up autofocus
+        
+        This "fast" autofocus method moves the stage continuously in Z, while
+        following the sharpness using the MJPEG stream.  This version is the
+        simplest "fast" autofocus method, and performs the following sequence 
+        of moves:
+
+        1. Move to `-dz/2`, i.e. the bottom of the range
+        2. Move up by `dz`, i.e. to the top of the range, while recording the
+           sharpness of the image as a function of time.  Record the estimated
+           position of the stage when the sharpness was maximised, `fz`.
+        3. Move back to the bottom (by `-dz`)
+        4. Move up to the position where it was sharpest.
+
+        ## Backlash correction
+        This routine should cancel out backlash: the stage is moving upwards as
+        we record the sharpnes vs z data, and it is also moving upwards when
+        we make the final move to the sharpest point.  Mechanical backlash should
+        therefore be the same in both cases.
+
+        This does not account for lag between the sharpness measurements and the
+        stage's motion; that has been tested for and seems not to be a big issue
+        most of the time, but may need to be accounted for in the future, if
+        hardware or software changes increase the latency.
+
+        ## Sharpness metric
+        This method uses the MJPEG preview stream to estimate the sharpness of
+        the image.  MJPEG streams consist of a series of independent JPEG images,
+        so each frame can be looked at in isolation (though see later for an 
+        important caveat).  JPEG images are compressed lossily, by taking the 
+        discrete cosine transform (DCT) of each 8x8 block in the image.  A very
+        rough precis of how this works is that after the DCT, cosine components 
+        that are deemed unimportant (i.e. smaller than a threshold) are discarded.
+        The effect is that images with lots of high-frequency information have a
+        larger file size.
+
+        We look only at the size of each JPEG frame in the stream, so we get a
+        remarkably robust estimate of image sharpness without even opening the 
+        images!  That's what lets us analyse 30 images/second even on the very
+        limited processing power available to the Raspberry Pi 3.
+
+        > *Warning*
+        > We assume that JPEG frames are independent.  This is only true if the
+        > MJPEG stream is encoded at *constant quality* without any additional
+        > bit rate control.  By default, many streams will reduce the quality
+        > factor if they exceed a target bit rate, which badly affects this
+        > method.  We turn off bit rate limiting for the Raspberry Pi camera,
+        > which fixes the problem, at the expense of sometimes failing if
+        > particularly sharp images appear in the stream, as there is a fairly
+        > small maximum size for each JPEG frame beyond which empty images are 
+        > returned.
+
+        ## Estimation of sharpness vs z
+        What we record during an autofocus is two time series, from two parallel
+        threads.  One thread monitors the camera, and records the size of each
+        JPEG frame as a function of time.  NB this is time from `time.time()`
+        in Python, so will not be microsecond-accurate.  The other thread is
+        responsible for moving the stage, and records its current Z position 
+        before and after each move.  Interpolating between these `(t, z)` points
+        gives us a `z` value for each JPEG size, and so we can estimate the 
+        JPEG size as a function of `z` and hence determine the `z` value at 
+        which sharpness is maximised.
+        """
+        with microscope.lock(timeout=1), microscope.camera.lock, microscope.stage.lock:
             with monitor_sharpness(microscope) as m:
                 # Move to (-dz / 2)
                 m.focus_rel(-dz / 2)
@@ -253,15 +458,28 @@ class AutofocusExtension(BaseExtension):
                 # Return all focus data
                 return m.data_dict()
 
+    @extension_action(
+        args = {
+            "dz": fields.Int(missing=2000, example=2000),
+            "backlash": fields.Int(missing=25, minimum=0),
+        },
+        extra_args_functions=[find_microscope_with_real_stage],
+    )
     def fast_up_down_up_autofocus(
         self,
         microscope: Microscope,
         dz: int = 2000,
         target_z: int = 0,
         initial_move_up: bool = True,
-        mini_backlash: int = 25,
+        backlash: Optional[int] = None,
+        mini_backlash: Optional[int] = None,
     ) -> Dict[str, np.ndarray]:
-        """Autofocus by measuring on the way down, and moving back up with feedback.
+        """Perform a fast up-down-up autofocus, with feedback
+        
+        Autofocus by measuring on the way down, and moving back up with feedback.
+        This is a "fast" autofocus method, i.e. it moves the stage continuously
+        while monitoring the sharpness using the MJPEG stream. See `fast_autofocus`
+        for more details.
 
         This autofocus method is very efficient, as it only passes the peak once.
         The sequence of moves it performs is:
@@ -277,7 +495,10 @@ class AutofocusExtension(BaseExtension):
             target position.
 
         Moving back to the target position in two steps allows us to correct for
-        backlash, by using the sharpness-vs-z curve as a rough encoder for Z.
+        backlash, by using the sharpness-vs-z curve as a rough encoder for Z. The
+        main source of error is that the curves on the way up and the way down are 
+        not always identical, largely due to small lateral shifts as the Z axis is
+        moved.
 
         Parameters:
             dz: number of steps over which to scan (optional, default 2000)
@@ -290,13 +511,18 @@ class AutofocusExtension(BaseExtension):
                 from the starting position.  Mostly useful if you're able to combine
                 the initial move with something else, e.g. moving to the next scan point.
 
-            mini_backlash: (optional, default 25) is a small extra move made in step
+            backlash: (optional, default 25) is a small extra move made in step
                 3 to help counteract backlash.  It should be small enough that you
                 would always expect there to be greater backlash than this.  Too small
                 might slightly hurt accuracy, but is unlikely to be a big issue.  Too big
                 may cause you to overshoot, which is a problem.
+
+            mini_backlash: (optional, default 25) is an alias for `backlash` and will be
+                removed in due course.
         """
-        with microscope.camera.lock, microscope.stage.lock:
+        if not mini_backlash: # I renamed the argument, 
+            mini_backlash = backlash or 25
+        with microscope.lock(timeout=1), microscope.camera.lock, microscope.stage.lock:
             with monitor_sharpness(microscope) as m:
                 # Ensure the MJPEG stream has started
                 microscope.camera.start_stream()
@@ -347,116 +573,8 @@ class AutofocusExtension(BaseExtension):
 
 
 class MeasureSharpnessAPI(View):
+    __doc__ = AutofocusExtension.measure_sharpness.__doc__
     def post(self):
-        microscope = find_component("org.openflexure.microscope")
-
-        if not microscope:
-            abort(503, "No microscope connected. Unable to measure sharpness.")
+        microscope = find_microscope()["microscope"]
 
         return {"sharpness": self.extension.measure_sharpness(microscope)}
-
-
-class MoveAndMeasureAPI(ActionView):
-    """
-    Move the stage and measure dynamic sharpness
-    """
-
-    args = {"dz": fields.Int(required=True)}
-
-    def post(self, args):
-        microscope = find_component("org.openflexure.microscope")
-
-        if not microscope:
-            abort(503, "No microscope connected. Unable to autofocus.")
-
-        if microscope.has_real_stage():
-            # Acquire microscope lock with 1s timeout
-            with microscope.camera.lock, microscope.stage.lock:
-                return self.extension.move_and_measure(microscope, dz=args.get("dz"))
-
-        else:
-            abort(503, "No stage connected. Unable to autofocus.")
-
-
-class AutofocusAPI(ActionView):
-    """
-    Run a standard autofocus
-    """
-
-    args = {"dz": fields.List(fields.Int())}
-
-    def post(self, args):
-        microscope = find_component("org.openflexure.microscope")
-
-        if not microscope:
-            abort(503, "No microscope connected. Unable to autofocus.")
-
-        # Figure out the range of z values to use
-        dz = np.array(args.get("dz", np.linspace(-300, 300, 7)))
-
-        if microscope.has_real_stage():
-            logging.debug("Running autofocus...")
-
-            # return a handle on the autofocus task
-            return self.extension.autofocus(microscope, dz)
-
-        else:
-            abort(503, "No stage connected. Unable to autofocus.")
-
-
-class FastAutofocusAPI(ActionView):
-    """
-    Run a fast autofocus
-    """
-
-    args = {"dz": fields.Int(missing=2000, example=2000)}
-
-    def post(self, args):
-        microscope = find_component("org.openflexure.microscope")
-
-        if not microscope:
-            abort(503, "No microscope connected. Unable to autofocus.")
-
-        if microscope.has_real_stage():
-            logging.debug("Running autofocus...")
-            # Acquire microscope lock with 1s timeout
-            with microscope.lock(timeout=1):
-                # Run fast_autofocus
-                return self.extension.fast_autofocus(microscope, dz=args.get("dz"))
-
-        else:
-            abort(503, "No stage connected. Unable to autofocus.")
-
-
-class UpDownUpAutofocusAPI(ActionView):
-    """
-    Run a fast up-down-up autofocus
-    """
-
-    args = {
-        "dz": fields.Int(missing=2000, example=2000),
-        "backlash": fields.Int(missing=25, minimum=0),
-    }
-
-    def post(self, args):
-        microscope = find_component("org.openflexure.microscope")
-
-        if not microscope:
-            abort(503, "No microscope connected. Unable to autofocus.")
-
-        # Figure out the parameters to use
-        dz = args.get("dz")
-        backlash = args.get("backlash")
-
-        if microscope.has_real_stage():
-            logging.debug("Running autofocus...")
-
-            # Acquire microscope lock with 1s timeout
-            with microscope.lock(timeout=1):
-                # Run fast_up_down_up_autofocus
-                return self.extension.fast_up_down_up_autofocus(
-                    microscope, dz=dz, mini_backlash=backlash
-                )
-
-        else:
-            abort(503, "No stage connected. Unable to autofocus.")
