@@ -1,5 +1,6 @@
 from labthings import fields, find_component
 from labthings.views import PropertyView
+from marshmallow import validate
 
 
 class StageTypeProperty(PropertyView):
@@ -8,8 +9,9 @@ class StageTypeProperty(PropertyView):
     schema = fields.String(
         missing=None,
         example="SangaStage",
-        OneOf=["SangaStage", "SangaDeltaStage"],
+        validate=validate.OneOf(["SangaStage", "SangaDeltaStage"]),
         description="The translation stage geometry",
+        allow_none=False,
     )
 
     def get(self):
