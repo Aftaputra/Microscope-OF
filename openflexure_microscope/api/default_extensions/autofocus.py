@@ -21,6 +21,9 @@ from labthings.utilities import get_docstring, get_summary
 
 
 class JPEGSharpnessMonitor:
+    """Monitor JPEG frame size in a background thread
+    
+    This class starts a background thread """
     def __init__(self, microscope: Microscope):
         self.microscope: Microscope = microscope
         self.camera: BaseCamera = microscope.camera
@@ -146,37 +149,36 @@ def sharpness_edge(image: np.ndarray) -> float:
     )
 
 
-def find_microscope() -> dict:
+def find_microscope() -> Microscope:
     """Find the microscope component or raise an exception.
     
     This function will fail with HTTPError extensions if it can't 
     find the appropriate hardware.
 
-    It is returned as a dictionary with one key, "microscope".
-    This means it can be easily merged into an arguments dictionary.
+    We return a `Microscope` object
     """
     microscope = find_component("org.openflexure.microscope")
 
     if not microscope:
         abort(503, "No microscope connected. Unable to autofocus.")
 
-    return {"microscope": microscope}
+    return microscope
 
-def find_microscope_with_real_stage() -> dict:
+def find_microscope_with_real_stage() -> Microscope:
     """Find the microscope and ensure it has a real stage.
     
     This function wraps `find_microscope()` and additionally asserts
     that there is a real stage, raising a `503` code if not.
     """
-    args = find_microscope()
+    microscope = find_microscope()
 
-    if not args["microscope"].has_real_stage():
+    if not microscope.has_real_stage():
         abort(503, "No stage connected. Unable to autofocus.")
 
-    return args
+    return microscope
 
 
-def extension_action(args=None, extra_args_functions=None):
+def extension_action(args=None):
     """A decorator to auto-create an Action endpoint for a method
     
     Use this decorator on any method of an extension (`BaseExtension` subclass)
@@ -187,13 +189,8 @@ def extension_action(args=None, extra_args_functions=None):
     or dictionary, determining the datatype of the arguments, which will be
     taken from the JSON payload of the POST request initiating the action).
     
-    It is also possible to specify a list of functions, which will be executed
-    in order, and their results will be added to the arguments.  This allows,
-    for example, hardware components to be injected into the arguments.  This
-    feature is experimental and should not be relied upon.
-    
     The parsed arguments dictionary is expanded as the function arguments,
-    i.e. we call `decorated_method(self, **kwargs).  This means that any
+    i.e. we call `decorated_method(self, **kwargs)`.  This means that any
     unused arguments will cause an error, which is probably good practice...
 
     NB this decorator does **not** replace the function with a `View` or 
@@ -213,13 +210,9 @@ def extension_action(args=None, extra_args_functions=None):
             __doc__ = class_docstring
             args = supplied_args
 
-            def post(self, args):
-                # Inject arguments, if functions are supplied (TODO: I don't love this...)
-                if extra_args_functions:
-                    for f in extra_args_functions:
-                        args.update(f())
+            def post(self, arguments):
                 # Run the action
-                return func(**args)
+                return func(**arguments)
 
             def get(self, *args, **kwargs):
                 # Explicitly wrap the `get` method to allow us to add a docstring
@@ -250,6 +243,18 @@ def extension_action(args=None, extra_args_functions=None):
         ActionViewWrapper.post.__doc__ = ActionViewWrapper.post.description
         ActionViewWrapper.__name__ = func.__name__
         ActionViewWrapper.get.summary = f"List running and completed `{func.__name__}` actions."
+        ActionViewWrapper.get.description = (
+            ActionViewWrapper.get.summary +
+            "\n\n" +
+            inspect.cleandoc(
+                f"""
+                This `GET` request will return a list of `Action` objects corresponding
+                to the `{func.__name__}` action.  It will include all the times it has
+                been run since the server was last restarted, including running, completed,
+                and failed attempts.
+                """
+            )
+        )
 
         func.flask_view = ActionViewWrapper
         return func
@@ -286,7 +291,7 @@ class AutofocusExtension(BaseExtension):
                 self.add_view(obj.flask_view, f"/{name}", name)
 
     def measure_sharpness(
-        self, microscope: Microscope, metric_fn: Callable = sharpness_sum_lap2
+        self, microscope: Optional[Microscope] = None, metric_fn: Callable = sharpness_sum_lap2
     ) -> float:
         """Measure the sharpness from the MJPEG stream
         
@@ -294,6 +299,8 @@ class AutofocusExtension(BaseExtension):
         and return its size.  This is the sharpness metric used by the fast autofocus
         method.
         """
+        if not microscope:
+            microscope = find_microscope()
         if hasattr(microscope.camera, "array") and callable(
             getattr(microscope.camera, "array")
         ):
@@ -302,12 +309,17 @@ class AutofocusExtension(BaseExtension):
             raise RuntimeError(f"Object {microscope.camera} has no method `array`")
 
     @extension_action(
-        args = {"dz": fields.List(fields.Int())},
-        extra_args_functions = [find_microscope_with_real_stage],
+        args = {
+            "dz": fields.List(
+                fields.Int(), 
+                description="An ascending list of relative z positions",
+                example = [int(x) for x in np.linspace(-300, 300, 7)],
+            )
+        },
     )
     def autofocus(
         self,
-        microscope: Microscope,
+        microscope: Optional[Microscope] = None,
         dz: Optional[List[int]] = None,
         settle: float = 0.5,
         metric_fn: Callable = sharpness_sum_lap2,
@@ -318,8 +330,11 @@ class AutofocusExtension(BaseExtension):
         and at each position an image is captured and the sharpness function 
         evaulated.  We then move back to the position where the sharpness was
         highest.  No interpolation is performed.
+
         dz is assumed to be in ascending order (starting at -ve values)
         """
+        if not microscope:
+            microscope = find_microscope_with_real_stage()
         camera: BaseCamera = microscope.camera
         stage: BaseStage = microscope.stage
         if not dz:
@@ -345,18 +360,19 @@ class AutofocusExtension(BaseExtension):
 
         return positions, sharpnesses
 
-    def move_and_find_focus(self, microscope: Microscope, dz: int) -> int:
+    def move_and_find_focus(self, microscope: Optional[Microscope] = None, dz: int = 0) -> int:
         """Make a relative Z move and return the peak sharpness position"""
+        if not microscope:
+            microscope = find_microscope_with_real_stage()
         with monitor_sharpness(microscope) as m:
             m.focus_rel(dz)
             return m.sharpest_z_on_move(0)
     
     @extension_action(
-        args={"dz": fields.Int(required=True)},
-        extra_args_functions=[find_microscope_with_real_stage],
+        args={"dz": fields.Int(required=True, description="The relative Z move to make")},
     )
     def move_and_measure(
-        self, microscope: Microscope, dz: int
+        self, microscope: Optional[Microscope] = None, dz: int = 0
     ) -> Dict[str, np.ndarray]:
         """Make a relative move in Z and measure dynamic sharpness
 
@@ -365,16 +381,23 @@ class AutofocusExtension(BaseExtension):
         each JPEG frame in the preview stream.  It returns a dictionary with
         stage position vs time and image size (i.e. sharpness) vs time.
         """
+        if not microscope:
+            microscope = find_microscope_with_real_stage()
         with monitor_sharpness(microscope) as m:
             m.focus_rel(dz)
             return m.data_dict()
 
     @extension_action(
-        args={"dz": fields.Int(missing=2000, example=2000)},
-        extra_args_functions=[find_microscope_with_real_stage],
+        args={
+            "dz": fields.Int(
+                missing=2000, 
+                example=2000, 
+                description="Total Z range to search over (in stage steps)"
+            )
+        },
     )
     def fast_autofocus(
-        self, microscope: Microscope, dz: int = 2000
+        self, microscope: Optional[Microscope] = None, dz: int = 2000
     ) -> Dict[str, np.ndarray]:
         """Perform a fast down-up-down-up autofocus
         
@@ -417,16 +440,16 @@ class AutofocusExtension(BaseExtension):
         images!  That's what lets us analyse 30 images/second even on the very
         limited processing power available to the Raspberry Pi 3.
 
-        > *Warning*
-        > We assume that JPEG frames are independent.  This is only true if the
-        > MJPEG stream is encoded at *constant quality* without any additional
-        > bit rate control.  By default, many streams will reduce the quality
-        > factor if they exceed a target bit rate, which badly affects this
-        > method.  We turn off bit rate limiting for the Raspberry Pi camera,
-        > which fixes the problem, at the expense of sometimes failing if
-        > particularly sharp images appear in the stream, as there is a fairly
-        > small maximum size for each JPEG frame beyond which empty images are 
-        > returned.
+        ## Warning: frame independence
+        We assume that JPEG frames are independent.  This is only true if the
+        MJPEG stream is encoded at *constant quality* without any additional
+        bit rate control.  By default, many streams will reduce the quality
+        factor if they exceed a target bit rate, which badly affects this
+        method.  We turn off bit rate limiting for the Raspberry Pi camera,
+        which fixes the problem, at the expense of sometimes failing if
+        particularly sharp images appear in the stream, as there is a fairly
+        small maximum size for each JPEG frame beyond which empty images are 
+        returned.
 
         ## Estimation of sharpness vs z
         What we record during an autofocus is two time series, from two parallel
@@ -439,6 +462,8 @@ class AutofocusExtension(BaseExtension):
         JPEG size as a function of `z` and hence determine the `z` value at 
         which sharpness is maximised.
         """
+        if not microscope:
+            microscope = find_microscope_with_real_stage()
         with microscope.lock(timeout=1), microscope.camera.lock, microscope.stage.lock:
             with monitor_sharpness(microscope) as m:
                 # Move to (-dz / 2)
@@ -460,14 +485,30 @@ class AutofocusExtension(BaseExtension):
 
     @extension_action(
         args = {
-            "dz": fields.Int(missing=2000, example=2000),
-            "backlash": fields.Int(missing=25, minimum=0),
+            "dz": fields.Int(
+                missing = 2000, 
+                example = 2000, 
+                description = "Total Z range to search over (in stage steps)"
+            ),
+            "target_z": fields.Int(
+                missing = 0,
+                example = -100,
+                description = "Target finishing position, relative to the focus."
+            ),
+            "initial_move_up": fields.Bool(
+                missing = True,
+                description = "Set to Flase to disable the initial move upwards"
+            ),
+            "backlash": fields.Int(
+                missing=25, 
+                minimum=0,
+                description="Distance to undershoot, before correction move."
+            ),
         },
-        extra_args_functions=[find_microscope_with_real_stage],
     )
     def fast_up_down_up_autofocus(
         self,
-        microscope: Microscope,
+        microscope: Optional[Microscope] = None,
         dz: int = 2000,
         target_z: int = 0,
         initial_move_up: bool = True,
@@ -501,25 +542,27 @@ class AutofocusExtension(BaseExtension):
         moved.
 
         Parameters:
-            dz: number of steps over which to scan (optional, default 2000)
+          * `dz`: number of steps over which to scan (optional, default 2000)
 
-            target_z: we aim to finish at this position, relative to focus.  This may 
-                be useful if, for example, you want to acquire a stack of images in Z. 
-                It is optional, and the default value of 0 will finish at the focus.
+          * `target_z`: we aim to finish at this position, relative to focus.  This may 
+            be useful if, for example, you want to acquire a stack of images in Z. 
+            It is optional, and the default value of 0 will finish at the focus.
 
-            initial_move_up: (optional, default True) set this to `False` to move down
-                from the starting position.  Mostly useful if you're able to combine
-                the initial move with something else, e.g. moving to the next scan point.
+          * `initial_move_up`: (optional, default True) set this to `False` to move down
+            from the starting position.  Mostly useful if you're able to combine
+            the initial move with something else, e.g. moving to the next scan point.
 
-            backlash: (optional, default 25) is a small extra move made in step
-                3 to help counteract backlash.  It should be small enough that you
-                would always expect there to be greater backlash than this.  Too small
-                might slightly hurt accuracy, but is unlikely to be a big issue.  Too big
-                may cause you to overshoot, which is a problem.
+          * **backlash**: (optional, default 25) is a small extra move made in step
+            3 to help counteract backlash.  It should be small enough that you
+            would always expect there to be greater backlash than this.  Too small
+            might slightly hurt accuracy, but is unlikely to be a big issue.  Too big
+            may cause you to overshoot, which is a problem.
 
-            mini_backlash: (optional, default 25) is an alias for `backlash` and will be
-                removed in due course.
+          * **mini_backlash**: (optional, default 25) is an alias for `backlash` and will be
+            removed in due course.
         """
+        if not microscope:
+            microscope = find_microscope_with_real_stage()
         if not mini_backlash: # I renamed the argument, 
             mini_backlash = backlash or 25
         with microscope.lock(timeout=1), microscope.camera.lock, microscope.stage.lock:
@@ -575,6 +618,4 @@ class AutofocusExtension(BaseExtension):
 class MeasureSharpnessAPI(View):
     __doc__ = AutofocusExtension.measure_sharpness.__doc__
     def post(self):
-        microscope = find_microscope()["microscope"]
-
-        return {"sharpness": self.extension.measure_sharpness(microscope)}
+        return {"sharpness": self.extension.measure_sharpness()}
