@@ -14,14 +14,14 @@ class LSTImageProperty(PropertyView):
 
     responses = {
         200: {
-            "content_type": "image/png",
+            "content": { "image/jpeg": {} },
             "description": "Lens-shading table in RGB format",
         }
     }
 
     def get(self):
         """
-        Get the stage geometry.
+        Get the lens shading table as an image.
         """
         microscope = find_component("org.openflexure.microscope")
 

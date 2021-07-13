@@ -19,7 +19,9 @@ class MjpegStream(PropertyView):
 
     responses = {
         200: {
-            "content_type": "multipart/x-mixed-replace",
+            "content": {
+                "multipart/x-mixed-replace": {}
+            },
             "description": (
                 "An MJPEG stream of camera images.\n\n"
                 "This endpoint will serve JPEG images sequentially, \n"
@@ -60,7 +62,12 @@ class SnapshotStream(PropertyView):
     Single JPEG snapshot from the camera stream
     """
 
-    responses = {200: {"content_type": "image/jpeg", "description": "Snapshot taken"}}
+    responses = {
+        200: {
+            "content": { "image/jpeg": {} },
+            "description": "Snapshot taken"
+        }
+    }
 
     def get(self):
         """

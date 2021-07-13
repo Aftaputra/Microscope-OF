@@ -71,7 +71,7 @@ class RAMCaptureAPI(ActionView):
     args = BasicCaptureArgs()
     responses = {
         200: {
-            "content_type": "image/jpeg",
+            "content": { "image/jpeg": {} },
             "description": "A JPEG image, representing the capture"
         }
     }
