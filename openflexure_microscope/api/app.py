@@ -39,6 +39,7 @@ from openflexure_microscope.paths import (
     OPENFLEXURE_VAR_PATH,
     logs_file_path,
 )
+from .openapi import add_spec_extras
 
 
 # Custom RotatingFileHandler subclass
@@ -208,6 +209,8 @@ def routes():
 @app.route("/api/v1/<path:path>")
 def api_v1_catch_all(path):  # pylint: disable=W0613
     abort(410, "API v1 is no longer in use. Please upgrade your client.")
+
+add_spec_extras(labthing.spec)
 
 
 # Automatically clean up microscope at exit
