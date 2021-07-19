@@ -2,7 +2,7 @@ import inspect
 import logging
 import time
 from contextlib import contextmanager
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, cast
 
 import numpy as np
 from labthings import current_action, fields, find_component
@@ -346,7 +346,8 @@ class AutofocusExtension(BaseExtension):
         camera: BaseCamera = microscope.camera
         stage: BaseStage = microscope.stage
         if not dz:
-            dz: List[int] = list(np.linspace(-300, 300, 7))
+            dz = list(np.linspace(-300, 300, 7))
+        dz = cast(List[int], dz)  # dz can't now be None, so fix its type.
 
         with set_properties(stage, backlash=256), stage.lock, camera.lock:
             sharpnesses: List[float] = []
