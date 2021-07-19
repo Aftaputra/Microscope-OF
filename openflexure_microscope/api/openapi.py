@@ -9,7 +9,10 @@ API_TAGS = [
             "as `Action` objects and their status can be queried using the links "
             "embedded in the JSON action description."
         ),
-        "externalDocs": "https://iot.mozilla.org/wot/#action-resource",
+        "externalDocs": {
+            "url": "https://iot.mozilla.org/wot/#action-resource",
+            "description": "Mozilla's description of Web of Things 'Action' resources."
+        }
     },
     {
         "name": "properties",
@@ -17,22 +20,22 @@ API_TAGS = [
             "Properties can be read and/or written to, and affect the "
             "state of the microscope."
         ),
-        "externalDocs": "https://iot.mozilla.org/wot/#property-resource",
+        "externalDocs": {
+            "url": "https://iot.mozilla.org/wot/#property-resource",
+            "description": "Mozilla's description of Web of Things 'Property' resources."
+        }
     },
     {
         "name": "captures",
         "description": "",
-        "externalDocs": ""
     },
     {
         "name": "extensions",
         "description": "",
-        "externalDocs": ""
     },
     {
         "name": "events",
         "description": "",
-        "externalDocs": ""
     }
 ]
 
