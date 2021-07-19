@@ -44,7 +44,7 @@ project = "OpenFlexure Microscope Software"
 copyright = "2018, Bath Open Instrumentation Group"  # pylint: disable=redefined-builtin
 author = "Bath Open Instrumentation Group"
 
-#TODO: extract version from ../setup.py
+# TODO: extract version from ../setup.py
 # The short X.Y version
 version = ""
 # The full version, including alpha/beta/rc tags
@@ -68,11 +68,11 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "sphinx.ext.ifconfig",
-    #"sphinxcontrib.httpdomain",
-    #"sphinxcontrib.autohttp.flask",
-    #"sphinxcontrib.autohttp.flaskqref",
+    # "sphinxcontrib.httpdomain",
+    # "sphinxcontrib.autohttp.flask",
+    # "sphinxcontrib.autohttp.flaskqref",
     "sphinxcontrib.openapi",
-    "sphinxcontrib.redoc"
+    "sphinxcontrib.redoc",
 ]
 
 # Override ordering
@@ -228,7 +228,7 @@ epub_exclude_files = ["search.html"]
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-#TODO: update with pysangaboard?
+# TODO: update with pysangaboard?
 intersphinx_mapping = {
     "openflexure_stage": ("https://openflexure-stage.readthedocs.io/en/latest/", None),
     "picamerax": ("https://picamerax.readthedocs.io/en/latest//", None),
@@ -244,9 +244,9 @@ todo_include_todos = True
 # -- Options for redoc extension ---------------------------------------------
 redoc = [
     {
-        'name': 'OpenFlexure Microscope HTTP API',
-        'page': 'api_redoc',
-        'spec': '../build/swagger.yaml',
-        'embed': True,
+        "name": "OpenFlexure Microscope HTTP API",
+        "page": "api_redoc",
+        "spec": "../build/swagger.yaml",
+        "embed": True,
     }
 ]

@@ -1,4 +1,5 @@
 import yaml
+
 with open("./build/swagger.yaml", "r") as f:
     api = yaml.load(f)
 

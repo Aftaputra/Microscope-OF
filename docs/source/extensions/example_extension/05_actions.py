@@ -94,7 +94,7 @@ class QuickCaptureAPI(ActionView):
     args = {"use_video_port": fields.Boolean(missing=True)}
 
     # Our success response (200) returns an image (image/jpeg mimetype)
-    responses = {200: {"content_type": "image/jpeg"}}
+    responses = {200: {"content": {"image/jpeg": {}}}}
 
     def post(self, args):
         """

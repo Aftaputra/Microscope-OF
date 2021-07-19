@@ -24,6 +24,7 @@ class JPEGSharpnessMonitor:
     """Monitor JPEG frame size in a background thread
     
     This class starts a background thread """
+
     def __init__(self, microscope: Microscope):
         self.microscope: Microscope = microscope
         self.camera: BaseCamera = microscope.camera
@@ -164,6 +165,7 @@ def find_microscope() -> Microscope:
 
     return microscope
 
+
 def find_microscope_with_real_stage() -> Microscope:
     """Find the microscope and ensure it has a real stage.
     
@@ -199,6 +201,7 @@ def extension_action(args=None):
     responsible for collating and adding the views in its `__init__` method.
     """
     supplied_args = args
+
     def decorator(func):
         class_docstring = f"""Manage actions for {func.__name__}.
         
@@ -206,6 +209,7 @@ def extension_action(args=None):
         each time {func.__name__} has been run in response to a `GET` request,
         and will start a new `Action` in response to a `POST` request.
         """
+
         class ActionViewWrapper(ActionView):
             __doc__ = class_docstring
             args = supplied_args
@@ -222,9 +226,9 @@ def extension_action(args=None):
         # aren't guaranteed to have the same leading whitespace, we just make sure
         # both docstrings are stripped of leading indent, using `inspect.cleandoc()`
         ActionViewWrapper.post.description = (
-            get_docstring(func, remove_newlines=False) + 
-            "\n\n" +
-            inspect.cleandoc(
+            get_docstring(func, remove_newlines=False)
+            + "\n\n"
+            + inspect.cleandoc(
                 """
                 This `POST` request starts an Action, i.e. the hardware will do something
                 that may continue after the HTTP request has been responded to.  The 
@@ -242,11 +246,13 @@ def extension_action(args=None):
         ActionViewWrapper.post.summary = get_summary(func)
         ActionViewWrapper.post.__doc__ = ActionViewWrapper.post.description
         ActionViewWrapper.__name__ = func.__name__
-        ActionViewWrapper.get.summary = f"List running and completed `{func.__name__}` actions."
+        ActionViewWrapper.get.summary = (
+            f"List running and completed `{func.__name__}` actions."
+        )
         ActionViewWrapper.get.description = (
-            ActionViewWrapper.get.summary +
-            "\n\n" +
-            inspect.cleandoc(
+            ActionViewWrapper.get.summary
+            + "\n\n"
+            + inspect.cleandoc(
                 f"""
                 This `GET` request will return a list of `Action` objects corresponding
                 to the `{func.__name__}` action.  It will include all the times it has
@@ -258,8 +264,8 @@ def extension_action(args=None):
 
         func.flask_view = ActionViewWrapper
         return func
-    return decorator
 
+    return decorator
 
 
 ### Autofocus extension
@@ -291,7 +297,9 @@ class AutofocusExtension(BaseExtension):
                 self.add_view(obj.flask_view, f"/{name}", name)
 
     def measure_sharpness(
-        self, microscope: Optional[Microscope] = None, metric_fn: Callable = sharpness_sum_lap2
+        self,
+        microscope: Optional[Microscope] = None,
+        metric_fn: Callable = sharpness_sum_lap2,
     ) -> float:
         """Measure the sharpness from the MJPEG stream
         
@@ -309,13 +317,13 @@ class AutofocusExtension(BaseExtension):
             raise RuntimeError(f"Object {microscope.camera} has no method `array`")
 
     @extension_action(
-        args = {
+        args={
             "dz": fields.List(
-                fields.Int(), 
+                fields.Int(),
                 description="An ascending list of relative z positions",
-                example = [int(x) for x in np.linspace(-300, 300, 7)],
+                example=[int(x) for x in np.linspace(-300, 300, 7)],
             )
-        },
+        }
     )
     def autofocus(
         self,
@@ -360,16 +368,20 @@ class AutofocusExtension(BaseExtension):
 
         return positions, sharpnesses
 
-    def move_and_find_focus(self, microscope: Optional[Microscope] = None, dz: int = 0) -> int:
+    def move_and_find_focus(
+        self, microscope: Optional[Microscope] = None, dz: int = 0
+    ) -> int:
         """Make a relative Z move and return the peak sharpness position"""
         if not microscope:
             microscope = find_microscope_with_real_stage()
         with monitor_sharpness(microscope) as m:
             m.focus_rel(dz)
             return m.sharpest_z_on_move(0)
-    
+
     @extension_action(
-        args={"dz": fields.Int(required=True, description="The relative Z move to make")},
+        args={
+            "dz": fields.Int(required=True, description="The relative Z move to make")
+        }
     )
     def move_and_measure(
         self, microscope: Optional[Microscope] = None, dz: int = 0
@@ -390,11 +402,11 @@ class AutofocusExtension(BaseExtension):
     @extension_action(
         args={
             "dz": fields.Int(
-                missing=2000, 
-                example=2000, 
-                description="Total Z range to search over (in stage steps)"
+                missing=2000,
+                example=2000,
+                description="Total Z range to search over (in stage steps)",
             )
-        },
+        }
     )
     def fast_autofocus(
         self, microscope: Optional[Microscope] = None, dz: int = 2000
@@ -484,27 +496,27 @@ class AutofocusExtension(BaseExtension):
                 return m.data_dict()
 
     @extension_action(
-        args = {
+        args={
             "dz": fields.Int(
-                missing = 2000, 
-                example = 2000, 
-                description = "Total Z range to search over (in stage steps)"
+                missing=2000,
+                example=2000,
+                description="Total Z range to search over (in stage steps)",
             ),
             "target_z": fields.Int(
-                missing = 0,
-                example = -100,
-                description = "Target finishing position, relative to the focus."
+                missing=0,
+                example=-100,
+                description="Target finishing position, relative to the focus.",
             ),
             "initial_move_up": fields.Bool(
-                missing = True,
-                description = "Set to Flase to disable the initial move upwards"
+                missing=True,
+                description="Set to Flase to disable the initial move upwards",
             ),
             "backlash": fields.Int(
-                missing=25, 
+                missing=25,
                 minimum=0,
-                description="Distance to undershoot, before correction move."
+                description="Distance to undershoot, before correction move.",
             ),
-        },
+        }
     )
     def fast_up_down_up_autofocus(
         self,
@@ -563,7 +575,7 @@ class AutofocusExtension(BaseExtension):
         """
         if not microscope:
             microscope = find_microscope_with_real_stage()
-        if not mini_backlash: # I renamed the argument, 
+        if not mini_backlash:  # I renamed the argument,
             mini_backlash = backlash or 25
         with microscope.lock(timeout=1), microscope.camera.lock, microscope.stage.lock:
             with monitor_sharpness(microscope) as m:
@@ -617,5 +629,6 @@ class AutofocusExtension(BaseExtension):
 
 class MeasureSharpnessAPI(View):
     __doc__ = AutofocusExtension.measure_sharpness.__doc__
+
     def post(self):
         return {"sharpness": self.extension.measure_sharpness()}

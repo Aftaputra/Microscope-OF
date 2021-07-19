@@ -14,7 +14,7 @@ class LSTImageProperty(PropertyView):
 
     responses = {
         200: {
-            "content": { "image/jpeg": {} },
+            "content": {"image/jpeg": {}},
             "description": "Lens-shading table in RGB format",
         }
     }

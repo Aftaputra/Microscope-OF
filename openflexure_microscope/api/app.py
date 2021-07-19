@@ -210,6 +210,7 @@ def routes():
 def api_v1_catch_all(path):  # pylint: disable=W0613
     abort(410, "API v1 is no longer in use. Please upgrade your client.")
 
+
 add_spec_extras(labthing.spec)
 
 
@@ -247,35 +248,39 @@ def ofm_serve():
     server: Server = Server(app)
     server.run(host="0.0.0.0", port=5000, debug=debug_app, zeroconf=True)
 
+
 def generate_openapi():
     parser = argparse.ArgumentParser("Generate an OpenAPI specification document")
     parser.add_argument(
-        '-o', 
-        dest='output', 
+        "-o",
+        dest="output",
         default="openapi.yaml",
         help=(
-            'Specify the output filename.  If it ends in .json, we output JSON.'
-            'Use .yml or .yaml for YAML (which is the default'
-        )
+            "Specify the output filename.  If it ends in .json, we output JSON."
+            "Use .yml or .yaml for YAML (which is the default"
+        ),
     )
     parser.add_argument(
-        "--validate", 
-        action="store_true", 
-        help="Validate the API spec, returning an error code if it does not pass."
+        "--validate",
+        action="store_true",
+        help="Validate the API spec, returning an error code if it does not pass.",
     )
     args = parser.parse_args()
     if args.validate:
         import apispec.utils
+
         if apispec.utils.validate_spec(labthing.spec):
             print("OpenAPI specification validated OK.")
     fname = args.output
     if fname.endswith(".json"):
         import json
-        with open(fname, 'w') as fd:
+
+        with open(fname, "w") as fd:
             json.dump(labthing.spec.to_dict(), fd)
     else:
-        with open(fname, 'w') as fd:
+        with open(fname, "w") as fd:
             fd.write(labthing.spec.to_yaml())
+
 
 # Start the app if the module is run directly
 if __name__ == "__main__":

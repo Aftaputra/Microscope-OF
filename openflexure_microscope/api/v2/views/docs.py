@@ -2,6 +2,7 @@ from labthings.views import View
 from labthings import current_labthing
 from flask import Response
 
+
 class APISpecJSONView(View):
     """OpenAPI v3 documentation
 
@@ -11,6 +12,7 @@ class APISpecJSONView(View):
     def get(self):
         return current_labthing().spec.to_dict()
 
+
 class APISpecYAMLView(View):
     """OpenAPI v3 documentation
     
@@ -18,4 +20,4 @@ class APISpecYAMLView(View):
     """
 
     def get(self):
-        return Response(current_labthing().spec.to_yaml(), mimetype='text/yaml')
+        return Response(current_labthing().spec.to_yaml(), mimetype="text/yaml")

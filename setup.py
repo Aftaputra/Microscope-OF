@@ -44,7 +44,7 @@ setup(
     # set up the project for development, you use those specific packages, rather than
     # the looser specifications given here.
     install_requires=[
-        "apispec[validation]", # We need the extra to validate the spec
+        "apispec[validation]",  # We need the extra to validate the spec
         "Flask ~= 1.0",
         "Pillow ~= 7.2.0",
         "numpy ~= 1.20",
@@ -68,7 +68,7 @@ setup(
     # them to specific versions to enable consistent builds and testing.
     extras_require={
         "dev": [
-            "sphinx < 4.0", # Currently httpdomain isn't ready for 4.0
+            "sphinx < 4.0",  # Currently httpdomain isn't ready for 4.0
             "sphinxcontrib-openapi ~= 0.7",
             "sphinx_rtd_theme ~=0.5.2",
             "rope ~= 0.14.0",
@@ -90,7 +90,7 @@ setup(
         "console_scripts": [
             "ofm-serve=openflexure_microscope.api.app:ofm_serve",
             "ofm-rescue=openflexure_microscope.rescue.auto:main",
-            "ofm-generate-openapi=openflexure_microscope.api.app:generate_openapi"
+            "ofm-generate-openapi=openflexure_microscope.api.app:generate_openapi",
         ]
     },
     project_urls={

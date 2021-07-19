@@ -1,5 +1,3 @@
-
-
 API_TAGS = [
     {
         "name": "actions",
@@ -11,8 +9,8 @@ API_TAGS = [
         ),
         "externalDocs": {
             "url": "https://iot.mozilla.org/wot/#action-resource",
-            "description": "Mozilla's description of Web of Things 'Action' resources."
-        }
+            "description": "Mozilla's description of Web of Things 'Action' resources.",
+        },
     },
     {
         "name": "properties",
@@ -22,22 +20,14 @@ API_TAGS = [
         ),
         "externalDocs": {
             "url": "https://iot.mozilla.org/wot/#property-resource",
-            "description": "Mozilla's description of Web of Things 'Property' resources."
-        }
+            "description": "Mozilla's description of Web of Things 'Property' resources.",
+        },
     },
-    {
-        "name": "captures",
-        "description": "",
-    },
-    {
-        "name": "extensions",
-        "description": "",
-    },
-    {
-        "name": "events",
-        "description": "",
-    }
+    {"name": "captures", "description": ""},
+    {"name": "extensions", "description": ""},
+    {"name": "events", "description": ""},
 ]
+
 
 def add_spec_extras(spec):
     """Add extra documentation and features to the OpenAPI spec"""
