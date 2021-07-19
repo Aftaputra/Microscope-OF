@@ -102,6 +102,27 @@ pytest:
     - tags
     - web
 
+openapi:
+  stage: testing
+  image: python:3.7
+  retry: 1
+
+  <<: *python-install
+
+  script:
+    - ofm-generate-openapi -o docs/build/swagger.yaml --validate
+  artifacts:
+    name: "openapi"
+    expire_in: 1 week
+    paths:
+      - "./docs/build/swagger.yaml"
+  
+  only:
+    - branches
+    - merge_requests
+    - tags
+    - web
+
 # JavaScript linting with ESLint (via Vue CLI)
 eslint:
   stage: analysis
@@ -146,6 +167,7 @@ package:
   stage: package
   dependencies:
     - build
+    - openapi
 
   image: ubuntu:latest
 
@@ -154,9 +176,11 @@ package:
     - mkdir -p dist
     - tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz .
     - tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz ./openflexure_microscope/api/static/dist/
+    - cp docs/build/swagger.yaml dist/openflexure-microscope-api-${CI_COMMIT_REF_NAME}.yaml
     - cd dist/
     - sha256sum openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz > openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256
     - sha256sum openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz > openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz.sha256
+    - sha256sum openflexure-microscope-api-${CI_COMMIT_REF_NAME}.yaml > openflexure-microscope-api-${CI_COMMIT_REF_NAME}.yaml.sha256
 
   artifacts:
     name: "dist"
