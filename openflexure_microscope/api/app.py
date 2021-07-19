@@ -258,7 +258,16 @@ def generate_openapi():
             'Use .yml or .yaml for YAML (which is the default'
         )
     )
+    parser.add_argument(
+        "--validate", 
+        action="store_true", 
+        help="Validate the API spec, returning an error code if it does not pass."
+    )
     args = parser.parse_args()
+    if args.validate:
+        import apispec.utils
+        if apispec.utils.validate_spec(labthing.spec):
+            print("OpenAPI specification validated OK.")
     fname = args.output
     if fname.endswith(".json"):
         import json
@@ -267,7 +276,6 @@ def generate_openapi():
     else:
         with open(fname, 'w') as fd:
             fd.write(labthing.spec.to_yaml())
-
 
 # Start the app if the module is run directly
 if __name__ == "__main__":

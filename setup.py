@@ -44,6 +44,7 @@ setup(
     # set up the project for development, you use those specific packages, rather than
     # the looser specifications given here.
     install_requires=[
+        "apispec[validation]", # We need the extra to validate the spec
         "Flask ~= 1.0",
         "Pillow ~= 7.2.0",
         "numpy ~= 1.20",
