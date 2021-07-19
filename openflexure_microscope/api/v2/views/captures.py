@@ -207,7 +207,7 @@ class CaptureDownload(View):
             "required": False,
             "schema": {"type": "string"},
             "example": "myimage.jpeg",
-        }
+        },
     ]
 
     def get(self, id_, filename: Optional[str]):

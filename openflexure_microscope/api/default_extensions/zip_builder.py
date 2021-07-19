@@ -166,6 +166,7 @@ class ZipBuilderAPIView(ActionView):
 class ZipListAPIView(PropertyView):
     """List all the zip files currently available for download.
     """
+
     schema = ZipObjectSchema(many=True)
 
     def get(self):
@@ -175,20 +176,17 @@ class ZipListAPIView(PropertyView):
 class ZipGetterAPIView(View):
     """Download or delete a particular capture collection ZIP file
     """
+
     parameters = [
         {
             "name": "session_id",
             "in": "path",
             "description": "The unique ID of the zip builder session",
             "required": True,
-            "schema": { "type": "string" },
+            "schema": {"type": "string"},
         }
     ]
-    responses = {
-        404: {
-            "description": "The session ID could not be found",
-        }
-    }
+    responses = {404: {"description": "The session ID could not be found"}}
 
     def get(self, session_id):
         """
@@ -205,11 +203,12 @@ class ZipGetterAPIView(View):
             as_attachment=True,
             attachment_filename=f"{session_id}.zip",
         )
+
     get.responses = {
         200: {
-            "content": {"application/zip": {}}, 
+            "content": {"application/zip": {}},
             "description": "A zip archive containing the selected captures",
-        },
+        }
     }
 
     def delete(self, session_id):
@@ -225,8 +224,5 @@ class ZipGetterAPIView(View):
         del self.extension.manager.session_zips[session_id]
 
         return {"return": session_id}
-    delete.responses = {
-        200: {
-            "description": "The zip file was deleted",
-        },
-    }
+
+    delete.responses = {200: {"description": "The zip file was deleted"}}
