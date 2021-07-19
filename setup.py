@@ -75,6 +75,8 @@ setup(
             "pylint ~= 2.3",
             "pytest ~= 6.1.2",
             "mypy ~= 0.790",
+            "types-python-dateutil",
+            "types-setuptools",
             "poethepoet ~= 0.10.0",
             "freezegun ~= 1.0.0",
             "lxml ~= 4.6",

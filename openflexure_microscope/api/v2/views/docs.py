@@ -1,6 +1,6 @@
-from labthings.views import View
-from labthings import current_labthing
 from flask import Response
+from labthings import current_labthing
+from labthings.views import View
 
 
 class APISpecJSONView(View):

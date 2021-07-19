@@ -2,10 +2,10 @@ import datetime
 import logging
 import time
 import uuid
-import marshmallow
 from functools import reduce
 from typing import Dict, List, Optional, Tuple
 
+import marshmallow
 from labthings import (
     current_action,
     fields,

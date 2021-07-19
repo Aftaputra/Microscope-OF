@@ -24,7 +24,7 @@ import os
 from datetime import datetime
 
 import pkg_resources
-from flask import abort, send_file, jsonify
+from flask import abort, jsonify, send_file
 from flask_cors import CORS, cross_origin
 from labthings import create_app
 from labthings.extensions import find_extensions
@@ -39,6 +39,7 @@ from openflexure_microscope.paths import (
     OPENFLEXURE_VAR_PATH,
     logs_file_path,
 )
+
 from .openapi import add_spec_extras
 
 

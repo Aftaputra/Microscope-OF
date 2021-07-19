@@ -7,6 +7,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 import numpy as np
 from labthings import current_action, fields, find_component
 from labthings.extensions import BaseExtension
+from labthings.utilities import get_docstring, get_summary
 from labthings.views import ActionView, View
 from scipy import ndimage
 
@@ -15,7 +16,6 @@ from openflexure_microscope.devel import abort
 from openflexure_microscope.microscope import Microscope
 from openflexure_microscope.stage.base import BaseStage
 from openflexure_microscope.utilities import set_properties
-from labthings.utilities import get_docstring, get_summary
 
 ### Autofocus utilities
 
@@ -218,7 +218,7 @@ def extension_action(args=None):
                 # Run the action
                 return func(**arguments)
 
-            def get(self, *args, **kwargs):
+            def get(self, *args, **kwargs):  # pylint: disable=useless-super-delegation
                 # Explicitly wrap the `get` method to allow us to add a docstring
                 return super().get(*args, **kwargs)
 
@@ -346,7 +346,7 @@ class AutofocusExtension(BaseExtension):
         camera: BaseCamera = microscope.camera
         stage: BaseStage = microscope.stage
         if not dz:
-            dz = np.linspace(-300, 300, 7)
+            dz: List[int] = list(np.linspace(-300, 300, 7))
 
         with set_properties(stage, backlash=256), stage.lock, camera.lock:
             sharpnesses: List[float] = []

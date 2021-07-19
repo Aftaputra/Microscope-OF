@@ -19,8 +19,8 @@ from openflexure_microscope.stage.sanga import SangaDeltaStage, SangaStage
 
 try:
     from openflexure_microscope.camera.pi import PiCameraStreamer
-except Exception as e:  # pylint: disable=W0703
-    logging.error(e)
+except Exception as exc:  # pylint: disable=W0703
+    logging.error(exc)
     logging.warning("Unable to import PiCameraStreamer")
 from labthings import CompositeLock
 
