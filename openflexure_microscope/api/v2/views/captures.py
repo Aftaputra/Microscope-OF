@@ -198,7 +198,17 @@ class CaptureDownload(View):
     responses = {
         200: {"content": {"image/jpeg": {}}, "description": "Image data in JPEG format"}
     }
-    parameters = [CAPTURE_ID_PARAMETER]
+    parameters = [
+        CAPTURE_ID_PARAMETER,
+        {
+            "name": "filename",
+            "in": "path",
+            "description": "The filename of the downloaded image.",
+            "required": False,
+            "schema": {"type": "string"},
+            "example": "myimage.jpeg",
+        }
+    ]
 
     def get(self, id_, filename: Optional[str]):
         """
