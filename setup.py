@@ -72,7 +72,7 @@ setup(
             "sphinxcontrib-openapi ~= 0.7",
             "sphinx_rtd_theme ~=0.5.2",
             "rope ~= 0.14.0",
-            "pylint ~= 2.3",
+            "pylint ~= 2.8.0",  # 2.9.2 crashes and I've not yet figured out why.
             "pytest ~= 6.1.2",
             "mypy ~= 0.790",
             "types-python-dateutil",
