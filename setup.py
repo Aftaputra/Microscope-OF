@@ -59,7 +59,7 @@ setup(
         "pyyaml ~= 5.4.0",
         "pytest-cov ~= 2.10.1",
         "piexif ~= 1.1.3",
-        "labthings ~= 1.2.2",
+        "labthings ~= 1.3.0",
         "typing-extensions ~= 3.7.4",  # Needed for some type-hints in Python < 3.8 (e.g. Literal)
         "RPi.GPIO ~= 0.7.0; platform_machine == 'armv7l'",
     ],
