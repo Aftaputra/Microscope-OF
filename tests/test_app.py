@@ -1,3 +1,4 @@
+from apispec.utils import validate_spec
 from openflexure_microscope.api.app import api_microscope, app, labthing
 from openflexure_microscope.camera.base import BaseCamera
 from openflexure_microscope.microscope import Microscope
@@ -12,3 +13,6 @@ def test_microscope_creation():
     assert isinstance(api_microscope, Microscope)
     assert isinstance(api_microscope.camera, BaseCamera)
     assert isinstance(api_microscope.stage, BaseStage)
+
+def test_openapi_valid():
+    assert validate_spec(labthing.spec)
