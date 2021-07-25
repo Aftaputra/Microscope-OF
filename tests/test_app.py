@@ -14,5 +14,6 @@ def test_microscope_creation():
     assert isinstance(api_microscope.camera, BaseCamera)
     assert isinstance(api_microscope.stage, BaseStage)
 
+
 def test_openapi_valid():
     assert validate_spec(labthing.spec)
