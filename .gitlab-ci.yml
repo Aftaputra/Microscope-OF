@@ -110,6 +110,7 @@ openapi:
   <<: *python-install
 
   script:
+    - mkdir -p docs/build/
     - ofm-generate-openapi -o docs/build/swagger.yaml --validate
   artifacts:
     name: "openapi"
