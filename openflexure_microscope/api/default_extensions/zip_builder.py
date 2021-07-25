@@ -10,7 +10,7 @@ from labthings import fields, find_component, update_action_progress
 from labthings.extensions import BaseExtension
 from labthings.schema import Schema, pre_dump
 from labthings.utilities import description_from_view
-from labthings.views import ActionView, PropertyView, View
+from labthings.views import ActionView, PropertyView, View, described_operation
 
 from openflexure_microscope.captures import CaptureObject
 from openflexure_microscope.microscope import Microscope
@@ -188,6 +188,7 @@ class ZipGetterAPIView(View):
     ]
     responses = {404: {"description": "The session ID could not be found"}}
 
+    @described_operation
     def get(self, session_id):
         """
         Download a particular capture collection ZIP file
@@ -211,6 +212,7 @@ class ZipGetterAPIView(View):
         }
     }
 
+    @described_operation
     def delete(self, session_id):
         """
         Close and delete a particular capture collection ZIP file
