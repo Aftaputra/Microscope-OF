@@ -441,18 +441,6 @@ export default {
     },
 
     scanPayload: function() {
-      var payload = Object.assign({}, this.basePayload);
-
-      // Scan params
-      payload.grid = [this.scanSteps.x, this.scanSteps.y, this.scanSteps.z];
-      payload.stride_size = [
-        this.scanStepSize.x,
-        this.scanStepSize.y,
-        this.scanStepSize.z
-      ];
-      payload.style = this.scanStyle.toLowerCase();
-      payload.namemode = this.namingStyle.toLowerCase();
-
       // Convert AF selector to dz
       var afDeltas = {
         Off: 0,
@@ -461,22 +449,32 @@ export default {
         Fine: 10,
         Fast: 2000
       };
-
-      payload.autofocus_dz = afDeltas[this.scanDeltaZ];
-      payload.fast_autofocus = this.scanDeltaZ == "Fast";
-
-      return payload;
+      return {
+        ...this.basePayload,
+        // Scan params
+        grid: [this.scanSteps.x, this.scanSteps.y, this.scanSteps.z],
+        stride_size: [
+          this.scanStepSize.x,
+          this.scanStepSize.y,
+          this.scanStepSize.z
+        ],
+        style: this.scanStyle.toLowerCase(),
+        namemode: this.namingStyle.toLowerCase(),
+        autofocus_dz: afDeltas[this.scanDeltaZ],
+        fast_autofocus: this.scanDeltaZ == "Fast"
+      };
     },
     smartScanPayload: function() {
-      var payload = Object.assign({}, this.scanPayload);
-      payload.threshold = this.smartStackThreshold;
-      payload.width = this.smartStackPeakWidth;
-      payload.align_dist = this.smartStackAlignDist;
-      payload.backlash = this.smartStackBacklash;
-      payload.fit_style = this.smartStackFitStyle;
-      payload.m_and_m_index = this.smartStackMAndMIndex;
-      payload.autofocus_dz = this.smartStackAutofocusDz;
-      return payload;
+      return {
+        ...this.scanPayload,
+        threshold: this.smartStackThreshold,
+        width: this.smartStackPeakWidth,
+        align_dist: this.smartStackAlignDist,
+        backlash: this.smartStackBacklash,
+        fit_style: this.smartStackFitStyle,
+        m_and_m_index: this.smartStackMAndMIndex,
+        autofocus_dz: this.smartStackAutofocusDz
+      };
     }
   },
 
