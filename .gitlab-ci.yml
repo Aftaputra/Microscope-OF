@@ -102,6 +102,11 @@ pytest:
     - tags
     - web
 
+  artifacts:
+    when: always
+    reports:
+      junit: pytest_report.xml
+
 openapi:
   stage: testing
   image: python:3.7

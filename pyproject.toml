@@ -44,7 +44,7 @@ black_check = "black --check ."
 isort = "isort openflexure_microscope"
 pylint = "pylint openflexure_microscope"
 mypy = "mypy --cobertura-xml-report openflexure_microscope openflexure_microscope"
-test = "pytest ."
+test = "pytest . --junitxml=pytest_report.xml"
 serve = "python -m openflexure_microscope.api.app"
 
 format = ["black", "isort"]
