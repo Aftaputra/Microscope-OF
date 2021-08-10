@@ -162,7 +162,7 @@ build:
     name: "dist"
     expire_in: 1 week
     paths:
-      - "js/"
+      - "openflexure_microscope/static/dist/"
 
   only:
     - master
