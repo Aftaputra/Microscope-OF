@@ -17,7 +17,23 @@ class MjpegStream(PropertyView):
     Real-time MJPEG stream from the microscope camera
     """
 
-    responses = {200: {"content_type": "multipart/x-mixed-replace"}}
+    responses = {
+        200: {
+            "content": {"multipart/x-mixed-replace": {}},
+            "description": (
+                "An MJPEG stream of camera images.\n\n"
+                "This endpoint will serve JPEG images sequentially, \n"
+                "with each frame separated by `--frame` and a \n"
+                "`Content-Type: image/jpeg` header.\n"
+                "Using this endpoint as the `src` of an HTML `<img>` \n"
+                "tag will result in the video stream displaying without \n"
+                "further effort.\n\n"
+                "If you save the stream to disk (e.g. with `curl`), be \n"
+                "aware that the text in between frames may confuse some \n"
+                "video players."
+            ),
+        }
+    }
 
     def get(self):
         """
@@ -44,7 +60,7 @@ class SnapshotStream(PropertyView):
     Single JPEG snapshot from the camera stream
     """
 
-    responses = {200: {"content_type": "image/jpeg", "description": "Snapshot taken"}}
+    responses = {200: {"content": {"image/jpeg": {}}, "description": "Snapshot taken"}}
 
     def get(self):
         """

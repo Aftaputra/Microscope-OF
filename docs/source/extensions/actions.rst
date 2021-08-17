@@ -22,7 +22,9 @@ Like properties, we use a special view class to identify a view as an action: ``
 
         # Our success response (200) returns an image (image/jpeg mimetype)
         responses = {
-            200: {"content_type": "image/jpeg"}
+            200: {
+                "content": { "image/jpeg": {} },
+            }
         }
 
         def post(self, args):

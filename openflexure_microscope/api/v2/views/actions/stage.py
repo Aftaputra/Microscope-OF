@@ -9,16 +9,19 @@ class MoveStageAPI(ActionView):
         "absolute": fields.Boolean(
             missing=False, example=False, description="Move to an absolute position"
         ),
-        "x": fields.Int(missing=None, example=100),
-        "y": fields.Int(missing=None, example=100),
-        "z": fields.Int(missing=None, example=20),
+        "x": fields.Int(missing=None, example=100, allow_none=False),
+        "y": fields.Int(missing=None, example=100, allow_none=False),
+        "z": fields.Int(missing=None, example=20, allow_none=False),
     }
 
     def post(self, args):
         """
         Move the microscope stage in x, y, z
 
-        Any axes that are not specifed will not move.
+        This action moves the stage. Any axes that are not specifed will not move.
+        If `absolute=True` is specified, the stage will move to the absolute
+        coordinates given.  If not (the default), a relative move is made, i.e.
+        `x=0, y=0, z=0` corresponds to no motion.
         """
         microscope = find_component("org.openflexure.microscope")
 
@@ -50,7 +53,8 @@ class ZeroStageAPI(ActionView):
     def post(self):
         """
         Zero the stage coordinates.
-        Does not move the stage, but rather makes the current position read as [0, 0, 0]
+
+        This action does not move the stage, but rather makes the current position read as [0, 0, 0]
         """
         microscope = find_component("org.openflexure.microscope")
 

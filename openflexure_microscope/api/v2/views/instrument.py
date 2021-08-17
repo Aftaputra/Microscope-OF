@@ -32,9 +32,24 @@ class SettingsProperty(PropertyView):
         return self.get()
 
 
+ROUTE_PARAMETER = {
+    "name": "route",
+    "in": "path",
+    "description": (
+        "The location of a key or sub-dictionary. "
+        + "This is formatted like a path, i.e. forward "
+        + "slashes delimit components of the path."
+    ),
+    "required": True,
+    "schema": {"type": "string"},
+    "example": "camera/exposure_time",
+}
+
+
 class NestedSettingsProperty(View):
     tags = ["properties"]
     responses = {404: {"description": "Settings key cannot be found"}}
+    parameters = [ROUTE_PARAMETER]
 
     def get(self, route: str):
         """
@@ -79,6 +94,7 @@ class StateProperty(PropertyView):
 class NestedStateProperty(View):
     tags = ["properties"]
     responses = {404: {"description": "Status key cannot be found"}}
+    parameters = [ROUTE_PARAMETER]
 
     def get(self, route):
         """
@@ -107,6 +123,7 @@ class ConfigurationProperty(PropertyView):
 class NestedConfigurationProperty(View):
     tags = ["properties"]
     responses = {404: {"description": "Status key cannot be found"}}
+    parameters = [ROUTE_PARAMETER]
 
     def get(self, route):
         """

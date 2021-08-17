@@ -146,8 +146,19 @@ class CaptureList(PropertyView):
         return image_list
 
 
+CAPTURE_ID_PARAMETER = {
+    "name": "id_",
+    "in": "path",
+    "description": "The unique ID of the capture",
+    "required": True,
+    "schema": {"type": "string"},
+    "example": "eeae7ae9-0c0d-45a4-9ef2-7b84bb67a1d1",
+}
+
+
 class CaptureView(View):
     tags = ["captures"]
+    parameters = [CAPTURE_ID_PARAMETER]
 
     @marshal_with(FullCaptureSchema())
     def get(self, id_):
@@ -161,6 +172,8 @@ class CaptureView(View):
             return abort(404)  # 404 Not Found
 
         return capture_obj
+
+    get.responses = {404: {"description": "Capture object was not found"}}
 
     def delete(self, id_):
         """
@@ -182,7 +195,20 @@ class CaptureView(View):
 
 class CaptureDownload(View):
     tags = ["captures"]
-    responses = {200: {"content_type": "image/jpeg"}}
+    responses = {
+        200: {"content": {"image/jpeg": {}}, "description": "Image data in JPEG format"}
+    }
+    parameters = [
+        CAPTURE_ID_PARAMETER,
+        {
+            "name": "filename",
+            "in": "path",
+            "description": "The filename of the downloaded image.",
+            "required": False,
+            "schema": {"type": "string"},
+            "example": "myimage.jpeg",
+        },
+    ]
 
     def get(self, id_, filename: Optional[str]):
         """
@@ -223,6 +249,7 @@ class CaptureDownload(View):
 
 class CaptureTags(View):
     tags = ["captures"]
+    parameters = [CAPTURE_ID_PARAMETER]
 
     def get(self, id_):
         """
@@ -270,6 +297,7 @@ class CaptureTags(View):
 
 class CaptureAnnotations(View):
     tags = ["captures"]
+    parameters = [CAPTURE_ID_PARAMETER]
 
     def get(self, id_):
         """

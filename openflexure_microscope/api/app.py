@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import argparse
 import atexit
 import logging
 import logging.handlers
@@ -23,7 +24,7 @@ import os
 from datetime import datetime
 
 import pkg_resources
-from flask import abort, send_file, jsonify
+from flask import abort, jsonify, send_file
 from flask_cors import CORS, cross_origin
 from labthings import create_app
 from labthings.extensions import find_extensions
@@ -38,6 +39,8 @@ from openflexure_microscope.paths import (
     OPENFLEXURE_VAR_PATH,
     logs_file_path,
 )
+
+from .openapi import add_spec_extras
 
 
 # Custom RotatingFileHandler subclass
@@ -207,6 +210,9 @@ def api_v1_catch_all(path):  # pylint: disable=W0613
     abort(410, "API v1 is no longer in use. Please upgrade your client.")
 
 
+add_spec_extras(labthing.spec)
+
+
 # Automatically clean up microscope at exit
 def cleanup():
     logging.debug("App teardown started...")
@@ -240,6 +246,39 @@ def ofm_serve():
     logging.info("Starting OpenFlexure Microscope Server...")
     server: Server = Server(app)
     server.run(host="0.0.0.0", port=5000, debug=debug_app, zeroconf=True)
+
+
+def generate_openapi():
+    parser = argparse.ArgumentParser("Generate an OpenAPI specification document")
+    parser.add_argument(
+        "-o",
+        dest="output",
+        default="openapi.yaml",
+        help=(
+            "Specify the output filename.  If it ends in .json, we output JSON."
+            "Use .yml or .yaml for YAML (which is the default"
+        ),
+    )
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Validate the API spec, returning an error code if it does not pass.",
+    )
+    args = parser.parse_args()
+    if args.validate:
+        import apispec.utils
+
+        if apispec.utils.validate_spec(labthing.spec):
+            print("OpenAPI specification validated OK.")
+    fname = args.output
+    if fname.endswith(".json"):
+        import json
+
+        with open(fname, "w") as fd:
+            json.dump(labthing.spec.to_dict(), fd)
+    else:
+        with open(fname, "w") as fd:
+            fd.write(labthing.spec.to_yaml())
 
 
 # Start the app if the module is run directly

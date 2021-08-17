@@ -44,6 +44,7 @@ setup(
     # set up the project for development, you use those specific packages, rather than
     # the looser specifications given here.
     install_requires=[
+        "apispec[validation]",  # We need the extra to validate the spec
         "Flask ~= 1.0",
         "Pillow ~= 7.2.0",
         "numpy ~= 1.20",
@@ -58,7 +59,7 @@ setup(
         "pyyaml ~= 5.4.0",
         "pytest-cov ~= 2.10.1",
         "piexif ~= 1.1.3",
-        "labthings ~= 1.2.2",
+        "labthings ~= 1.3.0",
         "typing-extensions ~= 3.7.4",  # Needed for some type-hints in Python < 3.8 (e.g. Literal)
         "RPi.GPIO ~= 0.7.0; platform_machine == 'armv7l'",
     ],
@@ -67,11 +68,15 @@ setup(
     # them to specific versions to enable consistent builds and testing.
     extras_require={
         "dev": [
-            "sphinxcontrib-httpdomain ~= 1.7",
+            "sphinx < 4.0",  # Currently httpdomain isn't ready for 4.0
+            "sphinxcontrib-openapi ~= 0.7",
+            "sphinx_rtd_theme ~=0.5.2",
             "rope ~= 0.14.0",
-            "pylint ~= 2.3",
+            "pylint ~= 2.8.0",  # 2.9.2 crashes and I've not yet figured out why.
             "pytest ~= 6.1.2",
             "mypy ~= 0.790",
+            "types-python-dateutil",
+            "types-setuptools",
             "poethepoet ~= 0.10.0",
             "freezegun ~= 1.0.0",
             "lxml ~= 4.6",
@@ -87,6 +92,7 @@ setup(
         "console_scripts": [
             "ofm-serve=openflexure_microscope.api.app:ofm_serve",
             "ofm-rescue=openflexure_microscope.rescue.auto:main",
+            "ofm-generate-openapi=openflexure_microscope.api.app:generate_openapi",
         ]
     },
     project_urls={

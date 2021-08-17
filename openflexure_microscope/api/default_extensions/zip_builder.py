@@ -10,7 +10,7 @@ from labthings import fields, find_component, update_action_progress
 from labthings.extensions import BaseExtension
 from labthings.schema import Schema, pre_dump
 from labthings.utilities import description_from_view
-from labthings.views import ActionView, PropertyView, View
+from labthings.views import ActionView, PropertyView, View, described_operation
 
 from openflexure_microscope.captures import CaptureObject
 from openflexure_microscope.microscope import Microscope
@@ -149,15 +149,24 @@ class ZipBuilderAPIView(ActionView):
     args = fields.List(fields.String(), required=True)
 
     def post(self, args):
+        """Build a zip file of some captures
+        
+        Given a list of capture IDs as its argument, this action will
+        create a zip file that can be downloaded once the action has
+        completed.
+        """
         microscope = find_component("org.openflexure.microscope")
 
-        # Return a handle on the autofocus task
+        # Build a zip file from the supplied IDs
         return self.extension.manager.marshaled_build_zip_from_capture_ids(
             microscope, args
         )
 
 
 class ZipListAPIView(PropertyView):
+    """List all the zip files currently available for download.
+    """
+
     schema = ZipObjectSchema(many=True)
 
     def get(self):
@@ -165,10 +174,21 @@ class ZipListAPIView(PropertyView):
 
 
 class ZipGetterAPIView(View):
-    """
-    Download or delete a particular capture collection ZIP file
+    """Download or delete a particular capture collection ZIP file
     """
 
+    parameters = [
+        {
+            "name": "session_id",
+            "in": "path",
+            "description": "The unique ID of the zip builder session",
+            "required": True,
+            "schema": {"type": "string"},
+        }
+    ]
+    responses = {404: {"description": "The session ID could not be found"}}
+
+    @described_operation
     def get(self, session_id):
         """
         Download a particular capture collection ZIP file
@@ -176,7 +196,7 @@ class ZipGetterAPIView(View):
         if not session_id in self.extension.manager.session_zips:
             return abort(404)  # 404 Not Found
 
-        logging.info("Session ID: %s", session_id)
+        logging.info("Retrieving zip (session ID: %s)", session_id)
 
         return send_file(
             self.extension.manager.zip_fp_from_id(session_id).name,
@@ -185,6 +205,14 @@ class ZipGetterAPIView(View):
             attachment_filename=f"{session_id}.zip",
         )
 
+    get.responses = {
+        200: {
+            "content": {"application/zip": {}},
+            "description": "A zip archive containing the selected captures",
+        }
+    }
+
+    @described_operation
     def delete(self, session_id):
         """
         Close and delete a particular capture collection ZIP file
@@ -198,3 +226,5 @@ class ZipGetterAPIView(View):
         del self.extension.manager.session_zips[session_id]
 
         return {"return": session_id}
+
+    delete.responses = {200: {"description": "The zip file was deleted"}}
