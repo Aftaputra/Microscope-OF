@@ -21,12 +21,12 @@ stages:
 # Re-usable block to install (and cache) openflexure-microscope-server static app
 .node-install-template: &node-install
   before_script:
-    - cd js/
+    - cd webapp
     - npm install
   cache:
     key: "${CI_COMMIT_REF_SLUG}"
     paths:
-      - js/node_modules
+      - webapp/node_modules
 
 # Python static analysis with PyLint
 pylint:

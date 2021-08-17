@@ -83,7 +83,7 @@ To set up a development version of the software (most likely using emulated came
     * `curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -`
     * `sudo apt install nodejs`
 * To build the web application (this produces a set of static files, that are served by the Flask webserver)
-  * `cd js`
+  * `cd webapp`
   * `npm install`
   * `npm run build`
 * To create a Node.js development server (this will help various development tools to display more information, and auto-rebuilds when you change the source files)
@@ -97,14 +97,14 @@ All of the commands below assume that you are running in the OFM virtual environ
 
 * To auto-format the Python code run `poe format`
 * To auto-format the Javascript code, run
-  * `cd js`
+  * `cd webapp`
   * `npm run lint`
 
 **Before submitting a merge request/merging** please auto-format your code and also run the quality checks (linting, static analysis, and unit tests)
 
 * To auto-format and type-check the Python code run `poe check`
 * To auto-format the Javascript code, run
-  * `cd js`
+  * `cd webapp`
   * `npm run lint`
 
 
