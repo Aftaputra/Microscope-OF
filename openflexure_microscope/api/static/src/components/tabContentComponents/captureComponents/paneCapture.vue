@@ -244,10 +244,70 @@
           </div>
         </div>
       </li>
+      <!--Show stack and scan if scan plugin is enabled-->
+      <li v-if="scanUri" :class="{ 'uk-open': smartStack && scanCapture }">
+        <a class="uk-accordion-title" href="#">Smart Stack</a>
+        <div
+          class="uk-accordion-content"
+          :class="{ 'uk-disabled': !scanCapture }"
+        >
+          <div class="uk-margin">
+            <label
+              ><input
+                v-model="smartStack"
+                class="uk-checkbox"
+                type="checkbox"
+              />
+              Enable smart stacking</label
+            >
+          </div>
+          <p>
+            Smart stacking is an experimental closed-loop Z stack, that checks
+            the Z stack is centred on the focus. It requires Z stacking to be
+            enabled above (we recommend 9 images in Z) and you must select
+            "fast" autofocus.
+          </p>
+          <div :class="{ 'uk-disabled': !smartStack }">
+            <div class="uk-margin-small uk-margin-remove-bottom">
+              <label class="uk-form-label" for="form-stacked-text"
+                >Autofocus range (steps)</label
+              >
+              <input
+                v-model="smartStackAutofocusDz"
+                class="uk-input uk-form-small"
+                type="number"
+                min="1000"
+              />
+            </div>
+            <div class="uk-margin-small uk-margin-remove-bottom">
+              <label class="uk-form-label" for="form-stacked-text"
+                >Alignment range (steps)</label
+              >
+              <input
+                v-model="smartStackAlignDist"
+                class="uk-input uk-form-small"
+                type="number"
+                min="100"
+              />
+            </div>
+          </div>
+        </div>
+      </li>
     </ul>
 
     <div v-if="scanCapture" class="uk-margin uk-margin-remove-top">
       <taskSubmitter
+        v-if="smartStack"
+        :submit-url="smartScanUri"
+        :submit-data="smartScanPayload"
+        :submit-label="'Start Smart Scan'"
+        :button-primary="true"
+        @response="onScanResponse"
+        @error="modalError"
+      >
+      </taskSubmitter>
+      <taskSubmitter
+        v-if="!smartStack"
         :submit-url="scanUri"
         :submit-data="scanPayload"
         :submit-label="'Start Scan'"
@@ -305,7 +365,14 @@ function defaultCaptureSettings() {
     annotations: {
       Client: "openflexure-microscope-jsclient:builtin"
     },
-    scanUri: null
+    smartStack: false,
+    smartStackThreshold: 0.9,
+    smartStackPeakWidth: 200,
+    smartStackAlignDist: 900,
+    smartStackBacklash: 100,
+    smartStackFitStyle: "chevy",
+    smartStackMAndMIndex: 10,
+    smartStackAutofocusDz: 3000
   };
 }
 
@@ -322,7 +389,9 @@ export default {
   data: function() {
     return {
       ...defaultCaptureSettings(),
-      scanCapture: false // Don't remember the "scan" tickbox in local storage.
+      scanCapture: false, // Don't remember the "scan" tickbox in local storage.
+      scanUri: null,
+      smartScanUri: null
     };
   },
 
@@ -372,18 +441,6 @@ export default {
     },
 
     scanPayload: function() {
-      var payload = this.basePayload;
-
-      // Scan params
-      payload.grid = [this.scanSteps.x, this.scanSteps.y, this.scanSteps.z];
-      payload.stride_size = [
-        this.scanStepSize.x,
-        this.scanStepSize.y,
-        this.scanStepSize.z
-      ];
-      payload.style = this.scanStyle.toLowerCase();
-      payload.namemode = this.namingStyle.toLowerCase();
-
       // Convert AF selector to dz
       var afDeltas = {
         Off: 0,
@@ -392,11 +449,32 @@ export default {
         Fine: 10,
         Fast: 2000
       };
-
-      payload.autofocus_dz = afDeltas[this.scanDeltaZ];
-      payload.fast_autofocus = this.scanDeltaZ == "Fast";
-
-      return payload;
+      return {
+        ...this.basePayload,
+        // Scan params
+        grid: [this.scanSteps.x, this.scanSteps.y, this.scanSteps.z],
+        stride_size: [
+          this.scanStepSize.x,
+          this.scanStepSize.y,
+          this.scanStepSize.z
+        ],
+        style: this.scanStyle.toLowerCase(),
+        namemode: this.namingStyle.toLowerCase(),
+        autofocus_dz: afDeltas[this.scanDeltaZ],
+        fast_autofocus: this.scanDeltaZ == "Fast"
+      };
+    },
+    smartScanPayload: function() {
+      return {
+        ...this.scanPayload,
+        threshold: this.smartStackThreshold,
+        width: this.smartStackPeakWidth,
+        align_dist: this.smartStackAlignDist,
+        backlash: this.smartStackBacklash,
+        fit_style: this.smartStackFitStyle,
+        m_and_m_index: this.smartStackMAndMIndex,
+        autofocus_dz: this.smartStackAutofocusDz
+      };
     }
   },
 
@@ -441,6 +519,22 @@ export default {
           if (foundExtension) {
             // Get plugin action link
             this.scanUri = foundExtension.links.tile.href;
+          }
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+
+      axios
+        .get(this.pluginsUri) // Get a list of plugins
+        .then(response => {
+          var plugins = response.data;
+          var foundExtension = plugins.find(
+            e => e.title === "org.openflexure.smart-stack"
+          );
+          if (foundExtension) {
+            // Get plugin action link
+            this.smartScanUri = foundExtension.links.tile.href;
           }
         })
         .catch(error => {
