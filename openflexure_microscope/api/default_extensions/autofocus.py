@@ -216,7 +216,7 @@ def extension_action(args=None):
 
             def post(self, arguments):
                 # Run the action
-                return func(**arguments)
+                return func(self.extension, **arguments)
 
             def get(self, *args, **kwargs):  # pylint: disable=useless-super-delegation
                 # Explicitly wrap the `get` method to allow us to add a docstring
@@ -294,7 +294,7 @@ class AutofocusExtension(BaseExtension):
             obj = getattr(self, k)
             if hasattr(obj, "flask_view"):
                 name = obj.__name__
-                self.add_view(obj.flask_view, f"/{name}", name)
+                self.add_view(obj.flask_view, f"/{name}", endpoint=name)
 
     def measure_sharpness(
         self,
