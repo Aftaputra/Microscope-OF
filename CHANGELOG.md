@@ -1,6 +1,19 @@
-# Unreleased
-* Added support for ImJoy
-* Added a setting to disable the gallery
+# [v2.10.0b2](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.10.0b1...v2.10.0b2) (2021-08-11)
+## New features
+* Added support for ImJoy plugins ([!120](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/120))
+* Added a setting to disable the gallery ([!120](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/120))
+* Scan parameters are now remembered in the "capture" pane ([!132](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/132))
+* The Capture pane now contains controls for the smart stack plugin, if installed (([!134](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/134)))
+
+## Developer changes
+* CI now fails if `Pipfile.lock` is out of date ([!131](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/131))
+* The Thing Description and OpenAPI documentation are now valid, and much improved ([!133](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/133))
+* Pytest XML reports are now recorded in the CI pipeline ([!135](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/135))
+* The application is now packaged for every commit on `master` ([!136](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/136))
+
+# [v2.10.0b0](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.10.0b0...v2.10.0b1) (2021-05-26)
+## Minor bug fixes and improvements
+* Fixed some installation issues with updated Python dependencies ([!129](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/129))
 
 # [v2.10.0b0](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.9.3...v2.10.0b0) (2021-05-18)
 

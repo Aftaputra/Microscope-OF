@@ -28,7 +28,28 @@ There are 2 important settings files, described in the [docs](https://openflexur
 
 # Developer guidelines
 
-## Local installation
+## Developing on a Raspberry Pi
+
+The easiest way to work on the software is to build an OpenFlexure Microscope around a Raspberry Pi, using our custom disk image.  This includes a pre-installed copy of this server, and a pre-built copy of the web application, so it's ready to use.  You can also develop directly on the Raspberry Pi, and this is the best way to test out changes to the Python code using actual hardware.  To do this, use the command-line script `ofm develop`.  This will replace the server application at `/var/openflexure/application/openflexure-microscope-server/` with a clone of this git repository.  You can manage the server with the `ofm` command, using `ofm start`, `ofm stop`, and `ofm restart` to do the respective actions. `ofm serve` will run a debug server that prints its logs and errors to the console.
+
+Our favourite way of working with the server on a Pi is to follow the instructions above, then open a VSCode Remote session from another computer.  This allows you to use your usual developer environment to write code, but everything runs on the Raspberry Pi with real hardware.  Note that `ofm develop` uses an `https://` address for the git repository, so you will probably need to change the "remote" URL to your fork of the repository, or to SSH, before you're able to push changes.
+
+### Updating just the web app
+
+Installing and running node.js on a Raspberry Pi is slow and often frustrating.  Our preference is to do node.js development on another computer, and connect either to a dummy server on that computer, or to a real microscope elsewhere on the network.  If you only want to work on the Python code, it's possible to download a pre-built web application and use it with your modified Python code.  To do this, locate the archive of the web application, and then run:
+```
+cd /var/openflexure/
+sudo chown -R openflexure-ws.openflexure-ws .
+sudo chmod -R g+w .
+cd application/openflexure-microscope-server/
+sudo rm -rf openflexure_microscope/api/static/dist/
+curl <tarball URL> | tar -xz
+```
+NB the `sudo chown` and `sudo chmod` lines are probably unnecessary, but depending on the state of your system they may fix annoying permissions issues.
+
+To find the `<tarball URL>` you should look for `openflexure-microscope-webapp-<version>.tar.gz` on the [build server](https://build.openflexure.org/openflexure-microscope-server/), or open the `package` job of a CI pipeline on this repository, and locate it by browsing the artifacts.  That should work for any merge request that's currently open.
+
+## Installation on other platforms
 
 The Raspberry Pi image we use currently ships with Python 3.7.3. For local development on a different platform, please use PyEnv or similar to make sure you're running on this version. For example, Windows users can use [Scoop](https://scoop.sh/) to install specific Python versions.  This repository contains two closely related parts; a web server written in Python, that handles hardware control, and a web application using Vue.js that provides a graphical control interface.  It is possible to work on either of these in isolation, but bear in mind that if you only set up Python development, you will need to host the web application elsewhere.
 
@@ -139,7 +160,7 @@ As of `2.10.0b0` we have switched to using `pipenv` for managing dependencies, a
 ## Changelog generation
 
 * `npm install -g conventional-changelog-cli`
-* `conventional-changelog -r 1 --config ./changelog.config.js -i CHANGELOG.md -s`
+* `npx conventional-changelog -r 1 --config ./changelog.config.js -i CHANGELOG.md -s`
 
 ## Microscope extensions
 

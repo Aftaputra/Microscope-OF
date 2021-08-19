@@ -164,6 +164,7 @@ build:
       - "./openflexure_microscope/api/static/dist/"
 
   only:
+    - master
     - merge_requests
     - tags
     - web
@@ -198,6 +199,7 @@ package:
       - "./dist/openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz.sha256"
 
   only:
+    - master
     - merge_requests
     - tags
     - web
