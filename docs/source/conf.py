@@ -68,8 +68,6 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "sphinx.ext.ifconfig",
-    "sphinxcontrib.openapi",
-    "sphinxcontrib.redoc",
 ]
 
 # Override ordering
