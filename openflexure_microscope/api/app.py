@@ -24,7 +24,7 @@ import os
 from datetime import datetime
 
 import pkg_resources
-from flask import abort, jsonify, send_file
+from flask import abort, send_file
 from flask_cors import CORS, cross_origin
 from labthings import create_app
 from labthings.extensions import find_extensions
