@@ -175,7 +175,30 @@ export default {
         // Get the returned Task ID
         .then(response => {
           // Start the store polling TaskId for success
-          this.startPolling(response.data.id, response.data.href);
+          return this.startPolling(response.data.id, response.data.href);
+        })
+        .then(response => {
+          // Do something with the final response
+
+          this.$emit("response", response);
+          this.$emit("finished");
+        })
+        .catch(error => {
+          if (!error) {
+            error = Error("Unknown error");
+          }
+          this.$emit("error", error);
+          this.$emit("finished");
+        })
+        .finally(() => {
+          // Reset taskRunning and taskId
+          this.taskRunning = false;
+          this.taskStarted = false;
+          this.taskId = null;
+          // Update the form data if we're self-updating
+          if (this.selfUpdate) {
+            this.getFormData();
+          }
         });
     },
 
@@ -187,30 +210,7 @@ export default {
         // Start the store polling TaskId for success
         this.taskRunning = true;
         this.$emit("taskRunning", this.taskId);
-        this.pollTask(this.taskId, this.pollInterval)
-          .then(response => {
-            // Do something with the final response
-
-            this.$emit("response", response);
-            this.$emit("finished");
-          })
-          .catch(error => {
-            if (!error) {
-              error = Error("Unknown error");
-            }
-            this.$emit("error", error);
-            this.$emit("finished");
-          })
-          .finally(() => {
-            // Reset taskRunning and taskId
-            this.taskRunning = false;
-            this.taskStarted = false;
-            this.taskId = null;
-            // Update the form data if we're self-updating
-            if (this.selfUpdate) {
-              this.getFormData();
-            }
-          });
+        return this.pollTask(this.taskId, this.pollInterval);
       }
     },
 
