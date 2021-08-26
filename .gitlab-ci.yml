@@ -119,6 +119,7 @@ openapi:
     - ofm-generate-openapi -o docs/build/swagger.yaml --validate
   artifacts:
     name: "openapi"
+    expose_as: "OpenAPI Description"
     expire_in: 1 week
     paths:
       - "./docs/build/swagger.yaml"
