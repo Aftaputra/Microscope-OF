@@ -24,7 +24,7 @@ import os
 from datetime import datetime
 
 import pkg_resources
-from flask import abort, jsonify, send_file
+from flask import abort, send_file
 from flask_cors import CORS, cross_origin
 from labthings import create_app
 from labthings.extensions import find_extensions
@@ -107,19 +107,6 @@ app, labthing = create_app(
 
 # Enable CORS for some routes outside of LabThings
 cors: CORS = CORS(app)
-
-# Enable correct handling of Marshmallow/Webargs validation errors
-# Return validation errors as JSON
-# (see  https://webargs.readthedocs.io/en/latest/framework_support.html)
-@app.errorhandler(422)
-@app.errorhandler(400)
-def handle_error(err):
-    headers = err.data.get("headers", None)
-    messages = err.data.get("messages", ["Invalid request."])
-    if headers:
-        return jsonify({"errors": messages}), err.code, headers
-    else:
-        return jsonify({"errors": messages}), err.code
 
 
 # Use custom JSON encoder
