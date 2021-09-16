@@ -245,7 +245,7 @@
         </div>
       </li>
       <!--Show stack and scan if scan plugin is enabled-->
-      <li v-if="scanUri" :class="{ 'uk-open': smartStack && scanCapture }">
+      <li v-if="smartScanUri" :class="{ 'uk-open': smartStack && scanCapture }">
         <a class="uk-accordion-title" href="#">Smart Stack</a>
         <div
           class="uk-accordion-content"
