@@ -20,12 +20,16 @@ if os.system("git lfs env > /dev/null") == 0:
     os.system("git lfs fetch")
     os.system("git lfs checkout")
 else:
-    print("Warning: it seems git lfs is not installed.  Bodging our way around the problem to retrieve images...")
-    os.system('wget https://github.com/git-lfs/git-lfs/releases/download/v2.7.1/git-lfs-linux-amd64-v2.7.1.tar.gz')
-    os.system('tar xvfz git-lfs-linux-amd64-v2.7.1.tar.gz')
-    os.system('./git-lfs install')  # make lfs available in current repository
-    os.system('./git-lfs fetch')  # download content from remote
-    os.system('./git-lfs checkout')  # make local files to have the real content on them
+    print(
+        "Warning: it seems git lfs is not installed.  Bodging our way around the problem to retrieve images..."
+    )
+    os.system(
+        "wget https://github.com/git-lfs/git-lfs/releases/download/v2.7.1/git-lfs-linux-amd64-v2.7.1.tar.gz"
+    )
+    os.system("tar xvfz git-lfs-linux-amd64-v2.7.1.tar.gz")
+    os.system("./git-lfs install")  # make lfs available in current repository
+    os.system("./git-lfs fetch")  # download content from remote
+    os.system("./git-lfs checkout")  # make local files to have the real content on them
 
 # Load module from relative imports by modifying the path
 
@@ -47,15 +51,15 @@ class Mock(MagicMock):
 
 
 mock_imports = [
-    "picamerax", 
-    "picamerax.array", 
-    "picamerax.mmalobj", 
-    "numpy", 
-    "labthings", 
+    "picamerax",
+    "picamerax.array",
+    "picamerax.mmalobj",
+    "numpy",
+    "labthings",
     "labthings.json",
-    "expiringdict", 
-    "dateutil", 
-    "dateutil.parser", 
+    "expiringdict",
+    "dateutil",
+    "dateutil.parser",
     "typing_extensions",
     "PIL",
     "sangaboard",
