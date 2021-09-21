@@ -54,16 +54,6 @@ mock_imports = [
     "picamerax",
     "picamerax.array",
     "picamerax.mmalobj",
-    "numpy",
-    "labthings",
-    "labthings.json",
-    "expiringdict",
-    "dateutil",
-    "dateutil.parser",
-    "typing_extensions",
-    "PIL",
-    "sangaboard",
-    "piexif",
 ]
 
 sys.modules.update((mod_name, Mock()) for mod_name in mock_imports)
