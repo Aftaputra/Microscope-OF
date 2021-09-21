@@ -15,6 +15,22 @@
 import os
 import sys
 
+# Workaround to install and execute git-lfs on Read the Docs
+if os.system("git lfs env > /dev/null") == 0:
+    os.system("git lfs fetch")
+    os.system("git lfs checkout")
+else:
+    print(
+        "Warning: it seems git lfs is not installed.  Bodging our way around the problem to retrieve images..."
+    )
+    os.system(
+        "wget https://github.com/git-lfs/git-lfs/releases/download/v2.7.1/git-lfs-linux-amd64-v2.7.1.tar.gz"
+    )
+    os.system("tar xvfz git-lfs-linux-amd64-v2.7.1.tar.gz")
+    os.system("./git-lfs install")  # make lfs available in current repository
+    os.system("./git-lfs fetch")  # download content from remote
+    os.system("./git-lfs checkout")  # make local files to have the real content on them
+
 # Load module from relative imports by modifying the path
 
 module_path = os.path.abspath("../..")
@@ -68,8 +84,6 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "sphinx.ext.ifconfig",
-    "sphinxcontrib.openapi",
-    "sphinxcontrib.redoc",
 ]
 
 # Override ordering
@@ -237,13 +251,3 @@ intersphinx_mapping = {
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
-
-# -- Options for redoc extension ---------------------------------------------
-redoc = [
-    {
-        "name": "OpenFlexure Microscope HTTP API",
-        "page": "api_redoc",
-        "spec": "../build/swagger.yaml",
-        "embed": True,
-    }
-]

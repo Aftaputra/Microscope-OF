@@ -20,5 +20,5 @@ $(BUILDDIR)/swagger.yaml: Makefile
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-html dirhtml singlehtml json htmlhelp epub latex latexpdf text changes xml linkcheck doctest coverage clean: openapi Makefile
+html dirhtml singlehtml json htmlhelp epub latex latexpdf text changes xml linkcheck doctest coverage clean: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

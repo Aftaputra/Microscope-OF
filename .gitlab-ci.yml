@@ -194,10 +194,7 @@ package:
     name: "dist"
     expire_in: 1 week
     paths:
-      - "./dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz"
-      - "./dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256"
-      - "./dist/openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz"
-      - "./dist/openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz.sha256"
+      - "./dist/"
 
   only:
     - master
