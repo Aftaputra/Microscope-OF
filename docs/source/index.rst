@@ -6,6 +6,7 @@ Welcome to OpenFlexure Microscope Software's documentation!
    :caption: Contents:
 
    quickstart.rst
+   webapp/index.rst
    config.rst
    microscope.rst
    camera.rst
