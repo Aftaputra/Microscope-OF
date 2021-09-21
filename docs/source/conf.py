@@ -50,11 +50,7 @@ class Mock(MagicMock):
         return MagicMock()
 
 
-mock_imports = [
-    "picamerax",
-    "picamerax.array",
-    "picamerax.mmalobj",
-]
+mock_imports = ["picamerax", "picamerax.array", "picamerax.mmalobj"]
 
 sys.modules.update((mod_name, Mock()) for mod_name in mock_imports)
 
