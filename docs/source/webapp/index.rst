@@ -5,12 +5,12 @@ Web Application interface
    :maxdepth: 2
    :caption: Contents:
 
-   pane_navigate.rst
-   pane_capture.rst
-   pane_settings.rst
-   pane_gallery.rst
+   pane_navigate
+   pane_capture
+   pane_settings
+   pane_gallery
 
-The main graphical interface for the OpenFlexure Microscope is implemented as a web application, which allows it to be accessed either through OpenFlexure Connect or a web browser.  See the :doc:`../quickstart.rst` page for connection instructions.  A "tour" should guide users through the interface when they connect for the first time, and introduce the key interface elements.  
+The main graphical interface for the OpenFlexure Microscope is implemented as a web application, which allows it to be accessed either through OpenFlexure Connect or a web browser.  See the :doc:`../quickstart` page for connection instructions.  A "tour" should guide users through the interface when they connect for the first time, and introduce the key interface elements.  
 
 Interface structure
 -------------------

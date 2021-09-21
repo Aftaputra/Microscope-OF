@@ -20,4 +20,4 @@ Various scan patterns are available for XY scanning.  Raster scanning is the def
 
 Images acquired during the scan will be saved to a folder on the Raspberry Pi.  They can be named according to their coordinates in the scan (default) or numbered sequentially (in case the latter is easier to process).
 
-To retrieve images acquired during a scan, or captured individually, you can use the :doc:`pane_gallery.rst`.
+To retrieve images acquired during a scan, or captured individually, you can use the :doc:`pane_gallery`.

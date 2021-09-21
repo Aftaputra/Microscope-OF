@@ -34,7 +34,21 @@ class Mock(MagicMock):
         return MagicMock()
 
 
-mock_imports = ["picamerax", "picamerax.array", "picamerax.mmalobj"]
+mock_imports = [
+    "picamerax", 
+    "picamerax.array", 
+    "picamerax.mmalobj", 
+    "numpy", 
+    "labthings", 
+    "labthings.json",
+    "expiringdict", 
+    "dateutil", 
+    "dateutil.parser", 
+    "typing_extensions",
+    "PIL",
+    "sangaboard",
+    "piexif",
+]
 
 sys.modules.update((mod_name, Mock()) for mod_name in mock_imports)
 
@@ -235,13 +249,3 @@ intersphinx_mapping = {
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
-
-# -- Options for redoc extension ---------------------------------------------
-redoc = [
-    {
-        "name": "OpenFlexure Microscope HTTP API",
-        "page": "api_redoc",
-        "spec": "../build/swagger.yaml",
-        "embed": True,
-    }
-]
