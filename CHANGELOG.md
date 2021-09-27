@@ -1,3 +1,18 @@
+# [v2.10.0](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.10.0b2...v2.10.0) (2021-08-11)
+## Documentation improvements
+* Many improvements to the generated OpenAPI documentation, resulting in it now validating. ([!133](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/133))
+* Added a user guide and fixed readthedocs.  Linked to the API documentation, and store it on the build server with releases. ([!140](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/140))
+
+## Developer changes
+* The web app is now in a top-level directory ([!122]((https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/122))
+* OpenAPI descriptions are now easier to download from a merge request. ([!139](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/139))
+
+## Minor bug fixes and improvements
+* Removed vestigial error handling code that is now dealt with by LabThings. ([!137](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/137))
+* taskSubmitter buttons in the web app now handle errors more robustly.  This fixes a bug where the progress bar would spin indefinitely.  ([!138](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/138))
+* Smart stack controls now only appear if the plugin is installed.  ([!142](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/142))
+* Javascript dependencies are updated for security.  ([!141](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/141))
+
 # [v2.10.0b2](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.10.0b1...v2.10.0b2) (2021-08-11)
 ## New features
 * Added support for ImJoy plugins ([!120](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/120))

@@ -12,7 +12,7 @@ The simplest way to set up a microscope is to download the pre-built Raspberry P
 There are instructions on how to [use the microscope](https://openflexure.org/projects/microscope/control) once you have installed the software, either from OpenFlexure Connect, or through a web browser.
 The web server starts on port 5000 by default, and the microscope SD image uses the hostname "microscope" so you can usually access the web interface at <http://microscope.local:5000/>.
 
-Full developer documentation can be found on [**ReadTheDocs**](https://openflexure-microscope-software.readthedocs.io/), including some installation notes.
+A user guide and developer documentation can be found on [**ReadTheDocs**](https://openflexure-microscope-software.readthedocs.io/), including some installation notes, a link to the HTTP API reference, and guidance for developing extensions.
 More information is also available in the [handbook](https://gitlab.com/openflexure/microscope-handbook/), and in the "development instructions" below.
 
 ## Settings
