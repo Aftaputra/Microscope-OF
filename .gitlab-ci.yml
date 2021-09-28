@@ -232,7 +232,7 @@ deploy:
     - web
 
 zenodo:
-  stage: zenodo
+  stage: deploy
   image: ubuntu:20.04
   before_script:
     - apt-get update -qq

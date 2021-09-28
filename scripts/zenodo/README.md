@@ -17,7 +17,7 @@ This folder contains some scripts put together by Kaspar Bumke, and re-used by R
   - Copy and paste the block below, to build and upload the source and built artefacts.
     ```yaml
     zenodo:
-    stage: zenodo
+    stage: deploy
     image: ubuntu:20.04
     before_script:
         - apt-get update -qq
