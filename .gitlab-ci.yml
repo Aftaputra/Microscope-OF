@@ -239,7 +239,7 @@ zenodo:
     - apt-get -y -qq install git python3-pip
     - pip3 install -r scripts/zenodo/requirements.txt
   variables:
-    ZENODO_USE_SANDBOX: "true"
+    ZENODO_USE_SANDBOX: "false"
   script:
     - git archive "${CI_COMMIT_REF_NAME}" --format=zip --output="${CI_PROJECT_NAME}-${CI_COMMIT_REF_NAME}-source.zip"
     - python3 scripts/zenodo/upload_to_zenodo.py "${CI_PROJECT_NAME}-${CI_COMMIT_REF_NAME}-source.zip" dist/*
