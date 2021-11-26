@@ -59,7 +59,7 @@ def ndarray_to_json(arr: np.ndarray) -> JSONArrayType:
 
 
 def json_to_ndarray(json_dict: JSONArrayType):
-    if not json_dict.get("@type") != "ndarray":
+    if json_dict.get("@type") != "ndarray":
         logging.warning("No valid @type attribute found. Conversion may fail.")
     for required_param in ("dtype", "shape", "base64"):
         if not json_dict.get(required_param):
