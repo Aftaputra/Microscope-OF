@@ -45,6 +45,31 @@ class JPEGSharpnessMonitor:
         self.camera.stream.stop_tracking()
         self.camera.stream.reset_tracking()
 
+    def hold(self, delay: int = 5):
+        self.camera.stream.start_tracking()
+        self.stage_times.append(time.time())
+        self.stage_positions.append(self.stage.position)
+
+        time.sleep(delay)
+
+        self.camera.stream.stop_tracking()
+        self.stage_times.append(time.time())
+        self.stage_positions.append(self.stage.position)
+
+        # Retrieve frame data
+        for frame in self.camera.stream.frames:
+            # Make timestamp absolute Unix time
+            self.jpeg_times.append(frame.time)
+            self.jpeg_sizes.append(frame.size)
+        # Clear frame data for this move from the stream
+        self.camera.stream.reset_tracking()
+
+        # Index of the data for this movement
+        data_index: int = len(self.stage_positions) - 2
+        # Final z position after move
+        final_z_position: int = self.stage_positions[-1][2]
+        return data_index, final_z_position
+
     def focus_rel(self, dz: int, backlash: bool = False, **kwargs) -> Tuple[int, int]:
         # Store the start time and position
         self.camera.stream.start_tracking()
@@ -499,6 +524,32 @@ class AutofocusExtension(BaseExtension):
     @extension_action(
         args={
             "dz": fields.Int(
+                missing=500,
+                example=500,
+                description="Total Z range to move down, then up (in stage steps)",
+            ),
+            "delay": fields.Int(
+                missing=5,
+                example=5,
+                description="How long to measure sharpness for after the move",
+            )
+        }
+    )
+    def measure_settling_time(self, microscope: Optional[Microscope] = None, delay: int = 2, dz: int = 400) -> Dict[str, np.ndarray]:
+        """Make a Z move down then up, then monitor sharpness.
+        This is useful so we can see how long we need to wait for the sharpness value to converge"""
+        if not microscope:
+            microscope = find_microscope_with_real_stage()
+        with microscope.lock(timeout=1), microscope.camera.lock, microscope.stage.lock:
+            with monitor_sharpness(microscope) as m:
+                m.focus_rel(-dz)
+                m.focus_rel(dz)
+                m.hold(delay)
+                return m.data_dict()
+
+    @extension_action(
+        args={
+            "dz": fields.Int(
                 missing=2000,
                 example=2000,
                 description="Total Z range to search over (in stage steps)",
@@ -516,7 +567,7 @@ class AutofocusExtension(BaseExtension):
                 missing=25,
                 minimum=0,
                 description="Distance to undershoot, before correction move.",
-            ),
+            )
         }
     )
     def fast_up_down_up_autofocus(
