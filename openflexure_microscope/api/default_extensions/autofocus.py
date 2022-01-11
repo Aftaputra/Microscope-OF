@@ -46,6 +46,8 @@ class JPEGSharpnessMonitor:
         self.camera.stream.reset_tracking()
 
     def hold(self, delay: int = 5):
+        """Run time.sleep for delay seconds, 
+        while monitoring the JPEG frame size of the stream"""
         self.camera.stream.start_tracking()
         self.stage_times.append(time.time())
         self.stage_positions.append(self.stage.position)
@@ -536,7 +538,7 @@ class AutofocusExtension(BaseExtension):
         }
     )
     def measure_settling_time(self, microscope: Optional[Microscope] = None, delay: int = 2, dz: int = 400) -> Dict[str, np.ndarray]:
-        """Make a Z move down then up, then monitor sharpness.
+        """Make a Z move down then up by dz, then pause for delay while monitoring sharpness.
         This is useful so we can see how long we need to wait for the sharpness value to converge"""
         if not microscope:
             microscope = find_microscope_with_real_stage()
