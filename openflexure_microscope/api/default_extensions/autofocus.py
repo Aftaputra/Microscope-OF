@@ -534,10 +534,12 @@ class AutofocusExtension(BaseExtension):
                 missing=5,
                 example=5,
                 description="How long to measure sharpness for after the move",
-            )
+            ),
         }
     )
-    def measure_settling_time(self, microscope: Optional[Microscope] = None, delay: int = 2, dz: int = 400) -> Dict[str, np.ndarray]:
+    def measure_settling_time(
+        self, microscope: Optional[Microscope] = None, delay: int = 2, dz: int = 400
+    ) -> Dict[str, np.ndarray]:
         """Make a Z move down then up by dz, then pause for delay while monitoring sharpness.
         This is useful so we can see how long we need to wait for the sharpness value to converge"""
         if not microscope:
@@ -569,7 +571,7 @@ class AutofocusExtension(BaseExtension):
                 missing=25,
                 minimum=0,
                 description="Distance to undershoot, before correction move.",
-            )
+            ),
         }
     )
     def fast_up_down_up_autofocus(
