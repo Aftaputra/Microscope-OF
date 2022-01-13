@@ -175,13 +175,13 @@ class CaptureManager:
     def remove_image(self, capture_obj: CaptureObject, capture_id: str):
         logging.info("Deleting capture %s", capture_id)
         if capture_id in self.images:
-            logging.info("Deleting capture object %s", capture_obj)
+            logging.debug("Deleting capture object %s", capture_obj)
             del self.images[capture_id]
 
     def remove_video(self, capture_obj: CaptureObject, capture_id: str):
         logging.info("Deleting capture %s", capture_id)
         if capture_id in self.images:
-            logging.info("Deleting capture object %s", capture_obj)
+            logging.debug("Deleting capture object %s", capture_obj)
             del self.videos[capture_id]
 
 
