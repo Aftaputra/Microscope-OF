@@ -111,13 +111,13 @@ class CaptureObject(object):
         self.stream.write(s)
 
     def flush(self):
-        logging.info("Writing image data to disk %s", self.file)
+        logging.debug("Writing image data to disk %s", self.file)
         with open(self.file, "wb") as outfile:
             outfile.write(self.stream.getbuffer())
         self.stream.close()
-        logging.info("Writing metadata to disk %s", self.file)
+        logging.debug("Writing metadata to disk %s", self.file)
         self._init_metadata()
-        logging.info("Finished writing to disk %s", self.file)
+        logging.debug("Finished writing to disk %s", self.file)
 
     def open(self, mode):
         return open(self.file, mode)
@@ -179,7 +179,7 @@ class CaptureObject(object):
         self.annotations = image_metadata.get("annotations")
 
     def read_full_metadata(self) -> dict:
-        logging.info("Reading full capture metadata from %s...", self.file)
+        logging.debug("Reading full capture metadata from %s...", self.file)
         exif_dict = self._read_exif()
         return self._decode_usercomment(exif_dict)
 
@@ -284,7 +284,7 @@ class CaptureObject(object):
 
         # Write new data to file EXIF, if supported
         if self.format.upper() in EXIF_FORMATS and self.exists:
-            logging.info("Writing Exif data to %s", self.file)
+            logging.debug("Writing Exif data to %s", self.file)
 
             # Extract current Exif data
             exif_dict = self._read_exif()
@@ -311,7 +311,7 @@ class CaptureObject(object):
 
             # Insert exif into file
             piexif.insert(exif_bytes, self.file)
-            logging.info("Finished writing Exif data to %s", self.file)
+            logging.debug("Finished writing Exif data to %s", self.file)
 
     # PROPERTIES
 
@@ -331,7 +331,7 @@ class CaptureObject(object):
         """
 
         if self.exists:  # If data file exists
-            logging.info("Opening from file %s", (self.file))
+            logging.debug("Opening from file %s", (self.file))
             with open(self.file, "rb") as f:
                 d = io.BytesIO(f.read())  # Load bytes from file
             d.seek(0)  # Rewind loaded bytestream
