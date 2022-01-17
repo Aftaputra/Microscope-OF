@@ -1,3 +1,12 @@
+# [v2.10.1](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.10.0...v2.10.1) (2022-01-17)
+## Bug fixes
+* Fixed a typo in the serialisation of numpy arrays (#243) ([!148](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/148))
+* Made it possible again to track sharpness while the stage is not moving.  This changed when the extra thread was removed from `JPEGSharpnessMonitor`. ([!149](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/149))
+
+## Minor improvements
+* Added a function to measure settling time after a Z move ([!149](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/149))
+* Bumped some INFO logging statements to DEBUG to de-clutter the logs. ([!151](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/149))
+
 # [v2.10.0](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.10.0b2...v2.10.0) (2021-08-11)
 ## Documentation improvements
 * Many improvements to the generated OpenAPI documentation, resulting in it now validating. ([!133](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/133))

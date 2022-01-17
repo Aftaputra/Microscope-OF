@@ -22,7 +22,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="openflexure-microscope-server",
-    version="2.10.0",
+    version="2.10.1",
     description="Python module, and Flask-based web API, to run the OpenFlexure Microscope.",
     long_description=long_description,
     long_description_content_type="text/markdown",
