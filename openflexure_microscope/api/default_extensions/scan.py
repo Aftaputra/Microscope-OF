@@ -2,10 +2,10 @@ import datetime
 import logging
 import time
 import uuid
-from functools import reduce
 from typing import Dict, List, Optional, Tuple
 
 import marshmallow
+import numpy as np
 from labthings import (
     current_action,
     fields,
@@ -15,7 +15,6 @@ from labthings import (
 )
 from labthings.extensions import BaseExtension
 from labthings.views import ActionView
-import numpy as np
 from typing_extensions import Literal
 
 from openflexure_microscope.api.v2.views.actions.camera import FullCaptureArgs
@@ -36,7 +35,7 @@ def construct_grid(
     step_sizes: XyCoordinate,
     n_steps: XyCoordinate,
     style: Literal["raster", "snake", "spiral"] = "raster",
-):
+) -> List[List[XyCoordinate]]:
     """
     Given an initial position, step sizes, and number of steps,
     construct a 2-dimensional list of scan x-y positions.
@@ -96,7 +95,9 @@ def construct_grid(
     return arr
 
 
-def closest_point_in_xy(current_position: XyCoordinate, points: List[XyzCoordinate]):
+def closest_point_in_xy(
+    current_position: XyCoordinate, points: List[XyzCoordinate]
+) -> Optional[XyzCoordinate]:
     """Find the closest point in a list
 
     Given a 2D position, find the 3D position that's closest in XY and return it.
@@ -108,16 +109,14 @@ def closest_point_in_xy(current_position: XyCoordinate, points: List[XyzCoordina
         return None
     points_2d = np.asarray(points)[:, :2]
 
-    squared_distances = np.sum((points_2d - current_position)**2, axis=1)
+    squared_distances = np.sum((points_2d - current_position) ** 2, axis=1)
     # We reverse the distances before searching, as argmin will return the first
     # point in the event of there being multiple points with the same minimum,
     # and we want to pick the last one.
     reverse_min_index = np.argmin(squared_distances[::-1])
     # of course, now we must convert the index to be the right way round
     min_index = len(points) - 1 - reverse_min_index
-    if min_index != len(points) - 1:
-        logging.info(f"Using point {min_index} of {len(points)} for focus.")
-    return points[min_index]
+    return points[int(min_index)]  # The explicit cast is necessary for MyPy
 
 
 ### Capturing
@@ -200,7 +199,7 @@ class ScanExtension(BaseExtension):
         metadata: Optional[dict] = None,
         annotations: Optional[Dict[str, str]] = None,
         tags: Optional[List[str]] = None,
-        detect_empty_fields_and_skip_autofocus: bool = False
+        detect_empty_fields_and_skip_autofocus: bool = False,
     ):
         metadata = metadata or {}
         annotations = annotations or {}
@@ -213,7 +212,7 @@ class ScanExtension(BaseExtension):
         # Construct an x-y grid (worry about z later)
         x_y_grid = construct_grid(
             initial_position[:2], stride_size[:2], grid[:2], style=style
-        ) # This is a list of lists.
+        )  # This is a list of lists.
 
         # Keep task progress
         # NB the number of points is found from the number of elements in
@@ -224,7 +223,6 @@ class ScanExtension(BaseExtension):
         # Generate a basename if none given
         if not basename:
             basename = generate_basename()
-
 
         # Add dataset metadata
         dataset_d = {
@@ -252,11 +250,17 @@ class ScanExtension(BaseExtension):
 
         if detect_empty_fields_and_skip_autofocus:
             # Check for the background detect extension if we need it, raise an error now if it's missing.
-            background_detect_extension = find_extension("org.openflexure.background-detect")
+            background_detect_extension = find_extension(
+                "org.openflexure.background-detect"
+            )
             if not background_detect_extension:
-                raise RuntimeError("Detecting background fields requires the background detect extension and it was not found.")
+                raise RuntimeError(
+                    "Detecting background fields requires the background detect extension and it was not found."
+                )
 
-        focused_positions: List[XyzCoordinate] = []  # Positions where we found sharp images
+        focused_positions: List[
+            XyzCoordinate
+        ] = []  # Positions where we found sharp images
 
         # Now step through each point in the x-y coordinate array
         for line in x_y_grid:
@@ -267,7 +271,11 @@ class ScanExtension(BaseExtension):
                 # point, except when we're at the start of a row when it will be the first
                 # point of the preceding row.
                 closest_focused_point = closest_point_in_xy(x_y, focused_positions)
-                next_z = closest_focused_point[2] if closest_focused_point else initial_position[2]
+                next_z = (
+                    closest_focused_point[2]
+                    if closest_focused_point
+                    else initial_position[2]
+                )
                 # Move to new grid position
                 logging.debug("Moving to step %s", ([x_y[0], x_y[1], next_z]))
                 microscope.stage.move_abs((x_y[0], x_y[1], next_z))
@@ -279,7 +287,9 @@ class ScanExtension(BaseExtension):
                     logging.debug(f"Background detection verdict: {verdict}")
                     if verdict["classification"] == "background":
                         skip_autofocus = True
-                        logging.info(f"Detected an empty field at {x_y}, skipping autofocus.")
+                        logging.info(
+                            f"Detected an empty field at {x_y}, skipping autofocus."
+                        )
 
                 if autofocus_enabled and not skip_autofocus:
                     if fast_autofocus:
@@ -297,11 +307,19 @@ class ScanExtension(BaseExtension):
                     here = microscope.stage.position
                     # Check if we've moved worryingly far in Z
                     if closest_focused_point:
-                        lateral_move = np.sqrt(np.sum((np.array(here)[:2] - np.array(closest_focused_point)[:2])**2))
+                        lateral_move = np.sqrt(
+                            np.sum(
+                                (
+                                    np.array(here)[:2]
+                                    - np.array(closest_focused_point)[:2]
+                                )
+                                ** 2
+                            )
+                        )
                         axial_move = np.abs(here[2] - closest_focused_point[2])
                         if axial_move > lateral_move * 0.4:
                             autofocus_accepted = False
-                            logging.warn(
+                            logging.warning(
                                 f"During a scan, there was a large axial jump from {closest_focused_point}"
                                 f" to {here}.  This may mean autofocus has failed."
                             )
@@ -473,5 +491,7 @@ class TileScanAPI(ActionView):
                 fast_autofocus=args.get("fast_autofocus"),
                 annotations=args.get("annotations"),
                 tags=args.get("tags"),
-                detect_empty_fields_and_skip_autofocus=args.get("detect_empty_fields_and_skip_autofocus"),
+                detect_empty_fields_and_skip_autofocus=args.get(
+                    "detect_empty_fields_and_skip_autofocus"
+                ),
             )
