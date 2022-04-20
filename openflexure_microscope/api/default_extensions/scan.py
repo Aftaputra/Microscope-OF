@@ -2,7 +2,7 @@ import datetime
 import logging
 import time
 import uuid
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import Callable, Dict, List, Optional, Tuple
 
 import marshmallow
 import numpy as np
@@ -29,6 +29,7 @@ XyzCoordinate = Tuple[int, int, int]
 
 ### Grid construction
 
+
 class FocusManager:
     """Manage axial motion during a series of XY moves
 
@@ -36,21 +37,22 @@ class FocusManager:
     It currently uses the regular autofocus method, and has support
     for background detection.
     """
-    initial_position: XyzCoordinate = None
-    focused_positions: List[XyzCoordinate] = None
-    current_image_is_background: Optional[Callable] = None
-    autofocus: Optional[Callable] = None
-    microscope: Microscope = None
+
+    initial_position: XyzCoordinate = None  # type: ignore[assignment]
+    focused_positions: List[XyzCoordinate] = None  # type: ignore[assignment]
+    microscope: Microscope = None  # type: ignore[assignment]
+    current_image_is_background_function: Optional[Callable] = None
+    autofocus_function: Optional[Callable] = None
     axial_jump_threshold: Optional[float] = None
 
     def __init__(
-        self, 
+        self,
         microscope: Microscope,
         initial_position: XyzCoordinate,
         autofocus_function: Optional[Callable],
         current_image_is_background_function: Optional[Callable] = None,
-        axial_jump_threshold: Optional[float] = 0.4
-        ):
+        axial_jump_threshold: Optional[float] = 0.4,
+    ):
         """Set up management of axial motion.
 
         The `FocusManager` keeps track of previous positions where the
@@ -74,19 +76,19 @@ class FocusManager:
         use background estimation.
         """
         self.initial_position = initial_position
+        self.focused_positions = []
         self.microscope = microscope
         self.autofocus_function = autofocus_function
         if not autofocus_function:
             logging.info("Setting up FocusManager with autofocus disabled.")
         self.current_image_is_background_function = current_image_is_background_function
         self.axial_jump_threshold = axial_jump_threshold
-        self.focused_positions = []
 
     def record_focused_point(self, position: XyzCoordinate):
         """Add a position to the list of successfully-focused points"""
         self.focused_positions.append(position)
 
-    def closest_focused_point(self, position: XyCoordinate) -> XyzCoordinate:
+    def closest_focused_point(self, position: XyCoordinate) -> Optional[XyzCoordinate]:
         """The closest point in our list of focused points to a given XY position."""
         return closest_point_in_xy(position, self.focused_positions)
 
@@ -122,9 +124,11 @@ class FocusManager:
         """
         if not self.axial_jump_threshold:
             return False
-        closest_focused_point = self.closest_focused_point(position)
+        closest_focused_point = self.closest_focused_point(position[:2])
+        if not closest_focused_point:
+            return False
         move = np.array(position) - np.array(closest_focused_point)
-        lateral_move = np.sqrt(np.sum(move[:2]**2))
+        lateral_move = np.sqrt(np.sum(move[:2] ** 2))
         axial_move = np.abs(move[2])
         return axial_move > lateral_move * self.axial_jump_threshold
 
@@ -158,7 +162,6 @@ class FocusManager:
         else:
             # If there has not been a jump in focus, record the point as successful
             self.record_focused_point(here)
-
 
 
 def construct_grid(
@@ -225,6 +228,7 @@ def construct_grid(
 
     return arr
 
+
 def construct_grid_1d(
     initial: XyCoordinate,
     step_sizes: XyCoordinate,
@@ -237,7 +241,9 @@ def construct_grid_1d(
     but the list-of-lists is flattened to a simple list.
     """
     path = []
-    grid = construct_grid(initial=initial, step_sizes=step_sizes, n_steps=n_steps, style=style)
+    grid = construct_grid(
+        initial=initial, step_sizes=step_sizes, n_steps=n_steps, style=style
+    )
     for line in grid:
         path += line  # concatenate the lists
     return path
@@ -340,38 +346,49 @@ class ScanExtension(BaseExtension):
         # Locate the autofocus extension
         autofocus_extension = find_extension("org.openflexure.autofocus")
         if not autofocus_extension:
-            raise RuntimeError("The Autofocus extension is missing: select 'None' as your autofocus type to scan without autofocusing.")
+            raise RuntimeError(
+                "The Autofocus extension is missing: select 'None' as your autofocus "
+                "type to scan without autofocusing."
+            )
         if not (microscope.has_real_stage() and microscope.has_real_camera()):
-            raise RuntimeError("A real stage and camera are needed in order to autofocus.  You can still run a scan without autofocus.")
-        
+            raise RuntimeError(
+                "A real stage and camera are needed in order to autofocus.  You can "
+                "still run a scan without autofocus."
+            )
+
         if use_fast_autofocus:
+
             def autofocus():
                 # Run fast autofocus. Client should provide dz ~ 2000
                 autofocus_extension.fast_autofocus(microscope, dz=dz)
                 time.sleep(0.5)
+
             return autofocus
         else:
+
             def autofocus():
                 # Run slow autofocus. Client should provide dz ~ 50
-                autofocus_extension.autofocus(
-                    microscope,
-                    range(-3 * dz, 4 * dz, dz),
-                )
+                autofocus_extension.autofocus(microscope, range(-3 * dz, 4 * dz, dz))
                 time.sleep(0.5)
+
             return autofocus
 
     def get_background_detect_function(self):
         """Return a function that returns true if we are looking at background"""
         # Check for the background detect extension, raise an error now if it's missing.
-        background_detect_extension = find_extension("org.openflexure.background-detect")
+        background_detect_extension = find_extension(
+            "org.openflexure.background-detect"
+        )
         if not background_detect_extension:
             raise RuntimeError(
                 "Detecting background fields requires the background detect extension and it was not found."
             )
+
         def current_image_is_background():
             verdict = background_detect_extension.grab_and_classify_image()
             logging.debug(f"Background detection verdict: {verdict}")
             return verdict["classification"] == "background"
+
         return current_image_is_background
 
     ### Scanning
@@ -428,10 +445,11 @@ class ScanExtension(BaseExtension):
         }
 
         # Perform set-up to be able to autofocus, if needed
+        autofocus: Optional[Callable] = None
         if autofocus_dz:
-            autofocus = self.get_autofocus_function(dz=autofocus_dz, use_fast_autofocus=fast_autofocus)
-        else:
-            autofocus = None
+            autofocus = self.get_autofocus_function(
+                dz=autofocus_dz, use_fast_autofocus=fast_autofocus
+            )
         if detect_empty_fields_and_skip_autofocus:
             current_image_is_background = self.get_background_detect_function()
         else:
@@ -439,9 +457,11 @@ class ScanExtension(BaseExtension):
         focus_manager = FocusManager(
             microscope,
             initial_position,
-            autofocus_function = autofocus,
-            current_image_is_background_function = current_image_is_background,
-            axial_jump_threshold = 0.4 if detect_empty_fields_and_skip_autofocus else None
+            autofocus_function=autofocus,
+            current_image_is_background_function=current_image_is_background,
+            axial_jump_threshold=0.4
+            if detect_empty_fields_and_skip_autofocus
+            else None,
         )
 
         # Now step through each point in the x-y coordinate array
