@@ -221,6 +221,17 @@
               </select>
             </div>
 
+            <div class="uk-margin-small uk-margin-remove-bottom" v-if="backgroundDetectUri">
+              <label class="uk-form-label" for="form-stacked-text">
+                <input
+                  v-model="detectEmptyFieldsAndSkipAutofocus"
+                  class="uk-checkbox"
+                  type="checkbox"
+                />
+                Skip autofocus for empty fields of view
+              </label>
+            </div>
+
             <div class="uk-margin-small uk-margin-remove-bottom">
               <label class="uk-form-label" for="form-stacked-text"
                 >Scan Style</label
@@ -365,6 +376,7 @@ function defaultCaptureSettings() {
     annotations: {
       Client: "openflexure-microscope-jsclient:builtin"
     },
+    detectEmptyFieldsAndSkipAutofocus: false,
     smartStack: false,
     smartStackThreshold: 0.9,
     smartStackPeakWidth: 200,
@@ -391,7 +403,8 @@ export default {
       ...defaultCaptureSettings(),
       scanCapture: false, // Don't remember the "scan" tickbox in local storage.
       scanUri: null,
-      smartScanUri: null
+      smartScanUri: null,
+      backgroundDetectUri: null
     };
   },
 
@@ -461,7 +474,8 @@ export default {
         style: this.scanStyle.toLowerCase(),
         namemode: this.namingStyle.toLowerCase(),
         autofocus_dz: afDeltas[this.scanDeltaZ],
-        fast_autofocus: this.scanDeltaZ == "Fast"
+        fast_autofocus: this.scanDeltaZ == "Fast",
+        detect_empty_fields_and_skip_autofocus: this.detectEmptyFieldsAndSkipAutofocus
       };
     },
     smartScanPayload: function() {
@@ -508,6 +522,10 @@ export default {
     },
 
     updateScanUri: function() {
+      // Update URIs for the various functions in plugins.
+      // This will only work if the plugins are present, so
+      // checking if the URIs is null will determine which
+      // extensions are available.
       axios
         .get(this.pluginsUri) // Get a list of plugins
         .then(response => {
@@ -535,6 +553,22 @@ export default {
           if (foundExtension) {
             // Get plugin action link
             this.smartScanUri = foundExtension.links.tile.href;
+          }
+        })
+        .catch(error => {
+          this.modalError(error); // Let mixin handle error
+        });
+
+      axios
+        .get(this.pluginsUri) // Get a list of plugins
+        .then(response => {
+          var plugins = response.data;
+          var foundExtension = plugins.find(
+            e => e.title === "org.openflexure.background-detect"
+          );
+          if (foundExtension) {
+            // Get plugin action link
+            this.backgroundDetectUri = foundExtension.links.grab_and_classify_image.href;
           }
         })
         .catch(error => {
