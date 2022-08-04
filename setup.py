@@ -22,7 +22,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="openflexure-microscope-server",
-    version="2.10.1",
+    version="2.11.0",
     description="Python module, and Flask-based web API, to run the OpenFlexure Microscope.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -52,7 +52,7 @@ setup(
         "python-dateutil ~= 2.8",
         "psutil ~= 5.6.7",  # Autostorage extension
         "opencv-python-headless ~= 4.5.1",
-        "sangaboard ~= 0.2",
+        "sangaboard ~= 0.3.0",
         "expiringdict ~= 1.2.1",
         "camera-stage-mapping == 0.1.4",
         "picamerax ~= 20.9.1",
