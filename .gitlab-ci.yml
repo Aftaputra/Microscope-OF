@@ -58,7 +58,9 @@ mypy:
 
   artifacts:
     reports:
-      cobertura: openflexure_microscope/cobertura.xml
+      coverage_report: 
+        coverage_format: cobertura
+        path: openflexure_microscope/cobertura.xml
 
   only:
     - branches
