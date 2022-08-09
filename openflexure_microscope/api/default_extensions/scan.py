@@ -578,17 +578,17 @@ class ScanExtension(BaseExtension):
 
 
 class TileScanArgs(FullCaptureArgs):
-    namemode = fields.String(load_default="coordinates", example="coordinates")
+    namemode = fields.String(load_default="coordinates", metadata={"example": "coordinates"})
     grid = fields.List(
         fields.Integer(validate=marshmallow.validate.Range(min=1)),
         load_default=[3, 3, 3],
-        example=[3, 3, 3],
+        metadata={"example": [3, 3, 3]},
     )
     style = fields.String(load_default="raster")
     autofocus_dz = fields.Integer(load_default=50)
     fast_autofocus = fields.Boolean(load_default=False)
     stride_size = fields.List(
-        fields.Integer, load_default=[2000, 1500, 100], example=[2000, 1500, 100]
+        fields.Integer, load_default=[2000, 1500, 100], metadata={"example":[2000, 1500, 100]}
     )
     detect_empty_fields_and_skip_autofocus = fields.Boolean(load_default=False)
 

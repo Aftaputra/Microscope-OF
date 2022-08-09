@@ -66,10 +66,10 @@ class TimelapseAPIView(ActionView):
 
     args = {
         "n_images": fields.Integer(
-            required=True, example=5, description="Number of images"
+            required=True, metadata={"example": 5, "description": "Number of images"}
         ),
         "t_between": fields.Number(
-            load_default=1, example=1, description="Time (seconds) between images"
+            load_default=1, metadata={"example": 1, "description": "Time (seconds) between images"}
         ),
     }
 

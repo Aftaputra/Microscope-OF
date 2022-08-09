@@ -349,8 +349,10 @@ class AutofocusExtension(BaseExtension):
         args={
             "dz": fields.List(
                 fields.Int(),
-                metadata={"description": "An ascending list of relative z positions"},
-                example=[int(x) for x in np.linspace(-300, 300, 7)],
+                metadata={
+                    "description": "An ascending list of relative z positions",
+                    "example": [int(x) for x in np.linspace(-300, 300, 7)],
+                }
             )
         }
     )
@@ -433,8 +435,10 @@ class AutofocusExtension(BaseExtension):
         args={
             "dz": fields.Int(
                 load_default=2000,
-                example=2000,
-                metadata={"description": "Total Z range to search over (in stage steps)"},
+                metadata={
+                    "description": "Total Z range to search over (in stage steps)",
+                    "example": 2000,
+                },
             )
         }
     )
@@ -529,13 +533,17 @@ class AutofocusExtension(BaseExtension):
         args={
             "dz": fields.Int(
                 load_default=500,
-                example=500,
-                metadata={"description": "Total Z range to move down, then up (in stage steps)"},
+                metadata={
+                    "description": "Total Z range to move down, then up (in stage steps)",
+                    "example": 500,
+                },
             ),
             "delay": fields.Int(
                 load_default=5,
-                example=5,
-                metadata={"description": "How long to measure sharpness for after the move"},
+                metadata={
+                    "description": "How long to measure sharpness for after the move",
+                    "example": 5,
+                },
             ),
         }
     )
@@ -557,13 +565,17 @@ class AutofocusExtension(BaseExtension):
         args={
             "dz": fields.Int(
                 load_default=2000,
-                example=2000,
-                metadata={"description": "Total Z range to search over (in stage steps)"},
+                metadata={
+                    "description": "Total Z range to search over (in stage steps)",
+                    "example": 2000,
+                },
             ),
             "target_z": fields.Int(
                 load_default=0,
-                example=-100,
-                metadata={"description": "Target finishing position, relative to the focus."},
+                metadata={
+                    "description": "Target finishing position, relative to the focus.",
+                    "example": -100,
+                },
             ),
             "initial_move_up": fields.Bool(
                 load_default=True,
@@ -571,8 +583,10 @@ class AutofocusExtension(BaseExtension):
             ),
             "backlash": fields.Int(
                 load_default=25,
-                minimum=0,
-                metadata={"description": "Distance to undershoot, before correction move."},
+                metadata={
+                    "description": "Distance to undershoot, before correction move.",
+                    "minimum": 0,
+                },
             ),
         }
     )

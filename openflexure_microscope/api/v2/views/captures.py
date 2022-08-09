@@ -24,7 +24,7 @@ class InstrumentSchema(Schema):
 
 class ImageSchema(Schema):
     id = fields.UUID()
-    time = fields.String(format="date")
+    time = fields.String(metadata={"format": "date"})
     format = fields.String()
     name = fields.String()
     tags = fields.List(fields.String())
