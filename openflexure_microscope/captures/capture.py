@@ -121,7 +121,7 @@ class CaptureObject(object):
 
     def open(self, mode):
         # We don't specify an encoding because this will be a binary file.
-        return open(self.file, mode) # pylint: disable=unspecified-encoding
+        return open(self.file, mode)  # pylint: disable=unspecified-encoding
 
     def split_file_path(self, filepath: str):
         """
