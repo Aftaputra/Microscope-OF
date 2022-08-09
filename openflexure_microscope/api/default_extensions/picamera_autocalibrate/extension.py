@@ -172,20 +172,20 @@ class DeleteLSTView(ActionView):
 class AutoExposureFromRawView(ActionView):
     args = {
         "target_white_level": fields.Int(
-            missing=700,
+            load_default=700,
             example=700,
             description=(
                 "The pixel value (10-bit format) that we aim for when adjusting shutter/gain."
             ),
         ),
         "max_iterations": fields.Int(
-            missing=20,
+            load_default=20,
             description=(
                 "The number of adjustments to the camera's settings to make before giving up."
             ),
         ),
         "tolerance": fields.Float(
-            missing=0.05,
+            load_default=0.05,
             example=0.05,
             description=(
                 "We stop adjusting when we get within this fraction of the target "
@@ -193,7 +193,7 @@ class AutoExposureFromRawView(ActionView):
             ),
         ),
         "percentile": fields.Float(
-            missing=99.9,
+            load_default=99.9,
             example=99.9,
             description=(
                 "A float between 0 and 100 setting the centile to use "
@@ -212,7 +212,7 @@ class AutoExposureFromRawView(ActionView):
 class AutoWhiteBalanceFromRawView(ActionView):
     args = {
         "percentile": fields.Float(
-            missing=99.9,
+            load_default=99.9,
             example=99.9,
             description=(
                 "A float between 0 and 100 setting the centile to use "
@@ -232,7 +232,7 @@ class GetRawChannelPercentilesView(ActionView):
     args = {
         "percentile": fields.Float(
             example=99.9,
-            description="A float between 0 and 100 setting the centile to calculate",
+            metadata={"description": "A float between 0 and 100 setting the centile to calculate"},
         )
     }
     schema = fields.List(fields.Integer)

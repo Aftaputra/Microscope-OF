@@ -298,10 +298,10 @@ class CalibrateXYView(ActionView):
 class MoveInImageCoordinatesView(ActionView):
     args = {
         "x": fields.Float(
-            description="The number of pixels to move in X", required=True, example=100
+            metadata={"description": "The number of pixels to move in X"}, required=True, example=100
         ),
         "y": fields.Float(
-            description="The number of pixels to move in Y", required=True, example=100
+            metadata={"description": "The number of pixels to move in Y"}, required=True, example=100
         ),
     }
 
@@ -316,10 +316,10 @@ class MoveInImageCoordinatesView(ActionView):
 class ClosedLoopMoveInImageCoordinatesView(ActionView):
     args = {
         "x": fields.Float(
-            description="The number of pixels to move in X", required=True, example=100
+            metadata={"description": "The number of pixels to move in X"}, required=True, example=100
         ),
         "y": fields.Float(
-            description="The number of pixels to move in Y", required=True, example=100
+            metadata={"description": "The number of pixels to move in Y"}, required=True, example=100
         ),
     }
 
@@ -336,13 +336,13 @@ class ClosedLoopMoveInImageCoordinatesView(ActionView):
 class TestClosedLoopSpiralScanView(ActionView):
     args = {
         "x_step": fields.Float(
-            description="The number of pixels to move in X", required=True, example=100
+            metadata={"description": "The number of pixels to move in X"}, required=True, example=100
         ),
         "y_step": fields.Float(
-            description="The number of pixels to move in Y", required=True, example=100
+            metadata={"description": "The number of pixels to move in Y"}, required=True, example=100
         ),
         "N": fields.Int(
-            description="The number of rings in the spiral scan",
+            metadata={"description": "The number of rings in the spiral scan"},
             required=True,
             example=3,
         ),

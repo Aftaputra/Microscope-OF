@@ -15,18 +15,18 @@ class CaptureResizeSchema(Schema):
 
 
 class BasicCaptureArgs(Schema):
-    use_video_port = fields.Boolean(missing=False)
+    use_video_port = fields.Boolean(load_default=False)
     bayer = fields.Boolean(
-        missing=False, description="Include raw bayer data in capture"
+        load_default=False, metadata={"description": "Include raw bayer data in capture"}
     )
     resize = fields.Nested(CaptureResizeSchema(), required=False)
 
 
 class FullCaptureArgs(BasicCaptureArgs):
     filename = fields.String(example="MyFileName")
-    temporary = fields.Boolean(missing=False, description="Delete capture on shutdown")
-    annotations = fields.Dict(missing={}, example={"Client": "SwaggerUI"})
-    tags = fields.List(fields.String, missing=[], example=["docs"])
+    temporary = fields.Boolean(load_default=False, metadata={"description": "Delete capture on shutdown"})
+    annotations = fields.Dict(load_default={}, example={"Client": "SwaggerUI"})
+    tags = fields.List(fields.String, load_default=[], example=["docs"])
 
 
 class CaptureAPI(ActionView):
@@ -113,7 +113,7 @@ class GPUPreviewStartAPI(ActionView):
     in the format ``[x, y, width, height]``.
     """
 
-    args = {"window": fields.List(fields.Integer, missing=[], example=[0, 0, 640, 480])}
+    args = {"window": fields.List(fields.Integer, load_default=[], example=[0, 0, 640, 480])}
 
     def post(self, args):
         """

@@ -7,10 +7,10 @@ class StageTypeProperty(PropertyView):
     """The type of the stage"""
 
     schema = fields.String(
-        missing=None,
+        load_default=None,
         example="SangaStage",
         validate=validate.OneOf(["SangaStage", "SangaDeltaStage"]),
-        description="The translation stage geometry",
+        metadata={"description": "The translation stage geometry"},
         allow_none=False,
     )
 
