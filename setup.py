@@ -51,6 +51,7 @@ setup(
         "scipy ~= 1.6.1",
         "python-dateutil ~= 2.8",
         "psutil ~= 5.6.7",  # Autostorage extension
+        "markupsafe ~= 2.0.0",  # 2.1.x breaks jinja2
         "opencv-python-headless ~= 4.5.1",
         "sangaboard ~= 0.3.2",
         "expiringdict ~= 1.2.1",
