@@ -195,10 +195,11 @@ class AutoExposureFromRawView(ActionView):
             },
         ),
         "max_iterations": fields.Int(
-            load_default=20,metadata={
+            load_default=20,
+            metadata={
                 "description": (
                     "The number of adjustments to the camera's settings to make before giving up."
-                ),
+                )
             },
         ),
         "tolerance": fields.Float(
@@ -220,9 +221,7 @@ class AutoExposureFromRawView(ActionView):
 
 
 class AutoWhiteBalanceFromRawView(ActionView):
-    args = {
-        "percentile": percentile_field,
-    }
+    args = {"percentile": percentile_field}
 
     def post(self, args):
         with find_picamera() as (picamera, _, _):
@@ -235,7 +234,7 @@ class GetRawChannelPercentilesView(ActionView):
             metadata={
                 "description": "A float between 0 and 100 setting the centile to calculate",
                 "example": 99.9,
-            },
+            }
         )
     }
     schema = fields.List(fields.Integer)

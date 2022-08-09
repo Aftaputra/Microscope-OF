@@ -352,7 +352,7 @@ class AutofocusExtension(BaseExtension):
                 metadata={
                     "description": "An ascending list of relative z positions",
                     "example": [int(x) for x in np.linspace(-300, 300, 7)],
-                }
+                },
             )
         }
     )
@@ -412,7 +412,9 @@ class AutofocusExtension(BaseExtension):
 
     @extension_action(
         args={
-            "dz": fields.Int(required=True, metadata={"description": "The relative Z move to make"})
+            "dz": fields.Int(
+                required=True, metadata={"description": "The relative Z move to make"}
+            )
         }
     )
     def move_and_measure(
@@ -579,7 +581,9 @@ class AutofocusExtension(BaseExtension):
             ),
             "initial_move_up": fields.Bool(
                 load_default=True,
-                metadata={"description": "Set to Flase to disable the initial move upwards"},
+                metadata={
+                    "description": "Set to Flase to disable the initial move upwards"
+                },
             ),
             "backlash": fields.Int(
                 load_default=25,
