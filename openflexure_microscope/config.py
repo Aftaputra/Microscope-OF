@@ -88,7 +88,7 @@ def load_json_file(config_path) -> dict:
 
     logging.info("Loading %s...", config_path)
 
-    with open(config_path) as config_file:
+    with open(config_path, encoding="utf-8") as config_file:
         try:
             config_data = json.load(config_file)
         except json.decoder.JSONDecodeError as e:
@@ -112,7 +112,7 @@ def save_json_file(config_path: str, config_dict: dict):
     logging.info("Saving %s...", config_path)
     logging.debug(config_dict)
 
-    with open(config_path, "w") as outfile:
+    with open(config_path, "w", encoding="utf-8") as outfile:
         json.dump(config_dict, outfile, cls=JSONEncoder, indent=2, sort_keys=True)
 
 
@@ -150,7 +150,7 @@ def initialise_file(config_path, populate: str = "{}\n"):
         create_file(config_path)
 
         logging.info("Populating %s...", (config_path))
-        with open(config_path, "w") as outfile:
+        with open(config_path, "w", encoding="utf-8") as outfile:
             outfile.write(populate)
 
 

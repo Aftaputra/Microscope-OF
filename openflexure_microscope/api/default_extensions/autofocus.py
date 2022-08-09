@@ -245,7 +245,7 @@ def extension_action(args=None):
                 # Run the action
                 return func(self.extension, **arguments)
 
-            def get(self, *args, **kwargs):  # pylint: disable=useless-super-delegation
+            def get(self, *args, **kwargs):  # pylint: disable=useless-super-delegation,arguments-differ
                 # Explicitly wrap the `get` method to allow us to add a docstring
                 return super().get(*args, **kwargs)
 

@@ -26,7 +26,7 @@ def main():
 
     try:
         import picamerax
-    except Exception as e:  # pylint: disable=W0703
+    except Exception as _:  # pylint: disable=W0703
         error_sources.append(PICAMERA_IMPORT_ERROR)
     else:
         try:

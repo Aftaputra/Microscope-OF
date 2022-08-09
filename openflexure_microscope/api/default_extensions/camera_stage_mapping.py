@@ -200,7 +200,7 @@ class CSMExtension(BaseExtension):
             "linear_calibration_y": cal_y,
         }
 
-        with open(CSM_DATAFILE_PATH, "w") as f:
+        with open(CSM_DATAFILE_PATH, "w", encoding="utf-8") as f:
             json.dump(data, f, cls=JSONEncoder)
 
         return data
