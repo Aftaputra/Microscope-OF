@@ -307,7 +307,9 @@ class PiCameraStreamer(BaseCamera):
             self.picamera.zoom = new_fov
 
     def start_preview(
-        self, fullscreen: bool = True, window: Optional[Tuple[int, int, int, int]] = None
+        self,
+        fullscreen: bool = True,
+        window: Optional[Tuple[int, int, int, int]] = None,
     ):
         """Start the on board GPU camera preview."""
         with self.lock(timeout=1):
