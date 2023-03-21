@@ -3,6 +3,8 @@ import json
 import logging
 import os
 import shutil
+from typing import Optional
+
 
 from .json import JSONEncoder
 from .paths import CONFIGURATION_FILE_PATH, SETTINGS_FILE_PATH
@@ -17,7 +19,7 @@ class OpenflexureSettingsFile:
         expand (bool): Expand paths to valid auxillary config files.
     """
 
-    def __init__(self, path: str, defaults: dict = None):
+    def __init__(self, path: str, defaults: Optional[dict] = None):
         defaults = defaults or {}
 
         # Set arguments
