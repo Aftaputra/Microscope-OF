@@ -2,6 +2,7 @@
 ## New features
 * Background detection can now be used in scans, if you have the background-detect extension. ([!153](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/153))
 * Support for Sangaboard firmware v1, via updated `sangaboard` dependency ([!154](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/154))
+* Fixed links in the OpenAPI documentation describing actions etc. ([!155](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/154))
 
 # [v2.10.1](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.10.0...v2.10.1) (2022-01-17)
 ## Bug fixes
