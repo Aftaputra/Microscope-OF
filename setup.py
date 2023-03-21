@@ -53,7 +53,7 @@ setup(
         "psutil ~= 5.6.7",  # Autostorage extension
         "markupsafe ~= 2.0.0",  # 2.1.x breaks jinja2
         "opencv-python-headless ~= 4.5.1",
-        "sangaboard ~= 0.3.2",
+        "sangaboard ~= 0.3.3",
         "expiringdict ~= 1.2.1",
         "camera-stage-mapping == 0.1.4",
         "picamerax ~= 20.9.1",
