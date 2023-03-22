@@ -5,7 +5,6 @@ import os
 import shutil
 from typing import Optional
 
-
 from .json import JSONEncoder
 from .paths import CONFIGURATION_FILE_PATH, SETTINGS_FILE_PATH
 
