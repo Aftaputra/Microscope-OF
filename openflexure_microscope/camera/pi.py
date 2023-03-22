@@ -30,7 +30,7 @@ import logging
 import time
 
 # Type hinting
-from typing import BinaryIO, Tuple, Union, Optional
+from typing import BinaryIO, Optional, Tuple, Union
 
 import numpy as np
 
