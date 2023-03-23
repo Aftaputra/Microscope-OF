@@ -9,7 +9,7 @@ API_TAGS = [
         ),
         "externalDocs": {
             "url": "https://www.w3.org/TR/wot-thing-description/#actionaffordance",
-            "description": "w3's description of Web of Things 'Action' resources.",
+            "description": "W3C's description of Web of Things 'Action' resources.",
         },
     },
     {
@@ -20,7 +20,7 @@ API_TAGS = [
         ),
         "externalDocs": {
             "url": "https://www.w3.org/TR/wot-thing-description/#propertyaffordance",
-            "description": "w3's description of Web of Things 'Property' resources.",
+            "description": "W3C's description of Web of Things 'Property' resources.",
         },
     },
     {"name": "captures", "description": ""},

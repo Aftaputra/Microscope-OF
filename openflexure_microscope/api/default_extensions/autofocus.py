@@ -543,7 +543,7 @@ class AutofocusExtension(BaseExtension):
             "delay": fields.Int(
                 load_default=5,
                 metadata={
-                    "description": "How long to measure sharpness for after the move",
+                    "description": "How long to measure sharpness for after the move, in seconds",
                     "example": 5,
                 },
             ),
@@ -582,7 +582,7 @@ class AutofocusExtension(BaseExtension):
             "initial_move_up": fields.Bool(
                 load_default=True,
                 metadata={
-                    "description": "Set to Flase to disable the initial move upwards"
+                    "description": "Set to False to disable the initial move upwards"
                 },
             ),
             "backlash": fields.Int(
