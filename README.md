@@ -69,7 +69,7 @@ To set up a development version of the software (most likely using emulated came
 * Create a virtual environment and activate it:
   * `python -m venv .venv`
   * `source .venv/bin/activate` (on Linux) or `.venv/Scripts/activate` (on Windows)
-  * `pip install pipenv`
+  * `pip install --upgrade pip wheel pipenv`
   * `pipenv install --dev` (This will install development dependencies.  If you don't need these, `pipenv install` will get you just the dependencies needed to run the server, which takes about half the time.)
 * Finally, run the server:
   * You can use `ofm serve` or `ofm restart` on the Raspberry Pi to manage the server.
@@ -146,6 +146,9 @@ As of `2.10.0b0` we have switched to using `pipenv` for managing dependencies, a
 * `pyproject.toml` is retained, but *no longer includes package metadata or dependencies* and does not have a `[tool.poetry]` table.  It does define the build system as per PEP517, which is `setuptools`, and it also contains settings for `black`, `poe` and `isort`.
 * `Pipfile` is very minimal, and only declares dependencies on the current module, i.e. the dependencies declared in `setup.py`.  It also specifies the Python version.  This allows us to single-source dependency information from `setup.py` but use the dependency resolution/locking functionality of `pipenv`
 * `Pipfile.lock` locks the dependency versions in the same way as `poetry.lock` used to, i.e. it specifies exact versions of everything, derived from the looser specifications in `setup.py`.
+* Dependency resolution is a pain, in part because compiling packages like scipy and numpy from source on a Pi is slow and unreliable. To avoid this, we usually lock the dependencies on a Raspberry Pi, using:
+  `PIP_ONLY_BINARY=":all:" pipenv lock --dev`
+  This forces the use of wheels only, and thus restricts us to things that built OK on Piwheels.  The resulting Pipfile.lock should then work nicely on other Raspberry Pis (as well as other platforms).
 
 ## Creating releases
 
