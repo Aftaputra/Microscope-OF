@@ -147,8 +147,9 @@ As of `2.10.0b0` we have switched to using `pipenv` for managing dependencies, a
 * `Pipfile` is very minimal, and only declares dependencies on the current module, i.e. the dependencies declared in `setup.py`.  It also specifies the Python version.  This allows us to single-source dependency information from `setup.py` but use the dependency resolution/locking functionality of `pipenv`
 * `Pipfile.lock` locks the dependency versions in the same way as `poetry.lock` used to, i.e. it specifies exact versions of everything, derived from the looser specifications in `setup.py`.
 * Dependency resolution is a pain, in part because compiling packages like scipy and numpy from source on a Pi is slow and unreliable. To avoid this, we usually lock the dependencies on a Raspberry Pi, using:
-  `PIP_ONLY_BINARY=":all:" pipenv lock --dev`
-  This forces the use of wheels only, and thus restricts us to things that built OK on Piwheels.  The resulting Pipfile.lock should then work nicely on other Raspberry Pis (as well as other platforms).
+  `PIP_ONLY_BINARY="numpy, scipy, matplotlib" pipenv lock --dev`
+  This forces the use of wheels only, and thus restricts us to things that built OK on Piwheels.  The resulting Pipfile.lock should then work nicely on other Raspberry Pis.
+* **The Pipfile we use is now Raspberry Pi-specific** so if you attempt to use it on other platforms it will probably fail. This is because we've removed `pypi` to avoid hash conflicts. The CI now runs on a Raspberry Pi image, so that the tests use a similar environment to our deployment.  Currently, changing the `[source]` entry back to PyPi will allow you to re-lock the dependencies on other platforms. In the future we may need to maintain two Pipfiles and two Pipfile.lock files.
 
 ## Creating releases
 
@@ -169,3 +170,6 @@ As of `2.10.0b0` we have switched to using `pipenv` for managing dependencies, a
 
 The Microscope module, and Flask app, both support plugins for extending lower-level functionality not well suited to web API calls. The current documentation can be found [here](https://openflexure-microscope-software.readthedocs.io/en/latest/plugins.html).
 If you want to add functions to the microscope software, this is probably the best mechanism to use if it works for you.
+
+
+```
