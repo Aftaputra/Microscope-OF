@@ -11,7 +11,7 @@ stages:
   retry: 1
   before_script:
     - apt-get update
-    - apt-get install python3 python3-pip python3-venv libxslt1.1
+    - apt-get install apt-utils curl wget python3 python3-pip python3-venv raspi-gpio libgfortran3 libatlas3-base libffi-dev vim git-lfs libtiff5 libpango-1.0-0 libavcodec58 libgdk-pixbuf2.0-0 libjasper1 libswscale5 libpangocairo-1.0-0 libilmbase23 libatk1.0-0 libgtk-3-0 libwebp6 libcairo2 libavutil56 libcairo-gobject2 libopenexr23 libavformat58 libxslt1.1
     - python3 -m venv .venv        # NB this does not overwrite an existing cached venv
     - source .venv/bin/activate
     - pip install pipenv           # Should be cached after first run
