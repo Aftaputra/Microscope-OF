@@ -1,5 +1,39 @@
+[project]
+name = "openflexure-microscope-server"
+version = "3.0.0.dev0"
+authors = [
+  { name="Richard Bowman", email="richard.bowman@cantab.net" },
+  { name="Joel Collins" },
+  { name="Julian Stirling" },
+]
+description = "Back-end code for the OpenFlexure Microscope"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "labthings-fastapi",
+  "labthings-sangaboard",
+  "labthings-picamera2",
+  "numpy ~= 1.20",
+  "scipy ~= 1.6.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "labthings-fastapi[dev]",
+]
+
+[project.urls]
+"Homepage" = "https://openflexure.org/"
+"Bug Tracker" = "https://gitlab.com/openflexure/openflexure-microscope-server/-/issues"
+"Source" = "https://gitlab.com/openflexure/openflexure-microscope-server/"
+
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 # The [tool.poetry] metadata has been removed from this file, because 
@@ -34,6 +68,12 @@ line_length = 88
 disable = "fixme,C,R,W1203"
 max-line-length = 88
 
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+
+[tool.ruff]
+target-version = "py39"
+
 [tool.poe.executor]
 type = "virtualenv"
 location = ".venv"
@@ -41,13 +81,15 @@ location = ".venv"
 [tool.poe.tasks]
 black = "black ."
 black_check = "black --check ."
+ruff = "ruff . --fix"
+ruff_check = "ruff ."
 isort = "isort openflexure_microscope"
 pylint = "pylint openflexure_microscope"
 mypy = "mypy --cobertura-xml-report openflexure_microscope openflexure_microscope"
 test = "pytest . --junitxml=pytest_report.xml"
 serve = "python -m openflexure_microscope.api.app"
 
-format = ["black", "isort"]
-lint = ["pylint", "mypy"]
+format = ["black", "isort", "ruff"]
+lint = ["ruff_check", "pylint", "mypy"]
 
 check = ["format", "lint", "test"]
