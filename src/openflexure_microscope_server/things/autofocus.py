@@ -1,0 +1,162 @@
+from __future__ import annotations
+from contextlib import contextmanager
+import logging
+import time
+from typing import Annotated, Mapping, Optional
+
+from anyio import from_thread
+from fastapi import Depends
+
+from labthings_fastapi.thing import Thing
+from labthings_fastapi.dependencies.raw_thing import raw_thing_dependency
+from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
+from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
+from labthings_fastapi.decorators import thing_action
+from labthings_fastapi.types.numpy import NDArray
+from labthings_picamera2.thing import StreamingPiCamera2
+from labthings_sangaboard import SangaboardThing
+import numpy as np
+from pydantic import BaseModel
+
+Stage = direct_thing_client_dependency(SangaboardThing, "/stage/")
+Camera = raw_thing_dependency(StreamingPiCamera2)
+
+### Autofocus utilities
+
+class JPEGSharpnessMonitor:
+    __globals__ = globals()  # Required for FastAPI dependency
+    def __init__(self, stage: Stage, camera: Camera, portal: BlockingPortal):
+        self.camera = camera
+        self.stage = stage
+        self.portal = portal
+        print(f"Created sharpness monitor with {stage}, {camera}, {portal}")
+        self.stage_positions: list[Mapping[str, int]] = []
+        self.stage_times: list[float] = []
+        self.jpeg_times: list[float] = []
+        self.jpeg_sizes: list[int] = []
+
+    running = False
+
+    async def monitor_sharpness(self):
+        """Start monitoring the frame sizes"""
+        self.running = True
+        async for frame in self.camera.lores_mjpeg_stream.frame_async_generator():
+            self.jpeg_times.append(time.time())
+            self.jpeg_sizes.append(len(frame))
+            if not self.running:
+                break
+    
+    @contextmanager
+    def run(self):
+        """Context manager, during which we will monitor sharpness from the camera"""
+        self.portal.spawn_task(self.monitor_sharpness)
+        try:
+            yield
+        finally:
+            self.running = False
+
+    def focus_rel(self, dz: int, **kwargs) -> tuple[int, int]:
+        # Store the start time and position
+        self.stage_times.append(time.time())
+        self.stage_positions.append(self.stage.position)
+
+        # Main move
+        self.stage.move_relative(z=dz, **kwargs)
+
+        # Store the end time and position
+        self.stage_times.append(time.time())
+        self.stage_positions.append(self.stage.position)
+
+        # Index of the data for this movement
+        data_index: int = len(self.stage_positions) - 2
+        # Final z position after move
+        final_z_position: int = self.stage_positions[-1]['z']
+        return data_index, final_z_position
+
+    def move_data(
+        self, istart: int, istop: Optional[int] = None
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Extract sharpness as a function of (interpolated) z"""
+        if istop is None:
+            istop = istart + 2
+        jpeg_times: np.ndarray = np.array(self.jpeg_times)
+        jpeg_sizes: np.ndarray = np.array(self.jpeg_sizes)
+        stage_times: np.ndarray = np.array(self.stage_times)[
+            istart:istop
+        ]
+        stage_zs: np.ndarray = np.array(
+            [p['z'] for p in self.stage_positions[istart:istop]]
+          )
+        try:
+            start: int = int(np.argmax(jpeg_times > stage_times[0]))
+            stop: int = int(np.argmax(jpeg_times > stage_times[1]))
+        except ValueError as e:
+            if np.sum(jpeg_times > stage_times[0]) == 0:
+                raise ValueError(
+                    "No images were captured during the move of the stage.  Perhaps the camera is not streaming images?"
+                ) from e
+            else:
+                raise e
+        if stop < 1:
+            stop = len(jpeg_times)
+            logging.debug("changing stop to %s", (stop))
+        jpeg_times = jpeg_times[start:stop]
+        jpeg_zs: np.ndarray = np.interp(
+            jpeg_times, stage_times, stage_zs
+        )  # np.ndarray[float]
+        return jpeg_times, jpeg_zs, jpeg_sizes[start:stop]
+
+    def sharpest_z_on_move(self, index: int) -> int:
+        """Return the z position of the sharpest image on a given move"""
+        _, jz, js = self.move_data(index)
+        if len(js) == 0:
+            raise ValueError(
+                "No images were captured during the move of the stage.  Perhaps the camera is not streaming images?"
+            )
+        return jz[np.argmax(js)]
+
+    def data_dict(self) -> SharpnessDataArrays:
+        """Return the gathered data as a single convenient dictionary"""
+        data = {}
+        for k in ["jpeg_times", "jpeg_sizes", "stage_times", "stage_positions"]:
+            data[k] = getattr(self, k)
+        return SharpnessDataArrays(**data)
+
+
+SharpnessMonitorDep = Annotated[JPEGSharpnessMonitor, Depends()]
+
+class SharpnessDataArrays(BaseModel):
+    jpeg_times: NDArray
+    jpeg_sizes: NDArray
+    stage_times: NDArray
+    stage_positions: NDArray
+
+
+class AutofocusThing(Thing):
+    @thing_action
+    def fast_autofocus(
+        self,
+        m: SharpnessMonitorDep,
+        dz: int=2000
+    ) -> SharpnessDataArrays:
+        """Sweep the stage up and down, then move to the sharpest point
+        
+        This method will will move down by dz/2, sweep up by dz, and then evaluate
+        the position where the image was sharpest. We'll then move back down, and
+        finally up to the sharpest point.
+        """
+        with m.run():
+            # Move to (-dz / 2)
+            m.focus_rel(-dz / 2)
+            # Move to dz while monitoring sharpness
+            # i: Sharpness monitor index for this move
+            # z: Final z position after move
+            i, z = m.focus_rel(dz)
+            # Get the z position with highest sharpness from the previous move (index i)
+            fz: int = m.sharpest_z_on_move(i)
+            # Move all the way to the start so it's consistent
+            i, z = m.focus_rel(-dz)
+            # Move to the target position fz (relative move of (fz - z))
+            m.focus_rel(fz - z)
+            # Return all focus data
+            return m.data_dict()
