@@ -5,12 +5,14 @@ from labthings_sangaboard import SangaboardThing
 from labthings_picamera2.thing import StreamingPiCamera2
 
 from .things.autofocus import AutofocusThing
+from .things.camera_stage_mapping import CameraStageMapper
 
 logging.basicConfig(level=logging.INFO)
 
 thing_server = ThingServer()
-thing_server.add_thing(StreamingPiCamera2(), "/camera")
-thing_server.add_thing(SangaboardThing(), "/stage")
-thing_server.add_thing(AutofocusThing(), "/autofocus")
+thing_server.add_thing(StreamingPiCamera2(), "/camera/")
+thing_server.add_thing(SangaboardThing(), "/stage/")
+thing_server.add_thing(AutofocusThing(), "/autofocus/")
+thing_server.add_thing(CameraStageMapper(), "/camera_stage_mapping/")
 
 app = thing_server.app

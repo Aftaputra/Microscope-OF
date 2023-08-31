@@ -1,0 +1,189 @@
+"""
+OpenFlexure Microscope API extension for stage calibration
+
+This file contains the HTTP API for camera/stage calibration. It
+includes calibration functions that measure the relationship between
+stage coordinates and camera coordinates, as well as functions that
+move by a specified displacement in pixels, perform closed-loop moves,
+and return the calibration data.
+
+This module is only intended to be called from the OpenFlexure Microscope
+server, and depends on that server and its underlying LabThings library.
+"""
+import io
+import json
+import logging
+import os
+import time
+from typing import Annotated, Any, Callable, Dict, List, NamedTuple, Optional, Tuple
+from fastapi import Depends
+
+import numpy as np
+from pydantic import BaseModel
+import PIL
+from camera_stage_mapping.camera_stage_calibration_1d import (
+    calibrate_backlash_1d,
+    image_to_stage_displacement_from_1d,
+)
+from camera_stage_mapping.camera_stage_tracker import Tracker
+from camera_stage_mapping.closed_loop_move import closed_loop_move, closed_loop_scan
+from camera_stage_mapping.scan_coords_times import ordered_spiral
+
+from labthings_picamera2.thing import StreamingPiCamera2
+from labthings_sangaboard import SangaboardThing
+
+from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
+from labthings_fastapi.types.numpy import NDArray, denumpify, DenumpifyingDict
+from labthings_fastapi.decorators import thing_action, thing_property
+from labthings_fastapi.thing import Thing
+
+Camera = direct_thing_client_dependency(StreamingPiCamera2, "/camera/")
+Stage = direct_thing_client_dependency(SangaboardThing, "/stage/")
+
+CoordinateType = Tuple[float, float, float]
+XYCoordinateType = Tuple[float, float]
+
+class HardwareInterfaceModel(BaseModel):
+    move: Callable[[NDArray], None]
+    get_position: Callable[[], NDArray]
+    grab_image: Callable[[], NDArray]
+    settle: Callable[[], None]
+
+
+def make_hardware_interface(stage: Stage, camera: Camera) -> HardwareInterfaceModel:
+    """Construct the functions we need to interface with the hardware"""
+    axes = stage.axis_names
+    pos2dict = lambda pos: {k: p for k, p in zip(axes, pos)}
+    dict2pos = lambda posd: tuple(posd[k] for k in axes if k in posd)
+    def move(pos: CoordinateType) -> None:
+        current_pos = stage.position
+        new_pos = pos2dict(pos)
+        displacement = {k: new_pos[k] - current_pos[k] for k in new_pos.keys()}
+        stage.move_relative(**displacement)
+    def get_position() -> CoordinateType:
+        return dict2pos(stage.position)
+    def grab_image() -> np.ndarray:
+        return camera.capture_array()
+    def settle() -> None:
+        time.sleep(0.2)
+        camera.capture_metadata
+    return HardwareInterfaceModel(
+        move=move, get_position=get_position, grab_image=grab_image, settle=settle
+    )
+
+HardwareInterfaceDep = Annotated[HardwareInterfaceModel, Depends(make_hardware_interface)]
+
+
+class MoveHistory(NamedTuple):
+    times: List[float]
+    stage_positions: List[CoordinateType]
+
+
+class LoggingMoveWrapper:
+    """Wrap a move function, and maintain a log position/time.
+    
+    This class is callable, so it doesn't change the signature
+    of the function it wraps - it just makes it possible to get
+    a list of all the moves we've made, and how long they took.
+    
+    Said list is intended to be useful for calibrating the stage
+    so we can estimate how long moves will take.
+    """
+
+    def __init__(self, move_function: Callable):
+        self._move_function: Callable = move_function
+        self._current_position: Optional[CoordinateType] = None
+        self.clear_history()
+
+    def __call__(self, new_position: CoordinateType, *args, **kwargs):
+        """Move to a new position, and record it"""
+        self._history.append((time.time(), self._current_position))
+        self._move_function(new_position, *args, **kwargs)
+        self._current_position = new_position
+        self._history.append((time.time(), self._current_position))
+
+    @property
+    def history(self) -> MoveHistory:
+        """The history, as a numpy array of times and another of positions"""
+        times: List[float] = [t for t, p in self._history if p is not None]
+        positions: List[CoordinateType] = [p for t, p in self._history if p is not None]
+        return MoveHistory(times, positions)
+
+    def clear_history(self):
+        """Reset our history to be an empty list"""
+        self._history: List[Tuple[float, Optional[CoordinateType]]] = []
+
+
+class CameraStageMapper(Thing):
+    """A Thing to manage mapping between image and stage coordinates"""
+    def __enter__(self):
+        pass
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.thing_settings.write_to_file()
+
+    @thing_action
+    def calibrate_1d(self, hw: HardwareInterfaceDep, direction: Tuple[float, float, float]) -> DenumpifyingDict:
+        """Move a microscope's stage in 1D, and figure out the relationship with the camera"""
+        move = LoggingMoveWrapper(hw.move)  # log positions and times for stage calibration
+
+        tracker = Tracker(hw.grab_image, hw.get_position, settle=hw.settle)
+
+        direction_array: np.ndarray = np.array(direction)
+
+        result: dict = calibrate_backlash_1d(tracker, move, direction_array)
+        result["move_history"] = move.history
+        return result
+
+    @thing_action
+    def calibrate_xy(self, hw: HardwareInterfaceDep) -> DenumpifyingDict:
+        """Move the microscope's stage in X and Y, to calibrate its relationship to the camera"""
+        logging.info("Calibrating X axis:")
+        cal_x: dict = self.calibrate_1d(hw, (1, 0, 0))
+        logging.info("Calibrating Y axis:")
+        cal_y: dict = self.calibrate_1d(hw, (0, 1, 0))
+
+        # Combine X and Y calibrations to make a 2D calibration
+        cal_xy: dict = denumpify(image_to_stage_displacement_from_1d([cal_x, cal_y]))
+        self.thing_settings.update(cal_xy)
+
+        data: Dict[str, dict] = {
+            "camera_stage_mapping_calibration": cal_xy,
+            "linear_calibration_x": cal_x,
+            "linear_calibration_y": cal_y,
+        }
+
+        self.thing_settings["last_calibration"] = DenumpifyingDict(data).model_dump()
+
+        return data
+
+    @thing_property
+    def image_to_stage_displacement_matrix(self) -> List[List[float]]:  # 2x2 integer array
+        """A 2x2 matrix that converts displacement in image coordinates to stage coordinates."""
+        displacement_matrix = self.thing_settings.get("image_to_stage_displacement")
+        if not displacement_matrix:
+            raise ValueError("The microscope has not yet been calibrated.")
+        return np.array(displacement_matrix).tolist()
+    
+    @thing_action
+    def move_in_image_coordinates(
+        self,
+        stage: Stage,
+        x: float,
+        y: float,
+    ):
+        """Move by a given number of pixels on the camera
+        
+        NB x and y here refer to what is usually understood to be the horizontal and
+        vertical axes of the image. In many toolkits, "matrix indices" are used, which
+        swap the order of these coordinates. This includes opencv and PIL. So, don't be
+        surprised if you find it necessary to swap x and y around.
+
+        As a general rule, `x` usually corresponds to the longer dimension of the image,
+        and `y` to the shorter one. Checking what shape your chosen toolkit reports for
+        an image usually helps resolve any ambiguity.
+        """
+        relative_move: np.ndarray = np.dot(
+            np.array([y, x]),
+            np.array(self.image_to_stage_displacement_matrix)
+        )
+        stage.move_relative(x=relative_move[0], y=relative_move[1])

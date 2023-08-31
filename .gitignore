@@ -76,3 +76,6 @@ activate
 classes.png
 packages.png
 openflexure_microscope/cobertura.xml
+
+# labthings settings
+/settings/
