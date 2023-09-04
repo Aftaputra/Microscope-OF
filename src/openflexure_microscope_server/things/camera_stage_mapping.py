@@ -187,3 +187,12 @@ class CameraStageMapper(Thing):
             np.array(self.image_to_stage_displacement_matrix)
         )
         stage.move_relative(x=relative_move[0], y=relative_move[1])
+
+    @property
+    def thing_state(self) -> dict:
+        """Summary metadata describing the current state of the Thing"""
+        return {
+            "image_to_stage_displacement_matrix": (
+                self.image_to_stage_displacement_matrix
+            ),
+        }
