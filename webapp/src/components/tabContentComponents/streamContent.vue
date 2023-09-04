@@ -35,8 +35,6 @@
 </template>
 
 <script>
-import axios from "axios";
-
 // Export main app
 export default {
   name: "StreamDisplay",

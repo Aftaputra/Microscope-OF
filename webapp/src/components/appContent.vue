@@ -156,7 +156,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import { mapState } from "vuex";
 
 // Import generic components
@@ -352,7 +351,7 @@ export default {
         .catch(error => {
           this.modalError(error); // Let mixin handle error
         });*/
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           resolve({});
         });
     },
