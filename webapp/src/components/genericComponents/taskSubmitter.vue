@@ -142,7 +142,7 @@ export default {
           if (task.status == "pending" || task.status == "running") {
             this.taskStarted = true;
             this.$emit("taskStarted", this.taskId);
-            this.startPolling(task.id, task.links.self.href);
+            this.startPolling(task.id, task.links.find(t => t.rel==self).href);
           }
         }
       });
@@ -219,7 +219,10 @@ export default {
 
       var checkCondition = (resolve, reject) => {
         // If the condition is met, we're done!
-        axios.get(this.taskUrl).then(response => {
+        axios.get(
+          this.taskUrl,
+          {baseURL: this.$store.getters.baseUri}
+        ).then(response => {
           var result = response.data.status;
           // If the task ends with success
           if (result == "completed") {

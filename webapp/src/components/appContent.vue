@@ -344,13 +344,16 @@ export default {
 
   methods: {
     updatePlugins: function() {
-      return axios
+      /*return axios
         .get(this.pluginsUri)
         .then(response => {
           this.plugins = response.data;
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
+        });*/
+        return new Promise((resolve, reject) => {
+          resolve({});
         });
     },
     setTab: function(event, tab) {

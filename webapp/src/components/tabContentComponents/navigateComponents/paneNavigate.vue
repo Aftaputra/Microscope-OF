@@ -228,14 +228,17 @@ export default {
   },
 
   computed: {
+    baseUri: function() {
+      return this.$store.getters.baseUri;
+    },
     moveActionUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/actions/stage/move`;
+      return `${this.$store.getters.baseUri}/stage/move_relative`;
     },
     zeroActionUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/actions/stage/zero`;
     },
     positionStatusUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/instrument/state/stage/position`;
+      return `${this.baseUri}/stage/position`;
     },
     pluginsUri: function() {
       return `${this.$store.getters.baseUri}/api/v2/extensions`;
@@ -308,14 +311,13 @@ export default {
       if (!this.moveLock) {
         // Lock move requests
         this.moveLock = true;
-
+        let move_type = absolute ? "absolute" : "relative";
         // Send move request
         axios
-          .post(this.moveActionUri, {
+          .post(`${this.baseUri}/stage/move_${move_type}`, {
             x: x,
             y: y,
-            z: z,
-            absolute: absolute
+            z: z
           })
           .then(() => {
             this.updatePosition(); // Update the position in text boxes
@@ -344,8 +346,8 @@ export default {
         // Send move request
         axios
           .post(this.moveInImageCoordinatesUri, {
-            x: y, // NB the coordinates are numpy/PIL style, meaning X and Y are swapped.
-            y: x
+            x: x, // NB the coordinates are numpy/PIL style, meaning X and Y are swapped.
+            y: y
           })
           .then(() => {
             this.updatePosition(); // Update the position in text boxes
@@ -383,42 +385,11 @@ export default {
     },
 
     updateAutofocusUri: function() {
-      axios
-        .get(this.pluginsUri) // Get a list of plugins
-        .then(response => {
-          var plugins = response.data;
-          var foundExtension = plugins.find(
-            e => e.title === "org.openflexure.autofocus"
-          );
-          // if ScanPlugin is enabled
-          if (foundExtension) {
-            // Get plugin action link
-            this.fastAutofocusUri = foundExtension.links.fast_autofocus.href;
-            this.normalAutofocusUri = foundExtension.links.autofocus.href;
-          }
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
+      this.fastAutofocusUri = `${this.baseUri}/autofocus/fast_autofocus`;
     },
 
     updateMoveInImageCoordinatesUri: function() {
-      axios
-        .get(this.pluginsUri) // Get a list of plugins
-        .then(response => {
-          var plugins = response.data;
-          var foundExtension = plugins.find(
-            e => e.title === "org.openflexure.camera_stage_mapping"
-          );
-          if (foundExtension) {
-            // Get plugin action link
-            this.moveInImageCoordinatesUri =
-              foundExtension.links.move_in_image_coordinates.href;
-          }
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
+      this.moveInImageCoordinatesUri = `${this.baseUri}/camera_stage_mapping/move_in_image_coordinates`;
     }
   }
 };

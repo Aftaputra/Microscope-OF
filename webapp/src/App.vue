@@ -210,7 +210,7 @@ export default {
     // Watch for origin changes
     this.unwatchOriginFunction = this.$store.watch(
       (state, getters) => {
-        return getters.uriV2;
+        return getters.baseUri;
       },
       () => {
         this.checkConnection();
@@ -306,10 +306,11 @@ export default {
 
   methods: {
     checkConnection: function() {
-      var uriV2 = this.$store.getters.uriV2;
+      var baseUri = this.$store.getters.baseUri;
       this.$store.commit("changeWaiting", true);
       axios
-        .get(uriV2)
+        // TODO: more robust check - e.g. use a microscope Thing
+        .get(`${baseUri}/stage/`)
         .then(() => {
           this.$store.commit("setConnected");
           this.$store.commit("setErrorMessage", null);

@@ -14,6 +14,14 @@
 * JS client is coupled to the API, and so are no longer separately built and deployed.
 * See [openflexure-microscope-server/README.md](https://gitlab.com/openflexure/openflexure-microscope-server/-/blob/master/README.md) for details on creating new releases
 
+## Installing
+
+* Install Node.js (and npm)
+* Install dependencies with `npm install`
+* Node v18 changes SSL, and so you need `$env:NODE_OPTIONS = "--openssl-legacy-provider"` on Windows or `export NODE_OPTIONS=--openssl-legacy-provider` on Linux/MacOS for compatibility.
+* Build the static web app with `npm run build`
+* Serve a development version with `npm run serve`
+
 ## VS Code and ESLint
 
 To prevent the editor from interfering with ESLint, add to your project `settings.json`:

@@ -6,10 +6,6 @@
           <b>API origin:</b>
           <br />
           {{ $store.state.origin }}
-          <br />
-          <b>API URL:</b>
-          <br />
-          {{ $store.getters.uriV2 }}
         </div>
       </div>
 

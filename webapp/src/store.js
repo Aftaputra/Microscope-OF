@@ -152,7 +152,6 @@ export default new Vuex.Store({
   actions: {},
 
   getters: {
-    uriV2: state => `${state.origin}/api/v2`,
     baseUri: state => state.origin,
     ready: state => state.available
   }
