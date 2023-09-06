@@ -79,3 +79,6 @@ openflexure_microscope/cobertura.xml
 
 # labthings settings
 /settings/
+
+# web app build
+/src/openflexure_microscope_server/static/
