@@ -20,7 +20,7 @@ dependencies = [
   "labthings-picamera2",
   "camera-stage-mapping",
   "numpy ~= 1.20",
-  "scipy ~= 1.6.1",
+  "scipy ~= 1.6",
 ]
 
 [project.optional-dependencies]
