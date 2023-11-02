@@ -124,7 +124,7 @@ export default {
         () => {
           this.$store.commit("resetState");
           // Post and silence errors
-          axios.post(this.baseUri + 'shutdown').catch(() => {});
+          axios.post(this.baseUri + 'system_control/shutdown').catch(() => {});
         },
         () => {}
       );
@@ -134,7 +134,7 @@ export default {
         () => {
           this.$store.commit("resetState");
           // Post and silence errors
-          axios.post(this.baseUri + 'restart').catch(() => {});
+          axios.post(this.baseUri + 'system_control/restart').catch(() => {});
         },
         () => {}
       );
