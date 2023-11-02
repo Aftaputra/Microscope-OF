@@ -3,7 +3,7 @@
     <div class="uk-grid uk-grid-divider uk-child-width-expand" uk-grid>
       <div class="uk-width-large">
         <h3>Automatic calibration</h3>
-        <cameraCalibrationSettings :camera-uri="cameraUri"/>
+        <cameraCalibrationSettings :camera-uri="cameraUri" />
 
         <h3>Manual camera settings</h3>
         <form @submit.prevent="applySettingsRequest">
@@ -39,7 +39,7 @@
                   />
                   <NumericArraySettingLine
                     label="MJPEG stream resolution"
-                    :property-url="cameraUri +'stream_resolution'"
+                    :property-url="cameraUri + 'stream_resolution'"
                     :read-back-delay="100"
                   />
                 </div>
@@ -104,7 +104,7 @@ export default {
     miniStreamDisplay,
     NumericSettingLine,
     NumericArraySettingLine
-},
+  },
 
   data: function() {
     return {

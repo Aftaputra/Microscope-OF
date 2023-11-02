@@ -221,7 +221,10 @@
               </select>
             </div>
 
-            <div class="uk-margin-small uk-margin-remove-bottom" v-if="backgroundDetectUri">
+            <div
+              v-if="backgroundDetectUri"
+              class="uk-margin-small uk-margin-remove-bottom"
+            >
               <label class="uk-form-label" for="form-stacked-text">
                 <input
                   v-model="detectEmptyFieldsAndSkipAutofocus"
@@ -475,7 +478,8 @@ export default {
         namemode: this.namingStyle.toLowerCase(),
         autofocus_dz: afDeltas[this.scanDeltaZ],
         fast_autofocus: this.scanDeltaZ == "Fast",
-        detect_empty_fields_and_skip_autofocus: this.detectEmptyFieldsAndSkipAutofocus
+        detect_empty_fields_and_skip_autofocus: this
+          .detectEmptyFieldsAndSkipAutofocus
       };
     },
     smartScanPayload: function() {
@@ -568,7 +572,8 @@ export default {
           );
           if (foundExtension) {
             // Get plugin action link
-            this.backgroundDetectUri = foundExtension.links.grab_and_classify_image.href;
+            this.backgroundDetectUri =
+              foundExtension.links.grab_and_classify_image.href;
           }
         })
         .catch(error => {

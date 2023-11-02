@@ -15,10 +15,7 @@
       >
       </taskSubmitter>
     </div>
-    <div
-      v-if="'auto_expose_from_minimum' in actions"
-      class="uk-margin-small"
-    >
+    <div v-if="'auto_expose_from_minimum' in actions" class="uk-margin-small">
       <taskSubmitter
         :can-terminate="false"
         :requires-confirmation="false"
@@ -29,10 +26,7 @@
       >
       </taskSubmitter>
     </div>
-    <div
-      v-if="'calibrate_white_balance' in actions"
-      class="uk-margin-small"
-    >
+    <div v-if="'calibrate_white_balance' in actions" class="uk-margin-small">
       <taskSubmitter
         :can-terminate="false"
         :requires-confirmation="false"
@@ -43,10 +37,7 @@
       >
       </taskSubmitter>
     </div>
-    <div
-      v-if="'calibrate_lens_shading' in actions"
-      class="uk-margin-small"
-    >
+    <div v-if="'calibrate_lens_shading' in actions" class="uk-margin-small">
       <taskSubmitter
         :can-terminate="false"
         :requires-confirmation="true"
@@ -62,7 +53,7 @@
       </taskSubmitter>
     </div>
 
-    <div 
+    <div
       v-show="showExtraSettings"
       v-if="'flatten_lens_shading_table' in actions"
       class="uk-child-width-expand"
@@ -77,11 +68,12 @@
       >
       </taskSubmitter>
     </div>
-    <div 
+    <div
       v-show="showExtraSettings"
       v-if="'reset_lens_shading' in actions"
       class="uk-child-width-expand"
-    >      <taskSubmitter
+    >
+      <taskSubmitter
         :can-terminate="false"
         :requires-confirmation="false"
         :submit-url="cameraUri + 'reset_lens_shading'"
@@ -132,13 +124,16 @@ export default {
 
   methods: {
     updateActions: async function() {
-      try{
-          let response = await axios.get(this.cameraUri) // Get the thing description
-          let td = response.data
-          this.actions = td.actions
-          console.log("full auto calibrate in actions", 'full_auto_calibrate' in this.actions)
-      } catch(error) {
-        this.modalError(error) // Let mixin handle error
+      try {
+        let response = await axios.get(this.cameraUri); // Get the thing description
+        let td = response.data;
+        this.actions = td.actions;
+        console.log(
+          "full auto calibrate in actions",
+          "full_auto_calibrate" in this.actions
+        );
+      } catch (error) {
+        this.modalError(error); // Let mixin handle error
       }
     },
 

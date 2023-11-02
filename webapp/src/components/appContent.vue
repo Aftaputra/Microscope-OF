@@ -351,9 +351,9 @@ export default {
         .catch(error => {
           this.modalError(error); // Let mixin handle error
         });*/
-        return new Promise((resolve) => {
-          resolve({});
-        });
+      return new Promise(resolve => {
+        resolve({});
+      });
     },
     setTab: function(event, tab) {
       if (!(this.currentTab == tab)) {
