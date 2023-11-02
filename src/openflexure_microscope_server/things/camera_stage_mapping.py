@@ -132,6 +132,7 @@ class CameraStageMapper(Thing):
 
         result: dict = calibrate_backlash_1d(tracker, move, direction_array)
         result["move_history"] = move.history
+        result["image_resolution"] = hw.grab_image().shape[:2]
         return result
 
     @thing_action
@@ -145,11 +146,13 @@ class CameraStageMapper(Thing):
         # Combine X and Y calibrations to make a 2D calibration
         cal_xy: dict = denumpify(image_to_stage_displacement_from_1d([cal_x, cal_y]))
         self.thing_settings.update(cal_xy)
+        self.thing_settings["image_resolution"] = cal_x["image_resolution"]
 
         data: Dict[str, dict] = {
             "camera_stage_mapping_calibration": cal_xy,
             "linear_calibration_x": cal_x,
             "linear_calibration_y": cal_y,
+            "image_resolution": cal_x["image_resolution"]
         }
 
         self.thing_settings["last_calibration"] = DenumpifyingDict(data).model_dump()
@@ -195,4 +198,7 @@ class CameraStageMapper(Thing):
             "image_to_stage_displacement_matrix": (
                 self.image_to_stage_displacement_matrix
             ),
+            "image_resolution": (
+                self.thing_settings.get("image_to_stage_displacement", None)
+            )
         }
