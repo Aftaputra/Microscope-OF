@@ -87,7 +87,6 @@ export default {
     updateActions: async function() {
       try {
         let response = await axios.get(this.thingUri); // Get Thing Description
-        console.log("CSM TD", response.data);
         this.actions = response.data.actions;
         this.properties = response.data.properties;
       } catch (error) {

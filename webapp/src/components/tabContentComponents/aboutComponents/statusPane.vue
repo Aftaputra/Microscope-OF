@@ -1,6 +1,6 @@
 <template>
   <div class="host-input">
-    <div v-if="configuration">
+    <div v-if="$store.state.available">
       <div>
         <div class="uk-margin-small-bottom">
           <b>API origin:</b>
@@ -11,13 +11,9 @@
 
       <hr />
 
-      <div v-if="settings">
-        <b>Device name:</b> <br />
-        {{ settings.name }}
-      </div>
       <div>
         <b>Server version:</b> <br />
-        {{ configuration.application.version }}
+        TODO
       </div>
 
       <hr />
@@ -25,18 +21,18 @@
       <div class="uk-margin-small-bottom">
         <b>Camera:</b>
         <br />
-        <div v-if="configuration.camera.type != 'MissingCamera'">
-          {{ configuration.camera.type }}
+        <div v-if="'camera' in things">
+          {{ things.camera.title }}
         </div>
-        <div v-else class="uk-text-danger"><b>No camera connected</b></div>
+        <div v-else class="uk-text-danger"><b>No camera configured</b></div>
       </div>
       <div>
         <b>Stage:</b>
         <br />
-        <div v-if="configuration.stage.type != 'MissingStage'">
-          {{ configuration.stage.type }}
+        <div v-if="'stage' in things">
+          {{ things.stage.title }}
         </div>
-        <div v-else class="uk-text-danger"><b>No stage connected</b></div>
+        <div v-else class="uk-text-danger"><b>No stage configured</b></div>
       </div>
 
       <hr />
@@ -44,7 +40,7 @@
       <div class="uk-grid-small uk-child-width-1-2" uk-grid>
         <div>
           <button
-            v-show="'shutdown' in systemActionLinks"
+            v-show="'shutdown' in systemControlActions"
             class="uk-button uk-button-danger uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
             @click="shutdownRequest"
           >
@@ -54,7 +50,7 @@
 
         <div>
           <button
-            v-show="'reboot' in systemActionLinks"
+            v-show="'reboot' in systemControlActions"
             class="uk-button uk-button-danger uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
             @click="rebootRequest"
           >
@@ -83,87 +79,52 @@ export default {
 
   data: function() {
     return {
-      configuration: null,
-      settings: null,
-      systemActionLinks: {}
+      things: {},
+      systemControlActions: {}
     };
   },
 
   computed: {
-    settingsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/instrument/settings`;
+    baseUri: function() {
+      return `${this.$store.getters.baseUri}/`;
     },
-    configurationUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/instrument/configuration`;
-    },
-    rootUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2`;
-    }
   },
 
   mounted: function() {
     // Watch for host 'ready', then update configuration
     this.updateConfiguration();
-    this.updateSettings();
-    this.updateSystemActions();
+    this.updateActions();
   },
 
   methods: {
-    updateConfiguration: function() {
-      axios
-        .get(this.configurationUri)
-        .then(response => {
-          this.configuration = response.data;
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
+    updateConfiguration: async function() {
+      console.log("Showing the configuration is not yet fully implemented")
+      // Retrieve TDs for camera and stage
+      let things = {};
+      for (let thing of ["camera", "stage"]) {
+        try {
+          let response = await axios.get(this.baseUri + thing); // Get Thing Description
+          things[thing] = response.data;
+        } catch (error) {
+          console.log(thing + " was missing", error)
+        }
+      }
+      this.things = things;  // We must set this.things in order to trigger the UI update
     },
-    updateSettings: function() {
-      axios
-        .get(this.settingsUri)
-        .then(response => {
-          this.settings = response.data;
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
-    },
-    updateSystemActions: function() {
-      axios
-        .get(this.rootUri)
-        .then(response => {
-          if ("RebootAPI" in response.data.actions) {
-            this.$set(
-              this.systemActionLinks,
-              "reboot",
-              `${this.$store.getters.baseUri}/api/v2/actions/system/reboot/`
-            );
-          } else {
-            delete this.systemActionLinks.reboot;
-          }
-          if ("ShutdownAPI" in response.data.actions) {
-            this.$set(
-              this.systemActionLinks,
-              "shutdown",
-              `${this.$store.getters.baseUri}/api/v2/actions/system/shutdown/`
-            );
-          } else {
-            delete this.systemActionLinks.shutdown;
-          }
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
+    updateActions: async function() {
+      try {
+        let response = await axios.get(this.baseUri + "system_control"); // Get Thing Description
+        this.systemControlActions = response.data.actions;
+      } catch (error) {
+        console.log("system control was missing - shutdown/restart buttons will not appear", error)
+      }
     },
     shutdownRequest: function() {
       this.modalConfirm("Shut down microscope?").then(
         () => {
-          if ("shutdown" in this.systemActionLinks) {
-            this.$store.commit("resetState");
-            // Post and silence errors
-            axios.post(this.systemActionLinks.shutdown).catch(() => {});
-          }
+          this.$store.commit("resetState");
+          // Post and silence errors
+          axios.post(this.baseUri + 'shutdown').catch(() => {});
         },
         () => {}
       );
@@ -171,11 +132,9 @@ export default {
     rebootRequest: function() {
       this.modalConfirm("Restart microscope?").then(
         () => {
-          if ("reboot" in this.systemActionLinks) {
-            this.$store.commit("resetState");
-            // Post and silence errors
-            axios.post(this.systemActionLinks.reboot).catch(() => {});
-          }
+          this.$store.commit("resetState");
+          // Post and silence errors
+          axios.post(this.baseUri + 'restart').catch(() => {});
         },
         () => {}
       );
