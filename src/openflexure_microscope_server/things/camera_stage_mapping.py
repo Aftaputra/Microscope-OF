@@ -185,6 +185,12 @@ class CameraStageMapper(Thing):
         if not displacement_matrix:
             raise ValueError("The microscope has not yet been calibrated.")
         return np.array(displacement_matrix).tolist()
+
+    @thing_property
+    def last_calibration(self) -> Optional[Dict]:  # 2x2 integer array
+        """The results of the last calibration that was run
+        """
+        return self.thing_settings.get("last_calibration", None)
     
     @thing_action
     def move_in_image_coordinates(
@@ -210,7 +216,7 @@ class CameraStageMapper(Thing):
         )
         stage.move_relative(x=relative_move[0], y=relative_move[1])
 
-    @property
+    @thing_property
     def thing_state(self) -> dict:
         """Summary metadata describing the current state of the Thing"""
         return {
