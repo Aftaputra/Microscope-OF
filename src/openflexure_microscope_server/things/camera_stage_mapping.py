@@ -137,7 +137,10 @@ class CameraStageMapper(Thing):
 
     @thing_action
     def calibrate_xy(self, hw: HardwareInterfaceDep) -> DenumpifyingDict:
-        """Move the microscope's stage in X and Y, to calibrate its relationship to the camera"""
+        """Move the microscope's stage in X and Y, to calibrate its relationship to the camera
+        
+        This performs two 1d calibrations in x and y, then combines their results.
+        """
         logging.info("Calibrating X axis:")
         cal_x: dict = self.calibrate_1d(hw, (1, 0, 0))
         logging.info("Calibrating Y axis:")
@@ -161,7 +164,23 @@ class CameraStageMapper(Thing):
 
     @thing_property
     def image_to_stage_displacement_matrix(self) -> List[List[float]]:  # 2x2 integer array
-        """A 2x2 matrix that converts displacement in image coordinates to stage coordinates."""
+        """A 2x2 matrix that converts displacement in image coordinates to stage coordinates.
+        
+        Note that this matrix is defined using "matrix coordinates", i.e. image coordinates
+        may be (y,x). This is an artifact of the way numpy, opencv, etc. define images. If
+        you are making use of this matrix in your own code, you will need to take care of
+        that conversion.
+        
+        It is often helpful to give a concrete example: to make a move in image coordinates
+        (`dy`, `dx`), where `dx` is horizontal, i.e. the longer dimension of the image, you
+        should move the stage by:
+        ```
+        stage_disp = np.dot(
+            np.array(image_to_stage_displacement_matrix),
+            np.array([dy,dx]),
+        )
+        ```
+        """
         displacement_matrix = self.thing_settings.get("image_to_stage_displacement")
         if not displacement_matrix:
             raise ValueError("The microscope has not yet been calibrated.")
