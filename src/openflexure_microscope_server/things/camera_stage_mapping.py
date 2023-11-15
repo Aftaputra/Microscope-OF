@@ -132,11 +132,15 @@ class CameraStageMapper(Thing):
 
         result: dict = calibrate_backlash_1d(tracker, move, direction_array)
         result["move_history"] = move.history
+        result["image_resolution"] = hw.grab_image().shape[:2]
         return result
 
     @thing_action
     def calibrate_xy(self, hw: HardwareInterfaceDep) -> DenumpifyingDict:
-        """Move the microscope's stage in X and Y, to calibrate its relationship to the camera"""
+        """Move the microscope's stage in X and Y, to calibrate its relationship to the camera
+        
+        This performs two 1d calibrations in x and y, then combines their results.
+        """
         logging.info("Calibrating X axis:")
         cal_x: dict = self.calibrate_1d(hw, (1, 0, 0))
         logging.info("Calibrating Y axis:")
@@ -145,11 +149,13 @@ class CameraStageMapper(Thing):
         # Combine X and Y calibrations to make a 2D calibration
         cal_xy: dict = denumpify(image_to_stage_displacement_from_1d([cal_x, cal_y]))
         self.thing_settings.update(cal_xy)
+        self.thing_settings["image_resolution"] = cal_x["image_resolution"]
 
         data: Dict[str, dict] = {
             "camera_stage_mapping_calibration": cal_xy,
             "linear_calibration_x": cal_x,
             "linear_calibration_y": cal_y,
+            "image_resolution": cal_x["image_resolution"]
         }
 
         self.thing_settings["last_calibration"] = DenumpifyingDict(data).model_dump()
@@ -158,11 +164,33 @@ class CameraStageMapper(Thing):
 
     @thing_property
     def image_to_stage_displacement_matrix(self) -> List[List[float]]:  # 2x2 integer array
-        """A 2x2 matrix that converts displacement in image coordinates to stage coordinates."""
+        """A 2x2 matrix that converts displacement in image coordinates to stage coordinates.
+        
+        Note that this matrix is defined using "matrix coordinates", i.e. image coordinates
+        may be (y,x). This is an artifact of the way numpy, opencv, etc. define images. If
+        you are making use of this matrix in your own code, you will need to take care of
+        that conversion.
+        
+        It is often helpful to give a concrete example: to make a move in image coordinates
+        (`dy`, `dx`), where `dx` is horizontal, i.e. the longer dimension of the image, you
+        should move the stage by:
+        ```
+        stage_disp = np.dot(
+            np.array(image_to_stage_displacement_matrix),
+            np.array([dy,dx]),
+        )
+        ```
+        """
         displacement_matrix = self.thing_settings.get("image_to_stage_displacement")
         if not displacement_matrix:
             raise ValueError("The microscope has not yet been calibrated.")
         return np.array(displacement_matrix).tolist()
+
+    @thing_property
+    def last_calibration(self) -> Optional[Dict]:  # 2x2 integer array
+        """The results of the last calibration that was run
+        """
+        return self.thing_settings.get("last_calibration", None)
     
     @thing_action
     def move_in_image_coordinates(
@@ -188,11 +216,14 @@ class CameraStageMapper(Thing):
         )
         stage.move_relative(x=relative_move[0], y=relative_move[1])
 
-    @property
+    @thing_property
     def thing_state(self) -> dict:
         """Summary metadata describing the current state of the Thing"""
         return {
             "image_to_stage_displacement_matrix": (
                 self.image_to_stage_displacement_matrix
             ),
+            "image_resolution": (
+                self.thing_settings.get("image_to_stage_displacement", None)
+            )
         }

@@ -10,6 +10,7 @@ from labthings_picamera2.thing import StreamingPiCamera2
 
 from .things.autofocus import AutofocusThing
 from .things.camera_stage_mapping import CameraStageMapper
+from .things.system_control import SystemControlThing
 from .serve_static_files import add_static_files
 import openflexure_microscope_server
 
@@ -20,6 +21,7 @@ thing_server.add_thing(StreamingPiCamera2(), "/camera/")
 thing_server.add_thing(SangaboardThing(), "/stage/")
 thing_server.add_thing(AutofocusThing(), "/autofocus/")
 thing_server.add_thing(CameraStageMapper(), "/camera_stage_mapping/")
+thing_server.add_thing(SystemControlThing(), "/system_control/")
 try:
     add_static_files(thing_server.app)
 except RuntimeError:
