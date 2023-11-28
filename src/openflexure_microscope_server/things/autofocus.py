@@ -2,7 +2,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 import logging
 import time
-from typing import Annotated, Mapping, Optional
+from typing import Annotated, Mapping, Optional, Sequence
 
 from anyio import from_thread
 from fastapi import Depends
@@ -159,4 +159,30 @@ class AutofocusThing(Thing):
             # Move to the target position fz (relative move of (fz - z))
             m.focus_rel(fz - z)
             # Return all focus data
+            return m.data_dict()
+        
+    @thing_action
+    def move_and_measure(
+        self,
+        m: SharpnessMonitorDep,
+        dz: Sequence[int],
+        wait: float=0,
+    ) -> SharpnessDataArrays:
+        """Make a move (or a series of moves) and monitor sharpness
+        
+        This method will will make a series of relative moves in z, and
+        return the sharpness (JPEG size) vs time, along with timestamps
+        for the moves. This can be used to calibrate autofocus.
+
+        Each move is relative to the last one, i.e. we will finish at
+        `sum(dz)` relative to the starting position.
+
+        If `wait` is specified, we will wait for that many seconds
+        between moves.
+        """
+        with m.run():
+            for i, current_dz in enumerate(dz):
+                if i > 0 and wait > 0:
+                    time.sleep(wait)
+                m.focus_rel(current_dz)
             return m.data_dict()
