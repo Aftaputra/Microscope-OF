@@ -187,7 +187,7 @@ class CameraStageMapper(Thing):
         return np.array(displacement_matrix).tolist()
 
     @thing_property
-    def last_calibration(self) -> Optional[Dict]:  # 2x2 integer array
+    def last_calibration(self) -> Optional[Dict]:
         """The results of the last calibration that was run
         """
         return self.thing_settings.get("last_calibration", None)
@@ -219,11 +219,16 @@ class CameraStageMapper(Thing):
     @thing_property
     def thing_state(self) -> dict:
         """Summary metadata describing the current state of the Thing"""
-        return {
-            "image_to_stage_displacement_matrix": (
+        state: dict[str, Any] = {}
+        try:
+            state["image_to_stage_displacement_matrix"] = (
                 self.image_to_stage_displacement_matrix
-            ),
-            "image_resolution": (
-                self.thing_settings.get("image_to_stage_displacement", None)
             )
-        }
+        except ValueError:
+            pass  # If it can't be retrieved, we'll just return an empty dict
+        if self.last_calibration:
+            try:
+                state["image_resolution"] = self.last_calibration["image_resolution"]
+            except KeyError:
+                logging.warning("Couldn't find `image_resolution` in CSM calibration")
+        return state
