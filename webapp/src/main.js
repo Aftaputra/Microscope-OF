@@ -34,6 +34,16 @@ Vue.config.productionTip = false;
 
 Vue.mixin({
   methods: {
+    async getThingDescription(thing) {
+      // Get the thing description for the given thing
+      let origin = this.$store.state.origin;
+      let uri = `${origin}/${thing}/`;
+      // We cache TDs in the store, and fetch only if needed.
+      if (!(uri in store.state.wot.thingDescriptions)) {
+        await store.dispatch("wot/fetchThingDescription", uri);
+      }
+      return store.state.wot.thingDescriptions[uri];
+    },
     modalConfirm: function(modalText) {
       var context = this;
 

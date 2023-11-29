@@ -51,7 +51,7 @@ export default {
     return {
       settings: null,
       actions: {},
-      properties: {},
+      properties: {}
     };
   },
 
