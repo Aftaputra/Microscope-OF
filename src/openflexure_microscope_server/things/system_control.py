@@ -1,14 +1,7 @@
 """
-OpenFlexure Microscope API extension for stage calibration
+OpenFlexure Microscope system control Thing
 
-This file contains the HTTP API for camera/stage calibration. It
-includes calibration functions that measure the relationship between
-stage coordinates and camera coordinates, as well as functions that
-move by a specified displacement in pixels, perform closed-loop moves,
-and return the calibration data.
-
-This module is only intended to be called from the OpenFlexure Microscope
-server, and depends on that server and its underlying LabThings library.
+This module defines a Thing that can shut down or restart the host computer.
 """
 import subprocess
 import os
