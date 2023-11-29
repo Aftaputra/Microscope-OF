@@ -12,19 +12,22 @@
               <li class="uk-open">
                 <a class="uk-accordion-title" href="#">Pi Camera Settings</a>
                 <div class="uk-accordion-content">
-                  <NumericSettingLine
+                  <PropertyControl
                     label="Exposure time"
-                    :property-url="cameraUri + 'exposure_time'"
+                    property-name="exposure_time"
+                    :thing-description="thingDescription"
                     :read-back-delay="1000"
                   />
-                  <NumericSettingLine
+                  <PropertyControl
                     label="Analogue gain"
-                    :property-url="cameraUri + 'analogue_gain'"
+                    property-name="analogue_gain"
+                    :thing-description="thingDescription"
                     :read-back-delay="1000"
                   />
-                  <NumericArraySettingLine
+                  <PropertyControl
                     label="Colour gains"
-                    :property-url="cameraUri + 'colour_gains'"
+                    property-name="colour_gains"
+                    :thing-description="thingDescription"
                     :read-back-delay="1000"
                   />
                 </div>
@@ -32,14 +35,16 @@
               <li class="uk-open">
                 <a class="uk-accordion-title" href="#">Image Quality</a>
                 <div class="uk-accordion-content">
-                  <NumericSettingLine
+                  <PropertyControl
                     label="MJPEG stream bit rate"
-                    :property-url="cameraUri + 'mjpeg_bitrate'"
+                    property-name="mjpeg_bitrate"
+                    :thing-description="thingDescription"
                     :read-back-delay="100"
                   />
-                  <NumericArraySettingLine
+                  <PropertyControl
                     label="MJPEG stream resolution"
-                    :property-url="cameraUri + 'stream_resolution'"
+                    property-name="stream_resolution"
+                    :thing-description="thingDescription"
                     :read-back-delay="100"
                   />
                 </div>
@@ -92,8 +97,7 @@
 <script>
 import cameraCalibrationSettings from "./cameraSettingsComponents/cameraCalibrationSettings.vue";
 import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
-import NumericSettingLine from "../../genericComponents/numericSettingLine.vue";
-import NumericArraySettingLine from "../../genericComponents/numericArraySettingLine.vue";
+import PropertyControl from "../../labThingsComponents/propertyControl.vue";
 
 // Export main app
 export default {
@@ -102,8 +106,7 @@ export default {
   components: {
     cameraCalibrationSettings,
     miniStreamDisplay,
-    NumericSettingLine,
-    NumericArraySettingLine
+    PropertyControl
   },
 
   data: function() {
@@ -133,7 +136,8 @@ export default {
         { text: "Normal (30fps)", value: 30 },
         { text: "Low (15fps)", value: 15 },
         { text: "Very low (10fps)", value: 10 }
-      ]
+      ],
+      thingDescription: undefined
     };
   },
 
@@ -141,6 +145,10 @@ export default {
     cameraUri: function() {
       return `${this.$store.getters.baseUri}/camera/`;
     }
+  },
+
+  mounted: async function() {
+    this.thingDescription = await this.getThingDescription("camera");
   }
 };
 </script>

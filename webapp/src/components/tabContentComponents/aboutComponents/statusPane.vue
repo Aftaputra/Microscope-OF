@@ -87,7 +87,7 @@ export default {
   computed: {
     baseUri: function() {
       return `${this.$store.getters.baseUri}/`;
-    },
+    }
   },
 
   mounted: function() {
@@ -98,7 +98,7 @@ export default {
 
   methods: {
     updateConfiguration: async function() {
-      console.log("Showing the configuration is not yet fully implemented")
+      console.log("Showing the configuration is not yet fully implemented");
       // Retrieve TDs for camera and stage
       let things = {};
       for (let thing of ["camera", "stage"]) {
@@ -106,17 +106,20 @@ export default {
           let response = await axios.get(this.baseUri + thing); // Get Thing Description
           things[thing] = response.data;
         } catch (error) {
-          console.log(thing + " was missing", error)
+          console.log(thing + " was missing", error);
         }
       }
-      this.things = things;  // We must set this.things in order to trigger the UI update
+      this.things = things; // We must set this.things in order to trigger the UI update
     },
     updateActions: async function() {
       try {
         let response = await axios.get(this.baseUri + "system_control"); // Get Thing Description
         this.systemControlActions = response.data.actions;
       } catch (error) {
-        console.log("system control was missing - shutdown/restart buttons will not appear", error)
+        console.log(
+          "system control was missing - shutdown/restart buttons will not appear",
+          error
+        );
       }
     },
     shutdownRequest: function() {
@@ -124,7 +127,7 @@ export default {
         () => {
           this.$store.commit("resetState");
           // Post and silence errors
-          axios.post(this.baseUri + 'system_control/shutdown').catch(() => {});
+          axios.post(this.baseUri + "system_control/shutdown").catch(() => {});
         },
         () => {}
       );
@@ -134,7 +137,7 @@ export default {
         () => {
           this.$store.commit("resetState");
           // Post and silence errors
-          axios.post(this.baseUri + 'system_control/restart').catch(() => {});
+          axios.post(this.baseUri + "system_control/restart").catch(() => {});
         },
         () => {}
       );

@@ -44,7 +44,7 @@
         <i class="material-icons">refresh</i>
       </a>
     </div>
-    <div v-else class="input-and-buttons-container">
+    <div v-if="dataType == 'other'" class="input-and-buttons-container">
       <input
         :value="value"
         class="uk-form-small numeric-setting-line-input"
@@ -62,6 +62,10 @@ export default {
   name: "PropertyControl",
 
   props: {
+    label: {
+      type: String,
+      default: ""
+    },
     propertyName: {
       type: String,
       required: true
@@ -79,7 +83,7 @@ export default {
 
   data: () => {
     return {
-      value: {},
+      value: undefined,
       valueOnEnter: undefined,
       focused: false
     };
@@ -90,21 +94,35 @@ export default {
       return this.readBackDelay !== undefined;
     },
     propertyDescription: function() {
-      return this.thingDescription.properties[this.propertyName];
+      try {
+        return this.thingDescription.properties[this.propertyName];
+      } catch (error) {
+        return undefined;
+      }
+    },
+    readPropertyUrl: function() {
+      let href = this.formHref("readproperty");
+      return this.prependTdBaseUri(href);
+    },
+    writePropertyUrl: function() {
+      let href = this.formHref("writeproperty");
+      return this.prependTdBaseUri(href);
     },
     dataType: function() {
       let prop = this.propertyDescription;
+      if (prop == undefined) {
+        return "undefined";
+      }
       const num_types = ["integer", "float", "number"];
       if (num_types.includes(prop.type)) {
         return "number";
       }
-      console.log("Prop type", prop.type, "is not in", num_types);
       if (prop.type == "array") {
-        if (num_types.includes(prop.items)) {
+        if (num_types.includes(prop.items.type)) {
           return "number_array";
         }
         if (Array.isArray(prop.items)) {
-          if (prop.items.every(t => num_types.includes(t))) {
+          if (prop.items.every(t => num_types.includes(t.type))) {
             return "number_array";
           }
         }
@@ -125,21 +143,60 @@ export default {
     }
   },
 
+  watch: {
+    readPropertyUrl: function() {
+      // Ensure we read the property once the URL is known
+      this.readProperty();
+    }
+  },
+
   mounted: function() {
-    this.readProperty();
+    // Read the property when we're mounted - usually this won't
+    // work because the URL isn't set yet. However, it's helpful if
+    // the app is reloaded (e.g. from a dev server).
+    if (this.value == undefined) {
+      this.readProperty();
+    }
   },
 
   methods: {
+    formHref: function(op = "readproperty") {
+      if (this.thingDescription == undefined) return undefined;
+      try {
+        let forms = this.propertyDescription.forms;
+        let readForm = forms.find(f => f.op == op || f.op.includes(op));
+        return readForm.href;
+      } catch (error) {
+        console.log(
+          `Failed to find form for ${op} on ${this.propertyName}`,
+          error
+        );
+        return undefined;
+      }
+    },
+    prependTdBaseUri: function(href) {
+      if (href == undefined) return undefined;
+      if (href.startsWith("http")) return href;
+      if ("base" in this.thingDescription) {
+        if (href.startsWith("/")) href = href.slice(1);
+        if (!this.thingDescription.base.endsWith("/"))
+          this.thingDescription.base += "/";
+        return this.thingDescription.base + href;
+      }
+      return href;
+    },
     readProperty: async function() {
-      let response = await axios.get(this.propertyUrl);
+      console.log(`Reading property ${this.propertyName}`);
+      let response = await axios.get(this.readPropertyUrl);
+      console.log(`Read property ${this.propertyName}`);
       this.value = response.data;
-      console.log("Read property", this.propertyUrl, response.data);
+      console.log("Read property", this.readPropertyUrl, response.data);
       return response.data;
     },
     writeProperty: async function() {
       try {
         let requestedValue = this.value;
-        await axios.post(this.propertyUrl, requestedValue);
+        await axios.post(this.writePropertyUrl, requestedValue);
         if (this.readBack) {
           await new Promise(r => setTimeout(r, this.readBackDelay));
           let newVal = await this.readProperty();
