@@ -1,10 +1,16 @@
+"""OpenFlexure Microscope autofocus module
+
+This module defines a Thing that is responsible for using the stage and
+camera together to perform an autofocus routine.
+
+See repository root for licensing information.
+"""
 from __future__ import annotations
 from contextlib import contextmanager
 import logging
 import time
 from typing import Annotated, Mapping, Optional, Sequence
 
-from anyio import from_thread
 from fastapi import Depends
 
 from labthings_fastapi.thing import Thing
