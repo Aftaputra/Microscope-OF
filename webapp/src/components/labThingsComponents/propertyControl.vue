@@ -186,11 +186,8 @@ export default {
       return href;
     },
     readProperty: async function() {
-      console.log(`Reading property ${this.propertyName}`);
       let response = await axios.get(this.readPropertyUrl);
-      console.log(`Read property ${this.propertyName}`);
       this.value = response.data;
-      console.log("Read property", this.readPropertyUrl, response.data);
       return response.data;
     },
     writeProperty: async function() {
