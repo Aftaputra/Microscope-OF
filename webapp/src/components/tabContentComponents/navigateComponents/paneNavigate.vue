@@ -235,14 +235,11 @@ export default {
       return `${this.$store.getters.baseUri}/stage/move_relative`;
     },
     zeroActionUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/actions/stage/zero`;
+      return `${this.$store.getters.baseUri}/stage/zero`;
     },
     positionStatusUri: function() {
       return `${this.baseUri}/stage/position`;
     },
-    pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/extensions`;
-    }
   },
 
   watch: {
