@@ -58,7 +58,7 @@ export default {
     },
     streamImgUri: function() {
       return `${this.$store.getters.baseUri}/camera/mjpeg_stream`;
-    },
+    }
   },
 
   mounted() {

@@ -51,6 +51,11 @@ export default {
   },
 
   computed: {
+    thingDescriptionUri: function() {
+      return this.$store.getters["wot/thingDescription"](
+        "camera_stage_mapping"
+      );
+    }
   },
 
   mounted() {
@@ -87,30 +92,6 @@ export default {
             link.setAttribute("download", "csm_calibration.json");
             document.body.appendChild(link);
             link.click();
-          }
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
-    },
-
-    updateThingDescription: function() {
-      this.thingDescription = 
-      axios
-        .get(this.pluginsUri) // Get a list of plugins
-        .then(response => {
-          var plugins = response.data;
-          var foundExtension = plugins.find(
-            e => e.title === "org.openflexure.camera_stage_mapping"
-          );
-          // if camera-stage mapping extension is enabled
-          if (foundExtension) {
-            // Get plugin action link
-            this.recalibrationLinks = foundExtension.links;
-            // Update whether calibration data is available
-            this.updateCalibrationDataAvailability();
-          } else {
-            this.recalibrationLinks = {};
           }
         })
         .catch(error => {

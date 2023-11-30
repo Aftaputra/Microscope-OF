@@ -14,19 +14,16 @@ export default {
   components: {},
 
   data: function() {
-    return {
-      thingDescription: {}
-    };
+    return {};
   },
 
   computed: {
     stageType: function() {
       return this.thingDescription.title;
+    },
+    thingDescription: function() {
+      return this.$store.getters["wot/thingDescription"]("stage");
     }
-  },
-
-  mounted: async function() {
-    this.thingDescription = await this.getThingDescription("stage");
   }
 };
 </script>

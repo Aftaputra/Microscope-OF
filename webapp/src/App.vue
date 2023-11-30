@@ -42,7 +42,6 @@
 import appContent from "./components/appContent.vue";
 import loadingContent from "./components/loadingContent.vue";
 
-import axios from "axios";
 var Mousetrap = require("mousetrap");
 
 Mousetrap.prototype.stopCallback = function(e, element) {
@@ -311,9 +310,17 @@ export default {
       // TODO: more robust check - e.g. use a microscope Thing
       // TODO: should we purge existing consumedThings?
       try {
-        await axios.get(`${baseUri}/things/`);
-        await this.getThingDescription("stage");
-        await this.getThingDescription("camera");
+        await this.$store.dispatch(
+          "wot/fetchThingDescriptions",
+          `${baseUri}/thing_descriptions/`
+        );
+        for (let requiredThing of ["camera", "stage"]) {
+          if (!this.$store.getters["wot/thingAvailable"](requiredThing)) {
+            throw new Error(
+              `No ${requiredThing} found, the GUI won't work without one.`
+            );
+          }
+        }
         this.$store.commit("setConnected");
         this.$store.commit("setErrorMessage", null);
       } catch (error) {
@@ -322,7 +329,6 @@ export default {
         this.$store.commit("changeWaiting", false);
       }
     },
-
     handleExit: function() {
       this.$root.$emit("globalTogglePreview", false);
     },
