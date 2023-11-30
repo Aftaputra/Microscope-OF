@@ -34,15 +34,31 @@ Vue.config.productionTip = false;
 
 Vue.mixin({
   methods: {
-    async getThingDescription(thing) {
-      // Get the thing description for the given thing
-      let origin = this.$store.state.origin;
-      let uri = `${origin}/${thing}/`;
-      // We cache TDs in the store, and fetch only if needed.
-      if (!(uri in store.state.wot.thingDescriptions)) {
-        await store.dispatch("wot/fetchThingDescription", uri);
+    thingDescription(thing) {
+      return this.$store.getters["wot/thingDescription"](thing);
+    },
+    thingAvailable(thing) {
+      return this.$store.getters["wot/thingAvailable"](thing);
+    },
+    async readThingProperty(thing, property) {
+      let url = this.$store.getters["wot/thingPropertyUrl"](thing, property, "readproperty");
+      try {
+        let response = await axios.get(url);
+        return response.data;
+      } catch (error) {
+        this.modalError(error);
       }
-      return store.state.wot.thingDescriptions[uri];
+    },
+    async writeThingProperty(thing, property, value) {
+      let url = this.$store.getters["wot/thingPropertyUrl"](thing, property, "writeproperty");
+      try {
+        let response = await axios.put(url, value);
+      } catch (error) {
+        this.modalError(error);
+      }
+    },
+    thingActionUrl(thing, action) {
+      return this.$store.getters["wot/thingActionUrl"](thing, action);
     },
     modalConfirm: function(modalText) {
       var context = this;
