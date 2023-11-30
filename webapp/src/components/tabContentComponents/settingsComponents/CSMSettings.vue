@@ -43,7 +43,7 @@ export default {
 
   data: function() {
     return {
-      settings: null,
+      thingDescription: undefined,
       recalibrationLinks: {},
       isCalibrating: false,
       dataAvailable: false
@@ -51,34 +51,13 @@ export default {
   },
 
   computed: {
-    settingsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/instrument/settings`;
-    },
-    pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/extensions`;
-    }
   },
 
   mounted() {
-    this.updateSettings();
-    this.updateRecalibrationLinks();
+    this.updateThingDescription();
   },
 
   methods: {
-    updateSettings: function() {
-      // Update links
-      axios
-        .get(this.settingsUri)
-        .then(response => {
-          this.settings =
-            response.data.extensions["org.openflexure.camera_stage_mapping"];
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-          this.settings = {};
-        });
-    },
-
     updateCalibrationDataAvailability: function() {
       if ("get_calibration" in this.recalibrationLinks) {
         axios
@@ -115,7 +94,8 @@ export default {
         });
     },
 
-    updateRecalibrationLinks: function() {
+    updateThingDescription: function() {
+      this.thingDescription = 
       axios
         .get(this.pluginsUri) // Get a list of plugins
         .then(response => {
