@@ -239,7 +239,7 @@ export default {
     },
     positionStatusUri: function() {
       return `${this.baseUri}/stage/position`;
-    },
+    }
   },
 
   watch: {

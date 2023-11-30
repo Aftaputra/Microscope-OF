@@ -136,19 +136,17 @@ export default {
         { text: "Normal (30fps)", value: 30 },
         { text: "Low (15fps)", value: 15 },
         { text: "Very low (10fps)", value: 10 }
-      ],
-      thingDescription: undefined
+      ]
     };
   },
 
   computed: {
     cameraUri: function() {
       return `${this.$store.getters.baseUri}/camera/`;
+    },
+    thingDescription: function() {
+      return this.$store.getters["wot/thingDescription"]("camera");
     }
-  },
-
-  mounted: async function() {
-    this.thingDescription = await this.getThingDescription("camera");
   }
 };
 </script>

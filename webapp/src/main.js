@@ -1,6 +1,7 @@
 import Vue from "vue";
 import App from "./App.vue";
 import store from "./store";
+import axios from "axios";
 import UIkit from "uikit";
 import VueTour from "vue-tour";
 import VueFriendlyIframe from "vue-friendly-iframe";
@@ -41,7 +42,11 @@ Vue.mixin({
       return this.$store.getters["wot/thingAvailable"](thing);
     },
     async readThingProperty(thing, property) {
-      let url = this.$store.getters["wot/thingPropertyUrl"](thing, property, "readproperty");
+      let url = this.$store.getters["wot/thingPropertyUrl"](
+        thing,
+        property,
+        "readproperty"
+      );
       try {
         let response = await axios.get(url);
         return response.data;
@@ -50,9 +55,13 @@ Vue.mixin({
       }
     },
     async writeThingProperty(thing, property, value) {
-      let url = this.$store.getters["wot/thingPropertyUrl"](thing, property, "writeproperty");
+      let url = this.$store.getters["wot/thingPropertyUrl"](
+        thing,
+        property,
+        "writeproperty"
+      );
       try {
-        let response = await axios.put(url, value);
+        await axios.put(url, value);
       } catch (error) {
         this.modalError(error);
       }
