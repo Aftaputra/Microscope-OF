@@ -201,11 +201,15 @@ export default {
     show: async function() {
       // Check if the camera and stage are calibrated, if they can be
       if (this.canCSMCalibrated) {
-        let csm = this.readThingProperty(
-          "camera_stage_mapping",
-          "image_to_stage_displacement_matrix"
-        );
-        this.isCSMCalibrated = Boolean(csm);
+        try {
+          let csm = this.readThingProperty(
+            "camera_stage_mapping",
+            "image_to_stage_displacement_matrix"
+          );
+          this.isCSMCalibrated = Boolean(csm);
+        } catch {
+          this.isCSMCalibrated = false;
+        }
       }
       if (this.canLSTCalibrated) {
         this.isLSTCalibrated = this.readThingProperty(
