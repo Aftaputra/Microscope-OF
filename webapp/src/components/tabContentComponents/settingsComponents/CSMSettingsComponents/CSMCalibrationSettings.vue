@@ -63,7 +63,7 @@ export default {
   methods: {
     getCalibrationData: async function() {
       try {
-        let data = this.readThingProperty(
+        let data = await this.readThingProperty(
           "camera_stage_mapping",
           "last_calibration"
         );
