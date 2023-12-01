@@ -71,7 +71,10 @@ export const wotStoreModule = {
     ) => {
       // Find the URL for a particular operation
       let td = state.thingDescriptions[thing];
-      if (!td) return null;
+      if (!td) {
+        if (allowUndefined) return undefined;
+        throw `Could not find form for ${affordanceType} ${thing}/${affordance} with op ${op}`;
+      }
       let affordances = td[affordanceType];
       let href = findFormHref(affordances[affordance], op);
       if (href == undefined) {
