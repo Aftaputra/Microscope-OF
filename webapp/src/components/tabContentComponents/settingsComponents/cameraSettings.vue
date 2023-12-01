@@ -15,19 +15,19 @@
                   <PropertyControl
                     label="Exposure time"
                     property-name="exposure_time"
-                    :thing-description="thingDescription"
+                    thing-name="camera"
                     :read-back-delay="1000"
                   />
                   <PropertyControl
                     label="Analogue gain"
                     property-name="analogue_gain"
-                    :thing-description="thingDescription"
+                    thing-name="camera"
                     :read-back-delay="1000"
                   />
                   <PropertyControl
                     label="Colour gains"
                     property-name="colour_gains"
-                    :thing-description="thingDescription"
+                    thing-name="camera"
                     :read-back-delay="1000"
                   />
                 </div>
@@ -38,13 +38,13 @@
                   <PropertyControl
                     label="MJPEG stream bit rate"
                     property-name="mjpeg_bitrate"
-                    :thing-description="thingDescription"
+                    thing-name="camera"
                     :read-back-delay="100"
                   />
                   <PropertyControl
                     label="MJPEG stream resolution"
                     property-name="stream_resolution"
-                    :thing-description="thingDescription"
+                    thing-name="camera"
                     :read-back-delay="100"
                   />
                 </div>
@@ -144,9 +144,6 @@ export default {
     cameraUri: function() {
       return `${this.$store.getters.baseUri}/camera/`;
     },
-    thingDescription: function() {
-      return this.$store.getters["wot/thingDescription"]("camera");
-    }
   }
 };
 </script>

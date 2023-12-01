@@ -19,10 +19,7 @@ export default {
 
   computed: {
     stageType: function() {
-      return this.thingDescription.title;
-    },
-    thingDescription: function() {
-      return this.$store.getters["wot/thingDescription"]("stage");
+      return this.thingDescription("stage").title;
     }
   }
 };
