@@ -175,7 +175,7 @@ class CameraStageMapper(Thing):
         return data
 
     @thing_property
-    def image_to_stage_displacement_matrix(self) -> List[List[float]]:  # 2x2 integer array
+    def image_to_stage_displacement_matrix(self) -> Optional[List[List[float]]]:  # 2x2 integer array
         """A 2x2 matrix that converts displacement in image coordinates to stage coordinates.
         
         Note that this matrix is defined using "matrix coordinates", i.e. image coordinates
@@ -195,8 +195,13 @@ class CameraStageMapper(Thing):
         """
         displacement_matrix = self.thing_settings.get("image_to_stage_displacement")
         if not displacement_matrix:
-            raise CSMUncalibratedError()
+            return None
         return np.array(displacement_matrix).tolist()
+    
+    def assert_calibrated(self):
+        """Raise an exception if the image_to_stage_displacement matrix is not set"""
+        if self.image_to_stage_displacement_matrix is None:
+            raise CSMUncalibratedError()
 
     @thing_property
     def last_calibration(self) -> Optional[Dict]:
@@ -222,6 +227,7 @@ class CameraStageMapper(Thing):
         and `y` to the shorter one. Checking what shape your chosen toolkit reports for
         an image usually helps resolve any ambiguity.
         """
+        self.assert_calibrated()
         relative_move: np.ndarray = np.dot(
             np.array([y, x]),
             np.array(self.image_to_stage_displacement_matrix)
@@ -232,12 +238,9 @@ class CameraStageMapper(Thing):
     def thing_state(self) -> dict:
         """Summary metadata describing the current state of the Thing"""
         state: dict[str, Any] = {}
-        try:
-            state["image_to_stage_displacement_matrix"] = (
-                self.image_to_stage_displacement_matrix
-            )
-        except ValueError:
-            pass  # If it can't be retrieved, we'll just return an empty dict
+        state["image_to_stage_displacement_matrix"] = (
+            self.image_to_stage_displacement_matrix
+        )
         if self.last_calibration:
             try:
                 state["image_resolution"] = self.last_calibration["image_resolution"]
