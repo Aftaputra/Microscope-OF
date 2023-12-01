@@ -67,7 +67,11 @@ Vue.mixin({
       }
     },
     thingActionUrl(thing, action) {
-      return this.$store.getters["wot/thingActionUrl"](thing, action, "invokeaction");
+      return this.$store.getters["wot/thingActionUrl"](
+        thing,
+        action,
+        "invokeaction"
+      );
     },
     modalConfirm: function(modalText) {
       var context = this;

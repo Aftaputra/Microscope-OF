@@ -143,7 +143,7 @@ export default {
   computed: {
     cameraUri: function() {
       return `${this.$store.getters.baseUri}/camera/`;
-    },
+    }
   }
 };
 </script>
