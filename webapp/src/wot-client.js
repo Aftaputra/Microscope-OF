@@ -53,11 +53,13 @@ export const wotStoreModule = {
     }
   },
   getters: {
+    thingDescriptions: state => {
+      return state.thingDescriptions;
+    },
     thingDescription: state => thingName => {
       return state.thingDescriptions[thingName];
     },
     thingAvailable: state => thingName => {
-      console.log("thingAvailable", thingName, state.thingDescriptions)
       return thingName in state.thingDescriptions;
     },
     thingFormUrl: state => (thing, affordanceType, affordance, op) => {
@@ -65,7 +67,19 @@ export const wotStoreModule = {
       let td = state.thingDescriptions[thing];
       if (!td) return null;
       let affordances = td[affordanceType];
-      return findForm(affordances[affordance], op);
+      let href = findFormHref(affordances[affordance], op);
+      if (href == undefined) return undefined;
+
+      // If we've found an href, prepend the `base` URL if appropriate
+      if (href.startsWith("http")) return href;
+      if ("base" in td) {
+        let base = td.base;
+        if (href.startsWith("/")) href = href.slice(1);
+        if (!base.endsWith("/"))
+          base += "/";
+        return base + href;
+      }
+      return href;
     },
     thingPropertyUrl: (_state, getters) => (thing, property, op) => {
       // Find the URL for a particular property
@@ -78,7 +92,7 @@ export const wotStoreModule = {
   }
 };
 
-export function findForm(affordance, op) {
+export function findFormHref(affordance, op) {
   // Find the form in the affordance that matches the given operation type
   let forms = affordance.forms;
   let matchingForm = forms.find(f => f.op == op || f.op.includes(op));
