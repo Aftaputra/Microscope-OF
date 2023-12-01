@@ -16,7 +16,7 @@
     </div>
     <div v-if="dataType == 'number_array'" class="input-and-buttons-container">
       <input
-        v-for="i in value.length"
+        v-for="i in valueLength"
         :key="i"
         v-model="value[i - 1]"
         class="uk-form-small numeric-setting-line-input"
@@ -56,8 +56,6 @@
 </template>
 
 <script>
-import axios from "axios";
-
 export default {
   name: "PropertyControl",
 
@@ -70,8 +68,8 @@ export default {
       type: String,
       required: true
     },
-    thingDescription: {
-      type: Object,
+    thingName: {
+      type: String,
       required: true
     },
     readBackDelay: {
@@ -90,23 +88,27 @@ export default {
   },
 
   computed: {
+    valueLength: function() {
+      if (this.dataType == "number_array") {
+        if (this.value == undefined) {
+          return 0;
+        }
+        return this.value.length;
+      } else {
+        return 1;
+      }
+    },
     readBack: function() {
       return this.readBackDelay !== undefined;
     },
     propertyDescription: function() {
       try {
-        return this.thingDescription.properties[this.propertyName];
+        return this.thingDescription(this.thingName).properties[
+          this.propertyName
+        ];
       } catch (error) {
         return undefined;
       }
-    },
-    readPropertyUrl: function() {
-      let href = this.formHref("readproperty");
-      return this.prependTdBaseUri(href);
-    },
-    writePropertyUrl: function() {
-      let href = this.formHref("writeproperty");
-      return this.prependTdBaseUri(href);
     },
     dataType: function() {
       let prop = this.propertyDescription;
@@ -144,7 +146,7 @@ export default {
   },
 
   watch: {
-    readPropertyUrl: function() {
+    propertyDescription: function() {
       // Ensure we read the property once the URL is known
       this.readProperty();
     }
@@ -160,40 +162,22 @@ export default {
   },
 
   methods: {
-    formHref: function(op = "readproperty") {
-      if (this.thingDescription == undefined) return undefined;
-      try {
-        let forms = this.propertyDescription.forms;
-        let readForm = forms.find(f => f.op == op || f.op.includes(op));
-        return readForm.href;
-      } catch (error) {
-        console.log(
-          `Failed to find form for ${op} on ${this.propertyName}`,
-          error
-        );
-        return undefined;
-      }
-    },
-    prependTdBaseUri: function(href) {
-      if (href == undefined) return undefined;
-      if (href.startsWith("http")) return href;
-      if ("base" in this.thingDescription) {
-        if (href.startsWith("/")) href = href.slice(1);
-        if (!this.thingDescription.base.endsWith("/"))
-          this.thingDescription.base += "/";
-        return this.thingDescription.base + href;
-      }
-      return href;
-    },
     readProperty: async function() {
-      let response = await axios.get(this.readPropertyUrl);
-      this.value = response.data;
-      return response.data;
+      let data = await this.readThingProperty(
+        this.thingName,
+        this.propertyName
+      );
+      this.value = data;
+      return data;
     },
     writeProperty: async function() {
       try {
         let requestedValue = this.value;
-        await axios.post(this.writePropertyUrl, requestedValue);
+        await this.writeThingProperty(
+          this.thingName,
+          this.propertyName,
+          requestedValue
+        );
         if (this.readBack) {
           await new Promise(r => setTimeout(r, this.readBackDelay));
           let newVal = await this.readProperty();
