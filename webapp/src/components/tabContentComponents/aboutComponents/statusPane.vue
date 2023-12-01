@@ -21,7 +21,7 @@
       <div class="uk-margin-small-bottom">
         <b>Camera:</b>
         <br />
-        <div v-if="'camera' in things">
+        <div v-if="thingAvailable('camera')">
           {{ things.camera.title }}
         </div>
         <div v-else class="uk-text-danger"><b>No camera configured</b></div>
@@ -29,7 +29,7 @@
       <div>
         <b>Stage:</b>
         <br />
-        <div v-if="'stage' in things">
+        <div v-if="thingAvailable('stage')">
           {{ things.stage.title }}
         </div>
         <div v-else class="uk-text-danger"><b>No stage configured</b></div>
@@ -40,9 +40,9 @@
       <div class="uk-grid-small uk-child-width-1-2" uk-grid>
         <div>
           <button
-            v-show="'shutdown' in systemControlActions"
+            v-show="'shutdown' in things.system_control.actions"
             class="uk-button uk-button-danger uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
-            @click="shutdownRequest"
+            @click="systemRequest('shutdown')"
           >
             Shutdown
           </button>
@@ -50,9 +50,9 @@
 
         <div>
           <button
-            v-show="'reboot' in systemControlActions"
+            v-show="'reboot' in things.system_control.actions"
             class="uk-button uk-button-danger uk-float-right uk-margin uk-margin-remove-top uk-width-1-1"
-            @click="rebootRequest"
+            @click="systemRequest('reboot')"
           >
             Restart
           </button>
@@ -75,69 +75,22 @@ import axios from "axios";
 export default {
   name: "StatusPane",
 
-  components: {},
-
-  data: function() {
-    return {
-      things: {},
-      systemControlActions: {}
-    };
-  },
-
   computed: {
-    baseUri: function() {
-      return `${this.$store.getters.baseUri}/`;
+    things: function() {
+      return this.$store.state["wot/thingDescriptions"];
     }
   },
 
-  mounted: function() {
-    // Watch for host 'ready', then update configuration
-    this.updateConfiguration();
-    this.updateActions();
-  },
-
   methods: {
-    updateConfiguration: async function() {
-      console.log("Showing the configuration is not yet fully implemented");
-      // Retrieve TDs for camera and stage
-      let things = {};
-      for (let thing of ["camera", "stage"]) {
-        try {
-          let response = await axios.get(this.baseUri + thing); // Get Thing Description
-          things[thing] = response.data;
-        } catch (error) {
-          console.log(thing + " was missing", error);
-        }
-      }
-      this.things = things; // We must set this.things in order to trigger the UI update
-    },
-    updateActions: async function() {
-      try {
-        let response = await axios.get(this.baseUri + "system_control"); // Get Thing Description
-        this.systemControlActions = response.data.actions;
-      } catch (error) {
-        console.log(
-          "system control was missing - shutdown/restart buttons will not appear",
-          error
-        );
-      }
-    },
-    shutdownRequest: function() {
-      this.modalConfirm("Shut down microscope?").then(
-        () => {
-          this.$store.commit("resetState");
-          // Post and silence errors
-          axios.post(this.baseUri + "system_control/shutdown").catch(() => {});
-        },
-        () => {}
-      );
-    },
-    rebootRequest: function() {
+    systemRequest: function(action) {
       this.modalConfirm("Restart microscope?").then(
         () => {
           this.$store.commit("resetState");
+          this.$store.commit("wot/deleteAllThingDescriptions");
           // Post and silence errors
-          axios.post(this.baseUri + "system_control/restart").catch(() => {});
+          axios
+            .post(this.thingActionUrl("system_control", action))
+            .catch(() => {});
         },
         () => {}
       );
