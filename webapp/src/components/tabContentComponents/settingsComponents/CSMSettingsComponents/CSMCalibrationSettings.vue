@@ -9,7 +9,7 @@
         :confirmation-message="
           'Start recalibration of the stage to the camera? This may take a while, and the microscope will be locked during this time.'
         "
-        :submit-url="thingUri + 'calibrate_xy'"
+        :submit-url="calibrateXYUri"
         :submit-label="'Auto-Calibrate using camera'"
         @response="onRecalibrateResponse"
         @error="modalError"
@@ -28,7 +28,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import taskSubmitter from "../../../genericComponents/taskSubmitter";
 
 // Export main app
@@ -55,18 +54,24 @@ export default {
     properties() {
       return this.$store.getters["wot/thingDescription"]("camera_stage_mapping")
         .properties;
+    },
+    calibrateXYUri() {
+      return this.thingActionUrl("camera_stage_mapping", "calibrate_xy");
     }
   },
 
   methods: {
     getCalibrationData: async function() {
       try {
-        let response = await axios.get(this.thingUri + "last_calibration");
-        if (response.data == {}) {
+        let data = this.readThingProperty(
+          "camera_stage_mapping",
+          "last_calibration"
+        );
+        if (data == {}) {
           throw "No calibration data available.";
         }
-        const data = JSON.stringify(response.data);
-        const url = window.URL.createObjectURL(new Blob([data]));
+        const dataStr = JSON.stringify(data);
+        const url = window.URL.createObjectURL(new Blob([dataStr]));
         const link = document.createElement("a");
         link.href = url;
         link.setAttribute("download", "csm_calibration.json");
