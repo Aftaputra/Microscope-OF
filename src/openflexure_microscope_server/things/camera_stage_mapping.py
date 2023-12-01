@@ -16,7 +16,7 @@ import logging
 import os
 import time
 from typing import Annotated, Any, Callable, Dict, List, NamedTuple, Optional, Tuple
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 
 import numpy as np
 from pydantic import BaseModel
@@ -114,6 +114,18 @@ class LoggingMoveWrapper:
         self._history: List[Tuple[float, Optional[CoordinateType]]] = []
 
 
+class CSMUncalibratedError(HTTPException):
+    def __init__(self):
+        HTTPException.__init__(
+            self,
+            503,
+            (
+                "The camera_stage_mapping calibration is not yet available. "
+                "This probably means you need to run the calibration routine."
+            )
+        )
+
+
 class CameraStageMapper(Thing):
     """A Thing to manage mapping between image and stage coordinates"""
     def __enter__(self):
@@ -183,7 +195,7 @@ class CameraStageMapper(Thing):
         """
         displacement_matrix = self.thing_settings.get("image_to_stage_displacement")
         if not displacement_matrix:
-            raise ValueError("The microscope has not yet been calibrated.")
+            raise CSMUncalibratedError()
         return np.array(displacement_matrix).tolist()
 
     @thing_property
