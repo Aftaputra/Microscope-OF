@@ -21,7 +21,7 @@
       <div class="uk-margin-small-bottom">
         <b>Camera:</b>
         <br />
-        <div v-if="thingAvailable('camera')">
+        <div v-if="'camera' in things">
           {{ things.camera.title }}
         </div>
         <div v-else class="uk-text-danger"><b>No camera configured</b></div>
@@ -29,7 +29,7 @@
       <div>
         <b>Stage:</b>
         <br />
-        <div v-if="thingAvailable('stage')">
+        <div v-if="'stage' in things">
           {{ things.stage.title }}
         </div>
         <div v-else class="uk-text-danger"><b>No stage configured</b></div>
@@ -77,7 +77,7 @@ export default {
 
   computed: {
     things: function() {
-      return this.$store.state["wot/thingDescriptions"];
+      return this.$store.getters["wot/thingDescriptions"];
     }
   },
 
