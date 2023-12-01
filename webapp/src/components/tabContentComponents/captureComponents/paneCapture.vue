@@ -102,7 +102,7 @@
 
     <ul uk-accordion="multiple: true">
       <!--Show stack and scan if scan plugin is enabled-->
-      <li v-if="scanUri" :class="{ 'uk-open': scanCapture }">
+      <li v-if="thingAvailable('scan')" :class="{ 'uk-open': scanCapture }">
         <a class="uk-accordion-title" href="#">Stack and Scan</a>
         <div class="uk-accordion-content">
           <div class="uk-margin">
@@ -222,7 +222,7 @@
             </div>
 
             <div
-              v-if="backgroundDetectUri"
+              v-if="thingAvailable('background_detect')"
               class="uk-margin-small uk-margin-remove-bottom"
             >
               <label class="uk-form-label" for="form-stacked-text">
@@ -259,7 +259,10 @@
         </div>
       </li>
       <!--Show stack and scan if scan plugin is enabled-->
-      <li v-if="smartScanUri" :class="{ 'uk-open': smartStack && scanCapture }">
+      <li
+        v-if="thingAvailable('smart_scan')"
+        :class="{ 'uk-open': smartStack && scanCapture }"
+      >
         <a class="uk-accordion-title" href="#">Smart Stack</a>
         <div
           class="uk-accordion-content"
@@ -404,10 +407,7 @@ export default {
   data: function() {
     return {
       ...defaultCaptureSettings(),
-      scanCapture: false, // Don't remember the "scan" tickbox in local storage.
-      scanUri: null,
-      smartScanUri: null,
-      backgroundDetectUri: null
+      scanCapture: false // Don't remember the "scan" tickbox in local storage.
     };
   },
 
@@ -418,10 +418,13 @@ export default {
       };
     },
     captureActionUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/actions/camera/capture`;
+      return this.thingActionUrl("camera", "capture");
     },
-    pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/extensions`;
+    scanUri: function() {
+      return this.thingActionUrl("scan", "scan");
+    },
+    smartScanUri: function() {
+      return this.thingActionUrl("scan", "scan");
     },
     basePayload: function() {
       var payload = {};
@@ -497,7 +500,6 @@ export default {
   },
 
   mounted() {
-    this.updateScanUri();
     // Load settings if they have been saved, and set up watchers to sync with local storage
     syncDataWithLocalStorage("captureSettings", this, defaultCaptureSettings());
 
@@ -519,62 +521,6 @@ export default {
           this.$root.$emit("globalFlashStream");
           // Update the global capture list
           this.$root.$emit("globalUpdateCaptures");
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
-    },
-
-    updateScanUri: function() {
-      // Update URIs for the various functions in plugins.
-      // This will only work if the plugins are present, so
-      // checking if the URIs is null will determine which
-      // extensions are available.
-      axios
-        .get(this.pluginsUri) // Get a list of plugins
-        .then(response => {
-          var plugins = response.data;
-          var foundExtension = plugins.find(
-            e => e.title === "org.openflexure.scan"
-          );
-          // if ScanPlugin is enabled
-          if (foundExtension) {
-            // Get plugin action link
-            this.scanUri = foundExtension.links.tile.href;
-          }
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
-
-      axios
-        .get(this.pluginsUri) // Get a list of plugins
-        .then(response => {
-          var plugins = response.data;
-          var foundExtension = plugins.find(
-            e => e.title === "org.openflexure.smart-stack"
-          );
-          if (foundExtension) {
-            // Get plugin action link
-            this.smartScanUri = foundExtension.links.tile.href;
-          }
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
-
-      axios
-        .get(this.pluginsUri) // Get a list of plugins
-        .then(response => {
-          var plugins = response.data;
-          var foundExtension = plugins.find(
-            e => e.title === "org.openflexure.background-detect"
-          );
-          if (foundExtension) {
-            // Get plugin action link
-            this.backgroundDetectUri =
-              foundExtension.links.grab_and_classify_image.href;
-          }
         })
         .catch(error => {
           this.modalError(error); // Let mixin handle error
