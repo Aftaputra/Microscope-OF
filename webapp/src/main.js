@@ -41,7 +41,7 @@ Vue.mixin({
     thingAvailable(thing) {
       return this.$store.getters["wot/thingAvailable"](thing);
     },
-    async readThingProperty(thing, property) {
+    async readThingProperty(thing, property, silence_errors = false) {
       let url = this.$store.getters["wot/thingPropertyUrl"](
         thing,
         property,
@@ -51,7 +51,8 @@ Vue.mixin({
         let response = await axios.get(url);
         return response.data;
       } catch (error) {
-        this.modalError(error);
+        if (!silence_errors) this.modalError(error);
+        return undefined;
       }
     },
     async writeThingProperty(thing, property, value) {
