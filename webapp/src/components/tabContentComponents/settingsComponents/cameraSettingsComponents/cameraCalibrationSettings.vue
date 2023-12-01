@@ -128,10 +128,6 @@ export default {
         let response = await axios.get(this.cameraUri); // Get the thing description
         let td = response.data;
         this.actions = td.actions;
-        console.log(
-          "full auto calibrate in actions",
-          "full_auto_calibrate" in this.actions
-        );
       } catch (error) {
         this.modalError(error); // Let mixin handle error
       }
