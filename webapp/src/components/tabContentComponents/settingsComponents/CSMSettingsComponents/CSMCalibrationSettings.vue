@@ -47,22 +47,15 @@ export default {
     }
   },
 
-  data: function() {
-    return {
-      settings: null,
-      actions: {},
-      properties: {}
-    };
-  },
-
   computed: {
-    thingUri: function() {
-      return `${this.$store.getters.baseUri}/camera_stage_mapping/`;
+    actions() {
+      return this.$store.getters["wot/thingDescription"]("camera_stage_mapping")
+        .actions;
+    },
+    properties() {
+      return this.$store.getters["wot/thingDescription"]("camera_stage_mapping")
+        .properties;
     }
-  },
-
-  mounted() {
-    this.updateActions();
   },
 
   methods: {
@@ -79,16 +72,6 @@ export default {
         link.setAttribute("download", "csm_calibration.json");
         document.body.appendChild(link);
         link.click();
-      } catch (error) {
-        this.modalError(error); // Let mixin handle error
-      }
-    },
-
-    updateActions: async function() {
-      try {
-        let response = await axios.get(this.thingUri); // Get Thing Description
-        this.actions = response.data.actions;
-        this.properties = response.data.properties;
       } catch (error) {
         this.modalError(error); // Let mixin handle error
       }
