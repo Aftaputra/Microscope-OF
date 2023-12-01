@@ -45,7 +45,8 @@ Vue.mixin({
       let url = this.$store.getters["wot/thingPropertyUrl"](
         thing,
         property,
-        "readproperty"
+        "readproperty",
+        false
       );
       try {
         let response = await axios.get(url);
@@ -59,7 +60,8 @@ Vue.mixin({
       let url = this.$store.getters["wot/thingPropertyUrl"](
         thing,
         property,
-        "writeproperty"
+        "writeproperty",
+        false
       );
       try {
         await axios.put(url, value);
@@ -68,11 +70,13 @@ Vue.mixin({
       }
     },
     thingActionUrl(thing, action) {
-      return this.$store.getters["wot/thingActionUrl"](
+      let url = this.$store.getters["wot/thingActionUrl"](
         thing,
         action,
-        "invokeaction"
+        "invokeaction",
+        false
       );
+      return url;
     },
     modalConfirm: function(modalText) {
       var context = this;

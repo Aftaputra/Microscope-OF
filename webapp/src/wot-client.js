@@ -62,14 +62,22 @@ export const wotStoreModule = {
     thingAvailable: state => thingName => {
       return thingName in state.thingDescriptions;
     },
-    thingFormUrl: state => (thing, affordanceType, affordance, op) => {
+    thingFormUrl: state => (
+      thing,
+      affordanceType,
+      affordance,
+      op,
+      allowUndefined = true
+    ) => {
       // Find the URL for a particular operation
       let td = state.thingDescriptions[thing];
       if (!td) return null;
       let affordances = td[affordanceType];
       let href = findFormHref(affordances[affordance], op);
-      if (href == undefined) return undefined;
-
+      if (href == undefined) {
+        if (allowUndefined) return undefined;
+        throw `Could not find form for ${affordanceType} ${thing}/${affordance} with op ${op}`;
+      }
       // If we've found an href, prepend the `base` URL if appropriate
       if (href.startsWith("http")) return href;
       if ("base" in td) {
@@ -80,13 +88,29 @@ export const wotStoreModule = {
       }
       return href;
     },
-    thingPropertyUrl: (_state, getters) => (thing, property, op) => {
+    thingPropertyUrl: (_state, getters) => (
+      thing,
+      property,
+      op,
+      allowUndefined
+    ) => {
       // Find the URL for a particular property
-      return getters.thingFormUrl(thing, "properties", property, op);
+      return getters.thingFormUrl(
+        thing,
+        "properties",
+        property,
+        op,
+        allowUndefined
+      );
     },
-    thingActionUrl: (_state, getters) => (thing, action, op) => {
+    thingActionUrl: (_state, getters) => (
+      thing,
+      action,
+      op,
+      allowUndefined
+    ) => {
       // Find the URL for a particular action
-      return getters.thingFormUrl(thing, "actions", action, op);
+      return getters.thingFormUrl(thing, "actions", action, op, allowUndefined);
     }
   }
 };
