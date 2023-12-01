@@ -216,11 +216,11 @@ export default {
           component: settingsContent,
           class: "uk-margin-auto-top"
         },
-        {
+        /*{
           id: "logging",
           icon: "assignment_late",
           component: loggingContent
-        },
+        },*/
         {
           id: "about",
           icon: "info",
@@ -267,12 +267,12 @@ export default {
           icon: "visibility",
           component: viewContent
         },
-        {
+        /*{
           id: "gallery",
           icon: "photo_library",
           component: galleryContent,
           divide: true // Add a divider after this tab icon
-        },
+        },*/
         {
           id: "navigate",
           icon: "gamepad",
