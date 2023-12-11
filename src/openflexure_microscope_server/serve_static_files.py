@@ -15,7 +15,8 @@ def add_static_file(app: FastAPI, fname: str, folder: str):
 def add_static_files(app: FastAPI):
     #with importlib.resources.as_file(openflexure_microscope_server) as p:
     #   static_path = p.join("/static/")
-    static_path = "./src/openflexure_microscope_server/static"
+    #TODO: don't hard code this!
+    static_path = "/var/openflexure/application/openflexure-microscope-server/src/openflexure_microscope_server/static"
     if not os.path.isdir(static_path):
         raise RuntimeError("Can't find static files :(")
 

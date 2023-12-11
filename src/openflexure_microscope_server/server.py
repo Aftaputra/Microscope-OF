@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import importlib.resources
 import os.path
+from fastapi import Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
 from labthings_fastapi.thing_server import ThingServer
@@ -31,3 +32,24 @@ except RuntimeError:
 
 
 app = thing_server.app
+
+# TODO: update openflexure connect to make this unnecessary!!
+# The endpoints below fool OpenFlexure Connect into thinking we are a
+# v2 microscope, so we show up correctly.
+# This is necessary until Connect is rebuilt.
+@app.get("/routes")
+def routes_stub() -> dict[str, dict]:
+    fake_routes = [
+        "/api/v2/",
+        "/api/v2/streams/snapshot",
+    ]
+    return {url: {"url": url, "methods": ["GET"]} for url in fake_routes}
+
+class JPEGResponse(Response):
+    media_type = "image/jpeg"
+
+@app.get("/api/v2/streams/snapshot")
+@app.head("/api/v2/streams/snapshot")
+async def thumbnail() -> JPEGResponse:
+    blob = await thing_server.things["/camera/"].lores_mjpeg_stream.grab_frame()
+    return JPEGResponse(blob)
