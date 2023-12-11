@@ -143,7 +143,7 @@
                   v-if="fastAutofocusUri"
                   :submit-url="fastAutofocusUri"
                   :submit-data="{ dz: 2000 }"
-                  :submit-label="'Fast'"
+                  :submit-label="'Autofocus'"
                   :button-primary="false"
                   :submit-on-event="'globalFastAutofocusEvent'"
                   @taskStarted="isAutofocusing = 1"
@@ -151,32 +151,34 @@
                   @error="modalError"
                 ></taskSubmitter>
               </div>
+            </div>
+          </div>
+        </li>
+        <li v-show="captureUri" class="uk-open">
+          <a class="uk-accordion-title" href="#">Image Capture</a>
+          <div class="uk-accordion-content">
+            <div class="uk-grid-small uk-child-width-expand" uk-grid>
+              <taskSubmitter
+                v-if="captureUri"
+                :submit-url="captureUri"
+                :submit-data="{ resolution: 'main' }"
+                :submit-label="'Low Resolution'"
+                :submit-on-event="'globalCaptureEvent'"
+                @response="handleCaptureResponse"
+                @error="modalError"
+              ></taskSubmitter>
+            </div>
 
-              <div v-show="!isAutofocusing || isAutofocusing == 2">
-                <taskSubmitter
-                  v-if="normalAutofocusUri"
-                  :submit-url="normalAutofocusUri"
-                  :submit-data="{ dz: [-90, -60, -30, 0, 30, 60, 90] }"
-                  :submit-label="'Medium'"
-                  :button-primary="false"
-                  @taskStarted="isAutofocusing = 2"
-                  @finished="isAutofocusing = 0"
-                  @error="modalError"
-                ></taskSubmitter>
-              </div>
-
-              <div v-show="!isAutofocusing || isAutofocusing == 3">
-                <taskSubmitter
-                  v-if="normalAutofocusUri"
-                  :submit-url="normalAutofocusUri"
-                  :submit-data="{ dz: [-30, -20, -10, 0, 10, 20, 30] }"
-                  :submit-label="'Fine'"
-                  :button-primary="false"
-                  @taskStarted="isAutofocusing = 3"
-                  @finished="isAutofocusing = 0"
-                  @error="modalError"
-                ></taskSubmitter>
-              </div>
+            <div class="uk-grid-small uk-child-width-expand" uk-grid>
+              <taskSubmitter
+                v-if="captureUri"
+                :submit-url="captureUri"
+                :submit-data="{ resolution: 'full' }"
+                submit-label="Full Resolution"
+                submit-on-event="globalCaptureEvent"
+                @response="handleCaptureResponse"
+                @error="modalError"
+              ></taskSubmitter>
             </div>
           </div>
         </li>
@@ -220,10 +222,7 @@ export default {
       },
       setPosition: null,
       isAutofocusing: 0,
-      moveLock: false,
-      fastAutofocusUri: null,
-      normalAutofocusUri: null,
-      moveInImageCoordinatesUri: null
+      moveLock: false
     };
   },
 
@@ -239,6 +238,18 @@ export default {
     },
     positionStatusUri: function() {
       return `${this.baseUri}/stage/position`;
+    },
+    fastAutofocusUri: function() {
+      return this.thingActionUrl("autofocus", "fast_autofocus");
+    },
+    captureUri: function() {
+      return this.thingActionUrl("camera", "capture_jpeg");
+    },
+    moveInImageCoordinatesUri: function() {
+      return this.thingActionUrl(
+        "camera_stage_mapping",
+        "move_in_image_coordinates"
+      );
     }
   },
 
@@ -282,8 +293,6 @@ export default {
     // Update the current position in text boxes
     this.updatePosition();
     // Look for autofocus plugin
-    this.updateAutofocusUri();
-    this.updateMoveInImageCoordinatesUri();
   },
 
   beforeDestroy() {
@@ -381,12 +390,22 @@ export default {
         });
     },
 
-    updateAutofocusUri: function() {
-      this.fastAutofocusUri = `${this.baseUri}/autofocus/fast_autofocus`;
-    },
-
-    updateMoveInImageCoordinatesUri: function() {
-      this.moveInImageCoordinatesUri = `${this.baseUri}/camera_stage_mapping/move_in_image_coordinates`;
+    handleCaptureResponse: async function(response) {
+      // Retrieve the captured image and save it
+      let imageUri = response.output.href;
+      if (!imageUri) {
+        this.modalError("No image URI returned from capture task.");
+        console.log(`Capture resulted in response ${response}`);
+        return;
+      }
+      // To save the returned data, we make a virtual link and click it
+      let imageResponse = await axios.get(imageUri, { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([imageResponse.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `OFM_${new Date().toISOString()}.jpeg`);
+      document.body.appendChild(link);
+      link.click();
     }
   }
 };
