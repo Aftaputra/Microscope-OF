@@ -8,7 +8,7 @@ the server.
 from collections.abc import Mapping
 from typing import Any, Mapping, MutableMapping, Optional, Sequence
 from fastapi import HTTPException
-from labthings_fastapi.dependencies.metadata import ThingStates
+from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.decorators import thing_action, thing_property
 from pydantic import BaseModel
@@ -86,9 +86,9 @@ class SettingsManager(Thing):
         self.thing_settings["external_metadata"] = metadata
     
     @thing_action
-    def get_things_state(self, thing_states_metadata: ThingStates) -> Mapping:
+    def get_things_state(self, metadata_getter: GetThingStates) -> Mapping:
         """Metadata summarising the current state of all Things in the server"""
-        return thing_states_metadata
+        return metadata_getter()
 
     @thing_property
     def external_metadata_in_state(self) -> Sequence[str]:
