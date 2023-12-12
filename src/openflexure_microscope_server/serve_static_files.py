@@ -20,14 +20,16 @@ def add_static_files(app: FastAPI):
     if not os.path.isdir(static_path):
         raise RuntimeError("Can't find static files :(")
 
-    for folder in ["css", "js", "fonts"]:
-        app.mount(
-            f"/{folder}/",
-            StaticFiles(directory=os.path.join(static_path, folder)),
-            name=f"static_{folder}",
-        )
     @app.get("/", response_class=RedirectResponse)
     async def redirect_fastapi():
         return "/index.html"
     for fname in os.listdir(static_path):
-        add_static_file(app, fname, static_path)
+        fpath = os.path.join(static_path, fname)
+        if os.path.isfile(fpath):
+            add_static_file(app, fname, static_path)
+        elif os.path.isdir(fpath):
+            app.mount(
+                f"/{fname}/",
+                StaticFiles(directory=fpath),
+                name=f"static_{fname}",
+            )
