@@ -42,15 +42,15 @@
     <div class="uk-width-xlarge uk-align-center">
       <div
         v-for="item in pagedItems"
-        :key="item.timestamp"
+        :key="item.sequence"
         uk-alert
         class="logging-entry"
         :class="{
-          'uk-alert-warning uk-alert': item.data.levelname == 'WARNING',
-          'uk-alert-danger uk-alert': item.data.levelname == 'ERROR'
+          'uk-alert-warning uk-alert': item.level == 'WARNING',
+          'uk-alert-danger uk-alert': item.level == 'ERROR'
         }"
       >
-        <b>{{ formatDateTime(item.data.created) }}</b>
+        <b>{{ formatDateTime(item.timestamp) }}</b>
         <div class="logging-message">{{ formatMessage(item) }}</div>
       </div>
 
@@ -102,18 +102,15 @@ export default {
       var items = [];
       for (var item of this.logs) {
         // Add to capture list if matched
-        if (this.filteredLevels.includes(item.data.levelname)) {
+        if (this.filteredLevels.includes(item.level)) {
           items.push(item);
         }
       }
 
       return items;
     },
-    loggingUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/events/logging`;
-    },
     logFileURI: function() {
-      return `${this.$store.getters.baseUri}/api/v2/log`;
+      return `${this.$store.getters.baseUri}/log/`;
     },
     pagedItems: function() {
       let startIndex = (this.page - 1) * this.maxitems;
@@ -122,11 +119,6 @@ export default {
     numberOfPages: function() {
       return Math.floor(this.filteredItems.length / this.maxitems);
     }
-  },
-
-  mounted() {
-    // Update on mount (does nothing if not connected)
-    this.updateLogs();
   },
 
   methods: {
@@ -141,22 +133,30 @@ export default {
         this.updateLogs();
       }
     },
-    updateLogs: function() {
-      axios
-        .get(this.loggingUri)
-        .then(response => {
-          this.logs = response.data.reverse();
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
+    async updateLogs() {
+      let response = await axios.get(this.logFileURI);
+      let lines = response.data.split("\n").reverse();
+      this.logs = [];
+      let regexp = /\[(.+)\] \[(.+)\] (.*)$/;
+      for (let line of lines) {
+        if (line.length > 0) {
+          let m = line.match(regexp);
+          this.logs.push({
+            timestamp: m[1],
+            level: m[2],
+            message: m[3],
+            sequence: this.logs.length
+          });
+        }
+      }
     },
     formatDateTime: function(isoDateTimeString) {
+      isoDateTimeString = isoDateTimeString.replace(",", ".");
       let date = new Date(isoDateTimeString);
       return date.toLocaleDateString() + " " + date.toLocaleTimeString();
     },
     formatMessage: function(item) {
-      return item.data.levelname + ": " + item.data.message;
+      return item.level + ": " + item.message;
     }
   }
 };

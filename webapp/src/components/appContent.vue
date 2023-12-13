@@ -216,11 +216,11 @@ export default {
           component: settingsContent,
           class: "uk-margin-auto-top"
         },
-        /*{
+        {
           id: "logging",
           icon: "assignment_late",
           component: loggingContent
-        },*/
+        },
         {
           id: "about",
           icon: "info",
