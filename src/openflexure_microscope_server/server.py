@@ -14,9 +14,11 @@ from .things.camera_stage_mapping import CameraStageMapper
 from .things.system_control import SystemControlThing
 from .things.settings_manager import SettingsManager
 from .serve_static_files import add_static_files
-import openflexure_microscope_server
 
-logging.basicConfig(level=logging.INFO)
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+root_logger.info("This is a message from OFM server via root_logger")
+logging.info("This is another message via logging.info")
 
 thing_server = ThingServer()
 thing_server.add_thing(StreamingPiCamera2(), "/camera/")
