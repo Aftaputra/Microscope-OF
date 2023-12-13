@@ -6,12 +6,11 @@ for code that currently lives in clients but needs to persist settings on
 the server.
 """
 from collections.abc import Mapping
-from typing import Any, Mapping, MutableMapping, Optional, Sequence
+from typing import Any, MutableMapping, Optional, Sequence
 from fastapi import HTTPException
 from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.decorators import thing_action, thing_property
-from pydantic import BaseModel
 
 
 def recursive_update(old_dict: MutableMapping, update: Mapping):

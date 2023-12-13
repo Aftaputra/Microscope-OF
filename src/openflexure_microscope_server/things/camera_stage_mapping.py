@@ -10,24 +10,18 @@ and return the calibration data.
 This module is only intended to be called from the OpenFlexure Microscope
 server, and depends on that server and its underlying LabThings library.
 """
-import io
-import json
 import logging
-import os
 import time
-from typing import Annotated, Any, Callable, Dict, List, NamedTuple, Optional, Tuple
+from typing import Annotated, Any, Callable, Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 from fastapi import Depends, HTTPException
 
 import numpy as np
 from pydantic import BaseModel
-import PIL
 from camera_stage_mapping.camera_stage_calibration_1d import (
     calibrate_backlash_1d,
     image_to_stage_displacement_from_1d,
 )
 from camera_stage_mapping.camera_stage_tracker import Tracker
-from camera_stage_mapping.closed_loop_move import closed_loop_move, closed_loop_scan
-from camera_stage_mapping.scan_coords_times import ordered_spiral
 
 from labthings_picamera2.thing import StreamingPiCamera2
 from labthings_sangaboard import SangaboardThing
@@ -53,8 +47,10 @@ class HardwareInterfaceModel(BaseModel):
 def make_hardware_interface(stage: Stage, camera: Camera) -> HardwareInterfaceModel:
     """Construct the functions we need to interface with the hardware"""
     axes = stage.axis_names
-    pos2dict = lambda pos: {k: p for k, p in zip(axes, pos)}
-    dict2pos = lambda posd: tuple(posd[k] for k in axes if k in posd)
+    def pos2dict(pos: Sequence[float]) -> Mapping[str, float]:
+        return {k: p for k, p in zip(axes, pos)}
+    def dict2pos(posd: Mapping[str, float]) -> Sequence[float]:
+        return tuple(posd[k] for k in axes if k in posd)
     def move(pos: CoordinateType) -> None:
         current_pos = stage.position
         new_pos = pos2dict(pos)

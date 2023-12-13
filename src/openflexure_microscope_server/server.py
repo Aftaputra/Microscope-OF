@@ -1,10 +1,6 @@
 from __future__ import annotations
 import logging
-import importlib.resources
-import os.path
 from fastapi import Response
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, RedirectResponse
 from labthings_fastapi.thing_server import ThingServer
 from labthings_sangaboard import SangaboardThing
 from labthings_picamera2.thing import StreamingPiCamera2
@@ -42,6 +38,7 @@ app = thing_server.app
 # This is necessary until Connect is rebuilt.
 @app.get("/routes")
 def routes_stub() -> dict[str, dict]:
+    """A stub list of routes, used by OF Connect to identify the microscope"""
     fake_routes = [
         "/api/v2/",
         "/api/v2/streams/snapshot",
@@ -54,5 +51,6 @@ class JPEGResponse(Response):
 @app.get("/api/v2/streams/snapshot")
 @app.head("/api/v2/streams/snapshot")
 async def thumbnail() -> JPEGResponse:
+    """A low-resolution snapshot, for compatibility with OF connect"""
     blob = await thing_server.things["/camera/"].lores_mjpeg_stream.grab_frame()
     return JPEGResponse(blob)

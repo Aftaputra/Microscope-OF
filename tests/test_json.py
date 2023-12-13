@@ -1,8 +1,6 @@
 import json
-import re
 import uuid
 from fractions import Fraction
-from uuid import uuid3
 
 import numpy as np
 import pytest
