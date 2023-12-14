@@ -92,6 +92,7 @@
                       class="uk-input uk-form-small"
                       type="number"
                       name="inputPositionX"
+                      @keyup.enter="startMoveTask"
                     />
                   </div>
                 </div>
@@ -104,6 +105,7 @@
                       class="uk-input uk-form-small"
                       type="number"
                       name="inputPositionY"
+                      @keyup.enter="startMoveTask"
                     />
                   </div>
                 </div>
@@ -116,18 +118,23 @@
                       class="uk-input uk-form-small"
                       type="number"
                       name="inputPositionZx"
+                      @keyup.enter="startMoveTask"
                     />
                   </div>
                 </div>
               </div>
 
               <p>
-                <button
-                  type="submit"
-                  class="uk-button uk-button-default uk-float-right uk-width-1-1"
-                >
-                  Move
-                </button>
+                <taskSubmitter
+                  ref="moveTaskSubmitter"
+                  :submit-url="absoluteMoveUri"
+                  :submit-data="setPosition"
+                  :submit-label="'Move'"
+                  :canTerminate="false"
+                  @taskStarted="moveLock = true"
+                  @finished="moveLock = false"
+                  @error="modalError"
+                ></taskSubmitter>
               </p>
             </form>
           </div>
@@ -230,11 +237,11 @@ export default {
     baseUri: function() {
       return this.$store.getters.baseUri;
     },
-    moveActionUri: function() {
-      return `${this.$store.getters.baseUri}/stage/move_relative`;
+    absoluteMoveUri: function() {
+      return this.thingActionUrl("stage", "move_absolute");
     },
     zeroActionUri: function() {
-      return `${this.$store.getters.baseUri}/stage/zero`;
+      return this.thingActionUrl("stage", "zero");
     },
     positionStatusUri: function() {
       return `${this.baseUri}/stage/position`;
@@ -273,17 +280,17 @@ export default {
     this.stepSize =
       this.getLocalStorageObj("navigation_stepSize") || this.stepSize;
     this.invert = this.getLocalStorageObj("navigation_invert") || this.invert;
+    let self = this;
     // A global signal listener to perform a move action
-    this.$root.$on("globalMoveEvent", (x, y, z, absolute) => {
-      this.moveRequest(x, y, z, absolute);
-    });
+    this.$root.$on("globalMoveEvent", self.move);
     // A global signal listener to perform a move action in pixels
     this.$root.$on("globalMoveInImageCoordinatesEvent", (x, y, absolute) => {
       this.moveInImageCoordinatesRequest(x, y, absolute);
     });
     // A global signal listener to perform a move in multiples of a step size
     this.$root.$on("globalMoveStepEvent", (x_steps, y_steps, z_steps) => {
-      this.moveRequest(
+      this.$root.$emit(
+        "globalMoveEvent", 
         x_steps * this.stepSize.x * (this.invert.x ? -1 : 1),
         y_steps * this.stepSize.y * (this.invert.y ? -1 : 1),
         z_steps * this.stepSize.z * (this.invert.z ? -1 : 1),
@@ -292,7 +299,6 @@ export default {
     });
     // Update the current position in text boxes
     this.updatePosition();
-    // Look for autofocus plugin
   },
 
   beforeDestroy() {
@@ -303,40 +309,31 @@ export default {
   },
 
   methods: {
-    handleSubmit: function() {
-      this.moveRequest(
-        this.setPosition.x,
-        this.setPosition.y,
-        this.setPosition.z,
-        true
-      );
+    timeout(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     },
-
-    moveRequest: function(x, y, z, absolute) {
-      // If not movement-locked
-      if (!this.moveLock) {
-        // Lock move requests
-        this.moveLock = true;
-        let move_type = absolute ? "absolute" : "relative";
-        // Send move request
-        axios
-          .post(`${this.baseUri}/stage/move_${move_type}`, {
-            x: x,
-            y: y,
-            z: z
-          })
-          .then(() => {
-            this.updatePosition(); // Update the position in text boxes
-          })
-          .catch(error => {
-            this.modalError(error); // Let mixin handle error
-          })
-          .then(() => {
-            this.moveLock = false; // Release the move lock
-          });
+    async move(x, y, z, absolute) {
+      // Move the stage, by updating the controls and starting a move task
+      // This is equivalent to clicking the "move" button.
+      if (this.moveLock) return;  // Discard move requests if we're already moving
+      // NB moveLock is just  boolean flag - it's not as safe as a "proper" lock.
+      this.moveLock = true;  // This will also be set by the task submitter, but
+      // setting it here avoids multiple moves being requested simultaneously.
+      if (absolute){
+        this.setPosition = {"x": x, "y": y, "z": z}
+      }else{
+        this.setPosition = {
+          "x": this.setPosition.x + x,
+          "y": this.setPosition.y + y,
+          "z": this.setPosition.z + z
+        }
       }
+      await this.timeout(1);  // Wait for Vue to update the position
+      this.startMoveTask();
     },
-
+    startMoveTask() {
+      this.$refs.moveTaskSubmitter.startTask();
+    },
     moveInImageCoordinatesRequest: function(x, y) {
       // If not movement-locked
       if (!this.moveLock) {
