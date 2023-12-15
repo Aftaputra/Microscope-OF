@@ -78,7 +78,7 @@
         </li>
 
         <li class="uk-open">
-          <a class="uk-accordion-title" href="#">Move-to</a>
+          <a class="uk-accordion-title" href="#">Position</a>
           <div class="uk-accordion-content">
             <form>
               <!-- Text boxes to set and view position -->
@@ -102,6 +102,7 @@
                   :submit-data="setPosition"
                   :submit-label="'Move'"
                   :canTerminate="false"
+                  :pollInterval="0.05"
                   @taskStarted="moveLock = true"
                   @finished="moveLock = false"
                   @error="modalError"
@@ -293,6 +294,7 @@ export default {
       if (absolute){
         this.setPosition = {"x": x, "y": y, "z": z}
       }else{
+        await this.updatePosition();
         this.setPosition = {
           "x": this.setPosition.x + x,
           "y": this.setPosition.y + y,
@@ -300,10 +302,10 @@ export default {
         }
       }
       await this.timeout(1);  // Wait for Vue to update the position
-      this.startMoveTask();
+      await this.startMoveTask();
     },
-    startMoveTask() {
-      this.$refs.moveTaskSubmitter.startTask();
+    async startMoveTask() {
+      await this.$refs.moveTaskSubmitter.startTask();
     },
     moveInImageCoordinatesRequest: function(x, y) {
       // If not movement-locked
@@ -347,15 +349,8 @@ export default {
         });
     },
 
-    updatePosition: function() {
-      axios
-        .get(this.positionStatusUri)
-        .then(response => {
-          this.setPosition = response.data;
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
+    async updatePosition() {
+      this.setPosition = await this.readThingProperty("stage", "position")
     },
 
     handleCaptureResponse: async function(response) {
