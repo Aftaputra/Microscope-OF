@@ -130,6 +130,7 @@ Vue.mixin({
     modalError: function(error) {
       var errormsg = this.getErrorMessage(error);
       this.$store.commit("setErrorMessage", errormsg);
+      console.log("Modal error:", error);
       UIkit.notification({
         message: `${errormsg}`,
         status: "danger"
