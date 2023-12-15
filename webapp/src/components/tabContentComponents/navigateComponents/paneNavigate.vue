@@ -68,12 +68,13 @@
               </div>
             </div>
 
-            <button
-              class="uk-button uk-button-default uk-margin uk-width-1-1"
-              @click="zeroRequest()"
-            >
-              Zero coordinates
-            </button>
+            <taskSubmitter
+              :submit-url="zeroActionUri"
+              :submit-label="'Zero Coordinates'"
+              :canTerminate="false"
+              @finished="updatePosition"
+              @error="modalError"
+            ></taskSubmitter>
           </div>
         </li>
 
@@ -213,7 +214,7 @@ export default {
       return this.thingActionUrl("stage", "move_absolute");
     },
     zeroActionUri: function() {
-      return this.thingActionUrl("stage", "zero");
+      return this.thingActionUrl("stage", "set_zero_position");
     },
     positionStatusUri: function() {
       return `${this.baseUri}/stage/position`;
