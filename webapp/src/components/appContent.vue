@@ -279,22 +279,14 @@ export default {
           component: navigateContent
         },
         {
-          id: "capture",
-          icon: "camera_alt",
-          component: captureContent,
-          divide: true // Add a divider after this tab icon
-        }
-      ];
-      if (!this.$store.state.galleryEnabled) {
-        tabs = tabs.filter(tab => tab.id != "gallery");
-      }
-      if (this.$store.state.IHIEnabled) {
-        tabs.push({
           id: "slidescan",
           icon: "settings_overscan",
           component: slideScanContent,
           divide: true
-        });
+        }
+      ];
+      if (!this.$store.state.galleryEnabled) {
+        tabs = tabs.filter(tab => tab.id != "gallery");
       }
       if (this.$store.state.imjoyEnabled) {
         tabs.push({

@@ -88,7 +88,6 @@ export default new Vuex.Store({
     disableStream: false,
     autoGpuPreview: false,
     trackWindow: true,
-    IHIEnabled: false,
     imjoyEnabled: false,
     galleryEnabled: true,
     appTheme: "system",
@@ -113,9 +112,6 @@ export default new Vuex.Store({
     },
     changeAppTheme(state, theme) {
       state.appTheme = theme;
-    },
-    changeIHIEnabled(state, enabled) {
-      state.IHIEnabled = enabled;
     },
     changeImjoyEnabled(state, enabled) {
       if (process.env.VUE_APP_ENABLE_IMJOY === "true") {
