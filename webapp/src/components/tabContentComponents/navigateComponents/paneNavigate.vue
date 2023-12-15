@@ -80,50 +80,21 @@
         <li class="uk-open">
           <a class="uk-accordion-title" href="#">Move-to</a>
           <div class="uk-accordion-content">
-            <form @submit.prevent="handleSubmit">
+            <form>
               <!-- Text boxes to set and view position -->
-
-              <div class="uk-grid-small uk-child-width-1-3" uk-grid>
-                <div>
-                  <label class="uk-form-label" for="form-stacked-text">x</label>
-                  <div class="uk-form-controls">
-                    <input
-                      v-model="setPosition.x"
-                      class="uk-input uk-form-small"
-                      type="number"
-                      name="inputPositionX"
-                      @keyup.enter="startMoveTask"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label class="uk-form-label" for="form-stacked-text">y</label>
-                  <div class="uk-form-controls">
-                    <input
-                      v-model="setPosition.y"
-                      class="uk-input uk-form-small"
-                      type="number"
-                      name="inputPositionY"
-                      @keyup.enter="startMoveTask"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label class="uk-form-label" for="form-stacked-text">z</label>
-                  <div class="uk-form-controls">
-                    <input
-                      v-model="setPosition.z"
-                      class="uk-input uk-form-small"
-                      type="number"
-                      name="inputPositionZx"
-                      @keyup.enter="startMoveTask"
-                    />
-                  </div>
-                </div>
+              <div class="input-and-buttons-container">
+                <input
+                  v-for="(_v, key) in setPosition"
+                  :key="`setPosition_${key}`"
+                  v-model="setPosition[key]"
+                  class="uk-form-small numeric-setting-line-input"
+                  type="number"
+                  @keyup.enter="startMoveTask"
+                />
+                <a class="button-next-to-input" @click="updatePosition">
+                  <i class="material-icons">refresh</i>
+                </a>
               </div>
-
               <p>
                 <taskSubmitter
                   ref="moveTaskSubmitter"
@@ -407,3 +378,34 @@ export default {
   }
 };
 </script>
+
+
+<style scoped>
+.input-and-buttons-container {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: flex-start;
+  align-content: stretch;
+  align-items: center;
+  width: 100%;
+}
+.numeric-setting-line-input {
+  flex-grow: 1;
+  margin-left: 5px;
+  margin-right: 5px;
+  width: 3em;
+}
+/* Chrome, Safari, Edge, Opera */
+.numeric-setting-line-input::-webkit-outer-spin-button,
+.numeric-setting-line-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.button-next-to-input {
+  flex-grow: 0;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+</style>
