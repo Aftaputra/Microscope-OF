@@ -138,6 +138,17 @@ def distance_to_site(current, next):
     current = np.array(current, dtype="float64")
     return np.sqrt((next[1] - current[1]) ** 2 + (next[0] - current[0]) ** 2)
 
+def generate_config(folder_path: str, positions: list, names: list):
+
+    positions = np.array(positions)
+
+    mean_loc = np.mean(positions, axis = 0)
+
+    with open(os.path.join(folder_path, 'TileConfiguration.txt'), 'w') as fp:
+        fp.write('# Define the number of dimensions we are working on\ndim = 2\n\n# Define the image coordinates\n')
+        for i in range(len(names)):    
+            loc = positions[i] - mean_loc
+            fp.write(f'{names[i]}; ; {loc[1], loc[0]} \n')
 
 class SmartScanThing(Thing):
     @thing_action
@@ -166,9 +177,9 @@ class SmartScanThing(Thing):
         current_keys = settings.external_metadata_in_state
         logging.info(type(current_keys))
 
-        # if "1background_stats" not in current_keys:
-        current_keys.append("background_stats")
-        settings.external_metadata_in_state = deepcopy(current_keys)
+        if "background_stats" not in current_keys:
+            current_keys.append("background_stats")
+            settings.external_metadata_in_state = current_keys
 
         logging.info(settings.external_metadata_in_state)
         logging.info(settings.external_metadata)
@@ -189,6 +200,9 @@ class SmartScanThing(Thing):
         # except:
         #     logging.warning("No template set")
         #     raise Exception
+
+        names = []
+        positions = []
 
         previous_dir = 0
 
@@ -274,7 +288,7 @@ class SmartScanThing(Thing):
 
             # mask the image to only include pixels outside 5 stds of the mean of all three channels.
             # get the percent of pixels that are in the mask (assumed sample)
-            img_mask = check_dist(img2, stats_list, 3)
+            img_mask = check_dist(img2, stats_list, 5)
             background_coverage = round(
                 100 * np.count_nonzero(img_mask) / img_mask.size, 1
             )
@@ -344,16 +358,25 @@ class SmartScanThing(Thing):
                             stage.move_absolute(z=int(focused_path[z_index][2]))
                             attempts += 1
 
-                img = cam.capture_jpeg()
-                img = np.array(Image.open(img.open()))
-                img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)
-                img = Image.fromarray(img)
-                img.save(os.path.join(folder_path, f"rabbit_{loc[0]}_{loc[1]}.jpg"))
+                img = Image.open(cam.capture_jpeg().open())
+                exif = img.info['exif']
+                width, height = img.size 
+                img = img.resize((int(width*0.5), int(height*0.5)))
+                name = f"rabbit_{loc[0]}_{loc[1]}.jpg"
+
+                img.save(os.path.join(folder_path, name), exif = exif)
+                positions.append(loc[:2])
+                names.append(name)
+
 
             img_preview = cam.grab_jpeg()
             img_preview = np.array(Image.open(img_preview.open()))
             # add the current position to the list of all positions visited
             true_path.append(loc)
+
+            # if len(names) > 1:
+            generate_config(folder_path, positions, names)
+
 
             path = sorted(path, key=lambda x: distance_to_site(loc[:2], x))
 

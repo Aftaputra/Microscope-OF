@@ -48,7 +48,6 @@ class RecentringThing(Thing):
             height_max = stage.position["z"] + dz / 2
             data = autofocus.fast_autofocus(dz=dz)
             heights, _ = unpack_autofocus(data)
-            print(min(heights), max(heights), stage.position["z"])
             time.sleep(0.3)
             # TODO: max heights seems badly wrong! Something about turning?
             if (
