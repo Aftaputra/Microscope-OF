@@ -71,7 +71,18 @@
             <taskSubmitter
               :submit-url="zeroActionUri"
               :submit-label="'Zero Coordinates'"
-              :canTerminate="false"
+              :can-terminate="false"
+              @finished="updatePosition"
+              @error="modalError"
+            ></taskSubmitter>
+            <taskSubmitter
+              :submit-url="recentreActionUri"
+              :submit-label="'Re-centre Stage'"
+              :can-terminate="false"
+              :requires-confirmation="true"
+              :confirmation-message="
+                'The stage will now move, and autofocus will be used to find the centre of motion. This requires a sample to be visible in the microscope. OK to proceed?'
+              "
               @finished="updatePosition"
               @error="modalError"
             ></taskSubmitter>
@@ -102,8 +113,8 @@
                   :submit-url="absoluteMoveUri"
                   :submit-data="setPosition"
                   :submit-label="'Move'"
-                  :canTerminate="false"
-                  :pollInterval="0.05"
+                  :can-terminate="false"
+                  :poll-interval="0.05"
                   @taskStarted="moveLock = true"
                   @finished="moveLock = false"
                   @error="modalError"
@@ -216,6 +227,9 @@ export default {
     zeroActionUri: function() {
       return this.thingActionUrl("stage", "set_zero_position");
     },
+    recentreActionUri: function() {
+      return this.thingActionUrl("auto_recentre_stage", "recentre");
+    },
     positionStatusUri: function() {
       return `${this.baseUri}/stage/position`;
     },
@@ -263,7 +277,7 @@ export default {
     // A global signal listener to perform a move in multiples of a step size
     this.$root.$on("globalMoveStepEvent", (x_steps, y_steps, z_steps) => {
       this.$root.$emit(
-        "globalMoveEvent", 
+        "globalMoveEvent",
         x_steps * this.stepSize.x * (this.invert.x ? -1 : 1),
         y_steps * this.stepSize.y * (this.invert.y ? -1 : 1),
         z_steps * this.stepSize.z * (this.invert.z ? -1 : 1),
@@ -288,21 +302,21 @@ export default {
     async move(x, y, z, absolute) {
       // Move the stage, by updating the controls and starting a move task
       // This is equivalent to clicking the "move" button.
-      if (this.moveLock) return;  // Discard move requests if we're already moving
+      if (this.moveLock) return; // Discard move requests if we're already moving
       // NB moveLock is just  boolean flag - it's not as safe as a "proper" lock.
-      this.moveLock = true;  // This will also be set by the task submitter, but
+      this.moveLock = true; // This will also be set by the task submitter, but
       // setting it here avoids multiple moves being requested simultaneously.
-      if (absolute){
-        this.setPosition = {"x": x, "y": y, "z": z}
-      }else{
+      if (absolute) {
+        this.setPosition = { x: x, y: y, z: z };
+      } else {
         await this.updatePosition();
         this.setPosition = {
-          "x": this.setPosition.x + x,
-          "y": this.setPosition.y + y,
-          "z": this.setPosition.z + z
-        }
+          x: this.setPosition.x + x,
+          y: this.setPosition.y + y,
+          z: this.setPosition.z + z
+        };
       }
-      await this.timeout(1);  // Wait for Vue to update the position
+      await this.timeout(1); // Wait for Vue to update the position
       await this.startMoveTask();
     },
     async startMoveTask() {
@@ -351,7 +365,7 @@ export default {
     },
 
     async updatePosition() {
-      this.setPosition = await this.readThingProperty("stage", "position")
+      this.setPosition = await this.readThingProperty("stage", "position");
     },
 
     handleCaptureResponse: async function(response) {
@@ -374,7 +388,6 @@ export default {
   }
 };
 </script>
-
 
 <style scoped>
 .input-and-buttons-container {
