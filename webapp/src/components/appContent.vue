@@ -231,10 +231,6 @@ export default {
   },
 
   computed: {
-    pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/extensions`;
-    },
-
     pluginsGuiList: function() {
       // List of plugin GUIs, obtained from this.plugins values
       var pluginGuis = [];

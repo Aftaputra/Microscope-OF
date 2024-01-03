@@ -134,7 +134,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import taskSubmitter from "../../genericComponents/taskSubmitter";
 
 export default {
@@ -166,9 +165,6 @@ export default {
   },
 
   computed: {
-    pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/extensions`;
-    },
     currentTimeForm: {
       get() {
         // Chop the timezone information from the end
@@ -210,30 +206,7 @@ export default {
     }
   },
 
-  mounted: function() {
-    this.updateScanUri();
-  },
-
   methods: {
-    updateScanUri: function() {
-      axios
-        .get(this.pluginsUri) // Get a list of plugins
-        .then(response => {
-          var plugins = response.data;
-          var foundExtension = plugins.find(
-            e => e.title === "org.openflexure.scan"
-          );
-          // if ScanPlugin is enabled
-          if (foundExtension) {
-            // Get plugin action link
-            this.scanUri = foundExtension.links.tile.href;
-          }
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
-    },
-
     onScanError: function(error) {
       this.scanRunning = false;
       this.modalError(error);
