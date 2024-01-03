@@ -113,7 +113,7 @@ build:
     name: "dist"
     expire_in: 1 week
     paths:
-      - "openflexure_microscope/api/static/dist/"
+      - "src/openflexure_microscope/static/"
 
 # Package application into distribution tarball
 package:
@@ -128,7 +128,7 @@ package:
     # Build distribution archive
     - mkdir -p dist
     - tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz .
-    - tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz ./openflexure_microscope/api/static/dist/
+    - tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz ./openflexure_microscope_server/static/
     - cp docs/build/swagger.yaml dist/openflexure-microscope-api-${CI_COMMIT_REF_NAME}.yaml
     - cd dist/
     - sha256sum openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz > openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256
