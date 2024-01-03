@@ -11,7 +11,7 @@
         @keydown="keyDown"
       />
       <a class="button-next-to-input" @click="readProperty">
-        <i class="material-icons">refresh</i>
+        <span class="material-symbols-outlined">refresh</span>
       </a>
     </div>
     <div v-if="dataType == 'number_array'" class="input-and-buttons-container">
@@ -26,7 +26,7 @@
         @keydown="keyDown"
       />
       <a class="button-next-to-input" @click="readProperty">
-        <i class="material-icons">refresh</i>
+        <span class="material-symbols-outlined">refresh</span>
       </a>
     </div>
     <div v-if="dataType == 'number_object'" class="input-and-buttons-container">
@@ -41,7 +41,7 @@
         @keydown="keyDown"
       />
       <a class="button-next-to-input" @click="readProperty">
-        <i class="material-icons">refresh</i>
+        <span class="material-symbols-outlined">refresh</span>
       </a>
     </div>
     <div v-if="dataType == 'other'" class="input-and-buttons-container">

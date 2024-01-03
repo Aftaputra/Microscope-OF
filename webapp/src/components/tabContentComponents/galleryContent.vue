@@ -12,12 +12,12 @@
         <ul class="uk-navbar-nav">
           <li :class="[sortDescending ? 'uk-active' : '']">
             <a class="uk-icon" href="#" @click="sortDescending = true">
-              <i class="material-icons">keyboard_arrow_down</i>
+              <span class="material-symbols-outlined">keyboard_arrow_down</span>
             </a>
           </li>
           <li :class="[!sortDescending ? 'uk-active' : '']">
             <a class="uk-icon" href="#" @click="sortDescending = false">
-              <i class="material-icons">keyboard_arrow_up</i>
+              <span class="material-symbols-outlined">keyboard_arrow_up</span>
             </a>
           </li>
           <li>
@@ -85,7 +85,7 @@
         class="gallery-folder-heading uk-flex uk-flex-middle"
       >
         <a class="uk-icon uk-margin-remove" href="#" @click="galleryBack()">
-          <i class="material-icons">arrow_back</i>
+          <span class="material-symbols-outlined">arrow_back</span>
         </a>
         <div class="uk-margin-left">
           <h3 class="uk-margin-remove uk-margin-left">

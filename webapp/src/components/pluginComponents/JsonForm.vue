@@ -5,7 +5,7 @@
         {{ name }}
       </div>
       <a href="#" class="uk-icon uk-width-auto" @click="updateForm()"
-        ><i class="material-icons">cached</i></a
+        ><span class="material-symbols-outlined">cached</span></a
       >
     </div>
 

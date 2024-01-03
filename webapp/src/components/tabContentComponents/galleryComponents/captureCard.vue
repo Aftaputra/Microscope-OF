@@ -26,7 +26,7 @@
         </div>
         <div class="uk-margin-remove-top uk-padding-remove uk-width-auto">
           <a href="#" class="uk-icon" @click="delCaptureConfirm()">
-            <i class="material-icons">delete</i>
+            <span class="material-symbols-outlined">delete</span>
           </a>
         </div>
       </div>
@@ -58,7 +58,8 @@
         <ul class="uk-nav uk-dropdown-nav">
           <li v-for="item in openInImjoyMenuItems" :key="item.name">
             <a href="#" @click="item.callback(name, imgURL)"
-              ><i class="material-icons">launch</i>{{ item.title }}</a
+              ><span class="material-symbols-outlined">launch</span
+              >{{ item.title }}</a
             >
           </li>
         </ul>
@@ -136,7 +137,9 @@
         @submit.prevent="handleTagSubmit"
       >
         <div class="uk-inline">
-          <span class="uk-form-icon"><i class="material-icons">label</i></span>
+          <span class="uk-form-icon"
+            ><span class="material-symbols-outlined">label</span></span
+          >
           <input
             v-model="newTag"
             autofocus

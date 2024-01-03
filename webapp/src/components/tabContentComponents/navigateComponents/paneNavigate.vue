@@ -104,7 +104,7 @@
                   @keyup.enter="startMoveTask"
                 />
                 <a class="button-next-to-input" @click="updatePosition">
-                  <i class="material-icons">refresh</i>
+                  <span class="material-symbols-outlined">refresh</span>
                 </a>
               </div>
               <p>

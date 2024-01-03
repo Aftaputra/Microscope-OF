@@ -33,9 +33,9 @@
               style="filter: grayscale(100%);width: 22px;margin-top: 5px;margin-bottom: 8px;"
               :src="item.iconURL"
             />
-            <i v-if="!item.iconURL" class="material-icons">
+            <span v-if="!item.iconURL" class="material-symbols-outlined">
               {{ item.icon }}
-            </i>
+            </span>
           </tabIcon>
           <!-- Add a divider if item.divide is true -->
           <hr v-if="item.divide" :key="'tab-divider-' + index" />
@@ -52,7 +52,9 @@
           :click-callback="updatePlugins"
           @set-tab="setTab"
         >
-          <i class="material-icons">{{ plugin.icon || "extension" }}</i>
+          <span class="material-symbols-outlined">{{
+            plugin.icon || "extension"
+          }}</span>
         </tabIcon>
 
         <tabIcon
@@ -69,9 +71,9 @@
             style="filter: grayscale(100%);width: 22px;margin-top: 5px;margin-bottom: 8px;"
             :src="imjoyTab.iconURL"
           />
-          <i v-if="!imjoyTab.iconURL" class="material-icons">
+          <span v-if="!imjoyTab.iconURL" class="material-symbols-outlined">
             {{ imjoyTab.iconName || "extension" }}
-          </i>
+          </span>
         </tabIcon>
 
         <hr id="extension-tab-divider" />
@@ -88,7 +90,7 @@
             :class="item.class"
             @set-tab="setTab"
           >
-            <i class="material-icons">{{ item.icon }}</i>
+            <span class="material-symbols-outlined">{{ item.icon }}</span>
           </tabIcon>
           <!-- Add a divider if item.divide is true -->
           <hr v-if="item.divide" :key="'tab-divider-' + index" />

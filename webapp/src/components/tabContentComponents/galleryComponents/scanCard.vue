@@ -27,7 +27,7 @@
         </div>
         <div class="uk-margin-remove-top uk-padding-remove uk-width-auto">
           <a href="#" class="uk-icon" @click="delAllConfirm()">
-            <i class="material-icons">delete</i>
+            <span class="material-symbols-outlined">delete</span>
           </a>
         </div>
       </div>
@@ -57,7 +57,8 @@
               href="#"
               style="color:black"
               @click="item.callback(name, allURLs)"
-              ><i class="material-icons">launch</i>{{ item.title }}</a
+              ><span class="material-symbols-outlined">launch</span
+              >{{ item.title }}</a
             >
           </li>
         </ul>

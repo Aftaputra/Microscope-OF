@@ -10,7 +10,7 @@ import VueObserveVisibility from "vue-observe-visibility";
 require("vue-tour/dist/vue-tour.css");
 
 // Import MD icons
-import "material-design-icons/iconfont/material-icons.css";
+import "material-symbols/outlined.css";
 
 // UIKit overrides
 UIkit.mixin(
