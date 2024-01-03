@@ -1,39 +1,28 @@
+from typing import Mapping, Optional
 import cv2
 import numpy as np
 import os
 import time
 from PIL import Image
+from pydantic import BaseModel
 from scipy.stats import norm
 import logging
 from copy import deepcopy
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
-from labthings_fastapi.decorators import thing_action
+from labthings_fastapi.decorators import thing_action, thing_property
 from labthings_sangaboard import SangaboardThing
 from labthings_picamera2.thing import StreamingPiCamera2
 from openflexure_microscope_server.things.autofocus import AutofocusThing
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
 from openflexure_microscope_server.things.auto_recentre_stage import RecentringThing
-from openflexure_microscope_server.things.settings_manager import SettingsManager
 
 StageDep = direct_thing_client_dependency(SangaboardThing, "/stage/")
 CamDep = direct_thing_client_dependency(StreamingPiCamera2, "/camera/")
 CSMDep = direct_thing_client_dependency(CameraStageMapper, "/camera_stage_mapping/")
 AutofocusDep = direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 RecentreStage = direct_thing_client_dependency(RecentringThing, "/auto_recentre_stage/")
-SettingsDep = direct_thing_client_dependency(SettingsManager, "/settings/")
-
-
-def check_dist(image, stats_list, multiple):
-    """tests whether each pixel in image is within multiple stdevs (stats_list[1]) of the mean (stats_list[0]) for all three channels
-    returns a mask with True for pixels within that range (similar to stats list) and False otherwise
-    """
-    return np.all(
-        np.abs(image - stats_list[np.newaxis, np.newaxis, 0, :])
-        < stats_list[np.newaxis, np.newaxis, 1, :] * multiple,
-        axis=2,
-    )
 
 
 def closest(current, focused_path):
@@ -150,9 +139,82 @@ def generate_config(folder_path: str, positions: list, names: list):
             loc = positions[i] - mean_loc
             fp.write(f'{names[i]}; ; {loc[1], loc[0]} \n')
 
-class SmartScanThing(Thing):
+
+class ChannelDistributions(BaseModel):
+    means: list[float]
+    standard_deviations: list[float]
+    colorspace: str = "LUV"
+
+class BackgroundDetectThing(Thing):
+    @thing_property
+    def background_distributions(self) -> Optional[ChannelDistributions]:
+        """The statistics of the background image"""
+        bd = self.thing_settings.get("background_distributions", None)
+        if bd:
+            return ChannelDistributions(**bd)
+        else:
+            return None
+    
+    @background_distributions.setter
+    def background_distributions(self, value: Optional[ChannelDistributions]) -> None:
+        try:
+            self.thing_settings["background_distributions"] = value.model_dump()
+        except AttributeError:
+            self.thing_settings["background_distributions"] = None
+
+    @thing_property
+    def tolerance(self) -> float:
+        """How many standard deviations to allow for the background"""
+        return self.thing_settings.get("tolerance", 5)
+    
+    @tolerance.setter
+    def tolerance(self, value: float) -> None:
+        self.thing_settings["tolerance"] = value
+
+    def background_mask(self, image: np.ndarray) -> np.ndarray:
+        """Calculate a binary image, showing whether each pixel is background
+
+        The image should be in LUV format, the ouput will be binary with the
+        same shape in the first two dimensions.
+        """
+        d = self.background_distributions
+        if not d:
+            raise RuntimeError("Background is not set: you need to calibrate background detection.")
+        return np.all(
+            np.abs(image - np.array(d.means)[np.newaxis, np.newaxis, :])
+            < np.array(d.standard_deviations)[np.newaxis, np.newaxis, :] * self.tolerance,
+            axis=2,
+        )
+    
     @thing_action
-    def set_template(self, settings: SettingsDep, cam: CamDep):
+    def background_fraction(self, cam: CamDep) -> float:
+        """Determine what fraction of the current image is background
+        
+        This action will acquire a new image from the preview stream, then
+        evaluate whether it is foreground or background, by comparing it
+        too the saved statistics. This is done on a per-pixel basis, and
+        the returned value (between 0 and 1) is the fraction of the image
+        that is background.
+        """
+        background = cam.grab_jpeg()
+        background = np.array(Image.open(background.open()))
+
+        # we're working in the LUV colourspace as it collect colours together in a human-intuitive way
+        background_LUV = cv2.cvtColor(background, cv2.COLOR_RGB2LUV)
+        mask = self.background_mask(background_LUV)
+        return np.count_nonzero(mask) / np.prod(mask.shape)
+
+    
+    @thing_action
+    def set_background(self, cam: CamDep):
+        """Grab an image, and use its statistics to set the background
+        
+        This should be run when the microscope is looking at an empty region,
+        and will calculate the mean and standard deviation of the pixel values
+        in the LUV colourspace. These values will then be used to compare
+        future images to the distribution, to determine if each pixel is
+        foreground or background.
+        """
         background = cam.grab_jpeg()
         background = np.array(Image.open(background.open()))
 
@@ -166,24 +228,27 @@ class SmartScanThing(Thing):
         points = np.array([np.asarray(ch1), np.asarray(ch2), np.asarray(ch3)]).T
 
         # we get the mean and standard deviation of values in each channel
-
         mu, std = np.apply_along_axis(norm.fit, 0, points)
-        stats_list = np.vstack([mu, std])
 
-        settings.update_external_metadata(
-            data={"background_stats": stats_list.tolist()}
+        self.background_distributions = ChannelDistributions(
+            means = mu.tolist(),
+            standard_deviations = std.tolist(),
+            colorspace = "LUV",
         )
 
-        current_keys = settings.external_metadata_in_state
-        logging.info(type(current_keys))
+    @property
+    def thing_state(self) -> Mapping:
+        bd = self.background_distributions
+        return {
+            "background_distributions": bd.model_dump() if bd else None,
+            "tolerance": self.tolerance,
+        }
 
-        if "background_stats" not in current_keys:
-            current_keys.append("background_stats")
-            settings.external_metadata_in_state = current_keys
+    
+BackgroundDep = direct_thing_client_dependency(BackgroundDetectThing, "/background_detect/")
 
-        logging.info(settings.external_metadata_in_state)
-        logging.info(settings.external_metadata)
-
+class SmartScanThing(Thing):
+    
     @thing_action
     def sample_scan(
         self,
@@ -191,16 +256,9 @@ class SmartScanThing(Thing):
         stage: StageDep,
         cam: CamDep,
         csm: CSMDep,
-        settings: SettingsDep,
+        background_detect: BackgroundDep,
         recentre: RecentreStage,
     ):
-        # try:
-        stats_list = np.array(settings.external_metadata["background_stats"])
-        #     print(stats_list)
-        # except:
-        #     logging.warning("No template set")
-        #     raise Exception
-
         names = []
         positions = []
 
@@ -277,20 +335,10 @@ class SmartScanThing(Thing):
                     x=int(loc[0]), y=int(loc[1]), z=int(focused_path[z_index][2])
                 )
 
-            # capture an image, convert it to LUV, then make lists of the 3 channels' values
-            img = cam.grab_jpeg()
-            img = np.array(Image.open(img.open()))
-
-            img2 = cv2.cvtColor(img, cv2.COLOR_RGB2LUV)
-            ch4 = (img2.T[0]).flatten()
-            ch5 = (img2.T[1]).flatten()
-            ch6 = (img2.T[2]).flatten()
-
-            # mask the image to only include pixels outside 5 stds of the mean of all three channels.
-            # get the percent of pixels that are in the mask (assumed sample)
-            img_mask = check_dist(img2, stats_list, 5)
+            # Check if the image is background
+            background_fraction = background_detect.background_fraction()
             background_coverage = round(
-                100 * np.count_nonzero(img_mask) / img_mask.size, 1
+                100 * background_fraction, 1
             )
 
             # if more than 92% of the image is background, treat it as background and continue
