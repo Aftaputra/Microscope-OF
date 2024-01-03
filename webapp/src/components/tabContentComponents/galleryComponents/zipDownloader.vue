@@ -56,12 +56,6 @@ export default {
     };
   },
 
-  computed: {
-    pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/extensions`;
-    }
-  },
-
   mounted: function() {
     this.updateZipperUri();
   },
@@ -84,7 +78,7 @@ export default {
   methods: {
     updateZipperUri: function() {
       if (this.$store.state.available) {
-        axios
+        /*axios
           .get(this.pluginsUri) // Get a list of plugins
           .then(response => {
             var plugins = response.data;
@@ -100,7 +94,7 @@ export default {
           })
           .catch(error => {
             this.modalError(error); // Let mixin handle error
-          });
+          });*/
       } else {
         this.zipBuilderUri = null;
         this.zipGetterUri = null;

@@ -2,7 +2,7 @@
 
 The "server" is the main component of the OpenFlexure Microscope's software.  It is responsible for controlling microscope hardware, data management, and allowing it to be controlled locally and over a network.
 This repository now includes the web client, which is served from the root of the Python web server.
-This software runs on [Python-LabThings](https://github.com/labthings/python-labthings/), and so most non-microscope functionality is handled by that library.
+This software runs on [LabThings-FastAPI](https://github.com/rwb27/labthings-fastapi/), and so most non-microscope functionality is handled by that library.
 
 ## Getting started
 
@@ -62,18 +62,19 @@ To set up a development version of the software (most likely using emulated came
 * `cd openflexure-microscope-server`
 
 ### Set up the Python environment and run a test server
-* (Optional) Set local Python version to match what is available on the Pi
-  * `pyenv init` (this may or may not be required, depending on how you installed `pyenv`)
-  * `pyenv install 3.7.3`
-  * `pyenv local 3.7.3`
+* (Optional) Set local Python version to 3.11
 * Create a virtual environment and activate it:
   * `python -m venv .venv`
   * `source .venv/bin/activate` (on Linux) or `.venv/Scripts/activate` (on Windows)
-  * `pip install --upgrade pip wheel pipenv`
-  * `pipenv install --dev` (This will install development dependencies.  If you don't need these, `pipenv install` will get you just the dependencies needed to run the server, which takes about half the time.)
-* Finally, run the server:
-  * You can use `ofm serve` or `ofm restart` on the Raspberry Pi to manage the server.
-  * To run the server locally, with dummy hardware, you can use `python -m openflexure_microscope.api.app` to start a development-mode Flask server on `localhost:5000`
+  * `pip install -e .[dev]` (This will install development dependencies.  If you don't need these, there is probably a simpler way to run the server than cloning this repo.)
+* Finally, run the server: currently you can do this with `sudo systemctl start openflexure-microscope-server` if it's pre-installed on a Raspberry Pi, or `uvicorn --port 5000 openflexure_microscope_server.server:app` to run locally.
+
+### Run the server manually on a Raspberry Pi
+```
+cd /var/openflexure
+sudo -u openflexure-ws PATH="/var/openflexure/application/openflexure-microscope-server/.venv/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin" /var/openflexure/application/openflexure-microscope-server/.venv/bin/uvicorn --reload --reload-dir=./application --host 0.0.0.0 --port 5000 openflexure_microscope_server.server:app
+```
+
 
 ### Set up the Javascript environment and build
 * The Flask web application, written in Python, serves a web application written in `Vue.js`.  This is distributed as part of the built version of the server, hosted on our [build server](https://build.openflexure.org/openflexure-microscope-server/).

@@ -1,6 +1,7 @@
 import Vue from "vue";
 import App from "./App.vue";
 import store from "./store";
+import axios from "axios";
 import UIkit from "uikit";
 import VueTour from "vue-tour";
 import VueFriendlyIframe from "vue-friendly-iframe";
@@ -34,6 +35,49 @@ Vue.config.productionTip = false;
 
 Vue.mixin({
   methods: {
+    thingDescription(thing) {
+      return this.$store.getters["wot/thingDescription"](thing);
+    },
+    thingAvailable(thing) {
+      return this.$store.getters["wot/thingAvailable"](thing);
+    },
+    async readThingProperty(thing, property, silence_errors = false) {
+      let url = this.$store.getters["wot/thingPropertyUrl"](
+        thing,
+        property,
+        "readproperty",
+        false
+      );
+      try {
+        let response = await axios.get(url);
+        return response.data;
+      } catch (error) {
+        if (!silence_errors) this.modalError(error);
+        return undefined;
+      }
+    },
+    async writeThingProperty(thing, property, value) {
+      let url = this.$store.getters["wot/thingPropertyUrl"](
+        thing,
+        property,
+        "writeproperty",
+        false
+      );
+      try {
+        await axios.put(url, value);
+      } catch (error) {
+        this.modalError(error);
+      }
+    },
+    thingActionUrl(thing, action) {
+      let url = this.$store.getters["wot/thingActionUrl"](
+        thing,
+        action,
+        "invokeaction",
+        false
+      );
+      return url;
+    },
     modalConfirm: function(modalText) {
       var context = this;
 
@@ -86,6 +130,7 @@ Vue.mixin({
     modalError: function(error) {
       var errormsg = this.getErrorMessage(error);
       this.$store.commit("setErrorMessage", errormsg);
+      console.log("Modal error:", error);
       UIkit.notification({
         message: `${errormsg}`,
         status: "danger"

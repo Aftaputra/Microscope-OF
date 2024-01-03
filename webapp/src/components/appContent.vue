@@ -231,10 +231,6 @@ export default {
   },
 
   computed: {
-    pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/extensions`;
-    },
-
     pluginsGuiList: function() {
       // List of plugin GUIs, obtained from this.plugins values
       var pluginGuis = [];
@@ -267,34 +263,26 @@ export default {
           icon: "visibility",
           component: viewContent
         },
-        {
+        /*{
           id: "gallery",
           icon: "photo_library",
           component: galleryContent,
           divide: true // Add a divider after this tab icon
-        },
+        },*/
         {
           id: "navigate",
           icon: "gamepad",
           component: navigateContent
         },
         {
-          id: "capture",
-          icon: "camera_alt",
-          component: captureContent,
-          divide: true // Add a divider after this tab icon
-        }
-      ];
-      if (!this.$store.state.galleryEnabled) {
-        tabs = tabs.filter(tab => tab.id != "gallery");
-      }
-      if (this.$store.state.IHIEnabled) {
-        tabs.push({
           id: "slidescan",
           icon: "settings_overscan",
           component: slideScanContent,
           divide: true
-        });
+        }
+      ];
+      if (!this.$store.state.galleryEnabled) {
+        tabs = tabs.filter(tab => tab.id != "gallery");
       }
       if (this.$store.state.imjoyEnabled) {
         tabs.push({
@@ -351,9 +339,9 @@ export default {
         .catch(error => {
           this.modalError(error); // Let mixin handle error
         });*/
-        return new Promise((resolve) => {
-          resolve({});
-        });
+      return new Promise(resolve => {
+        resolve({});
+      });
     },
     setTab: function(event, tab) {
       if (!(this.currentTab == tab)) {

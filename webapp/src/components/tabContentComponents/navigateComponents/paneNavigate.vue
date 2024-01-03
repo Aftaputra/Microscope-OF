@@ -68,66 +68,46 @@
               </div>
             </div>
 
-            <button
-              class="uk-button uk-button-default uk-margin uk-width-1-1"
-              @click="zeroRequest()"
-            >
-              Zero coordinates
-            </button>
+            <taskSubmitter
+              :submit-url="zeroActionUri"
+              :submit-label="'Zero Coordinates'"
+              :canTerminate="false"
+              @finished="updatePosition"
+              @error="modalError"
+            ></taskSubmitter>
           </div>
         </li>
 
         <li class="uk-open">
-          <a class="uk-accordion-title" href="#">Move-to</a>
+          <a class="uk-accordion-title" href="#">Position</a>
           <div class="uk-accordion-content">
-            <form @submit.prevent="handleSubmit">
+            <form>
               <!-- Text boxes to set and view position -->
-
-              <div class="uk-grid-small uk-child-width-1-3" uk-grid>
-                <div>
-                  <label class="uk-form-label" for="form-stacked-text">x</label>
-                  <div class="uk-form-controls">
-                    <input
-                      v-model="setPosition.x"
-                      class="uk-input uk-form-small"
-                      type="number"
-                      name="inputPositionX"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label class="uk-form-label" for="form-stacked-text">y</label>
-                  <div class="uk-form-controls">
-                    <input
-                      v-model="setPosition.y"
-                      class="uk-input uk-form-small"
-                      type="number"
-                      name="inputPositionY"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label class="uk-form-label" for="form-stacked-text">z</label>
-                  <div class="uk-form-controls">
-                    <input
-                      v-model="setPosition.z"
-                      class="uk-input uk-form-small"
-                      type="number"
-                      name="inputPositionZx"
-                    />
-                  </div>
-                </div>
+              <div class="input-and-buttons-container">
+                <input
+                  v-for="(_v, key) in setPosition"
+                  :key="`setPosition_${key}`"
+                  v-model="setPosition[key]"
+                  class="uk-form-small numeric-setting-line-input"
+                  type="number"
+                  @keyup.enter="startMoveTask"
+                />
+                <a class="button-next-to-input" @click="updatePosition">
+                  <i class="material-icons">refresh</i>
+                </a>
               </div>
-
               <p>
-                <button
-                  type="submit"
-                  class="uk-button uk-button-default uk-float-right uk-width-1-1"
-                >
-                  Move
-                </button>
+                <taskSubmitter
+                  ref="moveTaskSubmitter"
+                  :submit-url="absoluteMoveUri"
+                  :submit-data="setPosition"
+                  :submit-label="'Move'"
+                  :canTerminate="false"
+                  :pollInterval="0.05"
+                  @taskStarted="moveLock = true"
+                  @finished="moveLock = false"
+                  @error="modalError"
+                ></taskSubmitter>
               </p>
             </form>
           </div>
@@ -143,7 +123,7 @@
                   v-if="fastAutofocusUri"
                   :submit-url="fastAutofocusUri"
                   :submit-data="{ dz: 2000 }"
-                  :submit-label="'Fast'"
+                  :submit-label="'Autofocus'"
                   :button-primary="false"
                   :submit-on-event="'globalFastAutofocusEvent'"
                   @taskStarted="isAutofocusing = 1"
@@ -151,32 +131,34 @@
                   @error="modalError"
                 ></taskSubmitter>
               </div>
+            </div>
+          </div>
+        </li>
+        <li v-show="captureUri" class="uk-open">
+          <a class="uk-accordion-title" href="#">Image Capture</a>
+          <div class="uk-accordion-content">
+            <div class="uk-grid-small uk-child-width-expand" uk-grid>
+              <taskSubmitter
+                v-if="captureUri"
+                :submit-url="captureUri"
+                :submit-data="{ resolution: 'main' }"
+                :submit-label="'Low Resolution'"
+                :submit-on-event="'globalCaptureEvent'"
+                @response="handleCaptureResponse"
+                @error="modalError"
+              ></taskSubmitter>
+            </div>
 
-              <div v-show="!isAutofocusing || isAutofocusing == 2">
-                <taskSubmitter
-                  v-if="normalAutofocusUri"
-                  :submit-url="normalAutofocusUri"
-                  :submit-data="{ dz: [-90, -60, -30, 0, 30, 60, 90] }"
-                  :submit-label="'Medium'"
-                  :button-primary="false"
-                  @taskStarted="isAutofocusing = 2"
-                  @finished="isAutofocusing = 0"
-                  @error="modalError"
-                ></taskSubmitter>
-              </div>
-
-              <div v-show="!isAutofocusing || isAutofocusing == 3">
-                <taskSubmitter
-                  v-if="normalAutofocusUri"
-                  :submit-url="normalAutofocusUri"
-                  :submit-data="{ dz: [-30, -20, -10, 0, 10, 20, 30] }"
-                  :submit-label="'Fine'"
-                  :button-primary="false"
-                  @taskStarted="isAutofocusing = 3"
-                  @finished="isAutofocusing = 0"
-                  @error="modalError"
-                ></taskSubmitter>
-              </div>
+            <div class="uk-grid-small uk-child-width-expand" uk-grid>
+              <taskSubmitter
+                v-if="captureUri"
+                :submit-url="captureUri"
+                :submit-data="{ resolution: 'full' }"
+                submit-label="Full Resolution"
+                submit-on-event="globalCaptureEvent"
+                @response="handleCaptureResponse"
+                @error="modalError"
+              ></taskSubmitter>
             </div>
           </div>
         </li>
@@ -220,10 +202,7 @@ export default {
       },
       setPosition: null,
       isAutofocusing: 0,
-      moveLock: false,
-      fastAutofocusUri: null,
-      normalAutofocusUri: null,
-      moveInImageCoordinatesUri: null
+      moveLock: false
     };
   },
 
@@ -231,17 +210,26 @@ export default {
     baseUri: function() {
       return this.$store.getters.baseUri;
     },
-    moveActionUri: function() {
-      return `${this.$store.getters.baseUri}/stage/move_relative`;
+    absoluteMoveUri: function() {
+      return this.thingActionUrl("stage", "move_absolute");
     },
     zeroActionUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/actions/stage/zero`;
+      return this.thingActionUrl("stage", "set_zero_position");
     },
     positionStatusUri: function() {
       return `${this.baseUri}/stage/position`;
     },
-    pluginsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/extensions`;
+    fastAutofocusUri: function() {
+      return this.thingActionUrl("autofocus", "fast_autofocus");
+    },
+    captureUri: function() {
+      return this.thingActionUrl("camera", "capture_jpeg");
+    },
+    moveInImageCoordinatesUri: function() {
+      return this.thingActionUrl(
+        "camera_stage_mapping",
+        "move_in_image_coordinates"
+      );
     }
   },
 
@@ -265,17 +253,17 @@ export default {
     this.stepSize =
       this.getLocalStorageObj("navigation_stepSize") || this.stepSize;
     this.invert = this.getLocalStorageObj("navigation_invert") || this.invert;
+    let self = this;
     // A global signal listener to perform a move action
-    this.$root.$on("globalMoveEvent", (x, y, z, absolute) => {
-      this.moveRequest(x, y, z, absolute);
-    });
+    this.$root.$on("globalMoveEvent", self.move);
     // A global signal listener to perform a move action in pixels
     this.$root.$on("globalMoveInImageCoordinatesEvent", (x, y, absolute) => {
       this.moveInImageCoordinatesRequest(x, y, absolute);
     });
     // A global signal listener to perform a move in multiples of a step size
     this.$root.$on("globalMoveStepEvent", (x_steps, y_steps, z_steps) => {
-      this.moveRequest(
+      this.$root.$emit(
+        "globalMoveEvent", 
         x_steps * this.stepSize.x * (this.invert.x ? -1 : 1),
         y_steps * this.stepSize.y * (this.invert.y ? -1 : 1),
         z_steps * this.stepSize.z * (this.invert.z ? -1 : 1),
@@ -284,9 +272,6 @@ export default {
     });
     // Update the current position in text boxes
     this.updatePosition();
-    // Look for autofocus plugin
-    this.updateAutofocusUri();
-    this.updateMoveInImageCoordinatesUri();
   },
 
   beforeDestroy() {
@@ -297,40 +282,32 @@ export default {
   },
 
   methods: {
-    handleSubmit: function() {
-      this.moveRequest(
-        this.setPosition.x,
-        this.setPosition.y,
-        this.setPosition.z,
-        true
-      );
+    timeout(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     },
-
-    moveRequest: function(x, y, z, absolute) {
-      // If not movement-locked
-      if (!this.moveLock) {
-        // Lock move requests
-        this.moveLock = true;
-        let move_type = absolute ? "absolute" : "relative";
-        // Send move request
-        axios
-          .post(`${this.baseUri}/stage/move_${move_type}`, {
-            x: x,
-            y: y,
-            z: z
-          })
-          .then(() => {
-            this.updatePosition(); // Update the position in text boxes
-          })
-          .catch(error => {
-            this.modalError(error); // Let mixin handle error
-          })
-          .then(() => {
-            this.moveLock = false; // Release the move lock
-          });
+    async move(x, y, z, absolute) {
+      // Move the stage, by updating the controls and starting a move task
+      // This is equivalent to clicking the "move" button.
+      if (this.moveLock) return;  // Discard move requests if we're already moving
+      // NB moveLock is just  boolean flag - it's not as safe as a "proper" lock.
+      this.moveLock = true;  // This will also be set by the task submitter, but
+      // setting it here avoids multiple moves being requested simultaneously.
+      if (absolute){
+        this.setPosition = {"x": x, "y": y, "z": z}
+      }else{
+        await this.updatePosition();
+        this.setPosition = {
+          "x": this.setPosition.x + x,
+          "y": this.setPosition.y + y,
+          "z": this.setPosition.z + z
+        }
       }
+      await this.timeout(1);  // Wait for Vue to update the position
+      await this.startMoveTask();
     },
-
+    async startMoveTask() {
+      await this.$refs.moveTaskSubmitter.startTask();
+    },
     moveInImageCoordinatesRequest: function(x, y) {
       // If not movement-locked
       if (!this.moveLock) {
@@ -373,24 +350,58 @@ export default {
         });
     },
 
-    updatePosition: function() {
-      axios
-        .get(this.positionStatusUri)
-        .then(response => {
-          this.setPosition = response.data;
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
+    async updatePosition() {
+      this.setPosition = await this.readThingProperty("stage", "position")
     },
 
-    updateAutofocusUri: function() {
-      this.fastAutofocusUri = `${this.baseUri}/autofocus/fast_autofocus`;
-    },
-
-    updateMoveInImageCoordinatesUri: function() {
-      this.moveInImageCoordinatesUri = `${this.baseUri}/camera_stage_mapping/move_in_image_coordinates`;
+    handleCaptureResponse: async function(response) {
+      // Retrieve the captured image and save it
+      let imageUri = response.output.href;
+      if (!imageUri) {
+        this.modalError("No image URI returned from capture task.");
+        console.log(`Capture resulted in response ${response}`);
+        return;
+      }
+      // To save the returned data, we make a virtual link and click it
+      let imageResponse = await axios.get(imageUri, { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([imageResponse.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `OFM_${new Date().toISOString()}.jpeg`);
+      document.body.appendChild(link);
+      link.click();
     }
   }
 };
 </script>
+
+
+<style scoped>
+.input-and-buttons-container {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: flex-start;
+  align-content: stretch;
+  align-items: center;
+  width: 100%;
+}
+.numeric-setting-line-input {
+  flex-grow: 1;
+  margin-left: 5px;
+  margin-right: 5px;
+  width: 3em;
+}
+/* Chrome, Safari, Edge, Opera */
+.numeric-setting-line-input::-webkit-outer-spin-button,
+.numeric-setting-line-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.button-next-to-input {
+  flex-grow: 0;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+</style>

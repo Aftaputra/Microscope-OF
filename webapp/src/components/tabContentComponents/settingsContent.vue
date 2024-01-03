@@ -70,19 +70,6 @@
             Camera/stage mapping
           </tabIcon>
         </li>
-        <li>
-          <tabIcon
-            id="settings-microscope-icon"
-            tab-i-d="microscope"
-            :show-title="false"
-            :show-tooltip="false"
-            :require-connection="true"
-            :current-tab="currentTab"
-            @set-tab="setTab"
-          >
-            General
-          </tabIcon>
-        </li>
       </ul>
     </div>
     <div class="view-component uk-width-expand uk-padding-small">
@@ -136,24 +123,12 @@
           <CSMSettings />
         </div>
       </tabContent>
-
-      <tabContent
-        tab-i-d="microscope"
-        :require-connection="true"
-        :current-tab="currentTab"
-      >
-        <div class="settings-pane uk-padding-small">
-          <h3>Microscope settings</h3>
-          <microscopeSettings />
-        </div>
-      </tabContent>
     </div>
   </div>
 </template>
 
 <script>
 import streamSettings from "./settingsComponents/streamSettings.vue";
-import microscopeSettings from "./settingsComponents/microscopeSettings.vue";
 import cameraSettings from "./settingsComponents/cameraSettings.vue";
 import appSettings from "./settingsComponents/appSettings.vue";
 import featuresSettings from "./settingsComponents/featuresSettings.vue";
@@ -171,7 +146,6 @@ export default {
     streamSettings,
     cameraSettings,
     stageSettings,
-    microscopeSettings,
     CSMSettings,
     appSettings,
     featuresSettings,

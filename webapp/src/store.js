@@ -1,5 +1,6 @@
 import Vue from "vue";
 import Vuex from "vuex";
+import wotStoreModule from "./wot-client";
 
 Vue.use(Vuex);
 
@@ -76,7 +77,8 @@ function getOriginFromLocation() {
 
 export default new Vuex.Store({
   modules: {
-    imjoy: moduleImjoy
+    imjoy: moduleImjoy,
+    wot: wotStoreModule
   },
   state: {
     origin: getOriginFromLocation(),
@@ -86,7 +88,6 @@ export default new Vuex.Store({
     disableStream: false,
     autoGpuPreview: false,
     trackWindow: true,
-    IHIEnabled: false,
     imjoyEnabled: false,
     galleryEnabled: true,
     appTheme: "system",
@@ -111,9 +112,6 @@ export default new Vuex.Store({
     },
     changeAppTheme(state, theme) {
       state.appTheme = theme;
-    },
-    changeIHIEnabled(state, enabled) {
-      state.IHIEnabled = enabled;
     },
     changeImjoyEnabled(state, enabled) {
       if (process.env.VUE_APP_ENABLE_IMJOY === "true") {

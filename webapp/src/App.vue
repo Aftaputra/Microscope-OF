@@ -42,7 +42,6 @@
 import appContent from "./components/appContent.vue";
 import loadingContent from "./components/loadingContent.vue";
 
-import axios from "axios";
 var Mousetrap = require("mousetrap");
 
 Mousetrap.prototype.stopCallback = function(e, element) {
@@ -305,24 +304,31 @@ export default {
   },
 
   methods: {
-    checkConnection: function() {
+    async checkConnection() {
       var baseUri = this.$store.getters.baseUri;
       this.$store.commit("changeWaiting", true);
-      axios
-        // TODO: more robust check - e.g. use a microscope Thing
-        .get(`${baseUri}/stage/`)
-        .then(() => {
-          this.$store.commit("setConnected");
-          this.$store.commit("setErrorMessage", null);
-        })
-        .catch(error => {
-          this.$store.commit("setErrorMessage", error);
-        })
-        .finally(() => {
-          this.$store.commit("changeWaiting", false);
-        });
+      // TODO: more robust check - e.g. use a microscope Thing
+      // TODO: should we purge existing consumedThings?
+      try {
+        await this.$store.dispatch(
+          "wot/fetchThingDescriptions",
+          `${baseUri}/thing_descriptions/`
+        );
+        for (let requiredThing of ["camera", "stage"]) {
+          if (!this.$store.getters["wot/thingAvailable"](requiredThing)) {
+            throw new Error(
+              `No ${requiredThing} found, the GUI won't work without one.`
+            );
+          }
+        }
+        this.$store.commit("setConnected");
+        this.$store.commit("setErrorMessage", null);
+      } catch (error) {
+        this.$store.commit("setErrorMessage", error);
+      } finally {
+        this.$store.commit("changeWaiting", false);
+      }
     },
-
     handleExit: function() {
       this.$root.$emit("globalTogglePreview", false);
     },

@@ -58,9 +58,6 @@ export default {
     },
     streamImgUri: function() {
       return `${this.$store.getters.baseUri}/camera/mjpeg_stream`;
-    },
-    settingsUri: function() {
-      return `${this.$store.getters.baseUri}/api/v2/instrument/settings`;
     }
   },
 
