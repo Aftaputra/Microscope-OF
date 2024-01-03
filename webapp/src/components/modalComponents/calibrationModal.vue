@@ -48,6 +48,7 @@
 
           <cameraCalibrationSettings
             :show-extra-settings="false"
+            :camera-uri="cameraUri"
           ></cameraCalibrationSettings>
         </div>
       </div>
@@ -190,6 +191,9 @@ export default {
       var CSMUseful = this.canCSMCalibrated && !this.isCSMCalibrated;
       var LSTUseful = this.canLSTCalibrated && !this.isLSTCalibrated;
       return CSMUseful || LSTUseful;
+    },
+    cameraUri: function() {
+      return `${this.$store.getters.baseUri}/camera/`;
     }
   },
 
