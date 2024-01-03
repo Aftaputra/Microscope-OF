@@ -168,6 +168,7 @@ import tabContent from "./genericComponents/tabContent";
 import navigateContent from "./tabContentComponents/navigateContent.vue";
 import captureContent from "./tabContentComponents/captureContent.vue";
 import slideScanContent from "./tabContentComponents/slideScanContent.vue";
+import backgroundDetectContent from "./tabContentComponents/backgroundDetectContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
 import settingsContent from "./tabContentComponents/settingsContent.vue";
 import extensionContent from "./tabContentComponents/extensionContent.vue";
@@ -279,8 +280,12 @@ export default {
         {
           id: "slidescan",
           icon: "settings_overscan",
-          component: slideScanContent,
-          divide: true
+          component: slideScanContent
+        },
+        {
+          id: "background_detect",
+          icon: "background_replace",
+          component: backgroundDetectContent
         }
       ];
       if (!this.$store.state.galleryEnabled) {
