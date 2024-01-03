@@ -191,19 +191,19 @@ export default {
       this.taskStarted = true;
       this.$emit("taskStarted", this.taskId);
       try {
-        let response = await axios.post(this.submitUrl, this.submitData)
+        let response = await axios.post(this.submitUrl, this.submitData);
         if (this.statusModal) {
           UIkit.modal(this.$refs.statusModal).show();
         }
         // Start the store polling TaskId for success
-        response = await this.startPolling(response.data.id, response.data.href);
+        response = await this.startPolling(
+          response.data.id,
+          response.data.href
+        );
         this.$emit("response", response);
         this.$emit("finished");
       } catch (error) {
-        if (!error) {
-          error = Error("Unknown error");
-        }
-        this.$emit("error", error);
+        this.$emit("error", error | Error("Unknown error"));
         this.$emit("finished");
       } finally {
         // Reset taskRunning and taskId

@@ -42,11 +42,6 @@ export default {
     propertyControl
   },
 
-  data: function() {
-    return {
-    };
-  },
-
   computed: {
     backgroundFractionUri() {
       return this.thingActionUrl("background_detect", "background_fraction");
@@ -58,9 +53,9 @@ export default {
 
   methods: {
     alertBackgroundFraction(r) {
-      let fraction = r.output
-      let percentage = (fraction * 100).toFixed(1)
-      this.modalNotify(`Current image is ${percentage}% background.`)
+      let fraction = r.output;
+      let percentage = (fraction * 100).toFixed(1);
+      this.modalNotify(`Current image is ${percentage}% background.`);
     }
   }
 };
