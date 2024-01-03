@@ -34,11 +34,22 @@
         {{ submitLabel }}
       </button>
     </div>
+
+    <div id="modal-center" ref="statusModal" class="uk-flex-top" uk-modal>
+      <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+        <div>
+          <pre v-for="(item, index) in log" :key="`log_entry_${index}`">
+            {{ item.message }}
+          </pre>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
+import UIkit from "uikit";
 
 export default {
   name: "TaskSubmitter",
@@ -87,6 +98,11 @@ export default {
       type: String,
       required: false,
       default: null
+    },
+    modalProgress: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
 
@@ -96,7 +112,8 @@ export default {
       taskUrl: null,
       progress: null,
       taskStarted: false,
-      taskRunning: false
+      taskRunning: false,
+      log: []
     };
   },
 
@@ -165,7 +182,7 @@ export default {
       }
     },
 
-    startTask: function() {
+    async startTask() {
       // Starts a new Action task
 
       this.$emit("submit", this.submitData);
@@ -173,36 +190,32 @@ export default {
 
       this.taskStarted = true;
       this.$emit("taskStarted", this.taskId);
-      axios
-        .post(this.submitUrl, this.submitData)
-        // Get the returned Task ID
-        .then(response => {
-          // Start the store polling TaskId for success
-          return this.startPolling(response.data.id, response.data.href);
-        })
-        .then(response => {
-          // Do something with the final response
-
-          this.$emit("response", response);
-          this.$emit("finished");
-        })
-        .catch(error => {
-          if (!error) {
-            error = Error("Unknown error");
-          }
-          this.$emit("error", error);
-          this.$emit("finished");
-        })
-        .finally(() => {
-          // Reset taskRunning and taskId
-          this.taskRunning = false;
-          this.taskStarted = false;
-          this.taskId = null;
-          // Update the form data if we're self-updating
-          if (this.selfUpdate) {
-            this.getFormData();
-          }
-        });
+      try {
+        let response = await axios.post(this.submitUrl, this.submitData)
+        if (this.statusModal) {
+          UIkit.modal(this.$refs.statusModal).show();
+        }
+        // Start the store polling TaskId for success
+        response = await this.startPolling(response.data.id, response.data.href);
+        this.$emit("response", response);
+        this.$emit("finished");
+      } catch (error) {
+        if (!error) {
+          error = Error("Unknown error");
+        }
+        this.$emit("error", error);
+        this.$emit("finished");
+      } finally {
+        // Reset taskRunning and taskId
+        this.taskRunning = false;
+        this.taskStarted = false;
+        this.taskId = null;
+        // Update the form data if we're self-updating
+        if (this.selfUpdate) {
+          this.getFormData();
+        }
+        UIkit.modal(this.$refs.statusModal).hide();
+      }
     },
 
     startPolling: function(taskId, taskUrl) {
@@ -244,6 +257,7 @@ export default {
             } else {
               // Since the task is still running, we can update the progress bar
               this.progress = response.data.progress;
+              this.log = response.data.log;
               // Check again after timeout
               setTimeout(checkCondition, interval, resolve, reject);
             }

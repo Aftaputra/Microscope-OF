@@ -11,6 +11,7 @@
         "
         :submit-url="calibrateXYUri"
         :submit-label="'Auto-Calibrate using camera'"
+        :modal-progress="true"
         @response="onRecalibrateResponse"
         @error="modalError"
       />
