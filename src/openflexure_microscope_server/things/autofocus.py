@@ -55,7 +55,7 @@ class JPEGSharpnessMonitor:
     @contextmanager
     def run(self):
         """Context manager, during which we will monitor sharpness from the camera"""
-        self.portal.spawn_task(self.monitor_sharpness)
+        self.portal.start_task_soon(self.monitor_sharpness)
         try:
             yield
         finally:
