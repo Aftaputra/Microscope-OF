@@ -41,6 +41,13 @@ def unpack_autofocus(scan_data):
 class RecentringThing(Thing):
     @thing_action
     def looping_autofocus(self, autofocus: AutofocusDep, stage: StageDep, dz=2000):
+        """Repeatedly autofocus the stage until it looks focused.
+        
+        This action will run the `fast_autofocus` action until it settles on a point
+        in the middle 3/5 of its range. Such logic can be helpful if the microscope
+        is close to focus, but not quite within `dz/2`. It will attempt to autofocus
+        up to 10 times.
+        """
         repeat = True
         attempts = 0
         while repeat and attempts < 10:
@@ -67,12 +74,17 @@ class RecentringThing(Thing):
         max_steps=15,
         lateral_distance=5000,
     ):
-        """Recentre the OpenFlexure stage, based on the
-        location of the xy turning point
+        """Recentre the stage, based on the focal plane
 
         Autofocuses at multiple points around the sample to
         find the overall maximum (or minimum) height, which
-        corresponds to the centre of the stage.
+        corresponds to the centre of the stage. This exploits the
+        fact that the OpenFlexure stage moves in an arc, i.e. its
+        height will vary with X and Y. The point where the variation
+        of Z with X and Y motion is smallest is the centre of its 
+        XY travel. This routine moves in X and Y, monitoring the
+        Z value of the focal plane, and attempts to find the point
+        where Z does not vary with X and Y, which is where it stops.
 
         max_steps: The maximum number of moves in x or y before
         aborting due to a poorly positioned stage or hard to focus
