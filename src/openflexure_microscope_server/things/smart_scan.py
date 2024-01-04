@@ -11,6 +11,7 @@ from copy import deepcopy
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
+from labthings_fastapi.dependencies.invocation import CancelHook, InvocationLogger
 from labthings_fastapi.decorators import thing_action, thing_property
 from labthings_sangaboard import SangaboardThing
 from labthings_picamera2.thing import StreamingPiCamera2
@@ -252,6 +253,8 @@ class SmartScanThing(Thing):
     @thing_action
     def sample_scan(
         self,
+        cancel: CancelHook,
+        logger: InvocationLogger,
         autofocus: AutofocusDep,
         stage: StageDep,
         cam: CamDep,
@@ -319,8 +322,13 @@ class SmartScanThing(Thing):
         folder_path = os.path.join(folder_path, str(j))
         os.makedirs(folder_path)
 
+        logger.info(f"Saving scan to local folder {folder_path}")
+
         # move to each x-y position. in z, move to the height of the closest x-y position that successfully focused
         while len(path) > 0:
+            if cancel.is_set():
+                logging.info("Scan terminated.")
+                break
             loc = [path[0][0], path[0][1], stage.position["z"]]
 
             path.remove(loc[:2])
@@ -345,6 +353,7 @@ class SmartScanThing(Thing):
 
             if 100 - background_coverage < sample_coverage:
                 category = "background"
+                logger.info(f"Skipping {stage.position} as it is {background_coverage}% background.")
                 # fig.set_facecolor("gray")
             else:
                 # if not, it's sample. run an autofocus and use the updated height
@@ -395,13 +404,15 @@ class SmartScanThing(Thing):
                         break
                     else:
                         if attempts >= 5:
+                            logger.warning("Could not autofocus after 5 attempts.")
                             break
                         else:
                             # if the autofocus was rejected, we return to the height of the closest successful autofocus. not perfect, but better than wandering out of focus
-                            print(
-                                "Resetting from a previous focus position. Options are {0}, we chose {1}".format(
-                                    focused_path, nearest_focused_site
-                                )
+                            logger.info(
+                                "The focus seems to have moved farther than we expect. "
+                                "We will now rest the Z position and try again. "
+                                f"Options are {focused_path}, we chose "
+                                f"{nearest_focused_site}"
                             )
                             stage.move_absolute(z=int(focused_path[z_index][2]))
                             attempts += 1
@@ -412,6 +423,7 @@ class SmartScanThing(Thing):
                 img = img.resize((int(width*0.5), int(height*0.5)))
                 name = f"rabbit_{loc[0]}_{loc[1]}.jpg"
 
+                logger.info(f"Saving {name} at {stage.position}")
                 img.save(os.path.join(folder_path, name), exif = exif)
                 positions.append(loc[:2])
                 names.append(name)
@@ -431,4 +443,5 @@ class SmartScanThing(Thing):
             if len(true_path) > 750:
                 break
 
+        logger.info("Returning to starting position.")
         stage.move_absolute(x=starting_loc[0], y=starting_loc[1], z=starting_loc[2])
