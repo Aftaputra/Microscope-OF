@@ -138,26 +138,19 @@ Vue.mixin({
     },
 
     getErrorMessage: function(error) {
-      var errormsg = "";
-
-      // If a response was obtained
+      // If a response was obtained, format it nicely and return it
       if (error.response) {
         // If the response is a nicely formatted JSON response from the server
         if (error.response.data.message) {
-          errormsg = `${error.response.status}: ${error.response.data.message}`;
+          return `${error.response.status}: ${error.response.data.message}`;
         }
         // If the response is just some generic error response
-        else {
-          errormsg = `${error.response.status}: ${error.response.data}`;
-        }
-        // If the error occured during the request
-      } else if (error.request) {
-        errormsg = `${error.message}`;
-        // Everything else
-      } else {
-        errormsg = `${error.message}`;
+        return `${error.response.status}: ${error.response.data}`;
       }
-      return errormsg;
+      // If we have an error object with a message, use that
+      if (error.message) return `${error.message}`;
+      // Otherwise attempt to cast it to a string.
+      return `${error}`;
     },
 
     showModalElement: function(element) {
