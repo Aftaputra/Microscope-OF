@@ -1,5 +1,8 @@
+import shutil
 from typing import Mapping, Optional
 import cv2
+from fastapi import HTTPException
+from fastapi.responses import FileResponse
 import numpy as np
 import os
 import time
@@ -8,11 +11,12 @@ from pydantic import BaseModel
 from scipy.stats import norm
 import logging
 from copy import deepcopy
+from datetime import datetime
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
-from labthings_fastapi.dependencies.invocation import CancelHook, InvocationLogger
-from labthings_fastapi.decorators import thing_action, thing_property
+from labthings_fastapi.dependencies.invocation import CancelHook, InvocationLogger, InvocationCancelledError
+from labthings_fastapi.decorators import thing_action, thing_property, fastapi_endpoint
 from labthings_sangaboard import SangaboardThing
 from labthings_picamera2.thing import StreamingPiCamera2
 from openflexure_microscope_server.things.autofocus import AutofocusThing
@@ -248,7 +252,46 @@ class BackgroundDetectThing(Thing):
     
 BackgroundDep = direct_thing_client_dependency(BackgroundDetectThing, "/background_detect/")
 
+
+def ensure_free_disk_space(path: str, min_space: int = 500000000) -> None:
+    """Raise an exception if we are running out of disk space"""
+    du = shutil.disk_usage(path)
+    if du.free < min_space:
+        raise IOError(f"There is not enough free disk space to continue {du}")
+
+
+class ScanInfo(BaseModel):
+    """"Summary information about a scan folder"""
+    name: str
+    created: datetime
+    modified: datetime
+    number_of_images: int
+
+
+DOWNLOADABLE_SCAN_FILES = (
+    "images.zip",
+)
+
+
 class SmartScanThing(Thing):
+    @property
+    def scan_folder_path(self) -> str:
+        """This folder will hold all the scans we do."""
+        # TODO: This should be determined using sensible configuration.
+        # If the working directory is `/var/openflexure` this will result
+        # in scans being saved at `/var/openflexure/scans/`
+        return "scans"
+    
+    def new_scan_folder(self) -> str:
+        """Create a new empty folder, into which we can save scan images"""
+        if not os.path.exists(self.scan_folder_path):
+            os.makedirs(self.scan_folder_path)
+        for j in range(999999):
+            folder_path = os.path.join(self.scan_folder_path, f"scan_{j:06}")
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+                return folder_path
+        raise FileExistsError("Could not create a new scan folder: all names in use!")
     
     @thing_action
     def sample_scan(
@@ -261,187 +304,218 @@ class SmartScanThing(Thing):
         csm: CSMDep,
         background_detect: BackgroundDep,
         recentre: RecentreStage,
+        overlap: float = 0.4,
     ):
+        """Move the stage to cover an area, taking images that can be tiled together.
+
+        The stage will move in a pattern that grows outwards from the starting point,
+        stopping once it is surrounded by "background" (as detected by the 
+        background_detect Thing).
+
+        Input:
+
+        * `overlap` is the fraction by which images should overlap, i.e. 
+          `0.3` means we will move by 70% of the field of view each time.
+        """
         names = []
         positions = []
 
-        previous_dir = 0
-
-        # if necessary, move to the starting point for your scan
-
-        starting_loc = list(stage.position.values())
-
-        recentre.looping_autofocus()
-
-        dx = 60
-        dy = 60
+        # Record the starting position so we can move back there afterwards
+        starting_position = stage.position
 
         r = cam.grab_jpeg()
         arr = np.array(Image.open(r.open()))
+        if arr.shape[:2] != csm.image_resolution:
+            logger.error(
+                f"Images are, by default, {arr.shape[:2]}, but the CSM was "
+                f"calibrated at {csm.image_resolution}."
+            )
 
-        camera_stage_mapping_matrix = csm.image_to_stage_displacement_matrix
+        # Here, we calculate the x and y step size based on the desired overlap
+        # TODO: Consider using CSM calibration size instead
+        # TODO: generalise to have 2D displacements for x and y (as the
+        # camera and stage may not be aligned).
+        CSM = csm.image_to_stage_displacement_matrix
+        dx = int(np.dot(np.array([0, arr.shape[0] * (1 - overlap)]), CSM)[0])
+        dy = int(np.dot(np.array([arr.shape[1] * (1 - overlap), 0]), CSM)[1])
+        logger.info(f"Based on an overlap of {overlap}, we will make steps of {dx}, {dy}")
 
-        # TODO: CHECK HOW TO GET CALIBRATION IMAGE SIZE
-
-        dx = dx * arr.shape[1] / 100
-        dy = dy * arr.shape[0] / 100
-
-        dx = np.array(
-            np.dot(np.array([0, dx]), camera_stage_mapping_matrix), dtype=int
-        )[0]
-        dy = np.array(
-            np.dot(np.array([dy, 0]), camera_stage_mapping_matrix), dtype=int
-        )[1]
-
-        dz = 3000
-
-        sample_coverage = 7
-
-        print(dx, dy)
+        dz = 3000  # This is used for autofocus - make configurable?
+        sample_coverage = 7  # TODO: make this configurable
 
         # construct a 2D scan path
         path = [[stage.position["x"], stage.position["y"]]]
 
-        # a list of the sites images have been taken at, and sites with a successful autofocus
-        focused_path = []
-        true_path = []
-
+        focused_path = []  # This holds a list of all points where focus succeeded
+        true_path = []  # This holds a list of all points visited
         i = 0
-
         ids = []
-
         start_time = time.strftime("%H_%M_%S-%d_%m_%Y")
 
-        folder_path = r"scans"
+        
+        scan_path = self.new_scan_folder()
+        images_folder = os.path.join(scan_path, "images")
+        os.mkdir(images_folder)
+        logger.info(f"Saving images to {images_folder}")
 
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-        j = 0
-        while os.path.exists(os.path.join(folder_path, str(j))):
-            j += 1
-        folder_path = os.path.join(folder_path, str(j))
-        os.makedirs(folder_path)
+        try:
+            # TODO: I think this is unnecessary, we do a looping autofocus at the first point in the loop, unless
+            # it's flagged as background (which is a wierd case anyway)
+            recentre.looping_autofocus()
+            # move to each x-y position. in z, move to the height of the closest x-y position that successfully focused
+            while len(path) > 0:
+                loc = [path[0][0], path[0][1], stage.position["z"]]
 
-        logger.info(f"Saving scan to local folder {folder_path}")
+                path.remove(loc[:2])
 
-        # move to each x-y position. in z, move to the height of the closest x-y position that successfully focused
-        while len(path) > 0:
-            if cancel.is_set():
-                logging.info("Scan terminated.")
-                break
-            loc = [path[0][0], path[0][1], stage.position["z"]]
+                # TODO: combine this with the move below for speed (I think this could just be "else")
+                stage.move_absolute(x=int(loc[0]), y=int(loc[1]), z=int(loc[2]))
 
-            path.remove(loc[:2])
+                if len(focused_path) > 1:
+                    z_index = closest(loc, focused_path)
+                    # print('Moving to {0}'.format([coords[0], coords[1], focused_path[z_index][2]]))
+                    # print(focused_path)
+                    stage.move_absolute(
+                        x=int(loc[0]), y=int(loc[1]), z=int(focused_path[z_index][2])
+                    )
 
-            stage.move_absolute(x=int(loc[0]), y=int(loc[1]), z=int(loc[2]))
-
-            if len(focused_path) > 1:
-                z_index = closest(loc, focused_path)
-                # print('Moving to {0}'.format([coords[0], coords[1], focused_path[z_index][2]]))
-                # print(focused_path)
-                stage.move_absolute(
-                    x=int(loc[0]), y=int(loc[1]), z=int(focused_path[z_index][2])
+                # Check if the image is background
+                background_fraction = background_detect.background_fraction()
+                background_coverage = round(
+                    100 * background_fraction, 1
                 )
 
-            # Check if the image is background
-            background_fraction = background_detect.background_fraction()
-            background_coverage = round(
-                100 * background_fraction, 1
-            )
+                # if more than 92% of the image is background, treat it as background and continue
+                if 100 - background_coverage < sample_coverage:
+                    category = "background"
+                    logger.info(f"Skipping {stage.position} as it is {background_coverage}% background.")
+                else:
+                    # if not, it's sample. run an autofocus and use the updated height
+                    new_pos = [
+                        [stage.position["x"] - dx, stage.position["y"]],
+                        [stage.position["x"] + dx, stage.position["y"]],
+                        [stage.position["x"], stage.position["y"] - dy],
+                        [stage.position["x"], stage.position["y"] + dy],
+                    ]
+                    for pos in new_pos:
+                        if (
+                            pos not in [sublist[:2] for sublist in true_path]
+                            and pos not in path
+                        ):
+                            path.append(pos)
 
-            # if more than 92% of the image is background, treat it as background and continue
+                    category = "sample"
 
-            if 100 - background_coverage < sample_coverage:
-                category = "background"
-                logger.info(f"Skipping {stage.position} as it is {background_coverage}% background.")
-                # fig.set_facecolor("gray")
-            else:
-                # if not, it's sample. run an autofocus and use the updated height
-                new_pos = [
-                    [stage.position["x"] - dx, stage.position["y"]],
-                    [stage.position["x"] + dx, stage.position["y"]],
-                    [stage.position["x"], stage.position["y"] - dy],
-                    [stage.position["x"], stage.position["y"] + dy],
-                ]
-                for pos in new_pos:
-                    if (
-                        pos not in [sublist[:2] for sublist in true_path]
-                        and pos not in path
-                    ):
-                        path.append(pos)
+                    attempts = 0
+                    while True:
+                        recentre.looping_autofocus(dz=3000)
+                        current_height = stage.position["z"]
 
-                category = "sample"
-                # fig.set_facecolor("pink")
+                        # if there have been successful autofocuses in this scan, find the closest one in x-y
+                        # test if the change in z between them exceeds a ratio (indicating a failed autofocus)
+                        if len(focused_path) > 0:
+                            nearest_focused_site = focused_path[closest(loc, focused_path)]
+                            result = limit_focus_change(
+                                nearest_focused_site[0:2],
+                                nearest_focused_site[-1],
+                                loc[0:2],
+                                current_height,
+                                0.3,
+                            )
 
-                attempts = 0
+                        # if there haven't been any previous autofocuses, we have to assume this one worked
+                        else:
+                            result = "accept"
 
-                while True:
-                    recentre.looping_autofocus(dz=3000)
-                    current_height = stage.position["z"]
-
-                    # if there have been successful autofocuses in this scan, find the closest one in x-y
-                    # test if the change in z between them exceeds a ratio (indicating a failed autofocus)
-
-                    if len(focused_path) > 0:
-                        nearest_focused_site = focused_path[closest(loc, focused_path)]
-                        result = limit_focus_change(
-                            nearest_focused_site[0:2],
-                            nearest_focused_site[-1],
-                            loc[0:2],
-                            current_height,
-                            0.3,
-                        )
-
-                    # if there haven't been any previous autofocuses, we have to assume this one worked
-                    else:
-                        result = "accept"
-
-                    # if the autofocus worked, take a new, more focused image. add the current position to the list of successful locations
-                    if result == "accept":
-                        loc = list(stage.position.values())
-                        # img = microscope.grab_image_array()
-                        focused_path.append(loc)
-                        break
-                    else:
+                        # if the autofocus worked, add the current position to the list of successful locations
+                        if result == "accept":
+                            loc = list(stage.position.values())
+                            focused_path.append(loc)
+                            break
                         if attempts >= 5:
                             logger.warning("Could not autofocus after 5 attempts.")
                             break
-                        else:
-                            # if the autofocus was rejected, we return to the height of the closest successful autofocus. not perfect, but better than wandering out of focus
-                            logger.info(
-                                "The focus seems to have moved farther than we expect. "
-                                "We will now rest the Z position and try again. "
-                                f"Options are {focused_path}, we chose "
-                                f"{nearest_focused_site}"
-                            )
-                            stage.move_absolute(z=int(focused_path[z_index][2]))
-                            attempts += 1
+                        # if the autofocus was rejected, we return to the height of the closest successful autofocus. not perfect, but better than wandering out of focus
+                        logger.info(
+                            "The focus seems to have moved farther than we expect. "
+                            "We will now rest the Z position and try again. "
+                            f"Options are {focused_path}, we chose "
+                            f"{nearest_focused_site}"
+                        )
+                        stage.move_absolute(z=int(focused_path[z_index][2]))
+                        attempts += 1
 
-                img = Image.open(cam.capture_jpeg().open())
-                exif = img.info['exif']
-                width, height = img.size 
-                img = img.resize((int(width*0.5), int(height*0.5)))
-                name = f"rabbit_{loc[0]}_{loc[1]}.jpg"
+                    img = Image.open(cam.capture_jpeg(resolution="full").open())
+                    exif = img.info['exif']
+                    width, height = img.size 
+                    img = img.resize((int(width*0.5), int(height*0.5)))
+                    name = f"image_{loc[0]}_{loc[1]}.jpg"
 
-                logger.info(f"Saving {name} at {stage.position}")
-                img.save(os.path.join(folder_path, name), exif = exif)
-                positions.append(loc[:2])
-                names.append(name)
+                    logger.info(f"Saving {name} at {stage.position}")
+                    img.save(
+                        os.path.join(images_folder, name),
+                        exif=exif,
+                        quality=95,
+                        subsampling=0
+                    )
+                    positions.append(loc[:2])
+                    names.append(name)
 
+                # add the current position to the list of all positions visited
+                true_path.append(loc)
 
-            img_preview = cam.grab_jpeg()
-            img_preview = np.array(Image.open(img_preview.open()))
-            # add the current position to the list of all positions visited
-            true_path.append(loc)
+                # if len(names) > 1:
+                generate_config(images_folder, positions, names)
 
-            # if len(names) > 1:
-            generate_config(folder_path, positions, names)
+                path = sorted(path, key=lambda x: distance_to_site(loc[:2], x))
 
-
-            path = sorted(path, key=lambda x: distance_to_site(loc[:2], x))
-
-            if len(true_path) > 750:
-                break
-
-        logger.info("Returning to starting position.")
-        stage.move_absolute(x=starting_loc[0], y=starting_loc[1], z=starting_loc[2])
+                if len(true_path) > 750:
+                    break
+        except InvocationCancelledError:
+            logger.error("Stopping scan because it was cancelled.", exc_info=1)
+        except IOError as e:
+            logger.error(
+                f"Stopping scan because of an IOError (most likely a full disk): {e}",
+                exc_info=1,
+            )
+        finally:
+            logger.info("Creating zip archive of images (may take some time)...")
+            shutil.make_archive(
+                os.path.join(scan_path, "images"), "zip", images_folder
+            )
+            logger.info("Returning to starting position.")
+            stage.move_absolute(**starting_position)
+    
+    @thing_property
+    def scans(self) -> list[ScanInfo]:
+        """All available scans"""
+        scans: list[ScanInfo] = []
+        for f in os.listdir(self.scan_folder_path):
+            path = os.path.join(self.scan_folder_path, f)
+            if os.path.isdir(path):
+                images_folder = os.path.join(path, "images")
+                if os.path.isdir(images_folder):
+                    number_of_images = len(os.listdir(images_folder))
+                else:
+                    number_of_images = 0
+                scans.append(
+                    ScanInfo(
+                        name = f,
+                        created = os.path.getctime(path),
+                        modified = os.path.getmtime(path),
+                        number_of_images = number_of_images,
+                    )
+                )
+        return scans
+    
+    @fastapi_endpoint("get", "{scan_name}/{file}")
+    def get_images_zip(self, scan_name: str, file: str) -> FileResponse:
+        if file not in DOWNLOADABLE_SCAN_FILES:
+            raise HTTPException(
+                403, f"You may only download files named {DOWNLOADABLE_SCAN_FILES}"
+            )
+        path = os.path.join(self.scan_folder_path, scan_name, file)
+        if not os.path.isfile(path):
+            raise HTTPException(404, "File not found")
+        return FileResponse(path)
+    
