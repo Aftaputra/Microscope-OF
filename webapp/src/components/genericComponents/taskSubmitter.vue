@@ -35,15 +35,21 @@
       </button>
     </div>
 
-    <div id="modal-center" ref="statusModal" class="" uk-modal="bg-close: false; esc-close: false; stack: true;">
+    <div
+      id="modal-center"
+      ref="statusModal"
+      class=""
+      uk-modal="bg-close: false; esc-close: false; stack: true;"
+    >
       <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
         <h2>{{ submitLabel }}</h2>
         <div id="log-container" ref="logContainer">
           <div v-for="(item, index) in log" :key="`log_entry_${index}`">
             {{ item.message }}
           </div>
-          <div v-if="taskStatus=='error'" class="uk-alert-danger">
-            The task failed due to an error - use the button below to close this dialog.
+          <div v-if="taskStatus == 'error'" class="uk-alert-danger">
+            The task failed due to an error - use the button below to close this
+            dialog.
           </div>
         </div>
         <div id="progress-and-cancel-row">
@@ -241,7 +247,12 @@ export default {
           response.data.id,
           response.data.href
         );
-        this.$emit("response", response);
+        if (response.status == "completed") {
+          this.$emit("response", response);
+        } else if (response.status == "cancelled") {
+          this.$emit("cancelled", response);
+          this.modalNotify(`The action '${this.submitLabel}' was cancelled.`);
+        }
         this.$emit("finished");
       } catch (error) {
         this.$emit("error", error | Error("Unknown error"));
@@ -284,9 +295,13 @@ export default {
           .then(response => {
             var result = response.data.status;
             this.taskStatus = result;
-            // If the task ends with success
-            if (result == "completed") {
-              resolve(response.data);
+            if ((result == "running") | (result == "pending")) {
+              // If the task is still running, we update progress/log,
+              // and schedule another poll
+              this.progress = response.data.progress;
+              this.log = response.data.log;
+              // Check again after timeout
+              setTimeout(checkCondition, interval, resolve, reject);
             }
             // If task ends with an error
             else if (result == "error") {
@@ -294,17 +309,10 @@ export default {
               if (!this.progress) this.progress = 1;
               reject(new Error(response.data.output));
             }
-            // If task ends with termination
-            else if (result == "cancelled") {
-              // Pass a generic termination error back with reject
-              if (!this.progress) this.progress = 100;
-              reject(new Error("Task cancelled"));
-            } else {
-              // Since the task is still running, we can update the progress bar
-              this.progress = response.data.progress;
-              this.log = response.data.log;
-              // Check again after timeout
-              setTimeout(checkCondition, interval, resolve, reject);
+            // If task ends without reporting an error
+            // (NB this includes cancellation)
+            else {
+              resolve(response.data);
             }
           });
       };
@@ -319,7 +327,7 @@ export default {
     },
 
     hideModal() {
-      UIkit.modal(this.$refs.statusModal).hide()
+      UIkit.modal(this.$refs.statusModal).hide();
     },
 
     terminateTask: function() {
