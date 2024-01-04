@@ -157,7 +157,7 @@ class AutofocusThing(Thing):
             # Move to dz while monitoring sharpness
             # i: Sharpness monitor index for this move
             # z: Final z position after move
-            i, z = m.focus_rel(dz)
+            i, z = m.focus_rel(dz, block_cancellation=True)
             # Get the z position with highest sharpness from the previous move (index i)
             fz: int = m.sharpest_z_on_move(i)
             # Move all the way to the start so it's consistent
