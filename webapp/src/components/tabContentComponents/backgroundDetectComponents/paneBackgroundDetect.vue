@@ -1,9 +1,9 @@
 <template>
   <div class="uk-padding-small">
-    <div v-show="!thingAvailable" class="ui-alert-error" uk-alert>
+    <div v-show="!backendOK" class="uk-alert-danger">
       The background detect Thing seems to be missing or incompatible.
     </div>
-    <div v-show="thingAvailable">
+    <div v-show="backendOK">
       <div class="uk-margin">
         <taskSubmitter
           :submit-url="setBackgroundUri"
@@ -42,40 +42,26 @@ export default {
     propertyControl
   },
 
-  data: function() {
-    return {
-    };
-  },
-
   computed: {
     backgroundFractionUri() {
       return this.thingActionUrl("background_detect", "background_fraction");
     },
     setBackgroundUri() {
       return this.thingActionUrl("background_detect", "set_background");
+    },
+    backendOK() {
+      return (
+        (this.backgroundFractionUri != null) & (this.setBackgroundUri != null)
+      );
     }
   },
 
   methods: {
     alertBackgroundFraction(r) {
-      let fraction = r.output
-      let percentage = (fraction * 100).toFixed(1)
-      this.modalNotify(`Current image is ${percentage}% background.`)
+      let fraction = r.output;
+      let percentage = (fraction * 100).toFixed(1);
+      this.modalNotify(`Current image is ${percentage}% background.`);
     }
   }
 };
 </script>
-
-<style>
-.grid-container {
-  display: grid;
-  grid-template-columns: auto auto;
-  grid-column-gap: 10px;
-}
-
-.warning {
-  color: #c11;
-  font-weight: bold;
-  text-align: center;
-}
-</style>

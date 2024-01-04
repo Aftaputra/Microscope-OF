@@ -34,11 +34,43 @@
         {{ submitLabel }}
       </button>
     </div>
+
+    <div id="modal-center" ref="statusModal" class="" uk-modal>
+      <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+        <div id="log-container" ref="logContainer">
+          <div v-for="(item, index) in log" :key="`log_entry_${index}`">
+            {{ item.message }}
+          </div>
+        </div>
+        <div id="progress-and-cancel-row">
+          <div class="stretchy">
+            <div class="progress uk-margin-small">
+              <div
+                v-if="progress"
+                class="determinate"
+                :style="barWidthFromProgress"
+              ></div>
+              <div v-else class="indeterminate"></div>
+            </div>
+          </div>
+
+          <button
+            v-if="canTerminate && taskRunning"
+            type="button"
+            class="uk-button uk-button-danger not-stretchy"
+            @click="terminateTask()"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
+import UIkit from "uikit";
 
 export default {
   name: "TaskSubmitter",
@@ -87,6 +119,11 @@ export default {
       type: String,
       required: false,
       default: null
+    },
+    modalProgress: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
 
@@ -96,7 +133,8 @@ export default {
       taskUrl: null,
       progress: null,
       taskStarted: false,
-      taskRunning: false
+      taskRunning: false,
+      log: []
     };
   },
 
@@ -108,7 +146,14 @@ export default {
     }
   },
 
-  created() {},
+  watch: {
+    log: function() {
+      this.$nextTick(function() {
+        let viewer = this.$refs.logContainer;
+        viewer.scrollTop = viewer.scrollHeight;
+      });
+    }
+  },
 
   mounted() {
     // Check for already running tasks
@@ -165,7 +210,7 @@ export default {
       }
     },
 
-    startTask: function() {
+    async startTask() {
       // Starts a new Action task
 
       this.$emit("submit", this.submitData);
@@ -173,36 +218,32 @@ export default {
 
       this.taskStarted = true;
       this.$emit("taskStarted", this.taskId);
-      axios
-        .post(this.submitUrl, this.submitData)
-        // Get the returned Task ID
-        .then(response => {
-          // Start the store polling TaskId for success
-          return this.startPolling(response.data.id, response.data.href);
-        })
-        .then(response => {
-          // Do something with the final response
-
-          this.$emit("response", response);
-          this.$emit("finished");
-        })
-        .catch(error => {
-          if (!error) {
-            error = Error("Unknown error");
-          }
-          this.$emit("error", error);
-          this.$emit("finished");
-        })
-        .finally(() => {
-          // Reset taskRunning and taskId
-          this.taskRunning = false;
-          this.taskStarted = false;
-          this.taskId = null;
-          // Update the form data if we're self-updating
-          if (this.selfUpdate) {
-            this.getFormData();
-          }
-        });
+      try {
+        let response = await axios.post(this.submitUrl, this.submitData);
+        if (this.modalProgress) {
+          UIkit.modal(this.$refs.statusModal).show();
+        }
+        // Start the store polling TaskId for success
+        response = await this.startPolling(
+          response.data.id,
+          response.data.href
+        );
+        this.$emit("response", response);
+        this.$emit("finished");
+      } catch (error) {
+        this.$emit("error", error | Error("Unknown error"));
+        this.$emit("finished");
+      } finally {
+        // Reset taskRunning and taskId
+        this.taskRunning = false;
+        this.taskStarted = false;
+        this.taskId = null;
+        // Update the form data if we're self-updating
+        if (this.selfUpdate) {
+          this.getFormData();
+        }
+        UIkit.modal(this.$refs.statusModal).hide();
+      }
     },
 
     startPolling: function(taskId, taskUrl) {
@@ -244,6 +285,7 @@ export default {
             } else {
               // Since the task is still running, we can update the progress bar
               this.progress = response.data.progress;
+              this.log = response.data.log;
               // Check again after timeout
               setTimeout(checkCondition, interval, resolve, reject);
             }
@@ -269,6 +311,32 @@ export default {
 <style lang="less" scoped>
 @import "../../assets/less/theme.less";
 
+#log-container {
+  position: relative;
+  height: 6em;
+  overflow-y: scroll;
+  overflow-x: auto;
+}
+
+#progress-and-cancel-row {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: flex-start;
+  align-content: stretch;
+  align-items: center;
+  width: 100%;
+}
+
+#progress-and-cancel-row .stretchy {
+  flex-grow: 1;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+#progress-and-cancel-row .not-stretchy {
+  flex-grow: 0;
+  margin-left: 5px;
+  margin-right: 5px;
+}
 .progress {
   position: relative;
   height: 5px;
