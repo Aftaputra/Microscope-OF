@@ -113,10 +113,10 @@
                   :submit-url="absoluteMoveUri"
                   :submit-data="setPosition"
                   :submit-label="'Move'"
-                  :can-terminate="false"
+                  :can-terminate="true"
                   :poll-interval="0.05"
                   @taskStarted="moveLock = true"
-                  @finished="moveLock = false"
+                  @finished="updatePosition(); moveLock = false"
                   @error="modalError"
                 ></taskSubmitter>
               </p>
@@ -138,7 +138,7 @@
                   :button-primary="false"
                   :submit-on-event="'globalFastAutofocusEvent'"
                   @taskStarted="isAutofocusing = 1"
-                  @finished="isAutofocusing = 0"
+                  @finished="updatePosition(); isAutofocusing = 0"
                   @error="modalError"
                 ></taskSubmitter>
               </div>
