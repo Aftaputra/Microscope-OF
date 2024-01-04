@@ -4,7 +4,7 @@
     <div v-if="'calibrate_xy' in actions" class="uk-margin-small">
       <taskSubmitter
         :button-primary="true"
-        :can-terminate="false"
+        :can-terminate="true"
         :requires-confirmation="true"
         :confirmation-message="
           'Start recalibration of the stage to the camera? This may take a while, and the microscope will be locked during this time.'
