@@ -35,12 +35,33 @@
       </button>
     </div>
 
-    <div id="modal-center" ref="statusModal" class="uk-flex-top" uk-modal>
+    <div id="modal-center" ref="statusModal" class="" uk-modal>
       <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
-        <div>
-          <pre v-for="(item, index) in log" :key="`log_entry_${index}`">
+        <div id="log-container" ref="logContainer">
+          <div v-for="(item, index) in log" :key="`log_entry_${index}`">
             {{ item.message }}
-          </pre>
+          </div>
+        </div>
+        <div id="progress-and-cancel-row">
+          <div class="stretchy">
+            <div class="progress uk-margin-small">
+              <div
+                v-if="progress"
+                class="determinate"
+                :style="barWidthFromProgress"
+              ></div>
+              <div v-else class="indeterminate"></div>
+            </div>
+          </div>
+
+          <button
+            v-if="canTerminate && taskRunning"
+            type="button"
+            class="uk-button uk-button-danger not-stretchy"
+            @click="terminateTask()"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </div>
@@ -125,7 +146,14 @@ export default {
     }
   },
 
-  created() {},
+  watch: {
+    log: function() {
+      this.$nextTick(function() {
+        let viewer = this.$refs.logContainer;
+        viewer.scrollTop = viewer.scrollHeight;
+      });
+    }
+  },
 
   mounted() {
     // Check for already running tasks
@@ -192,7 +220,7 @@ export default {
       this.$emit("taskStarted", this.taskId);
       try {
         let response = await axios.post(this.submitUrl, this.submitData);
-        if (this.statusModal) {
+        if (this.modalProgress) {
           UIkit.modal(this.$refs.statusModal).show();
         }
         // Start the store polling TaskId for success
@@ -283,6 +311,32 @@ export default {
 <style lang="less" scoped>
 @import "../../assets/less/theme.less";
 
+#log-container {
+  position: relative;
+  height: 6em;
+  overflow-y: scroll;
+  overflow-x: auto;
+}
+
+#progress-and-cancel-row {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: flex-start;
+  align-content: stretch;
+  align-items: center;
+  width: 100%;
+}
+
+#progress-and-cancel-row .stretchy {
+  flex-grow: 1;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+#progress-and-cancel-row .not-stretchy {
+  flex-grow: 0;
+  margin-left: 5px;
+  margin-right: 5px;
+}
 .progress {
   position: relative;
   height: 5px;
