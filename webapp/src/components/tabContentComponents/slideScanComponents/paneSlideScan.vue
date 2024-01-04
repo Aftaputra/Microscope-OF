@@ -1,7 +1,15 @@
 <template>
   <div class="uk-padding-small">
-    <div v-show="!scanUri">No scan extension found</div>
-    <div v-show="scanUri">
+    <div v-show="!backendOK" class="uk-alert-danger">No scan back-end found.</div>
+    <div v-show="backendOK">
+      <taskSubmitter
+        :submit-url="smartScanUri"
+        submit-label="Start tiled scan"
+        :can-terminate="true"
+        :modal-progress="true"
+      />
+    </div>
+    <div v-show="false">
       <form @submit.prevent @keyup.enter="increment()">
         <div v-show="stepValue == 0" id="step-user">
           <h3>User information (1/4)</h3>
@@ -165,6 +173,10 @@ export default {
   },
 
   computed: {
+    backendOK() {
+      return this.thingAvailable("smart_scan");
+    },
+    smartScanUri() { return this.thingActionUrl("smart_scan", "sample_scan") },
     currentTimeForm: {
       get() {
         // Chop the timezone information from the end
