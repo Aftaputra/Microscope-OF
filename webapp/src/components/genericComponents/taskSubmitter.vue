@@ -41,6 +41,9 @@
           <div v-for="(item, index) in log" :key="`log_entry_${index}`">
             {{ item.message }}
           </div>
+          <div v-if="taskStatus=='error'" class="uk-alert-danger">
+            The task failed due to an error - use the button below to close this dialog.
+          </div>
         </div>
         <div id="progress-and-cancel-row">
           <div class="stretchy">
@@ -61,6 +64,14 @@
             @click="terminateTask()"
           >
             Cancel
+          </button>
+          <button
+            v-if="!taskStarted"
+            type="button"
+            class="uk-button not-stretchy"
+            @click="hideModal"
+          >
+            Close
           </button>
         </div>
       </div>
@@ -134,7 +145,8 @@ export default {
       progress: null,
       taskStarted: false,
       taskRunning: false,
-      log: []
+      log: [],
+      taskStatus: ""
     };
   },
 
@@ -242,7 +254,10 @@ export default {
         if (this.selfUpdate) {
           this.getFormData();
         }
-        UIkit.modal(this.$refs.statusModal).hide();
+        if (this.taskStatus != "error") {
+          // Leave the modal up if there was an error.
+          UIkit.modal(this.$refs.statusModal).hide();
+        }
       }
     },
 
@@ -267,6 +282,7 @@ export default {
           .get(this.taskUrl, { baseURL: this.$store.getters.baseUri })
           .then(response => {
             var result = response.data.status;
+            this.taskStatus = result;
             // If the task ends with success
             if (result == "completed") {
               resolve(response.data);
@@ -274,13 +290,13 @@ export default {
             // If task ends with an error
             else if (result == "error") {
               // Pass the error string back with reject
-
+              if (!this.progress) this.progress = 1;
               reject(new Error(response.data.output));
             }
             // If task ends with termination
             else if (result == "cancelled") {
               // Pass a generic termination error back with reject
-
+              if (!this.progress) this.progress = 100;
               reject(new Error("Task cancelled"));
             } else {
               // Since the task is still running, we can update the progress bar
@@ -299,6 +315,10 @@ export default {
       axios.get(this.taskUrl).then(response => {
         this.progress = response.data.progress;
       });
+    },
+
+    hideModal() {
+      UIkit.modal(this.$refs.statusModal).hide()
     },
 
     terminateTask: function() {
