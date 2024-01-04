@@ -35,8 +35,9 @@
       </button>
     </div>
 
-    <div id="modal-center" ref="statusModal" class="" uk-modal>
+    <div id="modal-center" ref="statusModal" class="" uk-modal="bg-close: false; esc-close: false; stack: true;">
       <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+        <h2>{{ submitLabel }}</h2>
         <div id="log-container" ref="logContainer">
           <div v-for="(item, index) in log" :key="`log_entry_${index}`">
             {{ item.message }}

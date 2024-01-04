@@ -78,8 +78,9 @@
             <taskSubmitter
               :submit-url="recentreActionUri"
               :submit-label="'Re-centre Stage'"
-              :can-terminate="false"
+              :can-terminate="true"
               :requires-confirmation="true"
+              :modal-progress="true"
               :confirmation-message="
                 'The stage will now move, and autofocus will be used to find the centre of motion. This requires a sample to be visible in the microscope. OK to proceed?'
               "
