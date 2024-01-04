@@ -22,11 +22,11 @@ from camera_stage_mapping.camera_stage_calibration_1d import (
     image_to_stage_displacement_from_1d,
 )
 from camera_stage_mapping.camera_stage_tracker import Tracker
-
 from labthings_picamera2.thing import StreamingPiCamera2
 from labthings_sangaboard import SangaboardThing
 
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
+from labthings_fastapi.dependencies.invocation import InvocationLogger
 from labthings_fastapi.types.numpy import NDArray, denumpify, DenumpifyingDict
 from labthings_fastapi.decorators import thing_action, thing_property
 from labthings_fastapi.thing import Thing
@@ -42,9 +42,33 @@ class HardwareInterfaceModel(BaseModel):
     get_position: Callable[[], NDArray]
     grab_image: Callable[[], NDArray]
     settle: Callable[[], None]
+    grab_image_downsampling: float = 1
 
 
-def make_hardware_interface(stage: Stage, camera: Camera) -> HardwareInterfaceModel:
+def downsample(factor: int, image: np.ndarray) -> np.ndarray:
+    """Downsample an image by taking the mean of each nxn region
+    
+    This should be very efficient: we calculate the mean of each
+    `factor * factor` square, no interpolation. If the image is
+    not an integer multiple of the resampling factor, we discard
+    the left-over pixels. This avoids odd edge effects and keeps
+    performance quick.
+    """
+    if factor == 1:
+        return image
+    new_size = [d // factor for d in image.shape[:2]]
+    # First, we ensure we have something that's an integer multiple
+    # of `factor`
+    cropped = image[:new_size[0] * factor, :new_size[1] * factor, ...]
+    reshaped = cropped.reshape(
+        (new_size[0], factor, new_size[1], factor) + image.shape[2:]
+    )
+    return reshaped.mean(axis=(1,3))
+
+
+def make_hardware_interface(
+        stage: Stage, camera: Camera, downsample_factor: int = 2
+    ) -> HardwareInterfaceModel:
     """Construct the functions we need to interface with the hardware"""
     axes = stage.axis_names
     def pos2dict(pos: Sequence[float]) -> Mapping[str, float]:
@@ -59,12 +83,13 @@ def make_hardware_interface(stage: Stage, camera: Camera) -> HardwareInterfaceMo
     def get_position() -> CoordinateType:
         return dict2pos(stage.position)
     def grab_image() -> np.ndarray:
-        return camera.capture_array()
+        img = camera.capture_array()
+        return downsample(downsample_factor, img)
     def settle() -> None:
         time.sleep(0.2)
         camera.capture_metadata
     return HardwareInterfaceModel(
-        move=move, get_position=get_position, grab_image=grab_image, settle=settle
+        move=move, get_position=get_position, grab_image=grab_image, settle=settle, grab_image_downsampling=downsample_factor
     )
 
 HardwareInterfaceDep = Annotated[HardwareInterfaceModel, Depends(make_hardware_interface)]
@@ -130,40 +155,54 @@ class CameraStageMapper(Thing):
         self.thing_settings.write_to_file()
 
     @thing_action
-    def calibrate_1d(self, hw: HardwareInterfaceDep, direction: Tuple[float, float, float]) -> DenumpifyingDict:
+    def calibrate_1d(
+        self, 
+        hw: HardwareInterfaceDep,
+        logger: InvocationLogger,
+        direction: Tuple[float, float, float],
+    ) -> DenumpifyingDict:
         """Move a microscope's stage in 1D, and figure out the relationship with the camera"""
         move = LoggingMoveWrapper(hw.move)  # log positions and times for stage calibration
-
         tracker = Tracker(hw.grab_image, hw.get_position, settle=hw.settle)
-
         direction_array: np.ndarray = np.array(direction)
 
-        result: dict = calibrate_backlash_1d(tracker, move, direction_array)
+        result: dict = calibrate_backlash_1d(tracker, move, direction_array, logger=logger)
         result["move_history"] = move.history
         result["image_resolution"] = hw.grab_image().shape[:2]
         return result
 
     @thing_action
-    def calibrate_xy(self, hw: HardwareInterfaceDep) -> DenumpifyingDict:
+    def calibrate_xy(
+        self, hw: HardwareInterfaceDep, logger: InvocationLogger
+    ) -> DenumpifyingDict:
         """Move the microscope's stage in X and Y, to calibrate its relationship to the camera
         
         This performs two 1d calibrations in x and y, then combines their results.
         """
-        logging.info("Calibrating X axis:")
-        cal_x: dict = self.calibrate_1d(hw, (1, 0, 0))
-        logging.info("Calibrating Y axis:")
-        cal_y: dict = self.calibrate_1d(hw, (0, 1, 0))
+        logger.info("Calibrating X axis:")
+        cal_x: dict = self.calibrate_1d(hw, logger, (1, 0, 0))
+        logger.info("Calibrating Y axis:")
+        cal_y: dict = self.calibrate_1d(hw, logger, (0, 1, 0))
+        logger.info("Calibration complete, updating metadata.")
 
         # Combine X and Y calibrations to make a 2D calibration
-        cal_xy: dict = denumpify(image_to_stage_displacement_from_1d([cal_x, cal_y]))
-        self.thing_settings.update(cal_xy)
-        self.thing_settings["image_resolution"] = cal_x["image_resolution"]
+        cal_xy: dict = image_to_stage_displacement_from_1d([cal_x, cal_y])
+        # Correct the result for downsampling performed in the hardware interface
+        # (this may be to speed up correlation, or to avoid debayering artifacts)
+        cal_xy["image_to_stage_displacement"] /= hw.grab_image_downsampling
+        corrected_resolution = tuple(
+            r * hw.grab_image_downsampling for r in cal_x["image_resolution"]
+        )
+        self.thing_settings.update(denumpify(cal_xy))
+        self.thing_settings["image_resolution"] = corrected_resolution
 
         data: Dict[str, dict] = {
             "camera_stage_mapping_calibration": cal_xy,
             "linear_calibration_x": cal_x,
             "linear_calibration_y": cal_y,
-            "image_resolution": cal_x["image_resolution"]
+            "downsampled_image_resolution": cal_x["image_resolution"],
+            "image_resolution": corrected_resolution,
+            "downsampling": hw.grab_image_downsampling,
         }
 
         self.thing_settings["last_calibration"] = DenumpifyingDict(data).model_dump()
@@ -193,6 +232,11 @@ class CameraStageMapper(Thing):
         if not displacement_matrix:
             return None
         return np.array(displacement_matrix).tolist()
+    
+    @thing_property
+    def image_resolution(self) -> Optional[Tuple[float, float]]:
+        """The image size used to calibrate the image_to_stage_displacement_matrix"""
+        return self.thing_settings.get("image_resolution", None)
     
     def assert_calibrated(self):
         """Raise an exception if the image_to_stage_displacement matrix is not set"""
@@ -231,15 +275,9 @@ class CameraStageMapper(Thing):
         stage.move_relative(x=relative_move[0], y=relative_move[1])
 
     @thing_property
-    def thing_state(self) -> dict:
+    def thing_state(self) -> dict[str, Any]:
         """Summary metadata describing the current state of the Thing"""
-        state: dict[str, Any] = {}
-        state["image_to_stage_displacement_matrix"] = (
-            self.image_to_stage_displacement_matrix
-        )
-        if self.last_calibration:
-            try:
-                state["image_resolution"] = self.last_calibration["image_resolution"]
-            except KeyError:
-                logging.warning("Couldn't find `image_resolution` in CSM calibration")
-        return state
+        return {
+            k: getattr(self, k)
+            for k in ["image_to_stage_displacement_matrix", "image_resolution"]
+        }
