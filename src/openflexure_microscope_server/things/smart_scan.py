@@ -132,18 +132,24 @@ def distance_to_site(current, next):
     current = np.array(current, dtype="float64")
     return np.sqrt((next[1] - current[1]) ** 2 + (next[0] - current[0]) ** 2)
 
-def generate_config(folder_path: str, positions: list, names: list):
+def scale_csm(csm_matrix, calibration_width, img_width):
+    "Account for a calibration width that may differ from image width"
+    scale = img_width / calibration_width  # Usually >1, if we calibrated at low res
+    csm = np.array(csm_matrix) / scale  # Decrease the CSM if pixels are smaller]
+    return csm
+
+def generate_config(folder_path: str, positions: list, names: list, camera_to_sample_matrix, csm_calibration_width, img_width, logger):
 
     positions = np.array(positions)
-
     mean_loc = np.mean(positions, axis = 0)
+
+    camera_to_sample_matrix = scale_csm(camera_to_sample_matrix, csm_calibration_width, img_width)
 
     with open(os.path.join(folder_path, 'TileConfiguration.txt'), 'w') as fp:
         fp.write('# Define the number of dimensions we are working on\ndim = 2\n\n# Define the image coordinates\n')
         for i in range(len(names)):    
-            loc = positions[i] - mean_loc
+            loc = np.dot((positions[i] - mean_loc), np.linalg.inv(camera_to_sample_matrix))
             fp.write(f'{names[i]}; ; {loc[1], loc[0]} \n')
-
 
 class ChannelDistributions(BaseModel):
     means: list[float]
@@ -325,7 +331,7 @@ class SmartScanThing(Thing):
 
         r = cam.grab_jpeg()
         arr = np.array(Image.open(r.open()))
-        if arr.shape[:2] != csm.image_resolution:
+        if list(arr.shape[:2]) != csm.image_resolution:
             logger.error(
                 f"Images are, by default, {arr.shape[:2]}, but the CSM was "
                 f"calibrated at {csm.image_resolution}."
@@ -336,6 +342,11 @@ class SmartScanThing(Thing):
         # TODO: generalise to have 2D displacements for x and y (as the
         # camera and stage may not be aligned).
         CSM = csm.image_to_stage_displacement_matrix
+        csm_calibration_width = csm.last_calibration["image_resolution"][1]
+        
+        # TODO: this downsampling by two is to deal with a camera issue
+        img_width = int(arr.shape[1] / 2)
+
         dx = int(np.dot(np.array([0, arr.shape[0] * (1 - overlap)]), CSM)[0])
         dy = int(np.dot(np.array([arr.shape[1] * (1 - overlap), 0]), CSM)[1])
         logger.info(f"Based on an overlap of {overlap}, we will make steps of {dx}, {dy}")
@@ -445,7 +456,8 @@ class SmartScanThing(Thing):
                         stage.move_absolute(z=int(focused_path[z_index][2]))
                         attempts += 1
 
-                    img = Image.open(cam.capture_jpeg(resolution="full").open())
+                    # img = Image.open(cam.capture_jpeg(resolution="full").open())
+                    img = Image.open(cam.capture_jpeg().open())
                     exif = img.info['exif']
                     width, height = img.size 
                     img = img.resize((int(width*0.5), int(height*0.5)))
@@ -464,8 +476,8 @@ class SmartScanThing(Thing):
                 # add the current position to the list of all positions visited
                 true_path.append(loc)
 
-                # if len(names) > 1:
-                generate_config(images_folder, positions, names)
+                if len(names) > 1:
+                    generate_config(images_folder, positions, names, CSM, csm_calibration_width, img_width, logger)
 
                 path = sorted(path, key=lambda x: distance_to_site(loc[:2], x))
 
