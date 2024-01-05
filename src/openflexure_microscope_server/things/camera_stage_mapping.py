@@ -196,6 +196,10 @@ class CameraStageMapper(Thing):
         self.thing_settings.update(denumpify(cal_xy))
         self.thing_settings["image_resolution"] = corrected_resolution
 
+        csm_matrix = cal_xy["image_to_stage_displacement"]
+        csm_as_string = f'[{round(csm_matrix[0][0], 2)}, {round(csm_matrix[0][1], 2)},],[{round(csm_matrix[1][0], 2)}, {round(csm_matrix[1][1], 2)}]'
+        logger.info(f"CSM matrix is {csm_as_string}.")
+
         data: Dict[str, dict] = {
             "camera_stage_mapping_calibration": cal_xy,
             "linear_calibration_x": cal_x,
