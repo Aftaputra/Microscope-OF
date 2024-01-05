@@ -488,7 +488,14 @@ class SmartScanThing(Thing):
     
     @thing_property
     def scans(self) -> list[ScanInfo]:
-        """All available scans"""
+        """All the available scans
+        
+        Each scan has a name (which can be used to access it), along with
+        its modified and created times (according to the filesystem) and
+        the number of items in the `images` folder. Note that the number
+        of images reported may be confused if non-image files are present
+        in the `images` folder.
+        """
         scans: list[ScanInfo] = []
         for f in os.listdir(self.scan_folder_path):
             path = os.path.join(self.scan_folder_path, f)
@@ -508,8 +515,25 @@ class SmartScanThing(Thing):
                 )
         return scans
     
-    @fastapi_endpoint("get", "{scan_name}/{file}")
-    def get_images_zip(self, scan_name: str, file: str) -> FileResponse:
+    @fastapi_endpoint(
+            "get",
+            "scans/{scan_name}/{file}",
+            responses = {
+                200: {
+                    "description": "Successfully downloading file",
+                    "content": {"*/*": {}}
+                },
+                403: {"description": "Filename not permitted"},
+                404: {"description": "File not found"}
+            },
+        )
+    def get_scan_file(self, scan_name: str, file: str) -> FileResponse:
+        """Retrieve a file from a scan.
+        
+        This endpoint allows files to be downloaded from a scan. For security
+        reasons, there is a list of allowable filenames, and paths with additional
+        slashes are not permitted.
+        """
         if file not in DOWNLOADABLE_SCAN_FILES:
             raise HTTPException(
                 403, f"You may only download files named {DOWNLOADABLE_SCAN_FILES}"
@@ -519,3 +543,35 @@ class SmartScanThing(Thing):
             raise HTTPException(404, "File not found")
         return FileResponse(path)
     
+    @fastapi_endpoint(
+        "delete",
+        "scans/{scan_name}",
+        responses = {
+            200: {"description": "Successfully deleted scan"},
+            404: {"description": "Scan not found"},
+        },
+    )
+    def delete_scan(self, scan_name: str) -> None:
+        """Delete all files from a scan.
+        
+        This endpoint allows scans to be deleted from disk.
+        """
+        path = os.path.join(self.scan_folder_path, scan_name)
+        if not os.path.isdir(path):
+            print(f"can't find {path}")
+            raise HTTPException(404, "Scan not found")
+        shutil.rmtree(path)
+    
+    @fastapi_endpoint(
+        "delete",
+        "scans",
+    )
+    def delete_all_scans(self) -> None:
+        """Delete all the scans on the microscope
+        
+        **This will irreversibly remove all smart scan data from the 
+        microscope!**
+        Use with extreme caution.
+        """
+        for scan in self.scans:
+            self.delete_scan(scan.name)
