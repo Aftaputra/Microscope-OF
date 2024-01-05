@@ -187,6 +187,7 @@ const imjoyContent = () =>
 // Import modal components for device initialisation
 import calibrationModal from "./modalComponents/calibrationModal.vue";
 import TabIcon from "./genericComponents/tabIcon.vue";
+import ScanListContent from "./tabContentComponents/scanListContent.vue";
 
 // Export main app
 export default {
@@ -266,21 +267,25 @@ export default {
           icon: "visibility",
           component: viewContent
         },
-        /*{
-          id: "gallery",
-          icon: "photo_library",
-          component: galleryContent,
-          divide: true // Add a divider after this tab icon
-        },*/
         {
           id: "navigate",
           icon: "gamepad",
           component: navigateContent
         },
+        /*{
+          id: "gallery",
+          icon: "photo_library",
+          component: galleryContent
+        },*/
         {
           id: "slidescan",
           icon: "settings_overscan",
           component: slideScanContent
+        },
+        {
+          id: "scanlist",
+          icon: "photo_library",
+          component: ScanListContent
         },
         {
           id: "background_detect",
