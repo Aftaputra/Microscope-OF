@@ -10,6 +10,7 @@
           submit-label="Set background"
           :can-terminate="false"
           :poll-interval="0.1"
+          @response="alertBackgroundSet"
         />
       </div>
       <div class="uk-margin">
@@ -20,12 +21,28 @@
         />
       </div>
       <div class="uk-margin">
+        <propertyControl
+          thing-name="background_detect"
+          property-name="fraction"
+          label="Sample coverage required"
+        />
+      </div>
+      <div class="uk-margin">
         <taskSubmitter
           :submit-url="backgroundFractionUri"
           submit-label="Check current image"
           :can-terminate="false"
           :poll-interval="0.1"
           @response="alertBackgroundFraction"
+        />
+      </div>
+      <div class="uk-margin">
+        <taskSubmitter
+          :submit-url="labelImageUri"
+          submit-label="Label current image"
+          :can-terminate="false"
+          :poll-interval="0.1"
+          @response="alertImageLabel"
         />
       </div>
     </div>
@@ -43,6 +60,9 @@ export default {
   },
 
   computed: {
+    labelImageUri() {
+      return this.thingActionUrl("background_detect", "image_is_sample");
+    },
     backgroundFractionUri() {
       return this.thingActionUrl("background_detect", "background_fraction");
     },
@@ -59,8 +79,15 @@ export default {
   methods: {
     alertBackgroundFraction(r) {
       let fraction = r.output;
-      let percentage = (fraction * 100).toFixed(1);
-      this.modalNotify(`Current image is ${percentage}% background.`);
+      // let percentage = (fraction * 100).toFixed(0);
+      this.modalNotify(`Current image is ${fraction.toFixed(0)}% background.`);
+    },
+    alertBackgroundSet() {
+      this.modalNotify(`Background image has been updated`);
+    },
+    alertImageLabel(r) {
+      let label = r.output===true? 'sample' : 'background'
+      this.modalNotify(`Current image is ${label}`);
     }
   }
 };
