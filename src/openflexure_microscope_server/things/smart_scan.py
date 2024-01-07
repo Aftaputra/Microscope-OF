@@ -182,6 +182,15 @@ class BackgroundDetectThing(Thing):
     def tolerance(self, value: float) -> None:
         self.thing_settings["tolerance"] = value
 
+    @thing_property
+    def fraction(self) -> float:
+        """How much of the image needs to be not background to label as sample"""
+        return self.thing_settings.get("fraction", 7)
+
+    @fraction.setter
+    def fraction(self, value: float) -> None:
+        self.thing_settings["fraction"] = value
+
     def background_mask(self, image: np.ndarray) -> np.ndarray:
         """Calculate a binary image, showing whether each pixel is background
 
@@ -204,17 +213,24 @@ class BackgroundDetectThing(Thing):
         This action will acquire a new image from the preview stream, then
         evaluate whether it is foreground or background, by comparing it
         too the saved statistics. This is done on a per-pixel basis, and
-        the returned value (between 0 and 1) is the fraction of the image
+        the returned value (between 0 and 100) is the fraction of the image
         that is background.
         """
-        background = cam.grab_jpeg()
-        background = np.array(Image.open(background.open()))
+        current_image = cam.grab_jpeg()
+        current_image = np.array(Image.open(current_image.open()))
 
         # we're working in the LUV colourspace as it collect colours together in a human-intuitive way
-        background_LUV = cv2.cvtColor(background, cv2.COLOR_RGB2LUV)
-        mask = self.background_mask(background_LUV)
-        return np.count_nonzero(mask) / np.prod(mask.shape)
+        current_image_LUV = cv2.cvtColor(current_image, cv2.COLOR_RGB2LUV)
+        mask = self.background_mask(current_image_LUV)
+        return np.count_nonzero(mask) / np.prod(mask.shape) * 100
 
+    @thing_action
+    def image_is_sample(self, cam: CamDep) -> bool:
+        """Label the current image as either background or sample"""
+        b_fraction = self.background_fraction(cam)
+        fraction_threshold = self.fraction
+
+        return (100 - b_fraction) > fraction_threshold
     
     @thing_action
     def set_background(self, cam: CamDep):
@@ -253,6 +269,7 @@ class BackgroundDetectThing(Thing):
         return {
             "background_distributions": bd.model_dump() if bd else None,
             "tolerance": self.tolerance,
+            "fraction": self.fraction,
         }
 
     
@@ -352,7 +369,6 @@ class SmartScanThing(Thing):
         logger.info(f"Based on an overlap of {overlap}, we will make steps of {dx}, {dy}")
 
         dz = 3000  # This is used for autofocus - make configurable?
-        sample_coverage = 7  # TODO: make this configurable
 
         # construct a 2D scan path
         path = [[stage.position["x"], stage.position["y"]]]
@@ -391,15 +407,12 @@ class SmartScanThing(Thing):
                     )
 
                 # Check if the image is background
-                background_fraction = background_detect.background_fraction()
-                background_coverage = round(
-                    100 * background_fraction, 1
-                )
+                image_is_sample = background_detect.image_is_sample()
 
                 # if more than 92% of the image is background, treat it as background and continue
-                if 100 - background_coverage < sample_coverage:
+                if not image_is_sample:
                     category = "background"
-                    logger.info(f"Skipping {stage.position} as it is {background_coverage}% background.")
+                    logger.info(f"Skipping {stage.position} as it is {round(background_detect.background_fraction(),0)}% background.")
                 else:
                     # if not, it's sample. run an autofocus and use the updated height
                     new_pos = [
@@ -484,7 +497,7 @@ class SmartScanThing(Thing):
                 if len(true_path) > 750:
                     break
         except InvocationCancelledError:
-            logger.error("Stopping scan because it was cancelled.", exc_info=1)
+            logger.error("Stopping scan because it was cancelled.", exc_info=0)
         except IOError as e:
             logger.error(
                 f"Stopping scan because of an IOError (most likely a full disk): {e}",
