@@ -50,8 +50,20 @@
           'uk-alert-danger uk-alert': item.level == 'ERROR'
         }"
       >
-        <b>{{ formatDateTime(item.timestamp) }}</b>
-        <div class="logging-message">{{ formatMessage(item) }}</div>
+        <b>{{ formatDateTime(item.timestamp) }}: {{ item.level }}</b>
+        <div class="logging-summary">
+          {{ item.summary }}
+          <a
+            v-if="(item.summary != item.message) & !item.expanded"
+            style="float: right"
+            @click="item.expanded = true"
+          >
+            More info...
+          </a>
+          <div v-if="item.expanded" class="logging-message">
+            {{ item.message }}
+          </div>
+        </div>
       </div>
 
       <Paginate
@@ -135,38 +147,45 @@ export default {
     },
     async updateLogs() {
       let response = await axios.get(this.logFileURI);
-      let lines = response.data.split("\n").reverse();
-      this.logs = [];
+      let lines = response.data.split("\n");
+      let logs = [];
       let regexp = /\[(.+)\] \[(.+)\] (.*)$/;
       for (let line of lines) {
         if (line.length > 0) {
           let m = line.match(regexp);
           if (m) {
-            this.logs.push({
+            logs.push({
               timestamp: m[1],
               level: m[2],
+              summary: m[3],
               message: m[3],
-              sequence: this.logs.length
+              sequence: logs.length,
+              expanded: false
             });
-          } else if (this.logs) {
+          } else if (logs) {
             // If a line does not look like a log entry, append it to the last
             // log entry (i.e. allow multi-line messages)
-            this.logs[this.logs.length - 1].message += "\n" + line;
+            let entry = logs[logs.length - 1];
+            entry.message += "\n" + line;
+            if (entry.message.startsWith("Traceback")) {
+              entry.summary = line; // For tracebacks, the last line is the best summary
+            }
           } else {
             // if there's no existing log message to append to, discard lines
             // until we find one.
+            console.log(
+              "Ignored non-matching lines at the start of the log file."
+            );
             continue;
           }
         }
       }
+      this.logs = logs.reverse(); // Display in reverse chronological order
     },
     formatDateTime: function(isoDateTimeString) {
       isoDateTimeString = isoDateTimeString.replace(",", ".");
       let date = new Date(isoDateTimeString);
       return date.toLocaleDateString() + " " + date.toLocaleTimeString();
-    },
-    formatMessage: function(item) {
-      return item.level + ": " + item.message;
     }
   }
 };
@@ -185,5 +204,7 @@ export default {
 }
 .logging-message {
   font-family: monospace;
+  overflow-x: auto;
+  text-wrap: nowrap;
 }
 </style>
