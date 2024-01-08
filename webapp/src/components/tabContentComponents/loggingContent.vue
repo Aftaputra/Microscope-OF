@@ -60,8 +60,7 @@
           >
             More info...
           </a>
-          <div v-if="item.expanded" class="logging-message">
-            {{ item.message }}
+          <div v-if="item.expanded" v-html="item.message" class="logging-message">
           </div>
         </div>
       </div>
@@ -158,7 +157,7 @@ export default {
               timestamp: m[1],
               level: m[2],
               summary: m[3],
-              message: m[3],
+              message: this.escapeText(m[3]),
               sequence: logs.length,
               expanded: false
             });
@@ -166,9 +165,23 @@ export default {
             // If a line does not look like a log entry, append it to the last
             // log entry (i.e. allow multi-line messages)
             let entry = logs[logs.length - 1];
-            entry.message += "\n" + line;
-            if (entry.message.startsWith("Traceback")) {
-              entry.summary = line; // For tracebacks, the last line is the best summary
+            m = line.match(/^( *)(\^+)/);  // detect python stack trace "underlines"
+            if (m) {
+              let linestart = entry.message.lastIndexOf('\n') + 1;
+              let ustart = linestart + m[1].length;
+              let uend = ustart + m[2].length;
+              entry.message = (
+                entry.message.substring(0, ustart)
+                + "<u>"
+                + entry.message.substring(ustart, uend)
+                + "</u>"
+                + entry.message.substring(uend)
+              );
+            } else {
+              entry.message += "\n" + this.escapeText(line);
+              if (entry.message.startsWith("Traceback")) {
+                entry.summary = line; // For tracebacks, the last line is the best summary
+              }
             }
           } else {
             // if there's no existing log message to append to, discard lines
@@ -186,6 +199,11 @@ export default {
       isoDateTimeString = isoDateTimeString.replace(",", ".");
       let date = new Date(isoDateTimeString);
       return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    },
+    escapeText: function(unsafeText) {
+      let div = document.createElement('div');
+      div.innerText = unsafeText;
+      return div.innerHTML;
     }
   }
 };
