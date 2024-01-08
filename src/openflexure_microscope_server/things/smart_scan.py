@@ -330,7 +330,6 @@ class SmartScanThing(Thing):
         csm: CSMDep,
         background_detect: BackgroundDep,
         recentre: RecentreStage,
-        overlap: float = 0.4,
     ):
         """Move the stage to cover an area, taking images that can be tiled together.
 
@@ -354,6 +353,8 @@ class SmartScanThing(Thing):
         names = []
         positions = []
 
+        max_dist = self.max_range
+
         # Record the starting position so we can move back there afterwards
         starting_position = stage.position
 
@@ -375,12 +376,12 @@ class SmartScanThing(Thing):
         # TODO: this downsampling by two is to deal with a camera issue
         img_width = int(arr.shape[1] / 2)
 
+        overlap = self.overlap
+
         dx = int(np.dot(np.array([0, arr.shape[1] * (1 - overlap)]), CSM)[0])
         dy = int(np.dot(np.array([arr.shape[0] * (1 - overlap), 0]), CSM)[1])
 
         logger.info(f"Based on an overlap of {overlap}, we will make steps of {dx}, {dy}")
-
-        dz = 3000  # This is used for autofocus - make configurable?
 
         # construct a 2D scan path
         path = [[stage.position["x"], stage.position["y"]]]
@@ -446,7 +447,7 @@ class SmartScanThing(Thing):
 
                     attempts = 0
                     while True:
-                        recentre.looping_autofocus(dz=3000)
+                        recentre.looping_autofocus(dz=self.autofocus_dz)
                         current_height = stage.position["z"]
 
                         # if there have been successful autofocuses in this scan, find the closest one in x-y
@@ -508,6 +509,16 @@ class SmartScanThing(Thing):
                 if len(names) > 1:
                     generate_config(images_folder, positions, names, CSM, csm_calibration_width, img_width, logger)
 
+                temp_path = []
+
+                for i in path:
+                    if distance_to_site(i, true_path[0][:2]) < max_dist:
+                        temp_path.append(i)
+                    else:
+                        logger.info(f'Rejected moving to {i} as it is out of range')
+
+                path = temp_path.copy()
+
                 path = sorted(path, key=lambda x: (steps_from_centre(x, true_path[0][:2], dx, dy), distance_to_site(loc[:2], x)))
 
                 if len(true_path) > 750:
@@ -526,6 +537,33 @@ class SmartScanThing(Thing):
             logger.info("Returning to starting position.")
             stage.move_absolute(**starting_position, block_cancellation=True)
     
+    @thing_property
+    def max_range(self) -> int:
+        """The maximum distance from the centre of the scan before we break"""
+        return self.thing_settings.get("max_range", 400000)
+
+    @max_range.setter
+    def max_range(self, value: int) -> None:
+        self.thing_settings["max_range"] = value
+
+    @thing_property
+    def autofocus_dz(self) -> int:
+        """The z distance to perform an autofocus"""
+        return self.thing_settings.get("autofocus_dz", 3000)
+
+    @autofocus_dz.setter
+    def autofocus_dz(self, value: int) -> None:
+        self.thing_settings["autofocus_dz"] = value
+
+    @thing_property
+    def overlap(self) -> float:
+        """The z distance to perform an autofocus"""
+        return self.thing_settings.get("overlap", 0.4)
+
+    @overlap.setter
+    def overlap(self, value: float) -> None:
+        self.thing_settings["overlap"] = value
+
     @thing_property
     def scans(self) -> list[ScanInfo]:
         """All the available scans

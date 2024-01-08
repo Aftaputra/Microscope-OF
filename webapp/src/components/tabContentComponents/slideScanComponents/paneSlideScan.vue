@@ -4,22 +4,54 @@
       No scan back-end found.
     </div>
     <div v-show="backendOK">
-      <taskSubmitter
-        :submit-url="smartScanUri"
-        submit-label="Start tiled scan"
-        :can-terminate="true"
-        :modal-progress="true"
-      />
+      <ul uk-accordion="multiple: true">
+        <li>
+          <a class="uk-accordion-title" href="#">Configure</a>
+            <div class="uk-accordion-content">
+                <div class="uk-margin">
+                  <propertyControl
+                    thing-name="smart_scan"
+                    property-name="max_range"
+                    label="Maximum Distance (steps)"
+                  />
+                  <div class="uk-margin">
+                    <propertyControl
+                      thing-name="smart_scan"
+                      property-name="autofocus_dz"
+                      label="Autofocus range (steps)"
+                    />
+                </div>
+                  <div class="uk-margin">
+                      <propertyControl
+                        thing-name="smart_scan"
+                        property-name="overlap"
+                        label="Image overlap (0-1)"
+                      />
+                  </div>
+              </div>
+            </div>
+          </li>
+        </ul>
+      <div class="uk-margin">
+        <taskSubmitter
+          :submit-url="smartScanUri"
+          submit-label="Start tiled scan"
+          :can-terminate="true"
+          :modal-progress="true"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import taskSubmitter from "../../genericComponents/taskSubmitter";
+import propertyControl from "../../labThingsComponents/propertyControl.vue";
 
 export default {
   components: {
-    taskSubmitter
+    taskSubmitter,
+    propertyControl
   },
 
   computed: {
