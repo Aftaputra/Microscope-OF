@@ -26,7 +26,7 @@ from labthings_picamera2.thing import StreamingPiCamera2
 from labthings_sangaboard import SangaboardThing
 
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
-from labthings_fastapi.dependencies.invocation import InvocationLogger
+from labthings_fastapi.dependencies.invocation import InvocationCancelledError, InvocationLogger
 from labthings_fastapi.types.numpy import NDArray, denumpify, DenumpifyingDict
 from labthings_fastapi.decorators import thing_action, thing_property
 from labthings_fastapi.thing import Thing
@@ -158,6 +158,7 @@ class CameraStageMapper(Thing):
     def calibrate_1d(
         self, 
         hw: HardwareInterfaceDep,
+        stage: Stage,
         logger: InvocationLogger,
         direction: Tuple[float, float, float],
     ) -> DenumpifyingDict:
@@ -166,23 +167,29 @@ class CameraStageMapper(Thing):
         tracker = Tracker(hw.grab_image, hw.get_position, settle=hw.settle)
         direction_array: np.ndarray = np.array(direction)
 
-        result: dict = calibrate_backlash_1d(tracker, move, direction_array, logger=logger)
+        starting_position = stage.position
+        try:
+            result: dict = calibrate_backlash_1d(tracker, move, direction_array, logger=logger)
+        except InvocationCancelledError as e:
+            logger.info("Returning to starting position")
+            stage.move_absolute(**starting_position, block_cancellation=True)
+            raise e
         result["move_history"] = move.history
         result["image_resolution"] = hw.grab_image().shape[:2]
         return result
 
     @thing_action
     def calibrate_xy(
-        self, hw: HardwareInterfaceDep, logger: InvocationLogger
+        self, hw: HardwareInterfaceDep, stage: Stage, logger: InvocationLogger
     ) -> DenumpifyingDict:
         """Move the microscope's stage in X and Y, to calibrate its relationship to the camera
         
         This performs two 1d calibrations in x and y, then combines their results.
         """
         logger.info("Calibrating X axis:")
-        cal_x: dict = self.calibrate_1d(hw, logger, (1, 0, 0))
+        cal_x: dict = self.calibrate_1d(hw, stage, logger, (1, 0, 0))
         logger.info("Calibrating Y axis:")
-        cal_y: dict = self.calibrate_1d(hw, logger, (0, 1, 0))
+        cal_y: dict = self.calibrate_1d(hw, stage, logger, (0, 1, 0))
         logger.info("Calibration complete, updating metadata.")
 
         # Combine X and Y calibrations to make a 2D calibration
