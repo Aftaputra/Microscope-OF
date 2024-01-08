@@ -509,11 +509,10 @@ class SmartScanThing(Thing):
                 if len(true_path) > 750:
                     break
         except InvocationCancelledError:
-            logger.error("Stopping scan because it was cancelled.", exc_info=0)
+            logger.error("Stopping scan because it was cancelled.")
         except IOError as e:
-            logger.error(
+            logger.exception(
                 f"Stopping scan because of an IOError (most likely a full disk): {e}",
-                exc_info=1,
             )
         finally:
             logger.info("Creating zip archive of images (may take some time)...")
