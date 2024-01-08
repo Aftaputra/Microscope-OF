@@ -343,6 +343,14 @@ class SmartScanThing(Thing):
         * `overlap` is the fraction by which images should overlap, i.e. 
           `0.3` means we will move by 70% of the field of view each time.
         """
+
+        # Before anything else, check that we've got a background set
+        # It's annoying to have to wait to find out!
+
+        d = background_detect.background_distributions
+        if not d:
+            raise RuntimeError("Background is not set: you need to calibrate background detection.")
+
         names = []
         positions = []
 
