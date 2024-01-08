@@ -60,8 +60,13 @@
           >
             More info...
           </a>
-          <div v-if="item.expanded" v-html="item.message" class="logging-message">
-          </div>
+          <!-- eslint-disable vue/no-v-html -->
+          <div
+            v-if="item.expanded"
+            class="logging-message"
+            v-html="item.message"
+          ></div>
+          <!-- eslint-enable -->
         </div>
       </div>
 
@@ -165,18 +170,17 @@ export default {
             // If a line does not look like a log entry, append it to the last
             // log entry (i.e. allow multi-line messages)
             let entry = logs[logs.length - 1];
-            m = line.match(/^( *)(\^+)/);  // detect python stack trace "underlines"
+            m = line.match(/^( *)(\^+)/); // detect python stack trace "underlines"
             if (m) {
-              let linestart = entry.message.lastIndexOf('\n') + 1;
+              let linestart = entry.message.lastIndexOf("\n") + 1;
               let ustart = linestart + m[1].length;
               let uend = ustart + m[2].length;
-              entry.message = (
-                entry.message.substring(0, ustart)
-                + "<u>"
-                + entry.message.substring(ustart, uend)
-                + "</u>"
-                + entry.message.substring(uend)
-              );
+              entry.message =
+                entry.message.substring(0, ustart) +
+                "<u>" +
+                entry.message.substring(ustart, uend) +
+                "</u>" +
+                entry.message.substring(uend);
             } else {
               entry.message += "\n" + this.escapeText(line);
               if (entry.message.startsWith("Traceback")) {
@@ -201,7 +205,7 @@ export default {
       return date.toLocaleDateString() + " " + date.toLocaleTimeString();
     },
     escapeText: function(unsafeText) {
-      let div = document.createElement('div');
+      let div = document.createElement("div");
       div.innerText = unsafeText;
       return div.innerHTML;
     }
