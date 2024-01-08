@@ -6,9 +6,24 @@
     <div v-if="taskStarted" ref="isPollingElement">
       <div class="progress uk-margin-small">
         <div
-          v-if="progress"
+          v-if="progress & (taskStatus == 'running')"
           class="determinate"
           :style="barWidthFromProgress"
+        ></div>
+        <div
+          v-else-if="taskStatus == 'cancelled'"
+          class="determinate"
+          :style="barWidthFromProgress"
+        ></div>
+        <div
+          v-else-if="taskStatus == 'completed'"
+          class="determinate"
+          style="width:100%"
+        ></div>
+        <div
+          v-else-if="taskStatus == 'error'"
+          class="determinate"
+          style="width:0%"
         ></div>
         <div v-else class="indeterminate"></div>
       </div>
@@ -48,19 +63,25 @@
             {{ item.message }}
           </div>
           <div v-if="taskStatus == 'error'" class="uk-alert-danger">
-            The task failed due to an error - use the button below to close this
-            dialog.
+            The task failed due to an error. There may be more information in
+            the log.
+          </div>
+          <div v-if="taskStatus == 'cancelled'" class="uk-alert-primary">
+            The task was cancelled.
+          </div>
+          <div v-if="taskStatus == 'completed'" class="uk-alert-primary">
+            The task completed successfully.
           </div>
         </div>
         <div id="progress-and-cancel-row">
           <div class="stretchy">
             <div class="progress uk-margin-small">
+              <div v-if="indeterminateProgressBar" class="indeterminate"></div>
               <div
-                v-if="progress"
+                v-else
                 class="determinate"
                 :style="barWidthFromProgress"
               ></div>
-              <div v-else class="indeterminate"></div>
             </div>
           </div>
 
@@ -162,6 +183,13 @@ export default {
       var progress = this.progress <= 100 ? this.progress : 100;
       var styleString = `width: ${progress}%`;
       return styleString;
+    },
+    indeterminateProgressBar: function() {
+      if (this.taskStatus == "pending") return true;
+      if ((this.taskStatus == "running") & !this.progress) {
+        return true;
+      }
+      return false;
     }
   },
 
@@ -265,10 +293,6 @@ export default {
         // Update the form data if we're self-updating
         if (this.selfUpdate) {
           this.getFormData();
-        }
-        if (this.taskStatus != "error") {
-          // Leave the modal up if there was an error.
-          UIkit.modal(this.$refs.statusModal).hide();
         }
       }
     },
