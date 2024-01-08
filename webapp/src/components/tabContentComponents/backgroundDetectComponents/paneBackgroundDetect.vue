@@ -24,7 +24,7 @@
         <propertyControl
           thing-name="background_detect"
           property-name="fraction"
-          label="Sample coverage required"
+          label="Sample coverage required (%)"
         />
       </div>
       <div class="uk-margin">
@@ -34,6 +34,7 @@
           :can-terminate="false"
           :poll-interval="0.1"
           @response="alertBackgroundFraction"
+          @error="backgroundDetectError"
         />
       </div>
       <div class="uk-margin">
@@ -43,6 +44,7 @@
           :can-terminate="false"
           :poll-interval="0.1"
           @response="alertImageLabel"
+          @error="backgroundDetectError"
         />
       </div>
     </div>
@@ -88,6 +90,12 @@ export default {
     alertImageLabel(r) {
       let label = r.output === true ? "sample" : "background";
       this.modalNotify(`Current image is ${label}`);
+    },
+    backgroundDetectError() {
+      this.modalError(
+        "Background detection failed, most likely you need to set a background image." +
+          " There may be more information in the log."
+      );
     }
   }
 };
