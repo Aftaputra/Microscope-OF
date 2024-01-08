@@ -86,7 +86,7 @@ export default {
       this.modalNotify(`Background image has been updated`);
     },
     alertImageLabel(r) {
-      let label = r.output===true? 'sample' : 'background'
+      let label = r.output === true ? "sample" : "background";
       this.modalNotify(`Current image is ${label}`);
     }
   }

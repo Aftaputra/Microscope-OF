@@ -141,12 +141,22 @@ export default {
       for (let line of lines) {
         if (line.length > 0) {
           let m = line.match(regexp);
-          this.logs.push({
-            timestamp: m[1],
-            level: m[2],
-            message: m[3],
-            sequence: this.logs.length
-          });
+          if (m) {
+            this.logs.push({
+              timestamp: m[1],
+              level: m[2],
+              message: m[3],
+              sequence: this.logs.length
+            });
+          } else if (this.logs) {
+            // If a line does not look like a log entry, append it to the last
+            // log entry (i.e. allow multi-line messages)
+            this.logs[this.logs.length - 1].message += "\n" + line;
+          } else {
+            // if there's no existing log message to append to, discard lines
+            // until we find one.
+            continue;
+          }
         }
       }
     },
