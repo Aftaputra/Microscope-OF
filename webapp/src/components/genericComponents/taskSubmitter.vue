@@ -168,7 +168,6 @@ export default {
 
   data: function() {
     return {
-      taskId: null,
       taskUrl: null,
       progress: null,
       taskStarted: false,
@@ -233,7 +232,7 @@ export default {
         for (const task of response.data) {
           if (task.status == "pending" || task.status == "running") {
             this.taskStarted = true;
-            this.$emit("taskStarted", this.taskId);
+            this.$emit("taskStarted");
             this.startPolling(
               task.id,
               task.links.find(t => t.rel == self).href
@@ -264,7 +263,7 @@ export default {
       // Send a request to start a task
 
       this.taskStarted = true;
-      this.$emit("taskStarted", this.taskId);
+      this.$emit("taskStarted");
       try {
         let response = await axios.post(this.submitUrl, this.submitData);
         if (this.modalProgress) {
@@ -289,7 +288,6 @@ export default {
         // Reset taskRunning and taskId
         this.taskRunning = false;
         this.taskStarted = false;
-        this.taskId = null;
         // Update the form data if we're self-updating
         if (this.selfUpdate) {
           this.getFormData();
@@ -300,12 +298,11 @@ export default {
     startPolling: function(taskId, taskUrl) {
       if (this.taskRunning != true) {
         // Starts polling an existing Action task
-        this.taskId = taskId;
         this.taskUrl = taskUrl;
         // Start the store polling TaskId for success
         this.taskRunning = true;
-        this.$emit("taskRunning", this.taskId);
-        return this.pollTask(this.taskId, this.pollInterval);
+        this.$emit("taskRunning", taskId);
+        return this.pollTask(taskId, this.pollInterval);
       }
     },
 
