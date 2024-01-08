@@ -394,6 +394,8 @@ class SmartScanThing(Thing):
         scan_path = self.new_scan_folder()
         images_folder = os.path.join(scan_path, "images")
         os.mkdir(images_folder)
+        raw_images_folder = os.path.join(scan_path, "raw_images")
+        os.mkdir(raw_images_folder)
         logger.info(f"Saving images to {images_folder}")
 
         try:
@@ -481,12 +483,14 @@ class SmartScanThing(Thing):
                         stage.move_absolute(z=int(focused_path[z_index][2]))
                         attempts += 1
 
+                    name = f"image_{loc[0]}_{loc[1]}.jpg"
                     # img = Image.open(cam.capture_jpeg(resolution="full").open())
-                    img = Image.open(cam.capture_jpeg().open())
+                    jpegblob = cam.capture_jpeg(resolution="full")
+                    jpegblob.save(os.path.join(raw_images_folder, name))
+                    img = Image.open(jpegblob.open())
                     exif = img.info['exif']
                     width, height = img.size 
                     img = img.resize((int(width*0.5), int(height*0.5)))
-                    name = f"image_{loc[0]}_{loc[1]}.jpg"
 
                     logger.info(f"Saving {name} at {stage.position}")
                     img.save(
@@ -520,7 +524,7 @@ class SmartScanThing(Thing):
                 os.path.join(scan_path, "images"), "zip", images_folder
             )
             logger.info("Returning to starting position.")
-            stage.move_absolute(**starting_position)
+            stage.move_absolute(**starting_position, block_cancellation=True)
     
     @thing_property
     def scans(self) -> list[ScanInfo]:
