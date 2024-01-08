@@ -108,6 +108,9 @@ def distance_to_site(current, next):
         (next[1] - current[1]) ** 2 + (next[0] - current[0]) ** 2, dtype="float64"
     )
 
+def steps_from_centre(current_loc, starting_loc, dx, dy):
+    step_size = np.array([dx,dy])
+    return np.max(np.divide(np.abs(np.subtract(current_loc, starting_loc)), step_size))
 
 # def set_template(microscope, pos):
 #     microscope.move(pos)
@@ -364,8 +367,9 @@ class SmartScanThing(Thing):
         # TODO: this downsampling by two is to deal with a camera issue
         img_width = int(arr.shape[1] / 2)
 
-        dx = int(np.dot(np.array([0, arr.shape[0] * (1 - overlap)]), CSM)[0])
-        dy = int(np.dot(np.array([arr.shape[1] * (1 - overlap), 0]), CSM)[1])
+        dx = int(np.dot(np.array([0, arr.shape[1] * (1 - overlap)]), CSM)[0])
+        dy = int(np.dot(np.array([arr.shape[0] * (1 - overlap), 0]), CSM)[1])
+
         logger.info(f"Based on an overlap of {overlap}, we will make steps of {dx}, {dy}")
 
         dz = 3000  # This is used for autofocus - make configurable?
@@ -379,7 +383,6 @@ class SmartScanThing(Thing):
         ids = []
         start_time = time.strftime("%H_%M_%S-%d_%m_%Y")
 
-        
         scan_path = self.new_scan_folder()
         images_folder = os.path.join(scan_path, "images")
         os.mkdir(images_folder)
@@ -391,9 +394,10 @@ class SmartScanThing(Thing):
             recentre.looping_autofocus()
             # move to each x-y position. in z, move to the height of the closest x-y position that successfully focused
             while len(path) > 0:
+
                 loc = [path[0][0], path[0][1], stage.position["z"]]
 
-                path.remove(loc[:2])
+                path.remove(path[0])
 
                 # TODO: combine this with the move below for speed (I think this could just be "else")
                 stage.move_absolute(x=int(loc[0]), y=int(loc[1]), z=int(loc[2]))
@@ -492,7 +496,7 @@ class SmartScanThing(Thing):
                 if len(names) > 1:
                     generate_config(images_folder, positions, names, CSM, csm_calibration_width, img_width, logger)
 
-                path = sorted(path, key=lambda x: distance_to_site(loc[:2], x))
+                path = sorted(path, key=lambda x: (steps_from_centre(x, true_path[0][:2], dx, dy), distance_to_site(loc[:2], x)))
 
                 if len(true_path) > 750:
                     break
