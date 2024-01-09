@@ -330,6 +330,7 @@ class SmartScanThing(Thing):
         csm: CSMDep,
         background_detect: BackgroundDep,
         recentre: RecentreStage,
+        sample_check
     ):
         """Move the stage to cover an area, taking images that can be tiled together.
 
@@ -345,15 +346,22 @@ class SmartScanThing(Thing):
 
         # Before anything else, check that we've got a background set
         # It's annoying to have to wait to find out!
+        max_dist = self.max_range
 
-        d = background_detect.background_distributions
-        if not d:
-            raise RuntimeError("Background is not set: you need to calibrate background detection.")
-
+        if sample_check:
+            d = background_detect.background_distributions
+            if not d:
+                raise RuntimeError("Background is not set: you need to calibrate background detection.")
+        else:
+            logger.warning(
+                "This scan will run in a spiral from the starting point "
+                f"until you cancel it, or until it has moved by {max_dist} steps "
+                "in every direction. Make sure you watch it run to stop it leaving "
+                "the area of interest, or (worse) leading the microscope's range "
+                "of motion."
+                )
         names = []
         positions = []
-
-        max_dist = self.max_range
 
         # Record the starting position so we can move back there afterwards
         starting_position = stage.position
@@ -422,11 +430,13 @@ class SmartScanThing(Thing):
                     )
 
                 # Check if the image is background
-                image_is_sample = background_detect.image_is_sample()
+                if sample_check:
+                    image_is_sample = background_detect.image_is_sample()
+                else:
+                    image_is_sample = True
 
                 # if more than 92% of the image is background, treat it as background and continue
                 if not image_is_sample:
-                    category = "background"
                     logger.info(f"Skipping {stage.position} as it is {round(background_detect.background_fraction(),0)}% background.")
                 else:
                     # if not, it's sample. run an autofocus and use the updated height
@@ -442,8 +452,6 @@ class SmartScanThing(Thing):
                             and pos not in path
                         ):
                             path.append(pos)
-
-                    category = "sample"
 
                     attempts = 0
                     while True:
