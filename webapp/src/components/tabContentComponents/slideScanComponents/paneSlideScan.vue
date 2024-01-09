@@ -32,14 +32,23 @@
             </div>
           </li>
         </ul>
-      <div class="uk-margin">
-        <taskSubmitter
+        <div class="uk-margin">
+          <taskSubmitter
           :submit-url="smartScanUri"
-          submit-label="Start tiled scan"
+          submit-label="Start smart scan"
           :can-terminate="true"
           :modal-progress="true"
-        />
-      </div>
+          />
+        </div>
+
+        <div class="uk-margin">
+          <taskSubmitter
+          :submit-url="standardScanUri"
+          submit-label="Start manual scan"
+          :can-terminate="true"
+          :modal-progress="true"
+          />
+        </div>
     </div>
   </div>
 </template>
@@ -60,6 +69,9 @@ export default {
     },
     smartScanUri() {
       return this.thingActionUrl("smart_scan", "sample_scan");
+    },
+    standardScanUri() {
+      return this.thingActionUrl("smart_scan", "standard_scan");
     }
   },
 

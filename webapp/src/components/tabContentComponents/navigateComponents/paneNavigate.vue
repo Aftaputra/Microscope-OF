@@ -155,7 +155,7 @@
         <li v-show="captureUri" class="uk-open">
           <a class="uk-accordion-title" href="#">Image Capture</a>
           <div class="uk-accordion-content">
-            <div class="uk-grid-small uk-child-width-expand" uk-grid>
+            <div class="uk-margin">
               <taskSubmitter
                 v-if="captureUri"
                 :submit-url="captureUri"
@@ -167,7 +167,7 @@
               ></taskSubmitter>
             </div>
 
-            <div class="uk-grid-small uk-child-width-expand" uk-grid>
+            <div class="uk-margin">
               <taskSubmitter
                 v-if="captureUri"
                 :submit-url="captureUri"
