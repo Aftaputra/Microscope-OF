@@ -4,30 +4,7 @@
     class="uk-margin-remove uk-padding-remove"
   >
     <div v-if="taskStarted" ref="isPollingElement">
-      <div class="progress uk-margin-small">
-        <div
-          v-if="progress & (taskStatus == 'running')"
-          class="determinate"
-          :style="barWidthFromProgress"
-        ></div>
-        <div
-          v-else-if="taskStatus == 'cancelled'"
-          class="determinate"
-          :style="barWidthFromProgress"
-        ></div>
-        <div
-          v-else-if="taskStatus == 'completed'"
-          class="determinate"
-          style="width:100%"
-        ></div>
-        <div
-          v-else-if="taskStatus == 'error'"
-          class="determinate"
-          style="width:0%"
-        ></div>
-        <div v-else class="indeterminate"></div>
-      </div>
-
+      <action-progress-bar :progress="progress" :task-status="taskStatus" />
       <button
         v-if="canTerminate && taskRunning"
         type="button"
@@ -56,33 +33,18 @@
       class=""
       uk-modal="bg-close: false; esc-close: false; stack: true;"
     >
-      <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+      <div
+        id="status-modal"
+        class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical"
+      >
         <h2>{{ submitLabel }}</h2>
-        <div id="log-container" ref="logContainer">
-          <div v-for="(item, index) in log" :key="`log_entry_${index}`">
-            {{ item.message }}
-          </div>
-          <div v-if="taskStatus == 'error'" class="uk-alert-danger">
-            The task failed due to an error. There may be more information in
-            the log.
-          </div>
-          <div v-if="taskStatus == 'cancelled'" class="uk-alert-warning">
-            The task was cancelled.
-          </div>
-          <div v-if="taskStatus == 'completed'" class="uk-alert-success">
-            The task completed successfully.
-          </div>
-        </div>
+        <action-log-display :log="log" :task-status="taskStatus" />
         <div id="progress-and-cancel-row">
           <div class="stretchy">
-            <div class="progress uk-margin-small">
-              <div v-if="indeterminateProgressBar" class="indeterminate"></div>
-              <div
-                v-else
-                class="determinate"
-                :style="barWidthFromProgress"
-              ></div>
-            </div>
+            <action-progress-bar
+              :progress="progress"
+              :task-status="taskStatus"
+            />
           </div>
 
           <button
@@ -110,9 +72,12 @@
 <script>
 import axios from "axios";
 import UIkit from "uikit";
+import actionProgressBar from "./actionProgressBar.vue";
+import ActionLogDisplay from "./actionLogDisplay.vue";
 
 export default {
   name: "TaskSubmitter",
+  components: { actionProgressBar, ActionLogDisplay },
 
   props: {
     submitUrl: {
@@ -177,27 +142,21 @@ export default {
     };
   },
 
-  computed: {
-    barWidthFromProgress: function() {
-      var progress = this.progress <= 100 ? this.progress : 100;
-      var styleString = `width: ${progress}%`;
-      return styleString;
-    },
-    indeterminateProgressBar: function() {
-      if (this.taskStatus == "pending") return true;
-      if ((this.taskStatus == "running") & !this.progress) {
-        return true;
-      }
-      return false;
-    }
-  },
-
   watch: {
-    log: function() {
-      this.$nextTick(function() {
-        let viewer = this.$refs.logContainer;
-        viewer.scrollTop = viewer.scrollHeight;
-      });
+    progress(newval) {
+      this.$emit("update:progress", newval);
+    },
+    taskStarted(newval) {
+      this.$emit("update:taskStarted", newval);
+    },
+    taskRunning(newval) {
+      this.$emit("update:taskRunning", newval);
+    },
+    log(newval) {
+      this.$emit("update:log", newval);
+    },
+    taskStatus(newval) {
+      this.$emit("update:taskStatus", newval);
     }
   },
 
@@ -235,7 +194,7 @@ export default {
             this.$emit("taskStarted");
             this.startPolling(
               task.id,
-              task.links.find(t => t.rel == self).href
+              task.links.find(t => t.rel == "self").href
             );
           }
         }
@@ -352,6 +311,7 @@ export default {
     },
 
     terminateTask: function() {
+      console.log(`deleting task at ${this.taskUrl}`);
       axios.delete(this.taskUrl);
     }
   }
@@ -360,13 +320,6 @@ export default {
 
 <style lang="less" scoped>
 @import "../../assets/less/theme.less";
-
-#log-container {
-  position: relative;
-  height: 6em;
-  overflow-y: auto;
-  overflow-x: auto;
-}
 
 #progress-and-cancel-row {
   display: flex;
@@ -387,121 +340,8 @@ export default {
   margin-left: 5px;
   margin-right: 5px;
 }
-.progress {
-  position: relative;
-  height: 5px;
-  display: block;
-  width: 100%;
-  background-color: rgba(180, 180, 180, 0.15);
-  border-radius: 2px;
-  background-clip: padding-box;
-  margin: 0.5rem 0 1rem 0;
-  overflow: hidden;
-}
 
-.progress .determinate {
-  position: absolute;
-  background-color: inherit;
-  top: 0;
-  bottom: 0;
-  transition: width 0.3s linear;
-}
-
-.progress .indeterminate,
-.progress .determinate {
-  background-color: @global-primary-background;
-}
-
-.hook-inverse() {
-  .progress .indeterminate,
-  .progress .determinate {
-    background-color: @inverse-primary-muted-color;
-  }
-}
-
-.progress .indeterminate:before {
-  content: "";
-  position: absolute;
-  background-color: inherit;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  will-change: left, right;
-  -webkit-animation: indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395)
-    infinite;
-  animation: indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
-}
-
-.progress .indeterminate:after {
-  content: "";
-  position: absolute;
-  background-color: inherit;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  will-change: left, right;
-  -webkit-animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1)
-    infinite;
-  animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1)
-    infinite;
-  -webkit-animation-delay: 1.15s;
-  animation-delay: 1.15s;
-}
-
-@-webkit-keyframes indeterminate {
-  0% {
-    left: -35%;
-    right: 100%;
-  }
-  60% {
-    left: 100%;
-    right: -90%;
-  }
-  100% {
-    left: 100%;
-    right: -90%;
-  }
-}
-@keyframes indeterminate {
-  0% {
-    left: -35%;
-    right: 100%;
-  }
-  60% {
-    left: 100%;
-    right: -90%;
-  }
-  100% {
-    left: 100%;
-    right: -90%;
-  }
-}
-@-webkit-keyframes indeterminate-short {
-  0% {
-    left: -200%;
-    right: 100%;
-  }
-  60% {
-    left: 107%;
-    right: -8%;
-  }
-  100% {
-    left: 107%;
-    right: -8%;
-  }
-}
-@keyframes indeterminate-short {
-  0% {
-    left: -200%;
-    right: 100%;
-  }
-  60% {
-    left: 107%;
-    right: -8%;
-  }
-  100% {
-    left: 107%;
-    right: -8%;
-  }
+#status-modal .log-container {
+  height: 10em;
 }
 </style>
