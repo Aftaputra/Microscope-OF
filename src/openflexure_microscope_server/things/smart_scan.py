@@ -110,7 +110,7 @@ def distance_to_site(current, next):
 
 def steps_from_centre(current_loc, starting_loc, dx, dy):
     step_size = np.array([dx,dy])
-    return np.max(np.divide(np.abs(np.subtract(current_loc, starting_loc)), step_size))
+    return np.max(np.abs(np.divide(np.subtract(current_loc, starting_loc), step_size)))
 
 # def set_template(microscope, pos):
 #     microscope.move(pos)
@@ -368,7 +368,7 @@ class SmartScanThing(Thing):
 
         r = cam.grab_jpeg()
         arr = np.array(Image.open(r.open()))
-        if list(arr.shape[:2]) != csm.image_resolution:
+        if list(arr.shape[:2]) != [int(i) for i in csm.image_resolution]:
             logger.error(
                 f"Images are, by default, {arr.shape[:2]}, but the CSM was "
                 f"calibrated at {csm.image_resolution}."
@@ -386,8 +386,8 @@ class SmartScanThing(Thing):
 
         overlap = self.overlap
 
-        dx = int(np.dot(np.array([0, arr.shape[1] * (1 - overlap)]), CSM)[0])
-        dy = int(np.dot(np.array([arr.shape[0] * (1 - overlap), 0]), CSM)[1])
+        dx = int(np.abs(np.dot(np.array([0, arr.shape[1] * (1 - overlap)]), CSM)[0]))
+        dy = int(np.abs(np.dot(np.array([arr.shape[0] * (1 - overlap), 0]), CSM)[1]))
 
         logger.info(f"Based on an overlap of {overlap}, we will make steps of {dx}, {dy}")
 
