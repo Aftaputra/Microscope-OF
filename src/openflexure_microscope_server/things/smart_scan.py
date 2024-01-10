@@ -428,6 +428,7 @@ class SmartScanThing(Thing):
             recentre.looping_autofocus()
             # move to each x-y position. in z, move to the height of the closest x-y position that successfully focused
             while len(path) > 0:
+                ensure_free_disk_space(scan_path)
 
                 loc = [path[0][0], path[0][1], stage.position["z"]]
 
