@@ -11,6 +11,7 @@ from .things.system_control import SystemControlThing
 from .things.settings_manager import SettingsManager
 from .things.auto_recentre_stage import RecentringThing
 from .things.smart_scan import SmartScanThing, BackgroundDetectThing
+from .things.stitching import Stitcher
 from .things.test import APITestThing
 from .serve_static_files import add_static_files
 from .logging import configure_logging, retrieve_log
@@ -26,6 +27,7 @@ thing_server.add_thing(CameraStageMapper(), "/camera_stage_mapping/")
 thing_server.add_thing(SystemControlThing(), "/system_control/")
 thing_server.add_thing(SettingsManager(), "/settings/")
 thing_server.add_thing(SmartScanThing(), "/smart_scan/")
+thing_server.add_thing(Stitcher("application/openflexure-stitching/.venv/bin/openflexure-stitch"), "/stitching/")
 thing_server.add_thing(BackgroundDetectThing(), "/background_detect/")
 thing_server.add_thing(APITestThing(), "/api_test/")
 try:

@@ -301,21 +301,30 @@ DOWNLOADABLE_SCAN_FILES = (
 
 class SmartScanThing(Thing):
     @property
-    def scan_folder_path(self) -> str:
+    def scans_folder_path(self) -> str:
         """This folder will hold all the scans we do."""
         # TODO: This should be determined using sensible configuration.
         # If the working directory is `/var/openflexure` this will result
         # in scans being saved at `/var/openflexure/scans/`
         return "scans"
+
+    def scan_folder_path(self, scan_name: Optional[str]=None):
+        """The path to the scan folder with a given name"""
+        if not scan_name:
+            if not self.latest_scan_name:
+                raise IOError("There is no latest scan to return")
+            scan_name = self.latest_scan_name
+        return os.path.join(self.scans_folder_path, scan_name)
     
     def new_scan_folder(self) -> str:
         """Create a new empty folder, into which we can save scan images"""
-        if not os.path.exists(self.scan_folder_path):
-            os.makedirs(self.scan_folder_path)
+        if not os.path.exists(self.scans_folder_path):
+            os.makedirs(self.scans_folder_path)
         for j in range(999999):
-            folder_path = os.path.join(self.scan_folder_path, f"scan_{j:06}")
+            folder_path = os.path.join(self.scans_folder_path, f"scan_{j:06}")
             if not os.path.exists(folder_path):
                 os.makedirs(folder_path)
+                self.latest_scan_name = os.path.basename(folder_path)
                 return folder_path
         raise FileExistsError("Could not create a new scan folder: all names in use!")
     
@@ -583,8 +592,8 @@ class SmartScanThing(Thing):
         in the `images` folder.
         """
         scans: list[ScanInfo] = []
-        for f in os.listdir(self.scan_folder_path):
-            path = os.path.join(self.scan_folder_path, f)
+        for f in os.listdir(self.scans_folder_path):
+            path = os.path.join(self.scans_folder_path, f)
             if os.path.isdir(path):
                 images_folder = os.path.join(path, "images")
                 if os.path.isdir(images_folder):
@@ -624,7 +633,7 @@ class SmartScanThing(Thing):
             raise HTTPException(
                 403, f"You may only download files named {DOWNLOADABLE_SCAN_FILES}"
             )
-        path = os.path.join(self.scan_folder_path, scan_name, file)
+        path = os.path.join(self.scans_folder_path, scan_name, file)
         if not os.path.isfile(path):
             raise HTTPException(404, "File not found")
         return FileResponse(path)
@@ -642,7 +651,7 @@ class SmartScanThing(Thing):
         
         This endpoint allows scans to be deleted from disk.
         """
-        path = os.path.join(self.scan_folder_path, scan_name)
+        path = os.path.join(self.scans_folder_path, scan_name)
         if not os.path.isdir(path):
             print(f"can't find {path}")
             raise HTTPException(404, "Scan not found")
