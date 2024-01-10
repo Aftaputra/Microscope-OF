@@ -33,7 +33,7 @@
       class=""
       uk-modal="bg-close: false; esc-close: false; stack: true;"
     >
-      <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+      <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical" id="status-modal">
         <h2>{{ submitLabel }}</h2>
         <action-log-display :log="log" :task-status="taskStatus" />
         <div id="progress-and-cancel-row">
@@ -308,6 +308,7 @@ export default {
     },
 
     terminateTask: function() {
+      console.log(`deleting task at ${this.taskUrl}`);
       axios.delete(this.taskUrl);
     }
   }
@@ -335,5 +336,9 @@ export default {
   flex-grow: 0;
   margin-left: 5px;
   margin-right: 5px;
+}
+
+#status-modal .log-container {
+  height:10em;
 }
 </style>

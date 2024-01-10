@@ -1,5 +1,5 @@
 <template>
-  <div id="log-container" ref="logContainer">
+  <div class="log-container" ref="logContainer">
     <div v-if="log">
       <div v-for="(item, index) in log" :key="`log_entry_${index}`">
         {{ item.message }}
@@ -44,9 +44,8 @@ export default {
 </script>
 
 <style scoped>
-#log-container {
+.log-container {
   position: relative;
-  height: 6em;
   overflow-y: scroll;
   overflow-x: auto;
 }

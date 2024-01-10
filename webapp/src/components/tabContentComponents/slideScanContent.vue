@@ -39,12 +39,12 @@
             :submit-url="smartScanUri"
             submit-label="Start smart scan"
             :can-terminate="true"
-            :modal-progress="true"
-            :submit-data="{ sample_check: false }"
+            :submit-data="{ sample_check: true }"
             @update:taskRunning="scanning = $event"
             @update:taskStatus="taskStatus = $event"
             @update:progress="progress = $event"
             @update:log="log = $event"
+            ref="smartScanTaskSubmitter"
           />
         </div>
         <div class="uk-margin">
@@ -52,7 +52,6 @@
             :submit-url="smartScanUri"
             submit-label="Start manual scan"
             :can-terminate="true"
-            :modal-progress="true"
             :submit-data="{ sample_check: false }"
             @update:taskRunning="scanning = $event"
             @update:taskStatus="taskStatus = $event"
@@ -60,6 +59,22 @@
             @update:log="log = $event"
           />
         </div>
+      </div>
+      <div v-show="scanning">
+        <action-log-display
+          id="log-display"
+          :log="log"
+          :task-status="taskStatus"
+        />
+        <action-progress-bar :progress="progress" :task-status="taskStatus" />
+        <button
+          v-if="scanning"
+          type="button"
+          class="uk-button uk-button-danger uk-margin-remove uk-float-right uk-width-1-1"
+          @click="$refs.smartScanTaskSubmitter.terminateTask()"
+        >
+          Cancel
+        </button>
       </div>
     </div>
     <div class="view-component uk-width-expand">
@@ -72,6 +87,8 @@
 import streamDisplay from "./streamContent.vue";
 import taskSubmitter from "../genericComponents/taskSubmitter";
 import propertyControl from "../labThingsComponents/propertyControl.vue";
+import actionLogDisplay from "../genericComponents/actionLogDisplay.vue";
+import actionProgressBar from "../genericComponents/actionProgressBar.vue";
 
 export default {
   name: "SlideScanContent",
@@ -79,14 +96,16 @@ export default {
   components: {
     streamDisplay,
     taskSubmitter,
-    propertyControl
+    propertyControl,
+    actionLogDisplay,
+    actionProgressBar
   },
 
   data() {
     return {
       lastScanName: null,
       scanning: false,
-      taskStatus: null,
+      taskStatus: "pending",
       progress: null,
       log: []
     };
@@ -109,3 +128,12 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+#log-display {
+  height: 20em;
+}
+.control-component {
+  width: 33%;
+}
+</style>
