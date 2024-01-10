@@ -194,7 +194,7 @@ export default {
             this.$emit("taskStarted");
             this.startPolling(
               task.id,
-              task.links.find(t => t.rel == self).href
+              task.links.find(t => t.rel == "self").href
             );
           }
         }
