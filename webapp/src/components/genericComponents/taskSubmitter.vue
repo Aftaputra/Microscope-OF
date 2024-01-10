@@ -33,7 +33,10 @@
       class=""
       uk-modal="bg-close: false; esc-close: false; stack: true;"
     >
-      <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical" id="status-modal">
+      <div
+        id="status-modal"
+        class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical"
+      >
         <h2>{{ submitLabel }}</h2>
         <action-log-display :log="log" :task-status="taskStatus" />
         <div id="progress-and-cancel-row">
@@ -339,6 +342,6 @@ export default {
 }
 
 #status-modal .log-container {
-  height:10em;
+  height: 10em;
 }
 </style>

@@ -36,6 +36,7 @@
         </ul>
         <div class="uk-margin">
           <taskSubmitter
+            ref="smartScanTaskSubmitter"
             :submit-url="smartScanUri"
             submit-label="Start smart scan"
             :can-terminate="true"
@@ -44,7 +45,6 @@
             @update:taskStatus="taskStatus = $event"
             @update:progress="progress = $event"
             @update:log="log = $event"
-            ref="smartScanTaskSubmitter"
           />
         </div>
         <div class="uk-margin">
