@@ -1,27 +1,12 @@
-import shutil
-from typing import Mapping, Optional
-import cv2
-from fastapi import HTTPException
-from fastapi.responses import FileResponse
-import numpy as np
+from typing import Optional
 import os
-import time
-from PIL import Image
-from pydantic import BaseModel
-from scipy.stats import norm
-import logging
-from copy import deepcopy
-from datetime import datetime
 from subprocess import CompletedProcess, run, PIPE
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.raw_thing import raw_thing_dependency
-from labthings_fastapi.dependencies.invocation import CancelHook, InvocationLogger, InvocationCancelledError
+from labthings_fastapi.dependencies.invocation import InvocationLogger
 from labthings_fastapi.decorators import thing_action
 from labthings_fastapi.outputs.blob import BlobOutput
-from openflexure_microscope_server.things.autofocus import AutofocusThing
-from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
-from openflexure_microscope_server.things.auto_recentre_stage import RecentringThing
 
 from .smart_scan import SmartScanThing
 
@@ -51,13 +36,41 @@ class Stitcher(Thing):
     def images_folder(self, smart_scan: SmartScanDep, scan_name: Optional[str]=None) -> str:
         scan_folder = smart_scan.scan_folder_path(scan_name=scan_name)
         return os.path.join(scan_folder, "images")
+    
+    @staticmethod
+    def output_up_to_date(folder: str, output_filename: str, image_prefix: str="image", image_suffix: str=".jpg") -> bool:
+        """Check if any of the images in a folder are newer than a file
+        
+        If there are no images (files with the prefix and suffix) newer than the 
+        `output_filename`, we return `True`, i.e. the output is up to date. If
+        any image in the folder is newer, we return `False`.
+        
+        This is not flawless logic - if an update process is slow, images might be
+        saved between starting that process and saving the output. Consequently,
+        a `True` from this function does not guarantee the output is up to date.
+
+        If the output file is missing, we also return `False`.
+        """
+        output_path = os.path.join(folder, output_filename)
+        if not os.path.exists(output_path):
+            return False
+        mtime = os.path.getmtime(output_path)
+        for fname in os.listdir(folder):
+            if fname.startswith(image_prefix) and fname.endswith(image_suffix):
+                if os.path.getmtime(os.path.join(folder, fname)) > mtime:
+                    return False
+        return True
 
     @thing_action
     def stitch_scan_from_stage(self, logger: InvocationLogger, smart_scan: SmartScanDep, scan_name: Optional[str]=None, downsample: float=1.0) -> JPEGBlob:
         """Generate a stitched image based on stage position metadata"""
+        output_fname = "stitched_from_stage.jpg"
         images_folder = self.images_folder(smart_scan=smart_scan, scan_name=scan_name)
-        self.run_subprocess(logger, [self._script, "--stitching_mode", "only_stage_stitch", images_folder])
-        return JPEGBlob.from_file(os.path.join(images_folder, "stitched_from_stage.jpg"))
+        if self.output_up_to_date(images_folder, output_fname):
+            logger.info(f"No images are newer than {output_fname}, skipping.")
+        else:
+            self.run_subprocess(logger, [self._script, "--stitching_mode", "only_stage_stitch", images_folder])
+        return JPEGBlob.from_file(os.path.join(images_folder, output_fname))
     
     @thing_action
     def update_scan_correlations(self, logger: InvocationLogger, smart_scan: SmartScanDep, scan_name: Optional[str]=None) -> None:
