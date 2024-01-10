@@ -34,6 +34,15 @@ export default {
 
   watch: {
     log: function() {
+      this.scrollToBottom();
+    },
+    taskStatus: function() {
+      this.scrollToBottom();
+    }
+  },
+
+  methods: {
+    scrollToBottom() {
       this.$nextTick(function() {
         let viewer = this.$refs.logContainer;
         viewer.scrollTop = viewer.scrollHeight;
