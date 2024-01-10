@@ -41,7 +41,7 @@
             submit-label="Start smart scan"
             :can-terminate="true"
             :submit-data="{ sample_check: true }"
-            @update:taskRunning="scanning = $event"
+            @taskStarted="scanning = true"
             @update:taskStatus="taskStatus = $event"
             @update:progress="progress = $event"
             @update:log="log = $event"
@@ -53,7 +53,6 @@
             submit-label="Start manual scan"
             :can-terminate="true"
             :submit-data="{ sample_check: false }"
-            @update:taskRunning="scanning = $event"
             @update:taskStatus="taskStatus = $event"
             @update:progress="progress = $event"
             @update:log="log = $event"
@@ -68,12 +67,20 @@
         />
         <action-progress-bar :progress="progress" :task-status="taskStatus" />
         <button
-          v-if="scanning"
+          v-if="cancellable"
           type="button"
           class="uk-button uk-button-danger uk-margin-remove uk-float-right uk-width-1-1"
           @click="$refs.smartScanTaskSubmitter.terminateTask()"
         >
           Cancel
+        </button>
+        <button
+          v-if="!cancellable"
+          type="button"
+          class="uk-button uk-button-danger uk-margin-remove uk-float-right uk-width-1-1"
+          @click="scanning = false"
+        >
+          Close
         </button>
       </div>
     </div>
@@ -117,6 +124,9 @@ export default {
     },
     smartScanUri() {
       return this.thingActionUrl("smart_scan", "sample_scan");
+    },
+    cancellable() {
+      return (this.taskStatus == "running") | (this.taskStatus == "pending");
     }
   },
 
