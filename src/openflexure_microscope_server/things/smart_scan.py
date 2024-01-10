@@ -307,6 +307,12 @@ class SmartScanThing(Thing):
         # If the working directory is `/var/openflexure` this will result
         # in scans being saved at `/var/openflexure/scans/`
         return "scans"
+    
+    _latest_scan_name = None
+    @thing_property
+    def latest_scan_name(self) -> Optional[str]:
+        """The name of the last scan to be started."""
+        return self._latest_scan_name
 
     def scan_folder_path(self, scan_name: Optional[str]=None):
         """The path to the scan folder with a given name"""
@@ -324,7 +330,7 @@ class SmartScanThing(Thing):
             folder_path = os.path.join(self.scans_folder_path, f"scan_{j:06}")
             if not os.path.exists(folder_path):
                 os.makedirs(folder_path)
-                self.latest_scan_name = os.path.basename(folder_path)
+                self._latest_scan_name = os.path.basename(folder_path)
                 return folder_path
         raise FileExistsError("Could not create a new scan folder: all names in use!")
     
