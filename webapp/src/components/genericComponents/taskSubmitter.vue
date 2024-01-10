@@ -66,10 +66,10 @@
             The task failed due to an error. There may be more information in
             the log.
           </div>
-          <div v-if="taskStatus == 'cancelled'" class="uk-alert-primary">
+          <div v-if="taskStatus == 'cancelled'" class="uk-alert-warning">
             The task was cancelled.
           </div>
-          <div v-if="taskStatus == 'completed'" class="uk-alert-primary">
+          <div v-if="taskStatus == 'completed'" class="uk-alert-success">
             The task completed successfully.
           </div>
         </div>
@@ -364,7 +364,7 @@ export default {
 #log-container {
   position: relative;
   height: 6em;
-  overflow-y: scroll;
+  overflow-y: auto;
   overflow-x: auto;
 }
 
