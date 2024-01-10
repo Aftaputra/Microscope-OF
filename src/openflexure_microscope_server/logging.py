@@ -4,8 +4,8 @@ import os
 
 from fastapi.responses import FileResponse, PlainTextResponse
 
-OFM_LOG_FOLDER =  "/var/openflexure/log/"
-OFM_LOG_FILE = os.path.join(OFM_LOG_FOLDER, "openflexure-microscope-server.log")
+OFM_LOG_FOLDER =  "/var/openflexure/logs/"
+OFM_LOG_FILE = os.path.join(OFM_LOG_FOLDER, "openflexure-microscope.log")
 
 def configure_logging():
     root_logger = logging.getLogger()
