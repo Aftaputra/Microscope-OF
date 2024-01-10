@@ -55,7 +55,7 @@ export default {
 <style scoped>
 .log-container {
   position: relative;
-  overflow-y: scroll;
+  overflow-y: auto;
   overflow-x: auto;
 }
 </style>
