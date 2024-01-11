@@ -41,18 +41,7 @@
             submit-label="Start smart scan"
             :can-terminate="true"
             :submit-data="{ sample_check: true }"
-            @taskStarted="scanning = true"
-            @update:taskStatus="taskStatus = $event"
-            @update:progress="progress = $event"
-            @update:log="log = $event"
-          />
-        </div>
-        <div class="uk-margin">
-          <taskSubmitter
-            :submit-url="smartScanUri"
-            submit-label="Start manual scan"
-            :can-terminate="true"
-            :submit-data="{ sample_check: false }"
+            @taskStarted="startScanning"
             @update:taskStatus="taskStatus = $event"
             @update:progress="progress = $event"
             @update:log="log = $event"
@@ -78,14 +67,26 @@
           v-if="!cancellable"
           type="button"
           class="uk-button uk-button-danger uk-margin-remove uk-float-right uk-width-1-1"
-          @click="scanning = false"
+          @click="scanning = false; lastStitchedImage=null;"
         >
           Close
         </button>
       </div>
+      <mini-stream-display v-if="displayImageOnRight" />
+      <div v-show="false">
+        <taskSubmitter
+          ref="stitchFromStageSubmitter"
+          :submit-url="stitchFromStageUri"
+          submit-label="Stitch image from stage coordinates"
+          :submit-data="stitchPayload"
+          @completed="lastStitchedImage = $event.href"
+          @update:taskStatus="stitchFromStageStatus = $event"
+        />
+      </div>
     </div>
     <div class="view-component uk-width-expand">
-      <streamDisplay />
+      <img v-if="displayImageOnRight" :src="lastStitchedImage" id="last-stitched-image"/>
+      <streamDisplay v-else />
     </div>
   </div>
 </template>
@@ -96,6 +97,7 @@ import taskSubmitter from "../genericComponents/taskSubmitter";
 import propertyControl from "../labThingsComponents/propertyControl.vue";
 import actionLogDisplay from "../genericComponents/actionLogDisplay.vue";
 import actionProgressBar from "../genericComponents/actionProgressBar.vue";
+import MiniStreamDisplay from '../genericComponents/miniStreamDisplay.vue';
 
 export default {
   name: "SlideScanContent",
@@ -105,7 +107,8 @@ export default {
     taskSubmitter,
     propertyControl,
     actionLogDisplay,
-    actionProgressBar
+    actionProgressBar,
+    MiniStreamDisplay
   },
 
   data() {
@@ -113,8 +116,11 @@ export default {
       lastScanName: null,
       scanning: false,
       taskStatus: "pending",
+      correlateStatus: "",
+      stitchFromStageStatus: "",
       progress: null,
-      log: []
+      log: [],
+      lastStitchedImage: null
     };
   },
 
@@ -125,8 +131,37 @@ export default {
     smartScanUri() {
       return this.thingActionUrl("smart_scan", "sample_scan");
     },
+    stitchFromStageUri () {
+      return this.thingActionUrl("stitching", "stitch_scan_from_stage");
+    },
+    stitchUri () {
+      return this.thingActionUrl("stitching", "stitch_scan");
+    },
+    correlateUri () {
+      return this.thingActionUrl("stitching", "correlate_scan");
+    },
     cancellable() {
       return (this.taskStatus == "running") | (this.taskStatus == "pending");
+    },
+    correlatePayload() {
+      return {
+        scan_name: this.lastScanName
+      }
+    },
+    stitchPayload() {
+      return {
+        downsample: 2,
+        ...this.correlatePayload
+      }
+    },
+    stitchFromStagePayload() {
+      return {
+        downsample: 2,
+        ...this.correlatePayload
+      }
+    },
+    displayImageOnRight() {
+      return this.scanning & this.lastStitchedImage !== null;
     }
   },
 
@@ -134,6 +169,22 @@ export default {
     onScanError: function(error) {
       this.scanRunning = false;
       this.modalError(error);
+    },
+    correlateCurrentScan() {
+
+    },
+    startScanning() {
+      this.lastStitchedImage = null;
+      this.scanning = true;
+      setTimeout(this.pollScan, 5000);
+    },
+    pollScan() {
+      if (this.cancellable) {  // while the scan is running
+        if (!["pending", "running"].includes(this.stitchFromStageStatus)) {
+          this.$refs.stitchFromStageSubmitter.startTask()
+        }
+        setTimeout(this.pollScan, 5000);  // keep rescheduling until it's stopped
+      }
     }
   }
 };
