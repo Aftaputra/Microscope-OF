@@ -60,6 +60,9 @@
         </div>
       </div>
       <div v-show="scanning">
+      <h2 v-if="displayImageOnRight">
+        Live stitching preview
+      </h2>
         <mini-stream-display v-if="displayImageOnRight" />
         <action-log-display
           id="log-display"

@@ -58,6 +58,7 @@ export default {
   overflow-y: auto;
   overflow-x: auto;
   background-color: white;
+  color: black;
   padding: 0.5em;
   border: 1px solid black;
 }
