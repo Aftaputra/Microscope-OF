@@ -235,18 +235,18 @@ export default {
         );
         if (response.status == "completed") {
           this.$emit("response", response);
+          this.$emit("completed", response.output);
         } else if (response.status == "cancelled") {
           this.$emit("cancelled", response);
           this.modalNotify(`The action '${this.submitLabel}' was cancelled.`);
         }
-        this.$emit("finished");
       } catch (error) {
         this.$emit("error", error | Error("Unknown error"));
-        this.$emit("finished");
       } finally {
         // Reset taskRunning and taskId
         this.taskRunning = false;
         this.taskStarted = false;
+        this.$emit("finished");
         // Update the form data if we're self-updating
         if (this.selfUpdate) {
           this.getFormData();
@@ -300,19 +300,12 @@ export default {
       return new Promise(checkCondition);
     },
 
-    pollProgress: function() {
-      axios.get(this.taskUrl).then(response => {
-        this.progress = response.data.progress;
-      });
-    },
-
     hideModal() {
       UIkit.modal(this.$refs.statusModal).hide();
     },
 
     terminateTask: function() {
-      console.log(`deleting task at ${this.taskUrl}`);
-      axios.delete(this.taskUrl);
+      axios.delete(this.taskUrl, { baseURL: this.$store.getters.baseUri });
     }
   }
 };
