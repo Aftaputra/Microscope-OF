@@ -6,7 +6,9 @@ for code that currently lives in clients but needs to persist settings on
 the server.
 """
 from collections.abc import Mapping
+from socket import gethostname
 from typing import Any, MutableMapping, Optional, Sequence
+from uuid import UUID, uuid4
 from fastapi import HTTPException
 from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.thing import Thing
@@ -84,6 +86,13 @@ class SettingsManager(Thing):
             )
         self.thing_settings["external_metadata"] = metadata
     
+    @thing_property
+    def microscope_id(self) -> UUID:
+        """A unique identifier for this microscope"""
+        if "microscope_id" not in self.thing_settings:
+            self.thing_settings["microscope_id"] = uuid4()
+        return self.thing_settings["microscope_id"]
+
     @thing_action
     def get_things_state(self, metadata_getter: GetThingStates) -> Mapping:
         """Metadata summarising the current state of all Things in the server"""
@@ -100,7 +109,10 @@ class SettingsManager(Thing):
 
     @property
     def thing_state(self) -> Mapping:
-        state = {}
+        state = {
+            "hostname": gethostname(),
+            "microscope-uuid": self.microscope_id,
+        }
         metadata = self.external_metadata
         for k in self.external_metadata_in_state:
             try:
