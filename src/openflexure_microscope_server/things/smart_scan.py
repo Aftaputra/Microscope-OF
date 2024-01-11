@@ -435,7 +435,7 @@ class SmartScanThing(Thing):
             scan_folder = self.new_scan_folder()
             images_folder = os.path.join(scan_folder, "images")
             os.mkdir(images_folder)
-            raw_images_folder = os.path.join(scan_folder, "raw_images")
+            raw_images_folder = os.path.join(images_folder, "raw")
             os.mkdir(raw_images_folder)
             logger.info(f"Saving images to {images_folder}")
 
