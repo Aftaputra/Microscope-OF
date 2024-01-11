@@ -16,20 +16,32 @@
                   property-name="max_range"
                   label="Maximum Distance (steps)"
                 />
-                <div class="uk-margin">
-                  <propertyControl
-                    thing-name="smart_scan"
-                    property-name="autofocus_dz"
-                    label="Autofocus range (steps)"
-                  />
-                </div>
-                <div class="uk-margin">
-                  <propertyControl
-                    thing-name="smart_scan"
-                    property-name="overlap"
-                    label="Image overlap (0-1)"
-                  />
-                </div>
+              </div>
+              <div class="uk-margin">
+                <propertyControl
+                  thing-name="smart_scan"
+                  property-name="autofocus_dz"
+                  label="Autofocus range (steps)"
+                />
+              </div>
+              <div class="uk-margin">
+                <propertyControl
+                  thing-name="smart_scan"
+                  property-name="overlap"
+                  label="Image overlap (0-1)"
+                />
+              </div>
+            </div>
+          </li>
+          <li class="uk-open">
+            <a class="uk-accordion-title" href="#">Scan Settings</a>
+            <div class="uk-accordion-content">
+              <div class="uk-margin">
+                <propertyControl
+                  thing-name="smart_scan"
+                  property-name="skip_background"
+                  label="Detect and skip empty fields"
+                />
               </div>
             </div>
           </li>
@@ -40,19 +52,7 @@
             :submit-url="smartScanUri"
             submit-label="Start smart scan"
             :can-terminate="true"
-            :submit-data="{ sample_check: true }"
-            @taskStarted="scanning = true"
-            @update:taskStatus="taskStatus = $event"
-            @update:progress="progress = $event"
-            @update:log="log = $event"
-          />
-        </div>
-        <div class="uk-margin">
-          <taskSubmitter
-            :submit-url="smartScanUri"
-            submit-label="Start manual scan"
-            :can-terminate="true"
-            :submit-data="{ sample_check: false }"
+            @taskStarted="startScanning"
             @update:taskStatus="taskStatus = $event"
             @update:progress="progress = $event"
             @update:log="log = $event"
@@ -60,6 +60,7 @@
         </div>
       </div>
       <div v-show="scanning">
+        <mini-stream-display v-if="displayImageOnRight" />
         <action-log-display
           id="log-display"
           :log="log"
@@ -78,14 +79,15 @@
           v-if="!cancellable"
           type="button"
           class="uk-button uk-button-danger uk-margin-remove uk-float-right uk-width-1-1"
-          @click="scanning = false"
+          @click="scanning = false; lastStitchedImage=null;"
         >
           Close
         </button>
       </div>
     </div>
     <div class="view-component uk-width-expand">
-      <streamDisplay />
+      <img v-if="displayImageOnRight" :src="lastStitchedImage" id="last-stitched-image"/>
+      <streamDisplay v-else />
     </div>
   </div>
 </template>
@@ -96,6 +98,7 @@ import taskSubmitter from "../genericComponents/taskSubmitter";
 import propertyControl from "../labThingsComponents/propertyControl.vue";
 import actionLogDisplay from "../genericComponents/actionLogDisplay.vue";
 import actionProgressBar from "../genericComponents/actionProgressBar.vue";
+import MiniStreamDisplay from '../genericComponents/miniStreamDisplay.vue';
 
 export default {
   name: "SlideScanContent",
@@ -105,7 +108,8 @@ export default {
     taskSubmitter,
     propertyControl,
     actionLogDisplay,
-    actionProgressBar
+    actionProgressBar,
+    MiniStreamDisplay
   },
 
   data() {
@@ -113,8 +117,11 @@ export default {
       lastScanName: null,
       scanning: false,
       taskStatus: "pending",
+      correlateStatus: "",
+      stitchFromStageStatus: "",
       progress: null,
-      log: []
+      log: [],
+      lastStitchedImage: null,
     };
   },
 
@@ -127,6 +134,9 @@ export default {
     },
     cancellable() {
       return (this.taskStatus == "running") | (this.taskStatus == "pending");
+    },
+    displayImageOnRight() {
+      return this.scanning & this.lastStitchedImage !== null;
     }
   },
 
@@ -134,6 +144,23 @@ export default {
     onScanError: function(error) {
       this.scanRunning = false;
       this.modalError(error);
+    },
+    correlateCurrentScan() {
+
+    },
+    startScanning() {
+      this.lastStitchedImage = null;
+      this.scanning = true;
+      setTimeout(this.pollScan, 1000);
+    },
+    async pollScan() {
+      if (this.cancellable) {  // while the scan is running
+        let mtime = await this.readThingProperty("smart_scan", "latest_preview_stitch_time");
+        if (mtime !== null) {
+          this.lastStitchedImage = `${this.$store.getters.baseUri}/smart_scan/latest_preview_stitch.jpg?t=${mtime}`;
+        }
+        setTimeout(this.pollScan, 1000);  // keep rescheduling until it's stopped
+      }
     }
   }
 };

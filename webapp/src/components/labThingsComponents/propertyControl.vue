@@ -1,57 +1,79 @@
 <template>
   <div>
-    <label class="uk-form-label">{{ label }}</label>
-    <div v-if="dataType == 'number'" class="input-and-buttons-container">
-      <input
-        v-model="value"
-        class="uk-form-small numeric-setting-line-input"
-        type="number"
-        @focusin="focusIn"
-        @focusout="focusOut"
-        @keydown="keyDown"
-      />
+    <label v-if="dataType == 'number'" class="uk-form-label">{{ label }}
+      <div class="input-and-buttons-container">
+        <input
+          v-model="value"
+          class="uk-form-small numeric-setting-line-input"
+          type="number"
+          @focusin="focusIn"
+          @focusout="focusOut"
+          @keydown="keyDown"
+        />
+        <a class="button-next-to-input" @click="readProperty">
+          <span class="material-symbols-outlined">refresh</span>
+        </a>
+      </div>
+    </label>
+    <div v-if="dataType == 'boolean'" class="input-and-buttons-container">
+      <label class="uk-form-label numeric-setting-line-input">
+        <input
+          ref="checkbox"
+          v-model="value"
+          class="uk-checkbox"
+          type="checkbox"
+          @change="writeProperty"
+        />
+        {{ label }}
+      </label>
       <a class="button-next-to-input" @click="readProperty">
         <span class="material-symbols-outlined">refresh</span>
       </a>
     </div>
-    <div v-if="dataType == 'number_array'" class="input-and-buttons-container">
-      <input
-        v-for="i in valueLength"
-        :key="i"
-        v-model="value[i - 1]"
-        class="uk-form-small numeric-setting-line-input"
-        type="number"
-        @focusin="focusIn"
-        @focusout="focusOut"
-        @keydown="keyDown"
-      />
-      <a class="button-next-to-input" @click="readProperty">
-        <span class="material-symbols-outlined">refresh</span>
-      </a>
-    </div>
-    <div v-if="dataType == 'number_object'" class="input-and-buttons-container">
-      <input
-        v-for="(_v, key) in value"
-        :key="key"
-        v-model="value[key]"
-        class="uk-form-small numeric-setting-line-input"
-        type="number"
-        @focusin="focusIn"
-        @focusout="focusOut"
-        @keydown="keyDown"
-      />
-      <a class="button-next-to-input" @click="readProperty">
-        <span class="material-symbols-outlined">refresh</span>
-      </a>
-    </div>
-    <div v-if="dataType == 'other'" class="input-and-buttons-container">
-      <input
-        :value="value"
-        class="uk-form-small numeric-setting-line-input"
-        type="text"
-        disabled="true"
-      />
-    </div>
+    <label v-if="dataType == 'number_array'" class="uk-form-label">{{ label }}
+      <div class="input-and-buttons-container">
+        <input
+          v-for="i in valueLength"
+          :key="i"
+          v-model="value[i - 1]"
+          class="uk-form-small numeric-setting-line-input"
+          type="number"
+          @focusin="focusIn"
+          @focusout="focusOut"
+          @keydown="keyDown"
+        />
+        <a class="button-next-to-input" @click="readProperty">
+          <span class="material-symbols-outlined">refresh</span>
+        </a>
+      </div>
+    </label>
+    <label v-if="dataType == 'number_object'" class="uk-form-label">{{ label }}
+      <div class="input-and-buttons-container">
+        <input
+          v-for="(_v, key) in value"
+          :key="key"
+          v-model="value[key]"
+          class="uk-form-small numeric-setting-line-input"
+          type="number"
+          @focusin="focusIn"
+          @focusout="focusOut"
+          @keydown="keyDown"
+        />
+        <a class="button-next-to-input" @click="readProperty">
+          <span class="material-symbols-outlined">refresh</span>
+        </a>
+      </div>
+    </label>
+    <label v-if="dataType == 'other'" class="uk-form-label">{{ label }}
+      <div class="input-and-buttons-container">
+        <input
+          :value="value"
+          class="uk-form-small numeric-setting-line-input"
+          type="text"
+          disabled="true"
+        />
+      </div>
+    </label>
   </div>
 </template>
 
@@ -129,6 +151,9 @@ export default {
           }
         }
       }
+      if (prop.type == "boolean") {
+        return "boolean";
+      }
       if (prop.type == "object") {
         let numeric = true;
         for (let key in prop.properties) {
@@ -173,6 +198,7 @@ export default {
     writeProperty: async function() {
       try {
         let requestedValue = this.value;
+        console.log("writing", requestedValue);
         await this.writeThingProperty(
           this.thingName,
           this.propertyName,
@@ -193,6 +219,12 @@ export default {
         }
       } catch (error) {
         this.modalError(error); // Let mixin handle error
+      }
+    },
+    checkboxUpdated: function() {
+      if (this.value != this.$refs.checkbox.checked) {
+        this.value = this.$refs.checkbox.checked;
+        this.writeProperty();
       }
     },
     focusIn: function(event) {

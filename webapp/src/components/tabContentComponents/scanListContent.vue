@@ -135,6 +135,9 @@ export default {
   methods: {
     async updateScans() {
       let scans = await this.readThingProperty("smart_scan", "scans");
+      if (!scans | scans.length == 0) {
+        return;
+      }
       scans.forEach(scan => {
         scan.modified = Date.parse(scan.modified);
         scan.created = Date.parse(scan.created);
