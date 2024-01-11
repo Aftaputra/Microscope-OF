@@ -384,6 +384,11 @@ class SmartScanThing(Thing):
             # Before anything else, check that we've got a background set
             # It's annoying to have to wait to find out!
             max_dist = self.max_range
+            
+            if self.autofocus_dz == 0:
+                logger.info(f'Running scan without autofocus')
+            elif self.autofocus_dz <= 200:
+                logger.warning(f'Your dz range is {self.autofocus_dz} steps, which is too short to attempt to focus. Running without autofocus')
 
             if self.skip_background:
                 d = background_detect.background_distributions
@@ -489,40 +494,42 @@ class SmartScanThing(Thing):
                             path.append(pos)
 
                     attempts = 0
-                    while True:
-                        recentre.looping_autofocus(dz=self.autofocus_dz)
-                        current_height = stage.position["z"]
+                    if self.autofocus_dz > 200:
+                        while True:
+                            recentre.looping_autofocus(dz=self.autofocus_dz)
+                            current_height = stage.position["z"]
 
-                        # if there have been successful autofocuses in this scan, find the closest one in x-y
-                        # test if the change in z between them exceeds a ratio (indicating a failed autofocus)
-                        if len(focused_path) > 0:
-                            nearest_focused_site = focused_path[closest(loc, focused_path)]
-                            result = limit_focus_change(
-                                nearest_focused_site[0:2],
-                                nearest_focused_site[-1],
-                                loc[0:2],
-                                current_height,
-                                0.3,
+                            # if there have been successful autofocuses in this scan, find the closest one in x-y
+                            # test if the change in z between them exceeds a ratio (indicating a failed autofocus)
+                            if len(focused_path) > 0:
+                                nearest_focused_site = focused_path[closest(loc, focused_path)]
+                                result = limit_focus_change(
+                                    nearest_focused_site[0:2],
+                                    nearest_focused_site[-1],
+                                    loc[0:2],
+                                    current_height,
+                                    0.3,
+                                )
+
+                            # if there haven't been any previous autofocuses, we have to assume this one worked
+                            else:
+                                result = "accept"
+
+                            # if the autofocus worked, add the current position to the list of successful locations
+                            if result == "accept":
+                                loc = list(stage.position.values())
+                                focused_path.append(loc)
+                                break
+                            if attempts >= 3:
+                                logger.warning("Could not autofocus after 5 attempts.")
+                                break
+                            # if the autofocus was rejected, we return to the height of the closest successful autofocus. not perfect, but better than wandering out of focus
+                            logger.info(
+                                "The focus has shifted further than we expect: retrying."
                             )
-
-                        # if there haven't been any previous autofocuses, we have to assume this one worked
-                        else:
-                            result = "accept"
-
-                        # if the autofocus worked, add the current position to the list of successful locations
-                        if result == "accept":
-                            loc = list(stage.position.values())
-                            focused_path.append(loc)
-                            break
-                        if attempts >= 3:
-                            logger.warning("Could not autofocus after 5 attempts.")
-                            break
-                        # if the autofocus was rejected, we return to the height of the closest successful autofocus. not perfect, but better than wandering out of focus
-                        logger.info(
-                            "The focus has shifted further than we expect: retrying."
-                        )
-                        stage.move_absolute(z=int(focused_path[z_index][2]))
-                        attempts += 1
+                            stage.move_absolute(z=int(focused_path[z_index][2]))
+                            attempts += 1
+                    
 
                     name = f"image_{loc[0]}_{loc[1]}.jpg"
                     # img = Image.open(cam.capture_jpeg(resolution="full").open())
@@ -607,7 +614,7 @@ class SmartScanThing(Thing):
     @thing_property
     def max_range(self) -> int:
         """The maximum distance from the centre of the scan before we break"""
-        return self.thing_settings.get("max_range", 400000)
+        return self.thing_settings.get("max_range", 70000)
 
     @max_range.setter
     def max_range(self, value: int) -> None:
