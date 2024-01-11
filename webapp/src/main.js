@@ -63,9 +63,13 @@ Vue.mixin({
         "writeproperty",
         false
       );
-      // NB stringify is needed below, because otherwise boolean
-      // values get missed.
-      await axios.put(url, JSON.stringify(value));
+      // `false` fails because axios somehow eats it!
+      // Other values should not be stringified or pydantic
+      // can't parse them.
+      if (value===false | value===true) {
+        value=JSON.stringify(value);
+      }
+      await axios.put(url, value);
     },
     thingActionUrl(thing, action) {
       let url = this.$store.getters["wot/thingActionUrl"](
