@@ -650,6 +650,8 @@ class SmartScanThing(Thing):
         in the `images` folder.
         """
         scans: list[ScanInfo] = []
+        if not os.path.isdir(self.scans_folder_path):
+            return scans
         for f in os.listdir(self.scans_folder_path):
             path = os.path.join(self.scans_folder_path, f)
             if os.path.isdir(path):
