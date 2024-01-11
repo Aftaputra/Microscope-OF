@@ -90,8 +90,8 @@ class SettingsManager(Thing):
     def microscope_id(self) -> UUID:
         """A unique identifier for this microscope"""
         if "microscope_id" not in self.thing_settings:
-            self.thing_settings["microscope_id"] = uuid4()
-        return self.thing_settings["microscope_id"]
+            self.thing_settings["microscope_id"] = str(uuid4())
+        return UUID(self.thing_settings["microscope_id"])
 
     @thing_action
     def get_things_state(self, metadata_getter: GetThingStates) -> Mapping:
