@@ -63,11 +63,9 @@ Vue.mixin({
         "writeproperty",
         false
       );
-      try {
-        await axios.put(url, value);
-      } catch (error) {
-        this.modalError(error);
-      }
+      // NB stringify is needed below, because otherwise boolean
+      // values get missed.
+      await axios.put(url, JSON.stringify(value));
     },
     thingActionUrl(thing, action) {
       let url = this.$store.getters["wot/thingActionUrl"](

@@ -16,20 +16,32 @@
                   property-name="max_range"
                   label="Maximum Distance (steps)"
                 />
-                <div class="uk-margin">
-                  <propertyControl
-                    thing-name="smart_scan"
-                    property-name="autofocus_dz"
-                    label="Autofocus range (steps)"
-                  />
-                </div>
-                <div class="uk-margin">
-                  <propertyControl
-                    thing-name="smart_scan"
-                    property-name="overlap"
-                    label="Image overlap (0-1)"
-                  />
-                </div>
+              </div>
+              <div class="uk-margin">
+                <propertyControl
+                  thing-name="smart_scan"
+                  property-name="autofocus_dz"
+                  label="Autofocus range (steps)"
+                />
+              </div>
+              <div class="uk-margin">
+                <propertyControl
+                  thing-name="smart_scan"
+                  property-name="overlap"
+                  label="Image overlap (0-1)"
+                />
+              </div>
+            </div>
+          </li>
+          <li class="uk-open">
+            <a class="uk-accordion-title" href="#">Scan Settings</a>
+            <div class="uk-accordion-content">
+              <div class="uk-margin">
+                <propertyControl
+                  thing-name="smart_scan"
+                  property-name="skip_background"
+                  label="Detect and skip empty fields"
+                />
               </div>
             </div>
           </li>
@@ -40,7 +52,6 @@
             :submit-url="smartScanUri"
             submit-label="Start smart scan"
             :can-terminate="true"
-            :submit-data="{ sample_check: true }"
             @taskStarted="startScanning"
             @update:taskStatus="taskStatus = $event"
             @update:progress="progress = $event"
