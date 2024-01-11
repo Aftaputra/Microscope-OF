@@ -439,9 +439,6 @@ class SmartScanThing(Thing):
             os.mkdir(raw_images_folder)
             logger.info(f"Saving images to {images_folder}")
 
-            # TODO: I think this is unnecessary, we do a looping autofocus at the first point in the loop, unless
-            # it's flagged as background (which is a wierd case anyway)
-            recentre.looping_autofocus()
             # move to each x-y position. in z, move to the height of the closest x-y position that successfully focused
             while len(path) > 0:
                 ensure_free_disk_space(scan_folder)
@@ -512,15 +509,12 @@ class SmartScanThing(Thing):
                             loc = list(stage.position.values())
                             focused_path.append(loc)
                             break
-                        if attempts >= 5:
+                        if attempts >= 3:
                             logger.warning("Could not autofocus after 5 attempts.")
                             break
                         # if the autofocus was rejected, we return to the height of the closest successful autofocus. not perfect, but better than wandering out of focus
                         logger.info(
-                            "The focus seems to have moved farther than we expect. "
-                            "We will now rest the Z position and try again. "
-                            f"Options are {focused_path}, we chose "
-                            f"{nearest_focused_site}"
+                            "The focus has shifted further than we expect: retrying."
                         )
                         stage.move_absolute(z=int(focused_path[z_index][2]))
                         attempts += 1
