@@ -1,4 +1,5 @@
 import shutil
+import threading
 from typing import Mapping, Optional
 import cv2
 from fastapi import HTTPException
@@ -9,14 +10,15 @@ import time
 from PIL import Image
 from pydantic import BaseModel
 from scipy.stats import norm
-import logging
 from copy import deepcopy
 from datetime import datetime
+from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, run
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
 from labthings_fastapi.dependencies.invocation import CancelHook, InvocationLogger, InvocationCancelledError
 from labthings_fastapi.decorators import thing_action, thing_property, fastapi_endpoint
+from labthings_fastapi.outputs.blob import BlobOutput
 from labthings_sangaboard import SangaboardThing
 from labthings_picamera2.thing import StreamingPiCamera2
 from openflexure_microscope_server.things.autofocus import AutofocusThing
@@ -279,11 +281,18 @@ class BackgroundDetectThing(Thing):
 BackgroundDep = direct_thing_client_dependency(BackgroundDetectThing, "/background_detect/")
 
 
+class NotEnoughFreeSpaceError(IOError):
+    pass
+
+
 def ensure_free_disk_space(path: str, min_space: int = 500000000) -> None:
     """Raise an exception if we are running out of disk space"""
     du = shutil.disk_usage(path)
     if du.free < min_space:
-        raise IOError(f"There is not enough free disk space to continue {du}")
+        raise NotEnoughFreeSpaceError(
+            "There is not enough free disk space to continue."
+            f"(Required: {min_space}, {du})."
+        )
 
 
 class ScanInfo(BaseModel):
@@ -298,8 +307,16 @@ DOWNLOADABLE_SCAN_FILES = (
     "images.zip",
 )
 
+class JPEGBlob(BlobOutput):
+    media_type = "image/jpeg"
 
 class SmartScanThing(Thing):
+    def __init__(self, path_to_openflexure_stitch: str):
+        self._script = path_to_openflexure_stitch
+        self._preview_stitch_popen_lock = threading.Lock()
+        self._correlate_popen_lock = threading.Lock()
+        self._scan_lock = threading.Lock()
+    
     @property
     def scans_folder_path(self) -> str:
         """This folder will hold all the scans we do."""
@@ -358,83 +375,84 @@ class SmartScanThing(Thing):
         * `overlap` is the fraction by which images should overlap, i.e. 
           `0.3` means we will move by 70% of the field of view each time.
         """
-
-        # Before anything else, check that we've got a background set
-        # It's annoying to have to wait to find out!
-        max_dist = self.max_range
-
-        if sample_check:
-            d = background_detect.background_distributions
-            if not d:
-                raise RuntimeError("Background is not set: you need to calibrate background detection.")
-        else:
-            logger.warning(
-                "This scan will run in a spiral from the starting point "
-                f"until you cancel it, or until it has moved by {max_dist} steps "
-                "in every direction. Make sure you watch it run to stop it leaving "
-                "the area of interest, or (worse) leading the microscope's range "
-                "of motion."
-                )
-        names = []
-        positions = []
-
-        # Record the starting position so we can move back there afterwards
-        starting_position = stage.position
-
-        r = cam.grab_jpeg()
-        arr = np.array(Image.open(r.open()))
-        if list(arr.shape[:2]) != [int(i) for i in csm.image_resolution]:
-            logger.error(
-                f"Images are, by default, {arr.shape[:2]}, but the CSM was "
-                f"calibrated at {csm.image_resolution}."
-            )
-
-        # Here, we calculate the x and y step size based on the desired overlap
-        # TODO: Consider using CSM calibration size instead
-        # TODO: generalise to have 2D displacements for x and y (as the
-        # camera and stage may not be aligned).
-        CSM = csm.image_to_stage_displacement_matrix
-        csm_calibration_width = csm.last_calibration["image_resolution"][1]
-        
-        # TODO: this downsampling by two is to deal with a camera issue
-        img_width = int(arr.shape[1] / 2)
-
-        overlap = self.overlap
-
-        dx = int(np.abs(np.dot(np.array([0, arr.shape[1] * (1 - overlap)]), CSM)[0]))
-        dy = int(np.abs(np.dot(np.array([arr.shape[0] * (1 - overlap), 0]), CSM)[1]))
-
-        logger.info(f"Based on an overlap of {overlap}, we will make steps of {dx}, {dy}")
-
-        # construct a 2D scan path
-        path = [[stage.position["x"], stage.position["y"]]]
-
-        focused_path = []  # This holds a list of all points where focus succeeded
-        true_path = []  # This holds a list of all points visited
-        i = 0
-        ids = []
-        start_time = time.strftime("%H_%M_%S-%d_%m_%Y")
-
-        scan_path = self.new_scan_folder()
-        images_folder = os.path.join(scan_path, "images")
-        os.mkdir(images_folder)
-        raw_images_folder = os.path.join(scan_path, "raw_images")
-        os.mkdir(raw_images_folder)
-        logger.info(f"Saving images to {images_folder}")
-
+        self._scan_lock.acquire(timeout=0.1)
         try:
+            # Before anything else, check that we've got a background set
+            # It's annoying to have to wait to find out!
+            max_dist = self.max_range
+
+            if sample_check:
+                d = background_detect.background_distributions
+                if not d:
+                    raise RuntimeError("Background is not set: you need to calibrate background detection.")
+            else:
+                logger.warning(
+                    "This scan will run in a spiral from the starting point "
+                    f"until you cancel it, or until it has moved by {max_dist} steps "
+                    "in every direction. Make sure you watch it run to stop it leaving "
+                    "the area of interest, or (worse) leading the microscope's range "
+                    "of motion."
+                    )
+            names = []
+            positions = []
+
+            # Record the starting position so we can move back there afterwards
+            starting_position = stage.position
+
+            r = cam.grab_jpeg()
+            arr = np.array(Image.open(r.open()))
+            if list(arr.shape[:2]) != [int(i) for i in csm.image_resolution]:
+                logger.error(
+                    f"Images are, by default, {arr.shape[:2]}, but the CSM was "
+                    f"calibrated at {csm.image_resolution}."
+                )
+
+            # Here, we calculate the x and y step size based on the desired overlap
+            # TODO: Consider using CSM calibration size instead
+            # TODO: generalise to have 2D displacements for x and y (as the
+            # camera and stage may not be aligned).
+            CSM = csm.image_to_stage_displacement_matrix
+            csm_calibration_width = csm.last_calibration["image_resolution"][1]
+            
+            # TODO: this downsampling by two is to deal with a camera issue
+            img_width = int(arr.shape[1] / 2)
+
+            overlap = self.overlap
+
+            dx = int(np.abs(np.dot(np.array([0, arr.shape[1] * (1 - overlap)]), CSM)[0]))
+            dy = int(np.abs(np.dot(np.array([arr.shape[0] * (1 - overlap), 0]), CSM)[1]))
+
+            logger.info(f"Based on an overlap of {overlap}, we will make steps of {dx}, {dy}")
+
+            # construct a 2D scan path
+            path = [[stage.position["x"], stage.position["y"]]]
+
+            focused_path = []  # This holds a list of all points where focus succeeded
+            true_path = []  # This holds a list of all points visited
+            i = 0
+            ids = []
+            start_time = time.strftime("%H_%M_%S-%d_%m_%Y")
+
+            scan_folder = self.new_scan_folder()
+            images_folder = os.path.join(scan_folder, "images")
+            os.mkdir(images_folder)
+            raw_images_folder = os.path.join(scan_folder, "raw_images")
+            os.mkdir(raw_images_folder)
+            logger.info(f"Saving images to {images_folder}")
+
             # TODO: I think this is unnecessary, we do a looping autofocus at the first point in the loop, unless
             # it's flagged as background (which is a wierd case anyway)
             recentre.looping_autofocus()
             # move to each x-y position. in z, move to the height of the closest x-y position that successfully focused
             while len(path) > 0:
-                ensure_free_disk_space(scan_path)
+                ensure_free_disk_space(scan_folder)
 
                 loc = [path[0][0], path[0][1], stage.position["z"]]
 
                 path.remove(path[0])
 
                 # TODO: combine this with the move below for speed (I think this could just be "else")
+                logger.info(f"Moving to {loc}")
                 stage.move_absolute(x=int(loc[0]), y=int(loc[1]), z=int(loc[2]))
 
                 if len(focused_path) > 1:
@@ -517,7 +535,7 @@ class SmartScanThing(Thing):
                     width, height = img.size 
                     img = img.resize((int(width*0.5), int(height*0.5)))
 
-                    logger.info(f"Saving {name} at {stage.position}")
+                    logger.info(f"Saving {name}")
                     img.save(
                         os.path.join(images_folder, name),
                         exif=exif,
@@ -526,6 +544,11 @@ class SmartScanThing(Thing):
                     )
                     positions.append(loc[:2])
                     names.append(name)
+
+                    if not self.preview_stitch_running():
+                        self.preview_stitch_start(images_folder)
+                    if not self.correlate_running():
+                        self.correlate_start(images_folder)
 
                 # add the current position to the list of all positions visited
                 true_path.append(loc)
@@ -549,17 +572,34 @@ class SmartScanThing(Thing):
                     break
         except InvocationCancelledError:
             logger.error("Stopping scan because it was cancelled.")
-        except IOError as e:
+        except NotEnoughFreeSpaceError as e:
             logger.exception(
-                f"Stopping scan because of an IOError (most likely a full disk): {e}",
+                f"Stopping scan to avoid filling up the disk: {e}",
             )
+            raise e
+        except Exception as e:
+            logger.exception(
+                f"The scan stopped because of an error: {e}",
+                "We will attempt to stitch and archive the images acquired "
+                "so far."
+            )
+            raise e
         finally:
+            logger.info("Waiting for background processes to finish...")
+            self.preview_stitch_wait()
+            self.correlate_wait()
+            logger.info("Stitching final image (may take some time)...")
+            try:
+                self.stitch_scan(logger, os.path.basename(scan_folder))
+            except SubprocessError as e:
+                logger.exception(f"Stitching failed: {e}")
             logger.info("Creating zip archive of images (may take some time)...")
             shutil.make_archive(
-                os.path.join(scan_path, "images"), "zip", images_folder
+                os.path.join(scan_folder, "images"), "zip", images_folder
             )
             logger.info("Returning to starting position.")
             stage.move_absolute(**starting_position, block_cancellation=True)
+            self._scan_lock.release()
     
     @thing_property
     def max_range(self) -> int:
@@ -677,3 +717,107 @@ class SmartScanThing(Thing):
         """
         for scan in self.scans:
             self.delete_scan(scan.name)
+    
+    def images_folder(self, scan_name: Optional[str]=None) -> str:
+        scan_folder = self.scan_folder_path(scan_name=scan_name)
+        return os.path.join(scan_folder, "images")
+    
+    @property
+    def latest_preview_stitch_path(self):
+        """The path of the latest preview stitched image"""
+        return os.path.join(self.images_folder(), "stitched_from_stage.jpg")
+
+    @thing_property
+    def latest_preview_stitch_time(self) -> Optional[datetime]:
+        """The modification time of the latest preview image"""
+        fpath = self.latest_preview_stitch_path
+        if not os.path.exists(fpath):
+            return None
+        else:
+            return os.path.getmtime(fpath)
+        
+    @fastapi_endpoint(
+            "get",
+            "latest_preview_stitch.jpg",
+            responses = {
+                200: {
+                    "description": "A preview-quality stitched image",
+                    "content": {"image/jpeg": {}}
+                },
+                404: {"description": "File not found"}
+            },
+        )
+    def get_latest_preview(self) -> FileResponse:
+        """Retrieve the latest preview image.
+        """
+        path = self.latest_preview_stitch_path
+        if not os.path.isfile(path):
+            raise HTTPException(404, "File not found")
+        return FileResponse(path)
+    
+    _preview_stitch_popen = None
+    def preview_stitch_start(self, images_folder: str) -> None:
+        """Start stitching a preview of the scan in a subprocess"""
+        if self.preview_stitch_running():
+            raise RuntimeError("Only one subprocess is allowed at a time")
+        with self._preview_stitch_popen_lock:
+            self._preview_stitch_popen = Popen(
+                [self._script, "--stitching_mode", "only_stage_stitch", images_folder]
+            )
+
+    def preview_stitch_running(self) -> bool:
+        """Whether there is a preview stitch running in a subprocess"""
+        with self._preview_stitch_popen_lock:
+            if self._preview_stitch_popen is None:
+                return False
+            if self._preview_stitch_popen.poll() is None:
+                return True
+            return False
+    
+    def preview_stitch_wait(self):
+        if self.preview_stitch_running():
+            with self._preview_stitch_popen_lock:
+                self._preview_stitch_popen.wait()
+        
+    _correlate_popen = None
+    def correlate_start(self, images_folder: str) -> None:
+        """Start stitching a preview of the scan in a subprocess"""
+        if self.correlate_running():
+            raise RuntimeError("Only one subprocess is allowed at a time")
+        with self._correlate_popen_lock:
+            self._correlate_popen = Popen(
+                [self._script, "--stitching_mode", "only_correlate", images_folder]
+            )
+
+    def correlate_running(self) -> bool:
+        """Whether there is a preview stitch running in a subprocess"""
+        with self._correlate_popen_lock:
+            if self._correlate_popen is None:
+                return False
+            if self._correlate_popen.poll() is None:
+                return True
+            return False
+    
+    def correlate_wait(self):
+        if self.correlate_running():
+            with self._correlate_popen_lock:
+                self._correlate_popen.wait()
+
+    def run_subprocess(
+            self, logger: InvocationLogger, cmd: list[str],
+        ) -> CompletedProcess:
+        """Run a  subprocess and log any output"""
+        logger.info(f"Running command in subprocess: `{' '.join(cmd)}")
+        output = run(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        for pipe in [output.stdout, output.stderr]:
+            if pipe:
+                logger.info(pipe)
+        output.check_returncode()
+        return output
+
+    @thing_action
+    def stitch_scan(self, logger: InvocationLogger, scan_name: Optional[str]=None, downsample: float=1.0) -> None:
+        """Generate a stitched image based on stage position metadata"""
+        images_folder = self.images_folder(scan_name=scan_name)
+        self.run_subprocess(logger, [self._script, "--stitching_mode", "all", images_folder])
+
