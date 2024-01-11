@@ -111,7 +111,7 @@ class SettingsManager(Thing):
     def thing_state(self) -> Mapping:
         state = {
             "hostname": gethostname(),
-            "microscope-uuid": self.microscope_id,
+            "microscope-uuid": str(self.microscope_id),
         }
         metadata = self.external_metadata
         for k in self.external_metadata_in_state:
