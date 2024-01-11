@@ -362,7 +362,6 @@ class SmartScanThing(Thing):
         csm: CSMDep,
         background_detect: BackgroundDep,
         recentre: RecentreStage,
-        sample_check
     ):
         """Move the stage to cover an area, taking images that can be tiled together.
 
@@ -381,7 +380,7 @@ class SmartScanThing(Thing):
             # It's annoying to have to wait to find out!
             max_dist = self.max_range
 
-            if sample_check:
+            if self.skip_background:
                 d = background_detect.background_distributions
                 if not d:
                     raise RuntimeError("Background is not set: you need to calibrate background detection.")
@@ -464,7 +463,7 @@ class SmartScanThing(Thing):
                     )
 
                 # Check if the image is background
-                if sample_check:
+                if self.skip_background:
                     image_is_sample = background_detect.image_is_sample()
                 else:
                     image_is_sample = True
@@ -609,6 +608,18 @@ class SmartScanThing(Thing):
     @max_range.setter
     def max_range(self, value: int) -> None:
         self.thing_settings["max_range"] = value
+
+    @thing_property
+    def skip_background(self) -> bool:
+        """Whether to detect and skip empty fields of view
+        
+        This uses the settings from the `background_detect` Thing.
+        """
+        return self.thing_settings.get("skip_background", True)
+
+    @skip_background.setter
+    def skip_background(self, value: bool) -> None:
+        self.thing_settings["skip_background"] = value
 
     @thing_property
     def autofocus_dz(self) -> int:
