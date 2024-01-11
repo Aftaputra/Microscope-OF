@@ -374,6 +374,11 @@ class SmartScanThing(Thing):
         * `overlap` is the fraction by which images should overlap, i.e. 
           `0.3` means we will move by 70% of the field of view each time.
         """
+        # Define these variables so we can use them in the finally: block
+        # (after testing they are not None)
+        scan_folder = None
+        images_folder = None
+        starting_position = None
         self._scan_lock.acquire(timeout=0.1)
         try:
             # Before anything else, check that we've got a background set
@@ -578,21 +583,26 @@ class SmartScanThing(Thing):
             )
             raise e
         finally:
+            try:
+                logger.info("Returning to starting position.")
+                if starting_position is not None:
+                    stage.move_absolute(**starting_position, block_cancellation=True)
+            finally:
+                self._scan_lock.release()
             logger.info("Waiting for background processes to finish...")
             self.preview_stitch_wait()
             self.correlate_wait()
             logger.info("Stitching final image (may take some time)...")
             try:
-                self.stitch_scan(logger, os.path.basename(scan_folder))
+                if scan_folder:
+                    self.stitch_scan(logger, os.path.basename(scan_folder))
             except SubprocessError as e:
                 logger.exception(f"Stitching failed: {e}")
             logger.info("Creating zip archive of images (may take some time)...")
-            shutil.make_archive(
-                os.path.join(scan_folder, "images"), "zip", images_folder
-            )
-            logger.info("Returning to starting position.")
-            stage.move_absolute(**starting_position, block_cancellation=True)
-            self._scan_lock.release()
+            if images_folder and os.path.isdir(images_folder):
+                shutil.make_archive(
+                    os.path.join(scan_folder, "images"), "zip", images_folder
+                )
     
     @thing_property
     def max_range(self) -> int:
