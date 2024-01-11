@@ -4,6 +4,7 @@ from fastapi import Response
 from labthings_fastapi.thing_server import ThingServer
 from labthings_sangaboard import SangaboardThing
 from labthings_picamera2.thing import StreamingPiCamera2
+from socket import gethostname
 
 from .things.autofocus import AutofocusThing
 from .things.camera_stage_mapping import CameraStageMapper
@@ -50,6 +51,7 @@ def routes_stub() -> dict[str, dict]:
     fake_routes = [
         "/api/v2/",
         "/api/v2/streams/snapshot",
+        "/api/v2/instrument/settings/name"
     ]
     return {url: {"url": url, "methods": ["GET"]} for url in fake_routes}
 
@@ -62,3 +64,8 @@ async def thumbnail() -> JPEGResponse:
     """A low-resolution snapshot, for compatibility with OF connect"""
     blob = await thing_server.things["/camera/"].lores_mjpeg_stream.grab_frame()
     return JPEGResponse(blob)
+
+@app.get("/api/v2/instrument/settings/name")
+def get_hostname() -> str:
+    """Get the hostname of the device, for compatibility with OF connect"""
+    return gethostname()
