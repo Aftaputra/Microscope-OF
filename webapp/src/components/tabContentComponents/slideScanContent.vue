@@ -49,6 +49,7 @@
         </div>
       </div>
       <div v-show="scanning">
+        <mini-stream-display v-if="displayImageOnRight" />
         <action-log-display
           id="log-display"
           :log="log"
@@ -71,17 +72,6 @@
         >
           Close
         </button>
-      </div>
-      <mini-stream-display v-if="displayImageOnRight" />
-      <div v-show="false">
-        <taskSubmitter
-          ref="stitchFromStageSubmitter"
-          :submit-url="stitchFromStageUri"
-          submit-label="Stitch image from stage coordinates"
-          :submit-data="stitchPayload"
-          @completed="lastStitchedImage = $event.href"
-          @update:taskStatus="stitchFromStageStatus = $event"
-        />
       </div>
     </div>
     <div class="view-component uk-width-expand">
@@ -120,7 +110,7 @@ export default {
       stitchFromStageStatus: "",
       progress: null,
       log: [],
-      lastStitchedImage: null
+      lastStitchedImage: null,
     };
   },
 
@@ -131,34 +121,8 @@ export default {
     smartScanUri() {
       return this.thingActionUrl("smart_scan", "sample_scan");
     },
-    stitchFromStageUri () {
-      return this.thingActionUrl("stitching", "stitch_scan_from_stage");
-    },
-    stitchUri () {
-      return this.thingActionUrl("stitching", "stitch_scan");
-    },
-    correlateUri () {
-      return this.thingActionUrl("stitching", "correlate_scan");
-    },
     cancellable() {
       return (this.taskStatus == "running") | (this.taskStatus == "pending");
-    },
-    correlatePayload() {
-      return {
-        scan_name: this.lastScanName
-      }
-    },
-    stitchPayload() {
-      return {
-        downsample: 2,
-        ...this.correlatePayload
-      }
-    },
-    stitchFromStagePayload() {
-      return {
-        downsample: 2,
-        ...this.correlatePayload
-      }
     },
     displayImageOnRight() {
       return this.scanning & this.lastStitchedImage !== null;
@@ -176,14 +140,15 @@ export default {
     startScanning() {
       this.lastStitchedImage = null;
       this.scanning = true;
-      setTimeout(this.pollScan, 5000);
+      setTimeout(this.pollScan, 1000);
     },
-    pollScan() {
+    async pollScan() {
       if (this.cancellable) {  // while the scan is running
-        if (!["pending", "running"].includes(this.stitchFromStageStatus)) {
-          this.$refs.stitchFromStageSubmitter.startTask()
+        let mtime = await this.readThingProperty("smart_scan", "latest_preview_stitch_time");
+        if (mtime !== null) {
+          this.lastStitchedImage = `${this.$store.getters.baseUri}/smart_scan/latest_preview_stitch.jpg?t=${mtime}`;
         }
-        setTimeout(this.pollScan, 5000);  // keep rescheduling until it's stopped
+        setTimeout(this.pollScan, 1000);  // keep rescheduling until it's stopped
       }
     }
   }

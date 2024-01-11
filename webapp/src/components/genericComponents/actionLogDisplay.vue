@@ -1,5 +1,5 @@
 <template>
-  <div ref="logContainer" class="log-container">
+  <div ref="logContainer" class="log-container uk-margin-left uk-margin-right uk-margin">
     <div v-if="log">
       <div v-for="(item, index) in log" :key="`log_entry_${index}`">
         {{ item.message }}
@@ -57,5 +57,8 @@ export default {
   position: relative;
   overflow-y: auto;
   overflow-x: auto;
+  background-color: white;
+  padding: 0.5em;
+  border: 1px solid black;
 }
 </style>
