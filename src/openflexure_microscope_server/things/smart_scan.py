@@ -148,6 +148,8 @@ def generate_config(folder_path: str, positions: list, names: list, camera_to_sa
     positions = np.array(positions)
     mean_loc = np.mean(positions, axis = 0)
 
+    #TODO: positions from recent scans need to be 2x bigger - change to CSM res?
+
     camera_to_sample_matrix = scale_csm(camera_to_sample_matrix, csm_calibration_width, img_width)
 
     with open(os.path.join(folder_path, 'TileConfiguration.txt'), 'w') as fp:
@@ -422,9 +424,6 @@ class SmartScanThing(Thing):
             # camera and stage may not be aligned).
             CSM = csm.image_to_stage_displacement_matrix
             csm_calibration_width = csm.last_calibration["image_resolution"][1]
-            
-            # TODO: this downsampling by two is to deal with a camera issue
-            img_width = int(arr.shape[1] / 2)
 
             overlap = self.overlap
 
@@ -539,6 +538,8 @@ class SmartScanThing(Thing):
                     exif = img.info['exif']
                     width, height = img.size 
                     img = img.resize((int(width*0.5), int(height*0.5)))
+
+                    img_width, _ = img.size
 
                     logger.info(f"Saving {name}")
                     img.save(
