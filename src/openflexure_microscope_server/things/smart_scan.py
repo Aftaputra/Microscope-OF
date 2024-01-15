@@ -564,10 +564,11 @@ class SmartScanThing(Thing):
                     positions.append(loc[:2])
                     names.append(name)
 
-                    if not self.preview_stitch_running():
-                        self.preview_stitch_start(images_folder)
-                    if not self.correlate_running():
-                        self.correlate_start(images_folder, overlap=overlap)
+                    if self.stitch_automatically:
+                        if not self.preview_stitch_running():
+                            self.preview_stitch_start(images_folder)
+                        if not self.correlate_running():
+                            self.correlate_start(images_folder, overlap=overlap)
 
                 # add the current position to the list of all positions visited
                 true_path.append(loc)
@@ -615,7 +616,7 @@ class SmartScanThing(Thing):
             self.correlate_wait()
             logger.info("Stitching final image (may take some time)...")
             try:
-                if scan_folder:
+                if scan_folder and self.stitch_automatically:
                     self.stitch_scan(logger, os.path.basename(scan_folder), overlap=overlap)
             except SubprocessError as e:
                 logger.exception(f"Stitching failed: {e}")
@@ -663,6 +664,15 @@ class SmartScanThing(Thing):
     @overlap.setter
     def overlap(self, value: float) -> None:
         self.thing_settings["overlap"] = value
+    
+    @thing_property
+    def stitch_automatically(self) -> bool:
+        """Should we attempt to stitch scans as we go?"""
+        return self.thing_settings.get("stitch_automatically", True)
+    
+    @stitch_automatically.setter
+    def stitch_automatically(self, value: bool) -> None:
+        self.thing_settings["stitch_automatically"] = value
 
     @thing_property
     def scans(self) -> list[ScanInfo]:
