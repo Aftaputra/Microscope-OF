@@ -7,12 +7,21 @@ the server.
 """
 from collections.abc import Mapping
 from socket import gethostname
-from typing import Any, MutableMapping, Optional, Sequence
+from typing import Annotated, Any, MutableMapping, Optional, Sequence
 from uuid import UUID, uuid4
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException, Request
 from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.decorators import thing_action, thing_property
+from labthings_fastapi.thing_server import find_thing_server, ThingServer
+from labthings_fastapi.dependencies.invocation import InvocationLogger
+
+
+def thing_server_from_request(request: Request) -> ThingServer:
+    return find_thing_server(request.app)
+
+
+ThingServerDep = Annotated[ThingServer, Depends(thing_server_from_request)]
 
 
 def recursive_update(old_dict: MutableMapping, update: Mapping):
@@ -123,3 +132,30 @@ class SettingsManager(Thing):
             except KeyError:
                 continue
         return state
+
+    @thing_action
+    def save_all_thing_settings(self, thing_server: ThingServerDep, logger: InvocationLogger) -> None:
+        """Ensure all the Things sync their settings to disk.
+
+        Normally, each Thing has a `thing_settings` attribute that can be
+        used to save settings. That dictionary is saved to a JSON file
+        when the server shuts down cleanly.
+
+        This action causes all the `thing_settings` dictionaries to be
+        saved to files immediately, meaning that settings will not be
+        lost in the event of a server crash, power outage, etc.
+        """
+        for name, thing in thing_server.things.items():
+            try:
+                if thing._labthings_thing_settings:
+                    thing._labthings_thing_settings.write_to_file()
+                    logger.info(f"Wrote {name} settings to disk.")
+            except PermissionError:
+                logger.warning(
+                    f"Could not write {name} settings to disk: permission error."
+                )
+            except FileNotFoundError:
+                logger.warning(
+                    f"Could not write {name} settings, folder not found"
+                )
+
