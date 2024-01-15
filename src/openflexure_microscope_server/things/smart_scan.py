@@ -845,7 +845,7 @@ class SmartScanThing(Thing):
             self, logger: InvocationLogger, cmd: list[str],
         ) -> CompletedProcess:
         """Run a  subprocess and log any output"""
-        logger.info(f"Running command in subprocess: `{' '.join(cmd)}")
+        logger.info(f"Running command in subprocess: `{' '.join(cmd)}`")
         output = run(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
         for pipe in [output.stdout, output.stderr]:
             if pipe:
