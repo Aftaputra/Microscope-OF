@@ -43,6 +43,13 @@
                   label="Detect and skip empty fields"
                 />
               </div>
+              <div class="uk-margin">
+                <propertyControl
+                  thing-name="smart_scan"
+                  property-name="stitch_automatically"
+                  label="Automatically stitch images together"
+                />
+              </div>
             </div>
           </li>
         </ul>
