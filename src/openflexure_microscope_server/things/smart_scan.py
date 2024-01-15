@@ -341,12 +341,12 @@ class SmartScanThing(Thing):
             scan_name = self.latest_scan_name
         return os.path.join(self.scans_folder_path, scan_name)
     
-    def new_scan_folder(self) -> str:
+    def new_scan_folder(self, scan_name: Optional[str]="") -> str:
         """Create a new empty folder, into which we can save scan images"""
         if not os.path.exists(self.scans_folder_path):
             os.makedirs(self.scans_folder_path)
         for j in range(999999):
-            folder_path = os.path.join(self.scans_folder_path, f"scan_{j:06}")
+            folder_path = os.path.join(self.scans_folder_path, f"scan_{scan_name}{j:06}")
             if not os.path.exists(folder_path):
                 os.makedirs(folder_path)
                 self._latest_scan_name = os.path.basename(folder_path)
@@ -364,6 +364,7 @@ class SmartScanThing(Thing):
         csm: CSMDep,
         background_detect: BackgroundDep,
         recentre: RecentreStage,
+        scan_name: Optional[str]
     ):
         """Move the stage to cover an area, taking images that can be tiled together.
 
@@ -441,7 +442,7 @@ class SmartScanThing(Thing):
             ids = []
             start_time = time.strftime("%H_%M_%S-%d_%m_%Y")
 
-            scan_folder = self.new_scan_folder()
+            scan_folder = self.new_scan_folder(scan_name)
             images_folder = os.path.join(scan_folder, "images")
             os.mkdir(images_folder)
             raw_images_folder = os.path.join(images_folder, "raw")
