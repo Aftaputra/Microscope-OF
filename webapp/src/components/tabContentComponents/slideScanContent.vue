@@ -46,10 +46,20 @@
             </div>
           </li>
         </ul>
+        <label class="uk-form-label" for="form-stacked-text">Sample ID</label>
+        <div class="uk-form-controls">
+          <input
+            v-model="scan_name"
+            class="uk-input uk-form-small"
+            type="text"
+            name="Scan Name"
+          />
+        </div>
         <div class="uk-margin">
           <taskSubmitter
             ref="smartScanTaskSubmitter"
             :submit-url="smartScanUri"
+            :submit-data="{ scan_name: scan_name }"
             submit-label="Start smart scan"
             :can-terminate="true"
             @taskStarted="startScanning"
@@ -125,6 +135,7 @@ export default {
       progress: null,
       log: [],
       lastStitchedImage: null,
+      scan_name: ""
     };
   },
 

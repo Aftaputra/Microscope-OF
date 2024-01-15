@@ -341,12 +341,24 @@ class SmartScanThing(Thing):
             scan_name = self.latest_scan_name
         return os.path.join(self.scans_folder_path, scan_name)
     
-    def new_scan_folder(self) -> str:
-        """Create a new empty folder, into which we can save scan images"""
+    def new_scan_folder(self, scan_name: str="scan") -> str:
+        """Create a new empty folder, into which we can save scan images
+        
+        The folder will be named `{scan_name}_000001/` where the number is
+        zero-padded to be 6 digits long (to allow correct sorting if the
+        scans are ordered alphanumerically).
+        
+        Note that if you have discontinuous numbering (e.g. you've got scans
+        numbered 1 through 10, but you deleted scan 5), then the gaps will
+        get filled in - so there's no guarantee, for now, that the numbers
+        will correspond to order of creation. This may change in the future.
+        """
         if not os.path.exists(self.scans_folder_path):
             os.makedirs(self.scans_folder_path)
+        if not scan_name:
+            scan_name = "scan"
         for j in range(999999):
-            folder_path = os.path.join(self.scans_folder_path, f"scan_{j:06}")
+            folder_path = os.path.join(self.scans_folder_path, f"{scan_name}_{j:06}")
             if not os.path.exists(folder_path):
                 os.makedirs(folder_path)
                 self._latest_scan_name = os.path.basename(folder_path)
@@ -364,6 +376,7 @@ class SmartScanThing(Thing):
         csm: CSMDep,
         background_detect: BackgroundDep,
         recentre: RecentreStage,
+        scan_name: str="",
     ):
         """Move the stage to cover an area, taking images that can be tiled together.
 
@@ -441,7 +454,7 @@ class SmartScanThing(Thing):
             ids = []
             start_time = time.strftime("%H_%M_%S-%d_%m_%Y")
 
-            scan_folder = self.new_scan_folder()
+            scan_folder = self.new_scan_folder(scan_name)
             images_folder = os.path.join(scan_folder, "images")
             os.mkdir(images_folder)
             raw_images_folder = os.path.join(images_folder, "raw")
@@ -832,7 +845,7 @@ class SmartScanThing(Thing):
             self, logger: InvocationLogger, cmd: list[str],
         ) -> CompletedProcess:
         """Run a  subprocess and log any output"""
-        logger.info(f"Running command in subprocess: `{' '.join(cmd)}")
+        logger.info(f"Running command in subprocess: `{' '.join(cmd)}`")
         output = run(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
         for pipe in [output.stdout, output.stderr]:
             if pipe:
