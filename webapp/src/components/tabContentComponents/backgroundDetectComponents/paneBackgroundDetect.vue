@@ -4,6 +4,37 @@
       The background detect Thing seems to be missing or incompatible.
     </div>
     <div v-show="backendOK">
+      <ul uk-accordion="multiple: true">
+          <li>
+            <a class="uk-accordion-title" href="#">Settings</a>
+            <div class="uk-accordion-content">
+              <div class="uk-margin">
+                <propertyControl
+                  thing-name="background_detect"
+                  property-name="tolerance"
+                  label="Tolerance"
+                />
+              </div>
+              <div class="uk-margin">
+                <propertyControl
+                  thing-name="background_detect"
+                  property-name="fraction"
+                  label="Sample coverage required (%)"
+                />
+              </div>
+              <div class="uk-margin">
+                <taskSubmitter
+                  :submit-url="backgroundFractionUri"
+                  submit-label="Check current image"
+                  :can-terminate="false"
+                  :poll-interval="0.1"
+                  @response="alertBackgroundFraction"
+                  @error="backgroundDetectError"
+                />
+              </div>
+            </div>
+          </li>
+        </ul>
       <div class="uk-margin">
         <taskSubmitter
           :submit-url="setBackgroundUri"
@@ -14,33 +45,9 @@
         />
       </div>
       <div class="uk-margin">
-        <propertyControl
-          thing-name="background_detect"
-          property-name="tolerance"
-          label="Tolerance"
-        />
-      </div>
-      <div class="uk-margin">
-        <propertyControl
-          thing-name="background_detect"
-          property-name="fraction"
-          label="Sample coverage required (%)"
-        />
-      </div>
-      <div class="uk-margin">
-        <taskSubmitter
-          :submit-url="backgroundFractionUri"
-          submit-label="Check current image"
-          :can-terminate="false"
-          :poll-interval="0.1"
-          @response="alertBackgroundFraction"
-          @error="backgroundDetectError"
-        />
-      </div>
-      <div class="uk-margin">
         <taskSubmitter
           :submit-url="labelImageUri"
-          submit-label="Label current image"
+          submit-label="Check current image"
           :can-terminate="false"
           :poll-interval="0.1"
           @response="alertImageLabel"
