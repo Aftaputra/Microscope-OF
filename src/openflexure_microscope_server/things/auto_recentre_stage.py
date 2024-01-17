@@ -61,7 +61,6 @@ class RecentringThing(Thing):
                 stage.position["z"] - height_min < dz / 5
                 or height_max - stage.position["z"] < dz / 5
             ):
-                print(heights)
                 attempts += 1
             else:
                 repeat = False
@@ -110,8 +109,6 @@ class RecentringThing(Thing):
             # Start off with the current position, and moving in the positive direction
             focused_pos[direction] = [list(stage.position.values())]
             moves = +1
-
-            print(centre)
 
             stage.move_absolute(x=centre[0], y=centre[1], z=centre[2])
             steps = 0
