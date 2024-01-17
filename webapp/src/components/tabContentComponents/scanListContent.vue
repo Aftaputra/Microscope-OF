@@ -54,6 +54,15 @@
               <button class="uk-button" @click="deleteScan(item.name)">
                 Delete
               </button>
+              <task-submitter
+                submit-label="Stitch Images"
+                :can-terminate="false"
+                :submit-data="{'scan_name': item.name}"
+                :button-primary="false"
+                :submit-url="stitchUri"
+                :modal-progress="true"
+                @error="modalError"
+              />
               <ul>
                 <li>{{ item.number_of_images }} images</li>
                 <li>created {{ formatDate(item.created) }}</li>
@@ -99,6 +108,9 @@ export default {
     },
     createZipOfScanUri() {
       return this.thingActionUrl("smart_scan",  "create_zip_of_scan");
+    },
+    stitchUri() {
+      return this.thingActionUrl("smart_scan",  "stitch_scan");
     }
   },
 
