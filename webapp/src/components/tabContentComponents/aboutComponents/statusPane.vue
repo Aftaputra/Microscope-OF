@@ -3,6 +3,11 @@
     <div v-if="$store.state.available">
       <div>
         <div class="uk-margin-small-bottom">
+          <b>Microscope hostname:</b>
+          <br />
+          {{ $store.state.microscopeHostname }}
+        </div>
+        <div class="uk-margin-small-bottom">
           <b>API origin:</b>
           <br />
           {{ $store.state.origin }}

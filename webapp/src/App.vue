@@ -321,6 +321,13 @@ export default {
             );
           }
         }
+        try {
+          let hostname = await this.readThingProperty("settings", "hostname");
+          this.$store.commit("changeMicroscopeHostname", hostname);
+          document.title = `OpenFlexure Microscope: ${hostname}`;
+        } catch {
+          this.$store.commit("changeMicroscopeHostname", null);
+        }
         this.$store.commit("setConnected");
         this.$store.commit("setErrorMessage", null);
       } catch (error) {

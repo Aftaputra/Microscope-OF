@@ -91,7 +91,8 @@ export default new Vuex.Store({
     imjoyEnabled: false,
     galleryEnabled: true,
     appTheme: "system",
-    activeStreams: {}
+    activeStreams: {},
+    microscopeHostname: ""
   },
 
   mutations: {
@@ -144,6 +145,9 @@ export default new Vuex.Store({
     },
     removeStream(state, id) {
       state.activeStreams[id] = false;
+    },
+    changeMicroscopeHostname(state, value) {
+      state.microscopeHostname = value;
     }
   },
 
