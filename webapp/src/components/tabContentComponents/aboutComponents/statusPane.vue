@@ -12,6 +12,13 @@
           <br />
           {{ $store.state.origin }}
         </div>
+        <task-submitter
+          v-if="flashLedUri"
+          :submit-url="flashLedUri"
+          submit-label="Flash Illumination"
+          :can-terminate="false"
+          :submit-data="{'dt': 0.25}"
+        />
       </div>
 
       <hr />
@@ -76,13 +83,18 @@
 
 <script>
 import axios from "axios";
+import taskSubmitter from '../../genericComponents/taskSubmitter.vue';
 
 export default {
+  components: { taskSubmitter },
   name: "StatusPane",
 
   computed: {
     things: function() {
       return this.$store.getters["wot/thingDescriptions"];
+    },
+    flashLedUri() {
+      return this.thingActionUrl("stage", "flash_led");
     }
   },
 
