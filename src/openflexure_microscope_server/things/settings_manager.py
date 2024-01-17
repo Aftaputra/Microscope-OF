@@ -102,6 +102,11 @@ class SettingsManager(Thing):
             self.thing_settings["microscope_id"] = str(uuid4())
         return UUID(self.thing_settings["microscope_id"])
 
+    @thing_property
+    def hostname(self) -> str:
+        """The hostname of the microscope, as reported by its operating system."""
+        return gethostname()
+
     @thing_action
     def get_things_state(self, metadata_getter: GetThingStates) -> Mapping:
         """Metadata summarising the current state of all Things in the server"""
@@ -119,7 +124,7 @@ class SettingsManager(Thing):
     @property
     def thing_state(self) -> Mapping:
         state = {
-            "hostname": gethostname(),
+            "hostname": self.hostname,
             "microscope-uuid": str(self.microscope_id),
         }
         metadata = self.external_metadata
