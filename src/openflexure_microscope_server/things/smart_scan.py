@@ -564,9 +564,9 @@ class SmartScanThing(Thing):
                     positions.append(loc[:2])
                     names.append(name)
 
+                    if not self.preview_stitch_running():
+                        self.preview_stitch_start(images_folder)
                     if self.stitch_automatically:
-                        if not self.preview_stitch_running():
-                            self.preview_stitch_start(images_folder)
                         if not self.correlate_running():
                             self.correlate_start(images_folder, overlap=overlap)
 
