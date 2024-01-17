@@ -25,7 +25,7 @@
               <div class="uk-margin">
                 <taskSubmitter
                   :submit-url="backgroundFractionUri"
-                  submit-label="Check current image"
+                  submit-label="Check coverage"
                   :can-terminate="false"
                   :poll-interval="0.1"
                   @response="alertBackgroundFraction"
