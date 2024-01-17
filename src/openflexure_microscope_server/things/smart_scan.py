@@ -1,4 +1,5 @@
 import shutil
+import zipfile
 import threading
 from typing import Mapping, Optional
 import cv2
@@ -312,6 +313,9 @@ DOWNLOADABLE_SCAN_FILES = (
 class JPEGBlob(BlobOutput):
     media_type = "image/jpeg"
 
+class ZipBlob(BlobOutput):
+    media_type = "application/zip"
+
 class SmartScanThing(Thing):
     def __init__(self, path_to_openflexure_stitch: str):
         self._script = path_to_openflexure_stitch
@@ -425,6 +429,11 @@ class SmartScanThing(Thing):
 
             r = cam.grab_jpeg()
             arr = np.array(Image.open(r.open()))
+            if csm.image_resolution is None:
+                raise RuntimeError(
+                    "Camera-stage mapping is not calibrated. This is required before "
+                    "scans can be carried out."
+                )
             if list(arr.shape[:2]) != [int(i) for i in csm.image_resolution]:
                 logger.error(
                     f"Images are, by default, {arr.shape[:2]}, but the CSM was "
@@ -564,9 +573,9 @@ class SmartScanThing(Thing):
                     positions.append(loc[:2])
                     names.append(name)
 
+                    if not self.preview_stitch_running():
+                        self.preview_stitch_start(images_folder)
                     if self.stitch_automatically:
-                        if not self.preview_stitch_running():
-                            self.preview_stitch_start(images_folder)
                         if not self.correlate_running():
                             self.correlate_start(images_folder, overlap=overlap)
 
@@ -593,15 +602,17 @@ class SmartScanThing(Thing):
         except InvocationCancelledError:
             logger.error("Stopping scan because it was cancelled.")
         except NotEnoughFreeSpaceError as e:
-            logger.exception(
+            logger.error(
                 f"Stopping scan to avoid filling up the disk: {e}",
+                exc_info=e,
             )
             raise e
         except Exception as e:
-            logger.exception(
+            logger.error(
                 f"The scan stopped because of an error: {e}",
                 "We will attempt to stitch and archive the images acquired "
-                "so far."
+                "so far.",
+                exc_info=e,
             )
             raise e
         finally:
@@ -614,18 +625,13 @@ class SmartScanThing(Thing):
             logger.info("Waiting for background processes to finish...")
             self.preview_stitch_wait()
             self.correlate_wait()
-            logger.info("Stitching final image (may take some time)...")
             try:
                 if scan_folder and self.stitch_automatically:
+                    logger.info("Stitching final image (may take some time)...")
                     self.stitch_scan(logger, os.path.basename(scan_folder), overlap=overlap)
             except SubprocessError as e:
-                logger.exception(f"Stitching failed: {e}")
-            logger.info("Creating zip archive of images (may take some time)...")
-            if images_folder and os.path.isdir(images_folder):
-                shutil.make_archive(
-                    os.path.join(scan_folder, "images"), "zip", images_folder
-                )
-    
+                logger.error(f"Stitching failed: {e}", exc_info=e)
+
     @thing_property
     def max_range(self) -> int:
         """The maximum distance from the centre of the scan before we break"""
@@ -777,12 +783,17 @@ class SmartScanThing(Thing):
 
     @thing_property
     def latest_preview_stitch_time(self) -> Optional[datetime]:
-        """The modification time of the latest preview image"""
-        fpath = self.latest_preview_stitch_path
-        if not os.path.exists(fpath):
+        """The modification time of the latest preview image
+        
+        This will return `null` if there is no preview image to return.
+        """
+        try:
+            fpath = self.latest_preview_stitch_path
+            if os.path.exists(fpath):
+                return os.path.getmtime(fpath)
+        except IOError:
             return None
-        else:
-            return os.path.getmtime(fpath)
+        return None
         
     @fastapi_endpoint(
             "get",
@@ -868,4 +879,33 @@ class SmartScanThing(Thing):
         """Generate a stitched image based on stage position metadata"""
         images_folder = self.images_folder(scan_name=scan_name)
         self.run_subprocess(logger, [self._script, "--stitching_mode", "all", "--minimum_overlap", f"{overlap*0.9}", images_folder])
+    
+    @thing_action
+    def create_zip_of_scan(self, logger: InvocationLogger, scan_name: Optional[str]=None) -> ZipBlob:
+        """Generate a zip file that can be downloaded, with all the scan files in it."""
+        images_folder = self.images_folder(scan_name=scan_name)
+        scan_folder = self.scan_folder_path(scan_name=scan_name)
+        if scan_folder != os.path.dirname(images_folder) or os.path.basename(images_folder) != "images":
+            logger.error(
+                "There is a problem with filenames, the archive may be incorrect."
+                f"scan_folder: {scan_folder}, images_folder: {images_folder}."
+            )
+        if not os.path.isdir(images_folder):
+            raise FileNotFoundError(f"Tried to make a zip archive of {images_folder} but it does not exist.")
+        logger.info("Creating zip archive of images (may take some time)...")
+        shutil.make_archive(
+            os.path.join(scan_folder, "images"),
+            "zip",
+            scan_folder,
+            "images/",
+            logger=logger
+        )
+        zip_fname = os.path.join(scan_folder, "images.zip")
+        # Promote key files to the top level of the zip
+        with zipfile.ZipFile(zip_fname, mode="a") as zip:
+            for fname in ["stitched_from_stage.jpg", "stitched.jpg"]:
+                fpath = os.path.join(images_folder, fname)
+                if os.path.exists(fpath):
+                    zip.write(fpath, arcname=fname)
+        return ZipBlob.from_file(zip_fname)
 

@@ -120,6 +120,7 @@ export const wotStoreModule = {
 
 export function findFormHref(affordance, op) {
   // Find the form in the affordance that matches the given operation type
+  if (affordance == undefined) return undefined;
   let forms = affordance.forms;
   let matchingForm = forms.find(f => f.op == op || f.op.includes(op));
   if (matchingForm == undefined) return undefined;

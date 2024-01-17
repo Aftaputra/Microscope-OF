@@ -42,16 +42,27 @@
           <div class="uk-card">
             <div class="uk-card-body">
               <h3 class="uk-card-title">{{ item.name }}</h3>
-              <a
-                :href="`${scansUri}/${item.name}/images.zip`"
-                :download="`${item.name}_images.zip`"
-                class="uk-button uk-button-default"
-              >
-                Download images
-              </a>
+              <task-submitter
+                submit-label="Download ZIP"
+                :can-terminate="false"
+                :submit-data="{'scan_name': item.name}"
+                :button-primary="true"
+                :submit-url="createZipOfScanUri"
+                @response="downloadZipFile"
+                @error="modalError"
+              />
               <button class="uk-button" @click="deleteScan(item.name)">
                 Delete
               </button>
+              <task-submitter
+                submit-label="Stitch Images"
+                :can-terminate="false"
+                :submit-data="{'scan_name': item.name}"
+                :button-primary="false"
+                :submit-url="stitchUri"
+                :modal-progress="true"
+                @error="modalError"
+              />
               <ul>
                 <li>{{ item.number_of_images }} images</li>
                 <li>created {{ formatDate(item.created) }}</li>
@@ -73,9 +84,11 @@
 
 <script>
 import axios from "axios";
+import taskSubmitter from '../genericComponents/taskSubmitter.vue';
 
 // Export main app
 export default {
+  components: { taskSubmitter },
   name: "ScanListContent",
 
   data: function() {
@@ -92,6 +105,12 @@ export default {
         "readproperty",
         true
       );
+    },
+    createZipOfScanUri() {
+      return this.thingActionUrl("smart_scan",  "create_zip_of_scan");
+    },
+    stitchUri() {
+      return this.thingActionUrl("smart_scan",  "stitch_scan");
     }
   },
 
@@ -186,6 +205,17 @@ export default {
         // if the confirmation was cancelled, it's rejected with null error
         if (e) this.modalError(e);
       }
+    },
+    async downloadZipFile(response) {
+      const scan_name = response.input.scan_name;
+      const filename = `${scan_name}_images.zip`
+      const url = response.output.href;
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      console.log(link);
+      document.body.appendChild(link);
+      link.click();
     }
   }
 };

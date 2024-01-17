@@ -71,12 +71,12 @@ Vue.mixin({
       }
       await axios.put(url, value);
     },
-    thingActionUrl(thing, action) {
+    thingActionUrl(thing, action, allow_missing=false) {
       let url = this.$store.getters["wot/thingActionUrl"](
         thing,
         action,
         "invokeaction",
-        false
+        allow_missing
       );
       return url;
     },
