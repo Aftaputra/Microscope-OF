@@ -184,7 +184,7 @@ class BackgroundDetectThing(Thing):
     @thing_property
     def tolerance(self) -> float:
         """How many standard deviations to allow for the background"""
-        return self.thing_settings.get("tolerance", 5)
+        return self.thing_settings.get("tolerance", 7)
     
     @tolerance.setter
     def tolerance(self, value: float) -> None:
@@ -656,7 +656,7 @@ class SmartScanThing(Thing):
     @thing_property
     def autofocus_dz(self) -> int:
         """The z distance to perform an autofocus"""
-        return self.thing_settings.get("autofocus_dz", 3000)
+        return self.thing_settings.get("autofocus_dz", 1000)
 
     @autofocus_dz.setter
     def autofocus_dz(self, value: int) -> None:
@@ -665,7 +665,7 @@ class SmartScanThing(Thing):
     @thing_property
     def overlap(self) -> float:
         """The z distance to perform an autofocus"""
-        return self.thing_settings.get("overlap", 0.4)
+        return self.thing_settings.get("overlap", 0.45)
 
     @overlap.setter
     def overlap(self, value: float) -> None:
