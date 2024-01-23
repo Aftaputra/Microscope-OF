@@ -104,6 +104,9 @@
           Close
         </button>
       </div>
+      <h3 v-if="scanning">
+        Scan ID: {{ scan_name }}
+      </h3>
     </div>
     <div class="view-component uk-width-expand">
       <img v-if="displayImageOnRight" :src="lastStitchedImage" id="last-stitched-image"/>
