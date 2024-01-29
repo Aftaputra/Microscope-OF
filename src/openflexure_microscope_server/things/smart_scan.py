@@ -484,6 +484,8 @@ class SmartScanThing(Thing):
                 if len(focused_path) > 1:
                     z_index = closest(loc, focused_path)
                     z=int(focused_path[z_index][2])
+                else:
+                    z = loc[2]
                     # print('Moving to {0}'.format([coords[0], coords[1], focused_path[z_index][2]]))
                     # print(focused_path)
                 stage.move_absolute(

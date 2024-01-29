@@ -15,29 +15,6 @@ CamDep = direct_thing_client_dependency(StreamingPiCamera2, "/camera/")
 CSMDep = direct_thing_client_dependency(CameraStageMapper, "/camera_stage_mapping/")
 AutofocusDep = direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 
-
-def turningpoints(lst):
-    dx = np.diff(lst)
-    return dx[1:] * dx[:-1] < 0
-
-
-def unpack_autofocus(scan_data):
-    """Extract z, sharpness data from a move_and_measure call"""
-    scan_data = dict(scan_data)
-    jpeg_times = scan_data["jpeg_times"]
-    jpeg_sizes = scan_data["jpeg_sizes"]
-    jpeg_sizes_MB = [x / 10**3 for x in jpeg_sizes]
-    stage_times = scan_data["stage_times"]
-    stage_positions = scan_data["stage_positions"]
-    stage_height = [pos["z"] for pos in stage_positions]
-
-    jpeg_heights = np.interp(jpeg_times, stage_times, stage_height)
-
-    turning = np.where(turningpoints(jpeg_heights))[0]
-
-    return jpeg_heights[turning[0] : turning[1]], jpeg_sizes_MB[turning[0] : turning[1]]
-
-
 class RecentringThing(Thing):
     @thing_action
     def looping_autofocus(self, autofocus: AutofocusDep, stage: StageDep, dz=2000, start='centre'):
@@ -51,8 +28,7 @@ class RecentringThing(Thing):
         repeat = True
         attempts = 0
         while repeat and attempts < 10:
-            data = autofocus.fast_autofocus(dz=dz, start=start)
-            heights, _ = unpack_autofocus(data)
+            heights, sizes = autofocus.fast_autofocus(dz=dz, start=start)
             height_min = np.min(heights)
             height_max = np.max(heights)
             # TODO: max heights seems badly wrong! Something about turning?

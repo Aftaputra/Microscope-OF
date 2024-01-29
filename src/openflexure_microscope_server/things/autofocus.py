@@ -119,7 +119,7 @@ class JPEGSharpnessMonitor:
             raise ValueError(
                 "No images were captured during the move of the stage.  Perhaps the camera is not streaming images?"
             )
-        return jz[np.argmax(js)]
+        return jz[np.argmax(js)], jz, js
 
     def data_dict(self) -> SharpnessDataArrays:
         """Return the gathered data as a single convenient dictionary"""
@@ -161,13 +161,13 @@ class AutofocusThing(Thing):
             # z: Final z position after move
             i, z = m.focus_rel(dz, block_cancellation=True)
             # Get the z position with highest sharpness from the previous move (index i)
-            fz: int = m.sharpest_z_on_move(i)
+            fz, heights, sizes = m.sharpest_z_on_move(i)
             # Move all the way to the start so it's consistent
             i, z = m.focus_rel(-dz)
             # Move to the target position fz (relative move of (fz - z))
             m.focus_rel(fz - z)
             # Return all focus data
-            return m.data_dict()
+            return heights, sizes
         
     @thing_action
     def move_and_measure(
