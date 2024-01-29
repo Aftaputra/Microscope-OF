@@ -143,7 +143,8 @@ class AutofocusThing(Thing):
     def fast_autofocus(
         self,
         m: SharpnessMonitorDep,
-        dz: int=2000
+        dz: int=2000,
+        start: str='centre',
     ) -> SharpnessDataArrays:
         """Sweep the stage up and down, then move to the sharpest point
         
@@ -153,7 +154,8 @@ class AutofocusThing(Thing):
         """
         with m.run():
             # Move to (-dz / 2)
-            m.focus_rel(-dz / 2)
+            if start == 'centre':
+                m.focus_rel(-dz / 2)
             # Move to dz while monitoring sharpness
             # i: Sharpness monitor index for this move
             # z: Final z position after move

@@ -480,15 +480,15 @@ class SmartScanThing(Thing):
 
                 # TODO: combine this with the move below for speed (I think this could just be "else")
                 logger.info(f"Moving to {loc}")
-                stage.move_absolute(x=int(loc[0]), y=int(loc[1]), z=int(loc[2]))
 
                 if len(focused_path) > 1:
                     z_index = closest(loc, focused_path)
+                    z=int(focused_path[z_index][2])
                     # print('Moving to {0}'.format([coords[0], coords[1], focused_path[z_index][2]]))
                     # print(focused_path)
-                    stage.move_absolute(
-                        x=int(loc[0]), y=int(loc[1]), z=int(focused_path[z_index][2])
-                    )
+                stage.move_absolute(
+                    x=int(loc[0]), y=int(loc[1]), z = z - self.autofocus_dz / 2
+                )
 
                 # Check if the image is background
                 if self.skip_background:
@@ -517,7 +517,7 @@ class SmartScanThing(Thing):
                     attempts = 0
                     if self.autofocus_dz > 200:
                         while True:
-                            recentre.looping_autofocus(dz=self.autofocus_dz)
+                            recentre.looping_autofocus(dz=self.autofocus_dz, start = 'base')
                             current_height = stage.position["z"]
 
                             # if there have been successful autofocuses in this scan, find the closest one in x-y
@@ -542,7 +542,7 @@ class SmartScanThing(Thing):
                                 focused_path.append(loc)
                                 break
                             if attempts >= 3:
-                                logger.warning("Could not autofocus after 5 attempts.")
+                                logger.warning("Could not autofocus after 3 attempts.")
                                 break
                             # if the autofocus was rejected, we return to the height of the closest successful autofocus. not perfect, but better than wandering out of focus
                             logger.info(

@@ -33,14 +33,14 @@ def unpack_autofocus(scan_data):
 
     jpeg_heights = np.interp(jpeg_times, stage_times, stage_height)
 
-    turning = np.where(turningpoints(jpeg_heights))[0] + 1
+    turning = np.where(turningpoints(jpeg_heights))[0]
 
     return jpeg_heights[turning[0] : turning[1]], jpeg_sizes_MB[turning[0] : turning[1]]
 
 
 class RecentringThing(Thing):
     @thing_action
-    def looping_autofocus(self, autofocus: AutofocusDep, stage: StageDep, dz=2000):
+    def looping_autofocus(self, autofocus: AutofocusDep, stage: StageDep, dz=2000, start='centre'):
         """Repeatedly autofocus the stage until it looks focused.
         
         This action will run the `fast_autofocus` action until it settles on a point
@@ -51,17 +51,17 @@ class RecentringThing(Thing):
         repeat = True
         attempts = 0
         while repeat and attempts < 10:
-            height_min = stage.position["z"] - dz / 2
-            height_max = stage.position["z"] + dz / 2
-            data = autofocus.fast_autofocus(dz=dz)
+            data = autofocus.fast_autofocus(dz=dz, start=start)
             heights, _ = unpack_autofocus(data)
-            time.sleep(0.3)
+            height_min = np.min(heights)
+            height_max = np.max(heights)
             # TODO: max heights seems badly wrong! Something about turning?
             if (
                 stage.position["z"] - height_min < dz / 5
                 or height_max - stage.position["z"] < dz / 5
             ):
                 attempts += 1
+                start = 'centre'
             else:
                 repeat = False
 
