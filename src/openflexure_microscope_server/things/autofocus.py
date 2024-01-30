@@ -119,7 +119,7 @@ class JPEGSharpnessMonitor:
             raise ValueError(
                 "No images were captured during the move of the stage.  Perhaps the camera is not streaming images?"
             )
-        return jz[np.argmax(js)], jz, js
+        return jz[np.argmax(js)]
 
     def data_dict(self) -> SharpnessDataArrays:
         """Return the gathered data as a single convenient dictionary"""
@@ -161,13 +161,13 @@ class AutofocusThing(Thing):
             # z: Final z position after move
             i, z = m.focus_rel(dz, block_cancellation=True)
             # Get the z position with highest sharpness from the previous move (index i)
-            fz, heights, sizes = m.sharpest_z_on_move(i)
+            fz: int = m.sharpest_z_on_move(i)
             # Move all the way to the start so it's consistent
             i, z = m.focus_rel(-dz)
             # Move to the target position fz (relative move of (fz - z))
             m.focus_rel(fz - z)
             # Return all focus data
-            return heights, sizes
+            return m.data_dict()
         
     @thing_action
     def move_and_measure(
@@ -194,3 +194,40 @@ class AutofocusThing(Thing):
                     time.sleep(wait)
                 m.focus_rel(current_dz)
             return m.data_dict()
+
+    @thing_action
+    def looping_autofocus(self, stage: Stage,  m: SharpnessMonitorDep, dz=2000, start='centre'):
+        """Repeatedly autofocus the stage until it looks focused.
+        
+        This action will run the `fast_autofocus` action until it settles on a point
+        in the middle 3/5 of its range. Such logic can be helpful if the microscope
+        is close to focus, but not quite within `dz/2`. It will attempt to autofocus
+        up to 10 times.
+        """
+        repeat = True
+        attempts = 0
+
+        with m.run():
+            while repeat and attempts < 10:
+
+                if start == 'centre':
+                    stage.move_relative(x = 0, y = 0, z = -dz / 2)
+
+                i, z = m.focus_rel(dz, block_cancellation=True)
+                _, heights, sizes = m.move_data(i)
+            
+                peak_height = heights[np.argmax(sizes)]
+                height_min = np.min(heights)
+                height_max = np.max(heights)
+
+                if (
+                    peak_height - height_min < dz / 5
+                    or height_max - peak_height < dz / 5
+                ):
+                    attempts += 1
+                    start = 'centre'
+                    stage.move_absolute(z = peak_height)
+                else:
+                    repeat = False
+                    stage.move_relative(x = 0, y = 0, z = -dz)
+                    stage.move_absolute(z = peak_height)
