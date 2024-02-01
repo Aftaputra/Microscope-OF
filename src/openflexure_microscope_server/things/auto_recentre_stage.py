@@ -15,56 +15,7 @@ CamDep = direct_thing_client_dependency(StreamingPiCamera2, "/camera/")
 CSMDep = direct_thing_client_dependency(CameraStageMapper, "/camera_stage_mapping/")
 AutofocusDep = direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 
-
-def turningpoints(lst):
-    dx = np.diff(lst)
-    return dx[1:] * dx[:-1] < 0
-
-
-def unpack_autofocus(scan_data):
-    """Extract z, sharpness data from a move_and_measure call"""
-    scan_data = dict(scan_data)
-    jpeg_times = scan_data["jpeg_times"]
-    jpeg_sizes = scan_data["jpeg_sizes"]
-    jpeg_sizes_MB = [x / 10**3 for x in jpeg_sizes]
-    stage_times = scan_data["stage_times"]
-    stage_positions = scan_data["stage_positions"]
-    stage_height = [pos["z"] for pos in stage_positions]
-
-    jpeg_heights = np.interp(jpeg_times, stage_times, stage_height)
-
-    turning = np.where(turningpoints(jpeg_heights))[0] + 1
-
-    return jpeg_heights[turning[0] : turning[1]], jpeg_sizes_MB[turning[0] : turning[1]]
-
-
 class RecentringThing(Thing):
-    @thing_action
-    def looping_autofocus(self, autofocus: AutofocusDep, stage: StageDep, dz=2000):
-        """Repeatedly autofocus the stage until it looks focused.
-        
-        This action will run the `fast_autofocus` action until it settles on a point
-        in the middle 3/5 of its range. Such logic can be helpful if the microscope
-        is close to focus, but not quite within `dz/2`. It will attempt to autofocus
-        up to 10 times.
-        """
-        repeat = True
-        attempts = 0
-        while repeat and attempts < 10:
-            height_min = stage.position["z"] - dz / 2
-            height_max = stage.position["z"] + dz / 2
-            data = autofocus.fast_autofocus(dz=dz)
-            heights, _ = unpack_autofocus(data)
-            time.sleep(0.3)
-            # TODO: max heights seems badly wrong! Something about turning?
-            if (
-                stage.position["z"] - height_min < dz / 5
-                or height_max - stage.position["z"] < dz / 5
-            ):
-                attempts += 1
-            else:
-                repeat = False
-
     @thing_action
     def recentre(
         self,
@@ -103,7 +54,7 @@ class RecentringThing(Thing):
         # A list of all the positions we've focused
         focused_pos = [[], []]
 
-        self.looping_autofocus(autofocus, stage)
+        autofocus.looping_autofocus()
 
         for direction in [0, 1]:
             # Start off with the current position, and moving in the positive direction
@@ -133,7 +84,7 @@ class RecentringThing(Thing):
                 stage.move_absolute(
                     x=int(destination[0]), y=int(destination[1]), z=destination[2]
                 )
-                self.looping_autofocus(autofocus, stage)
+                autofocus.looping_autofocus(autofocus, stage)
                 position = list(stage.position.values())
                 focused_pos[direction].append(position)
 
@@ -190,7 +141,7 @@ class RecentringThing(Thing):
                 direction
             ]
             stage.move_absolute(x=centre[0], y=centre[1], z=centre[2])
-            self.looping_autofocus(autofocus, stage)
+            autofocus.looping_autofocus()
 
         logging.info(f"Centre of ROM is at {centre, stage.position['z']} \n")
 

@@ -143,7 +143,8 @@ class AutofocusThing(Thing):
     def fast_autofocus(
         self,
         m: SharpnessMonitorDep,
-        dz: int=2000
+        dz: int=2000,
+        start: str='centre',
     ) -> SharpnessDataArrays:
         """Sweep the stage up and down, then move to the sharpest point
         
@@ -153,7 +154,8 @@ class AutofocusThing(Thing):
         """
         with m.run():
             # Move to (-dz / 2)
-            m.focus_rel(-dz / 2)
+            if start == 'centre':
+                m.focus_rel(-dz / 2)
             # Move to dz while monitoring sharpness
             # i: Sharpness monitor index for this move
             # z: Final z position after move
@@ -192,3 +194,40 @@ class AutofocusThing(Thing):
                     time.sleep(wait)
                 m.focus_rel(current_dz)
             return m.data_dict()
+
+    @thing_action
+    def looping_autofocus(self, stage: Stage,  m: SharpnessMonitorDep, dz=2000, start='centre'):
+        """Repeatedly autofocus the stage until it looks focused.
+        
+        This action will run the `fast_autofocus` action until it settles on a point
+        in the middle 3/5 of its range. Such logic can be helpful if the microscope
+        is close to focus, but not quite within `dz/2`. It will attempt to autofocus
+        up to 10 times.
+        """
+        repeat = True
+        attempts = 0
+
+        with m.run():
+            while repeat and attempts < 10:
+
+                if start == 'centre':
+                    stage.move_relative(x = 0, y = 0, z = -dz / 2)
+
+                i, z = m.focus_rel(dz, block_cancellation=True)
+                _, heights, sizes = m.move_data(i)
+            
+                peak_height = heights[np.argmax(sizes)]
+                height_min = np.min(heights)
+                height_max = np.max(heights)
+
+                if (
+                    peak_height - height_min < dz / 5
+                    or height_max - peak_height < dz / 5
+                ):
+                    attempts += 1
+                    start = 'centre'
+                    stage.move_absolute(z = peak_height)
+                else:
+                    repeat = False
+                    stage.move_relative(x = 0, y = 0, z = -dz)
+                    stage.move_absolute(z = peak_height)
