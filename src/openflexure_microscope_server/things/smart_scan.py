@@ -11,6 +11,7 @@ import time
 from PIL import Image
 from pydantic import BaseModel
 from scipy.stats import norm
+from scipy.ndimage import zoom
 from copy import deepcopy
 from datetime import datetime
 from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, run
@@ -18,8 +19,10 @@ from threading import Event, Thread
 import glob
 import zipfile
 import json
+import piexif
 
 from labthings_fastapi.thing import Thing
+from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
 from labthings_fastapi.dependencies.invocation import CancelHook, InvocationLogger, InvocationCancelledError
 from labthings_fastapi.decorators import thing_action, thing_property, fastapi_endpoint
@@ -162,6 +165,22 @@ def generate_config(folder_path: str, positions: list, names: list, camera_to_sa
         for i in range(len(names)):    
             loc = np.dot((positions[i] - mean_loc), np.linalg.inv(camera_to_sample_matrix))
             fp.write(f'{names[i]}; ; {loc[1], loc[0]} \n')
+
+
+def raw2rggb(raw):
+    """Convert packed 10 bit raw to RGGB 8 bit"""
+    raw = np.asarray(raw)  # ensure it's an array
+    rggb = np.empty((616, 820, 4), dtype=np.uint8)
+    raw_w = rggb.shape[1]//2*5
+    for plane, offset in enumerate([(1,1), (0,1), (1,0), (0,0)]):
+        rggb[:, ::2, plane] = raw[offset[0]::2, offset[1]:raw_w+offset[1]:5]
+        rggb[:, 1::2, plane] = raw[offset[0]::2, offset[1]+2:raw_w+offset[1]+2:5]
+    return rggb
+
+
+def rggb2rgb(rggb):
+    return np.stack([rggb[..., 0], rggb[..., 1]//2 + rggb[..., 2]//2, rggb[...,3]], axis=2)
+
 
 class ChannelDistributions(BaseModel):
     means: list[float]
@@ -409,6 +428,7 @@ class SmartScanThing(Thing):
         autofocus: AutofocusDep,
         stage: StageDep,
         cam: CamDep,
+        metadata_getter: GetThingStates,
         csm: CSMDep,
         background_detect: BackgroundDep,
         recentre: RecentreStage,
@@ -430,6 +450,7 @@ class SmartScanThing(Thing):
         scan_folder = None
         images_folder = None
         starting_position = None
+        capture_thread = None
         self._scan_lock.acquire(timeout=0.1)
         try:
             # Before anything else, check that we've got a background set
@@ -514,16 +535,76 @@ class SmartScanThing(Thing):
 
             with open(os.path.join(images_folder, 'scan_inputs.json'), 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
+
+            # We will capture images and process them with this function, defined once here.
+            # Most of the variables it needs will be "baked in" so the arguments are just the ones
+            # that change each iteration.
+            # We also pre-calculate a normalisation image based on the LST and white balance
+            raw_image = cam.capture_array(stream_name="raw")
+            #TODO: assert the image is 10-bit packed, or deal with other formats!
+            rgb = rggb2rgb(raw2rggb(raw_image))
+            lst = dict(cam.lens_shading_tables)
+            lum = np.array(lst["luminance"])
+            Cr = np.array(lst["Cr"])
+            Cb = np.array(lst["Cb"])
+            gr, gb = cam.colour_gains
+            G = 1/lum
+            R = 1/lum/Cr/gr
+            B = 1/lum/Cb/gb
+            white_norm_lores = np.stack([R, G, B], axis=2)
+            zoom_factors = [i/n for i, n in zip(rgb[...,:3].shape, white_norm_lores.shape)]
+            white_norm = zoom(white_norm_lores, zoom_factors, order=1)[:rgb.shape[0], :rgb.shape[1], :]  # Could use some work
+            logger.info(
+                f"Generated normalisation image with shape {white_norm.shape}, "
+                f"max {white_norm.max(axis=(0,1))}, min {white_norm.min(axis=(0,1))}"
+            )
+            norm_inputs = {
+                "luminance": lum,
+                "Cr": Cr,
+                "Cb": Cb,
+                "gain_red": gr,
+                "gain_blue": gb,
+            }
+            def capture_and_save(acquired: Event, name: str) -> None:
+                """Capture an image and save it to disk
+                
+                This will set the event `acquired` once the image has been acquired, so
+                that the stage may be moved while it's saved.
+                """
+                try:
+                    capture_start = time.time()
+                    raw_image = cam.capture_array(stream_name="raw")
+                    acquired.set()
+                    acquisition_time = time.time()
+                    # Save the raw image
+                    np.savez(os.path.join(raw_images_folder, name + ".npz"), raw_image=raw_image, **norm_inputs)
+                    # Process it into 8 bit RGB
+                    processed = rggb2rgb(raw2rggb(raw_image)) / white_norm
+                    processed[processed > 255] = 255
+                    processed[processed < 0] = 0
+                    img = Image.fromarray(processed, mode="RGB")
+                    img.save(
+                        os.path.join(images_folder, name),
+                        exif=json.dumps(
+                            {
+                                "Exif": {
+                                    piexif.ExifIFD.UserComment: metadata_getter()
+                                }
+                            }
+                        ).encode("utf-8"),
+                        quality=95,
+                        subsampling=0
+                    )
+                    save_time = time.time()
+                    logger.info(f"Acquired {name} in {acquisition_time-capture_start:.1f}s then {save_time-acquisition_time:.1f}s saving to disk")
+                except Exception as e:
+                    logger.error(f"An error occurred while saving {name}: {e}", exc_info=e)
             
             # At the start of the loop, we simultaneously capture an image and move to the next scan point.
             # We skip capturing on the first run, because we've not focused yet - and also we skip capturing if
             # it looks like background.
-            capture_thread = None
             while len(path) > 0:
                 loc = self.move_to_next_point(stage, logger, path=path, focused_path=focused_path)
-                if capture_thread:  # wait for the previous capture to be saved
-                    capture_thread.join()
-
                 if not self.preview_stitch_running():
                     self.preview_stitch_start(images_folder)
                 if self.stitch_automatically:
@@ -596,46 +677,28 @@ class SmartScanThing(Thing):
                             attempts += 1
 
                     # Acquire the image in a thread, and continue once it's acquired (i.e. leave saving in the background)
+                    if capture_thread:  # wait for the previous capture to be saved, i.e. don't leave more than one image saving in the background
+                        if capture_thread.is_alive():
+                            wait_start = time.time()
+                            capture_thread.join()
+                            wait_time = time.time() - wait_start
+                            logger.info(f"Waited {wait_time:.1f}s for the previous capture to finish saving.")
                     acquired = Event()
                     name = f"image_{loc[0]}_{loc[1]}.jpg"
-                    def capture_and_save(): #cam: CamDep, logger: InvocationLogger, acquired: Event, name: str, images_folder: str, raw_images_folder: str) -> None:
-                        """Capture an image and save it to disk
-                        
-                        This will set the event `acquired` once the image has been acquired, so
-                        that the stage may be moved while it's saved.
-                        """
-                        capture_start = time.time()
-                        jpegblob = cam.capture_jpeg(resolution="full")
-                        acquired.set()
-                        acquisition_time = time.time() - capture_start
-                        jpegblob.save(os.path.join(raw_images_folder, name))
-                        img = Image.open(jpegblob.open())
-                        exif = img.info['exif']
-                        width, height = img.size 
-                        img = img.resize((int(width*0.5), int(height*0.5)))
-                        logger.info(f"Saving {name}")
-                        img.save(
-                            os.path.join(images_folder, name),
-                            exif=exif,
-                            quality=95,
-                            subsampling=0
-                        )
-                        save_time = time.time() - acquisition_time - capture_start
-                        logger.info(f"Acquired {name} in {acquisition_time}s then {save_time}s saving to disk")
                     capture_thread = Thread(
                         target=capture_and_save,
-                        #kwargs={
+                        kwargs={
                         #    "cam": cam,
                         #    "logger": logger,
-                        #    "acquired": acquired,
-                        #    "name": name,
+                            "acquired": acquired,
+                            "name": name,
                         #    "images_folder": images_folder,
                         #    "raw_images_folder": raw_images_folder,
-                        #}
+                        }
                     )
                     capture_thread.start()
-                    #acquired.wait()  # wait until the image is acquired
-                    time.sleep(0.5)
+                    acquired.wait()  # wait until the image is acquired
+                    #time.sleep(0.5)
                     positions.append(loc[:2])
                     names.append(name)
 
