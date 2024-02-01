@@ -14,6 +14,7 @@ from scipy.stats import norm
 from copy import deepcopy
 from datetime import datetime
 from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, run
+from threading import Event, Thread
 import glob
 import zipfile
 import json
@@ -514,11 +515,21 @@ class SmartScanThing(Thing):
             with open(os.path.join(images_folder, 'scan_inputs.json'), 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
             
-            # Make the initial move (which probably does nothing)
-            # NB we will move to the next scan point at the **end** of the loop, so that it can
-            # happen concurrently with saving the images.
-            loc = self.move_to_next_point(stage, logger, path=path, focused_path=focused_path)
+            # At the start of the loop, we simultaneously capture an image and move to the next scan point.
+            # We skip capturing on the first run, because we've not focused yet - and also we skip capturing if
+            # it looks like background.
+            capture_thread = None
             while len(path) > 0:
+                loc = self.move_to_next_point(stage, logger, path=path, focused_path=focused_path)
+                if capture_thread:  # wait for the previous capture to be saved
+                    capture_thread.join()
+
+                if not self.preview_stitch_running():
+                    self.preview_stitch_start(images_folder)
+                if self.stitch_automatically:
+                    if not self.correlate_running():
+                        self.correlate_start(images_folder, overlap=overlap)
+
                 ensure_free_disk_space(scan_folder)
 
                 # Check if the image is background
@@ -530,7 +541,9 @@ class SmartScanThing(Thing):
                 # if more than 92% of the image is background, treat it as background and continue
                 if not image_is_sample:
                     logger.info(f"Skipping {stage.position} as it is {round(background_detect.background_fraction(),0)}% background.")
+                    capture_image = False
                 else:
+                    capture_image = True
                     # if not, it's sample. run an autofocus and use the updated height
                     new_pos = [
                         [stage.position["x"] - dx, stage.position["y"]],
@@ -581,40 +594,55 @@ class SmartScanThing(Thing):
                             )
                             stage.move_absolute(z=int(loc[2]))
                             attempts += 1
-                    
 
+                    # Acquire the image in a thread, and continue once it's acquired (i.e. leave saving in the background)
+                    acquired = Event()
                     name = f"image_{loc[0]}_{loc[1]}.jpg"
-                    # img = Image.open(cam.capture_jpeg(resolution="full").open())
-                    jpegblob = cam.capture_jpeg(resolution="full")
-                    jpegblob.save(os.path.join(raw_images_folder, name))
-                    img = Image.open(jpegblob.open())
-                    exif = img.info['exif']
-                    width, height = img.size 
-                    img = img.resize((int(width*0.5), int(height*0.5)))
-
-                    img_width, _ = img.size
-
-                    logger.info(f"Saving {name}")
-                    img.save(
-                        os.path.join(images_folder, name),
-                        exif=exif,
-                        quality=95,
-                        subsampling=0
+                    def capture_and_save(): #cam: CamDep, logger: InvocationLogger, acquired: Event, name: str, images_folder: str, raw_images_folder: str) -> None:
+                        """Capture an image and save it to disk
+                        
+                        This will set the event `acquired` once the image has been acquired, so
+                        that the stage may be moved while it's saved.
+                        """
+                        capture_start = time.time()
+                        jpegblob = cam.capture_jpeg(resolution="full")
+                        acquired.set()
+                        acquisition_time = time.time() - capture_start
+                        jpegblob.save(os.path.join(raw_images_folder, name))
+                        img = Image.open(jpegblob.open())
+                        exif = img.info['exif']
+                        width, height = img.size 
+                        img = img.resize((int(width*0.5), int(height*0.5)))
+                        logger.info(f"Saving {name}")
+                        img.save(
+                            os.path.join(images_folder, name),
+                            exif=exif,
+                            quality=95,
+                            subsampling=0
+                        )
+                        save_time = time.time() - acquisition_time - capture_start
+                        logger.info(f"Acquired {name} in {acquisition_time}s then {save_time}s saving to disk")
+                    capture_thread = Thread(
+                        target=capture_and_save,
+                        #kwargs={
+                        #    "cam": cam,
+                        #    "logger": logger,
+                        #    "acquired": acquired,
+                        #    "name": name,
+                        #    "images_folder": images_folder,
+                        #    "raw_images_folder": raw_images_folder,
+                        #}
                     )
+                    capture_thread.start()
+                    acquired.wait()  # wait until the image is acquired
                     positions.append(loc[:2])
                     names.append(name)
-
-                    if not self.preview_stitch_running():
-                        self.preview_stitch_start(images_folder)
-                    if self.stitch_automatically:
-                        if not self.correlate_running():
-                            self.correlate_start(images_folder, overlap=overlap)
 
                 # add the current position to the list of all positions visited
                 true_path.append(loc)
 
-                if len(names) > 1:
-                    generate_config(images_folder, positions, names, CSM, csm_calibration_width, img_width, logger)
+                #if len(names) > 1:
+                #    generate_config(images_folder, positions, names, CSM, csm_calibration_width, img_width, logger)
 
                 temp_path = []
 
@@ -623,9 +651,7 @@ class SmartScanThing(Thing):
                         temp_path.append(i)
                     else:
                         logger.info(f'Rejected moving to {i} as it is out of range')
-
                 path = temp_path.copy()
-
                 path = sorted(path, key=lambda x: (steps_from_centre(x, true_path[0][:2], dx, dy), distance_to_site(loc[:2], x)))
 
         except InvocationCancelledError:
@@ -645,6 +671,8 @@ class SmartScanThing(Thing):
             )
             raise e
         finally:
+            if capture_thread:
+                capture_thread.join()
             try:
                 logger.info("Returning to starting position.")
                 if starting_position is not None:
