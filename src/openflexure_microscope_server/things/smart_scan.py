@@ -634,7 +634,8 @@ class SmartScanThing(Thing):
                         #}
                     )
                     capture_thread.start()
-                    acquired.wait()  # wait until the image is acquired
+                    #acquired.wait()  # wait until the image is acquired
+                    time.sleep(0.5)
                     positions.append(loc[:2])
                     names.append(name)
 
