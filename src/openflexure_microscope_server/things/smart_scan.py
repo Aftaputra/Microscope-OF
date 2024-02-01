@@ -597,8 +597,6 @@ class SmartScanThing(Thing):
                         if not self.correlate_running():
                             self.correlate_start(images_folder, overlap=overlap)
 
-                    self.create_zip_of_scan(logger = logger, scan_name = scan_folder.split('scans/')[1], download_zip = False)
-
                 # add the current position to the list of all positions visited
                 true_path.append(loc)
 
@@ -640,6 +638,7 @@ class SmartScanThing(Thing):
                     stage.move_absolute(**starting_position, block_cancellation=True)
             finally:
                 self._scan_lock.release()
+            self.create_zip_of_scan(logger = logger, scan_name = scan_folder.split('scans/')[1], download_zip = False)
             logger.info("Waiting for background processes to finish...")
             self.preview_stitch_wait()
             self.correlate_wait()
@@ -905,8 +904,7 @@ class SmartScanThing(Thing):
                 overlap = data_loaded['overlap']
             except:
                 overlap = 0.1
-        logger.info(overlap)
-        self.run_subprocess(logger, [self._script, "--stitching_mode", "all", "--minimum_overlap", f"{round(overlap*0.9,3)}", images_folder])
+        self.run_subprocess(logger, [self._script, "--stitching_mode", "all", "--minimum_overlap", f"{round(overlap*0.9,2)}", images_folder])
     
     @thing_action
     def create_zip_of_scan(self, logger: InvocationLogger, scan_name: Optional[str]=None, download_zip = True) -> ZipBlob:
@@ -944,7 +942,7 @@ class SmartScanThing(Thing):
         # This is a list of file names that are updated as the scan goes,
         # and should only be zipped at the end of the scan - otherwise they'll
         # be appended on every loop as we can't overwrite files in the zip
-        files_to_delay = ['TileConfiguration', 'tiling_cache', 'stitched.jp']
+        files_to_delay = ['TileConfiguration', 'tiling_cache', 'stitched.jp', 'stitched_from']
 
         with zipfile.ZipFile(zip_fname, mode="a") as zip:
             for file in files:
