@@ -372,6 +372,34 @@ class SmartScanThing(Thing):
                 return folder_path
         raise FileExistsError("Could not create a new scan folder: all names in use!")
     
+    
+    def move_to_next_point(
+            self,
+            stage: StageDep,
+            logger: InvocationLogger,
+            path: list[list[int]],
+            focused_path: list[list[int]],
+        ) -> list[int]:
+        """Remove the first point from the path, and move there.
+        
+        This will move to the next XY position in `path`, taking the `z` value
+        either from the current z value of the stage, or from `focused_path`.
+
+        Returns the point we have moved to.
+        """
+        loc = [path[0][0], path[0][1]]
+        path.remove(path[0])
+        if len(focused_path) > 1:
+            z_index = closest(loc, focused_path)
+            z = int(focused_path[z_index][2])
+        else:
+            z = stage.position["z"]
+        logger.info(f"Moving to {loc}")
+        stage.move_absolute(
+            x=int(loc[0]), y=int(loc[1]), z = z - self.autofocus_dz / 2
+        )
+        return loc + [z]
+
     @thing_action
     def sample_scan(
         self,
@@ -485,28 +513,13 @@ class SmartScanThing(Thing):
 
             with open(os.path.join(images_folder, 'scan_inputs.json'), 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
-
-            # move to each x-y position. in z, move to the height of the closest x-y position that successfully focused
+            
+            # Make the initial move (which probably does nothing)
+            # NB we will move to the next scan point at the **end** of the loop, so that it can
+            # happen concurrently with saving the images.
+            loc = self.move_to_next_point(stage, logger, path=path, focused_path=focused_path)
             while len(path) > 0:
                 ensure_free_disk_space(scan_folder)
-
-                loc = [path[0][0], path[0][1], stage.position["z"]]
-
-                path.remove(path[0])
-
-                # TODO: combine this with the move below for speed (I think this could just be "else")
-                logger.info(f"Moving to {loc}")
-
-                if len(focused_path) > 1:
-                    z_index = closest(loc, focused_path)
-                    z=int(focused_path[z_index][2])
-                else:
-                    z = loc[2]
-                    # print('Moving to {0}'.format([coords[0], coords[1], focused_path[z_index][2]]))
-                    # print(focused_path)
-                stage.move_absolute(
-                    x=int(loc[0]), y=int(loc[1]), z = z - self.autofocus_dz / 2
-                )
 
                 # Check if the image is background
                 if self.skip_background:
@@ -566,7 +579,7 @@ class SmartScanThing(Thing):
                             logger.info(
                                 "The focus has shifted further than we expect: retrying."
                             )
-                            stage.move_absolute(z=int(focused_path[z_index][2]))
+                            stage.move_absolute(z=int(loc[2]))
                             attempts += 1
                     
 
