@@ -582,19 +582,17 @@ class SmartScanThing(Thing):
                     processed = rggb2rgb(raw2rggb(raw_image)) / white_norm
                     processed[processed > 255] = 255
                     processed[processed < 0] = 0
-                    img = Image.fromarray(processed, mode="RGB")
+                    img = Image.fromarray(processed.astype(np.uint8), mode="RGB")
                     img.save(
                         os.path.join(images_folder, name),
-                        exif=json.dumps(
-                            {
-                                "Exif": {
-                                    piexif.ExifIFD.UserComment: metadata_getter()
-                                }
-                            }
-                        ).encode("utf-8"),
                         quality=95,
                         subsampling=0
                     )
+                    exif_dict = piexif.load(os.path.join(images_folder, name))
+                    exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(
+                        metadata_getter()
+                    ).encode("utf-8")
+                    piexif.insert(piexif.dump(exif_dict), os.path.join(images_folder, name))
                     save_time = time.time()
                     logger.info(f"Acquired {name} in {acquisition_time-capture_start:.1f}s then {save_time-acquisition_time:.1f}s saving to disk")
                 except Exception as e:
