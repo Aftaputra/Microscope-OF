@@ -683,6 +683,7 @@ class SmartScanThing(Thing):
                             logger.info(f"Waited {wait_time:.1f}s for the previous capture to finish saving.")
                     acquired = Event()
                     name = f"image_{loc[0]}_{loc[1]}.jpg"
+                    time.sleep(0.2)
                     capture_thread = Thread(
                         target=capture_and_save,
                         kwargs={
