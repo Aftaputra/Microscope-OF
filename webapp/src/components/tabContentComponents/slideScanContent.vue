@@ -108,8 +108,8 @@
         Scan ID: {{ scan_name }}
       </h3>
     </div>
-    <div class="view-component uk-width-expand">
-      <img v-if="displayImageOnRight" :src="lastStitchedImage" id="last-stitched-image"/>
+    <div class="view-image uk-width-expand uk-height-1-1">
+      <img v-if="displayImageOnRight" class=image-fit :src="lastStitchedImage" id="last-stitched-image">
       <streamDisplay v-else />
     </div>
   </div>
