@@ -1045,7 +1045,7 @@ class SmartScanThing(Thing):
         # This is a list of file names that are updated as the scan goes,
         # and should only be zipped at the end of the scan - otherwise they'll
         # be appended on every loop as we can't overwrite files in the zip
-        files_to_delay = ['TileConfiguration', 'tiling_cache', 'stitched.jp', 'stitched_from']
+        files_to_delay = ['TileConfiguration', 'tiling_cache', 'stitched.jp', 'stitched_from', 'stitched.om']
 
         with zipfile.ZipFile(zip_fname, mode="a") as zip:
             for file in files:

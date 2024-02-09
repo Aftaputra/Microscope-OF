@@ -31,6 +31,13 @@
                   label="Image overlap (0-1)"
                 />
               </div>
+                <div class="uk-margin">
+                <propertyControl
+                  thing-name="smart_scan"
+                  property-name="stitch_tiff"
+                  label="When stitching, produce a pyramidal tiff"
+                />
+              </div>
             </div>
           </li>
           <li class="uk-open">
