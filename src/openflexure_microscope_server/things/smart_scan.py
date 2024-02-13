@@ -640,24 +640,29 @@ class SmartScanThing(Thing):
                     attempts = 0
                     if self.autofocus_dz > 200:
                         while True:
-                            autofocus.looping_autofocus(dz=self.autofocus_dz, start = 'base')
+                            jpeg_zs, jpeg_sizes = autofocus.looping_autofocus(dz=self.autofocus_dz, start = 'base')
                             current_height = stage.position["z"]
+                            autofocus_success = autofocus.verify_focus_sharpness(sweep_sizes = jpeg_sizes, camera = CamDep, leniency = 1)
+                            logger.info(f"We just tested the focus! Result was {autofocus_success}")
 
-                            # if there have been successful autofocuses in this scan, find the closest one in x-y
-                            # test if the change in z between them exceeds a ratio (indicating a failed autofocus)
-                            if len(focused_path) > 0:
-                                nearest_focused_site = focused_path[closest(loc, focused_path)]
-                                result = limit_focus_change(
-                                    nearest_focused_site[0:2],
-                                    nearest_focused_site[-1],
-                                    loc[0:2],
-                                    current_height,
-                                    0.3,
-                                )
+                            if autofocus_success:
+                                # if there have been successful autofocuses in this scan, find the closest one in x-y
+                                # test if the change in z between them exceeds a ratio (indicating a failed autofocus)
+                                if len(focused_path) > 0:
+                                    nearest_focused_site = focused_path[closest(loc, focused_path)]
+                                    result = limit_focus_change(
+                                        nearest_focused_site[0:2],
+                                        nearest_focused_site[-1],
+                                        loc[0:2],
+                                        current_height,
+                                        0.3,
+                                    )
 
-                            # if there haven't been any previous autofocuses, we have to assume this one worked
+                                # if there haven't been any previous autofocuses, we have to assume this one worked
+                                else:
+                                    result = "accept"
                             else:
-                                result = "accept"
+                                result = "reject"
 
                             # if the autofocus worked, add the current position to the list of successful locations
                             if result == "accept":
@@ -761,6 +766,15 @@ class SmartScanThing(Thing):
     @max_range.setter
     def max_range(self, value: int) -> None:
         self.thing_settings["max_range"] = value
+
+    @thing_property
+    def stitch_tiff(self) -> bool:
+        """The maximum distance from the centre of the scan before we break"""
+        return self.thing_settings.get("stitch_tiff", False)
+
+    @stitch_tiff.setter
+    def stitch_tiff(self, value: bool) -> None:
+        self.thing_settings["stitch_tiff"] = value
 
     @thing_property
     def skip_background(self) -> bool:
