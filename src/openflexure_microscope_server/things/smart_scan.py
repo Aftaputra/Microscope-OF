@@ -549,8 +549,8 @@ class SmartScanThing(Thing):
             Cb = np.array(lst["Cb"])
             gr, gb = cam.colour_gains
             G = 1/lum
-            R = 1/lum/Cr/gr
-            B = 1/lum/Cb/gb
+            R = G/Cr/gr*np.min(Cr)  # The extra /np.max(Cr) emulates the quirky handling of Cr in
+            B = G/Cb/gb*np.min(Cb)   # the picamera2 pipeline
             white_norm_lores = np.stack([R, G, B], axis=2)
             zoom_factors = [i/n for i, n in zip(rgb[...,:3].shape, white_norm_lores.shape)]
             white_norm = zoom(white_norm_lores, zoom_factors, order=1)[:rgb.shape[0], :rgb.shape[1], :]  # Could use some work
