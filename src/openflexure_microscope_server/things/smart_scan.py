@@ -11,14 +11,19 @@ import time
 from PIL import Image
 from pydantic import BaseModel
 from scipy.stats import norm
+from scipy.ndimage import zoom
+from scipy.interpolate import interp1d
 from copy import deepcopy
 from datetime import datetime
 from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, run
+from threading import Event, Thread
 import glob
 import zipfile
 import json
+import piexif
 
 from labthings_fastapi.thing import Thing
+from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
 from labthings_fastapi.dependencies.invocation import CancelHook, InvocationLogger, InvocationCancelledError
 from labthings_fastapi.decorators import thing_action, thing_property, fastapi_endpoint
@@ -161,6 +166,22 @@ def generate_config(folder_path: str, positions: list, names: list, camera_to_sa
         for i in range(len(names)):    
             loc = np.dot((positions[i] - mean_loc), np.linalg.inv(camera_to_sample_matrix))
             fp.write(f'{names[i]}; ; {loc[1], loc[0]} \n')
+
+
+def raw2rggb(raw):
+    """Convert packed 10 bit raw to RGGB 8 bit"""
+    raw = np.asarray(raw)  # ensure it's an array
+    rggb = np.empty((616, 820, 4), dtype=np.uint8)
+    raw_w = rggb.shape[1]//2*5
+    for plane, offset in enumerate([(1,1), (0,1), (1,0), (0,0)]):
+        rggb[:, ::2, plane] = raw[offset[0]::2, offset[1]:raw_w+offset[1]:5]
+        rggb[:, 1::2, plane] = raw[offset[0]::2, offset[1]+2:raw_w+offset[1]+2:5]
+    return rggb
+
+
+def rggb2rgb(rggb):
+    return np.stack([rggb[..., 0], rggb[..., 1]//2 + rggb[..., 2]//2, rggb[...,3]], axis=2)
+
 
 class ChannelDistributions(BaseModel):
     means: list[float]
@@ -372,6 +393,34 @@ class SmartScanThing(Thing):
                 return folder_path
         raise FileExistsError("Could not create a new scan folder: all names in use!")
     
+    
+    def move_to_next_point(
+            self,
+            stage: StageDep,
+            logger: InvocationLogger,
+            path: list[list[int]],
+            focused_path: list[list[int]],
+        ) -> list[int]:
+        """Remove the first point from the path, and move there.
+        
+        This will move to the next XY position in `path`, taking the `z` value
+        either from the current z value of the stage, or from `focused_path`.
+
+        Returns the point we have moved to.
+        """
+        loc = [path[0][0], path[0][1]]
+        path.remove(path[0])
+        if len(focused_path) > 1:
+            z_index = closest(loc, focused_path)
+            z = int(focused_path[z_index][2])
+        else:
+            z = stage.position["z"]
+        logger.info(f"Moving to {loc}")
+        stage.move_absolute(
+            x=int(loc[0]), y=int(loc[1]), z = z - self.autofocus_dz / 2
+        )
+        return loc + [z]
+
     @thing_action
     def sample_scan(
         self,
@@ -380,6 +429,7 @@ class SmartScanThing(Thing):
         autofocus: AutofocusDep,
         stage: StageDep,
         cam: CamDep,
+        metadata_getter: GetThingStates,
         csm: CSMDep,
         background_detect: BackgroundDep,
         recentre: RecentreStage,
@@ -401,6 +451,7 @@ class SmartScanThing(Thing):
         scan_folder = None
         images_folder = None
         starting_position = None
+        capture_thread = None
         self._scan_lock.acquire(timeout=0.1)
         try:
             # Before anything else, check that we've got a background set
@@ -486,27 +537,88 @@ class SmartScanThing(Thing):
             with open(os.path.join(images_folder, 'scan_inputs.json'), 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
 
-            # move to each x-y position. in z, move to the height of the closest x-y position that successfully focused
+            # We will capture images and process them with this function, defined once here.
+            # Most of the variables it needs will be "baked in" so the arguments are just the ones
+            # that change each iteration.
+            # We also pre-calculate a normalisation image based on the LST and white balance
+            raw_image = cam.capture_array(stream_name="raw")
+            #TODO: assert the image is 10-bit packed, or deal with other formats!
+            rgb = rggb2rgb(raw2rggb(raw_image))
+            lst = dict(cam.lens_shading_tables)
+            lum = np.array(lst["luminance"])
+            Cr = np.array(lst["Cr"])
+            Cb = np.array(lst["Cb"])
+            gr, gb = cam.colour_gains
+            G = 1/lum
+            R = G/Cr/gr*np.min(Cr)  # The extra /np.max(Cr) emulates the quirky handling of Cr in
+            B = G/Cb/gb*np.min(Cb)   # the picamera2 pipeline
+            white_norm_lores = np.stack([R, G, B], axis=2)
+            zoom_factors = [i/n for i, n in zip(rgb[...,:3].shape, white_norm_lores.shape)]
+            white_norm = zoom(white_norm_lores, zoom_factors, order=1)[:rgb.shape[0], :rgb.shape[1], :]  # Could use some work
+            colour_correction_matrix = np.array(cam.colour_correction_matrix).reshape((3,3))
+            contrast_algorithm = cam.tuning["algorithms"][9]["rpi.contrast"]
+            gamma = np.array(contrast_algorithm["gamma_curve"]).reshape((-1,2))
+            gamma_8bit = interp1d(gamma[:, 0]/255, gamma[:, 1]/255)
+            def process_raw_image(img):
+                normed = img/white_norm
+                corrected = np.dot(colour_correction_matrix, normed.reshape((-1, 3)).T).T.reshape(normed.shape)
+                return gamma_8bit(corrected)
+            logger.info(
+                f"Generated normalisation image with shape {white_norm.shape}, "
+                f"max {white_norm.max(axis=(0,1))}, min {white_norm.min(axis=(0,1))}"
+            )
+            norm_inputs = {
+                "luminance": lum,
+                "Cr": Cr,
+                "Cb": Cb,
+                "gain_red": gr,
+                "gain_blue": gb,
+            }
+            def capture_and_save(acquired: Event, name: str) -> None:
+                """Capture an image and save it to disk
+                
+                This will set the event `acquired` once the image has been acquired, so
+                that the stage may be moved while it's saved.
+                """
+                try:
+                    capture_start = time.time()
+                    raw_image = cam.capture_array(stream_name="raw")
+                    acquired.set()
+                    acquisition_time = time.time()
+                    # Save the raw image
+                    np.savez(os.path.join(raw_images_folder, name + ".npz"), raw_image=raw_image, **norm_inputs)
+                    # Process it into 8 bit RGB
+                    processed = process_raw_image(rggb2rgb(raw2rggb(raw_image)))
+                    processed[processed > 255] = 255
+                    processed[processed < 0] = 0
+                    img = Image.fromarray(processed.astype(np.uint8), mode="RGB")
+                    img.save(
+                        os.path.join(images_folder, name),
+                        quality=95,
+                        subsampling=0
+                    )
+                    exif_dict = piexif.load(os.path.join(images_folder, name))
+                    exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(
+                        metadata_getter()
+                    ).encode("utf-8")
+                    piexif.insert(piexif.dump(exif_dict), os.path.join(images_folder, name))
+                    save_time = time.time()
+                    logger.info(f"Acquired {name} in {acquisition_time-capture_start:.1f}s then {save_time-acquisition_time:.1f}s saving to disk")
+                except Exception as e:
+                    logger.error(f"An error occurred while saving {name}: {e}", exc_info=e)
+            
+            # At the start of the loop, we simultaneously capture an image and move to the next scan point.
+            # We skip capturing on the first run, because we've not focused yet - and also we skip capturing if
+            # it looks like background.
             while len(path) > 0:
+                loc = self.move_to_next_point(stage, logger, path=path, focused_path=focused_path)
+                if not self.preview_stitch_running():
+                    self.preview_stitch_start(images_folder)
+                if self.stitch_automatically:
+                    if not self.correlate_running():
+                        self.correlate_start(images_folder, overlap=overlap)
+
                 ensure_free_disk_space(scan_folder)
-
-                loc = [path[0][0], path[0][1], stage.position["z"]]
-
-                path.remove(path[0])
-
-                # TODO: combine this with the move below for speed (I think this could just be "else")
-                logger.info(f"Moving to {loc}")
-
-                if len(focused_path) > 1:
-                    z_index = closest(loc, focused_path)
-                    z=int(focused_path[z_index][2])
-                else:
-                    z = loc[2]
-                    # print('Moving to {0}'.format([coords[0], coords[1], focused_path[z_index][2]]))
-                    # print(focused_path)
-                stage.move_absolute(
-                    x=int(loc[0]), y=int(loc[1]), z = z - self.autofocus_dz / 2
-                )
 
                 # Check if the image is background
                 if self.skip_background:
@@ -517,7 +629,9 @@ class SmartScanThing(Thing):
                 # if more than 92% of the image is background, treat it as background and continue
                 if not image_is_sample:
                     logger.info(f"Skipping {stage.position} as it is {round(background_detect.background_fraction(),0)}% background.")
+                    capture_image = False
                 else:
+                    capture_image = True
                     # if not, it's sample. run an autofocus and use the updated height
                     new_pos = [
                         [stage.position["x"] - dx, stage.position["y"]],
@@ -566,42 +680,41 @@ class SmartScanThing(Thing):
                             logger.info(
                                 "The focus has shifted further than we expect: retrying."
                             )
-                            stage.move_absolute(z=int(focused_path[z_index][2]))
+                            stage.move_absolute(z=int(loc[2]))
                             attempts += 1
-                    
 
+                    # Acquire the image in a thread, and continue once it's acquired (i.e. leave saving in the background)
+                    if capture_thread:  # wait for the previous capture to be saved, i.e. don't leave more than one image saving in the background
+                        if capture_thread.is_alive():
+                            wait_start = time.time()
+                            capture_thread.join()
+                            wait_time = time.time() - wait_start
+                            logger.info(f"Waited {wait_time:.1f}s for the previous capture to finish saving.")
+                    acquired = Event()
                     name = f"image_{loc[0]}_{loc[1]}.jpg"
-                    # img = Image.open(cam.capture_jpeg(resolution="full").open())
-                    jpegblob = cam.capture_jpeg(resolution="full")
-                    jpegblob.save(os.path.join(raw_images_folder, name))
-                    img = Image.open(jpegblob.open())
-                    exif = img.info['exif']
-                    width, height = img.size 
-                    img = img.resize((int(width*0.5), int(height*0.5)))
-
-                    img_width, _ = img.size
-
-                    logger.info(f"Saving {name}")
-                    img.save(
-                        os.path.join(images_folder, name),
-                        exif=exif,
-                        quality=95,
-                        subsampling=0
+                    time.sleep(0.2)
+                    capture_thread = Thread(
+                        target=capture_and_save,
+                        kwargs={
+                        #    "cam": cam,
+                        #    "logger": logger,
+                            "acquired": acquired,
+                            "name": name,
+                        #    "images_folder": images_folder,
+                        #    "raw_images_folder": raw_images_folder,
+                        }
                     )
+                    capture_thread.start()
+                    acquired.wait()  # wait until the image is acquired
+                    #time.sleep(0.5)
                     positions.append(loc[:2])
                     names.append(name)
-
-                    if not self.preview_stitch_running():
-                        self.preview_stitch_start(images_folder)
-                    if self.stitch_automatically:
-                        if not self.correlate_running():
-                            self.correlate_start(images_folder, overlap=overlap)
 
                 # add the current position to the list of all positions visited
                 true_path.append(loc)
 
-                if len(names) > 1:
-                    generate_config(images_folder, positions, names, CSM, csm_calibration_width, img_width, logger)
+                #if len(names) > 1:
+                #    generate_config(images_folder, positions, names, CSM, csm_calibration_width, img_width, logger)
 
                 temp_path = []
 
@@ -610,9 +723,7 @@ class SmartScanThing(Thing):
                         temp_path.append(i)
                     else:
                         logger.info(f'Rejected moving to {i} as it is out of range')
-
                 path = temp_path.copy()
-
                 path = sorted(path, key=lambda x: (steps_from_centre(x, true_path[0][:2], dx, dy), distance_to_site(loc[:2], x)))
 
         except InvocationCancelledError:
@@ -632,6 +743,8 @@ class SmartScanThing(Thing):
             )
             raise e
         finally:
+            if capture_thread:
+                capture_thread.join()
             try:
                 logger.info("Returning to starting position.")
                 if starting_position is not None:
@@ -942,7 +1055,7 @@ class SmartScanThing(Thing):
         # This is a list of file names that are updated as the scan goes,
         # and should only be zipped at the end of the scan - otherwise they'll
         # be appended on every loop as we can't overwrite files in the zip
-        files_to_delay = ['TileConfiguration', 'tiling_cache', 'stitched.jp', 'stitched_from']
+        files_to_delay = ['TileConfiguration', 'tiling_cache', 'stitched.jp', 'stitched_from', 'stitched.om']
 
         with zipfile.ZipFile(zip_fname, mode="a") as zip:
             for file in files:

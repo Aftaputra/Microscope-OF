@@ -31,6 +31,13 @@
                   label="Image overlap (0-1)"
                 />
               </div>
+                <div class="uk-margin">
+                <propertyControl
+                  thing-name="smart_scan"
+                  property-name="stitch_tiff"
+                  label="When stitching, produce a pyramidal tiff"
+                />
+              </div>
             </div>
           </li>
           <li class="uk-open">
@@ -108,8 +115,8 @@
         Scan ID: {{ scan_name }}
       </h3>
     </div>
-    <div class="view-component uk-width-expand">
-      <img v-if="displayImageOnRight" :src="lastStitchedImage" id="last-stitched-image"/>
+    <div class="view-image uk-width-expand uk-height-1-1">
+      <img v-if="displayImageOnRight" class=image-fit :src="lastStitchedImage" id="last-stitched-image">
       <streamDisplay v-else />
     </div>
   </div>

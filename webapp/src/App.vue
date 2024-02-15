@@ -429,6 +429,13 @@ html {
   padding: 0;
 }
 
+.image-fit{
+  height: 80%;
+  width: 100%;
+  object-fit: contain;
+  overflow-y: clip;
+}
+
 .section-content {
   padding: 0;
   height: 100%;
