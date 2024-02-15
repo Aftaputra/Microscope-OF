@@ -238,15 +238,15 @@ class AutofocusThing(Thing):
             return heights.tolist(), sizes.tolist()
 
     @thing_action
-    def verify_focus_sharpness(self, sweep_sizes: list, camera: WrappedCamera, leniency: int = 1):
+    def verify_focus_sharpness(self, sweep_sizes: list, camera: WrappedCamera, threshold: float = 0.95):
         '''Take the sharpness curve of the autofocus, and the size of the current frame
         to see if the autofocus completed successfully. Returns True if current sharpness
         is within "leniency" number of frames from the peak of the autofocus'''
 
         current_sharpness = camera.grab_jpeg_size(stream_name='lores')
 
-        peak = np.argmax(sweep_sizes)
-        accepted_range = [peak - leniency, peak + leniency]
+        peak = np.max(sweep_sizes)
+        base = np.min(sweep_sizes)
+        cutoff = threshold * (peak - base)
 
-        sharpness_range = [sweep_sizes[i] for i in accepted_range]
-        return current_sharpness >= min(sharpness_range)
+        return current_sharpness >= base + cutoff

@@ -642,7 +642,7 @@ class SmartScanThing(Thing):
                         while True:
                             jpeg_zs, jpeg_sizes = autofocus.looping_autofocus(dz=self.autofocus_dz, start = 'base')
                             current_height = stage.position["z"]
-                            autofocus_success = autofocus.verify_focus_sharpness(sweep_sizes = jpeg_sizes, camera = CamDep, leniency = 1)
+                            autofocus_success = autofocus.verify_focus_sharpness(sweep_sizes = jpeg_sizes, camera = CamDep, threshold = 0.92)
                             logger.info(f"We just tested the focus! Result was {autofocus_success}")
 
                             if autofocus_success:
@@ -655,7 +655,7 @@ class SmartScanThing(Thing):
                                         nearest_focused_site[-1],
                                         loc[0:2],
                                         current_height,
-                                        0.3,
+                                        0.5,
                                     )
 
                                 # if there haven't been any previous autofocuses, we have to assume this one worked
@@ -721,6 +721,7 @@ class SmartScanThing(Thing):
                         logger.info(f'Rejected moving to {i} as it is out of range')
                 path = temp_path.copy()
                 path = sorted(path, key=lambda x: (steps_from_centre(x, true_path[0][:2], dx, dy), distance_to_site(loc[:2], x)))
+                self.create_zip_of_scan(logger = logger, scan_name = scan_folder.split('scans/')[1], download_zip = False)
 
         except InvocationCancelledError:
             logger.error("Stopping scan because it was cancelled.")
@@ -1036,7 +1037,12 @@ class SmartScanThing(Thing):
             )
         if not os.path.isdir(images_folder):
             raise FileNotFoundError(f"Tried to make a zip archive of {images_folder} but it does not exist.")
-        logger.info("Creating zip archive of images (may take some time)...")
+        # logger.info("Creating zip archive of images (may take some time)...")
+
+        from pathlib import Path
+
+        root_directory = Path(images_folder)
+        print(sum(f.stat().st_size for f in root_directory.glob('**/*') if f.is_file()))
 
         zip_fname = f'{os.path.join(scan_folder, "images")}.zip'
 
@@ -1049,8 +1055,6 @@ class SmartScanThing(Thing):
             
         # get a list of files in the existing zip    
         current_zip = self.get_files_in_zip(zip_fname)
-
-        logger.info(current_zip)
 
         # get a list of files in the folder we're zipping
         folder_path = self.scan_folder_path(scan_name)
@@ -1065,11 +1069,14 @@ class SmartScanThing(Thing):
         with zipfile.ZipFile(zip_fname, mode="a") as zip:
             for file in files:
                 if any(banned_name in file for banned_name in files_to_delay):
-                    logger.info(f'we only add {file} into zip at the end of the scan')
+                    # logger.info(f'we only add {file} into zip at the end of the scan')
+                    pass
                 elif file in current_zip:
-                    logger.info(f'{file} is already in zip')
-                elif ".zip" in file:
-                    logger.info('Not adding the .zip to itself')
+                    # logger.info(f'{file} is already in zip')
+                    pass
+                elif ".zip" in file or 'raw' in file:
+                    # logger.info('Not adding the .zip to itself')
+                    pass
                 else:
                     logger.info(f'appending {file} to zip')
                     zip.write(os.path.join(folder_path, file), arcname=file)
@@ -1090,7 +1097,7 @@ class SmartScanThing(Thing):
                     if any(banned_name in file for banned_name in files_to_delay):
                         logger.info(f'we are finally adding {file} into zip')
                         zip.write(os.path.join(folder_path, file), arcname=file)
-
+            logger.info('about to download zip')
             return ZipBlob.from_file(zip_fname)
 
     @thing_action
