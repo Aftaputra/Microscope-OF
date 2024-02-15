@@ -562,6 +562,8 @@ class SmartScanThing(Thing):
             def process_raw_image(img):
                 normed = img/white_norm
                 corrected = np.dot(colour_correction_matrix, normed.reshape((-1, 3)).T).T.reshape(normed.shape)
+                corrected[corrected < 0] = 0
+                corrected[corrected > 255] = 255
                 return gamma_8bit(corrected)
             logger.info(
                 f"Generated normalisation image with shape {white_norm.shape}, "
