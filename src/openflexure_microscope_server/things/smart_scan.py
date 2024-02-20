@@ -14,7 +14,7 @@ from scipy.stats import norm
 from scipy.ndimage import zoom
 from copy import deepcopy
 from datetime import datetime
-from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, run
+from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, run, STDOUT
 from threading import Event, Thread
 import glob
 import zipfile
@@ -1003,12 +1003,29 @@ class SmartScanThing(Thing):
         ) -> CompletedProcess:
         """Run a  subprocess and log any output"""
         logger.info(f"Running command in subprocess: `{' '.join(cmd)}`")
-        output = run(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        for pipe in [output.stdout, output.stderr]:
-            if pipe:
-                logger.info(pipe)
-        output.check_returncode()
-        return output
+
+        
+        p = Popen(cmd, stdout=PIPE, stderr = STDOUT, bufsize=1, universal_newlines=True)
+        os.set_blocking(p.stdout.fileno(), False) 
+        logger.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+        while p.poll() == None:
+            try:
+                output = p.stdout.readline()
+                if output != "" and output != None:
+                    logger.info(output)  
+            except:
+                pass
+
+        for line in p.stdout:
+            try:
+                output = p.stdout.readline()
+                if output != "" and output != None:
+                    logger.info(output)  
+            except:
+                pass
+
+        logger.info('Stitching complete')
+        return p
 
     @thing_action
     def stitch_scan(self, logger: InvocationLogger, scan_name: Optional[str]=None, overlap: float = 0.0) -> None:
@@ -1038,13 +1055,6 @@ class SmartScanThing(Thing):
         if not os.path.isdir(images_folder):
             raise FileNotFoundError(f"Tried to make a zip archive of {images_folder} but it does not exist.")
         # logger.info("Creating zip archive of images (may take some time)...")
-
-        from pathlib import Path
-
-        root_directory = Path(images_folder)
-        print(sum(f.stat().st_size for f in root_directory.glob('**/*') if f.is_file()))
-
-        zip_fname = f'{os.path.join(scan_folder, "images")}.zip'
 
         # Create an empty zip file - we don't want to autofill it with files,
         # as some of them should only be added at the end (as we can't overwrite)
