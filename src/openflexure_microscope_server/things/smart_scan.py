@@ -12,6 +12,7 @@ from PIL import Image
 from pydantic import BaseModel
 from scipy.stats import norm
 from scipy.ndimage import zoom
+from scipy.interpolate import interp1d
 from copy import deepcopy
 from datetime import datetime
 from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, run, STDOUT
@@ -549,11 +550,21 @@ class SmartScanThing(Thing):
             Cb = np.array(lst["Cb"])
             gr, gb = cam.colour_gains
             G = 1/lum
-            R = 1/lum/Cr/gr
-            B = 1/lum/Cb/gb
+            R = G/Cr/gr*np.min(Cr)  # The extra /np.max(Cr) emulates the quirky handling of Cr in
+            B = G/Cb/gb*np.min(Cb)   # the picamera2 pipeline
             white_norm_lores = np.stack([R, G, B], axis=2)
             zoom_factors = [i/n for i, n in zip(rgb[...,:3].shape, white_norm_lores.shape)]
             white_norm = zoom(white_norm_lores, zoom_factors, order=1)[:rgb.shape[0], :rgb.shape[1], :]  # Could use some work
+            colour_correction_matrix = np.array(cam.colour_correction_matrix).reshape((3,3))
+            contrast_algorithm = cam.tuning["algorithms"][9]["rpi.contrast"]
+            gamma = np.array(contrast_algorithm["gamma_curve"]).reshape((-1,2))
+            gamma_8bit = interp1d(gamma[:, 0]/255, gamma[:, 1]/255)
+            def process_raw_image(img):
+                normed = img/white_norm
+                corrected = np.dot(colour_correction_matrix, normed.reshape((-1, 3)).T).T.reshape(normed.shape)
+                corrected[corrected < 0] = 0
+                corrected[corrected > 255] = 255
+                return gamma_8bit(corrected)
             logger.info(
                 f"Generated normalisation image with shape {white_norm.shape}, "
                 f"max {white_norm.max(axis=(0,1))}, min {white_norm.min(axis=(0,1))}"
@@ -580,7 +591,7 @@ class SmartScanThing(Thing):
                     # Save the raw image
                     np.savez(os.path.join(raw_images_folder, name + ".npz"), raw_image=raw_image, **norm_inputs)
                     # Process it into 8 bit RGB
-                    processed = rggb2rgb(raw2rggb(raw_image)) / white_norm
+                    processed = process_raw_image(rggb2rgb(raw2rggb(raw_image)))
                     processed[processed > 255] = 255
                     processed[processed < 0] = 0
                     img = Image.fromarray(processed.astype(np.uint8), mode="RGB")
