@@ -1057,6 +1057,8 @@ class SmartScanThing(Thing):
             raise FileNotFoundError(f"Tried to make a zip archive of {images_folder} but it does not exist.")
         # logger.info("Creating zip archive of images (may take some time)...")
 
+        zip_fname = f'{os.path.join(scan_folder, "images")}.zip'
+
         # Create an empty zip file - we don't want to autofill it with files,
         # as some of them should only be added at the end (as we can't overwrite)
         # them once they change
