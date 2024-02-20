@@ -573,6 +573,7 @@ class SmartScanThing(Thing):
                 """
                 try:
                     capture_start = time.time()
+                    metadata = metadata_getter()
                     raw_image = cam.capture_array(stream_name="raw")
                     acquired.set()
                     acquisition_time = time.time()
@@ -590,7 +591,7 @@ class SmartScanThing(Thing):
                     )
                     exif_dict = piexif.load(os.path.join(images_folder, name))
                     exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(
-                        metadata_getter()
+                        metadata
                     ).encode("utf-8")
                     piexif.insert(piexif.dump(exif_dict), os.path.join(images_folder, name))
                     save_time = time.time()
