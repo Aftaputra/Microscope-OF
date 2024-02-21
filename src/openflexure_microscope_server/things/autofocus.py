@@ -26,6 +26,7 @@ from pydantic import BaseModel
 
 Stage = direct_thing_client_dependency(SangaboardThing, "/stage/")
 Camera = raw_thing_dependency(StreamingPiCamera2)
+WrappedCamera = direct_thing_client_dependency(StreamingPiCamera2, "/camera/")
 
 ### Autofocus utilities
 
@@ -206,12 +207,14 @@ class AutofocusThing(Thing):
         """
         repeat = True
         attempts = 0
+        backlash = 200
 
         with m.run():
             while repeat and attempts < 10:
 
                 if start == 'centre':
-                    stage.move_relative(x = 0, y = 0, z = -dz / 2)
+                    stage.move_relative(x = 0, y = 0, z = -(backlash + dz / 2))
+                    stage.move_relative(x = 0, y = 0, z = backlash)
 
                 i, z = m.focus_rel(dz, block_cancellation=True)
                 _, heights, sizes = m.move_data(i)
@@ -226,8 +229,24 @@ class AutofocusThing(Thing):
                 ):
                     attempts += 1
                     start = 'centre'
+                    stage.move_absolute(z = peak_height-backlash)
                     stage.move_absolute(z = peak_height)
                 else:
                     repeat = False
-                    stage.move_relative(x = 0, y = 0, z = -dz)
+                    stage.move_relative(x = 0, y = 0, z = -(dz+backlash))
                     stage.move_absolute(z = peak_height)
+            return heights.tolist(), sizes.tolist()
+
+    @thing_action
+    def verify_focus_sharpness(self, sweep_sizes: list, camera: WrappedCamera, threshold: float = 0.95):
+        '''Take the sharpness curve of the autofocus, and the size of the current frame
+        to see if the autofocus completed successfully. Returns True if current sharpness
+        is within "leniency" number of frames from the peak of the autofocus'''
+
+        current_sharpness = camera.grab_jpeg_size(stream_name='lores')
+
+        peak = np.max(sweep_sizes)
+        base = np.min(sweep_sizes)
+        cutoff = threshold * (peak - base)
+
+        return current_sharpness >= base + cutoff

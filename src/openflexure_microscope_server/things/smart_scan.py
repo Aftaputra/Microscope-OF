@@ -15,7 +15,7 @@ from scipy.ndimage import zoom
 from scipy.interpolate import interp1d
 from copy import deepcopy
 from datetime import datetime
-from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, run
+from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, run, STDOUT
 from threading import Event, Thread
 import glob
 import zipfile
@@ -584,6 +584,7 @@ class SmartScanThing(Thing):
                 """
                 try:
                     capture_start = time.time()
+                    metadata = metadata_getter()
                     raw_image = cam.capture_array(stream_name="raw")
                     acquired.set()
                     acquisition_time = time.time()
@@ -601,7 +602,7 @@ class SmartScanThing(Thing):
                     )
                     exif_dict = piexif.load(os.path.join(images_folder, name))
                     exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(
-                        metadata_getter()
+                        metadata
                     ).encode("utf-8")
                     piexif.insert(piexif.dump(exif_dict), os.path.join(images_folder, name))
                     save_time = time.time()
@@ -651,24 +652,30 @@ class SmartScanThing(Thing):
                     attempts = 0
                     if self.autofocus_dz > 200:
                         while True:
-                            autofocus.looping_autofocus(dz=self.autofocus_dz, start = 'base')
+                            jpeg_zs, jpeg_sizes = autofocus.looping_autofocus(dz=self.autofocus_dz, start = 'base')
                             current_height = stage.position["z"]
+                            time.sleep(0.2)
+                            autofocus_success = autofocus.verify_focus_sharpness(sweep_sizes = jpeg_sizes, camera = CamDep, threshold = 0.92)
+                            logger.info(f"We just tested the focus! Result was {autofocus_success}")
 
-                            # if there have been successful autofocuses in this scan, find the closest one in x-y
-                            # test if the change in z between them exceeds a ratio (indicating a failed autofocus)
-                            if len(focused_path) > 0:
-                                nearest_focused_site = focused_path[closest(loc, focused_path)]
-                                result = limit_focus_change(
-                                    nearest_focused_site[0:2],
-                                    nearest_focused_site[-1],
-                                    loc[0:2],
-                                    current_height,
-                                    0.3,
-                                )
+                            if autofocus_success:
+                                # if there have been successful autofocuses in this scan, find the closest one in x-y
+                                # test if the change in z between them exceeds a ratio (indicating a failed autofocus)
+                                if len(focused_path) > 0:
+                                    nearest_focused_site = focused_path[closest(loc, focused_path)]
+                                    result = limit_focus_change(
+                                        nearest_focused_site[0:2],
+                                        nearest_focused_site[-1],
+                                        loc[0:2],
+                                        current_height,
+                                        0.5,
+                                    )
 
-                            # if there haven't been any previous autofocuses, we have to assume this one worked
+                                # if there haven't been any previous autofocuses, we have to assume this one worked
+                                else:
+                                    result = "accept"
                             else:
-                                result = "accept"
+                                result = "reject"
 
                             # if the autofocus worked, add the current position to the list of successful locations
                             if result == "accept":
@@ -727,6 +734,7 @@ class SmartScanThing(Thing):
                         logger.info(f'Rejected moving to {i} as it is out of range')
                 path = temp_path.copy()
                 path = sorted(path, key=lambda x: (steps_from_centre(x, true_path[0][:2], dx, dy), distance_to_site(loc[:2], x)))
+                self.create_zip_of_scan(logger = logger, scan_name = scan_folder.split('scans/')[1], download_zip = False)
 
         except InvocationCancelledError:
             logger.error("Stopping scan because it was cancelled.")
@@ -767,11 +775,20 @@ class SmartScanThing(Thing):
     @thing_property
     def max_range(self) -> int:
         """The maximum distance from the centre of the scan before we break"""
-        return self.thing_settings.get("max_range", 70000)
+        return self.thing_settings.get("max_range", 45000)
 
     @max_range.setter
     def max_range(self, value: int) -> None:
         self.thing_settings["max_range"] = value
+
+    @thing_property
+    def stitch_tiff(self) -> bool:
+        """Whether or not to also produce a pyramidal tiff"""
+        return self.thing_settings.get("stitch_tiff", False)
+
+    @stitch_tiff.setter
+    def stitch_tiff(self, value: bool) -> None:
+        self.thing_settings["stitch_tiff"] = value
 
     @thing_property
     def skip_background(self) -> bool:
@@ -999,17 +1016,39 @@ class SmartScanThing(Thing):
         ) -> CompletedProcess:
         """Run a  subprocess and log any output"""
         logger.info(f"Running command in subprocess: `{' '.join(cmd)}`")
-        output = run(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        for pipe in [output.stdout, output.stderr]:
-            if pipe:
-                logger.info(pipe)
-        output.check_returncode()
-        return output
+
+        
+        p = Popen(cmd, stdout=PIPE, stderr = STDOUT, bufsize=1, universal_newlines=True)
+        os.set_blocking(p.stdout.fileno(), False) 
+        logger.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+        while p.poll() == None:
+            try:
+                output = p.stdout.readline()
+                if output != "" and output != None:
+                    logger.info(output)  
+            except:
+                pass
+
+        for line in p.stdout:
+            try:
+                output = p.stdout.readline()
+                if output != "" and output != None:
+                    logger.info(output)  
+            except:
+                pass
+
+        logger.info('Stitching complete')
+        return p
 
     @thing_action
     def stitch_scan(self, logger: InvocationLogger, scan_name: Optional[str]=None, overlap: float = 0.0) -> None:
         """Generate a stitched image based on stage position metadata"""
         images_folder = self.images_folder(scan_name=scan_name)
+
+        if self.stitch_tiff:
+            tiff_arg = '--stitch_tiff'
+        else:
+            tiff_arg = '--no-stitch_tiff'
 
         if overlap == 0.0:
             try:
@@ -1019,7 +1058,7 @@ class SmartScanThing(Thing):
                 overlap = data_loaded['overlap']
             except:
                 overlap = 0.1
-        self.run_subprocess(logger, [self._script, "--stitching_mode", "all", "--minimum_overlap", f"{round(overlap*0.9,2)}", images_folder])
+        self.run_subprocess(logger, [self._script, "--stitching_mode", "all", f"{tiff_arg}", "--minimum_overlap", f"{round(overlap*0.9,2)}", images_folder])
     
     @thing_action
     def create_zip_of_scan(self, logger: InvocationLogger, scan_name: Optional[str]=None, download_zip = True) -> ZipBlob:
@@ -1033,7 +1072,7 @@ class SmartScanThing(Thing):
             )
         if not os.path.isdir(images_folder):
             raise FileNotFoundError(f"Tried to make a zip archive of {images_folder} but it does not exist.")
-        logger.info("Creating zip archive of images (may take some time)...")
+        # logger.info("Creating zip archive of images (may take some time)...")
 
         zip_fname = f'{os.path.join(scan_folder, "images")}.zip'
 
@@ -1046,8 +1085,6 @@ class SmartScanThing(Thing):
             
         # get a list of files in the existing zip    
         current_zip = self.get_files_in_zip(zip_fname)
-
-        logger.info(current_zip)
 
         # get a list of files in the folder we're zipping
         folder_path = self.scan_folder_path(scan_name)
@@ -1062,11 +1099,14 @@ class SmartScanThing(Thing):
         with zipfile.ZipFile(zip_fname, mode="a") as zip:
             for file in files:
                 if any(banned_name in file for banned_name in files_to_delay):
-                    logger.info(f'we only add {file} into zip at the end of the scan')
+                    # logger.info(f'we only add {file} into zip at the end of the scan')
+                    pass
                 elif file in current_zip:
-                    logger.info(f'{file} is already in zip')
-                elif ".zip" in file:
-                    logger.info('Not adding the .zip to itself')
+                    # logger.info(f'{file} is already in zip')
+                    pass
+                elif ".zip" in file or 'raw' in file:
+                    # logger.info('Not adding the .zip to itself')
+                    pass
                 else:
                     logger.info(f'appending {file} to zip')
                     zip.write(os.path.join(folder_path, file), arcname=file)
@@ -1087,7 +1127,7 @@ class SmartScanThing(Thing):
                     if any(banned_name in file for banned_name in files_to_delay):
                         logger.info(f'we are finally adding {file} into zip')
                         zip.write(os.path.join(folder_path, file), arcname=file)
-
+            logger.info('about to download zip')
             return ZipBlob.from_file(zip_fname)
 
     @thing_action

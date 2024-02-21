@@ -97,22 +97,33 @@
         <button
           v-if="cancellable"
           type="button"
-          class="uk-button uk-button-danger uk-margin-remove uk-float-right uk-width-1-1"
+          class="uk-button uk-button-danger uk-width-1-1"
           @click="$refs.smartScanTaskSubmitter.terminateTask()"
         >
           Cancel
         </button>
+        <div class="uk-margin uk-grid-small uk-child-width-expand" v-if="!cancellable" uk-grid>
         <button
-          v-if="!cancellable"
           type="button"
-          class="uk-button uk-button-danger uk-margin-remove uk-float-right uk-width-1-1"
+          class="uk-button"
           @click="scanning = false; lastStitchedImage=null;"
         >
           Close
         </button>
+        <task-submitter
+          class="uk-button"
+          submit-label="Download ZIP"
+          :can-terminate="false"
+          :submit-data="{'scan_name': lastScanName}"
+          :button-primary="true"
+          :submit-url="createZipOfScanUri"
+          @response="downloadZipFile"
+          @error="modalError"
+        />
+        </div>
       </div>
       <h3 v-if="scanning">
-        Scan ID: {{ scan_name }}
+        Scan ID: {{ lastScanName }}
       </h3>
     </div>
     <div class="view-image uk-width-expand uk-height-1-1">
@@ -157,6 +168,9 @@ export default {
   },
 
   computed: {
+    createZipOfScanUri() {
+      return this.thingActionUrl("smart_scan",  "create_zip_of_scan");
+    },
     backendOK() {
       return this.thingAvailable("smart_scan");
     },
@@ -190,8 +204,20 @@ export default {
         if (mtime !== null) {
           this.lastStitchedImage = `${this.$store.getters.baseUri}/smart_scan/latest_preview_stitch.jpg?t=${mtime}`;
         }
+        this.lastScanName = await this.readThingProperty("smart_scan", "latest_scan_name");
         setTimeout(this.pollScan, 1000);  // keep rescheduling until it's stopped
       }
+    },
+    async downloadZipFile(response) {
+      const scan_name = response.input.scan_name;
+      const filename = `${scan_name}_images.zip`
+      const url = response.output.href;
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      console.log(link);
+      document.body.appendChild(link);
+      link.click();
     }
   }
 };

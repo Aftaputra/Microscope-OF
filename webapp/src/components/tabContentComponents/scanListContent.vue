@@ -1,5 +1,8 @@
 <template>
-  <div class="galleryDisplay uk-padding uk-padding-remove-top">
+  <div 
+    v-observe-visibility="visibilityChanged"
+    class="galleryDisplay uk-padding uk-padding-remove-top"
+    >
     <!-- Gallery nav bar -->
     <nav
       class="gallery-navbar uk-navbar-container uk-navbar-transparent"
@@ -152,10 +155,15 @@ export default {
   },
 
   methods: {
+    visibilityChanged(isVisible) {
+      if (isVisible) {
+        this.updateScans();
+      }
+    },
     async updateScans() {
       let scans = await this.readThingProperty("smart_scan", "scans");
       if (!scans | scans.length == 0) {
-        return;
+        this.scans = scans;
       }
       scans.forEach(scan => {
         scan.modified = Date.parse(scan.modified);
