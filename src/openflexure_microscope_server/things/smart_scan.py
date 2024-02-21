@@ -654,6 +654,7 @@ class SmartScanThing(Thing):
                         while True:
                             jpeg_zs, jpeg_sizes = autofocus.looping_autofocus(dz=self.autofocus_dz, start = 'base')
                             current_height = stage.position["z"]
+                            time.sleep(0.2)
                             autofocus_success = autofocus.verify_focus_sharpness(sweep_sizes = jpeg_sizes, camera = CamDep, threshold = 0.92)
                             logger.info(f"We just tested the focus! Result was {autofocus_success}")
 
@@ -774,7 +775,7 @@ class SmartScanThing(Thing):
     @thing_property
     def max_range(self) -> int:
         """The maximum distance from the centre of the scan before we break"""
-        return self.thing_settings.get("max_range", 70000)
+        return self.thing_settings.get("max_range", 45000)
 
     @max_range.setter
     def max_range(self, value: int) -> None:
