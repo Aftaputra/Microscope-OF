@@ -112,7 +112,7 @@
         </button>
       </div>
       <h3 v-if="scanning">
-        Scan ID: {{ scan_name }}
+        Scan ID: {{ lastScanName }}
       </h3>
     </div>
     <div class="view-image uk-width-expand uk-height-1-1">
@@ -190,6 +190,7 @@ export default {
         if (mtime !== null) {
           this.lastStitchedImage = `${this.$store.getters.baseUri}/smart_scan/latest_preview_stitch.jpg?t=${mtime}`;
         }
+        this.lastScanName = await this.readThingProperty("smart_scan", "latest_scan_name");
         setTimeout(this.pollScan, 1000);  // keep rescheduling until it's stopped
       }
     }
