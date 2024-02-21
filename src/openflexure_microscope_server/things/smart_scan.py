@@ -654,6 +654,7 @@ class SmartScanThing(Thing):
                         while True:
                             jpeg_zs, jpeg_sizes = autofocus.looping_autofocus(dz=self.autofocus_dz, start = 'base')
                             current_height = stage.position["z"]
+                            time.sleep(0.2)
                             autofocus_success = autofocus.verify_focus_sharpness(sweep_sizes = jpeg_sizes, camera = CamDep, threshold = 0.92)
                             logger.info(f"We just tested the focus! Result was {autofocus_success}")
 
@@ -774,7 +775,7 @@ class SmartScanThing(Thing):
     @thing_property
     def max_range(self) -> int:
         """The maximum distance from the centre of the scan before we break"""
-        return self.thing_settings.get("max_range", 70000)
+        return self.thing_settings.get("max_range", 45000)
 
     @max_range.setter
     def max_range(self, value: int) -> None:
@@ -782,7 +783,7 @@ class SmartScanThing(Thing):
 
     @thing_property
     def stitch_tiff(self) -> bool:
-        """The maximum distance from the centre of the scan before we break"""
+        """Whether or not to also produce a pyramidal tiff"""
         return self.thing_settings.get("stitch_tiff", False)
 
     @stitch_tiff.setter
@@ -1044,6 +1045,11 @@ class SmartScanThing(Thing):
         """Generate a stitched image based on stage position metadata"""
         images_folder = self.images_folder(scan_name=scan_name)
 
+        if self.stitch_tiff:
+            tiff_arg = '--stitch_tiff'
+        else:
+            tiff_arg = '--no-stitch_tiff'
+
         if overlap == 0.0:
             try:
                 with open(os.path.join(images_folder, 'scan_inputs.json')) as data_file:
@@ -1052,7 +1058,7 @@ class SmartScanThing(Thing):
                 overlap = data_loaded['overlap']
             except:
                 overlap = 0.1
-        self.run_subprocess(logger, [self._script, "--stitching_mode", "all", "--minimum_overlap", f"{round(overlap*0.9,2)}", images_folder])
+        self.run_subprocess(logger, [self._script, "--stitching_mode", "all", f"{tiff_arg}", "--minimum_overlap", f"{round(overlap*0.9,2)}", images_folder])
     
     @thing_action
     def create_zip_of_scan(self, logger: InvocationLogger, scan_name: Optional[str]=None, download_zip = True) -> ZipBlob:
