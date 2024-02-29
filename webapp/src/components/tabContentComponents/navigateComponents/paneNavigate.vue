@@ -68,16 +68,18 @@
               </div>
             </div>
 
-            <taskSubmitter
-              :submit-url="zeroActionUri"
-              :submit-label="'Zero Coordinates'"
+            <action-button
+              thing="stage"
+              action="set_zero_position"
+              submit-label="Zero Coordinates"
               :can-terminate="false"
               @finished="updatePosition"
               @error="modalError"
-            ></taskSubmitter>
-            <taskSubmitter
-              :submit-url="recentreActionUri"
-              :submit-label="'Re-centre Stage'"
+            />
+            <action-button
+              thing="auto_recentre_stage"
+              action="recentre"
+              submit-label="Re-centre Stage"
               :can-terminate="true"
               :requires-confirmation="true"
               :modal-progress="true"
@@ -86,7 +88,7 @@
               "
               @finished="updatePosition"
               @error="modalError"
-            ></taskSubmitter>
+            />
           </div>
         </li>
 
@@ -109,9 +111,10 @@
                 </a>
               </div>
               <p>
-                <taskSubmitter
-                  ref="moveTaskSubmitter"
-                  :submit-url="absoluteMoveUri"
+                <action-button
+                  ref="moveButton"
+                  thing="stage"
+                  action="move_absolute"
                   :submit-data="setPosition"
                   :submit-label="'Move'"
                   :can-terminate="true"
@@ -122,21 +125,21 @@
                     moveLock = false;
                   "
                   @error="modalError"
-                ></taskSubmitter>
+                />
               </p>
             </form>
           </div>
         </li>
 
         <!--Show autofocus if default plugin is enabled-->
-        <li v-show="fastAutofocusUri || normalAutofocusUri" class="uk-open">
+        <li class="uk-open">
           <a class="uk-accordion-title" href="#">Autofocus</a>
           <div class="uk-accordion-content">
             <div class="uk-grid-small uk-child-width-expand" uk-grid>
               <div v-show="!isAutofocusing || isAutofocusing == 1">
-                <taskSubmitter
-                  v-if="fastAutofocusUri"
-                  :submit-url="fastAutofocusUri"
+                <action-button
+                  thing="autofocus"
+                  action="fast_autofocus"
                   :submit-data="{ dz: 2000 }"
                   :submit-label="'Autofocus'"
                   :button-primary="false"
@@ -147,36 +150,36 @@
                     isAutofocusing = 0;
                   "
                   @error="modalError"
-                ></taskSubmitter>
+                />
               </div>
             </div>
           </div>
         </li>
-        <li v-show="captureUri" class="uk-open">
+        <li class="uk-open">
           <a class="uk-accordion-title" href="#">Image Capture</a>
           <div class="uk-accordion-content">
             <div class="uk-margin">
-              <taskSubmitter
-                v-if="captureUri"
-                :submit-url="captureUri"
+              <action-button
+                thing="camera"
+                action="capture_jpeg"
                 :submit-data="{ resolution: 'main' }"
                 :submit-label="'Low Resolution'"
                 :submit-on-event="'globalCaptureEvent'"
                 @response="handleCaptureResponse"
                 @error="modalError"
-              ></taskSubmitter>
+              />
             </div>
 
             <div class="uk-margin">
-              <taskSubmitter
-                v-if="captureUri"
-                :submit-url="captureUri"
+              <action-button
+                thing="camera"
+                action="capture_jpeg"
                 :submit-data="{ resolution: 'full' }"
                 submit-label="Full Resolution"
-                submit-on-event="globalCaptureEvent"
+                :submit-on-event="'globalCaptureEvent'"
                 @response="handleCaptureResponse"
                 @error="modalError"
-              ></taskSubmitter>
+              />
             </div>
           </div>
         </li>
@@ -194,14 +197,14 @@
 
 <script>
 import axios from "axios";
-import taskSubmitter from "../../genericComponents/taskSubmitter";
+import ActionButton from "../../labThingsComponents/actionButton.vue";
 
 // Export main app
 export default {
   name: "PaneNavigate",
 
   components: {
-    taskSubmitter
+    ActionButton
   },
 
   data: function() {
@@ -228,23 +231,8 @@ export default {
     baseUri: function() {
       return this.$store.getters.baseUri;
     },
-    absoluteMoveUri: function() {
-      return this.thingActionUrl("stage", "move_absolute");
-    },
-    zeroActionUri: function() {
-      return this.thingActionUrl("stage", "set_zero_position");
-    },
-    recentreActionUri: function() {
-      return this.thingActionUrl("auto_recentre_stage", "recentre");
-    },
     positionStatusUri: function() {
       return `${this.baseUri}/stage/position`;
-    },
-    fastAutofocusUri: function() {
-      return this.thingActionUrl("autofocus", "fast_autofocus");
-    },
-    captureUri: function() {
-      return this.thingActionUrl("camera", "capture_jpeg");
     },
     moveInImageCoordinatesUri: function() {
       return this.thingActionUrl(
@@ -327,7 +315,7 @@ export default {
       await this.startMoveTask();
     },
     async startMoveTask() {
-      await this.$refs.moveTaskSubmitter.startTask();
+      await this.$refs.moveButton.startTask();
     },
     moveInImageCoordinatesRequest: function(x, y) {
       // If not movement-locked
@@ -357,18 +345,6 @@ export default {
             this.moveLock = false; // Release the move lock
           });
       }
-    },
-
-    zeroRequest: function() {
-      // Send move request
-      axios
-        .post(this.zeroActionUri)
-        .then(() => {
-          this.updatePosition(); // Update the position in text boxes
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });
     },
 
     async updatePosition() {

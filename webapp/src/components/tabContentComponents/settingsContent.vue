@@ -71,8 +71,9 @@
           </tabIcon>
         </li>
       </ul>
-      <task-submitter
-        :submit-url="saveAllThingSettingsUri"
+      <action-button
+        thing="settings"
+        action="save_all_thing_settings"
         submit-label="Save all settings"
         class="uk-margin"
       />
@@ -142,7 +143,7 @@ import stageSettings from "./settingsComponents/stageSettings.vue";
 // Import generic components
 import tabIcon from "../genericComponents/tabIcon";
 import tabContent from "../genericComponents/tabContent";
-import TaskSubmitter from '../genericComponents/taskSubmitter.vue';
+import ActionButton from "../labThingsComponents/actionButton.vue";
 
 // Export main app
 export default {
@@ -157,7 +158,7 @@ export default {
     featuresSettings,
     tabIcon,
     tabContent,
-    TaskSubmitter
+    ActionButton
   },
 
   data: function() {
@@ -165,12 +166,6 @@ export default {
       selected: "display",
       currentTab: "display"
     };
-  },
-
-  computed: {
-    saveAllThingSettingsUri() {
-      return this.thingActionUrl("settings", "save_all_thing_settings");
-    }
   },
 
   methods: {

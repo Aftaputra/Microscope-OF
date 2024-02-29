@@ -5,39 +5,41 @@
     </div>
     <div v-show="backendOK">
       <ul uk-accordion="multiple: true">
-          <li>
-            <a class="uk-accordion-title" href="#">Settings</a>
-            <div class="uk-accordion-content">
-              <div class="uk-margin">
-                <propertyControl
-                  thing-name="background_detect"
-                  property-name="tolerance"
-                  label="Tolerance"
-                />
-              </div>
-              <div class="uk-margin">
-                <propertyControl
-                  thing-name="background_detect"
-                  property-name="fraction"
-                  label="Sample coverage required (%)"
-                />
-              </div>
-              <div class="uk-margin">
-                <taskSubmitter
-                  :submit-url="backgroundFractionUri"
-                  submit-label="Check coverage"
-                  :can-terminate="false"
-                  :poll-interval="0.1"
-                  @response="alertBackgroundFraction"
-                  @error="backgroundDetectError"
-                />
-              </div>
+        <li>
+          <a class="uk-accordion-title" href="#">Settings</a>
+          <div class="uk-accordion-content">
+            <div class="uk-margin">
+              <propertyControl
+                thing-name="background_detect"
+                property-name="tolerance"
+                label="Tolerance"
+              />
             </div>
-          </li>
-        </ul>
+            <div class="uk-margin">
+              <propertyControl
+                thing-name="background_detect"
+                property-name="fraction"
+                label="Sample coverage required (%)"
+              />
+            </div>
+            <div class="uk-margin">
+              <action-button
+                thing="background_detect"
+                action="background_fraction"
+                submit-label="Check coverage"
+                :can-terminate="false"
+                :poll-interval="0.1"
+                @response="alertBackgroundFraction"
+                @error="backgroundDetectError"
+              />
+            </div>
+          </div>
+        </li>
+      </ul>
       <div class="uk-margin">
-        <taskSubmitter
-          :submit-url="setBackgroundUri"
+        <action-button
+          thing="background_detect"
+          action="set_background"
           submit-label="Set background"
           :can-terminate="false"
           :poll-interval="0.1"
@@ -45,8 +47,9 @@
         />
       </div>
       <div class="uk-margin">
-        <taskSubmitter
-          :submit-url="labelImageUri"
+        <action-button
+          thing="background_detect"
+          action="image_is_sample"
           submit-label="Check current image"
           :can-terminate="false"
           :poll-interval="0.1"
@@ -59,29 +62,18 @@
 </template>
 
 <script>
-import taskSubmitter from "../../genericComponents/taskSubmitter";
+import ActionButton from "../../labThingsComponents/actionButton.vue";
 import propertyControl from "../../labThingsComponents/propertyControl.vue";
 
 export default {
   components: {
-    taskSubmitter,
+    ActionButton,
     propertyControl
   },
 
   computed: {
-    labelImageUri() {
-      return this.thingActionUrl("background_detect", "image_is_sample");
-    },
-    backgroundFractionUri() {
-      return this.thingActionUrl("background_detect", "background_fraction");
-    },
-    setBackgroundUri() {
-      return this.thingActionUrl("background_detect", "set_background");
-    },
     backendOK() {
-      return (
-        (this.backgroundFractionUri != null) & (this.setBackgroundUri != null)
-      );
+      return this.thingAvailable("background_detect");
     }
   },
 

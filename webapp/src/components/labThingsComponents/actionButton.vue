@@ -72,15 +72,19 @@
 <script>
 import axios from "axios";
 import UIkit from "uikit";
-import actionProgressBar from "./actionProgressBar.vue";
+import ActionProgressBar from "./actionProgressBar.vue";
 import ActionLogDisplay from "./actionLogDisplay.vue";
 
 export default {
-  name: "TaskSubmitter",
-  components: { actionProgressBar, ActionLogDisplay },
+  name: "ActionButton",
+  components: { ActionProgressBar, ActionLogDisplay },
 
   props: {
-    submitUrl: {
+    action: {
+      type: String,
+      required: true
+    },
+    thing: {
       type: String,
       required: true
     },
@@ -140,6 +144,12 @@ export default {
       log: [],
       taskStatus: ""
     };
+  },
+
+  computed: {
+    submitUrl() {
+      return this.thingActionUrl(this.thing, this.action);
+    }
   },
 
   watch: {
