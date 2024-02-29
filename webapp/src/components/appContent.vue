@@ -253,12 +253,6 @@ export default {
     ...mapState({ imjoyEnabled: "imjoyEnabled" })
   },
 
-  created: function() {
-    if (this.$store.getters.ready) {
-      this.startModals();
-    }
-  },
-
   mounted() {
     // A global signal listener to switch tab
     this.$root.$on("globalSwitchTab", tabID => {
@@ -272,6 +266,9 @@ export default {
     this.$root.$on("globalDecrementTab", () => {
       this.incrementTabBy(-1);
     });
+    if (this.$store.getters.ready) {
+      this.startModals();
+    }
   },
 
   methods: {
@@ -289,7 +286,10 @@ export default {
       this.currentTab = newId;
     },
     startModals: function() {
-      this.$refs["calibrationModal"].show();
+      console.log(this.$refs);
+      let modal = this.$refs.calibrationModal;
+      console.log("modal", modal);
+      modal.show();
     },
     enterApp: function() {
       // Stuff to do once connected and all init modals are finished
