@@ -12,12 +12,12 @@
           <br />
           {{ $store.state.origin }}
         </div>
-        <task-submitter
-          v-if="flashLedUri"
-          :submit-url="flashLedUri"
+        <action-button
+          thing="stage"
+          action="flash_led"
           submit-label="Flash Illumination"
           :can-terminate="false"
-          :submit-data="{'dt': 0.25}"
+          :submit-data="{ dt: 0.25 }"
         />
       </div>
 
@@ -83,18 +83,15 @@
 
 <script>
 import axios from "axios";
-import taskSubmitter from '../../genericComponents/taskSubmitter.vue';
+import ActionButton from "../../labThingsComponents/actionButton.vue";
 
 export default {
-  components: { taskSubmitter },
   name: "StatusPane",
+  components: { ActionButton },
 
   computed: {
     things: function() {
       return this.$store.getters["wot/thingDescriptions"];
-    },
-    flashLedUri() {
-      return this.thingActionUrl("stage", "flash_led");
     }
   },
 

@@ -1,5 +1,8 @@
 <template>
-  <div ref="logContainer" class="log-container uk-margin-left uk-margin-right uk-margin">
+  <div
+    ref="logContainer"
+    class="log-container uk-margin-left uk-margin-right uk-margin"
+  >
     <div v-if="log">
       <div v-for="(item, index) in log" :key="`log_entry_${index}`">
         {{ item.message }}

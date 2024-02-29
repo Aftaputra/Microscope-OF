@@ -31,7 +31,7 @@
                   label="Image overlap (0-1)"
                 />
               </div>
-                <div class="uk-margin">
+              <div class="uk-margin">
                 <propertyControl
                   thing-name="smart_scan"
                   property-name="stitch_tiff"
@@ -70,9 +70,10 @@
           />
         </div>
         <div class="uk-margin">
-          <taskSubmitter
-            ref="smartScanTaskSubmitter"
-            :submit-url="smartScanUri"
+          <action-button
+            ref="smartScanButton"
+            thing="smart_scan"
+            action="sample_scan"
             :submit-data="{ scan_name: scan_name }"
             submit-label="Start smart scan"
             :can-terminate="true"
@@ -84,9 +85,9 @@
         </div>
       </div>
       <div v-show="scanning">
-      <h2 v-if="displayImageOnRight">
-        Live stitching preview
-      </h2>
+        <h2 v-if="displayImageOnRight">
+          Live stitching preview
+        </h2>
         <mini-stream-display v-if="displayImageOnRight" />
         <action-log-display
           id="log-display"
@@ -98,36 +99,47 @@
           v-if="cancellable"
           type="button"
           class="uk-button uk-button-danger uk-width-1-1"
-          @click="$refs.smartScanTaskSubmitter.terminateTask()"
+          @click="$refs.smartScanButton.terminateTask()"
         >
           Cancel
         </button>
-        <div class="uk-margin uk-grid-small uk-child-width-expand" v-if="!cancellable" uk-grid>
-        <button
-          type="button"
-          class="uk-button"
-          @click="scanning = false; lastStitchedImage=null;"
+        <div
+          v-if="!cancellable"
+          class="uk-margin uk-grid-small uk-child-width-expand"
+          uk-grid
         >
-          Close
-        </button>
-        <task-submitter
-          class="uk-button"
-          submit-label="Download ZIP"
-          :can-terminate="false"
-          :submit-data="{'scan_name': lastScanName}"
-          :button-primary="true"
-          :submit-url="createZipOfScanUri"
-          @response="downloadZipFile"
-          @error="modalError"
-        />
+          <button
+            type="button"
+            class="uk-button"
+            @click="
+              scanning = false;
+              lastStitchedImage = null;
+            "
+          >
+            Close
+          </button>
+          <action-button
+            class="uk-button"
+            thing="smart_scan"
+            action="create_zip_of_scan"
+            submit-label="Download ZIP"
+            :can-terminate="false"
+            :submit-data="{ scan_name: lastScanName }"
+            :button-primary="true"
+            @response="downloadZipFile"
+            @error="modalError"
+          />
         </div>
       </div>
-      <h3 v-if="scanning">
-        Scan ID: {{ lastScanName }}
-      </h3>
+      <h3 v-if="scanning">Scan ID: {{ lastScanName }}</h3>
     </div>
     <div class="view-image uk-width-expand uk-height-1-1">
-      <img v-if="displayImageOnRight" class=image-fit :src="lastStitchedImage" id="last-stitched-image">
+      <img
+        v-if="displayImageOnRight"
+        id="last-stitched-image"
+        class="image-fit"
+        :src="lastStitchedImage"
+      />
       <streamDisplay v-else />
     </div>
   </div>
@@ -135,22 +147,22 @@
 
 <script>
 import streamDisplay from "./streamContent.vue";
-import taskSubmitter from "../genericComponents/taskSubmitter";
 import propertyControl from "../labThingsComponents/propertyControl.vue";
-import actionLogDisplay from "../genericComponents/actionLogDisplay.vue";
-import actionProgressBar from "../genericComponents/actionProgressBar.vue";
-import MiniStreamDisplay from '../genericComponents/miniStreamDisplay.vue';
+import actionLogDisplay from "../labThingsComponents/actionLogDisplay.vue";
+import actionProgressBar from "../labThingsComponents/actionProgressBar.vue";
+import MiniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
+import ActionButton from "../labThingsComponents/actionButton.vue";
 
 export default {
   name: "SlideScanContent",
 
   components: {
     streamDisplay,
-    taskSubmitter,
     propertyControl,
     actionLogDisplay,
     actionProgressBar,
-    MiniStreamDisplay
+    MiniStreamDisplay,
+    ActionButton
   },
 
   data() {
@@ -168,20 +180,14 @@ export default {
   },
 
   computed: {
-    createZipOfScanUri() {
-      return this.thingActionUrl("smart_scan",  "create_zip_of_scan");
-    },
     backendOK() {
       return this.thingAvailable("smart_scan");
-    },
-    smartScanUri() {
-      return this.thingActionUrl("smart_scan", "sample_scan");
     },
     cancellable() {
       return (this.taskStatus == "running") | (this.taskStatus == "pending");
     },
     displayImageOnRight() {
-      return this.scanning & this.lastStitchedImage !== null;
+      return this.scanning & (this.lastStitchedImage !== null);
     }
   },
 
@@ -190,27 +196,32 @@ export default {
       this.scanRunning = false;
       this.modalError(error);
     },
-    correlateCurrentScan() {
-
-    },
+    correlateCurrentScan() {},
     startScanning() {
       this.lastStitchedImage = null;
       this.scanning = true;
       setTimeout(this.pollScan, 1000);
     },
     async pollScan() {
-      if (this.cancellable) {  // while the scan is running
-        let mtime = await this.readThingProperty("smart_scan", "latest_preview_stitch_time");
+      if (this.cancellable) {
+        // while the scan is running
+        let mtime = await this.readThingProperty(
+          "smart_scan",
+          "latest_preview_stitch_time"
+        );
         if (mtime !== null) {
           this.lastStitchedImage = `${this.$store.getters.baseUri}/smart_scan/latest_preview_stitch.jpg?t=${mtime}`;
         }
-        this.lastScanName = await this.readThingProperty("smart_scan", "latest_scan_name");
-        setTimeout(this.pollScan, 1000);  // keep rescheduling until it's stopped
+        this.lastScanName = await this.readThingProperty(
+          "smart_scan",
+          "latest_scan_name"
+        );
+        setTimeout(this.pollScan, 1000); // keep rescheduling until it's stopped
       }
     },
     async downloadZipFile(response) {
       const scan_name = response.input.scan_name;
-      const filename = `${scan_name}_images.zip`
+      const filename = `${scan_name}_images.zip`;
       const url = response.output.href;
       const link = document.createElement("a");
       link.href = url;

@@ -1,8 +1,8 @@
 <template>
-  <div 
+  <div
     v-observe-visibility="visibilityChanged"
     class="galleryDisplay uk-padding uk-padding-remove-top"
-    >
+  >
     <!-- Gallery nav bar -->
     <nav
       class="gallery-navbar uk-navbar-container uk-navbar-transparent"
@@ -45,24 +45,26 @@
           <div class="uk-card">
             <div class="uk-card-body">
               <h3 class="uk-card-title">{{ item.name }}</h3>
-              <task-submitter
+              <action-button
+                thing="smart_scan"
+                action="create_zip_of_scan"
                 submit-label="Download ZIP"
                 :can-terminate="false"
-                :submit-data="{'scan_name': item.name}"
+                :submit-data="{ scan_name: item.name }"
                 :button-primary="true"
-                :submit-url="createZipOfScanUri"
                 @response="downloadZipFile"
                 @error="modalError"
               />
               <button class="uk-button" @click="deleteScan(item.name)">
                 Delete
               </button>
-              <task-submitter
+              <action-button
                 submit-label="Stitch Images"
+                thing="smart_scan"
+                action="stitch_scan"
                 :can-terminate="false"
-                :submit-data="{'scan_name': item.name}"
+                :submit-data="{ scan_name: item.name }"
                 :button-primary="false"
-                :submit-url="stitchUri"
                 :modal-progress="true"
                 @error="modalError"
               />
@@ -87,12 +89,12 @@
 
 <script>
 import axios from "axios";
-import taskSubmitter from '../genericComponents/taskSubmitter.vue';
+import actionButton from "../labThingsComponents/actionButton.vue";
 
 // Export main app
 export default {
-  components: { taskSubmitter },
   name: "ScanListContent",
+  components: { actionButton },
 
   data: function() {
     return {
@@ -108,12 +110,6 @@ export default {
         "readproperty",
         true
       );
-    },
-    createZipOfScanUri() {
-      return this.thingActionUrl("smart_scan",  "create_zip_of_scan");
-    },
-    stitchUri() {
-      return this.thingActionUrl("smart_scan",  "stitch_scan");
     }
   },
 
@@ -162,7 +158,7 @@ export default {
     },
     async updateScans() {
       let scans = await this.readThingProperty("smart_scan", "scans");
-      if (!scans | scans.length == 0) {
+      if (!scans | (scans.length == 0)) {
         this.scans = scans;
       }
       scans.forEach(scan => {
@@ -216,7 +212,7 @@ export default {
     },
     async downloadZipFile(response) {
       const scan_name = response.input.scan_name;
-      const filename = `${scan_name}_images.zip`
+      const filename = `${scan_name}_images.zip`;
       const url = response.output.href;
       const link = document.createElement("a");
       link.href = url;

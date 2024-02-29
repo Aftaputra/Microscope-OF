@@ -66,12 +66,12 @@ Vue.mixin({
       // `false` fails because axios somehow eats it!
       // Other values should not be stringified or pydantic
       // can't parse them.
-      if (value===false | value===true) {
-        value=JSON.stringify(value);
+      if ((value === false) | (value === true)) {
+        value = JSON.stringify(value);
       }
       await axios.put(url, value);
     },
-    thingActionUrl(thing, action, allow_missing=false) {
+    thingActionUrl(thing, action, allow_missing = false) {
       let url = this.$store.getters["wot/thingActionUrl"](
         thing,
         action,

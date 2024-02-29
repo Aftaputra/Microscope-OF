@@ -7,7 +7,6 @@
     <!-- Initialisation modals -->
     <calibrationModal
       ref="calibrationModal"
-      :available-plugins="plugins"
       @onClose="enterApp()"
     ></calibrationModal>
     <!-- Vertical tab bar -->
@@ -40,22 +39,6 @@
           <!-- Add a divider if item.divide is true -->
           <hr v-if="item.divide" :key="'tab-divider-' + index" />
         </template>
-
-        <!-- For each plugin tab -->
-        <tabIcon
-          v-for="plugin in pluginsGuiList"
-          :key="plugin.id"
-          :tab-i-d="plugin.id"
-          :title="plugin.title"
-          :require-connection="plugin.requiresConnection"
-          :current-tab="currentTab"
-          :click-callback="updatePlugins"
-          @set-tab="setTab"
-        >
-          <span class="material-symbols-outlined">{{
-            plugin.icon || "extension"
-          }}</span>
-        </tabIcon>
 
         <tabIcon
           v-for="imjoyTab in imjoyTabs"
@@ -115,23 +98,6 @@
         <component :is="item.component"></component>
       </tabContent>
 
-      <!-- For each plugin tab -->
-      <tabContent
-        v-for="plugin in pluginsGuiList"
-        :key="plugin.id"
-        :tab-i-d="plugin.id"
-        :require-connection="plugin.requiresConnection"
-        :current-tab="currentTab"
-      >
-        <extensionContent
-          :forms="plugin.forms"
-          :frame="plugin.frame"
-          :web-component="plugin.wc"
-          :view-panel="plugin.viewPanel"
-          @reloadForms="updatePlugins()"
-        />
-      </tabContent>
-
       <tabContent
         v-for="imjoyTab in imjoyTabs"
         :key="imjoyTab.id"
@@ -166,19 +132,13 @@ import tabContent from "./genericComponents/tabContent";
 
 // Import new content components
 import navigateContent from "./tabContentComponents/navigateContent.vue";
-import captureContent from "./tabContentComponents/captureContent.vue";
 import slideScanContent from "./tabContentComponents/slideScanContent.vue";
 import backgroundDetectContent from "./tabContentComponents/backgroundDetectContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
 import settingsContent from "./tabContentComponents/settingsContent.vue";
-import extensionContent from "./tabContentComponents/extensionContent.vue";
 import aboutContent from "./tabContentComponents/aboutContent.vue";
 import loggingContent from "./tabContentComponents/loggingContent.vue";
-// ImJoy and the gallery are loaded asynchronously to allow them to be disabled if needed
-const galleryContent = () =>
-  import(
-    /* webpackChunkName: "gallery" */ "./tabContentComponents/galleryContent.vue"
-  );
+// ImJoy is loaded asynchronously to allow it to be disabled if needed
 const imjoyContent = () =>
   import(
     /* webpackChunkName: "imjoy" */ "./tabContentComponents/imjoyContent.vue"
@@ -197,12 +157,9 @@ export default {
     tabIcon,
     tabContent,
     navigateContent,
-    captureContent,
     slideScanContent,
     viewContent,
     settingsContent,
-    galleryContent,
-    extensionContent,
     calibrationModal,
     aboutContent,
     loggingContent,
@@ -211,7 +168,6 @@ export default {
   },
   data: function() {
     return {
-      plugins: [],
       currentTab: "view",
       bottomTabs: [
         {
@@ -235,24 +191,10 @@ export default {
   },
 
   computed: {
-    pluginsGuiList: function() {
-      // List of plugin GUIs, obtained from this.plugins values
-      var pluginGuis = [];
-      for (let plugin of Object.values(this.plugins)) {
-        if (plugin.meta.gui) {
-          pluginGuis.push(plugin.meta.gui);
-        }
-      }
-      return pluginGuis;
-    },
-
     tabOrder: function() {
       var ind = [];
       for (const tab of this.topTabs) {
         ind.push(tab.id);
-      }
-      for (const plugin of this.pluginsGuiList) {
-        ind.push(plugin.id);
       }
       for (const tab of this.bottomTabs) {
         ind.push(tab.id);
@@ -272,11 +214,6 @@ export default {
           icon: "gamepad",
           component: navigateContent
         },
-        /*{
-          id: "gallery",
-          icon: "photo_library",
-          component: galleryContent
-        },*/
         {
           id: "slidescan",
           icon: "settings_overscan",
@@ -318,11 +255,7 @@ export default {
 
   created: function() {
     if (this.$store.getters.ready) {
-      // Update plugins
-      this.updatePlugins().then(() => {
-        // Start initialisation modals
-        this.startModals();
-      });
+      this.startModals();
     }
   },
 
@@ -342,19 +275,6 @@ export default {
   },
 
   methods: {
-    updatePlugins: function() {
-      /*return axios
-        .get(this.pluginsUri)
-        .then(response => {
-          this.plugins = response.data;
-        })
-        .catch(error => {
-          this.modalError(error); // Let mixin handle error
-        });*/
-      return new Promise(resolve => {
-        resolve({});
-      });
-    },
     setTab: function(event, tab) {
       if (!(this.currentTab == tab)) {
         this.currentTab = tab;

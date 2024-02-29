@@ -429,7 +429,7 @@ html {
   padding: 0;
 }
 
-.image-fit{
+.image-fit {
   height: 80%;
   width: 100%;
   object-fit: contain;

@@ -2,14 +2,15 @@
   <div id="CSMCalibrationSettings">
     <!--Show auto calibrate if default plugin is enabled-->
     <div v-if="'calibrate_xy' in actions" class="uk-margin-small">
-      <taskSubmitter
+      <action-button
         :button-primary="true"
         :can-terminate="true"
         :requires-confirmation="true"
         :confirmation-message="
           'Start recalibration of the stage to the camera? This may take a while, and the microscope will be locked during this time.'
         "
-        :submit-url="calibrateXYUri"
+        thing="camera_stage_mapper"
+        action="calibrate_xy"
         :submit-label="'Auto-Calibrate using camera'"
         :modal-progress="true"
         @response="onRecalibrateResponse"
@@ -29,14 +30,14 @@
 </template>
 
 <script>
-import taskSubmitter from "../../../genericComponents/taskSubmitter";
+import ActionButton from "../../../labThingsComponents/actionButton.vue";
 
 // Export main app
 export default {
   name: "CSMCalibrationSettings",
 
   components: {
-    taskSubmitter
+    ActionButton
   },
 
   props: {
@@ -55,9 +56,6 @@ export default {
     properties() {
       return this.$store.getters["wot/thingDescription"]("camera_stage_mapping")
         .properties;
-    },
-    calibrateXYUri() {
-      return this.thingActionUrl("camera_stage_mapping", "calibrate_xy");
     }
   },
 

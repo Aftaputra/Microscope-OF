@@ -1,6 +1,7 @@
 <template>
   <div>
-    <label v-if="dataType == 'number'" class="uk-form-label">{{ label }}
+    <label v-if="dataType == 'number'" class="uk-form-label"
+      >{{ label }}
       <div class="input-and-buttons-container">
         <input
           v-model="value"
@@ -30,7 +31,8 @@
         <span class="material-symbols-outlined">refresh</span>
       </a>
     </div>
-    <label v-if="dataType == 'number_array'" class="uk-form-label">{{ label }}
+    <label v-if="dataType == 'number_array'" class="uk-form-label"
+      >{{ label }}
       <div class="input-and-buttons-container">
         <input
           v-for="i in valueLength"
@@ -47,7 +49,8 @@
         </a>
       </div>
     </label>
-    <label v-if="dataType == 'number_object'" class="uk-form-label">{{ label }}
+    <label v-if="dataType == 'number_object'" class="uk-form-label"
+      >{{ label }}
       <div class="input-and-buttons-container">
         <input
           v-for="(_v, key) in value"
@@ -64,7 +67,8 @@
         </a>
       </div>
     </label>
-    <label v-if="dataType == 'other'" class="uk-form-label">{{ label }}
+    <label v-if="dataType == 'other'" class="uk-form-label"
+      >{{ label }}
       <div class="input-and-buttons-container">
         <input
           :value="value"
