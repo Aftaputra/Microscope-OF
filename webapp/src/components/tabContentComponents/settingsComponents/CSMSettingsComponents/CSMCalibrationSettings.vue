@@ -9,7 +9,7 @@
         :confirmation-message="
           'Start recalibration of the stage to the camera? This may take a while, and the microscope will be locked during this time.'
         "
-        thing="camera_stage_mapper"
+        thing="camera_stage_mapping"
         action="calibrate_xy"
         :submit-label="'Auto-Calibrate using camera'"
         :modal-progress="true"

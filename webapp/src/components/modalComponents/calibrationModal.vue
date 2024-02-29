@@ -160,13 +160,6 @@ export default {
     miniStreamDisplay
   },
 
-  props: {
-    availablePlugins: {
-      type: Array,
-      required: true
-    }
-  },
-
   data: function() {
     return {
       ready: false,
