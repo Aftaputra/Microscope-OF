@@ -385,8 +385,8 @@ class SmartScanThing(Thing):
             os.makedirs(self.scans_folder_path)
         if not scan_name:
             scan_name = "scan"
-        for j in range(999999):
-            folder_path = os.path.join(self.scans_folder_path, f"{scan_name}_{j:06}")
+        for j in range(9999):
+            folder_path = os.path.join(self.scans_folder_path, f"{scan_name}_{j:04}")
             if not os.path.exists(folder_path):
                 os.makedirs(folder_path)
                 self._latest_scan_name = os.path.basename(folder_path)
@@ -1095,9 +1095,14 @@ class SmartScanThing(Thing):
         # and should only be zipped at the end of the scan - otherwise they'll
         # be appended on every loop as we can't overwrite files in the zip
         files_to_delay = ['TileConfiguration', 'tiling_cache', 'stitched.jp', 'stitched_from', 'stitched.om']
+        tiff_name = ""
 
         with zipfile.ZipFile(zip_fname, mode="a") as zip:
             for file in files:
+                if 'stitched.jp' in file:
+                    stitch_name = os.path.split(file)[1]
+                if '.ome.tiff' in file:
+                    tiff_name = os.path.split(file)[1]
                 if any(banned_name in file for banned_name in files_to_delay):
                     # logger.info(f'we only add {file} into zip at the end of the scan')
                     pass
@@ -1118,7 +1123,7 @@ class SmartScanThing(Thing):
         # TODO: if you download multiple times, you get duplicate files - is this a problem?
         if download_zip:
             with zipfile.ZipFile(zip_fname, mode="a") as zip:
-                for fname in ["stitched_from_stage.jpg", "stitched.jpg"]:
+                for fname in ["stitched_from_stage.jpg", stitch_name, tiff_name]:
                     fpath = os.path.join(images_folder, fname)
                     if os.path.exists(fpath):
                         logger.info(f'copying {fpath} to upper level')
