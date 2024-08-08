@@ -17,9 +17,9 @@ classifiers = [
 dependencies = [
   "labthings-fastapi[server]",
   "labthings-sangaboard",
-  "labthings-picamera2",
   "camera-stage-mapping ~= 0.1.6",
   "numpy ~= 1.20",
+  "piexif",
   "scipy ~= 1.6",
   "opencv-python ~= 4.7.0",
   "anyio ~= 4.0",
@@ -29,6 +29,10 @@ dependencies = [
 dev = [
   "labthings-fastapi[dev]",
 ]
+pi = [
+  "labthings-picamera2",
+]
+
 
 [project.urls]
 "Homepage" = "https://openflexure.org/"
