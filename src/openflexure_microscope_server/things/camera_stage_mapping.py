@@ -22,8 +22,8 @@ from camera_stage_mapping.camera_stage_calibration_1d import (
     image_to_stage_displacement_from_1d,
 )
 from camera_stage_mapping.camera_stage_tracker import Tracker
-from labthings_picamera2.thing import StreamingPiCamera2
-from labthings_sangaboard import SangaboardThing
+from .camera import Camera as CameraThing
+from .stage import Stage as StageThing
 
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
 from labthings_fastapi.dependencies.invocation import InvocationCancelledError, InvocationLogger
@@ -31,8 +31,8 @@ from labthings_fastapi.types.numpy import NDArray, denumpify, DenumpifyingDict
 from labthings_fastapi.decorators import thing_action, thing_property
 from labthings_fastapi.thing import Thing
 
-Camera = direct_thing_client_dependency(StreamingPiCamera2, "/camera/")
-Stage = direct_thing_client_dependency(SangaboardThing, "/stage/")
+Camera = direct_thing_client_dependency(CameraThing, "/camera/")
+Stage = direct_thing_client_dependency(StageThing, "/stage/")
 
 CoordinateType = Tuple[float, float, float]
 XYCoordinateType = Tuple[float, float]
@@ -87,7 +87,10 @@ def make_hardware_interface(
         return downsample(downsample_factor, img)
     def settle() -> None:
         time.sleep(0.2)
-        camera.capture_metadata
+        try:
+            camera.capture_metadata  # This discards frames on a picamera
+        except AttributeError:
+            pass  # Don't raise an error for other cameras (may consider grabbing a frame)
     return HardwareInterfaceModel(
         move=move, get_position=get_position, grab_image=grab_image, settle=settle, grab_image_downsampling=downsample_factor
     )

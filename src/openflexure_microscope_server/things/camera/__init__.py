@@ -1,22 +1,15 @@
-"""OpenFlexure Microscope OpenCV Camera
+"""OpenFlexure Microscope Camera
 
-This module defines a Thing that is responsible for using the stage and
-camera together to perform an autofocus routine.
+This module defines the interface for cameras. Any compatible Thing
+should enabe the server to work.
 
 See repository root for licensing information.
 """
 from __future__ import annotations
-import io
-import json
 import logging
-from typing import Literal, Optional
-from threading import Thread
-
-import cv2
-import piexif
+from typing import Literal
 
 from labthings_fastapi.thing import Thing
-from labthings_fastapi.utilities import get_blocking_portal
 from labthings_fastapi.decorators import thing_action, thing_property
 from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
@@ -29,43 +22,21 @@ class JPEGBlob(BlobOutput):
     media_type = "image/jpeg"
 
 
-class OpenCVCamera(Thing):
-    """A Thing representing an OpenCV camera"""
-    def __init__(self, camera_index: int=0):
-        self.camera_index = camera_index
-        self._capture_thread: Optional[Thread] = None
-        self._capture_enabled = False
+class Camera(Thing):
+    """A Thing representing a camera"""
 
     def __enter__(self):
-        self.cap = cv2.VideoCapture(self.camera_index)
-        self._capture_enabled = True
-        self._capture_thread = Thread(target=self._capture_frames)
-        self._capture_thread.start()
-        return self
+        raise NotImplementedError("Subclasses must implement __enter__")
     
     def __exit__(self, _exc_type, _exc_value, _traceback):
-        self.cap.release()
+        raise NotImplementedError("Subclasses must implement __exit__")
 
     @thing_property
     def stream_active(self) -> bool:
         "Whether the MJPEG stream is active"
-        if self._capture_enabled and self._capture_thread:
-            return self._capture_thread.is_alive()
-        return False
+        raise NotImplementedError("Subclasses must implement stream_active")
     mjpeg_stream = MJPEGStreamDescriptor()
     lores_mjpeg_stream = MJPEGStreamDescriptor()
-
-    def _capture_frames(self):
-        portal = get_blocking_portal(self)
-        while self._capture_enabled:
-            ret, frame = self.cap.read()
-            if not ret:
-                logging.error(f"Failed to capture frame from camera {self.camera_index}")
-                break
-            jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
-            self.mjpeg_stream.add_frame(jpeg, portal)
-            jpeg_lores = cv2.imencode(".jpg", cv2.resize(frame, (320, 240)))[1].tobytes()
-            self.lores_mjpeg_stream.add_frame(jpeg_lores, portal)
 
     @thing_action
     def snap_image(self) -> NDArray:
@@ -77,41 +48,29 @@ class OpenCVCamera(Thing):
         return self.capture_array()
 
     @thing_action
-    def capture_array(self) -> NDArray:
+    def capture_array(
+        self,
+        resolution: Literal["lores", "main", "full"] = "main",
+    ) -> NDArray:
         """Acquire one image from the camera and return as an array
 
         This function will produce a nested list containing an uncompressed RGB image.
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
         """
-        ret, frame = self.cap.read()
-        if not ret:
-            raise RuntimeError(f"Failed to capture frame from camera {self.camera_index}")
-        return frame
+        raise NotImplementedError("Subclasses must implement capture_array")
     
     @thing_action
     def capture_jpeg(
         self,
         metadata_getter: GetThingStates,
+        resolution: Literal["lores", "main", "full"] = "main",
     ) -> JPEGBlob:
         """Acquire one image from the camera and return as a JPEG blob
 
         This function will produce a JPEG image.
         """
-        frame = self.capture_array()
-        jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
-        exif_dict = {
-            "Exif": {
-                piexif.ExifIFD.UserComment: json.dumps(metadata_getter()).encode("utf-8")
-            },
-            "GPS": {},
-            "Interop": {},
-            "1st": {},
-            "thumbnail": None,
-        }
-        output = io.BytesIO()
-        piexif.insert(piexif.dump(exif_dict), jpeg, output)
-        return JPEGBlob.from_bytes(output.getvalue())
+        raise NotImplementedError("Subclasses must implement capture_jpeg")
 
     @thing_action
     def grab_jpeg(
