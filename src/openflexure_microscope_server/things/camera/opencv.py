@@ -44,6 +44,9 @@ class OpenCVCamera(Camera):
         return self
     
     def __exit__(self, _exc_type, _exc_value, _traceback):
+        if self.stream_active:
+            self._capture_enabled = False
+            self._capture_thread.join()
         self.cap.release()
 
     @thing_property
