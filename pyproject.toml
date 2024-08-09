@@ -33,6 +33,9 @@ pi = [
   "labthings-picamera2",
 ]
 
+[project.scripts]
+openflexure-microscope-server = "openflexure_microscope_server.server:serve_from_cli"
+
 
 [project.urls]
 "Homepage" = "https://openflexure.org/"

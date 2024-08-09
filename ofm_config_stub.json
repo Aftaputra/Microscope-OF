@@ -1,0 +1,11 @@
+{
+    "things": {
+        "/camera/": "openflexure_microscope_server.things.opencv_camera:OpenCVCamera",
+        "/stage/": "openflexure_microscope_server.things.dummy_stage:DummyStage",
+        
+        "/system_control/": "openflexure_microscope_server.things.system_control:SystemControlThing",
+        "/settings/": "openflexure_microscope_server.things.settings_manager:SettingsManager",
+        "/api_test/": "openflexure_microscope_server.things.test:APITestThing"
+    },
+    "settings_folder": "./openflexure_settings/"
+}
