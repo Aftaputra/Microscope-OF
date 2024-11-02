@@ -13,8 +13,9 @@ class DummyStage(Stage):
     This stage should work similarly to a Sangaboard stage, but without any
     hardware attached.
     """
+
     def __enter__(self):
-        pass
+        self.instantaneous_position = self.position
 
     def __exit__(self, _exc_type, _exc_value, _traceback):
         pass
@@ -26,19 +27,24 @@ class DummyStage(Stage):
         self.moving = True
         try:
             fraction_complete = 0.0
+            dt = 0.001
             max_displacement = max(abs(v) for v in displacement)
-            if block_cancellation:
-                time.sleep(0.001 * max_displacement)
-            else:
-                start_time = time.time()
-                while time.time() - start_time < 0.001 * max_displacement:
-                    cancel.sleep(0.1)
+            start_time = time.time()
+            while time.time() - start_time < dt * max_displacement:
+                if block_cancellation:
+                    time.sleep(dt)
+                else:
+                    cancel.sleep(dt)
+                fraction_complete = (time.time() - start_time) / (dt * max_displacement)
+                self.instantaneous_position = {
+                    k: self.position[k] + int(fraction_complete * v)
+                    for k, v in zip(self.axis_names, displacement)
+                }
             fraction_complete = 1.0
         except InvocationCancelledError as e:
             # If the move has been cancelled, stop it but don't handle the exception.
             # We need the exception to propagate in order to stop any calling tasks,
             # and to mark the invocation as "cancelled" rather than stopped.
-            fraction_complete = (time.time() - start_time) / (0.001 * max_displacement)
             raise e
         finally:
             self.moving=False
@@ -46,6 +52,7 @@ class DummyStage(Stage):
                 k: self.position[k] + int(fraction_complete * v)
                 for k, v in zip(self.axis_names, displacement)
             }
+            self.instantaneous_position = self.position
 
     @thing_action
     def move_absolute(self, cancel: CancelHook, block_cancellation: bool=False, **kwargs: Mapping[str, int]):
@@ -66,3 +73,4 @@ class DummyStage(Stage):
         stage.
         """
         self.position = {k: 0 for k in self.axis_names}
+        self.instantaneous_position = self.position

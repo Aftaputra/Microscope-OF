@@ -1,7 +1,7 @@
 """OpenFlexure Microscope OpenCV Camera
 
-This module defines a Thing that is responsible for using the stage and
-camera together to perform an autofocus routine.
+This module defines a camera Thing that uses OpenCV's 
+`VideoCapture`.
 
 See repository root for licensing information.
 """

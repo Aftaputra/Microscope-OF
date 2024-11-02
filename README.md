@@ -67,7 +67,7 @@ To set up a development version of the software (most likely using emulated came
   * `python -m venv .venv`
   * `source .venv/bin/activate` (on Linux) or `.venv/Scripts/activate` (on Windows)
   * `pip install -e .[dev]` (This will install development dependencies.  If you don't need these, there is probably a simpler way to run the server than cloning this repo.)
-* Finally, run the server: currently you can do this with `sudo systemctl start openflexure-microscope-server` if it's pre-installed on a Raspberry Pi, or `uvicorn --port 5000 openflexure_microscope_server.server:app` to run locally.
+* Finally, run the server: currently you can do this with `sudo systemctl start openflexure-microscope-server` if it's pre-installed on a Raspberry Pi, or `openflexure-microscope-server -c ofm_config_stub.json` to run locally.
 
 ### Run the server manually on a Raspberry Pi
 ```
