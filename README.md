@@ -1,8 +1,9 @@
 # OpenFlexure Microscope Software
 
 The "server" is the main component of the OpenFlexure Microscope's software.  It is responsible for controlling microscope hardware, data management, and allowing it to be controlled locally and over a network.
-This repository now includes the web client, which is served from the root of the Python web server.
-This software runs on [LabThings-FastAPI](https://github.com/rwb27/labthings-fastapi/), and so most non-microscope functionality is handled by that library.
+This repository includes the graphical interface, which is implemented as a web application served from the root of the Python web server. The simplest way to use it is via OpenFlexure eV, which should find your microscope on the network, and display the interface. The microscope's interface can be accessed at `http://microscope.local:5000/` in a web browser, assuming the hostname of your microscope is `microscope`.
+
+This software runs on [LabThings-FastAPI](https://github.com/rwb27/labthings-fastapi/), which creates an HTTP server using FastAPI (which in turn relies on Starlette and pydantic).
 
 ## Getting started
 
@@ -17,20 +18,28 @@ More information is also available in the [handbook](https://gitlab.com/openflex
 
 ## Settings
 
-There are 2 important settings files, described in the [docs](https://openflexure-microscope-software.readthedocs.io/en/master/config.html).  The paths given below are for the Raspberry Pi installation on our pre-built SD card, and will change if you run on another system:
-* `/var/openflexure/settings/microscope_configuration.json`
-    * Boot-time microscope configuration. Things like the type of camera connected, the stage board, geometry etc.
-    * Anything that needs to be loaded once as the server starts, and usually doesn't need to be re-written while the server is running
-    * This configuration file does not change often, and usually only needs to be updated when you change the physical hardware.
-* `/var/openflexure/settings/microscope_settings.json`
-    * Every other persistent setting. Camera settings, calibration data, default capture settings, stream resolution etc.
-    * This file changes very regularly, and if you need to reset your settings, it's usually this file that you should remove or reset.
+The microscope is initially configured by a LabThings config file. This specifies two important things:
+
+* The Python classes (and initialisation arguments) to use for each `Thing`. This sets the type of camera and stage, and enables/disables additional functionality like scanning and autofocus.
+* The location of the settings folder, where each Thing can store its settings.
+
+By default, this configuration file should be read from `/var/openflexure/settings/microscope_configuration.json` when the microscope is run as a service. If it is run at the command line you should specify the configuration using the `-c` command line flag. This configuration file does not change often, and usually only needs to be updated when you change the physical hardware. It may be that this file should be made read-only, particularly in microscopes deployed for e.g. medical applications.
+
+The settings folder is, by default, `/var/openflexure/settings/` on the SD card, or `./settings/` if run elsewhere. It can be changed in the configuration file. This holds every other persistent setting. Camera settings, calibration data, default capture settings, stream resolution and so on. There is one folder per `Thing`, each with their own file. The settings files can change very regularly, and if you need to reset your settings, it's usually these files that you should remove or reset. If you delete one settings file this should reset the corresponding `Thing`, you don't have to delete the whole folder.
 
 # Developer guidelines
 
 ## Developing on a Raspberry Pi
 
-The easiest way to work on the software is to build an OpenFlexure Microscope around a Raspberry Pi, using our custom disk image.  This includes a pre-installed copy of this server, and a pre-built copy of the web application, so it's ready to use.  You can also develop directly on the Raspberry Pi, and this is the best way to test out changes to the Python code using actual hardware.  To do this, use the command-line script `ofm develop`.  This will replace the server application at `/var/openflexure/application/openflexure-microscope-server/` with a clone of this git repository.  You can manage the server with the `ofm` command, using `ofm start`, `ofm stop`, and `ofm restart` to do the respective actions. `ofm serve` will run a debug server that prints its logs and errors to the console.
+The easiest way to work on the software is to build an OpenFlexure Microscope around a Raspberry Pi, using our custom disk image.  This includes a pre-installed copy of this server, and a pre-built copy of the web application, so it's ready to use.  You can also develop directly on the Raspberry Pi, and this is the best way to test out changes to the Python code using actual hardware.  
+
+You can manage the server with the `ofm` command, using `ofm start`, `ofm stop`, and `ofm restart` to do the respective actions. Often, stopping the server and running it manually will make errors easier to spot. To do this, run:
+```
+ofm stop
+ofm activate
+cd /var/openflexure
+sudo -u openflexure-ws openflexure-microscope-server -c settings/microscope_configuration.json
+```
 
 Our favourite way of working with the server on a Pi is to follow the instructions above, then open a VSCode Remote session from another computer.  This allows you to use your usual developer environment to write code, but everything runs on the Raspberry Pi with real hardware.  Note that `ofm develop` uses an `https://` address for the git repository, so you will probably need to change the "remote" URL to your fork of the repository, or to SSH, before you're able to push changes.
 
