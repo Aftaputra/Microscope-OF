@@ -6,15 +6,14 @@ from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.raw_thing import raw_thing_dependency
 from labthings_fastapi.dependencies.invocation import InvocationLogger
 from labthings_fastapi.decorators import thing_action
-from labthings_fastapi.outputs.blob import BlobOutput
+from labthings_fastapi.outputs.blob import blob_type
 
 from .smart_scan import SmartScanThing
 
 SmartScanDep = raw_thing_dependency(SmartScanThing)
 
 
-class JPEGBlob(BlobOutput):
-    media_type = "image/jpeg"
+JPEGBlob = blob_type("image/jpeg")
 
 
 class Stitcher(Thing):
