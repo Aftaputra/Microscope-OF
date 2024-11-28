@@ -42,10 +42,10 @@ You can manage the server with the `ofm` command, using `ofm start`, `ofm stop`,
 ofm stop
 ofm activate
 cd /var/openflexure
-sudo -u openflexure-ws openflexure-microscope-server -c settings/microscope_configuration.json
+sudo -u openflexure-ws openflexure-microscope-server -c microscope_configuration.json --host 0.0.0.0 --port 5000
 ```
 
-Our favourite way of working with the server on a Pi is to follow the instructions above, then open a VSCode Remote session from another computer.  This allows you to use your usual developer environment to write code, but everything runs on the Raspberry Pi with real hardware.  Note that `ofm develop` uses an `https://` address for the git repository, so you will probably need to change the "remote" URL to your fork of the repository, or to SSH, before you're able to push changes.
+Our favourite way of working with the server on a Pi is to follow the instructions above, then open a VSCode Remote session from another computer.  This allows you to use your usual developer environment to write code, but everything runs on the Raspberry Pi with real hardware.  Note that the repository is cloned by default over `https`, so you will probably need to change the "remote" URL to your fork of the repository, or to SSH, before you're able to push changes.
 
 ### Updating just the web app
 
