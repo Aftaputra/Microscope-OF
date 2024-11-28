@@ -15,13 +15,14 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 dependencies = [
-  "labthings-fastapi[server]",
+  "labthings-fastapi[server] == 0.0.6",
   "labthings-sangaboard",
-  "labthings-picamera2",
   "camera-stage-mapping ~= 0.1.6",
   "numpy ~= 1.20",
+  "piexif",
   "scipy ~= 1.6",
   "opencv-python ~= 4.7.0",
+  "pillow ~= 10.4",
   "anyio ~= 4.0",
 ]
 
@@ -29,6 +30,13 @@ dependencies = [
 dev = [
   "labthings-fastapi[dev]",
 ]
+pi = [
+  "labthings-picamera2 == 0.0.1-dev1",
+]
+
+[project.scripts]
+openflexure-microscope-server = "openflexure_microscope_server.server:serve_from_cli"
+
 
 [project.urls]
 "Homepage" = "https://openflexure.org/"

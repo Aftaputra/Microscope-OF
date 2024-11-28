@@ -1,17 +1,16 @@
 import numpy as np
 import logging
-import time
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
 from labthings_fastapi.decorators import thing_action
-from labthings_sangaboard import SangaboardThing
-from labthings_picamera2.thing import StreamingPiCamera2
+from .stage import Stage
+from .camera import Camera
 from openflexure_microscope_server.things.autofocus import AutofocusThing
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
 
-StageDep = direct_thing_client_dependency(SangaboardThing, "/stage/")
-CamDep = direct_thing_client_dependency(StreamingPiCamera2, "/camera/")
+StageDep = direct_thing_client_dependency(Stage, "/stage/")
+CamDep = direct_thing_client_dependency(Camera, "/camera/")
 CSMDep = direct_thing_client_dependency(CameraStageMapper, "/camera_stage_mapping/")
 AutofocusDep = direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 
