@@ -19,14 +19,13 @@ from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
 from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
 from labthings_fastapi.decorators import thing_action
 from labthings_fastapi.types.numpy import NDArray
-from .camera import Camera as CameraThing
+from .camera import RawCameraDependency as Camera
+from .camera import CameraDependency as WrappedCamera
 from .stage import Stage as StageThing
 import numpy as np
 from pydantic import BaseModel
 
 Stage = direct_thing_client_dependency(StageThing, "/stage/")
-Camera = raw_thing_dependency(CameraThing)
-WrappedCamera = direct_thing_client_dependency(CameraThing, "/camera/")
 
 ### Autofocus utilities
 

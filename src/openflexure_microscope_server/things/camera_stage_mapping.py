@@ -22,7 +22,7 @@ from camera_stage_mapping.camera_stage_calibration_1d import (
     image_to_stage_displacement_from_1d,
 )
 from camera_stage_mapping.camera_stage_tracker import Tracker
-from .camera import Camera as CameraThing
+from .camera import CameraDependency as Camera
 from .stage import Stage as StageThing
 
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
@@ -31,7 +31,6 @@ from labthings_fastapi.types.numpy import NDArray, denumpify, DenumpifyingDict
 from labthings_fastapi.decorators import thing_action, thing_property
 from labthings_fastapi.thing import Thing
 
-Camera = direct_thing_client_dependency(CameraThing, "/camera/")
 Stage = direct_thing_client_dependency(StageThing, "/stage/")
 
 CoordinateType = Tuple[float, float, float]

@@ -24,11 +24,11 @@ from labthings_fastapi.outputs.mjpeg_stream import MJPEGStreamDescriptor
 from labthings_fastapi.types.numpy import NDArray
 from labthings_fastapi.server import ThingServer
 
-from . import Camera, JPEGBlob
+from . import BaseCamera, JPEGBlob
 from ..stage import Stage
 
 
-class SimulatedCamera(Camera):
+class SimulatedCamera(BaseCamera):
     """A Thing representing an OpenCV camera"""
     shape = (600, 800, 3)
     glyph_shape = (51, 51, 3)
