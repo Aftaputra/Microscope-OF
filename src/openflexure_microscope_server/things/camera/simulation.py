@@ -25,7 +25,7 @@ from labthings_fastapi.types.numpy import NDArray
 from labthings_fastapi.server import ThingServer
 
 from . import BaseCamera, JPEGBlob
-from ..stage import Stage
+from ..stage import StageProtocol as Stage
 
 
 class SimulatedCamera(BaseCamera):

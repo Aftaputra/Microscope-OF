@@ -4,10 +4,10 @@ from labthings_fastapi.dependencies.invocation import CancelHook, InvocationCanc
 from collections.abc import Mapping
 import time
 
-from . import Stage
+from . import BaseStage
 
 
-class DummyStage(Stage):
+class DummyStage(BaseStage):
     """A dummy stage for testing purposes
     
     This stage should work similarly to a Sangaboard stage, but without any

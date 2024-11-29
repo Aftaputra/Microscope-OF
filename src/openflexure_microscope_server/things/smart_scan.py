@@ -29,13 +29,12 @@ from labthings_fastapi.dependencies.invocation import CancelHook, InvocationLogg
 from labthings_fastapi.decorators import thing_action, thing_property, fastapi_endpoint
 from labthings_fastapi.outputs.blob import blob_type
 from .camera import CameraDependency as CamDep
-from .stage import Stage
+from .stage import StageDependency as StageDep
 from openflexure_microscope_server.things.autofocus import AutofocusThing
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
 from openflexure_microscope_server.things.auto_recentre_stage import RecentringThing
 
 
-StageDep = direct_thing_client_dependency(Stage, "/stage/")
 CSMDep = direct_thing_client_dependency(CameraStageMapper, "/camera_stage_mapping/")
 AutofocusDep = direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 RecentreStage = direct_thing_client_dependency(RecentringThing, "/auto_recentre_stage/")
