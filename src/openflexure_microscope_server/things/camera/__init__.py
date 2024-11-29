@@ -14,15 +14,35 @@ from labthings_fastapi.decorators import thing_action, thing_property
 from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
 from labthings_fastapi.outputs.mjpeg_stream import MJPEGStreamDescriptor
-from labthings_fastapi.outputs.blob import BlobOutput
+from labthings_fastapi.outputs.blob import blob_type
 from labthings_fastapi.types.numpy import NDArray
 
 
-class JPEGBlob(BlobOutput):
-    media_type = "image/jpeg"
+JPEGBlob = blob_type("image/jpeg")
+
+class CameraMeta:
+    def __subclasscheck__(cls, C):
+        """Override Python's default behaviour and use duck typing"""
+        print(f"Checking if {C} is a camera...")
+        for action in ["snap_image", "capture_array", "capture_jpeg", "grab_jpeg", "grab_jpeg_size"]:
+            a = getattr(C, action, None)
+            if not callable(a):
+                return False
+        for prop in ["stream_active"]:
+            if not hasattr(C, prop):
+                return False
+        for k in ["mjpeg_stream", "lores_mjpeg_stream"]:
+            stream = getattr(C, k)
+            if not isinstance(stream, MJPEGStreamDescriptor):
+                return False
+        return True
+
+    def __instancecheck__(cls, I):
+        return cls.__subclasscheck__(I)
 
 
 class Camera(Thing):
+    __metaclass__ = CameraMeta
     """A Thing representing a camera"""
 
     def __enter__(self):
@@ -104,3 +124,4 @@ class Camera(Thing):
             self.lores_mjpeg_stream if stream_name == "lores" else self.mjpeg_stream
         )
         return portal.call(stream.next_frame_size)
+

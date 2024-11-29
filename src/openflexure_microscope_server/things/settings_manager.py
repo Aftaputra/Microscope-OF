@@ -13,7 +13,8 @@ from fastapi import Depends, HTTPException, Request
 from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.decorators import thing_action, thing_property
-from labthings_fastapi.server import find_thing_server, ThingServer
+from labthings_fastapi.dependencies.thing_server import find_thing_server
+from labthings_fastapi.server import ThingServer
 from labthings_fastapi.dependencies.invocation import InvocationLogger
 
 

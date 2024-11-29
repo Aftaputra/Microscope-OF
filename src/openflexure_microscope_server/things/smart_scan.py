@@ -27,7 +27,7 @@ from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
 from labthings_fastapi.dependencies.invocation import CancelHook, InvocationLogger, InvocationCancelledError
 from labthings_fastapi.decorators import thing_action, thing_property, fastapi_endpoint
-from labthings_fastapi.outputs.blob import BlobOutput
+from labthings_fastapi.outputs.blob import blob_type
 from .camera import Camera
 from .stage import Stage
 from openflexure_microscope_server.things.autofocus import AutofocusThing
@@ -335,11 +335,8 @@ DOWNLOADABLE_SCAN_FILES = (
     "images.zip",
 )
 
-class JPEGBlob(BlobOutput):
-    media_type = "image/jpeg"
-
-class ZipBlob(BlobOutput):
-    media_type = "application/zip"
+JPEGBlob = blob_type("image/jpeg")
+ZipBlob = blob_type("application/zip")
 
 class SmartScanThing(Thing):
     def __init__(self, path_to_openflexure_stitch: str):
