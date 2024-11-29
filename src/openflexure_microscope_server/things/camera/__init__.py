@@ -10,7 +10,7 @@ import logging
 from typing import Literal, Protocol, runtime_checkable
 
 from labthings_fastapi.thing import Thing
-from labthings_fastapi.decorators import thing_action
+from labthings_fastapi.decorators import thing_action, thing_property
 from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
@@ -85,12 +85,6 @@ class BaseCamera(Thing):
     It provides the stream descriptors and actions to grab from the stream.
     """
 
-    def __enter__(self):
-        raise NotImplementedError("Subclasses must implement __enter__")
-    
-    def __exit__(self, _exc_type, _exc_value, _traceback):
-        raise NotImplementedError("Subclasses must implement __exit__")
-
     mjpeg_stream = MJPEGStreamDescriptor()
     lores_mjpeg_stream = MJPEGStreamDescriptor()
 
@@ -135,7 +129,51 @@ class BaseCamera(Thing):
             self.lores_mjpeg_stream if stream_name == "lores" else self.mjpeg_stream
         )
         return portal.call(stream.next_frame_size)
+    
+
+class CameraStub(BaseCamera):
+    """A stub for a camera, to allow dependencies
+    
+    
+    As of LabThings-FastAPI 0.0.7, we can't make a thing client dependency
+    based on a protocol, because the protocol is not a Thing, and its
+    methods/properties are not decorated as Affordances. This stub class
+    is a workaround for that limitation, and should not be used directly.
+
+    This stub class should be used for dependencies on the CameraProtocol.
+    """
+    def __enter__(self) -> None:
+        raise NotImplementedError("Cameras must not inherit from CameraStub")
+    
+    def __exit__(self, _exc_type, _exc_value, _traceback) -> None:
+        raise NotImplementedError("Cameras must not inherit from CameraStub")
+
+    @thing_property
+    def stream_active(self) -> bool:
+        "Whether the MJPEG stream is active"
+        raise NotImplementedError("Cameras must not inherit from CameraStub")
+
+    @thing_action
+    def snap_image(self) -> NDArray:
+        """Acquire one image from the camera."""
+        raise NotImplementedError("Cameras must not inherit from CameraStub")
+
+    @thing_action
+    def capture_array(
+        self,
+        resolution: Literal["lores", "main", "full"] = "main",
+    ) -> NDArray:
+        raise NotImplementedError("Cameras must not inherit from CameraStub")
+    
+    @thing_action
+    def capture_jpeg(
+        self,
+        metadata_getter: GetThingStates,
+        resolution: Literal["lores", "main", "full"] = "main",
+    ) -> JPEGBlob:
+        """Acquire one image from the camera and return as a JPEG blob"""
+        raise NotImplementedError("Cameras must not inherit from CameraStub")
 
 
-CameraDependency = direct_thing_client_dependency(CameraProtocol, "/camera/")
+CameraDependency = direct_thing_client_dependency(CameraStub, "/camera/")
 RawCameraDependency = raw_thing_dependency(CameraProtocol)
