@@ -7,7 +7,7 @@ See repository root for licensing information.
 """
 from __future__ import annotations
 import logging
-from typing import Literal, Protocol, TypeAlias, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.decorators import thing_action
@@ -16,11 +16,12 @@ from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
 from labthings_fastapi.dependencies.raw_thing import raw_thing_dependency
 from labthings_fastapi.outputs.mjpeg_stream import MJPEGStreamDescriptor
-from labthings_fastapi.outputs.blob import blob_type
+from labthings_fastapi.outputs.blob import Blob
 from labthings_fastapi.types.numpy import NDArray
 
 
-JPEGBlob: TypeAlias = blob_type("image/jpeg")
+class JPEGBlob(Blob):
+    media_type: str = "image/jpeg"
 
 @runtime_checkable
 class CameraProtocol(Protocol):
