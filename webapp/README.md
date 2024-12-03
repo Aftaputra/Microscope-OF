@@ -11,7 +11,7 @@
 
 ## Creating releases
 
-* JS client is coupled to the API, and so are no longer separately built and deployed.
+* JS client is coupled to the API, and is built and distributed with the server.
 * See [openflexure-microscope-server/README.md](https://gitlab.com/openflexure/openflexure-microscope-server/-/blob/master/README.md) for details on creating new releases
 
 ## Installing

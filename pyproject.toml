@@ -29,6 +29,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "labthings-fastapi[dev]",
+  "ruff",
+  "mypy",
+  "pytest",
 ]
 pi = [
   "labthings-picamera2 == 0.0.1-dev2",
