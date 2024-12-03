@@ -1,6 +1,9 @@
 from __future__ import annotations
 from labthings_fastapi.decorators import thing_action
-from labthings_fastapi.dependencies.invocation import CancelHook, InvocationCancelledError
+from labthings_fastapi.dependencies.invocation import (
+    CancelHook,
+    InvocationCancelledError,
+)
 from collections.abc import Mapping
 import time
 
@@ -9,11 +12,12 @@ from . import BaseStage
 
 class DummyStage(BaseStage):
     """A dummy stage for testing purposes
-    
+
     This stage should work similarly to a Sangaboard stage, but without any
     hardware attached.
     """
-    def __init__(self, step_time: float=0.001, **kwargs):
+
+    def __init__(self, step_time: float = 0.001, **kwargs):
         super().__init__(**kwargs)
         self.step_time = step_time
 
@@ -24,7 +28,12 @@ class DummyStage(BaseStage):
         pass
 
     @thing_action
-    def move_relative(self, cancel: CancelHook, block_cancellation: bool=False, **kwargs: Mapping[str, int]):
+    def move_relative(
+        self,
+        cancel: CancelHook,
+        block_cancellation: bool = False,
+        **kwargs: Mapping[str, int],
+    ):
         """Make a relative move. Keyword arguments should be axis names."""
         displacement = [kwargs.get(k, 0) for k in self.axis_names]
         self.moving = True
@@ -50,7 +59,7 @@ class DummyStage(BaseStage):
             # and to mark the invocation as "cancelled" rather than stopped.
             raise e
         finally:
-            self.moving=False
+            self.moving = False
             self.position = {
                 k: self.position[k] + int(fraction_complete * v)
                 for k, v in zip(self.axis_names, displacement)
@@ -58,19 +67,26 @@ class DummyStage(BaseStage):
             self.instantaneous_position = self.position
 
     @thing_action
-    def move_absolute(self, cancel: CancelHook, block_cancellation: bool=False, **kwargs: Mapping[str, int]):
+    def move_absolute(
+        self,
+        cancel: CancelHook,
+        block_cancellation: bool = False,
+        **kwargs: Mapping[str, int],
+    ):
         """Make an absolute move. Keyword arguments should be axis names."""
         displacement = {
-            k: int(v) - self.position[k] 
+            k: int(v) - self.position[k]
             for k, v in kwargs.items()
             if k in self.axis_names
         }
-        self.move_relative(cancel, block_cancellation=block_cancellation, **displacement)
-        
+        self.move_relative(
+            cancel, block_cancellation=block_cancellation, **displacement
+        )
+
     @thing_action
     def set_zero_position(self):
         """Make the current position zero in all axes
-        
+
         This action does not move the stage, but resets the position to zero.
         It is intended for use after manually or automatically recentring the
         stage.

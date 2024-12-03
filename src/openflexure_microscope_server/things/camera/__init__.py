@@ -5,6 +5,7 @@ should enabe the server to work.
 
 See repository root for licensing information.
 """
+
 from __future__ import annotations
 import logging
 from typing import Literal, Protocol, runtime_checkable
@@ -23,15 +24,14 @@ from labthings_fastapi.types.numpy import NDArray
 class JPEGBlob(Blob):
     media_type: str = "image/jpeg"
 
+
 @runtime_checkable
 class CameraProtocol(Protocol):
     """A Thing representing a camera"""
 
-    def __enter__(self) -> None:
-        ...
-    
-    def __exit__(self, _exc_type, _exc_value, _traceback) -> None:
-        ...
+    def __enter__(self) -> None: ...
+
+    def __exit__(self, _exc_type, _exc_value, _traceback) -> None: ...
 
     @property
     def stream_active(self) -> bool:
@@ -45,9 +45,8 @@ class CameraProtocol(Protocol):
     def capture_array(
         self,
         resolution: Literal["lores", "main", "full"] = "main",
-    ) -> NDArray:
-        ...
-    
+    ) -> NDArray: ...
+
     def capture_jpeg(
         self,
         metadata_getter: GetThingStates,
@@ -78,9 +77,10 @@ class CameraProtocol(Protocol):
         """Acquire one image from the preview stream and return its size"""
         ...
 
+
 class BaseCamera(Thing):
     """A Thing representing a camera
-    
+
     This is a concrete base class for `Thing`s implementing the `CameraProtocol`.
     It provides the stream descriptors and actions to grab from the stream.
     """
@@ -110,12 +110,16 @@ class BaseCamera(Thing):
         stream (either "main" for the preview stream, or "lores" for the low
         resolution preview). No metadata is returned.
         """
-        logging.info(f"StreamingPiCamera2.grab_jpeg(stream_name={stream_name}) starting")
+        logging.info(
+            f"StreamingPiCamera2.grab_jpeg(stream_name={stream_name}) starting"
+        )
         stream = (
             self.lores_mjpeg_stream if stream_name == "lores" else self.mjpeg_stream
         )
         frame = portal.call(stream.grab_frame)
-        logging.info(f"StreamingPiCamera2.grab_jpeg(stream_name={stream_name}) got frame")
+        logging.info(
+            f"StreamingPiCamera2.grab_jpeg(stream_name={stream_name}) got frame"
+        )
         return JPEGBlob.from_bytes(frame)
 
     @thing_action
@@ -129,12 +133,12 @@ class BaseCamera(Thing):
             self.lores_mjpeg_stream if stream_name == "lores" else self.mjpeg_stream
         )
         return portal.call(stream.next_frame_size)
-    
+
 
 class CameraStub(BaseCamera):
     """A stub for a camera, to allow dependencies
-    
-    
+
+
     As of LabThings-FastAPI 0.0.7, we can't make a thing client dependency
     based on a protocol, because the protocol is not a Thing, and its
     methods/properties are not decorated as Affordances. This stub class
@@ -142,9 +146,10 @@ class CameraStub(BaseCamera):
 
     This stub class should be used for dependencies on the CameraProtocol.
     """
+
     def __enter__(self) -> None:
         raise NotImplementedError("Cameras must not inherit from CameraStub")
-    
+
     def __exit__(self, _exc_type, _exc_value, _traceback) -> None:
         raise NotImplementedError("Cameras must not inherit from CameraStub")
 
@@ -164,7 +169,7 @@ class CameraStub(BaseCamera):
         resolution: Literal["lores", "main", "full"] = "main",
     ) -> NDArray:
         raise NotImplementedError("Cameras must not inherit from CameraStub")
-    
+
     @thing_action
     def capture_jpeg(
         self,

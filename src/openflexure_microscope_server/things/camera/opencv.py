@@ -1,10 +1,11 @@
 """OpenFlexure Microscope OpenCV Camera
 
-This module defines a camera Thing that uses OpenCV's 
+This module defines a camera Thing that uses OpenCV's
 `VideoCapture`.
 
 See repository root for licensing information.
 """
+
 from __future__ import annotations
 import io
 import json
@@ -26,7 +27,8 @@ from . import BaseCamera, JPEGBlob
 
 class OpenCVCamera(BaseCamera):
     """A Thing representing an OpenCV camera"""
-    def __init__(self, camera_index: int=0):
+
+    def __init__(self, camera_index: int = 0):
         self.camera_index = camera_index
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
@@ -37,7 +39,7 @@ class OpenCVCamera(BaseCamera):
         self._capture_thread = Thread(target=self._capture_frames)
         self._capture_thread.start()
         return self
-    
+
     def __exit__(self, _exc_type, _exc_value, _traceback):
         if self.stream_active:
             self._capture_enabled = False
@@ -50,6 +52,7 @@ class OpenCVCamera(BaseCamera):
         if self._capture_enabled and self._capture_thread:
             return self._capture_thread.is_alive()
         return False
+
     mjpeg_stream = MJPEGStreamDescriptor()
     lores_mjpeg_stream = MJPEGStreamDescriptor()
 
@@ -58,11 +61,15 @@ class OpenCVCamera(BaseCamera):
         while self._capture_enabled:
             ret, frame = self.cap.read()
             if not ret:
-                logging.error(f"Failed to capture frame from camera {self.camera_index}")
+                logging.error(
+                    f"Failed to capture frame from camera {self.camera_index}"
+                )
                 break
             jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
             self.mjpeg_stream.add_frame(jpeg, portal)
-            jpeg_lores = cv2.imencode(".jpg", cv2.resize(frame, (320, 240)))[1].tobytes()
+            jpeg_lores = cv2.imencode(".jpg", cv2.resize(frame, (320, 240)))[
+                1
+            ].tobytes()
             self.lores_mjpeg_stream.add_frame(jpeg_lores, portal)
 
     @thing_action
@@ -78,9 +85,11 @@ class OpenCVCamera(BaseCamera):
         """
         ret, frame = self.cap.read()
         if not ret:
-            raise RuntimeError(f"Failed to capture frame from camera {self.camera_index}")
+            raise RuntimeError(
+                f"Failed to capture frame from camera {self.camera_index}"
+            )
         return frame
-    
+
     @thing_action
     def capture_jpeg(
         self,
@@ -95,7 +104,9 @@ class OpenCVCamera(BaseCamera):
         jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
         exif_dict = {
             "Exif": {
-                piexif.ExifIFD.UserComment: json.dumps(metadata_getter()).encode("utf-8")
+                piexif.ExifIFD.UserComment: json.dumps(metadata_getter()).encode(
+                    "utf-8"
+                )
             },
             "GPS": {},
             "Interop": {},
