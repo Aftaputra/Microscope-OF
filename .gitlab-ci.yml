@@ -16,11 +16,11 @@ meta-build-image:
     - cd .meta-testimage-python
     - docker build -t $CI_REGISTRY/openflexure/openflexure-microscope-server/testimage-python:latest .
     - docker push $CI_REGISTRY/openflexure/openflexure-microscope-server/testimage-python:latest
-  #only:
-    #refs:    # commented out for initial run
-    #  - main
-    # changes:
-    #   - .meta/Dockerfile
+  only:
+    refs:    # commented out for initial run
+      - v3
+    changes:
+      - .meta/Dockerfile
 
 
 # Re-usable block to install (and cache) Poetry and openflexure-microscope-server
@@ -72,6 +72,7 @@ mypy:
   extends: .python
   script:
     - mypy --cobertura-xml-report mypy --no-error-summary src | tee mypy/stdout.txt
+  after_script:
     - cat mypy/stdout.txt | mypy-gitlab-code-quality > codequality.json
   allow_failure: true
 
@@ -86,8 +87,11 @@ mypy:
 pytest:
   stage: testing
   extends: .python
-  script:
-    - pytest --cov --cov-report term --cov-report xml:coverage.xml --junitxml=report.xml
+  script: >
+    - pytest --cov --cov-report term 
+      --cov-report xml:coverage.xml
+      --junitxml=report.xml
+      --gitlab-code-quality-report=pytest-warnings.json
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     when: always
@@ -95,6 +99,7 @@ pytest:
       - report.xml
     reports:
       junit: report.xml
+      codequality: pytest-warnings.json
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml

@@ -32,6 +32,7 @@ dev = [
   "ruff",
   "mypy[reports]",
   "mypy-gitlab-code-quality",
+  "pytest-gitlab-code-quality",
   "pytest",
 ]
 pi = [
