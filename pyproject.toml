@@ -30,7 +30,8 @@ dependencies = [
 dev = [
   "labthings-fastapi[dev]",
   "ruff",
-  "mypy",
+  "mypy[reports]",
+  "mypy-gitlab-code-quality",
   "pytest",
 ]
 pi = [
