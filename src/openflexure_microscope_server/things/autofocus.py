@@ -14,8 +14,6 @@ from typing import Annotated, Mapping, Optional, Sequence
 from fastapi import Depends
 
 from labthings_fastapi.thing import Thing
-from labthings_fastapi.dependencies.raw_thing import raw_thing_dependency
-from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
 from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
 from labthings_fastapi.decorators import thing_action
 from labthings_fastapi.types.numpy import NDArray

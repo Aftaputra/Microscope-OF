@@ -1,3 +1,5 @@
+# ruff: noqa: E722
+
 import shutil
 import zipfile
 import threading
@@ -13,12 +15,10 @@ from pydantic import BaseModel
 from scipy.stats import norm
 from scipy.ndimage import zoom
 from scipy.interpolate import interp1d
-from copy import deepcopy
 from datetime import datetime
-from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, run, STDOUT
+from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, STDOUT
 from threading import Event, Thread
 import glob
-import zipfile
 import json
 import piexif
 
@@ -109,14 +109,14 @@ def limit_focus_change(prev_pos, prev_z, new_pos, new_z, limit):
         return "accept"
 
 
-def distance_to_site(current, next):
-    current = np.array(current, dtype="float64")
-    next = np.array(next, dtype="float64")
-    if (next[1] - current[1]) ** 2 + (next[0] - current[0]) ** 2 < 0:
-        print(f"Negative distance between {next} and {current}")
-    return np.sqrt(
-        (next[1] - current[1]) ** 2 + (next[0] - current[0]) ** 2, dtype="float64"
-    )
+# def distance_to_site(current, next):
+#     current = np.array(current, dtype="float64")
+#     next = np.array(next, dtype="float64")
+#     if (next[1] - current[1]) ** 2 + (next[0] - current[0]) ** 2 < 0:
+#         print(f"Negative distance between {next} and {current}")
+#     return np.sqrt(
+#         (next[1] - current[1]) ** 2 + (next[0] - current[0]) ** 2, dtype="float64"
+#     )
 
 def steps_from_centre(current_loc, starting_loc, dx, dy):
     step_size = np.array([dx,dy])
@@ -455,7 +455,7 @@ class SmartScanThing(Thing):
             max_dist = self.max_range
             
             if self.autofocus_dz == 0:
-                logger.info(f'Running scan without autofocus')
+                logger.info('Running scan without autofocus')
             elif self.autofocus_dz <= 200:
                 logger.warning(f'Your dz range is {self.autofocus_dz} steps, which is too short to attempt to focus. Running without autofocus')
 
@@ -495,7 +495,7 @@ class SmartScanThing(Thing):
             # TODO: generalise to have 2D displacements for x and y (as the
             # camera and stage may not be aligned).
             CSM = csm.image_to_stage_displacement_matrix
-            csm_calibration_width = csm.last_calibration["image_resolution"][1]
+            #csm_calibration_width = csm.last_calibration["image_resolution"][1]
 
             overlap = self.overlap
 
@@ -510,7 +510,6 @@ class SmartScanThing(Thing):
             focused_path = []  # This holds a list of all points where focus succeeded
             true_path = []  # This holds a list of all points visited
             i = 0
-            ids = []
             start_time = time.strftime("%H_%M_%S-%d_%m_%Y")
 
             scan_folder = self.new_scan_folder(scan_name)
@@ -628,9 +627,7 @@ class SmartScanThing(Thing):
                 # if more than 92% of the image is background, treat it as background and continue
                 if not image_is_sample:
                     logger.info(f"Skipping {stage.position} as it is {round(background_detect.background_fraction(),0)}% background.")
-                    capture_image = False
                 else:
-                    capture_image = True
                     # if not, it's sample. run an autofocus and use the updated height
                     new_pos = [
                         [stage.position["x"] - dx, stage.position["y"]],
@@ -1017,10 +1014,10 @@ class SmartScanThing(Thing):
         p = Popen(cmd, stdout=PIPE, stderr = STDOUT, bufsize=1, universal_newlines=True)
         os.set_blocking(p.stdout.fileno(), False) 
         logger.info(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-        while p.poll() == None:
+        while p.poll() is None:
             try:
                 output = p.stdout.readline()
-                if output != "" and output != None:
+                if output != "" and output is not None:
                     logger.info(output)  
             except:
                 pass
@@ -1028,7 +1025,7 @@ class SmartScanThing(Thing):
         for line in p.stdout:
             try:
                 output = p.stdout.readline()
-                if output != "" and output != None:
+                if output != "" and output is not None:
                     logger.info(output)  
             except:
                 pass

@@ -2,7 +2,6 @@ import json
 import os
 import tempfile
 
-from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 from labthings_fastapi.client import ThingClient
 from PIL import Image

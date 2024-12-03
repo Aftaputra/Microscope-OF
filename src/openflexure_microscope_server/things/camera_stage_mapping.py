@@ -10,7 +10,6 @@ and return the calibration data.
 This module is only intended to be called from the OpenFlexure Microscope
 server, and depends on that server and its underlying LabThings library.
 """
-import logging
 import time
 from typing import Annotated, Any, Callable, Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 from fastapi import Depends, HTTPException
