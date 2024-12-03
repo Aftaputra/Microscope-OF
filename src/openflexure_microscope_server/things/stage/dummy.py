@@ -13,6 +13,9 @@ class DummyStage(BaseStage):
     This stage should work similarly to a Sangaboard stage, but without any
     hardware attached.
     """
+    def __init__(self, step_time: float=0.001, **kwargs):
+        super().__init__(**kwargs)
+        self.step_time = step_time
 
     def __enter__(self):
         self.instantaneous_position = self.position
@@ -27,7 +30,7 @@ class DummyStage(BaseStage):
         self.moving = True
         try:
             fraction_complete = 0.0
-            dt = 0.001
+            dt = self.step_time
             max_displacement = max(abs(v) for v in displacement)
             start_time = time.time()
             while time.time() - start_time < dt * max_displacement:
