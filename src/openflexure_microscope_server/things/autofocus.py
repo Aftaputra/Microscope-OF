@@ -5,6 +5,7 @@ camera together to perform an autofocus routine.
 
 See repository root for licensing information.
 """
+
 from __future__ import annotations
 from contextlib import contextmanager
 import logging
@@ -14,8 +15,6 @@ from typing import Annotated, Mapping, Optional, Sequence
 from fastapi import Depends
 
 from labthings_fastapi.thing import Thing
-from labthings_fastapi.dependencies.raw_thing import raw_thing_dependency
-from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
 from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
 from labthings_fastapi.decorators import thing_action
 from labthings_fastapi.types.numpy import NDArray
@@ -28,8 +27,10 @@ from pydantic import BaseModel
 
 ### Autofocus utilities
 
+
 class JPEGSharpnessMonitor:
     __globals__ = globals()  # Required for FastAPI dependency
+
     def __init__(self, stage: Stage, camera: Camera, portal: BlockingPortal):
         self.camera = camera
         self.stage = stage
@@ -50,7 +51,7 @@ class JPEGSharpnessMonitor:
             self.jpeg_sizes.append(len(frame))
             if not self.running:
                 break
-    
+
     @contextmanager
     def run(self):
         """Context manager, during which we will monitor sharpness from the camera"""
@@ -75,7 +76,7 @@ class JPEGSharpnessMonitor:
         # Index of the data for this movement
         data_index: int = len(self.stage_positions) - 2
         # Final z position after move
-        final_z_position: int = self.stage_positions[-1]['z']
+        final_z_position: int = self.stage_positions[-1]["z"]
         return data_index, final_z_position
 
     def move_data(
@@ -86,12 +87,10 @@ class JPEGSharpnessMonitor:
             istop = istart + 2
         jpeg_times: np.ndarray = np.array(self.jpeg_times)
         jpeg_sizes: np.ndarray = np.array(self.jpeg_sizes)
-        stage_times: np.ndarray = np.array(self.stage_times)[
-            istart:istop
-        ]
+        stage_times: np.ndarray = np.array(self.stage_times)[istart:istop]
         stage_zs: np.ndarray = np.array(
-            [p['z'] for p in self.stage_positions[istart:istop]]
-          )
+            [p["z"] for p in self.stage_positions[istart:istop]]
+        )
         try:
             start: int = int(np.argmax(jpeg_times > stage_times[0]))
             stop: int = int(np.argmax(jpeg_times > stage_times[1]))
@@ -130,6 +129,7 @@ class JPEGSharpnessMonitor:
 
 SharpnessMonitorDep = Annotated[JPEGSharpnessMonitor, Depends()]
 
+
 class SharpnessDataArrays(BaseModel):
     jpeg_times: NDArray
     jpeg_sizes: NDArray
@@ -142,18 +142,18 @@ class AutofocusThing(Thing):
     def fast_autofocus(
         self,
         m: SharpnessMonitorDep,
-        dz: int=2000,
-        start: str='centre',
+        dz: int = 2000,
+        start: str = "centre",
     ) -> SharpnessDataArrays:
         """Sweep the stage up and down, then move to the sharpest point
-        
+
         This method will will move down by dz/2, sweep up by dz, and then evaluate
         the position where the image was sharpest. We'll then move back down, and
         finally up to the sharpest point.
         """
         with m.run():
             # Move to (-dz / 2)
-            if start == 'centre':
+            if start == "centre":
                 m.focus_rel(-dz / 2)
             # Move to dz while monitoring sharpness
             # i: Sharpness monitor index for this move
@@ -167,16 +167,16 @@ class AutofocusThing(Thing):
             m.focus_rel(fz - z)
             # Return all focus data
             return m.data_dict()
-        
+
     @thing_action
     def move_and_measure(
         self,
         m: SharpnessMonitorDep,
         dz: Sequence[int],
-        wait: float=0,
+        wait: float = 0,
     ) -> SharpnessDataArrays:
         """Make a move (or a series of moves) and monitor sharpness
-        
+
         This method will will make a series of relative moves in z, and
         return the sharpness (JPEG size) vs time, along with timestamps
         for the moves. This can be used to calibrate autofocus.
@@ -195,9 +195,11 @@ class AutofocusThing(Thing):
             return m.data_dict()
 
     @thing_action
-    def looping_autofocus(self, stage: Stage,  m: SharpnessMonitorDep, dz=2000, start='centre'):
+    def looping_autofocus(
+        self, stage: Stage, m: SharpnessMonitorDep, dz=2000, start="centre"
+    ):
         """Repeatedly autofocus the stage until it looks focused.
-        
+
         This action will run the `fast_autofocus` action until it settles on a point
         in the middle 3/5 of its range. Such logic can be helpful if the microscope
         is close to focus, but not quite within `dz/2`. It will attempt to autofocus
@@ -209,14 +211,13 @@ class AutofocusThing(Thing):
 
         with m.run():
             while repeat and attempts < 10:
-
-                if start == 'centre':
-                    stage.move_relative(x = 0, y = 0, z = -(backlash + dz / 2))
-                    stage.move_relative(x = 0, y = 0, z = backlash)
+                if start == "centre":
+                    stage.move_relative(x=0, y=0, z=-(backlash + dz / 2))
+                    stage.move_relative(x=0, y=0, z=backlash)
 
                 i, z = m.focus_rel(dz, block_cancellation=True)
                 _, heights, sizes = m.move_data(i)
-            
+
                 peak_height = heights[np.argmax(sizes)]
                 height_min = np.min(heights)
                 height_max = np.max(heights)
@@ -226,22 +227,24 @@ class AutofocusThing(Thing):
                     or height_max - peak_height < dz / 5
                 ):
                     attempts += 1
-                    start = 'centre'
-                    stage.move_absolute(z = peak_height-backlash)
-                    stage.move_absolute(z = peak_height)
+                    start = "centre"
+                    stage.move_absolute(z=peak_height - backlash)
+                    stage.move_absolute(z=peak_height)
                 else:
                     repeat = False
-                    stage.move_relative(x = 0, y = 0, z = -(dz+backlash))
-                    stage.move_absolute(z = peak_height)
+                    stage.move_relative(x=0, y=0, z=-(dz + backlash))
+                    stage.move_absolute(z=peak_height)
             return heights.tolist(), sizes.tolist()
 
     @thing_action
-    def verify_focus_sharpness(self, sweep_sizes: list, camera: WrappedCamera, threshold: float = 0.95):
-        '''Take the sharpness curve of the autofocus, and the size of the current frame
+    def verify_focus_sharpness(
+        self, sweep_sizes: list, camera: WrappedCamera, threshold: float = 0.95
+    ):
+        """Take the sharpness curve of the autofocus, and the size of the current frame
         to see if the autofocus completed successfully. Returns True if current sharpness
-        is within "leniency" number of frames from the peak of the autofocus'''
+        is within "leniency" number of frames from the peak of the autofocus"""
 
-        current_sharpness = camera.grab_jpeg_size(stream_name='lores')
+        current_sharpness = camera.grab_jpeg_size(stream_name="lores")
 
         peak = np.max(sweep_sizes)
         base = np.min(sweep_sizes)

@@ -43,5 +43,3 @@ def serve_from_cli(argv: Optional[list[str]] = None):
             uvicorn.run(app, host=args.host, port=args.port)
         else:
             raise e
-
-

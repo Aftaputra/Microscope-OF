@@ -5,6 +5,7 @@ from socket import gethostname
 
 def add_v2_endpoints(thing_server: ThingServer):
     app = thing_server.app
+
     # TODO: update openflexure connect to make this unnecessary!!
     # The endpoints below fool OpenFlexure Connect into thinking we are a
     # v2 microscope, so we show up correctly.
@@ -15,7 +16,7 @@ def add_v2_endpoints(thing_server: ThingServer):
         fake_routes = [
             "/api/v2/",
             "/api/v2/streams/snapshot",
-            "/api/v2/instrument/settings/name"
+            "/api/v2/instrument/settings/name",
         ]
         return {url: {"url": url, "methods": ["GET"]} for url in fake_routes}
 
