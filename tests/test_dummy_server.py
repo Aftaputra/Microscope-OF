@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 from labthings_fastapi.client import ThingClient
 from PIL import Image
+import numpy as np
 import piexif
 import pytest
 
@@ -14,12 +15,15 @@ from openflexure_microscope_server.things.camera.simulation import SimulatedCame
 from openflexure_microscope_server.things.stage.dummy import DummyStage
 from openflexure_microscope_server.things.autofocus import AutofocusThing
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
+from openflexure_microscope_server.things import camera_stage_mapping
+
+camera_stage_mapping.DEFAULT_SETTLING_TIME = 0 # skip the settling time for tests
 
 @pytest.fixture
 def thing_server():
     temp_folder = tempfile.TemporaryDirectory()
     server = ThingServer(settings_folder=temp_folder.name)
-    server.add_thing(SimulatedCamera(), "/camera/")
+    server.add_thing(SimulatedCamera(shape=(240, 320, 3), canvas_shape=(960, 1240, 3), frame_interval=0.01), "/camera/")
     server.add_thing(DummyStage(step_time=0.000001), "/stage/")
     server.add_thing(AutofocusThing(), "/autofocus/")
     server.add_thing(CameraStageMapper(), "/camera_stage_mapping/")
@@ -34,7 +38,7 @@ def client(thing_server):
 
 @pytest.fixture
 def slower_client(thing_server):
-    thing_server.things["/stage/"].step_time = 0.0002
+    thing_server.things["/stage/"].step_time = 0.0001
     with TestClient(thing_server.app) as client:
         yield client
 
@@ -70,7 +74,12 @@ def test_stage(client):
     for s, p in zip(start.values(), pos.values()):
         assert s == p
 
+def test_capture_array(client):
+    camera = ThingClient.from_url("/camera/", client)
+    array = np.asarray(camera.capture_array())
+    assert array.shape == (240, 320, 3)
+
 # Currently this fails, not yet sure why.
-#def test_camera_stage_mapping_calibration(client):
-#    camera_stage_mapping = ThingClient.from_url("/camera_stage_mapping/", client)
-#    camera_stage_mapping.calibrate_xy()
+def test_camera_stage_mapping_calibration(client):
+    camera_stage_mapping = ThingClient.from_url("/camera_stage_mapping/", client)
+    camera_stage_mapping.calibrate_xy()

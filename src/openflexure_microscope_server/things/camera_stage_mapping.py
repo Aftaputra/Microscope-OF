@@ -61,6 +61,9 @@ def downsample(factor: int, image: np.ndarray) -> np.ndarray:
     return reshaped.mean(axis=(1,3))
 
 
+DEFAULT_SETTLING_TIME = 0.2
+
+
 def make_hardware_interface(
         stage: Stage, camera: Camera, downsample_factor: int = 2
     ) -> HardwareInterfaceModel:
@@ -81,7 +84,7 @@ def make_hardware_interface(
         img = camera.capture_array()
         return downsample(downsample_factor, img)
     def settle() -> None:
-        time.sleep(0.2)
+        time.sleep(DEFAULT_SETTLING_TIME)
         try:
             camera.capture_metadata  # This discards frames on a picamera
         except AttributeError:

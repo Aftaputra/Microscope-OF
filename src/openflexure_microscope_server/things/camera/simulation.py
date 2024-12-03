@@ -23,21 +23,31 @@ from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.outputs.mjpeg_stream import MJPEGStreamDescriptor
 from labthings_fastapi.types.numpy import NDArray
 from labthings_fastapi.server import ThingServer
+from pydantic import RootModel
 
 from . import BaseCamera, JPEGBlob
 from ..stage import StageProtocol as Stage
 
+class ArrayModel(RootModel):
+    """A model for an array"""
+    root: NDArray
 
 class SimulatedCamera(BaseCamera):
     """A Thing representing an OpenCV camera"""
-    shape = (600, 800, 3)
-    glyph_shape = (51, 51, 3)
-    canvas_shape = (3000, 4000, 3)
-    frame_interval = 0.1
     _stage: Optional[Stage] = None
     _server: Optional[ThingServer] = None
 
-    def __init__(self):
+    def __init__(
+            self,
+            shape: tuple[int, int, int] = (600, 800, 3),
+            glyph_shape: tuple[int, int, int] = (51, 51, 3),
+            canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
+            frame_interval: float = 0.1,
+        ):
+        self.shape = shape
+        self.glyph_shape = glyph_shape
+        self.canvas_shape = canvas_shape
+        self.frame_interval = frame_interval
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
         self.generate_sprites()
@@ -85,9 +95,12 @@ class SimulatedCamera(BaseCamera):
         cw, ch, _ = self.canvas_shape
         w, h, _ = self.shape
         tl = (int(pos[0]) - w//2 - cw//2, int(pos[1]) - h//2 - ch//2)
-        return self.canvas[
+        image = self.canvas[
             tuple(slice(tl[i],tl[i] + self.shape[i]) for i in range(2)) + (slice(None),)
         ]
+        if image.shape != self.shape:
+            raise ValueError(f"Image shape {image.shape} does not match intended shape {self.shape}")
+        return image
 
     def attach_to_server(self, server: ThingServer, path: str):
         self._server = server
@@ -131,17 +144,20 @@ class SimulatedCamera(BaseCamera):
         portal = get_blocking_portal(self)
         while self._capture_enabled:
             time.sleep(self.frame_interval)
-            frame = self.generate_frame()
-            jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
-            self.mjpeg_stream.add_frame(jpeg, portal)
-            jpeg_lores = cv2.imencode(".jpg", cv2.resize(frame, (320, 240)))[1].tobytes()
-            self.lores_mjpeg_stream.add_frame(jpeg_lores, portal)
+            try:
+                frame = self.generate_frame()
+                jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
+                self.mjpeg_stream.add_frame(jpeg, portal)
+                jpeg_lores = cv2.imencode(".jpg", cv2.resize(frame, (320, 240)))[1].tobytes()
+                self.lores_mjpeg_stream.add_frame(jpeg_lores, portal)
+            except Exception as e:
+                logging.error(f"Failed to capture frame: {e}, retrying...")
 
     @thing_action
     def capture_array(
         self,
         resolution: Literal["main", "full"] = "full",
-    ) -> NDArray:
+    ) -> ArrayModel:
         """Acquire one image from the camera and return as an array
 
         This function will produce a nested list containing an uncompressed RGB image.
