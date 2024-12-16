@@ -17,15 +17,13 @@ classifiers = [
 dependencies = [
   "labthings-fastapi[server] == 0.0.7",
   "labthings-sangaboard",
-  "camera-stage-mapping ~= 0.1.6",
-  "numpy ~= 1.20",
-  "piexif",
-  "scipy ~= 1.6",
+  "camera-stage-mapping ~= 0.1.7",
   "opencv-python ~= 4.7.0",
   "pillow ~= 10.4",
   "anyio ~= 4.0",
-  "numpy < 2.0",
+  "numpy ~= 1.20",
   "scipy ~=1.14",
+  "piexif",
 ]
 
 [project.optional-dependencies]
@@ -38,7 +36,7 @@ dev = [
   "pytest",
 ]
 pi = [
-  "labthings-picamera2 == 0.0.1-dev2",
+  "labthings-picamera2 == 0.0.2-dev0",
 ]
 
 [project.scripts]
