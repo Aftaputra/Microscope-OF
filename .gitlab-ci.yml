@@ -69,7 +69,6 @@ ruff-lint:
 ruff-format:
   stage: analysis
   extends: .python
-  allow_failure: true
   script:
     - ruff format --check
 
