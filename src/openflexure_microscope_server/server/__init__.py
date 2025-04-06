@@ -30,7 +30,16 @@ def serve_from_cli(argv: Optional[list[str]] = None):
         config = cli.config_from_args(args)
         server = cli.server_from_config(config)
         customise_server(server)
-        uvicorn.run(server.app, host=args.host, port=args.port)
+        uvicorn.run(
+            server.app,
+            host=args.host,
+            port=args.port,
+            log_config={
+                "version": 1,
+                "disable_existing_loggers": False,
+            },
+        )
+
     except BaseException as e:
         if args.fallback:
             print(f"Error: {e}")
@@ -40,6 +49,14 @@ def serve_from_cli(argv: Optional[list[str]] = None):
             app.labthings_config = config
             app.labthings_server = server
             app.labthings_error = e
-            uvicorn.run(app, host=args.host, port=args.port)
+            uvicorn.run(
+                app,
+                host=args.host,
+                port=args.port,
+                log_config={
+                    "version": 1,
+                    "disable_existing_loggers": False,
+                },
+            )
         else:
             raise e
