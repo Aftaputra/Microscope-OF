@@ -30,7 +30,10 @@
             </button>
           </div>
           <div>
-            <a class="uk-button uk-button-default" :href="logFileURI" download
+            <a
+              class="uk-button uk-button-default"
+              :href="logFileURI"
+              download="openflexure_microscope-ui.log"
               >Download Log File</a
             >
           </div>
