@@ -6,7 +6,7 @@ from labthings_fastapi.server import cli, ThingServer
 import uvicorn
 from .serve_static_files import add_static_files
 from .legacy_api import add_v2_endpoints
-from ..logging import configure_logging, retrieve_log
+from ..logging import configure_logging, retrieve_log, retrieve_log_from_file
 
 
 def customise_server(server: ThingServer):
@@ -18,8 +18,9 @@ def customise_server(server: ThingServer):
     except RuntimeError:
         print("Failed to add static files - you will have to do without them!")
 
-    # Add an endpoint to get the log
+    # Add an endpoint to get the logs - (directly calling the FastAPI decorator)
     server.app.get("/log/")(retrieve_log)
+    server.app.get("/logfile/")(retrieve_log_from_file)
 
 
 def serve_from_cli(argv: Optional[list[str]] = None):

@@ -2,7 +2,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import PlainTextResponse
 
 OFM_LOG_FOLDER = "/var/openflexure/logs/"
 OFM_LOG_FILE = os.path.join(OFM_LOG_FOLDER, "openflexure_microscope.log")
@@ -48,6 +48,18 @@ def retrieve_log() -> PlainTextResponse:
     ths is the best place to get logs about crashes.
     """
     return PlainTextResponse(OFM_HANDLER.log_history)
+
+
+def retrieve_log_from_file() -> PlainTextResponse:
+    """
+    Returns the full log from the file for downloading.
+
+    Note this is read and then sent as otherwise it causes a RuntimeError if it
+    is written to while sending through FileResponse
+    """
+    with open(OFM_LOG_FILE, "r", encoding="utf-8") as logfile:
+        full_log = logfile.read()
+    return PlainTextResponse(full_log)
 
 
 class OFMHandler(logging.Handler):
