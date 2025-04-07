@@ -207,8 +207,12 @@ class CameraStageMapper(Thing):
             result: dict = calibrate_backlash_1d(
                 tracker, move, direction_array, logger=logger
             )
-        except (InvocationCancelledError, MappingError) as e:
+        except InvocationCancelledError as e:
+            logger.info("User cancelled the camera stage mapping calibration")
             logger.info("Returning to starting position")
+            stage.move_absolute(**starting_position, block_cancellation=True)
+        except MappingError as e:
+            logger.info("Returning to starting position due to failed calibration")
             stage.move_absolute(**starting_position, block_cancellation=True)
             raise e
         result["move_history"] = move.history
