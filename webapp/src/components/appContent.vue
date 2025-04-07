@@ -215,7 +215,7 @@ export default {
           component: navigateContent
         },
         {
-          id: "background_detect",
+          id: "background detect",
           icon: "background_replace",
           component: backgroundDetectContent
         },
@@ -225,7 +225,7 @@ export default {
           component: slideScanContent
         },
         {
-          id: "scanlist",
+          id: "scan list",
           icon: "photo_library",
           component: ScanListContent
         }
@@ -313,7 +313,7 @@ export default {
 }
 
 #switcher-left {
-  width: 75px;
+  width: 85px;
   padding-top: 2px !important;
 }
 
