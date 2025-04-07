@@ -32,6 +32,7 @@ from camera_stage_mapping.camera_stage_calibration_1d import (
     calibrate_backlash_1d,
     image_to_stage_displacement_from_1d,
 )
+from camera_stage_mapping.exceoptions import MappingError
 from labthings_fastapi.dependencies.invocation import (
     InvocationCancelledError,
     InvocationLogger,
@@ -206,7 +207,7 @@ class CameraStageMapper(Thing):
             result: dict = calibrate_backlash_1d(
                 tracker, move, direction_array, logger=logger
             )
-        except (InvocationCancelledError, ValueError) as e:
+        except (InvocationCancelledError, MappingError) as e:
             logger.info("Returning to starting position")
             stage.move_absolute(**starting_position, block_cancellation=True)
             raise e
