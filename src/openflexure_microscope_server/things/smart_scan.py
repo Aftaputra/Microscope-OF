@@ -13,8 +13,6 @@ import time
 from PIL import Image
 from pydantic import BaseModel
 from scipy.stats import norm
-from scipy.ndimage import zoom
-from scipy.interpolate import interp1d
 from datetime import datetime
 from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, STDOUT
 from threading import Event, Thread
@@ -623,7 +621,7 @@ class SmartScanThing(Thing):
             def save_capture(name, image, metadata):
                 try:
                     jpeg_path = os.path.join(images_folder, name)
-                    PIL_image = Image.fromarray(image.astype("uint8"), "RGB").save(
+                    Image.fromarray(image.astype("uint8"), "RGB").save(
                         jpeg_path, quality=95, subsampling=0
                     )
                     try:
