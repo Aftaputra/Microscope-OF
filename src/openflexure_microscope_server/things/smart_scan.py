@@ -102,46 +102,15 @@ def limit_focus_change(prev_pos, prev_z, new_pos, new_z, limit):
     else:
         movement_ratio = np.divide(focus_change, dist, dtype="float64")
 
-    # print('Movement ratio is {0} in z per lateral step. The limit is {1}'.format(round(movement_ratio, 4), round(limit,4)))
-    # print(f'This is the distance between {prev_pos}, {prev_z} and {new_pos}, {new_z}')
-
     if movement_ratio > limit:
         return "reject"
     else:
         return "accept"
 
 
-# def distance_to_site(current, next):
-#     current = np.array(current, dtype="float64")
-#     next = np.array(next, dtype="float64")
-#     if (next[1] - current[1]) ** 2 + (next[0] - current[0]) ** 2 < 0:
-#         print(f"Negative distance between {next} and {current}")
-#     return np.sqrt(
-#         (next[1] - current[1]) ** 2 + (next[0] - current[0]) ** 2, dtype="float64"
-#     )
-
-
 def steps_from_centre(current_loc, starting_loc, dx, dy):
     step_size = np.array([dx, dy])
     return np.max(np.abs(np.divide(np.subtract(current_loc, starting_loc), step_size)))
-
-
-# def set_template(microscope, pos):
-#     microscope.move(pos)
-#     background = microscope.grab_image_array()
-#     background_LUV = cv2.cvtColor(background, cv2.COLOR_RGB2LUV)
-
-#     ch1 = (background_LUV.T[0]).flatten()
-#     ch2 = (background_LUV.T[1]).flatten()
-#     ch3 = (background_LUV.T[2]).flatten()
-
-#     points = np.array([np.asarray(ch1),np.asarray(ch2),np.asarray(ch3)]).T
-
-#     # we get the mean and standard deviation of values in each channel
-
-#     mu, std = np.apply_along_axis(norm.fit, 0, points)
-#     stats_list = np.vstack([mu, std])
-#     return stats_list
 
 
 def distance_to_site(current, next):
@@ -170,6 +139,7 @@ def generate_config(
     mean_loc = np.mean(positions, axis=0)
 
     # TODO: positions from recent scans need to be 2x bigger - change to CSM res?
+    # TODO: fully test this with whether it works in Fiji as expected
 
     camera_to_sample_matrix = scale_csm(
         camera_to_sample_matrix, csm_calibration_width, img_width
@@ -529,7 +499,6 @@ class SmartScanThing(Thing):
             # TODO: generalise to have 2D displacements for x and y (as the
             # camera and stage may not be aligned).
             CSM = csm.image_to_stage_displacement_matrix
-            # csm_calibration_width = csm.last_calibration["image_resolution"][1]
 
             overlap = self.overlap
 
@@ -697,9 +666,6 @@ class SmartScanThing(Thing):
 
                 # add the current position to the list of all positions visited
                 true_path.append(loc)
-
-                # if len(names) > 1:
-                #    generate_config(images_folder, positions, names, CSM, csm_calibration_width, img_width, logger)
 
                 temp_path = []
 
@@ -1179,7 +1145,6 @@ class SmartScanThing(Thing):
             raise FileNotFoundError(
                 f"Tried to make a zip archive of {images_folder} but it does not exist."
             )
-        # logger.info("Creating zip archive of images (may take some time)...")
 
         zip_fname = f"{os.path.join(scan_folder, 'images')}.zip"
 
@@ -1217,13 +1182,10 @@ class SmartScanThing(Thing):
                 if ".ome.tiff" in file:
                     tiff_name = os.path.split(file)[1]
                 if any(banned_name in file for banned_name in files_to_delay):
-                    # logger.info(f'we only add {file} into zip at the end of the scan')
                     pass
                 elif file in current_zip:
-                    # logger.info(f'{file} is already in zip')
                     pass
                 elif ".zip" in file or "raw" in file:
-                    # logger.info('Not adding the .zip to itself')
                     pass
                 else:
                     logger.info(f"appending {file} to zip")
