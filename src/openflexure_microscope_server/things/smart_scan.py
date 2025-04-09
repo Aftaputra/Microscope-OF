@@ -574,72 +574,6 @@ class SmartScanThing(Thing):
             ) as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
 
-            # This is the function we'll use to grab (or later capture) an image
-            # and save it with metadata
-            def capture_and_save(acquired: Event, name: str) -> None:
-                """Capture an image and save it to disk
-
-                This will set the event `acquired` once the image has been acquired, so
-                that the stage may be moved while it's saved.
-                """
-                try:
-                    capture_start = time.time()
-                    image, metadata = capture_image()
-                    acquired.set()
-                    acquisition_time = time.time()
-                    save_capture(name, image, metadata)
-                    save_time = time.time()
-                    acquisition_duration = round(acquisition_time - capture_start, 1)
-                    saving_duration = round(save_time - acquisition_time, 1)
-                    logger.info(
-                        "Acquired {} in {}s then {}s saving to disk".format(
-                            name, acquisition_duration, saving_duration
-                        )
-                    )
-                except Exception as e:
-                    logger.error(
-                        "An error occurred while saving {}: {}".format(name, e),
-                        exc_info=e,
-                    )
-
-            def capture_image():
-                """Capture an image in memory and return it with metadata
-
-                This will set the event `acquired` once the image has been acquired, so
-                that the stage may be moved while it's saved.
-                """
-                try:
-                    metadata = metadata_getter()
-                    image = cam.capture_array()[..., :3]
-                    return image, metadata
-                except Exception as e:
-                    logger.error(
-                        "An error occurred while capturing: {}".format(e), exc_info=e
-                    )
-                    return 0, 0
-
-            def save_capture(name, image, metadata):
-                try:
-                    jpeg_path = os.path.join(images_folder, name)
-                    Image.fromarray(image.astype("uint8"), "RGB").save(
-                        jpeg_path, quality=95, subsampling=0
-                    )
-                    try:
-                        exif_dict = piexif.load(os.path.join(images_folder, name))
-                        exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(
-                            metadata
-                        ).encode("utf-8")
-                        piexif.insert(
-                            piexif.dump(exif_dict), os.path.join(images_folder, name)
-                        )
-                    except:
-                        pass
-                except Exception as e:
-                    logger.error(
-                        "An error occurred while saving {}: {}".format(name, e),
-                        exc_info=e,
-                    )
-
             # At the start of the loop, we simultaneously capture an image and move to the next scan point.
             # We skip capturing on the first run, because we've not focused yet - and also we skip capturing if
             # it looks like background.
@@ -743,16 +677,16 @@ class SmartScanThing(Thing):
                             )
                     acquired = Event()
                     name = f"image_{loc[0]}_{loc[1]}.jpg"
+                    jpeg_path = os.path.join(images_folder, name)
                     time.sleep(0.2)
                     capture_thread = Thread(
-                        target=capture_and_save,
+                        target=self.capture_and_save,
                         kwargs={
-                            #    "cam": cam,
-                            #    "logger": logger,
                             "acquired": acquired,
-                            "name": name,
-                            #    "images_folder": images_folder,
-                            #    "raw_images_folder": raw_images_folder,
+                            "jpeg_path": jpeg_path,
+                            "cam": cam,
+                            "logger": logger,
+                            "metadata_getter": metadata_getter
                         },
                     )
                     capture_thread.start()
@@ -828,6 +762,87 @@ class SmartScanThing(Thing):
                     )
             except SubprocessError as e:
                 logger.error(f"Stitching failed: {e}", exc_info=e)
+
+    def capture_and_save(
+        self,
+        acquired: Event,
+        jpeg_path: str,
+        cam: CamDep,
+        metadata_getter: GetThingStates,
+        logger: InvocationLogger
+    ) -> None:
+        """Capture an image and save it to disk
+
+        This will set the event `acquired` once the image has been acquired, so
+        that the stage may be moved while it's saved.
+        """
+        capture_start = time.time()
+        image, metadata = self.capture_image(cam, metadata_getter, logger)
+        acquired.set()
+        acquisition_time = time.time()
+        self.save_capture(jpeg_path, image, metadata, logger)
+        save_time = time.time()
+        acquisition_duration = round(acquisition_time - capture_start, 1)
+        saving_duration = round(save_time - acquisition_time, 1)
+        logger.debug(
+            f"Acquired {jpeg_path} in {acquisition_duration}s then {saving_duration}s saving to disk"
+        )
+
+    def capture_image(
+        self,
+        cam: CamDep,
+        metadata_getter: GetThingStates,
+        logger: InvocationLogger,
+    ) -> tuple[np.ndarray, dict]:
+        """Capture an image in memory and return it with metadata
+
+        This will set the event `acquired` once the image has been acquired, so
+        that the stage may be moved while it's saved.
+
+        CaptureError raised if the capture fails for any reason
+
+        returns tuple with numpy array of image data, and dict of metadata
+        """
+        try:
+            metadata = metadata_getter()
+            image = cam.capture_array()[..., :3]
+        except Exception as e:
+            raise CaptureError(
+                "An error occurred while capturing: {}".format(e), exc_info=e
+            )
+        return image, metadata
+
+    
+    def save_capture(self,
+        jpeg_path: str,
+        image: np.ndarray,
+        metadata: dict,
+        logger: InvocationLogger
+    ) -> None:
+        """Saving the captured image and metadata to disk
+        
+        logger warning (via InvocationLogger) is raised if metadata is failed to be added
+        
+        IOError is raised if the file cannot be saved
+        
+        nothing is returned on success"""
+        try:
+            Image.fromarray(image.astype("uint8"), "RGB").save(
+                jpeg_path, quality=95, subsampling=0
+            )
+            try:
+                exif_dict = piexif.load(jpeg_path)
+                exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(
+                    metadata
+                ).encode("utf-8")
+                piexif.insert(piexif.dump(exif_dict), jpeg_path)
+            except:
+                logger.warning(f"Failed to add metadata to {jpeg_path}")
+        except Exception as e:
+            raise IOError(
+                f"An error occurred while saving {jpeg_path}: {e}",
+                exc_info=e,
+            )
 
     @thing_property
     def max_range(self) -> int:
@@ -1239,3 +1254,7 @@ class SmartScanThing(Thing):
         zip = [os.path.normpath(i) for i in zip.namelist()]
 
         return zip
+
+
+class CaptureError(RuntimeError):
+    """An error trying to capture from Picamera"""
