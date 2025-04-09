@@ -156,25 +156,6 @@ def generate_config(
             fp.write(f"{names[i]}; ; {loc[1], loc[0]} \n")
 
 
-def raw2rggb(raw):
-    """Convert packed 10 bit raw to RGGB 8 bit"""
-    raw = np.asarray(raw)  # ensure it's an array
-    rggb = np.empty((616, 820, 4), dtype=np.uint8)
-    raw_w = rggb.shape[1] // 2 * 5
-    for plane, offset in enumerate([(1, 1), (0, 1), (1, 0), (0, 0)]):
-        rggb[:, ::2, plane] = raw[offset[0] :: 2, offset[1] : raw_w + offset[1] : 5]
-        rggb[:, 1::2, plane] = raw[
-            offset[0] :: 2, offset[1] + 2 : raw_w + offset[1] + 2 : 5
-        ]
-    return rggb
-
-
-def rggb2rgb(rggb):
-    return np.stack(
-        [rggb[..., 0], rggb[..., 1] // 2 + rggb[..., 2] // 2, rggb[..., 3]], axis=2
-    )
-
-
 class ChannelDistributions(BaseModel):
     means: list[float]
     standard_deviations: list[float]
@@ -428,7 +409,6 @@ class SmartScanThing(Thing):
         metadata_getter: GetThingStates,
         csm: CSMDep,
         background_detect: BackgroundDep,
-        recentre: RecentreStage,
         scan_name: str = "",
     ):
         """Move the stage to cover an area, taking images that can be tiled together.
@@ -450,8 +430,6 @@ class SmartScanThing(Thing):
         capture_thread = None
         self._scan_lock.acquire(timeout=0.1)
         try:
-            # Before anything else, check that we've got a background set
-            # It's annoying to have to wait to find out!
             max_dist = self.max_range
 
             if self.autofocus_dz == 0:
@@ -461,6 +439,8 @@ class SmartScanThing(Thing):
                     f"Your dz range is {self.autofocus_dz} steps, which is too short to attempt to focus. Running without autofocus"
                 )
 
+            # Before anything else, check that we've got a background set
+            # It's annoying to have to wait to find out!
             if self.skip_background:
                 d = background_detect.background_distributions
                 if not d:
@@ -660,7 +640,6 @@ class SmartScanThing(Thing):
                     )
                     capture_thread.start()
                     acquired.wait()  # wait until the image is acquired
-                    # time.sleep(0.5)
                     positions.append(loc[:2])
                     names.append(name)
 
