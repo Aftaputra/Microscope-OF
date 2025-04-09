@@ -686,7 +686,7 @@ class SmartScanThing(Thing):
                             "jpeg_path": jpeg_path,
                             "cam": cam,
                             "logger": logger,
-                            "metadata_getter": metadata_getter
+                            "metadata_getter": metadata_getter,
                         },
                     )
                     capture_thread.start()
@@ -769,7 +769,7 @@ class SmartScanThing(Thing):
         jpeg_path: str,
         cam: CamDep,
         metadata_getter: GetThingStates,
-        logger: InvocationLogger
+        logger: InvocationLogger,
     ) -> None:
         """Capture an image and save it to disk
 
@@ -812,19 +812,19 @@ class SmartScanThing(Thing):
             )
         return image, metadata
 
-    
-    def save_capture(self,
+    def save_capture(
+        self,
         jpeg_path: str,
         image: np.ndarray,
         metadata: dict,
-        logger: InvocationLogger
+        logger: InvocationLogger,
     ) -> None:
         """Saving the captured image and metadata to disk
-        
+
         logger warning (via InvocationLogger) is raised if metadata is failed to be added
-        
+
         IOError is raised if the file cannot be saved
-        
+
         nothing is returned on success"""
         try:
             Image.fromarray(image.astype("uint8"), "RGB").save(
