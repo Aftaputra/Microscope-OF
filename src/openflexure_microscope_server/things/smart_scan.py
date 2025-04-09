@@ -152,13 +152,12 @@ ZipBlob = blob_type("application/zip")
 
 class SmartScanThing(Thing):
     def __init__(self, path_to_openflexure_stitch: str):
-        self._script = path_to_openflexure_stitch
+        self._stitching_script = path_to_openflexure_stitch
         self._preview_stitch_popen = None
         self._preview_stitch_popen_lock = threading.Lock()
         self._correlate_popen = None
         self._correlate_popen_lock = threading.Lock()
         self._scan_lock = threading.Lock()
-
 
         # Variables set by the scan
         self._latest_scan_name = None
@@ -217,9 +216,11 @@ class SmartScanThing(Thing):
             # record starting position so we can return there
             self._starting_position = self._stage.position
             self._run_scan(scan_name, overlap)
-        except:
+        except Exception as e:
             self._return_to_starting_position()
             self._perform_final_stitch(overlap)
+            # Error must be raised so UI gives correct output
+            raise e
         finally:
             # However the scan finnishes unset all variables and release lock
             self._cancel = None
@@ -550,6 +551,7 @@ class SmartScanThing(Thing):
                     )
                     capture_thread.start()
                     acquired.wait()  # wait until the image is acquired
+
                     positions.append(loc[:2])
                     names.append(name)
 
@@ -637,6 +639,7 @@ class SmartScanThing(Thing):
             download_zip=False,
         )
         self._logger.info("Waiting for background processes to finish...")
+
         self.preview_stitch_wait()
         self.correlate_wait()
         try:
@@ -658,9 +661,12 @@ class SmartScanThing(Thing):
         This will set the event `acquired` once the image has been acquired, so
         that the stage may be moved while it's saved.
         """
-        capture_start = time.time()
-        image, metadata = self.capture_image()
-        acquired.set()
+        try:
+            capture_start = time.time()
+            image, metadata = self.capture_image()
+        finally:
+            # Ensure aquired is set even if capture fails or program will hang forever.
+            acquired.set()
         acquisition_time = time.time()
         self.save_capture(jpeg_path, image, metadata)
         save_time = time.time()
@@ -681,9 +687,7 @@ class SmartScanThing(Thing):
             metadata = self._metadata_getter()
             image = self._cam.capture_array()[..., :3]
         except Exception as e:
-            raise CaptureError(
-                "An error occurred while capturing: {}".format(e), exc_info=e
-            )
+            raise CaptureError("An error occurred while capturing") from e
         return image, metadata
 
     def save_capture(
@@ -709,10 +713,7 @@ class SmartScanThing(Thing):
             except:
                 self._logger.warning(f"Failed to add metadata to {jpeg_path}")
         except Exception as e:
-            raise IOError(
-                f"An error occurred while saving {jpeg_path}: {e}",
-                exc_info=e,
-            )
+            raise IOError(f"An error occurred while saving {jpeg_path}") from e
 
     @thing_property
     def max_range(self) -> int:
@@ -905,12 +906,24 @@ class SmartScanThing(Thing):
         return FileResponse(path)
 
     def preview_stitch_start(self, images_folder: str) -> None:
-        """Start stitching a preview of the scan in a subprocess"""
+        """Start stitching a preview of the scan in a backgroun subprocess
+
+        This uses popen and returns immediatly
+
+        - self._preview_stitch_popen holds the popen for polling
+        - self._preview_stitch_popen_lock is a lock aquired while interacting
+              with Popen
+        """
         if self.preview_stitch_running():
             raise RuntimeError("Only one subprocess is allowed at a time")
         with self._preview_stitch_popen_lock:
             self._preview_stitch_popen = Popen(
-                [self._script, "--stitching_mode", "only_stage_stitch", images_folder]
+                [
+                    self._stitching_script,
+                    "--stitching_mode",
+                    "only_stage_stitch",
+                    images_folder,
+                ]
             )
 
     def preview_stitch_running(self) -> bool:
@@ -934,7 +947,7 @@ class SmartScanThing(Thing):
         with self._correlate_popen_lock:
             self._correlate_popen = Popen(
                 [
-                    self._script,
+                    self._stitching_script,
                     "--stitching_mode",
                     "only_correlate",
                     "--minimum_overlap",
@@ -1012,7 +1025,7 @@ class SmartScanThing(Thing):
                 overlap = 0.1
         self.run_subprocess(
             [
-                self._script,
+                self._stitching_script,
                 "--stitching_mode",
                 "all",
                 f"{tiff_arg}",
