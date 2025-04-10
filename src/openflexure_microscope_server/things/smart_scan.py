@@ -285,7 +285,7 @@ class SmartScanThing(Thing):
             return None
         return self.dir_for_scan_name(self._ongoing_scan_name)
 
-    def _get_uniuqe_scan_name_and_dir(self, scan_name: str = "scan") -> str:
+    def _get_uniuqe_scan_name_and_dir(self, scan_name: str) -> str:
         """Get a unique name for this scan and create a directory for it
 
         The scan will be named `{scan_name}_000001` where the number is
@@ -306,6 +306,11 @@ class SmartScanThing(Thing):
         """
         if not os.path.exists(self.base_scan_dir):
             os.makedirs(self.base_scan_dir)
+
+        # if no scan name is set set to "scan". This done here as empty strings
+        # get passed in otherwise.
+        if not scan_name:
+            scan_name = "scan"
 
         for j in range(9999):
             trial_unique_scan_name = f"{scan_name}_{j:04}"
