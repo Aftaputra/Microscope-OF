@@ -37,7 +37,7 @@ class Stitcher(Thing):
     def images_folder(
         self, smart_scan: SmartScanDep, scan_name: Optional[str] = None
     ) -> str:
-        scan_folder = smart_scan.dir_for_scan_name(scan_name=scan_name)
+        scan_folder = smart_scan.dir_for_scan(scan_name=scan_name)
         return os.path.join(scan_folder, "images")
 
     @staticmethod

@@ -148,6 +148,7 @@ DOWNLOADABLE_SCAN_FILES = ("images.zip",)
 
 JPEGBlob = blob_type("image/jpeg")
 ZipBlob = blob_type("application/zip")
+IMG_DIR_NAME = "images"
 
 
 class SmartScanThing(Thing):
@@ -260,7 +261,7 @@ class SmartScanThing(Thing):
 
     @property
     def base_scan_dir(self) -> str:
-        """This folder will hold all the scans we do."""
+        """This directory will hold all the scans we do."""
         # TODO: This should be determined using sensible configuration.
         # If the working directory is `/var/openflexure` this will result
         # in scans being saved at `/var/openflexure/scans/`
@@ -271,19 +272,28 @@ class SmartScanThing(Thing):
         """The name of the last scan to be started."""
         return self._latest_scan_name
 
-    def dir_for_scan_name(self, scan_name: Optional[str] = None):
-        """The path to the scan folder with a given name"""
-        if not scan_name:
-            if not self.latest_scan_name:
-                raise IOError("There is no latest scan to return")
-            scan_name = self.latest_scan_name
+    def dir_for_scan(self, scan_name: str):
+        """The path to the scan directory for scan with input name"""
         return os.path.join(self.base_scan_dir, scan_name)
 
+    def images_dir_for_scan(self, scan_name: str) -> str:
+        """The path to theimages directory for scan with input name"""
+        scan_dir = self.dir_for_scan(scan_name=scan_name)
+        return os.path.join(scan_dir, IMG_DIR_NAME)
+
     @property
-    def _ongoing_scan_folder(self):
+    def _ongoing_scan_dir(self):
+        """For the ongoing scan this returns the scan directory"""
         if not self._ongoing_scan_name:
-            return None
-        return self.dir_for_scan_name(self._ongoing_scan_name)
+            raise RuntimeError("Cannot get ongoing scan name while no scan is running")
+        return self.dir_for_scan(self._ongoing_scan_name)
+
+    @property
+    def _ongoing_scan_images_dir(self):
+        """For the ongoing scan this returns the scan directory"""
+        if not self._ongoing_scan_name:
+            raise RuntimeError("Cannot get ongoing scan name while no scan is running")
+        return self.images_dir_for_scan(self._ongoing_scan_name)
 
     def _get_uniuqe_scan_name_and_dir(self, scan_name: str) -> str:
         """Get a unique name for this scan and create a directory for it
@@ -301,7 +311,7 @@ class SmartScanThing(Thing):
 
         Returns the scan name.
 
-        The directory can be accessed by self.dir_for_scan_name(unique_scan_name)
+        The directory can be accessed by self.dir_for_scan(unique_scan_name)
 
         """
         if not os.path.exists(self.base_scan_dir):
@@ -314,7 +324,7 @@ class SmartScanThing(Thing):
 
         for j in range(9999):
             trial_unique_scan_name = f"{scan_name}_{j:04}"
-            trial_dir = self.dir_for_scan_name(trial_unique_scan_name)
+            trial_dir = self.dir_for_scan(trial_unique_scan_name)
             if not os.path.exists(trial_dir):
                 os.makedirs(trial_dir)
                 # If we made the directory this is the scan name
@@ -357,11 +367,9 @@ class SmartScanThing(Thing):
         capture_thread = None
 
         try:
-            images_folder = os.path.join(self._ongoing_scan_folder, "images")
-            os.mkdir(images_folder)
-            raw_images_folder = os.path.join(images_folder, "raw")
-            os.mkdir(raw_images_folder)
-            self._logger.info(f"Saving images to {images_folder}")
+            os.mkdir(self._ongoing_scan_images_dir)
+
+            self._logger.info(f"Saving images to {self._ongoing_scan_images_dir}")
 
             max_dist = self.max_range
 
@@ -423,14 +431,15 @@ class SmartScanThing(Thing):
                 "skipping background": self.skip_background,
             }
 
-            with open(
-                os.path.join(images_folder, "scan_inputs.json"), "w", encoding="utf-8"
-            ) as f:
+            scan_inputs_fname = os.path.join(
+                self._ongoing_scan_images_dir, "scan_inputs.json"
+            )
+            with open(scan_inputs_fname, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
 
             if self._scan_images_taken != 0:
                 raise RuntimeError(
-                    "_scan_images_taken fhould be zero before starting scanning"
+                    "_scan_images_taken should be zero before starting scanning"
                 )
             # At the start of the loop, we simultaneously capture an image and move to the next scan point.
             # We skip capturing on the first run, because we've not focused yet - and also we skip capturing if
@@ -438,12 +447,12 @@ class SmartScanThing(Thing):
             while len(path) > 0:
                 loc = self.move_to_next_point(path=path, focused_path=focused_path)
                 if not self.preview_stitch_running():
-                    self.preview_stitch_start(images_folder)
+                    self.preview_stitch_start()
                 if self.stitch_automatically:
                     if not self.correlate_running():
-                        self.correlate_start(images_folder, overlap=overlap)
+                        self.correlate_start(overlap=overlap)
 
-                ensure_free_disk_space(self._ongoing_scan_folder)
+                ensure_free_disk_space(self._ongoing_scan_dir)
 
                 # Check if the image is background
                 if self.skip_background:
@@ -544,7 +553,7 @@ class SmartScanThing(Thing):
                         self._scan_images_taken += 1
                     acquired = Event()
                     name = f"image_{loc[0]}_{loc[1]}.jpg"
-                    jpeg_path = os.path.join(images_folder, name)
+                    jpeg_path = os.path.join(self._ongoing_scan_images_dir, name)
                     time.sleep(0.2)
 
                     # Use ErrorCapturingThread intead of Thread. This will raise errors in the calling
@@ -650,11 +659,9 @@ class SmartScanThing(Thing):
         self.preview_stitch_wait()
         self.correlate_wait()
         try:
-            if self._ongoing_scan_folder and self.stitch_automatically:
+            if self.stitch_automatically:
                 self._logger.info("Stitching final image (may take some time)...")
-                self.stitch_scan(
-                    os.path.basename(self._ongoing_scan_folder), overlap=overlap
-                )
+                self.stitch_scan(self._ongoing_scan_name, overlap=overlap)
         except SubprocessError as e:
             self._logger.error(f"Stitching failed: {e}", exc_info=e)
 
@@ -795,7 +802,7 @@ class SmartScanThing(Thing):
         for f in os.listdir(self.base_scan_dir):
             path = os.path.join(self.base_scan_dir, f)
             if os.path.isdir(path):
-                images_folder = os.path.join(path, "images")
+                images_folder = os.path.join(path, IMG_DIR_NAME)
                 if os.path.isdir(images_folder):
                     number_of_images = len(os.listdir(images_folder))
                 else:
@@ -871,14 +878,22 @@ class SmartScanThing(Thing):
         for scan in self.scans:
             self.delete_scan(scan.name)
 
-    def images_folder(self, scan_name: Optional[str] = None) -> str:
-        scan_folder = self.dir_for_scan_name(scan_name=scan_name)
-        return os.path.join(scan_folder, "images")
-
     @property
     def latest_preview_stitch_path(self):
-        """The path of the latest preview stitched image"""
-        return os.path.join(self.images_folder(), "stitched_from_stage.jpg")
+        """Return the path of the latest preview stitched image
+
+        If the image cannot be found (because there is no latest
+        scan, or because the latest scan has no preview stitch) then
+        raise FileNotFoundError
+        """
+        if not self.latest_scan_name:
+            raise FileNotFoundError("No latest scan found")
+
+        images_dir = self.images_dir_for_scan(self.latest_scan_name)
+        stitch_path = os.path.join(images_dir, "stitched_from_stage.jpg")
+        if not os.path.isfile(stitch_path):
+            raise FileNotFoundError("Latest scan has no preview stitch")
+        return stitch_path
 
     @thing_property
     def latest_preview_stitch_time(self) -> Optional[datetime]:
@@ -887,12 +902,9 @@ class SmartScanThing(Thing):
         This will return `null` if there is no preview image to return.
         """
         try:
-            fpath = self.latest_preview_stitch_path
-            if os.path.exists(fpath):
-                return os.path.getmtime(fpath)
-        except IOError:
+            return os.path.getmtime(self.latest_preview_stitch_path)
+        except FileNotFoundError:
             return None
-        return None
 
     @fastapi_endpoint(
         "get",
@@ -907,12 +919,12 @@ class SmartScanThing(Thing):
     )
     def get_latest_preview(self) -> FileResponse:
         """Retrieve the latest preview image."""
-        path = self.latest_preview_stitch_path
-        if not os.path.isfile(path):
+        try:
+            return FileResponse(self.latest_preview_stitch_path)
+        except FileNotFoundError:
             raise HTTPException(404, "File not found")
-        return FileResponse(path)
 
-    def preview_stitch_start(self, images_folder: str) -> None:
+    def preview_stitch_start(self) -> None:
         """Start stitching a preview of the scan in a backgroun subprocess
 
         This uses popen and returns immediatly
@@ -929,7 +941,7 @@ class SmartScanThing(Thing):
                     self._stitching_script,
                     "--stitching_mode",
                     "only_stage_stitch",
-                    images_folder,
+                    self._ongoing_scan_images_dir,
                 ]
             )
 
@@ -947,7 +959,7 @@ class SmartScanThing(Thing):
             with self._preview_stitch_popen_lock:
                 self._preview_stitch_popen.wait()
 
-    def correlate_start(self, images_folder: str, overlap: float = 0.1) -> None:
+    def correlate_start(self, overlap: float = 0.1) -> None:
         """Start stitching a preview of the scan in a subprocess"""
         if self.correlate_running():
             raise RuntimeError("Only one subprocess is allowed at a time")
@@ -959,7 +971,7 @@ class SmartScanThing(Thing):
                     "only_correlate",
                     "--minimum_overlap",
                     f"{round(overlap * 0.9, 2)}",
-                    images_folder,
+                    self._ongoing_scan_images_dir,
                 ]
             )
 
@@ -1011,11 +1023,11 @@ class SmartScanThing(Thing):
     @thing_action
     def stitch_scan(
         self,
-        scan_name: Optional[str] = None,
+        scan_name: str,
         overlap: float = 0.0,
     ) -> None:
         """Generate a stitched image based on stage position metadata"""
-        images_folder = self.images_folder(scan_name=scan_name)
+        images_folder = self.images_dir_for_scan(scan_name=scan_name)
 
         if self.stitch_tiff:
             tiff_arg = "--stitch_tiff"
@@ -1049,8 +1061,8 @@ class SmartScanThing(Thing):
         download_zip=True,
     ) -> ZipBlob:
         """Generate a zip file that can be downloaded, with all the scan files in it."""
-        images_folder = self.images_folder(scan_name=scan_name)
-        scan_folder = self.dir_for_scan_name(scan_name=scan_name)
+        images_folder = self.images_dir_for_scan(scan_name=scan_name)
+        scan_folder = self.dir_for_scan(scan_name=scan_name)
 
         if not os.path.isdir(images_folder):
             raise FileNotFoundError(
