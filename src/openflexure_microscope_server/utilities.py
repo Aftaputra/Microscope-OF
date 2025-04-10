@@ -27,7 +27,7 @@ class ErrorCapturingThread(Thread):
             args = ()
         if kwargs is None:
             kwargs = {}
-        # Make and empy list for the error.
+        # Make an empty list for the error.
         self._error_buffer = []
 
         # Add the target function end error buffer to the thread to the start of
@@ -69,7 +69,7 @@ def _wrap_and_catch_errors(target, error_buffer, *args, **kwargs):
       * error_buffer - An empty list that is used for returning
           the exception from the thread
       *args: The arguments for the target function
-      **keargs: The Keyword arguments for the target function
+      **kwargs: The Keyword arguments for the target function
     """
     try:
         target(*args, **kwargs)

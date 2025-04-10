@@ -212,7 +212,7 @@ class SmartScanThing(Thing):
 
         try:
             self._check_background_is_set()
-            self._ongoing_scan_name = self._get_uniuqe_scan_name_and_dir(scan_name)
+            self._ongoing_scan_name = self._get_unique_scan_name_and_dir(scan_name)
             overlap = self.overlap
             # record starting position so we can return there
             self._starting_position = self._stage.position
@@ -225,7 +225,7 @@ class SmartScanThing(Thing):
             # Error must be raised so UI gives correct output
             raise e
         finally:
-            # However the scan finnishes unset all variables and release lock
+            # However the scan finishes unset all variables and release lock
             self._cancel = None
             self._logger = None
             self._autofocus = None
@@ -239,9 +239,9 @@ class SmartScanThing(Thing):
             self._scan_lock.release()
 
     def _check_background_is_set(self):
-        """Before starting a scand check that we've got a background set
+        """Before starting a scan check that we've got a background set
 
-        Raise error if it is not set but backroung detect is being used.
+        Raise error if it is not set but background detect is being used.
         """
 
         if self.skip_background:
@@ -277,7 +277,7 @@ class SmartScanThing(Thing):
         return os.path.join(self.base_scan_dir, scan_name)
 
     def images_dir_for_scan(self, scan_name: str) -> str:
-        """The path to theimages directory for scan with input name"""
+        """The path to the images directory for scan with input name"""
         scan_dir = self.dir_for_scan(scan_name=scan_name)
         return os.path.join(scan_dir, IMG_DIR_NAME)
 
@@ -290,12 +290,12 @@ class SmartScanThing(Thing):
 
     @property
     def _ongoing_scan_images_dir(self):
-        """For the ongoing scan this returns the scan directory"""
+        """For the ongoing scan this returns the image directory"""
         if not self._ongoing_scan_name:
             raise RuntimeError("Cannot get ongoing scan name while no scan is running")
         return self.images_dir_for_scan(self._ongoing_scan_name)
 
-    def _get_uniuqe_scan_name_and_dir(self, scan_name: str) -> str:
+    def _get_unique_scan_name_and_dir(self, scan_name: str) -> str:
         """Get a unique name for this scan and create a directory for it
 
         The scan will be named `{scan_name}_000001` where the number is
@@ -363,7 +363,7 @@ class SmartScanThing(Thing):
     def _run_scan(self, scan_name, overlap):
         # Define these variables so we can use them in the finally: block
         # (after testing they are not None)
-        scan_sucessful = True
+        scan_successful = True
         capture_thread = None
 
         try:
@@ -597,17 +597,17 @@ class SmartScanThing(Thing):
                 )
 
         except InvocationCancelledError:
-            scan_sucessful = False
+            scan_successful = False
             self._logger.info("Stopping scan because it was cancelled.")
         except NotEnoughFreeSpaceError as e:
-            scan_sucessful = False
+            scan_successful = False
             self._logger.error(
                 f"Stopping scan to avoid filling up the disk: {e}",
                 exc_info=e,
             )
             raise e
         except Exception as e:
-            scan_sucessful = False
+            scan_successful = False
             self._logger.error(
                 f"The scan stopped because of an error: {e} "
                 "Attempting to stitch and archive the images acquired so far.",
@@ -621,11 +621,11 @@ class SmartScanThing(Thing):
                     capture_thread.join()
                 except Exception as e:
                     # If the thread has already ended due to an exception we will
-                    # ignore any excppetions, but if it appeared to be succesfull
+                    # ignore any exceptions, but if it appeared to be successful
                     # we will log an error.
-                    if scan_sucessful:
+                    if scan_successful:
                         self._logger.error(
-                            "The appears to have been successful however the final capture raised"
+                            "The scan appears to have started successfully, however the final capture raised"
                             f"the following error: {e}."
                             "Attempting to stitch and archive images.",
                             exc_info=e,
@@ -925,9 +925,9 @@ class SmartScanThing(Thing):
             raise HTTPException(404, "File not found")
 
     def preview_stitch_start(self) -> None:
-        """Start stitching a preview of the scan in a backgroun subprocess
+        """Start stitching a preview of the scan in a background subprocess
 
-        This uses popen and returns immediatly
+        This uses popen and returns immediately
 
         - self._preview_stitch_popen holds the popen for polling
         - self._preview_stitch_popen_lock is a lock aquired while interacting
