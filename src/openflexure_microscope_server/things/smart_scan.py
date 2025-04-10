@@ -331,8 +331,8 @@ class SmartScanThing(Thing):
     def _get_unique_scan_name_and_dir(self, scan_name: str) -> str:
         """Get a unique name for this scan and create a directory for it
 
-        The scan will be named `{scan_name}_000001` where the number is
-        zero-padded to be 6 digits long (to allow correct sorting if the
+        The scan will be named `{scan_name}_0001` where the number is
+        zero-padded to be 4 digits long (to allow correct sorting if the
         scans are ordered alphanumerically).
 
         Note that if you have discontinuous numbering (e.g. you've got scans
