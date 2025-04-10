@@ -193,8 +193,7 @@ class SmartScanThing(Thing):
         background_detect Thing).
         """
 
-        self._check_background_is_set(background_detect)
-
+        started_scan = False
         locked = self._scan_lock.acquire(timeout=0.1)
         if not locked:
             raise RuntimeError("Trying to run scan while scan is already running!")
@@ -211,14 +210,17 @@ class SmartScanThing(Thing):
         self._scan_images_taken = 0
 
         try:
+            self._check_background_is_set()
             self._ongoing_scan_name = self._get_uniuqe_scan_name_and_dir(scan_name)
             overlap = self.overlap
             # record starting position so we can return there
             self._starting_position = self._stage.position
+            started_scan = True
             self._run_scan(scan_name, overlap)
         except Exception as e:
-            self._return_to_starting_position()
-            self._perform_final_stitch(overlap)
+            if started_scan:
+                self._return_to_starting_position()
+                self._perform_final_stitch(overlap)
             # Error must be raised so UI gives correct output
             raise e
         finally:
@@ -235,14 +237,14 @@ class SmartScanThing(Thing):
             self._scan_images_taken = None
             self._scan_lock.release()
 
-    def _check_background_is_set(self, background_detect):
+    def _check_background_is_set(self):
         """Before starting a scand check that we've got a background set
 
         Raise error if it is not set but backroung detect is being used.
         """
 
         if self.skip_background:
-            d = background_detect.background_distributions
+            d = self._background_detect.background_distributions
             if not d:
                 raise RuntimeError(
                     "Background is not set: you need to calibrate background detection."
