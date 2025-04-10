@@ -3,7 +3,7 @@
 import shutil
 import zipfile
 import threading
-from typing import Optional
+from typing import Optional, Mapping
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
 import numpy as np
@@ -150,6 +150,27 @@ JPEGBlob = blob_type("image/jpeg")
 ZipBlob = blob_type("application/zip")
 IMG_DIR_NAME = "images"
 
+SCAN_ZERO_PAD_DIGITS = 4
+
+
+def _scan_running(method):
+    """
+    This decorator is used by all methods in SmartScanThing that are using
+    the variables set for the scan. It will throw a runtime error if
+    self._scan_logger is not set, as all scan variables are set at
+    the same time and released with the lock
+    """
+
+    def scan_running_wrapper(self, *args, **kwargs):
+        # Only start the method is the scan logger is set
+        if self._scan_logger is not None:
+            return method(self, *args, **kwargs)
+        raise RuntimeError(
+            "Calling a @scan_running method can only be done while a scan is running!"
+        )
+
+    return scan_running_wrapper
+
 
 class SmartScanThing(Thing):
     def __init__(self, path_to_openflexure_stitch: str):
@@ -161,7 +182,7 @@ class SmartScanThing(Thing):
         self._scan_lock = threading.Lock()
 
         # Variables set by the scan
-        self._latest_scan_name = None
+        self._latest_scan_name: Optional[str] = None
 
         # Scan logger is the invocation logger labthings-fastapi creates
         # when the `sample_scan` thing_action is called. It is saved as
@@ -169,35 +190,17 @@ class SmartScanThing(Thing):
         # Access to these variables requires a scan to be running,
         # any method that calls these should be decorrected with
         # @_scan_running
-        self._scan_logger = None
-        self._cancel = None
-        self._autofocus = None
-        self._stage = None
-        self._cam = None
-        self._metadata_getter = None
-        self._csm = None
-        self._background_detect = None
-        self._ongoing_scan_name = None
-        self._starting_position = None
-        self._scan_images_taken = None
-
-    def _scan_running(method):
-        """
-        This decorator is used by all methods that are using the variables
-        set for the scan. It will throw a runtime error if self._scan_logger
-        is not set, as all scan variables are set at the same time and released
-        with the lock
-        """
-
-        def scan_running_wrapper(self, *args, **kwargs):
-            # Only start the method is the scan logger is set
-            if self._scan_logger is not None:
-                return method(self, *args, **kwargs)
-            raise RuntimeError(
-                "Calling a @scan_running method can only be done while a scan is running!"
-            )
-
-        return scan_running_wrapper
+        self._scan_logger: Optional[InvocationLogger] = None
+        self._cancel: Optional[CancelHook] = None
+        self._autofocus: Optional[AutofocusDep] = None
+        self._stage: Optional[StageDep] = None
+        self._cam: Optional[CamDep] = None
+        self._metadata_getter: Optional[GetThingStates] = None
+        self._csm: Optional[CSMDep] = None
+        self._background_detect: Optional[BackgroundDep] = None
+        self._ongoing_scan_name: Optional[str] = None
+        self._starting_position: Optional[Mapping[str, int]] = None
+        self._scan_images_taken: Optional[int] = None
 
     @thing_action
     def sample_scan(
@@ -220,8 +223,8 @@ class SmartScanThing(Thing):
         """
 
         started_scan = False
-        locked = self._scan_lock.acquire(timeout=0.1)
-        if not locked:
+        got_lock = self._scan_lock.acquire(timeout=0.1)
+        if not got_lock:
             raise RuntimeError("Trying to run scan while scan is already running!")
 
         # Set private variables for this scan
@@ -246,7 +249,9 @@ class SmartScanThing(Thing):
         except Exception as e:
             if started_scan:
                 self._return_to_starting_position()
-                self._perform_final_stitch(overlap)
+                if not isinstance(e, NotEnoughFreeSpaceError):
+                    # Don't stich if drive is full (already logged)
+                    self._perform_final_stitch(overlap)
             # Error must be raised so UI gives correct output
             raise e
         finally:
@@ -271,8 +276,7 @@ class SmartScanThing(Thing):
         """
 
         if self.skip_background:
-            d = self._background_detect.background_distributions
-            if not d:
+            if not self._background_detect.background_distributions:
                 raise RuntimeError(
                     "Background is not set: you need to calibrate background detection."
                 )
@@ -351,8 +355,12 @@ class SmartScanThing(Thing):
         if not scan_name:
             scan_name = "scan"
 
-        for j in range(9999):
-            trial_unique_scan_name = f"{scan_name}_{j:04}"
+        # Set a sensible limit for the number of scans of one name
+        # based on our zero padding.
+        max_scan_no = 10**SCAN_ZERO_PAD_DIGITS - 1
+
+        for j in range(max_scan_no):
+            trial_unique_scan_name = f"{scan_name}_{j:0{SCAN_ZERO_PAD_DIGITS}d}"
             trial_dir = self.dir_for_scan(trial_unique_scan_name)
             if not os.path.exists(trial_dir):
                 os.makedirs(trial_dir)
@@ -477,11 +485,13 @@ class SmartScanThing(Thing):
             # it looks like background.
             while len(path) > 0:
                 loc = self._move_to_next_point(path=path, focused_path=focused_path)
-                if not self._preview_stitch_running():
-                    self._preview_stitch_start()
-                if self.stitch_automatically:
-                    if not self._correlate_running():
-                        self._correlate_start(overlap=overlap)
+
+                if self._scan_images_taken > 3:
+                    if not self._preview_stitch_running():
+                        self._preview_stitch_start()
+                    if self.stitch_automatically:
+                        if not self._correlate_running():
+                            self._correlate_start(overlap=overlap)
 
                 ensure_free_disk_space(self._ongoing_scan_dir)
 

@@ -27,7 +27,11 @@ class ErrorCapturingThread(Thread):
             args = ()
         if kwargs is None:
             kwargs = {}
-        # Make an empty list for the error.
+
+        # Make an empty list for any error.
+        # We are only ever going to have one or zero errors, this is an empty
+        # list as we need to pass the reference not the value to collect the
+        # error. If we could simply make a pointer we would have done that.
         self._error_buffer = []
 
         # Add the target function end error buffer to the thread to the start of
