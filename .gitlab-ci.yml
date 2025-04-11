@@ -104,11 +104,8 @@ pytest:
   stage: testing
   extends: .python
   script:
-    - >
-      pytest --cov --cov-report term
-      --cov-report xml:coverage.xml
-      --junitxml=report.xml
-#      --gitlab-code-quality-report=pytest-warnings.json # can restore when it installs ok
+    - pytest
+#    --gitlab-code-quality-report=pytest-warnings.json # can restore when it installs ok
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     when: always

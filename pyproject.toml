@@ -73,7 +73,13 @@ target-version = "py311"
 [tool.pytest.ini_options]
 addopts = [
     "--import-mode=importlib",
+    "--cov=openflexure_microscope_server",
+    "--cov-report=term",
+    "--cov-report=xml:coverage.xml",
+    "--junitxml=report.xml",
 ]
+
+norecursedirs = [".git", "build", "node_modules"]
 
 [tool.ruff.format]
 # Use native line endings for all files
