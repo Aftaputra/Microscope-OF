@@ -1,5 +1,3 @@
-# ruff: noqa: E722
-
 from typing import Mapping, Optional
 import cv2
 import numpy as np
