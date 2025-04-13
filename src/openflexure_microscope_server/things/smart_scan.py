@@ -175,6 +175,7 @@ class SmartScanThing(Thing):
         self._background_detect: Optional[BackgroundDep] = None
         self._ongoing_scan_name: Optional[str] = None
         self._starting_position: Optional[Mapping[str, int]] = None
+        self._capture_thread: Optional[ErrorCapturingThread] = None
         self._scan_images_taken: Optional[int] = None
         # TODO Scan data is a dict during refactoring, should become a dataclass
         self._scan_data: Optional[dict] = None
@@ -212,6 +213,7 @@ class SmartScanThing(Thing):
         self._metadata_getter = metadata_getter
         self._csm = csm
         self._background_detect = background_detect
+        self._capture_thread = None
         self._scan_images_taken = 0
 
         # Don't set self._scan_data dictionary. This is done at the start of _run_scan
@@ -241,6 +243,7 @@ class SmartScanThing(Thing):
             self._metadata_getter = None
             self._csm = None
             self._background_detect = None
+            self._capture_thread = None
             self._ongoing_scan_name = None
             self._scan_images_taken = None
             self._scan_data = None
@@ -499,8 +502,6 @@ class SmartScanThing(Thing):
         # cancel by user.
         scan_successful = True
 
-        capture_thread = None
-
         try:
             self._set_scan_data()
             self._save_scan_inputs_jons()
@@ -530,10 +531,10 @@ class SmartScanThing(Thing):
             )
             raise e
         finally:
-            if capture_thread:
+            if self._capture_thread:
                 # If the capture thread had an error we capture it here
                 try:
-                    capture_thread.join()
+                    self._capture_thread.join()
                 except Exception as e:
                     # If the scan has already ended due to an exception we will
                     # ignore any exceptions, but if it appeared to be successful
@@ -562,8 +563,6 @@ class SmartScanThing(Thing):
             intial_position=(self._stage.position["x"], self._stage.position["y"]),
             planner_settings=planner_settings,
         )
-
-        capture_thread = None
 
         # At the start of the loop, we simultaneously capture an image and move to the next scan point.
         # We skip capturing on the first run, because we've not focused yet - and also we skip capturing if
@@ -600,8 +599,8 @@ class SmartScanThing(Thing):
             )
 
             # wait for the previous capture to be saved, i.e. don't leave more than one image saving in the background
-            if capture_thread:
-                self._wait_for_capture_thread(capture_thread)
+            if self._capture_thread:
+                self._wait_for_capture_thread()
                 # increment capure counter as thread has completed
                 self._scan_images_taken += 1
                 # Add it to the incremental zip
@@ -613,7 +612,7 @@ class SmartScanThing(Thing):
 
             name = f"image_{new_pos_xyz[0]}_{new_pos_xyz[1]}.jpg"
             jpeg_path = os.path.join(self._ongoing_scan_images_dir, name)
-            capture_thread, acquired = self._start_capture_thread(jpeg_path)
+            self._capture_thread, acquired = self._start_capture_thread(jpeg_path)
             # wait until the image is acquired
             acquired.wait()
 
@@ -635,25 +634,23 @@ class SmartScanThing(Thing):
         Return False if failed after 3 tries - the position will be the initial estimate
         """
         attempts = 0
+        max_attempts = 3
+        dz = self._scan_data["autofocus_dz"]
 
-        while attempts < 3:
+        while attempts < max_attempts:
             attempts += 1
 
-            # Base on first run otherwise we move to estimated_z
-            start = "base" if attempts == 0 else "centre"
-
-            _, jpeg_sizes = self._autofocus.looping_autofocus(
-                dz=self._scan_data["autofocus_dz"], start=start
-            )
+            _, jpeg_sizes = self._autofocus.looping_autofocus(dz=dz, start="base")
             current_height = self._stage.position["z"]
             time.sleep(0.2)
             autofocus_sharp_enough = self._autofocus.verify_focus_sharpness(
                 sweep_sizes=jpeg_sizes, camera=CamDep, threshold=0.92
             )
 
-            # Not sharp enough, nobe to start and try again
+            # Not sharp enough, go to start and try again
             if not autofocus_sharp_enough:
-                self._stage.move_absolute(z=this_xyz[2])
+                z = this_xyz[2] - dz / 2 if attempts < max_attempts else this_xyz[2]
+                self._stage.move_absolute(z=z)
                 continue
 
             # No previous positions to compare against return success
@@ -675,7 +672,8 @@ class SmartScanThing(Thing):
                 return True
 
             # Shifted to far move to start and try again
-            self._stage.move_absolute(z=this_xyz[2])
+            z = this_xyz[2] - dz / 2 if attempts < max_attempts else this_xyz[2]
+            self._stage.move_absolute(z=z)
             self._scan_logger.info(
                 "The focus has shifted further than we expect: retrying."
             )
@@ -684,18 +682,18 @@ class SmartScanThing(Thing):
         return False
 
     @_scan_running
-    def _wait_for_capture_thread(self, capture_thread: ErrorCapturingThread) -> None:
+    def _wait_for_capture_thread(self) -> None:
         """
         Wait for the capture thread to be complete.
         """
         wait_start = time.time()
-        thread_was_alive = capture_thread.is_alive()
+        thread_was_alive = self._capture_thread.is_alive()
 
         # If the capture thread has thrown an exception it will be raised
         # when join is called, this will cause the scan to end. If we want
         # to retry captures at a later date this is where we will need to
         # catch the IOError or CaptureError from the thread.
-        capture_thread.join()
+        self._capture_thread.join()
         time.sleep(0.2)
         if thread_was_alive:
             wait_time = time.time() - wait_start
