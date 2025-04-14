@@ -67,7 +67,11 @@ def unpack_autofocus(scan_data):
 
 
 def focus_change_acceptable(prev_pos, prev_z, new_pos, new_z, fractional_limit):
-    # limit is the largest ratio of change in z to change in xy that's allowed
+    """Return true if the change in z-position is small enough.
+
+    A large change in z-position in an indication of focus failure.
+    fractional_limit is the largest ratio of change in z to change in xy that's allowed
+    """
 
     prev_xy = np.asarray(prev_pos, dtype="float64")
     new_xy = np.asarray(new_pos, dtype="float64")
@@ -100,7 +104,7 @@ def ensure_free_disk_space(path: str, min_space: int = 500000000) -> None:
            default = 500,000,000 (500MiB)
 
     Raises:
-        NotEnoughFreeSpaceError is the
+        NotEnoughFreeSpaceError if the remaining storage is below min_space
     """
     du = shutil.disk_usage(path)
     if du.free < min_space:
@@ -449,7 +453,7 @@ class SmartScanThing(Thing):
             )
             autofocus_dz = 0
 
-        # Fix scan parameters in case UI is updates during scan.
+        # Fix scan parameters in case UI is updated during scan.
         self._scan_data = {
             "scan_name": self._ongoing_scan_name,
             "overlap": overlap,
@@ -464,7 +468,7 @@ class SmartScanThing(Thing):
         }
 
     @_scan_running
-    def _save_scan_inputs_jons(self):
+    def _save_scan_inputs_json(self):
         # This should be a method of the scan_data dataclass
 
         data = {
@@ -504,7 +508,7 @@ class SmartScanThing(Thing):
 
         try:
             self._set_scan_data()
-            self._save_scan_inputs_jons()
+            self._save_scan_inputs_json()
             if self._scan_images_taken != 0:
                 msg = "_scan_images_taken should be zero before starting scanning"
                 raise RuntimeError(msg)
@@ -575,7 +579,7 @@ class SmartScanThing(Thing):
             new_pos_xyz = self._move_to_next_point(next_pos_xy, z_est)
 
             capture_image = True
-            # If skipping background, take and image to check if is background
+            # If skipping background, take an image to check if it is background
             if self._scan_data["skip_background"]:
                 capture_image = self._background_detect.image_is_sample()
 
@@ -583,7 +587,7 @@ class SmartScanThing(Thing):
                 route_planner.mark_location_visited(
                     new_pos_xyz, imaged=False, focused=False
                 )
-                # Background franction is actually a percentage
+                # Background fraction is actually a percentage
                 back_perc = round(self._background_detect.background_fraction(), 0)
                 msg = f"Skipping {new_pos_xyz} as it is {back_perc}% background."
                 self._scan_logger.info(msg)
@@ -826,8 +830,8 @@ class SmartScanThing(Thing):
                 ).encode("utf-8")
                 piexif.insert(piexif.dump(exif_dict), jpeg_path)
             except:  # noqa: E722
-                # We need to capture any exeption as there are many reasons metadata
-                # might not be added. We wern rather than log the error.
+                # We need to capture any exception as there are many reasons metadata
+                # might not be added. We warn rather than log the error.
                 self._scan_logger.warning(f"Failed to add metadata to {jpeg_path}")
         except Exception as e:
             raise IOError(f"An error occurred while saving {jpeg_path}") from e

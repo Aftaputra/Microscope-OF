@@ -39,7 +39,7 @@ def test_v_basic_smart_spiral():
     planner = scan_planners.SmartSpiral(
         intial_position=intial_position, planner_settings=planner_settings
     )
-    # Create a planner it shouldn't start complete
+    # Create a planner. It shouldn't be complete.
     assert not planner.scan_complete
     # When we start it should want to stay in the inital pos and have
     # no z_estimate
@@ -47,7 +47,7 @@ def test_v_basic_smart_spiral():
     assert xy_pos == intial_position
     assert z_pos is None
 
-    # Try to make imaged with only xy_position
+    # Try to mark location as imaged with only xy_position
     with pytest.raises(ValueError):
         planner.mark_location_visited(xy_pos, imaged=False, focused=False)
     # scan still not complete
@@ -100,7 +100,7 @@ def test_smart_spiral_first_few_pos():
     This test is  VERY long, not really a "unit". It checks step-by-step
     that data is added correctly for the first few postions in a scan.
 
-    This should catch basic caseses of if the algorithm is updated.
+    This should catch basic cases of if the algorithm is updated.
     """
     intial_position = (100, 50)
     planner_settings = {"dx": 50, "dy": 50, "max_dist": 10000}

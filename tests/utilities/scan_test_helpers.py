@@ -31,7 +31,7 @@ class FakeSample:
         Return whether an image at a given location with a given image size
         is on the sample
 
-        This doesn't check the entire image feild as this is designed to be used
+        This doesn't check the entire image field as this is designed to be used
         where the fake sample is much larger than the image and has smooth edges
         It just checks the 4 corners
         """
@@ -48,7 +48,7 @@ class FakeSample:
     @property
     def patch(self) -> PathPatch:
         """
-        The sample as a matplotlib patch fro plotting
+        The sample as a matplotlib patch for plotting
         """
         patch = PathPatch(self._sample_perimeter)
         patch.set(color=(1.0, 0.8, 1.0, 1.0))
@@ -86,7 +86,7 @@ def visualise_scan(sample: FakeSample, planner: scan_planners.ScanPlanner) -> Fi
 def interp_closed_path(xy_points: list[tuple[int, int]], n_points: int) -> MatPath:
     """
     Given a lists of xy_points interpolate an n_point closed curve. This can be used
-    to creat an arbitrary sample shape plan a scan.
+    to create an arbitrary sample shape plan a scan.
 
     Modified from:
     https://stackoverflow.com/questions/33962717/interpolating-a-closed-curve-using-scipy

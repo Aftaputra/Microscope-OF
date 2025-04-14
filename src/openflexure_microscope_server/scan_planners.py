@@ -22,7 +22,7 @@ XYZPosList: TypeAlias = list[XYZPos]
 
 def enforce_xy_tuple(value: XYPos) -> XYPos:
     """
-    Used for enfocring that an input is a tuple and is the correct length
+    Used for enforcing that an input is a tuple and is the correct length
     """
     if not isinstance(value, (list, tuple)):
         raise ValueError("2 value tuple expected")
@@ -35,7 +35,7 @@ def enforce_xy_tuple(value: XYPos) -> XYPos:
 
 def enforce_xyz_tuple(value: XYZPos) -> XYZPos:
     """
-    Used for enfocring that an input is a tuple and is the correct length
+    Used for enforcing that an input is a tuple and is the correct length
     """
     if not isinstance(value, (list, tuple)):
         raise ValueError("3 value tuple expected")
@@ -64,7 +64,7 @@ class ScanPlanner:
     locations are adjusted.
 
     When subclassing be sure to use enforce_xy_tuple and enforce_xyz_tuple on any user
-    data before
+    data before running
     """
 
     def __init__(self, intial_position: XYPos, planner_settings: Optional[dict] = None):
@@ -199,15 +199,15 @@ class ScanPlanner:
         path_pos = np.array(self._focused_locations, dtype="float64")[:, :2]
 
         # Use linalg.norm to calculate the direct distance bweween the points
-        # Note linalg.norm always used float64
+        # Note linalg.norm always uses float64
         dists = np.linalg.norm((path_pos - current_pos), axis=1)
 
-        # Get indicies of all mimuma.
+        # Get indices of all minima.
         # Note np.where always returns a tuple of arrays, hence the trailing [0]
-        indicies = np.where(dists == np.min(dists))[0]
+        indices = np.where(dists == np.min(dists))[0]
 
         # The last index is most recent
-        return self._focused_locations[indicies[-1]]
+        return self._focused_locations[indices[-1]]
 
     def mark_location_visited(
         self, xyz_pos: XYZPos, imaged: bool, focused: bool
@@ -216,7 +216,7 @@ class ScanPlanner:
         Mark the location as visited
 
         Args:
-            xyz_pos: the x_y poistion
+            xyz_pos: the x_y_z position
             imaged: true if an image was taken, false if not (due to background detect)
             focused: true if autofocus completed successfully
         """
@@ -289,10 +289,10 @@ class SmartSpiral(ScanPlanner):
         self, xyz_pos: XYZPos, imaged: bool = True, focused: bool = True
     ) -> None:
         """
-        Mark the location as visited. Adjust extra poisitons accordingly
+        Mark the location as visited. Adjust extra positions accordingly
 
         Args:
-            xyz_pos: the x_y poistion
+            xyz_pos: the x_y_z position
             imaged: true if an image was taken, false if not (due to background detect)
             focused: true if autofocus completed successfully
         """
@@ -306,9 +306,9 @@ class SmartSpiral(ScanPlanner):
 
     def _add_surrounding_positions(self, xy_pos: XYPos) -> None:
         """
-        This adds the surrounding (4 point connectivity) poistions
+        This adds the surrounding (4 point connectivity) positions
         to the remaining locations if they are not too far away or
-        or already planned or already visited
+        already planned or already visited
         """
         new_positions = [
             (xy_pos[0] - self._dx, xy_pos[1]),
@@ -318,7 +318,7 @@ class SmartSpiral(ScanPlanner):
         ]
 
         for new_pos in new_positions:
-            # Skip position if already planned or fixited
+            # Skip position if already planned or visited
             if self.position_planned(new_pos) or self.position_visited(new_pos):
                 continue
 
