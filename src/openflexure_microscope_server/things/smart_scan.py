@@ -132,8 +132,6 @@ class SmartScanThing(Thing):
         self._stitching_script = path_to_openflexure_stitch
         self._preview_stitch_popen = None
         self._preview_stitch_popen_lock = threading.Lock()
-        self._correlate_popen = None
-        self._correlate_popen_lock = threading.Lock()
         self._scan_lock = threading.Lock()
 
         # Variables set by the scan
@@ -472,10 +470,7 @@ class SmartScanThing(Thing):
         """
         if self._scan_images_taken > 3:
             if not self._preview_stitch_running():
-                self._preview_stitch_start()
-            if self._scan_data["stitch_automatically"]:
-                if not self._correlate_running():
-                    self._correlate_start(overlap=self._scan_data["overlap"])
+                self._preview_stitch_start(overlap=self._scan_data["overlap"])
 
     @_scan_running
     def _run_scan(self):
@@ -708,7 +703,6 @@ class SmartScanThing(Thing):
         self._scan_logger.info("Waiting for background processes to finish...")
 
         self._preview_stitch_wait()
-        self._correlate_wait()
         try:
             if self._scan_data["stitch_automatically"]:
                 self._scan_logger.info("Stitching final image (may take some time)...")
@@ -985,7 +979,7 @@ class SmartScanThing(Thing):
             raise HTTPException(404, "File not found")
 
     @_scan_running
-    def _preview_stitch_start(self) -> None:
+    def _preview_stitch_start(self, overlap: float = 0.1) -> None:
         """Start stitching a preview of the scan in a background subprocess
 
 
@@ -1003,6 +997,8 @@ class SmartScanThing(Thing):
                     self._stitching_script,
                     "--stitching_mode",
                     "only_stage_stitch",
+                    "--minimum_overlap",
+                    f"{round(overlap * 0.9, 2)}",
                     self._ongoing_scan_images_dir,
                 ]
             )
@@ -1023,38 +1019,7 @@ class SmartScanThing(Thing):
             with self._preview_stitch_popen_lock:
                 self._preview_stitch_popen.wait()
 
-    @_scan_running
-    def _correlate_start(self, overlap: float = 0.1) -> None:
-        """Start stitching a preview of the scan in a subprocess"""
-        if self._correlate_running():
-            raise RuntimeError("Only one subprocess is allowed at a time")
-        with self._correlate_popen_lock:
-            self._correlate_popen = Popen(
-                [
-                    self._stitching_script,
-                    "--stitching_mode",
-                    "only_correlate",
-                    "--minimum_overlap",
-                    f"{round(overlap * 0.9, 2)}",
-                    self._ongoing_scan_images_dir,
-                ]
-            )
 
-    @_scan_running
-    def _correlate_running(self) -> bool:
-        """Whether there is a preview stitch running in a subprocess"""
-        with self._correlate_popen_lock:
-            if self._correlate_popen is None:
-                return False
-            if self._correlate_popen.poll() is None:
-                return True
-            return False
-
-    @_scan_running
-    def _correlate_wait(self):
-        if self._correlate_running():
-            with self._correlate_popen_lock:
-                self._correlate_popen.wait()
 
     def run_subprocess(
         self,
