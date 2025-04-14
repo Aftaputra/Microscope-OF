@@ -127,7 +127,7 @@ def example_smart_spiral() -> tuple[FakeSample, scan_planners.ScanPlanner]:
     img_size = (1000, 1000)
     intial_position = (0, 0)
     planner_settings = {"dx": 700, "dy": 700, "max_dist": 100000}
-    planner = scan_planners.SmartSpiral(
+    planner = scan_planners.ShortSmartSpiral(
         intial_position=intial_position, planner_settings=planner_settings
     )
 

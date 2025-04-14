@@ -362,6 +362,135 @@ class SmartSpiral(ScanPlanner):
         return np.max(np.abs(displacement_in_moves))
 
 
+class ShortSmartSpiral(ScanPlanner):
+    """
+    This is a smart spiral scan that spirals out from the centre, but prioritises
+    short moves over rigidly sticking to minimising radius from the centre of the
+    scan.
+
+    Each time and image is taken the four neighbouring images are added
+    to the list of poisitions to image (unless they are already listed or
+    tried). However if a location is not imaged due no sample being detected
+    then neibouring positions are not imaged.
+
+    The next image taken is the closes to the centre (considering the largest
+    of vertical or horizontal distance), ties are broken by the distance from
+    the current position.
+    """
+
+    _max_dist: int = 0
+    _dx: int = 0
+    _dy: int = 0
+
+    def _parse(self, planner_settings: Optional[dict] = None) -> None:
+        """
+        Parse SmartSpiral Settings. This should be a dictionary
+
+        "dx" - the movement size in x
+        "dy" - the movement size in y
+        "max_dist" - The maximum distance to a location can be from the centre.
+        """
+
+        expected_keys = ["max_dist", "dx", "dy"]
+        invalid_msg = "SmartSpiral requires a planner_settings dictionary with keys: "
+        if not planner_settings:
+            raise ValueError(invalid_msg + ",".join(expected_keys))
+        if not all(keys in planner_settings for keys in expected_keys):
+            raise KeyError(invalid_msg + ",".join(expected_keys))
+
+        self._dx = int(planner_settings["dx"])
+        self._dy = int(planner_settings["dy"])
+        self._max_dist = int(planner_settings["max_dist"])
+
+    def _intial_location_list(self) -> XYPosList:
+        """
+        Called on initalisation. Sets the initial list of locations for this scan planner
+
+        For smart spiral this is just the first point
+        """
+        return [self._initial_position]
+
+    def mark_location_visited(
+        self, xyz_pos: XYZPos, imaged: bool = True, focused: bool = True
+    ) -> None:
+        """
+        Mark the location as visited. Adjust extra positions accordingly
+
+        Args:
+            xyz_pos: the x_y_z position
+            imaged: true if an image was taken, false if not (due to background detect)
+            focused: true if autofocus completed successfully
+        """
+        # First call the base class to update the positions
+        super().mark_location_visited(xyz_pos, imaged, focused)
+
+        xy_pos = enforce_xy_tuple(xyz_pos[:2])
+        if imaged:
+            self._add_surrounding_positions(xy_pos)
+        self._re_sort_remaining_locations(xy_pos)
+
+    def _add_surrounding_positions(self, xy_pos: XYPos) -> None:
+        """
+        This adds the surrounding (4 point connectivity) positions
+        to the remaining locations if they are not too far away or
+        already planned or already visited
+        """
+        new_positions = [
+            (xy_pos[0] - self._dx, xy_pos[1]),
+            (xy_pos[0] + self._dx, xy_pos[1]),
+            (xy_pos[0], xy_pos[1] - self._dy),
+            (xy_pos[0], xy_pos[1] + self._dy),
+        ]
+
+        for new_pos in new_positions:
+            # Skip position if already planned or visited
+            if self.position_planned(new_pos) or self.position_visited(new_pos):
+                continue
+
+            dist = distance_between(new_pos, self._initial_position)
+            if dist > self._max_dist:
+                LOGGER.debug("Rejected moving to %s as it is out of range", new_pos)
+                continue
+            self._remaining_locations.append(new_pos)
+
+    def _re_sort_remaining_locations(self, current_pos: XYPos) -> None:
+        """
+        Sort the remaining positions besed on the current location
+        """
+
+        # Defined rather than use a lambda for readability
+        def sort_key(pos):
+            return (
+                moves_between(current_pos, pos, [self._dx, self._dy]),
+                self.moves_from_centre(pos),
+                distance_between(current_pos, pos)
+            )
+
+        self._remaining_locations.sort(key=sort_key)
+
+    def moves_from_centre(
+        self,
+        xy_pos: XYPos,
+    ) -> float:
+        """
+        Return the number of moves from the centre in the x or y direction
+        whichever is largest
+
+        Args:
+        xy_pos: the position
+
+        Note this has been renamed from `steps_from_centre` as that implied
+        stepper motor steps not number of moves in a scan
+        """
+        move_size = np.array([self._dx, self._dy])
+        starting_pos = np.array(self._initial_position, dtype="float64")
+        current_pos = np.array(xy_pos, dtype="float64")
+
+        displacement_in_moves = (current_pos - starting_pos) / move_size
+
+        return np.max(np.abs(displacement_in_moves))
+
+
 def distance_between(
     current_pos: XYPos | np.ndarray, next_pos: XYPos | np.ndarray
 ) -> float:
@@ -373,3 +502,25 @@ def distance_between(
     next_pos = np.array(next_pos, dtype="float64")
     current_pos = np.array(current_pos, dtype="float64")
     return float(np.linalg.norm(next_pos - current_pos))
+
+def moves_between(
+    starting_pos: XYPos | np.ndarray,
+    ending_pos: XYPos | np.ndarray,
+    move_size: XYPos | np.ndarray | list[int, int]
+) -> float:
+    """
+    Return the number of moves between two xy positions in the x or y direction
+    whichever is largest
+
+    Args:
+    starting_pos: the position to measure from
+    ending_pos: the position to measure to
+    move_size: the step size for the scan, both in x and y
+    """
+    starting_pos = np.array(starting_pos, dtype="float64")
+    ending_pos = np.array(ending_pos, dtype="float64")
+    move_size = np.array(move_size)
+
+    displacement_in_moves = (ending_pos - starting_pos) / move_size
+
+    return np.max(np.abs(displacement_in_moves))
