@@ -463,7 +463,7 @@ class ShortSmartSpiral(ScanPlanner):
             return (
                 moves_between(current_pos, pos, [self._dx, self._dy]),
                 self.moves_from_centre(pos),
-                distance_between(current_pos, pos)
+                distance_between(current_pos, pos),
             )
 
         self._remaining_locations.sort(key=sort_key)
@@ -503,10 +503,11 @@ def distance_between(
     current_pos = np.array(current_pos, dtype="float64")
     return float(np.linalg.norm(next_pos - current_pos))
 
+
 def moves_between(
     starting_pos: XYPos | np.ndarray,
     ending_pos: XYPos | np.ndarray,
-    move_size: XYPos | np.ndarray | list[int, int]
+    move_size: XYPos | np.ndarray | list[int, int],
 ) -> float:
     """
     Return the number of moves between two xy positions in the x or y direction
