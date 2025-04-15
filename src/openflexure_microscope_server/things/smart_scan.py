@@ -1019,8 +1019,6 @@ class SmartScanThing(Thing):
             with self._preview_stitch_popen_lock:
                 self._preview_stitch_popen.wait()
 
-
-
     def run_subprocess(
         self,
         logger: InvocationLogger,
