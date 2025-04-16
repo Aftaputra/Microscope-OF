@@ -651,36 +651,12 @@ class SmartScanThing(Thing):
                 sweep_sizes=jpeg_sizes, camera=CamDep, threshold=0.92
             )
 
-            # Not sharp enough, go to start and try again
-            if not autofocus_sharp_enough:
+            # If sharp enough, break and return success, otherwise go to start and try again
+            if autofocus_sharp_enough:
+                return True
+            else:
                 z = this_xyz[2] - dz / 2 if attempts < max_attempts else this_xyz[2]
                 self._stage.move_absolute(z=z)
-                continue
-
-            # No previous positions to compare against return success
-            if closest_xyz is None:
-                return True
-
-            # Check the change in z-position is acceptable
-            # If the z change compared to the closest focused image exceeds
-            # a given fraction of the xy displacement this indicates failure
-            success = focus_change_acceptable(
-                prev_pos=closest_xyz[:2],
-                prev_z=closest_xyz[2],
-                new_pos=this_xyz[:2],
-                new_z=current_height,
-                fractional_limit=0.5,
-            )
-            # No focus change acceptable return success
-            if success:
-                return True
-
-            # Shifted to far move to start and try again
-            z = this_xyz[2] - dz / 2 if attempts < max_attempts else this_xyz[2]
-            self._stage.move_absolute(z=z)
-            self._scan_logger.info(
-                "The focus has shifted further than we expect: retrying."
-            )
 
         self._scan_logger.warning("Could not autofocus after 3 attempts.")
         return False
