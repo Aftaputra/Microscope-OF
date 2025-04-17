@@ -175,8 +175,8 @@ def update_example_smart_spiral_pickle(sample_name: str):
     pickle for each sample type
     """
     pkl_fname = os.path.join(THIS_DIR, f"example_smart_spiral_{sample_name}.pkl")
+    _, planner = example_smart_spiral(sample_name)
     with open(pkl_fname, "wb") as pkl_file_obj:
-        _, planner = example_smart_spiral(sample_name)
         pickle.dump(planner, pkl_file_obj, pickle.HIGHEST_PROTOCOL)
 
 
