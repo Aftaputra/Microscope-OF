@@ -338,31 +338,31 @@ class SmartSpiral(ScanPlanner):
         # Defined rather than use a lambda for readability
         def sort_key(pos):
             return (
-                moves_between(current_pos, pos, [self._dx, self._dy]),
-                self.moves_from_centre(pos),
+                self.moves_between(current_pos, pos),
+                self.moves_between(self._initial_position, pos),
             )
 
         self._remaining_locations.sort(key=sort_key)
 
-    def moves_from_centre(
+    def moves_between(
         self,
-        xy_pos: XYPos,
+        starting_pos: XYPos | np.ndarray,
+        ending_pos: XYPos | np.ndarray,
     ) -> float:
         """
-        Return the number of moves from the centre in the x or y direction
+        Return the number of moves between two xy positions in the x or y direction
         whichever is largest
 
         Args:
-        xy_pos: the position
-
-        Note this has been renamed from `steps_from_centre` as that implied
-        stepper motor steps not number of moves in a scan
+        starting_pos: the position to measure from
+        ending_pos: the position to measure to
         """
         move_size = np.array([self._dx, self._dy])
-        starting_pos = np.array(self._initial_position, dtype="float64")
-        current_pos = np.array(xy_pos, dtype="float64")
 
-        displacement_in_moves = (current_pos - starting_pos) / move_size
+        starting_pos = np.array(starting_pos, dtype="float64")
+        ending_pos = np.array(ending_pos, dtype="float64")
+
+        displacement_in_moves = (ending_pos - starting_pos) / move_size
 
         return np.max(np.abs(displacement_in_moves))
 
@@ -378,26 +378,3 @@ def distance_between(
     next_pos = np.array(next_pos, dtype="float64")
     current_pos = np.array(current_pos, dtype="float64")
     return float(np.linalg.norm(next_pos - current_pos))
-
-
-def moves_between(
-    starting_pos: XYPos | np.ndarray,
-    ending_pos: XYPos | np.ndarray,
-    move_size: XYPos | np.ndarray | list[int, int],
-) -> float:
-    """
-    Return the number of moves between two xy positions in the x or y direction
-    whichever is largest
-
-    Args:
-    starting_pos: the position to measure from
-    ending_pos: the position to measure to
-    move_size: the step size for the scan, both in x and y
-    """
-    starting_pos = np.array(starting_pos, dtype="float64")
-    ending_pos = np.array(ending_pos, dtype="float64")
-    move_size = np.array(move_size)
-
-    displacement_in_moves = (ending_pos - starting_pos) / move_size
-
-    return np.max(np.abs(displacement_in_moves))
