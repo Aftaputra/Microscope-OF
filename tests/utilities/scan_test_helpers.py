@@ -112,13 +112,13 @@ def interp_closed_path(xy_points: list[tuple[int, int]], n_points: int) -> MatPa
 
 
 def example_smart_spiral(
-    sample: str = "lobed",
+    sample_name: str = "lobed",
 ) -> tuple[FakeSample, scan_planners.ScanPlanner]:
     """
     Run an example scan and return the sample scanned and the planner object
     after scan is complete
     """
-    xy_sample_points = load_sample_points(sample=sample)
+    xy_sample_points = load_sample_points(sample_name)
     sample = FakeSample(xy_sample_points)
     img_size = (1000, 1000)
     intial_position = (0, 0)
@@ -162,7 +162,7 @@ def profile_and_save_plot_for_example_smart_spiral():
     run_stats.print_stats("scan_planners.py")
 
 
-def update_example_smart_spiral_pickle(sample: str):
+def update_example_smart_spiral_pickle(sample_name: str):
     """
     Pickle the ScanPlanner for the example_smart_spiral(),
     this is done so the history can be compared by testing to check
@@ -174,25 +174,28 @@ def update_example_smart_spiral_pickle(sample: str):
     Takes sample, the sample type we have generated, so we can make a
     pickle for each sample type
     """
-    pkl_fname = os.path.join(THIS_DIR, f"example_smart_spiral_{sample}.pkl")
+    pkl_fname = os.path.join(THIS_DIR, f"example_smart_spiral_{sample_name}.pkl")
     with open(pkl_fname, "wb") as pkl_file_obj:
-        _, planner = example_smart_spiral(sample=sample)
+        _, planner = example_smart_spiral(sample_name)
         pickle.dump(planner, pkl_file_obj, pickle.HIGHEST_PROTOCOL)
 
 
-def get_expected_result_for_example_smart_spiral(sample: str):
+def get_expected_result_for_example_smart_spiral(sample_name: str) -> ScanPlanner:
     """
     Return the expected ScanPlanner object for the example_smart_spiral(),
     this is pickled, so that it can be committed.
     """
-    pkl_fname = os.path.join(THIS_DIR, f"example_smart_spiral_{sample}.pkl")
+    pkl_fname = os.path.join(THIS_DIR, f"example_smart_spiral_{sample_name}.pkl")
     with open(pkl_fname, "rb") as pkl_file_obj:
         planner = pickle.load(pkl_file_obj)
     return planner
 
 
-def load_sample_points(sample: str):
-    """Returns the points to generate a FakeSample of sample type "sample" """
+def load_sample_points(sample_name: str):
+    """Return the points to generate the FakeSample corresponding to the given input name
+
+    Options are "lobed", "regular", and "core".
+    """
     sample_options = {
         "lobed": [
             (-5000, -5000),
@@ -216,7 +219,12 @@ def load_sample_points(sample: str):
             (1000, 0),
         ],
     }
-    return sample_options[sample]
+    if sample_name not in sample_options:
+        all_samples = ", ".join(sample_options.keys())
+        raise ValueError(
+            f"{sample_name} is not a valid sample name. Valid names : {all_samples}"
+        )
+    return sample_options[sample_name]
 
 
 if __name__ == "__main__":

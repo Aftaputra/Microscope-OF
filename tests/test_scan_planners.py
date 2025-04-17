@@ -263,12 +263,10 @@ def test_example_smart_spiral():
         "lobed",
         "core",
     ]
-    for sample_type in example_samples:
-        _, planner = scan_test_helpers.example_smart_spiral(sample=sample_type)
+    for sample_name in example_samples:
+        _, planner = scan_test_helpers.example_smart_spiral(sample_name)
         expected_planner = (
-            scan_test_helpers.get_expected_result_for_example_smart_spiral(
-                sample=sample_type
-            )
+            scan_test_helpers.get_expected_result_for_example_smart_spiral(sample_name)
         )
         assert planner.path_history == expected_planner.path_history
         assert planner.imaged_locations == expected_planner.imaged_locations
