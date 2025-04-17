@@ -180,7 +180,9 @@ def update_example_smart_spiral_pickle(sample_name: str):
         pickle.dump(planner, pkl_file_obj, pickle.HIGHEST_PROTOCOL)
 
 
-def get_expected_result_for_example_smart_spiral(sample_name: str) -> ScanPlanner:
+def get_expected_result_for_example_smart_spiral(
+    sample_name: str,
+) -> scan_planners.ScanPlanner:
     """
     Return the expected ScanPlanner object for the example_smart_spiral(),
     this is pickled, so that it can be committed.
