@@ -66,30 +66,6 @@ def unpack_autofocus(scan_data):
     return jpeg_heights[turning[0] : turning[1]], jpeg_sizes_mb[turning[0] : turning[1]]
 
 
-def focus_change_acceptable(prev_pos, prev_z, new_pos, new_z, fractional_limit):
-    """Return true if the change in z-position is small enough.
-
-    A large change in z-position in an indication of focus failure.
-    fractional_limit is the largest ratio of change in z to change in xy that's allowed
-    """
-
-    prev_xy = np.asarray(prev_pos, dtype="float64")
-    new_xy = np.asarray(new_pos, dtype="float64")
-
-    dist = np.sqrt(np.sum(((new_xy - prev_xy) / 10**4) ** 2, dtype="float64"))
-
-    focus_change = abs(new_z - prev_z) / 10**4
-    if dist == 0:
-        print(f"Not moved between {prev_pos} and {new_pos}")
-        movement_ratio = 0
-    else:
-        movement_ratio = np.divide(focus_change, dist, dtype="float64")
-
-    if movement_ratio > fractional_limit:
-        return False
-    return True
-
-
 class NotEnoughFreeSpaceError(IOError):
     pass
 
@@ -595,8 +571,7 @@ class SmartScanThing(Thing):
 
             focused = False
             if self._scan_data["autofocus_on"]:
-                closest_xyz = route_planner.closest_focus_site(new_pos_xyz[:2])
-                focused = self._try_autofocus(new_pos_xyz, closest_xyz)
+                focused = self._try_autofocus(new_pos_xyz)
 
             route_planner.mark_location_visited(
                 new_pos_xyz, imaged=True, focused=focused
@@ -624,15 +599,12 @@ class SmartScanThing(Thing):
     def _try_autofocus(
         self,
         this_xyz: tuple[int, int, int],
-        closest_xyz: Optional[tuple[int, int, int]],
     ) -> bool:
         """
         Try to perform autofocus and return boolean for if successful
 
         Args:
             this_xyz is the current x,y,z position.
-            closest_xyz is the (x, y, z) coordinates of the closest position, this is None
-                if no previous images have been taken or in focus
 
         Return True on successful autofocus.
         Return False if failed after 3 tries - the position will be the initial estimate
@@ -644,8 +616,7 @@ class SmartScanThing(Thing):
         while attempts < max_attempts:
             attempts += 1
 
-            _, jpeg_sizes = self._autofocus.looping_autofocus(dz=dz, start="base")
-            current_height = self._stage.position["z"]
+            _, jpeg_sizes = self._autofocus.looping_autofocus(dz=dz, start="centre")
             time.sleep(0.2)
             autofocus_sharp_enough = self._autofocus.verify_focus_sharpness(
                 sweep_sizes=jpeg_sizes, camera=CamDep, threshold=0.92
