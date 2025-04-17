@@ -340,7 +340,6 @@ class SmartSpiral(ScanPlanner):
             return (
                 moves_between(current_pos, pos, [self._dx, self._dy]),
                 self.moves_from_centre(pos),
-                distance_between(current_pos, pos),
             )
 
         self._remaining_locations.sort(key=sort_key)
