@@ -363,7 +363,7 @@ class SmartScanThing(Thing):
         self._stage.move_absolute(
             x=next_point[0],
             y=next_point[1],
-            z=z_estimate - self._scan_data["autofocus_dz"] / 2,
+            z=z_estimate,
         )
 
         return (next_point[0], next_point[1], z_estimate)
@@ -553,6 +553,11 @@ class SmartScanThing(Thing):
 
             next_pos_xy, z_est = route_planner.get_next_location_and_z_estimate()
             new_pos_xyz = self._move_to_next_point(next_pos_xy, z_est)
+            current_pos_xyz = (
+                new_pos_xyz[0],
+                new_pos_xyz[1],
+                self._stage.position["z"],
+            )
 
             capture_image = True
             # If skipping background, take an image to check if it is background
@@ -571,10 +576,11 @@ class SmartScanThing(Thing):
 
             focused = False
             if self._scan_data["autofocus_on"]:
-                focused = self._try_autofocus(new_pos_xyz)
+                focused, focused_z = self._try_autofocus(new_pos_xyz)
+                current_pos_xyz = (new_pos_xyz[0], new_pos_xyz[1], focused_z)
 
             route_planner.mark_location_visited(
-                new_pos_xyz, imaged=True, focused=focused
+                current_pos_xyz, imaged=True, focused=focused
             )
 
             # wait for the previous capture to be saved, i.e. don't leave more than one image saving in the background
@@ -606,8 +612,8 @@ class SmartScanThing(Thing):
         Args:
             this_xyz is the current x,y,z position.
 
-        Return True on successful autofocus.
-        Return False if failed after 3 tries - the position will be the initial estimate
+        Return True, focused_height on successful autofocus.
+        Return False, initial_height if failed after 3 tries - the position will be the initial estimate
         """
         attempts = 0
         max_attempts = 3
@@ -624,13 +630,13 @@ class SmartScanThing(Thing):
 
             # If sharp enough, break and return success, otherwise go to start and try again
             if autofocus_sharp_enough:
-                return True
+                return True, self._stage.position["z"]
             else:
                 z = this_xyz[2] - dz / 2 if attempts < max_attempts else this_xyz[2]
                 self._stage.move_absolute(z=z)
 
         self._scan_logger.warning("Could not autofocus after 3 attempts.")
-        return False
+        return False, self._stage.position["z"]
 
     @_scan_running
     def _wait_for_capture_thread(self) -> None:
