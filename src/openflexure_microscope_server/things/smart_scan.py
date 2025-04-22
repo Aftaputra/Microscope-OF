@@ -123,7 +123,10 @@ class ScanInfo(BaseModel):
     number_of_images: int
 
 
-DOWNLOADABLE_SCAN_FILES = ("images.zip",)
+DOWNLOADABLE_SCAN_FILES = (
+    "images.zip",
+    "stitched_thumbnail.jpg",
+)
 
 JPEGBlob = blob_type("image/jpeg")
 ZipBlob = blob_type("application/zip")
@@ -767,6 +770,50 @@ class SmartScanThing(Thing):
         except SubprocessError as e:
             self._scan_logger.error(f"Stitching failed: {e}", exc_info=e)
 
+    def update_thumbnail(self):
+        target_size = (400, 400)
+
+        images_folder = self._ongoing_scan_images_dir
+
+        file_path = os.path.join(images_folder, "stitched.jpg")
+        if os.path.isfile(file_path):
+            stitched_image = Image.open(file_path)
+        else:
+            file_path = os.path.join(images_folder, "stitched_from_stage.jpg")
+            if os.path.isfile(file_path):
+                stitched_image = Image.open(file_path)
+            else:
+                return None
+
+        try:
+            stitched_image.thumbnail(target_size)
+            stitched_image.save(os.path.join(images_folder, "stitched_thumbnail.jpg"))
+        except Exception:
+            return None
+
+    @fastapi_endpoint(
+        "get",
+        "scans/stitched_thumbnail.jpg",
+        responses={
+            200: {
+                "description": "A thumbnail-quality stitched image",
+                "content": {"image/jpeg": {}},
+            },
+            404: {"description": "File not found"},
+        },
+    )
+    def get_scan_thumbnail(self, scan_name: str) -> FileResponse:
+        """Retrieve a file from a scan.
+
+        This endpoint allows files to be downloaded from a scan.
+        """
+        path = os.path.join(
+            self.images_dir_for_scan(scan_name), "stitched_thumbnail.jpg"
+        )
+        if not os.path.isfile(path):
+            raise HTTPException(404, "File not found")
+        return FileResponse(path)
+
     @_scan_running
     def _capture_and_save(
         self,
@@ -914,11 +961,12 @@ class SmartScanThing(Thing):
                     number_of_images = len(os.listdir(images_folder))
                 else:
                     number_of_images = 0
+                modified = max(os.stat(root).st_mtime for root, _, _ in os.walk(path))
                 scans.append(
                     ScanInfo(
                         name=f,
                         created=os.path.getctime(path),
-                        modified=os.path.getmtime(path),
+                        modified=modified,
                         number_of_images=number_of_images,
                     )
                 )
@@ -1053,6 +1101,7 @@ class SmartScanThing(Thing):
                     self._ongoing_scan_images_dir,
                 ]
             )
+        self.update_thumbnail()
 
     @_scan_running
     def _preview_stitch_running(self) -> bool:
