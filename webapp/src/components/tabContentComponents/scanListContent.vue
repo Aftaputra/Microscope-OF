@@ -204,8 +204,8 @@ export default {
         });
         this.scans = scans;
       } catch (err) {
-        console.log("Failed to refresh scans");
-        console.log(err);
+        console.error("Failed to refresh scans");
+        console.error(err);
         this.scans = [];
       }
     },
