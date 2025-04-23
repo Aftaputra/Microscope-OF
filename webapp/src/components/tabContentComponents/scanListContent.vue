@@ -61,7 +61,7 @@
                     id="thumbnail-stitched-image"
                     class="thumbnail-fit"
                     :src="thumbnailPath(item.name)"
-                    onerror="this.src='/titleicon.svg';"
+                    onerror="this.src='/titleiconpink.svg';"
                   />
                 </div>
               </div>
