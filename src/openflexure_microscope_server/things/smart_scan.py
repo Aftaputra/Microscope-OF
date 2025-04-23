@@ -33,7 +33,6 @@ from openflexure_microscope_server.utilities import ErrorCapturingThread
 from openflexure_microscope_server.things.autofocus import AutofocusThing
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
 from openflexure_microscope_server.things.background_detect import BackgroundDetectThing
-from openflexure_microscope_server.things.z_stack import ZStackThing
 from openflexure_microscope_server import scan_planners
 
 CSMDep = direct_thing_client_dependency(CameraStageMapper, "/camera_stage_mapping/")
@@ -160,7 +159,6 @@ class SmartScanThing(Thing):
         self._background_detect: Optional[BackgroundDep] = None
         self._ongoing_scan_name: Optional[str] = None
         self._starting_position: Optional[Mapping[str, int]] = None
-        self._z_stack: Optional[ZStackDep] = None
         self._capture_thread: Optional[ErrorCapturingThread] = None
         self._scan_images_taken: Optional[int] = None
         # TODO Scan data is a dict during refactoring, should become a dataclass
@@ -177,7 +175,6 @@ class SmartScanThing(Thing):
         metadata_getter: GetThingStates,
         csm: CSMDep,
         background_detect: BackgroundDep,
-        z_stack: ZStackDep,
         scan_name: str = "",
     ):
         """Move the stage to cover an area, taking images that can be tiled together.
@@ -201,7 +198,6 @@ class SmartScanThing(Thing):
         self._csm = csm
         self._background_detect = background_detect
         self._capture_thread = None
-        self._z_stack = z_stack
         self._scan_images_taken = 0
 
         # Don't set self._scan_data dictionary. This is done at the start of _run_scan
@@ -236,7 +232,6 @@ class SmartScanThing(Thing):
             self._ongoing_scan_name = None
             self._scan_images_taken = None
             self._scan_data = None
-            self._z_stack = None
             self._scan_lock.release()
 
     @_scan_running
@@ -596,7 +591,7 @@ class SmartScanThing(Thing):
                 f"{new_pos_xyz[0]}_{new_pos_xyz[1]}",
             )
             os.makedirs(site_folder, exist_ok=True)
-            self._z_stack.run_z_stack(
+            self._autofocus.run_z_stack(
                 images_dir=self._ongoing_scan_images_dir,
                 stack_dir=site_folder,
             )
