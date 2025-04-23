@@ -632,7 +632,7 @@ class SmartScanThing(Thing):
             if autofocus_sharp_enough:
                 return True, self._stage.position["z"]
             else:
-                z = this_xyz[2] - dz / 2 if attempts < max_attempts else this_xyz[2]
+                z = this_xyz[2]
                 self._stage.move_absolute(z=z)
 
         self._scan_logger.warning("Could not autofocus after 3 attempts.")
