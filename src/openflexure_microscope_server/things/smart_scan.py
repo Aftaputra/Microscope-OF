@@ -770,27 +770,6 @@ class SmartScanThing(Thing):
         except SubprocessError as e:
             self._scan_logger.error(f"Stitching failed: {e}", exc_info=e)
 
-    def update_thumbnail(self):
-        target_size = (400, 400)
-
-        images_folder = self._ongoing_scan_images_dir
-
-        file_path = os.path.join(images_folder, "stitched.jpg")
-        if os.path.isfile(file_path):
-            stitched_image = Image.open(file_path)
-        else:
-            file_path = os.path.join(images_folder, "stitched_from_stage.jpg")
-            if os.path.isfile(file_path):
-                stitched_image = Image.open(file_path)
-            else:
-                return None
-
-        try:
-            stitched_image.thumbnail(target_size)
-            stitched_image.save(os.path.join(images_folder, "stitched_thumbnail.jpg"))
-        except Exception:
-            return None
-
     @fastapi_endpoint(
         "get",
         "scans/stitched_thumbnail.jpg",
@@ -1101,7 +1080,6 @@ class SmartScanThing(Thing):
                     self._ongoing_scan_images_dir,
                 ]
             )
-        self.update_thumbnail()
 
     @_scan_running
     def _preview_stitch_running(self) -> bool:
