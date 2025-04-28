@@ -988,6 +988,8 @@ class SmartScanThing(Thing):
                     "preview_stitch",
                     "--minimum_overlap",
                     f"{min_overlap}",
+                    "--resize",
+                    "0.25",
                     self._ongoing_scan_images_dir,
                 ]
             )
@@ -1104,6 +1106,8 @@ class SmartScanThing(Thing):
                 "--stitch_dzi",
                 "--minimum_overlap",
                 f"{round(overlap * 0.9, 2)}",
+                "--resize",
+                "0.25",
                 images_folder,
             ],
         )

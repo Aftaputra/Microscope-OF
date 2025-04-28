@@ -310,12 +310,7 @@ class AutofocusThing(Thing):
                 stack_dir,
                 f"{capture_count}.jpeg",
             )
-            capture._capture_and_save(
-                jpeg_path=jpeg_path,
-                cam=cam,
-                logger=logger,
-                metadata_getter=metadata_getter,
-            )
+            capture.capture_jpeg(filename=jpeg_path, cam=cam)
 
             # If the stack isn't complete yet, move
             if capture_count + 1 < images_to_capture:
