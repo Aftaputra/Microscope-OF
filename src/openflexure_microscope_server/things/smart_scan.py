@@ -979,7 +979,7 @@ class SmartScanThing(Thing):
             raise HTTPException(404, "File not found")
 
     @_scan_running
-    def _preview_stitch_start(self, overlap: float = 0.1) -> None:
+    def _preview_stitch_start(self, overlap: float) -> None:
         """Start stitching a preview of the scan in a background subprocess
 
 
@@ -989,6 +989,9 @@ class SmartScanThing(Thing):
         - self._preview_stitch_popen_lock is a lock aquired while interacting
               with Popen
         """
+        # Set minimum overlap to 90% of the scan overlap to catch only images directly adjacent,
+        # not images with overlapping corners.
+        min_overlap = round(overlap * 0.9, 2)
         if self._preview_stitch_running():
             raise RuntimeError("Only one subprocess is allowed at a time")
         with self._preview_stitch_popen_lock:
@@ -998,7 +1001,7 @@ class SmartScanThing(Thing):
                     "--stitching_mode",
                     "only_stage_stitch",
                     "--minimum_overlap",
-                    f"{round(overlap * 0.9, 2)}",
+                    f"{min_overlap}",
                     self._ongoing_scan_images_dir,
                 ]
             )
