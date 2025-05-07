@@ -1144,7 +1144,7 @@ class SmartScanThing(Thing):
         if final_version:
             with zipfile.ZipFile(zip_fname, mode="a") as scan_zip:
                 for file in files:
-                    if any(banned_name in file for banned_name in files_to_delay):
+                    if any(delayed_name in file for delayed_name in files_to_delay):
                         scan_zip.write(os.path.join(scan_folder, file), arcname=file)
 
     @thing_action
