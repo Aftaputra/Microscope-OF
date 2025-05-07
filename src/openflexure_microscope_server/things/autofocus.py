@@ -14,13 +14,11 @@ from typing import Annotated, Mapping, Optional, Sequence
 import os
 import shutil
 import glob
-import os
-import shutil
-import glob
 
 from fastapi import Depends
 import numpy as np
 from pydantic import BaseModel
+from PIL import Image
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
@@ -34,13 +32,12 @@ from .camera import RawCameraDependency as Camera
 from .camera import CameraDependency as WrappedCamera
 from .stage import StageDependency as Stage
 from .capture import CaptureThing
-import numpy as np
-from pydantic import BaseModel
 
 
 CaptureDep = direct_thing_client_dependency(CaptureThing, "/capture/")
 
 SETTLING_TIME = 0.3
+STACK_OVERSHOOT = 200
 
 
 class JPEGSharpnessMonitor:
@@ -302,7 +299,8 @@ class AutofocusThing(Thing):
         images_to_capture = self.stack_images_to_capture
 
         stack_z_range = stack_dz * (images_to_capture - 1)
-        stage.move_relative(z=-stack_z_range / 2)
+        stage.move_relative(z=-(STACK_OVERSHOOT + stack_z_range / 2))
+        stage.move_relative(z=STACK_OVERSHOOT)
 
         for capture_count in range(images_to_capture):
             time.sleep(SETTLING_TIME)
@@ -311,17 +309,29 @@ class AutofocusThing(Thing):
                 stack_dir,
                 f"{capture_count}.jpeg",
             )
-            capture._capture_and_save(
-                jpeg_path=jpeg_path,
+            start = time.time()
+            image, metadata = capture._capture_image(
                 cam=cam,
-                logger=logger,
                 metadata_getter=metadata_getter,
-                target_resolution=target_resolution,
+                logger=logger,
             )
-
-            # If the stack isn't complete yet, move
-            if capture_count + 1 < images_to_capture:
-                stage.move_relative(z=stack_dz)
+            captured = time.time()
+            # There's an unnecessary move up at the end of the stack
+            stage.move_relative(z=stack_dz)
+            moved = time.time()
+            image = image.resize(target_resolution, Image.LANCZOS)
+            downsampled = time.time()
+            capture._save_capture(
+                jpeg_path=jpeg_path,
+                image=image,
+                metadata=metadata,
+                logger=logger,
+            )
+            saved = time.time()
+            logger.info(f"Capturing took {round(captured - start, 2)} s")
+            logger.info(f"Resizing took {round(downsampled - moved, 2)} s")
+            logger.info(f"Saving took {round(saved - downsampled, 2)} s")
+            logger.info(f"Effective settling time was {round(saved - moved, 2)} s")
 
         self.copy_central_image_from_stack(images_dir, stack_dir)
 
