@@ -1096,7 +1096,6 @@ class SmartScanThing(Thing):
 
     def update_zip(
         self,
-        logger: InvocationLogger,
         scan_name: str,
         final_version: bool = False,
     ) -> None:
@@ -1107,9 +1106,6 @@ class SmartScanThing(Thing):
         scan_folder = self.dir_for_scan(scan_name=scan_name)
 
         zip_fname = os.path.join(scan_folder, "images.zip")
-
-        # if not os.path.isfile(zip_fname):
-        #     raise RuntimeError("zip file hasn't been created yet")
 
         # get a list of files in the existing zip
         current_zip = self.get_files_in_zip(zip_fname)
@@ -1140,7 +1136,6 @@ class SmartScanThing(Thing):
                 elif ".zip" in file:
                     pass
                 else:
-                    logger.info(f"appending {file} to zip")
                     scan_zip.write(os.path.join(scan_folder, file), arcname=file)
 
         # Finally zip the updating files we skipped previously
@@ -1150,19 +1145,16 @@ class SmartScanThing(Thing):
             with zipfile.ZipFile(zip_fname, mode="a") as scan_zip:
                 for file in files:
                     if any(banned_name in file for banned_name in files_to_delay):
-                        logger.info(f"we are finally adding {file} into zip")
                         scan_zip.write(os.path.join(scan_folder, file), arcname=file)
 
     @thing_action
     def download_zip(
         self,
         scan_name: str,
-        logger: InvocationLogger,
     ):
         """Update the zip to include the files we leave to the end, then return the
         zip file as a Blob"""
         self.update_zip(
-            logger=logger,
             scan_name=scan_name,
             final_version=True,
         )
@@ -1170,7 +1162,6 @@ class SmartScanThing(Thing):
         scan_folder = self.dir_for_scan(scan_name=scan_name)
 
         zip_fname = os.path.join(scan_folder, "images.zip")
-        logger.info("about to download zip")
         return ZipBlob.from_file(zip_fname)
 
     def get_files_in_zip(self, zip_path):
