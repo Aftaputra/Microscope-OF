@@ -13,7 +13,6 @@ from datetime import datetime
 from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, STDOUT
 import glob
 import json
-import piexif
 import re
 
 from labthings_fastapi.thing import Thing
@@ -40,9 +39,8 @@ AutofocusDep = direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 BackgroundDep = direct_thing_client_dependency(
     BackgroundDetectThing, "/background_detect/"
 )
-ZStackDep = direct_thing_client_dependency(ZStackThing, "/z_stack/")
-IMAGE_REGEX = re.compile(r"-?[0-9]+_-?[0-9]+\.jpeg$")
 
+IMAGE_REGEX = re.compile(r"-?[0-9]+_-?[0-9]+\.jpeg$")
 
 
 def unpack_autofocus(scan_data):
@@ -698,7 +696,6 @@ class SmartScanThing(Thing):
         if not os.path.isfile(path):
             raise HTTPException(404, "File not found")
         return FileResponse(path)
-
 
     @thing_property
     def max_range(self) -> int:
