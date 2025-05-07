@@ -42,6 +42,8 @@ BackgroundDep = direct_thing_client_dependency(
     BackgroundDetectThing, "/background_detect/"
 )
 
+IMAGE_REGEX = re.compile(r"-?[0-9]+_-?[0-9]+\.jpeg$")
+
 
 def unpack_autofocus(scan_data):
     """Extract z, sharpness data from a move_and_measure call
@@ -860,8 +862,7 @@ class SmartScanThing(Thing):
                 images_folder = os.path.join(path, IMG_DIR_NAME)
                 if os.path.isdir(images_folder):
                     folder_contents = os.listdir(images_folder)
-                    regexp = re.compile(r"[-]?[0-9]+_[-]?[0-9]+\.jpeg")
-                    scan_images = [x for x in folder_contents if regexp.search(x)]
+                    scan_images = [x for x in folder_contents if IMAGE_REGEX.search(x)]
                     number_of_images = len(scan_images)
                 else:
                     number_of_images = 0
