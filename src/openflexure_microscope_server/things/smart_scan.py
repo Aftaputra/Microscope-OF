@@ -257,7 +257,7 @@ class SmartScanThing(Thing):
                 stitch_name = os.path.basename(stitched_image)
 
                 shutil.copy(
-                    stitched_image_path,
+                    stitched_image,
                     os.path.join(
                         self.dir_for_scan(self._ongoing_scan_name), stitch_name
                     ),
