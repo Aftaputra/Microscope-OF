@@ -15,6 +15,7 @@ from threading import Event
 import glob
 import json
 import piexif
+import re
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.metadata import GetThingStates
@@ -858,7 +859,10 @@ class SmartScanThing(Thing):
             if os.path.isdir(path):
                 images_folder = os.path.join(path, IMG_DIR_NAME)
                 if os.path.isdir(images_folder):
-                    number_of_images = len(os.listdir(images_folder))
+                    folder_contents = os.listdir(images_folder)
+                    regexp = re.compile(r"[-]?[0-9]+_[-]?[0-9]+\.jpeg")
+                    scan_images = [x for x in folder_contents if regexp.search(x)]
+                    number_of_images = len(scan_images)
                 else:
                     number_of_images = 0
                 scans.append(
