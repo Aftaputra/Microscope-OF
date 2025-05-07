@@ -625,9 +625,8 @@ class SmartScanThing(Thing):
             self._scan_images_taken += 1
             # Add it to the incremental zip
             self.update_zip(
-                    logger=self._scan_logger,
-                    scan_name=self._ongoing_scan_name,
-                )
+                scan_name=self._ongoing_scan_name,
+            )
 
     @_scan_running
     def _try_autofocus(
@@ -682,7 +681,6 @@ class SmartScanThing(Thing):
             return
 
         self.update_zip(
-            logger=self._scan_logger,
             scan_name=self._ongoing_scan_name,
             final_version=False,
         )
