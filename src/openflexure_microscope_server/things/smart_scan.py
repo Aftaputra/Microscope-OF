@@ -249,10 +249,6 @@ class SmartScanThing(Thing):
         if len(stitched_image_path) == 0:
             logger.warning("Could't find a stitched image to copy")
         else:
-            if len(stitched_image_path) > 1:
-                logger.warning(
-                    "Found more than one stitched image to copy, you should check them carefully"
-                )
             for stitched_image in stitched_image_path:
                 stitch_name = os.path.basename(stitched_image)
 
