@@ -1179,7 +1179,7 @@ class SmartScanThing(Thing):
         self,
         scan_name: str,
     ):
-        """Update the zip to include the files left to the end, then return the
+        """Update the zip to include the files left until the end, then return the
         zip file as a Blob"""
         self.update_zip(
             scan_name=scan_name,
