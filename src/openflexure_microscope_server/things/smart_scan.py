@@ -557,9 +557,9 @@ class SmartScanThing(Thing):
                 try:
                     self._capture_thread.join()
                 except Exception as e:
-                    # If the scan has already ended due to an exception, we will
+                    # If the scan has already ended due to an exception,
                     # ignore any exceptions. If it appeared to be successful,
-                    # we will log the error.
+                    # log the error.
                     if scan_successful:
                         self._scan_logger.error(
                             "The scan appears to have started successfully, however "
