@@ -1166,8 +1166,6 @@ class SmartScanThing(Thing):
                     scan_zip.write(os.path.join(scan_folder, file), arcname=file)
 
         # Finally, zip the files skipped previously
-        # TODO: if you download multiple times, you get duplicate files - is this a problem?
-        # TODO: check if they're already in based on file name and size
         if final_version:
             with zipfile.ZipFile(zip_fname, mode="a") as scan_zip:
                 for file in files:
