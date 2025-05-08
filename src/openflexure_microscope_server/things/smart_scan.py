@@ -1141,3 +1141,25 @@ class SmartScanThing(Thing):
         """List the relative paths of all files and folders in the zip folder specified"""
         scan_zip = zipfile.ZipFile(zip_path)
         return [os.path.normpath(i) for i in scan_zip.namelist()]
+
+    @thing_action
+    def purge_empty_scans(self, logger: InvocationLogger) -> None:
+        """
+        Delete all scan folders containing no images at the top level
+        """
+        scan_list = self.scans
+
+        # Filter out scans with no top level files, ignoring JSON files
+        # JSON is ignored as it's created before any images are captured
+        for scan in scan_list:
+            scan_folder = os.path.join(self.base_scan_dir, scan.name, IMG_DIR_NAME)
+            image_list = [
+                f
+                for f in os.listdir(scan_folder)
+                if os.path.isfile(os.path.join(scan_folder, f)) and "json" not in f
+            ]
+
+            logger.info(image_list)
+
+            if len(image_list) == 0:
+                self.delete_scan(scan.name)
