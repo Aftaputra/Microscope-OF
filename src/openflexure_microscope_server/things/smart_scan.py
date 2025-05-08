@@ -93,6 +93,7 @@ def ensure_free_disk_space(path: str, min_space: int = 500000000) -> None:
 
 class ScanInfo(BaseModel):
     """Summary information about a scan folder"""
+
     """Summary information about a scan folder"""
 
     name: str
@@ -204,9 +205,7 @@ class SmartScanThing(Thing):
         try:
             self._check_background_and_csm_set()
             self._ongoing_scan_name = self._get_unique_scan_name_and_dir(scan_name)
-            self.create_zip_of_scan(
-                scan_name=self._ongoing_scan_name
-            )
+            self.create_zip_of_scan(scan_name=self._ongoing_scan_name)
             self._autofocus.looping_autofocus(dz=self.autofocus_dz, start="centre")
             # record starting position so we can return there
             self._starting_position = self._stage.position
@@ -519,7 +518,6 @@ class SmartScanThing(Thing):
         should return to the starting x,y,z position
         """
 
-
         # Used to check if finally was reached via exeption (except
         # cancel by user)
         scan_successful = True
@@ -595,7 +593,6 @@ class SmartScanThing(Thing):
             planner_settings=planner_settings,
         )
 
-        
         # The loop tests if the scan should continue, moves to the next position,
         # decides whether to capture an image, autofocuses if necessary,
         # captures an image if necessary, updates the scan path and future path,
@@ -833,7 +830,7 @@ class SmartScanThing(Thing):
                 # If number of images is 0, should the scan be appended or ignored?
                 # When deleting images, empty scans should be deleted. When displaying
                 # scans in the GUI or choosing a new scan name, should be ignored
-                
+
                 # A function to delete empty scan folders from the disk achieves all of this
                 scans.append(
                     ScanInfo(
