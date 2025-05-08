@@ -93,6 +93,7 @@ def ensure_free_disk_space(path: str, min_space: int = 500000000) -> None:
 
 class ScanInfo(BaseModel):
     """Summary information about a scan folder"""
+    """Summary information about a scan folder"""
 
     name: str
     created: datetime
