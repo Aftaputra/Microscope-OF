@@ -527,6 +527,8 @@ class SmartScanThing(Thing):
             )
             raise e
         finally:
+            # Whether or not this scan succeeded, remove any scan folders containing zero images
+            self.purge_empty_scans(logger=self._scan_logger)
             if self._capture_thread:
                 # If the capture thread had an error, we capture it here
                 try:
