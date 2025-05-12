@@ -197,6 +197,7 @@ class SmartScanThing(Thing):
             raise e
         finally:
             # However the scan finishes, unset all variables and release lock
+            self._update_scan_inputs_json()
             self._cancel = None
             self._scan_logger = None
             self._autofocus = None
@@ -470,6 +471,35 @@ class SmartScanThing(Thing):
         scan_inputs_fname = os.path.join(
             self._ongoing_scan_images_dir, "scan_inputs.json"
         )
+        with open(scan_inputs_fname, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+
+    @_scan_running
+    def _update_scan_inputs_json(self):
+        """
+        Update scan inputs as a JSON file in the scan folder, with
+        data only known at the end of the scan.
+        """
+        # This should be a method of the scan_data dataclass
+
+        duration = datetime.now() - datetime.strptime(self._scan_data["start_time"], "%H_%M_%S-%d_%m_%Y")
+        hours, remainder = divmod(duration.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        outputs = {
+            'image_count': self._scan_images_taken,
+            'duration': f"{hours}:{minutes}:{seconds}",
+        }
+
+        scan_inputs_fname = os.path.join(
+            self._ongoing_scan_images_dir, "scan_inputs.json"
+        )
+
+        with open(scan_inputs_fname, encoding="utf-8") as f:
+            data = json.load(f)
+
+        data.update(outputs)
+
         with open(scan_inputs_fname, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
