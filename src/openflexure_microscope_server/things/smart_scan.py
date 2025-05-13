@@ -76,6 +76,7 @@ class ScanInfo(BaseModel):
     created: datetime
     modified: datetime
     number_of_images: int
+    stitch_available: bool
 
 
 DOWNLOADABLE_SCAN_FILES = (
@@ -780,12 +781,17 @@ class SmartScanThing(Thing):
                 # scans in the GUI or choosing a new scan name, should be ignored
 
                 # A function to delete empty scan folders from the disk achieves all of this
+
+                stitch_available=(
+                    len([i for i in os.listdir(images_folder) if i.endswith("_stitched.jpg")]) > 0
+                )
                 scans.append(
                     ScanInfo(
                         name=f,
                         created=os.path.getctime(path),
                         modified=modified,
                         number_of_images=number_of_images,
+                        stitch_available=stitch_available,
                     )
                 )
         return scans

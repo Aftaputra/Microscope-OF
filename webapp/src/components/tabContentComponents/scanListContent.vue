@@ -41,8 +41,7 @@
       class="uk-padding-remove-top"
       uk-lightbox="toggle: .lightbox-link"
     >
-      <!-- Gallery capture cards -->
-      
+      <!-- Gallery capture cards -->      
       <div class="gallery-grid uk-grid-match" uk-grid>
         <div v-if="scansEmpty">
           <h2>No scans available</h2>
@@ -90,19 +89,15 @@
                 :submit-data="{ scan_name: item.name }"
                 :button-primary="false"
                 :modal-progress="true"
+                v-if="item.can_stitch"
                 @error="modalError"
               />
               <ul>
                 <li>{{ item.number_of_images }} images</li>
                 <li>created {{ formatDate(item.created) }}</li>
                 <li>modified {{ formatDate(item.modified) }}</li>
+                <li>scan stitched {{ item.stitch_available }}</li>
               </ul>
-
-              <div
-                class="uk-text-meta uk-margin-remove-top uk-padding-remove uk-width-expand"
-              >
-                <time>{{ item.created }}</time>
-              </div>
             </div>
           </div>
         </div>
@@ -198,6 +193,7 @@ export default {
         scans.forEach(scan => {
           scan.modified = Date.parse(scan.modified);
           scan.created = Date.parse(scan.created);
+          scan.can_stitch = !scan.stitch_available && scan.number_of_images > 3;
         });
         scans.sort((a, b) => {
           return b.modified - a.modified;
