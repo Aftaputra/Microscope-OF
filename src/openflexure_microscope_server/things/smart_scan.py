@@ -86,6 +86,7 @@ DOWNLOADABLE_SCAN_FILES = (
 JPEGBlob = blob_type("image/jpeg")
 ZipBlob = blob_type("application/zip")
 IMG_DIR_NAME = "images"
+SCAN_DATA_FILENAME = "scan_data.json"
 
 SCAN_ZERO_PAD_DIGITS = 4
 
@@ -468,7 +469,7 @@ class SmartScanThing(Thing):
         }
 
         scan_inputs_fname = os.path.join(
-            self._ongoing_scan_images_dir, "scan_data.json"
+            self._ongoing_scan_images_dir, SCAN_DATA_FILENAME
         )
         with open(scan_inputs_fname, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
@@ -496,7 +497,9 @@ class SmartScanThing(Thing):
             "scan_result": scan_result,
         }
 
-        scan_data_fname = os.path.join(self._ongoing_scan_images_dir, "scan_data.json")
+        scan_data_fname = os.path.join(
+            self._ongoing_scan_images_dir, SCAN_DATA_FILENAME
+        )
 
         with open(scan_data_fname, encoding="utf-8") as f:
             data = json.load(f)
