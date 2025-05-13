@@ -186,12 +186,10 @@ class SmartScanThing(Thing):
             # record starting position so we can return there
             self._starting_position = self._stage.position
             self._run_scan()
-            self._update_scan_data_json()
         except Exception as e:
             # If _scan_data is set then scan started
             if self._scan_data is not None:
                 self._return_to_starting_position()
-                self._update_scan_data_json()
                 if not isinstance(e, NotEnoughFreeSpaceError):
                     # Don't stich if drive is full (already logged)
                     self._perform_final_stitch()
@@ -476,10 +474,13 @@ class SmartScanThing(Thing):
             json.dump(data, f, ensure_ascii=False, indent=4)
 
     @_scan_running
-    def _update_scan_data_json(self):
+    def _update_scan_data_json(self, scan_result: str):
         """
         Update scan data as a JSON file in the scan folder, with
         data only known at the end of the scan.
+
+        Takes scan_result, a string that is either "success",
+        "cancelled by user", or the error that ended the scan.
         """
         # Should this be a method of the scan_data dataclass?
         current_time = datetime.now().replace(microsecond=0)
@@ -492,11 +493,10 @@ class SmartScanThing(Thing):
         outputs = {
             "image_count": self._scan_images_taken,
             "duration": str(duration),
+            "scan_result": scan_result,
         }
 
-        scan_data_fname = os.path.join(
-            self._ongoing_scan_images_dir, "scan_data.json"
-        )
+        scan_data_fname = os.path.join(self._ongoing_scan_images_dir, "scan_data.json")
 
         with open(scan_data_fname, encoding="utf-8") as f:
             data = json.load(f)
@@ -540,12 +540,15 @@ class SmartScanThing(Thing):
 
             # This is the main loop of the scan!
             self._main_scan_loop()
+            self._update_scan_data_json(scan_result="success")
 
         except InvocationCancelledError:
             scan_successful = False
             self._scan_logger.info("Stopping scan because it was cancelled.")
+            self._update_scan_data_json(scan_result="cancelled by user")
         except NotEnoughFreeSpaceError as e:
             scan_successful = False
+            self._update_scan_data_json(scan_result=str(e))
             self._scan_logger.error(
                 f"Stopping scan to avoid filling up the disk: {e}",
                 exc_info=e,
