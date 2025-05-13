@@ -186,12 +186,12 @@ class SmartScanThing(Thing):
             # record starting position so we can return there
             self._starting_position = self._stage.position
             self._run_scan()
-            self._update_scan_inputs_json()
+            self._update_scan_data_json()
         except Exception as e:
             # If _scan_data is set then scan started
             if self._scan_data is not None:
                 self._return_to_starting_position()
-                self._update_scan_inputs_json()
+                self._update_scan_data_json()
                 if not isinstance(e, NotEnoughFreeSpaceError):
                     # Don't stich if drive is full (already logged)
                     self._perform_final_stitch()
@@ -457,7 +457,7 @@ class SmartScanThing(Thing):
         Save scan inputs as a JSON file in the scan folder, to allow
         the user to review the settings used in the scan
         """
-        # This should be a method of the scan_data dataclass
+        # Should this be a method of the scan_data dataclass?
 
         data = {
             "scan_name": self._ongoing_scan_name,
@@ -470,18 +470,18 @@ class SmartScanThing(Thing):
         }
 
         scan_inputs_fname = os.path.join(
-            self._ongoing_scan_images_dir, "scan_inputs.json"
+            self._ongoing_scan_images_dir, "scan_data.json"
         )
         with open(scan_inputs_fname, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
     @_scan_running
-    def _update_scan_inputs_json(self):
+    def _update_scan_data_json(self):
         """
-        Update scan inputs as a JSON file in the scan folder, with
+        Update scan data as a JSON file in the scan folder, with
         data only known at the end of the scan.
         """
-        # This should be a method of the scan_data dataclass
+        # Should this be a method of the scan_data dataclass?
         current_time = datetime.now().replace(microsecond=0)
         start_time = datetime.strptime(
             self._scan_data["start_time"], "%H_%M_%S-%d_%m_%Y"
@@ -494,16 +494,16 @@ class SmartScanThing(Thing):
             "duration": str(duration),
         }
 
-        scan_inputs_fname = os.path.join(
-            self._ongoing_scan_images_dir, "scan_inputs.json"
+        scan_data_fname = os.path.join(
+            self._ongoing_scan_images_dir, "scan_data.json"
         )
 
-        with open(scan_inputs_fname, encoding="utf-8") as f:
+        with open(scan_data_fname, encoding="utf-8") as f:
             data = json.load(f)
 
         data.update(outputs)
 
-        with open(scan_inputs_fname, "w", encoding="utf-8") as f:
+        with open(scan_data_fname, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
     @_scan_running
@@ -1034,7 +1034,7 @@ class SmartScanThing(Thing):
         Note that as this is a thing_action it needs the logger passed as
         a variable if called from another thing action
         """
-        json_fname = "scan_inputs.json"
+        json_fname = "scan_data.json"
         images_folder = self.images_dir_for_scan(scan_name=scan_name)
         json_fpath = os.path.join(images_folder, json_fname)
 
