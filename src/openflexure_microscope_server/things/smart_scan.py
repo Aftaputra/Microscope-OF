@@ -186,6 +186,7 @@ class SmartScanThing(Thing):
             # record starting position so we can return there
             self._starting_position = self._stage.position
             self._run_scan()
+            self._update_scan_inputs_json()
         except Exception as e:
             # If _scan_data is set then scan started
             if self._scan_data is not None:
