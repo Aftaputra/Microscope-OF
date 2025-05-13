@@ -481,14 +481,16 @@ class SmartScanThing(Thing):
         data only known at the end of the scan.
         """
         # This should be a method of the scan_data dataclass
+        current_time = datetime.now().replace(microsecond=0)
+        start_time = datetime.strptime(
+            self._scan_data["start_time"], "%H_%M_%S-%d_%m_%Y"
+        ).replace(microsecond=0)
 
-        duration = datetime.now() - datetime.strptime(self._scan_data["start_time"], "%H_%M_%S-%d_%m_%Y")
-        hours, remainder = divmod(duration.seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
+        duration = current_time - start_time
 
         outputs = {
-            'image_count': self._scan_images_taken,
-            'duration': f"{hours}:{minutes}:{seconds}",
+            "image_count": self._scan_images_taken,
+            "duration": str(duration),
         }
 
         scan_inputs_fname = os.path.join(
