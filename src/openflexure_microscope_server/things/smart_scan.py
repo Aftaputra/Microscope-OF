@@ -1059,7 +1059,7 @@ class SmartScanThing(Thing):
                 # the file not being there, it not being json in the file,
                 # or the imported data not being indexable
                 logger.warning(
-                    f"Couldn't read scan data, is {json_fname} missing or corrupt? "
+                    f"Couldn't read scan data, is {SCAN_DATA_FILENAME} missing or corrupt? "
                     "Attempting stitch with overlap value of 0.1"
                 )
                 overlap = 0.1
