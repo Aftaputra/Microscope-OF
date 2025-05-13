@@ -1040,9 +1040,8 @@ class SmartScanThing(Thing):
         Note that as this is a thing_action it needs the logger passed as
         a variable if called from another thing action
         """
-        json_fname = "scan_data.json"
         images_folder = self.images_dir_for_scan(scan_name=scan_name)
-        json_fpath = os.path.join(images_folder, json_fname)
+        json_fpath = os.path.join(images_folder, SCAN_DATA_FILENAME)
 
         if self.stitch_tiff:
             tiff_arg = "--stitch_tiff"
