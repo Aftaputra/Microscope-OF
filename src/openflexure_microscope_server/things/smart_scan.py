@@ -527,8 +527,6 @@ class SmartScanThing(Thing):
             )
             raise e
         finally:
-            # Whether or not this scan succeeded, remove any scan folders containing zero images
-            self.purge_empty_scans(logger=self._scan_logger)
             if self._capture_thread:
                 # If the capture thread had an error, we capture it here
                 try:
@@ -549,6 +547,9 @@ class SmartScanThing(Thing):
         # user cancels it.
         self._return_to_starting_position()
         self._perform_final_stitch()
+
+        # Remove any scan folders containing zero images
+        self.purge_empty_scans(logger=self._scan_logger)
 
     @_scan_running
     def _main_scan_loop(self):
@@ -843,7 +844,7 @@ class SmartScanThing(Thing):
         "delete",
         "scans",
     )
-    def delete_all_scans(self, logger:InvocationLogger) -> None:
+    def delete_all_scans(self, logger: InvocationLogger) -> None:
         """Delete all the scans on the microscope
 
         **This will irreversibly remove all scanned data from the
@@ -854,7 +855,9 @@ class SmartScanThing(Thing):
             try:
                 self.delete_scan(scan.name)
             except PermissionError:
-                logger.warning(f"Could not delete scan {scan.name}. Check folder permissions")
+                logger.warning(
+                    f"Could not delete scan {scan.name}. Check folder permissions"
+                )
 
     @property
     def latest_preview_stitch_path(self):
@@ -1168,4 +1171,6 @@ class SmartScanThing(Thing):
                 try:
                     self.delete_scan(scan.name)
                 except PermissionError:
-                    logger.warning(f"Could not delete scan {scan.name}. Check folder permissions")
+                    logger.warning(
+                        f"Could not delete scan {scan.name}. Check folder permissions"
+                    )
