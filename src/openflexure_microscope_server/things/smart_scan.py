@@ -843,7 +843,7 @@ class SmartScanThing(Thing):
         "delete",
         "scans",
     )
-    def delete_all_scans(self) -> None:
+    def delete_all_scans(self, logger:InvocationLogger) -> None:
         """Delete all the scans on the microscope
 
         **This will irreversibly remove all scanned data from the
@@ -851,7 +851,10 @@ class SmartScanThing(Thing):
         Use with extreme caution.
         """
         for scan in self.scans:
-            self.delete_scan(scan.name)
+            try:
+                self.delete_scan(scan.name)
+            except PermissionError:
+                logger.warning(f"Could not delete scan {scan.name}. Check folder permissions")
 
     @property
     def latest_preview_stitch_path(self):
@@ -1161,7 +1164,8 @@ class SmartScanThing(Thing):
                 if os.path.isfile(os.path.join(scan_folder, f)) and "json" not in f
             ]
 
-            logger.info(image_list)
-
             if len(image_list) == 0:
-                self.delete_scan(scan.name)
+                try:
+                    self.delete_scan(scan.name)
+                except PermissionError:
+                    logger.warning(f"Could not delete scan {scan.name}. Check folder permissions")
