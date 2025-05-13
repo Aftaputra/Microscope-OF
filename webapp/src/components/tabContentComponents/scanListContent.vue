@@ -64,7 +64,7 @@
                   />
                 </div>
               </div>
-              <h3 class="uk-card-title">{{ item.name }}</h3>
+              <h3 class="uk-card-title" style="text-align: center;">{{ item.name }}</h3>
               <action-button
                 thing="smart_scan"
                 action="download_zip"
@@ -94,9 +94,10 @@
               />
               <ul>
                 <li>{{ item.number_of_images }} images</li>
-                <li>created {{ formatDate(item.created) }}</li>
-                <li>modified {{ formatDate(item.modified) }}</li>
-                <li>scan stitched {{ item.stitch_available }}</li>
+                <li>created: {{ formatDate(item.created) }}</li>
+                <li>modified: {{ formatDate(item.modified) }}</li>
+                <li v-if="item.number_of_images<3" style="color:red; font-weight: bold;">Not enough images<br />to stitch</li>  
+                <li v-else-if=!item.stitch_available style="color:red; font-weight: bold;">Scan not stitched</li>  
               </ul>
             </div>
           </div>
@@ -276,7 +277,7 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fill, 320px);
   justify-content: center;
-  overflow-y: auto;
+  overflow-y: hidden;
 }
 
 .gallery-grid > div {
@@ -290,4 +291,10 @@ export default {
   margin-left: auto;
   margin-right: auto;
 }*/
+
+ul {
+  display: inline-block;
+  text-align: center;
+  list-style-type:none;
+}
 </style>
