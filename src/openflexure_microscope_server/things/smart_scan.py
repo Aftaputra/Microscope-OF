@@ -190,6 +190,7 @@ class SmartScanThing(Thing):
             # If _scan_data is set then scan started
             if self._scan_data is not None:
                 self._return_to_starting_position()
+                self._update_scan_inputs_json()
                 if not isinstance(e, NotEnoughFreeSpaceError):
                     # Don't stich if drive is full (already logged)
                     self._perform_final_stitch()
@@ -197,7 +198,6 @@ class SmartScanThing(Thing):
             raise e
         finally:
             # However the scan finishes, unset all variables and release lock
-            self._update_scan_inputs_json()
             self._cancel = None
             self._scan_logger = None
             self._autofocus = None
