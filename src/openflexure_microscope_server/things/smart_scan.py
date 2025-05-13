@@ -965,12 +965,9 @@ class SmartScanThing(Thing):
 
         def log_buffer(buffer):
             """A short internal function to read everything in the buffer to
-            a multiline string and log"""
-            lines = []
+            the log"""
             while line := buffer.readline():
-                lines.append(line)
-            if lines:
-                logger.info("".join(lines))
+                logger.info(line)
 
         # Run the command piping stdout into the process for reading and
         # forwarding the stdrerr to stdout
