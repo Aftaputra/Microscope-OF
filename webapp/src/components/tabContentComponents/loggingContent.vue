@@ -153,7 +153,7 @@ export default {
       let response = await axios.get(this.logFileURI);
       let lines = response.data.split("\n");
       let logs = [];
-      let regexp = /\[(.+?)\] \[(.+?)\] (.*)$/;
+^\[(.+?)\] \[(DEBUG|INFO|WARNING|ERROR|CRITICAL)\] (.*)$
       for (let line of lines) {
         if (line.length > 0) {
           let m = line.match(regexp);
