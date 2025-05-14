@@ -85,18 +85,18 @@
                 submit-label="Stitch Images"
                 thing="smart_scan"
                 action="stitch_scan"
+                v-if="item.can_stitch"
                 :can-terminate="false"
                 :submit-data="{ scan_name: item.name }"
                 :button-primary="false"
                 :modal-progress="true"
-                v-if="item.can_stitch"
                 @error="modalError"
               />
               <ul>
                 <li>{{ item.number_of_images }} images</li>
                 <li>created: {{ formatDate(item.created) }}</li>
                 <li>modified: {{ formatDate(item.modified) }}</li>
-                <li v-if="item.number_of_images<3" style="color:red; font-weight: bold;">Not enough images<br />to stitch</li>  
+                <li v-if="item.number_of_images<3" style="color:red; font-weight: bold;">Not enough images to stitch</li>  
                 <li v-else-if=!item.stitch_available style="color:red; font-weight: bold;">Scan not stitched</li>  
               </ul>
             </div>
