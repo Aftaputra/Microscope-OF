@@ -771,20 +771,15 @@ class SmartScanThing(Thing):
                 images_folder = os.path.join(path, IMG_DIR_NAME)
                 if os.path.isdir(images_folder):
                     folder_contents = os.listdir(images_folder)
-                    scan_images = [x for x in folder_contents if IMAGE_REGEX.search(x)]
+                    scan_images = [i for i in folder_contents if IMAGE_REGEX.search(x)]
+                    stitches = [i for i in folder_contents if i.endswith("_stitched.jpg")]
                     number_of_images = len(scan_images)
+                    stitch_available = len(stitches) > 0
                 else:
                     number_of_images = 0
+                    stitch_available = False
                 modified = max(os.stat(root).st_mtime for root, _, _ in os.walk(path))
-                # If number of images is 0, should the scan be appended or ignored?
-                # When deleting images, empty scans should be deleted. When displaying
-                # scans in the GUI or choosing a new scan name, should be ignored
-
-                # A function to delete empty scan folders from the disk achieves all of this
-
-                stitch_available=(
-                    len([i for i in os.listdir(images_folder) if i.endswith("_stitched.jpg")]) > 0
-                )
+                
                 scans.append(
                     ScanInfo(
                         name=f,
