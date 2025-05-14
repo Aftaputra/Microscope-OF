@@ -829,7 +829,7 @@ class SmartScanThing(Thing):
             404: {"description": "Scan not found"},
         },
     )
-    def delete_scan(self, scan_name: str) -> None:
+    def delete_scan(self, scan_name: str, logger: InvocationLogger) -> None:
         """Delete all files from a scan.
 
         This endpoint allows scans to be deleted from disk.
@@ -837,8 +837,10 @@ class SmartScanThing(Thing):
         path = os.path.join(self.base_scan_dir, scan_name)
         if not os.path.isdir(path):
             print(f"can't find {path}")
-            raise HTTPException(404, "Scan not found")
-        shutil.rmtree(path)
+            raise HTTPException(400, "Scan not found")
+        result = self._delete_scan(path, logger)
+        if not result:
+            raise HTTPException(400, "Couldn't delete scan, check log for details")
 
     @fastapi_endpoint(
         "delete",
@@ -852,12 +854,19 @@ class SmartScanThing(Thing):
         Use with extreme caution.
         """
         for scan in self.scans:
-            try:
-                self.delete_scan(scan.name)
-            except PermissionError:
-                logger.warning(
-                    f"Could not delete scan {scan.name}. Check folder permissions"
-                )
+            self.delete_scan(scan.name, logger)
+
+    @thing_action
+    def _delete_scan(self, scan_path, logger: InvocationLogger) -> bool:
+        try:
+            shutil.rmtree(scan_path)
+            return True
+        except Exception as e:
+            logger.warning(
+                "Attempted to delete scan " + scan_path + ", which failed."
+                " Server sent response" + str(e)
+            )
+            return False
 
     @property
     def latest_preview_stitch_path(self):
@@ -1168,9 +1177,4 @@ class SmartScanThing(Thing):
             ]
 
             if len(image_list) == 0:
-                try:
-                    self.delete_scan(scan.name)
-                except PermissionError:
-                    logger.warning(
-                        f"Could not delete scan {scan.name}. Check folder permissions"
-                    )
+                self.delete_scan(scan.name)
