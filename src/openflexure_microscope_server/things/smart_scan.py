@@ -771,15 +771,17 @@ class SmartScanThing(Thing):
                 images_folder = os.path.join(path, IMG_DIR_NAME)
                 if os.path.isdir(images_folder):
                     folder_contents = os.listdir(images_folder)
-                    scan_images = [i for i in folder_contents if IMAGE_REGEX.search(x)]
-                    stitches = [i for i in folder_contents if i.endswith("_stitched.jpg")]
+                    scan_images = [i for i in folder_contents if IMAGE_REGEX.search(i)]
+                    stitches = [
+                        i for i in folder_contents if i.endswith("_stitched.jpg")
+                    ]
                     number_of_images = len(scan_images)
                     stitch_available = len(stitches) > 0
                 else:
                     number_of_images = 0
                     stitch_available = False
                 modified = max(os.stat(root).st_mtime for root, _, _ in os.walk(path))
-                
+
                 scans.append(
                     ScanInfo(
                         name=f,
