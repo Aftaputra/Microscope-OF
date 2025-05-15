@@ -77,6 +77,7 @@ class ScanInfo(BaseModel):
     modified: datetime
     number_of_images: int
     stitch_available: bool
+    dzi: Optional[str]
 
 
 DOWNLOADABLE_SCAN_FILES = (
@@ -819,6 +820,11 @@ class SmartScanThing(Thing):
                     ]
                     number_of_images = len(scan_images)
                     stitch_available = len(stitches) > 0
+                    dzi = [i for i in folder_contents if i.endswith("dzi")]
+                    if len(dzi) > 0:
+                        dzi = str(dzi[0])
+                    else:
+                        dzi = None
                 else:
                     number_of_images = 0
                     stitch_available = False
@@ -831,6 +837,7 @@ class SmartScanThing(Thing):
                         modified=modified,
                         number_of_images=number_of_images,
                         stitch_available=stitch_available,
+                        dzi=dzi,
                     )
                 )
         return scans
@@ -1096,6 +1103,7 @@ class SmartScanThing(Thing):
                 "--stitching_mode",
                 "all",
                 f"{tiff_arg}",
+                "--stitch_dzi",
                 "--minimum_overlap",
                 f"{round(overlap * 0.9, 2)}",
                 images_folder,
