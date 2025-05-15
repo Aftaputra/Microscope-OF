@@ -1,8 +1,7 @@
 <template>
   <div
     v-observe-visibility="visibilityChanged"
-    class="galleryDisplay uk-padding uk-padding-remove-top"
-  >
+    class="galleryDisplay uk-padding uk-padding-remove-top">
     <!-- Gallery nav bar -->
     <nav
       class="gallery-navbar uk-navbar-container uk-navbar-transparent"
@@ -35,6 +34,26 @@
       </div>
     </nav>
 
+    <!-- Modal for scan display -->
+    <div id="scan-modal" ref="scanModal" uk-modal>
+      <div class="uk-modal-dialog uk-modal-body" v-if="selectedScan" style="width: 95%; height: 95%;">
+        <h2 class="uk-modal-title">
+          {{ selectedScan.name }}
+          <button class="uk-modal-close uk-float-right" type="button"><span class="material-symbols-outlined">close</span></button>
+          <button class="uk-float-right" type="button" @click="goFullscreen">
+            <span class="material-symbols-outlined">fullscreen</span>
+          </button>
+          </h2>
+          <div v-if="selectedScanDZIAvailable" id="viewer_container" style="height: 80%;">
+          <OpenSeadragonViewer
+            id="openseadragon"
+            ref="openseadragon"
+            :src="selectedScanDZI"
+          />
+          </div>
+      </div>
+    </div>
+
     <!-- Gallery -->
     <div
       v-if="$store.getters.ready"
@@ -50,7 +69,7 @@
           </p>
         </div>
         <div v-for="item in scans" :key="item.id">
-          <div class="uk-card">
+          <div class="uk-card" @click="showScan(item)">
             <div class="uk-card-body">
               <div class="uk-card-media-top">
                 <div
@@ -65,7 +84,8 @@
                 </div>
               </div>
               <h3 class="uk-card-title" style="text-align: center;">{{ item.name }}</h3>
-              <action-button
+              <div class="button-container">
+                <action-button
                 thing="smart_scan"
                 action="download_zip"
                 submit-label="Download ZIP"
@@ -105,20 +125,25 @@
       </div>
     </div>
   </div>
+  </div>
 </template>
 
 <script>
 import axios from "axios";
+import UIkit from "uikit";
 import actionButton from "../labThingsComponents/actionButton.vue";
+import OpenSeadragonViewer from "./scanListComponents/openSeadragonViewer.vue";
 
 // Export main app
 export default {
   name: "ScanListContent",
-  components: { actionButton },
+  components: { actionButton, OpenSeadragonViewer },
 
   data: function() {
     return {
-      scans: []
+      scans: [],
+      selectedScan: null,
+      osdViewer: null
     };
   },
 
@@ -133,6 +158,16 @@ export default {
     },
     scansEmpty() {
       return this.scans.length == 0;
+    },
+    selectedScanDZI() {
+      if (this.selectedScan && this.dzi!="") {
+        return `${this.$store.getters.baseUri}/scans/${this.selectedScan.name}/images/${this.selectedScan.dzi}`;
+      } else {
+        return null;
+      }
+    },
+    selectedScanDZIAvailable() {
+      return this.selectedScan && this.selectedScan.dzi;
     }
   },
 
@@ -185,6 +220,9 @@ export default {
         this.updateScans();
       }
     },
+    goFullscreen() {
+      this.$refs.openseadragon.openFullscreen();
+    },
     async updateScans() {
       try {
         let scans = await this.readThingProperty("smart_scan", "scans");
@@ -194,7 +232,7 @@ export default {
         scans.forEach(scan => {
           scan.modified = Date.parse(scan.modified);
           scan.created = Date.parse(scan.created);
-          scan.can_stitch = !scan.stitch_available && scan.number_of_images > 3;
+          scan.can_stitch = !scan.stitch_available && scan.number_of_images > 3 || !scan.dzi && scan.number_of_images > 3;
         });
         scans.sort((a, b) => {
           return b.modified - a.modified;
@@ -256,7 +294,16 @@ export default {
       console.log(link);
       document.body.appendChild(link);
       link.click();
-    }
+    },
+    showScan(scan) {
+      if (scan.dzi){
+        this.selectedScan = scan;
+        UIkit.modal(this.$refs.scanModal).show();
+      }
+      else {
+        this.modalError(`Scan not stitched for viewing in webapp, please download or stitch`)
+      }
+    },
   }
 };
 </script>
@@ -283,6 +330,20 @@ export default {
 .gallery-grid > div {
   display: inline-block;
   margin-bottom: 20px;
+}
+
+#openseadragon {
+  width: 100%;
+  height: 100%;
+}
+#info-panel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 5px;
+    border-radius: 1px;
+    z-index: 1000;
 }
 
 /deep/ .capture-card {
