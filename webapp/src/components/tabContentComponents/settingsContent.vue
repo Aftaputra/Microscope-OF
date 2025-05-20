@@ -17,19 +17,6 @@
             Display
           </tabIcon>
         </li>
-        <li>
-          <tabIcon
-            id="settings-features-icon"
-            tab-i-d="features"
-            :show-title="false"
-            :show-tooltip="false"
-            :require-connection="false"
-            :current-tab="currentTab"
-            @set-tab="setTab"
-          >
-            Features
-          </tabIcon>
-        </li>
         <li class="uk-nav-header">Microscope Settings</li>
         <li>
           <tabIcon
@@ -90,16 +77,6 @@
       </tabContent>
 
       <tabContent
-        tab-i-d="features"
-        :require-connection="false"
-        :current-tab="currentTab"
-      >
-        <div class="settings-pane uk-padding-small">
-          <featuresSettings />
-        </div>
-      </tabContent>
-
-      <tabContent
         tab-i-d="camera"
         :require-connection="true"
         :current-tab="currentTab"
@@ -136,7 +113,6 @@
 import streamSettings from "./settingsComponents/streamSettings.vue";
 import cameraSettings from "./settingsComponents/cameraSettings.vue";
 import appSettings from "./settingsComponents/appSettings.vue";
-import featuresSettings from "./settingsComponents/featuresSettings.vue";
 import CSMSettings from "./settingsComponents/CSMSettings.vue";
 import stageSettings from "./settingsComponents/stageSettings.vue";
 // Import generic components
@@ -154,7 +130,6 @@ export default {
     stageSettings,
     CSMSettings,
     appSettings,
-    featuresSettings,
     tabIcon,
     tabContent,
     ActionButton
