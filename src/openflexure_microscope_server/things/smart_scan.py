@@ -1173,12 +1173,14 @@ class SmartScanThing(Thing):
         # JSON is ignored as it's created before any images are captured
         for scan in scan_list:
             scan_folder = os.path.join(self.base_scan_dir, scan.name, IMG_DIR_NAME)
-            image_list = [
-                f
-                for f in os.listdir(scan_folder)
-                if os.path.isfile(os.path.join(scan_folder, f)) and "json" not in f
-            ]
+            images_found = False
+            for fname in os.listdir(scan_folder):
+                fpath = os.path.join(scan_folder, fname)
+                if os.path.isfile(fpath) and IMAGE_REGEX.search(fname):
+                    images_found = True
+                    # break as soon as an image is found.
+                    break
 
-            if len(image_list) == 0:
+            if not images_found:
                 path = os.path.join(self.base_scan_dir, scan.name)
                 self._delete_scan(path, logger)
