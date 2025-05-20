@@ -3,7 +3,7 @@
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <div class="settings-nav">
       <ul class="uk-nav uk-nav-default">
-        <li class="uk-nav-header">Application settings</li>
+        <li class="uk-nav-header">Application Settings</li>
         <li>
           <tabIcon
             id="settings-display-icon"
@@ -30,7 +30,7 @@
             Features
           </tabIcon>
         </li>
-        <li class="uk-nav-header">Microscope settings</li>
+        <li class="uk-nav-header">Microscope Settings</li>
         <li>
           <tabIcon
             id="settings-camera-icon"
@@ -67,15 +67,14 @@
             :current-tab="currentTab"
             @set-tab="setTab"
           >
-            Camera/stage mapping
+            Camera to Stage Mapping
           </tabIcon>
         </li>
       </ul>
       <action-button
         thing="settings"
         action="save_all_thing_settings"
-        submit-label="Save all settings"
-        class="uk-margin"
+        submit-label="Save All Settings"
       />
     </div>
     <div class="view-component uk-width-expand uk-padding-small">
