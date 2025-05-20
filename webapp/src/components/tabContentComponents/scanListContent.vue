@@ -69,7 +69,7 @@
           </p>
         </div>
         <div v-for="item in scans" :key="item.id">
-          <div class="uk-card" @click="showScan(item)">
+          <div class="uk-card">
             <div class="uk-card-body">
               <div class="uk-card-media-top">
                 <div
@@ -80,6 +80,7 @@
                     class="thumbnail-fit"
                     :src="thumbnailPath(item.name)"
                     onerror="this.src='/titleiconpink.svg';"
+                    @click="showScan(item)"
                   />
                 </div>
               </div>
@@ -112,14 +113,29 @@
                 :modal-progress="true"
                 @error="modalError"
               />
+              <button
+                v-if="item.dzi" class="uk-button uk-button-default uk-width-1-1"
+                @click="showScan(item)"
+              >
+              Show Stitched Scan
+              </button>
+              <button
+                v-if="!item.dzi & item.stitch_available" class="uk-button uk-button-default uk-width-1-1"
+                @click="showScan(item)"
+              >
+              Generate Interactive Preview
+              </button>
+              </div>
+              <div>
               <ul>
                 <li>{{ item.number_of_images }} images</li>
                 <li>created: {{ formatDate(item.created) }}</li>
                 <li>modified: {{ formatDate(item.modified) }}</li>
-                <li v-if="item.number_of_images<3" style="color:red; font-weight: bold;">Not enough images to stitch</li>  
-                <li v-else-if=!item.stitch_available style="color:red; font-weight: bold;">Scan not stitched</li>  
               </ul>
-            </div>
+                <li v-if="item.number_of_images<3" style="color:red; text-align: center; font-weight: bold;">Not enough images to stitch</li>
+                <li v-else-if="!item.dzi & item.stitch_available" style="color:orange; text-align: center; font-weight: bold;">Interactive preview not available</li> 
+                <li v-else-if=!item.stitch_available style="color:red; text-align: center; font-weight: bold;">High quality stitch not available</li>  
+              </div>
           </div>
         </div>
       </div>
@@ -232,7 +248,7 @@ export default {
         scans.forEach(scan => {
           scan.modified = Date.parse(scan.modified);
           scan.created = Date.parse(scan.created);
-          scan.can_stitch = !scan.stitch_available && scan.number_of_images > 3 || !scan.dzi && scan.number_of_images > 3;
+          scan.can_stitch = !scan.stitch_available && scan.number_of_images > 3;
         });
         scans.sort((a, b) => {
           return b.modified - a.modified;
@@ -357,5 +373,6 @@ ul {
   display: inline-block;
   text-align: center;
   list-style-type:none;
+  margin: 5px 0px 10px 0px;
 }
 </style>
