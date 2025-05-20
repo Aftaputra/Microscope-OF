@@ -830,16 +830,18 @@ class SmartScanThing(Thing):
         },
     )
     def delete_scan(self, scan_name: str, logger: InvocationLogger) -> None:
-        """Delete all files from a scan.
+        """Delete the folder for the specified scan.
 
         This endpoint allows scans to be deleted from disk.
+
+        Takes the scan name to delete, and the Invocation Logger
         """
         path = os.path.join(self.base_scan_dir, scan_name)
         if not os.path.isdir(path):
-            print(f"can't find {path}")
+            logger.info(f"can't find {path}")
             raise HTTPException(400, "Scan not found")
-        result = self._delete_scan(path, logger)
-        if not result:
+        deleted_scan_success = self._delete_scan(path, logger)
+        if not deleted_scan_success:
             raise HTTPException(400, "Couldn't delete scan, check log for details")
 
     @fastapi_endpoint(
@@ -854,7 +856,8 @@ class SmartScanThing(Thing):
         Use with extreme caution.
         """
         for scan in self.scans:
-            self.delete_scan(scan.name, logger)
+            path = os.path.join(self.base_scan_dir, scan.name)
+            self._delete_scan(path, logger)
 
     @thing_action
     def _delete_scan(self, scan_path, logger: InvocationLogger) -> bool:
@@ -1177,4 +1180,5 @@ class SmartScanThing(Thing):
             ]
 
             if len(image_list) == 0:
-                self.delete_scan(scan.name)
+                path = os.path.join(self.base_scan_dir, scan.name)
+                self._delete_scan(path, logger)
