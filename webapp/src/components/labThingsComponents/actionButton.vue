@@ -297,12 +297,14 @@ export default {
             else if (result == "error") {
               // Pass the error string back with reject
               if (!this.progress) this.progress = 1;
-              // Test whether the log is empty. If so, return a default message
-              if (response.data.log.length == 0) {
+              // Test whether the log is empty or the most recent message is not from an error
+              // If so, return a default message
+              if (response.data.log.length == 0 | response.data.log.at(-1).levelname != "ERROR") {
                 var message = "Unexpected error, please check the logs";
               }
-              // Otherwise assume that the most recent message in the log is the error message
-              // If it's the empty string, use a default message
+              // As LabThings Actions add the message from any raised exception to the log, the
+              // last message in the log is the message from the Exception.
+              //If the Exception was raised with no message, use a default.
               else {
                 message = response.data.log.at(-1).message||"Unexpected error, please check the logs";
               }
