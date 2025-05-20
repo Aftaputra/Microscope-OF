@@ -251,7 +251,7 @@ export default {
           this.modalNotify(`The action '${this.submitLabel}' was cancelled.`);
         }
       } catch (error) {
-        this.$emit("error", error | Error("Unknown error"));
+        this.$emit("error", error);
       } finally {
         // Reset taskRunning and taskId
         this.taskRunning = false;
@@ -297,7 +297,9 @@ export default {
             else if (result == "error") {
               // Pass the error string back with reject
               if (!this.progress) this.progress = 1;
-              reject(new Error(response.data.output));
+              // Assume that the most recent message in the log is the error message
+              // and raise an Error with that message
+              reject(new Error(response.data.log.at(-1).message));
             }
             // If task ends without reporting an error
             // (NB this includes cancellation)
