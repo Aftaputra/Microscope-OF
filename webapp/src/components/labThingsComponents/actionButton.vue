@@ -297,9 +297,17 @@ export default {
             else if (result == "error") {
               // Pass the error string back with reject
               if (!this.progress) this.progress = 1;
-              // Assume that the most recent message in the log is the error message
-              // and raise an Error with that message
-              reject(new Error(response.data.log.at(-1).message));
+              // Test whether the log is empty. If so, return a default message
+              if (response.data.log.length == 0) {
+                var message = "Unexpected error, please check the logs";
+              }
+              // Otherwise assume that the most recent message in the log is the error message
+              // If it's the empty string, use a default message
+              else {
+                message = response.data.log.at(-1).message||"Unexpected error, please check the logs";
+              }
+              // Raise an Error with the chosen message
+              reject(new Error(message));
             }
             // If task ends without reporting an error
             // (NB this includes cancellation)
