@@ -126,9 +126,9 @@
                 <li>created: {{ formatDate(item.created) }}</li>
                 <li>modified: {{ formatDate(item.modified) }}</li>
               </ul>
-                <li v-if="item.number_of_images<3" style="color:red; text-align: center; font-weight: bold;">Not enough images to stitch</li>
-                <li v-else-if="!item.dzi & item.stitch_available" style="color:orange; text-align: center; font-weight: bold;">Interactive preview not available</li> 
-                <li v-else-if=!item.stitch_available style="color:orange; text-align: center; font-weight: bold;">High quality stitch not available</li>  
+                <li v-if="item.number_of_images<3" class="warning-msg">Not enough images to stitch</li>
+                <li v-else-if="!item.dzi & item.stitch_available" class="alert-msg">Interactive preview not available</li> 
+                <li v-else-if=!item.stitch_available class="alert-msg">High quality stitch not available</li>  
               </div>
           </div>
         </div>
@@ -368,5 +368,17 @@ ul {
   text-align: center;
   list-style-type:none;
   margin: 5px 0px 10px 0px;
+}
+
+.warning-msg {
+  color: red;
+  text-align: center;
+  font-weight: bold;
+}
+
+.alert-msg{
+  color: orange;
+  text-align: center;
+  font-weight: bold;
 }
 </style>
