@@ -34,7 +34,6 @@ from ..stage import StageProtocol as Stage
 RATIO = 0.2
 
 
-
 class SimulatedCamera(BaseCamera):
     """A Thing representing an OpenCV camera"""
 

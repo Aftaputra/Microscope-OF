@@ -219,7 +219,7 @@ def adjust_shutter_and_gain_from_raw(
             break
 
     if check_convergence(test, target_white_level, tolerance):
-        logging.info(f"Brightness has converged to within {tolerance * 100 :.0f}%.")
+        logging.info(f"Brightness has converged to within {tolerance * 100:.0f}%.")
     else:
         logging.warning(
             f"Failed to reach target brightness of {target_white_level}."
@@ -257,9 +257,11 @@ def adjust_white_balance_from_raw(
         channel_gains = 1 / grids
         if channel_gains.shape[1:] != channels.shape[1:]:
             channel_gains = upsample_channels(channel_gains, channels.shape[1:])
-        logging.info(f"Before gains, channel maxima are {np.max(channels, axis=(1,2))}")
+        logging.info(
+            f"Before gains, channel maxima are {np.max(channels, axis=(1, 2))}"
+        )
         channels = channels * channel_gains
-        logging.info(f"After gains, channel maxima are {np.max(channels, axis=(1,2))}")
+        logging.info(f"After gains, channel maxima are {np.max(channels, axis=(1, 2))}")
     if method == "centre":
         _, h, w = channels.shape
         blue, g1, g2, red = (
@@ -532,7 +534,7 @@ def raw_channels_from_camera(camera: Picamera2) -> LensShadingTables:
 
 def recreate_camera_manager():
     """Delete and recreate the camera manager.
-    
+
     This is necessary to ensure the tuning file is re-read.
     """
     del Picamera2._cm
