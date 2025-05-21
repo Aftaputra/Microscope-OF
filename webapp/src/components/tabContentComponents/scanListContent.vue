@@ -35,8 +35,8 @@
     </nav>
 
     <!-- Modal for scan display -->
-    <div id="scan-modal" ref="scanModal" uk-modal>
-      <div class="uk-modal-dialog uk-modal-body" v-if="selectedScan" style="width: 95%; height: 95%;">
+    <div id="scan-modal" ref="scanModal" style="padding: 10px;" uk-modal>
+      <div class="uk-modal-dialog uk-modal-body " v-if="selectedScan" style="padding: 10px; width: 95%; height: 95%;">
         <h2 class="uk-modal-title">
           {{ selectedScan.name }}
           <button class="uk-modal-close uk-float-right" type="button"><span class="material-symbols-outlined">close</span></button>
@@ -106,7 +106,7 @@
                 submit-label="Stitch Images"
                 thing="smart_scan"
                 action="stitch_scan"
-                v-if="item.can_stitch"
+                v-if="item.can_stitch | !item.dzi"
                 :can-terminate="false"
                 :submit-data="{ scan_name: item.name }"
                 :button-primary="false"
@@ -119,12 +119,6 @@
               >
               Show Stitched Scan
               </button>
-              <button
-                v-if="!item.dzi & item.stitch_available" class="uk-button uk-button-default uk-width-1-1"
-                @click="showScan(item)"
-              >
-              Generate Interactive Preview
-              </button>
               </div>
               <div>
               <ul>
@@ -134,7 +128,7 @@
               </ul>
                 <li v-if="item.number_of_images<3" style="color:red; text-align: center; font-weight: bold;">Not enough images to stitch</li>
                 <li v-else-if="!item.dzi & item.stitch_available" style="color:orange; text-align: center; font-weight: bold;">Interactive preview not available</li> 
-                <li v-else-if=!item.stitch_available style="color:red; text-align: center; font-weight: bold;">High quality stitch not available</li>  
+                <li v-else-if=!item.stitch_available style="color:orange; text-align: center; font-weight: bold;">High quality stitch not available</li>  
               </div>
           </div>
         </div>
