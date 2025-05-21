@@ -1,4 +1,3 @@
-import numpy as np
 from PIL import Image
 import time
 import piexif
@@ -48,7 +47,8 @@ class CaptureThing(Thing):
             f"Acquired {jpeg_path} in {acquisition_duration}s then {saving_duration}s saving to disk"
         )
 
-    def _capture_image(self, cam, metadata_getter) -> tuple[np.ndarray, dict]:
+    @thing_action
+    def _capture_image(self, cam, metadata_getter):
         """Capture an image in memory and return it with metadata
         CaptureError raised if the capture fails for any reason
         returns tuple with numpy array of image data, and dict of metadata
@@ -60,10 +60,11 @@ class CaptureThing(Thing):
             raise CaptureError("An error occurred while capturing") from e
         return image, metadata
 
+    @thing_action
     def _save_capture(
         self,
         jpeg_path: str,
-        image: np.ndarray,
+        image,
         metadata: dict,
         logger: InvocationLogger,
     ) -> None:

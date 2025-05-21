@@ -620,6 +620,8 @@ class SmartScanThing(Thing):
             self._manage_stitching_threads()
 
             next_pos_xy, z_est = route_planner.get_next_location_and_z_estimate()
+            self._scan_logger.info(z_est)
+            self._scan_logger.info(self._stage.position["z"])
             new_pos_xyz = self._move_to_next_point(next_pos_xy, z_est)
             current_pos_xyz = (
                 new_pos_xyz[0],
@@ -642,32 +644,18 @@ class SmartScanThing(Thing):
                 self._scan_logger.info(msg)
                 continue
 
-            focused = False
-            if self._scan_data["autofocus_on"]:
-                self._autofocus.looping_autofocus(
-                    dz=self._scan_data["autofocus_dz"], start="centre"
-                )
-                current_pos_xyz = (
-                    new_pos_xyz[0],
-                    new_pos_xyz[1],
-                    self._stage.position["z"],
-                )
-                # Without a test for autofocus success, assume it worked
-                focused = True
+            focused_height = self._autofocus.run_z_stack(
+                images_dir=self._ongoing_scan_images_dir,
+            )
+
+            current_pos_xyz = (
+                new_pos_xyz[0],
+                new_pos_xyz[1],
+                focused_height,
+            )
 
             route_planner.mark_location_visited(
-                current_pos_xyz, imaged=True, focused=focused
-            )
-
-            site_folder = os.path.join(
-                self._ongoing_scan_images_dir,
-                "stacks",
-                f"{new_pos_xyz[0]}_{new_pos_xyz[1]}",
-            )
-            os.makedirs(site_folder, exist_ok=True)
-            self._autofocus.run_z_stack(
-                images_dir=self._ongoing_scan_images_dir,
-                stack_dir=site_folder,
+                current_pos_xyz, imaged=True, focused=True
             )
 
             # increment capure counter as thread has completed

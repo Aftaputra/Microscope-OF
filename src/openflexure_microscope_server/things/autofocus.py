@@ -267,6 +267,16 @@ class AutofocusThing(Thing):
         self.thing_settings["stack_images_to_capture"] = value
 
     @thing_property
+    def stack_images_to_test(self) -> int:
+        """The number of images to test for successful focusing in a stack
+        Defaults to 9, which balances reliability and speed"""
+        return self.thing_settings.get("stack_images_to_test", 9)
+
+    @stack_images_to_test.setter
+    def stack_images_to_test(self, value: int) -> None:
+        self.thing_settings["stack_images_to_test"] = value
+
+    @thing_property
     def stack_dz(self) -> int:
         """Space in steps between images in a z-stack
         Suggested is 50 for 60-100x
@@ -287,35 +297,78 @@ class AutofocusThing(Thing):
         metadata_getter: GetThingStates,
         capture: CaptureDep,
         images_dir: str,
-        stack_dir: str,
     ) -> None:
         """Run a z stack, saving all images to stack_dir and copying the
         central image to stack_dir"""
         stack_dz = self.stack_dz
         images_to_capture = self.stack_images_to_capture
+        images_to_test = self.stack_images_to_test
 
-        stack_z_range = stack_dz * (images_to_capture - 1)
-        stage.move_relative(z=-stack_z_range / 2)
+        if images_to_test < images_to_capture:
+            raise RuntimeError(
+                "Can't capture more images than are tested. Please increase number to test, or decrease number to capture"
+            )
+        if images_to_test % 2 == 0:
+            raise RuntimeError("Images to test should be odd")
 
-        for capture_count in range(images_to_capture):
+        stack_z_range = stack_dz * (images_to_test - 1)
+        overshoot = stack_dz * 5
+        backlash_correction = 250
+
+        stage.move_relative(z=-(overshoot + backlash_correction + stack_z_range / 2))
+        stage.move_relative(z=backlash_correction)
+
+        continue_stack = True
+        captures = []
+        sharpnesses = []
+        heights = []
+        capture_count = 0
+        starting_height = stage.position["z"]
+
+        while continue_stack:
             time.sleep(SETTLING_TIME)
 
+            stage_location = stage.position
+
             jpeg_path = os.path.join(
-                stack_dir,
-                f"{capture_count}.jpeg",
+                images_dir,
+                f"{stage_location['x']}_{stage_location['y']}_{stage_location['z']}.jpeg",
             )
-            capture._capture_and_save(
-                jpeg_path=jpeg_path,
+            image, metadata = capture._capture_image(
                 cam=cam,
-                logger=logger,
                 metadata_getter=metadata_getter,
             )
+            captures.append([jpeg_path, image, metadata])
+            sharpnesses.append(cam.grab_jpeg_size(stream_name="lores"))
+            heights.append(stage.position["z"])
+            capture_count += 1
 
             # If the stack isn't complete yet, move
-            if capture_count + 1 < images_to_capture:
-                stage.move_relative(z=stack_dz)
+            if capture_count >= images_to_test:
+                logger.info(sharpnesses[-images_to_test:])
+                stack_result = self.test_stack(sharpnesses[-images_to_test:])
 
-        self.copy_central_image_from_stack(images_dir, stack_dir)
+                if stack_result == "success":
+                    continue_stack = False
+                elif stack_result == "restart" or capture_count > 20:
+                    captures = []
+                    sharpnesses = []
+                    heights = []
+                    capture_count = 0
+                    stage.move_absolute(
+                        z=starting_height - stack_dz * (images_to_test - 1)
+                    )
+            stage.move_relative(z=stack_dz)
+
+        sharpest_index = np.argmax(sharpnesses[-images_to_test:])
+        capture._save_capture(
+            jpeg_path=captures[-images_to_test:][sharpest_index][0],
+            image=captures[-images_to_test:][sharpest_index][1],
+            metadata=captures[-images_to_test:][sharpest_index][2],
+            logger=logger,
+        )
+
+        return heights[-images_to_test:][sharpest_index]
 
     def copy_central_image_from_stack(
         self,
@@ -331,3 +384,22 @@ class AutofocusThing(Thing):
         xy_location = os.path.basename(stack_dir)
 
         shutil.copy(central_image, os.path.join(images_dir, f"{xy_location}.jpeg"))
+
+    def test_stack(self, sharpnesses: list):
+        """Test a list of sharpnesses, to decide whether the focal plane is within them"""
+        sharpest_index = np.argmax(sharpnesses)
+        sharpness_length = len(sharpnesses)
+
+        if sharpness_length == 1:
+            return "success"
+        if sharpness_length == 3:
+            if sharpest_index == 1:
+                return "success"
+
+        exclusion_range = 3
+
+        if sharpest_index < exclusion_range:
+            return "restart"
+        if sharpest_index >= len(sharpnesses) - exclusion_range:
+            return "continue"
+        return "success"
