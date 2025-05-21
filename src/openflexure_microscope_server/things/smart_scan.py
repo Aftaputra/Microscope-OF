@@ -932,7 +932,7 @@ class SmartScanThing(Thing):
             raise FileNotFoundError("No latest scan found")
 
         images_dir = self.images_dir_for_scan(self.latest_scan_name)
-        stitch_path = os.path.join(images_dir, "stitched_from_stage.jpg")
+        stitch_path = os.path.join(images_dir, "preview.jpg")
         if not os.path.isfile(stitch_path):
             raise FileNotFoundError("Latest scan has no preview stitch")
         return stitch_path
@@ -987,7 +987,7 @@ class SmartScanThing(Thing):
                 [
                     STITCHING_CMD,
                     "--stitching_mode",
-                    "only_stage_stitch",
+                    "preview_stitch",
                     "--minimum_overlap",
                     f"{min_overlap}",
                     self._ongoing_scan_images_dir,
@@ -1166,6 +1166,7 @@ class SmartScanThing(Thing):
             "stitched_from",
             "stitched.om",
             "stitching_correlations",
+            "preview.jp",
         ]
 
         with zipfile.ZipFile(zip_fname, mode="a") as scan_zip:
