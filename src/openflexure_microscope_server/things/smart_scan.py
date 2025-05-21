@@ -88,6 +88,7 @@ JPEGBlob = blob_type("image/jpeg")
 ZipBlob = blob_type("application/zip")
 IMG_DIR_NAME = "images"
 SCAN_DATA_FILENAME = "scan_data.json"
+STITCHING_CMD = "openflexure-stitch"
 
 SCAN_ZERO_PAD_DIGITS = 4
 
@@ -112,8 +113,7 @@ def _scan_running(method):
 
 
 class SmartScanThing(Thing):
-    def __init__(self, path_to_openflexure_stitch: str):
-        self._stitching_script = path_to_openflexure_stitch
+    def __init__(self):
         self._preview_stitch_popen = None
         self._preview_stitch_popen_lock = threading.Lock()
         self._scan_lock = threading.Lock()
@@ -588,6 +588,9 @@ class SmartScanThing(Thing):
         self._return_to_starting_position()
         self._perform_final_stitch()
 
+        # Remove any scan folders containing zero images
+        self.purge_empty_scans(logger=self._scan_logger)
+
     @_scan_running
     def _main_scan_loop(self):
         """
@@ -868,22 +871,26 @@ class SmartScanThing(Thing):
             404: {"description": "Scan not found"},
         },
     )
-    def delete_scan(self, scan_name: str) -> None:
-        """Delete all files from a scan.
+    def delete_scan(self, scan_name: str, logger: InvocationLogger) -> None:
+        """Delete the folder for the specified scan.
 
         This endpoint allows scans to be deleted from disk.
+
+        Takes the scan name to delete, and the Invocation Logger
         """
         path = os.path.join(self.base_scan_dir, scan_name)
         if not os.path.isdir(path):
-            print(f"can't find {path}")
-            raise HTTPException(404, "Scan not found")
-        shutil.rmtree(path)
+            logger.info(f"can't find {path}")
+            raise HTTPException(400, "Scan not found")
+        deleted_scan_success = self._delete_scan(path, logger)
+        if not deleted_scan_success:
+            raise HTTPException(400, "Couldn't delete scan, check log for details")
 
     @fastapi_endpoint(
         "delete",
         "scans",
     )
-    def delete_all_scans(self) -> None:
+    def delete_all_scans(self, logger: InvocationLogger) -> None:
         """Delete all the scans on the microscope
 
         **This will irreversibly remove all scanned data from the
@@ -891,7 +898,20 @@ class SmartScanThing(Thing):
         Use with extreme caution.
         """
         for scan in self.scans:
-            self.delete_scan(scan.name)
+            path = os.path.join(self.base_scan_dir, scan.name)
+            self._delete_scan(path, logger)
+
+    @thing_action
+    def _delete_scan(self, scan_path, logger: InvocationLogger) -> bool:
+        try:
+            shutil.rmtree(scan_path)
+            return True
+        except Exception as e:
+            logger.warning(
+                "Attempted to delete scan " + scan_path + ", which failed."
+                " Server sent response" + str(e)
+            )
+            return False
 
     @property
     def latest_preview_stitch_path(self):
@@ -958,7 +978,7 @@ class SmartScanThing(Thing):
         with self._preview_stitch_popen_lock:
             self._preview_stitch_popen = Popen(
                 [
-                    self._stitching_script,
+                    STITCHING_CMD,
                     "--stitching_mode",
                     "only_stage_stitch",
                     "--minimum_overlap",
@@ -1072,7 +1092,7 @@ class SmartScanThing(Thing):
         self.run_subprocess(
             logger,
             [
-                self._stitching_script,
+                STITCHING_CMD,
                 "--stitching_mode",
                 "all",
                 f"{tiff_arg}",
@@ -1179,3 +1199,26 @@ class SmartScanThing(Thing):
         """List the relative paths of all files and folders in the zip folder specified"""
         scan_zip = zipfile.ZipFile(zip_path)
         return [os.path.normpath(i) for i in scan_zip.namelist()]
+
+    @thing_action
+    def purge_empty_scans(self, logger: InvocationLogger) -> None:
+        """
+        Delete all scan folders containing no images at the top level
+        """
+        scan_list = self.scans
+
+        # Filter out scans with no top level files, ignoring JSON files
+        # JSON is ignored as it's created before any images are captured
+        for scan in scan_list:
+            scan_folder = os.path.join(self.base_scan_dir, scan.name, IMG_DIR_NAME)
+            images_found = False
+            for fname in os.listdir(scan_folder):
+                fpath = os.path.join(scan_folder, fname)
+                if os.path.isfile(fpath) and IMAGE_REGEX.search(fname):
+                    images_found = True
+                    # break as soon as an image is found.
+                    break
+
+            if not images_found:
+                path = os.path.join(self.base_scan_dir, scan.name)
+                self._delete_scan(path, logger)
