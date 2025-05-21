@@ -26,9 +26,16 @@
     >
       Download calibration data
     </button>
-    <p v-if="this.csmMatrix!='undefined'">Current CSM matrix: {{ csmMatrix }} at a resolution of {{ csmResolution }} <br>
-    This means that one motor step is roughly {{ csmRatio }} pixels <br>
-    The full field of view is roughly {{ csmFOV }} motor steps</p>
+    <div v-if="this.csmMatrix!='undefined'" style="margin:10px;">
+    <details><summary>Calibration Details</summary>
+    <strong>CSM calculated for images with a resolution of {{ csmResolution }}</strong>
+    <ul>
+    <li>Current CSM Matrix: <tt>{{ csmMatrix }}</tt></li>
+    <li>Pixels per motor step: {{ csmRatio }}</li>
+    <li>Full field of view: {{ csmFOV }} motor steps</li>
+    </ul>
+    </details>
+    </div>
   </div>
 </template>
 
