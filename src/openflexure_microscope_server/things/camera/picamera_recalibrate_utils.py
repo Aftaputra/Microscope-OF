@@ -30,6 +30,11 @@ picamera.lens_shading_table = lst
 ```
 """
 
+# Disable N806 & 803, which checks that all variables and args are lowercase.
+# This is due to the number of matrix calculations and colour channel
+# calculations that are clearer using the standard R, G, B, or L, Cr, Cb terms.
+# ruff: noqa: N806 N803
+
 from __future__ import annotations
 import gc
 import logging
@@ -41,6 +46,9 @@ from scipy.ndimage import zoom
 
 from picamera2 import Picamera2
 import picamera2
+
+
+LensShadingTables = tuple[np.ndarray, np.ndarray, np.ndarray]
 
 
 def load_default_tuning(cam: Picamera2) -> dict:
@@ -58,12 +66,13 @@ def load_default_tuning(cam: Picamera2) -> dict:
     try:
         return cam.load_tuning_file(fname)
     except RuntimeError:
-        dir = "/usr/share/libcamera/ipa/raspberrypi"  # from picamera2 v0.3.9
-        # The directory above has been removed from the search path, which I
+        tuning_dir = "/usr/share/libcamera/ipa/raspberrypi"
+        # from picamera2 v0.3.9
+        # The directory above has been removed from the search path seems
         # find odd - as that's where the files currently are on a default
         # Raspbian image. This may need updating if the files have moved
         # in future updates to the system libcamera package
-        return cam.load_tuning_file(fname, dir=dir)
+        return cam.load_tuning_file(fname, dir=tuning_dir)
 
 
 def set_minimum_exposure(camera: Picamera2):
@@ -312,9 +321,6 @@ def channels_from_bayer_array(bayer_array: np.ndarray) -> np.ndarray:
     return channels
 
 
-LensShadingTables = tuple[np.ndarray, np.ndarray, np.ndarray]
-
-
 def get_16x12_grid(chan: np.ndarray, dx: int, dy: int):
     """Compresses channel down to a 16x12 grid - from libcamera
 
@@ -527,8 +533,8 @@ def raw_channels_from_camera(camera: Picamera2) -> LensShadingTables:
     # raw_image is a 3D array, with full resolution and 3 colour channels.  No
     # de-mosaicing has been done, so 2/3 of the values are zero (3/4 for R and B
     # channels, 1/2 for green because there's twice as many green pixels).
-    format = camera.camera_configuration()["raw"]["format"]
-    print(f"Acquired a raw image in format {format}")
+    raw_format = camera.camera_configuration()["raw"]["format"]
+    print(f"Acquired a raw image in format {raw_format}")
     return channels_from_bayer_array(raw_image)
 
 
@@ -540,24 +546,3 @@ def recreate_camera_manager():
     del Picamera2._cm
     gc.collect()
     Picamera2._cm = picamera2.picamera2.CameraManager()
-
-
-if __name__ == "__main__":
-    """This block is untested but has been updated."""
-    with Picamera2() as cam:
-        tuning = load_default_tuning(cam)
-    f = np.ones((12, 16))
-    set_static_lst(tuning, f, f, f)
-    set_static_geq(tuning)
-    with Picamera2(tuning=tuning) as cam:
-        cam.start_preview()
-        time.sleep(3)
-        logging.info("Recalibrating...")
-        adjust_shutter_and_gain_from_raw(cam)
-        adjust_white_balance_from_raw(cam)
-        lst = lst_from_camera(cam)
-        set_static_lst(tuning, *lst)
-        logging.info("Done.")
-    with Picamera2(tuning=tuning) as cam:
-        cam.start_preview()
-        time.sleep(2)

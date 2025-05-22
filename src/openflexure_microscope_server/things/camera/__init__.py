@@ -7,11 +7,12 @@ See repository root for licensing information.
 """
 
 from __future__ import annotations
-import logging
 from typing import Literal, Optional, Tuple
+import json
 
 from pydantic import RootModel
 from PIL import Image
+import piexif
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.decorators import thing_action, thing_property
