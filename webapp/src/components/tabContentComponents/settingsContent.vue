@@ -63,6 +63,25 @@
         action="save_all_thing_settings"
         submit-label="Save All Settings"
       />
+    <div>
+      <button
+        v-show="'shutdown' in things.system_control.actions"
+        class="uk-button uk-button-primary uk-margin uk-margin-remove-top uk-width-1-1"
+        @click="systemRequest('shutdown')"
+      >
+        Shutdown
+      </button>
+    </div>
+
+    <div>
+      <button
+        v-show="'reboot' in things.system_control.actions"
+        class="uk-button uk-button-primary uk-margin uk-margin-remove-top uk-width-1-1"
+        @click="systemRequest('reboot')"
+      >
+        Restart
+      </button>
+    </div>
     </div>
     <div class="view-component uk-width-expand uk-padding-small">
       <tabContent
@@ -110,6 +129,7 @@
 </template>
 
 <script>
+import axios from "axios";
 import streamSettings from "./settingsComponents/streamSettings.vue";
 import cameraSettings from "./settingsComponents/cameraSettings.vue";
 import appSettings from "./settingsComponents/appSettings.vue";
@@ -135,6 +155,12 @@ export default {
     ActionButton
   },
 
+  computed: {
+    things: function() {
+      return this.$store.getters["wot/thingDescriptions"];
+    }
+  },
+
   data: function() {
     return {
       selected: "display",
@@ -147,6 +173,26 @@ export default {
       if (!(this.currentTab == tab)) {
         this.currentTab = tab;
       }
+    },
+    systemRequest: function(action) {
+      let message = "";
+      if (action == "reboot") {
+        message = "Restart microscope?"
+      }
+      else {
+        message = "Shutdown microscope?"
+      }
+      this.modalConfirm(message).then(
+        () => {
+          this.$store.commit("resetState");
+          this.$store.commit("wot/deleteAllThingDescriptions");
+          // Post and silence errors
+          axios
+            .post(this.thingActionUrl("system_control", action))
+            .catch(() => {});
+        },
+        () => {}
+      );
     }
   }
 };
