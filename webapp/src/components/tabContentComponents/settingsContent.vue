@@ -147,7 +147,7 @@ export default {
       if (!(this.currentTab == tab)) {
         this.currentTab = tab;
       }
-    },
+    }
   }
 };
 </script>
