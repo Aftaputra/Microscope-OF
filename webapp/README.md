@@ -18,11 +18,18 @@
 
 * Install Node.js (and npm)
 * Install dependencies with `npm install`
-* Node v18 changes SSL, and so you need `$env:NODE_OPTIONS = "--openssl-legacy-provider"` on Windows or `export NODE_OPTIONS=--openssl-legacy-provider` on Linux/MacOS for compatibility.
+* Node v18 changes SSL, and so you need a legacy version for compatibility:
+    * On Windows:  `$env:NODE_OPTIONS = "--openssl-legacy-provider"`
+    * On Linux/MacOS `export NODE_OPTIONS=--openssl-legacy-provider`
 * Build the static web app with `npm run build`
-* Serve a development version with `npm run serve`
 
-We generally run this on the Raspberry Pi (as that is where the Webapp is hosted). If this isn't suitable - for example, if you can't install Node on your microscope due to version conflicts or no internet connection - you can build it on your computer instead, and then copy over the contents of `..\src\openflexure_microscope_server\static` to your Pi (using scp or another file transfer method).
+# Developing
+
+When developing it is usefule t use the development server so Vue changes happen instantly without the need to rebuild. To start the development server run:
+
+    npm run serve
+
+You access the development server on a different port (it's printed on the command line when you run the above command).  This means that when it starts up you will need to tell it where the microscope server is, using the "override API origin" field in the page that pops up.  If you are running a test server on your computer, this is most likely `http://localhost:5000/`.
 
 ## VS Code and ESLint
 
