@@ -104,15 +104,15 @@ class SimulatedCamera(BaseCamera):
         """Generate an image with blobs based on supplied coordinates"""
         canvas_width, canvas_height, _ = self.canvas_shape
         image_width, image_height, _ = self.shape
-        pos = [x * RATIO for x in pos]
+        pos = tuple(x * RATIO for x in pos)
         top_left = (
             int(pos[0]) - image_width // 2 - canvas_width // 2,
             int(pos[1]) - image_height // 2 - canvas_height // 2,
         )
-        focused_image = self.canvas[
-            tuple(slice(top_left[i], top_left[i] + self.shape[i]) for i in range(2))
-            + (slice(None),)
-        ]
+        x_slice = slice(top_left[0], top_left[0] + self.shape[0])
+        y_slice = slice(top_left[1], top_left[1] + self.shape[0])
+        z_slice = slice(None)
+        focused_image = self.canvas[(x_slice, y_slice, z_slice)]
         image = gaussian_filter(
             focused_image,
             sigma=np.abs(pos[2]) / 5,
