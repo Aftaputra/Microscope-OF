@@ -30,6 +30,10 @@ from pydantic import RootModel
 from . import BaseCamera, JPEGBlob
 from ..stage import StageProtocol as Stage
 
+# The ratio between "motor" steps and pixels
+# higher related to a faster movement
+RATIO = 0.2
+
 
 class ArrayModel(RootModel):
     """A model for an array"""
@@ -98,13 +102,22 @@ class SimulatedCamera(BaseCamera):
 
     def generate_image(self, pos: tuple[int, int, int]):
         """Generate an image with blobs based on supplied coordinates"""
-        cw, ch, _ = self.canvas_shape
-        w, h, _ = self.shape
-        tl = (int(pos[0]) - w // 2 - cw // 2, int(pos[1]) - h // 2 - ch // 2)
-        image = gaussian_filter(self.canvas[
-            tuple(slice(tl[i], tl[i] + self.shape[i]) for i in range(2))
+        canvas_width, canvas_height, _ = self.canvas_shape
+        image_width, image_height, _ = self.shape
+        pos = [x * RATIO for x in pos]
+        top_left = (
+            int(pos[0]) - image_width // 2 - canvas_width // 2,
+            int(pos[1]) - image_height // 2 - canvas_height // 2,
+        )
+        focused_image = self.canvas[
+            tuple(slice(top_left[i], top_left[i] + self.shape[i]) for i in range(2))
             + (slice(None),)
-        ], sigma = np.abs(pos[2])/5, axes = (0,1))
+        ]
+        image = gaussian_filter(
+            focused_image,
+            sigma=np.abs(pos[2]) / 5,
+            axes=(0, 1),
+        )
         if image.shape != self.shape:
             raise ValueError(
                 f"Image shape {image.shape} does not match intended shape {self.shape}"
@@ -127,7 +140,7 @@ class SimulatedCamera(BaseCamera):
         except Exception as e:
             print(f"Failed to get stage position: {e}")
             pos = {"x": 0, "y": 0, "z": 0}
-        return self.generate_image((pos["y"]/10, pos["x"]/10, pos["z"]/10))
+        return self.generate_image((pos["y"], pos["x"], pos["z"]))
 
     def __enter__(self):
         self._capture_enabled = True
