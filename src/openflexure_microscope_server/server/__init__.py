@@ -45,6 +45,10 @@ def serve_from_cli(argv: Optional[list[str]] = None):
     log_config["loggers"]["uvicorn"]["propagate"] = True
     log_config["loggers"]["uvicorn.access"]["propagate"] = True
 
+    # Create server and config vars before trying to configure so they are defined
+    # if fallback is needed before they are set.
+    config = None
+    server = None
     try:
         config = cli.config_from_args(args)
         log_folder = config.get("log_folder", "./openflexure/logs")
