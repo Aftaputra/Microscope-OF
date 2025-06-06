@@ -171,8 +171,9 @@ export default {
   },
 
   mounted() {
-    //Define .at() as a custom function, for backwards compatibility with Connect
-    function at(n) {
+    //Define .from_index() as a custom function, working similar to .at()
+    //For backwards compatibility, not using in-built .at() until updates to Connect
+    function from_index(n) {
       // ToInteger() abstract op
       n = Math.trunc(n) || 0;
       // Allow negative indexing from the end
@@ -184,8 +185,8 @@ export default {
     }
   const TypedArray = Reflect.getPrototypeOf(Int8Array);
   for (const C of [Array, String, TypedArray]) {
-      Object.defineProperty(C.prototype, "at",
-        { value: at,
+      Object.defineProperty(C.prototype, "from_index",
+        { value: from_index,
           writable: true,
           enumerable: false,
           configurable: true });
@@ -318,14 +319,14 @@ export default {
               if (!this.progress) this.progress = 1;
               // Test whether the log is empty or the most recent message is not from an error
               // If so, return a default message
-              if (response.data.log.length == 0 | response.data.log.at(-1).levelname != "ERROR") {
+              if (response.data.log.length == 0 | response.data.log.from_index(-1).levelname != "ERROR") {
                 var message = "Unexpected error, please check the logs";
               }
               // As LabThings Actions add the message from any raised exception to the log, the
               // last message in the log is the message from the Exception.
               //If the Exception was raised with no message, use a default.
               else {
-                message = response.data.log.at(-1).message||"Unexpected error, please check the logs";
+                message = response.data.log.from_index(-1).message||"Unexpected error, please check the logs";
               }
               // Raise an Error with the chosen message
               reject(new Error(message));
