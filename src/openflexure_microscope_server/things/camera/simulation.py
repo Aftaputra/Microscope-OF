@@ -110,7 +110,7 @@ class SimulatedCamera(BaseCamera):
             int(pos[1]) - image_height // 2 - canvas_height // 2,
         )
         x_slice = slice(top_left[0], top_left[0] + self.shape[0])
-        y_slice = slice(top_left[1], top_left[1] + self.shape[0])
+        y_slice = slice(top_left[1], top_left[1] + self.shape[1])
         z_slice = slice(None)
         focused_image = self.canvas[(x_slice, y_slice, z_slice)]
         image = gaussian_filter(
