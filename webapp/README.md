@@ -29,7 +29,9 @@ When developing it is useful to use the development server so Vue changes happen
 
     npm run serve
 
-You access the development server on a different port (it's printed on the command line when you run the above command).  This means that when the webapp starts up you will need to tell it where the microscope server is, using the "override API origin" field in the page that pops up.  If you are running a test server on your computer, this is most likely `http://localhost:5000/`.
+The development server is accessed on a different port from the microscope API. The port to access the development server is printed on the command line when you run the above command.
+
+When the development webapp starts it cannot locate the microscope API as this is served by the microscope on port 5000. Instead it will present you with a page giving you the option to "override API origin". If you are running a development server on your computer, you should enter `http://localhost:5000/`.
 
 ## VS Code and ESLint
 
