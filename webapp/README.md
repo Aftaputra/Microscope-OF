@@ -25,11 +25,11 @@
 
 # Developing
 
-When developing it is usefule t use the development server so Vue changes happen instantly without the need to rebuild. To start the development server run:
+When developing it is useful to use the development server so Vue changes happen instantly without the need to rebuild. To start the development server run:
 
     npm run serve
 
-You access the development server on a different port (it's printed on the command line when you run the above command).  This means that when it starts up you will need to tell it where the microscope server is, using the "override API origin" field in the page that pops up.  If you are running a test server on your computer, this is most likely `http://localhost:5000/`.
+You access the development server on a different port (it's printed on the command line when you run the above command).  This means that when the webapp starts up you will need to tell it where the microscope server is, using the "override API origin" field in the page that pops up.  If you are running a test server on your computer, this is most likely `http://localhost:5000/`.
 
 ## VS Code and ESLint
 
