@@ -1,3 +1,17 @@
+# [v3.0.0-beta1](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.11.0...v3.0.0-alpha1)
+
+This is the first alpha release of a almost total overhaul of the server, and the underlying LabThings framework. Some highlights are:
+
+* Moved to underlying architecture based on labthings-fastapi. This allows each component of the microscope to be a "Thing", which can interact with each other.
+* Current "Things" are camera, stage, autofocus, smart_scan background_detect, auto_recentre_stage, capture, settings_manager, system_control and test
+* Overhaul of scanning, removing the predetermined, rectangular area in favour of exploring the sample indefinitely by appending neighbouring xy sites after each capture
+* Background detect Thing optionally uses the colour distribution of a user-set "background" image to determine if the field of view is sample or background, and plan future scanning accordingly
+* Stitching from openflexure-stitching now part of the scanning protocol, displaying a live updating preview of the current scan, and optionally producing a high res stitched JPEG, DZI and/or TIFF at the end of the scan
+* A DZI viewer in the scan tab, allowing stitched images to be opened from within the GUI
+* Webapp updates - scan tab added showing thumbnail preview + image count + scan times, gallery removed, tour removed, power tab added,
+* Updated to numpy 2
+* Automatically delete empty scans
+
 # [v2.11.0](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.10.1...v2.11.0) (2022-08-08)
 ## New features
 * Background detection can now be used in scans, if you have the background-detect extension. ([!153](https://gitlab.com/openflexure/openflexure-microscope-server/-/merge_requests/153))
