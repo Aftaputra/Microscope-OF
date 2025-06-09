@@ -58,7 +58,7 @@ meta-build-image:
     - tags
     - web
 
-# Check webapp and server hav matching version string
+# Check webapp and server have matching version string
 version-check:
   stage: analysis
   #use a base python image as nothing needs to be installed
