@@ -111,8 +111,8 @@ select = [
 #    "RET", # Consistent clear return statments
     "RSE", # Raise parentheses
 #    "SIM", # Simplifications detected
-#    "ARG", # unused arguments
-#    "C90", # McCabe complexity!
+    "ARG", # unused arguments
+    "C90", # McCabe complexity!
     "NPY", # Numpy linting
     "N", # PEP8 naming
 #    "DOC", # Enforce argument, return, and raise to be mentioned in docstrings there is
