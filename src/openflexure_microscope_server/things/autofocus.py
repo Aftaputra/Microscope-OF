@@ -12,8 +12,6 @@ import logging
 import time
 from typing import Annotated, Mapping, Optional, Sequence
 import os
-import shutil
-import glob
 
 from fastapi import Depends
 import numpy as np
@@ -297,6 +295,7 @@ class AutofocusThing(Thing):
         metadata_getter: GetThingStates,
         capture: CaptureDep,
         images_dir: str,
+        sharpness_monitor: SharpnessMonitorDep,
     ) -> None:
         """Run a z stack, saving all images to stack_dir and copying the
         central image to stack_dir"""
@@ -355,9 +354,16 @@ class AutofocusThing(Thing):
                     sharpnesses = []
                     heights = []
                     capture_count = 0
-                    stage.move_absolute(
-                        z=starting_height - stack_dz * (images_to_test - 1)
+                    stage.move_absolute(z=starting_height - stack_z_range)
+                    self.looping_autofocus(
+                        stage=stage,
+                        sharpness_monitor=sharpness_monitor,
+                        dz=2000,
                     )
+                    stage.move_relative(
+                        z=-(overshoot + backlash_correction + stack_z_range / 2)
+                    )
+                    stage.move_relative(z=backlash_correction)
             stage.move_relative(z=stack_dz)
 
         sharpest_index = np.argmax(sharpnesses[-images_to_test:])
@@ -369,21 +375,6 @@ class AutofocusThing(Thing):
         )
 
         return heights[-images_to_test:][sharpest_index]
-
-    def copy_central_image_from_stack(
-        self,
-        images_dir: str,
-        stack_dir: str,
-    ):
-        """Gets a list of images in a folder (stack_dir), sorts them, and copies the central image
-        to images dir."""
-        image_list = glob.glob(os.path.join(stack_dir, "*"))
-        image_list.sort()
-        central_index = (len(image_list) - 1) // 2
-        central_image = image_list[central_index]
-        xy_location = os.path.basename(stack_dir)
-
-        shutil.copy(central_image, os.path.join(images_dir, f"{xy_location}.jpeg"))
 
     def test_stack(self, sharpnesses: list):
         """Test a list of sharpnesses, to decide whether the focal plane is within them"""
