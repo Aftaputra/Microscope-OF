@@ -108,7 +108,7 @@ select = [
 #    "LOG", # Flake8 logging issues (pedantic logger formatting issues can be added with "G")
 #    "T20", # Warns for print statments, production code should log
 #    "PT", # pytest linting
-#    "RET", # Consistent clear return statments
+    "RET", # Consistent clear return statments
     "RSE", # Raise parentheses
 #    "SIM", # Simplifications detected
     "ARG", # unused arguments
