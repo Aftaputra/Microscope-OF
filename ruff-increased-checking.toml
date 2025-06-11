@@ -32,6 +32,7 @@ select = [
     "NPY", # Numpy linting
     "N", # PEP8 naming
     "D", # Docstring checks these may need to be added gradually
+    "ERA001", # Commented out code!
 ]
 
 # Line length is set to 88 for ruff. This is what the formatter aims for
