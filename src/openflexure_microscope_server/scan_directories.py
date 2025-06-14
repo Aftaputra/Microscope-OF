@@ -78,7 +78,7 @@ class ScanDirectoryManager:
         """
         file_path = os.path.join(self.path_for(scan_name), filename)
         if check_exists:
-            if not os.path.exists:
+            if not os.path.exists(file_path):
                 return None
         return file_path
 
@@ -92,7 +92,7 @@ class ScanDirectoryManager:
         """
         file_path = os.path.join(self.img_dir_for(scan_name), filename)
         if check_exists:
-            if not os.path.exists:
+            if not os.path.exists(file_path):
                 return None
         return file_path
 
@@ -106,7 +106,7 @@ class ScanDirectoryManager:
 
         all_info: list[ScanInfo] = []
         for scan_name in self.all_scans:
-            all_info.append(ScanDirectory(scan_name, self.base_dir).scan_info)
+            all_info.append(ScanDirectory(scan_name, self.base_dir).scan_info())
         return all_info
 
     def _unique_scan_name(self, scan_name: str) -> str:
@@ -220,7 +220,7 @@ class ScanDirectory:
     @property
     def dir_path(self) -> str:
         """The full path to the scan directory"""
-        os.path.join(self._base_scan_dir, self._name)
+        return os.path.join(self._base_scan_dir, self._name)
 
     @property
     def images_dir(self) -> Optional[str]:
@@ -291,17 +291,21 @@ class ScanDirectory:
         """
 
         zip_fname = os.path.join(self.dir_path, "images.zip")
-        # get a list of files in the existing zip
-        zip_files = get_files_in_zip(zip_fname)
+
+        if os.path.isfile(zip_fname):
+            # get a list of files in the existing zip
+            zip_files = get_files_in_zip(zip_fname)
+        else:
+            zip_files = []
 
         with zipfile.ZipFile(zip_fname, mode="a") as scan_zip:
             for file in self.all_files():
                 # Don't zip zipfiles, or files in the zip
                 if file.endswith(".zip") or file in zip_files:
-                    break
+                    continue
                 # If this is not the final version, then only zip image files.
                 if not final_version and not IMAGE_REGEX.search(file):
-                    break
+                    continue
 
                 scan_zip.write(os.path.join(self.dir_path, file), arcname=file)
         return zip_fname
