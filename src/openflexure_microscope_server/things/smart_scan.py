@@ -48,6 +48,10 @@ STITCHING_CMD = "openflexure-stitch"
 STITCHING_RESOLUTION = (820, 616)
 
 
+class ScanNotRunningError(RuntimeError):
+    """Method called when scan not running that requires a scan to be running"""
+
+
 def _scan_running(method):
     """
     This decorator is used by all methods in SmartScanThing that are using
@@ -60,7 +64,7 @@ def _scan_running(method):
         # Only start the method is the scan logger is set
         if self._scan_logger is not None:
             return method(self, *args, **kwargs)
-        raise RuntimeError(
+        raise ScanNotRunningError(
             "Calling a @scan_running method can only be done while a scan is running!"
         )
 
@@ -665,7 +669,7 @@ class SmartScanThing(Thing):
         "scans/{scan_name}",
         responses={
             200: {"description": "Successfully deleted scan"},
-            404: {"description": "Scan not found"},
+            400: {"description": "Scan not deleted does"},
         },
     )
     def delete_scan(self, scan_name: str, logger: InvocationLogger) -> None:
