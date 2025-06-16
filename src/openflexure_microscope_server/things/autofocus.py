@@ -368,14 +368,20 @@ class AutofocusThing(Thing):
                     stage.move_relative(z=BACKLASH_CORRECTION)
             stage.move_relative(z=stack_dz)
 
+        # Find the range of images from the stack to capture
         sharpest_index = np.argmax(sharpnesses[-images_to_test:])
+        stack_extent = int((images_to_capture - 1) / 2)
+        stack_range = range(sharpest_index - stack_extent, sharpest_index + stack_extent + 1)
+        logger.info(stack_range)
 
-        capture._save_capture(
-            jpeg_path=captures[-images_to_test:][sharpest_index][0],
-            image=captures[-images_to_test:][sharpest_index][1],
-            metadata=captures[-images_to_test:][sharpest_index][2],
-            logger=logger,
-        )
+        # Loop through the range, saving each capture to disk
+        for capture_index in stack_range:
+            capture._save_capture(
+                jpeg_path=captures[-images_to_test:][capture_index][0],
+                image=captures[-images_to_test:][capture_index][1],
+                metadata=captures[-images_to_test:][capture_index][2],
+                logger=logger,
+            )
 
         return heights[-images_to_test:][sharpest_index]
 
