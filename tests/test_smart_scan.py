@@ -14,6 +14,7 @@ For these tests to reliably represent real behaviour the mock Things will need t
 be tested for matching signatures with dynamically generated clients.
 """
 
+from typing import Callable, Optional
 import tempfile
 import os
 import shutil
@@ -26,6 +27,11 @@ from openflexure_microscope_server.things.smart_scan import (
     SmartScanThing,
     ScanNotRunningError,
 )
+
+from .mock_things.mock_csm import MockCSMThing
+from .mock_things.mock_autofocus import MockAutoFocusThing
+from .mock_things.mock_stage import MockStageThing
+from .mock_things.mock_background_detect import MockBackgoundDetectThing
 
 # A global logger to pass in as an Invocation Logger
 LOGGER = logging.getLogger("mock-invocation_logger")
@@ -135,3 +141,117 @@ def test_delete_all_scans(smart_scan_thing, caplog):
             assert not os.path.exists(fake_scan_path)
         # No logs generated
         assert len(caplog.records) == 0
+
+
+def _run_only_outer_scan(adjust_inital_state: Optional[Callable] = None):
+    """
+    Create a subclass of SmartScanThing to mock _run_scan and run sample_scan
+
+    This should do all the set up for a scan, move into the mocked
+    _run_scan method where this can be tested. Once this is done
+    the final scan behaviour can be tested too.
+
+    adjust_initial_scan is a callable which accepts the mocked smart scan thing
+    as the only variable. It can be used to adjust the initial state of the test
+
+
+    This seems hard to do with a fixture so it is being done with a private
+    function
+    """
+
+    # cancel handle shouldn't be used. Set to arbitrary value for checking
+    cancel_mock = 1  # not called
+    af_mock = MockAutoFocusThing()
+    stage_mock = MockStageThing()
+    cam_mock = 4  # not called
+    meta_mock = 5  # not called
+    csm_mock = MockCSMThing()
+    bkgrnd_det_mock = MockBackgoundDetectThing()
+
+    class MockedSmartScanThing(SmartScanThing):
+        """
+        This is a subclass of SmartScanThing with a mocked method and
+        mocked thing_settings.
+        """
+
+        # Counter for checking functions were called
+        mock_call_count = {"_run_scan": 0}
+
+        # Mock thing settngs as a dictionary
+        thing_settings = {"skip_background": True}
+
+        def _run_scan(self):
+            self.mock_call_count["_run_scan"] += 1
+
+            """Check scan vars are set up as expected"""
+            assert not self._scan_lock.acquire(timeout=0.1)
+            assert self._cancel is cancel_mock
+            assert self._scan_logger is LOGGER
+            assert self._autofocus is af_mock
+            assert self._stage is stage_mock
+            assert self._cam is cam_mock
+            assert self._metadata_getter is meta_mock
+            assert self._csm is csm_mock
+            assert self._background_detect is bkgrnd_det_mock
+            assert self._capture_thread is None
+            assert self._scan_images_taken == 0
+
+    # mock smart scan thing
+    mock_ss_thing = MockedSmartScanThing(SCAN_DIR)
+
+    if adjust_inital_state is not None:
+        adjust_inital_state(mock_ss_thing)
+
+    exec_info = None
+    try:
+        mock_ss_thing.sample_scan(
+            cancel=cancel_mock,  # Shouldn't be used, can be checked
+            logger=LOGGER,
+            autofocus=af_mock,
+            stage=stage_mock,
+            cam=cam_mock,
+            metadata_getter=meta_mock,
+            csm=csm_mock,
+            background_detect=bkgrnd_det_mock,
+            scan_name="FooBar",
+        )
+    except Exception as e:
+        exec_info = e
+
+    assert mock_ss_thing._scan_lock.acquire(timeout=0.1)
+    mock_ss_thing._scan_lock.release()
+    assert mock_ss_thing._cancel is None
+    assert mock_ss_thing._scan_logger is None
+    assert mock_ss_thing._autofocus is None
+    assert mock_ss_thing._stage is None
+    assert mock_ss_thing._cam is None
+    assert mock_ss_thing._metadata_getter is None
+    assert mock_ss_thing._csm is None
+    assert mock_ss_thing._background_detect is None
+    assert mock_ss_thing._capture_thread is None
+    assert mock_ss_thing._scan_images_taken is None
+
+    # Return the mock thing for further state testing, and the
+    # exec_info of any uncaught exeptions that were raised
+    return mock_ss_thing, exec_info
+
+
+def test_outer_scan():
+    """Test setup and teardown of the scan."""
+    mock_ss_thing, exec_info = _run_only_outer_scan()
+    assert exec_info is None
+    # Checked the mocked _run_scan was run exactly once
+    assert mock_ss_thing.mock_call_count["_run_scan"] == 1
+
+
+def test_outer_scan_wo_scample_skip():
+    """Test setup and teardown of the scan."""
+
+    def _set_skip_background(mock_ss_thing):
+        mock_ss_thing.thing_settings["skip_background"] = False
+
+    mock_ss_thing, exec_info = _run_only_outer_scan(_set_skip_background)
+
+    assert exec_info is None
+    # Checked the mocked _run_scan was run exactly once
+    assert mock_ss_thing.mock_call_count["_run_scan"] == 1

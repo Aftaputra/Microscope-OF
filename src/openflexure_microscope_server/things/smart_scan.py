@@ -138,7 +138,9 @@ class SmartScanThing(Thing):
         self._capture_thread = None
         self._scan_images_taken = 0
 
-        # Don't set self._scan_data dictionary. This is done at the start of _run_scan
+        # Set _scan_data to None. It will for error checking. It will be set to a value
+        # by _run_scan
+        self._scan_data = None
 
         try:
             self._check_background_and_csm_set()
