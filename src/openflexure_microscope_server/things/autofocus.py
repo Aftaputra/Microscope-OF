@@ -33,6 +33,7 @@ from .capture import CaptureThing
 CaptureDep = direct_thing_client_dependency(CaptureThing, "/capture/")
 
 SETTLING_TIME = 0.3
+BACKLASH_CORRECTION = 250
 
 
 class JPEGSharpnessMonitor:
@@ -294,8 +295,8 @@ class AutofocusThing(Thing):
         logger: InvocationLogger,
         metadata_getter: GetThingStates,
         capture: CaptureDep,
-        images_dir: str,
         sharpness_monitor: SharpnessMonitorDep,
+        images_dir: str,
     ) -> None:
         """Run a z stack, saving all images to stack_dir and copying the
         central image to stack_dir"""
@@ -312,10 +313,11 @@ class AutofocusThing(Thing):
 
         stack_z_range = stack_dz * (images_to_test - 1)
         overshoot = stack_dz * 5
-        backlash_correction = 250
 
-        stage.move_relative(z=-(overshoot + backlash_correction + stack_z_range / 2))
-        stage.move_relative(z=backlash_correction)
+        # Move down by the height of the z stack, plus an overshoot
+        # Better to start too low and take too many images than too high and need to refocus
+        stage.move_relative(z=-(overshoot + BACKLASH_CORRECTION + stack_z_range / 2))
+        stage.move_relative(z=BACKLASH_CORRECTION)
 
         continue_stack = True
         captures = []
@@ -326,7 +328,6 @@ class AutofocusThing(Thing):
 
         while continue_stack:
             time.sleep(SETTLING_TIME)
-
             stage_location = stage.position
 
             jpeg_path = os.path.join(
@@ -344,11 +345,12 @@ class AutofocusThing(Thing):
 
             # If the stack isn't complete yet, move
             if capture_count >= images_to_test:
-                logger.info(sharpnesses[-images_to_test:])
                 stack_result = self.test_stack(sharpnesses[-images_to_test:])
 
                 if stack_result == "success":
                     continue_stack = False
+
+                # These are signs of overshooting. Autofocus and retry
                 elif stack_result == "restart" or capture_count > 20:
                     captures = []
                     sharpnesses = []
@@ -361,12 +363,13 @@ class AutofocusThing(Thing):
                         dz=2000,
                     )
                     stage.move_relative(
-                        z=-(overshoot + backlash_correction + stack_z_range / 2)
+                        z=-(overshoot + BACKLASH_CORRECTION + stack_z_range / 2)
                     )
-                    stage.move_relative(z=backlash_correction)
+                    stage.move_relative(z=BACKLASH_CORRECTION)
             stage.move_relative(z=stack_dz)
 
         sharpest_index = np.argmax(sharpnesses[-images_to_test:])
+
         capture._save_capture(
             jpeg_path=captures[-images_to_test:][sharpest_index][0],
             image=captures[-images_to_test:][sharpest_index][1],
@@ -377,20 +380,24 @@ class AutofocusThing(Thing):
         return heights[-images_to_test:][sharpest_index]
 
     def test_stack(self, sharpnesses: list):
-        """Test a list of sharpnesses, to decide whether the focal plane is within them"""
+        """Test a list of sharpnesses, to decide whether the sharpest image from a stack is within them"""
         sharpest_index = np.argmax(sharpnesses)
         sharpness_length = len(sharpnesses)
 
+        # If only testing one image, assume focus succeeded
         if sharpness_length == 1:
             return "success"
+        # If testing three images, test if the centre is the sharpest
         if sharpness_length == 3:
             if sharpest_index == 1:
                 return "success"
 
-        exclusion_range = 3
+        # For larger stacks, test if the best image is not within two of the edge of the stack
+        # ie for a stack of 7 images, best image must be between 3rd and and 5th
+        exclusion_range = 2
 
         if sharpest_index < exclusion_range:
             return "restart"
-        if sharpest_index >= len(sharpnesses) - exclusion_range:
+        if sharpest_index >= sharpness_length - exclusion_range:
             return "continue"
         return "success"
