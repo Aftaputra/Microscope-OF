@@ -387,7 +387,14 @@ class AutofocusThing(Thing):
         return heights[-images_to_test:][sharpest_index]
 
     def test_stack(self, sharpnesses: list):
-        """Test a list of sharpnesses, to decide whether the sharpest image from a stack is within them"""
+        """Test a list of sharpnesses, to decide whether the sharpest image from a stack is within them
+        
+        Returns a string
+        'success' if the sharpest image is towards the centre
+        'continue' if the sharpest image is in the final two images of the list
+        'restart' if the sharpest image is in the first two images of the list
+        """
+        
         sharpest_index = np.argmax(sharpnesses)
         sharpness_length = len(sharpnesses)
 
