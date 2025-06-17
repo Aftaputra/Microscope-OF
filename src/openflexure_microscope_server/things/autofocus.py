@@ -297,6 +297,7 @@ class AutofocusThing(Thing):
         capture: CaptureDep,
         sharpness_monitor: SharpnessMonitorDep,
         images_dir: str,
+        autofocus_dz: int,
     ) -> None:
         """Run a z stack, saving all images to stack_dir and copying the
         central image to stack_dir"""
@@ -360,7 +361,7 @@ class AutofocusThing(Thing):
                     self.looping_autofocus(
                         stage=stage,
                         sharpness_monitor=sharpness_monitor,
-                        dz=2000,
+                        dz=autofocus_dz,
                     )
                     stage.move_relative(
                         z=-(overshoot + BACKLASH_CORRECTION + stack_z_range / 2)

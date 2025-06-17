@@ -646,6 +646,7 @@ class SmartScanThing(Thing):
 
             focused_height = self._autofocus.run_z_stack(
                 images_dir=self._ongoing_scan_images_dir,
+                autofocus_dz = self._scan_data['autofocus_dz']
             )
 
             current_pos_xyz = (
