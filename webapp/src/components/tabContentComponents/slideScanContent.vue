@@ -40,6 +40,13 @@
               </div>
               <div class="uk-margin">
                 <propertyControl
+                  thing-name="autofocus"
+                  property-name="stack_images_to_test"
+                  label="Images in Stack to Test"
+                />
+              </div>
+              <div class="uk-margin">
+                <propertyControl
                   thing-name="smart_scan"
                   property-name="overlap"
                   label="Image Overlap (0-1)"
