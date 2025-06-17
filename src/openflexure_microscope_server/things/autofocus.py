@@ -372,8 +372,9 @@ class AutofocusThing(Thing):
         # Find the range of images from the stack to capture
         sharpest_index = np.argmax(sharpnesses[-images_to_test:])
         stack_extent = int((images_to_capture - 1) / 2)
-        stack_range = range(sharpest_index - stack_extent, sharpest_index + stack_extent + 1)
-        logger.info(stack_range)
+        stack_range = range(
+            sharpest_index - stack_extent, sharpest_index + stack_extent + 1
+        )
 
         # Loop through the range, saving each capture to disk
         for capture_index in stack_range:
@@ -388,13 +389,13 @@ class AutofocusThing(Thing):
 
     def test_stack(self, sharpnesses: list):
         """Test a list of sharpnesses, to decide whether the sharpest image from a stack is within them
-        
+
         Returns a string
         'success' if the sharpest image is towards the centre
         'continue' if the sharpest image is in the final two images of the list
         'restart' if the sharpest image is in the first two images of the list
         """
-        
+
         sharpest_index = np.argmax(sharpnesses)
         sharpness_length = len(sharpnesses)
 

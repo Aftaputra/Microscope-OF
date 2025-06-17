@@ -620,8 +620,6 @@ class SmartScanThing(Thing):
             self._manage_stitching_threads()
 
             next_pos_xy, z_est = route_planner.get_next_location_and_z_estimate()
-            self._scan_logger.info(z_est)
-            self._scan_logger.info(self._stage.position["z"])
             new_pos_xyz = self._move_to_next_point(next_pos_xy, z_est)
             current_pos_xyz = (
                 new_pos_xyz[0],
@@ -646,7 +644,7 @@ class SmartScanThing(Thing):
 
             focused_height = self._autofocus.run_z_stack(
                 images_dir=self._ongoing_scan_images_dir,
-                autofocus_dz = self._scan_data['autofocus_dz']
+                autofocus_dz=self._scan_data["autofocus_dz"],
             )
 
             current_pos_xyz = (
