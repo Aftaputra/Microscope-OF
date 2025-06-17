@@ -21,6 +21,8 @@
 
 <!-- To access your microscope log, either:
 
+* In the webapp, open the "Logging" tab, and click "Download log file" in the top right corner
+
 * Run `ofm log` on your microscope, and copy/paste the output here
 
 * Go to `http://<your microscope IP>:5000/logfile`, download the log file, and attach it here using the "Attach a File" button below
