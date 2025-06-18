@@ -174,8 +174,8 @@ class ScanPlanner:
 
         next_location = self._remaining_locations[0]
 
-        # If focussed locations exist return closest location, favouring most recent
-        closest_pos = self.closest_focus_site(next_location)
+        # If focussed locations exist, return the neighbour with the lowest z position
+        closest_pos = self.select_nearby_focus_site(next_location)
         if closest_pos is None:
             z = None
         else:
@@ -183,7 +183,7 @@ class ScanPlanner:
 
         return next_location, z
 
-    def closest_focus_site(self, xy_pos: XYPos) -> Optional[XYZPos]:
+    def select_nearby_focus_site(self, xy_pos: XYPos) -> Optional[XYZPos]:
         """
         Return the xyz position of the closest site where focus was achieved
         to the input xy_position, with the most recently taken image returned in
@@ -202,12 +202,20 @@ class ScanPlanner:
         # Note linalg.norm always uses float64
         dists = np.linalg.norm((path_pos - current_pos), axis=1)
 
-        # Get indices of all minima.
+        # Get indices of all focused sites within 1.6x the minimum distance.
+        # 1.6x chosen as it includes offsets in x and y on the Picamera2 aspect ratio
         # Note np.where always returns a tuple of arrays, hence the trailing [0]
-        indices = np.where(dists == np.min(dists))[0]
+        indices = np.where(dists <= 1.6 * np.min(dists))[0]
 
-        # The last index is most recent
-        return self._focused_locations[indices[-1]]
+        # Turning into an array allows slicing based on a list
+        focused_locations_array = np.array(self._focused_locations)
+
+        # Choose the lowest (smallest z) of the neighbouring sites. Smart stack works best
+        # if started too low, so the lowest z will perform best
+        chosen_focused_site = min(focused_locations_array[indices], key=lambda x: x[-1])
+
+        # Convert back into list so values are of type int instead of np.int32
+        return chosen_focused_site.tolist()
 
     def mark_location_visited(
         self, xyz_pos: XYZPos, imaged: bool, focused: bool
