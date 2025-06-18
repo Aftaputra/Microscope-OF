@@ -13,10 +13,10 @@ from uuid import UUID, uuid4
 from fastapi import Depends, HTTPException, Request
 from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.thing import Thing
-from labthings_fastapi.decorators import thing_action, thing_property
+from labthings_fastapi.decorators import thing_action, thing_property, thing_setting
+from labthings_fastapi.descriptors import ThingSetting
 from labthings_fastapi.dependencies.thing_server import find_thing_server
 from labthings_fastapi.server import ThingServer
-from labthings_fastapi.dependencies.invocation import InvocationLogger
 
 
 def thing_server_from_request(request: Request) -> ThingServer:
@@ -49,10 +49,17 @@ def nested_dict_get(data: dict, key: Sequence[str], create=False) -> Any:
 
 
 class SettingsManager(Thing):
-    @thing_property
-    def external_metadata(self) -> Mapping:
-        """External metadata stored in the server's settings"""
-        return self.thing_settings.get("external_metadata", {})
+    external_metadata = ThingSetting(
+        initial_value={},
+        model=Mapping,
+        description="External metadata stored in the server's settings",
+    )
+
+    external_metadata_in_state = ThingSetting(
+        initial_value=[],
+        model=Sequence[str],
+        description='A list of strings that are included in the "state" metadata',
+    )
 
     @thing_action
     def update_external_metadata(
@@ -75,7 +82,7 @@ class SettingsManager(Thing):
         if key:
             subdict = nested_dict_get(subdict, key.split("/"), create=True)
         recursive_update(subdict, data)
-        self.thing_settings["external_metadata"] = metadata
+        self.external_metadata = metadata
 
     @thing_action
     def delete_external_metadata(self, key: str) -> None:
@@ -93,14 +100,21 @@ class SettingsManager(Thing):
             raise HTTPException(
                 status_code=404, detail="The specified key '{key}' was not found"
             )
-        self.thing_settings["external_metadata"] = metadata
+        self.external_metadata = metadata
 
-    @thing_property
+    _microscope_id: Optional[str] = None
+
+    @thing_setting
     def microscope_id(self) -> UUID:
         """A unique identifier for this microscope"""
-        if "microscope_id" not in self.thing_settings:
-            self.thing_settings["microscope_id"] = str(uuid4())
-        return UUID(self.thing_settings["microscope_id"])
+        if self._microscope_id is None:
+            self._microscope_id = str(uuid4())
+        return UUID(self._microscope_id)
+
+    @microscope_id.setter
+    def microscope_id(self, uuid: UUID):
+        # TODO make read only but still settable from disk
+        self._microscope_id = uuid
 
     @thing_property
     def hostname(self) -> str:
@@ -111,16 +125,6 @@ class SettingsManager(Thing):
     def get_things_state(self, metadata_getter: GetThingStates) -> Mapping:
         """Metadata summarising the current state of all Things in the server"""
         return metadata_getter()
-
-    @thing_property
-    def external_metadata_in_state(self) -> Sequence[str]:
-        """A list of strings that are included in the "state" metadata"""
-        return self.thing_settings.get("external_metadata_in_state", [])
-
-    @external_metadata_in_state.setter
-    def external_metadata_in_state(self, keys: Sequence[str]):
-        """Set the keys from external metadata that are returned in state"""
-        self.thing_settings["external_metadata_in_state"] = keys
 
     @property
     def thing_state(self) -> Mapping:
@@ -138,29 +142,3 @@ class SettingsManager(Thing):
             except KeyError:
                 continue
         return state
-
-    @thing_action
-    def save_all_thing_settings(
-        self, thing_server: ThingServerDep, logger: InvocationLogger
-    ) -> None:
-        """Ensure all the Things sync their settings to disk.
-
-        Normally, each Thing has a `thing_settings` attribute that can be
-        used to save settings. That dictionary is saved to a JSON file
-        when the server shuts down cleanly.
-
-        This action causes all the `thing_settings` dictionaries to be
-        saved to files immediately, meaning that settings will not be
-        lost in the event of a server crash, power outage, etc.
-        """
-        for name, thing in thing_server.things.items():
-            try:
-                if thing._labthings_thing_settings:
-                    thing._labthings_thing_settings.write_to_file()
-                    logger.info(f"Wrote {name} settings to disk.")
-            except PermissionError:
-                logger.warning(
-                    f"Could not write {name} settings to disk: permission error."
-                )
-            except FileNotFoundError:
-                logger.warning(f"Could not write {name} settings, folder not found")

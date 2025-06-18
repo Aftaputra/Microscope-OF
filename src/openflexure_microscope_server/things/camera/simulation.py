@@ -115,9 +115,11 @@ class SimulatedCamera(BaseCamera):
             )
         return image
 
-    def attach_to_server(self, server: ThingServer, path: str):
+    def attach_to_server(
+        self, server: ThingServer, path: str, setting_storage_path: str
+    ):
         self._server = server
-        return super().attach_to_server(server, path)
+        return super().attach_to_server(server, path, setting_storage_path)
 
     def get_stage_position(self):
         if not self._stage and self._server:

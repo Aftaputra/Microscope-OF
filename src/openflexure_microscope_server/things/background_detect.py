@@ -6,7 +6,8 @@ from pydantic import BaseModel
 from scipy.stats import norm
 
 from labthings_fastapi.thing import Thing
-from labthings_fastapi.decorators import thing_action, thing_property
+from labthings_fastapi.decorators import thing_action, thing_setting
+from labthings_fastapi.descriptors import ThingSetting
 from .camera import CameraDependency as CamDep
 
 
@@ -17,38 +18,44 @@ class ChannelDistributions(BaseModel):
 
 
 class BackgroundDetectThing(Thing):
-    @thing_property
+    # Requires a getter and a setter to support being a BaseModel but being
+    # saved to file as a dict
+    _background_distributions: Optional[ChannelDistributions] = None
+
+    @thing_setting
     def background_distributions(self) -> Optional[ChannelDistributions]:
         """The statistics of the background image"""
-        bd = self.thing_settings.get("background_distributions", None)
-        if bd:
-            return ChannelDistributions(**bd)
-        return None
+        bd = self._background_distributions
+        if bd is None:
+            return None
+        return ChannelDistributions(**bd)
 
     @background_distributions.setter
-    def background_distributions(self, value: Optional[ChannelDistributions]) -> None:
-        try:
-            self.thing_settings["background_distributions"] = value.model_dump()
-        except AttributeError:
-            self.thing_settings["background_distributions"] = None
+    def background_distributions(
+        self, value: Optional[ChannelDistributions | dict]
+    ) -> None:
+        if value is None:
+            self._background_distributions = None
+        elif isinstance(value, ChannelDistributions):
+            self._background_distributions = value.model_dump()
+        elif isinstance(value, dict):
+            self._background_distributions = value
+        else:
+            raise TypeError(
+                f"Cannot set background_distributions with an object of type {type(value)}"
+            )
 
-    @thing_property
-    def tolerance(self) -> float:
-        """How many standard deviations to allow for the background"""
-        return self.thing_settings.get("tolerance", 7)
+    tolerance = ThingSetting(
+        initial_value=7.0,
+        model=float,
+        description="How many standard deviations to allow for the background",
+    )
 
-    @tolerance.setter
-    def tolerance(self, value: float) -> None:
-        self.thing_settings["tolerance"] = value
-
-    @thing_property
-    def fraction(self) -> float:
-        """How much of the image needs to be not background to label as sample"""
-        return self.thing_settings.get("fraction", 25)
-
-    @fraction.setter
-    def fraction(self, value: float) -> None:
-        self.thing_settings["fraction"] = value
+    fraction = ThingSetting(
+        initial_value=25.0,
+        model=float,
+        description="How much of the image needs to be not background to label as sample",
+    )
 
     def background_mask(self, image: np.ndarray) -> np.ndarray:
         """Calculate a binary image, showing whether each pixel is background

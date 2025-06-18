@@ -37,8 +37,9 @@ from labthings_fastapi.dependencies.invocation import (
     InvocationCancelledError,
     InvocationLogger,
 )
-from labthings_fastapi.types.numpy import NDArray, denumpify, DenumpifyingDict
+from labthings_fastapi.types.numpy import NDArray, DenumpifyingDict
 from labthings_fastapi.decorators import thing_action, thing_property
+from labthings_fastapi.descriptors import ThingSetting
 from labthings_fastapi.thing import Thing
 from camera_stage_mapping.camera_stage_tracker import Tracker
 from .camera import CameraDependency as Camera
@@ -181,12 +182,6 @@ class CSMUncalibratedError(HTTPException):
 class CameraStageMapper(Thing):
     """A Thing to manage mapping between image and stage coordinates"""
 
-    def __enter__(self):
-        pass
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.thing_settings.write_to_file()
-
     @thing_action
     def calibrate_1d(
         self,
@@ -244,8 +239,6 @@ class CameraStageMapper(Thing):
         corrected_resolution = tuple(
             r * hw.grab_image_downsampling for r in cal_x["image_resolution"]
         )
-        self.thing_settings.update(denumpify(cal_xy))
-        self.thing_settings["image_resolution"] = corrected_resolution
 
         csm_matrix = cal_xy["image_to_stage_displacement"]
         csm_as_string = f"[{round(csm_matrix[0][0], 2)}, {round(csm_matrix[0][1], 2)},],[{round(csm_matrix[1][0], 2)}, {round(csm_matrix[1][1], 2)}]"
@@ -260,7 +253,7 @@ class CameraStageMapper(Thing):
             "downsampling": hw.grab_image_downsampling,
         }
 
-        self.thing_settings["last_calibration"] = DenumpifyingDict(data).model_dump()
+        self.last_calibration = DenumpifyingDict(data).model_dump()
 
         return data
 
@@ -285,15 +278,28 @@ class CameraStageMapper(Thing):
         )
         ```
         """
-        displacement_matrix = self.thing_settings.get("image_to_stage_displacement")
-        if not displacement_matrix:
+        if self.last_calibration is None:
             return None
+        displacement_matrix = self.last_calibration["camera_stage_mapping_calibration"][
+            "image_to_stage_displacement"
+        ]
         return np.array(displacement_matrix).tolist()
+
+    last_calibration = ThingSetting(
+        initial_value=None,
+        model=Optional[dict],
+        readonly=True,
+        description="The most recent CSM calibration",
+    )
 
     @thing_property
     def image_resolution(self) -> Optional[Tuple[float, float]]:
         """The image size used to calibrate the image_to_stage_displacement_matrix"""
-        return self.thing_settings.get("image_resolution", None)
+        if self.last_calibration is None:
+            return None
+        return self.last_calibration["camera_stage_mapping_calibration"][
+            "image_resolution"
+        ]
 
     def assert_calibrated(self):
         """Raise an exception if the image_to_stage_displacement matrix is not set"""
@@ -301,11 +307,6 @@ class CameraStageMapper(Thing):
             # Disable check of no message in raised exception as the message is explicitly
             # added by CSMUncalibratedError
             raise CSMUncalibratedError()  # noqa: RSE102
-
-    @thing_property
-    def last_calibration(self) -> Optional[Dict]:
-        """The results of the last calibration that was run"""
-        return self.thing_settings.get("last_calibration", None)
 
     @thing_action
     def move_in_image_coordinates(

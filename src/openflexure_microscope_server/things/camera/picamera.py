@@ -26,7 +26,7 @@ from tempfile import TemporaryDirectory
 
 from pydantic import BaseModel, BeforeValidator
 
-from labthings_fastapi.descriptors.property import PropertyDescriptor
+from labthings_fastapi.descriptors.property import ThingProperty
 from labthings_fastapi.decorators import thing_action, thing_property
 from labthings_fastapi.outputs.mjpeg_stream import MJPEGStream
 from labthings_fastapi.utilities import get_blocking_portal
@@ -46,14 +46,12 @@ from . import picamera_recalibrate_utils as recalibrate_utils
 from . import BaseCamera, JPEGBlob, ArrayModel
 
 
-class PicameraControl(PropertyDescriptor):
+class PicameraControl(ThingProperty):
     def __init__(
         self, control_name: str, model: type = float, description: Optional[str] = None
     ):
         """A property descriptor controlling a picamera control"""
-        PropertyDescriptor.__init__(
-            self, model, observable=False, description=description
-        )
+        super().__init__(model, observable=False, description=description)
         self.control_name = control_name
 
     def _getter(self, obj: StreamingPiCamera2):
@@ -213,19 +211,19 @@ class StreamingPiCamera2(BaseCamera):
             except KeyError:
                 pass  # If controls are missing, leave at default
 
-    stream_resolution = PropertyDescriptor(
+    stream_resolution = ThingProperty(
         tuple[int, int],
         initial_value=(820, 616),
         description="Resolution to use for the MJPEG stream",
     )
 
-    mjpeg_bitrate = PropertyDescriptor(
+    mjpeg_bitrate = ThingProperty(
         Optional[int],
         initial_value=100000000,
         description="Bitrate for MJPEG stream (None for default)",
     )
 
-    stream_active = PropertyDescriptor(
+    stream_active = ThingProperty(
         bool,
         initial_value=False,
         description="Whether the MJPEG stream is active",
@@ -284,7 +282,7 @@ class StreamingPiCamera2(BaseCamera):
         with self.picamera() as cam:
             return cam.sensor_resolution
 
-    tuning = PropertyDescriptor(Optional[dict], None, readonly=True)
+    tuning = ThingProperty(Optional[dict], None, readonly=True)
 
     def settings_to_properties(self):
         """Set the values of properties based on the settings dict"""

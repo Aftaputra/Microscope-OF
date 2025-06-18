@@ -14,12 +14,17 @@ from PIL import Image
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
+from labthings_fastapi.descriptors import ThingSetting
 from labthings_fastapi.dependencies.invocation import (
     CancelHook,
     InvocationLogger,
     InvocationCancelledError,
 )
-from labthings_fastapi.decorators import thing_action, thing_property, fastapi_endpoint
+from labthings_fastapi.decorators import (
+    thing_action,
+    thing_property,
+    fastapi_endpoint,
+)
 from labthings_fastapi.outputs.blob import blob_type
 
 from openflexure_microscope_server.utilities import ErrorCapturingThread
@@ -590,72 +595,54 @@ class SmartScanThing(Thing):
             raise HTTPException(404, "File not found")
         return FileResponse(preview_path)
 
-    @thing_property
-    def save_resolution(self) -> tuple[int, int]:
-        """A tuple of the image resolution to capture. Should be in a
-        4:3 aspect ratio"""
-        return self.thing_settings.get("save_resolution", ((1640, 1232)))
+    save_resolution = ThingSetting(
+        initial_value=(1640, 1232),
+        model=tuple[int, int],
+        description=("A tuple of the image resolution to capture."),
+    )
 
-    @save_resolution.setter
-    def save_resolution(self, value: tuple[int, int]) -> None:
-        self.thing_settings["save_resolution"] = value
+    max_range = ThingSetting(
+        initial_value=45000,
+        model=int,
+        description=(
+            "The maximum distance from the centre of the scan before we break in steps"
+        ),
+    )
 
-    @thing_property
-    def max_range(self) -> int:
-        """The maximum distance from the centre of the scan before we break in steps"""
-        return self.thing_settings.get("max_range", 45000)
+    stitch_tiff = ThingSetting(
+        initial_value=False,
+        model=bool,
+        description="Whether or not to also produce a pyramidal tiff",
+    )
 
-    @max_range.setter
-    def max_range(self, value: int) -> None:
-        self.thing_settings["max_range"] = value
+    skip_background = ThingSetting(
+        initial_value=True,
+        model=bool,
+        description="""Whether to detect and skip empty fields of view
 
-    @thing_property
-    def stitch_tiff(self) -> bool:
-        """Whether or not to also produce a pyramidal tiff"""
-        return self.thing_settings.get("stitch_tiff", False)
+        This uses the settings from the `background_detect` Thing.""",
+    )
 
-    @stitch_tiff.setter
-    def stitch_tiff(self, value: bool) -> None:
-        self.thing_settings["stitch_tiff"] = value
+    autofocus_dz = ThingSetting(
+        initial_value=1000,
+        model=int,
+        description="The z distance to perform an autofocus in steps",
+    )
 
-    @thing_property
-    def skip_background(self) -> bool:
-        """Whether to detect and skip empty fields of view
+    overlap = ThingSetting(
+        initial_value=0.45,
+        model=float,
+        description="The fraction (0-1) that adjacent images should overlap in x or y",
+    )
 
-        This uses the settings from the `background_detect` Thing.
-        """
-        return self.thing_settings.get("skip_background", True)
-
-    @skip_background.setter
-    def skip_background(self, value: bool) -> None:
-        self.thing_settings["skip_background"] = value
-
-    @thing_property
-    def autofocus_dz(self) -> int:
-        """The z distance to perform an autofocus in steps"""
-        return self.thing_settings.get("autofocus_dz", 1000)
-
-    @autofocus_dz.setter
-    def autofocus_dz(self, value: int) -> None:
-        self.thing_settings["autofocus_dz"] = value
-
-    @thing_property
-    def overlap(self) -> float:
-        """The fraction (0-1) that adjacent images should overlap in x or y"""
-        return self.thing_settings.get("overlap", 0.45)
-
-    @overlap.setter
-    def overlap(self, value: float) -> None:
-        self.thing_settings["overlap"] = value
-
-    @thing_property
-    def stitch_automatically(self) -> bool:
-        """Whether to run a final stitch at the end of the scan (assuming scan success)"""
-        return self.thing_settings.get("stitch_automatically", True)
-
-    @stitch_automatically.setter
-    def stitch_automatically(self, value: bool) -> None:
-        self.thing_settings["stitch_automatically"] = value
+    stitch_automatically = ThingSetting(
+        initial_value=True,
+        model=bool,
+        description=(
+            "Whether to run a final stitch at the end of the scan (assuming scan "
+            "success)"
+        ),
+    )
 
     @thing_property
     def scans(self) -> list[scan_directories.ScanInfo]:

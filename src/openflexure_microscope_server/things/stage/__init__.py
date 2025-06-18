@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TypeAlias
 from collections.abc import Sequence, Mapping
 
-from labthings_fastapi.descriptors.property import PropertyDescriptor
+from labthings_fastapi.descriptors.property import ThingProperty
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.decorators import thing_action, thing_property
 from labthings_fastapi.dependencies.invocation import CancelHook
@@ -25,7 +25,7 @@ class BaseStage(Thing):
         """The names of the stage's axes, in order."""
         return self._axis_names
 
-    position = PropertyDescriptor(
+    position = ThingProperty(
         Mapping[str, int],
         dict.fromkeys(_axis_names, 0),
         description="Current position of the stage",
@@ -33,7 +33,7 @@ class BaseStage(Thing):
         observable=True,
     )
 
-    moving = PropertyDescriptor(
+    moving = ThingProperty(
         bool,
         False,
         description="Whether the stage is in motion",
