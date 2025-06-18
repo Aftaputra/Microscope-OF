@@ -288,7 +288,7 @@ class AutofocusThing(Thing):
         self.thing_settings["stack_dz"] = value
 
     @thing_action
-    def run_z_stack(
+    def run_smart_stack(
         self,
         cam: WrappedCamera,
         stage: Stage,
@@ -305,72 +305,75 @@ class AutofocusThing(Thing):
         images_to_capture = self.stack_images_to_capture
         images_to_test = self.stack_images_to_test
 
-        if images_to_test < images_to_capture:
-            raise RuntimeError(
-                "Can't capture more images than are tested. Please increase number to test, or decrease number to capture"
-            )
-        if images_to_test % 2 == 0:
-            raise RuntimeError("Images to test should be odd")
-
         stack_z_range = stack_dz * (images_to_test - 1)
         overshoot = stack_dz * 5
 
-        # Move down by the height of the z stack, plus an overshoot
-        # Better to start too low and take too many images than too high and need to refocus
-        stage.move_relative(z=-(overshoot + BACKLASH_CORRECTION + stack_z_range / 2))
-        stage.move_relative(z=BACKLASH_CORRECTION)
+        self.validate_scan_inputs(images_to_test, images_to_capture)
 
-        continue_stack = True
-        captures = []
-        sharpnesses = []
-        heights = []
-        capture_count = 0
-        starting_height = stage.position["z"]
-
-        while continue_stack:
-            time.sleep(SETTLING_TIME)
-            stage_location = stage.position
-
-            jpeg_path = os.path.join(
+        success = False
+        while not success:
+            result, heights, captures, sharpest_index = self.z_stack(
+                stack_dz,
+                images_to_test,
                 images_dir,
-                f"{stage_location['x']}_{stage_location['y']}_{stage_location['z']}.jpeg",
+                stack_z_range,
+                overshoot,
+                stage,
+                cam,
+                capture,
+                metadata_getter,
+                logger,
             )
-            image, metadata = capture._capture_image(
-                cam=cam,
-                metadata_getter=metadata_getter,
+
+            if result == "success":
+                success = True
+                break
+
+            # If result remains as "restart", move to the start and autofocus
+            self.reset_stack(
+                heights,
+                stack_z_range,
+                overshoot,
+                autofocus_dz,
+                stage,
+                sharpness_monitor,
             )
-            captures.append([jpeg_path, image, metadata])
-            sharpnesses.append(cam.grab_jpeg_size(stream_name="lores"))
-            heights.append(stage.position["z"])
-            capture_count += 1
 
-            # If the stack isn't complete yet, move
-            if capture_count >= images_to_test:
-                stack_result = self.test_stack(sharpnesses[-images_to_test:])
+        self.save_stack(
+            sharpest_index,
+            captures,
+            images_to_test,
+            images_to_capture,
+            logger,
+            capture,
+        )
 
-                if stack_result == "success":
-                    continue_stack = False
+        return heights[-images_to_test:][sharpest_index]
 
-                # These are signs of overshooting. Autofocus and retry
-                elif stack_result == "restart" or capture_count > 20:
-                    captures = []
-                    sharpnesses = []
-                    heights = []
-                    capture_count = 0
-                    stage.move_absolute(z=starting_height - stack_z_range)
-                    self.looping_autofocus(
-                        stage=stage,
-                        sharpness_monitor=sharpness_monitor,
-                        dz=autofocus_dz,
-                    )
-                    stage.move_relative(
-                        z=-(overshoot + BACKLASH_CORRECTION + stack_z_range / 2)
-                    )
-                    stage.move_relative(z=BACKLASH_CORRECTION)
-            stage.move_relative(z=stack_dz)
+    def reset_stack(
+        self,
+        heights,
+        autofocus_dz,
+        stage,
+        sharpness_monitor,
+    ):
+        stage.move_absolute(z=heights[0])
+        self.looping_autofocus(
+            stage=stage,
+            sharpness_monitor=sharpness_monitor,
+            dz=autofocus_dz,
+        )
 
+    def save_stack(
+        self,
+        sharpest_index,
+        captures,
+        images_to_test,
+        images_to_capture,
+        logger,
+        capture,
+    ):
         # Find the range of images from the stack to capture
-        sharpest_index = np.argmax(sharpnesses[-images_to_test:])
         stack_extent = int((images_to_capture - 1) / 2)
         stack_range = range(
             sharpest_index - stack_extent, sharpest_index + stack_extent + 1
@@ -384,8 +387,91 @@ class AutofocusThing(Thing):
                 metadata=captures[-images_to_test:][capture_index][2],
                 logger=logger,
             )
+        return sharpest_index
 
-        return heights[-images_to_test:][sharpest_index]
+    def z_stack(
+        self,
+        stack_dz,
+        images_to_test,
+        images_dir,
+        stack_z_range,
+        overshoot,
+        stage,
+        cam,
+        capture,
+        metadata_getter,
+    ):
+        # Move down by the height of the z stack, plus an overshoot
+        # Better to start too low and take too many images than too high and need to refocus
+
+        stage.move_relative(z=-(overshoot + BACKLASH_CORRECTION + stack_z_range / 2))
+        stage.move_relative(z=BACKLASH_CORRECTION)
+
+        captures = []
+        sharpnesses = []
+        heights = []
+
+        while len(captures) <= 20:
+            time.sleep(SETTLING_TIME)
+
+            captures, heights, sharpnesses = self.capture_stack_image(
+                captures,
+                heights,
+                sharpnesses,
+                images_dir,
+                cam,
+                stage,
+                capture,
+                metadata_getter,
+            )
+
+            # If the number of images is enough to test, test them
+            if len(captures) >= images_to_test:
+                stack_result = self.test_stack(sharpnesses[-images_to_test:])
+
+                if stack_result == "success":
+                    sharpest_index = np.argmax(sharpnesses[-images_to_test:])
+                    return "success", heights, captures, sharpest_index
+
+                if stack_result == "restart":
+                    return "restart", heights, None, None
+
+            stage.move_relative(z=stack_dz)
+        return "restart", heights, None, None
+
+    def capture_stack_image(
+        self,
+        captures,
+        heights,
+        sharpnesses,
+        images_dir,
+        cam,
+        stage,
+        capture,
+        metadata_getter,
+    ):
+        stage_location = stage.position
+        jpeg_path = os.path.join(
+            images_dir,
+            f"{stage_location['x']}_{stage_location['y']}_{stage_location['z']}.jpeg",
+        )
+        image, metadata = capture._capture_image(
+            cam=cam,
+            metadata_getter=metadata_getter,
+        )
+        captures.append([jpeg_path, image, metadata])
+        sharpnesses.append(cam.grab_jpeg_size(stream_name="lores"))
+        heights.append(stage_location["z"])
+
+        return captures, heights, sharpnesses
+
+    def validate_scan_inputs(self, images_to_test, images_to_capture):
+        if images_to_test < images_to_capture:
+            raise RuntimeError(
+                "Can't capture more images than are tested. Please increase number to test, or decrease number to capture"
+            )
+        if images_to_test % 2 == 0:
+            raise RuntimeError("Images to test should be odd")
 
     def test_stack(self, sharpnesses: list):
         """Test a list of sharpnesses, to decide whether the sharpest image from a stack is within them
