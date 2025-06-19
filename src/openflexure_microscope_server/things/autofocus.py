@@ -299,8 +299,18 @@ class AutofocusThing(Thing):
         images_dir: str,
         autofocus_dz: int,
     ) -> None:
-        """Run a z stack, saving all images to stack_dir and copying the
-        central image to stack_dir"""
+        """Run a smart stack, which captures images offset in z, testing
+        whether the sharpest image is towards the centre of the stack.
+        The sharpest image, and optionally images around the sharpest,
+        will be saved using their coordinates to images_dir
+
+        Arguments:
+        images_dir: the folder to save all images
+        autofocus_dz: should the stack fail, the range to refocus over before retrying
+        variables cam to sharpness_monitor are Thing dependencies injected automatically by LabThings FastAPI
+        """
+
+        # Set the variables to prevent changes from the GUI or other windows
         stack_dz = self.stack_dz
         images_to_capture = self.stack_images_to_capture
         images_to_test = self.stack_images_to_test
@@ -308,9 +318,11 @@ class AutofocusThing(Thing):
         stack_z_range = stack_dz * (images_to_test - 1)
         overshoot = stack_dz * 5
 
-        self.validate_scan_inputs(images_to_test, images_to_capture)
+        # Ensure the stack settings are appropriate
+        self.validate_stack_inputs(images_to_test, images_to_capture)
 
         success = False
+        # Loop until a stack is successful
         while not success:
             result, heights, captures, sharpest_index = self.z_stack(
                 stack_dz,
@@ -322,23 +334,21 @@ class AutofocusThing(Thing):
                 cam,
                 capture,
                 metadata_getter,
-                logger,
             )
 
             if result == "success":
                 success = True
                 break
 
-            # If result remains as "restart", move to the start and autofocus
+            # If "result" remains as "restart", move to the start and autofocus
             self.reset_stack(
                 heights,
-                stack_z_range,
-                overshoot,
                 autofocus_dz,
                 stage,
                 sharpness_monitor,
             )
 
+        # Save the sharpest image, and images either side of focus
         self.save_stack(
             sharpest_index,
             captures,
@@ -348,15 +358,24 @@ class AutofocusThing(Thing):
             capture,
         )
 
+        # Return the z position of the sharpest image, for path planning and tracking
         return heights[-images_to_test:][sharpest_index]
 
     def reset_stack(
         self,
-        heights,
-        autofocus_dz,
-        stage,
-        sharpness_monitor,
-    ):
+        heights: list[int],
+        autofocus_dz: int,
+        stage: Stage,
+        sharpness_monitor: SharpnessMonitorDep,
+    ) -> None:
+        """Return to the initial height of the current stack, and run
+        a looping autofocus. Clears all previous captures, heights and sharpnesses.
+
+        Arguments:
+        heights: a list of the z positions of previous captures
+        autofocus_dz: the range in steps to autofocus
+        variables stage and sharpness_monitor are Thing dependencies passed through from the calling action
+        """
         stage.move_absolute(z=heights[0])
         self.looping_autofocus(
             stage=stage,
@@ -366,13 +385,23 @@ class AutofocusThing(Thing):
 
     def save_stack(
         self,
-        sharpest_index,
-        captures,
-        images_to_test,
-        images_to_capture,
-        logger,
-        capture,
-    ):
+        sharpest_index: int,
+        captures: list[list],
+        images_to_test: int,
+        images_to_capture: int,
+        logger: InvocationLogger,
+        capture: CaptureDep,
+    ) -> int:
+        """Save the required captures to disk. Will save the sharpest image,
+        and any images either side of focus.
+
+        Arguments:
+        sharpest_index: the index of the sharpest image, within the "images_to_test" slice
+        captures: a list of captures, including file name, image data and metadata
+        images_to_test: the number of images in the stack tested for success
+        images_to_capture: the number of images to save to disk
+        variables logger and capture are Thing dependencies passed through from the calling action
+        """
         # Find the range of images from the stack to capture
         stack_extent = int((images_to_capture - 1) / 2)
         stack_range = range(
@@ -391,19 +420,32 @@ class AutofocusThing(Thing):
 
     def z_stack(
         self,
-        stack_dz,
-        images_to_test,
-        images_dir,
-        stack_z_range,
-        overshoot,
-        stage,
-        cam,
-        capture,
-        metadata_getter,
-    ):
+        stack_dz: int,
+        images_to_test: int,
+        images_dir: str,
+        stack_z_range: int,
+        overshoot: int,
+        stage: Stage,
+        cam: WrappedCamera,
+        capture: CaptureDep,
+        metadata_getter: GetThingStates,
+    ) -> list:
+        """Capture a series of images offset by stack_dz, and test whether
+        the sharpest image is towards the centre of the stack.
+
+        Returns a test result string, a list of z positions, a list of captures and the
+        index of the sharpest image in a successful stack.
+
+        Arguments:
+        stack_dz: the distance in steps between images in the stack
+        images_to_test: the number of images in the stack to test for focus
+        images_dir: a string of the path to write all images
+        stack_z_range: the height in steps of the stack to test
+        overshoot: how far below the estimated optimal starting position to begin stacking
+        variables stage to metadata_getter are Thing dependencies passed through from the calling action
+        """
         # Move down by the height of the z stack, plus an overshoot
         # Better to start too low and take too many images than too high and need to refocus
-
         stage.move_relative(z=-(overshoot + BACKLASH_CORRECTION + stack_z_range / 2))
         stage.move_relative(z=BACKLASH_CORRECTION)
 
@@ -411,9 +453,12 @@ class AutofocusThing(Thing):
         sharpnesses = []
         heights = []
 
-        while len(captures) <= 20:
+        # If the sharpest image isn't found within the 15 images above the estimated point, break
+        # the loop and return "restart"
+        while len(captures) <= images_to_test + 15:
             time.sleep(SETTLING_TIME)
 
+            # Append a new image to the stack
             captures, heights, sharpnesses = self.capture_stack_image(
                 captures,
                 heights,
@@ -427,7 +472,7 @@ class AutofocusThing(Thing):
 
             # If the number of images is enough to test, test them
             if len(captures) >= images_to_test:
-                stack_result = self.test_stack(sharpnesses[-images_to_test:])
+                stack_result = self.check_stack_result(sharpnesses[-images_to_test:])
 
                 if stack_result == "success":
                     sharpest_index = np.argmax(sharpnesses[-images_to_test:])
@@ -441,15 +486,27 @@ class AutofocusThing(Thing):
 
     def capture_stack_image(
         self,
-        captures,
-        heights,
-        sharpnesses,
-        images_dir,
-        cam,
-        stage,
-        capture,
-        metadata_getter,
-    ):
+        captures: list[list],
+        heights: list[int],
+        sharpnesses: list[int],
+        images_dir: str,
+        cam: WrappedCamera,
+        stage: Stage,
+        capture: CaptureDep,
+        metadata_getter: GetThingStates,
+    ) -> list:
+        """Append a new capture to the ongoing stack.
+        Includes appending the height, image sharpness and image
+        data to the relevant lists.
+        TODO: clear previous captures, to limit images held in memory
+
+        arguments:
+        captures: a list of captures, including file name, image data and metadata
+        heights: a list of the z positions of previous captures
+        sharpnesses: a list of the sharpnesses of previous captures
+        images_dir: a path to the folder to save images
+        variables stage to metadata_getter are Thing dependencies passed through from the calling action
+        """
         stage_location = stage.position
         jpeg_path = os.path.join(
             images_dir,
@@ -465,7 +522,15 @@ class AutofocusThing(Thing):
 
         return captures, heights, sharpnesses
 
-    def validate_scan_inputs(self, images_to_test, images_to_capture):
+    def validate_stack_inputs(
+        self, images_to_test: int, images_to_capture: int
+    ) -> None:
+        """Check the stack settings are appropriate, and raise an error if not
+
+        Arguments:
+        images_to_test: number of images in the stack to test for focus
+        images_to_capture: number of images to be captured around the focused image
+        """
         if images_to_test < images_to_capture:
             raise RuntimeError(
                 "Can't capture more images than are tested. Please increase number to test, or decrease number to capture"
@@ -473,13 +538,16 @@ class AutofocusThing(Thing):
         if images_to_test % 2 == 0:
             raise RuntimeError("Images to test should be odd")
 
-    def test_stack(self, sharpnesses: list):
+    def check_stack_result(self, sharpnesses: list[int]) -> str:
         """Test a list of sharpnesses, to decide whether the sharpest image from a stack is within them
 
         Returns a string
         'success' if the sharpest image is towards the centre
         'continue' if the sharpest image is in the final two images of the list
         'restart' if the sharpest image is in the first two images of the list
+
+        Arguments:
+        sharpnesses: a list of the sharpnesses to test for focus
         """
 
         sharpest_index = np.argmax(sharpnesses)
@@ -492,6 +560,9 @@ class AutofocusThing(Thing):
         if sharpness_length == 3:
             if sharpest_index == 1:
                 return "success"
+            if sharpest_index == 0:
+                return "restart"
+            return "continue"
 
         # For larger stacks, test if the best image is not within two of the edge of the stack
         # ie for a stack of 7 images, best image must be between 3rd and and 5th
