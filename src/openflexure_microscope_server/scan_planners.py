@@ -185,9 +185,8 @@ class ScanPlanner:
 
     def select_nearby_focus_site(self, xy_pos: XYPos) -> Optional[XYZPos]:
         """
-        Return the xyz position of the closest site where focus was achieved
-        to the input xy_position, with the most recently taken image returned in
-        the case of a tie
+        Return the xyz position of the nearby site with the lowest z position.
+        Nearby is defined as within 1.6 times the distance to the closest neighbour.
 
         Returns None if there if no focussed locations are present
         """
