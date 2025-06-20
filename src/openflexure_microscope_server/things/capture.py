@@ -1,11 +1,11 @@
 from PIL import Image
-import time
 import piexif
 import json
+import numpy as np
 
 from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.thing import Thing
-from labthings_fastapi.decorators import thing_action
+from labthings_fastapi.dependencies.raw_thing import raw_thing_dependency
 from .camera import CameraDependency as CamDep
 from labthings_fastapi.dependencies.invocation import (
     InvocationLogger,
@@ -20,35 +20,9 @@ class CaptureThing(Thing):
     """A temporary Thing to handle capturing to disk with associated metadata
     Will be moved to the camera Thing or dependency in due course"""
 
-    @thing_action
-    def _capture_and_save(
-        self,
-        jpeg_path: str,
-        cam: CamDep,
-        logger: InvocationLogger,
-        metadata_getter: GetThingStates,
-    ) -> None:
-        """Capture an image and save it to disk
-
-        This will set the event `acquired` once the image has been acquired, so
-        that the stage may be moved while it's saved.
-        """
-        capture_start = time.time()
-        image, metadata = self._capture_image(
-            cam,
-            metadata_getter,
-        )
-        acquisition_time = time.time()
-        self._save_capture(jpeg_path, image, metadata, logger)
-        save_time = time.time()
-        acquisition_duration = round(acquisition_time - capture_start, 1)
-        saving_duration = round(save_time - acquisition_time, 1)
-        logger.info(
-            f"Acquired {jpeg_path} in {acquisition_duration}s then {saving_duration}s saving to disk"
-        )
-
-    @thing_action
-    def _capture_image(self, cam, metadata_getter):
+    def _capture_image(
+        self, cam: CamDep, metadata_getter: GetThingStates
+    ) -> tuple[np.ndarray, dict]:
         """Capture an image in memory and return it with metadata
         CaptureError raised if the capture fails for any reason
         returns tuple with numpy array of image data, and dict of metadata
@@ -60,11 +34,10 @@ class CaptureThing(Thing):
             raise CaptureError("An error occurred while capturing") from e
         return image, metadata
 
-    @thing_action
     def _save_capture(
         self,
         jpeg_path: str,
-        image,
+        image: Image.Image,
         metadata: dict,
         logger: InvocationLogger,
     ) -> None:
@@ -88,3 +61,6 @@ class CaptureThing(Thing):
                 logger.warning(f"Failed to add metadata to {jpeg_path}")
         except Exception as e:
             raise IOError(f"An error occurred while saving {jpeg_path}") from e
+
+
+RawCaptureDependency = raw_thing_dependency(CaptureThing)

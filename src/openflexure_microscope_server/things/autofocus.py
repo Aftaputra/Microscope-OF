@@ -22,15 +22,12 @@ from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
 from labthings_fastapi.decorators import thing_action, thing_property
 from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.types.numpy import NDArray
-from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
 from labthings_fastapi.dependencies.invocation import InvocationLogger
 
 from .camera import RawCameraDependency as Camera
 from .camera import CameraDependency as WrappedCamera
 from .stage import StageDependency as Stage
-from .capture import CaptureThing
-
-CaptureDep = direct_thing_client_dependency(CaptureThing, "/capture/")
+from .capture import RawCaptureDependency as CaptureDep
 
 SETTLING_TIME = 0.3
 BACKLASH_CORRECTION = 250
