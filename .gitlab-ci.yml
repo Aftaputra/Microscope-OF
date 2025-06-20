@@ -44,7 +44,7 @@ meta-build-image:
     - web
 
 .javascript:
-  image: node:15
+  image: node:18
   before_script:
     - cd webapp
     - npm install
@@ -52,6 +52,19 @@ meta-build-image:
     key: "${CI_COMMIT_REF_SLUG}"
     paths:
       - webapp/node_modules
+  only:
+    - branches
+    - merge_requests
+    - tags
+    - web
+
+# Check webapp and server have matching version string
+version-check:
+  stage: analysis
+  #use a base python image as nothing needs to be installed
+  image: python:3.11
+  script:
+    - ./check_version_sync.py
   only:
     - branches
     - merge_requests
@@ -145,6 +158,7 @@ build:
   stage: build
   extends: .javascript
   script:
+    - export NODE_OPTIONS=--openssl-legacy-provider
     # Build JS application for production
     - npm run build
   artifacts:

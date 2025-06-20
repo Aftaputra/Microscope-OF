@@ -87,7 +87,7 @@ def make_hardware_interface(
     axes = stage.axis_names
 
     def pos2dict(pos: Sequence[float]) -> Mapping[str, float]:
-        return {k: p for k, p in zip(axes, pos)}
+        return dict(zip(axes, pos))
 
     def dict2pos(posd: Mapping[str, float]) -> Sequence[float]:
         return tuple(posd[k] for k in axes if k in posd)
@@ -228,10 +228,12 @@ class CameraStageMapper(Thing):
 
         This performs two 1d calibrations in x and y, then combines their results.
         """
-        logger.info("Calibrating X axis:")
-        cal_x: dict = self.calibrate_1d(hw, stage, logger, (1, 0, 0))
+        # Calibrate y-axis first as it is more likely to fail.
+        # The x-y difference is due to the camera aspect ratio, not the stage hardware.
         logger.info("Calibrating Y axis:")
         cal_y: dict = self.calibrate_1d(hw, stage, logger, (0, 1, 0))
+        logger.info("Calibrating X axis:")
+        cal_x: dict = self.calibrate_1d(hw, stage, logger, (1, 0, 0))
         logger.info("Calibration complete, updating metadata.")
 
         # Combine X and Y calibrations to make a 2D calibration

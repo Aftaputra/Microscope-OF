@@ -91,3 +91,6 @@ openflexure_settings/
 
 # Files created by simulator
 openflexure/
+
+# js version file
+/webapp/src/version.js
