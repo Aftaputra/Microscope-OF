@@ -337,7 +337,7 @@ class AutofocusThing(Thing):
                 success = True
                 break
 
-            # If "result" remains as "restart", move to the start and autofocus
+            # If a stack is not successful, move to the start and autofocus
             self.reset_stack(
                 heights,
                 autofocus_dz,
