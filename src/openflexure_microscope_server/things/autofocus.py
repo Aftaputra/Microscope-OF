@@ -495,7 +495,6 @@ class AutofocusThing(Thing):
         """Append a new capture to the ongoing stack.
         Includes appending the height, image sharpness and image
         data to the relevant lists.
-        TODO: clear previous captures, to limit images held in memory
 
         arguments:
         captures: a list of captures, including file name, image data and metadata
