@@ -183,6 +183,32 @@ class ScanPlanner:
 
         return next_location, z
 
+    def closest_focus_site(self, xy_pos: XYPos) -> Optional[XYZPos]:
+        """
+        Return the xyz position of the closest site where focus was achieved
+        to the input xy_position, with the most recently taken image returned in
+        the case of a tie
+
+        Returns None if there if no focussed locations are present
+        """
+        if not self._focused_locations:
+            return None
+
+        # must be float64 (double precision) to deal with the huge numbers involved!
+        current_pos = np.array(xy_pos, dtype="float64")
+        path_pos = np.array(self._focused_locations, dtype="float64")[:, :2]
+
+        # Use linalg.norm to calculate the direct distance bweween the points
+        # Note linalg.norm always uses float64
+        dists = np.linalg.norm((path_pos - current_pos), axis=1)
+
+        # Get indices of all minima.
+        # Note np.where always returns a tuple of arrays, hence the trailing [0]
+        indices = np.where(dists == np.min(dists))[0]
+
+        # The last index is most recent
+        return self._focused_locations[indices[-1]]
+
     def select_nearby_focus_site(self, xy_pos: XYPos) -> Optional[XYZPos]:
         """
         Return the xyz position of the nearby site with the lowest z position.
@@ -214,7 +240,7 @@ class ScanPlanner:
         chosen_focused_site = min(focused_locations_array[indices], key=lambda x: x[-1])
 
         # Convert back into list so values are of type int instead of np.int32
-        return chosen_focused_site.tolist()
+        return tuple(chosen_focused_site.tolist())
 
     def mark_location_visited(
         self, xyz_pos: XYZPos, imaged: bool, focused: bool
