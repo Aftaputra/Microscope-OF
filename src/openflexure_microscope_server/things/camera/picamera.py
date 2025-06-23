@@ -97,7 +97,7 @@ class StreamingPiCamera2(BaseCamera):
     def __init__(self, camera_num: int = 0):
         self.camera_num = camera_num
         self.camera_configs: dict[str, dict] = {}
-        # NB persistent controls will be updated with settings, in __enter__.
+        # Note persistent controls will be updated with settings, in __enter__.
         self.persistent_controls = {
             "AeEnable": False,
             "AnalogueGain": 1.0,
@@ -129,25 +129,34 @@ class StreamingPiCamera2(BaseCamera):
         """
         with self.picamera() as cam:
             for i in range(discard_frames):
-                # Discard frames, so we know our data is fresh
+                # Discard frames, so data is fresh
                 cam.capture_metadata()
-            for k, v in cam.capture_metadata().items():
-                if k in self.persistent_controls:
-                    if k in self.persistent_control_tolerances:
-                        if (
-                            np.abs(self.persistent_controls[k] - v)
-                            < self.persistent_control_tolerances[k]
-                        ):
-                            logging.debug(
-                                f"Ignoring a small change in persistent control {k}"
-                                f"from {self.persistent_controls[k]} to {v}"
-                                "while updating persistent controls."
-                            )
-                            continue  # Ignore small changes, to avoid drift
-                    self.persistent_controls[k] = v
-        self.thing_settings.update(
-            self.persistent_controls
-        )  # TODO: Is this saving to the wrong place?
+            for key, value in cam.capture_metadata().items():
+                if key not in self.persistent_controls:
+                    # Skip keys that are not persistent controls
+                    continue
+                if self._control_value_within_tolerance(key, value):
+                    logging.debug(
+                        "Ignoring a small change in persistent control %s from %s to "
+                        "%s while updating persistent controls.",
+                        key,
+                        self.persistent_controls[key],
+                        self.persistent_controls[key],
+                    )
+                else:
+                    self.persistent_controls[key] = value
+        self.thing_settings.update(self.persistent_controls)
+
+    def _control_value_within_tolerance(self, key: str, value: float) -> bool:
+        """Return True if the updated value for a persistent control is within
+        tolerance of current value. This allows ignoring small changes
+        """
+        if key not in self.persistent_control_tolerances:
+            # Not tolerance range set, so it is not within tollerance
+            return False
+
+        difference = np.abs(self.persistent_controls[key] - value)
+        return difference < self.persistent_control_tolerances[key]
 
     def settings_to_persistent_controls(self):
         """Update the persistent controls dict from the settings dict
@@ -246,7 +255,6 @@ class StreamingPiCamera2(BaseCamera):
         so will fail if it's run before those are populated in `__enter__`.
         """
         if "tuning" in self.thing_settings:
-            # TODO: should this be a separate file?
             self.tuning = self.thing_settings["tuning"].dict
         else:
             logging.info("Did not find tuning in settings, reading from camera...")
@@ -288,6 +296,7 @@ class StreamingPiCamera2(BaseCamera):
         self.populate_default_tuning()
         self.initialise_tuning()
         self.initialise_picamera()
+        # populate sensor modes by reading the property
         self.sensor_modes
         self.settings_to_persistent_controls()
         self.settings_to_properties()
@@ -420,10 +429,8 @@ class StreamingPiCamera2(BaseCamera):
                     self.lores_mjpeg_stream.stop()
                 logging.info("Stopped MJPEG stream.")
 
-            # Increase the resolution for taking an image
-            time.sleep(
-                0.2
-            )  # Sprinkled a sleep to prevent camera getting confused by rapid commands
+            # Adding a sleep to prevent camera getting confused by rapid commands
+            time.sleep(0.2)
 
     @thing_action
     def capture_image(
