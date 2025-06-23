@@ -29,8 +29,9 @@ from .camera import CameraDependency as WrappedCamera
 from .stage import StageDependency as Stage
 from .capture import RawCaptureDependency as CaptureDep
 
-class StackInfo(BaseModel):
-    """Dataclass with default scan parameters"""
+
+class StackParams(BaseModel):
+    """Pydantic model for scan parameters"""
 
     # These are generic settings that seem to apply well to a standard scan
     # and are not altered by default when running a scan
@@ -51,13 +52,21 @@ class StackInfo(BaseModel):
     # how far below (in factors of stack_dz) the estimated optimal starting position to
     # begin the stack. Better to start slightly too low and require many images, rather than
     # too high and needing to autofocus and restart the stack
-    undershoot: int = 5
+    img_undershoot: int = 5
 
     # These we expect to be overwritten by AutofocusThing properties
     stack_dz: int = 50
     images_to_capture: int = 1
     images_to_test: int = 5
     autofocus_dz: int = 2000
+
+    stack_z_range: int = stack_dz * (images_to_test - 1)
+    # Starting too low by "steps_undershoot" makes smart stacking faster.
+    # Starting a stack too high requires it to move to the start,
+    # autofocus and then re-stack. Starting slightly too low only
+    # requires extra +z movements and captures.
+    steps_undershoot: int = stack_dz * img_undershoot
+
 
 class JPEGSharpnessMonitor:
     __globals__ = globals()  # Required for FastAPI dependency
@@ -334,19 +343,12 @@ class AutofocusThing(Thing):
         """
 
         # Set the variables to prevent changes from the GUI or other windows
-        stack_parameters = StackInfo(
-            stack_dz = self.stack_dz,
-            images_to_capture = self.stack_images_to_capture,
-            images_to_test = self.stack_images_to_test,
-            autofocus_dz = autofocus_dz
+        stack_parameters = StackParams(
+            stack_dz=self.stack_dz,
+            images_to_capture=self.stack_images_to_capture,
+            images_to_test=self.stack_images_to_test,
+            autofocus_dz=autofocus_dz,
         )
-
-        stack_z_range = stack_parameters.stack_dz * (stack_parameters.images_to_test - 1)
-        # Starting too low by "undershoot" makes smart stacking faster.
-        # Starting a stack too high requires it to move to the start,
-        # autofocus and then re-stack. Starting slightly too low only
-        # requires extra +z movements and captures.
-        undershoot = stack_parameters.stack_dz * stack_parameters.undershoot
 
         # Ensure the stack settings are appropriate
         self.validate_stack_inputs(stack_parameters)
@@ -356,8 +358,6 @@ class AutofocusThing(Thing):
         while not success:
             result, heights, captures, sharpest_index = self.z_stack(
                 images_dir,
-                stack_z_range,
-                undershoot,
                 stack_parameters,
                 stage,
                 cam,
@@ -387,7 +387,7 @@ class AutofocusThing(Thing):
         )
 
         # Return the z position of the sharpest image, for path planning and tracking
-        return heights[-stack_parameters.images_to_test:][sharpest_index]
+        return heights[-stack_parameters.images_to_test :][sharpest_index]
 
     def reset_stack(
         self,
@@ -415,7 +415,7 @@ class AutofocusThing(Thing):
         self,
         sharpest_index: int,
         captures: list[list],
-        stack_parameters: StackInfo,
+        stack_parameters: StackParams,
         logger: InvocationLogger,
         capture: CaptureDep,
     ) -> int:
@@ -425,7 +425,7 @@ class AutofocusThing(Thing):
         Arguments:
         sharpest_index: the index of the sharpest image, within the "images_to_test" slice
         captures: a list of captures, including file name, image data and metadata
-        stack_parameters: a StackInfo dataclass with stack settings
+        stack_parameters: a StackParams Pydantic model with stack settings
         variables logger and capture are Thing dependencies passed through from the calling action
         """
         # Find the range of images from the stack to capture
@@ -437,9 +437,11 @@ class AutofocusThing(Thing):
         # Loop through the range, saving each capture to disk
         for capture_index in stack_range:
             capture._save_capture(
-                jpeg_path=captures[-stack_parameters.images_to_test:][capture_index][0],
-                image=captures[-stack_parameters.images_to_test:][capture_index][1],
-                metadata=captures[-stack_parameters.images_to_test:][capture_index][2],
+                jpeg_path=captures[-stack_parameters.images_to_test :][capture_index][
+                    0
+                ],
+                image=captures[-stack_parameters.images_to_test :][capture_index][1],
+                metadata=captures[-stack_parameters.images_to_test :][capture_index][2],
                 logger=logger,
             )
         return sharpest_index
@@ -447,9 +449,7 @@ class AutofocusThing(Thing):
     def z_stack(
         self,
         images_dir: str,
-        stack_z_range: int,
-        overshoot: int,
-        stack_parameters: StackInfo,
+        stack_parameters: StackParams,
         stage: Stage,
         cam: WrappedCamera,
         capture: CaptureDep,
@@ -463,14 +463,18 @@ class AutofocusThing(Thing):
 
         Arguments:
         images_dir: a string of the path to write all images
-        stack_z_range: the height in steps of the stack to test
-        overshoot: how far below the estimated optimal starting position to begin stacking
-        stack_parameters: a StackInfo dataclass with stack settings
+        stack_parameters: a StackParams Pydantic model with stack settings
         variables stage to metadata_getter are Thing dependencies passed through from the calling action
         """
         # Move down by the height of the z stack, plus an overshoot
         # Better to start too low and take too many images than too high and need to refocus
-        stage.move_relative(z=-(overshoot + stack_parameters.backlash_correction + stack_z_range / 2))
+        stage.move_relative(
+            z=-(
+                stack_parameters.steps_undershoot
+                + stack_parameters.backlash_correction
+                + stack_parameters.stack_z_range / 2
+            )
+        )
         stage.move_relative(z=stack_parameters.backlash_correction)
 
         captures = []
@@ -496,10 +500,14 @@ class AutofocusThing(Thing):
 
             # If the number of images is enough to test, test them
             if len(captures) >= stack_parameters.images_to_test:
-                stack_result = self.check_stack_result(sharpnesses[-stack_parameters.images_to_test:])
+                stack_result = self.check_stack_result(
+                    sharpnesses[-stack_parameters.images_to_test :]
+                )
 
                 if stack_result == "success":
-                    sharpest_index = np.argmax(sharpnesses[-stack_parameters.images_to_test:])
+                    sharpest_index = np.argmax(
+                        sharpnesses[-stack_parameters.images_to_test :]
+                    )
                     return "success", heights, captures, sharpest_index
 
                 if stack_result == "restart":
@@ -545,9 +553,7 @@ class AutofocusThing(Thing):
 
         return captures, heights, sharpnesses
 
-    def validate_stack_inputs(
-        self, stack_parameters
-    ) -> None:
+    def validate_stack_inputs(self, stack_parameters) -> None:
         """Check the stack settings are appropriate, and raise an error if not
 
         Arguments:
@@ -560,7 +566,10 @@ class AutofocusThing(Thing):
             )
         if stack_parameters.images_to_test % 2 == 0:
             raise RuntimeError("Images to test should be odd")
-        if stack_parameters.images_to_test <= 0 or stack_parameters.images_to_capture <= 0:
+        if (
+            stack_parameters.images_to_test <= 0
+            or stack_parameters.images_to_capture <= 0
+        ):
             raise RuntimeError("Stack parameters need to be at least 1")
 
     def check_stack_result(self, sharpnesses: list[int]) -> str:
