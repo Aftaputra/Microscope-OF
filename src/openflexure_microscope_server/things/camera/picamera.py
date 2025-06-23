@@ -177,12 +177,6 @@ class StreamingPiCamera2(BaseCamera):
         description="Bitrate for MJPEG stream (None for default)",
     )
 
-    @mjpeg_bitrate.setter
-    def mjpeg_bitrate(self, value: Optional[int]):
-        """Restart the stream when we set the bitrate"""
-        with self.picamera(pause_stream=True):
-            pass  # just pausing and restarting the stream is enough.
-
     stream_active = PropertyDescriptor(
         bool,
         initial_value=False,
