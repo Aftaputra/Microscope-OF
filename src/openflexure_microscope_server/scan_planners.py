@@ -212,6 +212,8 @@ class ScanPlanner:
     def select_nearby_focus_site(self, xy_pos: XYPos) -> Optional[XYZPos]:
         """
         Return the xyz position of the nearby site with the lowest z position.
+        Lowest position is best, as starting too high causes smart stacking to
+        autofocus and restart. Starting too low just requires extra movements in +z.
         Nearby is defined as within 1.6 times the distance to the closest neighbour.
 
         Returns None if there if no focussed locations are present

@@ -313,6 +313,10 @@ class AutofocusThing(Thing):
         images_to_test = self.stack_images_to_test
 
         stack_z_range = stack_dz * (images_to_test - 1)
+        # Starting too low by "overshoot" makes smart stacking faster.
+        # Starting a stack too high requires it to move to the start,
+        # autofocus and then re-stack. Starting slightly too low only
+        # requires extra +z movements and captures.
         overshoot = stack_dz * 5
 
         # Ensure the stack settings are appropriate
@@ -533,6 +537,8 @@ class AutofocusThing(Thing):
             )
         if images_to_test % 2 == 0:
             raise RuntimeError("Images to test should be odd")
+        if images_to_test <= 0 or images_to_capture <= 0:
+            raise RuntimeError("Stack parameters need to be at least 1")
 
     def check_stack_result(self, sharpnesses: list[int]) -> str:
         """Test a list of sharpnesses, to decide whether the sharpest image from a stack is within them
