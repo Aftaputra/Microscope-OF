@@ -1080,7 +1080,7 @@ class SmartScanThing(Thing):
         self,
         logger: InvocationLogger,
         scan_name: str,
-        stitch_resize: float,
+        stitch_resize: Optional[float] = None,
         overlap: float = 0.0,
     ) -> None:
         """Generate a stitched image based on stage position metadata
@@ -1100,7 +1100,6 @@ class SmartScanThing(Thing):
             try:
                 with open(json_fpath, "r", encoding="utf-8") as data_file:
                     data_loaded = json.load(data_file)
-                    logger.info(data_loaded)
                 overlap = data_loaded["overlap"]
             except (json.decoder.JSONDecodeError, FileNotFoundError, TypeError):
                 # As there is no schema or pydantic model this should handle
@@ -1117,6 +1116,29 @@ class SmartScanThing(Thing):
                     "Attempting stitch with overlap value of 0.1"
                 )
                 overlap = 0.1
+
+        if stitch_resize is None:
+            try:
+                with open(json_fpath, "r", encoding="utf-8") as data_file:
+                    data_loaded = json.load(data_file)
+                capture_resolution = data_loaded["capture resolution"]
+                stitch_resize = STITCHING_RESOLUTION[0] / capture_resolution[0]
+            except (json.decoder.JSONDecodeError, FileNotFoundError, TypeError):
+                # As there is no schema or pydantic model this should handle
+                # the file not being there, it not being json in the file,
+                # or the imported data not being indexable
+                logger.warning(
+                    f"Couldn't read scan data, is {SCAN_DATA_FILENAME} missing or corrupt? "
+                    "Attempting stitch with resize value of 0.5"
+                )
+                stitch_resize = 0.5
+            except KeyError:
+                logger.warning(
+                    "Value for capture resolution not found in scan data. "
+                    "Attempting stitch with resize value of 0.5"
+                )
+                stitch_resize = 0.5
+
         self.run_subprocess(
             logger,
             [
