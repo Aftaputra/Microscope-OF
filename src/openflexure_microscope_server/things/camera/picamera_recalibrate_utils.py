@@ -436,12 +436,12 @@ def set_static_lst(
     alsc["n_iter"] = 0  # disable the adaptive part
     alsc["luminance_strength"] = 1.0
     alsc["calibrations_Cr"] = [
-        {"ct": 4500, "table": np.reshape(cr, (-1)).round(3).tolist()}
+        {"ct": 4500, "table": as_flat_rounded_list(cr, round_to=3)}
     ]
     alsc["calibrations_Cb"] = [
-        {"ct": 4500, "table": np.reshape(cb, (-1)).round(3).tolist()}
+        {"ct": 4500, "table": as_flat_rounded_list(cb, round_to=3)}
     ]
-    alsc["luminance_lut"] = np.reshape(luminance, (-1)).round(3).tolist()
+    alsc["luminance_lut"] = as_flat_rounded_list(luminance, round_to=3)
 
 
 def set_static_ccm(tuning: dict, c: list) -> None:
@@ -544,3 +544,8 @@ def recreate_camera_manager():
     del Picamera2._cm
     gc.collect()
     Picamera2._cm = picamera2.picamera2.CameraManager()
+
+
+def as_flat_rounded_list(array: np.ndarray, round_to: int = 3) -> list[float]:
+    """Flatten array, round, and then convert to list"""
+    return np.reshape(array, -1).round(round_to).tolist()
