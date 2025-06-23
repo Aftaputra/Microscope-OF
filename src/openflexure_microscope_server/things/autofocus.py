@@ -41,10 +41,6 @@ class StackParams(BaseModel):
     # distance (in steps) to overshoot a move and then undo, to account for backlash
     backlash_correction: int = 250
 
-    # how many times the minimum distance between images to include as a "nearby" image
-    # default 1.4 includes images offset in x or y, but not diagonally
-    neighbour_cutoff: float = 1.4
-
     # how many images can be appended to the stack after the predicted peak to test for focus
     # before assuming the focus was passed, and restarting the stack
     stack_height_limit: int = 15

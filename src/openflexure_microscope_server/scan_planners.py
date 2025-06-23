@@ -20,6 +20,11 @@ XYPosList: TypeAlias = list[XYPos]
 XYZPosList: TypeAlias = list[XYZPos]
 
 
+# how many times the minimum distance between images to include as a "nearby" image
+# default 1.4 includes images offset in x or y, but not diagonally
+NEIGHBOUR_CUTOFF = 1.4
+
+
 def enforce_xy_tuple(value: XYPos) -> XYPos:
     """
     Used for enforcing that an input is a tuple and is the correct length
@@ -214,7 +219,7 @@ class ScanPlanner:
         Return the xyz position of the nearby site with the lowest z position.
         Lowest position is best, as starting too high causes smart stacking to
         autofocus and restart. Starting too low just requires extra movements in +z.
-        Nearby is defined as within 1.6 times the distance to the closest neighbour.
+        Nearby is defined as within NEIGHBOUR_CUTOFF times the distance to the closest neighbour.
 
         Returns None if there if no focussed locations are present
         """
@@ -229,10 +234,9 @@ class ScanPlanner:
         # Note linalg.norm always uses float64
         dists = np.linalg.norm((path_pos - current_pos), axis=1)
 
-        # Get indices of all focused sites within 1.6x the minimum distance.
-        # 1.6x chosen as it includes offsets in x and y on the Picamera2 aspect ratio
+        # Get indices of all focused sites within NEIGHBOUR_CUTOFF the minimum distance.
         # Note np.where always returns a tuple of arrays, hence the trailing [0]
-        indices = np.where(dists <= 1.6 * np.min(dists))[0]
+        indices = np.where(dists <= NEIGHBOUR_CUTOFF * np.min(dists))[0]
 
         # Turning into an array allows slicing based on a list
         focused_locations_array = np.array(self._focused_locations)
