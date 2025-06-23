@@ -15,7 +15,7 @@ import os
 
 from fastapi import Depends
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
@@ -60,12 +60,26 @@ class StackParams(BaseModel):
     images_to_test: int = 5
     autofocus_dz: int = 2000
 
-    stack_z_range: int = stack_dz * (images_to_test - 1)
-    # Starting too low by "steps_undershoot" makes smart stacking faster.
-    # Starting a stack too high requires it to move to the start,
-    # autofocus and then re-stack. Starting slightly too low only
-    # requires extra +z movements and captures.
-    steps_undershoot: int = stack_dz * img_undershoot
+    # Per pydantic docs, even with the @property applied before @computed_field,
+    # mypy may throw a Decorated property not supported error (mypy issue #1362)
+    # To avoid this error message, add # type: ignore[prop-decorator] to the @computed_field line.
+
+    @computed_field
+    @property
+    def stack_z_range(self) -> int:
+        """The range of the entire z stack, in steps"""
+        return self.stack_dz * (self.images_to_test - 1)
+
+    @computed_field
+    @property
+    def steps_undershoot(self) -> int:
+        """The distance to deliberately undershoot the estimated optimal starting point"""
+
+        # Starting too low by "steps_undershoot" makes smart stacking faster.
+        # Starting a stack too high requires it to move to the start,
+        # autofocus and then re-stack. Starting slightly too low only
+        # requires extra +z movements and captures.
+        return self.stack_dz * self.img_undershoot
 
 
 class JPEGSharpnessMonitor:
