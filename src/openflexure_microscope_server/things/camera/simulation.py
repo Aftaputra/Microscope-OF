@@ -31,6 +31,7 @@ from ..stage import StageProtocol as Stage
 # higher related to a faster movement
 RATIO = 0.2
 
+
 class SimulatedCamera(BaseCamera):
     """A Thing representing an OpenCV camera"""
 

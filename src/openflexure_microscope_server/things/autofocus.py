@@ -303,7 +303,7 @@ class AutofocusThing(Thing):
 
             jpeg_path = os.path.join(stack_dir, f"{capture_count}.jpeg")
             start_time = time.time()
-            cam.capture_to_memory(logger=logger, metadata_getter=logger)
+            cam.capture_to_memory(logger=logger, metadata_getter=metadata_getter)
             captured_time = time.time()
 
             if capture_count + 1 < images_to_capture:

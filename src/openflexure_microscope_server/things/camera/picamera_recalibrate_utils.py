@@ -80,16 +80,15 @@ def set_minimum_exposure(camera: Picamera2):
 
     We set exposure mode to manual, analog and digital gain
     to 1, and shutter speed to the minimum (8us for Pi Camera v2)
-    NB ISO is left at auto, because this is needed for the gains
+
+    Note ISO is left at auto, because this is needed for the gains
     to be set correctly.
     """
-    camera.set_controls({"AeEnable": False, "AnalogueGain": 1, "ExposureTime": 1})
-    # camera.iso = 0  # We must set ISO=0 (auto) or we can't set gain
-    #  camera.analog_gain = 1
-    # camera.digital_gain = 1 (not configurable)
+    # Disable Automatic exposure and gain algoritm (AeEnable), and set analogue
+    # gain and exposure time.
     # Setting the shutter speed to 1us will result in it being set
-    # to the minimum possible, which is probably 8us for PiCamera v2
-    # camera.shutter_speed = 1
+    # to the minimum possible, which is ~8us for PiCamera v2
+    camera.set_controls({"AeEnable": False, "AnalogueGain": 1, "ExposureTime": 1})
     time.sleep(0.5)
 
 
@@ -138,8 +137,7 @@ def test_exposure_settings(camera: Picamera2, percentile: float) -> ExposureTest
 
 def check_convergence(test: ExposureTest, target: int, tolerance: float):
     """Check whether the brightness is within the specified target range"""
-    converged = abs(test.level - target) < target * tolerance
-    return converged
+    return abs(test.level - target) < target * tolerance
 
 
 def adjust_shutter_and_gain_from_raw(
@@ -257,7 +255,6 @@ def adjust_white_balance_from_raw(
     camera.configure(config)
     camera.start()
     channels = channels_from_bayer_array(camera.capture_array("raw"))
-    # logging.info(f"White balance: channels were retrieved with shape {channels.shape}.")
     if luminance is not None and Cr is not None and Cb is not None:
         # Reconstruct a low-resolution image from the lens shading tables
         # and use it to normalise the raw image, to compensate for
@@ -328,10 +325,9 @@ def get_16x12_grid(chan: np.ndarray, dx: int, dy: int):
     for consistency.
     """
     grid = []
-    """
-    since left and bottom border will not necessarily have rectangles of
-    dimension dx x dy, the 32nd iteration has to be handled separately.
-    """
+
+    # since left and bottom border will not necessarily have rectangles of
+    # dimension dx x dy, the final iteration has to be handled separately.
     for i in range(11):
         for j in range(15):
             grid.append(np.mean(chan[dy * i : dy * (1 + i), dx * j : dx * (1 + j)]))
@@ -339,9 +335,7 @@ def get_16x12_grid(chan: np.ndarray, dx: int, dy: int):
     for j in range(15):
         grid.append(np.mean(chan[11 * dy :, dx * j : dx * (1 + j)]))
     grid.append(np.mean(chan[11 * dy :, 15 * dx :]))
-    """
-    return as np.array, ready for further manipulation
-    """
+    # return as np.array, ready for further manipulation
     return np.reshape(np.array(grid), (12, 16))
 
 
@@ -387,24 +381,27 @@ def lst_from_channels(channels: np.ndarray) -> LensShadingTables:
 def lst_from_grids(grids: np.ndarray) -> LensShadingTables:
     """Given 4 downsampled grids, generate the luminance and chrominance tables
 
+    The grids are the 4 BAYER channels RGGB
+
     The LST format has changed with `picamera2` and now uses a fixed resolution,
     and is in luminance, Cr, Cb format. This function returns three ndarrays of
     luminance, Cr, Cb, each with shape (12, 16).
-
-    # TODO: make consistent with
-    https://git.linuxtv.org/libcamera.git/tree/utils/raspberrypi/ctt/ctt_alsc.py
     """
+
+    # Calculated red, green, and blue channels from Bayer data
     r: np.ndarray = grids[3, ...]
     g: np.ndarray = np.mean(grids[1:3, ...], axis=0)
     b: np.ndarray = grids[0, ...]
 
     # What we actually want to calculate is the gains needed to compensate for the
     # lens shading - that's 1/lens_shading_table_float as we currently have it.
-    luminance_gains: np.ndarray = np.max(g) / g  # Minimum luminance gain is 1
+
+    # Minimum luminance gain is 1
+    luminance_gains: np.ndarray = np.max(g) / g
+
     cr_gains: np.ndarray = g / r
-    # cr_gains /= cr_gains[5, 7]  # Normalise so the central colour doesn't change
     cb_gains: np.ndarray = g / b
-    # cb_gains /= cb_gains[5, 7]
+
     return luminance_gains, cr_gains, cb_gains
 
 
@@ -491,11 +488,12 @@ def _geq_is_static(tuning: dict) -> bool:
     return geq["offset"] == 65535
 
 
-def index_of_algorithm(algorithms: list[dict], algorithm: str):
+def index_of_algorithm(algorithms: list[dict], algorithm: str) -> int:
     """Find the index of an algorithm's section in the tuning file"""
     for i, a in enumerate(algorithms):
         if algorithm in a:
             return i
+    raise ValueError(f"Algorithm {algorithm} is not available.")
 
 
 def copy_alsc_section(from_tuning: dict, to_tuning: dict):

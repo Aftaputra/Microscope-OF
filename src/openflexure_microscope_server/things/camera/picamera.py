@@ -41,8 +41,7 @@ class PicameraControl(PropertyDescriptor):
 
     def _getter(self, obj: StreamingPiCamera2):
         with obj.picamera() as cam:
-            ret = cam.capture_metadata()[self.control_name]
-            return ret
+            return cam.capture_metadata()[self.control_name]
 
     def _setter(self, obj: StreamingPiCamera2, value: Any):
         with obj.picamera() as cam:
@@ -171,6 +170,7 @@ class StreamingPiCamera2(BaseCamera):
         initial_value=(820, 616),
         description="Resolution to use for the MJPEG stream",
     )
+
     mjpeg_bitrate = PropertyDescriptor(
         Optional[int],
         initial_value=100000000,
@@ -368,8 +368,6 @@ class StreamingPiCamera2(BaseCamera):
         lower may cause dropped frames. Defaults to 6.
         """
         with self.picamera() as picam:
-            # TODO: Filip: can we use the lores output to keep preview stream going
-            # while recording? According to picamera2 docs 4.2.1.6 this should work
             try:
                 if picam.started:
                     picam.stop()
