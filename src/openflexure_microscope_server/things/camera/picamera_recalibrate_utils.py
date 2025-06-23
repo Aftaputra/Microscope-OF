@@ -255,6 +255,8 @@ def adjust_white_balance_from_raw(
     camera.configure(config)
     camera.start()
     channels = channels_from_bayer_array(camera.capture_array("raw"))
+    # TODO: read black level from camera rather than hard-coding 64
+    blacklevel = 64
     if luminance is not None and Cr is not None and Cb is not None:
         # Reconstruct a low-resolution image from the lens shading tables
         # and use it to normalise the raw image, to compensate for
@@ -269,17 +271,23 @@ def adjust_white_balance_from_raw(
         channels = channels * channel_gains
         logging.info(f"After gains, channel maxima are {np.max(channels, axis=(1, 2))}")
     if method == "centre":
-        _, h, w = channels.shape
-        blue, g1, g2, red = (
-            np.mean(
-                channels[:, 9 * h // 20 : 11 * h // 20, 9 * w // 20 : 11 * w // 20],
-                axis=(1, 2),
-            )
-            - 64
+        _, height, width = channels.shape
+        # Cut out the central 10% from 9/20 to 11/20...
+        low_y_range = 9 * height // 20
+        hi_y_range = 11 * height // 20
+        low_x_range = 9 * width // 20
+        hi_x_range = 11 * width // 20
+        # ...  and then take the mean of each bayer channel.
+        centre_means = np.mean(
+            channels[:, low_y_range:hi_y_range, low_x_range:hi_x_range],
+            axis=(1, 2),
         )
+        # Subtract blacklevel before splitting into channels
+        blue, g1, g2, red = centre_means - blacklevel
     else:
-        # TODO: read black level from camera rather than hard-coding 64
-        blue, g1, g2, red = np.percentile(channels, percentile, axis=(1, 2)) - 64
+        blue, g1, g2, red = (
+            np.percentile(channels, percentile, axis=(1, 2)) - blacklevel
+        )
     green = (g1 + g2) / 2.0
     new_awb_gains = (green / red, green / blue)
     if Cr is not None and Cb is not None:
