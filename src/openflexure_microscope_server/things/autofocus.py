@@ -353,8 +353,7 @@ class AutofocusThing(Thing):
         image to images dir."""
         image_list = glob.glob(os.path.join(stack_dir, "*"))
         image_list = sorted(image_list, key=os.path.getsize)
-        central_index = (len(image_list) - 1) // 2
-        central_image = image_list[central_index]
+        central_image = image_list[-1]
         xy_location = os.path.basename(stack_dir)
 
         logger.info(central_image)
