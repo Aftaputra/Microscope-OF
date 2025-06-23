@@ -501,10 +501,10 @@ def copy_alsc_section(from_tuning: dict, to_tuning: dict):
 
     This is done in-place, i.e. modifying to_tuning.
     """
+    # Using Picamera2 function to find the relevant sub-dict for each tuning file
     from_i = index_of_algorithm(from_tuning["algorithms"], "rpi.alsc")
     to_i = index_of_algorithm(to_tuning["algorithms"], "rpi.alsc")
-    # Please excuse the clumsy update-and-delete - this lets us use
-    # the nice Picamera2 function to find the relevant sub-dict.
+    # Updating the dictionary in place.
     to_tuning["algorithms"][to_i] = from_tuning["algorithms"][from_i]
 
 
