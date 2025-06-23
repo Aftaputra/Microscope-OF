@@ -549,7 +549,7 @@ class AutofocusThing(Thing):
         sharpest_index = np.argmax(sharpnesses)
         sharpness_length = len(sharpnesses)
 
-        # If only testing one image, assume focus succeeded
+        # If only testing one image, then by definition the sharpest is central
         if sharpness_length == 1:
             return "success"
         # If testing three images, test if the centre is the sharpest
