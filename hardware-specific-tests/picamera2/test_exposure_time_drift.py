@@ -5,12 +5,18 @@ from fastapi.testclient import TestClient
 
 from labthings_fastapi.server import ThingServer
 from labthings_fastapi.client import ThingClient
-from labthings_picamera2.thing import StreamingPiCamera2
+
+from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 def test_exposure_time_drift():
+    """
+    Capture 10 full resolution images and check that the exposure time remains constant
+
+    This confirms that automatic exposure time adjustment is fully turned off
+    """
     cam = StreamingPiCamera2()
     server = ThingServer()
     server.add_thing(cam, "/camera/")

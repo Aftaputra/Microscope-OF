@@ -1,23 +1,30 @@
+"""
+Tests that check that a tuning file can be reloaded
+"""
+
 import os
-from picamera2 import Picamera2
-from labthings_picamera2 import recalibrate_utils
 
 import pytest
+from picamera2 import Picamera2
+
+from openflexure_microscope_server.things.camera import recalibrate_utils
 
 
 MODEL = Picamera2.global_camera_info()[0]["Model"]
 
 
-def check_camera_available():
-    assert len(Picamera2.global_camera_info()) >= 1
-
-
 def load_default_tuning():
+    """
+    Return the default tuning file for the connected camera.
+    """
     fname = f"{MODEL}.json"
     return Picamera2.load_tuning_file(fname)
 
 
 def generate_bad_tuning():
+    """
+    Return a tuning file with an invalid version number to force an error when loaded.
+    """
     default_tuning = load_default_tuning()
     bad_tuning = default_tuning.copy()
     bad_tuning["version"] = 999
@@ -25,6 +32,14 @@ def generate_bad_tuning():
 
 
 def print_tuning(read_file=False):
+    """
+    Print the path of the default tuning file from the the environment variable.
+
+    :param read_file: Boolean, set true to also print the file contents.
+
+    This is useful for debuging. As PyTest suppresses the printing by default the
+    -s option is needed when running pylint to see this.
+    """
     key = "LIBCAMERA_RPI_TUNING_FILE"
     if key in os.environ:
         print(f"Tuning file environment variable: {os.environ[key]}")
@@ -36,6 +51,16 @@ def print_tuning(read_file=False):
 
 
 def _test_bad_tuning_after_good_tuning(configure):
+    """
+    Load the default tuning file into the camera, re-load with a broken tuning file,
+    check it errors. Finally check the default tuning file will load again afterwards.
+
+    :param configure: Boolean, set true to configure the camera on initial loading
+
+    This test checks that:
+    recalibrate_utils.recreate_camera_manager() is working as expected. As the default
+    PiCamera2 behaviour does not expect the tuning file to be reloaded.
+    """
     bad_tuning = generate_bad_tuning()
     default_tuning = load_default_tuning()
     print_tuning()
@@ -59,6 +84,12 @@ def _test_bad_tuning_after_good_tuning(configure):
         # and fail future tests
         pass
     del cam
+
+
+# Note: The tests below are marked with
+# @pytest.mark.filterwarnings("ignore: Exception ignored")
+# as the picamera will throw an exception ignored warning when deleting
+# the picamera object. This is expected
 
 
 @pytest.mark.filterwarnings("ignore: Exception ignored")

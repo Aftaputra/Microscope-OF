@@ -1,10 +1,12 @@
-from labthings_picamera2 import StreamingPiCamera2
-from labthings_fastapi.server import ThingServer
-from labthings_fastapi.client import ThingClient
 from fastapi.testclient import TestClient
 from PIL import Image
 import numpy as np
 from pytest import fixture
+
+from labthings_fastapi.server import ThingServer
+from labthings_fastapi.client import ThingClient
+
+from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
 
 
 @fixture(scope="module")
@@ -17,10 +19,17 @@ def client():
 
 
 def test_calibration(client):
+    """
+    Check that full auto calibrate completes without an exception
+    """
     client.full_auto_calibrate()
 
 
 def test_jpeg_and_array(client):
+    """
+    Check that grabbing a jpeg from the stream results in the same size
+    image as a array capture or a jpeg capture.
+    """
     blob = client.grab_jpeg()
     mjpeg_frame = Image.open(blob.open())
     assert mjpeg_frame

@@ -5,12 +5,16 @@ import numpy as np
 
 from labthings_fastapi.server import ThingServer
 from labthings_fastapi.client import ThingClient
-from labthings_picamera2.thing import StreamingPiCamera2
+
+from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 def test_sensor_mode():
+    """
+    Test capturing raw arrays in two different sensor modes
+    """
     cam = StreamingPiCamera2()
     server = ThingServer()
     server.add_thing(cam, "/camera/")
