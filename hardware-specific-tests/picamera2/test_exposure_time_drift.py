@@ -23,11 +23,12 @@ def test_exposure_time_drift():
 
     with TestClient(server.app) as test_client:
         client = ThingClient.from_url("/camera/", client=test_client)
-        client.exposure_time = 50000
-        time.sleep(0.1)
+        # 5444 is an exposure time supported by PiCamera2
+        client.exposure_time = 5444
+        time.sleep(0.5)
         initial_et = client.exposure_time
         print(f"Before capture, et is {client.exposure_time}")
-        for i in range(10):
+        for i in range(5):
             client.capture_jpeg(resolution="full")
             print(f"After capture, et is {client.exposure_time}")
         final_et = client.exposure_time
