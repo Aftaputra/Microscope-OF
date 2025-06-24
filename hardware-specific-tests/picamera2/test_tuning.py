@@ -7,7 +7,9 @@ import os
 import pytest
 from picamera2 import Picamera2
 
-from openflexure_microscope_server.things.camera import recalibrate_utils
+from openflexure_microscope_server.things.camera import (
+    picamera_recalibrate_utils as recalibrate_utils,
+)
 
 
 MODEL = Picamera2.global_camera_info()[0]["Model"]
