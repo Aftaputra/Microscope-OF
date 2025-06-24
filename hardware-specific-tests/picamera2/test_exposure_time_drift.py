@@ -1,3 +1,10 @@
+"""
+Check exposure times do not drift.
+
+This can get very tedious. Recommende running pytest with -s option
+to monitor progress.
+"""
+
 import logging
 import time
 
@@ -11,7 +18,7 @@ from openflexure_microscope_server.things.camera.picamera import StreamingPiCame
 logging.basicConfig(level=logging.DEBUG)
 
 
-def test_exposure_time_drift():
+def _test_exposure_time_drift(desired_time):
     """
     Capture 10 full resolution images and check that the exposure time remains constant
 
@@ -23,16 +30,40 @@ def test_exposure_time_drift():
 
     with TestClient(server.app) as test_client:
         client = ThingClient.from_url("/camera/", client=test_client)
-        # 5444 is an exposure time supported by PiCamera2
-        client.exposure_time = 5444
+        exposure_tol = cam.persistent_control_tolerances["ExposureTime"]
+        client.exposure_time = desired_time
+        print(f"Setting desired time of {desired_time}")
         time.sleep(0.5)
-        initial_et = client.exposure_time
-        print(f"Before capture, et is {client.exposure_time}")
-        for i in range(5):
+        pre_capture_et = client.exposure_time
+        print(f"Pre-capture the time is set to {pre_capture_et}")
+        # Check exp is set correctly within known tolerance
+        assert abs(pre_capture_et - desired_time) < exposure_tol
+        for i in range(10):
             client.capture_jpeg(resolution="full")
-            print(f"After capture, et is {client.exposure_time}")
-        final_et = client.exposure_time
-        assert initial_et == final_et
+            if i == 0:
+                # Exposure can update on first capture, due to frame rate restrictions
+                first_et = client.exposure_time
+                assert abs(first_et - pre_capture_et) < exposure_tol
+            frame_et = client.exposure_time
+            print(f"Frame {i} captured with exposure time {frame_et}")
+            # Check no further drift in value
+            assert first_et == frame_et
+
+        # Set the exposure time to the value it already is. To check it doesn't shift
+        print(f"Setting exposure time to {frame_et} to check it doesn't change")
+        client.exposure_time = frame_et
+        time.sleep(0.5)
+        # Check before and after capture
+        assert client.exposure_time == frame_et
+        client.capture_jpeg(resolution="full")
+        assert client.exposure_time == frame_et
+        print("Exposure time didn't change!!")
+    print(f"End of test for exposure target {desired_time}")
+
+
+def test_exposure_time_drift():
+    for desired_time in [100, 1000, 10000]:
+        _test_exposure_time_drift(desired_time)
 
 
 if __name__ == "__main__":

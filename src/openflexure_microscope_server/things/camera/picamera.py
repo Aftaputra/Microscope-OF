@@ -201,6 +201,13 @@ class StreamingPiCamera2(BaseCamera):
         "ExposureTime", int, description="The exposure time in microseconds"
     )
 
+    @exposure_time.setter
+    def exposure_time(self, value: int):
+        with self.picamera() as cam:
+            # Note: This set a value 1 higher than requested as picamera2 always sets
+            # a lower value than requested, even if the requested is allowed
+            cam.set_controls({"ExposureTime": value + 1})
+
     _sensor_modes = None
 
     @thing_property
