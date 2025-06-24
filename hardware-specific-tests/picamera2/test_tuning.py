@@ -93,6 +93,11 @@ def _test_bad_tuning_after_good_tuning(configure):
 # as the picamera will throw an exception ignored warning when deleting
 # the picamera object. This is expected
 
+# The 2 pairs of repeated identical tests exist because pytest only
+# starts once, and so by running the test more than one time checks
+# that the camera can be initialised multiple times without restarting
+# python.
+
 
 @pytest.mark.filterwarnings("ignore: Exception ignored")
 def test_bad_tuning_after_good_tuning_noconfigure():
