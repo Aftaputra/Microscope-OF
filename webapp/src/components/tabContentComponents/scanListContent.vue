@@ -89,13 +89,25 @@
                 <action-button
                 thing="smart_scan"
                 action="download_zip"
-                submit-label="Download ZIP"
+                submit-label="Download All"
                 :can-terminate="false"
                 :submit-data="{ scan_name: item.name }"
                 :button-primary="true"
                 @response="downloadZipFile"
                 @error="modalError"
-              />
+                class="uk-button uk-width-1-2"
+                />
+                <action-button
+                thing="smart_scan"
+                action="download_zip"
+                submit-label="Download Stitch"
+                :can-terminate="false"
+                :submit-data="{ scan_name: item.name }"
+                :button-primary="true"
+                @response="downloadZipFile"
+                @error="modalError"
+                class="uk-button uk-width-1-2"
+                />
               <button
                 class="uk-button uk-button-default uk-width-1-1"
                 @click="deleteScan(item.name)"
