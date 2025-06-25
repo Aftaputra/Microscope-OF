@@ -248,6 +248,10 @@ class BaseCamera(Thing):
         if save_resolution is not None and image.size != save_resolution:
             image = image.resize(save_resolution, Image.BOX)
         try:
+            # Per PIL documentation, (https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg)
+            # there are two factors when saving a JPEG. subsampling affects the colour, quality the pixels
+            # subsampling = 0 disables subsampling of colour
+            # quality = 95 is the maximum recommended - above this, JPEG compression is disabled, file size increases and quality is barely or not affected
             image.save(jpeg_path, quality=95, subsampling=0)
             try:
                 # Load EXIF metadata from image so it can be added to.
