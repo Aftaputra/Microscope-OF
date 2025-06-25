@@ -4,7 +4,7 @@ This SubModule interacts with a Raspberry Pi camera using the Picamera2 library.
 The Picamera2 library uses LibCamera as the underlying camera stack. This gives us
 some control of the GPU pipeline for the image.
 
-The API documentation for PiCamera2 is unfortunatly not in a standard auto-generated
+The API documentation for PiCamera2 is unfortunately not in a standard auto-generated
 website. For documentation of the PiCamera2 API there is a PDF called
 "The Picamera2 Library" available at:
 https://datasheets.raspberrypi.com/camera/picamera2-manual.pdf
@@ -426,7 +426,7 @@ class StreamingPiCamera2(BaseCamera):
         """
 
         # Buffer count can't be negative, zero, or too high.
-        if buffer_count < 1 or buffer_count < 8:
+        if buffer_count < 1 or buffer_count > 8:
             # 8 is slightly arbitrary. 6 is the PiCamera default for video
             # and the documentation only says that setting values higher gives
             # diminishing returns, and that the true maximum is hardware dependent
