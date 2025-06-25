@@ -69,7 +69,3 @@ def test_exposure_time_drift():
     """
     for desired_time in [100, 1000, 10000]:
         _test_exposure_time_drift(desired_time)
-
-
-if __name__ == "__main__":
-    test_exposure_time_drift()

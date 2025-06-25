@@ -28,7 +28,3 @@ def test_sensor_mode():
             # Note: Numpy array shape is (y,x), but the sensor is set with (x,y)
             # hence the need to compare index 0 with index 1.
             assert arr.shape[0] == size[1]
-
-
-if __name__ == "__main__":
-    test_sensor_mode()
