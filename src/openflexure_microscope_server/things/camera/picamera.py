@@ -556,15 +556,6 @@ class StreamingPiCamera2(BaseCamera):
         return JPEGBlob.from_temporary_directory(folder, fname)
 
     @thing_property
-    def exposure(self) -> float:
-        """An alias for `exposure_time` to fit the micromanager API"""
-        return self.exposure_time
-
-    @exposure.setter  # type: ignore
-    def exposure(self, value):
-        self.exposure_time = value
-
-    @thing_property
     def capture_metadata(self) -> dict:
         """Return the metadata from the camera"""
         with self.picamera() as cam:
