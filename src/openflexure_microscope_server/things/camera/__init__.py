@@ -31,6 +31,8 @@ class JPEGBlob(Blob):
 
 
 class PNGBlob(Blob):
+    """A class representing a PNG image as a LabThings FastAPI Blob"""
+
     media_type: str = "image/png"
 
 

@@ -33,14 +33,14 @@ def generate_bad_tuning():
     return bad_tuning
 
 
-def print_tuning(read_file=False):
+def print_tuning(read_file: bool = False):
     """
     Print the path of the default tuning file from the the environment variable.
 
     :param read_file: Boolean, set true to also print the file contents.
 
-    This is useful for debuging. As PyTest suppresses the printing by default the
-    -s option is needed when running pylint to see this.
+    This is useful for debugging. As pytest suppresses the printing by default the
+    -s option is needed when running pytest to see this.
     """
     key = "LIBCAMERA_RPI_TUNING_FILE"
     if key in os.environ:
@@ -52,7 +52,7 @@ def print_tuning(read_file=False):
         print("Tuning file environment variable not set")
 
 
-def _test_bad_tuning_after_good_tuning(configure):
+def _test_bad_tuning_after_good_tuning(configure: bool = False):
     """
     Load the default tuning file into the camera, re-load with a broken tuning file,
     check it errors. Finally check the default tuning file will load again afterwards.
@@ -66,14 +66,14 @@ def _test_bad_tuning_after_good_tuning(configure):
     bad_tuning = generate_bad_tuning()
     default_tuning = load_default_tuning()
     print_tuning()
-    print("opening camera with explicitly specified tuning")
+    print("opening camera with default tuning")
     with Picamera2(tuning=default_tuning) as cam:
         print_tuning()
         if configure:
             cam.configure(cam.create_preview_configuration())
     del cam
     recalibrate_utils.recreate_camera_manager()
-    print(f"Opening camera with tuning['version'] = {bad_tuning['version']}")
+    print(f"Opening camera with bad tuning - ['version'] = {bad_tuning['version']}")
     with pytest.raises(IndexError):
         # The bad version should cause a problem
         cam = Picamera2(tuning=bad_tuning)

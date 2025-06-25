@@ -1,7 +1,7 @@
 """
 Check exposure times do not drift.
 
-This can get very tedious. Recommende running pytest with -s option
+This can get very tedious. Recommend running pytest with -s option
 to monitor progress.
 """
 
@@ -38,16 +38,18 @@ def _test_exposure_time_drift(desired_time):
         print(f"Pre-capture the time is set to {pre_capture_et}")
         # Check exp is set correctly within known tolerance
         assert abs(pre_capture_et - desired_time) < exposure_tol
+
         for i in range(10):
             client.capture_jpeg(resolution="full")
             if i == 0:
                 # Exposure can update on first capture, due to frame rate restrictions
                 first_et = client.exposure_time
                 assert abs(first_et - pre_capture_et) < exposure_tol
-            frame_et = client.exposure_time
-            print(f"Frame {i} captured with exposure time {frame_et}")
-            # Check no further drift in value
-            assert first_et == frame_et
+            else:
+                frame_et = client.exposure_time
+                print(f"Frame {i} captured with exposure time {frame_et}")
+                # Check no further drift in value
+                assert first_et == frame_et
 
         # Set the exposure time to the value it already is. To check it doesn't shift
         print(f"Setting exposure time to {frame_et} to check it doesn't change")
@@ -62,6 +64,9 @@ def _test_exposure_time_drift(desired_time):
 
 
 def test_exposure_time_drift():
+    """
+    Performs the exposure time test for a range of exposure time values.
+    """
     for desired_time in [100, 1000, 10000]:
         _test_exposure_time_drift(desired_time)
 

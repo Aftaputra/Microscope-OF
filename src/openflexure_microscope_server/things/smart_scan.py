@@ -377,9 +377,12 @@ class SmartScanThing(Thing):
         return (next_point[0], next_point[1], z_estimate)
 
     @_scan_running
-    def _calc_displacement_from_test_image(self, overlap):
+    def _calc_displacement_from_test_image(self, overlap: int) -> tuple[int, int]:
         """
         Take a test image and use camera stage mapping to calculate x and y displacement
+
+        :param overlap: The desired overlap as a fraction of the image. i.e. 0.5 means
+        that each image should overlap its nearest neighbour by 50%.
 
         Return (dx, dy) - the x and y displacments in steps
         """
@@ -422,7 +425,9 @@ class SmartScanThing(Thing):
         dx, dy = self._calc_displacement_from_test_image(overlap)
         stitch_resize = STITCHING_RESOLUTION[0] / self.capture_resolution[0]
 
-        self._scan_logger.debug(f"Resizing images when stitching by {stitch_resize}")
+        self._scan_logger.debug(
+            f"Resizing images when stitching by a factor of {stitch_resize}"
+        )
 
         self._scan_logger.info(
             f"Based on an overlap of {overlap}, we will make steps of {dx}, {dy}"

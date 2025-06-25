@@ -294,6 +294,7 @@ class AutofocusThing(Thing):
 
         stack_z_range = stack_dz * (images_to_capture - 1)
         if stack_z_range > 0:
+            # Perform backlash corrected move. See issue #420
             stage.move_relative(z=-(STACK_OVERSHOOT + stack_z_range / 2))
             stage.move_relative(z=STACK_OVERSHOOT)
         time.sleep(0.3)
@@ -348,7 +349,7 @@ class AutofocusThing(Thing):
         images_dir: str,
         stack_dir: str,
         logger: InvocationLogger,
-    ):
+    ) -> None:
         """Gets a list of images in a folder (stack_dir), sorts them by filesize, and copies the sharpest
         image to images dir."""
         image_list = glob.glob(os.path.join(stack_dir, "*"))

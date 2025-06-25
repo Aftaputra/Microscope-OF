@@ -40,7 +40,7 @@ dev = [
   "matplotlib~=3.10"
 ]
 pi = [
-  "picamera2~=0.3.12",
+  "picamera2~=0.3.27",
 ]
 
 [project.scripts]
