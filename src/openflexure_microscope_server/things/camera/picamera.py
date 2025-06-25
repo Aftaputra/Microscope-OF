@@ -444,7 +444,7 @@ class StreamingPiCamera2(BaseCamera):
         self,
         stream_name: Literal["main", "lores", "raw"] = "main",
         wait: Optional[float] = 0.9,
-    ):
+    ) -> None:
         """Acquire one image from the camera.
 
         Return it as a PIL Image

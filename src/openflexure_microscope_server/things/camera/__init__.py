@@ -76,7 +76,9 @@ class BaseCamera(Thing):
         self._memory_metadata = None
 
     @thing_action
-    def start_streaming(self, main_resolution, buffer_count) -> None:
+    def start_streaming(
+        self, main_resolution: tuple[int, int], buffer_count: int
+    ) -> None:
         """Start (or stop and restart) the camera with the given resolution
         for the main stream, and buffer_count number of images in the buffer"""
         raise NotImplementedError(
@@ -132,7 +134,11 @@ class BaseCamera(Thing):
         return JPEGBlob.from_bytes(frame)
 
     @thing_action
-    def capture_image(self, stream_name, wait):
+    def capture_image(
+        self,
+        stream_name: Literal["main", "lores", "raw"],
+        wait: Optional[float],
+    ) -> None:
         """Capture a PIL image from stream stream_name with timeout wait"""
         raise NotImplementedError(
             "CameraThings must define their own capture_image method"
@@ -211,7 +217,10 @@ class BaseCamera(Thing):
     ) -> Image:
         """Capture an image in memory and return it with metadata
         CaptureError raised if the capture fails for any reason
-        returns tuple with PIL Image, and dict of metadata
+        returns tuple with PIL Image, and dict of metadata.
+
+        This robust capturing method attempts to capture the image five times
+        each time with a 5 second timeout set.
         """
         for capture_attempts in range(5):
             try:
