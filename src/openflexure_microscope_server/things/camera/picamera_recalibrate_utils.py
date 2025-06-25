@@ -69,13 +69,13 @@ def load_default_tuning(cam: Picamera2) -> dict:
         tuning_dir = "/usr/share/libcamera/ipa/raspberrypi"
         # from picamera2 v0.3.9
         # The directory above has been removed from the search path seems
-        # find odd - as that's where the files currently are on a default
+        # odd - as that's where the files currently are on a default
         # Raspbian image. This may need updating if the files have moved
         # in future updates to the system libcamera package
         return cam.load_tuning_file(fname, dir=tuning_dir)
 
 
-def set_minimum_exposure(camera: Picamera2):
+def set_minimum_exposure(camera: Picamera2) -> None:
     """Enable manual exposure, with low gain and shutter speed
 
     We set exposure mode to manual, analog and digital gain
@@ -135,7 +135,7 @@ def test_exposure_settings(camera: Picamera2, percentile: float) -> ExposureTest
     return result
 
 
-def check_convergence(test: ExposureTest, target: int, tolerance: float):
+def check_convergence(test: ExposureTest, target: int, tolerance: float) -> bool:
     """Check whether the brightness is within the specified target range"""
     return abs(test.level - target) < target * tolerance
 
@@ -222,7 +222,7 @@ def adjust_shutter_and_gain_from_raw(
 
         # Check the gain is still changing - if not, we have probably hit the maximum
         if camera.capture_metadata()["AnalogueGain"] == test.analog_gain:
-            logging.info(f"Gain has maxed out. at {test.analog_gain}")
+            logging.info(f"Gain has maxed out at {test.analog_gain}")
             break
 
     if check_convergence(test, target_white_level, tolerance):
@@ -504,7 +504,7 @@ def index_of_algorithm(algorithms: list[dict], algorithm: str) -> int:
     raise ValueError(f"Algorithm {algorithm} is not available.")
 
 
-def copy_alsc_section(from_tuning: dict, to_tuning: dict):
+def copy_alsc_section(from_tuning: dict, to_tuning: dict) -> None:
     """Copy the `rpi.alsc` algorithm from one tuning to another.
 
     This is done in-place, i.e. modifying to_tuning.
@@ -544,7 +544,7 @@ def raw_channels_from_camera(camera: Picamera2) -> LensShadingTables:
     return channels_from_bayer_array(raw_image)
 
 
-def recreate_camera_manager():
+def recreate_camera_manager() -> None:
     """Delete and recreate the camera manager.
 
     This is necessary to ensure the tuning file is re-read.

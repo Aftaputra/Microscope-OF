@@ -152,7 +152,7 @@ class StreamingPiCamera2(BaseCamera):
         tolerance of current value. This allows ignoring small changes
         """
         if key not in self.persistent_control_tolerances:
-            # Not tolerance range set, so it is not within tollerance
+            # Not tolerance range set, so it is not within tolerance
             return False
 
         difference = np.abs(self.persistent_controls[key] - value)
@@ -419,7 +419,7 @@ class StreamingPiCamera2(BaseCamera):
                 )
 
     @thing_action
-    def stop_streaming(self, stop_web_stream=True) -> None:
+    def stop_streaming(self, stop_web_stream: bool = True) -> None:
         """
         Stop the MJPEG stream
         """
@@ -617,7 +617,7 @@ class StreamingPiCamera2(BaseCamera):
             self.update_persistent_controls()
 
     @thing_action
-    def calibrate_lens_shading(self):
+    def calibrate_lens_shading(self) -> None:
         """Take an image and use it for flat-field correction.
 
         This method requires an empty (i.e. bright) field of view. It will take
@@ -643,7 +643,7 @@ class StreamingPiCamera2(BaseCamera):
         )
 
     @colour_correction_matrix.setter  # type: ignore
-    def colour_correction_matrix(self, value):
+    def colour_correction_matrix(self, value) -> None:
         self.thing_settings["colour_correction_matrix"] = value
         self.calibrate_colour_correction(value)
 
@@ -664,14 +664,14 @@ class StreamingPiCamera2(BaseCamera):
         self.colour_correction_matrix = c
 
     @thing_action
-    def calibrate_colour_correction(self, c: tuple):
+    def calibrate_colour_correction(self, c: tuple) -> None:
         """Overwrite the colour correction matrix in camera tuning"""
         with self.picamera(pause_stream=True):
             recalibrate_utils.set_static_ccm(self.tuning, c)
             self.initialise_picamera()
 
     @thing_action
-    def set_static_green_equalisation(self, offset: int = 65535):
+    def set_static_green_equalisation(self, offset: int = 65535) -> None:
         """Set the green equalisation to a static value.
 
         Green equalisation avoids the debayering algorithm becoming confused
@@ -686,7 +686,7 @@ class StreamingPiCamera2(BaseCamera):
             self.initialise_picamera()
 
     @thing_action
-    def full_auto_calibrate(self):
+    def full_auto_calibrate(self) -> None:
         """Perform a full auto-calibration
 
         This function will call the other calibration actions in sequence:
@@ -704,7 +704,7 @@ class StreamingPiCamera2(BaseCamera):
         self.calibrate_white_balance()
 
     @thing_action
-    def flat_lens_shading(self):
+    def flat_lens_shading(self) -> None:
         """Disable flat-field correction
 
         This method will set a completely flat lens shading table. It is not the
@@ -786,7 +786,7 @@ class StreamingPiCamera2(BaseCamera):
         )
 
     @thing_action
-    def flat_lens_shading_chrominance(self):
+    def flat_lens_shading_chrominance(self) -> None:
         """Disable flat-field correction
 
         This method will set the chrominance of the lens shading table to be
@@ -801,7 +801,7 @@ class StreamingPiCamera2(BaseCamera):
             self.initialise_picamera()
 
     @thing_action
-    def reset_lens_shading(self):
+    def reset_lens_shading(self) -> None:
         """Revert to default lens shading settings
 
         This method will restore the default "adaptive" lens shading method used

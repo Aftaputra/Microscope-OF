@@ -250,6 +250,7 @@ class BaseCamera(Thing):
         try:
             image.save(jpeg_path, quality=95, subsampling=0)
             try:
+                # Load EXIF metadata from image so it can be added to.
                 exif_dict = piexif.load(jpeg_path)
                 exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(
                     metadata
