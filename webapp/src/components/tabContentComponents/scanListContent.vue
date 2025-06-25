@@ -86,7 +86,9 @@
               </div>
               <h3 class="uk-card-title" style="text-align: center;">{{ item.name }}</h3>
               <div class="button-container">
+              <div class="uk-button-group" style="width:100%">
                 <action-button
+                class="uk-width-1-2"
                 thing="smart_scan"
                 action="download_zip"
                 submit-label="Download All"
@@ -95,15 +97,15 @@
                 :button-primary="true"
                 @response="downloadZipFile"
                 @error="modalError"
-                class="uk-button uk-width-1-2"
                 />
-                <a
-                  class="uk-button uk-button-primary uk-width-1-2"
-                  :class="item.stitch_available ? '' : 'disabled'"
-                  :href="downloadStitchFile( item.name )"
-                  download
-                  >Download Stitch</a
-                >
+                <EndpointButton
+                  class="uk-width-1-2"
+                  :buttonPrimary=true
+                  :isDisabled=!item.stitch_available
+                  :URL="downloadStitchFile( item.name )"
+                  buttonLabel="Download JPEG"
+                  />
+              </div>
               <button
                 class="uk-button uk-button-default uk-width-1-1"
                 @click="deleteScan(item.name)"
@@ -120,6 +122,7 @@
                 :button-primary="false"
                 :modal-progress="true"
                 @error="modalError"
+                @response="updateScans"
               />
               <button
                 v-if="item.dzi" class="uk-button uk-button-default uk-width-1-1"
@@ -151,11 +154,12 @@ import axios from "axios";
 import UIkit from "uikit";
 import actionButton from "../labThingsComponents/actionButton.vue";
 import OpenSeadragonViewer from "./scanListComponents/openSeadragonViewer.vue";
+import EndpointButton from "../labThingsComponents/endpointButton.vue";
 
 // Export main app
 export default {
   name: "ScanListContent",
-  components: { actionButton, OpenSeadragonViewer },
+  components: { actionButton, OpenSeadragonViewer, EndpointButton },
 
   data: function() {
     return {
