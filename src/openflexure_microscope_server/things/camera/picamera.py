@@ -623,11 +623,17 @@ class StreamingPiCamera2(BaseCamera):
         target_white_level: int = 700,
         percentile: float = 99.9,
     ):
-        """Adjust exposure to hit the target white level
+        """Adjust exposure until a the target white level is reached
 
-        Starting from the minimum exposure, we gradually increase exposure until
-        we hit the specified white level. We use a percentile rather than the
-        maximum, in order to be robust to a small number of noisy/bright pixels.
+        Starting from the minimum exposure, gradually increase exposure until
+        the image reaches the specified white level.
+
+        :param target_white_level: The target 10bit white level. 10-bit data has a
+        theoretical maximum of 1023, but with black level correction the true maxiumum
+        is about 950. Default is 700 as this is approximately 70% saturated.
+        :param percentile: The percentile to use instead of maximum. Default 99.9. When
+        calculating the brightest pixel, a percentile is used rather than the
+        maximum in order to be robust to a small number of noisy/bright pixels.
         """
         with self.picamera(pause_stream=True) as cam:
             recalibrate_utils.adjust_shutter_and_gain_from_raw(
