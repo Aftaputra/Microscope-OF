@@ -5,7 +5,7 @@ Currently it handles scan getting information from a information from a scan dir
 eventually is should handle all the file system operation for smart_scan.
 """
 
-from typing import Optional
+from typing import Optional, Literal
 import os
 import re
 import shutil
@@ -13,6 +13,7 @@ import zipfile
 
 from pydantic import BaseModel
 
+STITCH_SUFFIX = "_stitched.jpg"
 IMG_DIR_NAME = "images"
 IMAGE_REGEX = re.compile(r"-?[0-9]+_-?[0-9]+\.jpe?g$")
 SCAN_ZERO_PAD_DIGITS = 4
@@ -88,13 +89,20 @@ class ScanDirectoryManager:
         """Return the file path for the file within a scan directory
 
         If check_exists is True, None is returned if the file does not exist. If False
-        then the path is returned anway
+        then the path is returned anyway
         """
         file_path = os.path.join(self.img_dir_for(scan_name), filename)
         if check_exists:
             if not os.path.exists(file_path):
                 return None
         return file_path
+
+    def get_final_stitch(self, scan_name: str) -> Optional[str]:
+        """Return the file path for the final stitch.
+
+        If no final stitch is found, return None
+        """
+        return ScanDirectory(scan_name, self.base_dir).get_final_stitch()
 
     @property
     def all_scans(self) -> list[str]:
@@ -242,25 +250,55 @@ class ScanDirectory:
             return []
         return os.listdir(self.images_dir)
 
+    def _find_files(
+        self, file_types=Literal["all", "scan_images", "stitches", "dzi"]
+    ) -> tuple[list[str], list[str], list[str]] | list[str]:
+        folder_contents = self.get_scan_files()
+
+        # Return empty lists if no folder contents.
+        if not folder_contents:
+            if file_types == "all":
+                return [], [], []
+            return []
+
+        if file_types in ["all", "scan_images"]:
+            scan_images = [i for i in folder_contents if IMAGE_REGEX.search(i)]
+            if file_types == "scan_images":
+                return scan_images
+
+        if file_types in ["all", "stitches"]:
+            stitches = [i for i in folder_contents if i.endswith("_stitched.jpg")]
+            if file_types == "stitches":
+                return stitches
+
+        if file_types in ["all", "dzi"]:
+            dzi_files = [i for i in folder_contents if i.endswith("dzi")]
+            if file_types == "dzi":
+                return dzi_files
+
+        return scan_images, stitches, dzi_files
+
+    def get_final_stitch(self) -> Optional[str]:
+        """Return the file path for the final stitch.
+
+        If no final stitch is found, return None
+        """
+        stitches = self._find_files("stitches")
+        if not stitches:
+            return None
+        return stitches[0]
+
     def get_modified_time(self) -> float:
         """Return the modified time of the directory"""
         return max(os.stat(root).st_mtime for root, _, _ in os.walk(self.dir_path))
 
     def scan_info(self):
         """Return the information for the scan directory as a ScanInfo object"""
-        folder_contents = self.get_scan_files()
-        if folder_contents:
-            scan_images = [i for i in folder_contents if IMAGE_REGEX.search(i)]
-            stitches = [i for i in folder_contents if i.endswith("_stitched.jpg")]
-            dzi_files = [i for i in folder_contents if i.endswith("dzi")]
 
-            number_of_images = len(scan_images)
-            stitch_available = len(stitches) > 0
-            dzi = None if not dzi_files else str(dzi_files[0])
-        else:
-            number_of_images = 0
-            stitch_available = False
-            dzi = None
+        scan_images, stitches, dzi_files = self._find_files("all")
+        number_of_images = len(scan_images)
+        stitch_available = len(stitches) > 0
+        dzi = None if not dzi_files else str(dzi_files[0])
 
         return ScanInfo(
             name=self.name,

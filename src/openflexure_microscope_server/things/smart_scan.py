@@ -667,6 +667,30 @@ class SmartScanThing(Thing):
         return self._scan_dir_manager.all_scans_info()
 
     @fastapi_endpoint(
+        "get",
+        "get_stitch/{scan_name}",
+        responses={
+            200: {
+                "description": "Successfully downloading file",
+                "content": {"*/*": {}},
+            },
+            403: {"description": "Filename not permitted"},
+            404: {"description": "File not found"},
+        },
+    )
+    def get_stitch_file(self, scan_name: str) -> FileResponse:
+        """Return the stitched image corresponding to a given scan name, if it exists.
+
+        Will only return a file ending in suffix STITCH_SUFFIX
+        Note: when downloading this, the default filename will be `scan_name`.jpeg"""
+
+        stitch_path = self._scan_dir_manager.get_final_stitch(scan_name)
+
+        if stitch_path is None:
+            raise HTTPException(404, "File not found")
+        return FileResponse(stitch_path)
+
+    @fastapi_endpoint(
         "delete",
         "scans/{scan_name}",
         responses={

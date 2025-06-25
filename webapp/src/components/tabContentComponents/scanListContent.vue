@@ -97,17 +97,13 @@
                 @error="modalError"
                 class="uk-button uk-width-1-2"
                 />
-                <action-button
-                thing="smart_scan"
-                action="download_zip"
-                submit-label="Download Stitch"
-                :can-terminate="false"
-                :submit-data="{ scan_name: item.name }"
-                :button-primary="true"
-                @response="downloadZipFile"
-                @error="modalError"
-                class="uk-button uk-width-1-2"
-                />
+                <a
+                  class="uk-button uk-button-primary uk-width-1-2"
+                  :class="item.stitch_available ? '' : 'disabled'"
+                  :href="downloadStitchFile( item.name )"
+                  download
+                  >Download Stitch</a
+                >
               <button
                 class="uk-button uk-button-default uk-width-1-1"
                 @click="deleteScan(item.name)"
@@ -231,6 +227,9 @@ export default {
   },
 
   methods: {
+    downloadStitchFile: function(name) {
+      return `${this.$store.getters.baseUri}/smart_scan/get_stitch/${name}`;
+    },
     thumbnailPath(scan_name) {
       return (
         `${this.$store.getters.baseUri}/smart_scan/scans/stitched_thumbnail.jpg?scan_name=` +
@@ -392,5 +391,10 @@ ul {
   color: orange;
   text-align: center;
   font-weight: bold;
+}
+
+a.disabled {
+    pointer-events: none;
+    color: #ccc;
 }
 </style>
