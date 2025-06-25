@@ -326,10 +326,11 @@ def channels_from_bayer_array(bayer_array: np.ndarray) -> np.ndarray:
     return channels
 
 
-def get_16x12_grid(chan: np.ndarray, dx: int, dy: int):
+def get_16x12_grid(chan: np.ndarray, dx: int, dy: int) -> np.ndarray:
     """Compresses channel down to a 16x12 grid - from libcamera
 
-    This is taken from https://git.linuxtv.org/libcamera.git/tree/utils/raspberrypi/ctt/ctt_alsc.py
+    This is taken from
+    https://git.linuxtv.org/libcamera.git/tree/utils/raspberrypi/ctt/ctt_alsc.py
     for consistency.
     """
     grid = []
@@ -347,7 +348,7 @@ def get_16x12_grid(chan: np.ndarray, dx: int, dy: int):
     return np.reshape(np.array(grid), (12, 16))
 
 
-def upsample_channels(grids: np.ndarray, shape: tuple[int]):
+def upsample_channels(grids: np.ndarray, shape: tuple[int]) -> np.ndarray:
     """Zoom an image in the last two dimensions
 
     This is effectively the inverse operation of `get_16x12_grid`
@@ -452,14 +453,19 @@ def set_static_lst(
     alsc["luminance_lut"] = as_flat_rounded_list(luminance, round_to=3)
 
 
-def set_static_ccm(tuning: dict, c: list) -> None:
+def set_static_ccm(
+    tuning: dict,
+    col_corr_matrix: tuple[
+        float, float, float, float, float, float, float, float, float
+    ],
+) -> None:
     """Update the `rpi.alsc` section of a camera tuning dict to use a static correcton.
 
     `tuning` will be updated in-place to set its shading to static, and disable any
     adaptive tweaking by the algorithm.
     """
     ccm = Picamera2.find_tuning_algo(tuning, "rpi.ccm")
-    ccm["ccms"] = [{"ct": 2860, "ccm": c}]
+    ccm["ccms"] = [{"ct": 2860, "ccm": col_corr_matrix}]
 
 
 def get_static_ccm(tuning: dict) -> None:

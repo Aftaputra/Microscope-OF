@@ -1,3 +1,20 @@
+"""
+This SubModule interacts with a Raspberry Pi camera using the Picamera2 library.
+
+The Picamera2 library uses LibCamera as the underlying camera stack. This gives us
+some control of the GPU pipeline for the image.
+
+The API documentation for PiCamera2 is unfortunatly not in a standard auto-generated
+website. For documentation of the PiCamera2 API there is a PDF called
+"The Picamera2 Library" available at:
+https://datasheets.raspberrypi.com/camera/picamera2-manual.pdf
+
+For information on the algorithms used to tune/calibrate the Raspberry Pi Camera see
+the guide called "Raspberry Pi Camera Algorithm and Tuning Guide"
+Available at:
+https://datasheets.raspberrypi.com/camera/raspberry-pi-camera-guide.pdf
+"""
+
 from __future__ import annotations
 from datetime import datetime
 import json
@@ -71,6 +88,11 @@ class PicameraStreamOutput(Output):
 
 
 class SensorMode(BaseModel):
+    """
+    A Pydantic model holding all the information about a specific
+    sensor mode as reported by the PiCamera.
+    """
+
     unpacked: str
     bit_depth: int
     size: tuple[int, int]
@@ -81,11 +103,28 @@ class SensorMode(BaseModel):
 
 
 class SensorModeSelector(BaseModel):
+    """
+    A Pydantic model holding the two values needed to select a PiCamera
+    Sensor mode. The output size and the bit depth.
+
+    This is a Pydantic modell so that it can be saved to the disk.
+    """
+
     output_size: tuple[int, int]
     bit_depth: int
 
 
 class LensShading(BaseModel):
+    """
+    A Pydantic model holding the lens shading tables.
+
+    PiCamera needs three numpy arrays for lens shading correction. Each array is
+    (12, 16) in size. The arrays are luminance, red-difference chroma (Cr), and
+    blue-difference chroma (Cb).
+
+    This is a Pydantic modell so that it can be saved to the disk.
+    """
+
     luminance: list[list[float]]
     Cr: list[list[float]]
     Cb: list[list[float]]
@@ -203,6 +242,14 @@ class StreamingPiCamera2(BaseCamera):
 
     @exposure_time.setter
     def exposure_time(self, value: int):
+        """
+        Custom setter for the above exposure_time PicameraControl.
+
+        This is overriding the standard setter for a PicameraControl, as
+        the value needs to be adjusted before setting to behave as expected.
+
+        See comment within the function for more detail.
+        """
         with self.picamera() as cam:
             # Note: This set a value 1 higher than requested as picamera2 always sets
             # a lower value than requested, even if the requested is allowed
@@ -375,8 +422,18 @@ class StreamingPiCamera2(BaseCamera):
         main_resolution: the resolution for the main configuration. Defaults to
         (820, 616), 1/4 sensor size.
         buffer_count: the number of frames to hold in the buffer. Higher uses more memory,
-        lower may cause dropped frames. Defaults to 6.
+        lower may cause dropped frames. Value must be between 1 and 8, Defaults to 6.
         """
+
+        # Buffer count can't be negative, zero, or too high.
+        if buffer_count < 1 or buffer_count < 8:
+            # 8 is slightly arbitrary. 6 is the PiCamera default for video
+            # and the documentation only says that setting values higher gives
+            # diminishing returns, and that the true maximum is hardware dependent
+            raise ValueError(
+                f"Can't set a buffer count of {buffer_count}. "
+                "Buffer count must be an integer from 1-8"
+            )
         with self.picamera() as picam:
             try:
                 if picam.started:
@@ -388,7 +445,6 @@ class StreamingPiCamera2(BaseCamera):
                     sensor=self.thing_settings.get("sensor_mode", None),
                     controls=self.persistent_controls,
                 )
-                # Set buffer count - can't be negative
                 stream_config["buffer_count"] = buffer_count
                 picam.configure(stream_config)
                 logging.info("Starting picamera MJPEG stream...")
@@ -626,8 +682,10 @@ class StreamingPiCamera2(BaseCamera):
         the processed images. It should not affect raw images.
         """
         with self.picamera(pause_stream=True) as cam:
-            # Suppress lint warning that L, Cr, and Cb are not lowercase, as this is the
-            # Standard format for these mathematical vars.
+            # Suppress lint warning that L, Cr, and Cb are not lowercase, as these are
+            # the standard mathematical terms for:
+            # luminance (L), red-difference chroma (Cr), and blue-difference chroma
+            # (Cb).
             L, Cr, Cb = recalibrate_utils.lst_from_camera(cam)  # noqa: N806
             recalibrate_utils.set_static_lst(self.tuning, L, Cr, Cb)
             self.initialise_picamera()
@@ -649,8 +707,14 @@ class StreamingPiCamera2(BaseCamera):
 
     @thing_action
     def reset_ccm(self):
-        """Overwrite the colour correction matrix in camera tuning with default values from the documentation"""
-        c = [
+        """
+        Overwrite the colour correction matrix in camera tuning with default values.
+
+        These values are from the Raspberry Pi Camera Algorithm and Tuning Guide, page
+        45.
+        """
+        # This is flattened 3x3 matrix. See `calibrate_colour_correction`
+        col_corr_matrix = [
             1.80439,
             -0.73699,
             -0.06739,
@@ -661,13 +725,25 @@ class StreamingPiCamera2(BaseCamera):
             -0.56403,
             1.64781,
         ]
-        self.colour_correction_matrix = c
+        self.colour_correction_matrix = col_corr_matrix
 
     @thing_action
-    def calibrate_colour_correction(self, c: tuple) -> None:
-        """Overwrite the colour correction matrix in camera tuning"""
+    def calibrate_colour_correction(
+        self,
+        col_corr_matrix: tuple[
+            float, float, float, float, float, float, float, float, float
+        ],
+    ) -> None:
+        """Overwrite the colour correction matrix in camera tuning
+
+        col_corr_matrix: This is a 9 value tuple used to specify the 3x3
+        matrix that the GPU pipeline uses to convert from the camera R,G,B vector
+        to the standard R,G,B.
+
+        See page Raspberry Pi Camera Algorithm and Tuning Guide, page 45.
+        """
         with self.picamera(pause_stream=True):
-            recalibrate_utils.set_static_ccm(self.tuning, c)
+            recalibrate_utils.set_static_ccm(self.tuning, col_corr_matrix)
             self.initialise_picamera()
 
     @thing_action
@@ -710,29 +786,43 @@ class StreamingPiCamera2(BaseCamera):
         This method will set a completely flat lens shading table. It is not the
         same as the default behaviour, which is to use an adaptive lens shading
         table.
+
+        This flat table is used to take an image wth no lens shading so that the
+        correct lens shading table can be calibrated.
         """
         with self.picamera(pause_stream=True):
-            f = np.ones((12, 16))
-            recalibrate_utils.set_static_lst(self.tuning, f, f, f)
+            # Generate and array of ones of the correct size for each channel
+            flat_array = np.ones((12, 16))
+            recalibrate_utils.set_static_lst(
+                self.tuning, flat_array, flat_array, flat_array
+            )
             self.initialise_picamera()
 
     @thing_property
     def lens_shading_tables(self) -> Optional[LensShading]:
         """The current lens shading (i.e. flat-field correction)
 
-        This returns the current lens shading correction, as three 2D lists
-        each with dimensions 16x12. This assumes that we are using a static
-        lens shading table - if adaptive control is enabled, or if there
-        are multiple LSTs in use for different colour temperatures,
-        we return a null value to avoid confusion.
+        Return the current lens shading correction, as three 2D lists each with
+        dimensions 16x12, if a static lens shading table is in use.
+
+        Return None if:
+        - adaptive control is enabled
+        - multiple LSTs in use (for different colour temperatures),
         """
         if not self.lens_shading_is_static:
             return None
+
+        # Note "alsc" is the Picamera2 term for "Automatic Lens Shading Correction"
         alsc = Picamera2.find_tuning_algo(self.tuning, "rpi.alsc")
-        if any(len(alsc[f"calibrations_C{c}"]) != 1 for c in ("r", "b")):
+
+        # Check there is exactly 1 correction table for red-difference chroma (Cr)
+        # and blue-difference chroma (Cb)
+        if len(alsc["calibrations_Cr"]) != 1 or len(alsc["calibrations_Cb"]) != 1:
+            # If there is not exactly one table, then lens shading isn't static.
             return None
 
         def reshape_lst(lin: list[float]) -> list[list[float]]:
+            """Reshape the 192 element list into a 2D 16x12 list"""
             w, h = 16, 12
             return [lin[w * i : w * (i + 1)] for i in range(h)]
 
