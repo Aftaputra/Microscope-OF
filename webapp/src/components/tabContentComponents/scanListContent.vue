@@ -116,7 +116,7 @@
                 submit-label="Stitch Images"
                 thing="smart_scan"
                 action="stitch_scan"
-                v-if="item.can_stitch | !item.dzi"
+                v-if="item.can_stitch | (item.stitch_available & !item.dzi)"
                 :can-terminate="false"
                 :submit-data="{ scan_name: item.name }"
                 :button-primary="false"
