@@ -146,8 +146,6 @@ class BaseCamera(Thing):
     ) -> None:
         """Capture an image and save it to disk
 
-        This will set the event `acquired` once the image has been acquired, so
-        that the stage may be moved while it's saved.
 
         save_resolution can be set to resize the image before saving. By default this is None
             meaning that the image is saved at original resoltion.

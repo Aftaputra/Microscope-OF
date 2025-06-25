@@ -141,7 +141,7 @@ class StreamingPiCamera2(BaseCamera):
                         "%s while updating persistent controls.",
                         key,
                         self.persistent_controls[key],
-                        self.persistent_controls[key],
+                        value,
                     )
                 else:
                     self.persistent_controls[key] = value
@@ -442,14 +442,14 @@ class StreamingPiCamera2(BaseCamera):
     @thing_action
     def capture_image(
         self,
-        stream_name: Literal["main", "lores", "raw", "full"] = "main",
+        stream_name: Literal["main", "lores", "raw"] = "main",
         wait: Optional[float] = 0.9,
     ):
         """Acquire one image from the camera.
 
         Return it as a PIL Image
 
-        stream_name: (Optional) The PiCamera2 stream to use, should be one of ["main", "lores", "raw", "full"]. Default = "main"
+        stream_name: (Optional) The PiCamera2 stream to use, should be one of ["main", "lores", "raw"]. Default = "main"
         wait: (Optional, float) Set a timeout in seconds.
         A TimeoutError is raised if this time is exceeded during capture.
         Default = 0.9s, lower than the 1s timeout default in picamera yaml settings
