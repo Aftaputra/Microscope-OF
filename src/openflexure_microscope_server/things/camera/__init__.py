@@ -7,7 +7,7 @@ See repository root for licensing information.
 """
 
 from __future__ import annotations
-from typing import Literal, Optional, Tuple
+from typing import Literal, Optional, Tuple, Any
 import json
 
 from pydantic import RootModel
@@ -50,30 +50,84 @@ class NoImageInMemoryError(RuntimeError):
     """An error called if no image in in memory when an method is called to use that image"""
 
 
+class CameraMemoryBuffer:
+    """
+    A class that holds images in memory. The images are by default PIL images.
+
+    However subclasses of BaseCamera can use this class to store other object types
+    """
+
+    _storage: dict[int, tuple[Any, Optional[dict]]]
+
+    def __init__(self):
+        self._storage = {}
+        self._latest_id: int = 0
+
+    def add_image(
+        self, image: Any, metadata: Optional[dict], buffer_max: int = 1
+    ) -> None:
+        self._latest_id += 1
+        self._create_space(buffer_max)
+        self._storage[self._latest_id] = (image, metadata)
+        return self._latest_id
+
+    def get_image(
+        self, buffer_id: Optional[int] = None, remove: bool = True
+    ) -> tuple[Any, Optional[dict]]:
+        """
+        If the buffer ID is not set, always clear whole buffer
+        """
+
+        # No id given
+        if buffer_id is None:
+            # Get the latest image and metadata tuple from storage
+            try:
+                image_tuple = list(self._storage.value())[-1]
+            except IndexError as e:
+                raise NoImageInMemoryError("No image in memory to save.") from e
+            # Clear the storage so images don't get retrieved out of order
+            self._storage.clear()
+            return image_tuple
+
+        if remove:
+            return self._storage.pop(buffer_id)
+        return self._storage[buffer_id]
+
+    def clear(self):
+        self._storage.clear()
+
+    def _create_space(self, buffer_max: int) -> None:
+        """
+        Create space to add an image.
+        """
+        # If only one image to be stored just clear the storage and return
+        if buffer_max <= 1:
+            self._storage.clear()
+            return
+
+        # Number to remove to get the storage down to 1 less than the buffer length
+        to_remove = len(self._storage) - (buffer_max - 1)
+        # If if there is space. Nothing to do, just return
+        if to_remove < 1:
+            return
+
+        keys_to_remove = list(self._storage.keys())[:to_remove]
+        for key in keys_to_remove:
+            del self._storage[key]
+
+
 class BaseCamera(Thing):
     """The base class for all cameras. All cameras must directly inherit from this class"""
 
-    _memory_image: Optional[Image] = None
-    _memory_metadata: Optional[dict] = None
     mjpeg_stream = MJPEGStreamDescriptor()
     lores_mjpeg_stream = MJPEGStreamDescriptor()
+    _memory_buffer = CameraMemoryBuffer()
 
     def __enter__(self) -> None:
         raise NotImplementedError("CameraThings must define their own __enter__ method")
 
     def __exit__(self, _exc_type, _exc_value, _traceback) -> None:
         raise NotImplementedError("CameraThings must define their own __exit__ method")
-
-    @thing_property
-    def image_in_memory(self) -> bool:
-        """True if an image is in memory ready to be saved"""
-        return self._memory_image is not None and self._memory_metadata is not None
-
-    @thing_action
-    def clear_image_memory(self) -> None:
-        """Clear any image in memory"""
-        self._memory_image = None
-        self._memory_metadata = None
 
     @thing_action
     def start_streaming(
@@ -134,6 +188,18 @@ class BaseCamera(Thing):
         return JPEGBlob.from_bytes(frame)
 
     @thing_action
+    def grab_jpeg_size(
+        self,
+        portal: BlockingPortal,
+        stream_name: Literal["main", "lores"] = "main",
+    ) -> int:
+        """Acquire one image from the preview stream and return its size"""
+        stream = (
+            self.lores_mjpeg_stream if stream_name == "lores" else self.mjpeg_stream
+        )
+        return portal.call(stream.next_frame_size)
+
+    @thing_action
     def capture_image(
         self,
         stream_name: Literal["main", "lores", "raw"],
@@ -173,20 +239,18 @@ class BaseCamera(Thing):
 
     @thing_action
     def capture_to_memory(
-        self,
-        logger: InvocationLogger,
-        metadata_getter: GetThingStates,
+        self, logger: InvocationLogger, metadata_getter: GetThingStates, buffer_max
     ) -> None:
         """
         Capture an image to memory. This can be saved later with `save_from_memory`
 
         Note that only one image is held in memory so this will overwrite any image
         in memory.
+
+        Return the buffer id of the image captured
         """
-        self._memory_image, self._memory_metadata = self._robust_image_capture(
-            metadata_getter,
-            logger=logger,
-        )
+        image, metadata = self._robust_image_capture(metadata_getter, logger)
+        return self._memory_buffer.add_image(image, metadata, buffer_max=buffer_max)
 
     @thing_action
     def save_from_memory(
@@ -194,21 +258,21 @@ class BaseCamera(Thing):
         jpeg_path: str,
         logger: InvocationLogger,
         save_resolution: Optional[Tuple[int, int]] = None,
+        buffer_id: Optional[int] = None,
     ) -> None:
         """
         Save an image that has been captured to memory.
         """
-        if not self.image_in_memory:
-            raise NoImageInMemoryError("No image in memory to save.")
+        image, metadata = self._memory_buffer.get_image(buffer_id)
 
         self._save_capture(
             jpeg_path=jpeg_path,
-            image=self._memory_image,
-            metadata=self._memory_metadata,
+            image=image,
+            metadata=metadata,
             logger=logger,
             save_resolution=save_resolution,
         )
-        self.clear_image_memory()
+        self._memory_buffer.clear()
 
     def _robust_image_capture(
         self,
@@ -248,10 +312,13 @@ class BaseCamera(Thing):
         if save_resolution is not None and image.size != save_resolution:
             image = image.resize(save_resolution, Image.BOX)
         try:
-            # Per PIL documentation, (https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg)
-            # there are two factors when saving a JPEG. subsampling affects the colour, quality the pixels
+            # Per PIL documentation,
+            # (https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg)
+            # there are two factors when saving a JPEG. Subsampling affects the colour,
+            # quality affects the pixels.
             # subsampling = 0 disables subsampling of colour
-            # quality = 95 is the maximum recommended - above this, JPEG compression is disabled, file size increases and quality is barely or not affected
+            # quality = 95 is the maximum recommended - above this, JPEG compression is
+            # disabled, file size increases and quality is barely or not affected
             image.save(jpeg_path, quality=95, subsampling=0)
             try:
                 # Load EXIF metadata from image so it can be added to.

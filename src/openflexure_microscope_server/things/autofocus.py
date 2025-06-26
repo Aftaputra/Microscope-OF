@@ -9,8 +9,9 @@ See repository root for licensing information.
 from contextlib import contextmanager
 import logging
 import time
-from typing import Annotated, Mapping, Optional, Sequence
+from typing import Annotated, Mapping, Optional, Sequence, Literal
 import os
+from dataclasses import dataclass
 
 from fastapi import Depends
 import numpy as np
@@ -26,7 +27,8 @@ from labthings_fastapi.dependencies.invocation import InvocationLogger
 from .camera import RawCameraDependency as Camera
 from .camera import CameraDependency as WrappedCamera
 from .stage import StageDependency as Stage
-from .capture import RawCaptureDependency as CaptureDep
+
+# TODO Capture reolution should be save resolution for consistency
 
 
 class StackParams(BaseModel):
@@ -39,7 +41,9 @@ class StackParams(BaseModel):
     is always evaluated with the same number of images. i.e. if min_images_to_test=9,
     then 9 images are captured, if the stack is not well focussed, a 10th image is
     captured and images 2 to 10 are evaluated for focus
-    :param autofocus_dz: The number of steps in a full autofocus (if required)
+    :param autofocus_dz: The number of steps in a full autofocus (when required)
+    :param images_dir: The directory to save images to disk
+    :param capture_resolution: The resolution to save the captures to disk with
 
     """
 
@@ -48,13 +52,15 @@ class StackParams(BaseModel):
     images_to_save: int
     min_images_to_test: int
     autofocus_dz: int
+    images_dir: str
+    capture_resolution: tuple[int, int]
 
     # The following parameters have values that apply well to a standard scan
     # and are not altered by default when running a scan
 
     # time (in seconds) between moving and capturing an image
     settling_time: float = 0.3
-    
+
     # distance (in steps) to overshoot a move and then undo, to account for backlash
     backlash_correction: int = 250
 
@@ -76,7 +82,7 @@ class StackParams(BaseModel):
     @property
     def stack_z_range(self) -> int:
         """The range of the z stack, in steps
-        
+
         Note that this is the range of the minimum number of image captured,
         which is also the range of the images sored in memory that can be
         saved."""
@@ -97,13 +103,58 @@ class StackParams(BaseModel):
 
     @computed_field
     @property
-    def max_images_to_test(self) -> int
+    def max_images_to_test(self) -> int:
         """The maximum number of images that will be captured and tested in a stack
 
         This is 15 images more then the minimum number that are captured.
         """
         return self.min_images_to_test
-    
+
+    def slice_to_save(self, sharpest_index):
+        """Return the slice of images to save given the index of the sharpest image"""
+        images_each_side = (self.images_to_save - 1) // 2
+        return slice(
+            sharpest_index - images_each_side, sharpest_index + images_each_side + 1
+        )
+
+
+@dataclass
+class CaptureInfo:
+    """
+    The information from a capture in a z_stack
+    """
+
+    buffer_id: int
+    position: tuple[int, int, int]
+    sharpness: int
+
+    @property
+    def filename(self) -> str:
+        """The filename for this image generated from the poistion"""
+        return f"{self.position[0]}_{self.position[1]}_{self.position[2]}.jpeg"
+
+
+def _get_capture_by_id(captures: list[CaptureInfo], buffer_id: int) -> CaptureInfo:
+    """Return the capture from a list of CaptureInfo objects with the matching id.
+
+    :param captures: A list of capture objects
+    :param buffer_id: The buffer id of the image to return
+    """
+    return captures[_get_capture_index_by_id(captures, buffer_id)]
+
+
+def _get_capture_index_by_id(captures: list[CaptureInfo], buffer_id: int) -> int:
+    """Return the index of the capture with the matching id from a list of CaptureInfo
+    objects
+
+    :param captures: A list of capture objects
+    :param buffer_id: The buffer id of the image to return
+    """
+    ids = [capture.buffer_id for capture in captures]
+    if buffer_id not in ids:
+        raise ValueError(f"No capture has a buffer id of {buffer_id}")
+    return ids.index(buffer_id)
+
 
 class SharpnessDataArrays(BaseModel):
     jpeg_times: NDArray
@@ -372,7 +423,11 @@ class AutofocusThing(Thing):
         Arguments:
         images_dir: the folder to save all images
         autofocus_dz: should the stack fail, the range to refocus over before retrying
-        variables cam to sharpness_monitor are Thing dependencies injected automatically by LabThings FastAPI
+        variables cam to sharpness_monitor are Thing dependencies injected automatically by
+        LabThings FastAPI
+
+        Returns:
+        The z position of the sharpest image
         """
 
         # Set the variables to prevent changes from the GUI or other windows
@@ -381,6 +436,8 @@ class AutofocusThing(Thing):
             images_to_save=self.stack_images_to_save,
             min_images_to_test=self.stack_min_images_to_test,
             autofocus_dz=autofocus_dz,
+            images_dir=images_dir,
+            capture_resolution=capture_resolution,
         )
 
         # Ensure the stack settings are appropriate
@@ -388,22 +445,23 @@ class AutofocusThing(Thing):
 
         success = False
         # Loop until a stack is successful
-        while not success:
-            result, heights, captures, sharpest_index = self.z_stack(
-                images_dir,
-                stack_parameters,
-                stage,
-                cam,
-                metadata_getter,
+        while not success:  # TODO add a maximum number?
+            success, captures, sharpest_id = self.z_stack(
+                stack_parameters=stack_parameters,
+                stage=stage,
+                cam=cam,
+                logger=logger,
+                metadata_getter=metadata_getter,
             )
 
-            if result == "success":
-                success = True
+            if success:
                 break
 
+            # The z position of the first images in the previous attempt.
+            initial_z_pos = captures[0].position[2]
             # If a stack is not successful, move to the start and autofocus
             self.reset_stack(
-                heights,
+                initial_z_pos,
                 stack_parameters.autofocus_dz,
                 stage,
                 sharpness_monitor,
@@ -411,31 +469,33 @@ class AutofocusThing(Thing):
 
         # Save the sharpest image, and images either side of focus
         self.save_stack(
-            sharpest_index,
-            captures,
-            stack_parameters,
-            logger,
+            sharpest_id=sharpest_id,
+            captures=captures,
+            stack_parameters=stack_parameters,
+            cam=cam,
+            logger=logger,
         )
 
         # Return the z position of the sharpest image, for path planning and tracking
-        return heights[-stack_parameters.min_images_to_test :][sharpest_index]
+        return _get_capture_by_id(captures, sharpest_id).position[2]
 
     def reset_stack(
         self,
-        heights: list[int],
+        initial_z_pos: list[int],
         autofocus_dz: int,
         stage: Stage,
         sharpness_monitor: SharpnessMonitorDep,
     ) -> None:
         """Return to the initial height of the current stack, and run
-        a looping autofocus. Clears all previous captures, heights and sharpnesses.
+        a looping autofocus.
 
         Arguments:
-        heights: a list of the z positions of previous captures
+        initial_z_pos: The initial z positions of previous captures
         autofocus_dz: the range in steps to autofocus
-        variables stage and sharpness_monitor are Thing dependencies passed through from the calling action
+        variables stage and sharpness_monitor are Thing dependencies passed through from
+        the calling action
         """
-        stage.move_absolute(z=heights[0])
+        stage.move_absolute(z=initial_z_pos)
         self.looping_autofocus(
             stage=stage,
             sharpness_monitor=sharpness_monitor,
@@ -444,48 +504,52 @@ class AutofocusThing(Thing):
 
     def save_stack(
         self,
-        sharpest_index: int,
+        sharpest_id: int,
         captures: list[list],
         stack_parameters: StackParams,
+        cam: WrappedCamera,
         logger: InvocationLogger,
     ) -> int:
         """Save the required captures to disk. Will save the sharpest image,
         and any images either side of focus.
 
         Arguments:
-        sharpest_index: the index of the sharpest image, within the "min_images_to_test" slice
+        sharpest_id: the buffer id index of the sharpest image
         captures: a list of captures, including file name, image data and metadata
         stack_parameters: a StackParams Pydantic model with stack settings
-        variables logger and capture are Thing dependencies passed through from the calling action
+        variables logger and capture are Thing dependencies passed through from the
+        calling action
         """
-        
+
+        sharpest_index = _get_capture_index_by_id(sharpest_id)
+        slice_to_save = stack_parameters.slice_to_save(sharpest_index)
 
         # Loop through the range, saving each capture to disk
-        for capture_index in stack_range:
-            capture._save_capture(
-                jpeg_path=captures[-stack_parameters.min_images_to_test :][capture_index][
-                    0
-                ],
-                image=captures[-stack_parameters.min_images_to_test :][capture_index][1],
-                metadata=captures[-stack_parameters.min_images_to_test :][capture_index][2],
+        for capture in captures[slice_to_save]:
+            cam.save_from_memory(
+                jpeg_path=os.path.join(stack_parameters.images_dir, capture.filename),
                 logger=logger,
+                save_resolution=stack_parameters.capture_resolution,
+                buffer_id=capture.buffer_id,
             )
+        cam.clear_buffers()
         return sharpest_index
 
     def z_stack(
         self,
-        images_dir: str,
         stack_parameters: StackParams,
         stage: Stage,
         cam: WrappedCamera,
-        capture: CaptureDep,
+        logger: InvocationLogger,
         metadata_getter: GetThingStates,
-    ) -> list:
+    ) -> tuple[bool, list[CaptureInfo], Optional[int]]:
         """Capture a series of images offset by stack_parameters.stack_dz, and test whether
         the sharpest image is towards the centre of the stack.
 
-        Returns a test result string, a list of z positions, a list of captures and the
-        index of the sharpest image in a successful stack.
+        Returns:
+        - the stack result (True for successful stack, False for failed stack),
+        - a list of CaptureInfo objects,
+        - the buffer_id of the shapest image (or None if the stack failed)
 
         Arguments:
         images_dir: a string of the path to write all images
@@ -504,80 +568,60 @@ class AutofocusThing(Thing):
         stage.move_relative(z=stack_parameters.backlash_correction)
 
         captures = []
-        sharpnesses = []
-        heights = []
+        # Always check for focus using the the last `min_images_to_test` in the
+        # stack so check is fair
+        ims_to_check = slice(-stack_parameters.min_images_to_test, None)
 
-        # If the sharpest image isn't found within the 15 images above the estimated point, break
-        # the loop and return "restart"
-        while len(captures) <= stack_parameters.min_images_to_test + 15:
+        # If the sharpest image isn't found within the maximum number of images
+        # end the loop and return "restart"
+        while len(captures) <= stack_parameters.max_images_to_test:
             time.sleep(stack_parameters.settling_time)
 
             # Append a new image to the stack
-            captures, heights, sharpnesses = self.capture_stack_image(
-                captures,
-                heights,
-                sharpnesses,
-                images_dir,
-                cam,
-                stage,
-                capture,
-                metadata_getter,
+            captures.append(
+                self.capture_stack_image(
+                    cam,
+                    stage,
+                    logger,
+                    metadata_getter,
+                    buffer_max=stack_parameters.min_images_to_test,
+                )
             )
 
             # If the number of images is enough to test, test them
             if len(captures) >= stack_parameters.min_images_to_test:
-                stack_result = self.check_stack_result(
-                    sharpnesses[-stack_parameters.min_images_to_test :]
-                )
+                result, capture_id = self.check_stack_result(captures[ims_to_check])
 
-                if stack_result == "success":
-                    sharpest_index = np.argmax(
-                        sharpnesses[-stack_parameters.min_images_to_test :]
-                    )
-                    return "success", heights, captures, sharpest_index
+                if result == "success":
+                    return True, captures, capture_id
 
-                if stack_result == "restart":
-                    return "restart", heights, None, None
-
+                if result == "restart":
+                    return False, captures, None
+                # If reached here the result was "continue"
             stage.move_relative(z=stack_parameters.stack_dz)
-        return "restart", heights, None, None
+        return False, captures, None
 
     def capture_stack_image(
         self,
-        captures: list[list],
-        heights: list[int],
-        sharpnesses: list[int],
-        images_dir: str,
         cam: WrappedCamera,
         stage: Stage,
-        capture: CaptureDep,
+        logger: InvocationLogger,
         metadata_getter: GetThingStates,
+        buffer_max: int,
     ) -> list:
-        """Append a new capture to the ongoing stack.
-        Includes appending the height, image sharpness and image
-        data to the relevant lists.
+        """Capture another image and return the capture information.
 
-        arguments:
-        captures: a list of captures, including file name, image data and metadata
-        heights: a list of the z positions of previous captures
-        sharpnesses: a list of the sharpnesses of previous captures
-        images_dir: a path to the folder to save images
-        variables stage to metadata_getter are Thing dependencies passed through from the calling action
+        The capture is stored by the camera Thing, and can be saved by ID.
         """
         stage_location = stage.position
-        jpeg_path = os.path.join(
-            images_dir,
-            f"{stage_location['x']}_{stage_location['y']}_{stage_location['z']}.jpeg",
+        buffer_id = cam.capture_to_memory(
+            logger, metadata_getter, buffer_max=buffer_max
         )
-        image, metadata = capture._capture_image(
-            cam=cam,
-            metadata_getter=metadata_getter,
+        return CaptureInfo(
+            buffer_id=buffer_id,
+            position=stage_location,
+            sharpness=cam.grab_jpeg_size(stream_name="lores"),
         )
-        captures.append([jpeg_path, image, metadata])
-        sharpnesses.append(cam.grab_jpeg_size(stream_name="lores"))
-        heights.append(stage_location["z"])
-
-        return captures, heights, sharpnesses
 
     def validate_stack_inputs(self, stack_parameters) -> None:
         """Check the stack settings are appropriate, and raise an error if not
@@ -598,38 +642,44 @@ class AutofocusThing(Thing):
         ):
             raise RuntimeError("Stack parameters need to be at least 1")
 
-    def check_stack_result(self, sharpnesses: list[int]) -> str:
-        """Test a list of sharpnesses, to decide whether the sharpest image from a stack is within them
+    def check_stack_result(
+        self, captures: list[CaptureInfo]
+    ) -> tuple[Literal["success", "continue", "restart"], int]:
+        """Test a list of captures, to decide whether the sharpest image from a
+        stack is within them
 
-        Returns a string
-        'success' if the sharpest image is towards the centre
-        'continue' if the sharpest image is in the final two images of the list
-        'restart' if the sharpest image is in the first two images of the list
+        Returns two values,
+        result - which is one of three literal values:
+          'success' if the sharpest image is towards the centre
+          'continue' if the sharpest image is in the final two images of the list
+          'restart' if the sharpest image is in the first two images of the list
+        capture_id - the buffer id of the sharpest image
 
         Arguments:
         sharpnesses: a list of the sharpnesses to test for focus
         """
-
-        sharpest_index = np.argmax(sharpnesses)
-        sharpness_length = len(sharpnesses)
+        sharpest_index = np.argmax([capture.sharpness for capture in captures])
+        # The buffer id of the sharpest image
+        capture_id = captures[sharpest_index].buffer_id
+        sharpness_length = len(captures)
 
         # If only testing one image, then by definition the sharpest is central
         if sharpness_length == 1:
-            return "success"
+            return "success", capture_id
         # If testing three images, test if the centre is the sharpest
         if sharpness_length == 3:
             if sharpest_index == 1:
-                return "success"
+                return "success", capture_id
             if sharpest_index == 0:
-                return "restart"
-            return "continue"
+                return "restart", capture_id
+            return "continue", capture_id
 
         # For larger stacks, test if the best image is not within two of the edge of the stack
         # ie for a stack of 7 images, best image must be between 3rd and and 5th
         exclusion_range = 2
 
         if sharpest_index < exclusion_range:
-            return "restart"
+            return "restart", capture_id
         if sharpest_index >= sharpness_length - exclusion_range:
-            return "continue"
-        return "success"
+            return "continue", capture_id
+        return "success", capture_id

@@ -665,7 +665,7 @@ class SmartScanThing(Thing):
             )
 
             route_planner.mark_location_visited(
-                current_pos_xyz, imaged=True, focused=focused
+                current_pos_xyz, imaged=True, focused=True
             )
 
             site_folder = os.path.join(
