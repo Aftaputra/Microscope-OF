@@ -63,7 +63,7 @@ class StackParams:
                 "Minimum number of images to test should be positive and odd"
             )
         if images_to_save % 2 == 0 or images_to_save <= 0:
-            raise ValueError("Images to svae must be positive and odd")
+            raise ValueError("Images to save must be positive and odd")
 
         self.stack_dz = stack_dz
         self.images_to_save = images_to_save
@@ -140,7 +140,7 @@ class CaptureInfo:
     """
 
     buffer_id: int
-    position: tuple[int, int, int]
+    position: dict[str, int]
     sharpness: int
 
     @property
