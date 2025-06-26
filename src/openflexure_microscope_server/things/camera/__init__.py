@@ -111,14 +111,19 @@ class CameraMemoryBuffer:
             try:
                 image_tuple = list(self._storage.values())[-1]
             except IndexError as e:
-                raise NoImageInMemoryError("No image in memory to save.") from e
+                raise NoImageInMemoryError("No image in memory to retrieve.") from e
             # Clear the storage so images don't get retrieved out of order
             self._storage.clear()
             return image_tuple
 
-        if remove:
-            return self._storage.pop(buffer_id)
-        return self._storage[buffer_id]
+        try:
+            if remove:
+                return self._storage.pop(buffer_id)
+            return self._storage[buffer_id]
+        except KeyError as e:
+            raise NoImageInMemoryError(
+                "No image with matching id in memory to retrieve."
+            ) from e
 
     def clear(self):
         """
