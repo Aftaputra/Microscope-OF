@@ -40,7 +40,7 @@ dev = [
   "matplotlib~=3.10"
 ]
 pi = [
-  "labthings-picamera2 == 0.0.2",
+  "picamera2~=0.3.27",
 ]
 
 [project.scripts]
@@ -79,12 +79,13 @@ addopts = [
     "--cov=openflexure_microscope_server",
     "--cov-report=term",
     "--cov-report=xml:coverage.xml",
+    "--cov-report=html:htmlcov",
     "--junitxml=report.xml",
 ]
 
 norecursedirs = [".git", "build", "node_modules"]
-
 pythonpath = ["."]
+testpaths = ["tests"]
 
 [tool.ruff.format]
 # Use native line endings for all files

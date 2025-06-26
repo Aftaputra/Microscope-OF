@@ -6,7 +6,6 @@ camera together to perform an autofocus routine.
 See repository root for licensing information.
 """
 
-from __future__ import annotations
 from contextlib import contextmanager
 import logging
 import time
@@ -31,45 +30,64 @@ from .capture import RawCaptureDependency as CaptureDep
 
 
 class StackParams(BaseModel):
-    """Pydantic model for scan parameters"""
+    """Pydantic model for scan parameters
 
-    # These are generic settings that seem to apply well to a standard scan
+    :param stack_dz: The number of motor steps between images
+    :param images_to_save: The number of images to save to disk
+    :param min_images_to_test: The minimum number of images in the stack before, the
+    stack is evaluated for focus. As more images are captured evaluation of the focus
+    is always evaluated with the same number of images. i.e. if min_images_to_test=9,
+    then 9 images are captured, if the stack is not well focussed, a 10th image is
+    captured and images 2 to 10 are evaluated for focus
+    :param autofocus_dz: The number of steps in a full autofocus (if required)
+
+    """
+
+    # These parameters must be set on initialisation
+    stack_dz: int
+    images_to_save: int
+    min_images_to_test: int
+    autofocus_dz: int
+
+    # The following parameters have values that apply well to a standard scan
     # and are not altered by default when running a scan
 
     # time (in seconds) between moving and capturing an image
     settling_time: float = 0.3
+    
     # distance (in steps) to overshoot a move and then undo, to account for backlash
     backlash_correction: int = 250
 
-    # how many images can be appended to the stack after the predicted peak to test for focus
-    # before assuming the focus was passed, and restarting the stack
+    # how many images can be appended to the stack after the predicted peak to test
+    # for focus before assuming the focus was passed, and restarting the stack
     stack_height_limit: int = 15
 
     # how far below (in factors of stack_dz) the estimated optimal starting position to
-    # begin the stack. Better to start slightly too low and require many images, rather than
-    # too high and needing to autofocus and restart the stack
+    # begin the stack. Better to start slightly too low and require many images, rather
+    # than too high and needing to autofocus and restart the stack
     img_undershoot: int = 5
-
-    # These we expect to be overwritten by AutofocusThing properties
-    stack_dz: int = 50
-    images_to_capture: int = 1
-    images_to_test: int = 5
-    autofocus_dz: int = 2000
 
     # Per pydantic docs, even with the @property applied before @computed_field,
     # mypy may throw a Decorated property not supported error (mypy issue #1362)
-    # To avoid this error message, add # type: ignore[prop-decorator] to the @computed_field line.
+    # To avoid this error message, add # type: ignore[prop-decorator] to the
+    # @computed_field line.
 
     @computed_field
     @property
     def stack_z_range(self) -> int:
-        """The range of the entire z stack, in steps"""
-        return self.stack_dz * (self.images_to_test - 1)
+        """The range of the z stack, in steps
+        
+        Note that this is the range of the minimum number of image captured,
+        which is also the range of the images sored in memory that can be
+        saved."""
+        return self.stack_dz * (self.min_images_to_test - 1)
 
     @computed_field
     @property
     def steps_undershoot(self) -> int:
-        """The distance to deliberately undershoot the estimated optimal starting point"""
+        """
+        The distance to deliberately undershoot the estimated optimal starting point
+        """
 
         # Starting too low by "steps_undershoot" makes smart stacking faster.
         # Starting a stack too high requires it to move to the start,
@@ -77,10 +95,24 @@ class StackParams(BaseModel):
         # requires extra +z movements and captures.
         return self.stack_dz * self.img_undershoot
 
+    @computed_field
+    @property
+    def max_images_to_test(self) -> int
+        """The maximum number of images that will be captured and tested in a stack
+
+        This is 15 images more then the minimum number that are captured.
+        """
+        return self.min_images_to_test
+    
+
+class SharpnessDataArrays(BaseModel):
+    jpeg_times: NDArray
+    jpeg_sizes: NDArray
+    stage_times: NDArray
+    stage_positions: list[dict[str, int]]
+
 
 class JPEGSharpnessMonitor:
-    __globals__ = globals()  # Required for FastAPI dependency
-
     def __init__(self, stage: Stage, camera: Camera, portal: BlockingPortal):
         self.camera = camera
         self.stage = stage
@@ -156,9 +188,7 @@ class JPEGSharpnessMonitor:
             stop = len(jpeg_times)
             logging.debug("changing stop to %s", (stop))
         jpeg_times = jpeg_times[start:stop]
-        jpeg_zs: np.ndarray = np.interp(
-            jpeg_times, stage_times, stage_zs
-        )  # np.ndarray[float]
+        jpeg_zs: np.ndarray = np.interp(jpeg_times, stage_times, stage_zs)
         return jpeg_times, jpeg_zs, jpeg_sizes[start:stop]
 
     def sharpest_z_on_move(self, index: int) -> int:
@@ -179,13 +209,6 @@ class JPEGSharpnessMonitor:
 
 
 SharpnessMonitorDep = Annotated[JPEGSharpnessMonitor, Depends()]
-
-
-class SharpnessDataArrays(BaseModel):
-    jpeg_times: NDArray
-    jpeg_sizes: NDArray
-    stage_times: NDArray
-    stage_positions: list[dict[str, int]]
 
 
 class AutofocusThing(Thing):
@@ -298,24 +321,24 @@ class AutofocusThing(Thing):
             return heights.tolist(), sizes.tolist()
 
     @thing_property
-    def stack_images_to_capture(self) -> int:
+    def stack_images_to_save(self) -> int:
         """The number of images to capture and save in a stack
         Defaults to 1 unless you need to see either side of focus"""
-        return self.thing_settings.get("stack_images_to_capture", 1)
+        return self.thing_settings.get("stack_images_to_save", 1)
 
-    @stack_images_to_capture.setter
-    def stack_images_to_capture(self, value: int) -> None:
-        self.thing_settings["stack_images_to_capture"] = value
+    @stack_images_to_save.setter
+    def stack_images_to_save(self, value: int) -> None:
+        self.thing_settings["stack_images_to_save"] = value
 
     @thing_property
-    def stack_images_to_test(self) -> int:
+    def stack_min_images_to_test(self) -> int:
         """The number of images to test for successful focusing in a stack
         Defaults to 9, which balances reliability and speed"""
-        return self.thing_settings.get("stack_images_to_test", 9)
+        return self.thing_settings.get("stack_min_images_to_test", 9)
 
-    @stack_images_to_test.setter
-    def stack_images_to_test(self, value: int) -> None:
-        self.thing_settings["stack_images_to_test"] = value
+    @stack_min_images_to_test.setter
+    def stack_min_images_to_test(self, value: int) -> None:
+        self.thing_settings["stack_min_images_to_test"] = value
 
     @thing_property
     def stack_dz(self) -> int:
@@ -336,10 +359,10 @@ class AutofocusThing(Thing):
         stage: Stage,
         logger: InvocationLogger,
         metadata_getter: GetThingStates,
-        capture: CaptureDep,
         sharpness_monitor: SharpnessMonitorDep,
         images_dir: str,
         autofocus_dz: int,
+        capture_resolution: tuple[int, int],
     ) -> None:
         """Run a smart stack, which captures images offset in z, testing
         whether the sharpest image is towards the centre of the stack.
@@ -355,8 +378,8 @@ class AutofocusThing(Thing):
         # Set the variables to prevent changes from the GUI or other windows
         stack_parameters = StackParams(
             stack_dz=self.stack_dz,
-            images_to_capture=self.stack_images_to_capture,
-            images_to_test=self.stack_images_to_test,
+            images_to_save=self.stack_images_to_save,
+            min_images_to_test=self.stack_min_images_to_test,
             autofocus_dz=autofocus_dz,
         )
 
@@ -371,7 +394,6 @@ class AutofocusThing(Thing):
                 stack_parameters,
                 stage,
                 cam,
-                capture,
                 metadata_getter,
             )
 
@@ -393,11 +415,10 @@ class AutofocusThing(Thing):
             captures,
             stack_parameters,
             logger,
-            capture,
         )
 
         # Return the z position of the sharpest image, for path planning and tracking
-        return heights[-stack_parameters.images_to_test :][sharpest_index]
+        return heights[-stack_parameters.min_images_to_test :][sharpest_index]
 
     def reset_stack(
         self,
@@ -427,31 +448,26 @@ class AutofocusThing(Thing):
         captures: list[list],
         stack_parameters: StackParams,
         logger: InvocationLogger,
-        capture: CaptureDep,
     ) -> int:
         """Save the required captures to disk. Will save the sharpest image,
         and any images either side of focus.
 
         Arguments:
-        sharpest_index: the index of the sharpest image, within the "images_to_test" slice
+        sharpest_index: the index of the sharpest image, within the "min_images_to_test" slice
         captures: a list of captures, including file name, image data and metadata
         stack_parameters: a StackParams Pydantic model with stack settings
         variables logger and capture are Thing dependencies passed through from the calling action
         """
-        # Find the range of images from the stack to capture
-        stack_extent = int((stack_parameters.images_to_capture - 1) / 2)
-        stack_range = range(
-            sharpest_index - stack_extent, sharpest_index + stack_extent + 1
-        )
+        
 
         # Loop through the range, saving each capture to disk
         for capture_index in stack_range:
             capture._save_capture(
-                jpeg_path=captures[-stack_parameters.images_to_test :][capture_index][
+                jpeg_path=captures[-stack_parameters.min_images_to_test :][capture_index][
                     0
                 ],
-                image=captures[-stack_parameters.images_to_test :][capture_index][1],
-                metadata=captures[-stack_parameters.images_to_test :][capture_index][2],
+                image=captures[-stack_parameters.min_images_to_test :][capture_index][1],
+                metadata=captures[-stack_parameters.min_images_to_test :][capture_index][2],
                 logger=logger,
             )
         return sharpest_index
@@ -493,7 +509,7 @@ class AutofocusThing(Thing):
 
         # If the sharpest image isn't found within the 15 images above the estimated point, break
         # the loop and return "restart"
-        while len(captures) <= stack_parameters.images_to_test + 15:
+        while len(captures) <= stack_parameters.min_images_to_test + 15:
             time.sleep(stack_parameters.settling_time)
 
             # Append a new image to the stack
@@ -509,14 +525,14 @@ class AutofocusThing(Thing):
             )
 
             # If the number of images is enough to test, test them
-            if len(captures) >= stack_parameters.images_to_test:
+            if len(captures) >= stack_parameters.min_images_to_test:
                 stack_result = self.check_stack_result(
-                    sharpnesses[-stack_parameters.images_to_test :]
+                    sharpnesses[-stack_parameters.min_images_to_test :]
                 )
 
                 if stack_result == "success":
                     sharpest_index = np.argmax(
-                        sharpnesses[-stack_parameters.images_to_test :]
+                        sharpnesses[-stack_parameters.min_images_to_test :]
                     )
                     return "success", heights, captures, sharpest_index
 
@@ -567,18 +583,18 @@ class AutofocusThing(Thing):
         """Check the stack settings are appropriate, and raise an error if not
 
         Arguments:
-        images_to_test: number of images in the stack to test for focus
-        images_to_capture: number of images to be captured around the focused image
+        min_images_to_test: number of images in the stack to test for focus
+        images_to_save: number of images to be captured around the focused image
         """
-        if stack_parameters.images_to_test < stack_parameters.images_to_capture:
+        if stack_parameters.min_images_to_test < stack_parameters.images_to_save:
             raise RuntimeError(
                 "Can't capture more images than are tested. Please increase number to test, or decrease number to capture"
             )
-        if stack_parameters.images_to_test % 2 == 0:
+        if stack_parameters.min_images_to_test % 2 == 0:
             raise RuntimeError("Images to test should be odd")
         if (
-            stack_parameters.images_to_test <= 0
-            or stack_parameters.images_to_capture <= 0
+            stack_parameters.min_images_to_test <= 0
+            or stack_parameters.images_to_save <= 0
         ):
             raise RuntimeError("Stack parameters need to be at least 1")
 
