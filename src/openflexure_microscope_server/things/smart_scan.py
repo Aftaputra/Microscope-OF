@@ -421,7 +421,7 @@ class SmartScanThing(Thing):
         """
         overlap = self.overlap
         dx, dy = self._calc_displacement_from_test_image(overlap)
-        stitch_resize = STITCHING_RESOLUTION[0] / self.capture_resolution[0]
+        stitch_resize = STITCHING_RESOLUTION[0] / self.save_resolution[0]
 
         self._scan_logger.debug(
             f"Resizing images when stitching by a factor of {stitch_resize}"
@@ -454,7 +454,7 @@ class SmartScanThing(Thing):
             "skip_background": self.skip_background,
             "stitch_automatically": self.stitch_automatically,
             "stitch_resize": stitch_resize,
-            "capture_resolution": self.capture_resolution,
+            "save_resolution": self.save_resolution,
         }
 
     @_scan_running
@@ -473,7 +473,7 @@ class SmartScanThing(Thing):
             "dy": self._scan_data["dy"],
             "start time": self._scan_data["start_time"],
             "skipping background": self._scan_data["skip_background"],
-            "capture resolution": self._scan_data["capture_resolution"],
+            "capture resolution": self._scan_data["save_resolution"],
         }
 
         scan_inputs_fname = os.path.join(
@@ -656,7 +656,7 @@ class SmartScanThing(Thing):
             focused_height = self._autofocus.run_smart_stack(
                 images_dir=self._ongoing_scan_images_dir,
                 autofocus_dz=self._scan_data["autofocus_dz"],
-                capture_resolution=self._scan_data["capture_resolution"],
+                save_resolution=self._scan_data["save_resolution"],
             )
 
             current_pos_xyz = (
@@ -737,14 +737,14 @@ class SmartScanThing(Thing):
         return FileResponse(path)
 
     @thing_property
-    def capture_resolution(self) -> tuple[int, int]:
+    def save_resolution(self) -> tuple[int, int]:
         """A tuple of the image resolution to capture. Should be in a
         4:3 aspect ratio"""
-        return self.thing_settings.get("capture_resolution", ((1640, 1232)))
+        return self.thing_settings.get("save_resolution", ((1640, 1232)))
 
-    @capture_resolution.setter
-    def capture_resolution(self, value: tuple[int, int]) -> None:
-        self.thing_settings["capture_resolution"] = value
+    @save_resolution.setter
+    def save_resolution(self, value: tuple[int, int]) -> None:
+        self.thing_settings["save_resolution"] = value
 
     @thing_property
     def max_range(self) -> int:
@@ -1111,8 +1111,8 @@ class SmartScanThing(Thing):
             try:
                 with open(json_fpath, "r", encoding="utf-8") as data_file:
                     data_loaded = json.load(data_file)
-                capture_resolution = data_loaded["capture resolution"]
-                stitch_resize = STITCHING_RESOLUTION[0] / capture_resolution[0]
+                save_resolution = data_loaded["capture resolution"]
+                stitch_resize = STITCHING_RESOLUTION[0] / save_resolution[0]
             except (json.decoder.JSONDecodeError, FileNotFoundError, TypeError):
                 # As there is no schema or pydantic model this should handle
                 # the file not being there, it not being json in the file,

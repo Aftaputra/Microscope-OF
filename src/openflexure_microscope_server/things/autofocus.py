@@ -41,7 +41,7 @@ class StackParams(BaseModel):
     captured and images 2 to 10 are evaluated for focus
     :param autofocus_dz: The number of steps in a full autofocus (when required)
     :param images_dir: The directory to save images to disk
-    :param capture_resolution: The resolution to save the captures to disk with
+    :param save_resolution: The resolution to save the captures to disk with
 
     """
 
@@ -51,7 +51,7 @@ class StackParams(BaseModel):
     min_images_to_test: int
     autofocus_dz: int
     images_dir: str
-    capture_resolution: tuple[int, int]
+    save_resolution: tuple[int, int]
 
     # The following parameters have values that apply well to a standard scan
     # and are not altered by default when running a scan
@@ -409,7 +409,7 @@ class AutofocusThing(Thing):
         sharpness_monitor: SharpnessMonitorDep,
         images_dir: str,
         autofocus_dz: int,
-        capture_resolution: tuple[int, int],
+        save_resolution: tuple[int, int],
     ) -> None:
         """Run a smart stack, which captures images offset in z, testing
         whether the sharpest image is towards the centre of the stack.
@@ -433,7 +433,7 @@ class AutofocusThing(Thing):
             min_images_to_test=self.stack_min_images_to_test,
             autofocus_dz=autofocus_dz,
             images_dir=images_dir,
-            capture_resolution=capture_resolution,
+            save_resolution=save_resolution,
         )
 
         # Ensure the stack settings are appropriate
@@ -520,7 +520,7 @@ class AutofocusThing(Thing):
         for capture in captures[slice_to_save]:
             cam.save_from_memory(
                 jpeg_path=os.path.join(stack_parameters.images_dir, capture.filename),
-                save_resolution=stack_parameters.capture_resolution,
+                save_resolution=stack_parameters.save_resolution,
                 buffer_id=capture.buffer_id,
             )
         cam.clear_buffers()
