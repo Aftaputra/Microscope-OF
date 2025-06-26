@@ -656,6 +656,7 @@ class SmartScanThing(Thing):
             focused_height = self._autofocus.run_smart_stack(
                 images_dir=self._ongoing_scan_images_dir,
                 autofocus_dz=self._scan_data["autofocus_dz"],
+                capture_resolution=self._scan_data["capture_resolution"],
             )
 
             current_pos_xyz = (
@@ -666,18 +667,6 @@ class SmartScanThing(Thing):
 
             route_planner.mark_location_visited(
                 current_pos_xyz, imaged=True, focused=True
-            )
-
-            site_folder = os.path.join(
-                self._ongoing_scan_images_dir,
-                "stacks",
-                f"{new_pos_xyz[0]}_{new_pos_xyz[1]}",
-            )
-            os.makedirs(site_folder, exist_ok=True)
-            self._autofocus.run_z_stack(
-                images_dir=self._ongoing_scan_images_dir,
-                stack_dir=site_folder,
-                capture_resolution=self._scan_data["capture_resolution"],
             )
 
             # increment capure counter as thread has completed

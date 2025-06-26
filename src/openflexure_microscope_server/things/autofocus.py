@@ -20,9 +20,7 @@ from pydantic import BaseModel, computed_field
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
 from labthings_fastapi.decorators import thing_action, thing_property
-from labthings_fastapi.dependencies.metadata import GetThingStates
 from labthings_fastapi.types.numpy import NDArray
-from labthings_fastapi.dependencies.invocation import InvocationLogger
 
 from .camera import RawCameraDependency as Camera
 from .camera import CameraDependency as WrappedCamera
@@ -108,7 +106,7 @@ class StackParams(BaseModel):
 
         This is 15 images more then the minimum number that are captured.
         """
-        return self.min_images_to_test
+        return self.min_images_to_test + 15
 
     def slice_to_save(self, sharpest_index):
         """Return the slice of images to save given the index of the sharpest image"""
@@ -131,7 +129,7 @@ class CaptureInfo:
     @property
     def filename(self) -> str:
         """The filename for this image generated from the poistion"""
-        return f"{self.position[0]}_{self.position[1]}_{self.position[2]}.jpeg"
+        return f"{self.position['x']}_{self.position['y']}_{self.position['z']}.jpeg"
 
 
 def _get_capture_by_id(captures: list[CaptureInfo], buffer_id: int) -> CaptureInfo:
@@ -408,8 +406,6 @@ class AutofocusThing(Thing):
         self,
         cam: WrappedCamera,
         stage: Stage,
-        logger: InvocationLogger,
-        metadata_getter: GetThingStates,
         sharpness_monitor: SharpnessMonitorDep,
         images_dir: str,
         autofocus_dz: int,
@@ -450,15 +446,13 @@ class AutofocusThing(Thing):
                 stack_parameters=stack_parameters,
                 stage=stage,
                 cam=cam,
-                logger=logger,
-                metadata_getter=metadata_getter,
             )
 
             if success:
                 break
 
             # The z position of the first images in the previous attempt.
-            initial_z_pos = captures[0].position[2]
+            initial_z_pos = captures[0].position["z"]
             # If a stack is not successful, move to the start and autofocus
             self.reset_stack(
                 initial_z_pos,
@@ -473,11 +467,10 @@ class AutofocusThing(Thing):
             captures=captures,
             stack_parameters=stack_parameters,
             cam=cam,
-            logger=logger,
         )
 
         # Return the z position of the sharpest image, for path planning and tracking
-        return _get_capture_by_id(captures, sharpest_id).position[2]
+        return _get_capture_by_id(captures, sharpest_id).position["z"]
 
     def reset_stack(
         self,
@@ -508,7 +501,6 @@ class AutofocusThing(Thing):
         captures: list[list],
         stack_parameters: StackParams,
         cam: WrappedCamera,
-        logger: InvocationLogger,
     ) -> int:
         """Save the required captures to disk. Will save the sharpest image,
         and any images either side of focus.
@@ -521,14 +513,13 @@ class AutofocusThing(Thing):
         calling action
         """
 
-        sharpest_index = _get_capture_index_by_id(sharpest_id)
+        sharpest_index = _get_capture_index_by_id(captures, sharpest_id)
         slice_to_save = stack_parameters.slice_to_save(sharpest_index)
 
         # Loop through the range, saving each capture to disk
         for capture in captures[slice_to_save]:
             cam.save_from_memory(
                 jpeg_path=os.path.join(stack_parameters.images_dir, capture.filename),
-                logger=logger,
                 save_resolution=stack_parameters.capture_resolution,
                 buffer_id=capture.buffer_id,
             )
@@ -540,8 +531,6 @@ class AutofocusThing(Thing):
         stack_parameters: StackParams,
         stage: Stage,
         cam: WrappedCamera,
-        logger: InvocationLogger,
-        metadata_getter: GetThingStates,
     ) -> tuple[bool, list[CaptureInfo], Optional[int]]:
         """Capture a series of images offset by stack_parameters.stack_dz, and test whether
         the sharpest image is towards the centre of the stack.
@@ -582,8 +571,6 @@ class AutofocusThing(Thing):
                 self.capture_stack_image(
                     cam,
                     stage,
-                    logger,
-                    metadata_getter,
                     buffer_max=stack_parameters.min_images_to_test,
                 )
             )
@@ -605,8 +592,6 @@ class AutofocusThing(Thing):
         self,
         cam: WrappedCamera,
         stage: Stage,
-        logger: InvocationLogger,
-        metadata_getter: GetThingStates,
         buffer_max: int,
     ) -> list:
         """Capture another image and return the capture information.
@@ -614,9 +599,7 @@ class AutofocusThing(Thing):
         The capture is stored by the camera Thing, and can be saved by ID.
         """
         stage_location = stage.position
-        buffer_id = cam.capture_to_memory(
-            logger, metadata_getter, buffer_max=buffer_max
-        )
+        buffer_id = cam.capture_to_memory(buffer_max=buffer_max)
         return CaptureInfo(
             buffer_id=buffer_id,
             position=stage_location,

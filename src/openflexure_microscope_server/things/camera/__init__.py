@@ -221,8 +221,8 @@ class BaseCamera(Thing):
         """Capture an image and save it to disk
 
 
-        save_resolution can be set to resize the image before saving. By default this is None
-            meaning that the image is saved at original resoltion.
+        save_resolution can be set to resize the image before saving. By default this
+            is None meaning that the image is saved at original resoltion.
         """
         image, metadata = self._robust_image_capture(
             metadata_getter,
@@ -239,7 +239,7 @@ class BaseCamera(Thing):
 
     @thing_action
     def capture_to_memory(
-        self, logger: InvocationLogger, metadata_getter: GetThingStates, buffer_max
+        self, logger: InvocationLogger, metadata_getter: GetThingStates, buffer_max: int
     ) -> None:
         """
         Capture an image to memory. This can be saved later with `save_from_memory`
@@ -272,6 +272,9 @@ class BaseCamera(Thing):
             logger=logger,
             save_resolution=save_resolution,
         )
+
+    @thing_action
+    def clear_buffers(self) -> None:
         self._memory_buffer.clear()
 
     def _robust_image_capture(
