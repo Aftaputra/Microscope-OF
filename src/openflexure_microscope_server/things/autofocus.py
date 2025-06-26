@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from fastapi import Depends
 import numpy as np
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
@@ -29,8 +29,10 @@ from .stage import StageDependency as Stage
 # TODO Capture reolution should be save resolution for consistency
 
 
-class StackParams(BaseModel):
-    """Pydantic model for scan parameters
+class StackParams:
+    """A class for holding for scan parameters
+
+    All arguments are keyword only
 
     :param stack_dz: The number of motor steps between images
     :param images_to_save: The number of images to save to disk
@@ -42,41 +44,58 @@ class StackParams(BaseModel):
     :param autofocus_dz: The number of steps in a full autofocus (when required)
     :param images_dir: The directory to save images to disk
     :param save_resolution: The resolution to save the captures to disk with
-
     """
 
-    # These parameters must be set on initialisation
-    stack_dz: int
-    images_to_save: int
-    min_images_to_test: int
-    autofocus_dz: int
-    images_dir: str
-    save_resolution: tuple[int, int]
+    def __init__(
+        self,
+        *,
+        stack_dz: int,
+        images_to_save: int,
+        min_images_to_test: int,
+        autofocus_dz: int,
+        images_dir: str,
+        save_resolution: tuple[int, int],
+    ) -> None:
+        if min_images_to_test < images_to_save:
+            raise ValueError("Can't save more images than the minimum number tested")
+        if min_images_to_test % 2 == 0 or min_images_to_test <= 0:
+            raise ValueError(
+                "Minimum number of images to test should be positive and odd"
+            )
+        if images_to_save % 2 == 0 or images_to_save <= 0:
+            raise ValueError("Images to svae must be positive and odd")
 
-    # The following parameters have values that apply well to a standard scan
-    # and are not altered by default when running a scan
+        self.stack_dz = stack_dz
+        self.images_to_save = images_to_save
+        self.min_images_to_test = min_images_to_test
+        self.autofocus_dz = autofocus_dz
+        self.images_dir = images_dir
+        self.save_resolution = save_resolution
 
-    # time (in seconds) between moving and capturing an image
+    # Using docstrings under variables as this is how pdoc would expect
+    # attributed to be documented
+
     settling_time: float = 0.3
+    """time (in seconds) between moving and capturing an image"""
 
-    # distance (in steps) to overshoot a move and then undo, to account for backlash
     backlash_correction: int = 250
+    """
+    distance (in steps) to overshoot a move and then undo, to account for backlash
+    """
 
-    # how many images can be appended to the stack after the predicted peak to test
-    # for focus before assuming the focus was passed, and restarting the stack
     stack_height_limit: int = 15
+    """
+    how many images can be appended to the stack after the predicted peak to test
+    for focus before assuming the focus was passed, and restarting the stack
+    """
 
-    # how far below (in factors of stack_dz) the estimated optimal starting position to
-    # begin the stack. Better to start slightly too low and require many images, rather
-    # than too high and needing to autofocus and restart the stack
     img_undershoot: int = 5
+    """
+    how far below (in factors of stack_dz) the estimated optimal starting position to
+    begin the stack. Better to start slightly too low and require many images, rather
+    than too high and needing to autofocus and restart the stack
+    """
 
-    # Per pydantic docs, even with the @property applied before @computed_field,
-    # mypy may throw a Decorated property not supported error (mypy issue #1362)
-    # To avoid this error message, add # type: ignore[prop-decorator] to the
-    # @computed_field line.
-
-    @computed_field
     @property
     def stack_z_range(self) -> int:
         """The range of the z stack, in steps
@@ -86,7 +105,6 @@ class StackParams(BaseModel):
         saved."""
         return self.stack_dz * (self.min_images_to_test - 1)
 
-    @computed_field
     @property
     def steps_undershoot(self) -> int:
         """
@@ -99,7 +117,6 @@ class StackParams(BaseModel):
         # requires extra +z movements and captures.
         return self.stack_dz * self.img_undershoot
 
-    @computed_field
     @property
     def max_images_to_test(self) -> int:
         """The maximum number of images that will be captured and tested in a stack
@@ -436,9 +453,6 @@ class AutofocusThing(Thing):
             save_resolution=save_resolution,
         )
 
-        # Ensure the stack settings are appropriate
-        self.validate_stack_inputs(stack_parameters)
-
         success = False
         # Loop until a stack is successful
         while not success:  # TODO add a maximum number?
@@ -508,7 +522,7 @@ class AutofocusThing(Thing):
         Arguments:
         sharpest_id: the buffer id index of the sharpest image
         captures: a list of captures, including file name, image data and metadata
-        stack_parameters: a StackParams Pydantic model with stack settings
+        stack_parameters: a StackParams object holding stack parameters
         variables logger and capture are Thing dependencies passed through from the
         calling action
         """
@@ -542,7 +556,7 @@ class AutofocusThing(Thing):
 
         Arguments:
         images_dir: a string of the path to write all images
-        stack_parameters: a StackParams Pydantic model with stack settings
+        stack_parameters: a StackParams object holding stack parameters
         variables stage to metadata_getter are Thing dependencies passed through from the calling action
         """
         # Move down by the height of the z stack, plus an overshoot
@@ -605,25 +619,6 @@ class AutofocusThing(Thing):
             position=stage_location,
             sharpness=cam.grab_jpeg_size(stream_name="lores"),
         )
-
-    def validate_stack_inputs(self, stack_parameters) -> None:
-        """Check the stack settings are appropriate, and raise an error if not
-
-        Arguments:
-        min_images_to_test: number of images in the stack to test for focus
-        images_to_save: number of images to be captured around the focused image
-        """
-        if stack_parameters.min_images_to_test < stack_parameters.images_to_save:
-            raise RuntimeError(
-                "Can't capture more images than are tested. Please increase number to test, or decrease number to capture"
-            )
-        if stack_parameters.min_images_to_test % 2 == 0:
-            raise RuntimeError("Images to test should be odd")
-        if (
-            stack_parameters.min_images_to_test <= 0
-            or stack_parameters.images_to_save <= 0
-        ):
-            raise RuntimeError("Stack parameters need to be at least 1")
 
     def check_stack_result(
         self, captures: list[CaptureInfo]

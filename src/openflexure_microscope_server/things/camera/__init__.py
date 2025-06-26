@@ -60,12 +60,31 @@ class CameraMemoryBuffer:
     _storage: dict[int, tuple[Any, Optional[dict]]]
 
     def __init__(self):
+        # This dictionary is the main store for data. Dictionaries are ordered since
+        # Python 3.6, so the order in the dictionary is the capture order
         self._storage = {}
+        # A simple id system where each capture id is just the number of captures since
+        # the server starts
         self._latest_id: int = 0
 
     def add_image(
-        self, image: Any, metadata: Optional[dict], buffer_max: int = 1
+        self, image: Any, metadata: Optional[dict] = None, buffer_max: int = 1
     ) -> None:
+        """
+        Add an image to the Memory buffer
+
+        This will add an image to the memory buffer. By default the buffer will
+        be cleared. To allow saving multiple images the buffer_max must be set
+        every time an image is added.
+
+        :param image: The image to add. A PIL image is recommended, but cameras
+        can choose to use other formats
+        :param metadata: Optional, a dictionary of the image metadata.
+        :param buffer_max: The maximum number of images that should be in the buffer
+        once this images is added. Default is 1.
+
+        :return buffer_id: The id in the buffer for this image
+        """
         self._latest_id += 1
         self._create_space(buffer_max)
         self._storage[self._latest_id] = (image, metadata)
@@ -75,14 +94,22 @@ class CameraMemoryBuffer:
         self, buffer_id: Optional[int] = None, remove: bool = True
     ) -> tuple[Any, Optional[dict]]:
         """
-        If the buffer ID is not set, always clear whole buffer
+        Return the image with the given id.
+
+        If no id is given the most recent image is returned. However, the
+        buffer is also cleared, otherwise it would be possible to accidentally
+        retrieve images out of order.
+
+        :param buffer_id: The buffer id of the image to retrieve
+        :param remove: True (default) to remove this image from the buffer, False
+        to leave the image in the buffer.
         """
 
         # No id given
         if buffer_id is None:
             # Get the latest image and metadata tuple from storage
             try:
-                image_tuple = list(self._storage.value())[-1]
+                image_tuple = list(self._storage.values())[-1]
             except IndexError as e:
                 raise NoImageInMemoryError("No image in memory to save.") from e
             # Clear the storage so images don't get retrieved out of order
@@ -94,11 +121,17 @@ class CameraMemoryBuffer:
         return self._storage[buffer_id]
 
     def clear(self):
+        """
+        Clear all images from memory
+        """
         self._storage.clear()
 
     def _create_space(self, buffer_max: int) -> None:
         """
         Create space to add an image.
+
+        :param buffer_max: The maximum number of images that should be in the buffer
+        once another images is added.
         """
         # If only one image to be stored just clear the storage and return
         if buffer_max <= 1:
@@ -220,9 +253,13 @@ class BaseCamera(Thing):
     ) -> None:
         """Capture an image and save it to disk
 
-
-        save_resolution can be set to resize the image before saving. By default this
-            is None meaning that the image is saved at original resoltion.
+        :param jpeg_path: The path to save the file to
+        :param logger: This should be injected automatically by Labthings FastAPI
+        when calling the action
+        :param metadata_getter: This should be injected automatically by Labthings
+        FastAPI when calling the action
+        :param save_resolution: can be set to resize the image before saving. By
+        default this is None meaning that the image is saved at original resolution.
         """
         image, metadata = self._robust_image_capture(
             metadata_getter,
@@ -239,7 +276,10 @@ class BaseCamera(Thing):
 
     @thing_action
     def capture_to_memory(
-        self, logger: InvocationLogger, metadata_getter: GetThingStates, buffer_max: int
+        self,
+        logger: InvocationLogger,
+        metadata_getter: GetThingStates,
+        buffer_max: int = 1,
     ) -> None:
         """
         Capture an image to memory. This can be saved later with `save_from_memory`
@@ -247,7 +287,14 @@ class BaseCamera(Thing):
         Note that only one image is held in memory so this will overwrite any image
         in memory.
 
-        Return the buffer id of the image captured
+        :param logger: This should be injected automatically by Labthings FastAPI
+        when calling the action
+        :param metadata_getter: This should be injected automatically by Labthings
+        FastAPI when calling the action
+        :param buffer_max: The maximum number of images that should be in the buffer
+        once this images is added. Default is 1.
+
+        :return: the buffer id of the image captured
         """
         image, metadata = self._robust_image_capture(metadata_getter, logger)
         return self._memory_buffer.add_image(image, metadata, buffer_max=buffer_max)
@@ -262,6 +309,14 @@ class BaseCamera(Thing):
     ) -> None:
         """
         Save an image that has been captured to memory.
+
+        :param jpeg_path: The path to save the file to
+        :param logger: This should be injected automatically by Labthings FastAPI
+        when calling the action
+        :param save_resolution: can be set to resize the image before saving. By
+        default this is None meaning that the image is saved at original resolution.
+        :param buffer_id: The buffer id of the image to save, this was returned by
+        `capture_to_memory`
         """
         image, metadata = self._memory_buffer.get_image(buffer_id)
 
@@ -275,6 +330,7 @@ class BaseCamera(Thing):
 
     @thing_action
     def clear_buffers(self) -> None:
+        """Clear all images in memory"""
         self._memory_buffer.clear()
 
     def _robust_image_capture(
