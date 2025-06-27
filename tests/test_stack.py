@@ -226,7 +226,12 @@ def test_retrieval_of_captures(start):
         assert _get_capture_index_by_id(captures, buffer_id) == i
         assert _get_capture_by_id(captures, buffer_id) is capture
 
+    # Check errors are raised when supplying ids that aren't int the list
     with pytest.raises(ValueError):
         _get_capture_index_by_id(captures, start - 1)
     with pytest.raises(ValueError):
         _get_capture_index_by_id(captures, start + 21)
+    with pytest.raises(ValueError):
+        _get_capture_by_id(captures, start - 1)
+    with pytest.raises(ValueError):
+        _get_capture_by_id(captures, start + 21)
