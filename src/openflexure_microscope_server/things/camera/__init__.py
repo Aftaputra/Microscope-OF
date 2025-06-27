@@ -69,7 +69,7 @@ class CameraMemoryBuffer:
 
     def add_image(
         self, image: Any, metadata: Optional[dict] = None, buffer_max: int = 1
-    ) -> None:
+    ) -> int:
         """
         Add an image to the Memory buffer
 

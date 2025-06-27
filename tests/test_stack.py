@@ -215,9 +215,9 @@ def test_capture_filename_matches_regex():
 
 
 @given(st.integers(min_value=0, max_value=5000))
-def test_retriaval_of_captures(start):
+def test_retrieval_of_captures(start):
     """
-    For 20 random captures each chan be retried correctly
+    For 20 random captures, check each can be retrieved correctly by id
     """
     captures = [random_capture(start + i) for i in range(20)]
 

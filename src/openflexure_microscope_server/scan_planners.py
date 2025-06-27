@@ -357,7 +357,7 @@ class SmartSpiral(ScanPlanner):
         for this location. This overrides the default behaviour of ScanPlanner
         to take the lowest value of nearest neighbours as this works best for smart stack
 
-        Note z-position may be None! This indicates that the current z, position
+        Note z-position may be None! This indicates that the current z position
         should be used.
         """
         if self.scan_complete:
@@ -365,7 +365,7 @@ class SmartSpiral(ScanPlanner):
 
         next_location = self._remaining_locations[0]
 
-        # If focussed locations exist, return the neighbour with the lowest z position
+        # If focused locations exist, return the neighbour with the lowest z position
         closest_pos = self.select_nearby_focus_site(next_location)
         if closest_pos is None:
             z = None
@@ -381,7 +381,7 @@ class SmartSpiral(ScanPlanner):
         autofocus and restart. Starting too low just requires extra movements in +z.
         Nearby is defined as within NEIGHBOUR_CUTOFF times the distance to the closest neighbour.
 
-        Returns None if there if no focussed locations are present
+        Returns None if there if no focused locations are present
         """
         if not self._focused_locations:
             return None
@@ -390,7 +390,7 @@ class SmartSpiral(ScanPlanner):
         current_pos = np.array(xy_pos, dtype="float64")
         path_pos = np.array(self._focused_locations, dtype="float64")[:, :2]
 
-        # Use linalg.norm to calculate the direct distance bweween the points
+        # Use linalg.norm to calculate the direct distance between the points
         # Note linalg.norm always uses float64
         dists = np.linalg.norm((path_pos - current_pos), axis=1)
 

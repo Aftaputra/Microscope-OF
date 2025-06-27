@@ -27,7 +27,8 @@ def random_image():
 
 def random_metadata():
     """Create a misc dictionary to pretend to be metadata"""
-    # Not very metadata like, but we are just the same dict it is returned
+    # Not very metadata like, but we are just checking that the same dict it is
+    # returned
     return {"a": randint(1, 100), "b": randint(1, 100)}
 
 
@@ -122,7 +123,7 @@ def test_buffer_size_changing():
     with pytest.raises(NoImageInMemoryError):
         mem_buf.get_image(buffer_id2)
     returned_image3, _ = mem_buf.get_image(buffer_id3)
-    # Image 2 the expected image
+    # Image 3 the expected image
     assert misc_image3 is returned_image3
 
 
@@ -134,9 +135,10 @@ def test_capture_two_images_get_without_id():
     mem_buf.add_image(misc_image1, buffer_max=2)
     mem_buf.add_image(misc_image2, buffer_max=2)
     returned_image, _ = mem_buf.get_image()
-    # It is the same image
+    # When buffer_id is not specified, the most recent image (image2) is expected to
+    # be retrieved
     assert returned_image is misc_image2
-    # All were wiped from memory
+    # Check all images were wiped from memory, but trying get_image without an id
     with pytest.raises(NoImageInMemoryError):
         mem_buf.get_image()
 
@@ -184,7 +186,7 @@ def test_clear_buffer():
 
 
 def test_get_metadata_too():
-    """Capture 10 images clear the buffer and check they are gone"""
+    """Capture 10 images with metadata and check metadata is returned as expected"""
     mem_buf = CameraMemoryBuffer()
 
     images = []

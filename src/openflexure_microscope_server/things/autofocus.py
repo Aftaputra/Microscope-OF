@@ -37,7 +37,7 @@ class StackParams:
     :param min_images_to_test: The minimum number of images in the stack before, the
     stack is evaluated for focus. As more images are captured evaluation of the focus
     is always evaluated with the same number of images. i.e. if min_images_to_test=9,
-    then 9 images are captured, if the stack is not well focussed, a 10th image is
+    then 9 images are captured, if the stack is not well focused, a 10th image is
     captured and images 2 to 10 are evaluated for focus
     :param autofocus_dz: The number of steps in a full autofocus (when required)
     :param images_dir: The directory to save images to disk
@@ -582,7 +582,7 @@ class AutofocusThing(Thing):
 
         # If the sharpest image isn't found within the maximum number of images
         # end the loop and return "restart"
-        while len(captures) <= stack_parameters.max_images_to_test:
+        while len(captures) < stack_parameters.max_images_to_test:
             time.sleep(stack_parameters.settling_time)
 
             # Append a new image to the stack
