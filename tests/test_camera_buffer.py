@@ -27,8 +27,8 @@ def random_image():
 
 def random_metadata():
     """Create a misc dictionary to pretend to be metadata"""
-    # Not very metadata like, but we are just checking that the same dict it is
-    # returned
+    # Not very metadata like, but we are just checking that the same dict it
+    # is returned
     return {"a": randint(1, 100), "b": randint(1, 100)}
 
 

@@ -101,8 +101,8 @@ class StackParams:
     def stack_z_range(self) -> int:
         """The range of the z stack, in steps
 
-        Note that this is the range of the minimum number of image captured,
-        which is also the range of the images sored in memory that can be
+        Note that this is the range of the minimum number of images captured,
+        which is also the range of the images stored in memory that can be
         saved."""
         return self.stack_dz * (self.min_images_to_test - 1)
 
@@ -147,7 +147,7 @@ class CaptureInfo:
 
     @property
     def filename(self) -> str:
-        """The filename for this image generated from the poistion"""
+        """The filename for this image generated from the position"""
         return f"{self.position['x']}_{self.position['y']}_{self.position['z']}.jpeg"
 
 
@@ -488,7 +488,8 @@ class AutofocusThing(Thing):
             cam=cam,
         )
 
-        # Return the z position of the sharpest image, for path planning and tracking
+        # Return whether or not the smart stack was successful, and the z position of
+        # the sharpest image, for path planning and tracking
         return success, _get_capture_by_id(captures, sharpest_id).position["z"]
 
     def reset_stack(
