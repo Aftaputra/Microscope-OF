@@ -634,7 +634,7 @@ class AutofocusThing(Thing):
         :buffer_max: The maximum number of images to tell the camera to keep in memory
         for saving once the stack is complete
 
-        :return: A CaatureInfo object containing the capture information including its
+        :return: A CaptureInfo object containing the capture information including its
         camera buffer_id needed for saving.
         """
         stage_location = stage.position
