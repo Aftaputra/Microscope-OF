@@ -653,20 +653,16 @@ class SmartScanThing(Thing):
                 self._scan_logger.info(msg)
                 continue
 
-            focused_height = self._autofocus.run_smart_stack(
+            focused, focused_height = self._autofocus.run_smart_stack(
                 images_dir=self._ongoing_scan_images_dir,
                 autofocus_dz=self._scan_data["autofocus_dz"],
                 save_resolution=self._scan_data["save_resolution"],
             )
 
-            current_pos_xyz = (
-                new_pos_xyz[0],
-                new_pos_xyz[1],
-                focused_height,
-            )
+            current_pos_xyz = (new_pos_xyz[0], new_pos_xyz[1], focused_height)
 
             route_planner.mark_location_visited(
-                current_pos_xyz, imaged=True, focused=True
+                current_pos_xyz, imaged=True, focused=focused
             )
 
             # increment capure counter as thread has completed

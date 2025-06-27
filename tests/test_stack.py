@@ -170,8 +170,22 @@ def test_computed_stack_params():
     sharpnesses = [50, 77, 234, 324, 390, 496, 569, 454, 333, 222, 178, 70]
     max_ind = np.argmax(sharpnesses)
     slice_to_save = stack_parameters.slice_to_save(max_ind)
-    # Check the slice corresponds to the inex for the 5 images centred on the sharpest
+    # Check the slice corresponds to the index for the 5 images centred on the sharpest
     assert sharpnesses[slice_to_save] == [390, 496, 569, 454, 333]
+
+    # For a failed smart stack the slice may be truncated. Check it truncates correctly
+    sharpnesses = [496, 569, 454, 333, 222, 178, 70, 69, 66, 50, 45, 40]
+    max_ind = np.argmax(sharpnesses)
+    slice_to_save = stack_parameters.slice_to_save(max_ind)
+    # Check the slice corresponds to the index for the first 4 images
+    assert sharpnesses[slice_to_save] == [496, 569, 454, 333]
+
+    # And again for sharpest at the end
+    sharpnesses = [13, 21, 26, 31, 39, 49, 50, 77, 234, 324, 390, 496, 569]
+    max_ind = np.argmax(sharpnesses)
+    slice_to_save = stack_parameters.slice_to_save(max_ind)
+    # Check the slice corresponds to the index for the final 3 images
+    assert sharpnesses[slice_to_save] == [390, 496, 569]
 
 
 def random_capture(set_id: Optional[int] = None):

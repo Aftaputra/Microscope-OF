@@ -26,8 +26,6 @@ from .camera import RawCameraDependency as Camera
 from .camera import CameraDependency as WrappedCamera
 from .stage import StageDependency as Stage
 
-# TODO Capture reolution should be save resolution for consistency
-
 
 class StackParams:
     """A class for holding for scan parameters
@@ -76,25 +74,28 @@ class StackParams:
     # attributed to be documented
 
     settling_time: float = 0.3
-    """time (in seconds) between moving and capturing an image"""
+    """Time (in seconds) between moving and capturing an image"""
 
     backlash_correction: int = 250
     """
-    distance (in steps) to overshoot a move and then undo, to account for backlash
+    Distance (in steps) to overshoot a move and then undo, to account for backlash
     """
 
     stack_height_limit: int = 15
     """
-    how many images can be appended to the stack after the predicted peak to test
+    How many images can be appended to the stack after the predicted peak to test
     for focus before assuming the focus was passed, and restarting the stack
     """
 
     img_undershoot: int = 5
     """
-    how far below (in factors of stack_dz) the estimated optimal starting position to
+    How far below (in factors of stack_dz) the estimated optimal starting position to
     begin the stack. Better to start slightly too low and require many images, rather
     than too high and needing to autofocus and restart the stack
     """
+
+    max_attempts: int = 3
+    """Maximum number of times to attempt fast stack"""
 
     @property
     def stack_z_range(self) -> int:
@@ -129,7 +130,8 @@ class StackParams:
         """Return the slice of images to save given the index of the sharpest image"""
         images_each_side = (self.images_to_save - 1) // 2
         return slice(
-            sharpest_index - images_each_side, sharpest_index + images_each_side + 1
+            max(sharpest_index - images_each_side, 0),
+            sharpest_index + images_each_side + 1,
         )
 
 
@@ -427,7 +429,7 @@ class AutofocusThing(Thing):
         images_dir: str,
         autofocus_dz: int,
         save_resolution: tuple[int, int],
-    ) -> None:
+    ) -> tuple[bool, int]:
         """Run a smart stack, which captures images offset in z, testing
         whether the sharpest image is towards the centre of the stack.
         The sharpest image, and optionally images around the sharpest,
@@ -440,6 +442,7 @@ class AutofocusThing(Thing):
         LabThings FastAPI
 
         Returns:
+        A boolean, True if stack was successfully
         The z position of the sharpest image
         """
 
@@ -453,9 +456,9 @@ class AutofocusThing(Thing):
             save_resolution=save_resolution,
         )
 
-        success = False
+        trys = 0
         # Loop until a stack is successful
-        while not success:  # TODO add a maximum number?
+        while trys < stack_parameters.max_attempts:
             success, captures, sharpest_id = self.z_stack(
                 stack_parameters=stack_parameters,
                 stage=stage,
@@ -475,7 +478,9 @@ class AutofocusThing(Thing):
                 sharpness_monitor,
             )
 
-        # Save the sharpest image, and images either side of focus
+        # Save stack_parameters.image_to_save images centred on the sharpest capture.
+        # If the smart_stack failed the exact number of images saved may not be
+        # stack_parameters.image_to_save
         self.save_stack(
             sharpest_id=sharpest_id,
             captures=captures,
@@ -484,7 +489,7 @@ class AutofocusThing(Thing):
         )
 
         # Return the z position of the sharpest image, for path planning and tracking
-        return _get_capture_by_id(captures, sharpest_id).position["z"]
+        return success, _get_capture_by_id(captures, sharpest_id).position["z"]
 
     def reset_stack(
         self,
