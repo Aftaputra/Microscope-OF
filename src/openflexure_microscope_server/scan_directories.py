@@ -181,7 +181,7 @@ class ScanDirectoryManager:
         Args:
         path =  path to a location on the disk you want to check
         min_space [int] = the minimum space required in bytes
-            default = 500,000,000 (500MiB)
+            default = 500,000,000 (500MB)
 
         Raises:
             NotEnoughFreeSpaceError if the remaining storage is below min_space
