@@ -11,19 +11,14 @@ from socket import gethostname
 from typing import Annotated, Any, MutableMapping, Optional, Sequence
 from uuid import UUID, uuid4
 from fastapi import Depends, HTTPException, Request
-from labthings_fastapi.dependencies.metadata import GetThingStates
-from labthings_fastapi.thing import Thing
-from labthings_fastapi.decorators import thing_action, thing_property, thing_setting
-from labthings_fastapi.descriptors import ThingSetting
-from labthings_fastapi.dependencies.thing_server import find_thing_server
-from labthings_fastapi.server import ThingServer
+import labthings_fastapi as lt
 
 
-def thing_server_from_request(request: Request) -> ThingServer:
-    return find_thing_server(request.app)
+def thing_server_from_request(request: Request) -> lt.ThingServer:
+    return lt.find_thing_server(request.app)
 
 
-ThingServerDep = Annotated[ThingServer, Depends(thing_server_from_request)]
+ThingServerDep = Annotated[lt.ThingServer, Depends(thing_server_from_request)]
 
 
 def recursive_update(old_dict: MutableMapping, update: Mapping):
@@ -48,20 +43,20 @@ def nested_dict_get(data: dict, key: Sequence[str], create=False) -> Any:
     return subdict
 
 
-class SettingsManager(Thing):
-    external_metadata = ThingSetting(
+class SettingsManager(lt.Thing):
+    external_metadata = lt.ThingSetting(
         initial_value={},
         model=Mapping,
         description="External metadata stored in the server's settings",
     )
 
-    external_metadata_in_state = ThingSetting(
+    external_metadata_in_state = lt.ThingSetting(
         initial_value=[],
         model=Sequence[str],
         description='A list of strings that are included in the "state" metadata',
     )
 
-    @thing_action
+    @lt.thing_action
     def update_external_metadata(
         self, data: Mapping, key: Optional[str] = None
     ) -> None:
@@ -84,7 +79,7 @@ class SettingsManager(Thing):
         recursive_update(subdict, data)
         self.external_metadata = metadata
 
-    @thing_action
+    @lt.thing_action
     def delete_external_metadata(self, key: str) -> None:
         """Delete a key from the stored metadata.
 
@@ -104,7 +99,7 @@ class SettingsManager(Thing):
 
     _microscope_id: Optional[str] = None
 
-    @thing_setting
+    @lt.thing_setting
     def microscope_id(self) -> UUID:
         """A unique identifier for this microscope"""
         if self._microscope_id is None:
@@ -116,13 +111,13 @@ class SettingsManager(Thing):
         # TODO make read only but still settable from disk
         self._microscope_id = uuid
 
-    @thing_property
+    @lt.thing_property
     def hostname(self) -> str:
         """The hostname of the microscope, as reported by its operating system."""
         return gethostname()
 
-    @thing_action
-    def get_things_state(self, metadata_getter: GetThingStates) -> Mapping:
+    @lt.thing_action
+    def get_things_state(self, metadata_getter: lt.deps.GetThingStates) -> Mapping:
         """Metadata summarising the current state of all Things in the server"""
         return metadata_getter()
 

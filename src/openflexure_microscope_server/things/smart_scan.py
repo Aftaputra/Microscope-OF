@@ -11,21 +11,7 @@ from fastapi.responses import FileResponse
 import numpy as np
 from PIL import Image
 
-from labthings_fastapi.thing import Thing
-from labthings_fastapi.dependencies.metadata import GetThingStates
-from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
-from labthings_fastapi.descriptors import ThingSetting
-from labthings_fastapi.dependencies.invocation import (
-    CancelHook,
-    InvocationLogger,
-    InvocationCancelledError,
-)
-from labthings_fastapi.decorators import (
-    thing_action,
-    thing_property,
-    fastapi_endpoint,
-)
-from labthings_fastapi.outputs.blob import blob_type
+import labthings_fastapi as lt
 
 from openflexure_microscope_server.utilities import ErrorCapturingThread
 from openflexure_microscope_server import scan_directories
@@ -38,14 +24,16 @@ from .background_detect import BackgroundDetectThing
 from .camera import CameraDependency as CamDep
 from .stage import StageDependency as StageDep
 
-CSMDep = direct_thing_client_dependency(CameraStageMapper, "/camera_stage_mapping/")
-AutofocusDep = direct_thing_client_dependency(AutofocusThing, "/autofocus/")
-BackgroundDep = direct_thing_client_dependency(
+CSMDep = lt.deps.direct_thing_client_dependency(
+    CameraStageMapper, "/camera_stage_mapping/"
+)
+AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
+BackgroundDep = lt.deps.direct_thing_client_dependency(
     BackgroundDetectThing, "/background_detect/"
 )
 
-JPEGBlob = blob_type("image/jpeg")
-ZipBlob = blob_type("application/zip")
+JPEGBlob = lt.blob.blob_type("image/jpeg")
+ZipBlob = lt.blob.blob_type("application/zip")
 
 SCAN_DATA_FILENAME = "scan_data.json"
 STITCHING_CMD = "openflexure-stitch"
@@ -76,7 +64,7 @@ def _scan_running(method):
     return scan_running_wrapper
 
 
-class SmartScanThing(Thing):
+class SmartScanThing(lt.Thing):
     def __init__(self, scans_folder):
         self._scan_dir_manager = scan_directories.ScanDirectoryManager(scans_folder)
         self._preview_stitch_popen = None
@@ -87,17 +75,17 @@ class SmartScanThing(Thing):
         self._latest_scan_name: Optional[str] = None
 
         # Scan logger is the invocation logger labthings-fastapi creates
-        # when the `sample_scan` thing_action is called. It is saved as
+        # when the `sample_scan` lt.thing_action is called. It is saved as
         # private class variable along with many others here.
         # Access to these variables requires a scan to be running,
         # any method that calls these should be decorrected with
         # @_scan_running
-        self._scan_logger: Optional[InvocationLogger] = None
-        self._cancel: Optional[CancelHook] = None
+        self._scan_logger: Optional[lt.deps.InvocationLogger] = None
+        self._cancel: Optional[lt.deps.CancelHook] = None
         self._autofocus: Optional[AutofocusDep] = None
         self._stage: Optional[StageDep] = None
         self._cam: Optional[CamDep] = None
-        self._metadata_getter: Optional[GetThingStates] = None
+        self._metadata_getter: Optional[lt.deps.GetThingStates] = None
         self._csm: Optional[CSMDep] = None
         self._background_detect: Optional[BackgroundDep] = None
         self._ongoing_scan: Optional[scan_directories.ScanDirectory] = None
@@ -107,15 +95,15 @@ class SmartScanThing(Thing):
         # TODO Scan data is a dict during refactoring, should become a dataclass
         self._scan_data: Optional[dict] = None
 
-    @thing_action
+    @lt.thing_action
     def sample_scan(
         self,
-        cancel: CancelHook,
-        logger: InvocationLogger,
+        cancel: lt.deps.CancelHook,
+        logger: lt.deps.InvocationLogger,
         autofocus: AutofocusDep,
         stage: StageDep,
         cam: CamDep,
-        metadata_getter: GetThingStates,
+        metadata_getter: lt.deps.GetThingStates,
         csm: CSMDep,
         background_detect: BackgroundDep,
         scan_name: str = "",
@@ -210,7 +198,7 @@ class SmartScanThing(Thing):
                 "of motion."
             )
 
-    @thing_property
+    @lt.thing_property
     def latest_scan_name(self) -> Optional[str]:
         """The name of the last scan to be started."""
         return self._latest_scan_name
@@ -419,7 +407,7 @@ class SmartScanThing(Thing):
             self._main_scan_loop()
             self._update_scan_data_json(scan_result="success")
 
-        except InvocationCancelledError:
+        except lt.exceptions.InvocationCancelledError:
             scan_successful = False
             # Reset the cancel event so it can be thrown again
             self._cancel.clear()
@@ -572,7 +560,7 @@ class SmartScanThing(Thing):
         except SubprocessError as e:
             self._scan_logger.error(f"Stitching failed: {e}", exc_info=e)
 
-    @fastapi_endpoint(
+    @lt.fastapi_endpoint(
         "get",
         "scans/stitched_thumbnail.jpg",
         responses={
@@ -595,13 +583,13 @@ class SmartScanThing(Thing):
             raise HTTPException(404, "File not found")
         return FileResponse(preview_path)
 
-    save_resolution = ThingSetting(
+    save_resolution = lt.ThingSetting(
         initial_value=(1640, 1232),
         model=tuple[int, int],
         description=("A tuple of the image resolution to capture."),
     )
 
-    max_range = ThingSetting(
+    max_range = lt.ThingSetting(
         initial_value=45000,
         model=int,
         description=(
@@ -609,13 +597,13 @@ class SmartScanThing(Thing):
         ),
     )
 
-    stitch_tiff = ThingSetting(
+    stitch_tiff = lt.ThingSetting(
         initial_value=False,
         model=bool,
         description="Whether or not to also produce a pyramidal tiff",
     )
 
-    skip_background = ThingSetting(
+    skip_background = lt.ThingSetting(
         initial_value=True,
         model=bool,
         description="""Whether to detect and skip empty fields of view
@@ -623,19 +611,19 @@ class SmartScanThing(Thing):
         This uses the settings from the `background_detect` Thing.""",
     )
 
-    autofocus_dz = ThingSetting(
+    autofocus_dz = lt.ThingSetting(
         initial_value=1000,
         model=int,
         description="The z distance to perform an autofocus in steps",
     )
 
-    overlap = ThingSetting(
+    overlap = lt.ThingSetting(
         initial_value=0.45,
         model=float,
         description="The fraction (0-1) that adjacent images should overlap in x or y",
     )
 
-    stitch_automatically = ThingSetting(
+    stitch_automatically = lt.ThingSetting(
         initial_value=True,
         model=bool,
         description=(
@@ -644,7 +632,7 @@ class SmartScanThing(Thing):
         ),
     )
 
-    @thing_property
+    @lt.thing_property
     def scans(self) -> list[scan_directories.ScanInfo]:
         """All the available scans
 
@@ -656,7 +644,7 @@ class SmartScanThing(Thing):
         """
         return self._scan_dir_manager.all_scans_info()
 
-    @fastapi_endpoint(
+    @lt.fastapi_endpoint(
         "get",
         "get_stitch/{scan_name}",
         responses={
@@ -680,7 +668,7 @@ class SmartScanThing(Thing):
             raise HTTPException(404, "File not found")
         return FileResponse(stitch_path)
 
-    @fastapi_endpoint(
+    @lt.fastapi_endpoint(
         "delete",
         "scans/{scan_name}",
         responses={
@@ -688,7 +676,7 @@ class SmartScanThing(Thing):
             400: {"description": "An error occurred while trying to delete scan"},
         },
     )
-    def delete_scan(self, scan_name: str, logger: InvocationLogger) -> None:
+    def delete_scan(self, scan_name: str, logger: lt.deps.InvocationLogger) -> None:
         """Delete the folder for the specified scan.
 
         This endpoint allows scans to be deleted from disk.
@@ -702,11 +690,11 @@ class SmartScanThing(Thing):
         if not deleted_scan_success:
             raise HTTPException(400, "Couldn't delete scan, check log for details")
 
-    @fastapi_endpoint(
+    @lt.fastapi_endpoint(
         "delete",
         "scans",
     )
-    def delete_all_scans(self, logger: InvocationLogger) -> None:
+    def delete_all_scans(self, logger: lt.deps.InvocationLogger) -> None:
         """Delete all the scans on the microscope
 
         **This will irreversibly remove all scanned data from the
@@ -716,8 +704,8 @@ class SmartScanThing(Thing):
         for scan_name in self._scan_dir_manager.all_scans:
             self._delete_scan(scan_name, logger)
 
-    @thing_action
-    def purge_empty_scans(self, logger: InvocationLogger) -> None:
+    @lt.thing_action
+    def purge_empty_scans(self, logger: lt.deps.InvocationLogger) -> None:
         """
         Delete all scan folders containing no images at the top level
         """
@@ -727,7 +715,7 @@ class SmartScanThing(Thing):
             if scan_info.number_of_images == 0:
                 self._delete_scan(scan_info.name, logger)
 
-    def _delete_scan(self, scan_name, logger: InvocationLogger) -> bool:
+    def _delete_scan(self, scan_name, logger: lt.deps.InvocationLogger) -> bool:
         """
         A wrapper around scan manager's delete_scan that logs to the invocation logger
         """
@@ -752,7 +740,7 @@ class SmartScanThing(Thing):
             scan_name=self.latest_scan_name, filename="preview.jpg", check_exists=True
         )
 
-    @thing_property
+    @lt.thing_property
     def latest_preview_stitch_time(self) -> Optional[float]:
         """The modification time of the latest preview image, to allow live updating
 
@@ -767,7 +755,7 @@ class SmartScanThing(Thing):
             return None
         return os.path.getmtime(self.latest_preview_stitch_path)
 
-    @fastapi_endpoint(
+    @lt.fastapi_endpoint(
         "get",
         "latest_preview_stitch.jpg",
         responses={
@@ -836,8 +824,8 @@ class SmartScanThing(Thing):
 
     def run_subprocess(
         self,
-        logger: InvocationLogger,
-        cancel: CancelHook,
+        logger: lt.deps.InvocationLogger,
+        cancel: lt.deps.CancelHook,
         cmd: list[str],
     ) -> CompletedProcess:
         """
@@ -873,7 +861,7 @@ class SmartScanThing(Thing):
                 # Note that using cancel.sleep allows the InvocationCancelledError to
                 # be thrown
                 cancel.sleep(0.2)
-            except InvocationCancelledError as e:
+            except lt.exceptions.InvocationCancelledError as e:
                 logger.info("Stitching cancelled by user")
                 process.kill()
                 raise e
@@ -886,18 +874,18 @@ class SmartScanThing(Thing):
         else:
             raise ChildProcessError(f"Subprocess {cmd[0]} exited with an error.")
 
-    @thing_action
+    @lt.thing_action
     def stitch_scan(
         self,
-        logger: InvocationLogger,
-        cancel: CancelHook,
+        logger: lt.deps.InvocationLogger,
+        cancel: lt.deps.CancelHook,
         scan_name: str,
         stitch_resize: Optional[float] = None,
         overlap: float = 0.0,
     ) -> None:
         """Generate a stitched image based on stage position metadata
 
-        Note that as this is a thing_action it needs the logger passed as
+        Note that as this is a lt.thing_action it needs the logger passed as
         a variable if called from another thing action
         """
         json_fpath = self._scan_dir_manager.get_file_path_from_img_dir(
@@ -969,12 +957,12 @@ class SmartScanThing(Thing):
                     self._scan_dir_manager.img_dir_for(scan_name),
                 ],
             )
-        except InvocationCancelledError:
+        except lt.exceptions.InvocationCancelledError:
             # Sleep for 1 second just to allow invocation logs to pass to user.
             time.sleep(1)
             pass
 
-    @thing_action
+    @lt.thing_action
     def download_zip(
         self,
         scan_name: str,

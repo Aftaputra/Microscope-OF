@@ -17,10 +17,7 @@ from fastapi import Depends
 import numpy as np
 from pydantic import BaseModel
 
-from labthings_fastapi.thing import Thing
-from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
-from labthings_fastapi.decorators import thing_action
-from labthings_fastapi.descriptors import ThingSetting
+import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
 from .camera import RawCameraDependency as Camera
@@ -190,7 +187,7 @@ class SharpnessDataArrays(BaseModel):
 
 
 class JPEGSharpnessMonitor:
-    def __init__(self, stage: Stage, camera: Camera, portal: BlockingPortal):
+    def __init__(self, stage: Stage, camera: Camera, portal: lt.deps.BlockingPortal):
         self.camera = camera
         self.stage = stage
         self.portal = portal
@@ -288,14 +285,14 @@ class JPEGSharpnessMonitor:
 SharpnessMonitorDep = Annotated[JPEGSharpnessMonitor, Depends()]
 
 
-class AutofocusThing(Thing):
+class AutofocusThing(lt.Thing):
     """The Thing concerned with combinations of z axis movements and the camera.
 
     Actions here involve moving a stage in z, and using the camera to either
     capture images (generally, z-stacking) and measuring the sharpness of the
     field of view to assess focus (autofocus and testing the success of a z-stack)"""
 
-    @thing_action
+    @lt.thing_action
     def fast_autofocus(
         self,
         sharpness_monitor: SharpnessMonitorDep,
@@ -325,7 +322,7 @@ class AutofocusThing(Thing):
             # Return all focus data
             return sharpness_monitor.data_dict()
 
-    @thing_action
+    @lt.thing_action
     def z_move_and_measure_sharpness(
         self,
         sharpness_monitor: SharpnessMonitorDep,
@@ -351,7 +348,7 @@ class AutofocusThing(Thing):
                 sharpness_monitor.focus_rel(current_dz)
             return sharpness_monitor.data_dict()
 
-    @thing_action
+    @lt.thing_action
     def looping_autofocus(
         self,
         stage: Stage,
@@ -397,7 +394,7 @@ class AutofocusThing(Thing):
                     stage.move_absolute(z=peak_height)
             return heights.tolist(), sizes.tolist()
 
-    stack_images_to_save = ThingSetting(
+    stack_images_to_save = lt.ThingSetting(
         initial_value=1,
         model=int,
         description="""The number of images to save in a stack.
@@ -405,7 +402,7 @@ class AutofocusThing(Thing):
             Defaults to 1 unless you need to see either side of focus""",
     )
 
-    stack_min_images_to_test = ThingSetting(
+    stack_min_images_to_test = lt.ThingSetting(
         initial_value=9,
         model=int,
         description="""The minimum number of images to capture in a stack.
@@ -419,7 +416,7 @@ class AutofocusThing(Thing):
             """,
     )
 
-    stack_dz = ThingSetting(
+    stack_dz = lt.ThingSetting(
         initial_value=50,
         model=int,
         description="""Space in steps between images in a z-stack
@@ -428,7 +425,7 @@ class AutofocusThing(Thing):
             200 for 20x""",
     )
 
-    @thing_action
+    @lt.thing_action
     def run_smart_stack(
         self,
         cam: WrappedCamera,

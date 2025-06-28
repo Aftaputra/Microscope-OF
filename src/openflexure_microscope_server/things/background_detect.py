@@ -5,9 +5,7 @@ from PIL import Image
 from pydantic import BaseModel
 from scipy.stats import norm
 
-from labthings_fastapi.thing import Thing
-from labthings_fastapi.decorators import thing_action, thing_setting
-from labthings_fastapi.descriptors import ThingSetting
+import labthings_fastapi as lt
 from .camera import CameraDependency as CamDep
 
 
@@ -17,12 +15,12 @@ class ChannelDistributions(BaseModel):
     colorspace: str = "LUV"
 
 
-class BackgroundDetectThing(Thing):
+class BackgroundDetectThing(lt.Thing):
     # Requires a getter and a setter to support being a BaseModel but being
     # saved to file as a dict
     _background_distributions: Optional[ChannelDistributions] = None
 
-    @thing_setting
+    @lt.thing_setting
     def background_distributions(self) -> Optional[ChannelDistributions]:
         """The statistics of the background image"""
         bd = self._background_distributions
@@ -45,13 +43,13 @@ class BackgroundDetectThing(Thing):
                 f"Cannot set background_distributions with an object of type {type(value)}"
             )
 
-    tolerance = ThingSetting(
+    tolerance = lt.ThingSetting(
         initial_value=7.0,
         model=float,
         description="How many standard deviations to allow for the background",
     )
 
-    fraction = ThingSetting(
+    fraction = lt.ThingSetting(
         initial_value=25.0,
         model=float,
         description="How much of the image needs to be not background to label as sample",
@@ -78,7 +76,7 @@ class BackgroundDetectThing(Thing):
             axis=2,
         )
 
-    @thing_action
+    @lt.thing_action
     def background_fraction(self, cam: CamDep) -> float:
         """Determine what fraction of the current image is background
 
@@ -96,7 +94,7 @@ class BackgroundDetectThing(Thing):
         mask = self.background_mask(current_image_luv)
         return np.count_nonzero(mask) / np.prod(mask.shape) * 100
 
-    @thing_action
+    @lt.thing_action
     def image_is_sample(self, cam: CamDep) -> bool:
         """Label the current image as either background or sample"""
         b_fraction = self.background_fraction(cam)
@@ -104,7 +102,7 @@ class BackgroundDetectThing(Thing):
 
         return (100 - b_fraction) > fraction_threshold
 
-    @thing_action
+    @lt.thing_action
     def set_background(self, cam: CamDep):
         """Grab an image, and use its statistics to set the background
 

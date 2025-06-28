@@ -16,37 +16,31 @@ https://datasheets.raspberrypi.com/camera/raspberry-pi-camera-guide.pdf
 """
 
 from __future__ import annotations
+from typing import Annotated, Any, Iterator, Literal, Mapping, Optional
 from datetime import datetime
 import json
 import logging
 import os
 import tempfile
 import time
-from tempfile import TemporaryDirectory
+from contextlib import contextmanager
+from threading import RLock
 
 from pydantic import BaseModel, BeforeValidator
-
-from labthings_fastapi.descriptors.property import ThingProperty
-from labthings_fastapi.decorators import thing_action, thing_property
-from labthings_fastapi.outputs.mjpeg_stream import MJPEGStream
-from labthings_fastapi.utilities import get_blocking_portal
-from labthings_fastapi.dependencies.metadata import GetThingStates
-from labthings_fastapi.dependencies.blocking_portal import BlockingPortal
-from typing import Annotated, Any, Iterator, Literal, Mapping, Optional
-from contextlib import contextmanager
 import piexif
-from threading import RLock
 import picamera2
+import numpy as np
 from picamera2 import Picamera2
 from picamera2.encoders import MJPEGEncoder
 from picamera2.outputs import Output
-import numpy as np
-from . import picamera_recalibrate_utils as recalibrate_utils
 
+import labthings_fastapi as lt
+
+from . import picamera_recalibrate_utils as recalibrate_utils
 from . import BaseCamera, JPEGBlob, ArrayModel
 
 
-class PicameraControl(ThingProperty):
+class PicameraControl(lt.ThingProperty):
     def __init__(
         self, control_name: str, model: type = float, description: Optional[str] = None
     ):
@@ -66,7 +60,7 @@ class PicameraControl(ThingProperty):
 class PicameraStreamOutput(Output):
     """An Output class that sends frames to a stream"""
 
-    def __init__(self, stream: MJPEGStream, portal: BlockingPortal):
+    def __init__(self, stream: lt.outputs.MJPEGStream, portal: lt.deps.BlockingPortal):
         """Create an output that puts frames in an MJPEGStream
 
         We need to pass the stream object, and also the blocking portal, because
@@ -211,19 +205,19 @@ class StreamingPiCamera2(BaseCamera):
             except KeyError:
                 pass  # If controls are missing, leave at default
 
-    stream_resolution = ThingProperty(
+    stream_resolution = lt.ThingProperty(
         tuple[int, int],
         initial_value=(820, 616),
         description="Resolution to use for the MJPEG stream",
     )
 
-    mjpeg_bitrate = ThingProperty(
+    mjpeg_bitrate = lt.ThingProperty(
         Optional[int],
         initial_value=100000000,
         description="Bitrate for MJPEG stream (None for default)",
     )
 
-    stream_active = ThingProperty(
+    stream_active = lt.ThingProperty(
         bool,
         initial_value=False,
         description="Whether the MJPEG stream is active",
@@ -255,7 +249,7 @@ class StreamingPiCamera2(BaseCamera):
 
     _sensor_modes = None
 
-    @thing_property
+    @lt.thing_property
     def sensor_modes(self) -> list[SensorMode]:
         """All the available modes the current sensor supports"""
         if not self._sensor_modes:
@@ -263,7 +257,7 @@ class StreamingPiCamera2(BaseCamera):
                 self._sensor_modes = cam.sensor_modes
         return self._sensor_modes
 
-    @thing_property
+    @lt.thing_property
     def sensor_mode(self) -> Optional[SensorModeSelector]:
         """The intended sensor mode of the camera"""
         return self.thing_settings["sensor_mode"]
@@ -276,13 +270,13 @@ class StreamingPiCamera2(BaseCamera):
         with self.picamera(pause_stream=True):
             self.thing_settings["sensor_mode"] = new_mode
 
-    @thing_property
+    @lt.thing_property
     def sensor_resolution(self) -> tuple[int, int]:
         """The native resolution of the camera's sensor"""
         with self.picamera() as cam:
             return cam.sensor_resolution
 
-    tuning = ThingProperty(Optional[dict], None, readonly=True)
+    tuning = lt.ThingProperty(Optional[dict], None, readonly=True)
 
     def settings_to_properties(self):
         """Set the values of properties based on the settings dict"""
@@ -400,7 +394,7 @@ class StreamingPiCamera2(BaseCamera):
             cam.close()
         del self._picamera
 
-    @thing_action
+    @lt.thing_action
     def start_streaming(
         self, main_resolution: tuple[int, int] = (820, 616), buffer_count: int = 6
     ) -> None:
@@ -451,7 +445,7 @@ class StreamingPiCamera2(BaseCamera):
                     MJPEGEncoder(self.mjpeg_bitrate),
                     PicameraStreamOutput(
                         self.mjpeg_stream,
-                        get_blocking_portal(self),
+                        lt.get_blocking_portal(self),
                     ),
                     name=stream_name,
                 )
@@ -459,7 +453,7 @@ class StreamingPiCamera2(BaseCamera):
                     MJPEGEncoder(100000000),
                     PicameraStreamOutput(
                         self.lores_mjpeg_stream,
-                        get_blocking_portal(self),
+                        lt.get_blocking_portal(self),
                     ),
                     name="lores",
                 )
@@ -472,7 +466,7 @@ class StreamingPiCamera2(BaseCamera):
                     "Started MJPEG stream at %s on port %s", self.stream_resolution, 1
                 )
 
-    @thing_action
+    @lt.thing_action
     def stop_streaming(self, stop_web_stream: bool = True) -> None:
         """
         Stop the MJPEG stream
@@ -493,7 +487,7 @@ class StreamingPiCamera2(BaseCamera):
             # Adding a sleep to prevent camera getting confused by rapid commands
             time.sleep(0.2)
 
-    @thing_action
+    @lt.thing_action
     def capture_image(
         self,
         stream_name: Literal["main", "lores", "raw"] = "main",
@@ -511,7 +505,7 @@ class StreamingPiCamera2(BaseCamera):
         with self.picamera() as cam:
             return cam.capture_image(stream_name, wait=wait)
 
-    @thing_action
+    @lt.thing_action
     def capture_array(
         self,
         stream_name: Literal["main", "lores", "raw", "full"] = "main",
@@ -538,7 +532,7 @@ class StreamingPiCamera2(BaseCamera):
         with self.picamera() as cam:
             return cam.capture_array(stream_name, wait=wait)
 
-    @thing_property
+    @lt.thing_property
     def camera_configuration(self) -> Mapping:
         """The "configuration" dictionary of the picamera2 object
 
@@ -553,10 +547,10 @@ class StreamingPiCamera2(BaseCamera):
         with self.picamera() as cam:
             return cam.camera_configuration()
 
-    @thing_action
+    @lt.thing_action
     def capture_jpeg(
         self,
-        metadata_getter: GetThingStates,
+        metadata_getter: lt.deps.GetThingStates,
         resolution: Literal["lores", "main", "full"] = "main",
         wait: Optional[float] = 0.9,
     ) -> JPEGBlob:
@@ -580,7 +574,7 @@ class StreamingPiCamera2(BaseCamera):
         bypass this, you must use a raw capture.
         """
         fname = datetime.now().strftime("%Y-%m-%d-%H%M%S.jpeg")
-        folder = TemporaryDirectory()
+        folder = tempfile.TemporaryDirectory()
         path = os.path.join(folder.name, fname)
         config = self.camera_configuration
         # Low-res and main streams are running already - so we don't need
@@ -609,13 +603,13 @@ class StreamingPiCamera2(BaseCamera):
         piexif.insert(piexif.dump(exif_dict), path)
         return JPEGBlob.from_temporary_directory(folder, fname)
 
-    @thing_property
+    @lt.thing_property
     def capture_metadata(self) -> dict:
         """Return the metadata from the camera"""
         with self.picamera() as cam:
             return cam.capture_metadata()
 
-    @thing_action
+    @lt.thing_action
     def auto_expose_from_minimum(
         self,
         target_white_level: int = 700,
@@ -641,7 +635,7 @@ class StreamingPiCamera2(BaseCamera):
             )
             self.update_persistent_controls()
 
-    @thing_action
+    @lt.thing_action
     def calibrate_white_balance(
         self,
         method: Literal["percentile", "centre"] = "centre",
@@ -676,7 +670,7 @@ class StreamingPiCamera2(BaseCamera):
                 )
             self.update_persistent_controls()
 
-    @thing_action
+    @lt.thing_action
     def calibrate_lens_shading(self) -> None:
         """Take an image and use it for flat-field correction.
 
@@ -694,7 +688,7 @@ class StreamingPiCamera2(BaseCamera):
             recalibrate_utils.set_static_lst(self.tuning, L, Cr, Cb)
             self.initialise_picamera()
 
-    @thing_property
+    @lt.thing_property
     def colour_correction_matrix(
         self,
     ) -> tuple[float, float, float, float, float, float, float, float, float]:
@@ -709,7 +703,7 @@ class StreamingPiCamera2(BaseCamera):
         self.thing_settings["colour_correction_matrix"] = value
         self.calibrate_colour_correction(value)
 
-    @thing_action
+    @lt.thing_action
     def reset_ccm(self):
         """
         Overwrite the colour correction matrix in camera tuning with default values.
@@ -731,7 +725,7 @@ class StreamingPiCamera2(BaseCamera):
         ]
         self.colour_correction_matrix = col_corr_matrix
 
-    @thing_action
+    @lt.thing_action
     def calibrate_colour_correction(
         self,
         col_corr_matrix: tuple[
@@ -750,7 +744,7 @@ class StreamingPiCamera2(BaseCamera):
             recalibrate_utils.set_static_ccm(self.tuning, col_corr_matrix)
             self.initialise_picamera()
 
-    @thing_action
+    @lt.thing_action
     def set_static_green_equalisation(self, offset: int = 65535) -> None:
         """Set the green equalisation to a static value.
 
@@ -765,7 +759,7 @@ class StreamingPiCamera2(BaseCamera):
             recalibrate_utils.set_static_geq(self.tuning, offset)
             self.initialise_picamera()
 
-    @thing_action
+    @lt.thing_action
     def full_auto_calibrate(self) -> None:
         """Perform a full auto-calibration
 
@@ -783,7 +777,7 @@ class StreamingPiCamera2(BaseCamera):
         self.calibrate_lens_shading()
         self.calibrate_white_balance()
 
-    @thing_action
+    @lt.thing_action
     def flat_lens_shading(self) -> None:
         """Disable flat-field correction
 
@@ -802,7 +796,7 @@ class StreamingPiCamera2(BaseCamera):
             )
             self.initialise_picamera()
 
-    @thing_property
+    @lt.thing_property
     def lens_shading_tables(self) -> Optional[LensShading]:
         """The current lens shading (i.e. flat-field correction)
 
@@ -879,7 +873,7 @@ class StreamingPiCamera2(BaseCamera):
             float(gain_b / np.max(lst.Cb)),
         )
 
-    @thing_action
+    @lt.thing_action
     def flat_lens_shading_chrominance(self) -> None:
         """Disable flat-field correction
 
@@ -894,7 +888,7 @@ class StreamingPiCamera2(BaseCamera):
             recalibrate_utils.set_static_lst(self.tuning, luminance, flat, flat)
             self.initialise_picamera()
 
-    @thing_action
+    @lt.thing_action
     def reset_lens_shading(self) -> None:
         """Revert to default lens shading settings
 
@@ -905,7 +899,7 @@ class StreamingPiCamera2(BaseCamera):
             recalibrate_utils.copy_alsc_section(self.default_tuning, self.tuning)
             self.initialise_picamera()
 
-    @thing_property
+    @lt.thing_property
     def lens_shading_is_static(self) -> bool:
         """Whether the lens shading is static
 

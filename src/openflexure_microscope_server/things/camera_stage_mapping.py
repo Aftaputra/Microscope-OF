@@ -33,14 +33,10 @@ from camera_stage_mapping.camera_stage_calibration_1d import (
     image_to_stage_displacement_from_1d,
 )
 from camera_stage_mapping.exceptions import MappingError
-from labthings_fastapi.dependencies.invocation import (
-    InvocationCancelledError,
-    InvocationLogger,
-)
+
+import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray, DenumpifyingDict
-from labthings_fastapi.decorators import thing_action, thing_property
-from labthings_fastapi.descriptors import ThingSetting
-from labthings_fastapi.thing import Thing
+
 from camera_stage_mapping.camera_stage_tracker import Tracker
 from .camera import CameraDependency as Camera
 from .stage import StageDependency as Stage
@@ -179,15 +175,15 @@ class CSMUncalibratedError(HTTPException):
         )
 
 
-class CameraStageMapper(Thing):
+class CameraStageMapper(lt.Thing):
     """A Thing to manage mapping between image and stage coordinates"""
 
-    @thing_action
+    @lt.thing_action
     def calibrate_1d(
         self,
         hw: HardwareInterfaceDep,
         stage: Stage,
-        logger: InvocationLogger,
+        logger: lt.deps.InvocationLogger,
         direction: Tuple[float, float, float],
     ) -> DenumpifyingDict:
         """Move a microscope's stage in 1D, and figure out the relationship with the camera"""
@@ -202,7 +198,7 @@ class CameraStageMapper(Thing):
             result: dict = calibrate_backlash_1d(
                 tracker, move, direction_array, logger=logger
             )
-        except InvocationCancelledError as e:
+        except lt.exceptions.InvocationCancelledError as e:
             logger.info("User cancelled the camera stage mapping calibration")
             logger.info("Returning to starting position")
             stage.move_absolute(**starting_position, block_cancellation=True)
@@ -215,9 +211,9 @@ class CameraStageMapper(Thing):
         result["image_resolution"] = hw.grab_image().shape[:2]
         return result
 
-    @thing_action
+    @lt.thing_action
     def calibrate_xy(
-        self, hw: HardwareInterfaceDep, stage: Stage, logger: InvocationLogger
+        self, hw: HardwareInterfaceDep, stage: Stage, logger: lt.deps.InvocationLogger
     ) -> DenumpifyingDict:
         """Move the microscope's stage in X and Y, to calibrate its relationship to the camera
 
@@ -257,7 +253,7 @@ class CameraStageMapper(Thing):
 
         return data
 
-    @thing_property
+    @lt.thing_property
     def image_to_stage_displacement_matrix(
         self,
     ) -> Optional[List[List[float]]]:  # 2x2 integer array
@@ -285,21 +281,19 @@ class CameraStageMapper(Thing):
         ]
         return np.array(displacement_matrix).tolist()
 
-    last_calibration = ThingSetting(
+    last_calibration = lt.ThingSetting(
         initial_value=None,
         model=Optional[dict],
         readonly=True,
         description="The most recent CSM calibration",
     )
 
-    @thing_property
+    @lt.thing_property
     def image_resolution(self) -> Optional[Tuple[float, float]]:
         """The image size used to calibrate the image_to_stage_displacement_matrix"""
         if self.last_calibration is None:
             return None
-        return self.last_calibration["camera_stage_mapping_calibration"][
-            "image_resolution"
-        ]
+        return self.last_calibration["image_resolution"]
 
     def assert_calibrated(self):
         """Raise an exception if the image_to_stage_displacement matrix is not set"""
@@ -308,7 +302,7 @@ class CameraStageMapper(Thing):
             # added by CSMUncalibratedError
             raise CSMUncalibratedError()  # noqa: RSE102
 
-    @thing_action
+    @lt.thing_action
     def move_in_image_coordinates(
         self,
         stage: Stage,
@@ -332,7 +326,7 @@ class CameraStageMapper(Thing):
         )
         stage.move_relative(x=relative_move[0], y=relative_move[1])
 
-    @thing_property
+    @lt.thing_property
     def thing_state(self) -> dict[str, Any]:
         """Summary metadata describing the current state of the Thing"""
         return {
