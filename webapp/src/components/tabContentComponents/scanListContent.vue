@@ -255,7 +255,7 @@ export default {
     formatDate(timestamp) {
       // Multiply by 1000 as JS uses ms not s
       let d = new Date(timestamp*1000);
-      // Convert to a sting in a very javascript way!
+      // Convert to a string in a very javascript way!
       let yyyy = d.getFullYear();
       let mm = d.getMonth() + 1;
       let dd = d.getDate();

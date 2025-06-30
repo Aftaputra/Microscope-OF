@@ -155,7 +155,7 @@ class SmartScanThing(Thing):
             if self._scan_data is not None:
                 self._return_to_starting_position()
                 if not isinstance(e, scan_directories.NotEnoughFreeSpaceError):
-                    # Don't stich if drive is full (already logged)
+                    # Don't stitch if drive is full (already logged)
                     self._perform_final_stitch()
             # Error must be raised so UI gives correct output
             raise e
@@ -671,7 +671,7 @@ class SmartScanThing(Thing):
         "scans/{scan_name}",
         responses={
             200: {"description": "Successfully deleted scan"},
-            400: {"description": "Scan not deleted does"},
+            400: {"description": "An error occurred while trying to delete scan"},
         },
     )
     def delete_scan(self, scan_name: str, logger: InvocationLogger) -> None:
@@ -744,7 +744,7 @@ class SmartScanThing(Thing):
 
         This will return None (`null` to JS) if there is no preview image to return.
 
-        This is used for two things reasons:
+        This is used for two reasons:
         1. If all caching was turned off this stitch would be sent over the network
            repeatedly
         2. If caching was is on, then the stitch will not update when needed.

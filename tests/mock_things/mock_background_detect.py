@@ -1,4 +1,4 @@
-"""This testing submodule contains mock autofocus things.
+"""This testing submodule contains mock background detect things.
 
 These mocks are designed to be inserted as dependencies to give specific
 functionality and returns.

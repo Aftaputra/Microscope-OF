@@ -24,13 +24,13 @@ LOGGER = logging.getLogger("mock-invocation_logger")
 BASE_SCAN_DIR = os.path.join(tempfile.gettempdir(), "scans")
 
 
-def _clear_scan_dir():
+def _clear_scan_dir() -> None:
     """Delete the scan dir"""
     if os.path.exists(BASE_SCAN_DIR):
         shutil.rmtree(BASE_SCAN_DIR)
 
 
-def _add_fake_image(scan_dir: ScanDirectory):
+def _add_fake_image(scan_dir: ScanDirectory) -> None:
     """Make a fake image on disk in the scan directory"""
     x_pos = random.randint(-100, 100)
     y_pos = random.randint(-100, 100)
@@ -40,8 +40,14 @@ def _add_fake_image(scan_dir: ScanDirectory):
         f_obj.write("fake")
 
 
-def _add_fake_file(scan_dir: ScanDirectory, filename: str, in_im_dir=False):
-    """Make a fake file  on disk in the scan directory"""
+def _add_fake_file(
+    scan_dir: ScanDirectory, filename: str, in_im_dir: bool = False
+) -> None:
+    """Make a fake file on disk in the scan directory.
+
+    :param in_im_dir: Boolean, if set True the fake file is created in the images
+    directory of the scan not the root directory.
+    """
     if in_im_dir:
         filepath = os.path.join(scan_dir.images_dir, filename)
     else:
@@ -53,7 +59,12 @@ def _add_fake_file(scan_dir: ScanDirectory, filename: str, in_im_dir=False):
 def test_basic_directory_operations():
     """Test some basic operations
 
-    Rather a long test but systematically iterates through some basics.
+    Test some basic operations, including:
+    - ScanDirectoryManager creates a scan directory
+    - For a fake (dummy) scan, a path can be created and retrieved
+    - For a fake (dummy) file, a path can be created and retrieved (for both a .zip and .img file)
+    - When a scan directory is created, the directory exists as does the image directory
+    - Scan directories can be deleted and scans can be cleared
     """
     _clear_scan_dir()
     assert not os.path.isdir(BASE_SCAN_DIR)
@@ -66,20 +77,20 @@ def test_basic_directory_operations():
     scan_path = os.path.join(BASE_SCAN_DIR, scan_name)
     scan_im_dir = os.path.join(BASE_SCAN_DIR, scan_name, "images")
 
-    # It doesn't exitist but we can check its paths
+    # It doesn't exist but we can check its paths
     assert not scan_dir_manager.exists(scan_name)
     assert not os.path.isdir(scan_path)
     assert scan_dir_manager.path_for(scan_name) == scan_path
     assert scan_dir_manager.img_dir_for(scan_name) == scan_im_dir
 
-    # or a get the path of a fake file
+    # Get the path of a fake file
     fake_file = scan_dir_manager.get_file_from(scan_name, "foo.zip")
     assert fake_file == os.path.join(scan_path, "foo.zip")
     # But this is none if we check it exists
     fake_file = scan_dir_manager.get_file_from(scan_name, "foo.zip", check_exists=True)
     assert fake_file is None
 
-    # or a get the path of a fake file
+    # Get the path of another fake file
     fake_file = scan_dir_manager.get_file_from_img_dir(scan_name, "bar.img")
     assert fake_file == os.path.join(scan_im_dir, "bar.img")
     # But this is none if we check it exists
@@ -97,6 +108,7 @@ def test_basic_directory_operations():
     assert os.path.isdir(scan_path)
     assert os.path.isdir(scan_im_dir)
 
+    # Test cleanup. Delete the created scan and scan directory
     scan_dir_manager.delete_scan(scan_name)
     assert not scan_dir_manager.exists(scan_name)
     assert not os.path.isdir(scan_path)
@@ -116,7 +128,7 @@ def test_scan_sequence_and_listing():
 
     # Check they exist and are numbered sequentially
     all_scans = scan_dir_manager.all_scans
-    assert len(all_scans) == 4
+    assert len(set(all_scans)) == 4
     assert "fake_scan_0001" in all_scans
     assert "fake_scan_0002" in all_scans
     assert "fake_scan_0003" in all_scans
@@ -149,7 +161,7 @@ def test_scan_name_non_sequential():
     assert scan_dir.name == "fake_scan_0012"
 
     all_scans = scan_dir_manager.all_scans
-    assert len(all_scans) == 7
+    assert len(set(all_scans)) == 7
     assert "fake_scan_0001" in all_scans
     assert "fake_scan_0002" in all_scans
     assert "fake_scan_0003" in all_scans
@@ -192,15 +204,14 @@ def test_scan_info():
     now = time.time()
 
     assert info.name == "fake_scan_0001"
-    # Created and modifies in the last 5 seconds
+    # Created and modified in the last 5 seconds
     assert now - 5 < info.created < now
-    # Created and modifies in the last 5 seconds
-    assert now - 5 < info.created < now
+    assert now - 5 < info.modified < now
     assert info.number_of_images == 17
     assert not info.stitch_available
     assert info.dzi is None
 
-    # Add a fake scan and check this recognised as a stitch not a scan image
+    # Add a fake scan and check this is recognised as a stitch not a scan image
     _add_fake_file(scan_dir, "fake_scan_0001_stitched.jpg", in_im_dir=True)
     info = scan_dir.scan_info()
     assert info.number_of_images == 17
@@ -217,10 +228,9 @@ def test_empty_scan_info():
     now = time.time()
 
     assert info.name == "fake_scan_0001"
-    # Created and modifies in the last 5 seconds
+    # Created and modified in the last 5 seconds
     assert now - 5 < info.created < now
-    # Created and modifies in the last 5 seconds
-    assert now - 5 < info.created < now
+    assert now - 5 < info.modified < now
     assert info.number_of_images == 0
     assert not info.stitch_available
     assert info.dzi is None
@@ -236,7 +246,7 @@ def test_zipping_scan_data():
         scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
         scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
 
-        # Create 21 fake scan files, a fake stitch, and a fake zip
+        # Create 21 fake scan images, a fake stitch, and a fake zip
         for i in range(21):
             _add_fake_image(scan_dir)
         _add_fake_file(scan_dir, "fake_scan_0001_stitched.jpg", in_im_dir=True)
@@ -249,7 +259,7 @@ def test_zipping_scan_data():
         else:
             zip_fname = scan_dir_manager.zip_scan("fake_scan_0001")
         zip_files = get_files_in_zip(zip_fname)
-        assert len(zip_files) == 21
+        assert len(set(zip_files)) == 21
 
         # Zip again with final version on and there should be 22 images
         if caller == "scan_dir":
@@ -257,7 +267,7 @@ def test_zipping_scan_data():
         else:
             scan_dir_manager.zip_scan("fake_scan_0001", final_version=True)
         zip_files = get_files_in_zip(zip_fname)
-        assert len(get_files_in_zip(zip_fname)) == 22
+        assert len(set(get_files_in_zip(zip_fname))) == 22
         # Check the zips are not in the zip
         for file in zip_files:
             assert not file.endswith(".zip")

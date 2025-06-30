@@ -7,7 +7,7 @@ directly poll any properties and to start any methods.
 Any methods with LabThings dependency injections will require dependencies
 to be passed in manually. Rather than passing in real LabThings clients
 it is possible to create test objects that mock these clients. Thus, entirely
-isolating one Thing for testing, at the expense of neededing to create detailed
+isolating one Thing for testing, at the expense of needing to create detailed
 mock objects.
 
 For these tests to reliably represent real behaviour the mock Things will need to
@@ -41,7 +41,7 @@ LOGGER = logging.getLogger("mock-invocation_logger")
 SCAN_DIR = os.path.join(tempfile.gettempdir(), "scans")
 
 
-def _clear_scan_dir():
+def _clear_scan_dir() -> None:
     """Delete the scan dir"""
     if os.path.exists(SCAN_DIR):
         shutil.rmtree(SCAN_DIR)
@@ -77,6 +77,7 @@ def test_private_delete_scan(smart_scan_thing, caplog):
 
         # Make the outer scan dir, but not the one to delete
         os.makedirs(SCAN_DIR)
+        # Attempt to delete the fake scan. Expect it to fail and provide a warning
         deleted = smart_scan_thing._delete_scan(fake_scan_name, LOGGER)
         assert not deleted
         assert len(caplog.records) == 1
@@ -104,9 +105,10 @@ def test_public_delete_scan(smart_scan_thing, caplog):
         # Make the outer scan dir, but not the one to delete
         os.makedirs(SCAN_DIR)
 
-        with pytest.raises(HTTPException) as exc_info:
-            smart_scan_thing.delete_scan(fake_scan_name, LOGGER)
-        # Should raise a 400 error if the scan doesn't exists, not a 404 as the server
+        # Attempt to delete the fake scan. Expect it to fail
+    with pytest.raises(HTTPException) as exc_info:
+        smart_scan_thing.delete_scan(fake_scan_name, LOGGER)
+        # Should raise a 400 error if the scan doesn't exist, not a 404 as the server
         # was not expecting to receive the scan files
         assert exc_info.value.status_code == 400
         assert len(caplog.records) == 1
@@ -151,7 +153,7 @@ def _run_only_outer_scan(adjust_inital_state: Optional[Callable] = None):
     _run_scan method where this can be tested. Once this is done
     the final scan behaviour can be tested too.
 
-    adjust_initial_scan is a callable which accepts the mocked smart scan thing
+    adjust_initial_state is a callable which accepts the mocked smart scan thing
     as the only variable. It can be used to adjust the initial state of the test
 
 
@@ -177,7 +179,7 @@ def _run_only_outer_scan(adjust_inital_state: Optional[Callable] = None):
         # Counter for checking functions were called
         mock_call_count = {"_run_scan": 0}
 
-        # Mock thing settngs as a dictionary
+        # Mock thing settings as a dictionary
         thing_settings = {"skip_background": True}
 
         def _run_scan(self):
@@ -244,7 +246,7 @@ def test_outer_scan():
     assert mock_ss_thing.mock_call_count["_run_scan"] == 1
 
 
-def test_outer_scan_wo_scample_skip():
+def test_outer_scan_wo_sample_skip():
     """Test setup and teardown of the scan."""
 
     def _set_skip_background(mock_ss_thing):

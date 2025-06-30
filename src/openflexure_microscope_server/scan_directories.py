@@ -35,7 +35,7 @@ class ScanInfo(BaseModel):
 
 class ScanDirectoryManager:
     """
-    A class for managinging interactions with scan directories
+    A class for managing interactions with scan directories
     """
 
     _base_scan_dir: str
@@ -57,7 +57,7 @@ class ScanDirectoryManager:
     def path_for(self, scan_name: str) -> str:
         """Return the path for a given scan name
 
-        Returns the path even if it doesn't exist)
+        Returns the path even if it doesn't exist
         """
         return os.path.join(self._base_scan_dir, scan_name)
 
@@ -97,7 +97,7 @@ class ScanDirectoryManager:
         return file_path
 
     @property
-    def all_scans(self):
+    def all_scans(self) -> list[str]:
         """Return a list of the scan names in the base directory"""
         return [f.name for f in os.scandir(self._base_scan_dir) if f.is_dir()]
 
@@ -138,11 +138,11 @@ class ScanDirectoryManager:
 
         return f"{scan_name}_{scan_num:0{SCAN_ZERO_PAD_DIGITS}d}"
 
-    def new_scan_dir(self, scan_name: str) -> str:
+    def new_scan_dir(self, scan_name: str) -> "ScanDirectory":
         """Get a unique name for this scan and create a directory for it
 
         The scan will be named `{scan_name}_0001` where the number is
-        zero-padded to be 4 digits long (to allow correct sorting if the
+        zero-padded to be SCAN_ZERO_PAD_DIGITS digits long (to allow correct sorting if the
         scans are ordered alphanumerically).
 
         Creates a new empty folder, into which scans are saved
@@ -161,11 +161,11 @@ class ScanDirectoryManager:
         os.makedirs(self.img_dir_for(full_scan_name))
         return ScanDirectory(full_scan_name, self.base_dir)
 
-    def delete_scan(self, scan_name: str):
+    def delete_scan(self, scan_name: str) -> None:
         """Delete a scan"""
         shutil.rmtree(self.path_for(scan_name))
 
-    def zip_scan(self, scan_name: str, final_version: bool = False) -> str:
+    def zip_scan(self, scan_name: str, final_version: bool = False) -> "ScanDirectory":
         """Zips any images from the scan not yet zipped, return full path to zip
 
         `final_version` Set true to stitch all files not just the scan images
@@ -213,7 +213,7 @@ class ScanDirectory:
             )
 
     @property
-    def name(self):
+    def name(self) -> str:
         """The name of the scan"""
         return self._name
 
@@ -249,7 +249,7 @@ class ScanDirectory:
         return max(os.stat(root).st_mtime for root, _, _ in os.walk(self.dir_path))
 
     def scan_info(self):
-        """Return the inforomation for the scan directory as a ScanInfo object"""
+        """Return the information for the scan directory as a ScanInfo object"""
         folder_contents = self.get_scan_files()
         if folder_contents:
             scan_images = [i for i in folder_contents if IMAGE_REGEX.search(i)]
