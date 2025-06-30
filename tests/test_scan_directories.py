@@ -32,10 +32,13 @@ def _clear_scan_dir() -> None:
 
 def _add_fake_image(scan_dir: ScanDirectory) -> None:
     """Make a fake image on disk in the scan directory"""
-    x_pos = random.randint(-100, 100)
-    y_pos = random.randint(-100, 100)
-    filename = f"image_{x_pos}_{y_pos}.jpg"
-    filepath = os.path.join(scan_dir.images_dir, filename)
+    unique = False
+    while not unique:
+        x_pos = random.randint(-10000, 10000)
+        y_pos = random.randint(-10000, 10000)
+        filename = f"image_{x_pos}_{y_pos}.jpg"
+        filepath = os.path.join(scan_dir.images_dir, filename)
+        unique = not os.path.exists(filepath)
     with open(filepath, "w") as f_obj:
         f_obj.write("fake")
 
@@ -211,11 +214,40 @@ def test_scan_info():
     assert not info.stitch_available
     assert info.dzi is None
 
-    # Add a fake scan and check this is recognised as a stitch not a scan image
+    # Add a fake stitched images and check this is recognised as a stitch not
+    # a scan image
     _add_fake_file(scan_dir, "fake_scan_0001_stitched.jpg", in_im_dir=True)
     info = scan_dir.scan_info()
     assert info.number_of_images == 17
     assert info.stitch_available
+
+
+def test_get_final_stitch():
+    """Check that the final stitch can be retrieved"""
+    _clear_scan_dir()
+    scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
+
+    # Create some scan images files
+    for i in range(17):
+        _add_fake_image(scan_dir)
+
+    # No scans, so None should be returned, from both manager and scan dir
+    assert scan_dir_manager.get_final_stitch(scan_dir.name) is None
+    assert scan_dir.get_final_stitch() is None
+
+    fake_scan_name = "fake_scan_0001_stitched.jpg"
+    fake_scan_path = scan_dir_manager.get_file_from_img_dir(
+        scan_name=scan_dir.name,
+        filename="fake_scan_0001_stitched.jpg",
+        check_exists=False,
+    )
+    # Add a fake scan
+    _add_fake_file(scan_dir, fake_scan_name, in_im_dir=True)
+    # Manager returns full path
+    assert scan_dir_manager.get_final_stitch(scan_dir.name) == fake_scan_path
+    # ScanDirectory object returns just the filename
+    assert scan_dir.get_final_stitch() == fake_scan_name
 
 
 def test_empty_scan_info():
@@ -277,7 +309,7 @@ def test_creating_scan_dir_for_missing_scan():
     """Check creating ScanDirectory object for a dir that doesn't exist fails."""
     _clear_scan_dir()
     with pytest.raises(FileNotFoundError):
-        ScanDirectory(BASE_SCAN_DIR, "not_real_0001")
+        ScanDirectory("not_real_0001", BASE_SCAN_DIR)
 
 
 def test_none_returned_for_missing_images_dir():
@@ -290,10 +322,48 @@ def test_none_returned_for_missing_images_dir():
     """
     _clear_scan_dir()
     os.makedirs(os.path.join(BASE_SCAN_DIR, "fake_scan_0001"))
-    scan_dir = ScanDirectory(BASE_SCAN_DIR, "fake_scan_0001")
+    scan_dir = ScanDirectory("fake_scan_0001", BASE_SCAN_DIR)
     assert scan_dir.images_dir is None
     # Also check that get scan files returns and empty list
     assert scan_dir.get_scan_files() == []
+
+
+def test_find_files():
+    """Test the private _find_files method of ScanDirectories
+
+    Add files to directory and check expected returns.
+    """
+    _clear_scan_dir()
+    os.makedirs(os.path.join(BASE_SCAN_DIR, "fake_scan_0001", "images"))
+    scan_dir = ScanDirectory("fake_scan_0001", BASE_SCAN_DIR)
+
+    # For an empty directory, "all" is 3 empty lists
+    assert scan_dir._find_files("all") == ([], [], [])
+    # Other options are 1 empty list.
+    for file_type in ["scan_images", "stitches", "dzi"]:
+        assert scan_dir._find_files(file_type) == []
+
+    # Add a number of images
+    for i in range(2321):
+        _add_fake_image(scan_dir)
+
+    assert len(set(scan_dir._find_files("scan_images"))) == 2321
+    assert len(set(scan_dir._find_files("stitches"))) == 0
+    assert len(set(scan_dir._find_files("dzi"))) == 0
+
+    # Add and a stitched image
+    _add_fake_file(scan_dir, "fake_scan_0001_stitched.jpg", in_im_dir=True)
+
+    assert len(set(scan_dir._find_files("scan_images"))) == 2321
+    assert len(set(scan_dir._find_files("stitches"))) == 1
+    assert len(set(scan_dir._find_files("dzi"))) == 0
+
+    # Add and a dzi image
+    _add_fake_file(scan_dir, "fake_scan_0001.dzi", in_im_dir=True)
+
+    assert len(set(scan_dir._find_files("scan_images"))) == 2321
+    assert len(set(scan_dir._find_files("stitches"))) == 1
+    assert len(set(scan_dir._find_files("dzi"))) == 1
 
 
 DiskUsage = namedtuple("DiskUsage", ["total", "used", "free"])

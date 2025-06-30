@@ -13,10 +13,11 @@ import zipfile
 
 from pydantic import BaseModel
 
-STITCH_SUFFIX = "_stitched.jpg"
 IMG_DIR_NAME = "images"
-IMAGE_REGEX = re.compile(r"-?[0-9]+_-?[0-9]+\.jpe?g$")
 SCAN_ZERO_PAD_DIGITS = 4
+
+STITCH_REGEX = re.compile(r"stitched\.jpe?g$")
+IMAGE_REGEX = re.compile(r"-?[0-9]+_-?[0-9]+\.jpe?g$")
 
 
 class NotEnoughFreeSpaceError(IOError):
@@ -98,11 +99,14 @@ class ScanDirectoryManager:
         return file_path
 
     def get_final_stitch(self, scan_name: str) -> Optional[str]:
-        """Return the file path for the final stitch.
+        """Return the file full path for the final stitch.
 
         If no final stitch is found, return None
         """
-        return ScanDirectory(scan_name, self.base_dir).get_final_stitch()
+        stitch_fname = ScanDirectory(scan_name, self.base_dir).get_final_stitch()
+        if stitch_fname is None:
+            return None
+        return self.get_file_from_img_dir(scan_name, stitch_fname)
 
     @property
     def all_scans(self) -> list[str]:
@@ -267,7 +271,7 @@ class ScanDirectory:
                 return scan_images
 
         if file_types in ["all", "stitches"]:
-            stitches = [i for i in folder_contents if i.endswith("_stitched.jpg")]
+            stitches = [i for i in folder_contents if STITCH_REGEX.search(i)]
             if file_types == "stitches":
                 return stitches
 
@@ -279,7 +283,7 @@ class ScanDirectory:
         return scan_images, stitches, dzi_files
 
     def get_final_stitch(self) -> Optional[str]:
-        """Return the file path for the final stitch.
+        """Return the filename for the final stitch (in the images dir)
 
         If no final stitch is found, return None
         """
