@@ -54,6 +54,11 @@ def smart_scan_thing():
 
 
 def test_initial_properties(smart_scan_thing):
+    """Check the initial values of properties.
+
+    Test properties of SmartScanThing are available without a ThingServer
+    and return expected default values.
+    """
     assert smart_scan_thing._scan_dir_manager.base_dir == SCAN_DIR
     assert smart_scan_thing.latest_scan_name is None
 
@@ -125,6 +130,7 @@ def test_public_delete_scan(smart_scan_thing, caplog):
 
 
 def test_delete_all_scans(smart_scan_thing, caplog):
+    """Check the delete_all_scan API really does delete all the scans."""
     _clear_scan_dir()
     with caplog.at_level(logging.INFO):
         fake_scan_names = [

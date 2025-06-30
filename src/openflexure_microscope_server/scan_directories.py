@@ -73,8 +73,8 @@ class ScanDirectoryManager:
     ) -> Optional[str]:
         """Return the file path for the file within a scan directory
 
-        If check_exists is True then a FileNotFoundError will be raised if
-        the file does not exist.
+        If check_exists is True then None will be returned if the file does
+        not exist.
         """
         file_path = os.path.join(self.path_for(scan_name), filename)
         if check_exists:
@@ -178,13 +178,10 @@ class ScanDirectoryManager:
         """
         Raise an exception if there is not enough free disk space to continue scanning
 
-        Args:
-        path =  path to a location on the disk you want to check
-        min_space [int] = the minimum space required in bytes
-            default = 500,000,000 (500MB)
+        :param min_space: the minimum space required in bytes.
+            Default = 500,000,000 (500MB)
 
-        Raises:
-            NotEnoughFreeSpaceError if the remaining storage is below min_space
+        :raises: NotEnoughFreeSpaceError if the remaining storage is below min_space
         """
         disk_usage = shutil.disk_usage(self._base_scan_dir)
         if disk_usage.free < min_space:
@@ -198,7 +195,8 @@ class ScanDirectory:
     """A class for handling interactions with scan directories
 
     Initalisation parameters:
-      dir_path: the directory of the outer scan directory
+      name: the name of the scan (the scan directory basename)
+      base_scan_dir: Path of the directory that holds all scans
     """
 
     _name: str

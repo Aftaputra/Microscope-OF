@@ -49,7 +49,7 @@ STITCHING_RESOLUTION = (820, 616)
 
 
 class ScanNotRunningError(RuntimeError):
-    """Method called when scan not running that requires a scan to be running"""
+    """Exception called when scan not running that requires a scan to be running"""
 
 
 def _scan_running(method):
@@ -138,8 +138,8 @@ class SmartScanThing(Thing):
         self._capture_thread = None
         self._scan_images_taken = 0
 
-        # Set _scan_data to None. It will for error checking. It will be set to a value
-        # by _run_scan
+        # Set _scan_data to None. This is needed just in case an exception is raised
+        # before _run_scan (which sets the real data). As we check this in the `except`
         self._scan_data = None
 
         try:

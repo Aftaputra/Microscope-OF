@@ -11,8 +11,6 @@ from openflexure_microscope_server.things.background_detect import ChannelDistri
 
 
 class MockBackgoundDetectThing:
-    # Counter for checking functions were called
-
     background_distributions = ChannelDistributions(
         means=[128.0, 128.0, 128.0],
         standard_deviations=[3.0, 3.0, 3.0],

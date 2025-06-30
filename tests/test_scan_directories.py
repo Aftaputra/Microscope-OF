@@ -281,7 +281,13 @@ def test_creating_scan_dir_for_missing_scan():
 
 
 def test_none_returned_for_missing_images_dir():
-    """None should be returned for image dir path if images dir never created."""
+    """None should be returned for image dir path if images dir does not exist.
+
+    By default images directories are created at the same time the scan directory
+    is created. However, edge cases such as problems in deletions, microscopes
+    with older scans on, etc can cause and empty scan directory, so it is handled
+    explicitly.
+    """
     _clear_scan_dir()
     os.makedirs(os.path.join(BASE_SCAN_DIR, "fake_scan_0001"))
     scan_dir = ScanDirectory(BASE_SCAN_DIR, "fake_scan_0001")
