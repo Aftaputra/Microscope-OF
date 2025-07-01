@@ -17,6 +17,7 @@
 @global-primary-background: #C32280;
 
 @inverse-primary-muted-color: lighten(@global-primary-background, 15%);
+@darkened-primary-color: darken(@global-primary-background, 15%);
 @inverse-global-color: fade(@global-inverse-color, 80%);
 
 @global-border: #d5d5d5;
@@ -364,6 +365,12 @@ a:hover {
     border: 1px solid #f0506e;
 }
 
+.uk-button-disabled {
+    border: 1px solid #999999 !important;
+    background-color: #cccccc !important;
+    color: #919191 !important;
+}
+
 .hook-inverse() {
     .uk-button {
         background-color: rgba(27, 13, 13, 0.15);
@@ -387,12 +394,12 @@ a:hover {
         color: #fff;
         border-color: #fff;
     }
-}
 
-.disabled {
-  border: 1px solid #999999 !important;
-  background-color: #cccccc !important;
-  color: #919191 !important;
+    .uk-button-disabled {
+        border: 1px solid @darkened-primary-color !important;
+        background-color: #333333 !important;
+        color: #777777 !important;
+    }
 }
 
 .uk-icon-button,

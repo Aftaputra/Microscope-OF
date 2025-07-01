@@ -1,7 +1,7 @@
 <template>
     <a
       class="uk-button"
-      :class="[isDisabled ? 'disabled' : '', buttonPrimary ? 'uk-button-primary' : 'uk-button-default']"
+      :class="[isDisabled ? 'uk-button-disabled' : '', buttonPrimary ? 'uk-button-primary' : 'uk-button-default']"
       :href="URL"
       download
       > {{ buttonLabel }}</a
