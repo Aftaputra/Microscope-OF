@@ -122,17 +122,19 @@ def test_basic_directory_operations():
     assert scan_dir_manager.img_dir_for(scan_name) == scan_im_dir
 
     # Get the path of a fake file
-    fake_file = scan_dir_manager.get_file_from(scan_name, "foo.zip")
+    fake_file = scan_dir_manager.get_file_path_from(scan_name, "foo.zip")
     assert fake_file == os.path.join(scan_path, "foo.zip")
     # But this is none if we check it exists
-    fake_file = scan_dir_manager.get_file_from(scan_name, "foo.zip", check_exists=True)
+    fake_file = scan_dir_manager.get_file_path_from(
+        scan_name, "foo.zip", check_exists=True
+    )
     assert fake_file is None
 
     # Get the path of another fake file
-    fake_file = scan_dir_manager.get_file_from_img_dir(scan_name, "bar.img")
+    fake_file = scan_dir_manager.get_file_path_from_img_dir(scan_name, "bar.img")
     assert fake_file == os.path.join(scan_im_dir, "bar.img")
     # But this is none if we check it exists
-    fake_file = scan_dir_manager.get_file_from_img_dir(
+    fake_file = scan_dir_manager.get_file_path_from_img_dir(
         scan_name, "bar.img", check_exists=True
     )
     assert fake_file is None
@@ -268,11 +270,11 @@ def test_get_final_stitch():
         _add_fake_image(scan_dir)
 
     # No scans, so None should be returned, from both manager and scan dir
-    assert scan_dir_manager.get_final_stitch(scan_dir.name) is None
-    assert scan_dir.get_final_stitch() is None
+    assert scan_dir_manager.get_final_stitch_path(scan_dir.name) is None
+    assert scan_dir.get_final_stitch_name() is None
 
     fake_scan_name = "fake_scan_0001_stitched.jpg"
-    fake_scan_path = scan_dir_manager.get_file_from_img_dir(
+    fake_scan_path = scan_dir_manager.get_file_path_from_img_dir(
         scan_name=scan_dir.name,
         filename="fake_scan_0001_stitched.jpg",
         check_exists=False,
@@ -280,9 +282,9 @@ def test_get_final_stitch():
     # Add a fake scan
     _add_fake_file(scan_dir, fake_scan_name, in_im_dir=True)
     # Manager returns full path
-    assert scan_dir_manager.get_final_stitch(scan_dir.name) == fake_scan_path
+    assert scan_dir_manager.get_final_stitch_path(scan_dir.name) == fake_scan_path
     # ScanDirectory object returns just the filename
-    assert scan_dir.get_final_stitch() == fake_scan_name
+    assert scan_dir.get_final_stitch_name() == fake_scan_name
 
 
 def test_empty_scan_info():

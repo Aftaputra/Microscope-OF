@@ -580,7 +580,7 @@ class SmartScanThing(Thing):
 
         This endpoint allows files to be downloaded from a scan.
         """
-        preview_path = self._scan_dir_manager.get_file_from_img_dir(
+        preview_path = self._scan_dir_manager.get_file_path_from_img_dir(
             scan_name=scan_name, filename="stitched_thumbnail.jpg", check_exists=True
         )
         if preview_path is None:
@@ -684,7 +684,7 @@ class SmartScanThing(Thing):
         Will only return a file ending in suffix STITCH_SUFFIX
         Note: when downloading this, the default filename will be `scan_name`.jpeg"""
 
-        stitch_path = self._scan_dir_manager.get_final_stitch(scan_name)
+        stitch_path = self._scan_dir_manager.get_final_stitch_path(scan_name)
 
         if stitch_path is None:
             raise HTTPException(404, "File not found")
@@ -758,7 +758,7 @@ class SmartScanThing(Thing):
         if not self.latest_scan_name:
             return None
 
-        return self._scan_dir_manager.get_file_from_img_dir(
+        return self._scan_dir_manager.get_file_path_from_img_dir(
             scan_name=self.latest_scan_name, filename="preview.jpg", check_exists=True
         )
 
@@ -899,7 +899,7 @@ class SmartScanThing(Thing):
         Note that as this is a thing_action it needs the logger passed as
         a variable if called from another thing action
         """
-        json_fpath = self._scan_dir_manager.get_file_from_img_dir(
+        json_fpath = self._scan_dir_manager.get_file_path_from_img_dir(
             scan_name=scan_name, filename=SCAN_DATA_FILENAME
         )
 

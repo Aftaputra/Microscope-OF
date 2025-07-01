@@ -70,10 +70,10 @@ class ScanDirectoryManager:
         """
         return os.path.join(self._base_scan_dir, scan_name, IMG_DIR_NAME)
 
-    def get_file_from(
+    def get_file_path_from(
         self, scan_name: str, filename: str, check_exists: bool = False
     ) -> Optional[str]:
-        """Return the file path for the file within a scan directory
+        """Return the file full path for the file within a scan directory
 
         If check_exists is True then None will be returned if the file does
         not exist.
@@ -84,10 +84,10 @@ class ScanDirectoryManager:
                 return None
         return file_path
 
-    def get_file_from_img_dir(
+    def get_file_path_from_img_dir(
         self, scan_name: str, filename: str, check_exists: bool = False
     ) -> Optional[str]:
-        """Return the file path for the file within a scan directory
+        """Return the full file path for the file within a scan directory
 
         If check_exists is True, None is returned if the file does not exist. If False
         then the path is returned anyway
@@ -98,15 +98,15 @@ class ScanDirectoryManager:
                 return None
         return file_path
 
-    def get_final_stitch(self, scan_name: str) -> Optional[str]:
+    def get_final_stitch_path(self, scan_name: str) -> Optional[str]:
         """Return the file full path for the final stitch.
 
         If no final stitch is found, return None
         """
-        stitch_fname = ScanDirectory(scan_name, self.base_dir).get_final_stitch()
+        stitch_fname = ScanDirectory(scan_name, self.base_dir).get_final_stitch_name()
         if stitch_fname is None:
             return None
-        return self.get_file_from_img_dir(scan_name, stitch_fname)
+        return self.get_file_path_from_img_dir(scan_name, stitch_fname)
 
     @property
     def all_scans(self) -> list[str]:
@@ -282,7 +282,7 @@ class ScanDirectory:
 
         return scan_images, stitches, dzi_files
 
-    def get_final_stitch(self) -> Optional[str]:
+    def get_final_stitch_name(self) -> Optional[str]:
         """Return the filename for the final stitch (in the images dir)
 
         If no final stitch is found, return None
