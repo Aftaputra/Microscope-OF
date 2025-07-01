@@ -341,6 +341,7 @@ def test_zipping_scan_data():
         # Check the zips are not in the zip
         for file in zip_files:
             assert not file.endswith(".zip")
+            assert not file.endswith(".dzi")
 
 
 def test_all_files():

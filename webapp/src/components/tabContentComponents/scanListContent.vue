@@ -397,8 +397,4 @@ ul {
   font-weight: bold;
 }
 
-a.disabled {
-    pointer-events: none;
-    color: #ccc;
-}
 </style>
