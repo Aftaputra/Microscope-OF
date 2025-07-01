@@ -401,7 +401,7 @@ def test_none_returned_for_missing_images_dir():
     assert scan_dir.get_scan_files() == []
 
 
-def test_find_files():
+def test_extracting_files():
     """Test the private _find_files method of ScanDirectories
 
     Add files to directory and check expected returns.
@@ -410,34 +410,41 @@ def test_find_files():
     os.makedirs(os.path.join(BASE_SCAN_DIR, "fake_scan_0001", "images"))
     scan_dir = ScanDirectory("fake_scan_0001", BASE_SCAN_DIR)
 
-    # For an empty directory, "all" is 3 empty lists
-    assert scan_dir._find_files("all") == ([], [], [])
-    # Other options are 1 empty list.
-    for file_type in ["scan_images", "stitches", "dzi"]:
-        assert scan_dir._find_files(file_type) == []
+    # Starting all lists should be empty
+    scan_files = scan_dir.get_scan_files()
+    assert scan_dir._extract_scan_images(scan_files) == []
+    assert scan_dir._extract_final_stitches(scan_files) == []
+    assert scan_dir._extract_dzi_files(scan_files) == []
 
     # Add a number of images
     for i in range(2321):
         _add_fake_image(scan_dir)
 
-    assert len(set(scan_dir._find_files("scan_images"))) == 2321
-    assert len(set(scan_dir._find_files("stitches"))) == 0
-    assert len(set(scan_dir._find_files("dzi"))) == 0
+    scan_files = scan_dir.get_scan_files()
+    assert len(set(scan_dir._extract_scan_images(scan_files))) == 2321
+    assert len(set(scan_dir._extract_final_stitches(scan_files))) == 0
+    assert len(set(scan_dir._extract_dzi_files(scan_files))) == 0
 
     # Add and a stitched image
     _add_fake_file(scan_dir, "fake_scan_0001_stitched.jpg", in_im_dir=True)
 
-    assert len(set(scan_dir._find_files("scan_images"))) == 2321
-    assert len(set(scan_dir._find_files("stitches"))) == 1
-    assert len(set(scan_dir._find_files("dzi"))) == 0
+    scan_files = scan_dir.get_scan_files()
+    assert len(set(scan_dir._extract_scan_images(scan_files))) == 2321
+    assert len(set(scan_dir._extract_final_stitches(scan_files))) == 1
+    assert len(set(scan_dir._extract_dzi_files(scan_files))) == 0
 
     _make_fake_dzi(scan_dir)
 
-    assert len(set(scan_dir._find_files("scan_images"))) == 2321
-    assert len(set(scan_dir._find_files("stitches"))) == 1
-    assert len(set(scan_dir._find_files("dzi"))) == 1
+    # check totals are still correct after adding a dzi with lots of tiles.
+    scan_files = scan_dir.get_scan_files()
+    scan_images = scan_dir._extract_scan_images(scan_files)
+    stitches = scan_dir._extract_final_stitches(scan_files)
+    dzi_files = scan_dir._extract_dzi_files(scan_files)
+    assert len(set(scan_images)) == 2321
+    assert len(set(stitches)) == 1
+    assert len(set(dzi_files)) == 1
 
-    _, stitches, dzi_files = scan_dir._find_files("all")
+    # And check the names are as expected
     assert stitches[0] == "fake_scan_0001_stitched.jpg"
     assert dzi_files[0] == "fake_scan_0001.dzi"
 

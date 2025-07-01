@@ -5,7 +5,7 @@ Currently it handles scan getting information from a information from a scan dir
 eventually is should handle all the file system operation for smart_scan.
 """
 
-from typing import Optional, Literal
+from typing import Optional
 import os
 import re
 import shutil
@@ -254,40 +254,40 @@ class ScanDirectory:
             return []
         return os.listdir(self.images_dir)
 
-    def _find_files(
-        self, file_types=Literal["all", "scan_images", "stitches", "dzi"]
-    ) -> tuple[list[str], list[str], list[str]] | list[str]:
-        folder_contents = self.get_scan_files()
+    def _extract_scan_images(self, file_list: list[str]):
+        """Extract files which match the naming convention for scan images
 
-        # Return empty lists if no folder contents.
-        if not folder_contents:
-            if file_types == "all":
-                return [], [], []
-            return []
+        :param file_list: The list of files to search. Normally this would be
+        `self.get_scan_files()`
 
-        if file_types in ["all", "scan_images"]:
-            scan_images = [i for i in folder_contents if IMAGE_REGEX.search(i)]
-            if file_types == "scan_images":
-                return scan_images
+        :returns: The list of files that match the naming convention for scan images
+        """
+        return [i for i in file_list if IMAGE_REGEX.search(i)]
 
-        if file_types in ["all", "stitches"]:
-            stitches = [i for i in folder_contents if STITCH_REGEX.search(i)]
-            if file_types == "stitches":
-                return stitches
+    def _extract_final_stitches(self, file_list: list[str]):
+        """Extract files which match the naming convention for final stitches
 
-        if file_types in ["all", "dzi"]:
-            dzi_files = [i for i in folder_contents if i.endswith("dzi")]
-            if file_types == "dzi":
-                return dzi_files
+        :param file_list: The list of files to search.
 
-        return scan_images, stitches, dzi_files
+        :returns: The list of files that match the naming convention for final stitches
+        """
+        return [i for i in file_list if STITCH_REGEX.search(i)]
+
+    def _extract_dzi_files(self, file_list: list[str]):
+        """Extract files which match the naming convention for dzi_files
+
+        :param file_list: The list of files to search.
+
+        :returns: The list of files that match the naming convention for dzi_files
+        """
+        return [i for i in file_list if i.endswith("dzi")]
 
     def get_final_stitch_name(self) -> Optional[str]:
         """Return the filename for the final stitch (in the images dir)
 
         If no final stitch is found, return None
         """
-        stitches = self._find_files("stitches")
+        stitches = self._extract_final_stitches(self.get_scan_files())
         if not stitches:
             return None
         return stitches[0]
@@ -299,7 +299,10 @@ class ScanDirectory:
     def scan_info(self) -> ScanInfo:
         """Return the information for the scan directory as a ScanInfo object"""
 
-        scan_images, stitches, dzi_files = self._find_files("all")
+        scan_files = self.get_scan_files()
+        scan_images = self._extract_scan_images(scan_files)
+        stitches = self._extract_final_stitches(scan_files)
+        dzi_files = self._extract_dzi_files(scan_files)
         number_of_images = len(scan_images)
         stitch_available = len(stitches) > 0
         dzi = None if not dzi_files else str(dzi_files[0])
@@ -349,7 +352,8 @@ class ScanDirectory:
             zip_files = []
 
         # For each `filename.dzi` we need to skip the `filename_files` directory
-        dzi_dirs = [dzi[:-4] + "_files" for dzi in self._find_files("dzi")]
+        dzi_files = self._extract_dzi_files(self.get_scan_files())
+        dzi_dirs = [dzi[:-4] + "_files" for dzi in dzi_files]
 
         with zipfile.ZipFile(zip_fname, mode="a") as scan_zip:
             for file in self.all_files(skip_dirs=dzi_dirs):
