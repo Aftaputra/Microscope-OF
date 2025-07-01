@@ -296,7 +296,7 @@ class ScanDirectory:
         """Return the modified time of the directory"""
         return max(os.stat(root).st_mtime for root, _, _ in os.walk(self.dir_path))
 
-    def scan_info(self):
+    def scan_info(self) -> ScanInfo:
         """Return the information for the scan directory as a ScanInfo object"""
 
         scan_images, stitches, dzi_files = self._find_files("all")
@@ -313,10 +313,20 @@ class ScanDirectory:
             dzi=dzi,
         )
 
-    def all_files(self):
-        """Return a list of all files in the scan dir relative to the dir"""
+    def all_files(self, skip_dirs: Optional[list[str]] = None) -> list[str]:
+        """Return a list of all files in the scan dir relative to the dir.
+
+        :param skip_dirs: Skip any file in a directory that is on this list. The list
+            should be the basename of the directory. e.g. "scan_0001_files" not
+            "images/scan_0001_files"
+        """
+        if skip_dirs is None:
+            skip_dirs = []
         files = []
-        for file_root, _, filenames in os.walk(self.dir_path):
+        for file_root, dirs, filenames in os.walk(self.dir_path, topdown=True):
+            # Skip any skipped directories.
+            # Note: we must use slice assignment to edit in place.
+            dirs[:] = [d for d in dirs if d not in skip_dirs]
             for filename in filenames:
                 full_path = os.path.join(file_root, filename)
                 files.append(os.path.relpath(full_path, self.dir_path))
@@ -338,10 +348,13 @@ class ScanDirectory:
         else:
             zip_files = []
 
+        # For each `filename.dzi` we need to skip the `filename_files` directory
+        dzi_dirs = [dzi[:-4] + "_files" for dzi in self._find_files("dzi")]
+
         with zipfile.ZipFile(zip_fname, mode="a") as scan_zip:
-            for file in self.all_files():
-                # Don't zip zipfiles, or files in the zip
-                if file.endswith(".zip") or file in zip_files:
+            for file in self.all_files(skip_dirs=dzi_dirs):
+                # Don't zip zipfiles, dzi files, or files already in the zip
+                if file.endswith((".zip", ".dzi")) or file in zip_files:
                     continue
                 # If this is not the final version, then only zip image files.
                 if not final_version and not IMAGE_REGEX.search(file):

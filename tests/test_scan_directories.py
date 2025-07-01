@@ -1,5 +1,6 @@
 import tempfile
 import os
+import math
 import shutil
 import logging
 import random
@@ -57,6 +58,40 @@ def _add_fake_file(
         filepath = os.path.join(scan_dir.dir_path, filename)
     with open(filepath, "w") as f_obj:
         f_obj.write("fake")
+
+
+def _make_fake_dzi(scan_dir: ScanDirectory, n_layers: int = 8) -> None:
+    """Create a fake DZI in a scan
+
+    :param n_layers: The number of layers of tiles. I.e. tile directories numbered
+        0...(n_layers-1) will be created. Default 8
+    """
+
+    # Add an a dzi image
+    dzi_fname = scan_dir.name + ".dzi"
+    dzi_path = os.path.join(scan_dir.images_dir, dzi_fname)
+    with open(dzi_path, "w") as f_obj:
+        f_obj.write("This should be xml")
+
+    # and the directory for the dzi tiles
+    dzi_tile_dir = scan_dir.name + "_files"
+    dzi_tile_dir_path = os.path.join(scan_dir.images_dir, dzi_tile_dir)
+    os.makedirs(dzi_tile_dir_path)
+
+    # this directory then contains a directories numbered from 0-n
+    for i in range(n_layers):
+        layer_dir_path = os.path.join(dzi_tile_dir_path, str(i))
+        os.makedirs(layer_dir_path)
+
+        # Number of images (in each axis) in this layer. Number of tiles doubles each
+        # layer, but the first few layers always have 1 image.
+        n_ims = math.ceil(2 ** (i - 4))
+        for x_index in range(n_ims):
+            for y_index in range(n_ims):
+                tile_name = f"{x_index}_{y_index}.jpg"
+                tile_path = os.path.join(layer_dir_path, tile_name)
+                with open(tile_path, "w") as f_obj:
+                    f_obj.write("This would normally be jpeg data")
 
 
 def test_basic_directory_operations():
@@ -284,6 +319,9 @@ def test_zipping_scan_data():
         _add_fake_file(scan_dir, "fake_scan_0001_stitched.jpg", in_im_dir=True)
         _add_fake_file(scan_dir, "zipfile.zip")
 
+        # This fake dzi should have loads of images. The DZI should not be zipped!
+        _make_fake_dzi(scan_dir)
+
         # zip the directory without setting as the final version. It should only
         # zip the 21 scan images
         if caller == "scan_dir":
@@ -303,6 +341,38 @@ def test_zipping_scan_data():
         # Check the zips are not in the zip
         for file in zip_files:
             assert not file.endswith(".zip")
+
+
+def test_all_files():
+    """Test all_files returns the path, and respects skipped directories"""
+    _clear_scan_dir()
+    scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
+    # This fake dzi should have loads of images. The DZI should not be zipped!
+    _make_fake_dzi(scan_dir)
+    all_files = scan_dir.all_files()
+
+    # As standard for 8 layers there are 89 jpegs and 1 dzi file.
+    assert len(all_files) == 90
+    dzi_file = None
+    # Check all files exist
+    for file in all_files:
+        assert os.path.exists(os.path.join(scan_dir.dir_path, file))
+        if file.endswith(".dzi"):
+            # There is only 1 dzi file, so this should be None
+            assert dzi_file is None
+            dzi_file = file
+    # Once loop is complete there should be a dzi file
+    assert dzi_file is not None
+    # Get the dzi tile directory name
+    dzi_dir = os.path.basename(dzi_file[:-4] + "_files")
+
+    # Get all files skipping the dzi tile directory
+    all_files = scan_dir.all_files(skip_dirs=dzi_dir)
+    # There is now only one file
+    assert len(all_files) == 1
+    # It is the DZI file
+    assert all_files[0] == dzi_file
 
 
 def test_creating_scan_dir_for_missing_scan():
@@ -358,12 +428,15 @@ def test_find_files():
     assert len(set(scan_dir._find_files("stitches"))) == 1
     assert len(set(scan_dir._find_files("dzi"))) == 0
 
-    # Add and a dzi image
-    _add_fake_file(scan_dir, "fake_scan_0001.dzi", in_im_dir=True)
+    _make_fake_dzi(scan_dir)
 
     assert len(set(scan_dir._find_files("scan_images"))) == 2321
     assert len(set(scan_dir._find_files("stitches"))) == 1
     assert len(set(scan_dir._find_files("dzi"))) == 1
+
+    _, stitches, dzi_files = scan_dir._find_files("all")
+    assert stitches[0] == "fake_scan_0001_stitched.jpg"
+    assert dzi_files[0] == "fake_scan_0001.dzi"
 
 
 DiskUsage = namedtuple("DiskUsage", ["total", "used", "free"])
