@@ -357,6 +357,7 @@ def test_all_files():
 
     # As standard for 8 layers there are 89 jpegs and 1 dzi file.
     assert len(set(all_files)) == 90
+    assert len(all_files) == 90
     dzi_file = None
     # Check all files exist
     for file in all_files:
