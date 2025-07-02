@@ -2,7 +2,7 @@
 This sub-package contains utilities that help with testing and debugging.
 
 At the top level are some very basic testing functions, more specific testing
-is provides by modules inside the package.
+is provided by modules inside the package.
 """
 
 from typing import Protocol, Iterable
