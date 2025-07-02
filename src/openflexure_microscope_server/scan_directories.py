@@ -73,7 +73,7 @@ class ScanDirectoryManager:
     def get_file_path_from(
         self, scan_name: str, filename: str, check_exists: bool = False
     ) -> Optional[str]:
-        """Return the file full path for the file within a scan directory
+        """Return the full file path for the file within a scan directory
 
         If check_exists is True then None will be returned if the file does
         not exist.
