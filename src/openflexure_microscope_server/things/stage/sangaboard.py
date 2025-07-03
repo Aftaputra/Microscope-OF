@@ -20,7 +20,10 @@ class SangaboardThing(BaseStage):
     def __init__(self, port: str = None, **kwargs):
         """A Thing to manage a Sangaboard motor controller
 
-        Internally, this uses the `pysangaboard` library.
+        Internally, this uses the `pysangaboard` package from PyPi. This imports
+        as `sangaboard`. As `pysangaboard` does not support some features added
+        to the Sangaboard firmware v1 (LED flashing, aborting moves, etc) this
+        functionality is accessed by directly querying the serial interface.
         """
         self.sangaboard_kwargs = kwargs
         self.sangaboard_kwargs["port"] = port
@@ -30,7 +33,9 @@ class SangaboardThing(BaseStage):
         self._sangaboard_lock = threading.RLock()
         with self.sangaboard() as sb:
             if sb.version_tuple[0] != 1:
-                raise RuntimeError("labthings-sangaboard requires firmware v1")
+                raise RuntimeError(
+                    "Please update your Sangaboard Firmware. v1 is required."
+                )
             sb.query("blocking_moves false")
         self.update_position()
 
@@ -47,7 +52,7 @@ class SangaboardThing(BaseStage):
         with self._sangaboard_lock:
             yield self._sangaboard
 
-    def update_position(self):
+    def update_position(self) -> None:
         """Read position from the stage and set the corresponding property."""
         with self.sangaboard() as sb:
             self.position = dict(zip(self.axis_names, sb.position))
@@ -58,9 +63,9 @@ class SangaboardThing(BaseStage):
         cancel: CancelHook,
         block_cancellation: bool = False,
         **kwargs: Mapping[str, int],
-    ):
+    ) -> None:
         """Make a relative move. Keyword arguments should be axis names."""
-        displacement = [kwargs.get(k, 0) for k in self.axis_names]
+        displacement = [kwargs.get(axis, 0) for axis in self.axis_names]
         with self.sangaboard() as sb:
             self.moving = True
             try:
@@ -86,7 +91,7 @@ class SangaboardThing(BaseStage):
         cancel: CancelHook,
         block_cancellation: bool = False,
         **kwargs: Mapping[str, int],
-    ):
+    ) -> None:
         """Make an absolute move. Keyword arguments should be axis names."""
         with self.sangaboard():
             self.update_position()
@@ -100,7 +105,7 @@ class SangaboardThing(BaseStage):
             )
 
     @thing_action
-    def set_zero_position(self):
+    def set_zero_position(self) -> None:
         """Make the current position zero in all axes
 
         This action does not move the stage, but resets the position to zero.
