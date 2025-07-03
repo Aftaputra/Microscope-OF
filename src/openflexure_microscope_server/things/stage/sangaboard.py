@@ -6,8 +6,6 @@ from typing import Iterator, Literal
 from contextlib import contextmanager
 from collections.abc import Mapping
 
-from fastapi import HTTPException
-
 import sangaboard
 from labthings_fastapi.decorators import thing_action
 from labthings_fastapi.dependencies.invocation import (
@@ -100,19 +98,6 @@ class SangaboardThing(BaseStage):
             self.move_relative(
                 cancel, block_cancellation=block_cancellation, **displacement
             )
-
-    @thing_action
-    def abort_move(self):
-        """Abort a current move"""
-        if self.moving:
-            # Skip the lock - because we need to write **before** the current query
-            # finishes. This merits further careful thought for thread safety.
-            # TODO: more robust aborts
-            logging.warning("Aborting move: this is an experimental feature!")
-            tc = self._sangaboard.termination_character
-            self._sangaboard._ser.write(("stop" + tc).encode())
-        else:
-            raise HTTPException(status_code=409, detail="Stage is not moving.")
 
     @thing_action
     def set_zero_position(self):
