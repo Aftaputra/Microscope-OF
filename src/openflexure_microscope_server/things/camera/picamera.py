@@ -158,7 +158,7 @@ class StreamingPiCamera2(BaseCamera):
         and only update `self.persistent_controls` if the change is greater than
         this tolerance.
         """
-        with self.picamera() as cam:
+        with self._streaming_picamera() as cam:
             for i in range(discard_frames):
                 # Discard frames, so data is fresh
                 cam.capture_metadata()
@@ -242,7 +242,7 @@ class StreamingPiCamera2(BaseCamera):
 
         See comment within the function for more detail.
         """
-        with self.picamera() as cam:
+        with self._streaming_picamera() as cam:
             # Note: This set a value 1 higher than requested as picamera2 always sets
             # a lower value than requested, even if the requested is allowed
             cam.set_controls({"ExposureTime": value + 1})
@@ -253,46 +253,42 @@ class StreamingPiCamera2(BaseCamera):
     def sensor_modes(self) -> list[SensorMode]:
         """All the available modes the current sensor supports"""
         if not self._sensor_modes:
-            with self.picamera() as cam:
+            with self._streaming_picamera() as cam:
                 self._sensor_modes = cam.sensor_modes
         return self._sensor_modes
 
-    @lt.thing_property
+    _sensor_mode: Optional[dict] = None
+
+    @lt.thing_setting
     def sensor_mode(self) -> Optional[SensorModeSelector]:
         """The intended sensor mode of the camera"""
-        return self.thing_settings["sensor_mode"]
+        if self._sensor_mode is None:
+            return None
+        return SensorModeSelector(**self._sensor_mode)
 
     @sensor_mode.setter
-    def sensor_mode(self, new_mode: Optional[SensorModeSelector]):
+    def sensor_mode(self, new_mode: Optional[SensorModeSelector | dict]):
         """Change the sensor mode used"""
+
+        if new_mode is None:
+            self._sensor_mode = None
+        elif isinstance(new_mode, SensorModeSelector):
+            self._sensor_mode = new_mode.model_dump()
+        elif isinstance(new_mode, dict):
+            self._sensor_mode = new_mode
+
         if isinstance(new_mode, SensorModeSelector):
             new_mode = new_mode.model_dump()
-        with self.picamera(pause_stream=True):
+        with self._streaming_picamera(pause_stream=True):
             self.thing_settings["sensor_mode"] = new_mode
 
-    @lt.thing_property
+    @lt.thing_setting
     def sensor_resolution(self) -> tuple[int, int]:
         """The native resolution of the camera's sensor"""
-        with self.picamera() as cam:
+        with self._streaming_picamera() as cam:
             return cam.sensor_resolution
 
-    tuning = lt.ThingProperty(Optional[dict], None, readonly=True)
-
-    def settings_to_properties(self):
-        """Set the values of properties based on the settings dict"""
-        try:
-            props = self.thing_settings["properties"]
-        except KeyError:
-            return
-        for k, v in props.items():
-            setattr(self, k, v)
-
-    def properties_to_settings(self):
-        """Save certain properties to the settings dictionary"""
-        props = {}
-        for k in ["mjpeg_bitrate", "stream_resolution"]:
-            props[k] = getattr(self, k)
-        self.thing_settings["properties"] = props
+    tuning = lt.ThingSetting(Optional[dict], None, readonly=True)
 
     def initialise_tuning(self):
         """Read the tuning from the settings, or load default tuning
@@ -328,10 +324,10 @@ class StreamingPiCamera2(BaseCamera):
                     "Camera object already exists, closing for reinitialisation"
                 )
                 self._picamera.close()
-                print("closed, deleting picamera")
+                print("Picamera closed, deleting picamera")
                 del self._picamera
                 recalibrate_utils.recreate_camera_manager()
-            print("[re]creating Picamera2 object")
+            print("Creating new Picamera2 object")
             self._picamera = picamera2.Picamera2(
                 camera_num=self.camera_num,
                 tuning=self.tuning,
@@ -350,14 +346,19 @@ class StreamingPiCamera2(BaseCamera):
         return self
 
     @contextmanager
-    def picamera(self, pause_stream=False) -> Iterator[Picamera2]:
-        """Return the underlying `Picamera2` instance, optionally pausing the stream.
+    def _streaming_picamera(self, pause_stream=False) -> Iterator[Picamera2]:
+        """Lock access to picamera and return the underlying `Picamera2` instance.
 
-        If pause_stream is True (default is False), we will stop the MJPEG stream
-        before yielding control of the camera, and restart afterwards. If you make
-        changes to the camera settings, these may be ignored when the stream is
-        restarted: you may nened to call `update_persistent_controls()` to ensure
-        your changes persist after the stream restarts.
+        Optionally the stream can be paused to allow updating the camera settings.
+
+        :param pause_stream: If False the `Picamera2` instance is simply yielded.
+        If True:
+        * Updated persistent controls
+        * Stop the MJPEG Stream
+        * Yield the `Picamera2` instance for function calling the context manager to
+        make changes. If seetings are changed run `update_persistent_controls()` before
+        closing the context manager.
+        * On closing of the context manager the stream will restart.
         """
         already_streaming = self.stream_active
         with self._picamera_lock:
@@ -390,7 +391,7 @@ class StreamingPiCamera2(BaseCamera):
         self.thing_settings.write_to_file()
         # Shut down the camera
         self.stop_streaming()
-        with self.picamera() as cam:
+        with self._streaming_picamera() as cam:
             cam.close()
         del self._picamera
 
@@ -426,7 +427,7 @@ class StreamingPiCamera2(BaseCamera):
                 f"Can't set a buffer count of {buffer_count}. "
                 "Buffer count must be an integer from 1-8"
             )
-        with self.picamera() as picam:
+        with self._streaming_picamera() as picam:
             try:
                 if picam.started:
                     picam.stop()
@@ -471,7 +472,7 @@ class StreamingPiCamera2(BaseCamera):
         """
         Stop the MJPEG stream
         """
-        with self.picamera() as picam:
+        with self._streaming_picamera() as picam:
             try:
                 picam.stop_recording()  # This should also stop the extra lores encoder
             except Exception as e:
@@ -502,7 +503,7 @@ class StreamingPiCamera2(BaseCamera):
         A TimeoutError is raised if this time is exceeded during capture.
         Default = 0.9s, lower than the 1s timeout default in picamera yaml settings
         """
-        with self.picamera() as cam:
+        with self._streaming_picamera() as cam:
             return cam.capture_image(stream_name, wait=wait)
 
     @lt.thing_action
@@ -526,10 +527,10 @@ class StreamingPiCamera2(BaseCamera):
         # This was slower than capture_image for our use case, but directly returning
         # an image as an array is still a useful feature
         if stream_name == "full":
-            with self.picamera(pause_stream=True) as picam2:
+            with self._streaming_picamera(pause_stream=True) as picam2:
                 capture_config = picam2.create_still_configuration()
                 return picam2.switch_mode_and_capture_array(capture_config, wait=wait)
-        with self.picamera() as cam:
+        with self._streaming_picamera() as cam:
             return cam.capture_array(stream_name, wait=wait)
 
     @lt.thing_property
@@ -544,7 +545,7 @@ class StreamingPiCamera2(BaseCamera):
         this property refers to whatever configuration is currently in force -
         usually the one used for the preview stream.
         """
-        with self.picamera() as cam:
+        with self._streaming_picamera() as cam:
             return cam.camera_configuration()
 
     @lt.thing_action
@@ -580,14 +581,14 @@ class StreamingPiCamera2(BaseCamera):
         # Low-res and main streams are running already - so we don't need
         # to reconfigure for these
         if resolution in ("lores", "main") and config[resolution]:
-            with self.picamera() as cam:
+            with self._streaming_picamera() as cam:
                 cam.capture_file(path, name=resolution, format="jpeg", wait=wait)
         else:
             if resolution != "full":
                 logging.warning(
                     f"There was no {resolution} stream, capturing full resolution"
                 )
-            with self.picamera(pause_stream=True) as cam:
+            with self._streaming_picamera(pause_stream=True) as cam:
                 logging.info("Reconfiguring camera for full resolution capture")
                 cam.configure(cam.create_still_configuration())
                 cam.start()
@@ -606,7 +607,7 @@ class StreamingPiCamera2(BaseCamera):
     @lt.thing_property
     def capture_metadata(self) -> dict:
         """Return the metadata from the camera"""
-        with self.picamera() as cam:
+        with self._streaming_picamera() as cam:
             return cam.capture_metadata()
 
     @lt.thing_action
@@ -627,7 +628,7 @@ class StreamingPiCamera2(BaseCamera):
         calculating the brightest pixel, a percentile is used rather than the
         maximum in order to be robust to a small number of noisy/bright pixels.
         """
-        with self.picamera(pause_stream=True) as cam:
+        with self._streaming_picamera(pause_stream=True) as cam:
             recalibrate_utils.adjust_shutter_and_gain_from_raw(
                 cam,
                 target_white_level=target_white_level,
@@ -652,7 +653,7 @@ class StreamingPiCamera2(BaseCamera):
         If `method` is `"centre"`, we will correct the mean of the central 10%
         of the image.
         """
-        with self.picamera(pause_stream=True) as cam:
+        with self._streaming_picamera(pause_stream=True) as cam:
             if self.lens_shading_is_static:
                 lst: LensShading = self.lens_shading_tables
                 recalibrate_utils.adjust_white_balance_from_raw(
@@ -679,7 +680,7 @@ class StreamingPiCamera2(BaseCamera):
         one. This uses the camera's "tuning" file to correct the preview and
         the processed images. It should not affect raw images.
         """
-        with self.picamera(pause_stream=True) as cam:
+        with self._streaming_picamera(pause_stream=True) as cam:
             # Suppress lint warning that L, Cr, and Cb are not lowercase, as these are
             # the standard mathematical terms for:
             # luminance (L), red-difference chroma (Cr), and blue-difference chroma
@@ -740,7 +741,7 @@ class StreamingPiCamera2(BaseCamera):
 
         See page Raspberry Pi Camera Algorithm and Tuning Guide, page 45.
         """
-        with self.picamera(pause_stream=True):
+        with self._streaming_picamera(pause_stream=True):
             recalibrate_utils.set_static_ccm(self.tuning, col_corr_matrix)
             self.initialise_picamera()
 
@@ -755,7 +756,7 @@ class StreamingPiCamera2(BaseCamera):
 
         A value of 0 here does nothing, a value of 65535 is maximum correction.
         """
-        with self.picamera(pause_stream=True):
+        with self._streaming_picamera(pause_stream=True):
             recalibrate_utils.set_static_geq(self.tuning, offset)
             self.initialise_picamera()
 
@@ -788,7 +789,7 @@ class StreamingPiCamera2(BaseCamera):
         This flat table is used to take an image wth no lens shading so that the
         correct lens shading table can be calibrated.
         """
-        with self.picamera(pause_stream=True):
+        with self._streaming_picamera(pause_stream=True):
             # Generate and array of ones of the correct size for each channel
             flat_array = np.ones((12, 16))
             recalibrate_utils.set_static_lst(
@@ -833,7 +834,7 @@ class StreamingPiCamera2(BaseCamera):
     @lens_shading_tables.setter
     def lens_shading_tables(self, lst: LensShading) -> None:
         """Set the lens shading tables"""
-        with self.picamera(pause_stream=True):
+        with self._streaming_picamera(pause_stream=True):
             recalibrate_utils.set_static_lst(
                 self.tuning,
                 luminance=lst.luminance,
@@ -881,7 +882,7 @@ class StreamingPiCamera2(BaseCamera):
         flat, i.e. we'll correct vignetting of intensity, but not any change in
         colour across the image.
         """
-        with self.picamera(pause_stream=True):
+        with self._streaming_picamera(pause_stream=True):
             alsc = Picamera2.find_tuning_algo(self.tuning, "rpi.alsc")
             luminance = alsc["luminance_lut"]
             flat = np.ones((12, 16))
@@ -895,7 +896,7 @@ class StreamingPiCamera2(BaseCamera):
         This method will restore the default "adaptive" lens shading method used
         by the Raspberry Pi camera.
         """
-        with self.picamera(pause_stream=True):
+        with self._streaming_picamera(pause_stream=True):
             recalibrate_utils.copy_alsc_section(self.default_tuning, self.tuning)
             self.initialise_picamera()
 
