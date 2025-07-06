@@ -3,10 +3,9 @@ import App from "./App.vue";
 import store from "./store";
 import axios from "axios";
 import UIkit from "uikit";
-import VueTour from "vue-tour";
+
 import VueObserveVisibility from "vue-observe-visibility";
 
-require("vue-tour/dist/vue-tour.css");
 
 // Import MD icons
 import "material-symbols/outlined.css";
@@ -21,9 +20,6 @@ UIkit.mixin(
   },
   "accordion"
 );
-
-// Use vue-tour module
-Vue.use(VueTour);
 
 // Use visibility observer
 Vue.use(VueObserveVisibility);
