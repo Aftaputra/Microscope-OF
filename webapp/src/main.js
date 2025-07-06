@@ -4,7 +4,6 @@ import store from "./store";
 import axios from "axios";
 import UIkit from "uikit";
 import VueTour from "vue-tour";
-import VueFriendlyIframe from "vue-friendly-iframe";
 import VueObserveVisibility from "vue-observe-visibility";
 
 require("vue-tour/dist/vue-tour.css");
@@ -25,9 +24,6 @@ UIkit.mixin(
 
 // Use vue-tour module
 Vue.use(VueTour);
-
-// Use Friendly Iframe module
-Vue.use(VueFriendlyIframe);
 
 // Use visibility observer
 Vue.use(VueObserveVisibility);

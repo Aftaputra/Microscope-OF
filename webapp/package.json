@@ -36,7 +36,6 @@
     "prettier": "^1.19",
     "uikit": "^3.17",
     "vue": "^2.7",
-    "vue-friendly-iframe": "^0.17",
     "vue-template-compiler": "^2.7",
     "vue-tour": "^1.6",
     "vuejs-paginate": "^2.1",
