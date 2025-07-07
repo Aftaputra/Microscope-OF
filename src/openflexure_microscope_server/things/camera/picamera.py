@@ -338,7 +338,6 @@ class StreamingPiCamera2(BaseCamera):
 
         :param pause_stream: If False the `Picamera2` instance is simply yielded.
         If True:
-        * Updated persistent controls
         * Stop the MJPEG Stream
         * Yield the `Picamera2` instance for function calling the context manager to
         make changes.
