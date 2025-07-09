@@ -68,7 +68,6 @@ def _make_fake_dzi(scan_dir: ScanDirectory, n_layers: int = 8) -> None:
     :param n_layers: The number of layers of tiles. I.e. tile directories numbered
         0...(n_layers-1) will be created. Default 8
     """
-
     # Add an a dzi image
     dzi_fname = scan_dir.name + ".dzi"
     dzi_path = os.path.join(scan_dir.images_dir, dzi_fname)
@@ -309,7 +308,6 @@ def test_empty_scan_info():
 
 def test_zipping_scan_data():
     """Test zipping the scan images with fake image data"""
-
     # Run twice, once calling the ScanDirectory directly,
     # Once calling the ScanDirectoryManager
     for caller in ["scan_dir", "manager"]:

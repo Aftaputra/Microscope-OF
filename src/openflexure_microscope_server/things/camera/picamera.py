@@ -264,7 +264,6 @@ class StreamingPiCamera2(BaseCamera):
     @sensor_mode.setter
     def sensor_mode(self, new_mode: Optional[SensorModeSelector | dict]):
         """Change the sensor mode used"""
-
         if new_mode is None:
             self._sensor_mode = None
         elif isinstance(new_mode, SensorModeSelector):
@@ -287,9 +286,9 @@ class StreamingPiCamera2(BaseCamera):
     tuning = lt.ThingSetting(Optional[dict], None, readonly=True)
 
     def _initialise_picamera(self):
-        """Acquire the picamera device and store it as `self._picamera`.
+        """Acquire the picamera device and store it as ``self._picamera``.
 
-        This duplicates logic in `Picamera2.__init__` to provide a tuning file that
+        This duplicates logic in ``Picamera2.__init__`` to provide a tuning file that
         will be read when the camera system initialises.
         """
         if self._picamera_lock is not None:
@@ -332,16 +331,17 @@ class StreamingPiCamera2(BaseCamera):
 
     @contextmanager
     def _streaming_picamera(self, pause_stream=False) -> Iterator[Picamera2]:
-        """Lock access to picamera and return the underlying `Picamera2` instance.
+        """Lock access to picamera and return the underlying ``Picamera2`` instance.
 
         Optionally the stream can be paused to allow updating the camera settings.
 
-        :param pause_stream: If False the `Picamera2` instance is simply yielded.
-        If True:
-        * Stop the MJPEG Stream
-        * Yield the `Picamera2` instance for function calling the context manager to
-        make changes.
-        * On closing of the context manager the stream will restart.
+        :param pause_stream: If False the ``Picamera2`` instance is simply yielded.
+            If True:
+
+                * Stop the MJPEG Stream
+                * Yield the ``Picamera2`` instance for function calling the context manager to
+                    make changes.
+                * On closing of the context manager the stream will restart.
         """
         already_streaming = self.stream_active
         with self._picamera_lock:
@@ -372,8 +372,9 @@ class StreamingPiCamera2(BaseCamera):
         manual.
 
         Create two streams:
-        - `lores_mjpeg_stream` for autofocus at low-res resolution
-        - `mjpeg_stream` for preview. This is the `main_resolution` if this is less
+
+        * ``lores_mjpeg_stream`` for autofocus at low-res resolution
+        * ``mjpeg_stream`` for preview. This is the ``main_resolution`` if this is less
             than (1280, 960), or the low-res resolution if above. This allows for
             high resolution capture without streaming high resolution video.
 
@@ -489,7 +490,6 @@ class StreamingPiCamera2(BaseCamera):
         A TimeoutError is raised if this time is exceeded during capture.
         Default = 0.9s, lower than the 1s timeout default in picamera yaml settings
         """
-
         # This was slower than capture_image for our use case, but directly returning
         # an image as an array is still a useful feature
         if stream_name == "full":
@@ -523,13 +523,13 @@ class StreamingPiCamera2(BaseCamera):
     ) -> JPEGBlob:
         """Acquire one image from the camera as a JPEG
 
-        The JPEG will be acquired using `Picamera2.capture_file`. If the
-        `resolution` parameter is `main` or `lores`, it will be captured
+        The JPEG will be acquired using ``Picamera2.capture_file``. If the
+        ``resolution`` parameter is ``main`` or ``lores``, it will be captured
         from the main preview stream, or the low-res preview stream,
         respectively. This means the camera won't be reconfigured, and
         the stream will not pause (though it may miss one frame).
 
-        If `full` resolution is requested, we will briefly pause the
+        If ``full`` resolution is requested, we will briefly pause the
         MJPEG stream and reconfigure the camera to capture a full
         resolution image.
 
@@ -588,11 +588,12 @@ class StreamingPiCamera2(BaseCamera):
         the image reaches the specified white level.
 
         :param target_white_level: The target 10bit white level. 10-bit data has a
-        theoretical maximum of 1023, but with black level correction the true maxiumum
-        is about 950. Default is 700 as this is approximately 70% saturated.
+            theoretical maximum of 1023, but with black level correction the true
+            maximum is about 950. Default is 700 as this is approximately 70%
+            saturated.
         :param percentile: The percentile to use instead of maximum. Default 99.9. When
-        calculating the brightest pixel, a percentile is used rather than the
-        maximum in order to be robust to a small number of noisy/bright pixels.
+            calculating the brightest pixel, a percentile is used rather than the
+            maximum in order to be robust to a small number of noisy/bright pixels.
         """
         with self._streaming_picamera(pause_stream=True) as cam:
             recalibrate_utils.adjust_shutter_and_gain_from_raw(
@@ -615,7 +616,7 @@ class StreamingPiCamera2(BaseCamera):
         image with the lens shading correction applied, which should mean
         that the image is uniform, rather than weighted towards the centre.
 
-        If `method` is `"centre"`, we will correct the mean of the central 10%
+        If ``method`` is ``"centre"``, we will correct the mean of the central 10%
         of the image.
         """
         with self._streaming_picamera(pause_stream=True) as cam:
@@ -657,7 +658,7 @@ class StreamingPiCamera2(BaseCamera):
     def colour_correction_matrix(
         self,
     ) -> tuple[float, float, float, float, float, float, float, float, float]:
-        """The `colour_correction_matrix` from the tuning file.
+        """The ``colour_correction_matrix`` from the tuning file.
 
         This is broken out into its own property for convenience and compatibility with
         the micromanager API
@@ -720,11 +721,11 @@ class StreamingPiCamera2(BaseCamera):
 
         This function will call the other calibration actions in sequence:
 
-        * `flat_lens_shading` to disable flat-field
-        * `auto_expose_from_minimum`
-        * `set_static_green_equalisation` to set geq offset to max
-        * `calibrate_lens_shading`
-        * `calibrate_white_balance`
+        * ``flat_lens_shading`` to disable flat-field
+        * ``auto_expose_from_minimum``
+        * ``set_static_green_equalisation`` to set geq offset to max
+        * ``calibrate_lens_shading``
+        * ``calibrate_white_balance``
         """
         self.flat_lens_shading()
         self.auto_expose_from_minimum()
@@ -804,15 +805,15 @@ class StreamingPiCamera2(BaseCamera):
 
         The white balance algorithm we use assumes the brightest pixels
         should be white, and that the only thing affecting the colour of
-        said pixels is the `colour_gains`.
+        said pixels is the ``colour_gains``.
 
         The lens shading correction is normalised such that the *minimum*
-        gain in the `Cr` and `Cb` channels is 1. The white balance
+        gain in the ``Cr`` and ``Cb`` channels is 1. The white balance
         assumption above requires that the gain for the brightest pixels
         is 1. The solution might be that, when calibrating, we note which
         pixels are brightest (usually the centre) and explicitly use
         the LST values for there. However, for now I will assume that we
-        need to normalise by the **maximum** of the `Cr` and `Cb`
+        need to normalise by the **maximum** of the ``Cr`` and ``Cb``
         channels, which is correct the majority of the time.
         """
         if not self.lens_shading_is_static:

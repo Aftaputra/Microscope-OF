@@ -18,7 +18,7 @@ def set_shutdown_function(shutdown_function: Callable[[], None]):
     Ensure a function is called before the shutdown
 
     This monkey patches the Uvicorn Server's handle_exit. This is needed because
-    the uvicorn `lifecycle` events and FastAPI `shutdown` events only fire once
+    the uvicorn ``lifecycle`` events and FastAPI ``shutdown`` events only fire once
     background tasks have completed.
 
     Without this the system exits cleanly only if no client is receiving a
@@ -26,9 +26,8 @@ def set_shutdown_function(shutdown_function: Callable[[], None]):
     send streaming responses.
 
     :param shutdown_function: A callable with no arguments or outputs. This
-    should stop any async generators that may be sending to streaming responses.
+        should stop any async generators that may be sending to streaming responses.
     """
-
     original_handler = Server.handle_exit
 
     @wraps(Server.handle_exit)
@@ -58,7 +57,6 @@ def _get_scans_dir(config: dict) -> Optional[str]:
 
     Return is None if there is no /smart_scan/ thing loaded.
     """
-
     if "/smart_scan/" in config["things"]:
         try:
             return config["things"]["/smart_scan/"]["kwargs"]["scans_folder"]

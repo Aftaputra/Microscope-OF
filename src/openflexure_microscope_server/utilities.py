@@ -60,20 +60,18 @@ class ErrorCapturingThread(Thread):
 
 
 def _wrap_and_catch_errors(target, error_buffer, *args, **kwargs):
-    """
-    This function is designed only to be used by
-    ErrorCapturingThread
+    """Run target function in a try-except block.
 
-    It will run a target function in a try-except block
-    any errors caught are added to an empty list that
-    should be supplied as a keyword argument
+    This function is designed only to be used by ErrorCapturingThread.
 
-    Arguments:
-      * target - The target function to call
-      * error_buffer - An empty list that is used for returning
-          the exception from the thread
-      *args: The arguments for the target function
-      **kwargs: The Keyword arguments for the target function
+    It will run a target function in a try-except block catching any exception.
+    If an exception is caught it is added to ``error_buffer``.
+
+    :param target: The target function to call
+    :param error_buffer: An empty list that is used for returning the exception from
+        the thread. It is a list to ensure it is passed by reference.
+    :param ``*args``: The arguments for the target function
+    :param ``**kwargs``: The Keyword arguments for the target function
     """
     try:
         target(*args, **kwargs)

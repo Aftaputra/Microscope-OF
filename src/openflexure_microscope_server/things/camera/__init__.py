@@ -70,12 +70,12 @@ class CameraMemoryBuffer:
         every time an image is added.
 
         :param image: The image to add. A PIL image is recommended, but cameras
-        can choose to use other formats
+            can choose to use other formats
         :param metadata: Optional, a dictionary of the image metadata.
         :param buffer_max: The maximum number of images that should be in the buffer
-        once this images is added. Default is 1.
+            once this images is added. Default is 1.
 
-        :return buffer_id: The id in the buffer for this image
+        :returns: The id in the buffer for this image
         """
         self._latest_id += 1
         self._create_space(buffer_max)
@@ -94,9 +94,8 @@ class CameraMemoryBuffer:
 
         :param buffer_id: The buffer id of the image to retrieve
         :param remove: True (default) to remove this image from the buffer, False
-        to leave the image in the buffer.
+            to leave the image in the buffer.
         """
-
         # No id given
         if buffer_id is None:
             # Get the latest image and metadata tuple from storage
@@ -128,7 +127,7 @@ class CameraMemoryBuffer:
         Create space to add an image.
 
         :param buffer_max: The maximum number of images that should be in the buffer
-        once another images is added.
+            once another images is added.
         """
         # If only one image to be stored just clear the storage and return
         if buffer_max <= 1:
@@ -164,7 +163,8 @@ class BaseCamera(lt.Thing):
         self, main_resolution: tuple[int, int], buffer_count: int
     ) -> None:
         """Start (or stop and restart) the camera with the given resolution
-        for the main stream, and buffer_count number of images in the buffer"""
+        for the main stream, and buffer_count number of images in the buffer
+        """
         raise NotImplementedError(
             "CameraThings must define their own start_streaming method"
         )
@@ -175,9 +175,9 @@ class BaseCamera(lt.Thing):
 
         This is called when uvicorn gets the a shutdown signal. As this is called from
         the event loop it cannot interact with the our ThingProperties or run
-        `self.mjpeg_stream.stop()` as the portal cannot be called from this loop.
+        ``self.mjpeg_stream.stop()`` as the portal cannot be called from this loop.
 
-        Instead we just set the `_streaming` value to False. This stops the async frame
+        Instead we just set the ``_streaming`` value to False. This stops the async frame
         generator when the next frame notifies.
         """
         if self.stream_active:
@@ -186,7 +186,7 @@ class BaseCamera(lt.Thing):
 
     @lt.thing_property
     def stream_active(self) -> bool:
-        "Whether the MJPEG stream is active"
+        """Whether the MJPEG stream is active"""
         raise NotImplementedError(
             "CameraThings must define their own stream_active method"
         )
@@ -221,7 +221,7 @@ class BaseCamera(lt.Thing):
     ) -> JPEGBlob:
         """Acquire one image from the preview stream and return as an array
 
-        This differs from `capture_jpeg` in that it does not pause the MJPEG
+        This differs from ``capture_jpeg`` in that it does not pause the MJPEG
         preview stream. Instead, we simply return the next frame from that
         stream (either "main" for the preview stream, or "lores" for the low
         resolution preview). No metadata is returned.
@@ -267,11 +267,11 @@ class BaseCamera(lt.Thing):
 
         :param jpeg_path: The path to save the file to
         :param logger: This should be injected automatically by Labthings FastAPI
-        when calling the action
+            when calling the action
         :param metadata_getter: This should be injected automatically by Labthings
-        FastAPI when calling the action
+            FastAPI when calling the action
         :param save_resolution: can be set to resize the image before saving. By
-        default this is None meaning that the image is saved at original resolution.
+            default this is None meaning that the image is saved at original resolution.
         """
         image, metadata = self._robust_image_capture(
             metadata_getter,
@@ -294,19 +294,19 @@ class BaseCamera(lt.Thing):
         buffer_max: int = 1,
     ) -> None:
         """
-        Capture an image to memory. This can be saved later with `save_from_memory`
+        Capture an image to memory. This can be saved later with ``save_from_memory``
 
         Note that only one image is held in memory so this will overwrite any image
         in memory.
 
         :param logger: This should be injected automatically by Labthings FastAPI
-        when calling the action
+            when calling the action
         :param metadata_getter: This should be injected automatically by Labthings
-        FastAPI when calling the action
+            FastAPI when calling the action
         :param buffer_max: The maximum number of images that should be in the buffer
-        once this images is added. Default is 1.
+            once this images is added. Default is 1.
 
-        :return: the buffer id of the image captured
+        :returns: the buffer id of the image captured
         """
         image, metadata = self._robust_image_capture(metadata_getter, logger)
         return self._memory_buffer.add_image(image, metadata, buffer_max=buffer_max)
@@ -324,11 +324,12 @@ class BaseCamera(lt.Thing):
 
         :param jpeg_path: The path to save the file to
         :param logger: This should be injected automatically by Labthings FastAPI
-        when calling the action
+            when calling the action
         :param save_resolution: can be set to resize the image before saving. By
-        default this is None meaning that the image is saved at original resolution.
+            default this is None meaning that the image is saved at original
+            resolution.
         :param buffer_id: The buffer id of the image to save, this was returned by
-        `capture_to_memory`
+            ``capture_to_memory``
         """
         image, metadata = self._memory_buffer.get_image(buffer_id)
 
@@ -379,7 +380,8 @@ class BaseCamera(lt.Thing):
         """Saving the captured image and metadata to disk
         logger warning (via InvocationLogger) is raised if metadata is failed to be added
         IOError is raised if the file cannot be saved
-        nothing is returned on success"""
+        nothing is returned on success
+        """
         if save_resolution is not None and image.size != save_resolution:
             image = image.resize(save_resolution, Image.BOX)
         try:

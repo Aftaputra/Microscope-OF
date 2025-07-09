@@ -257,7 +257,8 @@ def test_example_smart_spiral():
     below and defined in scan_test_helpers.load_sample_points
 
     Will fail if the locations or path between locations visited has changed
-    for any of the samples listed"""
+    for any of the samples listed
+    """
     example_samples = [
         "regular",
         "lobed",

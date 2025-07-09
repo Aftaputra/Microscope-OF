@@ -91,7 +91,6 @@ def interp_closed_path(xy_points: list[tuple[int, int]], n_points: int) -> MatPa
     Modified from:
     https://stackoverflow.com/questions/33962717/interpolating-a-closed-curve-using-scipy
     """
-
     # Use zip to seperate x and y points into tuples
     x, y = zip(*xy_points)
 

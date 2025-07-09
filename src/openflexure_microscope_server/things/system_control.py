@@ -36,9 +36,7 @@ class SystemControlThing(lt.Thing):
 
     @lt.thing_property
     def is_raspberrypi() -> bool:
-        """
-        Checks if we are running on a Raspberry Pi.
-        """
+        """Return True if running on a Raspberry Pi."""
         return os.path.exists("/usr/bin/raspi-config")
 
     @lt.thing_action

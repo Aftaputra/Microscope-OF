@@ -43,7 +43,6 @@ class RecentringThing(lt.Thing):
         much between these sites, making the procedure more sensitive
         to noise or a failed autofocus.
         """
-
         max_steps = 20
         dx = lateral_distance
 

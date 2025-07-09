@@ -1,7 +1,7 @@
 """OpenFlexure Microscope OpenCV Camera
 
 This module defines a camera Thing that uses OpenCV's
-`VideoCapture`.
+``VideoCapture``.
 
 See repository root for licensing information.
 """
@@ -45,7 +45,7 @@ class OpenCVCamera(BaseCamera):
 
     @lt.thing_property
     def stream_active(self) -> bool:
-        "Whether the MJPEG stream is active"
+        """Whether the MJPEG stream is active"""
         if self._capture_enabled and self._capture_thread:
             return self._capture_thread.is_alive()
         return False

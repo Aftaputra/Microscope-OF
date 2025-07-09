@@ -114,7 +114,6 @@ class SmartScanThing(lt.Thing):
         stopping once it is surrounded by "background" (as detected by the
         background_detect Thing) or reaches the "max_range" measured in steps.
         """
-
         got_lock = self._scan_lock.acquire(timeout=0.1)
         if not got_lock:
             raise RuntimeError("Trying to run scan while scan is already running!")
@@ -214,7 +213,6 @@ class SmartScanThing(lt.Thing):
 
         Returns the (x,y,z) with the chosen z_estimate
         """
-
         if z_estimate is None:
             z_estimate = self._stage.position["z"]
 
@@ -233,9 +231,9 @@ class SmartScanThing(lt.Thing):
         Take a test image and use camera stage mapping to calculate x and y displacement
 
         :param overlap: The desired overlap as a fraction of the image. i.e. 0.5 means
-        that each image should overlap its nearest neighbour by 50%.
+            that each image should overlap its nearest neighbour by 50%.
 
-        Return (dx, dy) - the x and y displacments in steps
+        :returns: (dx, dy) - the x and y displacments in steps
         """
         test_jpg = self._cam.grab_jpeg()
         test_image = np.array(Image.open(test_jpg.open()))
@@ -375,7 +373,6 @@ class SmartScanThing(lt.Thing):
         """
         Manage the stitching threads, starting them if needed and not already running.
         """
-
         # Assume 4 images means at least one offset in x and y, making the stitching
         # well constrained.
         if self._scan_images_taken > 3:
@@ -390,7 +387,6 @@ class SmartScanThing(lt.Thing):
         determine whether the scan should be stitched and the microscope
         should return to the starting x,y,z position
         """
-
         # Used to check if finally was reached via exception (except
         # cancel by user)
         scan_successful = True
@@ -462,7 +458,6 @@ class SmartScanThing(lt.Thing):
         The loop to run through during a scan, until no more scan x,y positions
         are remaining.
         """
-
         # The initial plan for the scan should be a single x,y position. All future
         # moves will be planned around this point. In future, route planner could
         # have multiple starting positions, each of which will be visited before the
@@ -537,7 +532,6 @@ class SmartScanThing(lt.Thing):
     @_scan_running
     def _perform_final_stitch(self):
         """Update the scan zip and perform final stitch of the data"""
-
         if self._scan_images_taken <= 3:
             self._scan_logger.info("Not performing a stitch as 3 or fewer images taken")
             return
@@ -608,7 +602,7 @@ class SmartScanThing(lt.Thing):
         model=bool,
         description="""Whether to detect and skip empty fields of view
 
-        This uses the settings from the `background_detect` Thing.""",
+        This uses the settings from the ``BackgroundDetectThing``.""",
     )
 
     autofocus_dz = lt.ThingSetting(
@@ -638,7 +632,7 @@ class SmartScanThing(lt.Thing):
 
         Each scan has a name (which can be used to access it), along with
         its modified and created times (according to the filesystem) and
-        the number of items in the `images` folder. Note that image count
+        the number of items in the ``images`` folder. Note that image count
         uses a regular expression, and changes to the naming scheme will
         break it.
         """
@@ -660,8 +654,8 @@ class SmartScanThing(lt.Thing):
         """Return the stitched image corresponding to a given scan name, if it exists.
 
         Will only return a file ending in suffix STITCH_SUFFIX
-        Note: when downloading this, the default filename will be `scan_name`.jpeg"""
-
+        Note: when downloading this, the default filename will be ``scan_name``.jpeg
+        """
         stitch_path = self._scan_dir_manager.get_final_stitch_path(scan_name)
 
         if stitch_path is None:
@@ -709,7 +703,6 @@ class SmartScanThing(lt.Thing):
         """
         Delete all scan folders containing no images at the top level
         """
-
         # JSON is ignored as it's created before any images are captured
         for scan_info in self._scan_dir_manager.all_scans_info():
             if scan_info.number_of_images == 0:
@@ -732,7 +725,6 @@ class SmartScanThing(lt.Thing):
     @property
     def latest_preview_stitch_path(self) -> Optional[str]:
         """The path of the latest preview stitched image, or None if not available"""
-
         if not self.latest_scan_name:
             return None
 
@@ -744,9 +736,10 @@ class SmartScanThing(lt.Thing):
     def latest_preview_stitch_time(self) -> Optional[float]:
         """The modification time of the latest preview image, to allow live updating
 
-        This will return None (`null` to JS) if there is no preview image to return.
+        This will return None (``null`` to JS) if there is no preview image to return.
 
         This is used for two reasons:
+
         1. If all caching was turned off this stitch would be sent over the network
            repeatedly
         2. If caching was is on, then the stitch will not update when needed.
@@ -834,12 +827,14 @@ class SmartScanThing(lt.Thing):
         Raises:
             ChildProcessError if exit code is not zero
             InvocationCancelledError if the action is cancelled.
+
         """
         logger.info(f"Running command in subprocess: `{' '.join(cmd)}`")
 
         def log_buffer(buffer):
             """A short internal function to read everything in the buffer to
-            the log"""
+            the log
+            """
             while line := buffer.readline():
                 logger.info(line)
 
@@ -968,6 +963,7 @@ class SmartScanThing(lt.Thing):
         scan_name: str,
     ):
         """Update the zip to include the files left until the end, then return the
-        zip file as a Blob"""
+        zip file as a Blob
+        """
         zip_fname = self._scan_dir_manager.zip_scan(scan_name, final_version=True)
         return ZipBlob.from_file(zip_fname)

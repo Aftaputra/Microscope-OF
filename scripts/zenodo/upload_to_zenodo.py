@@ -25,7 +25,7 @@ def parse_arguments() -> Namespace:
 
 
 def script_directory(path):
-    """resolves path to directory of the current script"""
+    """Resolves path to directory of the current script"""
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), path)
 
 

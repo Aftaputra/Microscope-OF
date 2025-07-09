@@ -57,7 +57,7 @@ def downsample(factor: int, image: np.ndarray) -> np.ndarray:
     """Downsample an image by taking the mean of each nxn region
 
     This should be very efficient: we calculate the mean of each
-    `factor * factor` square, no interpolation. If the image is
+    ``factor * factor`` square, no interpolation. If the image is
     not an integer multiple of the resampling factor, we discard
     the left-over pixels. This avoids odd edge effects and keeps
     performance quick.
@@ -265,14 +265,16 @@ class CameraStageMapper(lt.Thing):
         that conversion.
 
         It is often helpful to give a concrete example: to make a move in image coordinates
-        (`dy`, `dx`), where `dx` is horizontal, i.e. the longer dimension of the image, you
+        (``dy``, ``dx``), where ``dx`` is horizontal, i.e. the longer dimension of the image, you
         should move the stage by:
-        ```
-        stage_disp = np.dot(
-            np.array(image_to_stage_displacement_matrix),
-            np.array([dy,dx]),
-        )
-        ```
+
+        .. code-block:: python
+
+            stage_disp = np.dot(
+                np.array(image_to_stage_displacement_matrix),
+                np.array([dy,dx]),
+            )
+
         """
         if self.last_calibration is None:
             return None
@@ -316,8 +318,8 @@ class CameraStageMapper(lt.Thing):
         swap the order of these coordinates. This includes opencv and PIL. So, don't be
         surprised if you find it necessary to swap x and y around.
 
-        As a general rule, `x` usually corresponds to the longer dimension of the image,
-        and `y` to the shorter one. Checking what shape your chosen toolkit reports for
+        As a general rule, ``x`` usually corresponds to the longer dimension of the image,
+        and ``y`` to the shorter one. Checking what shape your chosen toolkit reports for
         an image usually helps resolve any ambiguity.
         """
         self.assert_calibrated()

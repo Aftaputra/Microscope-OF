@@ -145,7 +145,7 @@ class SimulatedCamera(BaseCamera):
 
     @lt.thing_property
     def stream_active(self) -> bool:
-        "Whether the MJPEG stream is active"
+        """Whether the MJPEG stream is active"""
         if self._capture_enabled and self._capture_thread:
             return self._capture_thread.is_alive()
         return False

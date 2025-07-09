@@ -82,7 +82,7 @@ def test_client_connection() -> None:
 def subscribe_to_mjpeg_stream() -> subprocess.Popen:
     """Start a background process subscribed to the mjpeg stream.
 
-    :return: The Popen object for the ongoing process.
+    :returns: The Popen object for the ongoing process.
 
     :raises: RuntimeError if the stream is not still connected after 2s
     """
@@ -130,7 +130,7 @@ def start_server() -> subprocess.Popen:
 
     The server is started in a subprocess and all outputs are buffered.
 
-    :return: Popen object for the ongoing process
+    :returns: Popen object for the ongoing process
     """
     process = subprocess.Popen(
         SERVER_CMD,
@@ -156,7 +156,6 @@ def error_if_server_not_started(
 
     :raises RuntimeError: If the server is not running as expected.
     """
-
     confirmed_uvicorn_is_running = False
 
     t_start = time()

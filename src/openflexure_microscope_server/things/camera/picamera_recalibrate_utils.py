@@ -3,7 +3,7 @@ Functions to set up a Raspberry Pi Camera v2 for scientific use
 
 This module provides slower, simpler functions to set the
 gain, exposure, and white balance of a Raspberry Pi camera, using
-the `picamera2` Python library.  It's mostly used by the OpenFlexure
+the ``picamera2`` Python library.  It's mostly used by the OpenFlexure
 Microscope, though it deliberately has no hard dependencies on
 said software, so that it's useful on its own.
 
@@ -20,14 +20,15 @@ to "memory" or nonlinearities in the camera's image processing
 pipeline, is to use raw images.  This is quite slow, but very
 reliable.  The three steps above can be accomplished by:
 
-```
-picamera = picamera2.Picamera2()
+.. code-block:: python
 
-adjust_shutter_and_gain_from_raw(picamera)
-adjust_white_balance_from_raw(picamera)
-lst = lst_from_camera(picamera)
-picamera.lens_shading_table = lst
-```
+    picamera = picamera2.Picamera2()
+
+    adjust_shutter_and_gain_from_raw(picamera)
+    adjust_white_balance_from_raw(picamera)
+    lst = lst_from_camera(picamera)
+    picamera.lens_shading_table = lst
+
 """
 
 # Disable N806 & 803, which checks that all variables and args are lowercase.
@@ -55,7 +56,7 @@ def load_default_tuning(cam: Picamera2) -> dict:
     """Load the default tuning file for the camera
 
     This will open and close the camera to determine its model. If you are
-    using a model that's supported by `picamera2` it should have a tuning
+    using a model that's supported by ``picamera2`` it should have a tuning
     file built in. If not, this will probably crash with an error.
 
     Error handling for unsupported cameras is not something we are likely
@@ -152,25 +153,19 @@ def adjust_shutter_and_gain_from_raw(
     This routine is slow but effective.  It uses raw images, so we
     are not affected by white balance or digital gain.
 
+    :param camera: A Picamera2 object.
+    :param target_white_level: The raw, 10-bit value we aim for.  The brightest pixels
+        should be approximately this bright.  Maximum possible is about 900, 700 is
+        reasonable.
+    :param max_iterations: We will terminate once we perform this many iterations,
+        whether or not we converge.  More than 10 shouldn't happen.
+    :param tolerance: How close to the target value we consider "done".  Expressed as a
+        fraction of the ``target_white_level`` so 0.05 means +/- 5%
+    :param percentile: Rather then use the maximum value for each channel, we calculate
+        a percentile.  This makes us robust to single pixels that are bright/noisy.
+        99.9% still picks the top of the brightness range, but seems much more reliable
+        than just ``np.max()``.
 
-    Arguments:
-        target_white_level:
-            The raw, 10-bit value we aim for.  The brightest pixels
-            should be approximately this bright.  Maximum possible
-            is about 900, 700 is reasonable.
-        max_iterations:
-            We will terminate once we perform this many iterations,
-            whether or not we converge.  More than 10 shouldn't happen.
-        tolerance:
-            How close to the target value we consider "done".  Expressed
-            as a fraction of the ``target_white_level`` so 0.05 means
-            +/- 5%
-        percentile:
-            Rather then use the maximum value for each channel, we
-            calculate a percentile.  This makes us robust to single
-            pixels that are bright/noisy.  99.9% still picks the top
-            of the brightness range, but seems much more reliable
-            than just ``np.max()``.
     """
     # TODO: read black level and bit depth from camera?
     if target_white_level * (tolerance + 1) >= 959:
@@ -351,7 +346,7 @@ def get_16x12_grid(chan: np.ndarray, dx: int, dy: int) -> np.ndarray:
 def upsample_channels(grids: np.ndarray, shape: tuple[int]) -> np.ndarray:
     """Zoom an image in the last two dimensions
 
-    This is effectively the inverse operation of `get_16x12_grid`
+    This is effectively the inverse operation of ``get_16x12_grid``
     """
     zoom_factors = [
         1,
@@ -381,7 +376,7 @@ def downsampled_channels(channels: np.ndarray, blacklevel=64) -> list[np.ndarray
 def lst_from_channels(channels: np.ndarray) -> LensShadingTables:
     """Given the 4 Bayer colour channels from a white image, generate a LST.
 
-    Internally, is just calls `downsampled_channels` and `lst_from_grids`.
+    Internally, is just calls ``downsampled_channels`` and ``lst_from_grids``.
     """
     grids = downsampled_channels(channels)
     return lst_from_grids(grids)
@@ -392,11 +387,10 @@ def lst_from_grids(grids: np.ndarray) -> LensShadingTables:
 
     The grids are the 4 BAYER channels RGGB
 
-    The LST format has changed with `picamera2` and now uses a fixed resolution,
+    The LST format has changed with ``picamera2`` and now uses a fixed resolution,
     and is in luminance, Cr, Cb format. This function returns three ndarrays of
     luminance, Cr, Cb, each with shape (12, 16).
     """
-
     # Calculated red, green, and blue channels from Bayer data
     r: np.ndarray = grids[3, ...]
     g: np.ndarray = np.mean(grids[1:3, ...], axis=0)
@@ -419,7 +413,7 @@ def grids_from_lst(lum: np.ndarray, Cr: np.ndarray, Cb: np.ndarray) -> np.ndarra
 
     Note that these will be normalised - the maximum green value is always 1.
     Also, note that the channels are BGGR, to be consistent with the
-    `channels_from_raw_image` function. This should probably change in the
+    ``channels_from_raw_image`` function. This should probably change in the
     future.
     """
     G = 1 / np.array(lum)
@@ -434,9 +428,9 @@ def set_static_lst(
     cr: np.ndarray,
     cb: np.ndarray,
 ) -> None:
-    """Update the `rpi.alsc` section of a camera tuning dict to use a static correcton.
+    """Update the ``rpi.alsc`` section of a camera tuning dict to use a static correcton.
 
-    `tuning` will be updated in-place to set its shading to static, and disable any
+    ``tuning`` will be updated in-place to set its shading to static, and disable any
     adaptive tweaking by the algorithm.
     """
     for table in luminance, cr, cb:
@@ -459,9 +453,9 @@ def set_static_ccm(
         float, float, float, float, float, float, float, float, float
     ],
 ) -> None:
-    """Update the `rpi.alsc` section of a camera tuning dict to use a static correcton.
+    """Update the ``rpi.alsc`` section of a camera tuning dict to use a static correcton.
 
-    `tuning` will be updated in-place to set its shading to static, and disable any
+    ``tuning`` will be updated in-place to set its shading to static, and disable any
     adaptive tweaking by the algorithm.
     """
     ccm = Picamera2.find_tuning_algo(tuning, "rpi.ccm")
@@ -469,7 +463,7 @@ def set_static_ccm(
 
 
 def get_static_ccm(tuning: dict) -> None:
-    """Get the `rpi.ccm` section of a camera tuning dict"""
+    """Get the ``rpi.ccm`` section of a camera tuning dict"""
     ccm = Picamera2.find_tuning_algo(tuning, "rpi.ccm")
     return ccm["ccms"]
 
@@ -484,14 +478,13 @@ def set_static_geq(
     tuning: dict,
     offset: int = 65535,
 ) -> None:
-    """Update the `rpi.geq` section of a camera tuning dict to always use green
+    """Update the ``rpi.geq`` section of a camera tuning dict to always use green
     equalisation that averages the green pixels in the red and blue rows.
 
-    `tuning` will be updated in-place to set the geq offest to the given value.
+    ``tuning`` will be updated in-place to set the geq offest to the given value.
     The default 65535 is the maximum allowed value. This means
     the brightness will always be below the threshold where averaging is used.
     """
-
     geq = Picamera2.find_tuning_algo(tuning, "rpi.geq")
     geq["offset"] = offset  # max out offset to disable the adaptive green equalisation
 
@@ -511,7 +504,7 @@ def index_of_algorithm(algorithms: list[dict], algorithm: str) -> int:
 
 
 def copy_alsc_section(from_tuning: dict, to_tuning: dict) -> None:
-    """Copy the `rpi.alsc` algorithm from one tuning to another.
+    """Copy the ``rpi.alsc`` algorithm from one tuning to another.
 
     This is done in-place, i.e. modifying to_tuning.
     """

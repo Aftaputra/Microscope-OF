@@ -12,7 +12,8 @@ from collections.abc import Hashable
 class SizedIterableHashable(Iterable[Hashable], Protocol):
     """A protocol for sized iterable of hashable objects"""
 
-    def __len__(self) -> int: ...
+    def __len__(self) -> int:
+        """Add a len function to protocol so Python knows the object is sized."""
 
 
 def assert_unique_of_length(data: SizedIterableHashable, length: int) -> None:

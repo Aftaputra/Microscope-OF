@@ -115,7 +115,6 @@ class ScanDirectoryManager:
 
     def all_scans_info(self) -> list[ScanInfo]:
         """Return a lists of ScanInfo objects for each scan"""
-
         all_info: list[ScanInfo] = []
         for scan_name in self.all_scans:
             all_info.append(ScanDirectory(scan_name, self.base_dir).scan_info())
@@ -153,7 +152,7 @@ class ScanDirectoryManager:
     def new_scan_dir(self, scan_name: str) -> "ScanDirectory":
         """Get a unique name for this scan and create a directory for it
 
-        The scan will be named `{scan_name}_0001` where the number is
+        The scan will be named ``{scan_name}_0001`` where the number is
         zero-padded to be SCAN_ZERO_PAD_DIGITS digits long (to allow correct sorting if the
         scans are ordered alphanumerically).
 
@@ -161,7 +160,6 @@ class ScanDirectoryManager:
 
         Returns the a ScanDirectory object
         """
-
         # if no scan name is set set to "scan". This done here as empty strings
         # get passed in otherwise.
         if not scan_name:
@@ -180,7 +178,7 @@ class ScanDirectoryManager:
     def zip_scan(self, scan_name: str, final_version: bool = False) -> "ScanDirectory":
         """Zips any images from the scan not yet zipped, return full path to zip
 
-        `final_version` Set true to stitch all files not just the scan images
+        ``final_version`` Set true to stitch all files not just the scan images
         this should only be done at the end as it is not possible to update a file
         in a zip.
         """
@@ -193,7 +191,7 @@ class ScanDirectoryManager:
         :param min_space: the minimum space required in bytes.
             Default = 500,000,000 (500MB)
 
-        :raises: NotEnoughFreeSpaceError if the remaining storage is below min_space
+        :raises NotEnoughFreeSpaceError: if the remaining storage is below min_space
         """
         disk_usage = shutil.disk_usage(self._base_scan_dir)
         if disk_usage.free < min_space:
@@ -258,7 +256,7 @@ class ScanDirectory:
         """Extract files which match the naming convention for scan images
 
         :param file_list: The list of files to search. Normally this would be
-        `self.get_scan_files()`
+            ``self.get_scan_files()``
 
         :returns: The list of files that match the naming convention for scan images
         """
@@ -298,7 +296,6 @@ class ScanDirectory:
 
     def scan_info(self) -> ScanInfo:
         """Return the information for the scan directory as a ScanInfo object"""
-
         scan_files = self.get_scan_files()
         scan_images = self._extract_scan_images(scan_files)
         stitches = self._extract_final_stitches(scan_files)
@@ -338,11 +335,10 @@ class ScanDirectory:
     def zip_files(self, final_version: bool = False) -> str:
         """Zips any images from the scan not yet zipped, return full path to zip
 
-        `final_version` Set true to stitch all files not just the scan images
+        ``final_version`` Set true to stitch all files not just the scan images
         this should only be done at the end as it is not possible to update a file
         in a zip.
         """
-
         zip_fname = os.path.join(self.dir_path, "images.zip")
 
         if os.path.isfile(zip_fname):

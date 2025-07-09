@@ -60,24 +60,24 @@ class ScanPlanner:
 
     Each subclass should implement at least the methods with NotImplementedError
     set:
-    * _parse() - to parse the planner_settings dictionary, saving values to class
+
+    * ``_parse()`` - to parse the planner_settings dictionary, saving values to class
         variables
-    * _intial_location_list() - Sets the list of locations for the scan to follow
+    * ``_intial_location_list()`` - Sets the list of locations for the scan to follow
 
     For a simple scan pattern this should be sufficent. For more complex ones that
-    dynanically adjust the path it is suggested to override `mark_location_visited()`
-    calling `super().mark_location_visited()` at the start of the method so that all
+    dynamically adjust the path it is suggested to override ``mark_location_visited()``
+    calling ``super().mark_location_visited()`` at the start of the method so that all
     locations are adjusted.
 
-    When subclassing be sure to use enforce_xy_tuple and enforce_xyz_tuple on any user
-    data before running
+    When subclassing be sure to use ``enforce_xy_tuple`` and ``enforce_xyz_tuple`` on
+    any user data before running.
     """
 
     def __init__(self, intial_position: XYPos, planner_settings: Optional[dict] = None):
         """
         Set up lists for the path planning, and scan history.
         """
-
         self._initial_position = enforce_xy_tuple(intial_position)
         self._parse(planner_settings)
 
@@ -225,6 +225,7 @@ class ScanPlanner:
             xyz_pos: the x_y_z position
             imaged: true if an image was taken, false if not (due to background detect)
             focused: true if autofocus completed successfully
+
         """
         # ensure is tuple!
         xyz_pos = enforce_xyz_tuple(xyz_pos)
@@ -273,7 +274,6 @@ class SmartSpiral(ScanPlanner):
         "dy" - the movement size in y
         "max_dist" - The maximum distance to a location can be from the centre.
         """
-
         expected_keys = ["max_dist", "dx", "dy"]
         invalid_msg = "SmartSpiral requires a planner_settings dictionary with keys: "
         if not planner_settings:
@@ -303,6 +303,7 @@ class SmartSpiral(ScanPlanner):
             xyz_pos: the x_y_z position
             imaged: true if an image was taken, false if not (due to background detect)
             focused: true if autofocus completed successfully
+
         """
         # First call the base class to update the positions
         super().mark_location_visited(xyz_pos, imaged, focused)
@@ -420,6 +421,7 @@ class SmartSpiral(ScanPlanner):
         Args:
         starting_pos: the position to measure from
         ending_pos: the position to measure to
+
         """
         move_size = np.array([self._dx, self._dy])
 
@@ -437,7 +439,7 @@ def distance_between(
     """
     Calculate the distance between the two xy positions
 
-    This was previously called `distance_to_site`
+    This was previously called ``distance_to_site``
     """
     next_pos = np.array(next_pos, dtype="float64")
     current_pos = np.array(current_pos, dtype="float64")

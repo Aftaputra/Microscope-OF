@@ -65,7 +65,8 @@ def test_initial_properties(smart_scan_thing):
 
 def test_inaccessible_scan_methods(smart_scan_thing):
     """The @_scan_running decorator should make some methods
-    inaccessible unless a scan is running"""
+    inaccessible unless a scan is running
+    """
     with pytest.raises(ScanNotRunningError):
         smart_scan_thing._run_scan()
     with pytest.raises(ScanNotRunningError):
@@ -74,7 +75,6 @@ def test_inaccessible_scan_methods(smart_scan_thing):
 
 def test_private_delete_scan(smart_scan_thing, caplog):
     """Test the private _delete_scan method deletes directories or warns if it can't"""
-
     _clear_scan_dir()
     with caplog.at_level(logging.INFO):
         fake_scan_name = "fake_scan_0001"
@@ -101,7 +101,6 @@ def test_private_delete_scan(smart_scan_thing, caplog):
 
 def test_public_delete_scan(smart_scan_thing, caplog):
     """Test the delete_scan API call deletes directories or warns if it can't"""
-
     _clear_scan_dir()
     with caplog.at_level(logging.INFO):
         fake_scan_name = "fake_scan_0001"
@@ -166,7 +165,6 @@ def _run_only_outer_scan(adjust_inital_state: Optional[Callable] = None):
     This seems hard to do with a fixture so it is being done with a private
     function
     """
-
     # cancel handle shouldn't be used. Set to arbitrary value for checking
     cancel_mock = 1  # not called
     af_mock = MockAutoFocusThing()

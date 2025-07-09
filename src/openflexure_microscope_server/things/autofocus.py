@@ -33,10 +33,10 @@ class StackParams:
     :param stack_dz: The number of motor steps between images
     :param images_to_save: The number of images to save to disk
     :param min_images_to_test: The minimum number of images in the stack before, the
-    stack is evaluated for focus. As more images are captured evaluation of the focus
-    is always evaluated with the same number of images. i.e. if min_images_to_test=9,
-    then 9 images are captured, if the stack is not well focused, a 10th image is
-    captured and images 2 to 10 are evaluated for focus
+        stack is evaluated for focus. As more images are captured evaluation of the
+        focus is always evaluated with the same number of images. i.e. if
+        ``min_images_to_test=9``, then 9 images are captured, if the stack is not well
+        focused, a 10th image is captured and images 2 to 10 are evaluated for focus
     :param autofocus_dz: The number of steps in a full autofocus (when required)
     :param images_dir: The directory to save images to disk
     :param save_resolution: The resolution to save the captures to disk with
@@ -101,7 +101,8 @@ class StackParams:
 
         Note that this is the range of the minimum number of images captured,
         which is also the range of the images stored in memory that can be
-        saved."""
+        saved.
+        """
         return self.stack_dz * (self.min_images_to_test - 1)
 
     @property
@@ -109,7 +110,6 @@ class StackParams:
         """
         The distance to deliberately undershoot the estimated optimal starting point
         """
-
         # Starting too low by "steps_undershoot" makes smart stacking faster.
         # Starting a stack too high requires it to move to the start,
         # autofocus and then re-stack. Starting slightly too low only
@@ -157,7 +157,7 @@ def _get_capture_by_id(captures: list[CaptureInfo], buffer_id: int) -> CaptureIn
 
     :returns: the CaptureInfo object of the capture with matching id
 
-    :raises: ValueError if buffer_id does not match the buffer_id of any captures
+    :raises ValueError: if buffer_id does not match the buffer_id of any captures
     """
     return captures[_get_capture_index_by_id(captures, buffer_id)]
 
@@ -171,7 +171,7 @@ def _get_capture_index_by_id(captures: list[CaptureInfo], buffer_id: int) -> int
 
     :returns: the list index of the capture with matching id
 
-    :raises: ValueError if buffer_id does not match the buffer_id of any captures
+    :raises ValueError: if buffer_id does not match the buffer_id of any captures
     """
     ids = [capture.buffer_id for capture in captures]
     if buffer_id not in ids:
@@ -290,7 +290,8 @@ class AutofocusThing(lt.Thing):
 
     Actions here involve moving a stage in z, and using the camera to either
     capture images (generally, z-stacking) and measuring the sharpness of the
-    field of view to assess focus (autofocus and testing the success of a z-stack)"""
+    field of view to assess focus (autofocus and testing the success of a z-stack)
+    """
 
     @lt.thing_action
     def fast_autofocus(
@@ -336,9 +337,9 @@ class AutofocusThing(lt.Thing):
         for the moves. This can be used to calibrate autofocus.
 
         Each move is relative to the last one, i.e. we will finish at
-        `sum(dz)` relative to the starting position.
+        ``sum(dz)`` relative to the starting position.
 
-        If `wait` is specified, we will wait for that many seconds
+        If ``wait`` is specified, we will wait for that many seconds
         between moves.
         """
         with sharpness_monitor.run():
@@ -358,9 +359,9 @@ class AutofocusThing(lt.Thing):
     ):
         """Repeatedly autofocus the stage until it looks focused.
 
-        This action will run the `fast_autofocus` action until it settles on a point
+        This action will run the ``fast_autofocus`` action until it settles on a point
         in the middle 3/5 of its range. Such logic can be helpful if the microscope
-        is close to focus, but not quite within `dz/2`. It will attempt to autofocus
+        is close to focus, but not quite within ``dz/2``. It will attempt to autofocus
         up to 10 times.
         """
         repeat = True
@@ -444,17 +445,18 @@ class AutofocusThing(lt.Thing):
         :param cam: Camera Dependency supplied by LabThings dependency injection
         :param stage: Stage Dependency supplied by LabThings dependency injection
         :param sharpness_monitor: Sharpness Monitor Dependency (for focus detection)
-        supplied by LabThings dependency injection
+            supplied by LabThings dependency injection
         :param images_dir: the folder to save all images
         :param autofocus_dz: the range to autofocus over if a stack fails
         :param save_resolution: The resolution the images should be saved at, the
-        images will be resampled if this doesn't match the camera's capture resolution
+            images will be resampled if this doesn't match the camera's capture
+            resolution
 
         :returns: A tuple containing:
-        - A boolean, True if stack was successfully
-        - The z position of the sharpest image
-        """
 
+            * A boolean, True if stack was successfully
+            * The z position of the sharpest image
+        """
         # Set the variables to prevent changes from the GUI or other windows
         stack_parameters = StackParams(
             stack_dz=self.stack_dz,
@@ -511,11 +513,12 @@ class AutofocusThing(lt.Thing):
         """Return to the initial height of the current stack, and run
         a looping autofocus.
 
-        Arguments:
-        initial_z_pos: The initial z positions of previous captures
-        autofocus_dz: the range in steps to autofocus
-        variables stage and sharpness_monitor are Thing dependencies passed through from
-        the calling action
+        :param initial_z_pos: The initial z positions of previous captures
+        :param  autofocus_dz: the range in steps to autofocus
+
+        ``stage`` and ``sharpness_monitor`` are Thing dependencies passed through
+        from the calling action
+
         """
         stage.move_absolute(z=initial_z_pos)
         self.looping_autofocus(
@@ -534,14 +537,13 @@ class AutofocusThing(lt.Thing):
         """Save the required captures to disk. Will save the sharpest image,
         and any images either side of focus.
 
-        Arguments:
-        sharpest_id: the buffer id index of the sharpest image
-        captures: a list of captures, including file name, image data and metadata
-        stack_parameters: a StackParams object holding stack parameters
-        variables logger and capture are Thing dependencies passed through from the
-        calling action
-        """
+        :param sharpest_id: the buffer id index of the sharpest image
+        :param captures: a list of captures, including file name, image data and
+            metadata
+        :param stack_parameters: a StackParams object holding stack parameters
+        :param cam: is a Thing dependency passed through from the calling action
 
+        """
         sharpest_index = _get_capture_index_by_id(captures, sharpest_id)
         slice_to_save = stack_parameters.slice_to_save(sharpest_index)
 
@@ -569,9 +571,10 @@ class AutofocusThing(lt.Thing):
         :param stage: Stage Dependency to be passed through from the calling action
 
         :returns: A tuple of
-        - the stack result (True for successful stack, False for failed stack),
-        - a list of CaptureInfo objects,
-        - the buffer_id of the shapest image (or None if the stack failed)
+
+            * the stack result (True for successful stack, False for failed stack),
+            * a list of CaptureInfo objects,
+            * the buffer_id of the shapest image (or None if the stack failed)
         """
         # Move down by the height of the z stack, plus an overshoot
         # Better to start too low and take too many images than too high and need to refocus
@@ -628,11 +631,11 @@ class AutofocusThing(lt.Thing):
 
         :param cam: Camera Dependency to be passed through from the calling action
         :param stage: Stage Dependency to be passed through from the calling action
-        :buffer_max: The maximum number of images to tell the camera to keep in memory
-        for saving once the stack is complete
+        :param buffer_max: The maximum number of images to tell the camera to keep in memory
+            for saving once the stack is complete
 
-        :return: A CaptureInfo object containing the capture information including its
-        camera buffer_id needed for saving.
+        :returns: A CaptureInfo object containing the capture information including its
+            camera buffer_id needed for saving.
         """
         stage_location = stage.position
         buffer_id = cam.capture_to_memory(buffer_max=buffer_max)
@@ -649,14 +652,19 @@ class AutofocusThing(lt.Thing):
         stack is centrally enough in the stack
 
         :param captures: a list of the capture objects to for testing if the
-        sharpeness has converged in the centre
+            sharpness has converged in the centre
 
-        :return: A tuple with two values:
-        - result - which is one of three literal values:
-          'success' if the sharpest image is towards the centre
-          'continue' if the sharpest image is in the final two images of the list
-          'restart' if the sharpest image is in the first two images of the list
-        - capture_id - the buffer id of the sharpest image
+        :returns: A tuple with two values:
+
+            * result - which is one of three literal values:
+
+                * ``success`` if the sharpest image is towards the centre
+                * ``continue`` if the sharpest image is in the final two images of the
+                    list
+                * ``restart`` if the sharpest image is in the first two images of the
+                    list
+
+            * capture_id - the buffer id of the sharpest image
         """
         sharpest_index = np.argmax([capture.sharpness for capture in captures])
         # The buffer id of the sharpest image

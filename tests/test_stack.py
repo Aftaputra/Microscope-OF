@@ -23,7 +23,7 @@ RANDOM_GENERATOR = np.random.default_rng()
 
 
 def odd_integers(min_value=0, max_value=1000):
-    """A hypothesis strategy for odd integers"""
+    """Return a hypothesis strategy for odd integers."""
     min_base = (min_value) // 2
     max_base = (max_value - 1) // 2
     # Ensure the range allows at least one odd number
@@ -33,7 +33,7 @@ def odd_integers(min_value=0, max_value=1000):
 
 
 def even_integers(min_value=0, max_value=1000):
-    """A hypothesis strategy for even integers"""
+    """Return a hypothesis strategy for even integers."""
     min_base = (min_value + 1) // 2
     max_base = (max_value) // 2
     # Ensure the range allows at least one even number
@@ -54,7 +54,6 @@ def test_stack_params_validation(save_ims, extra_ims):
     images_to_save. (even so that, min_images_to_test is odd and larger than
     images_to_save
     """
-
     StackParams(
         stack_dz=50,
         images_to_save=save_ims,

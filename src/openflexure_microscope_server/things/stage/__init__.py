@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import TypeAlias
 from collections.abc import Sequence, Mapping
 
 import labthings_fastapi as lt
@@ -10,8 +9,8 @@ class BaseStage(lt.Thing):
 
     This can't be used directly but should reduce boilerplate code when
     implementing new stages. A minimal working stage must implement
-    `move_relative` and `move_absolute` actions, which update the
-    `position` property on completion, and provide `set_zero_position`.
+    ``move_relative`` and ``move_absolute`` actions, which update the
+    ``position`` property on completion, and provide ``set_zero_position``.
     """
 
     _axis_names = ("x", "y", "z")
@@ -79,6 +78,4 @@ class BaseStage(lt.Thing):
         )
 
 
-StageDependency: TypeAlias = lt.deps.direct_thing_client_dependency(
-    BaseStage, "/stage/"
-)
+StageDependency = lt.deps.direct_thing_client_dependency(BaseStage, "/stage/")

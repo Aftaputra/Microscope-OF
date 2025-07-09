@@ -66,9 +66,9 @@ class SettingsManager(lt.Thing):
         recursively, i.e. if a key exists, it will be added to rather than
         replaced.
 
-        If a key is supplied, we will treat `data` as being relative to that
-        key, i.e. calling this action with `data={"a":1 }, key="foo/bar"` is
-        equivalent to calling it with `data={"foo": {"bar": {"a": 1}}}`.
+        If a key is supplied, we will treat ``data`` as being relative to that
+        key, i.e. calling this action with ``data={"a":1 }, key="foo/bar"`` is
+        equivalent to calling it with ``data={"foo": {"bar": {"a": 1}}}``.
         """
         metadata = self.external_metadata
         subdict = metadata
@@ -84,8 +84,8 @@ class SettingsManager(lt.Thing):
         """Delete a key from the stored metadata.
 
         The key may contain forward slashes, which are understood to separate
-        levels of the dictionary - i.e. `'a/c'` will remove the `c` key from a
-        dictionary that looks like: `{'a': {'c': 1}, 'b': {'d': 2}}`
+        levels of the dictionary - i.e. ``'a/c'`` will remove the ``c`` key from a
+        dictionary that looks like: ``{'a': {'c': 1}, 'b': {'d': 2}}``
         """
         metadata = self.external_metadata
         try:
