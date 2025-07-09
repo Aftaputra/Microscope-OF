@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Optional, Callable
+from functools import wraps
 from copy import copy
 
 import labthings_fastapi as lt
@@ -30,6 +31,7 @@ def set_shutdown_function(shutdown_function: Callable[[], None]):
 
     original_handler = Server.handle_exit
 
+    @wraps(Server.handle_exit)
     def handle_exit(*args, **kwargs):
         shutdown_function()
         original_handler(*args, **kwargs)
