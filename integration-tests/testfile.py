@@ -176,8 +176,8 @@ def error_if_server_not_started(
     if not confirmed_uvicorn_is_running:
         raise RuntimeError("Cannot confirm Uvicorn is running on http://127.0.0.1:5000")
 
-    # If we reached here Everything is fine! print the logs!
-    print("Server is running with following outputs:\n\n")
+    # If we reached here Everything is fine!
+    print("Server is running as expected\n\n")
 
 
 def check_for_graceful_shutdown(server_process: subprocess.Popen) -> None:
