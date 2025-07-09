@@ -1,13 +1,14 @@
 #! /usr/bin/env python3
-"""This module fires up a server in a subprocess to allow for integration tests.""
+"""This module fires up a server in a subprocess to allow for integration tests.
 
-These are seperated from the unit tests to stop them artificially inflating the test
+These are separated from the unit tests to stop them artificially inflating the test
 coverage. For now this file should be run directly not with a test framework.
 
 These tests are designed to run on CI. They should work on Linux or WSL for local
 debugging.
 """
 
+from typing import Optional
 import subprocess
 import os
 import shutil
@@ -17,18 +18,28 @@ from PIL import Image
 
 import labthings_fastapi as lt
 
-THIS_DIR = os.path.dirname(os.path.realpath(__file__))
-WORKING_DIR = os.path.join(THIS_DIR, "working_dir")
-REPO_DIR = os.path.dirname(THIS_DIR)
-CONFIG_FILE = os.path.join(REPO_DIR, "ofm_config_simulation.json")
-SERVER_CMD = ["openflexure-microscope-server", "--fallback", "-c", CONFIG_FILE]
+THIS_DIR: str = os.path.dirname(os.path.realpath(__file__))
+WORKING_DIR: str = os.path.join(THIS_DIR, "working_dir")
+REPO_DIR: str = os.path.dirname(THIS_DIR)
+CONFIG_FILE: str = os.path.join(REPO_DIR, "ofm_config_simulation.json")
+SERVER_CMD: list[str] = ["openflexure-microscope-server", "--fallback", "-c", CONFIG_FILE]
 
 
-def main():
-    """Set up the server, run basic checks, shutdown, check for graceful exit"""
+def main() -> None:
+    """Set up the server, run basic checks, shutdown, check for graceful exit
+
+    The basic checks include checks that:
+      - The server boots
+      - The server reports the expected IP and port
+      - A ThingClient can connect to the camera
+      - The client grab a frame from the stream, and it is the expected size
+      - A background process can subscribe to the stream
+    """
     set_up_working_dir()
     os.chdir(WORKING_DIR)
 
+    server_process: Optional[subprocess.Popen] = None
+    subscriber_process: Optional[subprocess.Popen] = None
     try:
         print("Starting server")
         server_process = start_server()
@@ -44,13 +55,13 @@ def main():
         server_process.terminate()
         sleep(3)
 
-        check_for_graceful_shudown(server_process)
+        check_for_graceful_shutdown(server_process)
 
     finally:
         # Ensure the server and subscriber processes are really dead
-        if subscriber_process.poll() is None:
+        if subscriber_process is not None and subscriber_process.poll() is None:
             subscriber_process.kill()
-        if server_process.poll() is None:
+        if server_process is not None and server_process.poll() is None:
             server_process.kill()
             raise RuntimeError("Server needed killing at end of test.")
 
@@ -97,7 +108,7 @@ def subscribe_to_mjpeg_stream() -> subprocess.Popen:
     sleep(2)
     if process.poll() is not None:
         raise RuntimeError(
-            "MJPEG Subscriber process is not running. This likley means it could not"
+            "MJPEG Subscriber process is not running. This likely means it could not"
             " stay connected to the stream.\n"
         )
     return process
@@ -114,8 +125,7 @@ def start_server() -> subprocess.Popen:
     """
     Start the server in a subprocess.
 
-    The server is started in a background thread and all outputs are
-    buffered.
+    The server is started in a subprocess and all outputs are buffered.
 
     :return: Popen object for the ongoing process
     """
@@ -140,7 +150,7 @@ def error_if_server_not_started(server_process: subprocess.Popen) -> None:
 
     :param server_process: The Popen object for the the server process.
 
-    :rasies RuntimeError: If the server is not running as expected.
+    :raises RuntimeError: If the server is not running as expected.
     """
 
     stdout, stderr = read_process_buffers(server_process)
@@ -167,7 +177,7 @@ def error_if_server_not_started(server_process: subprocess.Popen) -> None:
     print(output)
 
 
-def check_for_graceful_shudown(server_process: subprocess.Popen) -> None:
+def check_for_graceful_shutdown(server_process: subprocess.Popen) -> None:
     """Check the server shutdown gracefully
 
     Check the subprocess is not running
@@ -177,7 +187,7 @@ def check_for_graceful_shudown(server_process: subprocess.Popen) -> None:
 
     :param server_process: The Popen object for the the server process.
 
-    :rasies RuntimeError: If the server didn't shutdown gracefully.
+    :raises RuntimeError: If the server didn't shutdown gracefully.
     """
     stdout, stderr = read_process_buffers(server_process)
     output = format_stdout_stderr(stdout, stderr)
