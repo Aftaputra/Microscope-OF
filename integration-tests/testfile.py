@@ -12,7 +12,7 @@ from typing import Optional
 import subprocess
 import os
 import shutil
-from time import sleep
+from time import sleep, time
 
 from PIL import Image
 
@@ -22,7 +22,12 @@ THIS_DIR: str = os.path.dirname(os.path.realpath(__file__))
 WORKING_DIR: str = os.path.join(THIS_DIR, "working_dir")
 REPO_DIR: str = os.path.dirname(THIS_DIR)
 CONFIG_FILE: str = os.path.join(REPO_DIR, "ofm_config_simulation.json")
-SERVER_CMD: list[str] = ["openflexure-microscope-server", "--fallback", "-c", CONFIG_FILE]
+SERVER_CMD: list[str] = [
+    "openflexure-microscope-server",
+    "--fallback",
+    "-c",
+    CONFIG_FILE,
+]
 
 
 def main() -> None:
@@ -43,9 +48,7 @@ def main() -> None:
     try:
         print("Starting server")
         server_process = start_server()
-        print("Waiting 15s to ensure started up")
-        sleep(15)
-        error_if_server_not_started(server_process)
+        error_if_server_not_started(server_process, timeout=15)
 
         test_client_connection()
 
@@ -132,16 +135,17 @@ def start_server() -> subprocess.Popen:
     process = subprocess.Popen(
         SERVER_CMD,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         bufsize=1,
         universal_newlines=True,
     )
     os.set_blocking(process.stdout.fileno(), False)
-    os.set_blocking(process.stderr.fileno(), False)
     return process
 
 
-def error_if_server_not_started(server_process: subprocess.Popen) -> None:
+def error_if_server_not_started(
+    server_process: subprocess.Popen, timeout: float = 15.0
+) -> None:
     """Check the server started up as expected.
 
     Check the subprocess is running
@@ -153,28 +157,27 @@ def error_if_server_not_started(server_process: subprocess.Popen) -> None:
     :raises RuntimeError: If the server is not running as expected.
     """
 
-    stdout, stderr = read_process_buffers(server_process)
-    output = format_stdout_stderr(stdout, stderr)
-    if server_process.poll() is not None:
-        raise RuntimeError(f"Server process is not running!\n{output}")
-
     confirmed_uvicorn_is_running = False
-    # Note that logs go to stderr once OFM logging process starts, but if there is an
-    # error very early (such as on import) on logs may go to stdout
-    for line in stdout + stderr:
-        if line.startswith("ERROR:"):
-            raise RuntimeError(f"Server started up with error\n{line}\n\n{output}")
-        if "Uvicorn running on http://127.0.0.1:5000" in line:
-            confirmed_uvicorn_is_running = True
+
+    t_start = time()
+    while not confirmed_uvicorn_is_running and time() - t_start < timeout:
+        sleep(0.2)
+        if stdout := read_process_buffers(server_process):
+            print("".join(stdout), end="")
+            if server_process.poll() is not None:
+                raise RuntimeError("Server process is not running!")
+
+            for line in stdout:
+                if line.startswith("ERROR:"):
+                    raise RuntimeError(f"Server started up with error\n{line}")
+                if "Uvicorn running on http://127.0.0.1:5000" in line:
+                    confirmed_uvicorn_is_running = True
 
     if not confirmed_uvicorn_is_running:
-        raise RuntimeError(
-            f"Cannot confirm Uvicorn is running on http://127.0.0.1:5000\n\n{output}"
-        )
+        raise RuntimeError("Cannot confirm Uvicorn is running on http://127.0.0.1:5000")
 
     # If we reached here Everything is fine! print the logs!
     print("Server is running with following outputs:\n\n")
-    print(output)
 
 
 def check_for_graceful_shutdown(server_process: subprocess.Popen) -> None:
@@ -189,43 +192,25 @@ def check_for_graceful_shutdown(server_process: subprocess.Popen) -> None:
 
     :raises RuntimeError: If the server didn't shutdown gracefully.
     """
-    stdout, stderr = read_process_buffers(server_process)
-    output = format_stdout_stderr(stdout, stderr)
-    for line in stdout + stderr:
+    stdout = read_process_buffers(server_process)
+    print("".join(stdout))
+    print("\n\n")
+    for line in stdout:
         if line.startswith("ERROR:"):
-            raise RuntimeError(f"Server encountered error\n{line}\n\n{output}")
+            raise RuntimeError(f"Server encountered error\n{line}")
         if "graceful shutdown exceeded" in line:
             # This should be logged as an ERROR. This check is belts and braces.
-            raise RuntimeError(f"Server failed to shutdown gracefully.\n\n{output}")
+            raise RuntimeError("Server failed to shutdown gracefully.")
 
 
-def read_process_buffers(process: subprocess.Popen) -> tuple[list[str], list[str]]:
-    """Return STDOUT and STDERR from a process"""
+def read_process_buffers(process: subprocess.Popen) -> list[str]:
+    """Return STDOUT from a process"""
     stdout = []
-    stderr = []
 
     while line := process.stdout.readline():
         stdout.append(line)
 
-    while line := process.stderr.readline():
-        stderr.append(line)
-
-    return stdout, stderr
-
-
-def format_stdout_stderr(stdout: list[str], stderr: list[str]) -> str:
-    """Return a ready to print format for stdout and stderr"""
-    text = ""
-    if stdout:
-        text += "**STDOUT**\n" + "".join(stdout) + "\n"
-    else:
-        text += "**STDOUT IS EMPTY**\n\n"
-
-    if stderr:
-        text += "**STDERR**\n" + "".join(stderr) + "\n"
-    else:
-        text += "**STDERR IS EMPTY**\n\n"
-    return text
+    return stdout
 
 
 if __name__ == "__main__":
