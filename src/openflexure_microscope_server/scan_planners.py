@@ -67,9 +67,9 @@ class ScanPlanner:
 
     * ``_parse()`` - to parse the planner_settings dictionary, saving values to class
         variables
-    * ``_intial_location_list()`` - Sets the list of locations for the scan to follow
+    * ``_initial_location_list()`` - Sets the list of locations for the scan to follow
 
-    For a simple scan pattern this should be sufficent. For more complex ones that
+    For a simple scan pattern this should be sufficient. For more complex ones that
     dynamically adjust the path it is suggested to override ``mark_location_visited()``
     calling ``super().mark_location_visited()`` at the start of the method so that all
     locations are adjusted.
@@ -78,17 +78,19 @@ class ScanPlanner:
     any user data before running.
     """
 
-    def __init__(self, intial_position: XYPos, planner_settings: Optional[dict] = None):
+    def __init__(
+        self, initial_position: XYPos, planner_settings: Optional[dict] = None
+    ):
         """Set up lists for the path planning, and scan history."""
-        self._initial_position = enforce_xy_tuple(intial_position)
+        self._initial_position = enforce_xy_tuple(initial_position)
         self._parse(planner_settings)
 
         # The remaining (x,y) locations to scan
         # (This was `path` before refactoring from the long `sample_scan` code)
-        self._remaining_locations: XYPosList = self._intial_location_list()
+        self._remaining_locations: XYPosList = self._initial_location_list()
 
         # This holds a list of all (x,y,z) locations where images were taken
-        # this may not be equivalent to the x,y poistions ins self._path_history
+        # this may not be equivalent to the x,y positions ins self._path_history
         # if background detect is used
         # (This was not used in the `sample_scan` code)
         self._imaged_locations: XYZPosList = []
@@ -132,10 +134,10 @@ class ScanPlanner:
         """Parse any settings sent to this planner and store them if needed."""
         raise NotImplementedError("Did you call the ScanPlanner base class?")
 
-    def _intial_location_list(self) -> XYPosList:
+    def _initial_location_list(self) -> XYPosList:
         """Set the initial list of locations for this scan planner.
 
-        This is called on initalisation.
+        This is called on initialisation.
 
         For a simple grid scan/snake scan this would be all locations to move to.
 
@@ -270,7 +272,7 @@ class SmartSpiral(ScanPlanner):
         self._dy = int(planner_settings["dy"])
         self._max_dist = int(planner_settings["max_dist"])
 
-    def _intial_location_list(self) -> XYPosList:
+    def _initial_location_list(self) -> XYPosList:
         """Set the initial list of locations for this scan planner.
 
         This is salled on initialisation.
@@ -327,7 +329,7 @@ class SmartSpiral(ScanPlanner):
             self._remaining_locations.append(new_pos)
 
     def _re_sort_remaining_locations(self, current_pos: XYPos) -> None:
-        """Sort the remaining positions besed on the current location."""
+        """Sort the remaining positions based on the current location."""
 
         # Defined rather than use a lambda for readability
         def sort_key(pos):
