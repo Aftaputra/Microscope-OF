@@ -19,6 +19,8 @@ from labthings_fastapi.types.numpy import NDArray
 
 
 class JPEGBlob(lt.blob.Blob):
+    """A class representing a JPEG image as a LabThings FastAPI Blob."""
+
     media_type: str = "image/jpeg"
 
 

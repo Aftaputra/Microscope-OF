@@ -175,6 +175,13 @@ def _get_capture_index_by_id(captures: list[CaptureInfo], buffer_id: int) -> int
 
 
 class SharpnessDataArrays(BaseModel):
+    """A BaseModel with the position and sharpness data from JPEGSharpnessMonitor.
+
+    Each JPEG Size (representing a sharpness metric) has an associated timestamp,
+    as does each stage position. The stage positions need to be interpolated so
+    they correspond with the image timestamps.
+    """
+
     jpeg_times: NDArray
     jpeg_sizes: NDArray
     stage_times: NDArray
@@ -182,6 +189,21 @@ class SharpnessDataArrays(BaseModel):
 
 
 class JPEGSharpnessMonitor:
+    """A class with direct access to the CameraThing for monitoring the MJPEG stream.
+
+    The autofocus algorithm uses sharpness calculated from the file size of the
+    images in the MJPEG stream. This class monitors both the stage position and the
+    jpeg sharpness over time.
+
+    The ``run`` context manager is used to start monitoring the camera stream. Position
+    monitoring happens during ``focus_rel``. Raw data can be retrieved with
+    ``data_dict`` and data with interpolate ``z`` positions  can be retrieved with
+    move_data.
+
+    A new JPEGSharpnessMonitor instance is created each time an action with the
+    SharpnessMonitorDep as an argument is called.
+    """
+
     def __init__(self, stage: Stage, camera: Camera, portal: lt.deps.BlockingPortal):
         self.camera = camera
         self.stage = stage
@@ -564,7 +586,7 @@ class AutofocusThing(lt.Thing):
     ) -> tuple[bool, list[CaptureInfo], Optional[int]]:
         """Capture a series of images checking that sharpest image central.
 
-        The images are seperated in z offset by stack_parameters.stack_dz, as they
+        The images are separated in z offset by stack_parameters.stack_dz, as they
         are captured the last stack_parameters.min_images_to_test images are checked
         to see if the sharpest image is central enough in the stack. If it is the stack
         completes.
@@ -577,7 +599,7 @@ class AutofocusThing(lt.Thing):
 
             * the stack result (True for successful stack, False for failed stack),
             * a list of CaptureInfo objects,
-            * the buffer_id of the shapest image (or None if the stack failed)
+            * the buffer_id of the sharpest image (or None if the stack failed).
         """
         # Move down by the height of the z stack, plus an overshoot
         # Better to start too low and take too many images than too high and need to refocus

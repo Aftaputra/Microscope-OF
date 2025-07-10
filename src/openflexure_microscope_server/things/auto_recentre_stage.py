@@ -16,6 +16,12 @@ AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocu
 
 
 class RecentringThing(lt.Thing):
+    """A Thing for recentring the stage by monitoring parasitic z motion of the stage.
+
+    As the stage moves over a sphere-cap there is parasitic motion in z during xy
+    movement. The highest z position is the centre of motion.
+    """
+
     @lt.thing_action
     def recentre(
         self,

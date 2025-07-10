@@ -16,7 +16,7 @@ IMAGE_REGEX = re.compile(r"-?[0-9]+_-?[0-9]+\.jpe?g$")
 
 
 class NotEnoughFreeSpaceError(IOError):
-    pass
+    """An exception raised if there is not enough free space on disk to scan."""
 
 
 class ScanInfo(BaseModel):

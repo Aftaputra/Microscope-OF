@@ -17,12 +17,24 @@ from .camera import CameraDependency as CamDep
 
 
 class ChannelDistributions(BaseModel):
+    """A BaseModel for storing the channel distribution of a background image."""
+
     means: list[float]
+    """The mean of each channel in the colourspace."""
     standard_deviations: list[float]
+    """The standard deviation of each channel in the colourspace."""
     colorspace: str = "LUV"
+    """The colourspace used."""
 
 
 class BackgroundDetectThing(lt.Thing):
+    """Thing for setting a background image and detecting sample in the field of view.
+
+    This uses an LUV colour space checking only the mean and standard deviation of the
+    UV channels. Over time different, selectable, background detection methods will be
+    added.
+    """
+
     # Requires a getter and a setter to support being a BaseModel but being
     # saved to file as a dict
     _background_distributions: Optional[ChannelDistributions] = None

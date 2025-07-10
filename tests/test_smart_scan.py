@@ -30,7 +30,7 @@ from openflexure_microscope_server.things.smart_scan import (
 from .mock_things.mock_csm import MockCSMThing
 from .mock_things.mock_autofocus import MockAutoFocusThing
 from .mock_things.mock_stage import MockStageThing
-from .mock_things.mock_background_detect import MockBackgoundDetectThing
+from .mock_things.mock_background_detect import MockBackgroundDetectThing
 
 # A global logger to pass in as an Invocation Logger
 LOGGER = logging.getLogger("mock-invocation_logger")
@@ -172,7 +172,7 @@ def _run_only_outer_scan(adjust_inital_state: Optional[Callable] = None):
     cam_mock = 4  # not called
     meta_mock = 5  # not called
     csm_mock = MockCSMThing()
-    bkgrnd_det_mock = MockBackgoundDetectThing()
+    bkgrnd_det_mock = MockBackgroundDetectThing()
 
     class MockedSmartScanThing(SmartScanThing):
         """Mocked version of SmartScanThing with a patched _run_scan method."""

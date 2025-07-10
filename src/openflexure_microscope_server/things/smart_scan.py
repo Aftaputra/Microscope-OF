@@ -75,6 +75,13 @@ def _scan_running(method):
 
 
 class SmartScanThing(lt.Thing):
+    """A Thing for scanning samples and interacting with past scans.
+
+    SmartScanThing exposes all functionality for automatically scanning samples,
+    previewing live stitching, retrieving data from past scans, and for deleting
+    past scans.
+    """
+
     def __init__(self, scans_folder):
         self._scan_dir_manager = scan_directories.ScanDirectoryManager(scans_folder)
         self._preview_stitch_popen = None

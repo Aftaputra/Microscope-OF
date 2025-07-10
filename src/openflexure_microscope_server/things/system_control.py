@@ -10,6 +10,8 @@ from pydantic import BaseModel
 
 
 class CommandOutput(BaseModel):
+    """A pydantic model passing the STDOUT and STDERR from a subprocess over HTTP."""
+
     output: str
     error: str
 

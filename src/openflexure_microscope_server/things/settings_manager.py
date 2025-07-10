@@ -43,6 +43,12 @@ def nested_dict_get(data: dict, key: Sequence[str], create=False) -> Any:
 
 
 class SettingsManager(lt.Thing):
+    """Provides functionality to other Things about the current server state.
+
+    The SettingsManager is used to get information the microscope ID, the hostname
+    and the state of other Things.
+    """
+
     external_metadata = lt.ThingSetting(
         initial_value={},
         model=Mapping,

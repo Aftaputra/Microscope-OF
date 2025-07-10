@@ -13,6 +13,8 @@ import requests
 
 
 class Zenodo:
+    """A class that packages data for Zenodo."""
+
     def __init__(self, api_token, use_sandbox=True):
         self._api_token = api_token
         self._use_sandbox = use_sandbox

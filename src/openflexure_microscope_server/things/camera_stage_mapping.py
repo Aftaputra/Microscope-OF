@@ -45,6 +45,14 @@ XYCoordinateType = Tuple[float, float]
 
 
 class HardwareInterfaceModel(BaseModel):
+    """A pydantic base model for a stage and camera interface.
+
+    This class provides access to both the stage and the camera, but
+    it is confusing both because it is a BaseModel of callables rather
+    than a class with methods, and because it uses names from the underlying
+    Thing actions, but performs different actions.
+    """
+
     move: Callable[[NDArray], None]
     get_position: Callable[[], NDArray]
     grab_image: Callable[[], NDArray]
@@ -123,6 +131,14 @@ HardwareInterfaceDep = Annotated[
 
 
 class MoveHistory(NamedTuple):
+    """A named tuple containing the position over time for a single move.
+
+    This a named tuple with elements:
+
+    * ``times``
+    * ``stage_positions``
+    """
+
     times: List[float]
     stage_positions: List[CoordinateType]
 
@@ -163,6 +179,13 @@ class LoggingMoveWrapper:
 
 
 class CSMUncalibratedError(HTTPException):
+    """An HTTP Exception raised if camera stage mapping data is needed but unavailable.
+
+    Camera Stage Mapping data is needed to convert from distances specified in fractions
+    of the feild of view to distances in motor steps. This is used when clicking on the
+    live preview to move, or when performing a scan.
+    """
+
     def __init__(self):
         HTTPException.__init__(
             self,
@@ -186,9 +209,8 @@ class CameraStageMapper(lt.Thing):
         direction: Tuple[float, float, float],
     ) -> DenumpifyingDict:
         """Move a microscope's stage in 1D, and figure out the relationship with the camera."""
-        move = LoggingMoveWrapper(
-            hw.move
-        )  # log positions and times for stage calibration
+        # log positions and times for stage calibration
+        move = LoggingMoveWrapper(hw.move)
         tracker = Tracker(hw.grab_image, hw.get_position, settle=hw.settle)
         direction_array: np.ndarray = np.array(direction)
 

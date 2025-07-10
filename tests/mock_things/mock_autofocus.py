@@ -9,6 +9,13 @@ answers to functions.
 
 
 class MockAutoFocusThing:
+    """A mock autofocus Thing that imports no code from AutofocusThing.
+
+    The class needs functionality added to it over time as more complex
+    mocking is needed. It imports no code from AutofocusThing so that coverage
+    is not artificially inflated.
+    """
+
     # Counter for checking functions were called
     mock_call_count = {"looping_autofocus": 0}
 

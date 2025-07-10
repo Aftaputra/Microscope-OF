@@ -10,7 +10,14 @@ answers to functions.
 from openflexure_microscope_server.things.background_detect import ChannelDistributions
 
 
-class MockBackgoundDetectThing:
+class MockBackgroundDetectThing:
+    """A mock background detect Thing that imports no code from BackgroundDetectThing.
+
+    The class needs functionality added to it over time as more complex
+    mocking is needed. It imports no code from BackgroundDetectThing so that coverage
+    is not artificially inflated.
+    """
+
     background_distributions = ChannelDistributions(
         means=[128.0, 128.0, 128.0],
         standard_deviations=[3.0, 3.0, 3.0],
