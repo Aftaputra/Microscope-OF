@@ -128,22 +128,22 @@ class StreamingPiCamera2(BaseCamera):
     stream_resolution = lt.ThingProperty(
         tuple[int, int],
         initial_value=(820, 616),
-        description="Resolution to use for the MJPEG stream",
     )
+    """Resolution to use for the MJPEG stream."""
 
     mjpeg_bitrate = lt.ThingProperty(
         Optional[int],
         initial_value=100000000,
-        description="Bitrate for MJPEG stream (None for default)",
     )
+    """Bitrate for MJPEG stream (None for default)."""
 
     stream_active = lt.ThingProperty(
         bool,
         initial_value=False,
-        description="Whether the MJPEG stream is active",
         observable=True,
         readonly=True,
     )
+    """Whether the MJPEG stream is active."""
 
     def save_settings(self):
         """Override save_settings to ensure that camera properties don't recurse.
@@ -282,6 +282,7 @@ class StreamingPiCamera2(BaseCamera):
             return cam.sensor_resolution
 
     tuning = lt.ThingSetting(Optional[dict], None, readonly=True)
+    """The Raspberry PiCamera Tuning File JSON."""
 
     def _initialise_picamera(self):
         """Acquire the picamera device and store it as ``self._picamera``.

@@ -393,33 +393,34 @@ class AutofocusThing(lt.Thing):
     stack_images_to_save = lt.ThingSetting(
         initial_value=1,
         model=int,
-        description="""The number of images to save in a stack.
-
-            Defaults to 1 unless you need to see either side of focus""",
     )
+    """The number of images to save in a stack.
+
+    Defaults to 1 unless you need to see either side of focus
+    """
 
     stack_min_images_to_test = lt.ThingSetting(
         initial_value=9,
         model=int,
-        description="""The minimum number of images to capture in a stack.
-
-            This many images are captures and tested for focus, if the focus
-            is not central enough more images may be captured. After new images
-            are captured the number sets the number of images used for checking
-            if focus is central.
-
-            Defaults to 9 which balances reliability and speed
-            """,
     )
+    """The minimum number of images to capture in a stack.
 
-    stack_dz = lt.ThingSetting(
-        initial_value=50,
-        model=int,
-        description="""Space in steps between images in a z-stack
-            Suggested is 50 for 60-100x
-            100 for 40x
-            200 for 20x""",
-    )
+    This many images are captures and tested for focus, if the focus is not central
+    enough more images may be captured. After new images are captured the number sets
+    the number of images used for checking if focus is central.
+
+    Defaults to 9 which balances reliability and speed/
+    """
+
+    stack_dz = lt.ThingSetting(initial_value=50, model=int)
+    """Distance in steps between images in a z-stack.
+
+    Suggested values:
+
+    * 50 for 60-100x
+    * 100 for 40x
+    * 200 for 20x
+    """
 
     @lt.thing_action
     def run_smart_stack(

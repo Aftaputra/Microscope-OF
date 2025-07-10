@@ -587,51 +587,46 @@ class SmartScanThing(lt.Thing):
     save_resolution = lt.ThingSetting(
         initial_value=(1640, 1232),
         model=tuple[int, int],
-        description=("A tuple of the image resolution to capture."),
     )
+    """A tuple of the image resolution to capture."""
 
     max_range = lt.ThingSetting(
         initial_value=45000,
         model=int,
-        description=(
-            "The maximum distance from the centre of the scan before we break in steps"
-        ),
     )
+    """The maximum distance in steps from the centre of the scan."""
 
     stitch_tiff = lt.ThingSetting(
         initial_value=False,
         model=bool,
-        description="Whether or not to also produce a pyramidal tiff",
     )
+    """Whether or not to also produce a pyramidal tiff at the end of a scan."""
 
     skip_background = lt.ThingSetting(
         initial_value=True,
         model=bool,
-        description="""Whether to detect and skip empty fields of view
-
-        This uses the settings from the ``BackgroundDetectThing``.""",
     )
+    """Whether to detect and skip empty fields of view.
+
+    This uses the settings from the ``BackgroundDetectThing``."""
 
     autofocus_dz = lt.ThingSetting(
         initial_value=1000,
         model=int,
-        description="The z distance to perform an autofocus in steps",
     )
+    """The z distance to perform an autofocus in steps."""
 
     overlap = lt.ThingSetting(
         initial_value=0.45,
         model=float,
-        description="The fraction (0-1) that adjacent images should overlap in x or y",
     )
+    """The fraction (0-1) that adjacent images should overlap in x or y."""
 
     stitch_automatically = lt.ThingSetting(
         initial_value=True,
         model=bool,
-        description=(
-            "Whether to run a final stitch at the end of the scan (assuming scan "
-            "success)"
-        ),
     )
+    """Whether to run a final stitch at the end of a successful scan."""
 
     @lt.thing_property
     def scans(self) -> list[scan_directories.ScanInfo]:

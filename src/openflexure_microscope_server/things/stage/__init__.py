@@ -23,18 +23,18 @@ class BaseStage(lt.Thing):
     position = lt.ThingProperty(
         Mapping[str, int],
         dict.fromkeys(_axis_names, 0),
-        description="Current position of the stage",
         readonly=True,
         observable=True,
     )
+    """Current position of the stage."""
 
     moving = lt.ThingProperty(
         bool,
         False,
-        description="Whether the stage is in motion",
         readonly=True,
         observable=True,
     )
+    """Whether the stage is in motion."""
 
     @property
     def thing_state(self):

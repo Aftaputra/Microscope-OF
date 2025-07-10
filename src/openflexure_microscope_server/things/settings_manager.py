@@ -46,14 +46,14 @@ class SettingsManager(lt.Thing):
     external_metadata = lt.ThingSetting(
         initial_value={},
         model=Mapping,
-        description="External metadata stored in the server's settings",
     )
+    """External metadata stored in the server's settings."""
 
     external_metadata_in_state = lt.ThingSetting(
         initial_value=[],
         model=Sequence[str],
-        description='A list of strings that are included in the "state" metadata',
     )
+    """A list of strings that are included in the "state" metadata."""
 
     @lt.thing_action
     def update_external_metadata(

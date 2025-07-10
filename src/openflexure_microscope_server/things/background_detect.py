@@ -53,14 +53,14 @@ class BackgroundDetectThing(lt.Thing):
     tolerance = lt.ThingSetting(
         initial_value=7.0,
         model=float,
-        description="How many standard deviations to allow for the background",
     )
+    """How many standard deviations to allow for the background."""
 
     fraction = lt.ThingSetting(
         initial_value=25.0,
         model=float,
-        description="How much of the image needs to be not background to label as sample",
     )
+    """How much of the image needs to be not background to label as sample"""
 
     def background_mask(self, image: np.ndarray) -> np.ndarray:
         """Calculate a binary image, showing whether each pixel is background.

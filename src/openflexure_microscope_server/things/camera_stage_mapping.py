@@ -283,11 +283,9 @@ class CameraStageMapper(lt.Thing):
         return np.array(displacement_matrix).tolist()
 
     last_calibration = lt.ThingSetting(
-        initial_value=None,
-        model=Optional[dict],
-        readonly=True,
-        description="The most recent CSM calibration",
+        initial_value=None, model=Optional[dict], readonly=True
     )
+    """The most recent CSM calibration."""
 
     @lt.thing_property
     def image_resolution(self) -> Optional[Tuple[float, float]]:
