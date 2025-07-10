@@ -172,7 +172,14 @@ build-docs:
   extends: .python
   stage: build
   script:
-    - pydoctor --docformat  restructuredtext --theme readthedocs src/openflexure_microscope_server
+    - |
+      pydoctor -W \
+      --docformat  restructuredtext \
+      --project-name "OpenFlexure Microscope Server" \
+      --project-version $CI_COMMIT_REF_NAME \
+      --theme readthedocs \
+      --html-viewsource-base https://gitlab.com/openflexure/openflexure-microscope-server/-/tree/$CI_COMMIT_SHA/ \
+      src/openflexure_microscope_server
     - echo "JOB_ID=$CI_JOB_ID" > build-docs.env
   artifacts:
     expire_in: 1 week
