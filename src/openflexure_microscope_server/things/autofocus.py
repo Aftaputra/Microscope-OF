@@ -197,7 +197,7 @@ class JPEGSharpnessMonitor:
 
     The ``run`` context manager is used to start monitoring the camera stream. Position
     monitoring happens during ``focus_rel``. Raw data can be retrieved with
-    ``data_dict`` and data with interpolate ``z`` positions  can be retrieved with
+    ``data_dict`` and data with interpolated ``z`` positions can be retrieved with
     move_data.
 
     A new JPEGSharpnessMonitor instance is created each time an action with the

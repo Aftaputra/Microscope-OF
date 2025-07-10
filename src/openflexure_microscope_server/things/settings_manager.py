@@ -60,7 +60,7 @@ class SettingsManager(lt.Thing):
         initial_value=[],
         model=Sequence[str],
     )
-    """A list of strings that are included in the "state" metadata."""
+    """Keys from ``external_metadata`` that are included in the "state" metadata."""
 
     @lt.thing_action
     def update_external_metadata(
