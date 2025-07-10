@@ -155,6 +155,10 @@ class LoggingMoveWrapper:
     """
 
     def __init__(self, move_function: Callable):
+        """Set the movement function to be wrapped.
+
+        :param move_function: the movement function to be wrapped
+        """
         self._move_function: Callable = move_function
         self._current_position: Optional[CoordinateType] = None
         self.clear_history()
@@ -187,6 +191,7 @@ class CSMUncalibratedError(HTTPException):
     """
 
     def __init__(self):
+        """Customise the default error code and message of HTTPException."""
         HTTPException.__init__(
             self,
             503,

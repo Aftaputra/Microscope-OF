@@ -23,14 +23,19 @@ from . import BaseCamera, JPEGBlob
 
 
 class OpenCVCamera(BaseCamera):
-    """A Thing representing an OpenCV camera."""
+    """A Thing that provides and interface to an OpenCV Camera."""
 
     def __init__(self, camera_index: int = 0):
+        """Iniatilise the thing storing the index of the camera to use.
+
+        :param camera_index: The index of the camera to use for the microscope.
+        """
         self.camera_index = camera_index
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
 
     def __enter__(self):
+        """Start the capture thread when the Thing context manager is opened."""
         self.cap = cv2.VideoCapture(self.camera_index)
         self._capture_enabled = True
         self._capture_thread = Thread(target=self._capture_frames)
@@ -38,6 +43,10 @@ class OpenCVCamera(BaseCamera):
         return self
 
     def __exit__(self, _exc_type, _exc_value, _traceback):
+        """Release the camera when the Thing context manager is closed.
+
+        Before releasing the camera the capture thread is closed.
+        """
         if self.stream_active:
             self._capture_enabled = False
             self._capture_thread.join()

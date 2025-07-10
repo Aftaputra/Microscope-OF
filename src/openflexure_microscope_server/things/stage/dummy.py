@@ -18,14 +18,22 @@ class DummyStage(BaseStage):
     """
 
     def __init__(self, step_time: float = 0.001, **kwargs):
+        """Initialise the Dummy stage, setting the step_time to adjust the speed.
+
+        :param step_time: The time in seconds per "motor" step. The default of 0.001
+            works well for the live simulation. For unit testing it is very slow
+            so the speed can be increased. Increasing it too far is problematic if
+            also doing computationally heavy tasks like simulated image blurring.
+        """
         super().__init__(**kwargs)
         self.step_time = step_time
 
     def __enter__(self):
+        """Register the stage position when the Thing context manager is opened."""
         self.instantaneous_position = self.position
 
     def __exit__(self, _exc_type, _exc_value, _traceback):
-        pass
+        """Nothing to do when the Thing context manager is closed."""
 
     @lt.thing_action
     def move_relative(

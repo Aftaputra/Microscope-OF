@@ -30,7 +30,7 @@ RATIO = 0.2
 
 
 class SimulatedCamera(BaseCamera):
-    """A Thing representing an OpenCV camera."""
+    """A Thing that simulates a camera for testing."""
 
     _stage: Optional[BaseStage] = None
     _server: Optional[lt.ThingServer] = None
@@ -42,6 +42,16 @@ class SimulatedCamera(BaseCamera):
         canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
         frame_interval: float = 0.1,
     ):
+        """Initalise the simulated with settings for how images are generated.
+
+        :param shape: The shape (size) of the generated image.
+        :param glyph_shape: The size randomly positioned glyphs.
+        :param canvas_shape: The shape (size) of the canvas generated on initialisation
+            that images are cropped from. If this is too large the it uses resources,
+            but its size limits the range of motion of the simulation.
+        :param frame_interval: Nominally the time between frames on the MJPEG stream,
+            however the rate may be slower due to calculation time for focus.
+        """
         self.shape = shape
         self.glyph_shape = glyph_shape
         self.canvas_shape = canvas_shape
@@ -143,12 +153,14 @@ class SimulatedCamera(BaseCamera):
         return self.generate_image((pos["y"], pos["x"], pos["z"]))
 
     def __enter__(self):
+        """Start the capture thread when the Thing context manager is opened."""
         self._capture_enabled = True
         self._capture_thread = Thread(target=self._capture_frames)
         self._capture_thread.start()
         return self
 
     def __exit__(self, _exc_type, _exc_value, _traceback):
+        """Close the capture thread when the Thing context manager is closed."""
         if self.stream_active:
             self._capture_enabled = False
             self._capture_thread.join()

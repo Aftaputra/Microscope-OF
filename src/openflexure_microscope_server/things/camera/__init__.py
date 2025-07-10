@@ -41,18 +41,19 @@ class CaptureError(RuntimeError):
 
 
 class NoImageInMemoryError(RuntimeError):
-    """An error called if no image in in memory when an method is called to use that image."""
+    """An error called if no image is in memory when accessed."""
 
 
 class CameraMemoryBuffer:
     """A class that holds images in memory. The images are by default PIL images.
 
-    However subclasses of BaseCamera can use this class to store other object types
+    However subclasses of BaseCamera can use this class to store other object types.
     """
 
     _storage: dict[int, tuple[Any, Optional[dict]]]
 
     def __init__(self):
+        """Create the buffer instance."""
         # This dictionary is the main store for data. Dictionaries are ordered since
         # Python 3.6, so the order in the dictionary is the capture order
         self._storage = {}
@@ -142,16 +143,22 @@ class CameraMemoryBuffer:
 
 
 class BaseCamera(lt.Thing):
-    """The base class for all cameras. All cameras must directly inherit from this class."""
+    """The base class for all cameras. All cameras must directly inherit from this class.
+
+    The connection to the camera hardware should be added to the ``__enter__`` method not
+    ``__init__`` method of the subclass.
+    """
 
     mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     lores_mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     _memory_buffer = CameraMemoryBuffer()
 
     def __enter__(self) -> None:
+        """Open hardware connection when the Thing context manager is opened."""
         raise NotImplementedError("CameraThings must define their own __enter__ method")
 
     def __exit__(self, _exc_type, _exc_value, _traceback) -> None:
+        """Close hardware connection when the Thing context manager is closed."""
         raise NotImplementedError("CameraThings must define their own __exit__ method")
 
     @lt.thing_action

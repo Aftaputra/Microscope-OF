@@ -40,6 +40,7 @@ class SangaboardThing(BaseStage):
         self.sangaboard_kwargs["port"] = port
 
     def __enter__(self):
+        """Connect to the sangaboard when the Thing context manager is opened."""
         self._sangaboard = sangaboard.Sangaboard(**self.sangaboard_kwargs)
         self._sangaboard_lock = threading.RLock()
         with self.sangaboard() as sb:
@@ -51,6 +52,7 @@ class SangaboardThing(BaseStage):
         self.update_position()
 
     def __exit__(self, _exc_type, _exc_value, _traceback):
+        """Close the sangaboard connection when the Thing context manager is closed."""
         with self.sangaboard() as sb:
             sb.close()
 

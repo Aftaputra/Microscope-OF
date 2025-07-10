@@ -26,21 +26,7 @@ from .stage import StageDependency as Stage
 
 
 class StackParams:
-    """A class for holding for scan parameters.
-
-    All arguments are keyword only
-
-    :param stack_dz: The number of motor steps between images
-    :param images_to_save: The number of images to save to disk
-    :param min_images_to_test: The minimum number of images in the stack before, the
-        stack is evaluated for focus. As more images are captured evaluation of the
-        focus is always evaluated with the same number of images. i.e. if
-        ``min_images_to_test=9``, then 9 images are captured, if the stack is not well
-        focused, a 10th image is captured and images 2 to 10 are evaluated for focus
-    :param autofocus_dz: The number of steps in a full autofocus (when required)
-    :param images_dir: The directory to save images to disk
-    :param save_resolution: The resolution to save the captures to disk with
-    """
+    """A class for holding for stack parameters, and returning computed ones."""
 
     def __init__(
         self,
@@ -52,6 +38,20 @@ class StackParams:
         images_dir: str,
         save_resolution: tuple[int, int],
     ) -> None:
+        """Initalise the parameters. All arguments are keyword only.
+
+        :param stack_dz: The number of motor steps between images
+        :param images_to_save: The number of images to save to disk
+        :param min_images_to_test: The minimum number of images in the stack before,
+            the stack is evaluated for focus. As more images are captured evaluation
+            of the focus is always evaluated with the same number of images. i.e. if
+            ``min_images_to_test=9``, then 9 images are captured, if the stack is not
+            well focused, a 10th image is captured and images 2 to 10 are evaluated
+            for focus
+        :param autofocus_dz: The number of steps in a full autofocus (when required)
+        :param images_dir: The directory to save images to disk
+        :param save_resolution: The resolution to save the captures to disk with
+        """
         if min_images_to_test < images_to_save:
             raise ValueError("Can't save more images than the minimum number tested")
         if min_images_to_test % 2 == 0 or min_images_to_test <= 0:
@@ -205,6 +205,13 @@ class JPEGSharpnessMonitor:
     """
 
     def __init__(self, stage: Stage, camera: Camera, portal: lt.deps.BlockingPortal):
+        """Initalise a new JPEGSharpnessMonitor. The args are injected automatically.
+
+        :param stage: A direct_thing_client dependency for the the microscope stage.
+        :param camera: A raw_thing_client depeendency for the camera. This is a raw
+            dependency as the underlying class needs to be
+        :param portal: The asyncio blocking portal for asynchronous task scheduling.
+        """
         self.camera = camera
         self.stage = stage
         self.portal = portal

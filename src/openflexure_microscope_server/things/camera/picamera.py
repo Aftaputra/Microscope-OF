@@ -104,9 +104,20 @@ class LensShading(BaseModel):
 
 
 class StreamingPiCamera2(BaseCamera):
-    """A Thing that represents an OpenCV camera."""
+    """A Thing that provides and interface to the Raspberry Pi Camera.
+
+    Currently the Thing only supports the PiCamera v2 board. This needs
+    generalisation.
+    """
 
     def __init__(self, camera_num: int = 0):
+        """Initialise the camera with the given camera number.
+
+        This makes no connection to the camera (except to get the default tuning file).
+
+        :param camera_num: The number of the camera. This should generally be left as 0
+            as most Raspberry Pi boards only support 1 camera.
+        """
         self._setting_save_in_progress = False
         self.camera_num = camera_num
         self.camera_configs: dict[str, dict] = {}
@@ -324,6 +335,11 @@ class StreamingPiCamera2(BaseCamera):
         self._picamera_lock = RLock()
 
     def __enter__(self):
+        """Start streaming when the Thing context manager is opened.
+
+        This opens the picamera connection, initialises the camera, sets the
+        sensor_modes property, and then starts the streams.
+        """
         self._initialise_picamera()
         # populate sensor modes by reading the property
         self.sensor_modes
@@ -360,7 +376,7 @@ class StreamingPiCamera2(BaseCamera):
                     self.start_streaming()
 
     def __exit__(self, exc_type, exc_value, traceback):
-        # Shut down the camera
+        """Close the picamera connection when the Thing context manager is closed."""
         self.stop_streaming()
         with self._streaming_picamera() as cam:
             cam.close()

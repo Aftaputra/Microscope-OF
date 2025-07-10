@@ -92,6 +92,13 @@ class OFMHandler(logging.Handler):
     """A logging.Handler that stores the most recent logs for access by the server."""
 
     def __init__(self, level=logging.INFO, max_logs=250):
+        """Inialise the handler with a set logging level and message buffer size.
+
+        :param level: The level of logs captured. As standard logs of INFO and above
+            are captured.
+        :param max_logs: The maximum number of logs to hold in memory. This sets
+            how many can be returned over HTTP.
+        """
         super().__init__(level=level)
         self._log = []
         self._max_logs = max_logs

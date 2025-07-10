@@ -36,6 +36,10 @@ class ScanDirectoryManager:
     _base_scan_dir: str
 
     def __init__(self, base_scan_dir: str):
+        """Initialise the scan directory manager.
+
+        :param base_scan_dir: Path of the directory that holds all scans.
+        """
         self._base_scan_dir = base_scan_dir
         if not os.path.exists(self._base_scan_dir):
             os.makedirs(self._base_scan_dir)
@@ -194,17 +198,17 @@ class ScanDirectoryManager:
 
 
 class ScanDirectory:
-    """A class for handling interactions with scan directories.
-
-    Initalisation parameters:
-      name: the name of the scan (the scan directory basename)
-      base_scan_dir: Path of the directory that holds all scans
-    """
+    """A class for handling interactions with scan directories."""
 
     _name: str
     _base_scan_dir: str
 
     def __init__(self, name: str, base_scan_dir: str):
+        """Initialise the scan directory.
+
+        :param name: the name of the scan (the scan directory basename).
+        :param base_scan_dir: Path of the directory that holds all scans.
+        """
         self._name = name
         self._base_scan_dir = base_scan_dir
         if not os.path.isdir(self.dir_path):

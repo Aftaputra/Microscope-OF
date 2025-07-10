@@ -16,6 +16,12 @@ class Zenodo:
     """A class that packages data for Zenodo."""
 
     def __init__(self, api_token, use_sandbox=True):
+        """Initialise the zenodo packager with the API token.
+
+        :param api_token: Your Zenodo API key.
+        :param use_sandbox: True to pushing to ``sandbox.zenodo.org`` rather than
+            ``zenodo.org`` for testing.
+        """
         self._api_token = api_token
         self._use_sandbox = use_sandbox
         if use_sandbox:
