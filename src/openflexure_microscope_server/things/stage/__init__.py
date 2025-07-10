@@ -1,3 +1,14 @@
+"""A package for stage control Things.
+
+`BaseStage` is the base class that provides core stage functionality, but
+no hardware interface control. To create a stage Thing to control a specific
+piece of hardware the BaseStage should be subclassed, and any method raising
+a NotImplementedError should be created.
+
+As the object will be used as a context manager create the hardware connection in
+``__enter__`` (not in ``__init__``), and close the connection with ``__exit__``.
+"""
+
 from __future__ import annotations
 from collections.abc import Sequence, Mapping
 
