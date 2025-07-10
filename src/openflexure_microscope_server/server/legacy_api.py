@@ -6,6 +6,7 @@ from socket import gethostname
 
 
 def add_v2_endpoints(thing_server: lt.ThingServer):
+    """Add the v2 API endpoints for OpenFlexure Connect discoverability."""
     app = thing_server.app
 
     # TODO: update openflexure connect to make this unnecessary!!

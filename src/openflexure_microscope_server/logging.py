@@ -21,6 +21,14 @@ OFM_LOG_FILE = None
 
 
 def configure_logging(log_folder):
+    """Configure logging for the server while it is running.
+
+    This modifies the root logger to have a rotating file handler and
+    adds a custom handler that prints and stores all records except
+    ``uvicorn.access`` logs.
+
+    It is important not to let Uvicorn override these settings.
+    """
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
     # Explictly make OFM_LOG_FILE a global so it can be updated based on log settings

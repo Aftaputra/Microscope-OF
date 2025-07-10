@@ -95,19 +95,35 @@ def _test_bad_tuning_after_good_tuning(configure: bool = False):
 
 @pytest.mark.filterwarnings("ignore: Exception ignored")
 def test_bad_tuning_after_good_tuning_noconfigure():
-    _test_bad_tuning_after_good_tuning(False)
+    """First run setting good, then bad, then good tuning.
+
+    create_preview_configuration() is NOT run on initial setup.
+    """
+    _test_bad_tuning_after_good_tuning(configure=False)
 
 
 @pytest.mark.filterwarnings("ignore: Exception ignored")
 def test_bad_tuning_after_good_tuning_configure():
-    _test_bad_tuning_after_good_tuning(True)
+    """Second run setting good, then bad, then good tuning.
+
+    create_preview_configuration() is run on initial setup this time.
+    """
+    _test_bad_tuning_after_good_tuning(configure=True)
 
 
 @pytest.mark.filterwarnings("ignore: Exception ignored")
 def test_bad_tuning_after_good_tuning_noconfigure2():
-    _test_bad_tuning_after_good_tuning(False)
+    """3rd run setting good, then bad, then good tuning.
+
+    create_preview_configuration() is NOT run on initial setup.
+    """
+    _test_bad_tuning_after_good_tuning(configure=False)
 
 
 @pytest.mark.filterwarnings("ignore: Exception ignored")
 def test_bad_tuning_after_good_tuning_configure2():
-    _test_bad_tuning_after_good_tuning(True)
+    """Final run setting good, then bad, then good tuning.
+
+    create_preview_configuration() is run on initial setup again.
+    """
+    _test_bad_tuning_after_good_tuning(configure=True)

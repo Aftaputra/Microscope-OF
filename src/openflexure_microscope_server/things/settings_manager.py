@@ -14,6 +14,7 @@ import labthings_fastapi as lt
 
 
 def thing_server_from_request(request: Request) -> lt.ThingServer:
+    """Wrap lt.find_thing_server."""
     return lt.find_thing_server(request.app)
 
 

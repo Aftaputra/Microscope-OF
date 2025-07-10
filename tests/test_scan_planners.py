@@ -12,6 +12,7 @@ from .utilities import scan_test_helpers
 
 
 def test_enforce_xy_tuple():
+    """Check that 2 value tuples (or ValueErrors) are always returned."""
     bad_len_vals = [[1], [], (1,), (2, 4, 4), [1, 4, 5, 7]]
     bad_type_vals = ["hi", 1, {"this": "that"}, {1, 2}]
     for value in bad_len_vals + bad_type_vals:
@@ -23,6 +24,7 @@ def test_enforce_xy_tuple():
 
 
 def test_enforce_xyz_tuple():
+    """Check that 3 value tuples (or ValueErrors) are always returned."""
     bad_len_vals = [[1], [], (1,), (2, 4), [1, 4, 5, 7]]
     bad_type_vals = ["hi!", 1, {"this": "that"}, {1, 2, 3}]
     for value in bad_len_vals + bad_type_vals:
@@ -34,12 +36,14 @@ def test_enforce_xyz_tuple():
 
 
 def test_base_class_not_implemented():
+    """Check NotImplementedError is raised when initialising ScanPlanner directly."""
     intial_position = (100, 50)
     with pytest.raises(NotImplementedError):
         scan_planners.ScanPlanner(intial_position=intial_position)
 
 
 def test_v_basic_smart_spiral():
+    """Check that a SmartSpiral where the first image is not sample completes."""
     intial_position = (100, 50)
     planner_settings = {"dx": 50, "dy": 50, "max_dist": 10000}
     planner = scan_planners.SmartSpiral(
@@ -71,6 +75,7 @@ def test_v_basic_smart_spiral():
 
 
 def test_bad_smart_spiral_settings():
+    """Check that KeyError is raised when SmartSpiral is given bad settings."""
     intial_position = (100, 50)
 
     # Class init should raise error if no planner_settings dictionary set
@@ -195,6 +200,7 @@ def test_smart_spiral_first_few_pos():
 
 
 def test_smart_spiral_stops_on_max_dist():
+    """Test that if max distance is reached smart spiral really does stop."""
     intial_position = (0, 0)
     planner_settings = {"dx": 100, "dy": 100, "max_dist": 1000}
     # Create a planner
