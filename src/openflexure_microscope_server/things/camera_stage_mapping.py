@@ -47,10 +47,7 @@ XYCoordinateType = Tuple[float, float]
 class HardwareInterfaceModel(BaseModel):
     """A pydantic base model for a stage and camera interface.
 
-    This class provides access to both the stage and the camera, but
-    it is confusing both because it is a BaseModel of callables rather
-    than a class with methods, and because it uses names from the underlying
-    Thing actions, but performs different actions.
+    This code has been flagged as confusing and will be replaced soon, see #476.
     """
 
     move: Callable[[NDArray], None]
