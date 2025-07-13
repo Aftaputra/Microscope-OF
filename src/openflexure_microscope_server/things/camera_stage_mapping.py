@@ -13,7 +13,6 @@ server, and depends on that server and its underlying LabThings library.
 import time
 from typing import (
     Any,
-    Callable,
     Dict,
     List,
     NamedTuple,
@@ -53,30 +52,28 @@ class MoveHistory(NamedTuple):
     stage_positions: List[CoordinateType]
 
 
-class LoggingMoveWrapper:
-    """Wrap a move function, and maintain a log position/time.
+class RecordedMove:
+    """Call stage movement and maintain a record of position and time.
 
-    This class is callable, so it doesn't change the signature
-    of the function it wraps - it just makes it possible to get
-    a list of all the moves we've made, and how long they took.
+    This class is callable, the callable wraps stage.move_to_xyz_position.
 
-    Said list is intended to be useful for calibrating the stage
-    so we can estimate how long moves will take.
+    The class records a list of all moves made and how long they took. This is useful
+    for calibrating the stage as it allows measuring how long moves take.
     """
 
-    def __init__(self, move_function: Callable):
+    def __init__(self, stage: Stage):
         """Set the movement function to be wrapped.
 
         :param move_function: the movement function to be wrapped
         """
-        self._move_function: Callable = move_function
+        self._stage: Stage = stage
         self._current_position: Optional[CoordinateType] = None
         self._history: List[Tuple[float, Optional[CoordinateType]]] = []
 
-    def __call__(self, new_position: CoordinateType, *args, **kwargs):
+    def __call__(self, new_position: CoordinateType):
         """Move to a new position, and record it."""
         self._history.append((time.time(), self._current_position))
-        self._move_function(new_position, *args, **kwargs)
+        self._stage.move_to_xyz_position(xyz_pos=new_position)
         self._current_position = new_position
         self._history.append((time.time(), self._current_position))
 
@@ -128,8 +125,8 @@ class CameraStageMapper(lt.Thing):
         direction: Tuple[float, float, float],
     ) -> DenumpifyingDict:
         """Move a microscope's stage in 1D, and figure out the relationship with the camera."""
-        # log positions and times for stage calibration
-        wrapped_move = LoggingMoveWrapper(stage.move_to_xyz_position)
+        # Record positions and times for stage calibration
+        recorded_move = RecordedMove(stage)
         tracker = Tracker(
             camera.capture_downsampled_array,
             stage.get_xyz_position,
@@ -140,7 +137,7 @@ class CameraStageMapper(lt.Thing):
         starting_position = stage.position
         try:
             result: dict = calibrate_backlash_1d(
-                tracker, wrapped_move, direction_array, logger=logger
+                tracker, recorded_move, direction_array, logger=logger
             )
         except lt.exceptions.InvocationCancelledError as e:
             logger.info("User cancelled the camera stage mapping calibration")
@@ -151,7 +148,7 @@ class CameraStageMapper(lt.Thing):
             logger.info("Returning to starting position due to failed calibration")
             stage.move_absolute(**starting_position, block_cancellation=True)
             raise e
-        result["move_history"] = wrapped_move.history
+        result["move_history"] = recorded_move.history
         result["image_resolution"] = camera.capture_downsampled_array().shape[:2]
         return result
 
