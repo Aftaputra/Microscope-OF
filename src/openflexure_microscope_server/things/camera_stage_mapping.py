@@ -62,9 +62,10 @@ class RecordedMove:
     """
 
     def __init__(self, stage: Stage):
-        """Set the movement function to be wrapped.
+        """Set the stage client used for for movement.
 
-        :param move_function: the movement function to be wrapped
+        :param stage: the stage client to be used. ``stage.move_to_xyz_position`` will
+            be called whenever the instance is called.
         """
         self._stage: Stage = stage
         self._current_position: Optional[CoordinateType] = None

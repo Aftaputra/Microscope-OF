@@ -105,6 +105,10 @@ class BaseStage(lt.Thing):
     ) -> None:
         """Move to the location specified by an (x, y, z) tuple.
 
+        :param cancel: A cancel hook for cancelling the move. This dependency should be
+            injected automatically by LabThings-FastAPI
+        :param xyz_pos: The (x, y, z) position to move to.
+
         :raises KeyError: if this stage does not have axes named "x", "y", and "z".
 
         This method is provides the interface expected by the camera_stage_mapping.
