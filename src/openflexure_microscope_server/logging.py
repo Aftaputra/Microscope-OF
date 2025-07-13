@@ -16,6 +16,7 @@ from logging.handlers import RotatingFileHandler
 import os
 
 from fastapi.responses import PlainTextResponse
+from fastapi import HTTPException
 
 OFM_LOG_FILE = None
 
@@ -39,6 +40,7 @@ def configure_logging(log_folder):
     # log file can't be accessed.
     ofm_format_str = "[%(asctime)s] [%(levelname)s] %(message)s"
     OFM_HANDLER.setFormatter(logging.Formatter(ofm_format_str))
+    OFM_HANDLER.addFilter(UvicornAccessFilter())
     root_logger.addHandler(OFM_HANDLER)
 
     try:
@@ -52,6 +54,7 @@ def configure_logging(log_folder):
         )
         format_str = "[%(asctime)s] [%(levelname)s] <%(name)s> %(message)s"
         handler.setFormatter(logging.Formatter(format_str))
+        handler.addFilter(UvicornAccessFilter())
         root_logger.addHandler(handler)
 
     except PermissionError as e:
@@ -84,12 +87,17 @@ def retrieve_log_from_file() -> PlainTextResponse:
     is written to while sending through FileResponse.
     """
     if OFM_LOG_FILE is None:
-        raise RuntimeError(
-            "Cannot retrieve log file as logging directory hasn't been configured"
+        raise HTTPException(
+            500, "Cannot retrieve log file as logging directory hasn't been configured."
         )
-    with open(OFM_LOG_FILE, "r", encoding="utf-8") as logfile:
-        full_log = logfile.read()
-    return PlainTextResponse(full_log)
+    try:
+        with open(OFM_LOG_FILE, "r", encoding="utf-8") as logfile:
+            full_log = logfile.read()
+        return PlainTextResponse(full_log)
+    except IOError as e:
+        raise HTTPException(
+            500, "An error occurred while trying to access the log file."
+        ) from e
 
 
 class OFMHandler(logging.Handler):
@@ -120,11 +128,6 @@ class OFMHandler(logging.Handler):
 
     def emit(self, record):
         """Emit will save the logged record to the log."""
-        # Basic filter for now that simply stops uvicorn.access logs
-        # These are the logs each time an API endpoint is accessed
-        # This is only the log for the UI.
-        if record.name.startswith("uvicorn.access"):
-            return
         try:
             if record.levelno >= self.level:
                 self.append_record(record)
@@ -139,6 +142,14 @@ class OFMHandler(logging.Handler):
     def log_history(self):
         """Return the log history up to the maximum number of logs."""
         return "\n".join(self._log)
+
+
+class UvicornAccessFilter(logging.Filter):
+    """A logging filter to filter out "uvicorn.access" messages."""
+
+    def filter(self, record):
+        """Return False if record is from "uvicorn.access"."""
+        return not record.name.startswith("uvicorn.access")
 
 
 OFM_HANDLER = OFMHandler()
