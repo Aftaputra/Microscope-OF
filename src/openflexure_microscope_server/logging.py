@@ -35,6 +35,12 @@ def configure_logging(log_folder):
     global OFM_LOG_FILE
     OFM_LOG_FILE = os.path.join(log_folder, "openflexure_microscope.log")
 
+    # Add OFM_HANDLER first so it can capture the error log if the
+    # log file can't be accessed.
+    ofm_format_str = "[%(asctime)s] [%(levelname)s] %(message)s"
+    OFM_HANDLER.setFormatter(logging.Formatter(ofm_format_str))
+    root_logger.addHandler(OFM_HANDLER)
+
     try:
         if not os.path.exists(log_folder):
             os.makedirs(log_folder)
@@ -47,12 +53,10 @@ def configure_logging(log_folder):
         format_str = "[%(asctime)s] [%(levelname)s] <%(name)s> %(message)s"
         handler.setFormatter(logging.Formatter(format_str))
         root_logger.addHandler(handler)
-        ofm_format_str = "[%(asctime)s] [%(levelname)s] %(message)s"
-        OFM_HANDLER.setFormatter(logging.Formatter(ofm_format_str))
-        root_logger.addHandler(OFM_HANDLER)
 
     except PermissionError as e:
-        logging.warning(f"Cannot create log file at {OFM_LOG_FILE}: {e}")
+        logging.error(f"Cannot create log file at {OFM_LOG_FILE}: {e}")
+
     logging.info("")
     logging.info("****************************************************")
     logging.info("OFM server root logger has been set up at INFO level")
