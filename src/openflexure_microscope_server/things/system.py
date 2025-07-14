@@ -10,6 +10,8 @@ from typing import Optional
 from uuid import UUID, uuid4
 import subprocess
 import os
+from signal import SIGTERM
+import time
 
 from pydantic import BaseModel
 
@@ -80,6 +82,16 @@ class OpenFlexureSystem(lt.Thing):
     @lt.thing_action
     def shutdown(self) -> CommandOutput:
         """Attempt to shutdown the device."""
+        if not self.is_raspberrypi:
+            os.kill(os.getpid(), SIGTERM)
+            time.sleep(0.5)
+            # If this line is reached then the server did not shut down!
+            return CommandOutput(
+                output="",
+                error="Shutdown command sent to server process, but the server has not shutdown.",
+            )
+
+        # On a Raspberry Pi
         p = subprocess.Popen(
             ["sudo", "shutdown", "-h", "now"],
             stderr=subprocess.PIPE,
@@ -92,6 +104,12 @@ class OpenFlexureSystem(lt.Thing):
     @lt.thing_action
     def reboot(self) -> CommandOutput:
         """Attempt to reboot the device."""
+        if not self.is_raspberrypi:
+            return CommandOutput(
+                output="",
+                error="Restart is only available on Raspberry Pi.",
+            )
+
         p = subprocess.Popen(
             ["sudo", "shutdown", "-r", "now"],
             stderr=subprocess.PIPE,
