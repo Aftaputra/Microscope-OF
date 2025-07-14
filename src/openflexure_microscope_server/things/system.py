@@ -30,7 +30,7 @@ class CommandOutput(BaseModel):
 class OpenFlexureSystem(lt.Thing):
     """Describe and control the OpenFlexure system.
 
-    This Things:
+    This Thing:
 
     * Exposes information about the Microscope, Server, and Thing states to the web
         API.
