@@ -5,7 +5,7 @@ the microscope, server, and thing states to the web API.
 """
 
 from collections.abc import Mapping
-from socket import gethostname
+import socket
 from typing import Optional
 from uuid import UUID, uuid4
 import subprocess
@@ -18,6 +18,9 @@ from pydantic import BaseModel
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.utilities import VersionData, robust_version_strings
+
+SHUTDOWN_CMD = ["sudo", "shutdown", "-h", "now"]
+REBOOT_CMD = ["sudo", "shutdown", "-r", "now"]
 
 
 class CommandOutput(BaseModel):
@@ -55,7 +58,7 @@ class OpenFlexureSystem(lt.Thing):
     @lt.thing_property
     def hostname(self) -> str:
         """The hostname of the microscope, as reported by its operating system."""
-        return gethostname()
+        return socket.gethostname()
 
     _version_data: Optional[VersionData] = None
 
@@ -93,7 +96,7 @@ class OpenFlexureSystem(lt.Thing):
 
         # On a Raspberry Pi
         p = subprocess.Popen(
-            ["sudo", "shutdown", "-h", "now"],
+            SHUTDOWN_CMD,
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
         )
@@ -111,7 +114,7 @@ class OpenFlexureSystem(lt.Thing):
             )
 
         p = subprocess.Popen(
-            ["sudo", "shutdown", "-r", "now"],
+            REBOOT_CMD,
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
         )
