@@ -225,7 +225,7 @@ class BaseCamera(lt.Thing):
         * The array is downsamples by the thing property `downsampled_array_factor`.
         * The default capture array arguments are used.
 
-        This method is provides the interface expected by the camera_stage_mapping.
+        This method provides the interface expected by the camera_stage_mapping.
         """
         img = self.capture_array()
         return downsample(self.downsampled_array_factor, img)
@@ -440,13 +440,17 @@ class BaseCamera(lt.Thing):
             raise IOError(f"An error occurred while saving {jpeg_path}") from e
 
     settling_time = lt.ThingSetting(float, 0.2)
-    """The the settling time when calling the ``settle()`` method."""
+    """The settling time when calling the ``settle()`` method."""
 
     @lt.thing_action
     def settle(self) -> None:
         """Sleep for the settling time, ready to provide a fresh frame.
 
-        This method is provides the interface expected by the camera_stage_mapping.
+        This function will sleep for the given time, and clear the buffer after sleeping.
+        As such, the next frame captured from the camera after running this function will
+        always be captured after settling.
+
+        This method provides the interface expected by the camera_stage_mapping.
         """
         time.sleep(self.settling_time)
         self.discard_frames()
@@ -464,7 +468,7 @@ def downsample(factor: int, image: np.ndarray) -> np.ndarray:
     * calculate each pixel as the mean of each ``factor * factor`` square without
         interpolation.
     * If the image is not an integer multiple of the resampling factor, discard
-        the left-over pixels to avoids odd edge effects and keep performance quick.
+        the left-over pixels to avoid odd edge effects and keep performance quick.
     """
     if factor == 1:
         return image

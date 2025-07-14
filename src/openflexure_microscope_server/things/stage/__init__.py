@@ -94,7 +94,7 @@ class BaseStage(lt.Thing):
 
         :raises KeyError: if this stage does not have axes named "x", "y", and "z".
 
-        This method is provides the interface expected by the camera_stage_mapping.
+        This method provides the interface expected by the camera_stage_mapping.
         """
         position_dict = self.position
         return (position_dict["x"], position_dict["y"], position_dict["z"])
@@ -111,7 +111,7 @@ class BaseStage(lt.Thing):
 
         :raises KeyError: if this stage does not have axes named "x", "y", and "z".
 
-        This method is provides the interface expected by the camera_stage_mapping.
+        This method provides the interface expected by the camera_stage_mapping.
         """
         self.move_absolute(cancel=cancel, x=xyz_pos[0], y=xyz_pos[1], z=xyz_pos[2])
 
