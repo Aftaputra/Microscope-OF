@@ -80,7 +80,7 @@ def git_repo(temp_dir):
     create_fake_file()
     create_fake_file()
     _git("add -A")
-    _git("commit -m 'message'")
+    _git("commit -m 'message2'")
 
     yield temp_dir
 
@@ -175,7 +175,7 @@ def test_reading_hash_from_git():
             create_fake_file()
             create_fake_file()
             _git("add -A")
-            _git("commit -m 'message'")
+            _git("commit -m 'message2'")
             git_hash2 = _git("rev-parse HEAD")
             assert utilities._get_hash_from_git_dir(git_dir) == git_hash2
 

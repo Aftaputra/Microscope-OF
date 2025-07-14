@@ -104,7 +104,7 @@ class VersionData(BaseModel):
     version_source: str
 
 
-def robust_version_strings() -> tuple[str, str]:
+def robust_version_strings() -> VersionData:
     """Return a version string and information on its source.
 
     Returning a python version string is not without problems. If the package is
@@ -118,7 +118,7 @@ def robust_version_strings() -> tuple[str, str]:
         installation from source. Return the version string from the toml file and
         return the literal string "TOML" as its source.
     3. If a Git directory is available but no pyproject.toml then something is very
-        weird log an error. Then return "Undefined" as the version string, but still
+        weird - log an error. Then return "Undefined" as the version string, but still
         return the Git hash as the source.
     4. Finally if neither a Git directory nor a pyproject.toml are available then the
        server has been installed from a distribution package (i.e. a wheel). In this
@@ -152,9 +152,10 @@ def robust_version_strings() -> tuple[str, str]:
         ver = "Undefined"
         source = _get_hash_from_git_dir(git_dir_path)
     else:
-        # "Neither probably installed from wheel. Note this can
-        # be unreliable if the package is not installed as a distribution.
-        # This is why it is the last option.
+        # Has neither .git nor pyproject.toml. It is probably installed from wheel.
+        # This will be the expected method of packaging in the future. This option
+        # is handled last as ``importlib.metadata.version`` can be unreliable if
+        # the package is no installed as a distribution package.
         ver = "v" + version("openflexure_microscope_server")
         source = "Dist"
     return VersionData(version=ver, version_source=source)
@@ -222,7 +223,8 @@ def _get_version_from_toml(toml_path: str) -> str:
 
     :param toml_path: The path to the toml file.
 
-    :returns: The version string directly as reported in the toml file.
+    :returns: The version string directly as reported in the toml file, or "Undefined"
+        if there is any error, errors are logged not raised.
     """
     try:
         with open(toml_path, "rb") as toml_file:
