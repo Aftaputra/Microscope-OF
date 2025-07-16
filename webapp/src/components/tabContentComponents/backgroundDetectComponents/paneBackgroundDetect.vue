@@ -10,15 +10,15 @@
           <div class="uk-accordion-content">
             <div class="uk-margin">
               <propertyControl
-                thing-name="background_detect"
-                property-name="tolerance"
+                thing-name="caomera"
+                property-name="background_tolerance"
                 label="Tolerance"
               />
             </div>
             <div class="uk-margin">
               <propertyControl
-                thing-name="background_detect"
-                property-name="fraction"
+                thing-name="camera"
+                property-name="min_sample_coverage"
                 label="Sample Coverage Required (%)"
               />
             </div>

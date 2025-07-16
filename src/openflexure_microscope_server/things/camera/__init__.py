@@ -19,6 +19,7 @@ import piexif
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
+from openflexure_microscope_server.background_detect import ChannelDistributions, BackgroundDetectLUV
 
 class JPEGBlob(lt.blob.Blob):
     """A class representing a JPEG image as a LabThings FastAPI Blob."""
@@ -154,6 +155,10 @@ class BaseCamera(lt.Thing):
     mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     lores_mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     _memory_buffer = CameraMemoryBuffer()
+
+    def __init__(self):
+        super().__init__()
+        self.background_detector = BackgroundDetectLUV()
 
     def __enter__(self) -> None:
         """Open hardware connection when the Thing context manager is opened."""
@@ -454,6 +459,67 @@ class BaseCamera(lt.Thing):
         """
         time.sleep(self.settling_time)
         self.discard_frames()
+
+    background_tolerance = lt.ThingSetting(
+        initial_value=7.0,
+        model=float,
+    )
+    """How many standard deviations to allow for the background."""
+
+    min_sample_coverage = lt.ThingSetting(
+        initial_value=25.0,
+        model=float,
+    )
+    """The percentage of the image that needs to be not be background to label as sample."""
+
+    # Requires a getter and a setter to support being a BaseModel but being
+    # saved to file as a dict
+    _background_distributions: Optional[ChannelDistributions] = None
+
+    @lt.thing_setting
+    def background_distributions(self) -> Optional[ChannelDistributions]:
+        """The statistics of the background image."""
+        bd = self._background_distributions
+        if bd is None:
+            return None
+        return ChannelDistributions(**bd)
+
+    @background_distributions.setter
+    def background_distributions(
+        self, value: Optional[ChannelDistributions | dict]
+    ) -> None:
+        if value is None:
+            self._background_distributions = None
+        elif isinstance(value, ChannelDistributions):
+            self._background_distributions = value.model_dump()
+        elif isinstance(value, dict):
+            self._background_distributions = value
+        else:
+            raise TypeError(
+                f"Cannot set background_distributions with an object of type {type(value)}"
+            )
+
+    @lt.thing_action
+    def image_is_sample(self, portal: lt.deps.BlockingPortal) -> bool:
+        """Label the current image as either background or sample."""
+        current_image = self.grab_jpeg(portal)
+        current_image = np.array(Image.open(current_image.open()))
+        return self.background_detector.image_is_sample(current_image)
+
+    @lt.thing_action
+    def set_background(self, portal: lt.deps.BlockingPortal):
+        """Grab an image, and use its statistics to set the background.
+
+        This should be run when the microscope is looking at an empty region,
+        and will calculate the mean and standard deviation of the pixel values
+        in the LUV colourspace. These values will then be used to compare
+        future images to the distribution, to determine if each pixel is
+        foreground or background.
+        """
+        background = self.grab_jpeg(portal)
+        background = np.array(Image.open(background.open()))
+        self.background_detector.set_background(current_image)
+
 
 
 CameraDependency = lt.deps.direct_thing_client_dependency(BaseCamera, "/camera/")
