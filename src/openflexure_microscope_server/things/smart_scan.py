@@ -511,15 +511,13 @@ class SmartScanThing(lt.Thing):
             capture_image = True
             # If skipping background, take an image to check if current field of view is background
             if self._scan_data["skip_background"]:
-                capture_image = self._background_detect.image_is_sample()
+                capture_image, bg_message = self._background_detect.image_is_sample()
 
             if not capture_image:
                 route_planner.mark_location_visited(
                     new_pos_xyz, imaged=False, focused=False
                 )
-                # Background fraction is actually a percentage
-                back_perc = round(self._background_detect.background_fraction(), 0)
-                msg = f"Skipping {new_pos_xyz} as it is {back_perc}% background."
+                msg = f"Skipping {new_pos_xyz} as it is {bg_message}."
                 self._scan_logger.info(msg)
                 continue
 
