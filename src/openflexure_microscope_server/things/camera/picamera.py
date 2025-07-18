@@ -118,7 +118,7 @@ class StreamingPiCamera2(BaseCamera):
         :param camera_num: The number of the camera. This should generally be left as 0
             as most Raspberry Pi boards only support 1 camera.
         """
-        super().__init()
+        super().__init__()
         self._setting_save_in_progress = False
         self.camera_num = camera_num
         self.camera_configs: dict[str, dict] = {}

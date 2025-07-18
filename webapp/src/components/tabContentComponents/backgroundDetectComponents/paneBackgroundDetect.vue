@@ -8,37 +8,13 @@
         <li>
           <a class="uk-accordion-title" href="#">Settings</a>
           <div class="uk-accordion-content">
-            <div class="uk-margin">
-              <propertyControl
-                thing-name="caomera"
-                property-name="background_tolerance"
-                label="Tolerance"
-              />
-            </div>
-            <div class="uk-margin">
-              <propertyControl
-                thing-name="camera"
-                property-name="min_sample_coverage"
-                label="Sample Coverage Required (%)"
-              />
-            </div>
-            <div class="uk-margin">
-              <action-button
-                thing="background_detect"
-                action="background_fraction"
-                submit-label="Check Coverage"
-                :can-terminate="false"
-                :poll-interval="0.1"
-                @response="alertBackgroundFraction"
-                @error="backgroundDetectError"
-              />
-            </div>
+            <p> TODO!</p>
           </div>
         </li>
       </ul>
       <div class="uk-margin">
         <action-button
-          thing="background_detect"
+          thing="camera"
           action="set_background"
           submit-label="Set Background"
           :can-terminate="false"
@@ -47,8 +23,9 @@
         />
       </div>
       <div class="uk-margin">
+        <!--Once status is read this should be disabled id not ready..-->
         <action-button
-          thing="background_detect"
+          thing="camera"
           action="image_is_sample"
           submit-label="Check Current Image"
           :can-terminate="false"
@@ -87,8 +64,8 @@ export default {
       this.modalNotify(`Background image has been updated`);
     },
     alertImageLabel(r) {
-      let label = r.output === true ? "sample" : "background";
-      this.modalNotify(`Current image is ${label}`);
+      let label = r.output[0] ? "sample" : "background";
+      this.modalNotify(`Current image is ${label}, as ${r.output[1]}`);
     },
     backgroundDetectError() {
       this.modalError(

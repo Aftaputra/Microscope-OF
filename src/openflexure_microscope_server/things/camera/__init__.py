@@ -20,7 +20,11 @@ import piexif
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from openflexure_microscope_server.background_detect import BackgroundDetectLUV
+from openflexure_microscope_server.background_detect import (
+    ColourChannelDetectLUV,
+    BackgroundDetectAlgorithm,
+    BackgroundDetectorStatus,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -166,7 +170,7 @@ class BaseCamera(lt.Thing):
         This must be run by all child camera classes.
         """
         super().__init__()
-        self.background_detectors = {"Colour Channels (LUV)": BackgroundDetectLUV()}
+        self.background_detectors = {"Colour Channels (LUV)": ColourChannelDetectLUV()}
         self._detector_name = "Colour Channels (LUV)"
 
     def __enter__(self) -> None:
@@ -484,23 +488,36 @@ class BaseCamera(lt.Thing):
         self._detector_name = name
 
     @property
-    def active_detector(self):
+    def active_detector(self) -> BackgroundDetectAlgorithm:
         """The active background detector instance."""
         return self.background_detectors[self.detector_name]
 
+    @lt.thing_property
+    def background_detector_status(self) -> BackgroundDetectorStatus:
+        """The status of the active detector for the UI."""
+        return self.active_detector.status
+
     @lt.thing_setting
     def background_detector_data(self) -> str:
-        """The name of the active background selector."""
+        """The data for each background detector, used to save to disk."""
         data = {}
         for name, obj in self.background_detectors.items():
+            bg_data = (
+                None
+                if obj.background_data is None
+                else obj.background_data.model_dump()
+            )
             data[name] = {
                 "settings": obj.settings.model_dump(),
-                "background_data": obj.background_data.model_dump(),
+                "background_data": bg_data,
             }
 
     @detector_name.setter
     def detector_name(self, data: str) -> None:
-        """Validate and set detector_name."""
+        """Set the data for each detector. This should only be called on init.
+
+        Do not call over HTTP. Would be good to have a way to make this private.
+        """
         for name, instance_data in data.items():
             if name in self.background_detectors:
                 obj = self.background_detectors[name]

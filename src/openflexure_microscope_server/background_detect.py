@@ -5,12 +5,32 @@ for analysis. Information from this images is used to detect whether an image fr
 current camera field of view contains sample.
 """
 
-from typing import Optional
+from typing import Optional, Any
 import cv2
 import numpy as np
 from pydantic import BaseModel
 from pydantic.errors import PydanticUserError
 from scipy.stats import norm
+from labthings_fastapi.thing_description import type_to_dataschema
+
+
+class BackgroundDetectorStatus(BaseModel):
+    """The status information about a background detector instance needed for the GUI.
+
+    Each BackgroundDetectAlgorithm must be able to return one of these models when
+    ``status`` is called.
+    """
+
+    ready: bool
+    """True if ready to be used, if False this detector isn't initialised for use.
+
+    This could be called ``has_background_data`` or similar, but the more generic
+    ``ready`` is used in case more complex methods are added in the future, which
+    need different initialisation.
+    """
+    settings: BaseModel
+    """The settings for this this background detect Algorithm"""
+    settings_schema: dict[str, Any]
 
 
 class BackgroundDetectAlgorithm:
@@ -24,11 +44,20 @@ class BackgroundDetectAlgorithm:
     def __init__(self):
         """Initialise the algorithm settings."""
         try:
-            _settings: BaseModel = self.settings_data_model()
+            self._settings: BaseModel = self.settings_data_model()
         except PydanticUserError as e:
             raise NotImplementedError(
                 "BackgroundDetectAlgorithms must set their own settings data model."
             ) from e
+
+    @property
+    def status(self) -> BackgroundDetectorStatus:
+        """The status information needed for the GUI. Read only."""
+        return BackgroundDetectorStatus(
+            ready=self.background_data is not None,
+            settings=self.settings,
+            settings_schema=type_to_dataschema(self.settings_data_model),
+        )
 
     # Requires a getter and a setter to support being a BaseModel but being
     # saved to file as a dict
@@ -40,21 +69,16 @@ class BackgroundDetectAlgorithm:
         bd = self._background_data
         if bd is None:
             return None
-        try:
-            return self.background_data_model(**bd)
-        except PydanticUserError as e:
-            raise NotImplementedError(
-                "BackgroundDetectAlgorithms must set their own background data model."
-            ) from e
+        return bd
 
     @background_data.setter
     def background_data(self, value: Optional[BaseModel | dict]) -> None:
         if value is None:
             self._background_data = None
         elif isinstance(value, self.background_data_model):
-            self._background_data = value.model_dump()
-        elif isinstance(value, dict):
             self._background_data = value
+        elif isinstance(value, dict):
+            self._background_data = self.background_data_model(**value)
         else:
             raise TypeError(
                 f"Cannot set background_data with an object of type {type(value)}"
@@ -63,23 +87,18 @@ class BackgroundDetectAlgorithm:
     @property
     def settings(self) -> BaseModel:
         """The statistics of the background image."""
-        bd = self._background_data
-        if bd is None:
-            return None
-        return self.settings_data_model(**bd)
+        return self._settings
 
     @settings.setter
-    def settings(self, value: Optional[BaseModel | dict]) -> None:
-        if value is None:
-            self._settings = None
-        elif isinstance(value, self.settings_data_model):
-            self._settings = value.model_dump()
-        elif isinstance(value, dict):
+    def settings(self, value: BaseModel | dict) -> None:
+        if isinstance(value, self.settings_data_model):
             self._settings = value
+        elif isinstance(value, dict):
+            self._settings = self.settings_data_model(**value)
         else:
             raise TypeError(f"Cannot set settings with an object of type {type(value)}")
 
-    def image_is_sample(self, image: np.ndarrayl) -> tuple[bool, str]:
+    def image_is_sample(self, image: np.ndarray) -> tuple[bool, str]:
         """Label the current image as either background or sample.
 
         :returns: A tuple of the result (boolean), and explanation string. The
@@ -172,7 +191,7 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         mask = self.background_mask(image_luv)
         return (1 - np.count_nonzero(mask) / np.prod(mask.shape)) * 100
 
-    def image_is_sample(self, image: np.ndarrayl) -> tuple[bool, str]:
+    def image_is_sample(self, image: np.ndarray) -> tuple[bool, str]:
         """Label the current image as either background or sample.
 
         :returns: A tuple of the result (boolean), and explanation string. The
