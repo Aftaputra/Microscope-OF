@@ -28,6 +28,9 @@ from ..stage import BaseStage
 # higher related to a faster movement
 RATIO = 0.2
 
+# Some colour variation, for bg detect.
+BG_COLOR = [220, 215, 217]
+
 
 class SimulatedCamera(BaseCamera):
     """A Thing that simulates a camera for testing."""
@@ -38,7 +41,7 @@ class SimulatedCamera(BaseCamera):
     def __init__(
         self,
         shape: tuple[int, int, int] = (600, 800, 3),
-        glyph_shape: tuple[int, int, int] = (51, 51, 3),
+        glyph_shape: tuple[int, int, int] = (91, 91, 3),
         canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
         frame_interval: float = 0.1,
     ):
@@ -64,18 +67,42 @@ class SimulatedCamera(BaseCamera):
 
     def generate_sprites(self):
         """Generate sprites to populate the image."""
+        sprite_sizes = [5, 7, 10, 21, 36, 40]
         self.sprites = []
-        black = np.zeros(self.glyph_shape, dtype=np.uint8)
-        x = np.arange(black.shape[0])
-        y = np.arange(black.shape[1])
-        rr = np.sqrt((x[:, None] - np.mean(x)) ** 2 + (y[None, :] - np.mean(y)) ** 2)
-        for i in [5, 7, 9, 11, 13, 15]:
-            sprite = black.copy()
-            sprite[rr < i] = 255
-            self.sprites.append(sprite)
+
+        channel_block = np.zeros(self.glyph_shape[0:2])
+        x = np.arange(channel_block.shape[0])
+        y = np.arange(channel_block.shape[1])
+        # 2D grid of radii
+        r_coord = np.sqrt(
+            (x[:, None] - np.mean(x)) ** 2 + (y[None, :] - np.mean(y)) ** 2
+        )
+
+        for sprite_size in sprite_sizes:
+            # Mask of where this sprite is
+            sprite_mask = r_coord < sprite_size
+            # Calculate a sharp edged circle with value varying from 0 in centre to 1
+            # at the edge
+            sprite_px = r_coord[sprite_mask]
+            sprite_px -= np.min(sprite_px)
+            sprite_px /= np.max(sprite_px)
+            # Create each channel. Note these will be subtracted from the white value.
+            sprite_r = channel_block.copy()
+            sprite_r[sprite_mask] = 70 * sprite_px
+            sprite_g = channel_block.copy()
+            sprite_g[sprite_mask] = 200 * sprite_px
+            sprite_b = channel_block.copy()
+            sprite_b[sprite_mask] = 70 * sprite_px
+            # Stack into a negative image of the sprite
+            sprite = np.stack([sprite_r, sprite_g, sprite_b], axis=2)
+            # Convert to uint8 and append to the list
+            self.sprites.append(sprite.astype(np.uint8))
 
     def generate_blobs(self, n_blobs: int = 1000):
-        """Generate coordinates of blobs.
+        """Generate coordinates of blobs and their sizes.
+
+        A 1000x3 array is returned. Each row represents (x,y) coordinate
+        of the sprite and the index representing the size of the sprite.
 
         Blobs are characterised by X, Y, sprite
         We also generate a KD tree to rapidly find blobs in an image
@@ -88,15 +115,20 @@ class SimulatedCamera(BaseCamera):
         self.blobs[:, 2] = rng.choice(len(self.sprites), n_blobs)
 
     def generate_canvas(self):
-        """Generate a blank canvas."""
-        self.canvas = np.zeros(self.canvas_shape, dtype=np.uint8)
-        self.canvas[...] = 255
+        """Generate a canvas."""
+        self.canvas = np.ones(self.canvas_shape, dtype=np.int16)
+        self.canvas[:, :, 0] *= BG_COLOR[0]
+        self.canvas[:, :, 1] *= BG_COLOR[1]
+        self.canvas[:, :, 2] *= BG_COLOR[2]
         w, h, _ = self.glyph_shape
-        for x, y, sprite in self.blobs:
+        for x, y, sprite_size_index in self.blobs:
             self.canvas[
                 int(x) - w // 2 : int(x) - w // 2 + w,
                 int(y) - h // 2 : int(y) - h // 2 + h,
-            ] -= self.sprites[int(sprite)]
+            ] -= self.sprites[int(sprite_size_index)]
+        self.canvas[self.canvas < 0] = 0
+        self.canvas[self.canvas > 255] = 255
+        self.canvas = self.canvas.astype(np.uint8)
 
     def generate_image(self, pos: tuple[int, int, int]):
         """Generate an image with blobs based on supplied coordinates."""
