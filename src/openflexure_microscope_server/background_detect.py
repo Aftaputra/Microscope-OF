@@ -158,23 +158,23 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
     def background_mask(self, image: np.ndarray) -> np.ndarray:
         """Calculate a binary image, showing whether each pixel is background.
 
+        True is background.
+
         The image should be in LUV format, the output will be binary with the
         same shape in the first two dimensions.
-
-        # human-intuitive way
         """
         d = self.background_data
         if not d:
             raise RuntimeError(
                 "Background is not set: you need to calibrate background detection."
             )
-
+        print(d)
         # Only use the U and V channels of as brightness (L) often changes as the
         # height of the sample changes.
         return np.all(
             np.abs(image[:, :, 1:] - np.array(d.means[1:])[np.newaxis, np.newaxis, :])
             < np.array(d.standard_deviations[1:])[np.newaxis, np.newaxis, :]
-            * self.channel_tolerance,
+            * self.settings.channel_tolerance,
             axis=2,
         )
 
@@ -189,6 +189,9 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         """
         image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
         mask = self.background_mask(image_luv)
+        print(np.count_nonzero(mask))
+        print(np.prod(mask.shape))
+        print((1 - np.count_nonzero(mask) / np.prod(mask.shape)) * 100)
         return (1 - np.count_nonzero(mask) / np.prod(mask.shape)) * 100
 
     def image_is_sample(self, image: np.ndarray) -> tuple[bool, str]:
@@ -200,7 +203,7 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         """
         sample_coverage = self.get_sample_coverage(image)
 
-        is_sample = sample_coverage > self.min_sample_coverage
+        is_sample = sample_coverage > self.settings.min_sample_coverage
         message = f"{sample_coverage}% sample"
         if not is_sample:
             message = "only " + message

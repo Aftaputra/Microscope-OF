@@ -498,7 +498,7 @@ class BaseCamera(lt.Thing):
         return self.active_detector.status
 
     @lt.thing_setting
-    def background_detector_data(self) -> str:
+    def background_detector_data(self) -> dict:
         """The data for each background detector, used to save to disk."""
         data = {}
         for name, obj in self.background_detectors.items():
@@ -511,9 +511,10 @@ class BaseCamera(lt.Thing):
                 "settings": obj.settings.model_dump(),
                 "background_data": bg_data,
             }
+        return data
 
-    @detector_name.setter
-    def detector_name(self, data: str) -> None:
+    @background_detector_data.setter
+    def background_detector_data(self, data: dict) -> None:
         """Set the data for each detector. This should only be called on init.
 
         Do not call over HTTP. Would be good to have a way to make this private.
@@ -548,6 +549,8 @@ class BaseCamera(lt.Thing):
         background = self.grab_jpeg(portal)
         background = np.array(Image.open(background.open()))
         self.active_detector.set_background(background)
+        # Manually save settings as the setter is not called.
+        self.save_settings()
 
 
 CameraDependency = lt.deps.direct_thing_client_dependency(BaseCamera, "/camera/")

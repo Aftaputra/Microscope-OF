@@ -1,9 +1,6 @@
 <template>
   <div class="uk-padding-small">
-    <div v-show="!backendOK" class="uk-alert-danger">
-      The background detect Thing seems to be missing or incompatible.
-    </div>
-    <div v-show="backendOK">
+    <div>
       <ul uk-accordion="multiple: true">
         <li>
           <a class="uk-accordion-title" href="#">Settings</a>
@@ -40,18 +37,10 @@
 
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
-import propertyControl from "../../labThingsComponents/propertyControl.vue";
 
 export default {
   components: {
-    ActionButton,
-    propertyControl
-  },
-
-  computed: {
-    backendOK() {
-      return this.thingAvailable("background_detect");
-    }
+    ActionButton
   },
 
   methods: {
