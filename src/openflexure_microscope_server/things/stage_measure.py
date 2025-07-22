@@ -56,6 +56,37 @@ def steps_generate(small_step, z_perc, big_step, dir, stream_resolution):
 
     return step_sizes_small, minimum_offset_small, z_steps, minimum_offset_z, step_sizes_big, wrong_axis_max_small, wrong_axis_max_z
 
+def predict_z(pixel_per_step, positions, axis, direction, stage: StageDep, cam: CamDep):
+
+    res_dic = {
+        'x': cam.stream_resolution[0],
+        'y': cam.stream_resolution[1]
+    }
+
+    lateral_positions = [i[axis] for i in positions]
+    z_positions = [i['z'] for i in positions]
+    parameters, covariance = curve_fit(quadratic, lateral_positions, z_positions)
+    relative_move = direction * 2 * res_dic[axis]/(2*pixel_per_step) # This is the number of steps to cover 200% of the FOV.
+    z_dest = quadratic(stage.position[axis] + relative_move, *parameters)
+    z_diff = z_dest - stage.position['z']
+
+    return z_diff
+
+def move_and_measure(step_size, axis, delta, image1, csm: CSMDep, autofocus: AutofocusDep, cam:CamDep):
+    if axis == 'x':
+        csm.move_in_image_coordinates(x = step_size['x'], y = 0)
+        wrong_axis = 'y'
+    else:
+        csm.move_in_image_coordinates(x = 0, y = step_size['y'])
+        wrong_axis = 'x'
+    focus_data = autofocus.looping_autofocus(dz = 800)
+    image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
+    offset = [x * 1 for x in fft_image_tracking.displacement_between_images(image_0 = image1, image_1 = image2, sigma=10, fractional_threshold=0.1, pad=True)] # Units is pixels
+    delta['x'] = int(offset[1])
+    delta['y'] = int(offset[0])
+
+    return delta, offset, focus_data, wrong_axis
+
 class RangeofMotionThing(Thing):
     def rom_axis(
         self,
@@ -85,13 +116,11 @@ class RangeofMotionThing(Thing):
             focused_positions = []
             axis_results = {}
 
+            pixel_per_step = ((1/abs(csm.image_to_stage_displacement_matrix[0][1])) 
+                            + (1/abs(csm.image_to_stage_displacement_matrix[1][0])))/4
+
             # Generate required dictionaries for step sizes and minimum offsets
             stream_resolution = cam.stream_resolution
-
-            res_dic = {
-                'x': stream_resolution[0],
-                'y': stream_resolution[1]
-            }
 
             step_sizes_small, minimum_offset_small, z_steps, minimum_offset_z, step_sizes_big, wrong_axis_max_small, wrong_axis_max_z = steps_generate(20, 50, 200, direction, stream_resolution=stream_resolution)
 
@@ -115,17 +144,7 @@ class RangeofMotionThing(Thing):
             # Medium sized steps
             for loop in range(4):
                 image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
-                if axis == 'x':
-                    csm.move_in_image_coordinates(x = z_steps['x'], y = 0)
-                    wrong_axis = 'y'
-                else:
-                    csm.move_in_image_coordinates(x = 0, y = z_steps['y'])
-                    wrong_axis = 'x'
-                focus_data = autofocus.looping_autofocus(dz = 800)
-                image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
-                offset = [x * 1 for x in fft_image_tracking.displacement_between_images(image_0 = image1, image_1 = image2, sigma=10, fractional_threshold=0.1, pad=True)] # Units is pixels
-                delta['x'] = int(offset[1])
-                delta['y'] = int(offset[0])
+                delta, offset, focus_data, wrong_axis = move_and_measure(step_size = z_steps, axis = axis, delta = delta, image1 = image1, csm = csm, autofocus = autofocus, cam = cam)
                 logger.info(f"Offset measured as {delta[axis]}")
                 stage_coords.append(stage.position)
                 cor_lat_steps.append(offset)
@@ -140,15 +159,7 @@ class RangeofMotionThing(Thing):
 
             # 1 big step followed by 3 small steps
             while np.abs(delta[axis]) > np.abs(minimum_offset_small[axis]) and parasitic_motion == False:
-
-                pixel_per_step = ((1/abs(csm.image_to_stage_displacement_matrix[0][1])) 
-                            + (1/abs(csm.image_to_stage_displacement_matrix[1][0])))/4
-                lateral_positions = [i[axis] for i in focused_positions]
-                z_positions = [i['z'] for i in focused_positions]
-                parameters, covariance = curve_fit(quadratic, lateral_positions, z_positions)
-                relative_move = direction * 2 * res_dic[axis]/(2*pixel_per_step) # This is the number of steps to cover 200% of the FOV.
-                z_dest = quadratic(stage.position[axis] + relative_move, *parameters)
-                z_diff = z_dest - stage.position['z']
+                z_diff = predict_z(pixel_per_step = pixel_per_step, positions = focused_positions, axis = axis, direction = direction, stage = stage, cam = cam)
 
                 logger.info(f"Z calibration complete.")
 
@@ -163,19 +174,13 @@ class RangeofMotionThing(Thing):
 
                 stage_coords.append(stage.position)
 
+                focus_data = autofocus.looping_autofocus(dz = 800)
+
                 failure_count = 0
 
                 for loop in range(3):
                     image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
-                    if axis == 'x':
-                        csm.move_in_image_coordinates(x = step_sizes_small['x'], y = 0)
-                    else:
-                        csm.move_in_image_coordinates(x = 0, y = step_sizes_small['y'])
-                    focus_data = autofocus.looping_autofocus(dz = 800)
-                    image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
-                    offset = [x * 1 for x in fft_image_tracking.displacement_between_images(image_0 = image1, image_1 = image2, sigma=10, fractional_threshold=0.1, pad=True)] # Units is pixels
-                    delta['x'] = int(offset[1])
-                    delta['y'] = int(offset[0])
+                    delta, offset, focus_data, wrong_axis = move_and_measure(step_size = step_sizes_small, axis = axis, delta = delta, image1 = image1, csm = csm, autofocus = autofocus, cam = cam)
                     logger.info(f"Offset measured as {delta[axis]}")
                     
                     while np.abs(delta[axis]) < minimum_offset_small[axis] and failure_count < 3:
