@@ -9,6 +9,7 @@ from scipy.optimize import curve_fit
 from camera_stage_mapping import camera_stage_tracker
 from camera_stage_mapping import fft_image_tracking
 from dataclasses import dataclass, field
+from numpy.typing import NDArray
 
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
@@ -32,7 +33,7 @@ def quadratic(x, a, b, c):
     '''  
     return a * x**2 + b * x + c
 
-def dict_generate(dict_steps, stream_resolution, dir, factor = 1):
+def dict_generate(dict_steps: int, stream_resolution: list, dir: int, factor: float = 1) -> dict:
     '''
     Creates a single dictionary of step sizes 
     '''
@@ -42,7 +43,7 @@ def dict_generate(dict_steps, stream_resolution, dir, factor = 1):
     }
     return dict
 
-def steps_generate(small_step, z_perc, big_step, dir, stream_resolution):
+def steps_generate(small_step: int, z_perc: int, big_step: int, dir: int, stream_resolution: list) -> dict:
     '''
     Creates all required dictionaries of all necessary step sizes. 
     '''
@@ -56,8 +57,10 @@ def steps_generate(small_step, z_perc, big_step, dir, stream_resolution):
 
     return step_sizes_small, minimum_offset_small, z_steps, minimum_offset_z, step_sizes_big, wrong_axis_max_small, wrong_axis_max_z
 
-def predict_z(pixel_per_step, positions, axis, direction, stage: StageDep, cam: CamDep):
-
+def predict_z(pixel_per_step: float, positions: list, axis: str, direction: int, stage: StageDep, cam: CamDep) -> float:
+    """
+    Predicts the next z position for a big move using an array of previous positions.
+    """
     res_dic = {
         'x': cam.stream_resolution[0],
         'y': cam.stream_resolution[1]
@@ -72,7 +75,10 @@ def predict_z(pixel_per_step, positions, axis, direction, stage: StageDep, cam: 
 
     return z_diff
 
-def move_and_measure(step_size, axis, delta, image1, csm: CSMDep, autofocus: AutofocusDep, cam:CamDep):
+def move_and_measure(step_size: dict, axis: str, delta: dict, image1, csm: CSMDep, autofocus: AutofocusDep, cam:CamDep):
+    """
+    Moves the stage and measures the offset between the two positions.
+    """
     if axis == 'x':
         csm.move_in_image_coordinates(x = step_size['x'], y = 0)
         wrong_axis = 'y'
