@@ -138,19 +138,19 @@ class RangeofMotionThing(Thing):
                     parasitic_motion = True
                     break
 
-            pixel_per_step = ((1/abs(csm.image_to_stage_displacement_matrix[0][1])) 
-                            + (1/abs(csm.image_to_stage_displacement_matrix[1][0])))/4
-            lateral_positions = [i[axis] for i in focused_positions]
-            z_positions = [i['z'] for i in focused_positions]
-            parameters, covariance = curve_fit(quadratic, lateral_positions, z_positions)
-            relative_move = direction * 2 * res_dic[axis]/(2*pixel_per_step) # This is the number of steps to cover 200% of the FOV.
-            z_dest = quadratic(stage.position[axis] + relative_move, *parameters)
-            z_diff = z_dest - stage.position['z']
-
-            logger.info(f"Z calibration complete.")
-
             # 1 big step followed by 3 small steps
             while np.abs(delta[axis]) > np.abs(minimum_offset_small[axis]) and parasitic_motion == False:
+
+                pixel_per_step = ((1/abs(csm.image_to_stage_displacement_matrix[0][1])) 
+                            + (1/abs(csm.image_to_stage_displacement_matrix[1][0])))/4
+                lateral_positions = [i[axis] for i in focused_positions]
+                z_positions = [i['z'] for i in focused_positions]
+                parameters, covariance = curve_fit(quadratic, lateral_positions, z_positions)
+                relative_move = direction * 2 * res_dic[axis]/(2*pixel_per_step) # This is the number of steps to cover 200% of the FOV.
+                z_dest = quadratic(stage.position[axis] + relative_move, *parameters)
+                z_diff = z_dest - stage.position['z']
+
+                logger.info(f"Z calibration complete.")
 
                 stage.move_relative(z = z_diff)
 
@@ -243,8 +243,6 @@ class RangeofMotionThing(Thing):
 
             stage.move_absolute(x = starting_position[0], y = starting_position[1], z = starting_position[2], block_cancellation=True)
 
-
-
         except:
             logger.error("Stopping measurement because it was cancelled by the user")
             stage.move_absolute(x = starting_position[0], y = starting_position[1], z = starting_position[2], block_cancellation=True)
@@ -265,27 +263,53 @@ class RangeofMotionThing(Thing):
         Measures the range of motion of the stage across the x and y axes.
         """
         logger.info("Using the stage to measure the Range of Motion. Please ensure you are using a big enough sample.")
-        x_pos_results = self.rom_axis( 
-            autofocus,
-            stage,
-            cam,
-            csm,
-            cancel,
-            logger,
-            axis = 'x', 
-            direction = 1
-        )
-        # for axis_dir in [['x', 1],['x', -1],['y', 1],['y', -1]]:
-        #     axis_dir_results = self.rom_axis(
-        #         autofocus,
-        #         stage,
-        #         cam,
-        #         csm,
-        #         cancel,
-        #         logger,
-        #         axis = axis_dir[0], 
-        #         direction = axis_dir[1]
-        #         )
-        return x_pos_results
+        start_time = time.time()
+        rom_results = {}
+
+        for axis_dir in [['x', 1],['x', -1],['y', 1],['y', -1]]:
+            axis_dir_results = self.rom_axis(
+                autofocus,
+                stage,
+                cam,
+                csm,
+                cancel,
+                logger,
+                axis = axis_dir[0], 
+                direction = axis_dir[1]
+                )
+            rom_results[f"{axis_dir}"] = axis_dir_results
+
+        end_time = time.time()
+        total_time = (end_time - start_time)/60
+
+        x_range = abs(rom_results["['x', 1]"]["final_position"]["x"] - rom_results["['x', -1]"]["final_position"]["x"])
+        y_range = abs(rom_results["['y', 1]"]["final_position"]["y"] - rom_results["['y', -1]"]["final_position"]["y"])
+
+        step_range = [x_range, y_range]
+
+        logger.info(f"Range of motion is {x_range} X {y_range}")
+
+        rom_results["Time"] = total_time
+        rom_results["CSM Matrix"] = csm.image_to_stage_displacement_matrix
+        rom_results["Step Range"] = step_range
+
+        self.thing_settings["rom_data"] = DenumpifyingDict(rom_results).model_dump()
+
+        with open("/var/openflexure/ROM_Test_Results.json", 'w') as file_object:
+            json.dump(rom_results, file_object, indent = 3)
+
+        return rom_results
+
+    @thing_property
+    def rom_data(self) -> Optional[Dict]:
+        """
+        The results of the last range of motion calibration that was run.
+        """
+        filename = '/var/openflexure/settings/range_of_motion/settings.json'
+        with open(filename) as f:
+            rom_object = json.load(f)
+
+        return rom_object
+
     
            
