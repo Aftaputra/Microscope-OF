@@ -69,13 +69,13 @@ def predict_z(pixel_per_step: float, positions: list, axis: str, direction: int,
     lateral_positions = [i[axis] for i in positions]
     z_positions = [i['z'] for i in positions]
     parameters, covariance = curve_fit(quadratic, lateral_positions, z_positions)
-    relative_move = direction * 2 * res_dic[axis]/(2*pixel_per_step) # This is the number of steps to cover 200% of the FOV.
+    relative_move = (direction * res_dic[axis])/pixel_per_step # This is the number of steps to cover 200% of the FOV.
     z_dest = quadratic(stage.position[axis] + relative_move, *parameters)
     z_diff = z_dest - stage.position['z']
 
     return z_diff
 
-def move_and_measure(step_size: dict, axis: str, delta: dict, image1, csm: CSMDep, autofocus: AutofocusDep, cam:CamDep):
+def move_and_measure(step_size: dict, axis: str, delta: dict, image1, autofocus_proc: bool, focus_data: list, csm: CSMDep, autofocus: AutofocusDep, cam:CamDep):
     """
     Moves the stage and measures the offset between the two positions.
     """
@@ -85,7 +85,8 @@ def move_and_measure(step_size: dict, axis: str, delta: dict, image1, csm: CSMDe
     else:
         csm.move_in_image_coordinates(x = 0, y = step_size['y'])
         wrong_axis = 'x'
-    focus_data = autofocus.looping_autofocus(dz = 800)
+    if autofocus_proc == True:
+        focus_data = autofocus.looping_autofocus(dz = 800)
     image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
     offset = [x * 1 for x in fft_image_tracking.displacement_between_images(image_0 = image1, image_1 = image2, sigma=10, fractional_threshold=0.1, pad=True)] # Units is pixels
     delta['x'] = int(offset[1])
@@ -144,13 +145,14 @@ class RangeofMotionThing(Thing):
             parasitic_motion = False
 
             stage_coords.append(stage.position)
+            focused_positions.append(stage.position)
 
-            logger.info("Moving the stage in 4 medium sized steps.")
+            logger.info("Moving the stage in 5 medium sized steps.")
             
             # Medium sized steps
-            for loop in range(4):
+            for loop in range(5):
                 image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
-                delta, offset, focus_data, wrong_axis = move_and_measure(step_size = z_steps, axis = axis, delta = delta, image1 = image1, csm = csm, autofocus = autofocus, cam = cam)
+                delta, offset, focus_data, wrong_axis = move_and_measure(step_size = z_steps, axis = axis, delta = delta, image1 = image1, autofocus_proc = True, focus_data = focus_data, csm = csm, autofocus = autofocus, cam = cam)
                 logger.info(f"Offset measured as {delta[axis]}")
                 stage_coords.append(stage.position)
                 cor_lat_steps.append(offset)
@@ -186,7 +188,7 @@ class RangeofMotionThing(Thing):
 
                 for loop in range(3):
                     image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
-                    delta, offset, focus_data, wrong_axis = move_and_measure(step_size = step_sizes_small, axis = axis, delta = delta, image1 = image1, csm = csm, autofocus = autofocus, cam = cam)
+                    delta, offset, focus_data, wrong_axis = move_and_measure(step_size = step_sizes_small, axis = axis, delta = delta, image1 = image1, autofocus_proc = False, focus_data = focus_data, csm = csm, autofocus = autofocus, cam = cam)
                     logger.info(f"Offset measured as {delta[axis]}")
                     
                     while np.abs(delta[axis]) < minimum_offset_small[axis] and failure_count < 3:
@@ -198,7 +200,7 @@ class RangeofMotionThing(Thing):
                             image_0 = image1, image_1 = image2, sigma=10, fractional_threshold=0.1, pad=True)] # Units is pixels
                         delta['x'] = int(offset[1])
                         delta['y'] = int(offset[0])
-                        logger.info(f"Displacement found was {np.abs(delta[axis])}. Minimum offset is {minimum_offset_small[axis]}")
+                        logger.info(f"Displacement found was {delta[axis]}. Minimum offset is {minimum_offset_small[axis]}")
 
                     stage_coords.append(stage.position)
                     cor_lat_steps.append(offset)
