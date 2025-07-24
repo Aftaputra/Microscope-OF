@@ -737,7 +737,7 @@ class StreamingPiCamera2(BaseCamera):
             self._initialise_picamera()
 
     @lt.thing_action
-    def full_auto_calibrate(self) -> None:
+    def full_auto_calibrate(self, portal: lt.deps.BlockingPortal) -> None:
         """Perform a full auto-calibration.
 
         This function will call the other calibration actions in sequence:
@@ -747,12 +747,14 @@ class StreamingPiCamera2(BaseCamera):
         * ``set_static_green_equalisation`` to set geq offset to max
         * ``calibrate_lens_shading``
         * ``calibrate_white_balance``
+        * ``set_background``
         """
         self.flat_lens_shading()
         self.auto_expose_from_minimum()
         self.set_static_green_equalisation()
         self.calibrate_lens_shading()
         self.calibrate_white_balance()
+        self.set_background(portal)
 
     @lt.thing_action
     def flat_lens_shading(self) -> None:
