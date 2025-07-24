@@ -30,6 +30,9 @@ class BackgroundDetectorStatus(BaseModel):
     """
     settings: BaseModel
     """The settings for this this background detect Algorithm"""
+
+    # Setting schema is a dict until LabThings FastAPI issue #154 is fixed and
+    # DataSchema can be used.
     settings_schema: dict[str, Any]
 
 
@@ -56,7 +59,7 @@ class BackgroundDetectAlgorithm:
         return BackgroundDetectorStatus(
             ready=self.background_data is not None,
             settings=self.settings,
-            settings_schema=type_to_dataschema(self.settings_data_model),
+            settings_schema=type_to_dataschema(self.settings_data_model).model_dump(),
         )
 
     # Requires a getter and a setter to support being a BaseModel but being
