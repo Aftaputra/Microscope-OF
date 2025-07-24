@@ -44,17 +44,12 @@ export default {
   },
 
   methods: {
-    alertBackgroundFraction(r) {
-      let fraction = r.output;
-      // let percentage = (fraction * 100).toFixed(0);
-      this.modalNotify(`Current image is ${fraction.toFixed(0)}% background.`);
-    },
     alertBackgroundSet() {
       this.modalNotify(`Background image has been updated`);
     },
     alertImageLabel(r) {
       let label = r.output[0] ? "sample" : "background";
-      this.modalNotify(`Current image is ${label}, as ${r.output[1]}`);
+      this.modalNotify(`Current image is ${label} (${r.output[1]})`);
     },
     backgroundDetectError() {
       this.modalError(

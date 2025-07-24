@@ -1,7 +1,7 @@
 """The core sample scanning functionality for the OpenFlexure Microscope.
 
 SmartScan provides sample scanning functionality including automatic background
-detection (via the `CameraThing`) and automatic path planning via
+detection (via the ``CameraThing``) and automatic path planning via
 `scan_planners`. It manages the directories of past scans via `scan_directories`.
 It also controls external processes for live stitching composite images, and
 the creation of the final stitched images.

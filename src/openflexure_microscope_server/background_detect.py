@@ -204,7 +204,7 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         sample_coverage = self.get_sample_coverage(image)
 
         is_sample = sample_coverage > self.settings.min_sample_coverage
-        message = f"{sample_coverage}% sample"
+        message = f"{sample_coverage:0.1f}% sample"
         if not is_sample:
             message = "only " + message
         return is_sample, message
