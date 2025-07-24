@@ -95,6 +95,9 @@ def move_and_measure(step_size: dict, axis: str, delta: dict, image1, autofocus_
     return delta, offset, focus_data, wrong_axis
 
 def motion_detection(axis: str, direction: int, csm: CSMDep, stage: StageDep, cam: CamDep, logger: InvocationLogger) -> dict:
+    """
+    Moves the stage until motion is detected.
+    """
     displacements = [1,2,4,8,16,32,64,128,256,512]  # Array of increasing step sizes
     motion_minimum = 20  # minimum nuber of pixels for motion to be detected
 
