@@ -49,27 +49,21 @@ def steps_generate(small_step: int, z_perc: int, big_step: int, dir: int, stream
     '''
     step_sizes_big = dict_generate(big_step, stream_resolution, dir)
     step_sizes_small = dict_generate(small_step, stream_resolution, dir)
-    minimum_offset_small = dict_generate(small_step, stream_resolution, dir, factor = 0.8)
+    minimum_offset_small = dict_generate(small_step, stream_resolution, dir, factor = 0.65)
     z_steps = dict_generate(z_perc, stream_resolution, dir)
-    minimum_offset_z = dict_generate(z_perc, stream_resolution, dir, factor = 0.8)
+    minimum_offset_z = dict_generate(z_perc, stream_resolution, dir, factor = 0.65)
     wrong_axis_max_small = dict_generate(small_step, stream_resolution, dir, factor = 0.1)
     wrong_axis_max_z = dict_generate(z_perc, stream_resolution, dir, factor = 0.1)
 
     return step_sizes_small, minimum_offset_small, z_steps, minimum_offset_z, step_sizes_big, wrong_axis_max_small, wrong_axis_max_z
 
-def predict_z(pixel_per_step: float, positions: list, axis: str, direction: int, stage: StageDep, cam: CamDep) -> float:
+def predict_z(positions: list, axis: str, relative_move: float, stage: StageDep) -> float:
     """
     Predicts the next z position for a big move using an array of previous positions.
     """
-    res_dic = {
-        'x': cam.stream_resolution[0],
-        'y': cam.stream_resolution[1]
-    }
-
     lateral_positions = [i[axis] for i in positions]
     z_positions = [i['z'] for i in positions]
     parameters, covariance = curve_fit(quadratic, lateral_positions, z_positions)
-    relative_move = (direction * res_dic[axis])/pixel_per_step # This is the number of steps to cover 200% of the FOV.
     z_dest = quadratic(stage.position[axis] + relative_move, *parameters)
     z_diff = z_dest - stage.position['z']
 
@@ -123,9 +117,6 @@ class RangeofMotionThing(Thing):
             focused_positions = []
             axis_results = {}
 
-            pixel_per_step = ((1/abs(csm.image_to_stage_displacement_matrix[0][1])) 
-                            + (1/abs(csm.image_to_stage_displacement_matrix[1][0])))/4
-
             # Generate required dictionaries for step sizes and minimum offsets
             stream_resolution = cam.stream_resolution
 
@@ -167,7 +158,7 @@ class RangeofMotionThing(Thing):
 
             # 1 big step followed by 3 small steps
             while np.abs(delta[axis]) > np.abs(minimum_offset_small[axis]) and parasitic_motion == False:
-                z_diff = predict_z(pixel_per_step = pixel_per_step, positions = focused_positions, axis = axis, direction = direction, stage = stage, cam = cam)
+                z_diff = predict_z(positions = focused_positions, axis = axis, relative_move = step_sizes_big[axis], stage = stage)
 
                 logger.info(f"Z calibration complete.")
 
@@ -180,9 +171,9 @@ class RangeofMotionThing(Thing):
                 else:
                     csm.move_in_image_coordinates(x = 0, y = step_sizes_big['y'])
 
-                stage_coords.append(stage.position)
-
                 focus_data = autofocus.looping_autofocus(dz = 800)
+
+                stage_coords.append(stage.position)
 
                 failure_count = 0
 
@@ -191,7 +182,7 @@ class RangeofMotionThing(Thing):
                     delta, offset, focus_data, wrong_axis = move_and_measure(step_size = step_sizes_small, axis = axis, delta = delta, image1 = image1, autofocus_proc = False, focus_data = focus_data, csm = csm, autofocus = autofocus, cam = cam)
                     logger.info(f"Offset measured as {delta[axis]}")
                     
-                    while np.abs(delta[axis]) < minimum_offset_small[axis] and failure_count < 3:
+                    while np.abs(delta[axis]) < np.abs(minimum_offset_small[axis]) and failure_count < 3:
                         logger.info(f"Correlation failed. Refocusing to check. Attempt {failure_count + 1}/3")
                         focus_data = autofocus.looping_autofocus(dz = 1000)
                         image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)           
