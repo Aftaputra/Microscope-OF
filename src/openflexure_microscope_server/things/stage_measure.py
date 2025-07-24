@@ -57,14 +57,20 @@ def steps_generate(small_step: int, z_perc: int, big_step: int, dir: int, stream
 
     return step_sizes_small, minimum_offset_small, z_steps, minimum_offset_z, step_sizes_big, wrong_axis_max_small, wrong_axis_max_z
 
-def predict_z(positions: list, axis: str, relative_move: float, stage: StageDep) -> float:
+def predict_z(positions: list, axis: str, relative_move: float, stage: StageDep, csm: CSMDep) -> float:
     """
     Predicts the next z position for a big move using an array of previous positions.
     """
+
+    pixel_step = {
+        'x':1/csm.image_to_stage_displacement_matrix[0][1],
+        'y':1/csm.image_to_stage_displacement_matrix[1][0]
+    }
+
     lateral_positions = [i[axis] for i in positions]
     z_positions = [i['z'] for i in positions]
-    parameters, covariance = curve_fit(quadratic, lateral_positions, z_positions)
-    z_dest = quadratic(stage.position[axis] + relative_move, *parameters)
+    parameters, _ = curve_fit(quadratic, lateral_positions,  z_positions)
+    z_dest = quadratic(stage.position[axis] + (relative_move/pixel_step[axis]), *parameters)
     z_diff = z_dest - stage.position['z']
 
     return z_diff
@@ -87,6 +93,39 @@ def move_and_measure(step_size: dict, axis: str, delta: dict, image1, autofocus_
     delta['y'] = int(offset[0])
 
     return delta, offset, focus_data, wrong_axis
+
+def motion_detection(axis: str, direction: int, csm: CSMDep, stage: StageDep, cam: CamDep, logger: InvocationLogger) -> dict:
+    displacements = [1,2,4,8,16,32,64,128,256,512]  # Array of increasing step sizes
+    motion_minimum = 20  # minimum nuber of pixels for motion to be detected
+
+    this_motion_step = {
+        'x': 0,
+        'y': 0
+    }
+
+    delta = {
+        'x': 0,
+        'y': 0
+    }
+    
+    for loop in range(np.shape(displacements)[0]):
+        this_motion_step[axis] = displacements[loop] * direction * -1
+        logger.info(f"Testing with step size {this_motion_step[axis]}")
+        image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)           
+        csm.move_in_image_coordinates(x = this_motion_step['x'], y = this_motion_step['y'])
+        image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)           
+        offset = [x * 1 for x in fft_image_tracking.displacement_between_images(
+            image_0 = image1, image_1 = image2, sigma=10, fractional_threshold=0.1, pad=True)] # Units is pixels
+        delta['x'] = int(offset[1])
+        delta['y'] = int(offset[0])
+        logger.info(f"Offset measured as {np.abs(delta[axis])}")
+        if np.abs(delta[axis]) > motion_minimum:
+            logger.info("Motion detected.")
+            break
+
+    true_final = stage.position
+
+    return true_final
 
 class RangeofMotionThing(Thing):
     def rom_axis(
@@ -114,7 +153,6 @@ class RangeofMotionThing(Thing):
 
             stage_coords = []
             cor_lat_steps = []
-            focused_positions = []
             axis_results = {}
 
             # Generate required dictionaries for step sizes and minimum offsets
@@ -136,7 +174,6 @@ class RangeofMotionThing(Thing):
             parasitic_motion = False
 
             stage_coords.append(stage.position)
-            focused_positions.append(stage.position)
 
             logger.info("Moving the stage in 5 medium sized steps.")
             
@@ -147,7 +184,6 @@ class RangeofMotionThing(Thing):
                 logger.info(f"Offset measured as {delta[axis]}")
                 stage_coords.append(stage.position)
                 cor_lat_steps.append(offset)
-                focused_positions.append(stage.position)
 
                 # Check for parasitic motion
 
@@ -158,7 +194,7 @@ class RangeofMotionThing(Thing):
 
             # 1 big step followed by 3 small steps
             while np.abs(delta[axis]) > np.abs(minimum_offset_small[axis]) and parasitic_motion == False:
-                z_diff = predict_z(positions = focused_positions, axis = axis, relative_move = step_sizes_big[axis], stage = stage)
+                z_diff = predict_z(positions = stage_coords, axis = axis, relative_move = step_sizes_big[axis], stage = stage, csm = csm)
 
                 logger.info(f"Z calibration complete.")
 
@@ -195,7 +231,6 @@ class RangeofMotionThing(Thing):
 
                     stage_coords.append(stage.position)
                     cor_lat_steps.append(offset)
-                    focused_positions.append(stage.position)
 
                     if np.abs(delta[wrong_axis]) > np.abs(wrong_axis_max_small[wrong_axis]):
                         logger.info(f"Parasitic motion detected in {wrong_axis}-axis whilst measuring {axis}-axis.")
@@ -207,37 +242,11 @@ class RangeofMotionThing(Thing):
                         break
 
             # Motion detection
-
             logger.info(f"Running motion detection")
 
-            displacements = np.array([1,2,4,8,16,32,64,128,256,512,1024])  # Array of increasing step sizes
-            motion_minimum = 20  # minimum nuber of pixels for motion to be detected
+            final_pos = motion_detection(axis = axis, direction = direction, csm = csm, stage = stage, cam = cam, logger = logger)
 
-            this_motion_step = {
-                'x':np.zeros(np.shape(displacements)[0]),
-                'y':np.zeros(np.shape(displacements)[0]),
-                'z':0
-            }
-
-            this_motion_step[axis] = displacements * direction * -1
-            
-            for loop in range(np.shape(displacements)[0]):
-                logger.info(f"Testing with step size {this_motion_step[axis][loop]}")
-                image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)           
-                stage.move_relative(x = this_motion_step['x'][loop], y = this_motion_step['y'][loop], z = this_motion_step['z'])
-                image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)           
-                offset = [x * 1 for x in fft_image_tracking.displacement_between_images(
-                    image_0 = image1, image_1 = image2, sigma=10, fractional_threshold=0.1, pad=True)] # Units is pixels
-                delta['x'] = int(offset[1])
-                delta['y'] = int(offset[0])
-                logger.info(f"Offset measured as {np.abs(delta[axis])}")
-                if np.abs(delta[axis]) > motion_minimum:
-                    logger.info("Motion detected.")
-                    break
-
-            stage_coords[np.shape(stage_coords)[0] - 1] = stage.position
-
-            final_pos = stage.position
+            stage_coords[np.shape(stage_coords)[0] - 1] = final_pos
 
             axis_results = {
                 "correlation_lateral_steps": cor_lat_steps,
