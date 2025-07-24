@@ -31,6 +31,9 @@ RATIO = 0.2
 # Some colour variation, for bg detect.
 BG_COLOR = [220, 215, 217]
 
+# Random Number Generator
+RNG = np.random.default_rng()
+
 
 class SimulatedCamera(BaseCamera):
     """A Thing that simulates a camera for testing."""
@@ -108,14 +111,18 @@ class SimulatedCamera(BaseCamera):
         We also generate a KD tree to rapidly find blobs in an image
         """
         self.blobs = np.zeros((n_blobs, 3))
-        rng = np.random.default_rng()
+
         w = np.max(self.glyph_shape)
-        self.blobs[:, 0] = rng.uniform(w / 2, self.canvas_shape[0] - w / 2, n_blobs)
-        self.blobs[:, 1] = rng.uniform(w / 2, self.canvas_shape[1] - w / 2, n_blobs)
-        self.blobs[:, 2] = rng.choice(len(self.sprites), n_blobs)
+        self.blobs[:, 0] = RNG.uniform(w / 2, self.canvas_shape[0] - w / 2, n_blobs)
+        self.blobs[:, 1] = RNG.uniform(w / 2, self.canvas_shape[1] - w / 2, n_blobs)
+        self.blobs[:, 2] = RNG.choice(len(self.sprites), n_blobs)
 
     def generate_canvas(self):
-        """Generate a canvas."""
+        """Generate a canvas.
+
+        Canvas is int16 so that random noise can be added to simulation image before
+        changing to unit8 to stop wrapping.
+        """
         self.canvas = np.ones(self.canvas_shape, dtype=np.int16)
         self.canvas[:, :, 0] *= BG_COLOR[0]
         self.canvas[:, :, 1] *= BG_COLOR[1]
@@ -128,7 +135,6 @@ class SimulatedCamera(BaseCamera):
             ] -= self.sprites[int(sprite_size_index)]
         self.canvas[self.canvas < 0] = 0
         self.canvas[self.canvas > 255] = 255
-        self.canvas = self.canvas.astype(np.uint8)
 
     def generate_image(self, pos: tuple[int, int, int]):
         """Generate an image with blobs based on supplied coordinates."""
@@ -152,7 +158,12 @@ class SimulatedCamera(BaseCamera):
             raise ValueError(
                 f"Image shape {image.shape} does not match intended shape {self.shape}"
             )
-        return image
+
+        # Add noise and convert to uint8
+        image += RNG.normal(scale=2, size=self.shape).astype("int16")
+        image[image < 0] = 0
+        image[image > 255] = 255
+        return image.astype("uint8")
 
     def attach_to_server(
         self, server: lt.ThingServer, path: str, setting_storage_path: str
