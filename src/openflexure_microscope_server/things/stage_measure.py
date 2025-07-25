@@ -28,6 +28,8 @@ The range of motion is measured by first taking 5 'medium' sized steps which giv
 'small' steps to test that the stage is still moving as expected and has not reached the edge. Once the edge has been found and too account for the possibility that a 'big'
 step was take just before the edge was reached, the stage is moved in a sequence of increasing pixel sizes in the opposite direction until motion is detected. This is
 position is taken as the true final position.
+
+Throughout the test, parasitic motion(motion in the axis not being measured) is tracked and an error is raised if it exceeds a reasonable amount.
 '''
 
 def quadratic(x, a, b, c):
@@ -78,7 +80,14 @@ def predict_z(positions: list, axis: str, relative_move: float, stage: StageDep,
 
     return z_diff
 
-def move_and_measure(step_size: dict[str, float], axis: str, delta: dict[str, int], image1, autofocus_proc: bool, focus_data: list[float], csm: CSMDep, autofocus: AutofocusDep, cam:CamDep) -> tuple:
+def move_and_measure(
+        step_size: dict[str, float],
+        axis: str, delta: dict[str, int],
+        image1, autofocus_proc: bool,
+        focus_data: list[float],
+        csm: CSMDep,
+        autofocus: AutofocusDep,
+        cam:CamDep) -> tuple:
     """Moves the stage and measures the offset between the two positions.
 
     :params step_size: A dictionary with keys 'x' and 'y' with pixel distances.
@@ -127,10 +136,9 @@ def medium_moves(
     :params focus_data: A list of focus data returned by the autofocus procedure.
     :params stage_coords: A list of all previous positions the stage has been.
     :params cor_lat_steps: A list of all correlation values.
-    :return: Stage_coords and cor_lat_steps are lists of data tracked throughout the test. Delta and parasitic_motion are updated and tracked after each move.
+    :return: Stage_coords and cor_lat_steps are lists of data tracked throughout the test. Delta is updated and tracked after each move.
     """
 
-    parasitic_motion = False
     medium_step = 50
     wrong_axis_max_medium = dict_generate(
         medium_step, stream_resolution, direction, factor=0.1
@@ -154,13 +162,8 @@ def medium_moves(
         stage_coords.append(stage.position)
         cor_lat_steps.append(offset)
 
-        if np.abs(delta[wrong_axis]) > np.abs(wrong_axis_max_medium[wrong_axis]):
-            logger.info(
-                f"Parasitic motion detected in {wrong_axis}-axis whilst measuring {axis}-axis."
-            )
-            parasitic_motion = True
-            break
-    return stage_coords, cor_lat_steps, delta, parasitic_motion
+        assert(np.abs(delta[wrong_axis]) < np.abs(wrong_axis_max_medium[wrong_axis]))
+    return stage_coords, cor_lat_steps, delta
 
 def small_moves(
     small_step: int,
@@ -189,11 +192,10 @@ def small_moves(
     :params stage_coords: A list of all previous positions the stage has been.
     :params cor_lat_steps: A list of all correlation values.
     :params minimum_offset_small: A dictionary containing the minimum values for a successful correlation.
-    :return: Stage_coords and cor_lat_steps are lists of data tracked throughout the test. Delta and parasitic_motion are updated and tracked after each move.
+    :return: Stage_coords and cor_lat_steps are lists of data tracked throughout the test. Delta is updated and tracked after each move.
     """
     failure_count = 0
     wrong_axis_max_small = dict_generate(small_step, stream_resolution, direction, factor=0.1)
-    parasitic_motion = False
 
     for loop in range(3):
         image1 = cv2.resize(
@@ -243,17 +245,12 @@ def small_moves(
         stage_coords.append(stage.position)
         cor_lat_steps.append(offset)
 
-        if np.abs(delta[wrong_axis]) > np.abs(wrong_axis_max_small[wrong_axis]):
-            logger.info(
-                f"Parasitic motion detected in {wrong_axis}-axis whilst measuring {axis}-axis."
-            )
-            parasitic_motion = True
-            break
+        assert np.abs(delta[wrong_axis]) < np.abs(wrong_axis_max_small[wrong_axis])
 
         if np.abs(delta[axis]) < np.abs(minimum_offset_small[axis]):  # this means the edge has been found
             logger.info("Edge has been found.")
             break
-    return stage_coords, cor_lat_steps, delta, parasitic_motion
+    return stage_coords, cor_lat_steps, delta
 
 def motion_detection(axis: str, direction: int, csm: CSMDep, stage: StageDep, cam: CamDep, logger: InvocationLogger) -> dict:
     """Moves the stage until motion is detected. This happens at the end of each axis and direction and where the stage is moved in the opposite direction until
@@ -318,6 +315,10 @@ class RangeofMotionThing(Thing):
 
         starting_position = list(stage.position.values())
 
+        stage_coords = []
+        cor_lat_steps = []
+        axis_results = {}
+
         try:
             if direction == 1:
                 dir_word = "positive"
@@ -325,10 +326,6 @@ class RangeofMotionThing(Thing):
                 dir_word = "negative"
 
             logger.info(f"Beginning the {axis}-axis in the {dir_word} direction")
-
-            stage_coords = []
-            cor_lat_steps = []
-            axis_results = {}
 
             # Generate required dictionaries for step sizes and minimum offsets
             stream_resolution = cam.stream_resolution
@@ -342,13 +339,11 @@ class RangeofMotionThing(Thing):
                 'y':0
             }
 
-            parasitic_motion = False
-
             stage_coords.append(stage.position)
 
             logger.info("Moving the stage in 5 medium sized steps.")
 
-            stage_coords, cor_lat_steps, delta, parasitic_motion = medium_moves(
+            stage_coords, cor_lat_steps, delta = medium_moves(
                 stream_resolution=stream_resolution,
                 direction=direction,
                 axis=axis,
@@ -369,7 +364,7 @@ class RangeofMotionThing(Thing):
                 small_step, stream_resolution, direction, factor=0.65
             )
 
-            while np.abs(delta[axis]) > np.abs(minimum_offset_small[axis]) and not parasitic_motion:
+            while np.abs(delta[axis]) > np.abs(minimum_offset_small[axis]):
                 z_diff = predict_z(positions = stage_coords, axis = axis, relative_move = step_sizes_big[axis], stage = stage, csm = csm)
 
                 logger.info("Z calibration complete.")
@@ -387,7 +382,7 @@ class RangeofMotionThing(Thing):
 
                 stage_coords.append(stage.position)
 
-                stage_coords, cor_lat_steps, delta, parasitic_motion = small_moves(
+                stage_coords, cor_lat_steps, delta = small_moves(
                     small_step=small_step,
                     stream_resolution=stream_resolution,
                     direction=direction,
@@ -416,7 +411,8 @@ class RangeofMotionThing(Thing):
                 "stage_positions": stage_coords,
                 "final_position": final_pos
             }
-
+        except AssertionError:
+            logger.info("Parasitic motion detected.")
         finally:
             stage.move_absolute(x = starting_position[0], y = starting_position[1], z = starting_position[2], block_cancellation=True)
 
