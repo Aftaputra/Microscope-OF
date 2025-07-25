@@ -14,7 +14,7 @@ from scipy.stats import norm
 from labthings_fastapi.thing_description import type_to_dataschema
 
 
-class MissingBackgroundData(RuntimeError):
+class MissingBackgroundDataError(RuntimeError):
     """An error raised if checking for sample without background data set."""
 
 
@@ -177,7 +177,7 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         """
         d = self.background_data
         if not d:
-            raise MissingBackgroundData(
+            raise MissingBackgroundDataError(
                 "Background is not set: you need to calibrate background detection."
             )
         # Only use the U and V channels of as brightness (L) often changes as the
