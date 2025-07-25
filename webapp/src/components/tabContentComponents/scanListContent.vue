@@ -10,6 +10,22 @@
       <!-- Right side buttons -->
       <div class="uk-navbar-right">
         <div class="uk-grid">
+        <div style="margin-top:5px;margin-bottom: 2px">
+            <action-button
+                class="uk-width-1-1"
+                thing="smart_scan"
+                action="stitch_all_scans"
+                submit-label="Stitch All Remaining"
+                :can-terminate="true"
+                :button-primary="false"
+                :modal-progress="true"
+                :requires-confirmation="true"
+                :confirmation-message="
+                  '<h3>Stitch all unstitched scans?</h3><br>Depending on the number and size of scans, this may be slow, and your microscope should not be used during the stitching.'
+                "
+                @error="modalError"
+                />
+          </div>
           <div>
             <button
               class="uk-button uk-button-default uk-width-1-1"
@@ -117,12 +133,11 @@
                 thing="smart_scan"
                 action="stitch_scan"
                 v-if="item.can_stitch | (item.stitch_available & !item.dzi)"
-                :can-terminate="false"
+                :can-terminate="true"
                 :submit-data="{ scan_name: item.name }"
                 :button-primary="false"
                 :modal-progress="true"
                 @error="modalError"
-                @response="updateScans"
               />
               <button
                 v-if="item.dzi" class="uk-button uk-button-default uk-width-1-1"
@@ -200,6 +215,10 @@ export default {
     this.$root.$on("globalUpdateScans", () => {
       this.updateScans();
     });
+    this.$root.$on("modalClosed", () => {
+    // Handle the modal closed event here
+      this.updateScans();
+    });
   },
 
   created: function() {
@@ -228,6 +247,7 @@ export default {
       this.unwatchStoreFunction();
       this.unwatchStoreFunction = null;
     }
+    this.$root.$off("modalClosed"); // Clean up event listener
   },
 
   methods: {

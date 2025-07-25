@@ -977,3 +977,18 @@ class SmartScanThing(lt.Thing):
         """
         zip_fname = self._scan_dir_manager.zip_scan(scan_name, final_version=True)
         return ZipBlob.from_file(zip_fname)
+
+    @lt.thing_action
+    def stitch_all_scans(
+        self, logger: lt.deps.InvocationLogger, cancel: lt.deps.CancelHook
+    ):
+        """Check the list of scans, and stitch any that don't have a DZI associated with it.
+
+        :raises RuntimeError: if the microscope is currently running a scan
+
+        """
+        if self._scan_logger is not None:
+            raise RuntimeError("Can't stitch previous scans while a scan is ongoing")
+        for scan in self._scan_dir_manager.all_scans_info():
+            if scan.dzi is None:
+                self.stitch_scan(logger=logger, cancel=cancel, scan_name=scan.name)

@@ -344,10 +344,12 @@ export default {
 
     hideModal() {
       UIkit.modal(this.$refs.statusModal).hide();
+      this.$root.$emit("modalClosed");
     },
 
     terminateTask: function() {
       axios.delete(this.taskUrl, { baseURL: this.$store.getters.baseUri });
+      this.$root.$emit("modalClosed");
     }
   }
 };
