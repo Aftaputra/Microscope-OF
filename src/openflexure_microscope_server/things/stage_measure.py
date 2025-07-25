@@ -104,6 +104,157 @@ def move_and_measure(step_size: dict[str, float], axis: str, delta: dict[str, in
 
     return delta, offset, focus_data, wrong_axis
 
+def medium_moves(
+        stream_resolution: list[int],
+        direction: int,
+        axis: str,
+        delta: dict[str,int],
+        focus_data: list[float],
+        stage_coords: list,
+        cor_lat_steps: list,
+        csm: CSMDep,
+        cam: CamDep,
+        stage:StageDep,
+        autofocus: AutofocusDep,
+        logger: InvocationLogger
+        ) -> tuple:
+    """Carries out the medium sized steps section of the range of motion test to get 5 points to make z position predictions with
+
+    :params stream_resolution: The resolution of the stream from the camera.
+    :param direction: The direction the stage moves.
+    :params axis: The axis which is being measured. This must be 'x' or 'y'.
+    :params delta: A dictionary of 'x' and 'y' offsets.
+    :params focus_data: A list of focus data returned by the autofocus procedure.
+    :params stage_coords: A list of all previous positions the stage has been.
+    :params cor_lat_steps: A list of all correlation values.
+    :return: Stage_coords and cor_lat_steps are lists of data tracked throughout the test. Delta and parasitic_motion are updated and tracked after each move.
+    """
+
+    parasitic_motion = False
+    medium_step = 50
+    wrong_axis_max_medium = dict_generate(
+        medium_step, stream_resolution, direction, factor=0.1
+    )
+    for loop in range(5):
+        image1 = cv2.resize(
+            np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
+        )
+        delta, offset, focus_data, wrong_axis = move_and_measure(
+            step_size=dict_generate(medium_step, stream_resolution, direction),
+            axis=axis,
+            delta=delta,
+            image1=image1,
+            autofocus_proc=True,
+            focus_data=focus_data,
+            csm=csm,
+            autofocus=autofocus,
+            cam=cam,
+        )
+        logger.info(f"Offset measured as {delta[axis]}")
+        stage_coords.append(stage.position)
+        cor_lat_steps.append(offset)
+
+        if np.abs(delta[wrong_axis]) > np.abs(wrong_axis_max_medium[wrong_axis]):
+            logger.info(
+                f"Parasitic motion detected in {wrong_axis}-axis whilst measuring {axis}-axis."
+            )
+            parasitic_motion = True
+            break
+    return stage_coords, cor_lat_steps, delta, parasitic_motion
+
+def small_moves(
+    small_step: int,
+    stream_resolution: list[int],
+    direction: int,
+    axis: str,
+    delta: dict[str, int],
+    focus_data: list[float],
+    stage_coords: list,
+    cor_lat_steps: list,
+    minimum_offset_small: dict[str, float],
+    csm: CSMDep,
+    cam: CamDep,
+    stage: StageDep,
+    autofocus: AutofocusDep,
+    logger: InvocationLogger,
+) -> tuple:
+    """Carries out the medium sized steps section of the range of motion test to get 5 points to make z position predictions with
+
+    :params small_step: The integer value used to generate the small step sizes.
+    :params stream_resolution: The resolution of the stream from the camera.
+    :param direction: The direction the stage moves.
+    :params axis: The axis which is being measured. This must be 'x' or 'y'.
+    :params delta: A dictionary of 'x' and 'y' offsets.
+    :params focus_data: A list of focus data returned by the autofocus procedure.
+    :params stage_coords: A list of all previous positions the stage has been.
+    :params cor_lat_steps: A list of all correlation values.
+    :params minimum_offset_small: A dictionary containing the minimum values for a successful correlation.
+    :return: Stage_coords and cor_lat_steps are lists of data tracked throughout the test. Delta and parasitic_motion are updated and tracked after each move.
+    """
+    failure_count = 0
+    wrong_axis_max_small = dict_generate(small_step, stream_resolution, direction, factor=0.1)
+    parasitic_motion = False
+
+    for loop in range(3):
+        image1 = cv2.resize(
+            np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
+        )
+        delta, offset, focus_data, wrong_axis = move_and_measure(
+            step_size=dict_generate(small_step, stream_resolution, direction),
+            axis=axis,
+            delta=delta,
+            image1=image1,
+            autofocus_proc=False,
+            focus_data=focus_data,
+            csm=csm,
+            autofocus=autofocus,
+            cam=cam,
+        )
+        logger.info(f"Offset measured as {delta[axis]}")
+
+        while (
+            np.abs(delta[axis]) < np.abs(minimum_offset_small[axis])
+            and failure_count < 3
+        ):
+            logger.info(
+                f"Correlation failed. Refocusing to check. Attempt {failure_count + 1}/3"
+            )
+            focus_data = autofocus.looping_autofocus(dz=1000)
+            image2 = cv2.resize(
+                np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
+            )
+            failure_count += 1
+            offset = [
+                x * 1
+                for x in fft_image_tracking.displacement_between_images(
+                    image_0=image1,
+                    image_1=image2,
+                    sigma=10,
+                    fractional_threshold=0.1,
+                    pad=True,
+                )
+            ]  # Units is pixels
+            delta["x"] = int(offset[1])
+            delta["y"] = int(offset[0])
+            logger.info(
+                f"Displacement found was {delta[axis]}. Minimum offset is {minimum_offset_small[axis]}"
+            )
+
+        stage_coords.append(stage.position)
+        cor_lat_steps.append(offset)
+
+        if np.abs(delta[wrong_axis]) > np.abs(wrong_axis_max_small[wrong_axis]):
+            logger.info(
+                f"Parasitic motion detected in {wrong_axis}-axis whilst measuring {axis}-axis."
+            )
+            parasitic_motion = True
+            break
+
+        if np.abs(delta[axis]) < np.abs(minimum_offset_small[axis]):  # this means the edge has been found
+            logger.info("Edge has been found.")
+            break
+    return stage_coords, cor_lat_steps, delta, parasitic_motion
+
 def motion_detection(axis: str, direction: int, csm: CSMDep, stage: StageDep, cam: CamDep, logger: InvocationLogger) -> dict:
     """Moves the stage until motion is detected. This happens at the end of each axis and direction and where the stage is moved in the opposite direction until
     motion is detected.
@@ -182,13 +333,8 @@ class RangeofMotionThing(Thing):
             # Generate required dictionaries for step sizes and minimum offsets
             stream_resolution = cam.stream_resolution
 
-            small_step = 20
-            medium_step = 50
             big_step = 200
-
-            minimum_offset_small = dict_generate(small_step, stream_resolution, direction, factor=0.65)
-            wrong_axis_max_small = dict_generate(small_step, stream_resolution, direction, factor=0.1)
-            wrong_axis_max_z = dict_generate(medium_step, stream_resolution, direction, factor=0.1)
+            small_step = 20
             step_sizes_big = dict_generate(big_step, stream_resolution, direction)
 
             delta = {
@@ -202,32 +348,27 @@ class RangeofMotionThing(Thing):
 
             logger.info("Moving the stage in 5 medium sized steps.")
 
-            # Medium sized steps
-            for loop in range(5):
-                image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
-                delta, offset, focus_data, wrong_axis = move_and_measure(
-                    step_size=dict_generate(medium_step, stream_resolution, direction),
-                    axis=axis,
-                    delta=delta,
-                    image1=image1,
-                    autofocus_proc=True,
-                    focus_data=focus_data,
-                    csm=csm,
-                    autofocus=autofocus,
-                    cam=cam,
-                )
-                logger.info(f"Offset measured as {delta[axis]}")
-                stage_coords.append(stage.position)
-                cor_lat_steps.append(offset)
-
-                # Check for parasitic motion
-
-                if np.abs(delta[wrong_axis]) > np.abs(wrong_axis_max_z[wrong_axis]):
-                    logger.info(f"Parasitic motion detected in {wrong_axis}-axis whilst measuring {axis}-axis.")
-                    parasitic_motion = True
-                    break
+            stage_coords, cor_lat_steps, delta, parasitic_motion = medium_moves(
+                stream_resolution=stream_resolution,
+                direction=direction,
+                axis=axis,
+                delta=delta,
+                focus_data=focus_data,
+                stage_coords=stage_coords,
+                cor_lat_steps=cor_lat_steps,
+                csm=csm,
+                cam=cam,
+                stage=stage,
+                autofocus=autofocus,
+                logger=logger,
+            )
 
             # 1 big step followed by 3 small steps
+
+            minimum_offset_small = dict_generate(
+                small_step, stream_resolution, direction, factor=0.65
+            )
+
             while np.abs(delta[axis]) > np.abs(minimum_offset_small[axis]) and not parasitic_motion:
                 z_diff = predict_z(positions = stage_coords, axis = axis, relative_move = step_sizes_big[axis], stage = stage, csm = csm)
 
@@ -246,48 +387,22 @@ class RangeofMotionThing(Thing):
 
                 stage_coords.append(stage.position)
 
-                failure_count = 0
-
-                # Turn into function
-                for loop in range(3):
-                    image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
-                    delta, offset, focus_data, wrong_axis = move_and_measure(
-                        step_size=dict_generate(
-                            small_step, stream_resolution, direction
-                        ),
-                        axis=axis,
-                        delta=delta,
-                        image1=image1,
-                        autofocus_proc=False,
-                        focus_data=focus_data,
-                        csm=csm,
-                        autofocus=autofocus,
-                        cam=cam,
-                    )
-                    logger.info(f"Offset measured as {delta[axis]}")
-
-                    while np.abs(delta[axis]) < np.abs(minimum_offset_small[axis]) and failure_count < 3:
-                        logger.info(f"Correlation failed. Refocusing to check. Attempt {failure_count + 1}/3")
-                        focus_data = autofocus.looping_autofocus(dz = 1000)
-                        image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
-                        failure_count += 1
-                        offset = [x * 1 for x in fft_image_tracking.displacement_between_images(
-                            image_0 = image1, image_1 = image2, sigma=10, fractional_threshold=0.1, pad=True)] # Units is pixels
-                        delta['x'] = int(offset[1])
-                        delta['y'] = int(offset[0])
-                        logger.info(f"Displacement found was {delta[axis]}. Minimum offset is {minimum_offset_small[axis]}")
-
-                    stage_coords.append(stage.position)
-                    cor_lat_steps.append(offset)
-
-                    if np.abs(delta[wrong_axis]) > np.abs(wrong_axis_max_small[wrong_axis]):
-                        logger.info(f"Parasitic motion detected in {wrong_axis}-axis whilst measuring {axis}-axis.")
-                        parasitic_motion = True
-                        break
-
-                    if np.abs(delta[axis]) < np.abs(minimum_offset_small[axis]):  # this means the edge has been found
-                        logger.info("Edge has been found.")
-                        break
+                stage_coords, cor_lat_steps, delta, parasitic_motion = small_moves(
+                    small_step=small_step,
+                    stream_resolution=stream_resolution,
+                    direction=direction,
+                    axis=axis,
+                    delta=delta,
+                    focus_data=focus_data,
+                    stage_coords=stage_coords,
+                    cor_lat_steps=cor_lat_steps,
+                    minimum_offset_small=minimum_offset_small,
+                    csm=csm,
+                    cam=cam,
+                    stage=stage,
+                    autofocus=autofocus,
+                    logger=logger,
+                )
 
             # Motion detection
             logger.info("Running motion detection")
