@@ -101,6 +101,7 @@ Vue.mixin({
             if (context.$store.state.autoGpuPreview) {
               context.$root.$emit("globalTogglePreview", true);
             }
+          context.$root.$emit("modalClosed");
           });
       };
       return new Promise(showModal);
