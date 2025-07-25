@@ -1,24 +1,18 @@
 import numpy as np
-import logging
 import cv2
 import json
 from PIL import Image
 import time
-from typing import Annotated, Any, Callable, Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
+from typing import Dict, Optional
 from scipy.optimize import curve_fit
-from camera_stage_mapping import camera_stage_tracker
 from camera_stage_mapping import fft_image_tracking
-from dataclasses import dataclass, field
-from numpy.typing import NDArray
-
 from labthings_fastapi.thing import Thing
 from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
-from labthings_fastapi.dependencies.invocation import CancelHook, InvocationLogger, InvocationCancelledError
+from labthings_fastapi.dependencies.invocation import CancelHook, InvocationLogger
 from labthings_fastapi.decorators import thing_action, thing_property
-from .stage import StageDependency as StageDep
 from labthings_sangaboard import SangaboardThing
 from labthings_picamera2.thing import StreamingPiCamera2
-from labthings_fastapi.types.numpy import NDArray, denumpify, DenumpifyingDict
+from labthings_fastapi.types.numpy import DenumpifyingDict
 from openflexure_microscope_server.things.autofocus import AutofocusThing
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
 
@@ -27,41 +21,66 @@ CamDep = direct_thing_client_dependency(StreamingPiCamera2, "/camera/")
 CSMDep = direct_thing_client_dependency(CameraStageMapper, "/camera_stage_mapping/")
 AutofocusDep = direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 
+'''
+This file contains all the functions used to measure the range of motion of the OpenFlexure Microscope translation stage.
+
+The range of motion is measured by first taking 5 'medium' sized steps which gives enough positions to predict future z positions. Next, one 'big' step is taken followed by 3
+'small' steps to test that the stage is still moving as expected and has not reached the edge. Once the edge has been found and too account for the possibility that a 'big'
+step was take just before the edge was reached, the stage is moved in a sequence of increasing pixel sizes in the opposite direction until motion is detected. This is
+position is taken as the true final position.
+'''
+
 def quadratic(x, a, b, c):
-    '''
-    Quadratic function
-    '''  
+    """Quadratic function. Used for predicting z.
+
+    :param x: The points at which to evaluate the quadratic.
+    :param a: The coefficient of x^2.
+    :param b: The coefficient of x.
+    :param c: The constant coefficient.
+    :return: The quadratic, evaluated at each point in ``x``
+    """
     return a * x**2 + b * x + c
 
-def dict_generate(dict_steps: int, stream_resolution: list, dir: int, factor: float = 1) -> dict:
-    '''
-    Creates a single dictionary of step sizes 
-    '''
-    dict = {
-        'x':(dict_steps/100) * stream_resolution[0] * factor * dir,
-        'y':(dict_steps/100) * stream_resolution[1] * factor * dir
-    }
-    return dict
+def dict_generate(fov_perc: int, stream_resolution: list[int], direction: int, factor: float = 1) -> dict[str, float]:
+    """Creates a single dictionary of x and y moves for moving in image coordinates.
 
-def steps_generate(small_step: int, z_perc: int, big_step: int, dir: int, stream_resolution: list) -> dict:
-    '''
-    Creates all required dictionaries of all necessary step sizes. 
-    '''
-    step_sizes_big = dict_generate(big_step, stream_resolution, dir)
-    step_sizes_small = dict_generate(small_step, stream_resolution, dir)
-    minimum_offset_small = dict_generate(small_step, stream_resolution, dir, factor = 0.65)
-    z_steps = dict_generate(z_perc, stream_resolution, dir)
-    minimum_offset_z = dict_generate(z_perc, stream_resolution, dir, factor = 0.65)
-    wrong_axis_max_small = dict_generate(small_step, stream_resolution, dir, factor = 0.1)
-    wrong_axis_max_z = dict_generate(z_perc, stream_resolution, dir, factor = 0.1)
+    :param fov_perc: The percentage of field of view the stage should move by.
+    :param stream_resolution: The resolution of the stream from the camera.
+    :param direction: The direction the stage moves.
+    :param factor: Multiplicative factor which changes the final result.
+    :return: A dictionary with keys 'x' and 'y' with a pixel distance move the stage can make.
+    """
+    xy_dict = {
+        "x": (fov_perc / 100) * stream_resolution[0] * factor * direction,
+        "y": (fov_perc / 100) * stream_resolution[1] * factor * direction,
+    }
+    return xy_dict
+
+def steps_generate(small_step: int, z_perc: int, big_step: int, direction: int, stream_resolution: list) -> tuple:
+    '''Creates all required dictionaries of all necessary step sizes.'''
+    step_sizes_big = dict_generate(big_step, stream_resolution, direction)
+    step_sizes_small = dict_generate(small_step, stream_resolution, direction)
+    minimum_offset_small = dict_generate(
+        small_step, stream_resolution, direction, factor=0.65
+    )
+    z_steps = dict_generate(z_perc, stream_resolution, direction)
+    minimum_offset_z = dict_generate(z_perc, stream_resolution, direction, factor=0.65)
+    wrong_axis_max_small = dict_generate(
+        small_step, stream_resolution, direction, factor=0.1
+    )
+    wrong_axis_max_z = dict_generate(z_perc, stream_resolution, direction, factor=0.1)
 
     return step_sizes_small, minimum_offset_small, z_steps, minimum_offset_z, step_sizes_big, wrong_axis_max_small, wrong_axis_max_z
 
 def predict_z(positions: list, axis: str, relative_move: float, stage: StageDep, csm: CSMDep) -> float:
-    """
-    Predicts the next z position for a big move using an array of previous positions.
-    """
+    """Predicts the next z position for a 'big' move using an array of previous positions. This avoids long autofocuses and reduces the possibility of colliding with
+    the sample.
 
+    :params positions: The list of positions used for predicting z. This will usually be a list of all previuos positions.
+    :params axis: The axis in which the stage is moving. This must be 'x' or 'y'.
+    :params relative_move: The move which the function is trying to predict z for. Here, this is inputted with units of pixels.
+    :return: A number of pixels the stage needs to move in z.
+    """
     pixel_step = {
         'x':1/csm.image_to_stage_displacement_matrix[0][1],
         'y':1/csm.image_to_stage_displacement_matrix[1][0]
@@ -75,9 +94,16 @@ def predict_z(positions: list, axis: str, relative_move: float, stage: StageDep,
 
     return z_diff
 
-def move_and_measure(step_size: dict, axis: str, delta: dict, image1, autofocus_proc: bool, focus_data: list, csm: CSMDep, autofocus: AutofocusDep, cam:CamDep):
-    """
-    Moves the stage and measures the offset between the two positions.
+def move_and_measure(step_size: dict[str, float], axis: str, delta: dict[str, int], image1, autofocus_proc: bool, focus_data: list[float], csm: CSMDep, autofocus: AutofocusDep, cam:CamDep) -> tuple:
+    """Moves the stage and measures the offset between the two positions.
+
+    :params step_size: A dictionary with keys 'x' and 'y' with pixel distances.
+    :params axis: The axis in which the stage is moving. This must be 'x' or 'y'.
+    :params delta: A dictionary of 'x' and 'y' offsets.
+    :params image1: An image taken before moving to be correlated with image2.
+    :params autofocus_proc: If true, looping.autofocus will be used after the stage moves.
+    :params focus_data: A list of focus data returned by the autofocus procedure.
+    :return: All required data for the next move. This includes the updated delta value, offset and focus_data. Also returns what wrong_axis is i.e. if the direction is 'x', wrong_axis = 'y'.
     """
     if axis == 'x':
         csm.move_in_image_coordinates(x = step_size['x'], y = 0)
@@ -85,7 +111,7 @@ def move_and_measure(step_size: dict, axis: str, delta: dict, image1, autofocus_
     else:
         csm.move_in_image_coordinates(x = 0, y = step_size['y'])
         wrong_axis = 'x'
-    if autofocus_proc == True:
+    if autofocus_proc:
         focus_data = autofocus.looping_autofocus(dz = 800)
     image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
     offset = [x * 1 for x in fft_image_tracking.displacement_between_images(image_0 = image1, image_1 = image2, sigma=10, fractional_threshold=0.1, pad=True)] # Units is pixels
@@ -95,8 +121,12 @@ def move_and_measure(step_size: dict, axis: str, delta: dict, image1, autofocus_
     return delta, offset, focus_data, wrong_axis
 
 def motion_detection(axis: str, direction: int, csm: CSMDep, stage: StageDep, cam: CamDep, logger: InvocationLogger) -> dict:
-    """
-    Moves the stage until motion is detected.
+    """Moves the stage until motion is detected. This happens at the end of each axis and direction and where the stage is moved in the opposite direction until
+    motion is detected.
+
+    :params axis: The axis in which the stage is moving. This must be 'x' or 'y'.
+    :params direction: The direction in which the stage was moving previous to motion detection being used.
+    :return: The stage coordinates where motion was detected.
     """
     displacements = [1,2,4,8,16,32,64,128,256,512]  # Array of increasing step sizes
     motion_minimum = 20  # minimum nuber of pixels for motion to be detected
@@ -110,13 +140,13 @@ def motion_detection(axis: str, direction: int, csm: CSMDep, stage: StageDep, ca
         'x': 0,
         'y': 0
     }
-    
+
     for loop in range(np.shape(displacements)[0]):
         this_motion_step[axis] = displacements[loop] * direction * -1
         logger.info(f"Testing with step size {this_motion_step[axis]}")
-        image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)           
+        image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
         csm.move_in_image_coordinates(x = this_motion_step['x'], y = this_motion_step['y'])
-        image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)           
+        image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
         offset = [x * 1 for x in fft_image_tracking.displacement_between_images(
             image_0 = image1, image_1 = image2, sigma=10, fractional_threshold=0.1, pad=True)] # Units is pixels
         delta['x'] = int(offset[1])
@@ -141,17 +171,24 @@ class RangeofMotionThing(Thing):
         logger: InvocationLogger,
         axis: str,
         direction: int
-    ):
+    ) -> dict:
+        """Measure the range of motion in a single axis and direction.
+
+        :params axis: The axis which is being measured. This must be 'x' or 'y'.
+        :params direction: The direction which is being measured. This must be 1 or -1.
+        :return: Results dictionary containing stage positions, correlations and the final position.
         """
-        Measure the range of motion in a single axis and direction.
-        """
+
+        focus_data = autofocus.looping_autofocus(dz = 1000)
+
+        starting_position = list(stage.position.values())
 
         try:
             if direction == 1:
                 dir_word = "positive"
             else:
                 dir_word = "negative"
-            
+
             logger.info(f"Beginning the {axis}-axis in the {dir_word} direction")
 
             stage_coords = []
@@ -170,16 +207,12 @@ class RangeofMotionThing(Thing):
 
             logger.info(f"Using the follwing steps: {step_sizes_small, minimum_offset_small, z_steps, minimum_offset_z, step_sizes_big}")
 
-            focus_data = autofocus.looping_autofocus(dz = 1000)
-
-            starting_position = list(stage.position.values())
-
             parasitic_motion = False
 
             stage_coords.append(stage.position)
 
             logger.info("Moving the stage in 5 medium sized steps.")
-            
+
             # Medium sized steps
             for loop in range(5):
                 image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
@@ -196,14 +229,14 @@ class RangeofMotionThing(Thing):
                     break
 
             # 1 big step followed by 3 small steps
-            while np.abs(delta[axis]) > np.abs(minimum_offset_small[axis]) and parasitic_motion == False:
+            while np.abs(delta[axis]) > np.abs(minimum_offset_small[axis]) and not parasitic_motion:
                 z_diff = predict_z(positions = stage_coords, axis = axis, relative_move = step_sizes_big[axis], stage = stage, csm = csm)
 
-                logger.info(f"Z calibration complete.")
+                logger.info("Z calibration complete.")
 
                 stage.move_relative(z = z_diff)
 
-                logger.info(f"Moved in z by {z_diff}") 
+                logger.info(f"Moved in z by {z_diff}")
 
                 if axis == 'x':
                     csm.move_in_image_coordinates(x = step_sizes_big['x'], y = 0)
@@ -216,15 +249,16 @@ class RangeofMotionThing(Thing):
 
                 failure_count = 0
 
+                # Turn into function
                 for loop in range(3):
                     image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
                     delta, offset, focus_data, wrong_axis = move_and_measure(step_size = step_sizes_small, axis = axis, delta = delta, image1 = image1, autofocus_proc = False, focus_data = focus_data, csm = csm, autofocus = autofocus, cam = cam)
                     logger.info(f"Offset measured as {delta[axis]}")
-                    
+
                     while np.abs(delta[axis]) < np.abs(minimum_offset_small[axis]) and failure_count < 3:
                         logger.info(f"Correlation failed. Refocusing to check. Attempt {failure_count + 1}/3")
                         focus_data = autofocus.looping_autofocus(dz = 1000)
-                        image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)           
+                        image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
                         failure_count += 1
                         offset = [x * 1 for x in fft_image_tracking.displacement_between_images(
                             image_0 = image1, image_1 = image2, sigma=10, fractional_threshold=0.1, pad=True)] # Units is pixels
@@ -241,11 +275,11 @@ class RangeofMotionThing(Thing):
                         break
 
                     if np.abs(delta[axis]) < np.abs(minimum_offset_small[axis]):  # this means the edge has been found
-                        logger.info(f"Edge has been found.")
+                        logger.info("Edge has been found.")
                         break
 
             # Motion detection
-            logger.info(f"Running motion detection")
+            logger.info("Running motion detection")
 
             final_pos = motion_detection(axis = axis, direction = direction, csm = csm, stage = stage, cam = cam, logger = logger)
 
@@ -257,12 +291,9 @@ class RangeofMotionThing(Thing):
                 "final_position": final_pos
             }
 
+        finally:
             stage.move_absolute(x = starting_position[0], y = starting_position[1], z = starting_position[2], block_cancellation=True)
 
-        except:
-            logger.error("Stopping measurement because it was cancelled by the user")
-            stage.move_absolute(x = starting_position[0], y = starting_position[1], z = starting_position[2], block_cancellation=True)
-            raise Exception
         return axis_results
 
     @thing_action
@@ -275,8 +306,9 @@ class RangeofMotionThing(Thing):
         cancel: CancelHook,
         logger: InvocationLogger
     ):
-        """
-        Measures the range of motion of the stage across the x and y axes.
+        """Measures the range of motion of the stage across the x and y axes.
+
+        :return: Results dictionary separated into keys of each axis and direction.
         """
         logger.info("Using the stage to measure the Range of Motion. Please ensure you are using a big enough sample.")
         start_time = time.time()
@@ -290,7 +322,7 @@ class RangeofMotionThing(Thing):
                 csm,
                 cancel,
                 logger,
-                axis = axis_dir[0], 
+                axis = axis_dir[0],
                 direction = axis_dir[1]
                 )
             rom_results[f"{axis_dir}"] = axis_dir_results
@@ -318,14 +350,9 @@ class RangeofMotionThing(Thing):
 
     @thing_property
     def rom_data(self) -> Optional[Dict]:
-        """
-        The results of the last range of motion calibration that was run.
-        """
+        """The results of the last range of motion calibration that was run."""
         filename = '/var/openflexure/settings/range_of_motion/settings.json'
         with open(filename) as f:
             rom_object = json.load(f)
 
         return rom_object
-
-    
-           
