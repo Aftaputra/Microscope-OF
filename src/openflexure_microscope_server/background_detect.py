@@ -14,6 +14,10 @@ from scipy.stats import norm
 from labthings_fastapi.thing_description import type_to_dataschema
 
 
+class MissingBackgroundData(RuntimeError):
+    """An error raised if checking for sample without background data set."""
+
+
 class BackgroundDetectorStatus(BaseModel):
     """The status information about a background detector instance needed for the GUI.
 
@@ -39,9 +43,9 @@ class BackgroundDetectorStatus(BaseModel):
 class BackgroundDetectAlgorithm:
     """The base class for defining background detect algorithms."""
 
-    background_data_model: BaseModel
+    background_data_model: BaseModel = BaseModel
     """The data model of the background data. This must be set by child classes"""
-    settings_data_model: BaseModel
+    settings_data_model: BaseModel = BaseModel
     """The data model of algorithm settings. This must be set by child classes"""
 
     def __init__(self):
@@ -76,16 +80,21 @@ class BackgroundDetectAlgorithm:
 
     @background_data.setter
     def background_data(self, value: Optional[BaseModel | dict]) -> None:
-        if value is None:
-            self._background_data = None
-        elif isinstance(value, self.background_data_model):
-            self._background_data = value
-        elif isinstance(value, dict):
-            self._background_data = self.background_data_model(**value)
-        else:
-            raise TypeError(
-                f"Cannot set background_data with an object of type {type(value)}"
-            )
+        try:
+            if value is None:
+                self._background_data = None
+            elif isinstance(value, self.background_data_model):
+                self._background_data = value
+            elif isinstance(value, dict):
+                self._background_data = self.background_data_model(**value)
+            else:
+                raise TypeError(
+                    f"Cannot set background_data with an object of type {type(value)}"
+                )
+        except PydanticUserError as e:
+            raise NotImplementedError(
+                "BackgroundDetectAlgorithms must set their own background data model."
+            ) from e
 
     @property
     def settings(self) -> BaseModel:
@@ -168,10 +177,9 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         """
         d = self.background_data
         if not d:
-            raise RuntimeError(
+            raise MissingBackgroundData(
                 "Background is not set: you need to calibrate background detection."
             )
-        print(d)
         # Only use the U and V channels of as brightness (L) often changes as the
         # height of the sample changes.
         return np.all(
@@ -192,9 +200,7 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         """
         image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
         mask = self.background_mask(image_luv)
-        print(np.count_nonzero(mask))
-        print(np.prod(mask.shape))
-        print((1 - np.count_nonzero(mask) / np.prod(mask.shape)) * 100)
+
         return (1 - np.count_nonzero(mask) / np.prod(mask.shape)) * 100
 
     def image_is_sample(self, image: np.ndarray) -> tuple[bool, str]:
@@ -206,7 +212,8 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         """
         sample_coverage = self.get_sample_coverage(image)
 
-        is_sample = sample_coverage > self.settings.min_sample_coverage
+        # Use bool otherwise get numpy variants of True and False.
+        is_sample = bool(sample_coverage > self.settings.min_sample_coverage)
         message = f"{sample_coverage:0.1f}% sample"
         if not is_sample:
             message = "only " + message
