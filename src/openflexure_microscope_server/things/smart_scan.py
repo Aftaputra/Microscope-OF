@@ -984,8 +984,7 @@ class SmartScanThing(lt.Thing):
     ):
         """Check the list of scans, and stitch any that don't have a DZI associated with it.
 
-        Raises:
-            RuntimeError if the microscope is currently running a scan
+        :raises RuntimeError: if the microscope is currently running a scan
 
         """
         if self._scan_logger is not None:
