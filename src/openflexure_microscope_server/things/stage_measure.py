@@ -56,22 +56,6 @@ def dict_generate(fov_perc: int, stream_resolution: list[int], direction: int, f
     }
     return xy_dict
 
-def steps_generate(small_step: int, z_perc: int, big_step: int, direction: int, stream_resolution: list) -> tuple:
-    '''Creates all required dictionaries of all necessary step sizes.'''
-    step_sizes_big = dict_generate(big_step, stream_resolution, direction)
-    step_sizes_small = dict_generate(small_step, stream_resolution, direction)
-    minimum_offset_small = dict_generate(
-        small_step, stream_resolution, direction, factor=0.65
-    )
-    z_steps = dict_generate(z_perc, stream_resolution, direction)
-    minimum_offset_z = dict_generate(z_perc, stream_resolution, direction, factor=0.65)
-    wrong_axis_max_small = dict_generate(
-        small_step, stream_resolution, direction, factor=0.1
-    )
-    wrong_axis_max_z = dict_generate(z_perc, stream_resolution, direction, factor=0.1)
-
-    return step_sizes_small, minimum_offset_small, z_steps, minimum_offset_z, step_sizes_big, wrong_axis_max_small, wrong_axis_max_z
-
 def predict_z(positions: list, axis: str, relative_move: float, stage: StageDep, csm: CSMDep) -> float:
     """Predicts the next z position for a 'big' move using an array of previous positions. This avoids long autofocuses and reduces the possibility of colliding with
     the sample.
@@ -198,14 +182,19 @@ class RangeofMotionThing(Thing):
             # Generate required dictionaries for step sizes and minimum offsets
             stream_resolution = cam.stream_resolution
 
-            step_sizes_small, minimum_offset_small, z_steps, minimum_offset_z, step_sizes_big, wrong_axis_max_small, wrong_axis_max_z = steps_generate(20, 50, 200, direction, stream_resolution=stream_resolution)
+            small_step = 20
+            medium_step = 50
+            big_step = 200
+
+            minimum_offset_small = dict_generate(small_step, stream_resolution, direction, factor=0.65)
+            wrong_axis_max_small = dict_generate(small_step, stream_resolution, direction, factor=0.1)
+            wrong_axis_max_z = dict_generate(medium_step, stream_resolution, direction, factor=0.1)
+            step_sizes_big = dict_generate(big_step, stream_resolution, direction)
 
             delta = {
                 'x':0,
                 'y':0
             }
-
-            logger.info(f"Using the follwing steps: {step_sizes_small, minimum_offset_small, z_steps, minimum_offset_z, step_sizes_big}")
 
             parasitic_motion = False
 
@@ -216,7 +205,17 @@ class RangeofMotionThing(Thing):
             # Medium sized steps
             for loop in range(5):
                 image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
-                delta, offset, focus_data, wrong_axis = move_and_measure(step_size = z_steps, axis = axis, delta = delta, image1 = image1, autofocus_proc = True, focus_data = focus_data, csm = csm, autofocus = autofocus, cam = cam)
+                delta, offset, focus_data, wrong_axis = move_and_measure(
+                    step_size=dict_generate(medium_step, stream_resolution, direction),
+                    axis=axis,
+                    delta=delta,
+                    image1=image1,
+                    autofocus_proc=True,
+                    focus_data=focus_data,
+                    csm=csm,
+                    autofocus=autofocus,
+                    cam=cam,
+                )
                 logger.info(f"Offset measured as {delta[axis]}")
                 stage_coords.append(stage.position)
                 cor_lat_steps.append(offset)
@@ -252,7 +251,19 @@ class RangeofMotionThing(Thing):
                 # Turn into function
                 for loop in range(3):
                     image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
-                    delta, offset, focus_data, wrong_axis = move_and_measure(step_size = step_sizes_small, axis = axis, delta = delta, image1 = image1, autofocus_proc = False, focus_data = focus_data, csm = csm, autofocus = autofocus, cam = cam)
+                    delta, offset, focus_data, wrong_axis = move_and_measure(
+                        step_size=dict_generate(
+                            small_step, stream_resolution, direction
+                        ),
+                        axis=axis,
+                        delta=delta,
+                        image1=image1,
+                        autofocus_proc=False,
+                        focus_data=focus_data,
+                        csm=csm,
+                        autofocus=autofocus,
+                        cam=cam,
+                    )
                     logger.info(f"Offset measured as {delta[axis]}")
 
                     while np.abs(delta[axis]) < np.abs(minimum_offset_small[axis]) and failure_count < 3:
