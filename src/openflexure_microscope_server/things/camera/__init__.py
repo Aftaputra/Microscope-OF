@@ -168,6 +168,9 @@ class BaseCamera(lt.Thing):
         """Initialise the base camera, this creates the background detectors.
 
         This must be run by all child camera classes.
+
+        To add a new background detector to the server it must be added to the
+        dictionary in this function. Configuration will be added at a later date.
         """
         super().__init__()
         self.background_detectors = {"Colour Channels (LUV)": ColourChannelDetectLUV()}
@@ -515,9 +518,10 @@ class BaseCamera(lt.Thing):
 
     @background_detector_data.setter
     def background_detector_data(self, data: dict) -> None:
-        """Set the data for each detector. This should only be called on init.
+        """Set the data for each detector. Only to be used as settings are loaded from disk.
 
-        Do not call over HTTP. Would be good to have a way to make this private.
+        Do not call over HTTP. This needs to be updated once LbaThings Settings can be
+        read-only over HTTP (#484).
         """
         for name, instance_data in data.items():
             if name in self.background_detectors:
@@ -537,7 +541,7 @@ class BaseCamera(lt.Thing):
         return self.active_detector.image_is_sample(current_image)
 
     @lt.thing_action
-    def set_background(self, portal: lt.deps.BlockingPortal):
+    def set_background(self, portal: lt.deps.BlockingPortal) -> None:
         """Grab an image, and use its statistics to set the background.
 
         This should be run when the microscope is looking at an empty region,

@@ -1,7 +1,7 @@
 """Provide functionality to detect if the camera is imaging sample or background.
 
 An example background image is captured by the camera and sent to classes in the module
-for analysis. Information from this images is used to detect whether an image from the
+for analysis. Information from these images is used to detect whether an image from the
 current camera field of view contains sample.
 """
 
@@ -36,7 +36,8 @@ class BackgroundDetectorStatus(BaseModel):
     """The settings for this this background detect Algorithm"""
 
     # Setting schema is a dict until LabThings FastAPI issue #154 is fixed and
-    # DataSchema can be used.
+    # DataSchema can be used directly. For now `model_dump()` must be used to dump schema
+    # to a dict.
     settings_schema: dict[str, Any]
 
 
@@ -63,6 +64,8 @@ class BackgroundDetectAlgorithm:
         return BackgroundDetectorStatus(
             ready=self.background_data is not None,
             settings=self.settings,
+            # Dump model with `model_dump()` for reason explained when defining
+            # BackgroundDetectorStatus
             settings_schema=type_to_dataschema(self.settings_data_model).model_dump(),
         )
 
@@ -161,7 +164,8 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
     """Compare images with a known background in LUV colourspace.
 
     This uses an LUV colour space checking only the mean and standard deviation of the
-    U and V channels. The LUV colourspace as it collect colours together in a
+    U and V channels. The LUV colourspace as it collect colours together in a human-
+    intuitive way.
     """
 
     background_data_model: BaseModel = ChannelDistributions
@@ -219,7 +223,7 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
             message = "only " + message
         return is_sample, message
 
-    def set_background(self, image: np.ndarray) -> ChannelDistributions:
+    def set_background(self, image: np.ndarray) -> None:
         """Use the input image to update the background distributions."""
         image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
 

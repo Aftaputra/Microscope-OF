@@ -58,10 +58,10 @@ def test_bg_detect_base_class():
 
 
 def test_partial_base_class(background_image):
-    """Create a partial class so to initialise the base class and test other methods.
+    """Create a partial class to initialise the base class and test other methods.
 
     This test is to check that if the necessary methods are not set, that an
-    appropriate error is raise.
+    appropriate error is raised.
     """
 
     class BadAlgo1(BackgroundDetectAlgorithm):
@@ -109,7 +109,7 @@ def test_colour_channel_luv(background_image, sample_image):
     # Should be 50% background. Allowing 49.8-50.2% due to noise.
     assert 49.8 < float(match.group(1)) < 50.2
 
-    # Require 70% coverage
+    # Require 75% coverage
     cc_luv.settings = ColourChannelDetectSettings(min_sample_coverage=75.0)
 
     sample, message = cc_luv.image_is_sample(sample_image)
@@ -138,7 +138,7 @@ def test_colour_channel_luv_save_load(background_image, sample_image):
     setting_dict = cc_luv.settings.model_dump()
     data_dict = cc_luv.background_data.model_dump()
 
-    # Remove the old detector one so we don't accidentally use it!
+    # Remove the old detector so we don't accidentally use it!
     del cc_luv
 
     # Create a new instance
@@ -169,7 +169,7 @@ def test_colour_channel_luv_load_bad_data():
     """Check a type error is thrown on bad data input."""
 
     class WrongModel(BaseModel):
-        """Using a different BaseModel as this is most ilkley to cause confusion."""
+        """Using a different BaseModel as this is most likely to cause confusion."""
 
         prop1: int = 8
         prop2: str = "foo"

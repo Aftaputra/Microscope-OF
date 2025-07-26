@@ -14,11 +14,11 @@ from openflexure_microscope_server.background_detect import (
 
 
 class MockCameraThing:
-    """A mock background detect Thing that imports no code from BackgroundDetectThing.
+    """A mock camera Thing that imports no code from ``BaseCamera``.
 
     The class needs functionality added to it over time as more complex
-    mocking is needed. It imports no code from BackgroundDetectThing so that coverage
-    is not artificially inflated.
+    mocking is needed. It imports no code from ``BaseCamera or any other
+    camera Thing, so that coverage is not artificially inflated.
     """
 
     background_detector_status = BackgroundDetectorStatus(

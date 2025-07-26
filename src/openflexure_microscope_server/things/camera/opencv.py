@@ -30,7 +30,7 @@ class OpenCVCamera(BaseCamera):
 
         :param camera_index: The index of the camera to use for the microscope.
         """
-        super().__init()
+        super().__init__()
         self.camera_index = camera_index
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
