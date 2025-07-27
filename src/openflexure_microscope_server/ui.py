@@ -23,19 +23,33 @@ class ActionButton(BaseModel):
 
     thing: str
     """The Thing "path" for the Thing instance."""
+
     action: str
     """The name of the action to be triggered."""
+
     poll_interval: int = 1
     """The interval for polling in seconds."""
+
     submit_label: str = "Submit"
     """The label for the action button."""
+
     can_terminate: bool = True
     """Specify whether the action can be terminated."""
+
     requires_confirmation: bool = False
     """Specify whether a confirmation modal is needed."""
+
     confirmation_message: str = "Start task?"
     """The message for the confirmation modal."""
+
     button_primary: bool = True
     """Specify whether the button is styled as a primary button."""
+
     modal_progress: bool = False
     """Specify whether to show a progress modal."""
+
+    notify_on_success: bool = False
+    """Specify whether to a notification on successful completion."""
+
+    success_message: str = "Success!"
+    """The message to show on successful completion."""

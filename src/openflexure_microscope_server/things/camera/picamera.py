@@ -791,6 +791,8 @@ class StreamingPiCamera2(BaseCamera):
                     "Start recalibration? This may take a while, and the microscope "
                     "will be locked during this time."
                 ),
+                notify_on_success=True,
+                success_message="Finished recalibration.",
             ),
             action_button_for(
                 self.auto_expose_from_minimum,

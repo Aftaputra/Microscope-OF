@@ -1,58 +1,34 @@
 <template>
   <div>
-    <!--Show auto calibrate if default plugin is enabled-->
-    
-    <div 
+    <!--Show calibration actions as specified by the camera.-->
+    <div
       v-for="(action, index) in secondaryCalibrationActions"
+      :key="'primary_cal' + index"
       class="uk-child-width-expand"
-      :key = "'primary_cal' + index"
     >
-      <action-button
-        :can-terminate="action.can_terminate"
-        :requires-confirmation="action.requires_confirmation"
-        :thing="action.thing"
-        :action="action.action"
-        :submit-label="action.submit_label"
-        @response="onRecalibrateResponse"
-        @error="modalError"
-      />
+      <server-specified-action-button :action-data="action" />
     </div>
     <div v-if="showExtraSettings">
-      <div 
+      <div
         v-for="(action, index) in primaryCalibrationActions"
+        :key="'secondary_cal' + index"
         class="uk-child-width-expand"
-        :key = "'secondary_cal' + index"
       >
-        <action-button
-          :can-terminate="action.can_terminate"
-          :requires-confirmation="action.requires_confirmation"
-          :thing="action.thing"
-          :action="action.action"
-          :submit-label="action.submit_label"
-          @response="onRecalibrateResponse"
-          @error="modalError"
-        />
+        <server-specified-action-button :action-data="action" />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import ActionButton from "../../../labThingsComponents/actionButton.vue";
+import ServerSpecifiedActionButton from "../../../labThingsComponents/serverSpecifiedActionButton.vue";
 
 // Export main app
 export default {
   name: "CameraCalibrationSettings",
 
   components: {
-    ActionButton
-  },
-
-  data() {
-    return {
-      primaryCalibrationActions: [],
-      secondaryCalibrationActions: []
-    };
+    ServerSpecifiedActionButton
   },
 
   props: {
@@ -67,6 +43,13 @@ export default {
     }
   },
 
+  data() {
+    return {
+      primaryCalibrationActions: [],
+      secondaryCalibrationActions: []
+    };
+  },
+
   computed: {
     actions() {
       return this.$store.getters["wot/thingDescription"]("camera").actions;
@@ -74,14 +57,14 @@ export default {
   },
 
   async created() {
-    this.primaryCalibrationActions = await this.readThingProperty("camera", "primary_calibration_actions");
-    this.secondaryCalibrationActions = await this.readThingProperty("camera", "secondary_calibration_actions");
-  },
-
-  methods: {
-    onRecalibrateResponse: function() {
-      this.modalNotify("Finished recalibration.");
-    }
+    this.primaryCalibrationActions = await this.readThingProperty(
+      "camera",
+      "primary_calibration_actions"
+    );
+    this.secondaryCalibrationActions = await this.readThingProperty(
+      "camera",
+      "secondary_calibration_actions"
+    );
   }
 };
 </script>
