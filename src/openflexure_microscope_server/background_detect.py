@@ -83,6 +83,12 @@ class BackgroundDetectAlgorithm:
 
     @background_data.setter
     def background_data(self, value: Optional[BaseModel | dict]) -> None:
+        """Set the statistics for the background image.
+
+        This should be None, of no data is available. It can be set from either
+        a dictionary or a base model of the type specified in
+        ``self.background_data_model``.
+        """
         try:
             if value is None:
                 self._background_data = None
@@ -179,17 +185,22 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         The image should be in LUV format, the output will be binary with the
         same shape in the first two dimensions.
         """
-        d = self.background_data
-        if not d:
+        if not self.background_data:
             raise MissingBackgroundDataError(
                 "Background is not set: you need to calibrate background detection."
             )
-        # Only use the U and V channels of as brightness (L) often changes as the
-        # height of the sample changes.
+
+        # The ``[1:]`` is to only use the U and V channels of as brightness (L) often
+        # changes as the height of the sample changes.
+        # Wrapping in ``[[ ]]`` forces the colour channels to the numpy axis 2
+        # (3rd axis) so they are compared to the colour channel of each pixel.
+        means = np.array([[self.background_data.means[1:]]])
+        stds = np.array([[self.background_data.standard_deviations[1:]]])
+
+        # Compare each image in the pixel with the mean and standard deviation along
+        # axis to (the colour channels).
         return np.all(
-            np.abs(image[:, :, 1:] - np.array(d.means[1:])[np.newaxis, np.newaxis, :])
-            < np.array(d.standard_deviations[1:])[np.newaxis, np.newaxis, :]
-            * self.settings.channel_tolerance,
+            np.abs(image[:, :, 1:] - means) < stds * self.settings.channel_tolerance,
             axis=2,
         )
 
