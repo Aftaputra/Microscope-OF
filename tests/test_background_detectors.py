@@ -1,7 +1,6 @@
-"""Test the scan planning algorithms of the Microscope.
+"""Test the background detection algorithms.
 
-As well as low level function by function tests, this test suite also provides tests
-that simulate scanning a sample, checking that the expected path is followed.
+This tests both the base class an individual algorithms.
 """
 
 import re
@@ -10,7 +9,6 @@ import pytest
 from pydantic import BaseModel
 import numpy as np
 
-# Just for testing importing as
 from openflexure_microscope_server.background_detect import (
     MissingBackgroundDataError,
     BackgroundDetectAlgorithm,
@@ -153,6 +151,9 @@ def test_colour_channel_luv_save_load(background_image, sample_image):
     assert cc_luv2.settings.min_sample_coverage == 10.0
     sample, _ = cc_luv2.image_is_sample(sample_image)
     assert sample
+
+    # Remove the 2nd detector so we don't accidentally use it!
+    del cc_luv2
 
     # One final test that None can be set explicitly to background data as this will
     # happen if loading with background detect not saved.
