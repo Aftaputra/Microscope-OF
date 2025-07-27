@@ -190,8 +190,9 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
                 "Background is not set: you need to calibrate background detection."
             )
 
-        # The ``[1:]`` is to only use the U and V channels of as brightness (L) often
-        # changes as the height of the sample changes.
+        # The ``[1:]`` selects only the U and V channels of the image.
+        # Only U and V are used as brightness (L) often changes as
+        # the height of the sample changes.
         # Wrapping in ``[[ ]]`` forces the colour channels to the numpy axis 2
         # (3rd axis) so they are compared to the colour channel of each pixel.
         means = np.array([[self.background_data.means[1:]]])
