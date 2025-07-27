@@ -5,7 +5,12 @@
         <li>
           <a class="uk-accordion-title" href="#">Settings</a>
           <div class="uk-accordion-content">
-            <p> TODO!</p>
+            <input-from-schema
+              v-if="backgroundDetectorStatus"
+              v-model="backgroundDetectorStatus.settings"
+              :data-schema="backgroundDetectorStatus.settings_schema"
+              label=""
+            />
           </div>
         </li>
       </ul>
@@ -26,7 +31,7 @@
           thing="camera"
           action="image_is_sample"
           submit-label="Check Current Image"
-          :isDisabled="!backgroundDetectorStatus.ready"
+          :isDisabled="!ready"
           :can-terminate="false"
           :poll-interval="0.1"
           @response="alertImageLabel"
@@ -39,16 +44,25 @@
 
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
+import InputFromSchema from "../../labThingsComponents/inputFromSchema.vue";
 
 export default {
   components: {
     ActionButton,
+    InputFromSchema
   },
 
   data() {
     return {
       backgroundDetectorStatus: undefined,
     };
+  },
+
+  computed: {
+    ready() {
+      const status = this.backgroundDetectorStatus;
+      return status && status.ready === true;
+    }
   },
 
   methods: {

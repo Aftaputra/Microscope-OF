@@ -32,8 +32,9 @@ class BackgroundDetectorStatus(BaseModel):
     ``ready`` is used in case more complex methods are added in the future, which
     need different initialisation.
     """
-    settings: BaseModel
-    """The settings for this this background detect Algorithm"""
+    settings: dict[str, Any]
+    """The settings for this this background detect Algorithm. These are a dictionary
+    dumped from the base model."""
 
     # Setting schema is a dict until LabThings FastAPI issue #154 is fixed and
     # DataSchema can be used directly. For now `model_dump()` must be used to dump schema
@@ -63,7 +64,7 @@ class BackgroundDetectAlgorithm:
         """The status information needed for the GUI. Read only."""
         return BackgroundDetectorStatus(
             ready=self.background_data is not None,
-            settings=self.settings,
+            settings=self.settings.model_dump(),
             # Dump model with `model_dump()` for reason explained when defining
             # BackgroundDetectorStatus
             settings_schema=type_to_dataschema(self.settings_data_model).model_dump(),

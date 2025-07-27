@@ -88,7 +88,6 @@ export default {
     },
     writeProperty: async function(requestedValue) {
       try {
-        console.log(requestedValue);
         this.value=requestedValue;
         await this.writeThingProperty(
           this.thingName,
