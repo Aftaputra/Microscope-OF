@@ -20,6 +20,7 @@ import piexif
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
+from openflexure_microscope_server.ui import ActionButton
 from openflexure_microscope_server.background_detect import (
     ColourChannelDetectLUV,
     BackgroundDetectAlgorithm,
@@ -475,6 +476,16 @@ class BaseCamera(lt.Thing):
         """
         time.sleep(self.settling_time)
         self.discard_frames()
+
+    @lt.thing_property
+    def primary_calibration_actions(self) -> list[ActionButton]:
+        """The calibration actions for both calibration wizard and settings panel."""
+        return []
+
+    @lt.thing_property
+    def secondary_calibration_actions(self) -> list[ActionButton]:
+        """The calibration actions that appear only in settings panel."""
+        return []
 
     # Note that the default detector name is set at init. This is over written if
     # setting is loaded from disk.

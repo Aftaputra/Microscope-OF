@@ -21,6 +21,8 @@ from scipy.ndimage import gaussian_filter
 
 import labthings_fastapi as lt
 
+from openflexure_microscope_server.ui import ActionButton, action_button_for
+
 from . import BaseCamera, JPEGBlob, ArrayModel
 from ..stage import BaseStage
 
@@ -40,6 +42,7 @@ class SimulatedCamera(BaseCamera):
 
     _stage: Optional[BaseStage] = None
     _server: Optional[lt.ThingServer] = None
+    _show_sample: bool = True
 
     def __init__(
         self,
@@ -124,10 +127,11 @@ class SimulatedCamera(BaseCamera):
         Canvas is int16 so that random noise can be added to simulation image before
         changing to unit8 to stop wrapping.
         """
-        self.canvas = np.ones(self.canvas_shape, dtype=np.int16)
-        self.canvas[:, :, 0] *= BG_COLOR[0]
-        self.canvas[:, :, 1] *= BG_COLOR[1]
-        self.canvas[:, :, 2] *= BG_COLOR[2]
+        self.blank_canvas = np.ones(self.canvas_shape, dtype=np.int16)
+        self.blank_canvas[:, :, 0] *= BG_COLOR[0]
+        self.blank_canvas[:, :, 1] *= BG_COLOR[1]
+        self.blank_canvas[:, :, 2] *= BG_COLOR[2]
+        self.canvas = self.blank_canvas.copy()
         w, h, _ = self.glyph_shape
         for x, y, sprite_size_index in self.blobs:
             self.canvas[
@@ -149,7 +153,8 @@ class SimulatedCamera(BaseCamera):
         x_slice = slice(top_left[0], top_left[0] + self.shape[0])
         y_slice = slice(top_left[1], top_left[1] + self.shape[1])
         z_slice = slice(None)
-        focused_image = self.canvas[(x_slice, y_slice, z_slice)]
+        canvas = self.canvas if self._show_sample else self.blank_canvas
+        focused_image = canvas[(x_slice, y_slice, z_slice)]
         image = gaussian_filter(
             focused_image,
             sigma=np.abs(pos[2]) / 5,
@@ -279,3 +284,25 @@ class SimulatedCamera(BaseCamera):
         output = io.BytesIO()
         piexif.insert(piexif.dump(exif_dict), jpeg, output)
         return JPEGBlob.from_bytes(output.getvalue())
+
+    @lt.thing_action
+    def remove_sample(self):
+        """Show the simulated background with no sample."""
+        if not self._show_sample:
+            raise RuntimeError("Sample is already removed.")
+        self._show_sample = False
+
+    @lt.thing_action
+    def load_sample(self):
+        """Show the simulated sample."""
+        if self._show_sample:
+            raise RuntimeError("Sample is already in place.")
+        self._show_sample = True
+
+    @lt.thing_property
+    def secondary_calibration_actions(self) -> list[ActionButton]:
+        """The calibration actions that appear only in settings panel."""
+        return [
+            action_button_for(self.load_sample, submit_label="Load Sample"),
+            action_button_for(self.remove_sample, submit_label="Remove Sample"),
+        ]
