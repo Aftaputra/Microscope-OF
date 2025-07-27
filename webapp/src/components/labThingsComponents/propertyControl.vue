@@ -98,9 +98,14 @@ export default {
       type: String,
       required: true
     },
+    readBack: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
     readBackDelay: {
       type: Number,
-      default: undefined,
+      default: 1000,
       required: false
     }
   },
@@ -123,9 +128,6 @@ export default {
       } else {
         return 1;
       }
-    },
-    readBack: function() {
-      return this.readBackDelay !== undefined;
     },
     propertyDescription: function() {
       try {
@@ -202,7 +204,6 @@ export default {
     writeProperty: async function() {
       try {
         let requestedValue = this.value;
-        console.log("writing", requestedValue);
         await this.writeThingProperty(
           this.thingName,
           this.propertyName,

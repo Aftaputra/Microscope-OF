@@ -4,37 +4,14 @@
       <div class="uk-width-large">
         <h3>Automatic calibration</h3>
         <cameraCalibrationSettings :camera-uri="cameraUri" />
-
         <h3>Manual camera settings</h3>
-        <form @submit.prevent="applySettingsRequest">
-          <div class="uk-margin-small-bottom">
-            <ul uk-accordion="multiple: true">
-              <li class="uk-open">
-                <a class="uk-accordion-title" href="#">Pi Camera Settings</a>
-                <div class="uk-accordion-content">
-                  <PropertyControl
-                    label="Exposure Time (0-33251)"
-                    property-name="exposure_time"
-                    thing-name="camera"
-                    :read-back-delay="1000"
-                  />
-                  <PropertyControl
-                    label="Analogue Gain"
-                    property-name="analogue_gain"
-                    thing-name="camera"
-                    :read-back-delay="1000"
-                  />
-                  <PropertyControl
-                    label="Colour Gains"
-                    property-name="colour_gains"
-                    thing-name="camera"
-                    :read-back-delay="1000"
-                  />
-                </div>
-              </li>
-            </ul>
-          </div>
-        </form>
+        <div class="uk-margin-small-bottom">
+          <server-specified-property-control
+            v-for="(setting, index) in manualCameraSettings"
+            :key="'cam_setting' + index"
+            :property-data="setting"
+          />
+        </div>
       </div>
 
       <div id="mini-stream">
@@ -47,7 +24,7 @@
 <script>
 import cameraCalibrationSettings from "./cameraSettingsComponents/cameraCalibrationSettings.vue";
 import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
-import PropertyControl from "../../labThingsComponents/propertyControl.vue";
+import ServerSpecifiedPropertyControl from "../../labThingsComponents/serverSpecifiedPropertyControl.vue";
 
 // Export main app
 export default {
@@ -56,37 +33,12 @@ export default {
   components: {
     cameraCalibrationSettings,
     miniStreamDisplay,
-    PropertyControl
+    ServerSpecifiedPropertyControl
   },
 
-  data: function() {
+  data() {
     return {
-      picamera: {
-        shutter_speed: undefined,
-        analog_gain: undefined,
-        digital_gain: undefined,
-        framerate: undefined,
-        awb_gains: undefined
-      },
-      mjpeg_bitrate: undefined,
-      stream_resolution: undefined,
-      jpeg_quality: undefined,
-      bitrateOptions: [
-        { text: "Maximum (unlimited)", value: -1 },
-        { text: "High (25Mbps)", value: 25000000 },
-        { text: "Normal (17Mbps)", value: 17000000 },
-        { text: "Low (5Mbps)", value: 5000000 },
-        { text: "Very low (2.5Mbps)", value: 2500000 }
-      ],
-      resolutionOptions: [
-        { text: "Higher (832, 624)", value: [832, 624] },
-        { text: "Normal (640, 480)", value: [640, 480] }
-      ],
-      framerateOptions: [
-        { text: "Normal (30fps)", value: 30 },
-        { text: "Low (15fps)", value: 15 },
-        { text: "Very low (10fps)", value: 10 }
-      ]
+      manualCameraSettings: [],
     };
   },
 
@@ -94,6 +46,13 @@ export default {
     cameraUri: function() {
       return `${this.$store.getters.baseUri}/camera/`;
     }
+  },
+
+  async created() {
+    this.manualCameraSettings = await this.readThingProperty(
+      "camera",
+      "manual_camera_settings"
+    );
   }
 };
 </script>

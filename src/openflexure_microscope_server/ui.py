@@ -3,18 +3,6 @@
 from pydantic import BaseModel
 
 
-def action_button_for(action, **kwargs):
-    """Create an action button for the specified Thing Action.
-
-    :param action: The thing action to create a button for.
-    :param kwargs: Any attribute of `ActionButton` except for ``thing`` or ``action``.
-    """
-    thing = action.args[0]
-    thing_path = thing.path.strip("/")
-    action_name = action.func.__name__
-    return ActionButton(thing=thing_path, action=action_name, **kwargs)
-
-
 class ActionButton(BaseModel):
     """The data required for creating an actionButton in Vue.
 
@@ -53,3 +41,54 @@ class ActionButton(BaseModel):
 
     success_message: str = "Success!"
     """The message to show on successful completion."""
+
+
+def action_button_for(action, **kwargs) -> ActionButton:
+    """Create a ActionButton data for the specified Thing Action.
+
+    :param action: The thing action to create a button for.
+    :param kwargs: Any attribute of `ActionButton` except for ``thing`` or ``action``.
+    """
+    thing = action.args[0]
+    thing_path = thing.path.strip("/")
+    action_name = action.func.__name__
+    return ActionButton(thing=thing_path, action=action_name, **kwargs)
+
+
+class PropertyControl(BaseModel):
+    """The data required for creating an actionButton in Vue.
+
+    Currently this cannot be used to submitData, or to submitOnEvent.
+    """
+
+    thing: str
+    """The Thing "path" for the Thing instance."""
+
+    property_name: str
+    """The name of the property (or setting)."""
+
+    label: str
+    """The label to show in the UI"""
+
+    read_back: bool = False
+    """Whether or not to read back the property after setting.
+
+    This is useful for hardware settings that may be coerced to the closest value.
+    """
+
+    read_back_delay: int = 1000
+    """The delay in ms before reading back the property."""
+
+
+def property_control_for(thing, property_name, **kwargs) -> PropertyControl:
+    """Create an PropertyControl data for the specified Thing Property.
+
+    :param thing: The instance of the thing that has the property to be controlled.
+    :param property_name: The name of the property to create a control for.
+    :param kwargs: Any attribute of `PropertyControl` except for ``thing`` or
+        ``property_name``. If label is not set here it will be the property name.
+    """
+    thing_path = thing.path.strip("/")
+    if "label" not in kwargs:
+        kwargs["label"] = property_name
+    return PropertyControl(thing=thing_path, property_name=property_name, **kwargs)

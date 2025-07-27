@@ -35,7 +35,12 @@ from picamera2.outputs import Output
 import labthings_fastapi as lt
 from labthings_fastapi.exceptions import NotConnectedToServerError
 
-from openflexure_microscope_server.ui import ActionButton, action_button_for
+from openflexure_microscope_server.ui import (
+    ActionButton,
+    PropertyControl,
+    action_button_for,
+    property_control_for,
+)
 from . import picamera_recalibrate_utils as recalibrate_utils
 from . import BaseCamera, JPEGBlob, ArrayModel
 
@@ -830,6 +835,33 @@ class StreamingPiCamera2(BaseCamera):
                 self.reset_lens_shading,
                 submit_label="Reset Flat Field Correction",
                 can_terminate=False,
+            ),
+        ]
+
+    @lt.thing_property
+    def manual_camera_settings(self) -> list[PropertyControl]:
+        """The camera settings to expose as property controls in the settings panel."""
+        return [
+            property_control_for(
+                self,
+                "exposure_time",
+                label="Exposure Time (0-33251)",
+                read_back=True,
+                read_back_delay=1000,
+            ),
+            property_control_for(
+                self,
+                "analogue_gain",
+                label="Analogue Gain",
+                read_back=True,
+                read_back_delay=1000,
+            ),
+            property_control_for(
+                self,
+                "colour_gains",
+                label="Colour Gains",
+                read_back=True,
+                read_back_delay=1000,
             ),
         ]
 

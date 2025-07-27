@@ -21,7 +21,12 @@ from scipy.ndimage import gaussian_filter
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server.ui import ActionButton, action_button_for
+from openflexure_microscope_server.ui import (
+    ActionButton,
+    PropertyControl,
+    action_button_for,
+    property_control_for,
+)
 
 from . import BaseCamera, JPEGBlob, ArrayModel
 from ..stage import BaseStage
@@ -166,7 +171,7 @@ class SimulatedCamera(BaseCamera):
             )
 
         # Add noise and convert to uint8
-        image += RNG.normal(scale=2, size=self.shape).astype("int16")
+        image += RNG.normal(scale=self.noise_level, size=self.shape).astype("int16")
         image[image < 0] = 0
         image[image > 255] = 255
         return image.astype("uint8")
@@ -220,6 +225,8 @@ class SimulatedCamera(BaseCamera):
         if self._capture_enabled and self._capture_thread:
             return self._capture_thread.is_alive()
         return False
+
+    noise_level = lt.ThingProperty(float, 2.0)
 
     def _capture_frames(self):
         portal = lt.get_blocking_portal(self)
@@ -306,3 +313,8 @@ class SimulatedCamera(BaseCamera):
             action_button_for(self.load_sample, submit_label="Load Sample"),
             action_button_for(self.remove_sample, submit_label="Remove Sample"),
         ]
+
+    @lt.thing_property
+    def manual_camera_settings(self) -> list[PropertyControl]:
+        """The camera settings to expose as property controls in the settings panel."""
+        return [property_control_for(self, "noise_level", label="Noise Level")]
