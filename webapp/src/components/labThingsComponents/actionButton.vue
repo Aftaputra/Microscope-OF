@@ -18,6 +18,7 @@
     <div>
       <button
         type="button"
+        :disabled="isDisabled"
         :hidden="taskStarted"
         class="uk-button uk-width-1-1"
         :class="[buttonPrimary ? 'uk-button-primary' : 'uk-button-default']"
@@ -132,7 +133,12 @@ export default {
       type: Boolean,
       required: false,
       default: false
-    }
+    },
+    isDisabled: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
   },
 
   data: function() {

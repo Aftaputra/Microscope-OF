@@ -17,6 +17,7 @@
           :can-terminate="false"
           :poll-interval="0.1"
           @response="alertBackgroundSet"
+          @error="modalError"
         />
       </div>
       <div class="uk-margin">
@@ -25,10 +26,11 @@
           thing="camera"
           action="image_is_sample"
           submit-label="Check Current Image"
+          :isDisabled="!backgroundDetectorStatus.ready"
           :can-terminate="false"
           :poll-interval="0.1"
           @response="alertImageLabel"
-          @error="backgroundDetectError"
+          @error="modalError"
         />
       </div>
     </div>
@@ -40,7 +42,13 @@ import ActionButton from "../../labThingsComponents/actionButton.vue";
 
 export default {
   components: {
-    ActionButton
+    ActionButton,
+  },
+
+  data() {
+    return {
+      backgroundDetectorStatus: undefined,
+    };
   },
 
   methods: {
@@ -50,13 +58,13 @@ export default {
     alertImageLabel(r) {
       let label = r.output[0] ? "sample" : "background";
       this.modalNotify(`Current image is ${label} (${r.output[1]})`);
-    },
-    backgroundDetectError() {
-      this.modalError(
-        "Background detection failed, most likely you need to set a background image." +
-          " There may be more information in the log."
-      );
     }
+  },
+  async created() {
+    this.backgroundDetectorStatus = await this.readThingProperty(
+      "camera",
+      "background_detector_status"
+    );
   }
 };
 </script>
