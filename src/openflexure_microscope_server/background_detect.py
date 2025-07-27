@@ -8,7 +8,7 @@ current camera field of view contains sample.
 from typing import Optional, Any
 import cv2
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
 from pydantic.errors import PydanticUserError
 from scipy.stats import norm
 from labthings_fastapi.thing_description import type_to_dataschema
@@ -153,13 +153,18 @@ class ChannelDistributions(BaseModel):
 class ColourChannelDetectSettings(BaseModel):
     """A BaseModel for storing the settings for colour channel detectors."""
 
+    model_config = ConfigDict(extra="forbid")
+
     channel_tolerance: float = 7.0
     """Channel Tolerance
 
     The number of standard deviations a pixel value must be from the background mean
     to be considered sample.
     """
-    min_sample_coverage: float = 25.0
+
+    # Use Field to set Title reported to UI. By default Pydantic will convert the name
+    # from snake_case to Title Case.
+    min_sample_coverage: float = Field(25, title="Sample Coverage Required (%)")
     """Sample Coverage Required (%)
 
     The minimum percentage of the image that needs to be identified as sample for the

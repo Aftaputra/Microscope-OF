@@ -10,6 +10,8 @@
               v-model="backgroundDetectorStatus.settings"
               :data-schema="backgroundDetectorStatus.settings_schema"
               label=""
+              @requestUpdate="readSettings"
+              @sendValue="writeSettings"
             />
           </div>
         </li>
@@ -72,6 +74,19 @@ export default {
     alertImageLabel(r) {
       let label = r.output[0] ? "sample" : "background";
       this.modalNotify(`Current image is ${label} (${r.output[1]})`);
+    },
+    readSettings: async function() {
+      this.backgroundDetectorStatus = await this.readThingProperty(
+        "camera",
+        "background_detector_status"
+      );
+    },
+    writeSettings: async function(requestedValue) {
+      await this.invokeAction(
+        "camera",
+        "update_detector_settings",
+        {"data": requestedValue}
+      );
     }
   },
   async created() {

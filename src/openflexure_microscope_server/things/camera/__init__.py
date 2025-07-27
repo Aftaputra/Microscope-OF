@@ -516,6 +516,20 @@ class BaseCamera(lt.Thing):
         """The status of the active detector for the UI."""
         return self.active_detector.status
 
+    @lt.thing_action
+    def update_detector_settings(self, data) -> None:
+        """Update the settings of the current detector.
+
+        This is an action not a setting/property as the data model depends on the
+        selected detector. As such, it cannot be specified with the necessary precision
+        to be included in a ThingDescription as a setting/property, while retaining
+        enough useful information to communicate to the UI how it is set and read.
+
+        The information on how to read the settings is exposed in
+        ``background_detector_status``.
+        """
+        self.active_detector.settings = data
+
     @lt.thing_setting
     def background_detector_data(self) -> dict:
         """The data for each background detector, used to save to disk."""

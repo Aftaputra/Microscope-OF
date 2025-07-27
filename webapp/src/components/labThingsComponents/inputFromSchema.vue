@@ -51,20 +51,21 @@
     </label>
     <label v-if="dataType == 'number_object'" class="uk-form-label"
       >{{ label }}
-      <div class="input-and-buttons-container">
-        <input
-          v-for="(_v, key) in value"
-          :key="key"
-          v-model="internalValue[key]"
-          class="uk-form-small numeric-setting-line-input"
-          type="number"
-          @focusin="focusIn"
-          @focusout="focusOut"
-          @keydown="keyDown"
-        />
-        <a class="button-next-to-input" @click="requestUpdate">
-          <span class="material-symbols-outlined">refresh</span>
-        </a>
+      <div v-for="(val, key) in value" :key="key">
+        <label>{{internalLabels[key]}}</label>
+        <div class="input-and-buttons-container" >
+          <input
+            v-model="internalValue[key]"
+            class="uk-form-small numeric-setting-line-input"
+            type="number"
+            @focusin="focusIn"
+            @focusout="focusOut"
+            @keydown="keyDown"
+          />
+          <a class="button-next-to-input" @click="requestUpdate">
+            <span class="material-symbols-outlined">refresh</span>
+          </a>
+        </div>
       </div>
     </label>
     <label v-if="dataType == 'other'" class="uk-form-label"
@@ -112,6 +113,16 @@ export default {
     }
   },
   computed: {
+    internalLabels: function() {
+      if (this.dataType == "number_object") {
+        let labels = {};
+        for (const key in this.internalValue){
+          labels[key] = this.dataSchema.properties[key].title
+        }
+        return labels;
+      }
+      return [];
+    },
     valueLength: function() {
       if (this.dataType == "number_array") {
         if (this.internalValue == undefined) {
