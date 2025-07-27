@@ -3,6 +3,7 @@
     :thing="propertyData.thing"
     :property-name="propertyData.property_name"
     :thing-name="propertyData.thing"
+    :label="propertyData.label"
     :read-back="propertyData.read_back"
     :read-back-delay="propertyData.read_back_delay"
   />
