@@ -70,6 +70,7 @@ export default {
     },
 
     scrollToBottom() {
+    /*Scroll to bottom of log unless the user is hovering over the log.*/
       this.$nextTick(() => {
         if (this.userIsHovering) return;
 
