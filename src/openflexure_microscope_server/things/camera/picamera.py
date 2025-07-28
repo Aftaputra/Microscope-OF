@@ -226,7 +226,7 @@ class StreamingPiCamera2(BaseCamera):
         if not self._setting_save_in_progress and self.streaming:
             with self._streaming_picamera() as cam:
                 cam_value = cam.capture_metadata()["ExposureTime"]
-            if cam_value != self._exposure_time:
+            if abs(cam_value - self._exposure_time) > 30:
                 self._exposure_time = cam_value
                 self.save_settings()
         return self._exposure_time
@@ -754,6 +754,7 @@ class StreamingPiCamera2(BaseCamera):
         self.set_static_green_equalisation()
         self.calibrate_lens_shading()
         self.calibrate_white_balance()
+        self.reset_ccm()
         self.set_background(portal)
 
     @lt.thing_action
