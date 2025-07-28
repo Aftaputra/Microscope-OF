@@ -58,6 +58,7 @@ class SimulatedCamera(BaseCamera):
         :param frame_interval: Nominally the time between frames on the MJPEG stream,
             however the rate may be slower due to calculation time for focus.
         """
+        super().__init__()
         self.shape = shape
         self.glyph_shape = glyph_shape
         self.canvas_shape = canvas_shape

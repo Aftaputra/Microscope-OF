@@ -30,7 +30,7 @@ from openflexure_microscope_server.things.smart_scan import (
 from .mock_things.mock_csm import MockCSMThing
 from .mock_things.mock_autofocus import MockAutoFocusThing
 from .mock_things.mock_stage import MockStageThing
-from .mock_things.mock_background_detect import MockBackgroundDetectThing
+from .mock_things.mock_camera import MockCameraThing
 
 # A global logger to pass in as an Invocation Logger
 LOGGER = logging.getLogger("mock-invocation_logger")
@@ -169,10 +169,9 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
     cancel_mock = 1  # not called
     af_mock = MockAutoFocusThing()
     stage_mock = MockStageThing()
-    cam_mock = 4  # not called
+    cam_mock = MockCameraThing()
     meta_mock = 5  # not called
     csm_mock = MockCSMThing()
-    bkgrnd_det_mock = MockBackgroundDetectThing()
 
     class MockedSmartScanThing(SmartScanThing):
         """Mocked version of SmartScanThing with a patched _run_scan method."""
@@ -192,7 +191,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
             assert self._cam is cam_mock
             assert self._metadata_getter is meta_mock
             assert self._csm is csm_mock
-            assert self._background_detect is bkgrnd_det_mock
             assert self._capture_thread is None
             assert self._scan_images_taken == 0
 
@@ -212,7 +210,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
             cam=cam_mock,
             metadata_getter=meta_mock,
             csm=csm_mock,
-            background_detect=bkgrnd_det_mock,
             scan_name="FooBar",
         )
     except Exception as e:
@@ -227,7 +224,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
     assert mock_ss_thing._cam is None
     assert mock_ss_thing._metadata_getter is None
     assert mock_ss_thing._csm is None
-    assert mock_ss_thing._background_detect is None
     assert mock_ss_thing._capture_thread is None
     assert mock_ss_thing._scan_images_taken is None
 

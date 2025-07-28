@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Literal, Optional, Tuple, Any
 import json
 import time
+import logging
 
 import numpy as np
 from pydantic import RootModel
@@ -18,6 +19,14 @@ import piexif
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
+
+from openflexure_microscope_server.background_detect import (
+    ColourChannelDetectLUV,
+    BackgroundDetectAlgorithm,
+    BackgroundDetectorStatus,
+)
+
+LOGGER = logging.getLogger(__name__)
 
 
 class JPEGBlob(lt.blob.Blob):
@@ -154,6 +163,18 @@ class BaseCamera(lt.Thing):
     mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     lores_mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     _memory_buffer = CameraMemoryBuffer()
+
+    def __init__(self):
+        """Initialise the base camera, this creates the background detectors.
+
+        This must be run by all child camera classes.
+
+        To add a new background detector to the server it must be added to the
+        dictionary in this function. Configuration will be added at a later date.
+        """
+        super().__init__()
+        self.background_detectors = {"Colour Channels (LUV)": ColourChannelDetectLUV()}
+        self._detector_name = "Colour Channels (LUV)"
 
     def __enter__(self) -> None:
         """Open hardware connection when the Thing context manager is opened."""
@@ -454,6 +475,86 @@ class BaseCamera(lt.Thing):
         """
         time.sleep(self.settling_time)
         self.discard_frames()
+
+    # Note that the default detector name is set at init. This is over written if
+    # setting is loaded from disk.
+    @lt.thing_setting
+    def detector_name(self) -> str:
+        """The name of the active background selector."""
+        return self._detector_name
+
+    @detector_name.setter
+    def detector_name(self, name: str) -> None:
+        """Validate and set detector_name."""
+        if name not in self.background_detectors:
+            raise ValueError(f"{name} is not a valid background detector name")
+        self._detector_name = name
+
+    @property
+    def active_detector(self) -> BackgroundDetectAlgorithm:
+        """The active background detector instance."""
+        return self.background_detectors[self.detector_name]
+
+    @lt.thing_property
+    def background_detector_status(self) -> BackgroundDetectorStatus:
+        """The status of the active detector for the UI."""
+        return self.active_detector.status
+
+    @lt.thing_setting
+    def background_detector_data(self) -> dict:
+        """The data for each background detector, used to save to disk."""
+        data = {}
+        for name, obj in self.background_detectors.items():
+            bg_data = (
+                None
+                if obj.background_data is None
+                else obj.background_data.model_dump()
+            )
+            data[name] = {
+                "settings": obj.settings.model_dump(),
+                "background_data": bg_data,
+            }
+        return data
+
+    @background_detector_data.setter
+    def background_detector_data(self, data: dict) -> None:
+        """Set the data for each detector. Only to be used as settings are loaded from disk.
+
+        Do not call over HTTP. This needs to be updated once LbaThings Settings can be
+        read-only over HTTP (#484).
+        """
+        for name, instance_data in data.items():
+            if name in self.background_detectors:
+                obj = self.background_detectors[name]
+                obj.settings = instance_data["settings"]
+                obj.background_data = instance_data["background_data"]
+            else:
+                LOGGER.warning(
+                    f"No background detector named {name}, settings will be discarded."
+                )
+
+    @lt.thing_action
+    def image_is_sample(self, portal: lt.deps.BlockingPortal) -> tuple[bool, str]:
+        """Label the current image as either background or sample."""
+        current_image = self.grab_jpeg(portal)
+        current_image = np.array(Image.open(current_image.open()))
+        return self.active_detector.image_is_sample(current_image)
+
+    @lt.thing_action
+    def set_background(self, portal: lt.deps.BlockingPortal) -> None:
+        """Grab an image, and use its statistics to set the background.
+
+        This should be run when the microscope is looking at an empty region,
+        and will calculate the mean and standard deviation of the pixel values
+        in the LUV colourspace. These values will then be used to compare
+        future images to the distribution, to determine if each pixel is
+        foreground or background.
+        """
+        background = self.grab_jpeg(portal)
+        background = np.array(Image.open(background.open()))
+        self.active_detector.set_background(background)
+        # Manually save settings as the setter is not called.
+        self.save_settings()
 
 
 CameraDependency = lt.deps.direct_thing_client_dependency(BaseCamera, "/camera/")

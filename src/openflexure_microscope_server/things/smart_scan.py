@@ -1,7 +1,7 @@
 """The core sample scanning functionality for the OpenFlexure Microscope.
 
 SmartScan provides sample scanning functionality including automatic background
-detection (via the `BackgroundDetectThing`) and automatic path planning via
+detection (via the ``CameraThing``) and automatic path planning via
 `scan_planners`. It manages the directories of past scans via `scan_directories`.
 It also controls external processes for live stitching composite images, and
 the creation of the final stitched images.
@@ -29,7 +29,6 @@ from openflexure_microscope_server import scan_planners
 # Things
 from .autofocus import AutofocusThing
 from .camera_stage_mapping import CameraStageMapper
-from .background_detect import BackgroundDetectThing
 from .camera import CameraDependency as CamDep
 from .stage import StageDependency as StageDep
 
@@ -37,9 +36,6 @@ CSMDep = lt.deps.direct_thing_client_dependency(
     CameraStageMapper, "/camera_stage_mapping/"
 )
 AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
-BackgroundDep = lt.deps.direct_thing_client_dependency(
-    BackgroundDetectThing, "/background_detect/"
-)
 
 JPEGBlob = lt.blob.blob_type("image/jpeg")
 ZipBlob = lt.blob.blob_type("application/zip")
@@ -110,7 +106,6 @@ class SmartScanThing(lt.Thing):
         self._cam: Optional[CamDep] = None
         self._metadata_getter: Optional[lt.deps.GetThingStates] = None
         self._csm: Optional[CSMDep] = None
-        self._background_detect: Optional[BackgroundDep] = None
         self._ongoing_scan: Optional[scan_directories.ScanDirectory] = None
         self._starting_position: Optional[Mapping[str, int]] = None
         self._capture_thread: Optional[ErrorCapturingThread] = None
@@ -128,14 +123,13 @@ class SmartScanThing(lt.Thing):
         cam: CamDep,
         metadata_getter: lt.deps.GetThingStates,
         csm: CSMDep,
-        background_detect: BackgroundDep,
         scan_name: str = "",
     ):
         """Move the stage to cover an area, taking images that can be tiled together.
 
         The stage will move in a pattern that grows outwards from the starting point,
         stopping once it is surrounded by "background" (as detected by the
-        background_detect Thing) or reaches the "max_range" measured in steps.
+        camera Thing) or reaches the "max_range" measured in steps.
         """
         got_lock = self._scan_lock.acquire(timeout=0.1)
         if not got_lock:
@@ -149,7 +143,6 @@ class SmartScanThing(lt.Thing):
         self._cam = cam
         self._metadata_getter = metadata_getter
         self._csm = csm
-        self._background_detect = background_detect
         self._capture_thread = None
         self._scan_images_taken = 0
 
@@ -183,7 +176,6 @@ class SmartScanThing(lt.Thing):
             self._cam = None
             self._metadata_getter = None
             self._csm = None
-            self._background_detect = None
             self._capture_thread = None
             self._ongoing_scan = None
             self._scan_images_taken = None
@@ -207,7 +199,7 @@ class SmartScanThing(lt.Thing):
             )
 
         if self.skip_background:
-            if not self._background_detect.background_distributions:
+            if not self._cam.background_detector_status.ready:
                 raise RuntimeError(
                     "Background is not set: you need to calibrate background detection."
                 )
@@ -511,15 +503,13 @@ class SmartScanThing(lt.Thing):
             capture_image = True
             # If skipping background, take an image to check if current field of view is background
             if self._scan_data["skip_background"]:
-                capture_image = self._background_detect.image_is_sample()
+                capture_image, bg_message = self._cam.image_is_sample()
 
             if not capture_image:
                 route_planner.mark_location_visited(
                     new_pos_xyz, imaged=False, focused=False
                 )
-                # Background fraction is actually a percentage
-                back_perc = round(self._background_detect.background_fraction(), 0)
-                msg = f"Skipping {new_pos_xyz} as it is {back_perc}% background."
+                msg = f"Skipping {new_pos_xyz} as it is {bg_message}."
                 self._scan_logger.info(msg)
                 continue
 
