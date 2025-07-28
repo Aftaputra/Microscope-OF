@@ -23,6 +23,6 @@ class MockCameraThing:
 
     background_detector_status = BackgroundDetectorStatus(
         ready=True,
-        settings=ColourChannelDetectSettings(),
+        settings=ColourChannelDetectSettings().model_dump(),
         settings_schema={"fake": "schema"},
     )
