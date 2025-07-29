@@ -16,20 +16,22 @@ import time
 from ..utilities import quadratic
 from scipy.optimize import curve_fit
 from camera_stage_mapping import fft_image_tracking
-from labthings_fastapi.thing import Thing
-from labthings_fastapi.dependencies.thing import direct_thing_client_dependency
-from labthings_fastapi.dependencies.invocation import CancelHook, InvocationLogger
-from labthings_fastapi.decorators import thing_action
+import labthings_fastapi as lt
 from labthings_sangaboard import SangaboardThing
 from labthings_picamera2.thing import StreamingPiCamera2
 from labthings_fastapi.types.numpy import DenumpifyingDict
-from openflexure_microscope_server.things.autofocus import AutofocusThing
-from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
 
-StageDep = direct_thing_client_dependency(SangaboardThing, "/stage/")
-CamDep = direct_thing_client_dependency(StreamingPiCamera2, "/camera/")
-CSMDep = direct_thing_client_dependency(CameraStageMapper, "/camera_stage_mapping/")
-AutofocusDep = direct_thing_client_dependency(AutofocusThing, "/autofocus/")
+# Things
+from .autofocus import AutofocusThing
+from .camera_stage_mapping import CameraStageMapper
+from .camera import CameraDependency as CamDep
+from .stage import StageDependency as StageDep
+
+CSMDep = lt.deps.direct_thing_client_dependency(
+    CameraStageMapper, "/camera_stage_mapping/"
+)
+AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
+
 
 def generate_move_dicts(fov_perc: int, stream_resolution: list[int], direction: int, factor: float = 1) -> dict[str, float]:
     """Create a single dictionary of x and y moves for moving in image coordinates.
@@ -100,19 +102,19 @@ def move_and_measure(
     return delta, offset, focus_data, wrong_axis
 
 def medium_moves(
-        stream_resolution: list[int],
-        direction: int,
-        axis: str,
-        delta: dict[str,int],
-        focus_data: list[float],
-        stage_coords: list,
-        cor_lat_steps: list,
-        csm: CSMDep,
-        cam: CamDep,
-        stage:StageDep,
-        autofocus: AutofocusDep,
-        logger: InvocationLogger
-        ) -> tuple:
+    stream_resolution: list[int],
+    direction: int,
+    axis: str,
+    delta: dict[str, int],
+    focus_data: list[float],
+    stage_coords: list,
+    cor_lat_steps: list,
+    csm: CSMDep,
+    cam: CamDep,
+    stage: StageDep,
+    autofocus: AutofocusDep,
+    logger: lt.deps.InvocationLogger,
+) -> tuple:
     """Carries out the medium sized steps section of the range of motion test to get 5 points to make z position predictions with.
 
     :params stream_resolution: The resolution of the stream from the camera.
@@ -164,7 +166,7 @@ def small_moves(
     cam: CamDep,
     stage: StageDep,
     autofocus: AutofocusDep,
-    logger: InvocationLogger,
+    logger: lt.deps.InvocationLogger,
 ) -> tuple:
     """Carries out 3 small moves in a given direction and axis.
 
@@ -237,7 +239,14 @@ def small_moves(
             break
     return stage_coords, cor_lat_steps, delta
 
-def motion_detection(axis: str, direction: int, csm: CSMDep, stage: StageDep, cam: CamDep, logger: InvocationLogger) -> dict:
+def motion_detection(
+    axis: str,
+    direction: int,
+    csm: CSMDep,
+    stage: StageDep,
+    cam: CamDep,
+    logger: lt.deps.InvocationLogger,
+) -> dict:
     """Move the stage until motion is detected along a specified axis and direction.
 
     :params axis: The axis in which the stage is moving. This must be 'x' or 'y'.
@@ -274,7 +283,7 @@ def motion_detection(axis: str, direction: int, csm: CSMDep, stage: StageDep, ca
 
     return stage.position
 
-class RangeofMotionThing(Thing):
+class RangeofMotionThing(lt.Thing):
     """A class used to measure the range of motion of the stage in X and Y."""
 
     def rom_axis(
@@ -283,9 +292,9 @@ class RangeofMotionThing(Thing):
         stage: StageDep,
         cam: CamDep,
         csm: CSMDep,
-        logger: InvocationLogger,
+        logger: lt.deps.InvocationLogger,
         axis: str,
-        direction: int
+        direction: int,
     ) -> dict:
         """Measure the range of motion in a single axis and direction.
 
@@ -400,15 +409,14 @@ class RangeofMotionThing(Thing):
 
         return axis_results
 
-    @thing_action
+    @lt.thing_action
     def rom_main(
         self,
         autofocus: AutofocusDep,
         stage: StageDep,
         cam: CamDep,
         csm: CSMDep,
-        cancel: CancelHook,
-        logger: InvocationLogger
+        logger: lt.deps.InvocationLogger,
     ):
         """Measures the range of motion of the stage across the x and y axes.
 
@@ -424,7 +432,6 @@ class RangeofMotionThing(Thing):
                 stage,
                 cam,
                 csm,
-                cancel,
                 logger,
                 axis = axis_dir[0],
                 direction = axis_dir[1]
@@ -445,10 +452,9 @@ class RangeofMotionThing(Thing):
         rom_results["CSM Matrix"] = csm.image_to_stage_displacement_matrix
         rom_results["Step Range"] = step_range
 
-        self.thing_settings["rom_data"] = DenumpifyingDict(rom_results).model_dump()
+        self.rom_data = DenumpifyingDict(rom_results).model_dump()
 
         with open("/var/openflexure/ROM_Test_Results.json", 'w') as file_object:
             json.dump(rom_results, file_object, indent = 3)
 
         return rom_results
-
