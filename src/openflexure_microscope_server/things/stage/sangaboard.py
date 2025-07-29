@@ -169,7 +169,7 @@ class SangaboardThing(BaseStage):
                 time.sleep(dt)
 
     axis_direction = lt.ThingSetting(
-        initial_value={"x": 1, "y": 1, "z": -1},
+        initial_value={"x": -1, "y": 1, "z": -1},
         model=dict,
     )
     """The direction that each motor should move.
