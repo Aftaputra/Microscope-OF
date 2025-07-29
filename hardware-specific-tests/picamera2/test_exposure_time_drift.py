@@ -4,11 +4,13 @@ This can get very tedious. Recommend running pytest with -s option
 to monitor progress.
 """
 
+from typing import Optional, Any
 import logging
 import time
 import tempfile
 import os
 import json
+from contextlib import contextmanager
 
 from fastapi.testclient import TestClient
 
@@ -27,18 +29,31 @@ logging.basicConfig(level=logging.DEBUG)
 EXPOSURE_TOL = 30
 
 
+@contextmanager
+def camera_test_client(settings_folder: Optional[str] = None):
+    """Yield a camera ThingClinet on a camera server.
+
+    This is a context manager not a pytest fixture as it needs to be created
+    multiple times in some tests.
+    """
+    cam = StreamingPiCamera2()
+    server = ThingServer(settings_folder=settings_folder)
+    server.add_thing(cam, "/camera/")
+
+    with TestClient(server.app) as test_client:
+        client = ThingClient.from_url("/camera/", client=test_client)
+        yield client
+    del server
+    del cam
+
+
 def _test_exposure_time_drift(desired_time: int) -> None:
     """Capture 10 full res images and check that the exposure time remains constant.
 
     This confirms that automatic exposure time adjustment is fully turned off during
     capture.
     """
-    cam = StreamingPiCamera2()
-    server = ThingServer()
-    server.add_thing(cam, "/camera/")
-
-    with TestClient(server.app) as test_client:
-        client = ThingClient.from_url("/camera/", client=test_client)
+    with camera_test_client() as client:
         client.exposure_time = desired_time
         print(f"Setting desired time of {desired_time}")
         time.sleep(0.5)
@@ -82,13 +97,8 @@ def test_exposure_time_on_start_and_stop_stream():
 
     Take images using capture_to_memory() just as a scan would.
     """
-    cam = StreamingPiCamera2()
-    server = ThingServer()
-    server.add_thing(cam, "/camera/")
     desired_time = 1000
-    # Create a test client
-    with TestClient(server.app) as test_client:
-        client = ThingClient.from_url("/camera/", client=test_client)
+    with camera_test_client() as client:
         # Set a desired exposure time
         client.exposure_time = desired_time
         print(f"Setting desired time of {desired_time}")
@@ -115,17 +125,12 @@ def test_exposure_time_on_start_and_stop_stream():
             time.sleep(0.5)
             client.start_streaming()
         # Check after all of this the exposure time is the same.
-        assert abs(client.exposure_time - set_time) < EXPOSURE_TOL
+        assert client.exposure_time == set_time
 
 
 def _load_camera_and_return_exposure(tmpdir: str) -> int:
     """Load a camera (using any settings in tempdir) take images and check exposure."""
-    cam = StreamingPiCamera2()
-    server = ThingServer(settings_folder=tmpdir)
-    server.add_thing(cam, "/camera/")
-    # Create a test client
-    with TestClient(server.app) as test_client:
-        client = ThingClient.from_url("/camera/", client=test_client)
+    with camera_test_client(settings_folder=tmpdir) as client:
         # Set a desired exposure time
         time.sleep(0.5)
         # Take a couple of images to make sure that the exposure is adjusted to
@@ -133,20 +138,16 @@ def _load_camera_and_return_exposure(tmpdir: str) -> int:
         for i in range(2):
             client.capture_jpeg(resolution="full")
         # Save this time.
-        exposure_time = client.exposure_time
-    # close the server
-    del server
-    del cam
-    return exposure_time
+        return client.exposure_time
 
 
-def _load_setting(setting_file):
+def _load_setting(setting_file: str) -> dict[str, Any]:
     """Load settings json from disk to dictionary."""
     with open(setting_file, "r", encoding="utf-8") as file_obj:
         return json.load(file_obj)
 
 
-def _save_setting(settings, setting_file):
+def _save_setting(settings: dict[str, Any], setting_file: str):
     """Save settings dictionary to disk."""
     with open(setting_file, "w", encoding="utf-8") as file_obj:
         json.dump(settings, file_obj)
@@ -177,7 +178,7 @@ def test_exposure_time_saves_and_loads():
         recorded_exposure_second_load = _load_camera_and_return_exposure(tmpdir)
         settings = _load_setting(setting_file)
         assert settings["exposure_time"] == recorded_exposure_second_load
-        # Check it was set correctly within tolerance
+        # Check it was set to exactly the value previously saved to disk
         assert recorded_exposure == recorded_exposure_second_load
 
         # Repeat with 2000
@@ -195,5 +196,5 @@ def test_exposure_time_saves_and_loads():
         recorded_exposure_second_load = _load_camera_and_return_exposure(tmpdir)
         settings = _load_setting(setting_file)
         assert settings["exposure_time"] == recorded_exposure_second_load
-        # Check it was set correctly within tolerance
+        # Check it was set to exactly the value previously saved to disk
         assert recorded_exposure == recorded_exposure_second_load
