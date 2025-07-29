@@ -130,15 +130,31 @@ pytest:
     - git config --global user.name "Sir Unit of Test"
     - git config --global user.email "fake@email.no"
     - pytest
+    - mv .coverage .coverage.main
 #    --gitlab-code-quality-report=pytest-warnings.json # can restore when it installs ok
-  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     when: always
     paths:
       - report.xml
+      - .coverage.main
+
+# Combine CI coverage with coverage from Picamera
+combined-tests:
+  stage: testing
+  extends: .python
+  needs:
+    - job: pytest
+      artifacts: true
+  script:
+    - ./picamera_tests.py unzip
+    - coverage combine
+    - coverage report
+    - coverage xml
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    when: always
     reports:
       junit: report.xml
-#      codequality: pytest-warnings.json
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml

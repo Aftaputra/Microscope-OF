@@ -25,14 +25,14 @@ HASHED_FILES = [
 
 
 def _get_hashes(include_coverage=False):
-    """Return a dictonary of Git hashes for the HASHED FILES.
+    """Return a dictionary of Git hashes for the HASHED FILES.
 
     The key is the posixpath to the file so matching works even if the dictionary is
     compared to a dictionary created on another system.
 
     The coverage file is hashed when running for debug purposes.
 
-    Git hashes are so the files are line ending indpendent.
+    Git hashes are so the files are line ending independent.
     """
     hashes = {}
     filepaths = HASHED_FILES

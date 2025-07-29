@@ -10,7 +10,7 @@ It is essential to stop the server first:
 
 However, this will not archive the tests in the Git repository for reporting the coverage. For this see the section below on reporting the coverage.
 
-When writing and debugging these unit tests it is often best to run a specific test and to use the `-s` flag to see the print statments. It is also often useful to use `--pdb` to drop you into a python debug session on any failure. For example, you might run:
+When writing and debugging these unit tests it is often best to run a specific test and to use the `-s` flag to see the print statements. It is also often useful to use `--pdb` to drop you into a python debug session on any failure. For example, you might run:
 
     /picamera2/test_exposure_time_drift.py::test_exposure_time_saves_and_loads -s --pdb
 
