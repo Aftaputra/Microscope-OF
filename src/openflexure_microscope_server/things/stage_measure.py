@@ -13,6 +13,7 @@ import cv2
 import json
 from PIL import Image
 import time
+from ..utilities import quadratic
 from scipy.optimize import curve_fit
 from camera_stage_mapping import fft_image_tracking
 from labthings_fastapi.thing import Thing
@@ -29,17 +30,6 @@ StageDep = direct_thing_client_dependency(SangaboardThing, "/stage/")
 CamDep = direct_thing_client_dependency(StreamingPiCamera2, "/camera/")
 CSMDep = direct_thing_client_dependency(CameraStageMapper, "/camera_stage_mapping/")
 AutofocusDep = direct_thing_client_dependency(AutofocusThing, "/autofocus/")
-
-def quadratic(x, a, b, c):
-    """Quadratic function. Used for predicting z.
-
-    :param x: The points at which to evaluate the quadratic.
-    :param a: The coefficient of x^2.
-    :param b: The coefficient of x.
-    :param c: The constant coefficient.
-    :return: The quadratic, evaluated at each point in ``x``
-    """
-    return a * x**2 + b * x + c
 
 def generate_move_dicts(fov_perc: int, stream_resolution: list[int], direction: int, factor: float = 1) -> dict[str, float]:
     """Create a single dictionary of x and y moves for moving in image coordinates.

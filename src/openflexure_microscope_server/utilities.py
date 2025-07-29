@@ -327,3 +327,14 @@ def _get_version_from_toml(toml_path: str) -> str:
     except (IOError, ValueError, KeyError):
         LOGGER.error("Problem opening pyproject.toml")
         return "Undefined"
+
+def quadratic(x, a, b, c):
+    """Quadratic function. Used for predicting z.
+
+    :param x: The points at which to evaluate the quadratic.
+    :param a: The coefficient of x^2.
+    :param b: The coefficient of x.
+    :param c: The constant coefficient.
+    :return: The quadratic, evaluated at each point in ``x``
+    """
+    return a * x**2 + b * x + c
