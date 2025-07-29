@@ -342,7 +342,7 @@ class BaseCamera(lt.Thing):
         logger: lt.deps.InvocationLogger,
         metadata_getter: lt.deps.GetThingStates,
         buffer_max: int = 1,
-    ) -> None:
+    ) -> int:
         """Capture an image to memory. This can be saved later with ``save_from_memory``.
 
         Note that only one image is held in memory so this will overwrite any image

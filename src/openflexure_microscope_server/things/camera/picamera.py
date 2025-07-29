@@ -233,7 +233,7 @@ class StreamingPiCamera2(BaseCamera):
 
     @exposure_time.setter
     def exposure_time(self, value: int):
-        _exposure_time = value
+        self._exposure_time = value
         if self.streaming:
             with self._streaming_picamera() as cam:
                 # Note: This set a value 1 higher than requested as picamera2 always
@@ -250,7 +250,8 @@ class StreamingPiCamera2(BaseCamera):
             "Brightness": 0,
             "ColourGains": self.colour_gains,
             "Contrast": 1,
-            "ExposureTime": self.exposure_time,
+            # Must also set plus 1 or the exposure drifts with start and stop stream.
+            "ExposureTime": self.exposure_time + 1,
             "Saturation": 1,
             "Sharpness": 1,
         }
@@ -754,6 +755,7 @@ class StreamingPiCamera2(BaseCamera):
         self.set_static_green_equalisation()
         self.calibrate_lens_shading()
         self.calibrate_white_balance()
+        self.reset_ccm()
         self.set_background(portal)
 
     @lt.thing_action
