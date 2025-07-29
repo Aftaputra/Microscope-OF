@@ -272,15 +272,19 @@ export default {
       var x_rel = 0;
       var y_rel = 0;
       var z_rel = 0;
+      // 37 corresponds to the left key
       if (37 in this.arrowKeysDown) {
-        x_rel = x_rel + 1;
-      }
-      if (39 in this.arrowKeysDown) {
         x_rel = x_rel - 1;
       }
+      // 39 corresponds to the right key
+      if (39 in this.arrowKeysDown) {
+        x_rel = x_rel + 1;
+      }
+      // 38 corresponds to the up key
       if (38 in this.arrowKeysDown) {
         y_rel = y_rel + 1;
       }
+      // 40 corresponds to the down key
       if (40 in this.arrowKeysDown) {
         y_rel = y_rel - 1;
       }
