@@ -31,7 +31,7 @@ EXPOSURE_TOL = 30
 
 @contextmanager
 def camera_test_client(settings_folder: Optional[str] = None):
-    """Yield a camera ThingClinet on a camera server.
+    """Yield a camera ThingClient on a camera server.
 
     This is a context manager not a pytest fixture as it needs to be created
     multiple times in some tests.
