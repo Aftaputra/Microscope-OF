@@ -38,7 +38,7 @@ def _get_hashes(include_coverage: bool = False) -> dict[str, str]:
     filepaths = HASHED_FILES
     if include_coverage:
         filepaths.append(COVERAGE_FILE)
-    for filepath in HASHED_FILES:
+    for filepath in filepaths:
         if not os.path.isfile(filepath):
             # Sys exit rather than raise for better command line experience
             print(f"ERROR: {filepath} does not exist!")
