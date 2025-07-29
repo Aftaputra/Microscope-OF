@@ -226,7 +226,7 @@ class StreamingPiCamera2(BaseCamera):
         if not self._setting_save_in_progress and self.streaming:
             with self._streaming_picamera() as cam:
                 cam_value = cam.capture_metadata()["ExposureTime"]
-            if abs(cam_value - self._exposure_time) > 30:
+            if cam_value != self._exposure_time:
                 self._exposure_time = cam_value
                 self.save_settings()
         return self._exposure_time
@@ -250,7 +250,8 @@ class StreamingPiCamera2(BaseCamera):
             "Brightness": 0,
             "ColourGains": self.colour_gains,
             "Contrast": 1,
-            "ExposureTime": self.exposure_time,
+            # Must also set plus 1 or the exposure drifts with start and stop stream.
+            "ExposureTime": self.exposure_time + 1,
             "Saturation": 1,
             "Sharpness": 1,
         }
