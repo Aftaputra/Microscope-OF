@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.DEBUG)
 EXPOSURE_TOL = 30
 
 
-def _test_exposure_time_drift(desired_time):
+def _test_exposure_time_drift(desired_time: int) -> None:
     """Capture 10 full res images and check that the exposure time remains constant.
 
     This confirms that automatic exposure time adjustment is fully turned off during
@@ -78,7 +78,7 @@ def test_exposure_time_drift():
 
 
 def test_exposure_time_on_start_and_stop_stream():
-    """Start and stop stream in the same way a scan does and check exposere doesn't drift.
+    """Start and stop stream in the same way a scan does and check exposure doesn't drift.
 
     Take images using capture_to_memory() just as a scan would.
     """
