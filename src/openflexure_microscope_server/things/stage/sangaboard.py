@@ -68,7 +68,10 @@ class SangaboardThing(BaseStage):
     def update_position(self) -> None:
         """Read position from the stage and set the corresponding property."""
         with self.sangaboard() as sb:
-            self.position = dict(zip(self.axis_names, sb.position))
+            position = [
+                a * b for a, b in zip(sb.position, self.axis_direction.values())
+            ]
+            self.position = dict(zip(self.axis_names, position))
 
     @lt.thing_action
     def move_relative(
@@ -78,7 +81,9 @@ class SangaboardThing(BaseStage):
         **kwargs: Mapping[str, int],
     ) -> None:
         """Make a relative move. Keyword arguments should be axis names."""
-        displacement = [kwargs.get(axis, 0) for axis in self.axis_names]
+        displacement = [
+            kwargs.get(axis, 0) * self.axis_direction[axis] for axis in self.axis_names
+        ]
         with self.sangaboard() as sb:
             self.moving = True
             try:
@@ -162,3 +167,22 @@ class SangaboardThing(BaseStage):
                 time.sleep(dt)
                 sb.query(f"{led_command} {on_brightness}")
                 time.sleep(dt)
+
+    axis_direction = lt.ThingSetting(
+        initial_value={"x": 1, "y": 1, "z": -1},
+        model=dict,
+    )
+    """The direction that each motor should move.
+
+    Testing reveals that z and either x or y generally need inverting."""
+
+    @lt.thing_action
+    def invert_axis_direction(self, axis: Literal["x", "y", "z"]):
+        """Invert the direction setting of the given axis.
+
+        :param axis: The axis name (x, y or z) to invert.
+        """
+        direction = self.axis_direction
+        direction[axis] *= -1
+        self.axis_direction = direction
+        self.update_position()
