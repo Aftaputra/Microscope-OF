@@ -24,7 +24,7 @@ HASHED_FILES = [
 ]
 
 
-def _get_hashes(include_coverage=False):
+def _get_hashes(include_coverage: bool = False) -> dict[str, str]:
     """Return a dictionary of Git hashes for the HASHED FILES.
 
     The key is the posixpath to the file so matching works even if the dictionary is
@@ -49,7 +49,7 @@ def _get_hashes(include_coverage=False):
     return hashes
 
 
-def run_tests():
+def run_tests() -> None:
     """Run the picamera tests, zip the coverage database, hash relevant source files."""
     subprocess.run(["pytest", "hardware-specific-tests"], check=True)
     shutil.copyfile(".coverage", COVERAGE_FILE)
@@ -61,7 +61,7 @@ def run_tests():
         zipf.write(HASH_FILE)
 
 
-def unzip_coverage():
+def unzip_coverage() -> None:
     """Unzip coverage database if hashes match relevant source files."""
     if zipfile.is_zipfile(ZIP_FILE):
         with zipfile.ZipFile(ZIP_FILE, "r") as zip_obj:
@@ -89,7 +89,7 @@ def unzip_coverage():
         sys.exit(-1)
 
 
-def main():
+def main() -> None:
     """Either run tests or unzip previous results."""
     parser = argparse.ArgumentParser(
         description=(
