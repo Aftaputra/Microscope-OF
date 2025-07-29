@@ -6,6 +6,9 @@ to monitor progress.
 
 import logging
 import time
+import tempfile
+import os
+import json
 
 from fastapi.testclient import TestClient
 
@@ -75,10 +78,9 @@ def test_exposure_time_drift():
 
 
 def test_exposure_time_on_start_and_stop_stream():
-    """Capture 10 full res images and check that the exposure time remains constant.
+    """Start and stop stream in the same way a scan does and check exposere doesn't drift.
 
-    This confirms that automatic exposure time adjustment is fully turned off during
-    capture.
+    Take images using capture_to_memory() just as a scan would.
     """
     cam = StreamingPiCamera2()
     server = ThingServer()
@@ -99,12 +101,12 @@ def test_exposure_time_on_start_and_stop_stream():
         set_time = client.exposure_time
         assert abs(set_time - desired_time) < EXPOSURE_TOL
 
-        # Mimick doing 10 smart scans. Change to full res, take some images. Return
+        # Mimic doing 10 smart scans. Change to full res, take some images. Return
         # to standard preview resolution.
         for i in range(10):
             print(f"Starting simulation scan {i}")
             # This will need updating if we start supporting other Picamera models
-            # It is currently used here to mimick the behaviour in in scanning.
+            # It is currently used here to mimic the behaviour in in scanning.
             client.start_streaming(main_resolution=(3280, 2464))
             time.sleep(0.5)
             for _j in range(5):
@@ -114,3 +116,84 @@ def test_exposure_time_on_start_and_stop_stream():
             client.start_streaming()
         # Check after all of this the exposure time is the same.
         assert abs(client.exposure_time - set_time) < EXPOSURE_TOL
+
+
+def _load_camera_and_return_exposure(tmpdir: str) -> int:
+    """Load a camera (using any settings in tempdir) take images and check exposure."""
+    cam = StreamingPiCamera2()
+    server = ThingServer(settings_folder=tmpdir)
+    server.add_thing(cam, "/camera/")
+    # Create a test client
+    with TestClient(server.app) as test_client:
+        client = ThingClient.from_url("/camera/", client=test_client)
+        # Set a desired exposure time
+        time.sleep(0.5)
+        # Take a couple of images to make sure that the exposure is adjusted to
+        # a hardware compatible value.
+        for i in range(2):
+            client.capture_jpeg(resolution="full")
+        # Save this time.
+        exposure_time = client.exposure_time
+    # close the server
+    del server
+    del cam
+    return exposure_time
+
+
+def _load_setting(setting_file):
+    """Load settings json from disk to dictionary."""
+    with open(setting_file, "r", encoding="utf-8") as file_obj:
+        return json.load(file_obj)
+
+
+def _save_setting(settings, setting_file):
+    """Save settings dictionary to disk."""
+    with open(setting_file, "w", encoding="utf-8") as file_obj:
+        json.dump(settings, file_obj)
+
+
+def test_exposure_time_saves_and_loads():
+    """Check that exposure time saves to disk and loads correctly."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        setting_file = os.path.join(tmpdir, "camera", "settings.json")
+
+        # Create a server, take some images, and get the exposure time
+        initial_exposure = _load_camera_and_return_exposure(tmpdir)
+        settings = _load_setting(setting_file)
+        assert settings["exposure_time"] == initial_exposure
+
+        # Adjust exposure to 1000 and save
+        settings["exposure_time"] = 1000
+        _save_setting(settings, setting_file)
+
+        # Create a server, take some images, and get the exposure time
+        recorded_exposure = _load_camera_and_return_exposure(tmpdir)
+        settings = _load_setting(setting_file)
+        assert settings["exposure_time"] == recorded_exposure
+        # Check it was set correctly within tolerance
+        assert abs(recorded_exposure - 1000) < EXPOSURE_TOL
+
+        # Load a second time without changing the file. Exposure should not change
+        recorded_exposure_second_load = _load_camera_and_return_exposure(tmpdir)
+        settings = _load_setting(setting_file)
+        assert settings["exposure_time"] == recorded_exposure_second_load
+        # Check it was set correctly within tolerance
+        assert recorded_exposure == recorded_exposure_second_load
+
+        # Repeat with 2000
+        settings["exposure_time"] = 2000
+        _save_setting(settings, setting_file)
+
+        # Create a server, take some images, and get the exposure time
+        recorded_exposure = _load_camera_and_return_exposure(tmpdir)
+        settings = _load_setting(setting_file)
+        assert settings["exposure_time"] == recorded_exposure
+        # Check it was set correctly within tolerance
+        assert abs(recorded_exposure - 2000) < EXPOSURE_TOL
+
+        # Load a second time without changing the file. Exposure should not change
+        recorded_exposure_second_load = _load_camera_and_return_exposure(tmpdir)
+        settings = _load_setting(setting_file)
+        assert settings["exposure_time"] == recorded_exposure_second_load
+        # Check it was set correctly within tolerance
+        assert recorded_exposure == recorded_exposure_second_load

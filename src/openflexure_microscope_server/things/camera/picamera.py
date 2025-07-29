@@ -233,7 +233,7 @@ class StreamingPiCamera2(BaseCamera):
 
     @exposure_time.setter
     def exposure_time(self, value: int):
-        _exposure_time = value
+        self._exposure_time = value
         if self.streaming:
             with self._streaming_picamera() as cam:
                 # Note: This set a value 1 higher than requested as picamera2 always
