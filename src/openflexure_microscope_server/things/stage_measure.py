@@ -17,8 +17,6 @@ from ..utilities import quadratic
 from scipy.optimize import curve_fit
 from camera_stage_mapping import fft_image_tracking
 import labthings_fastapi as lt
-from labthings_sangaboard import SangaboardThing
-from labthings_picamera2.thing import StreamingPiCamera2
 from labthings_fastapi.types.numpy import DenumpifyingDict
 
 # Things
@@ -319,7 +317,7 @@ class RangeofMotionThing(lt.Thing):
             logger.info(f"Beginning the {axis}-axis in the {dir_word} direction")
 
             # Generate required dictionaries for step sizes and minimum offsets
-            stream_resolution = cam.stream_resolution
+            stream_resolution = [820,616]
 
             big_step = 200
             small_step = 20
@@ -452,9 +450,13 @@ class RangeofMotionThing(lt.Thing):
         rom_results["CSM Matrix"] = csm.image_to_stage_displacement_matrix
         rom_results["Step Range"] = step_range
 
-        self.rom_data = DenumpifyingDict(rom_results).model_dump()
+        self.last_calibration = DenumpifyingDict(rom_results).model_dump()
 
         with open("/var/openflexure/ROM_Test_Results.json", 'w') as file_object:
             json.dump(rom_results, file_object, indent = 3)
 
         return rom_results
+
+    last_calibration = lt.ThingSetting(
+        initial_value=None, model=dict, readonly=True
+    )
