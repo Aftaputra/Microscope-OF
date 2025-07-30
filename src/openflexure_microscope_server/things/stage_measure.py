@@ -15,6 +15,7 @@ is tracked and an error is raised if it exceeds a reasonable amount.
 import numpy as np
 import cv2
 import json
+from typing import Literal
 from PIL import Image
 import time
 from ..utilities import quadratic
@@ -37,7 +38,10 @@ AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocu
 
 
 def _generate_move_dicts(
-    fov_perc: int, stream_resolution: list[int], direction: int, factor: float = 1
+    fov_perc: int,
+    stream_resolution: list[int],
+    direction: Literal[1, -1],
+    factor: float = 1,
 ) -> dict[str, float]:
     """Create a single dictionary of x and y moves for moving in image coordinates.
 
@@ -54,7 +58,7 @@ def _generate_move_dicts(
 
 
 def _predict_z(
-    positions: list, axis: str, relative_move: float, stage: StageDep, csm: CSMDep
+    positions: list, axis: Literal["x", "y"], relative_move: float, stage: StageDep, csm: CSMDep
 ) -> float:
     """Predict the next z position for a move using previous positions.
 
@@ -82,7 +86,7 @@ def _predict_z(
 
 def _move_and_measure(
     step_size: dict[str, float],
-    axis: str,
+    axis: Literal["x", "y"],
     data,
     image1: npt.ArrayLike,
     autofocus_proc: bool,
@@ -125,8 +129,8 @@ def _move_and_measure(
 
 def _acquire_z_predict_points(
     stream_resolution: list[int],
-    direction: int,
-    axis: str,
+    direction: Literal[1, -1],
+    axis: Literal["x", "y"],
     data,
     csm: CSMDep,
     cam: CamDep,
@@ -173,8 +177,8 @@ def _acquire_z_predict_points(
 def _check_stage_operation(
     small_step: int,
     stream_resolution: list[int],
-    direction: int,
-    axis: str,
+    direction: Literal[1, -1],
+    axis: Literal["x", "y"],
     data,
     minimum_offset_small: dict[str, float],
     csm: CSMDep,
@@ -256,8 +260,8 @@ def _check_stage_operation(
 
 
 def _motion_detection(
-    axis: str,
-    direction: int,
+    axis: Literal["x", "y"],
+    direction: Literal[1, -1],
     csm: CSMDep,
     stage: StageDep,
     cam: CamDep,
@@ -348,8 +352,8 @@ class RangeofMotionThing(lt.Thing):
         cam: CamDep,
         csm: CSMDep,
         logger: lt.deps.InvocationLogger,
-        axis: str,
-        direction: int,
+        axis: Literal["x", "y"],
+        direction: Literal[1,-1],
     ) -> dict:
         """Measure the range of motion in a single axis and direction.
 
