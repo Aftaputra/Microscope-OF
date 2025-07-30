@@ -1,4 +1,16 @@
-## Hardware specific tests for the PiCamera.
+# Hardware specific tests
+
+This directory contains unit tests that require specific hardware to run. Current they implement tests for code that interacts with the Raspberry Pi Camera.
+
+## Hardware specific tests for the Pi Camera.
+
+The OpenFlexure Microscope Server runs automated test in the cloud (via the GitLab CI) to test each version of the code as changes are proposed and merged. As these tests run in the cloud they do not have access to actual microscope hardware. As such, these tests either test specific blocks of code that don't need hardware access or make use of simulated hardware via the simulation camera and dummy stage.
+
+To test the code that interacts with the hardware itself, hardware specific tests are needed and they must be run with the hardware available. This directory provides these tests. For now the only hardware specific tests are for the Pi Camera. They must be run on a Raspberry Pi with a Pi Camera attached.
+
+In GitLab we track our "code coverage", this tells us which lines of code have been executed during testing. The `picamera_tests.py` script in the root of the repository can be used to report the coverage from these tests. See the section below on "Reporting the coverage to GitLab".
+
+### Running these tests during development
 
 These are very slow as they run on hardware. They can be run with:
 
@@ -14,13 +26,33 @@ When writing and debugging these unit tests it is often best to run a specific t
 
     pytest hardware-specific-tests/picamera2/test_exposure_time_drift.py::test_exposure_time_saves_and_loads -s --pdb
 
-### Reporting the coverage
+### Reporting the coverage to GitLab
 
-To create a coverage report that will be included into the repository run:
+To create a coverage report that will be included into the repository (and reported to GitLab) run:
 
     ./picamera_tests.py run
 
-This will create a zip of test results along with hashes of the picamera files and the base camera file. The server will include this coverage report if the source files remain the same.
+This will first run `pytest` on the hardware specific tests. This creates a `.coverage` database that can be used to analyse the code coverage of these tests. This will be copied to `.coverage.picamera`. The script will then create a zip of these test results along with hashes of source code for the Pi Camera:
+
+* `picamera.py`
+* `picamera_recalibrate_utils.py`
+* `__init__.py` in the `camera` directory that defines `BaseCamera`
+
+This zip should then be committed to the repository.
+
+When the CI runs on GitLab to calculate code coverage. It will first run the tests in the `tests` directory, in one job and archive this as `.coverage.main`, and then it will run a second job that:
+
+* Imports the archive of `.coverage.main` for the tests just run on the server
+* Unzip the zip of the results of running tests on the Pi Camera (`.coverage.picamera`)
+* Check that the hashes for the Pi Camera source code have not changed. If they have changed it will error and ask for the picamera tests to be re-run on a Raspberry Pi.
+* It will then run `coverage combine` to create a single `.coverage` report that combines the coverage from both `.coverage.main` and `.coverage.picamera`.
+* It then generates the information needed to display the coverage in GitLab
+
+This ensures that:
+
+* Hardware specific tests are re-run if the relevant source code changes.
+* That the coverage for hardware specific tests is reported correctly
+* That the hardware specific tests do not need re-running when other code that does not affect PiCamera interaction is updated.
 
 ### Creating a combined report locally
 
