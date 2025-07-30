@@ -328,6 +328,7 @@ def _get_version_from_toml(toml_path: str) -> str:
         LOGGER.error("Problem opening pyproject.toml")
         return "Undefined"
 
+
 def quadratic(x, a, b, c):
     """Quadratic function. Used for predicting z.
 

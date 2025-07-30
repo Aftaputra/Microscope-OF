@@ -35,11 +35,9 @@ CSMDep = lt.deps.direct_thing_client_dependency(
 AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 
 
-def generate_move_dicts(fov_perc: int,
-                        stream_resolution: list[int],
-                        direction: int,
-                        factor: float = 1
-                        ) -> dict[str, float]:
+def generate_move_dicts(
+    fov_perc: int, stream_resolution: list[int], direction: int, factor: float = 1
+) -> dict[str, float]:
     """Create a single dictionary of x and y moves for moving in image coordinates.
 
     :param fov_perc: The percentage of field of view the stage should move by.
@@ -54,12 +52,9 @@ def generate_move_dicts(fov_perc: int,
     }
 
 
-def predict_z(positions: list,
-              axis: str,
-              relative_move: float,
-              stage: StageDep,
-              csm: CSMDep
-              ) -> float:
+def predict_z(
+    positions: list, axis: str, relative_move: float, stage: StageDep, csm: CSMDep
+) -> float:
     """Predict the next z position for a move using previous positions.
 
     :params positions: The list of positions used for predicting z.
@@ -70,26 +65,30 @@ def predict_z(positions: list,
     :return: A number of pixels the stage needs to move in z.
     """
     pixel_step = {
-        'x':1/csm.image_to_stage_displacement_matrix[0][1],
-        'y':1/csm.image_to_stage_displacement_matrix[1][0]
+        "x": 1 / csm.image_to_stage_displacement_matrix[0][1],
+        "y": 1 / csm.image_to_stage_displacement_matrix[1][0],
     }
 
     lateral_positions = [i[axis] for i in positions]
-    z_positions = [i['z'] for i in positions]
-    parameters, _ = curve_fit(quadratic, lateral_positions,  z_positions)
-    z_dest = quadratic(stage.position[axis] + (relative_move/pixel_step[axis]), *parameters)
+    z_positions = [i["z"] for i in positions]
+    parameters, _ = curve_fit(quadratic, lateral_positions, z_positions)
+    z_dest = quadratic(
+        stage.position[axis] + (relative_move / pixel_step[axis]), *parameters
+    )
 
     return z_dest - stage.position["z"]
 
+
 def move_and_measure(
-        step_size: dict[str, float],
-        axis: str,
-        data,
-        image1,
-        autofocus_proc: bool,
-        csm: CSMDep,
-        autofocus: AutofocusDep,
-        cam:CamDep) -> tuple:
+    step_size: dict[str, float],
+    axis: str,
+    data,
+    image1,
+    autofocus_proc: bool,
+    csm: CSMDep,
+    autofocus: AutofocusDep,
+    cam: CamDep,
+) -> tuple:
     """Move the stage and measure the offset between the two positions.
 
     :params step_size: A dictionary with keys 'x' and 'y' with pixel distances.
@@ -100,25 +99,28 @@ def move_and_measure(
     :return: All required data for the next move. This includes the updated delta value and offset.
     Also returns what wrong_axis is i.e. if the direction is 'x', wrong_axis = 'y'.
     """
-    if axis == 'x':
-        csm.move_in_image_coordinates(x = step_size['x'], y = 0)
-        wrong_axis = 'y'
+    if axis == "x":
+        csm.move_in_image_coordinates(x=step_size["x"], y=0)
+        wrong_axis = "y"
     else:
-        csm.move_in_image_coordinates(x = 0, y = step_size['y'])
-        wrong_axis = 'x'
+        csm.move_in_image_coordinates(x=0, y=step_size["y"])
+        wrong_axis = "x"
     if autofocus_proc:
-        autofocus.looping_autofocus(dz = 800)
-    image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
-    offset = [x * 1 for x in fft_image_tracking.displacement_between_images(
-        image_0 = image1,
-        image_1 = image2,
-        sigma=10,
-        fractional_threshold=0.1,
-        pad=True)] # Units is pixels
-    data.delta['x'] = int(offset[1])
-    data.delta['y'] = int(offset[0])
+        autofocus.looping_autofocus(dz=800)
+    image2 = cv2.resize(
+        np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
+    )
+    offset = [
+        x * 1
+        for x in fft_image_tracking.displacement_between_images(
+            image_0=image1, image_1=image2, sigma=10, fractional_threshold=0.1, pad=True
+        )
+    ]  # Units is pixels
+    data.delta["x"] = int(offset[1])
+    data.delta["y"] = int(offset[0])
 
     return offset, wrong_axis
+
 
 def acquire_z_predict_points(
     stream_resolution: list[int],
@@ -162,7 +164,10 @@ def acquire_z_predict_points(
 
         data.measure(stage.position, offset)
 
-        assert(np.abs(data.delta[wrong_axis]) < np.abs(wrong_axis_max_medium[wrong_axis]))
+        assert np.abs(data.delta[wrong_axis]) < np.abs(
+            wrong_axis_max_medium[wrong_axis]
+        )
+
 
 def check_stage_operation(
     small_step: int,
@@ -191,10 +196,8 @@ def check_stage_operation(
     """
     failure_count = 0
     wrong_axis_max_small = generate_move_dicts(
-        small_step,
-        stream_resolution,
-        direction,
-        factor=0.1)
+        small_step, stream_resolution, direction, factor=0.1
+    )
 
     for _loop in range(3):
         image1 = cv2.resize(
@@ -250,6 +253,7 @@ def check_stage_operation(
             logger.info("Edge has been found.")
             break
 
+
 def motion_detection(
     axis: str,
     direction: int,
@@ -265,39 +269,46 @@ def motion_detection(
     previous to motion detection being used.
     :return: The stage coordinates where motion was detected.
     """
-    displacements = [1,2,4,8,16,32,64,128,256,512]  # Array of increasing step sizes
+    displacements = [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+    ]  # Array of increasing step sizes
     motion_minimum = 20  # minimum number of pixels for motion to be detected
 
-    this_motion_step = {
-        'x': 0,
-        'y': 0
-    }
+    this_motion_step = {"x": 0, "y": 0}
 
-    delta = {
-        'x': 0,
-        'y': 0
-    }
+    delta = {"x": 0, "y": 0}
 
     for loop in range(np.shape(displacements)[0]):
         this_motion_step[axis] = displacements[loop] * direction * -1
         logger.info(f"Testing with step size {this_motion_step[axis]}")
-        image1 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())),
-                            dsize=(0,0),
-                            fx= 1,
-                            fy= 1)
-        csm.move_in_image_coordinates(x = this_motion_step['x'], y = this_motion_step['y'])
-        image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())),
-                            dsize=(0,0),
-                            fx= 1,
-                            fy= 1)
-        offset = [x * 1 for x in fft_image_tracking.displacement_between_images(
-            image_0 = image1,
-            image_1 = image2,
-            sigma=10,
-            fractional_threshold=0.1,
-            pad=True)]
-        delta['x'] = int(offset[1])
-        delta['y'] = int(offset[0])
+        image1 = cv2.resize(
+            np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
+        )
+        csm.move_in_image_coordinates(x=this_motion_step["x"], y=this_motion_step["y"])
+        image2 = cv2.resize(
+            np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
+        )
+        offset = [
+            x * 1
+            for x in fft_image_tracking.displacement_between_images(
+                image_0=image1,
+                image_1=image2,
+                sigma=10,
+                fractional_threshold=0.1,
+                pad=True,
+            )
+        ]
+        delta["x"] = int(offset[1])
+        delta["y"] = int(offset[0])
         logger.info(f"Offset measured as {np.abs(delta[axis])}")
         if np.abs(delta[axis]) > motion_minimum:
             logger.info("Motion detected.")
@@ -305,10 +316,16 @@ def motion_detection(
 
     return stage.position
 
-class RomDataTracker():
+
+class RomDataTracker:
     """Class for tracking range of motion data."""
 
-    def __init__(self, stage_coords: list[dict[str, int]] = [], cor_lat_steps: list[list[float]] = [], delta: dict = {'x':0, 'y':0}):
+    def __init__(
+        self,
+        stage_coords: list[dict[str, int]] = [],
+        cor_lat_steps: list[list[float]] = [],
+        delta: dict = {"x": 0, "y": 0},
+    ):
         """Define useful data tracked throughout test."""
         self.stage_coords = stage_coords
         self.cor_lat_steps = cor_lat_steps
@@ -318,6 +335,7 @@ class RomDataTracker():
         """Store useful data."""
         self.stage_coords.append(current_pos)
         self.cor_lat_steps.append(cor)
+
 
 class RangeofMotionThing(lt.Thing):
     """A class used to measure the range of motion of the stage in X and Y."""
@@ -339,7 +357,7 @@ class RangeofMotionThing(lt.Thing):
         :return: Results dictionary containing stage positions,
         correlations and the final position.
         """
-        autofocus.looping_autofocus(dz = 1000)
+        autofocus.looping_autofocus(dz=1000)
 
         starting_position = list(stage.position.values())
 
@@ -352,7 +370,7 @@ class RangeofMotionThing(lt.Thing):
             logger.info(f"Beginning the {axis}-axis in the {dir_word} direction")
 
             # Generate required dictionaries for step sizes and minimum offsets
-            stream_resolution = [820,616]
+            stream_resolution = [820, 616]
             big_step = 200
             small_step = 20
             step_sizes_big = generate_move_dicts(big_step, stream_resolution, direction)
@@ -380,23 +398,24 @@ class RangeofMotionThing(lt.Thing):
 
             while np.abs(rom_data.delta[axis]) > np.abs(minimum_offset_small[axis]):
                 z_diff = predict_z(
-                    positions = rom_data.stage_coords,
-                    axis = axis,
-                    relative_move = step_sizes_big[axis],
-                    stage = stage,
-                    csm = csm)
+                    positions=rom_data.stage_coords,
+                    axis=axis,
+                    relative_move=step_sizes_big[axis],
+                    stage=stage,
+                    csm=csm,
+                )
 
                 logger.info("Z calibration complete.")
-                stage.move_relative(z = z_diff)
+                stage.move_relative(z=z_diff)
                 logger.info(f"Moved in z by {z_diff}")
 
                 # Big step
-                if axis == 'x':
-                    csm.move_in_image_coordinates(x = step_sizes_big['x'], y = 0)
+                if axis == "x":
+                    csm.move_in_image_coordinates(x=step_sizes_big["x"], y=0)
                 else:
-                    csm.move_in_image_coordinates(x = 0, y = step_sizes_big['y'])
+                    csm.move_in_image_coordinates(x=0, y=step_sizes_big["y"])
 
-                autofocus.looping_autofocus(dz = 800)
+                autofocus.looping_autofocus(dz=800)
                 rom_data.stage_coords.append(stage.position)
 
                 check_stage_operation(
@@ -404,7 +423,7 @@ class RangeofMotionThing(lt.Thing):
                     stream_resolution=stream_resolution,
                     direction=direction,
                     axis=axis,
-                    data = rom_data,
+                    data=rom_data,
                     minimum_offset_small=minimum_offset_small,
                     csm=csm,
                     cam=cam,
@@ -415,22 +434,32 @@ class RangeofMotionThing(lt.Thing):
 
             # Motion detection
             logger.info("Running motion detection")
-            final_pos = motion_detection(axis = axis, direction = direction, csm = csm, stage = stage, cam = cam, logger = logger)
-            rom_data.stage_coords[np.shape(np.array(rom_data.stage_coords))[0] - 1] = final_pos
+            final_pos = motion_detection(
+                axis=axis,
+                direction=direction,
+                csm=csm,
+                stage=stage,
+                cam=cam,
+                logger=logger,
+            )
+            rom_data.stage_coords[np.shape(np.array(rom_data.stage_coords))[0] - 1] = (
+                final_pos
+            )
 
             axis_results = {
                 "correlation_lateral_steps": rom_data.cor_lat_steps,
                 "stage_positions": rom_data.stage_coords,
-                "final_position": final_pos
+                "final_position": final_pos,
             }
         except AssertionError:
             logger.info("Parasitic motion detected.")
         finally:
             stage.move_absolute(
-                x = starting_position[0],
-                y = starting_position[1],
-                z = starting_position[2],
-                block_cancellation=True)
+                x=starting_position[0],
+                y=starting_position[1],
+                z=starting_position[2],
+                block_cancellation=True,
+            )
 
         return axis_results
 
@@ -447,30 +476,36 @@ class RangeofMotionThing(lt.Thing):
 
         :return: Results dictionary separated into keys of each axis and direction.
         """
-        logger.info("Using the stage to measure the Range of Motion.\
-                    Please ensure you are using a big enough sample.")
+        logger.info(
+            "Using the stage to measure the Range of Motion.\
+                    Please ensure you are using a big enough sample."
+        )
         start_time = time.time()
         rom_results = {}
 
-        for axis_dir in [['x', 1],['x', -1],['y', 1],['y', -1]]:
+        for axis_dir in [["x", 1], ["x", -1], ["y", 1], ["y", -1]]:
             axis_dir_results = self.rom_axis(
                 autofocus,
                 stage,
                 cam,
                 csm,
                 logger,
-                axis = axis_dir[0],
-                direction = axis_dir[1]
-                )
+                axis=axis_dir[0],
+                direction=axis_dir[1],
+            )
             rom_results[f"{axis_dir}"] = axis_dir_results
 
         end_time = time.time()
-        total_time = (end_time - start_time)/60
+        total_time = (end_time - start_time) / 60
 
-        x_range = abs(rom_results["['x', 1]"]["final_position"]["x"] -
-                      rom_results["['x', -1]"]["final_position"]["x"])
-        y_range = abs(rom_results["['y', 1]"]["final_position"]["y"] -
-                      rom_results["['y', -1]"]["final_position"]["y"])
+        x_range = abs(
+            rom_results["['x', 1]"]["final_position"]["x"]
+            - rom_results["['x', -1]"]["final_position"]["x"]
+        )
+        y_range = abs(
+            rom_results["['y', 1]"]["final_position"]["y"]
+            - rom_results["['y', -1]"]["final_position"]["y"]
+        )
         step_range = [x_range, y_range]
         logger.info(f"Range of motion is {x_range} X {y_range}")
 
@@ -480,11 +515,9 @@ class RangeofMotionThing(lt.Thing):
 
         self.last_calibration = DenumpifyingDict(rom_results).model_dump()
 
-        with open("/var/openflexure/ROM_Test_Results.json", 'w') as file_object:
-            json.dump(rom_results, file_object, indent = 3)
+        with open("/var/openflexure/ROM_Test_Results.json", "w") as file_object:
+            json.dump(rom_results, file_object, indent=3)
 
         return rom_results
 
-    last_calibration = lt.ThingSetting(
-        initial_value=None, model=dict, readonly=True
-    )
+    last_calibration = lt.ThingSetting(initial_value=None, model=dict, readonly=True)
