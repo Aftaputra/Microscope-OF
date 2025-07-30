@@ -77,7 +77,7 @@ def move_and_measure(
 
     :params step_size: A dictionary with keys 'x' and 'y' with pixel distances.
     :params axis: The axis in which the stage is moving. This must be 'x' or 'y'.
-    :params delta: A dictionary of 'x' and 'y' offsets.
+    :params data: The object used to track stage coordinates, correlation and delta.
     :params image1: An image taken before moving to be correlated with image2.
     :params autofocus_proc: If true, looping.autofocus will be used after the stage moves.
     :return: All required data for the next move. This includes the updated delta value and offset. Also returns what wrong_axis is i.e. if the direction is 'x', wrong_axis = 'y'.
@@ -97,7 +97,7 @@ def move_and_measure(
 
     return offset, wrong_axis
 
-def acquie_z_predict_points(
+def acquire_z_predict_points(
     stream_resolution: list[int],
     direction: int,
     axis: str,
@@ -113,9 +113,7 @@ def acquie_z_predict_points(
     :params stream_resolution: The resolution of the stream from the camera.
     :param direction: The direction the stage moves.
     :params axis: The axis which is being measured. This must be 'x' or 'y'.
-    :params delta: A dictionary of 'x' and 'y' offsets.
-    :params stage_coords: A list of all previous positions the stage has been.
-    :params cor_lat_steps: A list of all correlation values.
+    :params data: The object used to track stage coordinates, correlation and delta.
     :return: Stage_coords and cor_lat_steps are lists of data tracked throughout the test. Delta is updated and tracked after each move.
     """
     medium_step = 50
@@ -161,9 +159,7 @@ def check_stage_operation(
     :params stream_resolution: The resolution of the stream from the camera.
     :param direction: The direction the stage moves.
     :params axis: The axis which is being measured. This must be 'x' or 'y'.
-    :params delta: A dictionary of 'x' and 'y' offsets.
-    :params stage_coords: A list of all previous positions the stage has been.
-    :params cor_lat_steps: A list of all correlation values.
+    :params data: The object used to track stage coordinates, correlation and delta.
     :params minimum_offset_small: A dictionary containing the minimum values for a successful correlation.
     :return: Stage_coords and cor_lat_steps are lists of data tracked throughout the test. Delta is updated and tracked after each move.
     """
@@ -321,12 +317,11 @@ class RangeofMotionThing(lt.Thing):
             small_step = 20
             step_sizes_big = generate_move_dicts(big_step, stream_resolution, direction)
 
-
             rom_data.stage_coords.append(stage.position)
 
             logger.info("Moving the stage in 5 medium sized steps.")
 
-            acquie_z_predict_points(
+            acquire_z_predict_points(
                 stream_resolution=stream_resolution,
                 direction=direction,
                 axis=axis,
@@ -353,6 +348,7 @@ class RangeofMotionThing(lt.Thing):
 
                 logger.info(f"Moved in z by {z_diff}")
 
+                # Big step
                 if axis == 'x':
                     csm.move_in_image_coordinates(x = step_sizes_big['x'], y = 0)
                 else:
