@@ -50,6 +50,9 @@ nosetests.xml
 coverage.xml
 report.xml
 pytest_report.xml
+.coverage.picamera
+.coverage.main
+picamera_test_hashes.json
 
 # Translations
 *.mo

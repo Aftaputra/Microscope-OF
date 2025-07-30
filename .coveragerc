@@ -2,3 +2,4 @@
 concurrency = multiprocessing, thread
 parallel = true
 sigterm = true
+relative_files = True
