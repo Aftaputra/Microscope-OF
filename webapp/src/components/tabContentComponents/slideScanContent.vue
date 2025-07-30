@@ -140,7 +140,6 @@
             Close
           </button>
           <action-button
-            class="uk-button"
             thing="smart_scan"
             action="download_zip"
             submit-label="Download ZIP"
