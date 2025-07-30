@@ -70,7 +70,6 @@ def move_and_measure(
         step_size: dict[str, float],
         axis: str, delta: dict[str, int],
         image1, autofocus_proc: bool,
-        focus_data: list[float],
         csm: CSMDep,
         autofocus: AutofocusDep,
         cam:CamDep) -> tuple:
@@ -81,8 +80,7 @@ def move_and_measure(
     :params delta: A dictionary of 'x' and 'y' offsets.
     :params image1: An image taken before moving to be correlated with image2.
     :params autofocus_proc: If true, looping.autofocus will be used after the stage moves.
-    :params focus_data: A list of focus data returned by the autofocus procedure.
-    :return: All required data for the next move. This includes the updated delta value, offset and focus_data. Also returns what wrong_axis is i.e. if the direction is 'x', wrong_axis = 'y'.
+    :return: All required data for the next move. This includes the updated delta value and offset. Also returns what wrong_axis is i.e. if the direction is 'x', wrong_axis = 'y'.
     """
     if axis == 'x':
         csm.move_in_image_coordinates(x = step_size['x'], y = 0)
@@ -91,20 +89,19 @@ def move_and_measure(
         csm.move_in_image_coordinates(x = 0, y = step_size['y'])
         wrong_axis = 'x'
     if autofocus_proc:
-        focus_data = autofocus.looping_autofocus(dz = 800)
+        autofocus.looping_autofocus(dz = 800)
     image2 = cv2.resize(np.array(Image.open(cam.grab_jpeg().open())), dsize=(0,0), fx= 1, fy= 1)
     offset = [x * 1 for x in fft_image_tracking.displacement_between_images(image_0 = image1, image_1 = image2, sigma=10, fractional_threshold=0.1, pad=True)] # Units is pixels
     delta['x'] = int(offset[1])
     delta['y'] = int(offset[0])
 
-    return delta, offset, focus_data, wrong_axis
+    return delta, offset, wrong_axis
 
 def acquie_z_predict_points(
     stream_resolution: list[int],
     direction: int,
     axis: str,
     delta: dict[str, int],
-    focus_data: list[float],
     data,
     csm: CSMDep,
     cam: CamDep,
@@ -118,7 +115,6 @@ def acquie_z_predict_points(
     :param direction: The direction the stage moves.
     :params axis: The axis which is being measured. This must be 'x' or 'y'.
     :params delta: A dictionary of 'x' and 'y' offsets.
-    :params focus_data: A list of focus data returned by the autofocus procedure.
     :params stage_coords: A list of all previous positions the stage has been.
     :params cor_lat_steps: A list of all correlation values.
     :return: Stage_coords and cor_lat_steps are lists of data tracked throughout the test. Delta is updated and tracked after each move.
@@ -131,13 +127,12 @@ def acquie_z_predict_points(
         image1 = cv2.resize(
             np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
         )
-        delta, offset, focus_data, wrong_axis = move_and_measure(
+        delta, offset, wrong_axis = move_and_measure(
             step_size=generate_move_dicts(medium_step, stream_resolution, direction),
             axis=axis,
             delta=delta,
             image1=image1,
             autofocus_proc=True,
-            focus_data=focus_data,
             csm=csm,
             autofocus=autofocus,
             cam=cam,
@@ -155,7 +150,6 @@ def check_stage_operation(
     direction: int,
     axis: str,
     delta: dict[str, int],
-    focus_data: list[float],
     data,
     minimum_offset_small: dict[str, float],
     csm: CSMDep,
@@ -171,7 +165,6 @@ def check_stage_operation(
     :param direction: The direction the stage moves.
     :params axis: The axis which is being measured. This must be 'x' or 'y'.
     :params delta: A dictionary of 'x' and 'y' offsets.
-    :params focus_data: A list of focus data returned by the autofocus procedure.
     :params stage_coords: A list of all previous positions the stage has been.
     :params cor_lat_steps: A list of all correlation values.
     :params minimum_offset_small: A dictionary containing the minimum values for a successful correlation.
@@ -184,13 +177,12 @@ def check_stage_operation(
         image1 = cv2.resize(
             np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
         )
-        delta, offset, focus_data, wrong_axis = move_and_measure(
+        delta, offset, wrong_axis = move_and_measure(
             step_size=generate_move_dicts(small_step, stream_resolution, direction),
             axis=axis,
             delta=delta,
             image1=image1,
             autofocus_proc=False,
-            focus_data=focus_data,
             csm=csm,
             autofocus=autofocus,
             cam=cam,
@@ -204,7 +196,7 @@ def check_stage_operation(
             logger.info(
                 f"Correlation failed. Refocusing to check. Attempt {failure_count + 1}/3"
             )
-            focus_data = autofocus.looping_autofocus(dz=1000)
+            autofocus.looping_autofocus(dz=1000)
             image2 = cv2.resize(
                 np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
             )
@@ -310,7 +302,7 @@ class RangeofMotionThing(lt.Thing):
         :params direction: The direction which is being measured. This must be 1 or -1.
         :return: Results dictionary containing stage positions, correlations and the final position.
         """
-        focus_data = autofocus.looping_autofocus(dz = 1000)
+        autofocus.looping_autofocus(dz = 1000)
 
         starting_position = list(stage.position.values())
 
@@ -346,7 +338,6 @@ class RangeofMotionThing(lt.Thing):
                 direction=direction,
                 axis=axis,
                 delta=delta,
-                focus_data=focus_data,
                 data=rom_data,
                 csm=csm,
                 cam=cam,
@@ -375,7 +366,7 @@ class RangeofMotionThing(lt.Thing):
                 else:
                     csm.move_in_image_coordinates(x = 0, y = step_sizes_big['y'])
 
-                focus_data = autofocus.looping_autofocus(dz = 800)
+                autofocus.looping_autofocus(dz = 800)
 
                 rom_data.stage_coords.append(stage.position)
 
@@ -385,7 +376,6 @@ class RangeofMotionThing(lt.Thing):
                     direction=direction,
                     axis=axis,
                     delta=delta,
-                    focus_data=focus_data,
                     data = rom_data,
                     minimum_offset_small=minimum_offset_small,
                     csm=csm,
