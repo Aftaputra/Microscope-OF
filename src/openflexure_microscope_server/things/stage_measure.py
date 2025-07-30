@@ -269,7 +269,7 @@ def motion_detection(
 class RomDataTracker():
     """Class for tracking range of motion data."""
 
-    def __init__(self, stage_coords, cor_lat_steps, delta):
+    def __init__(self, stage_coords: list[dict[str, int]] = [], cor_lat_steps: list[list[float]] = [], delta: dict = {'x':0, 'y':0}):
         """Define useful data tracked througout test."""
         self.stage_coords = stage_coords
         self.cor_lat_steps = cor_lat_steps
@@ -303,7 +303,7 @@ class RangeofMotionThing(lt.Thing):
 
         starting_position = list(stage.position.values())
 
-        rom_data = RomDataTracker([], [], {'x':0, 'y':0})
+        rom_data = RomDataTracker()
         axis_results = {}
 
         try:
@@ -381,7 +381,7 @@ class RangeofMotionThing(lt.Thing):
 
             final_pos = motion_detection(axis = axis, direction = direction, csm = csm, stage = stage, cam = cam, logger = logger)
 
-            rom_data.stage_coords[np.shape(rom_data.stage_coords)[0] - 1] = final_pos
+            rom_data.stage_coords[np.shape(np.array(rom_data.stage_coords))[0] - 1] = final_pos
 
             axis_results = {
                 "correlation_lateral_steps": rom_data.cor_lat_steps,
