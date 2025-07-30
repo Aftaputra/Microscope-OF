@@ -3,8 +3,8 @@
 The range of motion is measured by first taking 5 'medium' sized steps which gives enough positions
 to predict future z positions. Next, one 'big' step is taken followed by 3
 'small' steps to test that the stage is still moving as expected and has not reached the edge.
-Once the edge has been found and too account for the possibility that a 'big'
-step was take just before the edge was reached, the stage is moved in a sequence
+Once the edge has been found and to account for the possibility that a 'big'
+step was taken just before the edge was reached, the stage is moved in a sequence
 of increasing pixel sizes in the opposite direction until motion is detected. This is
 position is taken as the true final position.
 
@@ -22,6 +22,7 @@ from scipy.optimize import curve_fit
 from camera_stage_mapping import fft_image_tracking
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import DenumpifyingDict
+import numpy.typing as npt
 
 # Things
 from .autofocus import AutofocusThing
@@ -35,7 +36,7 @@ CSMDep = lt.deps.direct_thing_client_dependency(
 AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 
 
-def generate_move_dicts(
+def _generate_move_dicts(
     fov_perc: int, stream_resolution: list[int], direction: int, factor: float = 1
 ) -> dict[str, float]:
     """Create a single dictionary of x and y moves for moving in image coordinates.
@@ -52,7 +53,7 @@ def generate_move_dicts(
     }
 
 
-def predict_z(
+def _predict_z(
     positions: list, axis: str, relative_move: float, stage: StageDep, csm: CSMDep
 ) -> float:
     """Predict the next z position for a move using previous positions.
@@ -79,16 +80,16 @@ def predict_z(
     return z_dest - stage.position["z"]
 
 
-def move_and_measure(
+def _move_and_measure(
     step_size: dict[str, float],
     axis: str,
     data,
-    image1,
+    image1: npt.ArrayLike,
     autofocus_proc: bool,
     csm: CSMDep,
     autofocus: AutofocusDep,
     cam: CamDep,
-) -> tuple:
+) -> tuple[npt.ArrayLike, str]:
     """Move the stage and measure the offset between the two positions.
 
     :params step_size: A dictionary with keys 'x' and 'y' with pixel distances.
@@ -122,7 +123,7 @@ def move_and_measure(
     return offset, wrong_axis
 
 
-def acquire_z_predict_points(
+def _acquire_z_predict_points(
     stream_resolution: list[int],
     direction: int,
     axis: str,
@@ -143,15 +144,15 @@ def acquire_z_predict_points(
     Delta is updated and tracked after each move.
     """
     medium_step = 50
-    wrong_axis_max_medium = generate_move_dicts(
+    wrong_axis_max_medium = _generate_move_dicts(
         medium_step, stream_resolution, direction, factor=0.1
     )
     for _loop in range(5):
         image1 = cv2.resize(
             np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
         )
-        offset, wrong_axis = move_and_measure(
-            step_size=generate_move_dicts(medium_step, stream_resolution, direction),
+        offset, wrong_axis = _move_and_measure(
+            step_size=_generate_move_dicts(medium_step, stream_resolution, direction),
             axis=axis,
             data=data,
             image1=image1,
@@ -169,7 +170,7 @@ def acquire_z_predict_points(
         )
 
 
-def check_stage_operation(
+def _check_stage_operation(
     small_step: int,
     stream_resolution: list[int],
     direction: int,
@@ -195,7 +196,7 @@ def check_stage_operation(
     Delta is updated and tracked after each move.
     """
     failure_count = 0
-    wrong_axis_max_small = generate_move_dicts(
+    wrong_axis_max_small = _generate_move_dicts(
         small_step, stream_resolution, direction, factor=0.1
     )
 
@@ -203,8 +204,8 @@ def check_stage_operation(
         image1 = cv2.resize(
             np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
         )
-        offset, wrong_axis = move_and_measure(
-            step_size=generate_move_dicts(small_step, stream_resolution, direction),
+        offset, wrong_axis = _move_and_measure(
+            step_size=_generate_move_dicts(small_step, stream_resolution, direction),
             axis=axis,
             data=data,
             image1=image1,
@@ -254,7 +255,7 @@ def check_stage_operation(
             break
 
 
-def motion_detection(
+def _motion_detection(
     axis: str,
     direction: int,
     csm: CSMDep,
@@ -331,7 +332,7 @@ class RomDataTracker:
         self.cor_lat_steps = cor_lat_steps
         self.delta = delta
 
-    def measure(self, current_pos, cor):
+    def measure(self, current_pos: dict[str, int], cor: list[float]):
         """Store useful data."""
         self.stage_coords.append(current_pos)
         self.cor_lat_steps.append(cor)
@@ -365,20 +366,23 @@ class RangeofMotionThing(lt.Thing):
         axis_results = {}
 
         try:
-            dir_word = "positive" if direction == 1 else "negative"
 
-            logger.info(f"Beginning the {axis}-axis in the {dir_word} direction")
+            logger.info(
+                f"Beginning the {axis}-axis in the {'positive' if direction == 1 else 'negative'} direction"
+            )
 
             # Generate required dictionaries for step sizes and minimum offsets
             stream_resolution = [820, 616]
             big_step = 200
             small_step = 20
-            step_sizes_big = generate_move_dicts(big_step, stream_resolution, direction)
+            step_sizes_big = _generate_move_dicts(
+                big_step, stream_resolution, direction
+            )
 
             rom_data.stage_coords.append(stage.position)
 
             logger.info("Moving the stage in 5 medium sized steps.")
-            acquire_z_predict_points(
+            _acquire_z_predict_points(
                 stream_resolution=stream_resolution,
                 direction=direction,
                 axis=axis,
@@ -392,12 +396,12 @@ class RangeofMotionThing(lt.Thing):
 
             # 1 big step followed by 3 small steps
 
-            minimum_offset_small = generate_move_dicts(
+            minimum_offset_small = _generate_move_dicts(
                 small_step, stream_resolution, direction, factor=0.65
             )
 
             while np.abs(rom_data.delta[axis]) > np.abs(minimum_offset_small[axis]):
-                z_diff = predict_z(
+                z_diff = _predict_z(
                     positions=rom_data.stage_coords,
                     axis=axis,
                     relative_move=step_sizes_big[axis],
@@ -418,7 +422,7 @@ class RangeofMotionThing(lt.Thing):
                 autofocus.looping_autofocus(dz=800)
                 rom_data.stage_coords.append(stage.position)
 
-                check_stage_operation(
+                _check_stage_operation(
                     small_step=small_step,
                     stream_resolution=stream_resolution,
                     direction=direction,
@@ -434,7 +438,7 @@ class RangeofMotionThing(lt.Thing):
 
             # Motion detection
             logger.info("Running motion detection")
-            final_pos = motion_detection(
+            final_pos = _motion_detection(
                 axis=axis,
                 direction=direction,
                 csm=csm,

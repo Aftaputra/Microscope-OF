@@ -329,7 +329,7 @@ def _get_version_from_toml(toml_path: str) -> str:
         return "Undefined"
 
 
-def quadratic(x, a, b, c):
+def quadratic(x: float, a: float, b: float, c: float):
     """Quadratic function. Used for predicting z.
 
     :param x: The points at which to evaluate the quadratic.
