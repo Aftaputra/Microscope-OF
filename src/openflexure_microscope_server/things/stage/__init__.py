@@ -11,6 +11,7 @@ As the object will be used as a context manager create the hardware connection i
 
 from __future__ import annotations
 from collections.abc import Sequence, Mapping
+from typing import Literal
 
 import labthings_fastapi as lt
 
@@ -25,12 +26,15 @@ class BaseStage(lt.Thing):
     """
 
     _axis_names = ("x", "y", "z")
+    def __init__(self):
+        self._internal_position = dict.fromkeys(self._axis_names, 0)
 
     @lt.thing_property
     def axis_names(self) -> Sequence[str]:
         """The names of the stage's axes, in order."""
         return self._axis_names
 
+    # TODO make this have a getter so it uses axis direction to invert.
     position = lt.ThingProperty(
         Mapping[str, int],
         dict.fromkeys(_axis_names, 0),
@@ -47,10 +51,40 @@ class BaseStage(lt.Thing):
     )
     """Whether the stage is in motion."""
 
+    axis_direction = lt.ThingSetting(
+        initial_value={"x": -1, "y": 1, "z": -1},
+        model=Mapping[str, int],
+    )
+    """The direction that each motor should move.
+
+    Testing reveals that z and either x or y generally need inverting."""
+
+    def apply_axis_direction(self, position: list|Mapping[str|int]) -> list|Mapping[str|int]:
+
+        # TODO check if isinstance works for Mapping
+        if isinstance(position, (list, tuple)):
+            # TODO: check list length is axis length
+            position = [pos*ax_dir for pos, ax_dir in zip(position, self.axis_direction.values())]
+            return dict(zip(self.axis_names, position))
+        elif isinstance(position, Mapping):
+            # TODO add try for KeyError
+            return {axis: position[axis] * self.axis_direction[axis] for axis in self.position}
+        raise TypeError #TODO message
+
     @property
     def thing_state(self):
         """Summary metadata describing the current state of the stage."""
         return {"position": self.position}
+
+    @lt.thing_action
+    def invert_axis_direction(self, axis: Literal["x", "y", "z"]):
+        """Invert the direction setting of the given axis.
+
+        :param axis: The axis name (x, y or z) to invert.
+        """
+        direction = self.axis_direction
+        direction[axis] *= -1
+        self.axis_direction = direction
 
     @lt.thing_action
     def move_relative(
