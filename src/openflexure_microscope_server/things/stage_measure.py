@@ -99,7 +99,7 @@ def move_and_measure(
 
     return delta, offset, focus_data, wrong_axis
 
-def medium_moves(
+def acquie_z_predict_points(
     stream_resolution: list[int],
     direction: int,
     axis: str,
@@ -150,7 +150,7 @@ def medium_moves(
         assert(np.abs(delta[wrong_axis]) < np.abs(wrong_axis_max_medium[wrong_axis]))
     return stage_coords, cor_lat_steps, delta
 
-def small_moves(
+def check_stage_operation(
     small_step: int,
     stream_resolution: list[int],
     direction: int,
@@ -332,7 +332,7 @@ class RangeofMotionThing(lt.Thing):
 
             logger.info("Moving the stage in 5 medium sized steps.")
 
-            stage_coords, cor_lat_steps, delta = medium_moves(
+            stage_coords, cor_lat_steps, delta = acquie_z_predict_points(
                 stream_resolution=stream_resolution,
                 direction=direction,
                 axis=axis,
@@ -371,7 +371,7 @@ class RangeofMotionThing(lt.Thing):
 
                 stage_coords.append(stage.position)
 
-                stage_coords, cor_lat_steps, delta = small_moves(
+                stage_coords, cor_lat_steps, delta = check_stage_operation(
                     small_step=small_step,
                     stream_resolution=stream_resolution,
                     direction=direction,
