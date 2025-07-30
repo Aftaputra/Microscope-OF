@@ -148,8 +148,9 @@ combined-tests:
   script:
     - ./picamera_tests.py unzip
     - coverage combine
-    - coverage report
-    - coverage xml
+    # Use -i to ignore file changing between the two runs. We check the relevant ones.
+    - coverage report -i
+    - coverage xml -i
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     when: always
