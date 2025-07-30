@@ -312,7 +312,6 @@ class RangeofMotionThing(lt.Thing):
 
             # Generate required dictionaries for step sizes and minimum offsets
             stream_resolution = [820,616]
-
             big_step = 200
             small_step = 20
             step_sizes_big = generate_move_dicts(big_step, stream_resolution, direction)
@@ -320,7 +319,6 @@ class RangeofMotionThing(lt.Thing):
             rom_data.stage_coords.append(stage.position)
 
             logger.info("Moving the stage in 5 medium sized steps.")
-
             acquire_z_predict_points(
                 stream_resolution=stream_resolution,
                 direction=direction,
@@ -343,9 +341,7 @@ class RangeofMotionThing(lt.Thing):
                 z_diff = predict_z(positions = rom_data.stage_coords, axis = axis, relative_move = step_sizes_big[axis], stage = stage, csm = csm)
 
                 logger.info("Z calibration complete.")
-
                 stage.move_relative(z = z_diff)
-
                 logger.info(f"Moved in z by {z_diff}")
 
                 # Big step
@@ -355,7 +351,6 @@ class RangeofMotionThing(lt.Thing):
                     csm.move_in_image_coordinates(x = 0, y = step_sizes_big['y'])
 
                 autofocus.looping_autofocus(dz = 800)
-
                 rom_data.stage_coords.append(stage.position)
 
                 check_stage_operation(
@@ -374,9 +369,7 @@ class RangeofMotionThing(lt.Thing):
 
             # Motion detection
             logger.info("Running motion detection")
-
             final_pos = motion_detection(axis = axis, direction = direction, csm = csm, stage = stage, cam = cam, logger = logger)
-
             rom_data.stage_coords[np.shape(np.array(rom_data.stage_coords))[0] - 1] = final_pos
 
             axis_results = {
@@ -425,9 +418,7 @@ class RangeofMotionThing(lt.Thing):
 
         x_range = abs(rom_results["['x', 1]"]["final_position"]["x"] - rom_results["['x', -1]"]["final_position"]["x"])
         y_range = abs(rom_results["['y', 1]"]["final_position"]["y"] - rom_results["['y', -1]"]["final_position"]["y"])
-
         step_range = [x_range, y_range]
-
         logger.info(f"Range of motion is {x_range} X {y_range}")
 
         rom_results["Time"] = total_time
