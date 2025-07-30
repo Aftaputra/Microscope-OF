@@ -233,7 +233,7 @@ def motion_detection(
     :return: The stage coordinates where motion was detected.
     """
     displacements = [1,2,4,8,16,32,64,128,256,512]  # Array of increasing step sizes
-    motion_minimum = 20  # minimum nuber of pixels for motion to be detected
+    motion_minimum = 20  # minimum number of pixels for motion to be detected
 
     this_motion_step = {
         'x': 0,
@@ -266,7 +266,7 @@ class RomDataTracker():
     """Class for tracking range of motion data."""
 
     def __init__(self, stage_coords: list[dict[str, int]] = [], cor_lat_steps: list[list[float]] = [], delta: dict = {'x':0, 'y':0}):
-        """Define useful data tracked througout test."""
+        """Define useful data tracked throughout test."""
         self.stage_coords = stage_coords
         self.cor_lat_steps = cor_lat_steps
         self.delta = delta
