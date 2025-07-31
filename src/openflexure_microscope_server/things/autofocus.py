@@ -141,7 +141,11 @@ class CaptureInfo:
 
     @property
     def filename(self) -> str:
-        """The filename for this image generated from the position, prepended with "img_"."""
+        """The filename for this image generated from the position.
+
+        The file name is in the format ``img_{x}_{y}_{z}`` where x, y, and z are the
+        positions from the microscope stage.
+        """
         return (
             f"img_{self.position['x']}_{self.position['y']}_{self.position['z']}.jpeg"
         )
