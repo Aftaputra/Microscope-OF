@@ -141,8 +141,10 @@ class CaptureInfo:
 
     @property
     def filename(self) -> str:
-        """The filename for this image generated from the position."""
-        return f"{self.position['x']}_{self.position['y']}_{self.position['z']}.jpeg"
+        """The filename for this image generated from the position, prepended with "img_"."""
+        return (
+            f"img_{self.position['x']}_{self.position['y']}_{self.position['z']}.jpeg"
+        )
 
 
 def _get_capture_by_id(captures: list[CaptureInfo], buffer_id: int) -> CaptureInfo:
