@@ -529,6 +529,8 @@ class BaseCamera(lt.Thing):
         ``background_detector_status``.
         """
         self.active_detector.settings = data
+        # Manually save settings as the setter is not called.
+        self.save_settings()
 
     @lt.thing_setting
     def background_detector_data(self) -> dict:
