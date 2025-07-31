@@ -135,7 +135,6 @@ def _move_and_measure(
 
     return offset, wrong_axis
 
-
 def _acquire_z_predict_points(
     stream_resolution: list[int],
     direction: Literal[1, -1],
@@ -217,9 +216,6 @@ def _check_stage_operation(
     Delta is updated and tracked after each move.
     """
     failure_count = 0
-    wrong_axis_max_small = _generate_move_dicts(
-        small_step, stream_resolution, direction, factor=0.1
-    )  # Dictionary with maximum allowed parasitic motion
 
     for _loop in range(3):
         image1 = cv2.resize(
@@ -269,7 +265,15 @@ def _check_stage_operation(
 
         data.measure(stage.position, offset)
 
-        assert np.abs(data.delta[wrong_axis]) < np.abs(wrong_axis_max_small[wrong_axis])
+        assert np.abs(data.delta[wrong_axis]) < np.abs(
+            _generate_move_dicts(
+                small_step,
+                stream_resolution,
+                direction,
+                factor=0.1)[
+                wrong_axis
+            ]
+        )
 
         # this means the edge has been found
         if np.abs(data.delta[axis]) < np.abs(minimum_offset_small[axis]):
@@ -396,7 +400,8 @@ class RangeofMotionThing(lt.Thing):
 
         try:
             logger.info(
-                f"Beginning the {axis}-axis in the {'positive' if direction == 1 else 'negative'} direction"
+                f"Beginning the {axis}-axis in the {'positive' if direction == 1 else 'negative'}\
+                    direction"
             )
 
             # Generate required dictionaries for step sizes and minimum offsets
