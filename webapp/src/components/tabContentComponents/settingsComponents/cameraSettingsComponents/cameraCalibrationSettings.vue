@@ -2,7 +2,7 @@
   <div>
     <!--Show calibration actions as specified by the camera.-->
     <div
-      v-for="(action, index) in secondaryCalibrationActions"
+      v-for="(action, index) in primaryCalibrationActions"
       :key="'primary_cal' + index"
       class="uk-child-width-expand"
     >
@@ -10,7 +10,7 @@
     </div>
     <div v-if="showExtraSettings">
       <div
-        v-for="(action, index) in primaryCalibrationActions"
+        v-for="(action, index) in secondaryCalibrationActions"
         :key="'secondary_cal' + index"
         class="uk-child-width-expand"
       >
