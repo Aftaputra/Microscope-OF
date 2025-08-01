@@ -366,6 +366,11 @@ class RomDataTracker:
         self.stage_coords.append(current_pos)
         self.cor_lat_steps.append(cor)
 
+    def reset_tracker(self):
+        """Empty the rom tracker."""
+        self.stage_coords.clear()
+        self.cor_lat_steps.clear()
+
 
 class RangeofMotionThing(lt.Thing):
     """A class used to measure the range of motion of the stage in X and Y."""
@@ -484,10 +489,13 @@ class RangeofMotionThing(lt.Thing):
             )
 
             axis_results = {
-                "correlation_lateral_steps": rom_data.cor_lat_steps,
-                "stage_positions": rom_data.stage_coords,
+                "correlation_lateral_steps": rom_data.cor_lat_steps.copy(),
+                "stage_positions": rom_data.stage_coords.copy(),
                 "final_position": final_pos,
             }
+
+            rom_data.reset_tracker()
+
         except AssertionError:
             logger.info("Parasitic motion detected.")
         finally:
