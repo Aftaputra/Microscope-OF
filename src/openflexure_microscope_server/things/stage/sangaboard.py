@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from copy import copy
 from typing import Iterator, Literal
 from contextlib import contextmanager
 from collections.abc import Mapping
@@ -36,7 +37,7 @@ class SangaboardThing(BaseStage):
             Sangaboard class
 
         """
-        self.sangaboard_kwargs = kwargs
+        self.sangaboard_kwargs = copy(kwargs)
         self.sangaboard_kwargs["port"] = port
         super().__init__(**kwargs)
 
@@ -66,9 +67,9 @@ class SangaboardThing(BaseStage):
         with self._sangaboard_lock:
             yield self._sangaboard
 
-    axis_direction = lt.ThingSetting(
-        initial_value={"x": -1, "y": 1, "z": -1},
-        model=Mapping[str, int],
+    axis_inverted = lt.ThingSetting(
+        initial_value={"x": True, "y": False, "z": True},
+        model=Mapping[str, bool],
         readonly=True,
     )
     """Used to convert coordinates between the program frame and the hardware frame."""

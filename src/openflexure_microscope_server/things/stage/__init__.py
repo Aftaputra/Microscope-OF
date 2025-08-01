@@ -85,9 +85,9 @@ class BaseStage(lt.Thing):
     )
     """Whether the stage is in motion."""
 
-    axis_direction = lt.ThingSetting(
-        initial_value={"x": 1, "y": 1, "z": 1},
-        model=Mapping[str, int],
+    axis_inverted = lt.ThingSetting(
+        initial_value={"x": False, "y": False, "z": False},
+        model=Mapping[str, bool],
         readonly=True,
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
@@ -97,14 +97,14 @@ class BaseStage(lt.Thing):
     ) -> list[int] | Mapping[str | int]:
         if isinstance(position, (list, tuple)):
             return [
-                pos * ax_dir
-                for pos, ax_dir in zip(position, self.axis_direction.values())
+                -pos if inverted else pos
+                for pos, inverted in zip(position, self.axis_inverted.values())
             ]
         if isinstance(position, Mapping):
             try:
                 return {
-                    axis: position[axis] * self.axis_direction[axis]
-                    for axis in position
+                    ax: -position[ax] if self.axis_inverted[ax] else position[ax]
+                    for ax in position
                 }
             except KeyError as e:
                 raise KeyError(
@@ -126,12 +126,12 @@ class BaseStage(lt.Thing):
         :param axis: The axis name (x, y or z) to invert.
         """
         # Not mutating in place so that setting is saved on change.
-        direction = self.axis_direction
+        direction = self.axis_inverted
         try:
-            direction[axis] *= -1
+            direction[axis] = not direction[axis]
         except KeyError as e:
             raise KeyError(f"The axis {axis} is not defined.") from e
-        self.axis_direction = direction
+        self.axis_inverted = direction
 
     @lt.thing_action
     def move_relative(

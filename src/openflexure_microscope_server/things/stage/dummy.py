@@ -36,9 +36,9 @@ class DummyStage(BaseStage):
     def __exit__(self, _exc_type, _exc_value, _traceback):
         """Nothing to do when the Thing context manager is closed."""
 
-    axis_direction = lt.ThingSetting(
-        initial_value={"x": -1, "y": 1, "z": 1},
-        model=Mapping[str, int],
+    axis_inverted = lt.ThingSetting(
+        initial_value={"x": True, "y": False, "z": False},
+        model=Mapping[str, bool],
         readonly=True,
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
@@ -51,7 +51,6 @@ class DummyStage(BaseStage):
     ):
         """Make a relative move. Keyword arguments should be axis names."""
         displacement = [kwargs.get(k, 0) for k in self.axis_names]
-        print(f"d {displacement}")
         self.moving = True
         try:
             fraction_complete = 0.0
@@ -80,7 +79,6 @@ class DummyStage(BaseStage):
                 ax: self._hardware_position[ax] + int(fraction_complete * disp)
                 for ax, disp in zip(self.axis_names, displacement)
             }
-            print(self._hardware_position)
             self.instantaneous_position = self._hardware_position
 
     def _hardware_move_absolute(
