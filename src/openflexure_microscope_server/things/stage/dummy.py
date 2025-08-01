@@ -27,16 +27,16 @@ class DummyStage(BaseStage):
         """
         super().__init__(**kwargs)
         self.step_time = step_time
+        self.instantaneous_position = self._hardware_position
 
     def __enter__(self):
         """Register the stage position when the Thing context manager is opened."""
-        self.instantaneous_position = self.position
+        self.instantaneous_position = self._hardware_position
 
     def __exit__(self, _exc_type, _exc_value, _traceback):
         """Nothing to do when the Thing context manager is closed."""
 
-    @lt.thing_action
-    def move_relative(
+    def _hardware_move_relative(
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
@@ -44,6 +44,7 @@ class DummyStage(BaseStage):
     ):
         """Make a relative move. Keyword arguments should be axis names."""
         displacement = [kwargs.get(k, 0) for k in self.axis_names]
+        print(f"d {displacement}")
         self.moving = True
         try:
             fraction_complete = 0.0
@@ -57,8 +58,8 @@ class DummyStage(BaseStage):
                     cancel.sleep(dt)
                 fraction_complete = (time.time() - start_time) / (dt * max_displacement)
                 self.instantaneous_position = {
-                    k: self.position[k] + int(fraction_complete * v)
-                    for k, v in zip(self.axis_names, displacement)
+                    ax: self._hardware_position[ax] + int(fraction_complete * disp)
+                    for ax, disp in zip(self.axis_names, displacement)
                 }
             fraction_complete = 1.0
         except lt.exceptions.InvocationCancelledError as e:
@@ -68,14 +69,14 @@ class DummyStage(BaseStage):
             raise e
         finally:
             self.moving = False
-            self.position = {
-                k: self.position[k] + int(fraction_complete * v)
-                for k, v in zip(self.axis_names, displacement)
+            self._hardware_position = {
+                ax: self._hardware_position[ax] + int(fraction_complete * disp)
+                for ax, disp in zip(self.axis_names, displacement)
             }
-            self.instantaneous_position = self.position
+            print(self._hardware_position)
+            self.instantaneous_position = self._hardware_position
 
-    @lt.thing_action
-    def move_absolute(
+    def _hardware_move_absolute(
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
@@ -83,11 +84,11 @@ class DummyStage(BaseStage):
     ):
         """Make an absolute move. Keyword arguments should be axis names."""
         displacement = {
-            axis: int(pos) - self.position[axis]
+            axis: int(pos) - self._hardware_position[axis]
             for axis, pos in kwargs.items()
             if axis in self.axis_names
         }
-        self.move_relative(
+        self._hardware_move_relative(
             cancel, block_cancellation=block_cancellation, **displacement
         )
 
@@ -99,5 +100,5 @@ class DummyStage(BaseStage):
         It is intended for use after manually or automatically recentring the
         stage.
         """
-        self.position = dict.fromkeys(self.axis_names, 0)
-        self.instantaneous_position = self.position
+        self._hardware_position = dict.fromkeys(self.axis_names, 0)
+        self.instantaneous_position = self._hardware_position

@@ -16,32 +16,66 @@ from typing import Literal
 import labthings_fastapi as lt
 
 
+class RedefinedBaseMovementError(RuntimeError):
+    """The subclass of BaseStage has overridden ``move_relative`` or ``move_absolute``.
+
+    Overriding ``move_relative`` or ``move_absolute`` can be problematic as these use the
+    external position not the hardware position. It is recommended to override
+    ``_hardware_move_relative`` and ``_hardware_move_absolute`` instead.
+
+    The BaseStage will raise this on ``__init__``, it is the last thing ``__init__``
+    does. As such, this exception can be captured by ``try`` if a stage needs to
+    override these for a specific reason.
+    """
+
+
 class BaseStage(lt.Thing):
     """A base stage class for OpenFlexure translation stages.
 
     This can't be used directly but should reduce boilerplate code when
-    implementing new stages. A minimal working stage must implement
-    ``move_relative`` and ``move_absolute`` actions, which update the
-    ``position`` property on completion, and provide ``set_zero_position``.
+    implementing new stages.
+
+    Note that the coordinate system used for the microscope may need to have different
+    axis direction as those used for
+
+    A minimal working stage must implement ``_hardware_move_relative``
+    and ``_hardware_move_absolute`` actions, which update the ``_hardware_position``
+    attribute on completion, and also should implement ``set_zero_position``.
     """
 
     _axis_names = ("x", "y", "z")
+
     def __init__(self):
-        self._internal_position = dict.fromkeys(self._axis_names, 0)
+        """Initialise the stage.
+
+        :raises RedefinedBaseMovementError: if ``move_relative`` and/or
+        ``move_absolute`` are overridden. It is recommended to override
+        ``_hardware_move_relative`` and/or ``_hardware_move_absolute`` instead so that
+        all code in the child class uses the hardware reference frame.
+        """
+        self._hardware_position = dict.fromkeys(self._axis_names, 0)
+
+        # This must be the last thing the function does in case it is caught in a try.
+        if (
+            self.__class__.move_relative.func is not BaseStage.move_relative.func
+            or self.__class__.move_absolute.func is not BaseStage.move_absolute.func
+        ):
+            raise RedefinedBaseMovementError(
+                "move_relative and/or move_absolute has been overridden. This may "
+                "cause issues as the base methods implement converting from program "
+                "coordinates to hardware coordinates. Consider overriding "
+                "_hardware_move_relative and/or _hardware_move_absolute instead."
+            )
 
     @lt.thing_property
     def axis_names(self) -> Sequence[str]:
         """The names of the stage's axes, in order."""
         return self._axis_names
 
-    # TODO make this have a getter so it uses axis direction to invert.
-    position = lt.ThingProperty(
-        Mapping[str, int],
-        dict.fromkeys(_axis_names, 0),
-        readonly=True,
-        observable=True,
-    )
-    """Current position of the stage."""
+    @lt.thing_property
+    def position(self) -> Mapping[str, int]:
+        """Current position of the stage."""
+        return self._apply_axis_direction(self._hardware_position)
 
     moving = lt.ThingProperty(
         bool,
@@ -52,24 +86,33 @@ class BaseStage(lt.Thing):
     """Whether the stage is in motion."""
 
     axis_direction = lt.ThingSetting(
-        initial_value={"x": -1, "y": 1, "z": -1},
+        initial_value={"x": 1, "y": 1, "z": 1},
         model=Mapping[str, int],
     )
-    """The direction that each motor should move.
+    """Used to convert coordinates between the program frame and the hardware frame."""
 
-    Testing reveals that z and either x or y generally need inverting."""
-
-    def apply_axis_direction(self, position: list|Mapping[str|int]) -> list|Mapping[str|int]:
-
-        # TODO check if isinstance works for Mapping
-        if isinstance(position, (list, tuple)):
-            # TODO: check list length is axis length
-            position = [pos*ax_dir for pos, ax_dir in zip(position, self.axis_direction.values())]
+    def _apply_axis_direction(
+        self, position: Sequence[int] | Mapping[str | int]
+    ) -> list[int] | Mapping[str | int]:
+        if isinstance(position, Sequence):
+            position = [
+                pos * ax_dir
+                for pos, ax_dir in zip(position, self.axis_direction.values())
+            ]
             return dict(zip(self.axis_names, position))
-        elif isinstance(position, Mapping):
-            # TODO add try for KeyError
-            return {axis: position[axis] * self.axis_direction[axis] for axis in self.position}
-        raise TypeError #TODO message
+        if isinstance(position, Mapping):
+            try:
+                return {
+                    axis: position[axis] * self.axis_direction[axis]
+                    for axis in position
+                }
+            except KeyError as e:
+                raise KeyError(
+                    f"One or more axis in {position.keys()} is not defined."
+                ) from e
+        raise TypeError(
+            "Position must be a sequence of positions or a mapping from axis to position."
+        )
 
     @property
     def thing_state(self):
@@ -82,8 +125,12 @@ class BaseStage(lt.Thing):
 
         :param axis: The axis name (x, y or z) to invert.
         """
+        # Not mutating in place so that setting is saved on change.
         direction = self.axis_direction
-        direction[axis] *= -1
+        try:
+            direction[axis] *= -1
+        except KeyError as e:
+            raise KeyError(f"The axis {axis} is not defined.") from e
         self.axis_direction = direction
 
     @lt.thing_action
@@ -94,8 +141,24 @@ class BaseStage(lt.Thing):
         **kwargs: Mapping[str, int],
     ):
         """Make a relative move. Keyword arguments should be axis names."""
+        self._hardware_move_relative(
+            cancel=cancel,
+            block_cancellation=block_cancellation,
+            **self._apply_axis_direction(kwargs),
+        )
+
+    def _hardware_move_relative(
+        self,
+        cancel: lt.deps.CancelHook,
+        block_cancellation: bool = False,
+        **kwargs: Mapping[str, int],
+    ):
+        """Make a relative move in the coordinate system used by the physical hardware.
+
+        Make sure to use and update `self._hardware_position` not `self.position`.
+        """
         raise NotImplementedError(
-            "StageThings must define their own move_relative method"
+            "StageThings must define their own _hardware_move_relative method"
         )
 
     @lt.thing_action
@@ -106,6 +169,22 @@ class BaseStage(lt.Thing):
         **kwargs: Mapping[str, int],
     ):
         """Make an absolute move. Keyword arguments should be axis names."""
+        self._hardware_move_absolute(
+            cancel=cancel,
+            block_cancellation=block_cancellation,
+            **self._apply_axis_direction(kwargs),
+        )
+
+    def _hardware_move_absolute(
+        self,
+        cancel: lt.deps.CancelHook,
+        block_cancellation: bool = False,
+        **kwargs: Mapping[str, int],
+    ):
+        """Make a absolute move in the coordinate system used by the physical hardware.
+
+        Make sure to use and update `self._hardware_position` not `self.position`.
+        """
         raise NotImplementedError(
             "StageThings must define their own move_absolute method"
         )
