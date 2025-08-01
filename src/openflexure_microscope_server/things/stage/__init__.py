@@ -49,9 +49,9 @@ class BaseStage(lt.Thing):
         """Initialise the stage.
 
         :raises RedefinedBaseMovementError: if ``move_relative`` and/or
-        ``move_absolute`` are overridden. It is recommended to override
-        ``_hardware_move_relative`` and/or ``_hardware_move_absolute`` instead so that
-        all code in the child class uses the hardware reference frame.
+            ``move_absolute`` are overridden. It is recommended to override
+            ``_hardware_move_relative`` and/or ``_hardware_move_absolute`` instead so
+            that all code in the child class uses the hardware reference frame.
         """
         self._hardware_position = dict.fromkeys(self._axis_names, 0)
 
@@ -155,7 +155,7 @@ class BaseStage(lt.Thing):
     ):
         """Make a relative move in the coordinate system used by the physical hardware.
 
-        Make sure to use and update `self._hardware_position` not `self.position`.
+        Make sure to use and update ``self._hardware_position`` not ``self.position``.
         """
         raise NotImplementedError(
             "StageThings must define their own _hardware_move_relative method"
@@ -183,7 +183,7 @@ class BaseStage(lt.Thing):
     ):
         """Make a absolute move in the coordinate system used by the physical hardware.
 
-        Make sure to use and update `self._hardware_position` not `self.position`.
+        Make sure to use and update ``self._hardware_position`` not ``self.position``.
         """
         raise NotImplementedError(
             "StageThings must define their own move_absolute method"
