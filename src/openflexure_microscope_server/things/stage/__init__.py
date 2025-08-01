@@ -88,18 +88,18 @@ class BaseStage(lt.Thing):
     axis_direction = lt.ThingSetting(
         initial_value={"x": 1, "y": 1, "z": 1},
         model=Mapping[str, int],
+        readonly=True,
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
 
     def _apply_axis_direction(
-        self, position: Sequence[int] | Mapping[str | int]
+        self, position: list[int] | tuple[int] | Mapping[str | int]
     ) -> list[int] | Mapping[str | int]:
-        if isinstance(position, Sequence):
-            position = [
+        if isinstance(position, (list, tuple)):
+            return [
                 pos * ax_dir
                 for pos, ax_dir in zip(position, self.axis_direction.values())
             ]
-            return dict(zip(self.axis_names, position))
         if isinstance(position, Mapping):
             try:
                 return {

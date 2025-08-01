@@ -69,6 +69,7 @@ class SangaboardThing(BaseStage):
     axis_direction = lt.ThingSetting(
         initial_value={"x": -1, "y": 1, "z": -1},
         model=Mapping[str, int],
+        readonly=True,
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
 
