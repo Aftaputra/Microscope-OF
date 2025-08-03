@@ -7,8 +7,14 @@ generated, and the subprocess calling works as expected.
 import logging
 import os
 from copy import copy
+import uuid
+import re
+import threading
+from time import sleep
 
 import pytest
+
+import labthings_fastapi as lt
 
 from openflexure_microscope_server.stitching import (
     BaseStitcher,
@@ -20,7 +26,9 @@ from openflexure_microscope_server.stitching import (
 
 # A global logger pretending to be an Invocation Logger
 LOGGER = logging.getLogger("mock-invocation_logger")
-FAKE_DIR = os.path.join("a", "dir", "that", "is", "fake")
+FAKE_DIR: list[str] = os.path.join("a", "dir", "that", "is", "fake")
+THIS_DIR: str = os.path.dirname(os.path.realpath(__file__))
+MOCK_STITCHER: str = os.path.join(THIS_DIR, "mock_stitching", "mock-stitch.py")
 
 
 def test_base_stitcher():
@@ -165,7 +173,7 @@ def _validation_error_tester(scan_path, **kwargs):
 
 
 def test_validation_error():
-    """Test a number of way to try to inject mallicious arguments into the stitcher.
+    """Test a number of way to try to inject malicious arguments into the stitcher.
 
     The stitcher should throw a validation error each attempt.
     """
@@ -173,3 +181,101 @@ def test_validation_error():
     _validation_error_tester(FAKE_DIR, overlap=".2", correlation_resize=".25;rm -rf /;")
     _validation_error_tester(FAKE_DIR, overlap=".2;rm -rf /;", correlation_resize=".25")
     _validation_error_tester(FAKE_DIR, scan_data_dict={"overlap": ".2;rm -rf /;"})
+
+
+def test_extra_arg_validation():
+    """Test that malicious arguments in extra_args also throw validation error.
+
+    Currently extra args do not come from user input. But this makes checks more
+    future-proof.
+    """
+    stitcher = FinalStitcher(FAKE_DIR, logger=LOGGER)
+    stitcher._extra_args = ["&&rm -rf /&&"]
+    with pytest.raises(StitcherValidationError):
+        stitcher.command
+
+
+def test_preview_stitching_command(caplog, mocker):
+    """Check the preview process runs in a background thread and doesn't log."""
+    mock_cmd = "python -m mock_command.py"
+
+    mocker.patch("openflexure_microscope_server.stitching.STITCHING_CMD", mock_cmd)
+
+    with caplog.at_level(logging.INFO):
+        stitcher = PreviewStitcher(FAKE_DIR, overlap=0.1, correlation_resize=0.5)
+        stitcher.start()
+        # Should take a second or so to run so will still be running
+        assert stitcher.running
+        # Can't start another time, instead get a runtime error
+        with pytest.raises(RuntimeError):
+            stitcher.start()
+        # Wait for it to complete
+        stitcher.wait()
+        # It is now not running
+        assert not stitcher.running
+        assert len(caplog.records) == 0
+
+
+def test_final_stitching_command(caplog, mocker):
+    """Check the final stitch runs until completion, and print statements are logged."""
+    mock_cmd = f"python {MOCK_STITCHER}"
+
+    mocker.patch("openflexure_microscope_server.stitching.STITCHING_CMD", mock_cmd)
+
+    with caplog.at_level(logging.INFO):
+        # Input values to prevent logging
+        stitcher = FinalStitcher(
+            FAKE_DIR, logger=LOGGER, overlap=0.1, correlation_resize=0.5
+        )
+        # For the final stitcher it will always complete before returning.
+        stitcher.start(cancel=lt.deps.CancelHook(id=uuid.uuid4()))
+        # The mock command logs the inputs so should be 1 less than
+        # FINAL_EXPECTED_COMMAND as the command itself is not logged. However, there
+        # is two extra logs, The date (before the program starts) and
+        # "Stitching complete" when it ends.
+        assert len(caplog.records) == len(FINAL_EXPECTED_COMMAND) + 1
+        for i, record in enumerate(caplog.records):
+            msg = record.message
+            if i == 0:
+                assert re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}", msg)
+            elif i == len(FINAL_EXPECTED_COMMAND):
+                assert msg.strip() == "Stitching complete"
+            else:
+                assert msg.strip() == FINAL_EXPECTED_COMMAND[i]
+
+
+def test_final_stitching_command_cancelled(caplog, mocker):
+    """Check that final stitch can be cancelled."""
+    mock_cmd = f"python {MOCK_STITCHER}"
+
+    mocker.patch("openflexure_microscope_server.stitching.STITCHING_CMD", mock_cmd)
+
+    with caplog.at_level(logging.INFO):
+        stitcher = FinalStitcher(FAKE_DIR, logger=LOGGER)
+        cancel_hook = lt.deps.CancelHook(id=uuid.uuid4())
+
+        # Start stitching in a thread.
+        thread = threading.Thread(target=stitcher.start, kwargs={"cancel": cancel_hook})
+        thread.start()
+        # Sleep long enough for at least 1 log.
+        sleep(0.5)
+        # use set() to cancel!
+        cancel_hook.set()
+        thread.join()
+        assert len(caplog.records) < len(FINAL_EXPECTED_COMMAND) + 1
+        assert caplog.records[-1].message == "Stitching cancelled by user"
+
+
+def test_final_stitching_command_error(caplog, mocker):
+    """Check that ChildProcessError is raised if the final stitch errors."""
+    mock_cmd = f"python {MOCK_STITCHER}"
+
+    mocker.patch("openflexure_microscope_server.stitching.STITCHING_CMD", mock_cmd)
+
+    with caplog.at_level(logging.INFO):
+        stitcher = FinalStitcher(FAKE_DIR, logger=LOGGER)
+        # Send in the argument ERROR to mock-stitch and it will raise an error rather
+        # than echo.
+        stitcher._extra_args = ["ERROR"]
+        with pytest.raises(ChildProcessError):
+            stitcher.start(cancel=lt.deps.CancelHook(id=uuid.uuid4()))

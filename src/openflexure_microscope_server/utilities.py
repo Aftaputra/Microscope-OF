@@ -144,6 +144,7 @@ def make_path_safe(unsafe_path_string: str) -> str:
     slash/backslash/colon on Windows).
 
     :param unsafe_path_string: The original path string to sanitise.
+
     :returns: A version of the input string safe to use as a file path.
     """
     unsafe_character_pattern = (

@@ -10,6 +10,7 @@ from typing import Optional, Any
 import threading
 import subprocess
 import os
+import shlex
 import time
 
 import labthings_fastapi as lt
@@ -25,6 +26,21 @@ DEFAULT_RESIZE = 0.5
 
 class StitcherValidationError(RuntimeError):
     """The stitcher received values that it deems unsafe to create a command from."""
+
+
+def validate_command(cmd: list[str]):
+    """Validate that the command only characters that are allowed in a path.
+
+    The values in the commands should be numbers, commandline flags, paths, and
+    executables. All of these should be allowed by ``make_path_safe``.
+
+    :raises StitcherValidationError: if any element in the command is not safe.
+    """
+    for element in cmd:
+        if element != make_path_safe(element):
+            raise StitcherValidationError(
+                "Invalid stiching command: Contains unsafe characters."
+            )
 
 
 class BaseStitcher:
@@ -62,8 +78,9 @@ class BaseStitcher:
         """The command to run with subprocess.Popen."""
         # Revalidate for good measure,
         self.validate_path()
+
         # The command, and the mode
-        initial_args = [STITCHING_CMD, "--stitching_mode", self._mode]
+        initial_args = shlex.split(STITCHING_CMD) + ["--stitching_mode", self._mode]
         # Use float() just to really ensure that anything input is a float
         setting_args = [
             "--minimum_overlap",
@@ -71,7 +88,9 @@ class BaseStitcher:
             "--resize",
             f"{float(self.correlation_resize)}",
         ]
-        return initial_args + self._extra_args + setting_args + [self.images_dir]
+        full_cmd = initial_args + self._extra_args + setting_args + [self.images_dir]
+        validate_command(full_cmd)
+        return full_cmd
 
     def validate_path(self):
         """Check path is safe before making a command to run with subprocess.
@@ -82,7 +101,7 @@ class BaseStitcher:
         """
         if self.images_dir != make_path_safe(self.images_dir):
             raise StitcherValidationError(
-                "Invalid directory path contains unsafe characters."
+                "Invalid directory path: Contains unsafe characters."
             )
 
     def start(self) -> None:
@@ -280,7 +299,7 @@ class FinalStitcher(BaseStitcher):
         if process.poll() == 0:
             self.logger.info("Stitching complete")
         else:
-            raise ChildProcessError(f"Subprocess {cmd[0]} exited with an error.")
+            raise ChildProcessError(f"Subprocess {STITCHING_CMD} exited with an error.")
 
     def _log_ongoing(
         self,
