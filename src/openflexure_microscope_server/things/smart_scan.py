@@ -101,7 +101,6 @@ class SmartScanThing(lt.Thing):
         self._ongoing_scan: Optional[scan_directories.ScanDirectory] = None
         # TODO see if starting position can go into ScanData
         self._starting_position: Optional[Mapping[str, int]] = None
-        self._capture_thread: Optional[ErrorCapturingThread] = None
         self._scan_images_taken: Optional[int] = None
         # TODO Scan data is a dict during refactoring, should become a dataclass
         self._scan_data: Optional[scan_directories.ScanData] = None
@@ -138,7 +137,6 @@ class SmartScanThing(lt.Thing):
         # TODO check if metadata_getter this can be removed without error?
         self._metadata_getter = metadata_getter
         self._csm = csm
-        self._capture_thread = None
         self._scan_images_taken = 0
 
         # Set _scan_data to None. This is needed just in case an exception is raised
@@ -171,7 +169,6 @@ class SmartScanThing(lt.Thing):
             self._cam = None
             self._metadata_getter = None
             self._csm = None
-            self._capture_thread = None
             self._ongoing_scan = None
             self._scan_images_taken = None
             self._scan_data = None
@@ -347,10 +344,6 @@ class SmartScanThing(lt.Thing):
         scan should be stitched and whether  the microscope should return to the
         starting x,y,z position.
         """
-        # Used to check if finally was reached via exception (except
-        # cancel by user)
-        scan_successful = True
-
         try:
             self._cam.start_streaming(main_resolution=(3280, 2464))
             self._scan_data = self._collect_scan_data()
@@ -370,13 +363,11 @@ class SmartScanThing(lt.Thing):
             self._save_final_scan_data(scan_result="success")
 
         except lt.exceptions.InvocationCancelledError:
-            scan_successful = False
             # Reset the cancel event so it can be thrown again
             self._cancel.clear()
             self._scan_logger.info("Stopping scan because it was cancelled.")
             self._save_final_scan_data(scan_result="cancelled by user")
         except scan_directories.NotEnoughFreeSpaceError as e:
-            scan_successful = False
             self._save_final_scan_data(scan_result=str(e))
             self._scan_logger.error(
                 f"Stopping scan to avoid filling up the disk: {e}",
@@ -384,7 +375,6 @@ class SmartScanThing(lt.Thing):
             )
             raise e
         except Exception as e:
-            scan_successful = False
             self._save_final_scan_data(scan_result=str(e))
             self._scan_logger.error(
                 f"The scan stopped because of an error: {e} "
@@ -397,21 +387,7 @@ class SmartScanThing(lt.Thing):
 
             # Start streaming in the default resolution again as soon as possible
             self._cam.start_streaming()
-            if self._capture_thread:
-                # If the capture thread had an error, we capture it here
-                try:
-                    self._capture_thread.join()
-                except Exception as e:
-                    # If the scan has already ended due to an exception,
-                    # ignore any exceptions. If it appeared to be successful,
-                    # log the error.
-                    if scan_successful:
-                        self._scan_logger.error(
-                            "The scan appears to have completed successfully, however "
-                            f"the final capture raised the following error: {e}."
-                            "Attempting to stitch and archive images.",
-                            exc_info=e,
-                        )
+
 
         # This is what happens if the scan completes successfully or the
         # user cancels it.
@@ -508,7 +484,8 @@ class SmartScanThing(lt.Thing):
 
         self._scan_logger.info("Waiting for background processes to finish...")
 
-        self._preview_stitcher.wait()
+        if self._preview_stitcher is not None:
+            self._preview_stitcher.wait()
 
         if self._scan_data.stitch_automatically:
             self._scan_logger.info("Stitching final image (may take some time)...")

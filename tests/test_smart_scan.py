@@ -18,6 +18,7 @@ import tempfile
 import os
 import shutil
 import logging
+from datetime import datetime
 
 from fastapi import HTTPException
 import pytest
@@ -26,6 +27,7 @@ from openflexure_microscope_server.things.smart_scan import (
     SmartScanThing,
     ScanNotRunningError,
 )
+from openflexure_microscope_server.scan_directories import ScanData
 
 from .mock_things.mock_csm import MockCSMThing
 from .mock_things.mock_autofocus import MockAutoFocusThing
@@ -191,7 +193,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
             assert self._cam is cam_mock
             assert self._metadata_getter is meta_mock
             assert self._csm is csm_mock
-            assert self._capture_thread is None
             assert self._scan_images_taken == 0
 
     # mock smart scan thing
@@ -224,7 +225,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
     assert mock_ss_thing._cam is None
     assert mock_ss_thing._metadata_getter is None
     assert mock_ss_thing._csm is None
-    assert mock_ss_thing._capture_thread is None
     assert mock_ss_thing._scan_images_taken is None
 
     # Return the mock thing for further state testing, and the
@@ -253,3 +253,109 @@ def test_outer_scan_wo_sample_skip():
     assert exec_info is None
     # Checked the mocked _run_scan was run exactly once
     assert mock_ss_thing.mock_call_count["_run_scan"] == 1
+
+
+def _expected_scan_data():
+    """Return the expected ScanData object for a SmartScan with default properties."""
+    expected_dict = {
+        "scan_name": "test_name_0001",
+        "overlap": 0.45,
+        "max_dist": 45000,
+        "dx": 100,
+        "dy": 100,
+        "autofocus_dz": 1000,
+        "autofocus_on": True,
+        "skip_background": True,
+        "stitch_automatically": True,
+        "stitch_resize": 0.5,
+        "save_resolution": (1640, 1232),
+    }
+    return ScanData(start_time=datetime.now(), **expected_dict)
+
+
+@pytest.fixture
+def scan_thing_mocked_for_scan_data(smart_scan_thing, mocker):
+    """A scan thing that is mocked so that _collect_scan_data will return."""
+    # Give the scan thing a scan invocation logger so it thinks a scan is running.
+    smart_scan_thing._scan_logger = LOGGER
+    mocker.patch.object(
+        smart_scan_thing, "_calc_displacement_from_test_image", return_value=[100, 100]
+    )
+    mock_ongoing_scan = mocker.Mock()
+    type(mock_ongoing_scan).name = mocker.PropertyMock(return_value="test_name_0001")
+    type(mock_ongoing_scan).images_dir = mocker.PropertyMock(
+        return_value="scans/test_name_0001/images/"
+    )
+    smart_scan_thing._ongoing_scan = mock_ongoing_scan
+    return smart_scan_thing
+
+
+def test_collect_scan_data(scan_thing_mocked_for_scan_data):
+    """Run _collect_scan_data, and check the ScanData object has the expected values."""
+    scan_thing = scan_thing_mocked_for_scan_data
+
+    data = scan_thing._collect_scan_data()
+    expected_data = _expected_scan_data()
+    time_diff = expected_data.start_time - data.start_time
+    assert abs(time_diff.total_seconds()) < 1
+    # Set times to exactly the same before final comparison
+    expected_data.start_time = data.start_time
+    assert data == expected_data
+
+
+def test_save_final_scan_data(scan_thing_mocked_for_scan_data):
+    """Run _save_final_scan_data, check save is called with final results in ScanData."""
+    scan_thing = scan_thing_mocked_for_scan_data
+
+    scan_thing._scan_data = scan_thing._collect_scan_data()
+    scan_thing._scan_images_taken = 44
+    scan_thing._save_final_scan_data("Mocked!")
+    # _ongoing_scan is a mock so we can check that save_scan data was called and get
+    # the value
+    scan_thing._ongoing_scan.save_scan_data.assert_called()
+    final_data = scan_thing._ongoing_scan.save_scan_data.call_args[0][0]
+    assert isinstance(final_data, ScanData)
+    assert final_data.scan_result == "Mocked!"
+    assert final_data.final_image_count == 44
+    assert final_data.duration.total_seconds() < 1
+
+
+@pytest.fixture
+def scan_thing_mocked_for_run_scan(scan_thing_mocked_for_scan_data, mocker):
+    """Return a scan_thing mocked so _run_scan works.
+
+    main_scan_loop(), _return_to_starting_position(), _perform_final_stitch(), and
+    purge_empty_scans() are Mocks
+    _cam is a MockCameraThing
+    """
+    scan_thing = scan_thing_mocked_for_scan_data
+    scan_thing._cam = MockCameraThing()
+    scan_thing._scan_images_taken = 0
+    mocker.patch.object(scan_thing, "_main_scan_loop")
+    mocker.patch.object(scan_thing, "_return_to_starting_position")
+    mocker.patch.object(scan_thing, "_perform_final_stitch")
+    mocker.patch.object(scan_thing, "purge_empty_scans")
+
+    return scan_thing
+
+
+def test_run_scan(scan_thing_mocked_for_run_scan):
+    """Run _save_final_scan_data, check save is called with final results in ScanData."""
+    scan_thing = scan_thing_mocked_for_run_scan
+    scan_thing._scan_data = scan_thing._run_scan()
+
+    scan_thing._cam.start_streaming.assert_called()
+    # Save scan data is called at the start and the end!
+    assert scan_thing._ongoing_scan.save_scan_data.call_count == 2
+    # The scan was a success
+    final_scan_data = scan_thing._ongoing_scan.save_scan_data.call_args[0][0]
+    assert final_scan_data.scan_result == "success"
+
+    # The preview stitcher object should still exist. And images dir should be set.
+    assert scan_thing._preview_stitcher.images_dir == "scans/test_name_0001/images/"
+
+    # Other calls should be:
+    scan_thing._main_scan_loop.assert_called()
+    scan_thing._return_to_starting_position.assert_called()
+    scan_thing._perform_final_stitch.assert_called()
+    scan_thing.purge_empty_scans.assert_called()

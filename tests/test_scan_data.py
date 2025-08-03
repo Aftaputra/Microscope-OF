@@ -39,7 +39,7 @@ def _fake_scan_data(**kwargs) -> ScanData:
         "max_dist": 100000,
         "dx": 100,
         "dy": 100,
-        "autofocus_range": 1000,
+        "autofocus_dz": 1000,
         "autofocus_on": True,
         "start_time": copy(MOCK_START_TIME),
         "skip_background": True,

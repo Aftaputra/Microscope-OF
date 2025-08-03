@@ -58,7 +58,7 @@ class ScanData(BaseModel):
     max_dist: int
     dx: int
     dy: int
-    autofocus_range: int
+    autofocus_dz: int
     autofocus_on: bool
     start_time: datetime
     skip_background: bool
