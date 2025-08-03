@@ -12,7 +12,6 @@ import threading
 import os
 import time
 import json
-from datetime import datetime
 from subprocess import CompletedProcess, Popen, PIPE, SubprocessError, STDOUT
 
 from fastapi import HTTPException
@@ -40,7 +39,7 @@ AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocu
 JPEGBlob = lt.blob.blob_type("image/jpeg")
 ZipBlob = lt.blob.blob_type("application/zip")
 
-SCAN_DATA_FILENAME = "scan_data.json"
+
 STITCHING_CMD = "openflexure-stitch"
 
 STITCHING_RESOLUTION = (820, 616)
@@ -111,7 +110,7 @@ class SmartScanThing(lt.Thing):
         self._capture_thread: Optional[ErrorCapturingThread] = None
         self._scan_images_taken: Optional[int] = None
         # TODO Scan data is a dict during refactoring, should become a dataclass
-        self._scan_data: Optional[dict] = None
+        self._scan_data: Optional[scan_directories.ScanData] = None
 
     @lt.thing_action
     def sample_scan(
@@ -141,6 +140,7 @@ class SmartScanThing(lt.Thing):
         self._autofocus = autofocus
         self._stage = stage
         self._cam = cam
+        # TODO check if metadata_getter this can be removed without error?
         self._metadata_getter = metadata_getter
         self._csm = csm
         self._capture_thread = None
@@ -280,14 +280,11 @@ class SmartScanThing(lt.Thing):
         return dx, dy
 
     @_scan_running
-    def _set_scan_data(self):
-        """Set date for this scan to the ``self._scan_data`` variable.
-
-        This needs to become a dataclass at some point.
-        """
+    def _collect_scan_data(self) -> scan_directories.ScanData:
+        """Collect and return the data for this scan so it cannot be changed mid-scan."""
         overlap = self.overlap
         dx, dy = self._calc_displacement_from_test_image(overlap)
-        stitch_resize = STITCHING_RESOLUTION[0] / self.save_resolution[0]
+        stitch_resize = STITCHING_RESOLUTION[0] // self.save_resolution[0]
 
         self._scan_logger.debug(
             f"Resizing images when stitching by a factor of {stitch_resize}"
@@ -308,78 +305,33 @@ class SmartScanThing(lt.Thing):
             autofocus_dz = 0
 
         # Fix scan parameters in case UI is updated during scan.
-        self._scan_data = {
-            "scan_name": self._ongoing_scan.name,
-            "overlap": overlap,
-            "max_dist": self.max_range,
-            "dx": dx,
-            "dy": dy,
-            "autofocus_dz": autofocus_dz,
-            "autofocus_on": bool(autofocus_dz),
-            "start_time": time.strftime("%H_%M_%S-%d_%m_%Y"),
-            "skip_background": self.skip_background,
-            "stitch_automatically": self.stitch_automatically,
-            "stitch_resize": stitch_resize,
-            "save_resolution": self.save_resolution,
-        }
-
-    @_scan_running
-    def _save_scan_inputs_json(self):
-        """Save scan inputs as a JSON file in the scan folder.
-
-        This file allows the user to review the settings used in the scan.
-        """
-        # Should this be a method of the scan_data dataclass?
-
-        data = {
-            "scan_name": self._ongoing_scan.name,
-            "overlap": self._scan_data["overlap"],
-            "autofocus range": self._scan_data["autofocus_dz"],
-            "dx": self._scan_data["dx"],
-            "dy": self._scan_data["dy"],
-            "start time": self._scan_data["start_time"],
-            "skipping background": self._scan_data["skip_background"],
-            "capture resolution": self._scan_data["save_resolution"],
-        }
-
-        scan_inputs_fname = os.path.join(
-            self._ongoing_scan.images_dir, SCAN_DATA_FILENAME
+        return scan_directories.ScanData(
+            scan_name=self._ongoing_scan.name,
+            overlap=overlap,
+            max_dist=self.max_range,
+            dx=dx,
+            dy=dy,
+            autofocus_dz=autofocus_dz,
+            autofocus_on=bool(autofocus_dz),
+            start_time=time.strftime("%H_%M_%S-%d_%m_%Y"),
+            skip_background=self.skip_background,
+            stitch_automatically=self.stitch_automatically,
+            stitch_resize=stitch_resize,
+            save_resolution=self.save_resolution,
         )
-        with open(scan_inputs_fname, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
 
     @_scan_running
-    def _update_scan_data_json(self, scan_result: str):
+    def _save_final_scan_data(self, scan_result: str):
         """Update scan data JSON file with data only known at the end of the scan.
 
         Takes scan_result, a string that is either "success", "cancelled by user",
         or the error that ended the scan.
         """
-        # Should this be a method of the scan_data dataclass?
-        current_time = datetime.now().replace(microsecond=0)
-        start_time = datetime.strptime(
-            self._scan_data["start_time"], "%H_%M_%S-%d_%m_%Y"
-        ).replace(microsecond=0)
-
-        duration = current_time - start_time
-
-        outputs = {
-            "image_count": self._scan_images_taken,
-            "duration": str(duration),
-            "scan_result": scan_result,
-        }
-
-        scan_data_fname = os.path.join(
-            self._ongoing_scan.images_dir, SCAN_DATA_FILENAME
+        self.scan_data.set_final_data(
+            result=scan_result,
+            final_image_count=self._scan_images_taken,
         )
-
-        with open(scan_data_fname, encoding="utf-8") as f:
-            data = json.load(f)
-
-        data.update(outputs)
-
-        with open(scan_data_fname, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+        self._ongoing_scan.save_scan_data(self._scan_data)
 
     @_scan_running
     def _manage_stitching_threads(self):
@@ -388,7 +340,7 @@ class SmartScanThing(lt.Thing):
         # well constrained.
         if self._scan_images_taken > 3:
             if not self._preview_stitch_running():
-                self._preview_stitch_start(overlap=self._scan_data["overlap"])
+                self._preview_stitch_start(overlap=self._scan_data.overlap)
 
     @_scan_running
     def _run_scan(self):
@@ -404,25 +356,25 @@ class SmartScanThing(lt.Thing):
 
         try:
             self._cam.start_streaming(main_resolution=(3280, 2464))
-            self._set_scan_data()
-            self._save_scan_inputs_json()
+            self._scan_data = self._collect_scan_data()
+            self._ongoing_scan.save_scan_data(self._scan_data)
             if self._scan_images_taken != 0:
                 msg = "_scan_images_taken should be zero before starting scanning"
                 raise RuntimeError(msg)
 
             # This is the main loop of the scan!
             self._main_scan_loop()
-            self._update_scan_data_json(scan_result="success")
+            self._save_final_scan_data(scan_result="success")
 
         except lt.exceptions.InvocationCancelledError:
             scan_successful = False
             # Reset the cancel event so it can be thrown again
             self._cancel.clear()
             self._scan_logger.info("Stopping scan because it was cancelled.")
-            self._update_scan_data_json(scan_result="cancelled by user")
+            self._save_final_scan_data(scan_result="cancelled by user")
         except scan_directories.NotEnoughFreeSpaceError as e:
             scan_successful = False
-            self._update_scan_data_json(scan_result=str(e))
+            self._save_final_scan_data(scan_result=str(e))
             self._scan_logger.error(
                 f"Stopping scan to avoid filling up the disk: {e}",
                 exc_info=e,
@@ -430,6 +382,7 @@ class SmartScanThing(lt.Thing):
             raise e
         except Exception as e:
             scan_successful = False
+            self._save_final_scan_data(scan_result=str(e))
             self._scan_logger.error(
                 f"The scan stopped because of an error: {e} "
                 "Attempting to stitch and archive the images acquired so far.",
@@ -475,9 +428,9 @@ class SmartScanThing(lt.Thing):
         # have multiple starting positions, each of which will be visited before the
         # scan can end.
         planner_settings = {
-            "dx": self._scan_data["dx"],
-            "dy": self._scan_data["dy"],
-            "max_dist": self._scan_data["max_dist"],
+            "dx": self._scan_data.dx,
+            "dy": self._scan_data.dy,
+            "max_dist": self._scan_data.max_dist,
         }
         route_planner = scan_planners.SmartSpiral(
             initial_position=(self._stage.position["x"], self._stage.position["y"]),
@@ -502,7 +455,7 @@ class SmartScanThing(lt.Thing):
 
             capture_image = True
             # If skipping background, take an image to check if current field of view is background
-            if self._scan_data["skip_background"]:
+            if self._scan_data.skip_background:
                 capture_image, bg_message = self._cam.image_is_sample()
 
             if not capture_image:
@@ -515,8 +468,8 @@ class SmartScanThing(lt.Thing):
 
             focused, focused_height = self._autofocus.run_smart_stack(
                 images_dir=self._ongoing_scan.images_dir,
-                autofocus_dz=self._scan_data["autofocus_dz"],
-                save_resolution=self._scan_data["save_resolution"],
+                autofocus_dz=self._scan_data.autofocus_dz,
+                save_resolution=self._scan_data.save_resolution,
             )
 
             current_pos_xyz = (new_pos_xyz[0], new_pos_xyz[1], focused_height)
@@ -552,14 +505,14 @@ class SmartScanThing(lt.Thing):
 
         self._preview_stitch_wait()
         try:
-            if self._scan_data["stitch_automatically"]:
+            if self._scan_data.stitch_automatically:
                 self._scan_logger.info("Stitching final image (may take some time)...")
                 self.stitch_scan(
                     logger=self._scan_logger,
                     cancel=self._cancel,
                     scan_name=self._ongoing_scan.name,
-                    stitch_resize=self._scan_data["stitch_resize"],
-                    overlap=self._scan_data["overlap"],
+                    stitch_resize=self._scan_data.stitch_resize,
+                    overlap=self._scan_data.overlap,
                 )
         except SubprocessError as e:
             self._scan_logger.error(f"Stitching failed: {e}", exc_info=e)
@@ -798,7 +751,7 @@ class SmartScanThing(lt.Thing):
                     "--minimum_overlap",
                     f"{min_overlap}",
                     "--resize",
-                    f"{self._scan_data['stitch_resize']}",
+                    f"{self._scan_data.stitch_resize}",
                     self._ongoing_scan.images_dir,
                 ]
             )
@@ -885,9 +838,9 @@ class SmartScanThing(lt.Thing):
         Note that as this is a lt.thing_action it needs the logger passed as
         a variable if called from another thing action
         """
-        json_fpath = self._scan_dir_manager.get_file_path_from_img_dir(
-            scan_name=scan_name, filename=SCAN_DATA_FILENAME
-        )
+        # TODO tidy this function
+        # TODO handle if json_path is None (easier once tidied)
+        json_fpath = self._scan_dir_manager.get_scan_data_path()
 
         if self.stitch_tiff:
             tiff_arg = "--stitch_tiff"
@@ -904,7 +857,7 @@ class SmartScanThing(lt.Thing):
                 # the file not being there, it not being json in the file,
                 # or the imported data not being indexable
                 logger.warning(
-                    f"Couldn't read scan data, is {SCAN_DATA_FILENAME} missing or corrupt? "
+                    f"Couldn't read scan data, is {json_fpath} missing or corrupt? "
                     "Attempting stitch with overlap value of 0.1"
                 )
                 overlap = 0.1
@@ -919,20 +872,28 @@ class SmartScanThing(lt.Thing):
             try:
                 with open(json_fpath, "r", encoding="utf-8") as data_file:
                     data_loaded = json.load(data_file)
-                save_resolution = data_loaded["capture resolution"]
+
+                # Handle "capture resolution" being used to store the save resolution
+                # in old scans.
+                key = (
+                    "capture resolution"
+                    if "capture resolution" in data_loaded
+                    else "save_resolution"
+                )
+                save_resolution = data_loaded[key]
                 stitch_resize = STITCHING_RESOLUTION[0] / save_resolution[0]
             except (json.decoder.JSONDecodeError, FileNotFoundError, TypeError):
                 # As there is no schema or pydantic model this should handle
                 # the file not being there, it not being json in the file,
                 # or the imported data not being indexable
                 logger.warning(
-                    f"Couldn't read scan data, is {SCAN_DATA_FILENAME} missing or corrupt? "
+                    f"Couldn't read scan data, is {json_fpath} missing or corrupt? "
                     "Attempting stitch with resize value of 0.5"
                 )
                 stitch_resize = 0.5
             except KeyError:
                 logger.warning(
-                    "Value for capture resolution not found in scan data. "
+                    "Value for save resolution not found in scan data. "
                     "Attempting stitch with resize value of 0.5"
                 )
                 stitch_resize = 0.5

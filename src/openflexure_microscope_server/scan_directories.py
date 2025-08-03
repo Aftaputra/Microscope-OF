@@ -6,8 +6,9 @@ import re
 import shutil
 import zipfile
 import threading
+from datetime import datetime, timedelta
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, field_serializer
 
 from openflexure_microscope_server.utilities import requires_lock
 
@@ -16,6 +17,8 @@ SCAN_ZERO_PAD_DIGITS = 4
 
 STITCH_REGEX = re.compile(r"stitched\.jpe?g$")
 IMAGE_REGEX = re.compile(r"-?[0-9]+_-?[0-9]+\.jpe?g$")
+
+SCAN_DATA_FILENAME = "scan_data.json"
 
 
 class NotEnoughFreeSpaceError(IOError):
@@ -31,6 +34,96 @@ class ScanInfo(BaseModel):
     number_of_images: int
     stitch_available: bool
     dzi: Optional[str]
+
+
+class ScanData(BaseModel):
+    """Data about a scan to be saved to a JSON file in the directory.
+
+    This serialises into a human readable format where possible with
+
+    timestamps in %H_%M_%S-%d_%m_%Y format
+    timedeltas in %H:%M:%S format
+
+    Properties that are not known until the end have ``None`` serialised as "Unknown"
+    """
+
+    # TODO: Docs for each variable
+    # TODO: Make note about timestamp format. Is it too ambiguous?
+    scan_name: str
+    overlap: float
+    max_dist: int
+    dx: int
+    dy: int
+    autofocus_range: int
+    autofocus_on: bool
+    start_time: datetime
+    skip_background: str
+    stitch_automatically: str
+    stitch_resize: int
+    save_resolution: tuple[int, int]
+    final_image_count: Optional[int] = None
+    duration: Optional[timedelta] = None
+    scan_result: Optional[str] = None
+
+    def set_final_data(self, result: str, final_image_count: int):
+        """Set the final data for the scan, scan duration is automatically calculated.
+
+        :param result: A string describing the result.
+        :param final_image_count: The total number of images captures.
+        """
+        self.duration = datetime.now() - self.start_time
+        self.final_image_count = final_image_count
+        self.scan_result = result
+
+    @field_validator("start_time", mode="before")
+    @classmethod
+    def parse_timestamp(cls, value: str | datetime) -> datetime:
+        """Validate a timestamp that may be a string in Hrs_Min_Sec-Day_Month_Year format."""
+        if isinstance(value, str):
+            return datetime.strptime(value, "%H_%M_%S-%d_%m_%Y")
+        return value
+
+    @field_serializer("start_time")
+    def serialize_timestamp(self, value: datetime) -> str:
+        """Serialise timestamp to Hrs_Min_Sec-Day_Month_Year format."""
+        return value.strftime("%H_%M_%S-%d_%m_%Y")
+
+    @field_validator("duration", mode="before")
+    @classmethod
+    def parse_timedelta(cls, value: Optional[str | timedelta]) -> Optional[timedelta]:
+        """Validate a timedelta that may be a string in Hrs:Min:Sec format or "Unknown"."""
+        if isinstance(value, str):
+            if value == "Unknown":
+                return None
+            hrs, mins, secs = map(int, value.split(":"))
+            return timedelta(hours=hrs, minutes=mins, seconds=secs)
+        return value
+
+    @field_serializer("duration")
+    def serialize_timedelta(self, value: Optional[timedelta]) -> str:
+        """Serialise timedelta to Hrs:Min:Sec (or "Unknown" if None)."""
+        if value is None:
+            return "Unknown"
+        # Calculate the string manually rather than use str(), as this may convert to
+        # days for a very very long scan, and then it is much harder to parse.
+        total_secs = value.total_seconds()
+        hrs = int(total_secs // 3600)
+        mins = int((total_secs % 3600) // 60)
+        secs = int((total_secs % 60))
+        return f"{hrs}:{mins}:{secs}"
+
+    @field_validator("final_image_count", "scan_result", mode="before")
+    @classmethod
+    def parse_unknown_as_none(cls, value: Optional[str | int]) -> Optional[str | int]:
+        """Validate the string "Unknown" as None."""
+        if value == "Unknown":
+            return None
+        return value
+
+    @field_serializer("final_image_count", "scan_result")
+    def serialize_none_as_unknown(self, value: Optional[str | int]) -> str:
+        """Serialise None as "Unknown" for a more human readable result."""
+        return "Unknown" if value is None else str(value)
 
 
 class ScanDirectoryManager:
@@ -110,6 +203,17 @@ class ScanDirectoryManager:
         if stitch_fname is None:
             return None
         return self.get_file_path_from_img_dir(scan_name, stitch_fname)
+
+    @requires_lock
+    def get_scan_data_path(self, scan_name: str) -> Optional[str]:
+        """Return the file full path scan data JSON file.
+
+        If no scan data JSON file is found, return None
+        """
+        scan_data_path = ScanDirectory(scan_name, self.base_dir).scan_data_path
+        if not os.path.isfile(scan_data_path):
+            return None
+        return scan_data_path
 
     @property
     @requires_lock
@@ -251,6 +355,16 @@ class ScanDirectory:
         return None
 
     @property
+    def scan_data_path(self) -> Optional[str]:
+        """The path to the scan data json file for this directory.
+
+        Returns None if there is no images dir to write to.
+        """
+        if self.images_dir is not None:
+            return os.path.join(self.images_dir, SCAN_DATA_FILENAME)
+        return None
+
+    @property
     def created_time(self) -> float:
         """The time the directory was created on disk."""
         return os.path.getctime(self.dir_path)
@@ -340,6 +454,16 @@ class ScanDirectory:
                 full_path = os.path.join(file_root, filename)
                 files.append(os.path.relpath(full_path, self.dir_path))
         return files
+
+    def save_scan_data(self, scan_data: ScanData):
+        """Save the scan data for this scan to disk."""
+        if self.scan_data_path is None:
+            raise FileNotFoundError(
+                "There is no images directory to save scan data into."
+            )
+
+        with open(self.scan_data_path, "w", encoding="utf-8") as f:
+            f.write(scan_data.model_dump_json(indent=4))
 
     def zip_files(self, final_version: bool = False) -> str:
         """Zips any images from the scan not yet zipped, return full path to zip.
