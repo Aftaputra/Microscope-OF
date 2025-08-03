@@ -17,7 +17,7 @@ import labthings_fastapi as lt
 STITCHING_CMD = "openflexure-stitch"
 STITCHING_RESOLUTION = (820, 616)
 
-DEFAULT_OVERLAP = 0.5
+DEFAULT_OVERLAP = 0.1
 DEFAULT_RESIZE = 0.5
 
 
