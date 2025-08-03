@@ -324,7 +324,7 @@ class SmartScanThing(lt.Thing):
         Takes scan_result, a string that is either "success", "cancelled by user",
         or the error that ended the scan.
         """
-        self.scan_data.set_final_data(
+        self._scan_data.set_final_data(
             result=scan_result,
             final_image_count=self._scan_images_taken,
         )

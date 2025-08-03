@@ -7,6 +7,7 @@ import shutil
 import logging
 import random
 import time
+import json
 from collections import namedtuple
 
 import pytest
@@ -17,8 +18,10 @@ from openflexure_microscope_server.scan_directories import (
     ScanInfo,
     get_files_in_zip,
     NotEnoughFreeSpaceError,
+    SCAN_DATA_FILENAME,
 )
 
+from .test_scan_data import _fake_scan_data
 from .utilities import assert_unique_of_length
 
 # A global logger to pass in as an Invocation Logger
@@ -281,6 +284,46 @@ def test_get_final_stitch():
     assert scan_dir.get_final_stitch_name() == fake_scan_name
 
 
+def test_get_scan_data_path():
+    """Check that a scan data path behaves as expected."""
+    _clear_scan_dir()
+    scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
+    scan_name = scan_dir.name
+    expected_path = os.path.join(scan_dir.images_dir, SCAN_DATA_FILENAME)
+    # Asking the scan manager for the path will return None as there is no file.
+    assert scan_dir_manager.get_scan_data_path(scan_name) is None
+    # Asking the scan directly will return the location the file should be located
+    # this is so it can be created.
+    assert scan_dir.scan_data_path == expected_path
+
+    # Remove the images directory.
+    shutil.rmtree(scan_dir.images_dir)
+    assert scan_dir_manager.get_scan_data_path(scan_name) is None
+
+
+def test_get_scan_data_dict():
+    """Check that the dictionary for the scan data is returned, or None if doesn't exist."""
+    _clear_scan_dir()
+    scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
+    scan_name = scan_dir.name
+    # Doesn't yet exist
+    assert scan_dir_manager.get_scan_data_dict(scan_name) is None
+
+    fake_data = {"foo": 1, "bar": "foobar"}
+    with open(scan_dir.scan_data_path, "w", encoding="utf-8") as json_file:
+        json.dump(fake_data, json_file)
+
+    # Should now be able to load this fake data from disk
+    assert scan_dir_manager.get_scan_data_dict(scan_name) == fake_data
+
+    # Check None is returned if the data cannot be read.
+    with open(scan_dir.scan_data_path, "w", encoding="utf-8") as json_file:
+        json_file.write("this is not json")
+    assert scan_dir_manager.get_scan_data_dict(scan_name) is None
+
+
 def test_empty_scan_info():
     """Test the scan info is correct even if the scan is empty."""
     _clear_scan_dir()
@@ -337,6 +380,42 @@ def test_zipping_scan_data():
         for file in zip_files:
             assert not file.endswith(".zip")
             assert not file.endswith(".dzi")
+
+
+def test_saving_and_loading_scan_data():
+    """Test that scan data is saved and loaded as expected."""
+    _clear_scan_dir()
+    scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
+    scan_name = scan_dir.name
+
+    # Should start without a scan data file.
+    assert not os.path.isfile(scan_dir.scan_data_path)
+    # Create
+    scan_data_obj = _fake_scan_data()
+    scan_dir.save_scan_data(scan_data_obj)
+    # File should now exist
+    assert os.path.isfile(scan_dir.scan_data_path)
+
+    # Dump the scan json to a string an reload it
+    # Note that more detailed checking of the dumping and loading of ScanData is in
+    # tests/test_scan_data.py
+    scan_data_dict = json.loads(scan_data_obj.model_dump_json())
+    # What is loaded from file should be the same as from dumping and loading.
+    assert scan_dir_manager.get_scan_data_dict(scan_name) == scan_data_dict
+
+
+def test_saving_scan_data_error():
+    """Test that saving scan data if there is no images directory raises FileNotFoundError."""
+    _clear_scan_dir()
+    scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
+
+    # Remove the images directory.
+    shutil.rmtree(scan_dir.images_dir)
+    # Should raise FileNotFoundError.
+    with pytest.raises(FileNotFoundError):
+        scan_dir.save_scan_data(_fake_scan_data())
 
 
 def test_all_files():

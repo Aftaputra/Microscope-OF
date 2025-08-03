@@ -48,6 +48,8 @@ class ScanData(BaseModel):
     Properties that are not known until the end have ``None`` serialised as "Unknown"
     """
 
+    model_config = {"extra": "forbid"}
+
     # TODO: Docs for each variable
     # TODO: Make note about timestamp format. Is it too ambiguous?
     scan_name: str
@@ -58,8 +60,8 @@ class ScanData(BaseModel):
     autofocus_range: int
     autofocus_on: bool
     start_time: datetime
-    skip_background: str
-    stitch_automatically: str
+    skip_background: bool
+    stitch_automatically: bool
     # TODO: Think about changing stitch_resize name as it is NOT the resize for
     # just for correlation stitching
     stitch_resize: float
@@ -113,7 +115,7 @@ class ScanData(BaseModel):
         hrs = int(total_secs // 3600)
         mins = int((total_secs % 3600) // 60)
         secs = int((total_secs % 60))
-        return f"{hrs}:{mins}:{secs}"
+        return f"{hrs}:{mins:02}:{secs:02}"
 
     @field_validator("final_image_count", "scan_result", mode="before")
     @classmethod
@@ -124,9 +126,9 @@ class ScanData(BaseModel):
         return value
 
     @field_serializer("final_image_count", "scan_result")
-    def serialize_none_as_unknown(self, value: Optional[str | int]) -> str:
+    def serialize_none_as_unknown(self, value: Optional[str | int]) -> str | int:
         """Serialise None as "Unknown" for a more human readable result."""
-        return "Unknown" if value is None else str(value)
+        return "Unknown" if value is None else value
 
 
 class ScanDirectoryManager:
@@ -214,6 +216,8 @@ class ScanDirectoryManager:
         If no scan data JSON file is found, return None
         """
         scan_data_path = ScanDirectory(scan_name, self.base_dir).scan_data_path
+        if scan_data_path is None:
+            return None
         if not os.path.isfile(scan_data_path):
             return None
         return scan_data_path
