@@ -1,11 +1,12 @@
 """Functionality to manage file system operations for scan directories."""
 
-from typing import Optional
+from typing import Optional, Any
 import os
 import re
 import shutil
 import zipfile
 import threading
+import json
 from datetime import datetime, timedelta
 
 from pydantic import BaseModel, field_validator, field_serializer
@@ -59,7 +60,9 @@ class ScanData(BaseModel):
     start_time: datetime
     skip_background: str
     stitch_automatically: str
-    stitch_resize: int
+    # TODO: Think about changing stitch_resize name as it is NOT the resize for
+    # just for correlation stitching
+    stitch_resize: float
     save_resolution: tuple[int, int]
     final_image_count: Optional[int] = None
     duration: Optional[timedelta] = None
@@ -214,6 +217,21 @@ class ScanDirectoryManager:
         if not os.path.isfile(scan_data_path):
             return None
         return scan_data_path
+
+    def get_scan_data_dict(self, scan_name: str) -> Optional[dict[str, Any]]:
+        """Return the scan data read from a JSON file as a dict.
+
+        This is a dictionary not a base models as the data format has changed
+        somewhat over time.
+        """
+        json_fpath = self.get_scan_data_path(scan_name)
+        if json_fpath is None:
+            return None
+        try:
+            with open(json_fpath, "r", encoding="utf-8") as data_file:
+                return json.load(data_file)
+        except (json.decoder.JSONDecodeError, IOError):
+            return None
 
     @property
     @requires_lock
