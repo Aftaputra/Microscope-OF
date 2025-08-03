@@ -5,6 +5,7 @@ generated, and the subprocess calling works as expected.
 """
 
 import logging
+import os
 from copy import copy
 
 import pytest
@@ -14,11 +15,12 @@ from openflexure_microscope_server.stitching import (
     PreviewStitcher,
     FinalStitcher,
     STITCHING_RESOLUTION,
+    StitcherValidationError,
 )
 
 # A global logger pretending to be an Invocation Logger
 LOGGER = logging.getLogger("mock-invocation_logger")
-FAKE_DIR = "a/dir/that/is/fake"
+FAKE_DIR = os.path.join("a", "dir", "that", "is", "fake")
 
 
 def test_base_stitcher():
@@ -45,7 +47,7 @@ def test_base_stitcher():
         ]
         stitcher = BaseStitcher(FAKE_DIR, overlap=overlap, correlation_resize=0.5)
         assert stitcher.command == expected_command
-        # check that a BaseSticher can't start
+        # check that a BaseStitcher can't start
         with pytest.raises(NotImplementedError):
             stitcher.start()
 
@@ -148,3 +150,26 @@ def test_final_stitcher_command_set_with_dict():
             scan_data_dict={"overlap": 0.4, resolution_key: resolution},
         )
         assert stitcher.command == expected_command
+
+
+def _validation_error_tester(scan_path, **kwargs):
+    """Check each type of stitcher throws a validation error for the given init args."""
+    # If scan_data_dict is in the kwargs only test the scan_data_dict
+    if "scan_data_dict" not in kwargs:
+        with pytest.raises(StitcherValidationError):
+            BaseStitcher(scan_path, **kwargs).command
+        with pytest.raises(StitcherValidationError):
+            PreviewStitcher(scan_path, **kwargs).command
+    with pytest.raises(StitcherValidationError):
+        FinalStitcher(scan_path, logger=LOGGER, **kwargs).command
+
+
+def test_validation_error():
+    """Test a number of way to try to inject mallicious arguments into the stitcher.
+
+    The stitcher should throw a validation error each attempt.
+    """
+    _validation_error_tester("/dir;rm -rf /;", overlap=".2", correlation_resize=".25")
+    _validation_error_tester(FAKE_DIR, overlap=".2", correlation_resize=".25;rm -rf /;")
+    _validation_error_tester(FAKE_DIR, overlap=".2;rm -rf /;", correlation_resize=".25")
+    _validation_error_tester(FAKE_DIR, scan_data_dict={"overlap": ".2;rm -rf /;"})

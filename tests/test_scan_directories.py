@@ -160,6 +160,16 @@ def test_basic_directory_operations():
     assert not os.path.isdir(scan_path)
 
 
+def test_bad_scan_names():
+    """Check scan names with spaces, or worse BASH commands are not allowed."""
+    _clear_scan_dir()
+    scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
+    scan_dir = scan_dir_manager.new_scan_dir("fake scan")
+    assert scan_dir.name == "fake_scan_0001"
+    scan_dir = scan_dir_manager.new_scan_dir("fake scan;rm -rf /;")
+    assert scan_dir.name == "fake_scan_rm_-rf____0001"
+
+
 def test_scan_sequence_and_listing():
     """Check created scans are added in order and listed correctly."""
     _clear_scan_dir()

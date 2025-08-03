@@ -14,11 +14,17 @@ import time
 
 import labthings_fastapi as lt
 
+from openflexure_microscope_server.utilities import make_path_safe
+
 STITCHING_CMD = "openflexure-stitch"
 STITCHING_RESOLUTION = (820, 616)
 
 DEFAULT_OVERLAP = 0.1
 DEFAULT_RESIZE = 0.5
+
+
+class StitcherValidationError(RuntimeError):
+    """The stitcher received values that it deems unsafe to create a command from."""
 
 
 class BaseStitcher:
@@ -36,23 +42,48 @@ class BaseStitcher:
         # Set minimum overlap to 90% of the scan overlap to catch only images
         # directly adjacent, not images with overlapping corners.
         self.images_dir = images_dir
+        try:
+            overlap = float(overlap)
+            correlation_resize = float(correlation_resize)
+        except ValueError as e:
+            raise StitcherValidationError(
+                "Stitching inputs overlap or correlation_resize were not floats as "
+                "expected."
+            ) from e
+        self.validate_path()
+
         self.min_overlap = round(overlap * 0.9, 2)
-        self.correlation_resize = correlation_resize
+        self.correlation_resize = float(correlation_resize)
         self._mode = "all"
         self._extra_args = []
 
     @property
     def command(self) -> list[str]:
         """The command to run with subprocess.Popen."""
+        # Revalidate for good measure,
+        self.validate_path()
         # The command, and the mode
         initial_args = [STITCHING_CMD, "--stitching_mode", self._mode]
+        # Use float() just to really ensure that anything input is a float
         setting_args = [
             "--minimum_overlap",
-            f"{self.min_overlap}",
+            f"{float(self.min_overlap)}",
             "--resize",
-            f"{self.correlation_resize}",
+            f"{float(self.correlation_resize)}",
         ]
         return initial_args + self._extra_args + setting_args + [self.images_dir]
+
+    def validate_path(self):
+        """Check path is safe before making a command to run with subprocess.
+
+        This is essential for stopping arbitrary code execution.
+
+        :raises RuntimeError: if inputs are unsafe.
+        """
+        if self.images_dir != make_path_safe(self.images_dir):
+            raise StitcherValidationError(
+                "Invalid directory path contains unsafe characters."
+            )
 
     def start(self) -> None:
         """Start stitching a stitching process.
@@ -90,20 +121,6 @@ class PreviewStitcher(BaseStitcher):
         self._popen_obj: Optional[subprocess.Popen] = None
 
         self._mode = "preview_stitch"
-
-    @property
-    def command(self) -> list[str]:
-        """The command to run with subprocess.Popen."""
-        return [
-            STITCHING_CMD,
-            "--stitching_mode",
-            "preview_stitch",
-            "--minimum_overlap",
-            f"{self.min_overlap}",
-            "--resize",
-            f"{self.correlation_resize}",
-            self.images_dir,
-        ]
 
     def start(self) -> None:
         """Start stitching a preview of the scan in a background subprocess.

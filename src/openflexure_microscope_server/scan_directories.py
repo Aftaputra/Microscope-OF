@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel, field_validator, field_serializer
 
 from openflexure_microscope_server.utilities import requires_lock
+from openflexure_microscope_server.utilities import make_name_safe
 
 IMG_DIR_NAME = "images"
 SCAN_ZERO_PAD_DIGITS = 4
@@ -257,6 +258,7 @@ class ScanDirectoryManager:
 
         For more explanation on the scan naming see `new_scan_dir`
         """
+        scan_name = make_name_safe(scan_name)
         # A regex with the scan name and a group for the numbers
         scan_regex = re.compile(
             "^" + scan_name + "_([0-9]{" + str(SCAN_ZERO_PAD_DIGITS) + "})$"
