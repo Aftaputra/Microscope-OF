@@ -23,6 +23,7 @@ class MockCameraThing(Mock):
     """
 
     def __init__(self, *args, **kwargs):
+        """Initialise the mock camera, args and kwargs are the mock args and kwargs."""
         super().__init__(*args, **kwargs)
 
         self.background_detector_status = PropertyMock(

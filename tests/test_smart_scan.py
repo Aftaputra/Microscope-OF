@@ -23,11 +23,16 @@ from datetime import datetime
 from fastapi import HTTPException
 import pytest
 
+from labthings_fastapi.exceptions import InvocationCancelledError
+
 from openflexure_microscope_server.things.smart_scan import (
     SmartScanThing,
     ScanNotRunningError,
 )
-from openflexure_microscope_server.scan_directories import ScanData
+from openflexure_microscope_server.scan_directories import (
+    ScanData,
+    NotEnoughFreeSpaceError,
+)
 
 from .mock_things.mock_csm import MockCSMThing
 from .mock_things.mock_autofocus import MockAutoFocusThing
@@ -275,7 +280,7 @@ def _expected_scan_data():
 
 @pytest.fixture
 def scan_thing_mocked_for_scan_data(smart_scan_thing, mocker):
-    """A scan thing that is mocked so that _collect_scan_data will return."""
+    """Return a scan thing that is mocked so that _collect_scan_data will run."""
     # Give the scan thing a scan invocation logger so it thinks a scan is running.
     smart_scan_thing._scan_logger = LOGGER
     mocker.patch.object(
@@ -331,6 +336,7 @@ def scan_thing_mocked_for_run_scan(scan_thing_mocked_for_scan_data, mocker):
     scan_thing = scan_thing_mocked_for_scan_data
     scan_thing._cam = MockCameraThing()
     scan_thing._scan_images_taken = 0
+    mocker.patch.object(scan_thing, "_cancel")
     mocker.patch.object(scan_thing, "_main_scan_loop")
     mocker.patch.object(scan_thing, "_return_to_starting_position")
     mocker.patch.object(scan_thing, "_perform_final_stitch")
@@ -339,23 +345,158 @@ def scan_thing_mocked_for_run_scan(scan_thing_mocked_for_scan_data, mocker):
     return scan_thing
 
 
-def test_run_scan(scan_thing_mocked_for_run_scan):
-    """Run _save_final_scan_data, check save is called with final results in ScanData."""
-    scan_thing = scan_thing_mocked_for_run_scan
-    scan_thing._scan_data = scan_thing._run_scan()
+def check_run_scan(scan_thing, caplog, expected_exception=None):
+    """Run _run_scan with a mocked scan_thing, capture logs and call counts.
 
-    scan_thing._cam.start_streaming.assert_called()
-    # Save scan data is called at the start and the end!
-    assert scan_thing._ongoing_scan.save_scan_data.call_count == 2
-    # The scan was a success
-    final_scan_data = scan_thing._ongoing_scan.save_scan_data.call_args[0][0]
-    assert final_scan_data.scan_result == "success"
+    This can be used to check how run_scan executes in different exit modes.
+    A separate tests is above for scan completing with no exception.
 
+    :returns: a tuple of:
+
+        * The final result as reported in scan_data
+        * The logging records
+        * a dictionary of call counts
+    """
+    if expected_exception is None:
+        with caplog.at_level(logging.WARNING):
+            scan_thing._scan_data = scan_thing._run_scan()
+    else:
+        with pytest.raises(expected_exception), caplog.at_level(logging.WARNING):
+            scan_thing._scan_data = scan_thing._run_scan()
     # The preview stitcher object should still exist. And images dir should be set.
     assert scan_thing._preview_stitcher.images_dir == "scans/test_name_0001/images/"
 
-    # Other calls should be:
-    scan_thing._main_scan_loop.assert_called()
-    scan_thing._return_to_starting_position.assert_called()
-    scan_thing._perform_final_stitch.assert_called()
-    scan_thing.purge_empty_scans.assert_called()
+    final_scan_data = scan_thing._ongoing_scan.save_scan_data.call_args[0][0]
+    calls = {
+        "cam_start_streaming_calls": scan_thing._cam.start_streaming.call_count,
+        "main_scan_loop_calls": scan_thing._main_scan_loop.call_count,
+        "return_to_start_calls": scan_thing._return_to_starting_position.call_count,
+        "perform_final_stitch_calls": scan_thing._perform_final_stitch.call_count,
+        "purge_empty_scans_calls": scan_thing.purge_empty_scans.call_count,
+        "save_scan_data_calls": scan_thing._ongoing_scan.save_scan_data.call_count,
+    }
+    return final_scan_data.scan_result, caplog.records, calls
+
+
+def test_run_scan(scan_thing_mocked_for_run_scan, caplog):
+    """Run _save_final_scan_data, check save is called with final results in ScanData."""
+    result, logs, calls = check_run_scan(scan_thing_mocked_for_run_scan, caplog)
+
+    assert result == "success"
+    assert len(logs) == 0
+
+    expected_calls_numbers = {
+        "cam_start_streaming_calls": 2,
+        "main_scan_loop_calls": 1,
+        "return_to_start_calls": 1,
+        "perform_final_stitch_calls": 1,
+        "purge_empty_scans_calls": 1,
+        "save_scan_data_calls": 2,
+    }
+    assert calls == expected_calls_numbers
+
+
+def test_run_scan_wrong_image_value(scan_thing_mocked_for_run_scan, caplog):
+    """Check correct methods called if _scan_images_taken doesn't start at 0.
+
+    This should never happen but shows a good clear path for an error before
+    _main_scan_loop starts.
+    """
+    scan_thing = scan_thing_mocked_for_run_scan
+    scan_thing._scan_images_taken = 2
+
+    result, logs, calls = check_run_scan(scan_thing, caplog, RuntimeError)
+
+    assert result.startswith("RuntimeError:")
+    assert len(logs) == 1
+    assert logs[0].levelno == logging.ERROR
+
+    # Main loop not run, nor are return to start, final stitch, or purging of empty
+    # scans. Save scan data is still called twice
+    expected_calls_numbers = {
+        "cam_start_streaming_calls": 2,
+        "main_scan_loop_calls": 0,
+        "return_to_start_calls": 0,
+        "perform_final_stitch_calls": 0,
+        "purge_empty_scans_calls": 0,
+        "save_scan_data_calls": 2,
+    }
+    assert calls == expected_calls_numbers
+
+
+def test_run_scan_err_in_main_loop(scan_thing_mocked_for_run_scan, caplog, mocker):
+    """Check correct methods called if main_loop errors."""
+    scan_thing = scan_thing_mocked_for_run_scan
+    mocker.patch.object(
+        scan_thing, "_main_scan_loop", side_effect=FileNotFoundError("mocked")
+    )
+
+    result, logs, calls = check_run_scan(scan_thing, caplog, FileNotFoundError)
+
+    assert result.startswith("FileNotFoundError:")
+    assert len(logs) == 1
+    assert logs[0].levelno == logging.ERROR
+
+    # Main loop not run, nor are return to start, final stitch, or purging of empty
+    # scans. Save scan data is still called twice
+    expected_calls_numbers = {
+        "cam_start_streaming_calls": 2,
+        "main_scan_loop_calls": 1,
+        "return_to_start_calls": 0,
+        "perform_final_stitch_calls": 0,
+        "purge_empty_scans_calls": 0,
+        "save_scan_data_calls": 2,
+    }
+    assert calls == expected_calls_numbers
+
+
+def test_run_scan_cancelled(scan_thing_mocked_for_run_scan, caplog, mocker):
+    """Check correct methods called scan is cancelled."""
+    scan_thing = scan_thing_mocked_for_run_scan
+    mocker.patch.object(
+        scan_thing, "_main_scan_loop", side_effect=InvocationCancelledError()
+    )
+
+    result, logs, calls = check_run_scan(scan_thing, caplog)
+
+    assert result == "cancelled by user"
+    # No logs at warning level.
+    assert len(logs) == 0
+
+    # Main loop not run, nor are return to start, final stitch, or purging of empty
+    # scans. Save scan data is still called twice
+    expected_calls_numbers = {
+        "cam_start_streaming_calls": 2,
+        "main_scan_loop_calls": 1,
+        "return_to_start_calls": 1,
+        "perform_final_stitch_calls": 1,
+        "purge_empty_scans_calls": 1,
+        "save_scan_data_calls": 2,
+    }
+    assert calls == expected_calls_numbers
+
+
+def test_run_scan_fill_disk(scan_thing_mocked_for_run_scan, caplog, mocker):
+    """Check correct methods called if disk fills up."""
+    scan_thing = scan_thing_mocked_for_run_scan
+    mocker.patch.object(
+        scan_thing, "_main_scan_loop", side_effect=NotEnoughFreeSpaceError()
+    )
+
+    result, logs, calls = check_run_scan(scan_thing, caplog, NotEnoughFreeSpaceError)
+
+    assert result.startswith("NotEnoughFreeSpaceError:")
+    assert len(logs) == 1
+    assert logs[0].levelno == logging.ERROR
+
+    # Main loop not run, nor are return to start, final stitch, or purging of empty
+    # scans. Save scan data is still called twice
+    expected_calls_numbers = {
+        "cam_start_streaming_calls": 2,
+        "main_scan_loop_calls": 1,
+        "return_to_start_calls": 0,
+        "perform_final_stitch_calls": 0,
+        "purge_empty_scans_calls": 0,
+        "save_scan_data_calls": 2,
+    }
+    assert calls == expected_calls_numbers

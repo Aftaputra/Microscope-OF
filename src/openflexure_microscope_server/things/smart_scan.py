@@ -20,7 +20,6 @@ from PIL import Image
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server.utilities import ErrorCapturingThread
 from openflexure_microscope_server import scan_directories
 from openflexure_microscope_server import scan_planners
 from openflexure_microscope_server import stitching
@@ -368,14 +367,15 @@ class SmartScanThing(lt.Thing):
             self._scan_logger.info("Stopping scan because it was cancelled.")
             self._save_final_scan_data(scan_result="cancelled by user")
         except scan_directories.NotEnoughFreeSpaceError as e:
-            self._save_final_scan_data(scan_result=str(e))
+            self._save_final_scan_data(scan_result=f"NotEnoughFreeSpaceError: {e}")
             self._scan_logger.error(
                 f"Stopping scan to avoid filling up the disk: {e}",
                 exc_info=e,
             )
             raise e
         except Exception as e:
-            self._save_final_scan_data(scan_result=str(e))
+            err_name = type(e).__name__
+            self._save_final_scan_data(scan_result=f"{err_name}: {e}")
             self._scan_logger.error(
                 f"The scan stopped because of an error: {e} "
                 "Attempting to stitch and archive the images acquired so far.",
@@ -387,7 +387,6 @@ class SmartScanThing(lt.Thing):
 
             # Start streaming in the default resolution again as soon as possible
             self._cam.start_streaming()
-
 
         # This is what happens if the scan completes successfully or the
         # user cancels it.
