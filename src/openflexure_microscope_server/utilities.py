@@ -1,13 +1,18 @@
 """Utility functions and classes."""
 
+from typing import TypeVar, Callable, ParamSpec
 import os
 import re
 from threading import Thread
 import logging
 from importlib.metadata import version
 import tomllib
+from functools import wraps
 
 from pydantic import BaseModel
+
+T = TypeVar("T")
+P = ParamSpec("P")
 
 LOGGER = logging.getLogger(__name__)
 
@@ -16,6 +21,22 @@ REPO_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 COMMIT_REGEX = re.compile(r"[0-9a-f]{40}")
 # Regex for a reference in the git HEAD file. Group 1 is the path.
 REF_REGEX = re.compile(r"^ref:\s(.*)$")
+
+
+def requires_lock(method: Callable[P, T]) -> Callable[P, T]:
+    """Decorate a class method so that it requires the class lock to run.
+
+    The class should have a reentrant lock with the name ``self._lock``.
+    """
+
+    @wraps(method)
+    def wrapper(self, *args: P.args, **kwargs: P.kwargs) -> T:
+        if not hasattr(self, "_lock"):
+            raise AttributeError(f"{self.__class__.__name__} has no '_lock' attribute")
+        with self._lock:
+            return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class ErrorCapturingThread(Thread):

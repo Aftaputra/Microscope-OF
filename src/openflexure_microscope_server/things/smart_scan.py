@@ -717,6 +717,9 @@ class SmartScanThing(lt.Thing):
         This is a wrapper around scan manager's delete_scan that logs to the
         invocation logger id there is a problem.
         """
+        if self._ongoing_scan is not None and scan_name == self._ongoing_scan.name:
+            logger.error("Attempted to delete ongoing scan.")
+            return False
         try:
             self._scan_dir_manager.delete_scan(scan_name)
             return True
