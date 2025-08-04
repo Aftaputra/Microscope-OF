@@ -8,7 +8,6 @@ import logging
 import os
 from copy import copy
 import uuid
-import re
 import threading
 from time import sleep
 
@@ -229,19 +228,15 @@ def test_final_stitching_command(caplog, mocker):
         )
         # For the final stitcher it will always complete before returning.
         stitcher.start(cancel=lt.deps.CancelHook(id=uuid.uuid4()))
-        # The mock command logs the inputs so should be 1 less than
-        # FINAL_EXPECTED_COMMAND as the command itself is not logged. However, there
-        # is two extra logs, The date (before the program starts) and
-        # "Stitching complete" when it ends.
-        assert len(caplog.records) == len(FINAL_EXPECTED_COMMAND) + 1
+        # The mock command logs the inputs (but not the initial command) and the
+        # stitcher logs # "Stitching complete" when it ends.
+        assert len(caplog.records) == len(FINAL_EXPECTED_COMMAND)
         for i, record in enumerate(caplog.records):
-            msg = record.message
-            if i == 0:
-                assert re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}", msg)
-            elif i == len(FINAL_EXPECTED_COMMAND):
-                assert msg.strip() == "Stitching complete"
+            msg = record.message.strip()
+            if i == len(FINAL_EXPECTED_COMMAND) - 1:
+                assert msg == "Stitching complete"
             else:
-                assert msg.strip() == FINAL_EXPECTED_COMMAND[i]
+                assert msg == FINAL_EXPECTED_COMMAND[i + 1]
 
 
 def test_final_stitching_command_cancelled(caplog, mocker):

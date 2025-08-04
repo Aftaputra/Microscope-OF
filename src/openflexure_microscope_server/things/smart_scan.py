@@ -11,6 +11,7 @@ from typing import Optional
 import threading
 import os
 import time
+from datetime import datetime
 from subprocess import SubprocessError
 
 from fastapi import HTTPException
@@ -267,10 +268,10 @@ class SmartScanThing(lt.Thing):
         starting_position = self._stage.position
         overlap = self.overlap
         dx, dy = self._calc_displacement_from_test_image(overlap)
-        stitch_resize = stitching.STITCHING_RESOLUTION[0] / self.save_resolution[0]
+        correlation_resize = stitching.STITCHING_RESOLUTION[0] / self.save_resolution[0]
 
         self._scan_logger.debug(
-            f"Resizing images when stitching by a factor of {stitch_resize}"
+            f"Resizing images when correlating by a factor of {correlation_resize}"
         )
 
         self._scan_logger.info(
@@ -297,10 +298,10 @@ class SmartScanThing(lt.Thing):
             dy=dy,
             autofocus_dz=autofocus_dz,
             autofocus_on=bool(autofocus_dz),
-            start_time=time.strftime("%H_%M_%S-%d_%m_%Y"),
+            start_time=datetime.now(),
             skip_background=self.skip_background,
             stitch_automatically=self.stitch_automatically,
-            stitch_resize=stitch_resize,
+            correlation_resize=correlation_resize,
             save_resolution=self.save_resolution,
         )
 
@@ -338,7 +339,7 @@ class SmartScanThing(lt.Thing):
             self._preview_stitcher = stitching.PreviewStitcher(
                 self._ongoing_scan.images_dir,
                 overlap=self._scan_data.overlap,
-                correlation_resize=self._scan_data.stitch_resize,
+                correlation_resize=self._scan_data.correlation_resize,
             )
 
             # This is the main loop of the scan!
@@ -471,7 +472,7 @@ class SmartScanThing(lt.Thing):
                 logger=self._scan_logger,
                 cancel=self._cancel,
                 scan_name=self._ongoing_scan.name,
-                stitch_resize=self._scan_data.stitch_resize,
+                correlation_resize=self._scan_data.correlation_resize,
                 overlap=self._scan_data.overlap,
             )
 
@@ -691,7 +692,7 @@ class SmartScanThing(lt.Thing):
         logger: lt.deps.InvocationLogger,
         cancel: lt.deps.CancelHook,
         scan_name: str,
-        stitch_resize: Optional[float] = None,
+        correlation_resize: Optional[float] = None,
         overlap: Optional[float] = None,
     ) -> None:
         """Generate a stitched image based on stage position metadata.
@@ -706,7 +707,7 @@ class SmartScanThing(lt.Thing):
             self._scan_dir_manager.img_dir_for(scan_name),
             logger=logger,
             overlap=overlap,
-            correlation_resize=stitch_resize,
+            correlation_resize=correlation_resize,
             stitch_tiff=self.stitch_tiff,
             scan_data_dict=scan_data_dict,
         )

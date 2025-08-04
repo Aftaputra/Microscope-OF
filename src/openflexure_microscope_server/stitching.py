@@ -12,7 +12,6 @@ import subprocess
 import os
 from io import TextIOWrapper
 import shlex
-import time
 
 import labthings_fastapi as lt
 
@@ -288,12 +287,6 @@ class FinalStitcher(BaseStitcher):
         )
         # Stop opening pipe blocking writing to it
         os.set_blocking(process.stdout.fileno(), False)
-
-        # TODO check if we still want this? Is it for debugging, or should it have
-        # more explanation.
-        self.logger.info(
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
-        )
 
         self._log_ongoing(process, cancel=cancel)
 

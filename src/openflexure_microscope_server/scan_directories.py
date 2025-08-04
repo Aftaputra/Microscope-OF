@@ -43,7 +43,7 @@ class ScanData(BaseModel):
 
     This serialises into a human readable format where possible with
 
-    timestamps in %H_%M_%S-%d_%m_%Y format
+    timestamps in %Y-%m-%s_%H:%M:%S format
     timedeltas in %H:%M:%S format
 
     Properties that are not known until the end have ``None`` serialised as "Unknown"
@@ -51,26 +51,59 @@ class ScanData(BaseModel):
 
     model_config = {"extra": "forbid"}
 
-    # TODO: Docs for each variable
-    # TODO: Make note about timestamp format. Is it too ambiguous?
     scan_name: str
+    """The name of the scan i.e. scan_0001"""
+
     starting_position: Mapping[str, int]
+    """The starting position in dictionary format."""
+
     overlap: float
+    """The overlap between adjacent images as a fraction of the image size."""
+
     max_dist: int
+    """The maximum distance the scan could move (in steps) from the starting position."""
+
     dx: int
+    """The number of steps between adjacent images in x."""
+
     dy: int
+    """The number of steps between adjacent images in y."""
+
     autofocus_dz: int
+    """The z range used for autofocus (in steps)."""
+
     autofocus_on: bool
+    """Whether autofocus is on."""
+
     start_time: datetime
+    """The time the scan started."""
+
     skip_background: bool
+    """Whether automatic background detection is on, skipping locations with no sample."""
+
     stitch_automatically: bool
-    # TODO: Think about changing stitch_resize name as it is NOT the resize for
-    # just for correlation stitching
-    stitch_resize: float
+    """Whether the scan is set to automatically stitch when complete."""
+
+    correlation_resize: float
+    """The resize factor applied to images when the stitching program is correlating."""
+
     save_resolution: tuple[int, int]
+    """The resolution that scan images are saved at."""
+
     image_count: int = 0
+    """The number of images taken."""
+
     duration: Optional[timedelta] = None
+    """The duration of the scan.
+
+    This is automatically set when ``set_final_data()`` is run.
+    """
+
     scan_result: Optional[str] = None
+    """The result of the scan.
+
+    This should be set with ``set_final_data()`` to ensure duration is set.
+    """
 
     def set_final_data(self, result: str):
         """Set the final data for the scan, scan duration is automatically calculated.
@@ -83,15 +116,15 @@ class ScanData(BaseModel):
     @field_validator("start_time", mode="before")
     @classmethod
     def parse_timestamp(cls, value: str | datetime) -> datetime:
-        """Validate a timestamp that may be a string in Hrs_Min_Sec-Day_Month_Year format."""
+        """Validate a timestamp that may be a string in Year-Month-Day_Hrs:Min:Sec format."""
         if isinstance(value, str):
-            return datetime.strptime(value, "%H_%M_%S-%d_%m_%Y")
+            return datetime.strptime(value, "%Y-%m-%d_%H:%M:%S")
         return value
 
     @field_serializer("start_time")
     def serialize_timestamp(self, value: datetime) -> str:
-        """Serialise timestamp to Hrs_Min_Sec-Day_Month_Year format."""
-        return value.strftime("%H_%M_%S-%d_%m_%Y")
+        """Serialise timestamp to Year-Month-Day_Hrs:Min:Sec format."""
+        return value.strftime("%Y-%m-%d_%H:%M:%S")
 
     @field_validator("duration", mode="before")
     @classmethod

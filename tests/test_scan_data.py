@@ -45,7 +45,7 @@ def _fake_scan_data(**kwargs) -> ScanData:
         "start_time": copy(MOCK_START_TIME),
         "skip_background": True,
         "stitch_automatically": True,
-        "stitch_resize": 0.25,
+        "correlation_resize": 0.25,
         "save_resolution": (1000, 1000),
     }
     for key, value in kwargs.items():
@@ -79,7 +79,7 @@ def test_custom_serialisation():
     scan_data = _fake_scan_data()
     # Serialise to string then load directly as json
     scan_data_dict = json.loads(scan_data.model_dump_json())
-    assert scan_data_dict["start_time"] == "11_00_00-25_12_2024"
+    assert scan_data_dict["start_time"] == "2024-12-25_11:00:00"
     assert scan_data_dict["image_count"] == 0
     assert scan_data_dict["duration"] == "Unknown"
     assert scan_data_dict["scan_result"] == "Unknown"

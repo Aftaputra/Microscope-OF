@@ -272,7 +272,7 @@ def _expected_scan_data():
         "autofocus_on": True,
         "skip_background": True,
         "stitch_automatically": True,
-        "stitch_resize": 0.5,
+        "correlation_resize": 0.5,
         "save_resolution": (1640, 1232),
     }
     return ScanData(start_time=datetime.now(), **expected_dict)
