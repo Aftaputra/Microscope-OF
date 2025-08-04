@@ -295,12 +295,11 @@ class BaseCamera(lt.Thing):
         )
         return portal.call(stream.next_frame_size)
 
-    @lt.thing_action
     def capture_image(
         self,
         stream_name: Literal["main", "lores", "raw"],
         wait: Optional[float],
-    ) -> None:
+    ) -> Image:
         """Capture a PIL image from stream stream_name with timeout wait."""
         raise NotImplementedError(
             "CameraThings must define their own capture_image method"

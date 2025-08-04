@@ -28,6 +28,7 @@ from threading import RLock
 from pydantic import BaseModel, BeforeValidator
 import piexif
 import numpy as np
+from PIL import Image
 from picamera2 import Picamera2
 from picamera2.encoders import MJPEGEncoder
 from picamera2.outputs import Output
@@ -484,12 +485,11 @@ class StreamingPiCamera2(BaseCamera):
         with self._streaming_picamera() as cam:
             cam.capture_metadata()
 
-    @lt.thing_action
     def capture_image(
         self,
         stream_name: Literal["main", "lores", "raw"] = "main",
         wait: Optional[float] = 0.9,
-    ) -> None:
+    ) -> Image:
         """Acquire one image from the camera.
 
         Return it as a PIL Image
