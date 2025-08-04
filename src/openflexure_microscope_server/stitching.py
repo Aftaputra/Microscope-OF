@@ -10,6 +10,7 @@ from typing import Optional, Any
 import threading
 import subprocess
 import os
+from io import TextIOWrapper
 import shlex
 import time
 
@@ -324,8 +325,7 @@ class FinalStitcher(BaseStitcher):
         # Print everything in the buffer when program finishes
         self.log_buffer(process.stdout)
 
-    def log_buffer(self, buffer):
-        # TODO work out type
+    def log_buffer(self, buffer: TextIOWrapper):
         """Log everything in the buffer at INFO level."""
         while line := buffer.readline():
             self.logger.info(line)

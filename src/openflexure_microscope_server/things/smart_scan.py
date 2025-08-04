@@ -699,8 +699,6 @@ class SmartScanThing(lt.Thing):
         Note that as this is a lt.thing_action it needs the logger passed as
         a variable if called from another thing action
         """
-        # TODO tidy this function
-        # TODO handle if json_path is None (easier once tidied)
         scan_data_dict = self._scan_dir_manager.get_scan_data_dict(scan_name)
         if scan_data_dict is None:
             logger.warning("Couldn't read scan data it may be missing or corrupt.")
