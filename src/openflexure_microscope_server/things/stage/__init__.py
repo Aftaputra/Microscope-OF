@@ -93,17 +93,19 @@ class BaseStage(lt.Thing):
     """Used to convert coordinates between the program frame and the hardware frame."""
 
     def _apply_axis_direction(
-        self, position: list[int] | tuple[int] | Mapping[str | int]
-    ) -> list[int] | Mapping[str | int]:
+        self, position: list[int] | tuple[int] | Mapping[str, int]
+    ) -> list[int] | Mapping[str, int]:
         if isinstance(position, (list, tuple)):
             return [
-                -pos if inverted else pos
+                -int(pos) if inverted else int(pos)
                 for pos, inverted in zip(position, self.axis_inverted.values())
             ]
         if isinstance(position, Mapping):
             try:
                 return {
-                    ax: -position[ax] if self.axis_inverted[ax] else position[ax]
+                    ax: -int(position[ax])
+                    if self.axis_inverted[ax]
+                    else int(position[ax])
                     for ax in position
                 }
             except KeyError as e:

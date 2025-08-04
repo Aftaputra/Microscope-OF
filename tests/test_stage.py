@@ -123,9 +123,11 @@ def test_apply_axis_direction_mixed(dummy_stage):
     # A list of (input position, output position) to try
     position_pairs = [
         ([1, 2, 3], [-1, 2, -3]),  # list
+        ([1, "2", "3"], [-1, 2, -3]),  # list with strings
         ((1, 2, 0), [-1, 2, 0]),  # tuple (gets converted to list)
         ({"x": 1, "y": 2, "z": 3}, {"x": -1, "y": 2, "z": -3}),  # mapping
         ({"x": 1, "z": 2, "y": 3}, {"x": -1, "z": -2, "y": 3}),  # mapping out of order
+        ({"x": 1, "y": "2", "z": "3"}, {"x": -1, "y": 2, "z": -3}),  # mapping w strings
         ({"x": 3}, {"x": -3}),  # Mapping with only 1 value
         ({"x": 1, "z": 2}, {"x": -1, "z": -2}),  # Mapping with only 2 values
     ]
