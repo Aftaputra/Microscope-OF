@@ -177,7 +177,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
     af_mock = MockAutoFocusThing()
     stage_mock = MockStageThing()
     cam_mock = MockCameraThing()
-    meta_mock = 5  # not called
     csm_mock = MockCSMThing()
 
     class MockedSmartScanThing(SmartScanThing):
@@ -196,9 +195,7 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
             assert self._autofocus is af_mock
             assert self._stage is stage_mock
             assert self._cam is cam_mock
-            assert self._metadata_getter is meta_mock
             assert self._csm is csm_mock
-            assert self._scan_images_taken == 0
 
     # mock smart scan thing
     mock_ss_thing = MockedSmartScanThing(SCAN_DIR)
@@ -214,7 +211,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
             autofocus=af_mock,
             stage=stage_mock,
             cam=cam_mock,
-            metadata_getter=meta_mock,
             csm=csm_mock,
             scan_name="FooBar",
         )
@@ -228,9 +224,7 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
     assert mock_ss_thing._autofocus is None
     assert mock_ss_thing._stage is None
     assert mock_ss_thing._cam is None
-    assert mock_ss_thing._metadata_getter is None
     assert mock_ss_thing._csm is None
-    assert mock_ss_thing._scan_images_taken is None
 
     # Return the mock thing for further state testing, and the
     # exec_info of any uncaught exceptions that were raised
@@ -260,10 +254,16 @@ def test_outer_scan_wo_sample_skip():
     assert mock_ss_thing.mock_call_count["_run_scan"] == 1
 
 
+MOCK_SCAN_NAME = "test_name_0001"
+MOCK_SCAN_DIR = "scans/test_name_0001/images/"
+MOCK_START_POS = {"x": 123, "y": 456, "z": 789}
+
+
 def _expected_scan_data():
     """Return the expected ScanData object for a SmartScan with default properties."""
     expected_dict = {
-        "scan_name": "test_name_0001",
+        "scan_name": MOCK_SCAN_NAME,
+        "starting_position": MOCK_START_POS,
         "overlap": 0.45,
         "max_dist": 45000,
         "dx": 100,
@@ -287,11 +287,13 @@ def scan_thing_mocked_for_scan_data(smart_scan_thing, mocker):
         smart_scan_thing, "_calc_displacement_from_test_image", return_value=[100, 100]
     )
     mock_ongoing_scan = mocker.Mock()
-    type(mock_ongoing_scan).name = mocker.PropertyMock(return_value="test_name_0001")
-    type(mock_ongoing_scan).images_dir = mocker.PropertyMock(
-        return_value="scans/test_name_0001/images/"
-    )
+    type(mock_ongoing_scan).name = mocker.PropertyMock(return_value=MOCK_SCAN_NAME)
+    type(mock_ongoing_scan).images_dir = mocker.PropertyMock(return_value=MOCK_SCAN_DIR)
+    mock_stage = mocker.Mock()
+    type(mock_stage).position = mocker.PropertyMock(return_value=MOCK_START_POS)
+
     smart_scan_thing._ongoing_scan = mock_ongoing_scan
+    smart_scan_thing._stage = mock_stage
     return smart_scan_thing
 
 
@@ -313,7 +315,7 @@ def test_save_final_scan_data(scan_thing_mocked_for_scan_data):
     scan_thing = scan_thing_mocked_for_scan_data
 
     scan_thing._scan_data = scan_thing._collect_scan_data()
-    scan_thing._scan_images_taken = 44
+    scan_thing._scan_data.image_count = 44
     scan_thing._save_final_scan_data("Mocked!")
     # _ongoing_scan is a mock so we can check that save_scan data was called and get
     # the value
@@ -321,7 +323,7 @@ def test_save_final_scan_data(scan_thing_mocked_for_scan_data):
     final_data = scan_thing._ongoing_scan.save_scan_data.call_args[0][0]
     assert isinstance(final_data, ScanData)
     assert final_data.scan_result == "Mocked!"
-    assert final_data.final_image_count == 44
+    assert final_data.image_count == 44
     assert final_data.duration.total_seconds() < 1
 
 
@@ -335,7 +337,6 @@ def scan_thing_mocked_for_run_scan(scan_thing_mocked_for_scan_data, mocker):
     """
     scan_thing = scan_thing_mocked_for_scan_data
     scan_thing._cam = MockCameraThing()
-    scan_thing._scan_images_taken = 0
     mocker.patch.object(scan_thing, "_cancel")
     mocker.patch.object(scan_thing, "_main_scan_loop")
     mocker.patch.object(scan_thing, "_return_to_starting_position")
@@ -364,7 +365,7 @@ def check_run_scan(scan_thing, caplog, expected_exception=None):
         with pytest.raises(expected_exception), caplog.at_level(logging.WARNING):
             scan_thing._scan_data = scan_thing._run_scan()
     # The preview stitcher object should still exist. And images dir should be set.
-    assert scan_thing._preview_stitcher.images_dir == "scans/test_name_0001/images/"
+    assert scan_thing._preview_stitcher.images_dir == MOCK_SCAN_DIR
 
     final_scan_data = scan_thing._ongoing_scan.save_scan_data.call_args[0][0]
     calls = {
@@ -391,34 +392,6 @@ def test_run_scan(scan_thing_mocked_for_run_scan, caplog):
         "return_to_start_calls": 1,
         "perform_final_stitch_calls": 1,
         "purge_empty_scans_calls": 1,
-        "save_scan_data_calls": 2,
-    }
-    assert calls == expected_calls_numbers
-
-
-def test_run_scan_wrong_image_value(scan_thing_mocked_for_run_scan, caplog):
-    """Check correct methods called if _scan_images_taken doesn't start at 0.
-
-    This should never happen but shows a good clear path for an error before
-    _main_scan_loop starts.
-    """
-    scan_thing = scan_thing_mocked_for_run_scan
-    scan_thing._scan_images_taken = 2
-
-    result, logs, calls = check_run_scan(scan_thing, caplog, RuntimeError)
-
-    assert result.startswith("RuntimeError:")
-    assert len(logs) == 1
-    assert logs[0].levelno == logging.ERROR
-
-    # Main loop not run, nor are return to start, final stitch, or purging of empty
-    # scans. Save scan data is still called twice
-    expected_calls_numbers = {
-        "cam_start_streaming_calls": 2,
-        "main_scan_loop_calls": 0,
-        "return_to_start_calls": 0,
-        "perform_final_stitch_calls": 0,
-        "purge_empty_scans_calls": 0,
         "save_scan_data_calls": 2,
     }
     assert calls == expected_calls_numbers

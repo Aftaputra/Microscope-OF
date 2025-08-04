@@ -35,6 +35,7 @@ def _fake_scan_data(**kwargs) -> ScanData:
     """
     data_dict = {
         "scan_name": "fake_scan_0001",
+        "starting_position": {"x": 123, "y": 456, "z": 789},
         "overlap": 0.1,
         "max_dist": 100000,
         "dx": 100,
@@ -56,17 +57,19 @@ def test_set_final_data():
     """Check that adding final data to a ScanData object works as expected."""
     scan_data = _fake_scan_data()
 
-    assert scan_data.final_image_count is None
+    assert scan_data.image_count == 0
     assert scan_data.duration is None
     assert scan_data.scan_result is None
 
+    # Quickly take 123 images!
+    scan_data.image_count += 123
     # Should set duration based of finishing at datetime.now()
-    scan_data.set_final_data(result="Success", final_image_count=123)
+    scan_data.set_final_data(result="Success")
     expected_duration = datetime.now() - MOCK_START_TIME
     expected_duration_s = expected_duration.total_seconds()
     scan_duration_s = scan_data.duration.total_seconds()
 
-    assert scan_data.final_image_count == 123
+    assert scan_data.image_count == 123
     assert expected_duration_s - 1 < scan_duration_s < expected_duration_s + 1
     assert scan_data.scan_result == "Success"
 
@@ -77,15 +80,16 @@ def test_custom_serialisation():
     # Serialise to string then load directly as json
     scan_data_dict = json.loads(scan_data.model_dump_json())
     assert scan_data_dict["start_time"] == "11_00_00-25_12_2024"
-    assert scan_data_dict["final_image_count"] == "Unknown"
+    assert scan_data_dict["image_count"] == 0
     assert scan_data_dict["duration"] == "Unknown"
     assert scan_data_dict["scan_result"] == "Unknown"
 
-    scan_data.set_final_data(result="Success", final_image_count=123)
+    scan_data.image_count += 123
+    scan_data.set_final_data(result="Success")
     # Can't mock datetime.now as datetime is immutable. So just replace duraction
     scan_data.duration = MOCK_END_TIME - scan_data.start_time
     scan_data_dict = json.loads(scan_data.model_dump_json())
-    assert scan_data_dict["final_image_count"] == 123
+    assert scan_data_dict["image_count"] == 123
     assert scan_data_dict["duration"] == "1:29:03"
     assert scan_data_dict["scan_result"] == "Success"
 
@@ -106,7 +110,8 @@ def test_round_trip_finalised():
     """Check that finalised ScanData can be serialised and deserialised."""
     scan_data = _fake_scan_data()
     # Finalise the data.
-    scan_data.set_final_data(result="Success", final_image_count=123)
+    scan_data.image_count += 123
+    scan_data.set_final_data(result="Success")
 
     scan_data_dict = json.loads(scan_data.model_dump_json())
     scan_data_reloaded = ScanData(**scan_data_dict)

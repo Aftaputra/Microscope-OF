@@ -7,7 +7,7 @@ It also controls external processes for live stitching composite images, and
 the creation of the final stitched images.
 """
 
-from typing import Optional, Mapping
+from typing import Optional
 import threading
 import os
 import time
@@ -88,20 +88,16 @@ class SmartScanThing(lt.Thing):
         # when the `sample_scan` lt.thing_action is called. It is saved as
         # private class variable along with many others here.
         # Access to these variables requires a scan to be running,
-        # any method that calls these should be decorrected with
+        # any method that calls these should be decorated with
         # @_scan_running
         self._scan_logger: Optional[lt.deps.InvocationLogger] = None
         self._cancel: Optional[lt.deps.CancelHook] = None
         self._autofocus: Optional[AutofocusDep] = None
         self._stage: Optional[StageDep] = None
         self._cam: Optional[CamDep] = None
-        self._metadata_getter: Optional[lt.deps.GetThingStates] = None
         self._csm: Optional[CSMDep] = None
+
         self._ongoing_scan: Optional[scan_directories.ScanDirectory] = None
-        # TODO see if starting position can go into ScanData
-        self._starting_position: Optional[Mapping[str, int]] = None
-        self._scan_images_taken: Optional[int] = None
-        # TODO Scan data is a dict during refactoring, should become a dataclass
         self._scan_data: Optional[scan_directories.ScanData] = None
         self._preview_stitcher: Optional[stitching.PreviewStitcher] = None
 
@@ -113,7 +109,6 @@ class SmartScanThing(lt.Thing):
         autofocus: AutofocusDep,
         stage: StageDep,
         cam: CamDep,
-        metadata_getter: lt.deps.GetThingStates,
         csm: CSMDep,
         scan_name: str = "",
     ):
@@ -133,22 +128,14 @@ class SmartScanThing(lt.Thing):
         self._autofocus = autofocus
         self._stage = stage
         self._cam = cam
-        # TODO check if metadata_getter this can be removed without error?
-        self._metadata_getter = metadata_getter
         self._csm = csm
-        self._scan_images_taken = 0
-
-        # Set _scan_data to None. This is needed just in case an exception is raised
-        # before _run_scan (which sets the real data). As we check this in the `except`
+        # Confirm scan data is None as start of scan.
         self._scan_data = None
-
         try:
             self._check_background_and_csm_set()
             self._ongoing_scan = self._scan_dir_manager.new_scan_dir(scan_name)
             self._latest_scan_name = self._ongoing_scan.name
             self._autofocus.looping_autofocus(dz=self.autofocus_dz, start="centre")
-            # record starting position so we can return there
-            self._starting_position = self._stage.position
             self._run_scan()
         except Exception as e:
             # If _scan_data is set then scan started
@@ -156,6 +143,9 @@ class SmartScanThing(lt.Thing):
                 self._return_to_starting_position()
                 if not isinstance(e, scan_directories.NotEnoughFreeSpaceError):
                     # Don't stitch if drive is full (already logged)
+                    self._scan_logger.info(
+                        "Attempting to stitch and archive the images acquired so far."
+                    )
                     self._perform_final_stitch()
             # Error must be raised so UI gives correct output
             raise e
@@ -166,10 +156,8 @@ class SmartScanThing(lt.Thing):
             self._autofocus = None
             self._stage = None
             self._cam = None
-            self._metadata_getter = None
             self._csm = None
             self._ongoing_scan = None
-            self._scan_images_taken = None
             self._scan_data = None
             self._scan_lock.release()
             # Ensure any PreviewStitcher created cannot be reused.
@@ -275,6 +263,8 @@ class SmartScanThing(lt.Thing):
     @_scan_running
     def _collect_scan_data(self) -> scan_directories.ScanData:
         """Collect and return the data for this scan so it cannot be changed mid-scan."""
+        # Record starting position so it can be returned to at end of scan.
+        starting_position = self._stage.position
         overlap = self.overlap
         dx, dy = self._calc_displacement_from_test_image(overlap)
         stitch_resize = stitching.STITCHING_RESOLUTION[0] / self.save_resolution[0]
@@ -300,6 +290,7 @@ class SmartScanThing(lt.Thing):
         # Fix scan parameters in case UI is updated during scan.
         return scan_directories.ScanData(
             scan_name=self._ongoing_scan.name,
+            starting_position=starting_position,
             overlap=overlap,
             max_dist=self.max_range,
             dx=dx,
@@ -320,10 +311,7 @@ class SmartScanThing(lt.Thing):
         Takes scan_result, a string that is either "success", "cancelled by user",
         or the error that ended the scan.
         """
-        self._scan_data.set_final_data(
-            result=scan_result,
-            final_image_count=self._scan_images_taken,
-        )
+        self._scan_data.set_final_data(result=scan_result)
         self._ongoing_scan.save_scan_data(self._scan_data)
 
     @_scan_running
@@ -331,7 +319,7 @@ class SmartScanThing(lt.Thing):
         """Manage the stitching threads, starting them if needed and not already running."""
         # Assume 4 images means at least one offset in x and y, making the stitching
         # well constrained.
-        if self._scan_images_taken > 3:
+        if self._scan_data.image_count > 3:
             if not self._preview_stitcher.running:
                 self._preview_stitcher.start()
 
@@ -353,10 +341,6 @@ class SmartScanThing(lt.Thing):
                 correlation_resize=self._scan_data.stitch_resize,
             )
 
-            if self._scan_images_taken != 0:
-                msg = "_scan_images_taken should be zero before starting scanning"
-                raise RuntimeError(msg)
-
             # This is the main loop of the scan!
             self._main_scan_loop()
             self._save_final_scan_data(scan_result="success")
@@ -366,24 +350,19 @@ class SmartScanThing(lt.Thing):
             self._cancel.clear()
             self._scan_logger.info("Stopping scan because it was cancelled.")
             self._save_final_scan_data(scan_result="cancelled by user")
-        except scan_directories.NotEnoughFreeSpaceError as e:
-            self._save_final_scan_data(scan_result=f"NotEnoughFreeSpaceError: {e}")
-            self._scan_logger.error(
-                f"Stopping scan to avoid filling up the disk: {e}",
-                exc_info=e,
-            )
-            raise e
         except Exception as e:
             err_name = type(e).__name__
-            self._save_final_scan_data(scan_result=f"{err_name}: {e}")
+            if self._scan_data is not None:
+                self._save_final_scan_data(scan_result=f"{err_name}: {e}")
             self._scan_logger.error(
-                f"The scan stopped because of an error: {e} "
-                "Attempting to stitch and archive the images acquired so far.",
+                f"The scan stopped because of an error: {e}",
                 exc_info=e,
             )
             raise e
         finally:
-            # Don't set Preview Stitcher to None yet. It is used by _perform_final_scan.
+            # Don't set Preview Stitcher to None yet. It is used by
+            # _perform_final_stitch, which may also be run after this function completes
+            # if it ended due to an exception.
 
             # Start streaming in the default resolution again as soon as possible
             self._cam.start_streaming()
@@ -459,7 +438,7 @@ class SmartScanThing(lt.Thing):
             )
 
             # increment capture counter as thread has completed
-            self._scan_images_taken += 1
+            self._scan_data.image_count += 1
             # Add it to the incremental zip
             self._ongoing_scan.zip_files()
 
@@ -467,15 +446,15 @@ class SmartScanThing(lt.Thing):
     def _return_to_starting_position(self):
         """Return to the initial scan position, if set."""
         self._scan_logger.info("Returning to starting position.")
-        if self._starting_position is not None:
+        if self._scan_data is not None:
             self._stage.move_absolute(
-                **self._starting_position, block_cancellation=True
+                **self._scan_data.starting_position, block_cancellation=True
             )
 
     @_scan_running
     def _perform_final_stitch(self):
         """Update the scan zip and perform final stitch of the data."""
-        if self._scan_images_taken <= 3:
+        if self._scan_data.image_count <= 3:
             self._scan_logger.info("Not performing a stitch as 3 or fewer images taken")
             return
 

@@ -1,6 +1,6 @@
 """Functionality to manage file system operations for scan directories."""
 
-from typing import Optional, Any
+from typing import Optional, Any, Mapping
 import os
 import re
 import shutil
@@ -54,6 +54,7 @@ class ScanData(BaseModel):
     # TODO: Docs for each variable
     # TODO: Make note about timestamp format. Is it too ambiguous?
     scan_name: str
+    starting_position: Mapping[str, int]
     overlap: float
     max_dist: int
     dx: int
@@ -67,18 +68,16 @@ class ScanData(BaseModel):
     # just for correlation stitching
     stitch_resize: float
     save_resolution: tuple[int, int]
-    final_image_count: Optional[int] = None
+    image_count: int = 0
     duration: Optional[timedelta] = None
     scan_result: Optional[str] = None
 
-    def set_final_data(self, result: str, final_image_count: int):
+    def set_final_data(self, result: str):
         """Set the final data for the scan, scan duration is automatically calculated.
 
         :param result: A string describing the result.
-        :param final_image_count: The total number of images captures.
         """
         self.duration = datetime.now() - self.start_time
-        self.final_image_count = final_image_count
         self.scan_result = result
 
     @field_validator("start_time", mode="before")
@@ -118,7 +117,7 @@ class ScanData(BaseModel):
         secs = int((total_secs % 60))
         return f"{hrs}:{mins:02}:{secs:02}"
 
-    @field_validator("final_image_count", "scan_result", mode="before")
+    @field_validator("scan_result", mode="before")
     @classmethod
     def parse_unknown_as_none(cls, value: Optional[str | int]) -> Optional[str | int]:
         """Validate the string "Unknown" as None."""
@@ -126,7 +125,7 @@ class ScanData(BaseModel):
             return None
         return value
 
-    @field_serializer("final_image_count", "scan_result")
+    @field_serializer("scan_result")
     def serialize_none_as_unknown(self, value: Optional[str | int]) -> str | int:
         """Serialise None as "Unknown" for a more human readable result."""
         return "Unknown" if value is None else value
