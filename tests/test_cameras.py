@@ -74,12 +74,12 @@ def _get_clean_camera_description(camera_thing):
 
 
 def test_thing_description_equivalence(mock_picam_thing):
-    """Ensure extra actions and properties are not added to camera Things without explicit approval.
+    """Ensure the built-in camera Thing subclasses retain consistent core functionality.
 
     This test verifies that extra actions are not unintentionally introduced to
     camera child classes. Any addition of actions must be accompanied by an update
-    to this test, prompting review and justification for why the action does not
-    belong to the general base class.
+    to this test, prompting discussion of whether the action belongs in the subclass
+    or the base camera class.
     """
     base_td = BaseCamera().thing_description()
     base_actions = set(base_td.actions.keys())

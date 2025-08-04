@@ -33,13 +33,18 @@ class BackgroundDetectorStatus(BaseModel):
     need different initialisation.
     """
     settings: dict[str, Any]
-    """The settings for this this background detect Algorithm. These are a dictionary
+    """The settings for the current background detect Algorithm. These are a dictionary
     dumped from the base model."""
 
     # Setting schema is a dict until LabThings FastAPI issue #154 is fixed and
     # DataSchema can be used directly. For now `model_dump()` must be used to dump schema
     # to a dict.
     settings_schema: dict[str, Any]
+    """The schema for the settings for the current background detect Algorithm.
+
+    This is reported so that the UI can dynamically create a UI for any background detector
+    algorithm.
+    """
 
 
 class BackgroundDetectAlgorithm:
