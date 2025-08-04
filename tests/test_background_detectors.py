@@ -70,7 +70,8 @@ def test_partial_base_class(background_image):
     bad_algo1 = BadAlgo1()
     status = bad_algo1.status
     assert not status.ready
-    assert isinstance(status.settings, ColourChannelDetectSettings)
+    # Check the settings dictionary can be validated as ``ColourChannelDetectSettings``
+    ColourChannelDetectSettings(**status.settings)
 
     with pytest.raises(NotImplementedError):
         # Should error on any dictionary input. This simulates loading settings from

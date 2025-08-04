@@ -5,7 +5,14 @@
         <li>
           <a class="uk-accordion-title" href="#">Settings</a>
           <div class="uk-accordion-content">
-            <p> TODO!</p>
+            <input-from-schema
+              v-if="backgroundDetectorStatus"
+              v-model="backgroundDetectorStatus.settings"
+              :data-schema="backgroundDetectorStatus.settings_schema"
+              label=""
+              @requestUpdate="readSettings"
+              @sendValue="writeSettings"
+            />
           </div>
         </li>
       </ul>
@@ -17,6 +24,7 @@
           :can-terminate="false"
           :poll-interval="0.1"
           @response="alertBackgroundSet"
+          @error="modalError"
         />
       </div>
       <div class="uk-margin">
@@ -25,10 +33,11 @@
           thing="camera"
           action="image_is_sample"
           submit-label="Check Current Image"
+          :isDisabled="!ready"
           :can-terminate="false"
           :poll-interval="0.1"
           @response="alertImageLabel"
-          @error="backgroundDetectError"
+          @error="modalError"
         />
       </div>
     </div>
@@ -37,10 +46,25 @@
 
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
+import InputFromSchema from "../../labThingsComponents/inputFromSchema.vue";
 
 export default {
   components: {
-    ActionButton
+    ActionButton,
+    InputFromSchema
+  },
+
+  data() {
+    return {
+      backgroundDetectorStatus: undefined,
+    };
+  },
+
+  computed: {
+    ready() {
+      const status = this.backgroundDetectorStatus;
+      return status && status.ready === true;
+    }
   },
 
   methods: {
@@ -51,12 +75,25 @@ export default {
       let label = r.output[0] ? "sample" : "background";
       this.modalNotify(`Current image is ${label} (${r.output[1]})`);
     },
-    backgroundDetectError() {
-      this.modalError(
-        "Background detection failed, most likely you need to set a background image." +
-          " There may be more information in the log."
+    readSettings: async function() {
+      this.backgroundDetectorStatus = await this.readThingProperty(
+        "camera",
+        "background_detector_status"
+      );
+    },
+    writeSettings: async function(requestedValue) {
+      await this.invokeAction(
+        "camera",
+        "update_detector_settings",
+        {"data": requestedValue}
       );
     }
+  },
+  async created() {
+    this.backgroundDetectorStatus = await this.readThingProperty(
+      "camera",
+      "background_detector_status"
+    );
   }
 };
 </script>

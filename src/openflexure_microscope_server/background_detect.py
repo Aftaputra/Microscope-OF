@@ -8,7 +8,7 @@ current camera field of view contains sample.
 from typing import Optional, Any
 import cv2
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
 from pydantic.errors import PydanticUserError
 from scipy.stats import norm
 from labthings_fastapi.thing_description import type_to_dataschema
@@ -32,13 +32,19 @@ class BackgroundDetectorStatus(BaseModel):
     ``ready`` is used in case more complex methods are added in the future, which
     need different initialisation.
     """
-    settings: BaseModel
-    """The settings for this this background detect Algorithm"""
+    settings: dict[str, Any]
+    """The settings for the current background detect Algorithm. These are a dictionary
+    dumped from the base model."""
 
     # Setting schema is a dict until LabThings FastAPI issue #154 is fixed and
     # DataSchema can be used directly. For now `model_dump()` must be used to dump schema
     # to a dict.
     settings_schema: dict[str, Any]
+    """The schema for the settings for the current background detect Algorithm.
+
+    This is reported so that the UI can dynamically create a UI for any background detector
+    algorithm.
+    """
 
 
 class BackgroundDetectAlgorithm:
@@ -63,7 +69,7 @@ class BackgroundDetectAlgorithm:
         """The status information needed for the GUI. Read only."""
         return BackgroundDetectorStatus(
             ready=self.background_data is not None,
-            settings=self.settings,
+            settings=self.settings.model_dump(),
             # Dump model with `model_dump()` for reason explained when defining
             # BackgroundDetectorStatus
             settings_schema=type_to_dataschema(self.settings_data_model).model_dump(),
@@ -152,13 +158,18 @@ class ChannelDistributions(BaseModel):
 class ColourChannelDetectSettings(BaseModel):
     """A BaseModel for storing the settings for colour channel detectors."""
 
+    model_config = ConfigDict(extra="forbid")
+
     channel_tolerance: float = 7.0
     """Channel Tolerance
 
     The number of standard deviations a pixel value must be from the background mean
     to be considered sample.
     """
-    min_sample_coverage: float = 25.0
+
+    # Use Field to set Title reported to UI. By default Pydantic will convert the name
+    # from snake_case to Title Case.
+    min_sample_coverage: float = Field(25, title="Sample Coverage Required (%)")
     """Sample Coverage Required (%)
 
     The minimum percentage of the image that needs to be identified as sample for the

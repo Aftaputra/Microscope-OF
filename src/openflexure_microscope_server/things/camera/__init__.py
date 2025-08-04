@@ -20,6 +20,7 @@ import piexif
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
+from openflexure_microscope_server.ui import ActionButton, PropertyControl
 from openflexure_microscope_server.background_detect import (
     ColourChannelDetectLUV,
     BackgroundDetectAlgorithm,
@@ -476,6 +477,21 @@ class BaseCamera(lt.Thing):
         time.sleep(self.settling_time)
         self.discard_frames()
 
+    @lt.thing_property
+    def primary_calibration_actions(self) -> list[ActionButton]:
+        """The calibration actions for both calibration wizard and settings panel."""
+        return []
+
+    @lt.thing_property
+    def secondary_calibration_actions(self) -> list[ActionButton]:
+        """The calibration actions that appear only in settings panel."""
+        return []
+
+    @lt.thing_property
+    def manual_camera_settings(self) -> list[PropertyControl]:
+        """The camera settings to expose as property controls in the settings panel."""
+        return []
+
     # Note that the default detector name is set at init. This is over written if
     # setting is loaded from disk.
     @lt.thing_setting
@@ -499,6 +515,22 @@ class BaseCamera(lt.Thing):
     def background_detector_status(self) -> BackgroundDetectorStatus:
         """The status of the active detector for the UI."""
         return self.active_detector.status
+
+    @lt.thing_action
+    def update_detector_settings(self, data) -> None:
+        """Update the settings of the current detector.
+
+        This is an action not a setting/property as the data model depends on the
+        selected detector. As such, it cannot be specified with the necessary precision
+        to be included in a ThingDescription as a setting/property, while retaining
+        enough useful information to communicate to the UI how it is set and read.
+
+        The information on how to read the settings is exposed in
+        ``background_detector_status``.
+        """
+        self.active_detector.settings = data
+        # Manually save settings as the setter is not called.
+        self.save_settings()
 
     @lt.thing_setting
     def background_detector_data(self) -> dict:

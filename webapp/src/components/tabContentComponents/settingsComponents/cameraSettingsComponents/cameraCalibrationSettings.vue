@@ -1,100 +1,34 @@
 <template>
   <div>
-    <!--Show auto calibrate if default plugin is enabled-->
-    <div v-if="'full_auto_calibrate' in actions" class="uk-margin-small">
-      <action-button
-        :can-terminate="false"
-        :requires-confirmation="true"
-        :confirmation-message="
-          'Start recalibration? This may take a while, and the microscope will be locked during this time.'
-        "
-        thing="camera"
-        action="full_auto_calibrate"
-        :submit-label="'Full Auto-Calibrate'"
-        @response="onRecalibrateResponse"
-        @error="modalError"
-      />
-    </div>
-    <div v-if="'auto_expose_from_minimum' in actions" class="uk-margin-small">
-      <action-button
-        :can-terminate="false"
-        :requires-confirmation="false"
-        thing="camera"
-        action="auto_expose_from_minimum"
-        :submit-label="'Auto Gain &amp; Shutter Speed'"
-        @response="onRecalibrateResponse"
-        @error="modalError"
-      />
-    </div>
-    <div v-if="'calibrate_white_balance' in actions" class="uk-margin-small">
-      <action-button
-        :can-terminate="false"
-        :requires-confirmation="false"
-        thing="camera"
-        action="calibrate_white_balance"
-        :submit-label="'Auto White Balance'"
-        @response="onRecalibrateResponse"
-        @error="modalError"
-      />
-    </div>
-    <div v-if="'calibrate_lens_shading' in actions" class="uk-margin-small">
-      <action-button
-        :can-terminate="false"
-        :requires-confirmation="true"
-        :confirmation-message="
-          'Is the microscope looking at an evenly illuminated, empty field of view? ' +
-            'If not, the current image will show through in any images captured afterwards.'
-        "
-        thing="camera"
-        action="calibrate_lens_shading"
-        :submit-label="'Auto Flat Field Correction'"
-        @response="onRecalibrateResponse"
-        @error="modalError"
-      />
-    </div>
-
+    <!--Show calibration actions as specified by the camera.-->
     <div
-      v-show="showExtraSettings"
-      v-if="'flatten_lens_shading_table' in actions"
+      v-for="(action, index) in primaryCalibrationActions"
+      :key="'primary_cal' + index"
       class="uk-child-width-expand"
     >
-      <action-button
-        :can-terminate="false"
-        :requires-confirmation="false"
-        thing="camera"
-        action="flat_lens_shading"
-        :submit-label="'Disable Flat Field Correction'"
-        @response="onRecalibrateResponse"
-        @error="modalError"
-      />
+      <server-specified-action-button :action-data="action" />
     </div>
-    <div
-      v-show="showExtraSettings"
-      v-if="'reset_lens_shading' in actions"
-      class="uk-child-width-expand"
-    >
-      <action-button
-        :can-terminate="false"
-        :requires-confirmation="false"
-        thing="camera"
-        action="reset_lens_shading"
-        :submit-label="'Reset Flat Field Correction'"
-        @response="onRecalibrateResponse"
-        @error="modalError"
-      />
+    <div v-if="showExtraSettings">
+      <div
+        v-for="(action, index) in secondaryCalibrationActions"
+        :key="'secondary_cal' + index"
+        class="uk-child-width-expand"
+      >
+        <server-specified-action-button :action-data="action" />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import ActionButton from "../../../labThingsComponents/actionButton.vue";
+import ServerSpecifiedActionButton from "../../../labThingsComponents/serverSpecifiedActionButton.vue";
 
 // Export main app
 export default {
   name: "CameraCalibrationSettings",
 
   components: {
-    ActionButton
+    ServerSpecifiedActionButton
   },
 
   props: {
@@ -109,16 +43,28 @@ export default {
     }
   },
 
+  data() {
+    return {
+      primaryCalibrationActions: [],
+      secondaryCalibrationActions: []
+    };
+  },
+
   computed: {
     actions() {
       return this.$store.getters["wot/thingDescription"]("camera").actions;
     }
   },
 
-  methods: {
-    onRecalibrateResponse: function() {
-      this.modalNotify("Finished recalibration.");
-    }
+  async created() {
+    this.primaryCalibrationActions = await this.readThingProperty(
+      "camera",
+      "primary_calibration_actions"
+    );
+    this.secondaryCalibrationActions = await this.readThingProperty(
+      "camera",
+      "secondary_calibration_actions"
+    );
   }
 };
 </script>

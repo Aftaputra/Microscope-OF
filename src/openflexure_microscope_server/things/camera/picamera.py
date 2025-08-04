@@ -35,6 +35,12 @@ from picamera2.outputs import Output
 import labthings_fastapi as lt
 from labthings_fastapi.exceptions import NotConnectedToServerError
 
+from openflexure_microscope_server.ui import (
+    ActionButton,
+    PropertyControl,
+    action_button_for,
+    property_control_for,
+)
 from . import picamera_recalibrate_utils as recalibrate_utils
 from . import BaseCamera, JPEGBlob, ArrayModel
 
@@ -776,6 +782,88 @@ class StreamingPiCamera2(BaseCamera):
                 self.tuning, flat_array, flat_array, flat_array
             )
             self._initialise_picamera()
+
+    @lt.thing_property
+    def primary_calibration_actions(self) -> list[ActionButton]:
+        """The calibration actions for both calibration wizard and settings panel."""
+        return [
+            action_button_for(
+                self.full_auto_calibrate,
+                submit_label="Full Auto-Calibrate",
+                can_terminate=False,
+                requires_confirmation=True,
+                confirmation_message=(
+                    "Start recalibration? This may take a while, and the microscope "
+                    "will be locked during this time."
+                ),
+                notify_on_success=True,
+                success_message="Finished recalibration.",
+            ),
+            action_button_for(
+                self.auto_expose_from_minimum,
+                submit_label="Auto Gain & Shutter Speed",
+                can_terminate=False,
+            ),
+            action_button_for(
+                self.calibrate_white_balance,
+                submit_label="Auto White Balance",
+                can_terminate=False,
+            ),
+            action_button_for(
+                self.calibrate_lens_shading,
+                submit_label="Auto Flat Field Correction",
+                can_terminate=False,
+                requires_confirmation=True,
+                confirmation_message=(
+                    "Is the microscope looking at an evenly illuminated, empty field "
+                    "of view? If not, the current image will show through in any "
+                    "images captured afterwards."
+                ),
+            ),
+        ]
+
+    @lt.thing_property
+    def secondary_calibration_actions(self) -> list[ActionButton]:
+        """The calibration actions that appear only in settings panel."""
+        return [
+            action_button_for(
+                self.flat_lens_shading,
+                submit_label="Disable Flat Field Correction",
+                can_terminate=False,
+            ),
+            action_button_for(
+                self.reset_lens_shading,
+                submit_label="Reset Flat Field Correction",
+                can_terminate=False,
+            ),
+        ]
+
+    @lt.thing_property
+    def manual_camera_settings(self) -> list[PropertyControl]:
+        """The camera settings to expose as property controls in the settings panel."""
+        return [
+            property_control_for(
+                self,
+                "exposure_time",
+                label="Exposure Time (0-33251)",
+                read_back=True,
+                read_back_delay=1000,
+            ),
+            property_control_for(
+                self,
+                "analogue_gain",
+                label="Analogue Gain",
+                read_back=True,
+                read_back_delay=1000,
+            ),
+            property_control_for(
+                self,
+                "colour_gains",
+                label="Colour Gains",
+                read_back=True,
+                read_back_delay=1000,
+            ),
+        ]
 
     @lt.thing_property
     def lens_shading_tables(self) -> Optional[LensShading]:

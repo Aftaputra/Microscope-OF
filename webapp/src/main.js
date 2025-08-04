@@ -67,6 +67,21 @@ Vue.mixin({
       }
       await axios.put(url, value);
     },
+    async invokeAction(thing, action, data) {
+      let url = this.$store.getters["wot/thingActionUrl"](
+        thing,
+        action,
+        "invokeaction",
+        false
+      );
+      try {
+        let response = await axios.post(url, data);
+        return response;
+      } catch (error) {
+        this.modalError(error);
+        return undefined;
+      }
+    },
     thingActionUrl(thing, action, allow_missing = false) {
       let url = this.$store.getters["wot/thingActionUrl"](
         thing,
@@ -132,7 +147,6 @@ Vue.mixin({
     modalError: function(error) {
       var errormsg = this.getErrorMessage(error);
       this.$store.commit("setErrorMessage", errormsg);
-      console.log("Modal error:", error);
       UIkit.notification({
         message: `${errormsg}`,
         status: "danger"
@@ -140,25 +154,43 @@ Vue.mixin({
     },
 
     getErrorMessage: function(error) {
-      // If a response was obtained, format it nicely and return it
+      // Format the error.
+      let data = this.getErrorData(error)
+      // Get error data may get an object. Handle edge cases and if not try to use
+      // JSON to get the best string. This stops "objectObject" showing as an error.
+      if (data === null) return "null";
+      if (data === undefined) return "undefined";
+      if (typeof data === 'string') return data;
+      try {
+        return JSON.stringify(data, null, 2);
+      } catch (err) {
+        return String(data);
+      }
+    },
+    getErrorData: function(error){
+      // If a response was obtained, extract the most specific message
       if (error.response) {
         // If the response is a nicely formatted JSON response from the server
         if (error.response.data.message) {
-          return `${error.response.data.message}`;
+          return error.response.data.message;
         }
         if (error.response.data.detail) {
-          return `${error.response.data.detail}`;
+          try {
+            return error.response.data.detail[0].msg
+          } catch (err) {
+            return error.response.data.detail;
+          }
         }
         // If the response is just some generic error response
         if (error.response.data) {
-          return `${error.response.data}`;
+          return error.response.data;
         }
-        return `${error.response}`;
+        return error.response;
       }
       // If we have an error object with a message, use that
-      if (error.message) return `${error.message}`;
-      // Otherwise attempt to cast it to a string.
-      return `${error}`;
+      if (error.message) return error.message;
+      // At this point just formatting the whole error object is the best we can do.
+      return error;
     },
 
     showModalElement: function(element) {
