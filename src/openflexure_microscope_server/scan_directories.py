@@ -5,8 +5,11 @@ import os
 import re
 import shutil
 import zipfile
+import threading
 
 from pydantic import BaseModel
+
+from openflexure_microscope_server.utilities import requires_lock
 
 IMG_DIR_NAME = "images"
 SCAN_ZERO_PAD_DIGITS = 4
@@ -43,6 +46,7 @@ class ScanDirectoryManager:
         self._base_scan_dir = base_scan_dir
         if not os.path.exists(self._base_scan_dir):
             os.makedirs(self._base_scan_dir)
+        self._lock = threading.RLock()
 
     @property
     def base_dir(self) -> str:
@@ -67,6 +71,7 @@ class ScanDirectoryManager:
         """
         return os.path.join(self._base_scan_dir, scan_name, IMG_DIR_NAME)
 
+    @requires_lock
     def get_file_path_from(
         self, scan_name: str, filename: str, check_exists: bool = False
     ) -> Optional[str]:
@@ -81,6 +86,7 @@ class ScanDirectoryManager:
                 return None
         return file_path
 
+    @requires_lock
     def get_file_path_from_img_dir(
         self, scan_name: str, filename: str, check_exists: bool = False
     ) -> Optional[str]:
@@ -106,10 +112,12 @@ class ScanDirectoryManager:
         return self.get_file_path_from_img_dir(scan_name, stitch_fname)
 
     @property
+    @requires_lock
     def all_scans(self) -> list[str]:
         """Return a list of the scan names in the base directory."""
         return [f.name for f in os.scandir(self._base_scan_dir) if f.is_dir()]
 
+    @requires_lock
     def all_scans_info(self) -> list[ScanInfo]:
         """Return a lists of ScanInfo objects for each scan."""
         all_info: list[ScanInfo] = []
@@ -117,6 +125,7 @@ class ScanDirectoryManager:
             all_info.append(ScanDirectory(scan_name, self.base_dir).scan_info())
         return all_info
 
+    @requires_lock
     def _unique_scan_name(self, scan_name: str) -> str:
         """Get the next unique scan name starting with the given name.
 
@@ -146,6 +155,7 @@ class ScanDirectoryManager:
 
         return f"{scan_name}_{scan_num:0{SCAN_ZERO_PAD_DIGITS}d}"
 
+    @requires_lock
     def new_scan_dir(self, scan_name: str) -> "ScanDirectory":
         """Get a unique name for this scan and create a directory for it.
 
@@ -168,10 +178,12 @@ class ScanDirectoryManager:
         os.makedirs(self.img_dir_for(full_scan_name))
         return ScanDirectory(full_scan_name, self.base_dir)
 
+    @requires_lock
     def delete_scan(self, scan_name: str) -> None:
         """Delete a scan."""
         shutil.rmtree(self.path_for(scan_name))
 
+    @requires_lock
     def zip_scan(self, scan_name: str, final_version: bool = False) -> "ScanDirectory":
         """Zips any images from the scan not yet zipped, return full path to zip.
 
@@ -181,6 +193,7 @@ class ScanDirectoryManager:
         """
         return ScanDirectory(scan_name, self.base_dir).zip_files(final_version)
 
+    @requires_lock
     def check_free_disk_space(self, min_space: int = 500000000) -> None:
         """Raise an exception if there is not enough free disk space to continue scanning.
 
