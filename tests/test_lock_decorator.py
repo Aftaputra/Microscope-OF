@@ -50,12 +50,22 @@ def lockable_obj() -> LockableClass:
 
 
 def test_error_if_no_lock(lockable_obj):
-    """Test there is an Attribute error if the object has no lock attribute."""
+    """Test there is an AttributeError if the object has no _lock attribute."""
     # Delete the lock!
     del lockable_obj._lock
     with pytest.raises(AttributeError) as exec_info:
         lockable_obj.test_property
     assert str(exec_info.value) == "LockableClass has no '_lock' attribute"
+
+
+def test_error_if_lock_of_wrong_type(lockable_obj):
+    """Test there is an TypeError if the object's _lock attribute isn't a lock."""
+    # Delete the lock!
+    lockable_obj._lock = "I'm a mock, not a lock!"
+    with pytest.raises(TypeError) as exec_info:
+        lockable_obj.test_property
+    expected_msg = "requires_lock requires self._lock to be a lock"
+    assert str(exec_info.value) == expected_msg
 
 
 def test_functionality(lockable_obj):

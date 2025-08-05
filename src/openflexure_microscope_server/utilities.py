@@ -23,6 +23,16 @@ COMMIT_REGEX = re.compile(r"[0-9a-f]{40}")
 REF_REGEX = re.compile(r"^ref:\s(.*)$")
 
 
+def _is_lock_like(obj):
+    """Check if an object is a lock.
+
+    Cannot use ``isinstance(obj, threading.RLock)``, may be possible to use
+    ``isinstance(obj, threading._RLock)``. But this uses a private method and may
+    break. Instead making the check that both "acquire" and "release" exist.
+    """
+    return hasattr(obj, "acquire") and hasattr(obj, "release")
+
+
 def requires_lock(method: Callable[P, T]) -> Callable[P, T]:
     """Decorate a class method so that it requires the class lock to run.
 
@@ -31,8 +41,12 @@ def requires_lock(method: Callable[P, T]) -> Callable[P, T]:
 
     @wraps(method)
     def wrapper(self, *args: P.args, **kwargs: P.kwargs) -> T:
+        # Confirm the object the method is attached to has a self._lock property
         if not hasattr(self, "_lock"):
             raise AttributeError(f"{self.__class__.__name__} has no '_lock' attribute")
+        # And that it is a reentrant lock.
+        if not _is_lock_like(self._lock):
+            raise TypeError("requires_lock requires self._lock to be a lock")
         with self._lock:
             return method(self, *args, **kwargs)
 
