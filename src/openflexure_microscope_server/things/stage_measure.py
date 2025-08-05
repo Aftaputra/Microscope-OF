@@ -135,6 +135,7 @@ def _move_and_measure(
 
     return offset, wrong_axis
 
+
 def _acquire_z_predict_points(
     stream_resolution: list[int],
     direction: Literal[1, -1],
@@ -266,11 +267,7 @@ def _check_stage_operation(
         data.measure(stage.position, offset)
 
         assert np.abs(data.delta[wrong_axis]) < np.abs(
-            _generate_move_dicts(
-                small_step,
-                stream_resolution,
-                direction,
-                factor=0.1)[
+            _generate_move_dicts(small_step, stream_resolution, direction, factor=0.1)[
                 wrong_axis
             ]
         )
