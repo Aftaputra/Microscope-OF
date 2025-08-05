@@ -3,7 +3,7 @@
     <div>
       <ul uk-accordion="multiple: true">
         <li>
-          <a class="uk-accordion-title" href="#">Settings</a>
+          <a class="uk-accordion-title" href="#">Configure</a>
           <div class="uk-accordion-content">
             <input-from-schema
               v-if="backgroundDetectorStatus"
