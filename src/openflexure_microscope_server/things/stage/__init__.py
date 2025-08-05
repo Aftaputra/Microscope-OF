@@ -36,7 +36,7 @@ class BaseStage(lt.Thing):
     implementing new stages.
 
     Note that the coordinate system used for the microscope may need to have different
-    axis direction as those used for
+    axis direction as those used by the underlying stage controller.
 
     A minimal working stage must implement ``_hardware_move_relative``
     and ``_hardware_move_absolute`` actions, which update the ``_hardware_position``
