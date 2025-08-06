@@ -702,7 +702,7 @@ class SmartScanThing(lt.Thing):
         """
         scan_data_dict = self._scan_dir_manager.get_scan_data_dict(scan_name)
         if scan_data_dict is None:
-            logger.warning("Couldn't read scan data it may be missing or corrupt.")
+            logger.warning("Couldn't read scan data - it may be missing or corrupt.")
         final_stitcher = stitching.FinalStitcher(
             self._scan_dir_manager.img_dir_for(scan_name),
             logger=logger,
@@ -712,6 +712,7 @@ class SmartScanThing(lt.Thing):
             scan_data_dict=scan_data_dict,
         )
         try:
+            # start the final stitch, providing the cancel hook to allow aborting
             final_stitcher.start(cancel)
         except lt.exceptions.InvocationCancelledError:
             # Sleep for 1 second just to allow invocation logs to pass to user.

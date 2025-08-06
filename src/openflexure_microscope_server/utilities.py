@@ -128,8 +128,11 @@ def _wrap_and_catch_errors(target, error_buffer, *args, **kwargs):
 
 
 # Compiled regular expressions for unsafe characters
+# Matches anything that isn't a-z, A-Z, 0-9, _, ., -, :, /, \
 _WINDOWS_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-:/\\]")
+# Matches anything that isn't a-z, A-Z, 0-9, _, ., -, \
 _POSIX_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-/]")
+# Matches anything that isn't a-z, A-Z, 0-9, _, ., -
 _NAME_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-]")
 
 
