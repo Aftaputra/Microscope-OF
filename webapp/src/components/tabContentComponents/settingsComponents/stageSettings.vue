@@ -8,12 +8,12 @@
         Your z motor is currently {{ this.z_inverted }} inverted.
         <br>
         <br>
-        If you notice that moving in +z moves your objective down,
-        or causes your exposed z gear to turn clockwise,
-        this is backwards.
-        <br>
-        <br>
-        Click the button below to switch.
+        We expect that moving in +z:
+        <ul>
+        <li> Moves your objective up, towards the sample and illumination</li>
+        <li> Turns the exposed z gear anti-clockwise (when viewed from above)</li>
+        </ul>
+        If this is not the case, click the button below to switch.
         </p>
         <div class="uk-margin">
           <div class="uk-margin">
