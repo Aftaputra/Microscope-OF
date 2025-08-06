@@ -5,7 +5,7 @@
         <li>
           <a class="uk-accordion-title" href="#">Configure</a>
           <div class="uk-accordion-content">
-            <b>Step Size</b>
+            <b>Keyboard Step Size</b>
             <div class="uk-grid-small uk-child-width-1-3" uk-grid>
               <div>
                 <label class="uk-form-label" for="form-stacked-text">x</label>
@@ -57,17 +57,9 @@
                     name="inputStepZz"
                   />
                 </div>
-                <label
-                  ><input
-                    v-model="invert.z"
-                    class="uk-checkbox"
-                    type="checkbox"
-                  />
-                  Invert z</label
-                >
               </div>
             </div>
-
+            <br>
             <action-button
               thing="stage"
               action="set_zero_position"

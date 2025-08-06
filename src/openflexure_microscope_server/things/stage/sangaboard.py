@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from copy import copy
 from typing import Iterator, Literal
 from contextlib import contextmanager
 from collections.abc import Mapping
@@ -36,8 +37,9 @@ class SangaboardThing(BaseStage):
             Sangaboard class
 
         """
-        self.sangaboard_kwargs = kwargs
+        self.sangaboard_kwargs = copy(kwargs)
         self.sangaboard_kwargs["port"] = port
+        super().__init__(**kwargs)
 
     def __enter__(self):
         """Connect to the sangaboard when the Thing context manager is opened."""
@@ -65,19 +67,25 @@ class SangaboardThing(BaseStage):
         with self._sangaboard_lock:
             yield self._sangaboard
 
+    axis_inverted = lt.ThingSetting(
+        initial_value={"x": True, "y": False, "z": True},
+        model=Mapping[str, bool],
+        readonly=True,
+    )
+    """Used to convert coordinates between the program frame and the hardware frame."""
+
     def update_position(self) -> None:
         """Read position from the stage and set the corresponding property."""
         with self.sangaboard() as sb:
-            self.position = dict(zip(self.axis_names, sb.position))
+            self._hardware_position = dict(zip(self.axis_names, sb.position))
 
-    @lt.thing_action
-    def move_relative(
+    def _hardware_move_relative(
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: Mapping[str, int],
     ) -> None:
-        """Make a relative move. Keyword arguments should be axis names."""
+        """Make a relative move in the coordinate system used by the sangaboard."""
         displacement = [kwargs.get(axis, 0) for axis in self.axis_names]
         with self.sangaboard() as sb:
             self.moving = True
@@ -98,22 +106,21 @@ class SangaboardThing(BaseStage):
                 self.moving = False
                 self.update_position()
 
-    @lt.thing_action
-    def move_absolute(
+    def _hardware_move_absolute(
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: Mapping[str, int],
     ) -> None:
-        """Make an absolute move. Keyword arguments should be axis names."""
+        """Make a absolute move in the coordinate system used by the sangaboard."""
         with self.sangaboard():
             self.update_position()
             displacement = {
-                axis: int(pos) - self.position[axis]
+                axis: int(pos) - self._hardware_position[axis]
                 for axis, pos in kwargs.items()
                 if axis in self.axis_names
             }
-            self.move_relative(
+            self._hardware_move_relative(
                 cancel, block_cancellation=block_cancellation, **displacement
             )
 

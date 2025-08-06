@@ -1,20 +1,66 @@
 <template>
-  <div id="stageSettings" class="uk-width-large">
-    The microscope stage is a <b>{{ stageType }}</b
-    >. There are no settings to adjust here: to set the geometry of your stage
-    (i.e. switch between delta and cartesian), you will need to adjust the
-    configuration of your microscope, which cannot be done while it is running.
+  <div id="stageSettings" class="uk-width-large" v-observe-visibility="visibilityChanged">
+    The microscope stage is a <b>{{ stageType }}</b>
+    <div>
+      <div class="uk-margin">
+        <p>
+        <br>
+        Your z motor is currently {{ this.z_inverted }} inverted.
+        <br>
+        <br>
+        We expect that moving in +z:
+        <ul>
+        <li> Moves your objective up, towards the sample and illumination</li>
+        <li> Turns the exposed z gear anti-clockwise (when viewed from above)</li>
+        </ul>
+        If this is not the case, click the button below to switch.
+        </p>
+        <div class="uk-margin">
+          <div class="uk-margin">
+          <action-button
+            class="uk-width-1-2"
+            thing="stage"
+            action="invert_axis_direction"
+            :submit-data="{ axis: 'z' }"
+            submit-label="Invert z"
+            @response=readAxis()
+          />
+        </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import ActionButton from "../../labThingsComponents/actionButton.vue";
+
 export default {
   name: "StageSettings",
 
-  components: {},
+  components: {
+    ActionButton,
+  },
 
   data: function() {
-    return {};
+    return {
+      z_inverted: "",
+    };
+  },
+
+  methods:{
+    visibilityChanged(isVisible) {
+      if (isVisible) {
+        this.readAxis();
+      }
+    },
+    async readAxis() {
+      let axes_inverted = await this.readThingProperty(
+        "stage",
+        "axis_inverted"
+      );
+      this.z_inverted = axes_inverted['z'] ? "" : "not ";
+    }
   },
 
   computed: {
