@@ -45,10 +45,15 @@ def _generate_move_dicts(
 ) -> dict[str, float]:
     """Create a single dictionary of x and y moves for moving in image coordinates.
 
+    This can either be used to create move sizes or minimum move sizes. For example,
+    the stage must move a minimum distance for a move to be considered successful.
+    We define the minimum with this function. This is also used to define the maximally
+    allowed motion in the wrong axis.
+
     :param fov_perc: The percentage of field of view the stage should move by.
     :param stream_resolution: The resolution of the stream from the camera.
     :param direction: The direction the stage moves.
-    :param factor: Multiplicative factor which changes the final result.
+    :param factor: Reduction factor which allows for minimum move sizes to be created.
     :return: A dictionary with keys 'x' and 'y' with a pixel distance move the stage can make.
     """
     return {
@@ -66,11 +71,11 @@ def _predict_z(
 ) -> float:
     """Predict the next z position for a move using previous positions.
 
-    :params positions: The list of positions used for predicting z.
-    This will usually be a list of all previous positions.
-    :params axis: The axis in which the stage is moving. This must be 'x' or 'y'.
-    :params relative_move: The move which the function is trying to predict z for.
-    Here, this is inputted with units of pixels.
+    :param positions: The list of positions used for predicting z.
+        This will be a list of all previous positions.
+    :param axis: The axis in which the stage is moving. This must be 'x' or 'y'.
+    :param relative_move: The move which the function is trying to predict z for.
+        Here, this is inputted with units of pixels.
     :param stage: A direct_thing_client dependency for the the microscope stage.
     :param csm: A direct_thing_client dependency for camera stage mapping.
     :return: A number of pixels the stage needs to move in z.
@@ -89,7 +94,6 @@ def _predict_z(
 
     return z_dest - stage.position["z"]
 
-
 def _move_and_measure(
     step_size: dict[str, float],
     axis: Literal["x", "y"],
@@ -102,14 +106,14 @@ def _move_and_measure(
 ) -> tuple[npt.ArrayLike, str]:
     """Move the stage and measure the offset between the two positions.
 
-    :params step_size: A dictionary with keys 'x' and 'y' with pixel distances.
-    :params axis: The axis in which the stage is moving. This must be 'x' or 'y'.
-    :params data: The object used to track stage coordinates, correlation and delta.
-    :params image1: An image taken before moving to be correlated with image2.
-    :params autofocus_proc: If true, looping.autofocus will be used after the stage moves.
+    :param step_size: A dictionary with keys 'x' and 'y' with pixel distances.
+    :param axis: The axis in which the stage is moving. This must be 'x' or 'y'.
+    :param data: The object used to track stage coordinates, correlation and delta.
+    :param image1: An image taken before moving to be correlated with image2.
+    :param autofocus_proc: If true, looping.autofocus will be used after the stage moves.
     :param csm: A direct_thing_client dependency for camera stage mapping.
     :param autofocus: A direct_thing_client dependency for autofocus.
-    :param camera: A raw_thing_client depeendency for the camera.
+    :param cam: A raw_thing_client depeendency for the camera.
     :return: All required data for the next move. This includes the updated delta value and offset.
     Also returns what wrong_axis is i.e. if the direction is 'x', wrong_axis = 'y'.
     """
@@ -124,12 +128,9 @@ def _move_and_measure(
     image2 = cv2.resize(
         np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
     )
-    offset = [
-        x * 1
-        for x in fft_image_tracking.displacement_between_images(
+    offset = fft_image_tracking.displacement_between_images(
             image_0=image1, image_1=image2, sigma=10, fractional_threshold=0.1, pad=True
-        )
-    ]  # Units is pixels
+        ) # Units is pixels
     data.delta["x"] = int(offset[1])
     data.delta["y"] = int(offset[0])
 
@@ -202,13 +203,19 @@ def _check_stage_operation(
 ) -> None:
     """Carries out 3 small moves in a given direction and axis.
 
+    Each position after the first is correlated with the previous position
+    to check the stage has moved as far as it should. If the correlation is
+    less than expected, 3 attempts are made to refocus the image to ensure that
+    image quality is not causing the correlation to be unsuccessful. If the correlation
+    is still too low then the edge is found.
+
     :params small_step: The integer value used to generate the small step sizes.
     :params stream_resolution: The resolution of the stream from the camera.
     :param direction: The direction the stage moves.
     :params axis: The axis which is being measured. This must be 'x' or 'y'.
     :params data: The object used to track stage coordinates, correlation and delta.
     :params minimum_offset_small: A dictionary containing the minimum values for
-    a successful correlation.
+        a successful correlation.
     :param csm: A direct_thing_client dependency for camera stage mapping.
     :param camera: A raw_thing_client depeendency for the camera.
     :param stage: A raw_thing_client depeendency for the microscope stage.
@@ -247,16 +254,14 @@ def _check_stage_operation(
                 np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
             )
             failure_count += 1
-            offset = [
-                x * 1
-                for x in fft_image_tracking.displacement_between_images(
+            offset = fft_image_tracking.displacement_between_images(
                     image_0=image1,
                     image_1=image2,
                     sigma=10,
                     fractional_threshold=0.1,
                     pad=True,
                 )
-            ]  # Units is pixels
+             # Units is pixels
             data.delta["x"] = int(offset[1])
             data.delta["y"] = int(offset[0])
             logger.info(
@@ -296,18 +301,9 @@ def _motion_detection(
     :param camera: A raw_thing_client depeendency for the camera.
     :return: The stage coordinates where motion was detected.
     """
-    displacements = [
-        1,
-        2,
-        4,
-        8,
-        16,
-        32,
-        64,
-        128,
-        256,
-        512,
-    ]  # Array of increasing pixel sizes
+    # Array of increasing pixel sizes (powers of 2 from 1 to 512)
+    displacements = [2**i for i in range(10)]
+
     motion_minimum = 20  # minimum number of pixels for motion to be detected
 
     this_motion_step = {"x": 0, "y": 0}
@@ -324,16 +320,13 @@ def _motion_detection(
         image2 = cv2.resize(
             np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
         )
-        offset = [
-            x * 1
-            for x in fft_image_tracking.displacement_between_images(
+        offset = fft_image_tracking.displacement_between_images(
                 image_0=image1,
                 image_1=image2,
                 sigma=10,
                 fractional_threshold=0.1,
                 pad=True,
             )
-        ]
         delta["x"] = int(offset[1])
         delta["y"] = int(offset[0])
         logger.info(f"Offset measured as {np.abs(delta[axis])}")
@@ -388,8 +381,8 @@ class RangeofMotionThing(lt.Thing):
         :param cam: A raw_thing_client depeendency for the camera.
         :param csm: A raw_thing_client depeendency for camera stage mapping.
         :param logger: A raw_thing_client depeendency for the logger.
-        :params axis: The axis which is being measured. This must be 'x' or 'y'.
-        :params direction: The direction which is being measured. This must be 1 or -1.
+        :param axis: The axis which is being measured. This must be 'x' or 'y'.
+        :param direction: The direction which is being measured. This must be 1 or -1.
         :return: Results dictionary containing stage positions,
         correlations and the final position.
         """
