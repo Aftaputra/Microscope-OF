@@ -1,7 +1,7 @@
 """Communicate with OpenFlexure Stitching to perform stitches for scans.
 
 This includes both live stitching and final stitching. This is done via subprocess
-to call openflexure-stitching over CLI. This cannot be done via Threading dut to the
+to call openflexure-stitching over CLI. This cannot be done via Threading due to the
 CPU intensity of stitching causing scanning problems due to the Python Global
 Interpreter Lock (GIL). May be possible to shift to multiprocessing int the future.
 """
