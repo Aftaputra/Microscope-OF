@@ -74,7 +74,7 @@ def test_client_connection() -> None:
     cam_client = lt.ThingClient.from_url("http://localhost:5000/camera/")
     img = Image.open(cam_client.grab_jpeg().open())
     print(f"Successfully grabbed image of size {img.size}")
-    assert img.size == (800, 600)
+    assert img.size == (820, 616)
     print("Successfully grabbed image from camera mjpeg stream")
 
 

@@ -16,6 +16,7 @@ import time
 
 import cv2
 import numpy as np
+from PIL import Image
 import piexif
 from scipy.ndimage import gaussian_filter
 
@@ -51,7 +52,7 @@ class SimulatedCamera(BaseCamera):
 
     def __init__(
         self,
-        shape: tuple[int, int, int] = (600, 800, 3),
+        shape: tuple[int, int, int] = (616, 820, 3),
         glyph_shape: tuple[int, int, int] = (91, 91, 3),
         canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
         frame_interval: float = 0.1,
@@ -208,9 +209,7 @@ class SimulatedCamera(BaseCamera):
 
     def __enter__(self):
         """Start the capture thread when the Thing context manager is opened."""
-        self._capture_enabled = True
-        self._capture_thread = Thread(target=self._capture_frames)
-        self._capture_thread.start()
+        self.start_streaming()
         return self
 
     def __exit__(self, _exc_type, _exc_value, _traceback):
@@ -218,6 +217,29 @@ class SimulatedCamera(BaseCamera):
         if self.stream_active:
             self._capture_enabled = False
             self._capture_thread.join()
+
+    @lt.thing_action
+    def start_streaming(
+        self, main_resolution: tuple[int, int] = (820, 616), buffer_count: int = 1
+    ) -> None:
+        """Start the live stream.
+
+        The start_streaming method is used a camera ``Thing`` to begin streaming
+        images or to adjust the stream resolution if streaming is already active.
+
+        The simulation camera does not currently support the resolution argument.
+        It will always issue a warning that the resolution is not respected.
+        If called while already streaming, the warning will be emitted and no other
+        action will be taken.
+        """
+        logging.warning(
+            f"Simulation camera doesn't respect {main_resolution=} or {buffer_count=} "
+            "arguments."
+        )
+        if not self.stream_active:
+            self._capture_enabled = True
+            self._capture_thread = Thread(target=self._capture_frames)
+            self._capture_thread.start()
 
     @lt.thing_property
     def stream_active(self) -> bool:
@@ -236,9 +258,11 @@ class SimulatedCamera(BaseCamera):
                 frame = self.generate_frame()
                 jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
                 self.mjpeg_stream.add_frame(jpeg, portal)
-                jpeg_lores = cv2.imencode(".jpg", cv2.resize(frame, (320, 240)))[
-                    1
-                ].tobytes()
+                # Downsample for lores
+                ds_frame = cv2.resize(
+                    frame, (320, 240), interpolation=cv2.INTER_NEAREST
+                )
+                jpeg_lores = cv2.imencode(".jpg", ds_frame)[1].tobytes()
                 self.lores_mjpeg_stream.add_frame(jpeg_lores, portal)
             except Exception as e:
                 logging.error(f"Failed to capture frame: {e}, retrying...")
@@ -261,7 +285,7 @@ class SimulatedCamera(BaseCamera):
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
         """
-        logging.warning(f"Simulation camera doesn't respect {resolution} setting")
+        logging.warning(f"Simulation camera doesn't respect {resolution=} setting")
         return self.generate_frame()
 
     @lt.thing_action
@@ -274,7 +298,7 @@ class SimulatedCamera(BaseCamera):
 
         This function will produce a JPEG image.
         """
-        logging.warning(f"Simulation camera doesn't respect {resolution} setting")
+        logging.warning(f"Simulation camera doesn't respect {resolution=} setting")
         frame = self.capture_array()
         jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
         exif_dict = {
@@ -291,6 +315,20 @@ class SimulatedCamera(BaseCamera):
         output = io.BytesIO()
         piexif.insert(piexif.dump(exif_dict), jpeg, output)
         return JPEGBlob.from_bytes(output.getvalue())
+
+    def capture_image(
+        self,
+        stream_name: Literal["main", "lores", "raw"],
+        wait: Optional[float] = None,
+    ) -> Image:
+        """Capture to a PIL image. This is not exposed as a ThingAction.
+
+        It is used for capture to memory.
+        """
+        logging.warning(
+            f"Simulation camera doesn't respect {stream_name=} or {wait=} arguments."
+        )
+        return Image.fromarray(self.generate_frame())
 
     @lt.thing_action
     def remove_sample(self):
