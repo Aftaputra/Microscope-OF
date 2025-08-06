@@ -535,18 +535,20 @@ class RangeofMotionThing(lt.Thing):
                 direction=axis_dir[1],
             )
             # Save results from single axis and direction
-            rom_results[f"{axis_dir}"] = axis_dir_results
+            rom_results[f"{'positive' if axis_dir[1] == 1 else 'negative'} {axis_dir[0]}"] = (
+                axis_dir_results
+            )
 
         end_time = time.time()
         total_time = (end_time - start_time) / 60
 
         x_range = abs(
-            rom_results["['x', 1]"]["final_position"]["x"]
-            - rom_results["['x', -1]"]["final_position"]["x"]
+            rom_results["positive x"]["final_position"]["x"]
+            - rom_results["negative x"]["final_position"]["x"]
         )
         y_range = abs(
-            rom_results["['y', 1]"]["final_position"]["y"]
-            - rom_results["['y', -1]"]["final_position"]["y"]
+            rom_results["positive y"]["final_position"]["y"]
+            - rom_results["negative y"]["final_position"]["y"]
         )
         step_range = [x_range, y_range]
         logger.info(f"Range of motion is {x_range} X {y_range} steps")
