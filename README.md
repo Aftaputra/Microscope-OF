@@ -27,6 +27,8 @@ More information is also available in the [handbook](https://gitlab.com/openflex
 
 The Python package provides a command `ofm-microscope-server` that runs the server. This is what is used by `systemd` to run the service. You will need to provide some command-line arguments, see the output of `--help` for an up to date list. See `/etc/systemd/system/openflexure-microscope-server.service` for the command line used to run the server by default on the  Raspberry Pi. In general, you are likely to want to specify a configuration file with `-c`, a host (`--host 0.0.0.0` to serve on all addresses) and a port (`--port 5000`). The `--fallback` option will allow the server to start *even if the hardware specified in the configuration file can't load*. This serves an error page, rather than have the server fail. In the future, it should redirect users to a way to fix their configuration.
 
+It is also possible to run the server in simulation mode. See Developer guidelines below.
+
 ## Settings
 
 The microscope is initially configured by a LabThings config file. This specifies two important things:
@@ -40,9 +42,34 @@ The settings folder is, by default, `/var/openflexure/settings/` on the SD card,
 
 # Developer guidelines
 
-## Developing on a Raspberry Pi
+## Installation and set up
 
-The easiest way to work on the software is to build an OpenFlexure Microscope around a Raspberry Pi, using our custom disk image.  This includes a pre-installed copy of this server, and a pre-built copy of the web application, so it's ready to use.  You can also develop directly on the Raspberry Pi, and this is the best way to test out changes to the Python code using actual hardware.  
+To set up a development environment you will need Python 3.11 and the static files for the web application.
+
+### Installation and set up on a Raspberry Pi
+
+The OpenFlexure Raspberry Pi OS image comes with Python 3.11 already installed. We do not recommend trying to develop on the standard Raspberry Pi OS image.
+
+
+* To activate the microscope virtual environment run `ofm activate`
+* Navigate to the Openflexure repository with `cd /var/openflexure/application/openflexure-microscope-server`
+
+The Pi should already come with the static files for the web application.
+
+### Installation and set up on other platforms
+
+You should install Python 3.11. If you have a different version of python we recommend using [UV](https://docs.astral.sh/uv/) to set up a Python 3.11 virtual environment.
+
+* Clone the source code: `git clone https://gitlab.com/openflexure/openflexure-microscope-server.git`
+* Enter the directory `cd openflexure-microscope-server`
+* Create the virtual environment, for example with `uv venv --python 3.11`
+* Activate your virtual environment with `source .venv/bin/activate` (on Linux) or `.venv\Scripts\activate.bat` (on Windows)
+* Install the application `uv pip install -e .[dev]` (or `pip install -e .[dev]` if you are not using UV)
+* Run `python pull_webapp.py` to get the latest static files for the web application.
+
+## Running the server
+
+### Running the server on a Raspberry Pi
 
 You can manage the server with the `ofm` command, using `ofm start`, `ofm stop`, and `ofm restart` to do the respective actions. Often, stopping the server and running it manually will make errors easier to spot. To do this, run:
 ```
@@ -52,58 +79,34 @@ cd /var/openflexure
 sudo -u openflexure-ws openflexure-microscope-server --fallback -c microscope_configuration.json --host 0.0.0.0 --port 5000
 ```
 
-Our favourite way of working with the server on a Pi is to follow the instructions above, then open a VSCode Remote session from another computer.  This allows you to use your usual developer environment to write code, but everything runs on the Raspberry Pi with real hardware.  Note that the repository is cloned by default over `https`, so you will probably need to change the "remote" URL to your fork of the repository, or to SSH, before you're able to push changes.
+### Running the simulation server on other platforms
 
-### Updating just the web app
+To start the simulation server:
 
-Installing and running node.js on a Raspberry Pi is slow and often frustrating.  Our preference is to do node.js development on another computer, and connect either to a dummy server on that computer, or to a real microscope elsewhere on the network.  If you only want to work on the Python code, it's possible to download a pre-built web application and use it with your modified Python code.  To do this, locate the archive of the web application, and then run:
-```
-cd /var/openflexure/
-sudo chown -R openflexure-ws.openflexure-ws .
-sudo chmod -R g+w .
-cd application/openflexure-microscope-server/
-sudo rm -rf openflexure_microscope/api/static/dist/
-curl <tarball URL> | tar -xz
-```
-NB the `sudo chown` and `sudo chmod` lines are probably unnecessary, but depending on the state of your system they may fix annoying permissions issues.
+* Activate the virtual environment that was set up during installation
+* Run:
 
-To find the `<tarball URL>` you should look for `openflexure-microscope-webapp-<version>.tar.gz` on the [build server](https://build.openflexure.org/openflexure-microscope-server/), or open the `package` job of a CI pipeline on this repository, and locate it by browsing the artifacts.  That should work for any merge request that's currently open.
-
-## Installation on other platforms
-
-The Raspberry Pi image we use currently ships with Python 3.7.3. For local development on a different platform, please use PyEnv or similar to make sure you're running on this version. For example, Windows users can use [Scoop](https://scoop.sh/) to install specific Python versions.  This repository contains two closely related parts; a web server written in Python, that handles hardware control, and a web application using Vue.js that provides a graphical control interface.  It is possible to work on either of these in isolation, but bear in mind that if you only set up Python development, you will need to host the web application elsewhere.
-
-Most of our core team don't run the Javascript development on the Raspberry Pi, as npm can be quite slow to build the application.  Instead, we set up the Python part of the project on a Raspberry Pi, and run the Javascript part on your development machine.  You can then connect to the web application served from your local machine, and enter the address of the Raspberry Pi when the interface first loads.
-
-To set up a development version of the software (most likely using emulated camera and stage if you're not running on a Raspberry Pi):
-
-### Clone the repository
-* `git clone https://gitlab.com/openflexure/openflexure-microscope-server.git`
-* `cd openflexure-microscope-server`
-
-### Set up the Python environment and run a test server
-* (Optional) Set local Python version to 3.11
-* Create a virtual environment and activate it:
-  * `python -m venv .venv`
-  * `source .venv/bin/activate` (on Linux) or `.venv/Scripts/activate` (on Windows)
-  * `pip install -e .[dev]` (This will install development dependencies.  If you don't need these, there is probably a simpler way to run the server than cloning this repo.)
-* Finally, run the server: currently you can do this with `sudo systemctl start openflexure-microscope-server` if it's pre-installed on a Raspberry Pi, or `openflexure-microscope-server -c ofm_config_stub.json` to run locally.
-
-### Run the server manually on a Raspberry Pi
-```
-cd /var/openflexure
-sudo -u openflexure-ws PATH="/var/openflexure/application/openflexure-microscope-server/.venv/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin" /var/openflexure/application/openflexure-microscope-server/.venv/bin/openflexure-microscope-serve -c /var/openflexure/settings/ofm_config.json --host 0.0.0.0 --port 5000
-```
+    openflexure-microscope-server --fallback -c ./ofm_config_simulation.json
 
 
-### Set up the Javascript environment and build
+## General development overview
 
-The Labthings-FastAPI server, written in Python, serves a web application written in `Vue.js` (Vue2).  This is distributed with the SD card image for the microscope.
+Please first read our **[project contributions guide](./CONTRIBUTING.md)**
 
-For more details on the web app see the ReadMe in the [webapp](./webapp) directory.
+* We recommend all development is done on a branch.
+* If you are editing the web app, please see our see the README in the [webapp](./webapp) directory.
+* If you want to try a branch with webapp changes (that are already pushed to GitLab), but don't want to compile the javascript, then run `python pull_webapp.py -b <branch_name>` to get the artifacts from the GitLab CI.
+
+**For development on a Raspberry Pi** we recommend VSCode Remote session from another computer.  This allows you to use your usual developer environment to write code, but everything runs on the Raspberry Pi with real hardware.  Note that the repository is cloned by default over `https`, so you will probably need to change the "remote" URL to your fork of the repository, or to SSH, before you're able to push changes.
+
+### Adding functionality
+
+The microscope comprises a number of `Thing` instances, which provide actions and properties to implement hardware control and software features. These may be imported from any Python module, using `ofm_config.json`. See the LabThings-FastAPI documentation for how to create a `Thing`. 
+
+Currently, the camera and stage classes are provided by external libraries, `labthings-picamera2` and `labthings-sangaboard`. Replacing these is the easiest way to use alternative hardware: interfaces are defined in `openflexure_microscope_server.things.camera` and `openflexure_microscope_server.things.stage` respectively.
 
 
-## Python: Formatting, linting, and tests
+### Python: Formatting, linting, and tests
 
 All of the commands below assume that you are running in the OFM virtual environment, i.e. you have run `ofm activate` on an OpenFlexure SD card, or `source .venv/bin/activate` on Linux, or `.venv/Scripts/activate`on Windows.
 
@@ -118,18 +121,17 @@ All of the commands below assume that you are running in the OFM virtual environ
 **Before merging** please auto-format your code and also run the quality checks (linting, static analysis, and unit tests)
 
 * All commands above
-* `mypy src` (currently fails)
 * `pytest`
 
-For more details on out Python conventions please see the **[project contributions guide](./CONTRIBUTING.md)**.
-
-### Details
 
 We use several code analysis and formatting libraries in this project. Our CI will check each of these automatically, so ensuring they pass locally will save you time. Currently `ruff` is used for linting/formatting and `pytest` for unit tests. `mypy` will be enabled once the codebase is ready.
 
-## Python environment, build, and dependencies
+### Python environment, build, and dependencies
 
 As of `v3` we specify dependencies in `pyproject.toml`. These are not currently frozen due to difficulties matching versions on different platforms. On Raspberry Pi, it's best to specify `--only-binary=:all:` to ensure libraries like `numpy` and `scipy` are not compiled from source (which takes many hours, and/or fails). Pinning dependencies with `requirements.txt` and/or `requirements.in` may happen in the future.
+
+
+# Notes for Maintainers
 
 ## Creating releases
 
@@ -146,9 +148,3 @@ As of `v3` we specify dependencies in `pyproject.toml`. These are not currently 
 
 * `npm install -g conventional-changelog-cli`
 * `npx conventional-changelog -r 1 --config ./changelog.config.js -i CHANGELOG.md -s`
-
-## Adding functionality
-
-The microscope comprises a number of `Thing` instances, which provide actions and properties to implement hardware control and software features. These may be imported from any Python module, using `ofm_config.json`. See the LabThings-FastAPI documentation for how to create a `Thing`. 
-
-Currently, the camera and stage classes are provided by external libraries, `labthings-picamera2` and `labthings-sangaboard`. Replacing these is the easiest way to use alternative hardware: interfaces are defined in `openflexure_microscope_server.things.camera` and `openflexure_microscope_server.things.stage` respectively.

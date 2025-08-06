@@ -45,6 +45,7 @@ dev = [
   "hypothesis",
   "pydoctor~=25.4",
   "codespell~=2.4",
+  "python-gitlab~=6.2"
 ]
 pi = [
   "picamera2~=0.3.27",
