@@ -44,7 +44,12 @@ def validate_command(cmd: list[str]):
 
 
 class BaseStitcher:
-    """A base stitching class for all stitchers. Don't initialise this directly."""
+    """A base stitching class for all stitchers. Don't initialise this directly.
+
+    The base class has no way to run the command. Child classes should either implement
+    a ``start``, ``running``, and ``wait`` methods if they stitch in a thread, or ``run``
+    if they stitch in this thread and return once complete.
+    """
 
     def __init__(self, images_dir: str, *, overlap: float, correlation_resize: float):
         """Initialise a stitcher.
@@ -103,15 +108,6 @@ class BaseStitcher:
             raise StitcherValidationError(
                 "Invalid directory path: Contains unsafe characters."
             )
-
-    def start(self) -> None:
-        """Start stitching a stitching process.
-
-        This should be overridden by any child class.
-        """
-        raise NotImplementedError(
-            "Child stitchers should implement their own ``start`` method."
-        )
 
 
 class PreviewStitcher(BaseStitcher):
@@ -262,7 +258,7 @@ class FinalStitcher(BaseStitcher):
                 )
         return overlap, correlation_resize
 
-    def start(
+    def run(
         self,
         cancel: lt.deps.CancelHook,
     ) -> None:

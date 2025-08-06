@@ -715,7 +715,7 @@ class SmartScanThing(lt.Thing):
         )
         try:
             # start the final stitch, providing the cancel hook to allow aborting
-            final_stitcher.start(cancel)
+            final_stitcher.run(cancel)
         except lt.exceptions.InvocationCancelledError:
             # Sleep for 1 second just to allow invocation logs to pass to user.
             time.sleep(1)

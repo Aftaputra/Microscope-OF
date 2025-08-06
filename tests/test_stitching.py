@@ -54,9 +54,6 @@ def test_base_stitcher():
         ]
         stitcher = BaseStitcher(FAKE_DIR, overlap=overlap, correlation_resize=0.5)
         assert stitcher.command == expected_command
-        # check that a BaseStitcher can't start
-        with pytest.raises(NotImplementedError):
-            stitcher.start()
 
 
 def test_preview_stitcher_command():
@@ -227,7 +224,7 @@ def test_final_stitching_command(caplog, mocker):
             FAKE_DIR, logger=LOGGER, overlap=0.1, correlation_resize=0.5
         )
         # For the final stitcher it will always complete before returning.
-        stitcher.start(cancel=lt.deps.CancelHook(id=uuid.uuid4()))
+        stitcher.run(cancel=lt.deps.CancelHook(id=uuid.uuid4()))
         # The mock command logs the inputs (but not the initial command) and the
         # stitcher logs # "Stitching complete" when it ends.
         assert len(caplog.records) == len(FINAL_EXPECTED_COMMAND)
@@ -250,7 +247,7 @@ def test_final_stitching_command_cancelled(caplog, mocker):
         cancel_hook = lt.deps.CancelHook(id=uuid.uuid4())
 
         # Start stitching in a thread.
-        thread = threading.Thread(target=stitcher.start, kwargs={"cancel": cancel_hook})
+        thread = threading.Thread(target=stitcher.run, kwargs={"cancel": cancel_hook})
         thread.start()
         # Sleep long enough for at least 1 log.
         sleep(0.5)
@@ -273,4 +270,4 @@ def test_final_stitching_command_error(caplog, mocker):
         # than echo.
         stitcher._extra_args = ["ERROR"]
         with pytest.raises(ChildProcessError):
-            stitcher.start(cancel=lt.deps.CancelHook(id=uuid.uuid4()))
+            stitcher.run(cancel=lt.deps.CancelHook(id=uuid.uuid4()))
