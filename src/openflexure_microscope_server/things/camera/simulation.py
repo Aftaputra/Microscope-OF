@@ -224,8 +224,13 @@ class SimulatedCamera(BaseCamera):
     ) -> None:
         """Start the live stream.
 
-        This should be used to adjust the resolution the simulation doesn't yet do
-        this.
+        The start_streaming method is used a camera ``Thing`` to begin streaming
+        images or to adjust the stream resolution if streaming is already active.
+
+        The simulation camera does not currently support the resolution argument.
+        It will always issue a warning that the resolution is not respected.
+        If called while already streaming, the warning will be emitted and no other
+        action will be taken.
         """
         logging.warning(
             f"Simulation camera doesn't respect {main_resolution=} or {buffer_count=} "
