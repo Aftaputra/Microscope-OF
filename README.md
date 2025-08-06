@@ -54,7 +54,7 @@ Python 3.11 should come with the OpenFlexure Raspberry Pi OS image. We do not re
 * To activate the microscope virtual environment run `ofm activate`
 * Navigate to the Openflexure repository with `cd /var/openflexure/application/openflexure-microscope-server`
 
-The Pi should aready come with the static files for the web application.
+The Pi should already come with the static files for the web application.
 
 ### Installation and set up on other platforms
 
@@ -95,7 +95,7 @@ Please first read our **[project contributions guide](./CONTRIBUTING.md)**
 
 * We recommend all development is done on a branch.
 * If you are editing the web app please see our see the README in the [webapp](./webapp) directory.
-* If you want to try a branch that with webapp changes and don't want to copile the javascript run `python pull_webapp.py -b <branch_name>` to get the artifacts from the GitLab CI.
+* If you want to try a branch that with webapp changes and don't want to compile the javascript run `python pull_webapp.py -b <branch_name>` to get the artifacts from the GitLab CI.
 
 **For development on a Raspberry Pi** we recommend VSCode Remote session from another computer.  This allows you to use your usual developer environment to write code, but everything runs on the Raspberry Pi with real hardware.  Note that the repository is cloned by default over `https`, so you will probably need to change the "remote" URL to your fork of the repository, or to SSH, before you're able to push changes.
 
