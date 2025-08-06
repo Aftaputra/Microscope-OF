@@ -14,7 +14,6 @@ this is 10% of the expected motion is the measured axis.
 """
 
 import numpy as np
-import cv2
 from typing import Literal
 from PIL import Image
 import time
@@ -94,6 +93,7 @@ def _predict_z(
 
     return z_dest - stage.position["z"]
 
+
 def _move_and_measure(
     step_size: dict[str, float],
     axis: Literal["x", "y"],
@@ -127,8 +127,8 @@ def _move_and_measure(
         autofocus.looping_autofocus(dz=800)
     image2 = np.array(Image.open(cam.grab_jpeg().open()))
     offset = fft_image_tracking.displacement_between_images(
-            image_0=image1, image_1=image2, sigma=10, fractional_threshold=0.1, pad=True
-        ) # Units is pixels
+        image_0=image1, image_1=image2, sigma=10, fractional_threshold=0.1, pad=True
+    )  # Units is pixels
     data.delta["x"] = int(offset[1])
     data.delta["y"] = int(offset[0])
 
@@ -164,7 +164,7 @@ def _acquire_z_predict_points(
         medium_step, stream_resolution, direction, factor=0.1
     )
     for _loop in range(5):
-        image1 =  np.array(Image.open(cam.grab_jpeg().open()))
+        image1 = np.array(Image.open(cam.grab_jpeg().open()))
         offset, wrong_axis = _move_and_measure(
             step_size=_generate_move_dicts(medium_step, stream_resolution, direction),
             axis=axis,
@@ -175,6 +175,7 @@ def _acquire_z_predict_points(
             autofocus=autofocus,
             cam=cam,
         )
+
         logger.info(f"Offset measured as {data.delta[axis]}")
 
         data.measure(stage.position, offset)
@@ -247,13 +248,13 @@ def _check_stage_operation(
             image2 = np.array(Image.open(cam.grab_jpeg().open()))
             failure_count += 1
             offset = fft_image_tracking.displacement_between_images(
-                    image_0=image1,
-                    image_1=image2,
-                    sigma=10,
-                    fractional_threshold=0.1,
-                    pad=True,
-                )
-             # Units is pixels
+                image_0=image1,
+                image_1=image2,
+                sigma=10,
+                fractional_threshold=0.1,
+                pad=True,
+            )
+            # Units is pixels
             data.delta["x"] = int(offset[1])
             data.delta["y"] = int(offset[0])
             logger.info(
@@ -282,7 +283,7 @@ def _motion_detection(
     stage: StageDep,
     cam: CamDep,
     logger: lt.deps.InvocationLogger,
-) -> dict:
+) -> dict[str, int]:
     """Move the stage until motion is detected along a specified axis and direction.
 
     :params axis: The axis in which the stage is moving. This must be 'x' or 'y'.
@@ -309,12 +310,12 @@ def _motion_detection(
         csm.move_in_image_coordinates(x=this_motion_step["x"], y=this_motion_step["y"])
         image2 = np.array(Image.open(cam.grab_jpeg().open()))
         offset = fft_image_tracking.displacement_between_images(
-                image_0=image1,
-                image_1=image2,
-                sigma=10,
-                fractional_threshold=0.1,
-                pad=True,
-            )
+            image_0=image1,
+            image_1=image2,
+            sigma=10,
+            fractional_threshold=0.1,
+            pad=True,
+        )
         delta["x"] = int(offset[1])
         delta["y"] = int(offset[0])
         logger.info(f"Offset measured as {np.abs(delta[axis])}")
@@ -523,9 +524,9 @@ class RangeofMotionThing(lt.Thing):
                 direction=axis_dir[1],
             )
             # Save results from single axis and direction
-            rom_results[f"{'positive' if axis_dir[1] == 1 else 'negative'} {axis_dir[0]}"] = (
-                axis_dir_results
-            )
+            rom_results[
+                f"{'positive' if axis_dir[1] == 1 else 'negative'} {axis_dir[0]}"
+            ] = axis_dir_results
 
         end_time = time.time()
         total_time = (end_time - start_time) / 60
