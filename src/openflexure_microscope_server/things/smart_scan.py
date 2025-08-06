@@ -130,7 +130,9 @@ class SmartScanThing(lt.Thing):
         self._stage = stage
         self._cam = cam
         self._csm = csm
-        # Confirm scan data is None as start of scan.
+        # `scan_data` should already be None. This is added as a precaution as
+        # the presence of `scan_data` is used during error handling to
+        # determine whether the scan started.
         self._scan_data = None
         try:
             self._check_background_and_csm_set()
