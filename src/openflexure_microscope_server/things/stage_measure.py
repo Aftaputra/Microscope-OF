@@ -125,9 +125,7 @@ def _move_and_measure(
         wrong_axis = "x"
     if autofocus_proc:
         autofocus.looping_autofocus(dz=800)
-    image2 = cv2.resize(
-        np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
-    )
+    image2 = np.array(Image.open(cam.grab_jpeg().open()))
     offset = fft_image_tracking.displacement_between_images(
             image_0=image1, image_1=image2, sigma=10, fractional_threshold=0.1, pad=True
         ) # Units is pixels
@@ -166,9 +164,7 @@ def _acquire_z_predict_points(
         medium_step, stream_resolution, direction, factor=0.1
     )
     for _loop in range(5):
-        image1 = cv2.resize(
-            np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
-        )  # Captures image with option to resize
+        image1 =  np.array(Image.open(cam.grab_jpeg().open()))
         offset, wrong_axis = _move_and_measure(
             step_size=_generate_move_dicts(medium_step, stream_resolution, direction),
             axis=axis,
@@ -226,9 +222,7 @@ def _check_stage_operation(
     failure_count = 0
 
     for _loop in range(3):
-        image1 = cv2.resize(
-            np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
-        )
+        image1 = np.array(Image.open(cam.grab_jpeg().open()))
         offset, wrong_axis = _move_and_measure(
             step_size=_generate_move_dicts(small_step, stream_resolution, direction),
             axis=axis,
@@ -250,9 +244,7 @@ def _check_stage_operation(
                 f"Correlation failed. Refocusing to check. Attempt {failure_count + 1}/3"
             )
             autofocus.looping_autofocus(dz=1000)
-            image2 = cv2.resize(
-                np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
-            )
+            image2 = np.array(Image.open(cam.grab_jpeg().open()))
             failure_count += 1
             offset = fft_image_tracking.displacement_between_images(
                     image_0=image1,
@@ -313,13 +305,9 @@ def _motion_detection(
     for loop in range(np.shape(displacements)[0]):
         this_motion_step[axis] = displacements[loop] * direction * -1
         logger.info(f"Testing with step size {this_motion_step[axis]}")
-        image1 = cv2.resize(
-            np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
-        )
+        image1 = np.array(Image.open(cam.grab_jpeg().open()))
         csm.move_in_image_coordinates(x=this_motion_step["x"], y=this_motion_step["y"])
-        image2 = cv2.resize(
-            np.array(Image.open(cam.grab_jpeg().open())), dsize=(0, 0), fx=1, fy=1
-        )
+        image2 = np.array(Image.open(cam.grab_jpeg().open()))
         offset = fft_image_tracking.displacement_between_images(
                 image_0=image1,
                 image_1=image2,
