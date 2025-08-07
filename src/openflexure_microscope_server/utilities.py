@@ -3,6 +3,7 @@
 from typing import TypeVar, Callable, ParamSpec
 import os
 import re
+import sys
 from threading import Thread
 import logging
 from importlib.metadata import version
@@ -124,6 +125,50 @@ def _wrap_and_catch_errors(target, error_buffer, *args, **kwargs):
         target(*args, **kwargs)
     except BaseException as e:
         error_buffer.append(e)
+
+
+# Compiled regular expressions for unsafe characters
+# Matches anything that isn't a-z, A-Z, 0-9, _, ., -, :, /, \
+_WINDOWS_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-:/\\]")
+# Matches anything that isn't a-z, A-Z, 0-9, _, ., -, \
+_POSIX_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-/]")
+# Matches anything that isn't a-z, A-Z, 0-9, _, ., -
+_NAME_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-]")
+
+
+def make_path_safe(unsafe_path_string: str) -> str:
+    """Replace unsafe characters in a file path with underscores, preserving separators.
+
+    This can be used to check that user inputs have not been concatenated into an
+    unsafe filepath.
+
+    This ensures compatibility across platforms by preserving only valid characters,
+    including path separators (forward slash on POSIX, and forward
+    slash/backslash/colon on Windows).
+
+    :param unsafe_path_string: The original path string to sanitise.
+
+    :returns: A version of the input string safe to use as a file path.
+    """
+    unsafe_character_pattern = (
+        _WINDOWS_UNSAFE_PATTERN
+        if sys.platform.startswith("win")
+        else _POSIX_UNSAFE_PATTERN
+    )
+    return unsafe_character_pattern.sub("_", unsafe_path_string)
+
+
+def make_name_safe(unsafe_name_string: str) -> str:
+    """Replace unsafe characters in a filename or identifier with underscores.
+
+    This excludes all path separators, ensuring the result is safe to use as a
+    standalone filename or identifier component.
+
+    :param unsafe_name_string: The original name string to sanitise.
+
+    :returns: A version of the input string safe to use as a file name or identifier.
+    """
+    return _NAME_UNSAFE_PATTERN.sub("_", unsafe_name_string)
 
 
 class VersionData(BaseModel):
