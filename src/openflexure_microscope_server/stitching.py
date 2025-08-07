@@ -24,8 +24,8 @@ DEFAULT_OVERLAP = 0.1
 DEFAULT_RESIZE = 0.5
 
 
-class SubprocessOOMKilledError(MemoryError):
-    """Exception called when stitch is killed by Linux out of memory."""
+class SigkillError(ChildProcessError):
+    """Exception called when stitch is killed by Sigkill."""
 
 
 class StitcherValidationError(RuntimeError):
@@ -295,8 +295,9 @@ class FinalStitcher(BaseStitcher):
         if process.poll() == 0:
             self.logger.info("Stitching complete")
         elif process.poll() == -9:
-            raise SubprocessOOMKilledError(
-                "Stitching was killed due to insufficient memory."
+            raise SigkillError(
+                "Stitching was killed by an external process. This is "
+                "most likely due to running out of memory."
             )
         else:
             raise ChildProcessError(
