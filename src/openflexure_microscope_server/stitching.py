@@ -47,7 +47,7 @@ class BaseStitcher:
     """A base stitching class for all stitchers. Don't initialise this directly.
 
     The base class has no way to run the command. Child classes should either implement
-    a ``start``, ``running``, and ``wait`` methods if return after starting the
+    ``start``, ``running``, and ``wait`` methods if return after starting the
     subprocess and can be polled or waited on like a thread; or ``run`` if the
     the function blocks while the stitching subprocess is ongoing and return once
     complete.
@@ -207,7 +207,7 @@ class FinalStitcher(BaseStitcher):
         self._mode = "all"
 
         tiff_arg = "--stitch_tiff" if stitch_tiff else "--no-stitch_tiff"
-        self._extra_args = ["--stitch-dzi", tiff_arg]
+        self._extra_args = ["--stitch_dzi", tiff_arg]
 
     def _process_inputs(
         self,

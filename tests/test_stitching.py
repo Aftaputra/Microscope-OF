@@ -76,7 +76,7 @@ FINAL_EXPECTED_COMMAND = [
     "openflexure-stitch",
     "--stitching_mode",
     "all",
-    "--stitch-dzi",
+    "--stitch_dzi",
     "--no-stitch_tiff",
     "--minimum_overlap",
     "0.09",
