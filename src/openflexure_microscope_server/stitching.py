@@ -24,6 +24,10 @@ DEFAULT_OVERLAP = 0.1
 DEFAULT_RESIZE = 0.5
 
 
+class SubprocessOOMKilledError(MemoryError):
+    """Exception called when stitch is killed by Linux out of memory."""
+
+
 class StitcherValidationError(RuntimeError):
     """The stitcher received values that it deems unsafe to create a command from."""
 
@@ -290,8 +294,14 @@ class FinalStitcher(BaseStitcher):
 
         if process.poll() == 0:
             self.logger.info("Stitching complete")
+        elif process.poll() == -9:
+            raise SubprocessOOMKilledError(
+                "Stitching was killed due to insufficient memory."
+            )
         else:
-            raise ChildProcessError(f"Subprocess {STITCHING_CMD} exited with an error.")
+            raise ChildProcessError(
+                f"Subprocess {STITCHING_CMD} errored with exit code {process.poll()}."
+            )
 
     def _log_ongoing(
         self,
