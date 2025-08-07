@@ -47,8 +47,10 @@ class BaseStitcher:
     """A base stitching class for all stitchers. Don't initialise this directly.
 
     The base class has no way to run the command. Child classes should either implement
-    a ``start``, ``running``, and ``wait`` methods if they stitch in a thread, or ``run``
-    if they stitch in this thread and return once complete.
+    a ``start``, ``running``, and ``wait`` methods if return after starting the
+    subprocess and can be polled or waited on like a thread; or ``run`` if the
+    the function blocks while the stitching subprocess is ongoing and return once
+    complete.
     """
 
     def __init__(self, images_dir: str, *, overlap: float, correlation_resize: float):
