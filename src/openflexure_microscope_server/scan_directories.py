@@ -43,7 +43,7 @@ class ScanData(BaseModel):
 
     This serialises into a human readable format where possible with
 
-    timestamps in %Y-%m-%s_%H:%M:%S format
+    timestamps in %Y-%m-%d_%H:%M:%S format
     timedeltas in %H:%M:%S format
 
     Properties that are not known until the end have ``None`` serialised as "Unknown"
@@ -154,9 +154,7 @@ class ScanData(BaseModel):
     @classmethod
     def parse_unknown_as_none(cls, value: Optional[str | int]) -> Optional[str | int]:
         """Validate the string "Unknown" as None."""
-        if value == "Unknown":
-            return None
-        return value
+        return None if value == "Unknown" else value
 
     @field_serializer("scan_result")
     def serialize_none_as_unknown(self, value: Optional[str | int]) -> str | int:
@@ -258,7 +256,7 @@ class ScanDirectoryManager:
     def get_scan_data_dict(self, scan_name: str) -> Optional[dict[str, Any]]:
         """Return the scan data read from a JSON file as a dict.
 
-        This is a dictionary not a base models as the data format has changed
+        This is a dictionary not a base model as the data format has changed
         somewhat over time.
         """
         json_fpath = self.get_scan_data_path(scan_name)

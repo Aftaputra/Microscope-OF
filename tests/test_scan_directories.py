@@ -309,6 +309,9 @@ def test_get_scan_data_path():
 
     # Remove the images directory.
     shutil.rmtree(scan_dir.images_dir)
+    # When the images directory is deleted, internally `scan_dir.images_dir`
+    # will return `None`. Check that `get_scan_data_path` copes with the `None`
+    # return from `scan_dir.images_dir`.
     assert scan_dir_manager.get_scan_data_path(scan_name) is None
 
 

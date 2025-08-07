@@ -63,7 +63,7 @@ def test_set_final_data():
 
     # Quickly take 123 images!
     scan_data.image_count += 123
-    # Should set duration based of finishing at datetime.now()
+    # Should set duration based on finishing at datetime.now()
     scan_data.set_final_data(result="Success")
     expected_duration = datetime.now() - MOCK_START_TIME
     expected_duration_s = expected_duration.total_seconds()
@@ -86,7 +86,7 @@ def test_custom_serialisation():
 
     scan_data.image_count += 123
     scan_data.set_final_data(result="Success")
-    # Can't mock datetime.now as datetime is immutable. So just replace duraction
+    # Can't mock datetime.now as datetime is immutable. So just replace duration
     scan_data.duration = MOCK_END_TIME - scan_data.start_time
     scan_data_dict = json.loads(scan_data.model_dump_json())
     assert scan_data_dict["image_count"] == 123

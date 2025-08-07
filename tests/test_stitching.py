@@ -169,7 +169,7 @@ def _validation_error_tester(scan_path, **kwargs):
 
 
 def test_validation_error():
-    """Test a number of way to try to inject malicious arguments into the stitcher.
+    """Test a number of ways to try to inject malicious arguments into the stitcher.
 
     The stitcher should throw a validation error each attempt.
     """

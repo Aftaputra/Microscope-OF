@@ -3,7 +3,7 @@
 This includes both live stitching and final stitching. This is done via subprocess
 to call openflexure-stitching over CLI. This cannot be done via Threading due to the
 CPU intensity of stitching causing scanning problems due to the Python Global
-Interpreter Lock (GIL). May be possible to shift to multiprocessing int the future.
+Interpreter Lock (GIL). May be possible to shift to multiprocessing in the future.
 """
 
 from typing import Optional, Any
@@ -99,7 +99,7 @@ class BaseStitcher:
         validate_command(full_cmd)
         return full_cmd
 
-    def validate_path(self):
+    def validate_path(self) -> None:
         """Check path is safe before making a command to run with subprocess.
 
         This is essential for stopping arbitrary code execution.
@@ -159,7 +159,7 @@ class PreviewStitcher(BaseStitcher):
                 return True
             return False
 
-    def wait(self):
+    def wait(self) -> None:
         """Wait for this preview stitch to return."""
         if self.running:
             with self._popen_lock:
@@ -167,7 +167,7 @@ class PreviewStitcher(BaseStitcher):
 
 
 class FinalStitcher(BaseStitcher):
-    """A class to handle the final stich for a scan."""
+    """A class to handle the final stitch for a scan."""
 
     def __init__(
         self,
