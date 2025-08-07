@@ -19,6 +19,7 @@ from openflexure_microscope_server.utilities import make_path_safe
 
 STITCHING_CMD = "openflexure-stitch"
 STITCHING_RESOLUTION = (820, 616)
+STITCH_TILE_SIZE = 4096
 
 DEFAULT_OVERLAP = 0.1
 DEFAULT_RESIZE = 0.5
@@ -207,7 +208,12 @@ class FinalStitcher(BaseStitcher):
         self._mode = "all"
 
         tiff_arg = "--stitch_tiff" if stitch_tiff else "--no-stitch_tiff"
-        self._extra_args = ["--stitch_dzi", tiff_arg]
+        self._extra_args = [
+            "--stitch_dzi",
+            tiff_arg,
+            "--tile_size",
+            str(STITCH_TILE_SIZE),
+        ]
 
     def _process_inputs(
         self,
