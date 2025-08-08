@@ -1,3 +1,80 @@
+# [v3.0.0-alpha2](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v3.0.0-alpha1...v3.0.0-alpha2) (2025-08-08)
+
+This is the second alpha release the v3 server, the main focus has been higher resolution scans with more reliable focus. There have been many other changes, some highlights are:
+
+* Capture in Scanning increased from 0.5MP to 2MP
+* Using updated stitching which is significantly faster.
+* Scanning uses a "smart stacking" that camptures images until it has found the sharpest one. Removing the need to perform autofocus, and improving the focus reliability.
+* Server version is saved into image metadata
+* Improvements to settings in LabThings-FastAPI so settings persist more reliably
+* Improvements to memory management, process, and directory management during scanning
+* UI improvements including:
+  * Direct download of stitched image
+  * Stitching can be cancelled from the UI
+  * Stitch all scans button in the UI to stitch any scans that are not already stitched
+  * The log display pauses autoscroll on mouse hover
+  * More consistent updating of scan tab
+  * Better description of server version information
+* Picamera and Sangaboard code are now directly in the repository, in heriting from BaseCamera and BaseStage class. Allowing core functionality to be added to BaseStage and Base Camera.
+* Other underlying changed that will make customisation easier in the future.
+* Significantly increase in code testing
+
+The following merge requests have been merged into v3:
+
+* !290 Enable more lint checkers
+* !288 Remove numerical input spinners for x,y,z settings in Firefox
+* !295 Update issue templates
+* !298 Git ignore openflexure/ dir
+* !297 Add a timeout when shutting down the server.
+* !300 Automatically create HTML coverage report each time PyTest runs
+* !302 Correct spelling of Sangaboard
+* !303 Remove the overwriting of internal globals, requires removing future annoations <!-- codespell:ignore annoations -->
+* !251 2MP from 8MP capturing
+* !271 A stack that tests whether the sharpest image is towards the middle
+* !294 Trying to make a distinction between file directory operations for scans and scanning code
+* !308 Replace semi colon with double ampersand in package.json
+* !305 Allow downloading just the stitched image, and don't zip DZIs
+* !309 Combine uniquness and length checks <!-- codespell:ignore uniquness -->
+* !310 Remove test Thing that is is never used.
+* !312 Allow stiching to be cancelled after a scan complete
+* !311 Move SangaboardThing into repo
+* !315 Fix artifact path in CI for webapp
+* !313 Remove out of date CaptureThing from Simulation and Stub config
+* !314 Remove old unmaintained components
+* !296 Update Thing Settings and import statments for LabThings-FastAPI 0.0.10 <!-- codespell:ignore statments -->
+* !319 Python integration tests
+* !316 Stop streams to ensure that server exits gracefully.
+* !320 Better docstrings
+* !322 Update README to point at CONTRIBUTING and make contributing link to site,...
+* !324 Fix example docstring example in CONTRIBUTING.md
+* !325 Test logging
+* !326 Add camera-stage-mapping compliant functions to BaseStage and BaseCamera.
+* !321 Update setting manager
+* !323 Merge settings and system control
+* !328 Update simulation canvas to have colour so it works with background detect.
+* !330 Stitch all scans button, and refresh scan tab when closing modals
+* !327 Refactor background detect to allow switching algorithms
+* !332 Make log display pause on hover
+* !333 Bump LabThings-Fastapi to 0.0.11
+* !336 Remove zenodo scripts and job
+* !334 Stop exposure walking on camera reload, reset CCM on full calibration
+* !339 Remove auto-recentre stage
+* !340 Remove class from action button
+* !337 Report Picamera tests in CI
+* !341 Prepend images with img_
+* !343 Update .coveragerc to get 2 decimal places for coverage
+* !331 Dynamic UI for camera and background detect settings
+* !345 Change "settings" to "configure" in background detect tab
+* !346 Make scan directory manager thread safe
+* !344 Scanning in simulation
+* !338 Fix movements axes
+* !347 Pull webapp
+* !342 Break up SmartScan further so it can be tested
+* !353 Speed up `tests/test_stage.py` significantly
+* !352 Update to stitching 0.2
+
+
+
 # [v3.0.0-alpha1](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.11.0...v3.0.0-alpha1) (2025-06-09)
 
 This is the first alpha release of an almost total overhaul of the server, and the underlying LabThings framework. Some highlights are:
