@@ -78,6 +78,8 @@ FINAL_EXPECTED_COMMAND = [
     "all",
     "--stitch_dzi",
     "--no-stitch_tiff",
+    "--tile_size",
+    "8192",
     "--minimum_overlap",
     "0.09",
     "--resize",
@@ -117,8 +119,8 @@ def test_final_stitcher_command_set_val_directly():
     """Check that values are set as expected when directly input."""
     # Modify defaults
     expected_command = copy(FINAL_EXPECTED_COMMAND)
-    expected_command[6] = "0.36"
-    expected_command[8] = "0.25"
+    expected_command[8] = "0.36"
+    expected_command[10] = "0.25"
     # Test with no data dictionary, irrelevant data, and also the wrong data
     # When wrong data is submitted, it should take the directly input data.
     dict_vals = [
@@ -141,8 +143,8 @@ def test_final_stitcher_command_set_with_dict():
     """Check that values are set as expected when set from a ScanData dictionary."""
     # Modify defaults
     expected_command = copy(FINAL_EXPECTED_COMMAND)
-    expected_command[6] = "0.36"
-    expected_command[8] = "0.25"
+    expected_command[8] = "0.36"
+    expected_command[10] = "0.25"
     # Check same thing works with a dictionary, resize is calculated from the saved image
     # resolution. Make 4x bigger than STITCHING_RESOLUTION to get 0.25
     resolution = [dim * 4 for dim in STITCHING_RESOLUTION]
