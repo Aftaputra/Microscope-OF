@@ -19,7 +19,7 @@ from openflexure_microscope_server.utilities import make_path_safe
 
 STITCHING_CMD = "openflexure-stitch"
 STITCHING_RESOLUTION = (820, 616)
-STITCH_TILE_SIZE = 4096
+STITCH_TILE_SIZE = 8192
 
 DEFAULT_OVERLAP = 0.1
 DEFAULT_RESIZE = 0.5
