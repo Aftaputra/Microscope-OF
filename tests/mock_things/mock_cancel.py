@@ -14,6 +14,6 @@ import time
 class MockCancel:
     """A class to use when directly calling an action with CancelHook dependency."""
 
-    def sleep(self, time_in_seconds: float):
+    def sleep(self, time_in_seconds: float) -> None:
         """Sleep for the input number of seconds."""
         time.sleep(time_in_seconds)

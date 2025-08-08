@@ -234,7 +234,7 @@ def test_move_relative(stage_client, dummy_stage, path):
     inverted when appropriate.
 
     NOTE: it is essential that `stage_client` is imported even if any time it is used
-    dummy client could be used. This is because the fixture that creates stage client
+    dummy stage could be used. This is because the fixture that creates stage client
     handles adding the dummy_stage to a server. It needs to have been added to a
     server for it not to throw errors about not being connected to a server.
     """
@@ -295,7 +295,7 @@ def test_move_absolute(stage_client, dummy_stage, path):
     inverted when appropriate.
 
     NOTE: it is essential that `stage_client` is imported even if any time it is used
-    dummy client could be used. This is because the fixture that creates stage client
+    dummy stage could be used. This is because the fixture that creates stage client
     handles adding the dummy_stage to a server. It needs to have been added to a
     server for it not to throw errors about not being connected to a server.
     """
