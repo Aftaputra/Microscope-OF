@@ -34,12 +34,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "labthings-fastapi[dev]",
   "ruff",
   "mypy[reports]",
   "mypy-gitlab-code-quality",
 #  "pytest-gitlab-code-quality", # pytest version constraint clashes with labthings
   "pytest",
+  "pytest-cov",
   "pytest-mock==3.14",
   "matplotlib~=3.10",
   "hypothesis",
