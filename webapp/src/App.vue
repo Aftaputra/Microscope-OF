@@ -262,7 +262,7 @@ export default {
         event.target.classList.contains("scrollTarget")
       ) {
         var z_rel = event.deltaY / 100;
-        // Emit a signal to move, acted on by panelNavigate.vue
+        // Emit a signal to move, acted on by panelControl.vue
         this.$root.$emit("globalMoveStepEvent", 0, 0, z_rel, false);
       }
     },
@@ -289,7 +289,7 @@ export default {
         y_rel = y_rel - 1;
       }
       // Make a position request
-      // Emit a signal to move, acted on by panelNavigate.vue
+      // Emit a signal to move, acted on by panelControl.vue
       this.$root.$emit("globalMoveStepEvent", x_rel, y_rel, z_rel);
     }
   }

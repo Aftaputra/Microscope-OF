@@ -1,5 +1,5 @@
 <template>
-  <div id="paneNavigate" class="uk-padding-small">
+  <div id="paneControl" class="uk-padding-small">
     <div v-if="setPosition">
       <ul uk-accordion="multiple: true">
         <li>
@@ -180,7 +180,7 @@ import ActionButton from "../../labThingsComponents/actionButton.vue";
 
 // Export main app
 export default {
-  name: "PaneNavigate",
+  name: "PaneControl",
 
   components: {
     ActionButton
