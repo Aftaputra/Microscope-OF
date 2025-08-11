@@ -2,7 +2,7 @@
   <!-- Grid managing tab content -->
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <div class="control-component">
-      <paneNavigate />
+      <paneControl />
     </div>
     <div class="view-component uk-width-expand">
       <streamDisplay />
@@ -11,14 +11,14 @@
 </template>
 
 <script>
-import paneNavigate from "./navigateComponents/paneNavigate";
+import paneControl from "./controlComponents/paneControl";
 import streamDisplay from "./streamContent.vue";
 
 export default {
-  name: "NavigateContent",
+  name: "ControlContent",
 
   components: {
-    paneNavigate,
+    paneControl,
     streamDisplay
   }
 };

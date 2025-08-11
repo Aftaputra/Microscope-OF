@@ -102,7 +102,7 @@ import tabIcon from "./genericComponents/tabIcon";
 import tabContent from "./genericComponents/tabContent";
 
 // Import new content components
-import navigateContent from "./tabContentComponents/navigateContent.vue";
+import controlContent from "./tabContentComponents/controlContent.vue";
 import slideScanContent from "./tabContentComponents/slideScanContent.vue";
 import backgroundDetectContent from "./tabContentComponents/backgroundDetectContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
@@ -123,7 +123,7 @@ export default {
   components: {
     tabIcon,
     tabContent,
-    navigateContent,
+    controlContent,
     slideScanContent,
     viewContent,
     settingsContent,
@@ -182,9 +182,9 @@ export default {
           component: viewContent
         },
         {
-          id: "navigate",
+          id: "control",
           icon: "gamepad",
-          component: navigateContent
+          component: controlContent
         },
         {
           id: "background detect",
