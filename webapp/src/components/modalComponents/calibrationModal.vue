@@ -223,6 +223,14 @@ export default {
         this.onHide();
       }
     },
+    // Forces modal to show on button press
+    force_show: function() {
+      this.ready = true;
+      this.stepValue = 0;
+        // Show the modal
+        var el = this.$refs["calibrationModalEl"];
+        this.showModalElement(el); // Calls the mixin
+    },
 
     hide: function() {
       // Show the modal
