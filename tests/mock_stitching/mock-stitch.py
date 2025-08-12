@@ -11,6 +11,9 @@ def main():
         # This is used to check we catch errors correctly.
         if arg == "ERROR":
             raise RuntimeError("I was told to do this.")
+        if arg == "HANG":
+            # Rather than hang, just sleep for 10s:
+            time.sleep(10)
         print(arg, flush=True)
         time.sleep(0.2)
 
