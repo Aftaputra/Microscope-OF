@@ -178,7 +178,7 @@ def test_clear_buffer():
     mem_buf.clear()
 
     # They are now gone
-    for _i, (_image, buffer_id) in enumerate(zip(images, buffer_ids, strict=True)):
+    for _image, buffer_id in zip(images, buffer_ids, strict=True):
         with pytest.raises(NoImageInMemoryError):
             mem_buf.get_image(buffer_id)
 
@@ -202,7 +202,7 @@ def test_get_metadata_too():
     zipped = zip(images, metadatas, buffer_ids, strict=True)
 
     # Check both image and metadata
-    for _i, (image, metadata, buffer_id) in enumerate(zipped):
+    for image, metadata, buffer_id in zipped:
         returned_image, returned_metadata = mem_buf.get_image(buffer_id)
         assert image is returned_image
         assert metadata is returned_metadata
