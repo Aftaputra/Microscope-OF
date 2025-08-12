@@ -35,6 +35,29 @@ CSMDep = lt.deps.direct_thing_client_dependency(
 )
 AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 
+class RomDataTracker:
+    """Class for tracking range of motion data."""
+
+    def __init__(
+        self,
+        stage_coords: list[dict[str, int]] = [],
+        cor_lat_steps: list[npt.ArrayLike] = [],
+        delta: dict = {"x": 0, "y": 0},
+    ):
+        """Define useful data tracked throughout test."""
+        self.stage_coords = stage_coords
+        self.cor_lat_steps = cor_lat_steps
+        self.delta = delta
+
+    def measure(self, current_pos: dict[str, int], cor: npt.ArrayLike):
+        """Store useful data."""
+        self.stage_coords.append(current_pos)
+        self.cor_lat_steps.append(cor)
+
+    def reset_tracker(self):
+        """Empty the rom tracker."""
+        self.stage_coords.clear()
+        self.cor_lat_steps.clear()
 
 class ParasiticMotionError(Exception):
     """Custom exception raised when parasitic motion is detected.
@@ -45,10 +68,14 @@ class ParasiticMotionError(Exception):
 
     pass
 
+
 def parasitic_detect(delta: float, max_allowed_delta: float) -> None:
     """Compare two values and raise parasitic motion error."""
     if delta > max_allowed_delta:
-        raise ParasiticMotionError(f"Parasitic motion detected. {delta} is greate than {max_allowed_delta}")
+        raise ParasiticMotionError(
+            f"Parasitic motion detected. {delta} is greater than {max_allowed_delta}"
+        )
+
 
 def _generate_move_dicts(
     fov_perc: int,
@@ -153,7 +180,7 @@ def _acquire_z_predict_points(
     stream_resolution: list[int],
     direction: Literal[1, -1],
     axis: Literal["x", "y"],
-    data,
+    data: RomDataTracker,
     csm: CSMDep,
     cam: CamDep,
     stage: StageDep,
@@ -194,7 +221,11 @@ def _acquire_z_predict_points(
 
         data.measure(stage.position, offset)
 
-        parasitic_detect(delta=abs(data.delta[wrong_axis]), max_allowed_delta=abs(wrong_axis_max_medium[wrong_axis]))
+        parasitic_detect(
+            delta=abs(data.delta[wrong_axis]),
+            max_allowed_delta=abs(wrong_axis_max_medium[wrong_axis]),
+        )
+
 
 def _check_stage_operation(
     small_step: int,
@@ -275,7 +306,14 @@ def _check_stage_operation(
 
         data.measure(stage.position, offset)
 
-        parasitic_detect(abs(data.delta[wrong_axis]),abs(_generate_move_dicts(small_step, stream_resolution, direction, factor=0.1)[wrong_axis]))
+        parasitic_detect(
+            abs(data.delta[wrong_axis]),
+            abs(
+                _generate_move_dicts(
+                    small_step, stream_resolution, direction, factor=0.1
+                )[wrong_axis]
+            ),
+        )
 
         # this means the edge has been found
         if np.abs(data.delta[axis]) < np.abs(minimum_offset_small[axis]):
@@ -331,31 +369,6 @@ def _motion_detection(
             break
 
     return stage.position
-
-
-class RomDataTracker:
-    """Class for tracking range of motion data."""
-
-    def __init__(
-        self,
-        stage_coords: list[dict[str, int]] = [],
-        cor_lat_steps: list[list[float]] = [],
-        delta: dict = {"x": 0, "y": 0},
-    ):
-        """Define useful data tracked throughout test."""
-        self.stage_coords = stage_coords
-        self.cor_lat_steps = cor_lat_steps
-        self.delta = delta
-
-    def measure(self, current_pos: dict[str, int], cor: list[float]):
-        """Store useful data."""
-        self.stage_coords.append(current_pos)
-        self.cor_lat_steps.append(cor)
-
-    def reset_tracker(self):
-        """Empty the rom tracker."""
-        self.stage_coords.clear()
-        self.cor_lat_steps.clear()
 
 
 class RangeofMotionThing(lt.Thing):
