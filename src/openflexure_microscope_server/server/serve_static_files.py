@@ -22,7 +22,14 @@ def add_static_file(app: FastAPI, fname: str, folder: str) -> None:
     """
     p = os.path.join(folder, fname)
     app.get(f"/{fname}", response_class=FileResponse, include_in_schema=False)(
-        lambda: FileResponse(p)
+        lambda: FileResponse(
+            p,
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
     )
 
 
