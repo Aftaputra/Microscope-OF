@@ -1,0 +1,47 @@
+"""File contains unit tests for stage_measure."""
+
+from openflexure_microscope_server.things.stage_measure import (
+    _generate_move_dicts,
+    _predict_z,
+)
+
+from .mock_things.mock_csm import MockCSMThing
+from .mock_things.mock_stage import MockStageThing
+
+stage_mock = MockStageThing()
+csm_mock = MockCSMThing()
+
+
+def test_generate_move_dicts():
+    """Check that the dictionary generated for moves is correct."""
+    mock_perc = 50
+    mock_res = [820, 616]
+    mock_dir = 1
+    mock_dict = _generate_move_dicts(
+        fov_perc=mock_perc, stream_resolution=mock_res, direction=mock_dir
+    )
+    expected_dict = {"x": 410, "y": 308}
+    assert mock_dict == expected_dict
+
+
+def test_predict_z():
+    """Check that the prediction for the next z position is correct."""
+    mock_positions = [
+        {"x": 0, "y": 0, "z": 42},
+        {"x": 727, "y": 2, "z": 154},
+        {"x": 1454, "y": 4, "z": 228},
+        {"x": 2181, "y": 6, "z": 351},
+        {"x": 2908, "y": 8, "z": 509},
+        {"x": 3635, "y": 10, "z": 617},
+    ]
+    mock_axis = "x"
+    mock_move = 2908
+    mock_z_diff = _predict_z(
+        positions=mock_positions,
+        axis=mock_axis,
+        relative_move=mock_move,
+        stage=stage_mock,
+        csm=csm_mock,
+    )
+    expected_z_diff = 1343.1625053206606
+    assert mock_z_diff == expected_z_diff

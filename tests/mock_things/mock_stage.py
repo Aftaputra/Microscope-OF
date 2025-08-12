@@ -16,4 +16,4 @@ class MockStageThing:
     is not artificially inflated.
     """
 
-    position = (111, 222, 333)
+    position = {"x": 3635, "y": 10, "z": 617}
