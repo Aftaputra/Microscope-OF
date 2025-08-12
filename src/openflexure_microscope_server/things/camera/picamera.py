@@ -346,8 +346,8 @@ class StreamingPiCamera2(BaseCamera):
         sensor_modes property, and then starts the streams.
         """
         self._initialise_picamera()
-        # populate sensor modes by reading the property
-        self.sensor_modes
+        # Sensor modes is a cached property read it once after initialising the camera
+        _modes = self.sensor_modes
         self.start_streaming()
         return self
 

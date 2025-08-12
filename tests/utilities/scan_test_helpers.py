@@ -60,8 +60,8 @@ def visualise_scan(sample: FakeSample, planner: scan_planners.ScanPlanner) -> Fi
     """For a given sample and scanner object return a matplotlib figure of the scan."""
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.add_artist(sample.patch)
-    xh, yh = zip(*planner._path_history)
-    xi, yi, _ = zip(*planner._imaged_locations)
+    xh, yh = zip(*planner._path_history, strict=True)
+    xi, yi, _ = zip(*planner._imaged_locations, strict=True)
 
     # convert history to numpy array so can calculate quiver arrows
     xh = np.array(xh)
@@ -91,7 +91,7 @@ def interp_closed_path(xy_points: list[tuple[int, int]], n_points: int) -> MatPa
     https://stackoverflow.com/questions/33962717/interpolating-a-closed-curve-using-scipy
     """
     # Use zip to separate x and y points into tuples
-    x, y = zip(*xy_points)
+    x, y = zip(*xy_points, strict=True)
 
     # Append first point and convert to array
     x = np.array(x + (x[0],))
@@ -105,7 +105,7 @@ def interp_closed_path(xy_points: list[tuple[int, int]], n_points: int) -> MatPa
     xi, yi = interpolate.splev(np.linspace(0, 1, n_points), spline_data)
 
     # Convert to a matplotlib closed path
-    path_points = [[xp, yp] for xp, yp in (zip(xi, yi))]
+    path_points = [[xp, yp] for xp, yp in (zip(xi, yi, strict=True))]
     return MatPath(path_points, closed=True)
 
 

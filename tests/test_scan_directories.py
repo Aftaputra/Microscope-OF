@@ -245,7 +245,7 @@ def test_scan_info():
     scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
     scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
 
-    for i in range(17):
+    for _i in range(17):
         _add_fake_image(scan_dir)
     info = scan_dir.scan_info()
     now = time.time()
@@ -273,7 +273,7 @@ def test_get_final_stitch():
     scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
 
     # Create some scan images files
-    for i in range(17):
+    for _i in range(17):
         _add_fake_image(scan_dir)
 
     # No scans, so None should be returned, from both manager and scan dir
@@ -365,7 +365,7 @@ def test_zipping_scan_data():
         scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
 
         # Create 21 fake scan images, a fake stitch, and a fake zip
-        for i in range(21):
+        for _i in range(21):
             _add_fake_image(scan_dir)
         _add_fake_file(scan_dir, "fake_scan_0001_stitched.jpg", in_im_dir=True)
         _add_fake_file(scan_dir, "zipfile.zip")
@@ -502,7 +502,7 @@ def test_extracting_files():
     assert scan_dir._extract_dzi_files(scan_files) == []
 
     # Add a number of images
-    for i in range(2321):
+    for _i in range(2321):
         _add_fake_image(scan_dir)
 
     scan_files = scan_dir.get_scan_files()

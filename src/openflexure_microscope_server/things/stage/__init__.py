@@ -98,7 +98,9 @@ class BaseStage(lt.Thing):
         if isinstance(position, (list, tuple)):
             return [
                 -int(pos) if inverted else int(pos)
-                for pos, inverted in zip(position, self.axis_inverted.values())
+                for pos, inverted in zip(
+                    position, self.axis_inverted.values(), strict=True
+                )
             ]
         if isinstance(position, Mapping):
             try:

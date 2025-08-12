@@ -147,13 +147,13 @@ def test_buffer_size_respected():
 
     images = []
     buffer_ids = []
-    for i in range(10):
+    for _i in range(10):
         image = random_image()
         buffer_id = mem_buf.add_image(image, buffer_max=5)
         images.append(image)
         buffer_ids.append(buffer_id)
 
-    for i, (image, buffer_id) in enumerate(zip(images, buffer_ids)):
+    for i, (image, buffer_id) in enumerate(zip(images, buffer_ids, strict=True)):
         if i < 5:
             with pytest.raises(NoImageInMemoryError):
                 mem_buf.get_image(buffer_id)
@@ -168,7 +168,7 @@ def test_clear_buffer():
 
     images = []
     buffer_ids = []
-    for i in range(10):
+    for _i in range(10):
         image = random_image()
         buffer_id = mem_buf.add_image(image, buffer_max=10)
         images.append(image)
@@ -178,7 +178,7 @@ def test_clear_buffer():
     mem_buf.clear()
 
     # They are now gone
-    for i, (image, buffer_id) in enumerate(zip(images, buffer_ids)):
+    for _image, buffer_id in zip(images, buffer_ids, strict=True):
         with pytest.raises(NoImageInMemoryError):
             mem_buf.get_image(buffer_id)
 
@@ -190,7 +190,7 @@ def test_get_metadata_too():
     images = []
     metadatas = []
     buffer_ids = []
-    for i in range(10):
+    for _i in range(10):
         image = random_image()
         metadata = random_metadata()
         buffer_id = mem_buf.add_image(image, metadata, buffer_max=10)
@@ -199,10 +199,10 @@ def test_get_metadata_too():
         buffer_ids.append(buffer_id)
 
     # Preallocate zipped data, to avoid long confusing lines
-    zipped = zip(images, metadatas, buffer_ids)
+    zipped = zip(images, metadatas, buffer_ids, strict=True)
 
     # Check both image and metadata
-    for i, (image, metadata, buffer_id) in enumerate(zipped):
+    for image, metadata, buffer_id in zipped:
         returned_image, returned_metadata = mem_buf.get_image(buffer_id)
         assert image is returned_image
         assert metadata is returned_metadata

@@ -97,11 +97,11 @@ def test_stage(client):
     move = {"x": 1, "y": 2, "z": 3}
     stage.move_relative(**move)
     pos = stage.position
-    for s, m, p in zip(start.values(), move.values(), pos.values()):
+    for s, m, p in zip(start.values(), move.values(), pos.values(), strict=True):
         assert s + m == p
     stage.move_relative(**{k: -v for k, v in move.items()})
     pos = stage.position
-    for s, p in zip(start.values(), pos.values()):
+    for s, p in zip(start.values(), pos.values(), strict=True):
         assert s == p
 
 

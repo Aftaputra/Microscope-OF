@@ -65,7 +65,7 @@ class DummyStage(BaseStage):
                 fraction_complete = (time.time() - start_time) / (dt * max_displacement)
                 self.instantaneous_position = {
                     ax: self._hardware_position[ax] + int(fraction_complete * disp)
-                    for ax, disp in zip(self.axis_names, displacement)
+                    for ax, disp in zip(self.axis_names, displacement, strict=True)
                 }
             fraction_complete = 1.0
         except lt.exceptions.InvocationCancelledError as e:
@@ -77,7 +77,7 @@ class DummyStage(BaseStage):
             self.moving = False
             self._hardware_position = {
                 ax: self._hardware_position[ax] + int(fraction_complete * disp)
-                for ax, disp in zip(self.axis_names, displacement)
+                for ax, disp in zip(self.axis_names, displacement, strict=True)
             }
             self.instantaneous_position = self._hardware_position
 

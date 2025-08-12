@@ -212,7 +212,7 @@ def _test_move_relative(dummy_stage, axis_inverted, path):
         dummy_stage.move_relative(
             cancel=cancel, x=movement[0], y=movement[1], z=movement[2]
         )
-        position = [pos + move for pos, move in zip(position, movement)]
+        position = [pos + move for pos, move in zip(position, movement, strict=True)]
         stage_pos = dummy_stage.get_xyz_position()
         hw_pos = dummy_stage._hardware_position
         assert position[0] == stage_pos[0] == hw_pos["x"] * x_dir
@@ -244,7 +244,7 @@ def test_move_relative(stage_client, dummy_stage, path):
     axis_names = stage_client.axis_names
     # Create every combination of True/False for x,y,z.
     inversion_combinations = [
-        dict(zip(axis_names, inverted))
+        dict(zip(axis_names, inverted, strict=True))
         for inverted in itertools.product([True, False], repeat=len(axis_names))
     ]
     print(path)
@@ -305,7 +305,7 @@ def test_move_absolute(stage_client, dummy_stage, path):
     axis_names = stage_client.axis_names
     # Create every combination of True/False for x,y,z.
     inversion_combinations = [
-        dict(zip(axis_names, inverted))
+        dict(zip(axis_names, inverted, strict=True))
         for inverted in itertools.product([True, False], repeat=len(axis_names))
     ]
     for axis_inverted in inversion_combinations:
