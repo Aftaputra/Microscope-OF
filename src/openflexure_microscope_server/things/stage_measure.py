@@ -114,10 +114,10 @@ def _predict_z(
     """Predict the next z position for a move using previous positions.
 
     :param positions: The list of positions used for predicting z.
-        This will be a list of all previous positions.
+    This will be a list of all previous positions.
     :param axis: The axis in which the stage is moving. This must be 'x' or 'y'.
     :param relative_move: The move which the function is trying to predict z for.
-        Here, this is inputted with units of pixels.
+    Here, this is inputted with units of pixels.
     :param stage: A direct_thing_client dependency for the the microscope stage.
     :param csm: A direct_thing_client dependency for camera stage mapping.
     :return: A number of pixels the stage needs to move in z.
@@ -256,7 +256,7 @@ def _check_stage_operation(
     :params axis: The axis which is being measured. This must be 'x' or 'y'.
     :params data: The object used to track stage coordinates, correlation and delta.
     :params minimum_offset_small: A dictionary containing the minimum values for
-        a successful correlation.
+    a successful correlation.
     :param csm: A direct_thing_client dependency for camera stage mapping.
     :param camera: A raw_thing_client depeendency for the camera.
     :param stage: A raw_thing_client depeendency for the microscope stage.
