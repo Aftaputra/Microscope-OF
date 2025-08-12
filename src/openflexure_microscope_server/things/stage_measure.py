@@ -69,7 +69,7 @@ class ParasiticMotionError(Exception):
     pass
 
 
-def parasitic_detect(delta: float, max_allowed_delta: float) -> None:
+def _parasitic_detect(delta: float, max_allowed_delta: float) -> None:
     """Compare two values and raise parasitic motion error."""
     if delta > max_allowed_delta:
         raise ParasiticMotionError(
