@@ -105,7 +105,7 @@ def test_exposure_time_on_start_and_stop_stream():
         time.sleep(0.5)
         # Take a couple of images to make sure that the exposure is adjusted to
         # a hardware compatible value.
-        for i in range(2):
+        for _i in range(2):
             client.capture_jpeg(resolution="full")
         # Save this time.
         set_time = client.exposure_time
@@ -135,7 +135,7 @@ def _load_camera_and_return_exposure(tmpdir: str) -> int:
         time.sleep(0.5)
         # Take a couple of images to make sure that the exposure is adjusted to
         # a hardware compatible value.
-        for i in range(2):
+        for _i in range(2):
             client.capture_jpeg(resolution="full")
         # Save this time.
         return client.exposure_time

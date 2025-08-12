@@ -77,7 +77,9 @@ class SangaboardThing(BaseStage):
     def update_position(self) -> None:
         """Read position from the stage and set the corresponding property."""
         with self.sangaboard() as sb:
-            self._hardware_position = dict(zip(self.axis_names, sb.position))
+            self._hardware_position = dict(
+                zip(self.axis_names, sb.position, strict=True)
+            )
 
     def _hardware_move_relative(
         self,
@@ -164,7 +166,7 @@ class SangaboardThing(BaseStage):
                 "Brightness control is not yet implemented. Desired brightness: "
                 f"{intended_brightness}. Set brightness: {on_brightness}"
             )
-            for i in range(number_of_flashes):
+            for _i in range(number_of_flashes):
                 sb.query(f"{led_command} 0")
                 time.sleep(dt)
                 sb.query(f"{led_command} {on_brightness}")
