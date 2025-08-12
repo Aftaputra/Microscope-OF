@@ -9,6 +9,7 @@ Interpreter Lock (GIL). May be possible to shift to multiprocessing in the futur
 from typing import Optional, Any
 import threading
 import subprocess
+import signal
 import os
 from io import TextIOWrapper
 import shlex
@@ -160,11 +161,19 @@ class PreviewStitcher(BaseStitcher):
                 return True
             return False
 
-    def wait(self) -> None:
-        """Wait for this preview stitch to return."""
-        if self.running:
-            with self._popen_lock:
-                self._popen_obj.wait()
+    def wait(self, cancel: lt.deps.CancelHook) -> None:
+        """Wait for this preview stitch to return.
+
+        :raises InvocationCancelledError: if the action is cancelled.
+        """
+        while self.running:
+            try:
+                cancel.sleep(0.1)
+            except lt.exceptions.InvocationCancelledError as e:
+                with self._popen_lock:
+                    if self._popen_obj is not None:
+                        self._popen_obj.send_signal(signal.SIGKILL)
+                raise (e)
 
 
 class FinalStitcher(BaseStitcher):
@@ -272,10 +281,8 @@ class FinalStitcher(BaseStitcher):
     ) -> None:
         """Run the final stitch logging any output.
 
-        Raises:
-            ChildProcessError if exit code is not zero
-            InvocationCancelledError if the action is cancelled.
-
+        :raises ChildProcessError: if exit code is not zero
+        :raises InvocationCancelledError: if the action is cancelled.
         """
         cmd = self.command
         self.logger.debug(f"Running command in subprocess: `{' '.join(cmd)}`")
