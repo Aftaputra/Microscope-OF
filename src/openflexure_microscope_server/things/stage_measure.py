@@ -35,6 +35,7 @@ CSMDep = lt.deps.direct_thing_client_dependency(
 )
 AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 
+
 class RomDataTracker:
     """Class for tracking range of motion data."""
 
@@ -58,6 +59,7 @@ class RomDataTracker:
         """Empty the rom tracker."""
         self.stage_coords.clear()
         self.cor_lat_steps.clear()
+
 
 class ParasiticMotionError(Exception):
     """Custom exception raised when parasitic motion is detected.
@@ -221,7 +223,7 @@ def _acquire_z_predict_points(
 
         data.measure(stage.position, offset)
 
-        parasitic_detect(
+        _parasitic_detect(
             delta=abs(data.delta[wrong_axis]),
             max_allowed_delta=abs(wrong_axis_max_medium[wrong_axis]),
         )
@@ -306,7 +308,7 @@ def _check_stage_operation(
 
         data.measure(stage.position, offset)
 
-        parasitic_detect(
+        _parasitic_detect(
             abs(data.delta[wrong_axis]),
             abs(
                 _generate_move_dicts(

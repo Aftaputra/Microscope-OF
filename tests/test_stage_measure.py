@@ -5,7 +5,7 @@ from openflexure_microscope_server.things.stage_measure import (
     _generate_move_dicts,
     _predict_z,
     _parasitic_detect,
-    ParasiticMotionError
+    ParasiticMotionError,
 )
 
 from .mock_things.mock_csm import MockCSMThing
@@ -48,6 +48,7 @@ def test_predict_z():
     )
     expected_z_diff = 1343.1625053206606
     assert mock_z_diff == expected_z_diff
+
 
 def test_parasitic_detect():
     """Check that the parasitic error is raised correctly."""
