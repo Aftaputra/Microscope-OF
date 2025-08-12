@@ -36,6 +36,20 @@ CSMDep = lt.deps.direct_thing_client_dependency(
 AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 
 
+class ParasiticMotionError(Exception):
+    """Custom exception raised when parasitic motion is detected.
+
+    Parasitic motion is when motion in the direction not being measured
+    is too high.
+    """
+
+    pass
+
+def parasitic_detect(delta: float, max_allowed_delta: float) -> None:
+    """Compare two values and raise parasitic motion error."""
+    if delta > max_allowed_delta:
+        raise ParasiticMotionError(f"Parasitic motion detected. {delta} is greate than {max_allowed_delta}")
+
 def _generate_move_dicts(
     fov_perc: int,
     stream_resolution: list[int],
@@ -180,10 +194,7 @@ def _acquire_z_predict_points(
 
         data.measure(stage.position, offset)
 
-        assert np.abs(data.delta[wrong_axis]) < np.abs(
-            wrong_axis_max_medium[wrong_axis]
-        )
-
+        parasitic_detect(delta=abs(data.delta[wrong_axis]), max_allowed_delta=abs(wrong_axis_max_medium[wrong_axis]))
 
 def _check_stage_operation(
     small_step: int,
@@ -264,11 +275,7 @@ def _check_stage_operation(
 
         data.measure(stage.position, offset)
 
-        assert np.abs(data.delta[wrong_axis]) < np.abs(
-            _generate_move_dicts(small_step, stream_resolution, direction, factor=0.1)[
-                wrong_axis
-            ]
-        )
+        parasitic_detect(abs(data.delta[wrong_axis]),abs(_generate_move_dicts(small_step, stream_resolution, direction, factor=0.1)[wrong_axis]))
 
         # this means the edge has been found
         if np.abs(data.delta[axis]) < np.abs(minimum_offset_small[axis]):
@@ -475,7 +482,7 @@ class RangeofMotionThing(lt.Thing):
 
             rom_data.reset_tracker()
 
-        except AssertionError:
+        except ParasiticMotionError:
             logger.info("Parasitic motion detected.")
         finally:
             stage.move_absolute(
