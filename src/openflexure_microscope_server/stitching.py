@@ -24,8 +24,8 @@ DEFAULT_OVERLAP = 0.1
 DEFAULT_RESIZE = 0.5
 
 
-class SigkillError(ChildProcessError):
-    """Exception called when stitch is killed by Sigkill."""
+class ExternalSigkillError(ChildProcessError):
+    """Exception called when stitch is killed by an external process calling Sigkill."""
 
 
 class StitcherValidationError(RuntimeError):
@@ -295,7 +295,7 @@ class FinalStitcher(BaseStitcher):
         if process.poll() == 0:
             self.logger.info("Stitching complete")
         elif process.poll() == -9:
-            raise SigkillError(
+            raise ExternalSigkillError(
                 "Stitching was killed by an external process. This is "
                 "most likely due to running out of memory."
             )
