@@ -466,7 +466,7 @@ class SmartScanThing(lt.Thing):
         self._scan_logger.info("Waiting for background processes to finish...")
 
         if self._preview_stitcher is not None:
-            self._preview_stitcher.wait()
+            self._preview_stitcher.wait(self._cancel)
 
         if self._scan_data.stitch_automatically:
             self._scan_logger.info("Stitching final image (may take some time)...")
