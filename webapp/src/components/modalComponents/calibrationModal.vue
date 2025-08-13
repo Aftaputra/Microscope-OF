@@ -121,7 +121,7 @@
           v-show="stepValue == 3"
           class="uk-button uk-button-default"
           type="button"
-          @click="stepValue = 0"
+          @click="restart()"
         >
           Restart
         </button>
@@ -221,6 +221,23 @@ export default {
       } else {
         // If not useful, we just return the onClose event immediately
         this.onHide();
+      }
+    },
+    // Forces modal to show on button press
+    force_show: function() {
+      this.ready = true;
+      this.stepValue = 1;
+      this.force = true
+        // Show the modal
+        var el = this.$refs["calibrationModalEl"];
+        this.showModalElement(el); // Calls the mixin
+    },
+
+    restart: function() {
+      if (this.force == true){
+        this.stepValue = 1
+      } else {
+        this.stepValue = 0
       }
     },
 

@@ -1,6 +1,10 @@
 <template>
   <!-- Grid managing tab content -->
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
+    <calibrationModal
+      ref="calibrationModal"
+      @onClose="enterApp()"
+    ></calibrationModal>
     <div class="settings-nav">
       <ul class="uk-nav uk-nav-default">
         <li class="uk-nav-header">Application Settings</li>
@@ -18,6 +22,12 @@
           </tabIcon>
         </li>
         <li class="uk-nav-header">Microscope Settings</li>
+        <button
+        submit-label="Launch Calibration Wizard"
+        type="button"
+        class="uk-button uk-button-default uk-width-1-1"
+        @click="startModals"
+        >Launch Calibration Wizard</button>
         <li>
           <tabIcon
             id="settings-camera-icon"
@@ -106,6 +116,7 @@
 
 <script>
 import streamSettings from "./settingsComponents/streamSettings.vue";
+import calibrationModal from "../modalComponents/calibrationModal.vue";
 import cameraSettings from "./settingsComponents/cameraSettings.vue";
 import appSettings from "./settingsComponents/appSettings.vue";
 import CSMSettings from "./settingsComponents/CSMSettings.vue";
@@ -125,7 +136,8 @@ export default {
     CSMSettings,
     appSettings,
     tabIcon,
-    tabContent
+    tabContent,
+    calibrationModal
   },
 
   data: function() {
@@ -140,6 +152,9 @@ export default {
       if (!(this.currentTab == tab)) {
         this.currentTab = tab;
       }
+    },
+    startModals: function() {
+      this.$refs.calibrationModal.force_show();
     }
   }
 };
