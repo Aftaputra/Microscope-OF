@@ -1,3 +1,38 @@
+# These templates do the following:
+# python.yml:
+# - creates a venv and installs dev dependencies
+# - configures git username and email for unit tests
+# - sets python jobs to only run when a .py file is edited
+# javascript.yml:
+# - performs npm install based on the provided image and path
+# - sets javascript jobs to only run when a .js or .vue
+#   file is edited
+include:
+  - project: 'openflexure/ci-templates'
+    file: '/python.yml'
+  - project: 'openflexure/ci-templates'
+    file: '/javascript.yml'
+
+# We are using this job to pass the image name, path,
+# and cache path to the javascript template job
+.javascript_webapp:
+  extends: .javascript
+  variables:
+    JS_IMAGE: node:18
+    JS_PATH: webapp
+    JS_CACHE_PATH: webapp/node_modules
+
+# Collects together common trigger rules for
+# reusability
+.rules_common:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - when: never
+
 stages:
   - prepare
   - analysis
@@ -7,6 +42,7 @@ stages:
   - package
   - deploy
 
+# Only runs when .meta/Dockerfile is edited
 meta-build-image:
   image: docker:stable
   services:
@@ -17,78 +53,45 @@ meta-build-image:
     - cd .meta-testimage-python
     - docker build -t $CI_REGISTRY/openflexure/openflexure-microscope-server/testimage-python:latest .
     - docker push $CI_REGISTRY/openflexure/openflexure-microscope-server/testimage-python:latest
-  only:
-    refs:    # commented out for initial run
-      - v3
-    changes:
-      - .meta/Dockerfile
-
-
-# Re-usable block to install (and cache) Poetry and openflexure-microscope-server
-.python:
-  image: registry.gitlab.com/openflexure/openflexure-microscope-server/testimage-python
-  retry: 1
-  before_script:
-    - python --version
-    - python -m venv .venv        # NB this does not overwrite an existing cached venv
-    - source .venv/bin/activate
-    - pip install -e .[dev]
-  cache:
-    key: "${CI_COMMIT_REF_SLUG}"
-    paths:
-      - .cache/pip
-      - .venv
-  only:
-    - branches
-    - merge_requests
-    - tags
-    - web
-
-.javascript:
-  image: node:18
-  before_script:
-    - cd webapp
-    - npm install
-  cache:
-    key: "${CI_COMMIT_REF_SLUG}"
-    paths:
-      - webapp/node_modules
-  only:
-    - branches
-    - merge_requests
-    - tags
-    - web
+  rules:
+    - if: $CI_COMMIT_REF_NAME == "v3"
+      changes:
+        - .meta/Dockerfile
 
 # Check webapp and server have matching version string
 version-check:
   stage: analysis
+  extends: .rules_common
   #use a base python image as nothing needs to be installed
   image: python:3.11
   script:
     - ./check_version_sync.py
-  only:
-    - branches
-    - merge_requests
-    - tags
-    - web
 
 # A job to protect reviewers from Julian's terrible spelling.
 spelling:
   stage: analysis
-  extends: .python
+  extends:
+    - .python
+    # Extending this job means that the rules section defined
+    # in .rules_common overwrites any rules defined in .python
+    - .rules_common
   script:
     - codespell .
 
-# Python static analysis with ruff
-ruff-lint:
+# Python static analysis and formatting with ruff
+# Only runs when a .py file is edited
+ruff-checks:
   stage: analysis
   extends: .python
   script:
     - ruff check
+    - ruff format --check
+  # Only run on changed python files
 
 # Increased checking of the code with ruff this is allowed to fail
 # while we improve the code quality. Rules from this are
 # slowly moved into the main check
+# Only runs when a .py file is edited
 ruff-lint-increased:
   stage: analysis
   extends: .python
@@ -96,21 +99,17 @@ ruff-lint-increased:
   script:
     - ruff --config ruff-increased-checking.toml check
 
-# Python formatting with ruff
-ruff-format:
-  stage: analysis
-  extends: .python
-  script:
-    - ruff format --check
 
 # Python type checking with Mypy
+# Only runs when a .py file is edited
 mypy:
   stage: analysis
   extends: .python
   script:
-    - mypy --cobertura-xml-report mypy --no-error-summary src | tee mypy/stdout.txt
-  after_script:
-    - cat mypy/stdout.txt | mypy-gitlab-code-quality > codequality.json
+    - mkdir -p mypy
+    # "|| true" is used for preventing job failure when mypy find errors
+    - mypy src --cobertura-xml-report mypy --no-error-summary > mypy-out.txt || true
+    - mypy-gitlab-code-quality < mypy-out.txt > codequality.json
   allow_failure: true
 
   artifacts:
@@ -121,14 +120,11 @@ mypy:
         path: mypy/cobertura.xml
 
 # Python unit tests with PyTest
+# Only runs when a .py file is edited
 pytest:
   stage: testing
   extends: .python
   script:
-    # Our unit tests  create fake Git repositories. This doesn't work unless
-    # Git is configured with a name and email.
-    - git config --global user.name "Sir Unit of Test"
-    - git config --global user.email "fake@email.no"
     - pytest
     - mv .coverage .coverage.main
 #    --gitlab-code-quality-report=pytest-warnings.json # can restore when it installs ok
@@ -139,6 +135,7 @@ pytest:
       - .coverage.main
 
 # Combine CI coverage with coverage from Picamera
+# Only runs when a .py file is edited
 combined-tests:
   stage: testing
   extends: .python
@@ -160,24 +157,11 @@ combined-tests:
         coverage_format: cobertura
         path: coverage.xml
 
-# Generate and validate OpenAPI description - needs updating to work with v3
-# openapi:
-#   stage: testing
-#   extends: .python
-#   script:
-#     - mkdir -p docs/build/
-#     - ofm-generate-openapi -o docs/build/swagger.yaml --validate
-#   artifacts:
-#     name: "openapi"
-#     expose_as: "OpenAPI Description"
-#     expire_in: 1 week
-#     paths:
-#       - "./docs/build/swagger.yaml"
-
 # JavaScript linting with ESLint (via Vue CLI)
+# Only runs when a .js or .vue file is edited
 eslint:
   stage: analysis
-  extends: .javascript
+  extends: .javascript_webapp
   script:
     # Build JS application for production
     - npm run lint
@@ -185,7 +169,9 @@ eslint:
 # Build JS app
 build:
   stage: build
-  extends: .javascript
+  extends:
+    - .javascript_webapp
+    - .rules_common
   script:
     - export NODE_OPTIONS=--openssl-legacy-provider
     # Build JS application for production
@@ -196,6 +182,7 @@ build:
     paths:
       - "src/openflexure_microscope_server/static/"
 
+# Only runs when a .py file is edited unless the commit branch is V3
 build-docs:
   extends: .python
   stage: build
@@ -219,8 +206,19 @@ build-docs:
   environment:
     name: review/$CI_COMMIT_REF_SLUG
     url: https://$CI_PROJECT_ROOT_NAMESPACE.gitlab.io/-/openflexure-microscope-server/-/jobs/$JOB_ID/artifacts/apidocs/index.html
+  rules:
+    # So that 'pages' job at the end always works
+    # Add new rule first as the rules defined in .python
+    # end in when: never, so if this new rule goes after that
+    # clause, it will never be reached as rules are
+    # evaluated top to bottom
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    # This syntax means we append the rules from the .python
+    # job to this job, instead of overwriting them by creating
+    # this new rules section
+    - !reference [.python, rules]
 
-
+# Only runs when a .py file is edited
 server_integration_tests:
   extends: .python
   stage: integration
@@ -229,68 +227,6 @@ server_integration_tests:
       artifacts: true
   script:
     - integration-tests/testfile.py
-
-
-# # Package application into distribution tarball
-# package:
-#   stage: package
-#   dependencies:
-#     - build
-#     - openapi
-
-#   image: ubuntu:latest
-
-#   script:
-#     # Build distribution archive
-#     - mkdir -p dist
-#     - tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz .
-#     - tar -c --exclude-vcs --exclude-from .tarignore -vzf dist/openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz ./openflexure_microscope_server/static/
-#     - cp docs/build/swagger.yaml dist/openflexure-microscope-api-${CI_COMMIT_REF_NAME}.yaml
-#     - cd dist/
-#     - sha256sum openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz > openflexure-microscope-server-${CI_COMMIT_REF_NAME}.tar.gz.sha256
-#     - sha256sum openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz > openflexure-microscope-webapp-${CI_COMMIT_REF_NAME}.tar.gz.sha256
-#     - sha256sum openflexure-microscope-api-${CI_COMMIT_REF_NAME}.yaml > openflexure-microscope-api-${CI_COMMIT_REF_NAME}.yaml.sha256
-
-#   artifacts:
-#     name: "dist"
-#     expire_in: 1 week
-#     paths:
-#       - "./dist/"
-
-#   only:
-#     - master
-#     - merge_requests
-#     - tags
-#     - web
-
-# # Deploy to builds.openflexure.org
-# deploy:
-#   stage: deploy
-#   dependencies:
-#     - package
-
-#   image: ubuntu:latest
-
-#   before_script:
-#     - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
-#     - eval $(ssh-agent -s)
-#     - ssh-add <(echo "$SSH_PRIVATE_KEY_BATH_OPENFLEXURE_BASE64" | base64 --decode)
-#     - mkdir -p ~/.ssh
-#     - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-
-#   script:
-#     # Install rsync if not already installed
-#     - "which rsync || ( apt-get update -y && apt-get install rsync -y )"
-
-#     # Upload the builds folder to openflexure-microscope builds
-#     - rsync -hrvz -e ssh dist/ ci-user@openflexure.bath.ac.uk:/var/www/build/openflexure-microscope-server
-
-#     # Run update-latest.py on the build server
-#     - ssh -t ci-user@openflexure.bath.ac.uk "/var/www/build/update-latest.py"
-
-#   only:
-#     - tags
-#     - web
 
 pages:
   needs:
@@ -303,5 +239,5 @@ pages:
   artifacts:
       paths:
       - public
-  only:
-    - v3
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
