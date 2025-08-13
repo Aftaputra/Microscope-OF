@@ -4,7 +4,7 @@
     class="uk-margin-remove uk-padding-remove"
   >
     <div v-if="taskStarted" ref="isPollingElement">
-      <action-progress-bar :progress="progress" :task-status="taskStatus" />
+      <action-progress-bar v-if="taskStarted && hideOnRun" :progress="progress" :task-status="taskStatus" />
       <button
         v-if="canTerminate && taskRunning"
         type="button"
@@ -19,7 +19,7 @@
       <button
         type="button"
         :disabled="isDisabled"
-        :hidden="taskStarted"
+        :hidden="taskStarted && hideOnRun"
         class="uk-button uk-width-1-1"
         :class="[buttonPrimary ? 'uk-button-primary' : 'uk-button-default']"
         @click="bootstrapTask()"
@@ -139,6 +139,11 @@ export default {
       required: false,
       default: false
     },
+    hideOnRun: {
+      type: Boolean,
+      required: false,
+      default: true      
+    }
   },
 
   data: function() {
