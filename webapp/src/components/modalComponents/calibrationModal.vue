@@ -70,30 +70,30 @@
         ></miniStreamDisplay>
         <div class="action-button-container">
           <action-button
-          ref="moveZ"
+          class="moveZ"
           thing="stage"
           action="move_relative"
           :button-primary="false"
           :submit-data="{ x: 0, y: 0, z: -100}"
-          :submit-label="'-'"
+          :submit-label="' - '"
+          :hideOnRun="false"
           :can-terminate="false"
           @finished="
             updatePosition();
           "
-          class="action-button"
           />
           <action-button
-          ref="moveZ"
+          class="moveZ"
           thing="stage"
           action="move_relative"
           :button-primary="false"
           :submit-data="{ x: 0, y: 0, z: 100}"
           :submit-label="'+'"
           :can-terminate="false"
+          :hideOnRun="false"
           @finished="
             updatePosition();
           "
-          class="action-button"
           />
         </div>
       </div>
@@ -334,9 +334,11 @@ export default {
   gap: 8px;                  /* Small space between buttons */
   margin-top: 4px;           /* Gap from image */
 }
-.action-button {
-  padding: 6px 12px;      /* Smaller button */
-  font-size: 22px !important;
+>>> .moveZ .uk-button.uk-width-1-1 {
+  line-height: 50px;
+  font-size: 50px !important;
+  height: 60px; 
+  padding-bottom: 46px;
   margin: 0;                 /* Remove default margin */
   width: 120px;
   min-width: 80px;
