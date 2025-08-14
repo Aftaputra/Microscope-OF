@@ -1,7 +1,8 @@
 """OpenFlexure Microscope autofocus module.
 
 This module defines a Thing that is responsible for using the stage and
-camera together to perform an autofocus routine.
+camera together to perform an autofocus routine, and for collecting stacks
+of images (a 'z-stack').
 
 See repository root for licensing information.
 """
@@ -284,7 +285,7 @@ class JPEGSharpnessMonitor:
         jpeg_times: np.ndarray = np.array(self.jpeg_times)
         jpeg_sizes: np.ndarray = np.array(self.jpeg_sizes)
         stage_times: np.ndarray = np.array(self.stage_times)[istart:istop]
-        stage_zs: np.ndarray = np.array(
+        stage_heights: np.ndarray = np.array(
             [p["z"] for p in self.stage_positions[istart:istop]]
         )
         try:
@@ -302,17 +303,17 @@ class JPEGSharpnessMonitor:
             stop = len(jpeg_times)
             logging.debug("changing stop to %s", (stop))
         jpeg_times = jpeg_times[start:stop]
-        jpeg_zs: np.ndarray = np.interp(jpeg_times, stage_times, stage_zs)
-        return jpeg_times, jpeg_zs, jpeg_sizes[start:stop]
+        jpeg_heights: np.ndarray = np.interp(jpeg_times, stage_times, stage_heights)
+        return jpeg_times, jpeg_heights, jpeg_sizes[start:stop]
 
-    def sharpest_z_on_move(self, index: int) -> int:
+    def sharpest_z_on_move(self, data_index: int) -> int:
         """Return the z position of the sharpest image on a given move."""
-        _, jz, js = self.move_data(index)
-        if len(js) == 0:
+        _, jpeg_heights, jpeg_sizes = self.move_data(data_index)
+        if len(jpeg_sizes) == 0:
             raise ValueError(
                 "No images were captured during the move of the stage.  Perhaps the camera is not streaming images?"
             )
-        return jz[np.argmax(js)]
+        return jpeg_heights[np.argmax(jpeg_sizes)]
 
     def data_dict(self) -> SharpnessDataArrays:
         """Return the gathered data as a single convenient dictionary."""
@@ -338,7 +339,7 @@ class AutofocusThing(lt.Thing):
         self,
         sharpness_monitor: SharpnessMonitorDep,
         dz: int = 2000,
-        start: str = "centre",
+        start: Literal["centre", "base"] = "centre",
     ) -> SharpnessDataArrays:
         """Sweep the stage up and down, then move to the sharpest point.
 
@@ -351,15 +352,16 @@ class AutofocusThing(lt.Thing):
             if start == "centre":
                 sharpness_monitor.focus_rel(-dz / 2)
             # Move to dz while monitoring sharpness
-            # i: Sharpness monitor index for this move
-            # z: Final z position after move
-            i, z = sharpness_monitor.focus_rel(dz, block_cancellation=True)
-            # Get the z position with highest sharpness from the previous move (index i)
-            fz: int = sharpness_monitor.sharpest_z_on_move(i)
+            # focus_data_index: Sharpness monitor index for this move
+            focus_data_index, _ = sharpness_monitor.focus_rel(
+                dz, block_cancellation=True
+            )
+            # Get the z position with highest sharpness from the previous move
+            peak_z: int = sharpness_monitor.sharpest_z_on_move(focus_data_index)
             # Move all the way to the start so it's consistent
-            i, z = sharpness_monitor.focus_rel(-dz)
-            # Move to the target position fz (relative move of (fz - z))
-            sharpness_monitor.focus_rel(fz - z)
+            _, base_z = sharpness_monitor.focus_rel(-dz)
+            # Move to the target position fz (relative move of (peak - current z))
+            sharpness_monitor.focus_rel(peak_z - base_z)
             # Return all focus data
             return sharpness_monitor.data_dict()
 
@@ -383,8 +385,8 @@ class AutofocusThing(lt.Thing):
         between moves.
         """
         with sharpness_monitor.run():
-            for i, current_dz in enumerate(dz):
-                if i > 0 and wait > 0:
+            for move_index, current_dz in enumerate(dz):
+                if move_index > 0 and wait > 0:
                     time.sleep(wait)
                 sharpness_monitor.focus_rel(current_dz)
             return sharpness_monitor.data_dict()
@@ -395,7 +397,7 @@ class AutofocusThing(lt.Thing):
         stage: Stage,
         sharpness_monitor: SharpnessMonitorDep,
         dz=2000,
-        start="centre",
+        start: Literal["centre", "base"] = "centre",
     ):
         """Repeatedly autofocus the stage until it looks focused.
 
@@ -414,8 +416,10 @@ class AutofocusThing(lt.Thing):
                     stage.move_relative(x=0, y=0, z=-(backlash + dz / 2))
                     stage.move_relative(x=0, y=0, z=backlash)
 
-                i, z = sharpness_monitor.focus_rel(dz, block_cancellation=True)
-                _, heights, sizes = sharpness_monitor.move_data(i)
+                focus_data_index, _ = sharpness_monitor.focus_rel(
+                    dz, block_cancellation=True
+                )
+                _, heights, sizes = sharpness_monitor.move_data(focus_data_index)
 
                 peak_height = heights[np.argmax(sizes)]
                 height_min = np.min(heights)
