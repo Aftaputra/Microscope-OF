@@ -54,6 +54,45 @@
       </div>
 
       <div v-show="stepValue == 2">
+        <h3>Adjust z height</h3>
+        <p>
+          Insert a sample and adjust the z position of 
+          the stage using the buttons below, until the 
+          sample is in focus.
+        </p>
+        <p>
+          You may also adjust the z position with <b>page up</b> and <b>page down</b>.
+        </p>
+
+        <miniStreamDisplay
+          v-if="stepValue == 2"
+          class="mini-preview"
+        ></miniStreamDisplay>
+        <div class="action-button-container">
+          <action-button
+          class="moveZ"
+          thing="stage"
+          action="move_relative"
+          :button-primary="false"
+          :submit-data="{ x: 0, y: 0, z: -100}"
+          :submit-label="' - '"
+          :hideOnRun="false"
+          :can-terminate="false"
+          />
+          <action-button
+          class="moveZ"
+          thing="stage"
+          action="move_relative"
+          :button-primary="false"
+          :submit-data="{ x: 0, y: 0, z: 100}"
+          :submit-label="'+'"
+          :can-terminate="false"
+          :hideOnRun="false"
+          />
+        </div>
+      </div>
+
+      <div v-show="stepValue == 3">
         <h3>Camera-stage mapping</h3>
         <div v-if="isCSMCalibrated">
           <p>
@@ -87,7 +126,7 @@
           </ul>
 
           <miniStreamDisplay
-            v-if="stepValue == 2"
+            v-if="stepValue == 3"
             class="mini-preview"
           ></miniStreamDisplay>
 
@@ -99,7 +138,7 @@
         </div>
       </div>
 
-      <div v-show="stepValue == 3">
+      <div v-show="stepValue == 4">
         <p>
           <b>Calibration complete</b>
         </p>
@@ -118,7 +157,7 @@
           Cancel
         </button>
         <button
-          v-show="stepValue == 3"
+          v-show="stepValue == 4"
           class="uk-button uk-button-default"
           type="button"
           @click="restart()"
@@ -126,7 +165,7 @@
           Restart
         </button>
         <button
-          v-show="stepValue < 3"
+          v-show="stepValue < 4"
           class="uk-button uk-button-primary uk-margin-left"
           type="button"
           @click="increment()"
@@ -134,7 +173,7 @@
           Next
         </button>
         <button
-          v-show="stepValue == 3"
+          v-show="stepValue == 4"
           class="uk-button uk-button-primary uk-margin-left"
           type="button"
           @click="hide()"
@@ -150,6 +189,7 @@
 import cameraCalibrationSettings from "../tabContentComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
 import CSMCalibrationSettings from "../tabContentComponents/settingsComponents/CSMSettingsComponents/CSMCalibrationSettings.vue";
 import miniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
+import ActionButton from "../labThingsComponents/actionButton.vue";
 
 export default {
   name: "CalibrationModal",
@@ -157,7 +197,8 @@ export default {
   components: {
     cameraCalibrationSettings,
     CSMCalibrationSettings,
-    miniStreamDisplay
+    miniStreamDisplay,
+    ActionButton
   },
 
   data: function() {
@@ -223,6 +264,7 @@ export default {
         this.onHide();
       }
     },
+
     // Forces modal to show on button press
     force_show: function() {
       this.ready = true;
@@ -260,7 +302,7 @@ export default {
 
     increment: function() {
       // Upper bound on section number
-      if (this.stepValue < 3) {
+      if (this.stepValue < 4) {
         this.stepValue = this.stepValue + 1;
         return true;
       }
@@ -274,5 +316,21 @@ export default {
   width: 75%;
   margin-left: auto;
   margin-right: auto;
+}
+.action-button-container {
+  display: flex;
+  flex-direction: row;   /* Stack vertically */
+  justify-content: center;  /* Left align */
+  gap: 8px;                  /* Small space between buttons */
+  margin-top: 4px;           /* Gap from image */
+}
+>>> .moveZ .uk-button.uk-width-1-1 {
+  line-height: 50px;
+  font-size: 50px !important;
+  height: 60px; 
+  padding-bottom: 46px;
+  margin: 0;                 /* Remove default margin */
+  width: 120px;
+  min-width: 80px;
 }
 </style>
