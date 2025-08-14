@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_PATH = os.path.normpath(os.path.join(THIS_DIR, "..", "static"))
 
 NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -40,17 +41,17 @@ def add_static_files(app: FastAPI, scans_folder: Optional[str]) -> None:
 
     app: The FastAPI app to add to, in this case the OpenFlexure server
     """
-    static_path = os.path.normpath(os.path.join(THIS_DIR, "..", "static"))
+    check_static_dir()
 
     @app.get("/", response_class=RedirectResponse)
     async def redirect_fastapi():
         return "/index.html"
 
     # Mounting the webapp at / file by file to allow other endpoints to be created
-    for fname in os.listdir(static_path):
-        fpath = os.path.join(static_path, fname)
+    for fname in os.listdir(STATIC_PATH):
+        fpath = os.path.join(STATIC_PATH, fname)
         if os.path.isfile(fpath):
-            add_static_file(app, fname, static_path)
+            add_static_file(app, fname, STATIC_PATH)
         elif os.path.isdir(fpath):
             app.mount(
                 f"/{fname}/",
@@ -67,4 +68,23 @@ def add_static_files(app: FastAPI, scans_folder: Optional[str]) -> None:
             "/scans/",
             StaticFiles(directory=scans_folder),
             name="scans",
+        )
+
+
+def check_static_dir():
+    """Check that the static dir exists and contains expected files and dirs."""
+    if not os.path.isdir(STATIC_PATH):
+        raise FileNotFoundError(
+            "The static directory does not exist. You will need to pull or compile the"
+            "web app."
+        )
+    expected = [
+        os.path.isdir(os.path.join(STATIC_PATH, "js")),
+        os.path.isdir(os.path.join(STATIC_PATH, "css")),
+        os.path.isfile(os.path.join(STATIC_PATH, "index.html")),
+    ]
+    if not all(expected):
+        raise FileNotFoundError(
+            "The static directory does not contain a valid web app. You will need to "
+            "pull or compile the web app."
         )
