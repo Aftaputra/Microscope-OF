@@ -5,6 +5,7 @@
   >
     <div v-if="taskStarted" ref="isPollingElement">
       <action-progress-bar v-if="taskStarted && hideOnRun" :progress="progress" :task-status="taskStatus" />
+      <!-- hideOnRun selects if the button hides, don't show progress bar if button doesn't hide. -->
       <button
         v-if="canTerminate && taskRunning"
         type="button"

@@ -78,9 +78,6 @@
           :submit-label="' - '"
           :hideOnRun="false"
           :can-terminate="false"
-          @finished="
-            updatePosition();
-          "
           />
           <action-button
           class="moveZ"
@@ -91,9 +88,6 @@
           :submit-label="'+'"
           :can-terminate="false"
           :hideOnRun="false"
-          @finished="
-            updatePosition();
-          "
           />
         </div>
       </div>
@@ -269,10 +263,6 @@ export default {
         // If not useful, we just return the onClose event immediately
         this.onHide();
       }
-    },
-
-    async updatePosition() {
-      this.setPosition = await this.readThingProperty("stage", "position");
     },
 
     // Forces modal to show on button press
