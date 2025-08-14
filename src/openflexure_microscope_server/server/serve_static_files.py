@@ -9,6 +9,12 @@ from fastapi import FastAPI
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
+NO_CACHE_HEADERS = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
 
 def add_static_file(app: FastAPI, fname: str, folder: str) -> None:
     """Add a single file to the root of the FastAPI app.
@@ -20,16 +26,12 @@ def add_static_file(app: FastAPI, fname: str, folder: str) -> None:
     fname: the name of the file to add
     folder: the containing folder of the file
     """
-    p = os.path.join(folder, fname)
+    file_path = os.path.join(folder, fname)
+    # Cache font files, but not other static files.
+    headers = {} if fname.endswith(".woff2") else NO_CACHE_HEADERS
+
     app.get(f"/{fname}", response_class=FileResponse, include_in_schema=False)(
-        lambda: FileResponse(
-            p,
-            headers={
-                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-                "Pragma": "no-cache",
-                "Expires": "0",
-            },
-        )
+        lambda: FileResponse(file_path, headers=headers)
     )
 
 
