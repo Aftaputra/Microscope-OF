@@ -32,7 +32,7 @@ import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import DenumpifyingDict
 
 from camera_stage_mapping.camera_stage_tracker import Tracker
-from .camera import CameraDependency as Camera
+from .camera import CameraDependency as CameraClient
 from .stage import StageDependency as Stage
 
 CoordinateType = Tuple[float, float, float]
@@ -120,7 +120,7 @@ class CameraStageMapper(lt.Thing):
     @lt.thing_action
     def calibrate_1d(
         self,
-        camera: Camera,
+        camera: CameraClient,
         stage: Stage,
         logger: lt.deps.InvocationLogger,
         direction: Tuple[float, float, float],
@@ -155,7 +155,7 @@ class CameraStageMapper(lt.Thing):
 
     @lt.thing_action
     def calibrate_xy(
-        self, camera: Camera, stage: Stage, logger: lt.deps.InvocationLogger
+        self, camera: CameraClient, stage: Stage, logger: lt.deps.InvocationLogger
     ) -> DenumpifyingDict:
         """Move the microscope's stage in X and Y, to calibrate its relationship to the camera.
 
