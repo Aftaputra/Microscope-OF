@@ -1,7 +1,12 @@
 """Test the code that mounts static files to the server, without creating a server."""
 
+import os
+import shutil
+import tempfile
+
 import pytest
 from starlette.responses import FileResponse
+
 from openflexure_microscope_server.server import serve_static_files
 
 
@@ -15,6 +20,20 @@ def mock_app(mocker):
     app = mocker.Mock()
     app.get.return_value = wrapper
     return app
+
+
+@pytest.fixture
+def mock_static_dir():
+    """Return the path of a mock static directory.
+
+    It contains enough files to be recognised as a webapp.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.makedirs(os.path.join(tmpdir, "js"))
+        os.makedirs(os.path.join(tmpdir, "css"))
+        with open(os.path.join(tmpdir, "index.html"), "w", encoding="utf-8") as f_obj:
+            f_obj.write("<mock>mock</mock>")
+        yield tmpdir
 
 
 @pytest.mark.parametrize(
@@ -60,3 +79,48 @@ def test_add_static_file(filename, allow_cache, mock_app):
             # Check headers that refuse caching are present
             assert key in response.headers
             assert response.headers[key] == value
+
+
+def test_add_static_with_no_static_dir(mock_app, mocker):
+    """Test that a FileNotFound error is raised if the static dir does not exist."""
+    # Mock STATIC_PATH to something that doesn't exist
+    mocker.patch(
+        "openflexure_microscope_server.server.serve_static_files.STATIC_PATH",
+        "fakepath",
+    )
+    # Should raise as the mock static dir does not exist
+    with pytest.raises(FileNotFoundError):
+        serve_static_files.add_static_files(mock_app, scans_folder=None)
+    assert mock_app.get.call_count == 0
+
+
+def test_check_static_dir(mocker, mock_static_dir):
+    """Test check_static_dir recognises a basic webapp structure."""
+    mocker.patch(
+        "openflexure_microscope_server.server.serve_static_files.STATIC_PATH",
+        mock_static_dir,
+    )
+    # First run shouldn't error as the mock dir has enough files.
+    serve_static_files.check_static_dir()
+
+    js_path = os.path.join(mock_static_dir, "js")
+    index_path = os.path.join(mock_static_dir, "index.html")
+
+    # Remove javascript dir and check error.
+    shutil.rmtree(js_path)
+    with pytest.raises(FileNotFoundError):
+        serve_static_files.check_static_dir()
+    # replace javascript dir with file, it should still error.
+    shutil.copyfile(index_path, js_path)
+    with pytest.raises(FileNotFoundError):
+        serve_static_files.check_static_dir()
+
+    # Return it to a folder and check everything works again
+    os.remove(js_path)
+    os.makedirs(js_path)
+    serve_static_files.check_static_dir()
+
+    # But it errors again if index.html is removed.
+    os.remove(index_path)
+    with pytest.raises(FileNotFoundError):
+        serve_static_files.check_static_dir()
