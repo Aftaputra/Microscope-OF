@@ -20,9 +20,10 @@ XYZPosList: TypeAlias = list[XYZPos]
 
 
 # how many times the minimum distance between images to include as a "nearby" image
-# default 1.4 includes images offset in x or y, but not diagonally.
+# default 1.6 includes images offset in x or y, but not diagonally.
 # This wis based of a 4:3 aspect ratio. So x moves are 1.33 times larger than y
-NEIGHBOUR_CUTOFF = 1.4
+# testing revealed that asymmetric CSM led to anything below 1.5 being insufficient
+NEIGHBOUR_CUTOFF = 1.6
 
 
 def enforce_xy_tuple(value: XYPos) -> XYPos:
