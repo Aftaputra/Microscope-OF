@@ -350,16 +350,16 @@ class AutofocusThing(lt.Thing):
         with sharpness_monitor.run():
             # Move to (-dz / 2)
             if start == "centre":
-                sharpness_monitor.focus_rel(-dz / 2)
+                sharpness_monitor.focus_rel(-dz // 2)
             # Move to dz while monitoring sharpness
             # focus_data_index: Sharpness monitor index for this move
-            focus_data_index, _ = sharpness_monitor.focus_rel(
+            focus_data_index, _z = sharpness_monitor.focus_rel(
                 dz, block_cancellation=True
             )
             # Get the z position with highest sharpness from the previous move
             peak_z: int = sharpness_monitor.sharpest_z_on_move(focus_data_index)
             # Move all the way to the start so it's consistent
-            _, base_z = sharpness_monitor.focus_rel(-dz)
+            _index, base_z = sharpness_monitor.focus_rel(-dz)
             # Move to the target position fz (relative move of (peak - current z))
             sharpness_monitor.focus_rel(peak_z - base_z)
             # Return all focus data
@@ -419,7 +419,7 @@ class AutofocusThing(lt.Thing):
                 focus_data_index, _ = sharpness_monitor.focus_rel(
                     dz, block_cancellation=True
                 )
-                _, heights, sizes = sharpness_monitor.move_data(focus_data_index)
+                _times, heights, sizes = sharpness_monitor.move_data(focus_data_index)
 
                 peak_height = heights[np.argmax(sizes)]
                 height_min = np.min(heights)
