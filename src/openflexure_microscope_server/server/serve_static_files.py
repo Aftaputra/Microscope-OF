@@ -28,7 +28,7 @@ def add_static_file(app: FastAPI, fname: str, folder: str) -> None:
     folder: the containing folder of the file
     """
     file_path = os.path.join(folder, fname)
-    # Cache font files, but not other static files.
+    # Cache font files, but not other static files in the root static directory.
     headers = {} if fname.endswith(".woff2") else NO_CACHE_HEADERS
 
     app.get(f"/{fname}", response_class=FileResponse, include_in_schema=False)(
@@ -39,7 +39,13 @@ def add_static_file(app: FastAPI, fname: str, folder: str) -> None:
 def add_static_files(app: FastAPI, scans_folder: Optional[str]) -> None:
     """Add the static files responsible for the webapp app to the FastAPI app.
 
-    app: The FastAPI app to add to, in this case the OpenFlexure server
+    Note that any file in the root of the static dir will not be cached. However, the
+    files in mounted subdirectories are not sent with no-cache headers.
+    The Vue CSS and JS are hashed, so if updated their filename will update. The most
+    important file not to cache is "index.html".
+
+    :param app: The FastAPI app to add to, in this case the OpenFlexure server
+    :param scans_folder: The directory for the scans.
     """
     check_static_dir()
 
