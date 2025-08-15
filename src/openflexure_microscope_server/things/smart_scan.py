@@ -28,7 +28,7 @@ from openflexure_microscope_server import stitching
 # Things
 from .autofocus import AutofocusThing
 from .camera_stage_mapping import CameraStageMapper
-from .camera import CameraDependency as CamDep
+from .camera import CameraDependency as CameraClient
 from .stage import StageDependency as StageDep
 
 CSMDep = lt.deps.direct_thing_client_dependency(
@@ -95,7 +95,7 @@ class SmartScanThing(lt.Thing):
         self._cancel: Optional[lt.deps.CancelHook] = None
         self._autofocus: Optional[AutofocusDep] = None
         self._stage: Optional[StageDep] = None
-        self._cam: Optional[CamDep] = None
+        self._cam: Optional[CameraClient] = None
         self._csm: Optional[CSMDep] = None
 
         self._ongoing_scan: Optional[scan_directories.ScanDirectory] = None
@@ -109,7 +109,7 @@ class SmartScanThing(lt.Thing):
         logger: lt.deps.InvocationLogger,
         autofocus: AutofocusDep,
         stage: StageDep,
-        cam: CamDep,
+        cam: CameraClient,
         csm: CSMDep,
         scan_name: str = "",
     ):

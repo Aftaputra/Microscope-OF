@@ -20,8 +20,8 @@ from pydantic import BaseModel
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from .camera import RawCameraDependency as Camera
-from .camera import CameraDependency as WrappedCamera
+from .camera import RawCameraDependency as RawCamera
+from .camera import CameraDependency as CameraClient
 from .stage import StageDependency as Stage
 
 
@@ -210,7 +210,7 @@ class JPEGSharpnessMonitor:
     SharpnessMonitorDep as an argument is called.
     """
 
-    def __init__(self, stage: Stage, camera: Camera, portal: lt.deps.BlockingPortal):
+    def __init__(self, stage: Stage, camera: RawCamera, portal: lt.deps.BlockingPortal):
         """Initialise a new JPEGSharpnessMonitor. The args are injected automatically.
 
         :param stage: A direct_thing_client dependency for the the microscope stage.
@@ -470,7 +470,7 @@ class AutofocusThing(lt.Thing):
     @lt.thing_action
     def run_smart_stack(
         self,
-        cam: WrappedCamera,
+        cam: CameraClient,
         stage: Stage,
         sharpness_monitor: SharpnessMonitorDep,
         images_dir: str,
@@ -574,7 +574,7 @@ class AutofocusThing(lt.Thing):
         sharpest_id: int,
         captures: list[list],
         stack_parameters: StackParams,
-        cam: WrappedCamera,
+        cam: CameraClient,
     ) -> int:
         """Save the required captures to disk.
 
@@ -604,7 +604,7 @@ class AutofocusThing(lt.Thing):
     def z_stack(
         self,
         stack_parameters: StackParams,
-        cam: WrappedCamera,
+        cam: CameraClient,
         stage: Stage,
     ) -> tuple[bool, list[CaptureInfo], Optional[int]]:
         """Capture a series of images checking that sharpest image central.
@@ -669,7 +669,7 @@ class AutofocusThing(lt.Thing):
 
     def capture_stack_image(
         self,
-        cam: WrappedCamera,
+        cam: CameraClient,
         stage: Stage,
         buffer_max: int,
     ) -> CaptureInfo:
