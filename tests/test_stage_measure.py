@@ -6,6 +6,7 @@ from openflexure_microscope_server.things.stage_measure import (
     _predict_z,
     _parasitic_detect,
     ParasiticMotionError,
+    _collate_data
 )
 
 from .mock_things.mock_csm import MockCSMThing
@@ -56,3 +57,35 @@ def test_parasitic_detect():
     mock_max = 50
     with pytest.raises(ParasiticMotionError):
         _parasitic_detect(delta=mock_delta, max_allowed_delta=mock_max)
+
+def test_collate_data():
+    """Check that the data is being collected and calculated correctly."""
+    mock_data = {
+    "positive x": {
+        "final_position": {
+            "x": 100
+        }
+    },
+    "negative x": {
+        "final_position": {
+            "x": 50
+        }
+    },
+    "positive y": {
+        "final_position": {
+            "y": 100
+        }
+    },
+    "negative y": {
+        "final_position": {
+            "y": 50
+        }
+    }
+}
+
+    mock_step_range = [50, 50]
+    
+    mock_time = 123
+    mock_dict = _collate_data(data=mock_data, time=mock_time, csm=MockCSMThing)
+
+    assert mock_dict["Step Range"] == mock_step_range
