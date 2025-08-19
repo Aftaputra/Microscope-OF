@@ -1,14 +1,7 @@
 """File contains unit tests for stage_measure."""
 
 import pytest
-from openflexure_microscope_server.things.stage_measure import (
-    _generate_move_dicts,
-    _predict_z,
-    _parasitic_detect,
-    ParasiticMotionError,
-    _collate_data
-)
-
+from openflexure_microscope_server.things import stage_measure as sm
 from .mock_things.mock_csm import MockCSMThing
 from .mock_things.mock_stage import MockStageThing
 
@@ -21,7 +14,7 @@ def test_generate_move_dicts():
     mock_perc = 50
     mock_res = [820, 616]
     mock_dir = 1
-    mock_dict = _generate_move_dicts(
+    mock_dict = sm._generate_move_dicts(
         fov_perc=mock_perc, stream_resolution=mock_res, direction=mock_dir
     )
     expected_dict = {"x": 410, "y": 308}
@@ -40,7 +33,7 @@ def test_predict_z():
     ]
     mock_axis = "x"
     mock_move = 2908
-    mock_z_diff = _predict_z(
+    mock_z_diff = sm._predict_z(
         positions=mock_positions,
         axis=mock_axis,
         relative_move=mock_move,
@@ -55,37 +48,21 @@ def test_parasitic_detect():
     """Check that the parasitic error is raised correctly."""
     mock_delta = 100
     mock_max = 50
-    with pytest.raises(ParasiticMotionError):
-        _parasitic_detect(delta=mock_delta, max_allowed_delta=mock_max)
+    with pytest.raises(sm.ParasiticMotionError):
+        sm._parasitic_detect(delta=mock_delta, max_allowed_delta=mock_max)
+
 
 def test_collate_data():
     """Check that the data is being collected and calculated correctly."""
     mock_data = {
-    "positive x": {
-        "final_position": {
-            "x": 100
-        }
-    },
-    "negative x": {
-        "final_position": {
-            "x": 50
-        }
-    },
-    "positive y": {
-        "final_position": {
-            "y": 100
-        }
-    },
-    "negative y": {
-        "final_position": {
-            "y": 50
-        }
+        "positive x": {"final_position": {"x": 100}},
+        "negative x": {"final_position": {"x": 50}},
+        "positive y": {"final_position": {"y": 100}},
+        "negative y": {"final_position": {"y": 50}},
     }
-}
 
     mock_step_range = [50, 50]
-    
     mock_time = 123
-    mock_dict = _collate_data(data=mock_data, time=mock_time, csm=MockCSMThing)
+    mock_dict = sm._collate_data(data=mock_data, time=mock_time, csm=MockCSMThing)
 
     assert mock_dict["Step Range"] == mock_step_range

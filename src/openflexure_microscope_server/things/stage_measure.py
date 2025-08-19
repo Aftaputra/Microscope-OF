@@ -372,9 +372,10 @@ def _motion_detection(
 
     return stage.position
 
+
 def _collate_data(data: dict, time: float, csm: CSMDep) -> dict:
     """Collate anmd calculate all useful data from ROM test.
-    
+
     :param data: Dictionary created from ROM test.
     :param time: Total time of the range of motion test.
     :param csm: A direct_thing_client dependency for camera stage mapping.
@@ -575,9 +576,11 @@ class RangeofMotionThing(lt.Thing):
         end_time = time.time()
         total_time = (end_time - start_time) / 60
 
-        rom_results = _collate_data(data = rom_results, time=total_time, csm=csm)
+        rom_results = _collate_data(data=rom_results, time=total_time, csm=csm)
 
-        logger.info(f"Range of motion is {rom_results['Step Range'][0]} X {rom_results['Step Range'][1]} steps")
+        logger.info(
+            f"Range of motion is {rom_results['Step Range'][0]} X {rom_results['Step Range'][1]} steps"
+        )
 
         self.last_calibration = DenumpifyingDict(rom_results).model_dump()
 
