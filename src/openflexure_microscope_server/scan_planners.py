@@ -372,7 +372,10 @@ class SmartSpiral(ScanPlanner):
         autofocus and restart. Starting too low just requires extra movements in +z.
         Nearby is defined as within 1.1 times the larger of the x and y scan offsets.
 
-        Returns None if there if no focused locations are present
+        If no focused sites are within this range, use the height of the nearest
+        focused site.
+
+        Returns None if no focused locations are present
         """
         if not self._focused_locations:
             return None
@@ -392,6 +395,13 @@ class SmartSpiral(ScanPlanner):
         # Get indices of all focused sites within distance_cutoff.
         # Note np.where always returns a tuple of arrays, hence the trailing [0]
         indices = np.where(dists <= distance_cutoff)[0]
+
+        # Handle the case that no focused positions are within this range, and
+        # instead use the nearest focused position. This will always return a
+        # height, due to the check that self._focused_locations exists.
+        if len(indices) == 0:
+            distance_cutoff = min(dists)
+            indices = np.where(dists <= distance_cutoff)[0]
 
         # Turning into an array allows slicing based on a list
         focused_locations_array = np.array(self._focused_locations)
