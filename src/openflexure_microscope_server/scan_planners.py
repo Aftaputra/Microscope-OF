@@ -370,8 +370,7 @@ class SmartSpiral(ScanPlanner):
 
         Lowest position is best, as starting too high causes smart stacking to
         autofocus and restart. Starting too low just requires extra movements in +z.
-        Nearby is defined as within NEIGHBOUR_CUTOFF times the distance to the closest
-        neighbour.
+        Nearby is defined as within 1.1 times the larger of the x and y scan offsets.
 
         Returns None if there if no focused locations are present
         """
@@ -386,9 +385,13 @@ class SmartSpiral(ScanPlanner):
         # Note linalg.norm always uses float64
         dists = np.linalg.norm((path_pos - current_pos), axis=1)
 
-        # Get indices of all focused sites within NEIGHBOUR_CUTOFF the minimum distance.
+        # distance_cutoff is the larger of the x and y offsets, times 1.1 to ensure
+        # that rounding at any point doesn't cause problems
+        distance_cutoff = max([self._dx, self._dy]) * 1.1
+
+        # Get indices of all focused sites within distance_cutoff.
         # Note np.where always returns a tuple of arrays, hence the trailing [0]
-        indices = np.where(dists <= NEIGHBOUR_CUTOFF * np.min(dists))[0]
+        indices = np.where(dists <= distance_cutoff)[0]
 
         # Turning into an array allows slicing based on a list
         focused_locations_array = np.array(self._focused_locations)
