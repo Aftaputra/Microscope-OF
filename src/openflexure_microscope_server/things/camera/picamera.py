@@ -20,6 +20,7 @@ from datetime import datetime
 import json
 import logging
 import os
+import copy
 import tempfile
 import time
 from contextlib import contextmanager
@@ -138,7 +139,7 @@ class StreamingPiCamera2(BaseCamera):
         # Set tuning to default tuning. This will be overwritten when the Thing is
         # connects to the server if tuning is saved to disk.
         try:
-            self.tuning = self.default_tuning
+            self.tuning = copy.deepcopy(self.default_tuning)
         except NotConnectedToServerError:
             # This will throw an error after setting as we are not connected to
             # a server. But we know this, so we ignore the error.
