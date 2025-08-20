@@ -59,11 +59,25 @@ def test_get_tuning_algo(picamera_thing):
 
 
 def test_calibration(picamera_thing, client):
-    """Check that full auto calibrate completes without an exception."""
-    tuning = picamera_thing.tuning
-    default_tuning = picamera_thing.default_tuning
+    """Check that full auto calibrate completes and set the expected values."""
     # Tuning should start the same as the server is loading with no settings.
-    assert default_tuning == tuning
-    # After calibration they should be different
+    assert picamera_thing.default_tuning == picamera_thing.tuning
+    # lens_shading tables should be None when loaded on default tuning as it is
+    # adaptive
+    assert picamera_thing.lens_shading_tables is None
+    # The background detector isn't ready as there is no background image.
+    assert not picamera_thing.background_detector_status.ready
+
+    # Run full auto calibrate
     client.full_auto_calibrate()
-    assert default_tuning != tuning
+
+    # After calibration the tuning files should be different
+    assert picamera_thing.default_tuning != picamera_thing.tuning
+    # Lens shading tablesshould no longer be None
+    assert picamera_thing.lens_shading_tables is not None
+    # There should be exactly one colour correction matrix
+    # (no variations by colour temp)
+    assert len(picamera_thing.get_tuning_algo("rpi.ccm")["ccms"]) == 1
+    # Green equalisation offset should be set to maximum.
+    assert picamera_thing.get_tuning_algo("rpi.geq")["offset"] == 65535
+    assert picamera_thing.background_detector_status.ready
