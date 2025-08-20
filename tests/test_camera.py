@@ -52,7 +52,15 @@ def test_handle_broken_frame():
     camera.mjpeg_stream.grab_frame = flaky_grabber
     with camera_server(camera):
         portal = lt.get_blocking_portal(camera)
+
+        # Check that this does cause broken frames.
         with pytest.raises(OSError, match="broken data stream when reading image file"):
             for _i in range(15):
                 jpeg = camera.grab_jpeg(portal)
                 np.asarray(Image.open(jpeg.open()))
+
+        # Check that grab_as_array handles the broken frames and completes without
+        # the same error.
+        for _i in range(15):
+            array = camera.grab_as_array(portal)
+            assert isinstance(array, np.ndarray)
