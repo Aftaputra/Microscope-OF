@@ -308,6 +308,19 @@ class StreamingPiCamera2(BaseCamera):
     tuning = lt.ThingSetting(Optional[dict], None, readonly=True)
     """The Raspberry PiCamera Tuning File JSON."""
 
+    def get_tuning_algo(self, algorithm_name: str) -> Optional[dict]:
+        """Return the active tuning algorithm settings for the given algorithm.
+
+        :returns: The algorithm dictionary if found, returns None if no tuning data
+            is loaded or if the tuning algorithm is not found.
+        """
+        if self.tuning is None:
+            return None
+        try:
+            return Picamera2.find_tuning_algo(self.tuning, algorithm_name)
+        except StopIteration:
+            return None
+
     def _initialise_picamera(self):
         """Acquire the picamera device and store it as ``self._picamera``.
 
@@ -754,6 +767,7 @@ class StreamingPiCamera2(BaseCamera):
         * ``auto_expose_from_minimum``
         * ``set_static_green_equalisation`` to set geq offset to max
         * ``calibrate_lens_shading``
+        * ``reset_ccm``
         * ``calibrate_white_balance``
         * ``set_background``
         """
@@ -761,8 +775,8 @@ class StreamingPiCamera2(BaseCamera):
         self.auto_expose_from_minimum()
         self.set_static_green_equalisation()
         self.calibrate_lens_shading()
-        self.calibrate_white_balance()
         self.reset_ccm()
+        self.calibrate_white_balance()
         self.set_background(portal)
 
     @lt.thing_action
@@ -881,7 +895,7 @@ class StreamingPiCamera2(BaseCamera):
             return None
 
         # Note "alsc" is the Picamera2 term for "Automatic Lens Shading Correction"
-        alsc = Picamera2.find_tuning_algo(self.tuning, "rpi.alsc")
+        alsc = self.get_tuning_algo("rpi.alsc")
 
         # Check there is exactly 1 correction table for red-difference chroma (Cr)
         # and blue-difference chroma (Cb)
@@ -952,7 +966,7 @@ class StreamingPiCamera2(BaseCamera):
         colour across the image.
         """
         with self._streaming_picamera(pause_stream=True):
-            alsc = Picamera2.find_tuning_algo(self.tuning, "rpi.alsc")
+            alsc = self.get_tuning_algo("rpi.alsc")
             luminance = alsc["luminance_lut"]
             flat = np.ones((12, 16))
             recalibrate_utils.set_static_lst(self.tuning, luminance, flat, flat)

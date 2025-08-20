@@ -38,6 +38,26 @@ def client(picamera_thing) -> lt.ThingClient:
         yield client
 
 
+def test_get_tuning_algo(picamera_thing):
+    """Test that get_tuning algorithm retrieves tuning algorithms."""
+    # Missing algorithm returns None
+    assert picamera_thing.get_tuning_algo("foo") is None
+    # Real algorithm is a dict and contains expected keys
+    assert isinstance(picamera_thing.get_tuning_algo("rpi.geq"), dict)
+    assert "offset" in picamera_thing.get_tuning_algo("rpi.geq")
+
+    # Set the tuning to None as it is technically optional. And check this
+    # is handled gracefully.
+    try:
+        picamera_thing.tuning = None
+    except lt.exceptions.NotConnectedToServerError:
+        # Labthings will complain that it is not connected to a server
+        pass
+    # Check it is set to None.
+    assert picamera_thing.tuning is None
+    assert picamera_thing.get_tuning_algo("rpi.geq") is None
+
+
 def test_calibration(picamera_thing, client):
     """Check that full auto calibrate completes without an exception."""
     tuning = picamera_thing.tuning
