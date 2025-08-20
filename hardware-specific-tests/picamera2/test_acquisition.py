@@ -35,12 +35,15 @@ def test_jpeg_and_array(client):
     # Grab a jpeg from the stream
     blob = client.grab_jpeg()
     mjpeg_frame = Image.open(blob.open())
-    assert mjpeg_frame
+    # Verify throws an error if there are issues with the image
+    mjpeg_frame.verify()
+    assert mjpeg_frame.format == "JPEG"
 
     # Capture a jpeg
     blob = client.capture_jpeg(resolution="main")
     jpeg_capture = Image.open(blob.open())
-    assert jpeg_capture
+    jpeg_capture.verify()
+    assert jpeg_capture.format == "JPEG"
 
     # Capture an array
     arrlist = client.capture_array(stream_name="main")
