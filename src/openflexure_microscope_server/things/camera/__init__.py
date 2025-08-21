@@ -9,6 +9,7 @@ See repository root for licensing information.
 from __future__ import annotations
 from typing import Literal, Optional, Tuple, Any
 import json
+import io
 import time
 import logging
 
@@ -231,7 +232,7 @@ class BaseCamera(lt.Thing):
         self,
         stream_name: Literal["main", "lores", "raw", "full"] = "main",
         wait: Optional[float] = 5,
-    ) -> NDArray:
+    ) -> ArrayModel:
         """Acquire one image from the camera and return as an array."""
         raise NotImplementedError(
             "CameraThings must define their own capture_array method"
@@ -241,7 +242,7 @@ class BaseCamera(lt.Thing):
     """The downsampling factor when calling capture_downsampled_array."""
 
     @lt.thing_action
-    def capture_downsampled_array(self) -> NDArray:
+    def capture_downsampled_array(self) -> ArrayModel:
         """Acquire one image from the camera, downsample, and return as an array.
 
         * The array is downsamples by the thing property `downsampled_array_factor`.
@@ -270,7 +271,12 @@ class BaseCamera(lt.Thing):
         portal: lt.deps.BlockingPortal,
         stream_name: Literal["main", "lores"] = "main",
     ) -> JPEGBlob:
-        """Acquire one image from the preview stream and return as an array.
+        """Acquire one image from the preview stream and return as blob of JPEG data.
+
+        Note: in rare cases the JPEG stream may be broken. This can cause an OS error
+        when loading the image. If loading with PIL, as long as the header data is
+        complete, this error will not be raised until the data is accessed. Consider
+        using ``grab_jpeg_as_array`` instead.
 
         This differs from ``capture_jpeg`` in that it does not pause the MJPEG
         preview stream. Instead, we simply return the next frame from that
@@ -282,6 +288,33 @@ class BaseCamera(lt.Thing):
         )
         frame = portal.call(stream.grab_frame)
         return JPEGBlob.from_bytes(frame)
+
+    @lt.thing_action
+    def grab_as_array(
+        self,
+        portal: lt.deps.BlockingPortal,
+        stream_name: Literal["main", "lores"] = "main",
+    ) -> ArrayModel:
+        """Acquire one image from the preview stream and return as an array.
+
+        It works like ``grab_jpeg`` but reliably handles broken streams. Prefer using
+        this method over directly grabbing the frame and converting to a numpy array
+        via PIL.
+
+        This differs from ``capture_array`` in that it does not pause the MJPEG
+        preview stream.
+        """
+        stream = (
+            self.lores_mjpeg_stream if stream_name == "lores" else self.mjpeg_stream
+        )
+        tries = 0
+        while tries < 3:
+            try:
+                frame = portal.call(stream.grab_frame)
+                return np.asarray(Image.open(io.BytesIO(frame)))
+            except OSError:
+                tries += 1
+        raise OSError("Could not open frames from MJPEG stream.")
 
     @lt.thing_action
     def grab_jpeg_size(
@@ -567,8 +600,7 @@ class BaseCamera(lt.Thing):
     @lt.thing_action
     def image_is_sample(self, portal: lt.deps.BlockingPortal) -> tuple[bool, str]:
         """Label the current image as either background or sample."""
-        current_image = self.grab_jpeg(portal)
-        current_image = np.array(Image.open(current_image.open()))
+        current_image = self.grab_as_array(portal)
         return self.active_detector.image_is_sample(current_image)
 
     @lt.thing_action
@@ -581,8 +613,7 @@ class BaseCamera(lt.Thing):
         future images to the distribution, to determine if each pixel is
         foreground or background.
         """
-        background = self.grab_jpeg(portal)
-        background = np.array(Image.open(background.open()))
+        background = self.grab_as_array(portal)
         self.active_detector.set_background(background)
         # Manually save settings as the setter is not called.
         self.save_settings()

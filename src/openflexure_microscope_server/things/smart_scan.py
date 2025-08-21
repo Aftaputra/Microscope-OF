@@ -17,7 +17,6 @@ from subprocess import SubprocessError
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
 import numpy as np
-from PIL import Image
 
 import labthings_fastapi as lt
 
@@ -234,8 +233,7 @@ class SmartScanThing(lt.Thing):
 
         :returns: (dx, dy) - the x and y displacements in steps
         """
-        test_jpg = self._cam.grab_jpeg()
-        test_image = np.array(Image.open(test_jpg.open()))
+        test_image = self._cam.grab_as_array()
 
         test_image_res = list(test_image.shape)
         csm_image_res = [int(i) for i in self._csm.image_resolution]
