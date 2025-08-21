@@ -26,6 +26,10 @@ from .camera import CameraDependency as CameraClient
 from .stage import StageDependency as Stage
 
 
+class NotStreamingError(RuntimeError):
+    """No images captured from stream. The camera is almost certainly not streaming."""
+
+
 class StackParams:
     """A class for holding for stack parameters, and returning computed ones."""
 
@@ -310,8 +314,9 @@ class JPEGSharpnessMonitor:
         """Return the z position of the sharpest image on a given move."""
         _, jpeg_heights, jpeg_sizes = self.move_data(data_index)
         if len(jpeg_sizes) == 0:
-            raise ValueError(
-                "No images were captured during the move of the stage.  Perhaps the camera is not streaming images?"
+            raise NotStreamingError(
+                "No images were captured during the move of the stage. "
+                "Perhaps the camera is not streaming images?"
             )
         return jpeg_heights[np.argmax(jpeg_sizes)]
 

@@ -61,7 +61,7 @@ def _get_scans_dir(config: dict) -> Optional[str]:
         try:
             return config["things"]["/smart_scan/"]["kwargs"]["scans_folder"]
         except KeyError as e:
-            msg = "Configuration error smart scan should have scans_folder kwarg set"
+            msg = "Configuration error: smart scan should have scans_folder kwarg set"
             raise RuntimeError(msg) from e
     return None
 

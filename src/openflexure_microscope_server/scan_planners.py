@@ -33,7 +33,7 @@ def enforce_xy_tuple(value: XYPos) -> XYPos:
     :raises ValueError: if the input cannot be coerced to a tuple of length 2.
     """
     if not isinstance(value, (list, tuple)):
-        raise ValueError("2 value tuple expected")
+        raise TypeError("2 value tuple expected")
     if not len(value) == 2:
         raise ValueError("2 value tuple expected")
     if isinstance(value, list):
@@ -49,7 +49,7 @@ def enforce_xyz_tuple(value: XYZPos) -> XYZPos:
     :raises ValueError: if the input cannot be coerced to a tuple of length 3.
     """
     if not isinstance(value, (list, tuple)):
-        raise ValueError("3 value tuple expected")
+        raise TypeError("3 value tuple expected")
     if not len(value) == 3:
         raise ValueError("3 value tuple expected")
     if isinstance(value, list):
