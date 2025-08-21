@@ -15,7 +15,7 @@ https://datasheets.raspberrypi.com/camera/raspberry-pi-camera-guide.pdf
 """
 
 from __future__ import annotations
-from typing import Annotated, Iterator, Literal, Mapping, Optional
+from typing import Annotated, Iterator, Literal, Mapping, Optional, overload
 from datetime import datetime
 import json
 import logging
@@ -45,6 +45,10 @@ from openflexure_microscope_server.ui import (
 )
 from . import picamera_recalibrate_utils as recalibrate_utils
 from . import BaseCamera, JPEGBlob, ArrayModel
+
+
+class MissingCalibrationError(RuntimeError):
+    """Picamera tuning file is missing or doesn't contain the requested algorithm."""
 
 
 class PicameraStreamOutput(Output):
@@ -308,17 +312,40 @@ class StreamingPiCamera2(BaseCamera):
     tuning = lt.ThingSetting(Optional[dict], None, readonly=True)
     """The Raspberry PiCamera Tuning File JSON."""
 
-    def get_tuning_algo(self, algorithm_name: str) -> Optional[dict]:
+    # Use overload to clarify that only a dictionary is returned if `raise_if_missing`
+    # is True
+    @overload
+    def get_tuning_algo(
+        self, algorithm_name: str, raise_if_missing: Literal[True]
+    ) -> dict: ...
+    # Otherwise may also be None
+    @overload
+    def get_tuning_algo(
+        self, algorithm_name: str, raise_if_missing: bool
+    ) -> Optional[dict]: ...
+
+    def get_tuning_algo(
+        self, algorithm_name: str, raise_if_missing: bool = True
+    ) -> Optional[dict]:
         """Return the active tuning algorithm settings for the given algorithm.
 
         :returns: The algorithm dictionary if found, returns None if no tuning data
             is loaded or if the tuning algorithm is not found.
+
+        :raises MissingCalibrationError: If raise_if_missing is true and there is no
+            tuning file is available, or the requested algorithm is not present.
         """
         if self.tuning is None:
+            if raise_if_missing:
+                raise MissingCalibrationError("No tuning data is set.")
             return None
         try:
             return Picamera2.find_tuning_algo(self.tuning, algorithm_name)
-        except StopIteration:
+        except StopIteration as e:
+            if raise_if_missing:
+                raise MissingCalibrationError(
+                    f"No tuning algorithm with name {algorithm_name}."
+                ) from e
             return None
 
     def _initialise_picamera(self):

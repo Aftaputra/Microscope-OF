@@ -3,14 +3,17 @@
 import tempfile
 
 from fastapi.testclient import TestClient
-from pytest import fixture
+import pytest
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
+from openflexure_microscope_server.things.camera.picamera import (
+    StreamingPiCamera2,
+    MissingCalibrationError,
+)
 
 
-@fixture()
+@pytest.fixture()
 def picamera_thing() -> StreamingPiCamera2:
     """Return a StreamingPiCamera2 Thing.
 
@@ -20,7 +23,7 @@ def picamera_thing() -> StreamingPiCamera2:
     return StreamingPiCamera2()
 
 
-@fixture()
+@pytest.fixture()
 def client(picamera_thing) -> lt.ThingClient:
     """Initialise a test client for the StreamingPiCamera2 Thing.
 
@@ -40,22 +43,33 @@ def client(picamera_thing) -> lt.ThingClient:
 
 def test_get_tuning_algo(picamera_thing):
     """Test that get_tuning algorithm retrieves tuning algorithms."""
-    # Missing algorithm returns None
-    assert picamera_thing.get_tuning_algo("foo") is None
+    # Missing algorithm raises an error.
+    with pytest.raises(MissingCalibrationError):
+        picamera_thing.get_tuning_algo("foo")
+    # Or returns None if explicitly told not to error.
+    assert picamera_thing.get_tuning_algo("foo", raise_if_missing=False) is None
+
     # Real algorithm is a dict and contains expected keys
     assert isinstance(picamera_thing.get_tuning_algo("rpi.geq"), dict)
     assert "offset" in picamera_thing.get_tuning_algo("rpi.geq")
 
     # Set the tuning to None as it is technically optional. And check this
-    # is handled gracefully.
+    # is handled gracefully. This needs to be done in a try block as LabThings
+    # tries and fails to emit an event.
     try:
         picamera_thing.tuning = None
     except lt.exceptions.NotConnectedToServerError:
         # Labthings will complain that it is not connected to a server
         pass
-    # Check it is set to None.
+
+    # Check it is set to None despite the above LabThings issue.
     assert picamera_thing.tuning is None
-    assert picamera_thing.get_tuning_algo("rpi.geq") is None
+
+    # Raises an error as there is no tuning file set.
+    with pytest.raises(MissingCalibrationError):
+        picamera_thing.get_tuning_algo("rpi.geq")
+    # Or returns None if explicitly told not to error.
+    assert picamera_thing.get_tuning_algo("rpi.geq", raise_if_missing=False) is None
 
 
 def test_calibration(picamera_thing, client):
