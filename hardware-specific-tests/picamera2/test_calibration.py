@@ -1,6 +1,7 @@
 """Test data collection from the Raspberry Picamera."""
 
 import tempfile
+from copy import deepcopy
 
 from fastapi.testclient import TestClient
 import pytest
@@ -74,6 +75,8 @@ def test_get_tuning_algo(picamera_thing):
 
 def test_calibration(picamera_thing, client):
     """Check that full auto calibrate completes and set the expected values."""
+    # Save copy of default tuning file for end of test
+    original_default = deepcopy(picamera_thing.default_tuning)
     # Tuning should start the same as the server is loading with no settings.
     assert picamera_thing.default_tuning == picamera_thing.tuning
     # lens_shading tables should be None when loaded on default tuning as it is
@@ -87,7 +90,9 @@ def test_calibration(picamera_thing, client):
 
     # After calibration the tuning files should be different
     assert picamera_thing.default_tuning != picamera_thing.tuning
-    # Lens shading tablesshould no longer be None
+    # The default should be unchanged
+    assert picamera_thing.default_tuning == original_default
+    # Lens shading tables should no longer be None
     assert picamera_thing.lens_shading_tables is not None
     # There should be exactly one colour correction matrix
     # (no variations by colour temp)
