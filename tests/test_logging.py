@@ -155,3 +155,36 @@ def test_server_response_with_no_log_dir():
     with pytest.raises(HTTPException) as excinfo:
         ofm_logging.retrieve_log_from_file()
     assert excinfo.value.status_code == 500
+
+
+FAKE_UVICORN_LOGGER = logging.getLogger("uvicorn.error")
+
+
+@pytest.mark.parametrize(
+    "log_command, names_in_log, names_not_in_log",
+    [
+        [FAKE_UVICORN_LOGGER.debug, [], ["<uvicorn>", "<uvicorn.error>"]],
+        [FAKE_UVICORN_LOGGER.info, ["<uvicorn>"], ["<uvicorn.error>"]],
+        [FAKE_UVICORN_LOGGER.warning, ["<uvicorn>"], ["<uvicorn.error>"]],
+        [FAKE_UVICORN_LOGGER.error, ["<uvicorn.error>"], ["<uvicorn>"]],
+        [FAKE_UVICORN_LOGGER.exception, ["<uvicorn.error>"], ["<uvicorn>"]],
+    ],
+)
+def test_uvicorn_error_only_says_error_on_error(
+    log_command, names_in_log, names_not_in_log
+):
+    """Check that an HTTP exception is raised if the log file cannot be accessed.
+
+    Parametrised to check: debug doesn't log, info and warning log as <uvicorn>, and
+    error logs as <uvicorn.error>.
+    """
+    ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        ofm_logging.configure_logging(tmpdir)
+        log_command("Mockedy mock mock!")
+        with open(ofm_logging.OFM_LOG_FILE, "r", encoding="utf-8") as log_file:
+            log_txt = log_file.read()
+        for name in names_in_log:
+            assert name in log_txt
+        for name in names_not_in_log:
+            assert name not in log_txt

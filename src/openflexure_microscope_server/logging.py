@@ -53,7 +53,7 @@ def configure_logging(log_folder):
             backupCount=10,
         )
         format_str = "[%(asctime)s] [%(levelname)s] <%(name)s> %(message)s"
-        handler.setFormatter(logging.Formatter(format_str))
+        handler.setFormatter(OFMLogFileFormatter(format_str))
         handler.addFilter(UvicornAccessFilter())
         root_logger.addHandler(handler)
 
@@ -98,6 +98,25 @@ def retrieve_log_from_file() -> PlainTextResponse:
         raise HTTPException(
             500, "An error occurred while trying to access the log file."
         ) from e
+
+
+class OFMLogFileFormatter(logging.Formatter):
+    """The formatter used for the OpenFlexure Microscope Server log file."""
+
+    def format(self, record):
+        """Adjust the logging formatting for uvicorn logs.
+
+        Any ``uvicorn.error`` logs that are at a lower
+
+        uvicorn has two loggers. Each API access is ``uvicorn.access`` which we filter
+        due to the noise the other is ``uvicorn.error`` for more important messages.
+        However, ``uvicorn.error`` is used for expected messages that are not errors,
+        such as server start up. This can lead to people erroneously thinking that
+        there is an error with their miroscope.
+        """
+        if record.name == "uvicorn.error" and record.levelno < logging.ERROR:
+            record.name = "uvicorn"
+        return super().format(record)
 
 
 class OFMHandler(logging.Handler):
