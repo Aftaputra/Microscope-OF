@@ -273,7 +273,7 @@ class BaseCamera(lt.Thing):
     ) -> JPEGBlob:
         """Acquire one image from the preview stream and return as blob of JPEG data.
 
-        Note: in rare cases the JPEG stream may be broken. This cab cause an OS error
+        Note: in rare cases the JPEG stream may be broken. This can cause an OS error
         when loading the image. If loading with PIL, as long as the header data is
         complete, this error will not be raised until the data is accessed. Consider
         using ``grab_jpeg_as_array`` instead.
