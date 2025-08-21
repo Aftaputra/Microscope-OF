@@ -14,9 +14,13 @@ from .utilities import scan_test_helpers
 def test_enforce_xy_tuple():
     """Check that 2 value tuples (or ValueErrors) are always returned."""
     bad_len_vals = [[1], [], (1,), (2, 4, 4), [1, 4, 5, 7]]
-    bad_type_vals = ["hi", 1, {"this": "that"}, {1, 2}]
-    for value in bad_len_vals + bad_type_vals:
+    for value in bad_len_vals:
         with pytest.raises(ValueError):
+            scan_planners.enforce_xy_tuple(value)
+
+    bad_type_vals = ["hi", 1, {"this": "that"}, {1, 2}]
+    for value in bad_type_vals:
+        with pytest.raises(TypeError):
             scan_planners.enforce_xy_tuple(value)
 
     assert (1, 6) == scan_planners.enforce_xy_tuple((1, 6))
@@ -26,9 +30,13 @@ def test_enforce_xy_tuple():
 def test_enforce_xyz_tuple():
     """Check that 3 value tuples (or ValueErrors) are always returned."""
     bad_len_vals = [[1], [], (1,), (2, 4), [1, 4, 5, 7]]
-    bad_type_vals = ["hi!", 1, {"this": "that"}, {1, 2, 3}]
-    for value in bad_len_vals + bad_type_vals:
+    for value in bad_len_vals:
         with pytest.raises(ValueError):
+            scan_planners.enforce_xyz_tuple(value)
+
+    bad_type_vals = ["hi!", 1, {"this": "that"}, {1, 2, 3}]
+    for value in bad_type_vals:
+        with pytest.raises(TypeError):
             scan_planners.enforce_xyz_tuple(value)
 
     assert (1, 6, 2) == scan_planners.enforce_xyz_tuple((1, 6, 2))
