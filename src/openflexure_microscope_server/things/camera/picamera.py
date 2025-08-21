@@ -15,11 +15,12 @@ https://datasheets.raspberrypi.com/camera/raspberry-pi-camera-guide.pdf
 """
 
 from __future__ import annotations
-from typing import Annotated, Iterator, Literal, Mapping, Optional
+from typing import Annotated, Iterator, Literal, Mapping, Optional, overload
 from datetime import datetime
 import json
 import logging
 import os
+import copy
 import tempfile
 import time
 from contextlib import contextmanager
@@ -44,6 +45,10 @@ from openflexure_microscope_server.ui import (
 )
 from . import picamera_recalibrate_utils as recalibrate_utils
 from . import BaseCamera, JPEGBlob, ArrayModel
+
+
+class MissingCalibrationError(RuntimeError):
+    """Picamera tuning file is missing or doesn't contain the requested algorithm."""
 
 
 class PicameraStreamOutput(Output):
@@ -138,7 +143,7 @@ class StreamingPiCamera2(BaseCamera):
         # Set tuning to default tuning. This will be overwritten when the Thing is
         # connects to the server if tuning is saved to disk.
         try:
-            self.tuning = self.default_tuning
+            self.tuning = copy.deepcopy(self.default_tuning)
         except NotConnectedToServerError:
             # This will throw an error after setting as we are not connected to
             # a server. But we know this, so we ignore the error.
@@ -306,6 +311,42 @@ class StreamingPiCamera2(BaseCamera):
 
     tuning = lt.ThingSetting(Optional[dict], None, readonly=True)
     """The Raspberry PiCamera Tuning File JSON."""
+
+    # Use overload to clarify that only a dictionary is returned if `raise_if_missing`
+    # is True
+    @overload
+    def get_tuning_algo(
+        self, algorithm_name: str, raise_if_missing: Literal[True]
+    ) -> dict: ...
+    # Otherwise may also be None
+    @overload
+    def get_tuning_algo(
+        self, algorithm_name: str, raise_if_missing: bool
+    ) -> Optional[dict]: ...
+
+    def get_tuning_algo(
+        self, algorithm_name: str, raise_if_missing: bool = True
+    ) -> Optional[dict]:
+        """Return the active tuning algorithm settings for the given algorithm.
+
+        :returns: The algorithm dictionary if found, returns None if no tuning data
+            is loaded or if the tuning algorithm is not found.
+
+        :raises MissingCalibrationError: If raise_if_missing is true and there is no
+            tuning file is available, or the requested algorithm is not present.
+        """
+        if self.tuning is None:
+            if raise_if_missing:
+                raise MissingCalibrationError("No tuning data is set.")
+            return None
+        try:
+            return Picamera2.find_tuning_algo(self.tuning, algorithm_name)
+        except StopIteration as e:
+            if raise_if_missing:
+                raise MissingCalibrationError(
+                    f"No tuning algorithm with name {algorithm_name}."
+                ) from e
+            return None
 
     def _initialise_picamera(self):
         """Acquire the picamera device and store it as ``self._picamera``.
@@ -753,6 +794,7 @@ class StreamingPiCamera2(BaseCamera):
         * ``auto_expose_from_minimum``
         * ``set_static_green_equalisation`` to set geq offset to max
         * ``calibrate_lens_shading``
+        * ``reset_ccm``
         * ``calibrate_white_balance``
         * ``set_background``
         """
@@ -760,8 +802,8 @@ class StreamingPiCamera2(BaseCamera):
         self.auto_expose_from_minimum()
         self.set_static_green_equalisation()
         self.calibrate_lens_shading()
-        self.calibrate_white_balance()
         self.reset_ccm()
+        self.calibrate_white_balance()
         self.set_background(portal)
 
     @lt.thing_action
@@ -880,7 +922,7 @@ class StreamingPiCamera2(BaseCamera):
             return None
 
         # Note "alsc" is the Picamera2 term for "Automatic Lens Shading Correction"
-        alsc = Picamera2.find_tuning_algo(self.tuning, "rpi.alsc")
+        alsc = self.get_tuning_algo("rpi.alsc")
 
         # Check there is exactly 1 correction table for red-difference chroma (Cr)
         # and blue-difference chroma (Cb)
@@ -951,7 +993,7 @@ class StreamingPiCamera2(BaseCamera):
         colour across the image.
         """
         with self._streaming_picamera(pause_stream=True):
-            alsc = Picamera2.find_tuning_algo(self.tuning, "rpi.alsc")
+            alsc = self.get_tuning_algo("rpi.alsc")
             luminance = alsc["luminance_lut"]
             flat = np.ones((12, 16))
             recalibrate_utils.set_static_lst(self.tuning, luminance, flat, flat)

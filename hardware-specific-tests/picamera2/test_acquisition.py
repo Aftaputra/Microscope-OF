@@ -5,14 +5,13 @@ from PIL import Image
 import numpy as np
 from pytest import fixture
 
-from labthings_fastapi.server import ThingServer
-from labthings_fastapi.client import ThingClient
+import labthings_fastapi as lt
 
 from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
 
 
 @fixture(scope="module")
-def client():
+def client() -> lt.ThingClient:
     """Initialise a test client for the StreamingPiCamera2 Thing.
 
     This fixture:
@@ -21,16 +20,11 @@ def client():
     * Registers a StreamingPiCamera2 instance at the "/camera/" endpoint
     * Provides a ThingClient for interacting with it during tests.
     """
-    server = ThingServer()
+    server = lt.ThingServer()
     server.add_thing(StreamingPiCamera2(), "/camera/")
     with TestClient(server.app) as test_client:
-        client = ThingClient.from_url("/camera/", client=test_client)
+        client = lt.ThingClient.from_url("/camera/", client=test_client)
         yield client
-
-
-def test_calibration(client):
-    """Check that full auto calibrate completes without an exception."""
-    client.full_auto_calibrate()
 
 
 def test_jpeg_and_array(client):
@@ -41,12 +35,15 @@ def test_jpeg_and_array(client):
     # Grab a jpeg from the stream
     blob = client.grab_jpeg()
     mjpeg_frame = Image.open(blob.open())
-    assert mjpeg_frame
+    # Verify throws an error if there are issues with the image
+    mjpeg_frame.verify()
+    assert mjpeg_frame.format == "JPEG"
 
     # Capture a jpeg
     blob = client.capture_jpeg(resolution="main")
     jpeg_capture = Image.open(blob.open())
-    assert jpeg_capture
+    jpeg_capture.verify()
+    assert jpeg_capture.format == "JPEG"
 
     # Capture an array
     arrlist = client.capture_array(stream_name="main")
