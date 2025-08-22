@@ -12,18 +12,6 @@ from openflexure_microscope_server.server import serve_static_files
 
 
 @pytest.fixture
-def mock_app(mocker):
-    """Return a mock FastAPI app.
-
-    This is just a mock, where the get method returns a mock.
-    """
-    wrapper = mocker.Mock()
-    app = mocker.Mock()
-    app.get.return_value = wrapper
-    return app
-
-
-@pytest.fixture
 def mock_static_dir():
     """Return the path of a mock static directory.
 
