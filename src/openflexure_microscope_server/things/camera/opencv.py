@@ -18,7 +18,7 @@ from PIL import Image
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from . import BaseCamera, JPEGBlob
+from . import BaseCamera
 
 
 class OpenCVCamera(BaseCamera):
@@ -106,8 +106,8 @@ class OpenCVCamera(BaseCamera):
         self,
         stream_name: Literal["main", "full"] = "main",
         wait: Optional[float] = None,
-    ) -> JPEGBlob:
-        """Acquire one image from the camera and return as a JPEG blob.
+    ) -> Image:
+        """Acquire one image from the camera and return as a PIL image.
 
         This function will produce a JPEG image.
         """
