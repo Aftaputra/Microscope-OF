@@ -524,9 +524,22 @@ class StreamingPiCamera2(BaseCamera):
         with self._streaming_picamera() as cam:
             cam.capture_metadata()
 
+    @contextmanager
+    def _switch_to_still_capture_mode(self) -> Iterator[Picamera2]:
+        """Get the picamera lock, pause stream and switch into still capture config.
+
+        Restarts stream when complete.
+        """
+        with self._streaming_picamera(pause_stream=True) as cam:
+            logging.debug("Reconfiguring camera for full resolution capture")
+            cam.configure(cam.create_still_configuration(sensor=self._sensor_mode))
+            cam.start()
+            time.sleep(0.2)
+            yield cam
+
     def capture_image(
         self,
-        stream_name: Literal["main", "lores", "raw", "full"] = "main",
+        stream_name: Literal["main", "lores", "full"] = "main",
         wait: Optional[float] = 0.9,
     ) -> Image:
         """Acquire one image from the camera and return it as a PIL Image.
@@ -540,7 +553,8 @@ class StreamingPiCamera2(BaseCamera):
         reconfigure the camera to capture a full resolution image.
 
         :param stream_name: (Optional) The PiCamera2 stream to use, should be one of
-            ["main", "lores", "raw", "full"]. Default = "main"
+            ["main", "lores", "full"]. Default = "main". Note that "raw" images cannot
+            be captured as PIL images. Use capture_array
         :param wait: (Optional, float) Set a timeout in seconds. Default = 0.9s,
             lower than the 1s timeout for the camera. This ensures that our code times
             out and returns before the camera times out. If None is set the default
@@ -554,11 +568,7 @@ class StreamingPiCamera2(BaseCamera):
             with self._streaming_picamera() as cam:
                 return cam.capture_image(stream_name, wait=wait)
         elif stream_name == "full":
-            with self._streaming_picamera(pause_stream=True) as cam:
-                logging.debug("Reconfiguring camera for full resolution capture")
-                cam.configure(cam.create_still_configuration())
-                cam.start()
-                time.sleep(0.2)
+            with self._switch_to_still_capture_mode() as cam:
                 return cam.capture_image(name="main", wait=wait)
         else:
             raise ValueError(f'Unknown stream name "{stream_name}"')
@@ -584,6 +594,12 @@ class StreamingPiCamera2(BaseCamera):
 
         :raises TimeoutError: if this time is exceeded during capture.
         """
+        if stream_name == "raw":
+            # Raw cannot used capture_image.
+            if wait is None:
+                wait = 0.9
+            with self._switch_to_still_capture_mode() as cam:
+                return cam.capture_array(name="raw", wait=wait)
         # Note that internally the PiCamera creates a PIL image and then converts to
         # numpy with ``np.array(Image.open(io.BytesIO(self.make_buffer(name))))``.
         # As such we use capture_image to get an Image from the picamera and return
