@@ -7,8 +7,6 @@ See repository root for licensing information.
 """
 
 from __future__ import annotations
-import io
-import json
 import logging
 from typing import Literal, Optional
 from threading import Thread
@@ -17,7 +15,6 @@ import time
 import cv2
 import numpy as np
 from PIL import Image
-import piexif
 from scipy.ndimage import gaussian_filter
 
 import labthings_fastapi as lt
@@ -29,7 +26,7 @@ from openflexure_microscope_server.ui import (
     property_control_for,
 )
 
-from . import BaseCamera, JPEGBlob, ArrayModel
+from . import BaseCamera, ArrayModel
 from ..stage import BaseStage
 
 # The ratio between "motor" steps and pixels
@@ -290,34 +287,6 @@ class SimulatedCamera(BaseCamera):
         """
         logging.warning(f"Simulation camera doesn't respect {resolution=} setting")
         return self.generate_frame()
-
-    @lt.thing_action
-    def capture_jpeg(
-        self,
-        metadata_getter: lt.deps.GetThingStates,
-        resolution: Literal["main", "full"] = "main",
-    ) -> JPEGBlob:
-        """Acquire one image from the camera and return as a JPEG blob.
-
-        This function will produce a JPEG image.
-        """
-        logging.warning(f"Simulation camera doesn't respect {resolution=} setting")
-        frame = self.capture_array()
-        jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
-        exif_dict = {
-            "Exif": {
-                piexif.ExifIFD.UserComment: json.dumps(metadata_getter()).encode(
-                    "utf-8"
-                )
-            },
-            "GPS": {},
-            "Interop": {},
-            "1st": {},
-            "thumbnail": None,
-        }
-        output = io.BytesIO()
-        piexif.insert(piexif.dump(exif_dict), jpeg, output)
-        return JPEGBlob.from_bytes(output.getvalue())
 
     def capture_image(
         self,

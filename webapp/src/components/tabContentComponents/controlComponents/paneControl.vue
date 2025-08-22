@@ -141,7 +141,7 @@
               <action-button
                 thing="camera"
                 action="capture_jpeg"
-                :submit-data="{ resolution: 'main' }"
+                :submit-data="{ stream_name: 'main' }"
                 :submit-label="'Low Resolution'"
                 :submit-on-event="'globalCaptureEvent'"
                 @response="handleCaptureResponse"
@@ -153,7 +153,7 @@
               <action-button
                 thing="camera"
                 action="capture_jpeg"
-                :submit-data="{ resolution: 'full' }"
+                :submit-data="{ stream_name: 'full' }"
                 submit-label="Full Resolution"
                 :submit-on-event="'globalCaptureEvent'"
                 @response="handleCaptureResponse"

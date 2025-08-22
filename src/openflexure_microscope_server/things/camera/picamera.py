@@ -16,7 +16,6 @@ https://datasheets.raspberrypi.com/camera/raspberry-pi-camera-guide.pdf
 
 from __future__ import annotations
 from typing import Annotated, Iterator, Literal, Mapping, Optional, overload
-from datetime import datetime
 import json
 import logging
 import os
@@ -27,7 +26,6 @@ from contextlib import contextmanager
 from threading import RLock
 
 from pydantic import BaseModel, BeforeValidator
-import piexif
 import numpy as np
 from PIL import Image
 from picamera2 import Picamera2
@@ -44,7 +42,7 @@ from openflexure_microscope_server.ui import (
     property_control_for,
 )
 from . import picamera_recalibrate_utils as recalibrate_utils
-from . import BaseCamera, JPEGBlob, ArrayModel
+from . import BaseCamera, ArrayModel
 
 
 class MissingCalibrationError(RuntimeError):
@@ -528,20 +526,39 @@ class StreamingPiCamera2(BaseCamera):
 
     def capture_image(
         self,
-        stream_name: Literal["main", "lores", "raw"] = "main",
+        stream_name: Literal["main", "lores", "raw", "full"] = "main",
         wait: Optional[float] = 0.9,
     ) -> Image:
-        """Acquire one image from the camera.
+        """Acquire one image from the camera and return it as a PIL Image.
 
-        Return it as a PIL Image
+        If the ``stream_name`` parameter is ``main`` or ``lores``, it will be captured
+        from the main preview stream, or the low-res preview stream, respectively. This
+        means the camera won't be reconfigured, and the stream will not pause (though
+        it may miss one frame).
 
-        stream_name: (Optional) The PiCamera2 stream to use, should be one of ["main", "lores", "raw"]. Default = "main"
-        wait: (Optional, float) Set a timeout in seconds.
-        A TimeoutError is raised if this time is exceeded during capture.
-        Default = 0.9s, lower than the 1s timeout default in picamera yaml settings
+        If ``full`` resolution is requested, we will briefly pause the MJPEG stream and
+        reconfigure the camera to capture a full resolution image.
+
+        :param stream_name: (Optional) The PiCamera2 stream to use, should be one of
+            ["main", "lores", "raw", "full"]. Default = "main"
+        :param wait: (Optional, float) Set a timeout in seconds.
+
+        :rasises TimeoutError: if this time is exceeded during capture. Default = 0.9s,
+            lower than the 1s timeout for the camera. This ensures that our code times
+            out and returns before the camera times out.
         """
-        with self._streaming_picamera() as cam:
-            return cam.capture_image(stream_name, wait=wait)
+        if stream_name in ["main", "lores", "raw"]:
+            with self._streaming_picamera() as cam:
+                return cam.capture_image(stream_name, wait=wait)
+        elif stream_name == "full":
+            with self._streaming_picamera(pause_stream=True) as cam:
+                logging.debug("Reconfiguring camera for full resolution capture")
+                cam.configure(cam.create_still_configuration())
+                cam.start()
+                time.sleep(0.2)
+                return cam.capture_image(name="main", wait=wait)
+        else:
+            raise ValueError(f'Unknown stream name "{stream_name}"')
 
     @lt.thing_action
     def capture_array(
@@ -555,7 +572,8 @@ class StreamingPiCamera2(BaseCamera):
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
 
-        stream_name: (Optional) The PiCamera2 stream to use, should be one of ["main", "lores", "raw", "full"]. Default = "main"
+        stream_name: (Optional) The PiCamera2 stream to use, should be one of ["main",
+            "lores", "raw", "full"]. Default = "main"
         wait: (Optional, float) Set a timeout in seconds.
         A TimeoutError is raised if this time is exceeded during capture.
         Default = 0.9s, lower than the 1s timeout default in picamera yaml settings
@@ -583,62 +601,6 @@ class StreamingPiCamera2(BaseCamera):
         """
         with self._streaming_picamera() as cam:
             return cam.camera_configuration()
-
-    @lt.thing_action
-    def capture_jpeg(
-        self,
-        metadata_getter: lt.deps.GetThingStates,
-        resolution: Literal["lores", "main", "full"] = "main",
-        wait: Optional[float] = 0.9,
-    ) -> JPEGBlob:
-        """Acquire one image from the camera as a JPEG.
-
-        The JPEG will be acquired using ``Picamera2.capture_file``. If the
-        ``resolution`` parameter is ``main`` or ``lores``, it will be captured
-        from the main preview stream, or the low-res preview stream,
-        respectively. This means the camera won't be reconfigured, and
-        the stream will not pause (though it may miss one frame).
-
-        If ``full`` resolution is requested, we will briefly pause the
-        MJPEG stream and reconfigure the camera to capture a full
-        resolution image.
-
-        wait: (Optional, float) Set a timeout in seconds.
-        A TimeoutError is raised if this time is exceeded during capture.
-        Default = 0.9s, lower than the 1s timeout default in picamera yaml settings
-
-        Note that this always uses the image processing pipeline - to
-        bypass this, you must use a raw capture.
-        """
-        fname = datetime.now().strftime("%Y-%m-%d-%H%M%S.jpeg")
-        folder = tempfile.TemporaryDirectory()
-        path = os.path.join(folder.name, fname)
-        config = self.camera_configuration
-        # Low-res and main streams are running already - so we don't need
-        # to reconfigure for these
-        if resolution in ("lores", "main") and config[resolution]:
-            with self._streaming_picamera() as cam:
-                cam.capture_file(path, name=resolution, format="jpeg", wait=wait)
-        else:
-            if resolution != "full":
-                logging.warning(
-                    f"There was no {resolution} stream, capturing full resolution"
-                )
-            with self._streaming_picamera(pause_stream=True) as cam:
-                logging.info("Reconfiguring camera for full resolution capture")
-                cam.configure(cam.create_still_configuration())
-                cam.start()
-                cam.options["quality"] = 95
-                logging.info("capturing")
-                cam.capture_file(path, name="main", format="jpeg", wait=wait)
-                logging.info("done")
-        # After the file is written, add metadata about the current Things
-        exif_dict = piexif.load(path)
-        exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(
-            metadata_getter()
-        ).encode("utf-8")
-        piexif.insert(piexif.dump(exif_dict), path)
-        return JPEGBlob.from_temporary_directory(folder, fname)
 
     @lt.thing_property
     def capture_metadata(self) -> dict:
