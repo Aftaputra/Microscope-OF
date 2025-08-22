@@ -40,7 +40,7 @@ def test_jpeg_and_array(client):
     assert mjpeg_frame.format == "JPEG"
 
     # Capture a jpeg
-    blob = client.capture_jpeg(resolution="main")
+    blob = client.capture_jpeg(stream_name="main")
     jpeg_capture = Image.open(blob.open())
     jpeg_capture.verify()
     assert jpeg_capture.format == "JPEG"
