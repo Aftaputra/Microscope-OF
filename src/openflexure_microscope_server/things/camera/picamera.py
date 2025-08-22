@@ -541,12 +541,15 @@ class StreamingPiCamera2(BaseCamera):
 
         :param stream_name: (Optional) The PiCamera2 stream to use, should be one of
             ["main", "lores", "raw", "full"]. Default = "main"
-        :param wait: (Optional, float) Set a timeout in seconds.
-
-        :rasises TimeoutError: if this time is exceeded during capture. Default = 0.9s,
+        :param wait: (Optional, float) Set a timeout in seconds. Default = 0.9s,
             lower than the 1s timeout for the camera. This ensures that our code times
-            out and returns before the camera times out.
+            out and returns before the camera times out. If None is set the default
+            value of 0.9 will be used to prevent the possibility of the camera locking.
+
+        :raises TimeoutError: if this time is exceeded during capture.
         """
+        if wait is None:
+            wait = 0.9
         if stream_name in ["main", "lores", "raw"]:
             with self._streaming_picamera() as cam:
                 return cam.capture_image(stream_name, wait=wait)
@@ -572,20 +575,20 @@ class StreamingPiCamera2(BaseCamera):
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
 
-        stream_name: (Optional) The PiCamera2 stream to use, should be one of ["main",
-            "lores", "raw", "full"]. Default = "main"
-        wait: (Optional, float) Set a timeout in seconds.
-        A TimeoutError is raised if this time is exceeded during capture.
-        Default = 0.9s, lower than the 1s timeout default in picamera yaml settings
+        :param stream_name: (Optional) The PiCamera2 stream to use, should be one of
+            ["main", "lores", "raw", "full"]. Default = "main"
+        :param wait: (Optional, float) Set a timeout in seconds. Default = 0.9s,
+            lower than the 1s timeout for the camera. This ensures that our code times
+            out and returns before the camera times out. If None is set the default
+            value of 0.9 will be used to prevent the possibility of the camera locking.
+
+        :raises TimeoutError: if this time is exceeded during capture.
         """
-        # This was slower than capture_image for our use case, but directly returning
-        # an image as an array is still a useful feature
-        if stream_name == "full":
-            with self._streaming_picamera(pause_stream=True) as picam2:
-                capture_config = picam2.create_still_configuration()
-                return picam2.switch_mode_and_capture_array(capture_config, wait=wait)
-        with self._streaming_picamera() as cam:
-            return cam.capture_array(stream_name, wait=wait)
+        # Note that internally the PiCamera creates a PIL image and then converts to
+        # numpy with ``np.array(Image.open(io.BytesIO(self.make_buffer(name))))``.
+        # As such we use capture_image to get an Image from the picamera and return
+        # as array
+        return np.array(self.capture_image(stream_name, wait))
 
     @lt.thing_property
     def camera_configuration(self) -> Mapping:

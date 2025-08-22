@@ -8,7 +8,6 @@ See repository root for licensing information.
 
 from __future__ import annotations
 from typing import Literal, Optional, Tuple, Any
-from types import EllipsisType
 import json
 import io
 import time
@@ -263,7 +262,7 @@ class BaseCamera(lt.Thing):
         metadata_getter: lt.deps.GetThingStates,
         logger: lt.deps.InvocationLogger,
         stream_name: str = "main",
-        wait: Optional[float | EllipsisType] = ...,
+        wait: Optional[float] = None,
     ) -> JPEGBlob:
         """Acquire one image from the camera as a JPEG.
 
@@ -274,20 +273,15 @@ class BaseCamera(lt.Thing):
             injected.
         :param logger: LabThings InvocationLogger dependency, automatically injected.
         :param stream_name: A stream name supported by this camera.
-        :param wait: (Optional, float) Set a timeout in seconds. If not set it will
+        :param wait: (Optional, float) Set a timeout in seconds. If None it will
             use the default for the underlying camera.
         """
         fname = datetime.now().strftime("%Y-%m-%d-%H%M%S.jpeg")
         directory = tempfile.TemporaryDirectory()
         jpeg_path = os.path.join(directory.name, fname)
 
-        # Using Ellipsis to specify no input specified. As `None` set for wait may
-        # have a meaning as it does for the Picamera. If wait is Ellipsis then
-        # do not specify.
-        if wait is Ellipsis:
-            img = self.capture_image(stream_name)
-        else:
-            img = self.capture_image(stream_name, wait)
+        img = self.capture_image(stream_name, wait)
+
         self._save_capture(
             jpeg_path=jpeg_path,
             image=img,

@@ -277,7 +277,8 @@ class SimulatedCamera(BaseCamera):
     @lt.thing_action
     def capture_array(
         self,
-        resolution: Literal["main", "full"] = "full",
+        stream_name: Literal["main", "full"] = "full",
+        wait: Optional[float] = None,
     ) -> ArrayModel:
         """Acquire one image from the camera and return as an array.
 
@@ -285,7 +286,9 @@ class SimulatedCamera(BaseCamera):
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
         """
-        logging.warning(f"Simulation camera doesn't respect {resolution=} setting")
+        if wait is not None:
+            logging.warning("Simulation camera has no wait option. Use None.")
+        logging.warning(f"Simulation camera camera doesn't respect {stream_name=}")
         return self.generate_frame()
 
     def capture_image(
@@ -297,9 +300,9 @@ class SimulatedCamera(BaseCamera):
 
         It is used for capture to memory.
         """
-        logging.warning(
-            f"Simulation camera doesn't respect {stream_name=} or {wait=} arguments."
-        )
+        if wait is not None:
+            logging.warning("Simulation camera has no wait option. Use None.")
+        logging.warning(f"Simulation camera camera doesn't respect {stream_name=}")
         return Image.fromarray(self.generate_frame())
 
     @lt.thing_action

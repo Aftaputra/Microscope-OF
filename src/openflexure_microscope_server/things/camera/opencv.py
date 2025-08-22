@@ -83,7 +83,8 @@ class OpenCVCamera(BaseCamera):
     @lt.thing_action
     def capture_array(
         self,
-        resolution: Literal["main", "full"] = "full",
+        stream_name: Literal["main", "full"] = "full",
+        wait: Optional[float] = None,
     ) -> NDArray:
         """Acquire one image from the camera and return as an array.
 
@@ -91,7 +92,9 @@ class OpenCVCamera(BaseCamera):
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
         """
-        logging.warning(f"OpenCV camera doesn't respect {resolution} setting")
+        if wait is not None:
+            logging.warning("OpenCV camera has no wait option. Use None.")
+        logging.warning(f"OpenCV camera doesn't respect {stream_name=}")
         ret, frame = self.cap.read()
         if not ret:
             raise RuntimeError(
@@ -108,7 +111,7 @@ class OpenCVCamera(BaseCamera):
 
         This function will produce a JPEG image.
         """
-        logging.warning(
-            f"Simulation camera doesn't respect {stream_name=} or {wait=} arguments."
-        )
+        if wait is not None:
+            logging.warning("OpenCV camera has no wait option. Use None.")
+        logging.warning(f"OpenCV camera doesn't respect {stream_name=}")
         return Image.fromarray(self.capture_array())
