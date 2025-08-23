@@ -17,3 +17,11 @@ def mock_app(mocker):
     app = mocker.Mock()
     app.get.return_value = wrapper
     return app
+
+
+@pytest.fixture
+def mock_server(mock_app, mocker):
+    """Return a LabThings FastAPI server where .app is the mock_app fixture."""
+    server = mocker.Mock()
+    server.app = mock_app
+    return server
