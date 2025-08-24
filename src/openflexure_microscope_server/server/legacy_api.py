@@ -4,8 +4,20 @@ import labthings_fastapi as lt
 from fastapi import Response
 from socket import gethostname
 
+FAKE_ROUTES = [
+    "/api/v2/",
+    "/api/v2/streams/snapshot",
+    "/api/v2/instrument/settings/name",
+]
 
-def add_v2_endpoints(thing_server: lt.ThingServer):
+
+class JPEGResponse(Response):
+    """A FastAPI response with media_type set for a JPEG image."""
+
+    media_type = "image/jpeg"
+
+
+def add_v2_endpoints(thing_server: lt.ThingServer) -> None:
     """Add the v2 API endpoints for OpenFlexure Connect discoverability."""
     app = thing_server.app
 
@@ -19,15 +31,7 @@ def add_v2_endpoints(thing_server: lt.ThingServer):
 
         This is used by OF Connect to identify the microscope.
         """
-        fake_routes = [
-            "/api/v2/",
-            "/api/v2/streams/snapshot",
-            "/api/v2/instrument/settings/name",
-        ]
-        return {url: {"url": url, "methods": ["GET"]} for url in fake_routes}
-
-    class JPEGResponse(Response):
-        media_type = "image/jpeg"
+        return {url: {"url": url, "methods": ["GET"]} for url in FAKE_ROUTES}
 
     @app.get("/api/v2/streams/snapshot")
     @app.head("/api/v2/streams/snapshot")
