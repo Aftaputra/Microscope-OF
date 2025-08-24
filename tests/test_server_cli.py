@@ -18,12 +18,13 @@ def test_no_config():
         ofm_server.serve_from_cli([])
 
 
-def test_successful_start(mock_server, mocker, caplog):
+def test_successful_start(mocker, caplog):
     """Check some basic things from the microscope setup.
 
     This test checks that logging is set up and that the actual function used for
     handling shutdown events shuts down the mjpeg streams.
     """
+    mock_server = mocker.Mock()
     # Create a mock for the camera so we can check the MJPEG streams are closed on
     # shutdown.
     mock_camera = mocker.Mock()
@@ -69,11 +70,12 @@ def test_successful_start(mock_server, mocker, caplog):
     assert str(caplog.records[0].msg) == "mock-54321"
 
 
-def test_failed_customise(mock_server, mocker):
+def test_failed_customise(mocker):
     """Check what happens if there is an error before the server is started by uvicorn.
 
     This differs based on whether the --fallback flag is set.
     """
+    mock_server = mocker.Mock()
     # Mock the LabThings function that returns the server so we have a mock server
     mocker.patch(
         "openflexure_microscope_server.server.lt.cli.server_from_config",

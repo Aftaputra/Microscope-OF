@@ -17,8 +17,9 @@ SIM_CONFIG = os.path.join(REPO_ROOT, "ofm_config_simulation.json")
 
 
 @pytest.mark.parametrize("side_effect", [None, RuntimeError("Mock")])
-def test_monkey_patched_handle_exit(side_effect, mock_app, mocker):
+def test_monkey_patched_handle_exit(side_effect, mocker):
     """Test that handle exit is monkey_patched."""
+    mock_app = mocker.Mock()
     # Setup the same for any side_effect
     # Create mocks for FastAPI.Server, and for our custom shutdown function
     mock_shutdown_func = mocker.Mock(side_effect=side_effect)
@@ -49,8 +50,9 @@ def test_monkey_patched_handle_exit(side_effect, mock_app, mocker):
         assert original_mock_handle_exit.call_count == 0
 
 
-def test_customise_server(mock_server, mocker):
+def test_customise_server(mocker):
     """Check that all server customisation stages are called."""
+    mock_server = mocker.Mock()
     # Mock everything to be called in customisation, partly setup may not be complete,
     # but also to limit excess coverage reporting.
     mocked_add_static = mocker.patch.object(ofm_server, "add_static_files")
