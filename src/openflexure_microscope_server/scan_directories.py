@@ -9,7 +9,7 @@ import threading
 import json
 from datetime import datetime, timedelta
 
-from pydantic import BaseModel, field_validator, field_serializer
+from pydantic import BaseModel, field_validator, field_serializer, ConfigDict
 
 from openflexure_microscope_server.utilities import requires_lock
 from openflexure_microscope_server.utilities import make_name_safe
@@ -49,7 +49,7 @@ class ScanData(BaseModel):
     Properties that are not known until the end have ``None`` serialised as "Unknown"
     """
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     scan_name: str
     """The name of the scan i.e. scan_0001"""
