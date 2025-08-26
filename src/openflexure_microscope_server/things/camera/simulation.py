@@ -156,11 +156,14 @@ class SimulatedCamera(BaseCamera):
             int(pos[0]) - image_width // 2 - canvas_width // 2,
             int(pos[1]) - image_height // 2 - canvas_height // 2,
         )
-        x_slice = slice(top_left[0], top_left[0] + self.shape[0])
-        y_slice = slice(top_left[1], top_left[1] + self.shape[1])
-        z_slice = slice(None)
+        # Create index list with modulo rather than slicing to handle wrapping at the
+        # canvas edge.
+        x_indices = (np.arange(top_left[0], top_left[0] + image_width)) % canvas_width
+        y_indices = (np.arange(top_left[1], top_left[1] + image_height)) % canvas_height
+        z_indices = np.arange(self.shape[2])
         canvas = self.canvas if self._show_sample else self.blank_canvas
-        focused_image = canvas[(x_slice, y_slice, z_slice)]
+        # Use npx to make each 1d index list 3D
+        focused_image = canvas[np.ix_(x_indices, y_indices, z_indices)]
         image = gaussian_filter(
             focused_image,
             sigma=np.abs(pos[2]) / 5,
@@ -265,7 +268,7 @@ class SimulatedCamera(BaseCamera):
                 jpeg_lores = cv2.imencode(".jpg", ds_frame)[1].tobytes()
                 self.lores_mjpeg_stream.add_frame(jpeg_lores, portal)
             except Exception as e:
-                logging.error(f"Failed to capture frame: {e}, retrying...")
+                logging.exception(f"Failed to capture frame: {e}, retrying...")
 
     @lt.thing_action
     def discard_frames(self) -> None:
