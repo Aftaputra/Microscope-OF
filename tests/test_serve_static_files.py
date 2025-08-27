@@ -12,18 +12,6 @@ from openflexure_microscope_server.server import serve_static_files
 
 
 @pytest.fixture
-def mock_app(mocker):
-    """Return a mock FastAPI app.
-
-    This is just a mock, where the get method returns a mock.
-    """
-    wrapper = mocker.Mock()
-    app = mocker.Mock()
-    app.get.return_value = wrapper
-    return app
-
-
-@pytest.fixture
 def mock_static_dir():
     """Return the path of a mock static directory.
 
@@ -46,12 +34,13 @@ def mock_static_dir():
         ["fontfile.woff2", True],
     ],
 )
-def test_add_static_file(filename, allow_cache, mock_app):
+def test_add_static_file(filename, allow_cache, mocker):
     """Test running add_static_file with both font and non-font files.
 
     This should creates a wrapped function that returns a FileResponse, this
     should be have the path on disk and the no cache headers if not a woff2 font.
     """
+    mock_app = mocker.Mock()
     # Get the wrapper function from the mocked decorator
     wrapper = mock_app.get.return_value
     serve_static_files.add_static_file(mock_app, fname=filename, folder="bar")
@@ -83,8 +72,9 @@ def test_add_static_file(filename, allow_cache, mock_app):
             assert response.headers[key] == value
 
 
-def test_add_static_with_no_static_dir(mock_app, mocker):
+def test_add_static_with_no_static_dir(mocker):
     """Test that a FileNotFound error is raised if the static dir does not exist."""
+    mock_app = mocker.Mock()
     # Mock STATIC_PATH to something that doesn't exist
     mocker.patch(
         "openflexure_microscope_server.server.serve_static_files.STATIC_PATH",
@@ -128,8 +118,9 @@ def test_check_static_dir(mock_static_dir, mocker):
         serve_static_files.check_static_dir()
 
 
-def test_add_static_files(mock_app, mock_static_dir, mocker):
+def test_add_static_files(mock_static_dir, mocker):
     """Check add_static_files mounts the internal webapp dirs, and sets endpoints for files."""
+    mock_app = mocker.Mock()
     mocker.patch(
         "openflexure_microscope_server.server.serve_static_files.STATIC_PATH",
         mock_static_dir,
@@ -170,8 +161,9 @@ def test_add_static_files(mock_app, mock_static_dir, mocker):
     assert os.path.join(mock_static_dir, "js") in mounted_dirs
 
 
-def test_add_static_files_with_scan_dir(mock_app, mock_static_dir, mocker):
+def test_add_static_files_with_scan_dir(mock_static_dir, mocker):
     """Check the scan dir mounts if supplied."""
+    mock_app = mocker.Mock()
     mocker.patch(
         "openflexure_microscope_server.server.serve_static_files.STATIC_PATH",
         mock_static_dir,
