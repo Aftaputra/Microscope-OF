@@ -106,10 +106,8 @@ class OFMLogFileFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord):
         """Adjust the logging formatting for uvicorn logs.
 
-        Any ``uvicorn.error`` logs that are at a lower
-
         uvicorn has two loggers. Each API access is ``uvicorn.access`` which we filter
-        due to the noise the other is ``uvicorn.error`` for more important messages.
+        due to the noise. The other is ``uvicorn.error`` for more important messages.
         However, ``uvicorn.error`` is used for expected messages that are not errors,
         such as server start up. This can lead to people erroneously thinking that
         there is an error with their miroscope.

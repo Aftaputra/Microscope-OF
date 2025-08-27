@@ -181,7 +181,7 @@ def test_uvicorn_error_only_says_error_on_error(
     ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
     with tempfile.TemporaryDirectory() as tmpdir:
         ofm_logging.configure_logging(tmpdir)
-        log_command("Mockedy mock mock!")
+        log_command("Mockety mock mock!")
         with open(ofm_logging.OFM_LOG_FILE, "r", encoding="utf-8") as log_file:
             log_txt = log_file.read()
         for name in names_in_log:
