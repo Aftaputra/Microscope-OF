@@ -6,7 +6,7 @@ the microscope, server, and thing states to the web API.
 
 from collections.abc import Mapping
 import socket
-from typing import Optional
+from typing import Optional, Any
 from uuid import UUID, uuid4
 import subprocess
 import os
@@ -127,7 +127,7 @@ class OpenFlexureSystem(lt.Thing):
         return metadata_getter()
 
     @property
-    def thing_state(self) -> Mapping:
+    def thing_state(self) -> Mapping[str, Any]:
         """Summary metadata describing the current state of the Thing."""
         return {
             "hostname": self.hostname,
