@@ -12,7 +12,7 @@ from gitlab.exceptions import GitlabGetError
 PROJECT_ID = 9238334
 
 
-def main(tag: str, branch: str = "v3"):
+def main(tag: str, branch: str = "v3") -> None:
     """Create a list of the MRs into a given branch after a tag.
 
     :param tag: The tag the mrs should be since.

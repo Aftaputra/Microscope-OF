@@ -105,7 +105,7 @@ class ScanData(BaseModel):
     This should be set with ``set_final_data()`` to ensure duration is set.
     """
 
-    def set_final_data(self, result: str):
+    def set_final_data(self, result: str) -> None:
         """Set the final data for the scan, scan duration is automatically calculated.
 
         :param result: A string describing the result.
@@ -423,13 +423,13 @@ class ScanDirectory:
         """The time the directory was created on disk."""
         return os.path.getctime(self.dir_path)
 
-    def get_scan_files(self):
+    def get_scan_files(self) -> list[str]:
         """Return a list of the files in the images dir."""
         if self.images_dir is None:
             return []
         return os.listdir(self.images_dir)
 
-    def _extract_scan_images(self, file_list: list[str]):
+    def _extract_scan_images(self, file_list: list[str]) -> list[str]:
         """Extract files which match the naming convention for scan images.
 
         :param file_list: The list of files to search. Normally this would be
@@ -439,7 +439,7 @@ class ScanDirectory:
         """
         return [i for i in file_list if IMAGE_REGEX.search(i)]
 
-    def _extract_final_stitches(self, file_list: list[str]):
+    def _extract_final_stitches(self, file_list: list[str]) -> list[str]:
         """Extract files which match the naming convention for final stitches.
 
         :param file_list: The list of files to search.
@@ -448,7 +448,7 @@ class ScanDirectory:
         """
         return [i for i in file_list if STITCH_REGEX.search(i)]
 
-    def _extract_dzi_files(self, file_list: list[str]):
+    def _extract_dzi_files(self, file_list: list[str]) -> list[str]:
         """Extract files which match the naming convention for dzi_files.
 
         :param file_list: The list of files to search.
@@ -509,7 +509,7 @@ class ScanDirectory:
                 files.append(os.path.relpath(full_path, self.dir_path))
         return files
 
-    def save_scan_data(self, scan_data: ScanData):
+    def save_scan_data(self, scan_data: ScanData) -> None:
         """Save the scan data for this scan to disk."""
         if self.scan_data_path is None:
             raise FileNotFoundError(
@@ -551,7 +551,7 @@ class ScanDirectory:
         return zip_fname
 
 
-def get_files_in_zip(zip_path: str):
+def get_files_in_zip(zip_path: str) -> list[str]:
     """List the relative paths of all files and folders in the zip folder specified."""
     scan_zip = zipfile.ZipFile(zip_path)
     return [os.path.normpath(i) for i in scan_zip.namelist()]

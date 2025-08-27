@@ -18,6 +18,7 @@ from typing import (
     NamedTuple,
     Optional,
     Tuple,
+    Mapping,
 )
 from fastapi import HTTPException
 
@@ -85,7 +86,7 @@ class RecordedMove:
         positions: List[CoordinateType] = [p for t, p in self._history if p is not None]
         return MoveHistory(times, positions)
 
-    def clear_history(self):
+    def clear_history(self) -> None:
         """Reset our history to be an empty list."""
         self._history = []
 
@@ -241,7 +242,7 @@ class CameraStageMapper(lt.Thing):
             return None
         return self.last_calibration["image_resolution"]
 
-    def assert_calibrated(self):
+    def assert_calibrated(self) -> None:
         """Raise an exception if the image_to_stage_displacement matrix is not set."""
         if self.image_to_stage_displacement_matrix is None:
             # Disable check of no message in raised exception as the message is explicitly
@@ -254,7 +255,7 @@ class CameraStageMapper(lt.Thing):
         stage: Stage,
         x: float,
         y: float,
-    ):
+    ) -> None:
         """Move by a given number of pixels on the camera.
 
         NB x and y here refer to what is usually understood to be the horizontal and
@@ -273,7 +274,7 @@ class CameraStageMapper(lt.Thing):
         stage.move_relative(x=relative_move[0], y=relative_move[1])
 
     @lt.thing_property
-    def thing_state(self) -> dict[str, Any]:
+    def thing_state(self) -> Mapping[str, Any]:
         """Summary metadata describing the current state of the Thing."""
         return {
             k: getattr(self, k)

@@ -127,7 +127,7 @@ class StackParams:
         """
         return self.min_images_to_test + 15
 
-    def slice_to_save(self, sharpest_index: int):
+    def slice_to_save(self, sharpest_index: int) -> slice:
         """Return the slice of images to save given the index of the sharpest image."""
         images_each_side = (self.images_to_save - 1) // 2
         return slice(
@@ -234,7 +234,7 @@ class JPEGSharpnessMonitor:
 
     running = False
 
-    async def monitor_sharpness(self):
+    async def monitor_sharpness(self) -> None:
         """Start monitoring the frame sizes."""
         self.running = True
         async for frame in self.camera.lores_mjpeg_stream.frame_async_generator():
@@ -244,7 +244,7 @@ class JPEGSharpnessMonitor:
                 break
 
     @contextmanager
-    def run(self):
+    def run(self) -> None:
         """Context manager, during which we will monitor sharpness from the camera."""
         self.portal.start_task_soon(self.monitor_sharpness)
         try:
@@ -403,7 +403,7 @@ class AutofocusThing(lt.Thing):
         sharpness_monitor: SharpnessMonitorDep,
         dz: int = 2000,
         start: Literal["centre", "base"] = "centre",
-    ):
+    ) -> tuple[list[float], list[float]]:
         """Repeatedly autofocus the stage until it looks focused.
 
         This action will run the ``fast_autofocus`` action until it settles on a point

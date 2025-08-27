@@ -72,7 +72,7 @@ class PicameraStreamOutput(Output):
         _timestamp: Optional[int] = None,
         _packet: Any = None,
         _audio: bool = False,
-    ):
+    ) -> None:
         """Add a frame to the stream's ringbuffer."""
         self.stream.add_frame(frame, self.portal)
 
@@ -173,7 +173,7 @@ class StreamingPiCamera2(BaseCamera):
     )
     """Whether the MJPEG stream is active."""
 
-    def save_settings(self):
+    def save_settings(self) -> None:
         """Override save_settings to ensure that camera properties don't recurse.
 
         This method is run by any Thing when a ThingSetting is saved. However, the
@@ -204,7 +204,7 @@ class StreamingPiCamera2(BaseCamera):
         return self._analogue_gain
 
     @analogue_gain.setter
-    def analogue_gain(self, value: float):
+    def analogue_gain(self, value: float) -> None:
         self._analogue_gain = value
         if self.streaming:
             with self._streaming_picamera() as cam:
@@ -224,7 +224,7 @@ class StreamingPiCamera2(BaseCamera):
         return self._colour_gains
 
     @colour_gains.setter
-    def colour_gains(self, value: tuple[float, float]):
+    def colour_gains(self, value: tuple[float, float]) -> None:
         self._colour_gains = value
         if self.streaming:
             with self._streaming_picamera() as cam:
@@ -248,7 +248,7 @@ class StreamingPiCamera2(BaseCamera):
         return self._exposure_time
 
     @exposure_time.setter
-    def exposure_time(self, value: int):
+    def exposure_time(self, value: int) -> None:
         self._exposure_time = value
         if self.streaming:
             with self._streaming_picamera() as cam:
@@ -292,7 +292,7 @@ class StreamingPiCamera2(BaseCamera):
         return SensorModeSelector(**self._sensor_mode)
 
     @sensor_mode.setter
-    def sensor_mode(self, new_mode: Optional[SensorModeSelector | dict]):
+    def sensor_mode(self, new_mode: Optional[SensorModeSelector | dict]) -> None:
         """Change the sensor mode used."""
         if new_mode is None:
             self._sensor_mode = None
@@ -352,7 +352,7 @@ class StreamingPiCamera2(BaseCamera):
                 ) from e
             return None
 
-    def _initialise_picamera(self):
+    def _initialise_picamera(self) -> None:
         """Acquire the picamera device and store it as ``self._picamera``.
 
         This duplicates logic in ``Picamera2.__init__`` to provide a tuning file that
@@ -646,7 +646,7 @@ class StreamingPiCamera2(BaseCamera):
         self,
         target_white_level: int = 700,
         percentile: float = 99.9,
-    ):
+    ) -> None:
         """Adjust exposure until a the target white level is reached.
 
         Starting from the minimum exposure, gradually increase exposure until
@@ -672,7 +672,7 @@ class StreamingPiCamera2(BaseCamera):
         self,
         method: Literal["percentile", "centre"] = "centre",
         luminance_power: float = 1.0,
-    ):
+    ) -> None:
         """Correct the white balance of the image.
 
         This calibration requires a neutral image, such that the 99th centile
@@ -747,7 +747,7 @@ class StreamingPiCamera2(BaseCamera):
                 self._initialise_picamera()
 
     @lt.thing_action
-    def reset_ccm(self):
+    def reset_ccm(self) -> None:
         """Overwrite the colour correction matrix in camera tuning with default values.
 
         These values are from the Raspberry Pi Camera Algorithm and Tuning Guide, page

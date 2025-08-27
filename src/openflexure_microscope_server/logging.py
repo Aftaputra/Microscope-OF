@@ -21,7 +21,7 @@ from fastapi import HTTPException
 OFM_LOG_FILE = None
 
 
-def configure_logging(log_folder: str):
+def configure_logging(log_folder: str) -> None:
     """Configure logging for the server while it is running.
 
     This modifies the root logger to have a rotating file handler and
@@ -103,7 +103,7 @@ def retrieve_log_from_file() -> PlainTextResponse:
 class OFMLogFileFormatter(logging.Formatter):
     """The formatter used for the OpenFlexure Microscope Server log file."""
 
-    def format(self, record: logging.LogRecord):
+    def format(self, record: logging.LogRecord) -> str:
         """Adjust the logging formatting for uvicorn logs.
 
         uvicorn has two loggers. Each API access is ``uvicorn.access`` which we filter
@@ -132,7 +132,7 @@ class OFMHandler(logging.Handler):
         self._log = []
         self._max_logs = max_logs
 
-    def append_record(self, record: logging.LogRecord):
+    def append_record(self, record: logging.LogRecord) -> None:
         """Format message and append it to a list of records.
 
         The built in formatter is used to format the record.
@@ -143,7 +143,7 @@ class OFMHandler(logging.Handler):
         while len(self._log) > self._max_logs:
             self._log.pop(0)
 
-    def emit(self, record: logging.LogRecord):
+    def emit(self, record: logging.LogRecord) -> None:
         """Emit will save the logged record to the log."""
         try:
             if record.levelno >= self.level:
@@ -156,7 +156,7 @@ class OFMHandler(logging.Handler):
             self.handleError(record)
 
     @property
-    def log_history(self):
+    def log_history(self) -> str:
         """Return the log history up to the maximum number of logs."""
         return "\n".join(self._log)
 
@@ -164,7 +164,7 @@ class OFMHandler(logging.Handler):
 class UvicornAccessFilter(logging.Filter):
     """A logging filter to filter out "uvicorn.access" messages."""
 
-    def filter(self, record: logging.LogRecord):
+    def filter(self, record: logging.LogRecord) -> bool:
         """Return False if record is from "uvicorn.access"."""
         return not record.name.startswith("uvicorn.access")
 

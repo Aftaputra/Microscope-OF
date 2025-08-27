@@ -11,7 +11,7 @@ As the object will be used as a context manager create the hardware connection i
 
 from __future__ import annotations
 from collections.abc import Sequence, Mapping
-from typing import Literal
+from typing import Literal, Never, Any
 
 import labthings_fastapi as lt
 
@@ -119,12 +119,12 @@ class BaseStage(lt.Thing):
         )
 
     @property
-    def thing_state(self):
+    def thing_state(self) -> Mapping[str, Any]:
         """Summary metadata describing the current state of the stage."""
         return {"position": self.position}
 
     @lt.thing_action
-    def invert_axis_direction(self, axis: Literal["x", "y", "z"]):
+    def invert_axis_direction(self, axis: Literal["x", "y", "z"]) -> None:
         """Invert the direction setting of the given axis.
 
         :param axis: The axis name (x, y or z) to invert.
@@ -143,7 +143,7 @@ class BaseStage(lt.Thing):
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: int,
-    ):
+    ) -> None:
         """Make a relative move. Keyword arguments should be axis names."""
         self._hardware_move_relative(
             cancel=cancel,
@@ -156,7 +156,7 @@ class BaseStage(lt.Thing):
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: int,
-    ):
+    ) -> Never:
         """Make a relative move in the coordinate system used by the physical hardware.
 
         Make sure to use and update ``self._hardware_position`` not ``self.position``.
@@ -171,7 +171,7 @@ class BaseStage(lt.Thing):
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: int,
-    ):
+    ) -> None:
         """Make an absolute move. Keyword arguments should be axis names."""
         self._hardware_move_absolute(
             cancel=cancel,
@@ -184,7 +184,7 @@ class BaseStage(lt.Thing):
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: int,
-    ):
+    ) -> Never:
         """Make a absolute move in the coordinate system used by the physical hardware.
 
         Make sure to use and update ``self._hardware_position`` not ``self.position``.
@@ -194,7 +194,7 @@ class BaseStage(lt.Thing):
         )
 
     @lt.thing_action
-    def set_zero_position(self):
+    def set_zero_position(self) -> Never:
         """Make the current position zero in all axes.
 
         This action does not move the stage, but resets the position to zero.

@@ -133,7 +133,7 @@ class CameraMemoryBuffer:
                 "No image with matching id in memory to retrieve."
             ) from e
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all images from memory."""
         self._storage.clear()
 
@@ -208,7 +208,7 @@ class BaseCamera(lt.Thing):
             "CameraThings must define their own start_streaming method"
         )
 
-    def kill_mjpeg_streams(self):
+    def kill_mjpeg_streams(self) -> None:
         """Kill the streams now as the server is shutting down.
 
         This is called when uvicorn gets the a shutdown signal. As this is called from

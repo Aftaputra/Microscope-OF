@@ -15,7 +15,7 @@ from .legacy_api import add_v2_endpoints
 from ..logging import configure_logging, retrieve_log, retrieve_log_from_file
 
 
-def set_shutdown_function(shutdown_function: Callable[[], None]):
+def set_shutdown_function(shutdown_function: Callable[[], None]) -> None:
     """Ensure a function is called before the shutdown.
 
     This monkey patches the Uvicorn Server's handle_exit. This is needed because
@@ -32,7 +32,7 @@ def set_shutdown_function(shutdown_function: Callable[[], None]):
     original_handler = Server.handle_exit
 
     @wraps(Server.handle_exit)
-    def handle_exit(*args: Any, **kwargs: Any):
+    def handle_exit(*args: Any, **kwargs: Any) -> None:
         shutdown_function()
         original_handler(*args, **kwargs)
 
@@ -41,7 +41,7 @@ def set_shutdown_function(shutdown_function: Callable[[], None]):
 
 def customise_server(
     server: lt.ThingServer, log_folder: str, scans_folder: Optional[str]
-):
+) -> None:
     """Customise the server with additional endpoints, etc."""
     configure_logging(log_folder)
     add_v2_endpoints(server)
@@ -66,7 +66,7 @@ def _get_scans_dir(config: dict) -> Optional[str]:
     return None
 
 
-def serve_from_cli(argv: Optional[list[str]] = None):
+def serve_from_cli(argv: Optional[list[str]] = None) -> None:
     """Start the server from the command line."""
     args = lt.cli.parse_args(argv)
 
@@ -85,7 +85,7 @@ def serve_from_cli(argv: Optional[list[str]] = None):
         server = lt.cli.server_from_config(config)
         customise_server(server, log_folder, scans_folder)
 
-        def shutdown_call():
+        def shutdown_call() -> None:
             try:
                 # Kill any mjpeg streams so that StreamingResponses close.
                 server.things["/camera/"].kill_mjpeg_streams()

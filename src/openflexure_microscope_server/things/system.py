@@ -51,7 +51,7 @@ class OpenFlexureSystem(lt.Thing):
         return UUID(self._microscope_id)
 
     @microscope_id.setter
-    def microscope_id(self, uuid: UUID):
+    def microscope_id(self, uuid: UUID) -> None:
         # TODO make read only but still settable from disk
         self._microscope_id = uuid
 

@@ -105,7 +105,7 @@ class ErrorCapturingThread(Thread):
             daemon=daemon,
         )
 
-    def join(self, timeout: Optional[float] = None):
+    def join(self, timeout: Optional[float] = None) -> None:
         """Join when the thread is complete.
 
         If the thread ended due to an unhandled exception, the exception will be raised
@@ -121,7 +121,7 @@ class ErrorCapturingThread(Thread):
 
 def _wrap_and_catch_errors(
     target: Callable[..., Any], error_buffer: list, *args: Any, **kwargs: Any
-):
+) -> None:
     """Run target function in a try-except block.
 
     This function is designed only to be used by ErrorCapturingThread.

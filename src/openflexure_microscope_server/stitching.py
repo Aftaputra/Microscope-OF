@@ -34,7 +34,7 @@ class StitcherValidationError(RuntimeError):
     """The stitcher received values that it deems unsafe to create a command from."""
 
 
-def validate_command(cmd: list[str]):
+def validate_command(cmd: list[str]) -> None:
     """Validate that the command only characters that are allowed in a path.
 
     The values in the commands should be numbers, commandline flags, paths, and
@@ -340,7 +340,7 @@ class FinalStitcher(BaseStitcher):
         # Print everything in the buffer when program finishes
         self.log_buffer(process.stdout)
 
-    def log_buffer(self, buffer: TextIOWrapper):
+    def log_buffer(self, buffer: TextIOWrapper) -> None:
         """Log everything in the buffer at INFO level."""
         while line := buffer.readline():
             self.logger.info(line)

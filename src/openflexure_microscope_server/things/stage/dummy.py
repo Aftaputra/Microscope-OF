@@ -55,7 +55,7 @@ class DummyStage(BaseStage):
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: int,
-    ):
+    ) -> None:
         """Make a relative move. Keyword arguments should be axis names."""
         displacement = [kwargs.get(k, 0) for k in self.axis_names]
         self.moving = True
@@ -93,7 +93,7 @@ class DummyStage(BaseStage):
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: int,
-    ):
+    ) -> None:
         """Make an absolute move. Keyword arguments should be axis names."""
         displacement = {
             axis: int(pos) - self._hardware_position[axis]
@@ -105,7 +105,7 @@ class DummyStage(BaseStage):
         )
 
     @lt.thing_action
-    def set_zero_position(self):
+    def set_zero_position(self) -> None:
         """Make the current position zero in all axes.
 
         This action does not move the stage, but resets the position to zero.

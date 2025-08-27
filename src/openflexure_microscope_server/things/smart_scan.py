@@ -38,8 +38,17 @@ CSMDep = lt.deps.direct_thing_client_dependency(
 )
 AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 
-JPEGBlob = lt.blob.blob_type("image/jpeg")
-ZipBlob = lt.blob.blob_type("application/zip")
+
+class JPEGBlob(lt.blob.Blob):
+    """A class representing a JPEG image as a LabThings FastAPI Blob."""
+
+    media_type: str = "image/jpeg"
+
+
+class ZipBlob(lt.blob.Blob):
+    """A class representing a Zip file as a LabThings FastAPI Blob."""
+
+    media_type: str = "application/zip"
 
 
 class ScanNotRunningError(RuntimeError):
@@ -116,7 +125,7 @@ class SmartScanThing(lt.Thing):
         cam: CameraClient,
         csm: CSMDep,
         scan_name: str = "",
-    ):
+    ) -> None:
         """Move the stage to cover an area, taking images that can be tiled together.
 
         The stage will move in a pattern that grows outwards from the starting point,
@@ -171,7 +180,7 @@ class SmartScanThing(lt.Thing):
             self._preview_stitcher = None
 
     @_scan_running
-    def _check_background_and_csm_set(self):
+    def _check_background_and_csm_set(self) -> None:
         """Before starting a scan, check that background and camera-stage-mapping are set.
 
         Raise error if:
@@ -311,7 +320,7 @@ class SmartScanThing(lt.Thing):
         )
 
     @_scan_running
-    def _save_final_scan_data(self, scan_result: str):
+    def _save_final_scan_data(self, scan_result: str) -> None:
         """Update scan data JSON file with data only known at the end of the scan.
 
         Takes scan_result, a string that is either "success", "cancelled by user",
@@ -321,7 +330,7 @@ class SmartScanThing(lt.Thing):
         self._ongoing_scan.save_scan_data(self._scan_data)
 
     @_scan_running
-    def _manage_stitching_threads(self):
+    def _manage_stitching_threads(self) -> None:
         """Manage the stitching threads, starting them if needed and not already running."""
         # Assume 4 images means at least one offset in x and y, making the stitching
         # well constrained.
@@ -330,7 +339,7 @@ class SmartScanThing(lt.Thing):
                 self._preview_stitcher.start()
 
     @_scan_running
-    def _run_scan(self):
+    def _run_scan(self) -> None:
         """Prepare and run the main scan, and perform final actions on completion.
 
         The result (or exception) from the main scan loop determines whether the
@@ -382,7 +391,7 @@ class SmartScanThing(lt.Thing):
         self.purge_empty_scans(logger=self._scan_logger)
 
     @_scan_running
-    def _main_scan_loop(self):
+    def _main_scan_loop(self) -> None:
         """Run the main loop of the scan.
 
         This loop runs during a scan, until no more scan x,y positions
@@ -449,7 +458,7 @@ class SmartScanThing(lt.Thing):
             self._ongoing_scan.zip_files()
 
     @_scan_running
-    def _return_to_starting_position(self):
+    def _return_to_starting_position(self) -> None:
         """Return to the initial scan position, if set."""
         self._scan_logger.info("Returning to starting position.")
         if self._scan_data is not None:
@@ -458,7 +467,7 @@ class SmartScanThing(lt.Thing):
             )
 
     @_scan_running
-    def _perform_final_stitch(self):
+    def _perform_final_stitch(self) -> None:
         """Update the scan zip and perform final stitch of the data."""
         if self._scan_data.image_count <= 3:
             self._scan_logger.info("Not performing a stitch as 3 or fewer images taken")
@@ -729,7 +738,7 @@ class SmartScanThing(lt.Thing):
     def download_zip(
         self,
         scan_name: str,
-    ):
+    ) -> ZipBlob:
         """Return zip after including any files left until the end.
 
         The zipfile is returned as a Blob.
@@ -740,7 +749,7 @@ class SmartScanThing(lt.Thing):
     @lt.thing_action
     def stitch_all_scans(
         self, logger: lt.deps.InvocationLogger, cancel: lt.deps.CancelHook
-    ):
+    ) -> None:
         """Check the list of scans, and stitch any that don't have a DZI associated with it.
 
         :raises RuntimeError: if the microscope is currently running a scan

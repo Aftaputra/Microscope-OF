@@ -65,7 +65,7 @@ class OpenCVCamera(BaseCamera):
             return self._capture_thread.is_alive()
         return False
 
-    def _capture_frames(self):
+    def _capture_frames(self) -> None:
         portal = lt.get_blocking_portal(self)
         while self._capture_enabled:
             ret, frame = self.cap.read()

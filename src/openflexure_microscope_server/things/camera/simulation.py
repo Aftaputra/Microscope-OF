@@ -8,7 +8,7 @@ See repository root for licensing information.
 
 from __future__ import annotations
 import logging
-from typing import Literal, Optional
+from typing import Literal, Optional, Mapping
 from types import TracebackType
 from threading import Thread
 import time
@@ -76,7 +76,7 @@ class SimulatedCamera(BaseCamera):
         self.generate_blobs()
         self.generate_canvas()
 
-    def generate_sprites(self):
+    def generate_sprites(self) -> None:
         """Generate sprites to populate the image."""
         sprite_sizes = [5, 7, 10, 21, 36, 40]
         self.sprites = []
@@ -109,7 +109,7 @@ class SimulatedCamera(BaseCamera):
             # Convert to uint8 and append to the list
             self.sprites.append(sprite.astype(np.uint8))
 
-    def generate_blobs(self, n_blobs: int = 1000):
+    def generate_blobs(self, n_blobs: int = 1000) -> None:
         """Generate coordinates of blobs and their sizes.
 
         A 1000x3 array is returned. Each row represents (x,y) coordinate
@@ -125,7 +125,7 @@ class SimulatedCamera(BaseCamera):
         self.blobs[:, 1] = RNG.uniform(w / 2, self.canvas_shape[1] - w / 2, n_blobs)
         self.blobs[:, 2] = RNG.choice(len(self.sprites), n_blobs)
 
-    def generate_canvas(self):
+    def generate_canvas(self) -> None:
         """Generate a canvas.
 
         Canvas is int16 so that random noise can be added to simulation image before
@@ -145,7 +145,7 @@ class SimulatedCamera(BaseCamera):
         self.canvas[self.canvas < 0] = 0
         self.canvas[self.canvas > 255] = 255
 
-    def generate_image(self, pos: tuple[int, int, int]):
+    def generate_image(self, pos: tuple[int, int, int]) -> np.ndarray:
         """Generate an image with blobs based on supplied coordinates."""
         canvas_width, canvas_height, _ = self.canvas_shape
         image_width, image_height, _ = self.shape
@@ -180,16 +180,16 @@ class SimulatedCamera(BaseCamera):
 
     def attach_to_server(
         self, server: lt.ThingServer, path: str, setting_storage_path: str
-    ):
+    ) -> None:
         """Wrap the attach_to_server method so the server instance can be stored.
 
         Direct access to the server instance is needed to get the stage position while
         maintaining the same public API as a real camera that doesn't need this access.
         """
         self._server = server
-        return super().attach_to_server(server, path, setting_storage_path)
+        super().attach_to_server(server, path, setting_storage_path)
 
-    def get_stage_position(self):
+    def get_stage_position(self) -> Mapping[str, int]:
         """Return the stage position.
 
         The simulation camera has access to the stage position so it can generate a
@@ -199,7 +199,7 @@ class SimulatedCamera(BaseCamera):
             self._stage = self._server.things["/stage/"]
         return self._stage.instantaneous_position
 
-    def generate_frame(self):
+    def generate_frame(self) -> np.ndarray:
         """Generate a frame with blobs based on the stage coordinates."""
         try:
             pos = self.get_stage_position()
@@ -256,7 +256,7 @@ class SimulatedCamera(BaseCamera):
 
     noise_level = lt.ThingProperty(float, 2.0)
 
-    def _capture_frames(self):
+    def _capture_frames(self) -> None:
         portal = lt.get_blocking_portal(self)
         while self._capture_enabled:
             time.sleep(self.frame_interval)
@@ -312,14 +312,14 @@ class SimulatedCamera(BaseCamera):
         return Image.fromarray(self.generate_frame())
 
     @lt.thing_action
-    def remove_sample(self):
+    def remove_sample(self) -> None:
         """Show the simulated background with no sample."""
         if not self._show_sample:
             raise RuntimeError("Sample is already removed.")
         self._show_sample = False
 
     @lt.thing_action
-    def load_sample(self):
+    def load_sample(self) -> None:
         """Show the simulated sample."""
         if self._show_sample:
             raise RuntimeError("Sample is already in place.")
