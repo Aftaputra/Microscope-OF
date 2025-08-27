@@ -120,7 +120,7 @@ class ErrorCapturingThread(Thread):
 
 
 def _wrap_and_catch_errors(
-    target: Callable[..., Any], error_buffer: list, *args, **kwargs
+    target: Callable[..., Any], error_buffer: list, *args: Any, **kwargs: Any
 ):
     """Run target function in a try-except block.
 

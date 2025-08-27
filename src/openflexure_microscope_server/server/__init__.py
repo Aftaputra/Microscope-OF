@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Optional, Callable
+from typing import Optional, Callable, Any
 from functools import wraps
 from copy import copy
+import logging
 
 import labthings_fastapi as lt
 import uvicorn
-import logging
 from uvicorn.main import Server
 from .serve_static_files import add_static_files
 from .legacy_api import add_v2_endpoints
@@ -32,7 +32,7 @@ def set_shutdown_function(shutdown_function: Callable[[], None]):
     original_handler = Server.handle_exit
 
     @wraps(Server.handle_exit)
-    def handle_exit(*args, **kwargs):
+    def handle_exit(*args: Any, **kwargs: Any):
         shutdown_function()
         original_handler(*args, **kwargs)
 

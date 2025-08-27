@@ -5,7 +5,7 @@ import logging
 import threading
 import time
 from copy import copy
-from typing import Iterator, Literal, Optional
+from typing import Iterator, Literal, Optional, Any
 from types import TracebackType
 from contextlib import contextmanager
 from collections.abc import Mapping
@@ -25,7 +25,7 @@ class SangaboardThing(BaseStage):
     functionality is accessed by directly querying the serial interface.
     """
 
-    def __init__(self, port: str = None, **kwargs):
+    def __init__(self, port: str = None, **kwargs: Any):
         """Initialise SangaboardThing.
 
         Initialise the "Thing", but do not initialise an underlying

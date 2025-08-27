@@ -126,7 +126,7 @@ select = [
     "N", # PEP8 naming
     "D", # Docstring checks
     "ERA001", # Commented out code!
-    "ANN001",
+    "ANN001", "ANN002", "ANN003",
 ]
 
 ignore = [

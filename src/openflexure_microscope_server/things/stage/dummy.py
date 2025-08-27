@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Any
 from types import TracebackType
 from collections.abc import Mapping
 import time
@@ -19,7 +19,7 @@ class DummyStage(BaseStage):
     hardware attached.
     """
 
-    def __init__(self, step_time: float = 0.001, **kwargs):
+    def __init__(self, step_time: float = 0.001, **kwargs: Any):
         """Initialise the Dummy stage, setting the step_time to adjust the speed.
 
         :param step_time: The time in seconds per "motor" step. The default of 0.001

@@ -252,7 +252,7 @@ class JPEGSharpnessMonitor:
         finally:
             self.running = False
 
-    def focus_rel(self, dz: int, **kwargs) -> tuple[int, int]:
+    def focus_rel(self, dz: int, block_cancellation: int = False) -> tuple[int, int]:
         """Move the stage by dz, monitoring the position over time.
 
         This performs exactly one move. Multiple calls of this method
@@ -268,7 +268,7 @@ class JPEGSharpnessMonitor:
         self.stage_positions.append(self.stage.position)
 
         # Main move
-        self.stage.move_relative(z=dz, **kwargs)
+        self.stage.move_relative(z=dz, block_cancellation=block_cancellation)
 
         # Store the end time and position
         self.stage_times.append(time.time())
