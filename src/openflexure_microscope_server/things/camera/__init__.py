@@ -12,6 +12,9 @@ import json
 import io
 import time
 import logging
+from datetime import datetime
+import tempfile
+import os
 
 import numpy as np
 from pydantic import RootModel
@@ -257,13 +260,36 @@ class BaseCamera(lt.Thing):
     def capture_jpeg(
         self,
         metadata_getter: lt.deps.GetThingStates,
-        resolution: Literal["lores", "main", "full"] = "main",
-        wait: Optional[float] = 5,
+        logger: lt.deps.InvocationLogger,
+        stream_name: str = "main",
+        wait: Optional[float] = None,
     ) -> JPEGBlob:
-        """Acquire one image from the camera and return as a JPEG blob."""
-        raise NotImplementedError(
-            "CameraThings must define their own capture_jpeg method"
+        """Acquire one image from the camera as a JPEG.
+
+        This will use the internal capture image functionally of capture_image of
+        the specific camera being used.
+
+        :param metadata_getter: LabThings GetThingStates dependency, automatically
+            injected.
+        :param logger: LabThings InvocationLogger dependency, automatically injected.
+        :param stream_name: A stream name supported by this camera.
+        :param wait: (Optional, float) Set a timeout in seconds. If None it will
+            use the default for the underlying camera.
+        """
+        fname = datetime.now().strftime("%Y-%m-%d-%H%M%S.jpeg")
+        directory = tempfile.TemporaryDirectory()
+        jpeg_path = os.path.join(directory.name, fname)
+
+        img = self.capture_image(stream_name, wait)
+
+        self._save_capture(
+            jpeg_path=jpeg_path,
+            image=img,
+            metadata=metadata_getter(),
+            logger=logger,
         )
+
+        return JPEGBlob.from_temporary_directory(directory, fname)
 
     @lt.thing_action
     def grab_jpeg(
@@ -331,7 +357,7 @@ class BaseCamera(lt.Thing):
     def capture_image(
         self,
         stream_name: Literal["main", "lores", "raw"],
-        wait: Optional[float],
+        wait: Optional[float] = None,
     ) -> Image:
         """Capture a PIL image from stream stream_name with timeout wait."""
         raise NotImplementedError(
@@ -486,10 +512,10 @@ class BaseCamera(lt.Thing):
                     metadata
                 ).encode("utf-8")
                 piexif.insert(piexif.dump(exif_dict), jpeg_path)
-            except:  # noqa: E722
+            except Exception:
                 # We need to capture any exception as there are many reasons metadata
                 # might not be added. We warn rather than log the error.
-                logger.warning(f"Failed to add metadata to {jpeg_path}")
+                logger.exception(f"Failed to add metadata to {jpeg_path}")
         except Exception as e:
             raise IOError(f"An error occurred while saving {jpeg_path}") from e
 

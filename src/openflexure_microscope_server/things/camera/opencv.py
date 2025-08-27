@@ -7,19 +7,18 @@ See repository root for licensing information.
 """
 
 from __future__ import annotations
-import io
-import json
+
 import logging
 from typing import Literal, Optional
 from threading import Thread
 
 import cv2
-import piexif
+from PIL import Image
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from . import BaseCamera, JPEGBlob
+from . import BaseCamera
 
 
 class OpenCVCamera(BaseCamera):
@@ -84,7 +83,8 @@ class OpenCVCamera(BaseCamera):
     @lt.thing_action
     def capture_array(
         self,
-        resolution: Literal["main", "full"] = "full",
+        stream_name: Literal["main", "full"] = "full",
+        wait: Optional[float] = None,
     ) -> NDArray:
         """Acquire one image from the camera and return as an array.
 
@@ -92,7 +92,9 @@ class OpenCVCamera(BaseCamera):
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
         """
-        logging.warning(f"OpenCV camera doesn't respect {resolution} setting")
+        if wait is not None:
+            logging.warning("OpenCV camera has no wait option. Use None.")
+        logging.warning(f"OpenCV camera doesn't respect {stream_name=}")
         ret, frame = self.cap.read()
         if not ret:
             raise RuntimeError(
@@ -100,30 +102,16 @@ class OpenCVCamera(BaseCamera):
             )
         return frame
 
-    @lt.thing_action
-    def capture_jpeg(
+    def capture_image(
         self,
-        metadata_getter: lt.deps.GetThingStates,
-        resolution: Literal["main", "full"] = "main",
-    ) -> JPEGBlob:
-        """Acquire one image from the camera and return as a JPEG blob.
+        stream_name: Literal["main", "full"] = "main",
+        wait: Optional[float] = None,
+    ) -> Image:
+        """Acquire one image from the camera and return as a PIL image.
 
         This function will produce a JPEG image.
         """
-        logging.warning(f"OpenCV camera doesn't respect {resolution} setting")
-        frame = self.capture_array()
-        jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
-        exif_dict = {
-            "Exif": {
-                piexif.ExifIFD.UserComment: json.dumps(metadata_getter()).encode(
-                    "utf-8"
-                )
-            },
-            "GPS": {},
-            "Interop": {},
-            "1st": {},
-            "thumbnail": None,
-        }
-        output = io.BytesIO()
-        piexif.insert(piexif.dump(exif_dict), jpeg, output)
-        return JPEGBlob.from_bytes(output.getvalue())
+        if wait is not None:
+            logging.warning("OpenCV camera has no wait option. Use None.")
+        logging.warning(f"OpenCV camera doesn't respect {stream_name=}")
+        return Image.fromarray(self.capture_array())

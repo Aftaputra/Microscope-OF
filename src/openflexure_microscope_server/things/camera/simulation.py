@@ -7,8 +7,6 @@ See repository root for licensing information.
 """
 
 from __future__ import annotations
-import io
-import json
 import logging
 from typing import Literal, Optional
 from threading import Thread
@@ -17,7 +15,6 @@ import time
 import cv2
 import numpy as np
 from PIL import Image
-import piexif
 from scipy.ndimage import gaussian_filter
 
 import labthings_fastapi as lt
@@ -29,7 +26,7 @@ from openflexure_microscope_server.ui import (
     property_control_for,
 )
 
-from . import BaseCamera, JPEGBlob, ArrayModel
+from . import BaseCamera, ArrayModel
 from ..stage import BaseStage
 
 # The ratio between "motor" steps and pixels
@@ -280,7 +277,8 @@ class SimulatedCamera(BaseCamera):
     @lt.thing_action
     def capture_array(
         self,
-        resolution: Literal["main", "full"] = "full",
+        stream_name: Literal["main", "full"] = "full",
+        wait: Optional[float] = None,
     ) -> ArrayModel:
         """Acquire one image from the camera and return as an array.
 
@@ -288,36 +286,10 @@ class SimulatedCamera(BaseCamera):
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
         """
-        logging.warning(f"Simulation camera doesn't respect {resolution=} setting")
+        if wait is not None:
+            logging.warning("Simulation camera has no wait option. Use None.")
+        logging.warning(f"Simulation camera camera doesn't respect {stream_name=}")
         return self.generate_frame()
-
-    @lt.thing_action
-    def capture_jpeg(
-        self,
-        metadata_getter: lt.deps.GetThingStates,
-        resolution: Literal["main", "full"] = "main",
-    ) -> JPEGBlob:
-        """Acquire one image from the camera and return as a JPEG blob.
-
-        This function will produce a JPEG image.
-        """
-        logging.warning(f"Simulation camera doesn't respect {resolution=} setting")
-        frame = self.capture_array()
-        jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
-        exif_dict = {
-            "Exif": {
-                piexif.ExifIFD.UserComment: json.dumps(metadata_getter()).encode(
-                    "utf-8"
-                )
-            },
-            "GPS": {},
-            "Interop": {},
-            "1st": {},
-            "thumbnail": None,
-        }
-        output = io.BytesIO()
-        piexif.insert(piexif.dump(exif_dict), jpeg, output)
-        return JPEGBlob.from_bytes(output.getvalue())
 
     def capture_image(
         self,
@@ -328,9 +300,9 @@ class SimulatedCamera(BaseCamera):
 
         It is used for capture to memory.
         """
-        logging.warning(
-            f"Simulation camera doesn't respect {stream_name=} or {wait=} arguments."
-        )
+        if wait is not None:
+            logging.warning("Simulation camera has no wait option. Use None.")
+        logging.warning(f"Simulation camera camera doesn't respect {stream_name=}")
         return Image.fromarray(self.generate_frame())
 
     @lt.thing_action
