@@ -120,7 +120,7 @@ class OFMLogFileFormatter(logging.Formatter):
 class OFMHandler(logging.Handler):
     """A logging.Handler that stores the most recent logs for access by the server."""
 
-    def __init__(self, level: int = logging.INFO, max_logs: int = 250):
+    def __init__(self, level: int = logging.INFO, max_logs: int = 250) -> None:
         """Initialise the handler with a set logging level and message buffer size.
 
         :param level: The level of logs captured. As standard logs of INFO and above

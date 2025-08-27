@@ -78,7 +78,7 @@ class ErrorCapturingThread(Thread):
         kwargs: Optional[dict[str, Any]] = None,
         *,
         daemon: Optional[bool] = None,
-    ):
+    ) -> None:
         """Initialise with the same arguments as Thread."""
         # As all inputs are keywords we need to set the default values for args and kwargs:
         if args is None:

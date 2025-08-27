@@ -19,7 +19,7 @@ class DummyStage(BaseStage):
     hardware attached.
     """
 
-    def __init__(self, step_time: float = 0.001, **kwargs: Any):
+    def __init__(self, step_time: float = 0.001, **kwargs: Any) -> None:
         """Initialise the Dummy stage, setting the step_time to adjust the speed.
 
         :param step_time: The time in seconds per "motor" step. The default of 0.001
@@ -31,7 +31,7 @@ class DummyStage(BaseStage):
         self.step_time = step_time
         self.instantaneous_position = self._hardware_position
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Register the stage position when the Thing context manager is opened."""
         self.instantaneous_position = self._hardware_position
 
@@ -40,7 +40,7 @@ class DummyStage(BaseStage):
         _exc_type: type[BaseException],
         _exc_value: Optional[BaseException],
         _traceback: Optional[TracebackType],
-    ):
+    ) -> None:
         """Nothing to do when the Thing context manager is closed."""
 
     axis_inverted = lt.ThingSetting(

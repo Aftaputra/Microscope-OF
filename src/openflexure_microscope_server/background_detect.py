@@ -55,7 +55,7 @@ class BackgroundDetectAlgorithm:
     settings_data_model: BaseModel = BaseModel
     """The data model of algorithm settings. This must be set by child classes"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialise the algorithm settings."""
         try:
             self._settings: BaseModel = self.settings_data_model()

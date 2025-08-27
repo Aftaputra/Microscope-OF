@@ -134,7 +134,6 @@ ignore = [
     "D203",  # incompatible with D204
     "D213",  # incompatible with D212
     "D400",  # A stricter version of #415 that doesn't allow !
-    "ANN204", # Requrite type hints for
     "ANN401", # Disalows Any, Any is needed at times, Once MyPy is running Any will be
               # handled appropriately
 ]

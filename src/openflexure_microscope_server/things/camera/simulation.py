@@ -54,7 +54,7 @@ class SimulatedCamera(BaseCamera):
         glyph_shape: tuple[int, int, int] = (91, 91, 3),
         canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
         frame_interval: float = 0.1,
-    ):
+    ) -> None:
         """Initialise the simulated with settings for how images are generated.
 
         :param shape: The shape (size) of the generated image.
@@ -208,7 +208,7 @@ class SimulatedCamera(BaseCamera):
             pos = {"x": 0, "y": 0, "z": 0}
         return self.generate_image((pos["y"], pos["x"], pos["z"]))
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Start the capture thread when the Thing context manager is opened."""
         self.start_streaming()
         return self
@@ -218,7 +218,7 @@ class SimulatedCamera(BaseCamera):
         _exc_type: type[BaseException],
         _exc_value: Optional[BaseException],
         _traceback: Optional[TracebackType],
-    ):
+    ) -> None:
         """Close the capture thread when the Thing context manager is closed."""
         if self.stream_active:
             self._capture_enabled = False

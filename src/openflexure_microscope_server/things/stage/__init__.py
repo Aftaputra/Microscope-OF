@@ -45,7 +45,7 @@ class BaseStage(lt.Thing):
 
     _axis_names = ("x", "y", "z")
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialise the stage.
 
         :raises RedefinedBaseMovementError: if ``move_relative`` and/or

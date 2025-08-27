@@ -62,7 +62,7 @@ class RecordedMove:
     for calibrating the stage as it allows measuring how long moves take.
     """
 
-    def __init__(self, stage: Stage):
+    def __init__(self, stage: Stage) -> None:
         """Set the stage client used for for movement.
 
         :param stage: the stage client to be used. ``stage.move_to_xyz_position`` will
@@ -72,7 +72,7 @@ class RecordedMove:
         self._current_position: Optional[CoordinateType] = None
         self._history: List[Tuple[float, Optional[CoordinateType]]] = []
 
-    def __call__(self, new_position: CoordinateType):
+    def __call__(self, new_position: CoordinateType) -> None:
         """Move to a new position, and record it."""
         self._history.append((time.time(), self._current_position))
         self._stage.move_to_xyz_position(xyz_pos=new_position)
@@ -99,7 +99,7 @@ class CSMUncalibratedError(HTTPException):
     live preview to move, or when performing a scan.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Customise the default error code and message of HTTPException."""
         HTTPException.__init__(
             self,

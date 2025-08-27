@@ -59,7 +59,9 @@ class BaseStitcher:
     complete.
     """
 
-    def __init__(self, images_dir: str, *, overlap: float, correlation_resize: float):
+    def __init__(
+        self, images_dir: str, *, overlap: float, correlation_resize: float
+    ) -> None:
         """Initialise a stitcher.
 
         All args except images_dir are positional only.
@@ -128,7 +130,9 @@ class PreviewStitcher(BaseStitcher):
     one preview must finish before another can be started.
     """
 
-    def __init__(self, images_dir: str, *, overlap: float, correlation_resize: float):
+    def __init__(
+        self, images_dir: str, *, overlap: float, correlation_resize: float
+    ) -> None:
         """Initialise a preview stitcher.
 
         All args except images_dir are positional only.
@@ -192,7 +196,7 @@ class FinalStitcher(BaseStitcher):
         correlation_resize: Optional[float] = None,
         stitch_tiff: bool = False,
         scan_data_dict: Optional[dict[str, Any]] = None,
-    ):
+    ) -> None:
         """Initialise a final stitcher, this has more args than the base class.
 
         All args except images_dir are positional only.

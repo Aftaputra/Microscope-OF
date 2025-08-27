@@ -25,7 +25,7 @@ from . import BaseCamera
 class OpenCVCamera(BaseCamera):
     """A Thing that provides and interface to an OpenCV Camera."""
 
-    def __init__(self, camera_index: int = 0):
+    def __init__(self, camera_index: int = 0) -> None:
         """Iniatilise the thing storing the index of the camera to use.
 
         :param camera_index: The index of the camera to use for the microscope.
@@ -35,7 +35,7 @@ class OpenCVCamera(BaseCamera):
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Start the capture thread when the Thing context manager is opened."""
         self.cap = cv2.VideoCapture(self.camera_index)
         self._capture_enabled = True
@@ -48,7 +48,7 @@ class OpenCVCamera(BaseCamera):
         _exc_type: type[BaseException],
         _exc_value: Optional[BaseException],
         _traceback: Optional[TracebackType],
-    ):
+    ) -> None:
         """Release the camera when the Thing context manager is closed.
 
         Before releasing the camera the capture thread is closed.

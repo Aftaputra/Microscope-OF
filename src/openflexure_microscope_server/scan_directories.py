@@ -167,7 +167,7 @@ class ScanDirectoryManager:
 
     _base_scan_dir: str
 
-    def __init__(self, base_scan_dir: str):
+    def __init__(self, base_scan_dir: str) -> None:
         """Initialise the scan directory manager.
 
         :param base_scan_dir: Path of the directory that holds all scans.
@@ -374,7 +374,7 @@ class ScanDirectory:
     _name: str
     _base_scan_dir: str
 
-    def __init__(self, name: str, base_scan_dir: str):
+    def __init__(self, name: str, base_scan_dir: str) -> None:
         """Initialise the scan directory.
 
         :param name: the name of the scan (the scan directory basename).

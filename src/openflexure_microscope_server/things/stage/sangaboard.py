@@ -25,7 +25,7 @@ class SangaboardThing(BaseStage):
     functionality is accessed by directly querying the serial interface.
     """
 
-    def __init__(self, port: str = None, **kwargs: Any):
+    def __init__(self, port: str = None, **kwargs: Any) -> None:
         """Initialise SangaboardThing.
 
         Initialise the "Thing", but do not initialise an underlying
@@ -42,7 +42,7 @@ class SangaboardThing(BaseStage):
         self.sangaboard_kwargs["port"] = port
         super().__init__(**kwargs)
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Connect to the sangaboard when the Thing context manager is opened."""
         self._sangaboard = sangaboard.Sangaboard(**self.sangaboard_kwargs)
         self._sangaboard_lock = threading.RLock()
@@ -59,7 +59,7 @@ class SangaboardThing(BaseStage):
         _exc_type: type[BaseException],
         _exc_value: Optional[BaseException],
         _traceback: Optional[TracebackType],
-    ):
+    ) -> None:
         """Close the sangaboard connection when the Thing context manager is closed."""
         with self.sangaboard() as sb:
             sb.close()

@@ -69,7 +69,7 @@ class CameraMemoryBuffer:
 
     _storage: dict[int, tuple[Any, Optional[dict]]]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Create the buffer instance."""
         # This dictionary is the main store for data. Dictionaries are ordered since
         # Python 3.6, so the order in the dictionary is the capture order
@@ -170,7 +170,7 @@ class BaseCamera(lt.Thing):
     lores_mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     _memory_buffer = CameraMemoryBuffer()
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialise the base camera, this creates the background detectors.
 
         This must be run by all child camera classes.

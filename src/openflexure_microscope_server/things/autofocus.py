@@ -215,7 +215,9 @@ class JPEGSharpnessMonitor:
     SharpnessMonitorDep as an argument is called.
     """
 
-    def __init__(self, stage: Stage, camera: RawCamera, portal: lt.deps.BlockingPortal):
+    def __init__(
+        self, stage: Stage, camera: RawCamera, portal: lt.deps.BlockingPortal
+    ) -> None:
         """Initialise a new JPEGSharpnessMonitor. The args are injected automatically.
 
         :param stage: A direct_thing_client dependency for the the microscope stage.

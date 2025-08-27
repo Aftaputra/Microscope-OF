@@ -80,7 +80,7 @@ class ScanPlanner:
 
     def __init__(
         self, initial_position: XYPos, planner_settings: Optional[dict] = None
-    ):
+    ) -> None:
         """Set up lists for the path planning, and scan history."""
         self._initial_position = enforce_xy_tuple(initial_position)
         self._parse(planner_settings)

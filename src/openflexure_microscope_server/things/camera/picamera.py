@@ -53,7 +53,9 @@ class MissingCalibrationError(RuntimeError):
 class PicameraStreamOutput(Output):
     """An Output class that sends frames to a stream."""
 
-    def __init__(self, stream: lt.outputs.MJPEGStream, portal: lt.deps.BlockingPortal):
+    def __init__(
+        self, stream: lt.outputs.MJPEGStream, portal: lt.deps.BlockingPortal
+    ) -> None:
         """Create an output that puts frames in an MJPEGStream.
 
         We need to pass the stream object, and also the blocking portal, because
@@ -126,7 +128,7 @@ class StreamingPiCamera2(BaseCamera):
     generalisation.
     """
 
-    def __init__(self, camera_num: int = 0):
+    def __init__(self, camera_num: int = 0) -> None:
         """Initialise the camera with the given camera number.
 
         This makes no connection to the camera (except to get the default tuning file).
@@ -384,7 +386,7 @@ class StreamingPiCamera2(BaseCamera):
             )
         self._picamera_lock = RLock()
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Start streaming when the Thing context manager is opened.
 
         This opens the picamera connection, initialises the camera, sets the
@@ -430,7 +432,7 @@ class StreamingPiCamera2(BaseCamera):
         _exc_type: type[BaseException],
         _exc_value: Optional[BaseException],
         _traceback: Optional[TracebackType],
-    ):
+    ) -> None:
         """Close the picamera connection when the Thing context manager is closed."""
         self.stop_streaming()
         with self._streaming_picamera() as cam:
