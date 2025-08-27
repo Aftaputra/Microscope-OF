@@ -53,7 +53,7 @@ def configure_logging(log_folder):
             backupCount=10,
         )
         format_str = "[%(asctime)s] [%(levelname)s] <%(name)s> %(message)s"
-        handler.setFormatter(logging.Formatter(format_str))
+        handler.setFormatter(OFMLogFileFormatter(format_str))
         handler.addFilter(UvicornAccessFilter())
         root_logger.addHandler(handler)
 
@@ -100,6 +100,23 @@ def retrieve_log_from_file() -> PlainTextResponse:
         ) from e
 
 
+class OFMLogFileFormatter(logging.Formatter):
+    """The formatter used for the OpenFlexure Microscope Server log file."""
+
+    def format(self, record: logging.LogRecord):
+        """Adjust the logging formatting for uvicorn logs.
+
+        uvicorn has two loggers. Each API access is ``uvicorn.access`` which we filter
+        due to the noise. The other is ``uvicorn.error`` for more important messages.
+        However, ``uvicorn.error`` is used for expected messages that are not errors,
+        such as server start up. This can lead to people erroneously thinking that
+        there is an error with their miroscope.
+        """
+        if record.name == "uvicorn.error" and record.levelno < logging.ERROR:
+            record.name = "uvicorn"
+        return super().format(record)
+
+
 class OFMHandler(logging.Handler):
     """A logging.Handler that stores the most recent logs for access by the server."""
 
@@ -115,7 +132,7 @@ class OFMHandler(logging.Handler):
         self._log = []
         self._max_logs = max_logs
 
-    def append_record(self, record):
+    def append_record(self, record: logging.LogRecord):
         """Format message and append it to a list of records.
 
         The built in formatter is used to format the record.
@@ -126,7 +143,7 @@ class OFMHandler(logging.Handler):
         while len(self._log) > self._max_logs:
             self._log.pop(0)
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord):
         """Emit will save the logged record to the log."""
         try:
             if record.levelno >= self.level:
@@ -147,7 +164,7 @@ class OFMHandler(logging.Handler):
 class UvicornAccessFilter(logging.Filter):
     """A logging filter to filter out "uvicorn.access" messages."""
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord):
         """Return False if record is from "uvicorn.access"."""
         return not record.name.startswith("uvicorn.access")
 
