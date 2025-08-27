@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 from typing import Literal, Optional
+from types import TracebackType
 from threading import Thread
 
 import cv2
@@ -42,7 +43,12 @@ class OpenCVCamera(BaseCamera):
         self._capture_thread.start()
         return self
 
-    def __exit__(self, _exc_type, _exc_value, _traceback):
+    def __exit__(
+        self,
+        _exc_type: type[BaseException],
+        _exc_value: Optional[BaseException],
+        _traceback: Optional[TracebackType],
+    ):
         """Release the camera when the Thing context manager is closed.
 
         Before releasing the camera the capture thread is closed.

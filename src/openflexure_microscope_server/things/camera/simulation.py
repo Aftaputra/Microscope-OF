@@ -9,6 +9,7 @@ See repository root for licensing information.
 from __future__ import annotations
 import logging
 from typing import Literal, Optional
+from types import TracebackType
 from threading import Thread
 import time
 
@@ -212,7 +213,12 @@ class SimulatedCamera(BaseCamera):
         self.start_streaming()
         return self
 
-    def __exit__(self, _exc_type, _exc_value, _traceback):
+    def __exit__(
+        self,
+        _exc_type: type[BaseException],
+        _exc_value: Optional[BaseException],
+        _traceback: Optional[TracebackType],
+    ):
         """Close the capture thread when the Thing context manager is closed."""
         if self.stream_active:
             self._capture_enabled = False

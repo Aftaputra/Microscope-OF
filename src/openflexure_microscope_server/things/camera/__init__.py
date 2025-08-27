@@ -8,6 +8,7 @@ See repository root for licensing information.
 
 from __future__ import annotations
 from typing import Literal, Optional, Tuple, Any
+from types import TracebackType
 import json
 import io
 import time
@@ -185,7 +186,12 @@ class BaseCamera(lt.Thing):
         """Open hardware connection when the Thing context manager is opened."""
         raise NotImplementedError("CameraThings must define their own __enter__ method")
 
-    def __exit__(self, _exc_type, _exc_value, _traceback) -> None:
+    def __exit__(
+        self,
+        _exc_type: type[BaseException],
+        _exc_value: Optional[BaseException],
+        _traceback: Optional[TracebackType],
+    ) -> None:
         """Close hardware connection when the Thing context manager is closed."""
         raise NotImplementedError("CameraThings must define their own __exit__ method")
 
@@ -575,7 +581,7 @@ class BaseCamera(lt.Thing):
         return self.active_detector.status
 
     @lt.thing_action
-    def update_detector_settings(self, data) -> None:
+    def update_detector_settings(self, data: dict[str, Any]) -> None:
         """Update the settings of the current detector.
 
         This is an action not a setting/property as the data model depends on the

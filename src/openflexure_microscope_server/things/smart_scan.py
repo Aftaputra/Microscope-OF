@@ -7,7 +7,7 @@ It also controls external processes for live stitching composite images, and
 the creation of the final stitched images.
 """
 
-from typing import Optional
+from typing import Optional, Self, TypeVar, ParamSpec, Callable, Concatenate
 import threading
 import os
 import time
@@ -30,6 +30,9 @@ from .camera_stage_mapping import CameraStageMapper
 from .camera import CameraDependency as CameraClient
 from .stage import StageDependency as StageDep
 
+T = TypeVar("T")
+P = ParamSpec("P")
+
 CSMDep = lt.deps.direct_thing_client_dependency(
     CameraStageMapper, "/camera_stage_mapping/"
 )
@@ -43,7 +46,9 @@ class ScanNotRunningError(RuntimeError):
     """Exception called when scan not running that requires a scan to be running."""
 
 
-def _scan_running(method):
+def _scan_running(
+    method: Callable[Concatenate[Self, P], T],
+) -> Callable[Concatenate[Self, P], T]:
     """Decorate a method so that it will error if a scan is not running.
 
     This decorator is used by all methods in SmartScanThing that are using
@@ -52,7 +57,7 @@ def _scan_running(method):
     the same time and released with the lock
     """
 
-    def scan_running_wrapper(self, *args, **kwargs):
+    def scan_running_wrapper(self: Self, *args: P.args, **kwargs: P.kwargs) -> T:
         # Only start the method is the scan logger is set
         if self._scan_logger is not None:
             return method(self, *args, **kwargs)
@@ -623,7 +628,7 @@ class SmartScanThing(lt.Thing):
             if scan_info.number_of_images == 0:
                 self._delete_scan(scan_info.name, logger)
 
-    def _delete_scan(self, scan_name, logger: lt.deps.InvocationLogger) -> bool:
+    def _delete_scan(self, scan_name: str, logger: lt.deps.InvocationLogger) -> bool:
         """Delete a scan.
 
         This is a wrapper around scan manager's delete_scan that logs to the

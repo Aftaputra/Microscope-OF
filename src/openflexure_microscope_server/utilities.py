@@ -1,6 +1,6 @@
 """Utility functions and classes."""
 
-from typing import TypeVar, Callable, ParamSpec
+from typing import TypeVar, Callable, ParamSpec, Optional, Any, Concatenate, Self
 import os
 import re
 import sys
@@ -24,7 +24,7 @@ COMMIT_REGEX = re.compile(r"[0-9a-f]{40}")
 REF_REGEX = re.compile(r"^ref:\s(.*)$")
 
 
-def _is_lock_like(obj):
+def _is_lock_like(obj: Any) -> bool:
     """Check if an object is a lock.
 
     Cannot use ``isinstance(obj, threading.RLock)``, may be possible to use
@@ -34,14 +34,16 @@ def _is_lock_like(obj):
     return hasattr(obj, "acquire") and hasattr(obj, "release")
 
 
-def requires_lock(method: Callable[P, T]) -> Callable[P, T]:
+def requires_lock(
+    method: Callable[Concatenate[Self, P], T],
+) -> Callable[Concatenate[Self, P], T]:
     """Decorate a class method so that it requires the class lock to run.
 
     The class should have a reentrant lock with the name ``self._lock``.
     """
 
     @wraps(method)
-    def wrapper(self, *args: P.args, **kwargs: P.kwargs) -> T:
+    def wrapper(self: Self, *args: P.args, **kwargs: P.kwargs) -> T:
         # Confirm the object the method is attached to has a self._lock property
         if not hasattr(self, "_lock"):
             raise AttributeError(f"{self.__class__.__name__} has no '_lock' attribute")
@@ -67,7 +69,16 @@ class ErrorCapturingThread(Thread):
     join is run.
     """
 
-    def __init__(self, group=None, target=None, args=None, kwargs=None, daemon=None):
+    def __init__(
+        self,
+        group: Optional[Any] = None,
+        target: Optional[Callable[..., Any]] = None,
+        name: Optional[str] = None,
+        args: tuple[Any, ...] = (),
+        kwargs: Optional[dict[str, Any]] = None,
+        *,
+        daemon: Optional[bool] = None,
+    ):
         """Initialise with the same arguments as Thread."""
         # As all inputs are keywords we need to set the default values for args and kwargs:
         if args is None:
@@ -88,12 +99,13 @@ class ErrorCapturingThread(Thread):
         super().__init__(
             group=group,
             target=_wrap_and_catch_errors,
+            name=name,
             args=args,
             kwargs=kwargs,
             daemon=daemon,
         )
 
-    def join(self, timeout=None):
+    def join(self, timeout: Optional[float] = None):
         """Join when the thread is complete.
 
         If the thread ended due to an unhandled exception, the exception will be raised
@@ -107,7 +119,9 @@ class ErrorCapturingThread(Thread):
             raise err
 
 
-def _wrap_and_catch_errors(target, error_buffer, *args, **kwargs):
+def _wrap_and_catch_errors(
+    target: Callable[..., Any], error_buffer: list, *args, **kwargs
+):
     """Run target function in a try-except block.
 
     This function is designed only to be used by ErrorCapturingThread.

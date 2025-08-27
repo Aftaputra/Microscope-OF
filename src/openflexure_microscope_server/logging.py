@@ -21,7 +21,7 @@ from fastapi import HTTPException
 OFM_LOG_FILE = None
 
 
-def configure_logging(log_folder):
+def configure_logging(log_folder: str):
     """Configure logging for the server while it is running.
 
     This modifies the root logger to have a rotating file handler and
@@ -120,7 +120,7 @@ class OFMLogFileFormatter(logging.Formatter):
 class OFMHandler(logging.Handler):
     """A logging.Handler that stores the most recent logs for access by the server."""
 
-    def __init__(self, level=logging.INFO, max_logs=250):
+    def __init__(self, level: int = logging.INFO, max_logs: int = 250):
         """Initialise the handler with a set logging level and message buffer size.
 
         :param level: The level of logs captured. As standard logs of INFO and above

@@ -551,7 +551,7 @@ class ScanDirectory:
         return zip_fname
 
 
-def get_files_in_zip(zip_path):
+def get_files_in_zip(zip_path: str):
     """List the relative paths of all files and folders in the zip folder specified."""
     scan_zip = zipfile.ZipFile(zip_path)
     return [os.path.normpath(i) for i in scan_zip.namelist()]

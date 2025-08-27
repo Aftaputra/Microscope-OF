@@ -332,7 +332,7 @@ class SmartSpiral(ScanPlanner):
         """Sort the remaining positions based on the current location."""
 
         # Defined rather than use a lambda for readability
-        def sort_key(pos):
+        def sort_key(pos: XYPos):
             return (
                 self.moves_between(current_pos, pos),
                 self.moves_between(self._initial_position, pos),

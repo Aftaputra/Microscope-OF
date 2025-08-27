@@ -5,7 +5,8 @@ import logging
 import threading
 import time
 from copy import copy
-from typing import Iterator, Literal
+from typing import Iterator, Literal, Optional
+from types import TracebackType
 from contextlib import contextmanager
 from collections.abc import Mapping
 
@@ -53,7 +54,12 @@ class SangaboardThing(BaseStage):
             sb.query("blocking_moves false")
         self.update_position()
 
-    def __exit__(self, _exc_type, _exc_value, _traceback):
+    def __exit__(
+        self,
+        _exc_type: type[BaseException],
+        _exc_value: Optional[BaseException],
+        _traceback: Optional[TracebackType],
+    ):
         """Close the sangaboard connection when the Thing context manager is closed."""
         with self.sangaboard() as sb:
             sb.close()
@@ -85,7 +91,7 @@ class SangaboardThing(BaseStage):
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
-        **kwargs: Mapping[str, int],
+        **kwargs: int,
     ) -> None:
         """Make a relative move in the coordinate system used by the sangaboard."""
         displacement = [kwargs.get(axis, 0) for axis in self.axis_names]
@@ -112,7 +118,7 @@ class SangaboardThing(BaseStage):
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
-        **kwargs: Mapping[str, int],
+        **kwargs: int,
     ) -> None:
         """Make a absolute move in the coordinate system used by the sangaboard."""
         with self.sangaboard():

@@ -142,7 +142,7 @@ class BaseStage(lt.Thing):
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
-        **kwargs: Mapping[str, int],
+        **kwargs: int,
     ):
         """Make a relative move. Keyword arguments should be axis names."""
         self._hardware_move_relative(
@@ -155,7 +155,7 @@ class BaseStage(lt.Thing):
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
-        **kwargs: Mapping[str, int],
+        **kwargs: int,
     ):
         """Make a relative move in the coordinate system used by the physical hardware.
 
@@ -170,7 +170,7 @@ class BaseStage(lt.Thing):
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
-        **kwargs: Mapping[str, int],
+        **kwargs: int,
     ):
         """Make an absolute move. Keyword arguments should be axis names."""
         self._hardware_move_absolute(
@@ -183,7 +183,7 @@ class BaseStage(lt.Thing):
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
-        **kwargs: Mapping[str, int],
+        **kwargs: int,
     ):
         """Make a absolute move in the coordinate system used by the physical hardware.
 

@@ -1,6 +1,10 @@
 """Functionality for communicating the required user interface for a thing."""
 
+from typing import Callable, Any
+
 from pydantic import BaseModel
+
+import labthings_fastapi as lt
 
 
 class ActionButton(BaseModel):
@@ -43,7 +47,7 @@ class ActionButton(BaseModel):
     """The message to show on successful completion."""
 
 
-def action_button_for(action, **kwargs) -> ActionButton:
+def action_button_for(action: Callable[..., Any], **kwargs: Any) -> ActionButton:
     """Create a ActionButton data for the specified Thing Action.
 
     :param action: The thing action to create a button for.
@@ -80,7 +84,9 @@ class PropertyControl(BaseModel):
     """The delay in ms before reading back the property."""
 
 
-def property_control_for(thing, property_name, **kwargs) -> PropertyControl:
+def property_control_for(
+    thing: lt.Thing, property_name: str, **kwargs: Any
+) -> PropertyControl:
     """Create an PropertyControl data for the specified Thing Property.
 
     :param thing: The instance of the thing that has the property to be controlled.

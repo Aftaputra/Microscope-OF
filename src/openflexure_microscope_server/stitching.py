@@ -185,7 +185,7 @@ class FinalStitcher(BaseStitcher):
 
     def __init__(
         self,
-        images_dir,
+        images_dir: str,
         *,
         logger: lt.deps.InvocationLogger,
         overlap: Optional[float] = None,

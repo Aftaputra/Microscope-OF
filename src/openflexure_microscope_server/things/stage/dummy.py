@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+from types import TracebackType
 from collections.abc import Mapping
 import time
 
@@ -33,7 +35,12 @@ class DummyStage(BaseStage):
         """Register the stage position when the Thing context manager is opened."""
         self.instantaneous_position = self._hardware_position
 
-    def __exit__(self, _exc_type, _exc_value, _traceback):
+    def __exit__(
+        self,
+        _exc_type: type[BaseException],
+        _exc_value: Optional[BaseException],
+        _traceback: Optional[TracebackType],
+    ):
         """Nothing to do when the Thing context manager is closed."""
 
     axis_inverted = lt.ThingSetting(
@@ -47,7 +54,7 @@ class DummyStage(BaseStage):
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
-        **kwargs: Mapping[str, int],
+        **kwargs: int,
     ):
         """Make a relative move. Keyword arguments should be axis names."""
         displacement = [kwargs.get(k, 0) for k in self.axis_names]
@@ -85,7 +92,7 @@ class DummyStage(BaseStage):
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
-        **kwargs: Mapping[str, int],
+        **kwargs: int,
     ):
         """Make an absolute move. Keyword arguments should be axis names."""
         displacement = {

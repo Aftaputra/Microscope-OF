@@ -127,7 +127,7 @@ class StackParams:
         """
         return self.min_images_to_test + 15
 
-    def slice_to_save(self, sharpest_index):
+    def slice_to_save(self, sharpest_index: int):
         """Return the slice of images to save given the index of the sharpest image."""
         images_each_side = (self.images_to_save - 1) // 2
         return slice(
@@ -401,7 +401,7 @@ class AutofocusThing(lt.Thing):
         self,
         stage: Stage,
         sharpness_monitor: SharpnessMonitorDep,
-        dz=2000,
+        dz: int = 2000,
         start: Literal["centre", "base"] = "centre",
     ):
         """Repeatedly autofocus the stage until it looks focused.

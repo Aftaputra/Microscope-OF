@@ -15,7 +15,8 @@ https://datasheets.raspberrypi.com/camera/raspberry-pi-camera-guide.pdf
 """
 
 from __future__ import annotations
-from typing import Annotated, Iterator, Literal, Mapping, Optional, overload
+from typing import Annotated, Iterator, Literal, Mapping, Optional, overload, Any
+from types import TracebackType
 import json
 import logging
 import os
@@ -65,7 +66,12 @@ class PicameraStreamOutput(Output):
         self.portal = portal
 
     def outputframe(
-        self, frame, _keyframe=True, _timestamp=None, _packet=None, _audio=False
+        self,
+        frame: bytes,
+        _keyframe: Optional[bool] = True,
+        _timestamp: Optional[int] = None,
+        _packet: Any = None,
+        _audio: bool = False,
     ):
         """Add a frame to the stream's ringbuffer."""
         self.stream.add_frame(frame, self.portal)
@@ -396,7 +402,7 @@ class StreamingPiCamera2(BaseCamera):
         return self._picamera is not None and self._picamera.started
 
     @contextmanager
-    def _streaming_picamera(self, pause_stream=False) -> Iterator[Picamera2]:
+    def _streaming_picamera(self, pause_stream: bool = False) -> Iterator[Picamera2]:
         """Lock access to picamera and return the underlying ``Picamera2`` instance.
 
         Optionally the stream can be paused to allow updating the camera settings.
@@ -419,7 +425,12 @@ class StreamingPiCamera2(BaseCamera):
                 if pause_stream and already_streaming:
                     self.start_streaming()
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        _exc_type: type[BaseException],
+        _exc_value: Optional[BaseException],
+        _traceback: Optional[TracebackType],
+    ):
         """Close the picamera connection when the Thing context manager is closed."""
         self.stop_streaming()
         with self._streaming_picamera() as cam:
@@ -725,7 +736,10 @@ class StreamingPiCamera2(BaseCamera):
         return tuple(recalibrate_utils.get_static_ccm(self.tuning)[0]["ccm"])
 
     @colour_correction_matrix.setter  # type: ignore
-    def colour_correction_matrix(self, value) -> None:
+    def colour_correction_matrix(
+        self,
+        value: tuple[float, float, float, float, float, float, float, float, float],
+    ) -> None:
         recalibrate_utils.set_static_ccm(self.tuning, value)
 
         if self._picamera is not None:
