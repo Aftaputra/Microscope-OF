@@ -266,7 +266,7 @@ class BaseCamera(lt.Thing):
     ) -> JPEGBlob:
         """Acquire one image from the camera as a JPEG.
 
-        This will use the internal capture image functionally of capture_image if
+        This will use the internal capture image functionally of capture_image of
         the specific camera being used.
 
         :param metadata_getter: LabThings GetThingStates dependency, automatically

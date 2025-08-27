@@ -550,7 +550,10 @@ class StreamingPiCamera2(BaseCamera):
         it may miss one frame).
 
         If ``full`` resolution is requested, we will briefly pause the MJPEG stream and
-        reconfigure the camera to capture a full resolution image.
+        reconfigure the camera to capture a full resolution image. This will capture an
+        image at the full resolution of the current sensor mode. If the current sensor
+        mode bins or crops the image, this may not be the native resolution of the
+        camera sensor.
 
         :param stream_name: (Optional) The PiCamera2 stream to use, should be one of
             ["main", "lores", "full"]. Default = "main". Note that "raw" images cannot
