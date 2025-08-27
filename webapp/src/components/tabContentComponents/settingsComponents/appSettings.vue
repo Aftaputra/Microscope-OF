@@ -11,9 +11,13 @@
         </select>
       </label>
     </p>
+    <p>
+      <button class="uk-button uk-button-default" @click="toggleFullscreen">
+        Toggle Fullscreen
+      </button>
+    </p>
   </div>
 </template>
-
 <script>
 // Export main app
 export default {
@@ -30,6 +34,16 @@ export default {
       },
       set(value) {
         this.$store.commit("changeAppTheme", value);
+      }
+    }
+  },
+
+  methods: {
+    async toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
       }
     }
   },
