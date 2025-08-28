@@ -3,8 +3,10 @@
     v-model="value"
     :data-schema="propertyDescription"
     :label="label"
+    :animate="animate"
     @requestUpdate="readProperty"
     @sendValue="writeProperty"
+    @animationShown="resetAnimate"
   />
 </template>
 
@@ -45,7 +47,8 @@ export default {
 
   data() {
     return {
-      value: undefined
+      value: undefined,
+      animate: false
     };
   },
 
@@ -98,18 +101,25 @@ export default {
           await new Promise(r => setTimeout(r, this.readBackDelay));
           let newVal = await this.readProperty();
           if (newVal == requestedValue) {
-            await this.modalNotify(`Set ${this.label} to ${newVal}.`);
+            this.animate = true;
           } else {
+            this.animate = true;
             await this.modalNotify(
-              `Set ${this.label} to ${newVal} (requested ${requestedValue}).`
+              `Set ${this.label} to ${newVal} (closest valid value to requested ${requestedValue}).`
             );
           }
         } else {
-          await this.modalNotify(`Set ${this.label} to ${this.value}.`);
+          this.animate = true;
         }
       } catch (error) {
-        this.modalError(error); // Let mixin handle error
+        // Use mixin to display error
+        this.modalError(error);
+        // Re-read property to try to update to server value
+        this.readProperty();
       }
+    },
+    resetAnimate: function() {
+        this.animate = false;
     }
   }
 };
