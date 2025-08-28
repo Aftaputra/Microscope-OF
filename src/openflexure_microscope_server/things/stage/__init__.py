@@ -194,7 +194,7 @@ class BaseStage(lt.Thing):
         )
 
     @lt.thing_action
-    def set_zero_position(self) -> Never:
+    def set_zero_position(self) -> None:
         """Make the current position zero in all axes.
 
         This action does not move the stage, but resets the position to zero.
