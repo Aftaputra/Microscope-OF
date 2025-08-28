@@ -1,6 +1,9 @@
 <template>
   <a class="sync-button">
-    <span class="material-symbols-outlined sync-icon" title="Reload from microscope">
+    <span
+      class="material-symbols-outlined sync-icon"
+      title="Reread value from microscope. Required if microscope is updated externally"
+    >
       sync
     </span>
   </a>
@@ -30,6 +33,5 @@ export default {
   transform: rotate(-90deg);
   color: #c5247f;
 }
-
 
 </style>
