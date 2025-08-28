@@ -85,9 +85,7 @@
                   type="number"
                   @keyup.enter="startMoveTask"
                 />
-                <a class="button-next-to-input" @click="updatePosition">
-                  <span class="material-symbols-outlined">refresh</span>
-                </a>
+                <sync-property-button @click="updatePosition" />
               </div>
               <p>
                 <action-button
@@ -177,13 +175,15 @@
 <script>
 import axios from "axios";
 import ActionButton from "../../labThingsComponents/actionButton.vue";
+import syncPropertyButton from "../../labThingsComponents/syncPropertyButton.vue";
 
 // Export main app
 export default {
   name: "PaneControl",
 
   components: {
-    ActionButton
+    ActionButton,
+    syncPropertyButton
   },
 
   data: function() {
@@ -374,12 +374,5 @@ export default {
 .numeric-setting-line-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
-}
-.button-next-to-input {
-  flex-grow: 0;
-  padding-left: 5px;
-  padding-right: 5px;
-  vertical-align: middle;
-  cursor: pointer;
 }
 </style>

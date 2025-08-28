@@ -11,9 +11,7 @@
           @focusout="focusOut"
           @keydown="keyDown"
         />
-        <a class="button-next-to-input" @click="requestUpdate">
-          <span class="material-symbols-outlined">refresh</span>
-        </a>
+        <sync-property-button @click="requestUpdate" />
       </div>
     </label>
     <div v-if="dataType == 'boolean'" class="input-and-buttons-container">
@@ -27,9 +25,7 @@
         />
         {{ label }}
       </label>
-      <a class="button-next-to-input" @click="requestUpdate">
-        <span class="material-symbols-outlined">refresh</span>
-      </a>
+      <sync-property-button @click="requestUpdate" />
     </div>
     <label v-if="dataType == 'number_array'" class="uk-form-label"
       >{{ label }}
@@ -44,9 +40,7 @@
           @focusout="focusOut"
           @keydown="keyDown"
         />
-        <a class="button-next-to-input" @click="requestUpdate">
-          <span class="material-symbols-outlined">refresh</span>
-        </a>
+        <sync-property-button @click="requestUpdate" />
       </div>
     </label>
     <label v-if="dataType == 'number_object'" class="uk-form-label"
@@ -62,9 +56,7 @@
             @focusout="focusOut"
             @keydown="keyDown"
           />
-          <a class="button-next-to-input" @click="requestUpdate">
-            <span class="material-symbols-outlined">refresh</span>
-          </a>
+          <sync-property-button @click="requestUpdate" />
         </div>
       </div>
     </label>
@@ -83,8 +75,14 @@
 </template>
 
 <script>
+import syncPropertyButton from "./syncPropertyButton.vue";
+
 export default {
   name: "InputFromSchema",
+
+  components: {
+    syncPropertyButton
+  },
 
   props: {
     dataSchema: {
@@ -216,12 +214,5 @@ export default {
   margin-left: 5px;
   margin-right: 5px;
   width: 6em;
-}
-.button-next-to-input {
-  flex-grow: 0;
-  padding-left: 5px;
-  padding-right: 5px;
-  vertical-align: middle;
-  cursor: pointer;
 }
 </style>
