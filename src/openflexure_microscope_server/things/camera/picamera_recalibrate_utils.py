@@ -353,7 +353,9 @@ def upsample_channels(grids: np.ndarray, shape: tuple[int]) -> np.ndarray:
     return zoom(grids, zoom_factors, order=1)[:, : shape[0], : shape[1]]
 
 
-def downsampled_channels(channels: np.ndarray, blacklevel=64) -> list[np.ndarray]:
+def downsampled_channels(
+    channels: np.ndarray, blacklevel: int = 64
+) -> list[np.ndarray]:
     """Generate a downsampled, un-normalised image from which to calculate the LST.
 
     TODO: blacklevel probably ought to be determined from the camera...

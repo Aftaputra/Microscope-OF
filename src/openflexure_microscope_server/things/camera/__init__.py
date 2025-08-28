@@ -8,6 +8,7 @@ See repository root for licensing information.
 
 from __future__ import annotations
 from typing import Literal, Optional, Tuple, Any
+from types import TracebackType
 import json
 import io
 import time
@@ -68,7 +69,7 @@ class CameraMemoryBuffer:
 
     _storage: dict[int, tuple[Any, Optional[dict]]]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Create the buffer instance."""
         # This dictionary is the main store for data. Dictionaries are ordered since
         # Python 3.6, so the order in the dictionary is the capture order
@@ -132,7 +133,7 @@ class CameraMemoryBuffer:
                 "No image with matching id in memory to retrieve."
             ) from e
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all images from memory."""
         self._storage.clear()
 
@@ -169,7 +170,7 @@ class BaseCamera(lt.Thing):
     lores_mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     _memory_buffer = CameraMemoryBuffer()
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialise the base camera, this creates the background detectors.
 
         This must be run by all child camera classes.
@@ -185,7 +186,12 @@ class BaseCamera(lt.Thing):
         """Open hardware connection when the Thing context manager is opened."""
         raise NotImplementedError("CameraThings must define their own __enter__ method")
 
-    def __exit__(self, _exc_type, _exc_value, _traceback) -> None:
+    def __exit__(
+        self,
+        _exc_type: type[BaseException],
+        _exc_value: Optional[BaseException],
+        _traceback: Optional[TracebackType],
+    ) -> None:
         """Close hardware connection when the Thing context manager is closed."""
         raise NotImplementedError("CameraThings must define their own __exit__ method")
 
@@ -202,7 +208,7 @@ class BaseCamera(lt.Thing):
             "CameraThings must define their own start_streaming method"
         )
 
-    def kill_mjpeg_streams(self):
+    def kill_mjpeg_streams(self) -> None:
         """Kill the streams now as the server is shutting down.
 
         This is called when uvicorn gets the a shutdown signal. As this is called from
@@ -575,7 +581,7 @@ class BaseCamera(lt.Thing):
         return self.active_detector.status
 
     @lt.thing_action
-    def update_detector_settings(self, data) -> None:
+    def update_detector_settings(self, data: dict[str, Any]) -> None:
         """Update the settings of the current detector.
 
         This is an action not a setting/property as the data model depends on the

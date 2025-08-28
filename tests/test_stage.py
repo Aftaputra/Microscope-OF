@@ -1,6 +1,5 @@
 """Test the stage without creating a full HTTP server and socket connection."""
 
-from collections.abc import Mapping
 import tempfile
 import itertools
 
@@ -69,7 +68,7 @@ def test_override_base_movement():
             self,
             cancel: lt.deps.CancelHook,
             block_cancellation: bool = False,
-            **kwargs: Mapping[str, int],
+            **kwargs: int,
         ):
             pass
 
@@ -82,7 +81,7 @@ def test_override_base_movement():
             self,
             cancel: lt.deps.CancelHook,
             block_cancellation: bool = False,
-            **kwargs: Mapping[str, int],
+            **kwargs: int,
         ):
             pass
 

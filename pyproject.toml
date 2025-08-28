@@ -124,8 +124,9 @@ select = [
     "C90", # McCabe complexity!
     "NPY", # Numpy linting
     "N", # PEP8 naming
-    "D", # Docstring checks these may need to be added gradually
+    "D", # Docstring checks
     "ERA001", # Commented out code!
+    "ANN",
 ]
 
 ignore = [
@@ -133,13 +134,19 @@ ignore = [
     "D203",  # incompatible with D204
     "D213",  # incompatible with D212
     "D400",  # A stricter version of #415 that doesn't allow !
-    # The checkers below should be turned on as they complain about missing docstrings.
+    "ANN401", # Disalows Any, Any is needed at times, Once MyPy is running Any will be
+              # handled appropriately
 ]
 
 [tool.ruff.lint.per-file-ignores]
 # Tests are currently not fully docstring-ed, we'll ignore this for now.
 "tests/*" = [
     "B018", # Complaining about useless attribute access in tests, but we need them to check errors are raised
+    "ANN", # Tests are not typehinted for fixtures etc
+]
+"hardware-specific-tests/*" = [
+    "B018", # Complaining about useless attribute access in tests, but we need them to check errors are raised
+    "ANN", # Tests are not typehinted for fixtures etc
 ]
 
 [tool.ruff.lint.pydocstyle]

@@ -80,7 +80,7 @@ class ScanPlanner:
 
     def __init__(
         self, initial_position: XYPos, planner_settings: Optional[dict] = None
-    ):
+    ) -> None:
         """Set up lists for the path planning, and scan history."""
         self._initial_position = enforce_xy_tuple(initial_position)
         self._parse(planner_settings)
@@ -332,7 +332,7 @@ class SmartSpiral(ScanPlanner):
         """Sort the remaining positions based on the current location."""
 
         # Defined rather than use a lambda for readability
-        def sort_key(pos):
+        def sort_key(pos: XYPos) -> tuple[float, float, float]:
             return (
                 self.moves_between(current_pos, pos),
                 self.moves_between(self._initial_position, pos),

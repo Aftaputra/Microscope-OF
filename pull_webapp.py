@@ -43,7 +43,7 @@ def extract_zip(zip_data: bytes) -> None:
         print(f"Extracted zip to: {THIS_DIR}")
 
 
-def main(branch: str = "v3"):
+def main(branch: str = "v3") -> None:
     """Fetch build artifacts from GitLab for a given branch and unzip.
 
     Clear any existing static directory before extract the new files.

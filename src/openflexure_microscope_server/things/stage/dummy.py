@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Optional, Any
+from types import TracebackType
 from collections.abc import Mapping
 import time
 
@@ -17,7 +19,7 @@ class DummyStage(BaseStage):
     hardware attached.
     """
 
-    def __init__(self, step_time: float = 0.001, **kwargs):
+    def __init__(self, step_time: float = 0.001, **kwargs: Any) -> None:
         """Initialise the Dummy stage, setting the step_time to adjust the speed.
 
         :param step_time: The time in seconds per "motor" step. The default of 0.001
@@ -29,11 +31,16 @@ class DummyStage(BaseStage):
         self.step_time = step_time
         self.instantaneous_position = self._hardware_position
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Register the stage position when the Thing context manager is opened."""
         self.instantaneous_position = self._hardware_position
 
-    def __exit__(self, _exc_type, _exc_value, _traceback):
+    def __exit__(
+        self,
+        _exc_type: type[BaseException],
+        _exc_value: Optional[BaseException],
+        _traceback: Optional[TracebackType],
+    ) -> None:
         """Nothing to do when the Thing context manager is closed."""
 
     axis_inverted = lt.ThingSetting(
@@ -47,8 +54,8 @@ class DummyStage(BaseStage):
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
-        **kwargs: Mapping[str, int],
-    ):
+        **kwargs: int,
+    ) -> None:
         """Make a relative move. Keyword arguments should be axis names."""
         displacement = [kwargs.get(k, 0) for k in self.axis_names]
         self.moving = True
@@ -85,8 +92,8 @@ class DummyStage(BaseStage):
         self,
         cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
-        **kwargs: Mapping[str, int],
-    ):
+        **kwargs: int,
+    ) -> None:
         """Make an absolute move. Keyword arguments should be axis names."""
         displacement = {
             axis: int(pos) - self._hardware_position[axis]
@@ -98,7 +105,7 @@ class DummyStage(BaseStage):
         )
 
     @lt.thing_action
-    def set_zero_position(self):
+    def set_zero_position(self) -> None:
         """Make the current position zero in all axes.
 
         This action does not move the stage, but resets the position to zero.

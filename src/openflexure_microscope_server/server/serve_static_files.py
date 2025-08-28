@@ -50,7 +50,7 @@ def add_static_files(app: FastAPI, scans_folder: Optional[str]) -> None:
     check_static_dir()
 
     @app.get("/", response_class=RedirectResponse)
-    async def redirect_fastapi():
+    async def redirect_fastapi() -> str:
         return "/index.html"
 
     # Mounting the webapp at / file by file to allow other endpoints to be created
@@ -77,7 +77,7 @@ def add_static_files(app: FastAPI, scans_folder: Optional[str]) -> None:
         )
 
 
-def check_static_dir():
+def check_static_dir() -> None:
     """Check that the static dir exists and contains expected files and dirs."""
     if not os.path.isdir(STATIC_PATH):
         raise FileNotFoundError(

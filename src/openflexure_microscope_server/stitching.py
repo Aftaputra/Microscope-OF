@@ -34,7 +34,7 @@ class StitcherValidationError(RuntimeError):
     """The stitcher received values that it deems unsafe to create a command from."""
 
 
-def validate_command(cmd: list[str]):
+def validate_command(cmd: list[str]) -> None:
     """Validate that the command only characters that are allowed in a path.
 
     The values in the commands should be numbers, commandline flags, paths, and
@@ -59,7 +59,9 @@ class BaseStitcher:
     complete.
     """
 
-    def __init__(self, images_dir: str, *, overlap: float, correlation_resize: float):
+    def __init__(
+        self, images_dir: str, *, overlap: float, correlation_resize: float
+    ) -> None:
         """Initialise a stitcher.
 
         All args except images_dir are positional only.
@@ -128,7 +130,9 @@ class PreviewStitcher(BaseStitcher):
     one preview must finish before another can be started.
     """
 
-    def __init__(self, images_dir: str, *, overlap: float, correlation_resize: float):
+    def __init__(
+        self, images_dir: str, *, overlap: float, correlation_resize: float
+    ) -> None:
         """Initialise a preview stitcher.
 
         All args except images_dir are positional only.
@@ -185,14 +189,14 @@ class FinalStitcher(BaseStitcher):
 
     def __init__(
         self,
-        images_dir,
+        images_dir: str,
         *,
         logger: lt.deps.InvocationLogger,
         overlap: Optional[float] = None,
         correlation_resize: Optional[float] = None,
         stitch_tiff: bool = False,
         scan_data_dict: Optional[dict[str, Any]] = None,
-    ):
+    ) -> None:
         """Initialise a final stitcher, this has more args than the base class.
 
         All args except images_dir are positional only.
@@ -340,7 +344,7 @@ class FinalStitcher(BaseStitcher):
         # Print everything in the buffer when program finishes
         self.log_buffer(process.stdout)
 
-    def log_buffer(self, buffer: TextIOWrapper):
+    def log_buffer(self, buffer: TextIOWrapper) -> None:
         """Log everything in the buffer at INFO level."""
         while line := buffer.readline():
             self.logger.info(line)
