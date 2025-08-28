@@ -108,7 +108,10 @@ export default {
           await this.modalNotify(`Set ${this.label} to ${this.value}.`);
         }
       } catch (error) {
-        this.modalError(error); // Let mixin handle error
+        // Use mixin to display error
+        this.modalError(error);
+        // Re-read property to try to update to server value
+        this.readProperty();
       }
     }
   }
