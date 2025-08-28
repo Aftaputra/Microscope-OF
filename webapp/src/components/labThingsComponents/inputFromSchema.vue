@@ -6,6 +6,7 @@
         <input
           v-model="internalValue"
           class="uk-form-small numeric-setting-line-input"
+          :class="{ edited: isEdited, flash: animateUpdate }"
           type="number"
           @focusin="focusIn"
           @focusout="focusOut"
@@ -35,7 +36,9 @@
           :key="i"
           v-model="internalValue[i - 1]"
           class="uk-form-small numeric-setting-line-input"
+          :class="{ edited: isEdited, flash: animateUpdate }"
           type="number"
+          @input="updateIsEdited"
           @focusin="focusIn"
           @focusout="focusOut"
           @keydown="keyDown"
@@ -51,7 +54,9 @@
           <input
             v-model="internalValue[key]"
             class="uk-form-small numeric-setting-line-input"
+            :class="{ edited: isEdited, flash: animateUpdate }"
             type="number"
+            @input="updateIsEdited"
             @focusin="focusIn"
             @focusout="focusOut"
             @keydown="keyDown"
@@ -95,19 +100,50 @@ export default {
       type: String,
       default: ""
     },
+    animate: {
+      type: Boolean,
+      default: false
+    }
   },
 
   data() {
     return {
-      internalValue: this.value,
-      valueOnEnter: undefined,
-      focused: false
+      // Initialise with a copy. As this is faster than stringifying and parsing.
+      internalValue: Array.isArray(this.value)
+          ? [...this.value]
+          : typeof this.value === 'object'
+            ? { ...this.value }
+            : this.value,
+      // Is edited can't be computed as we mutate internalValue
+      isEdited: false,
+      animateUpdate: false,
     };
   },
 
+  mounted() {
+  if (this.value !== undefined) {
+      this.resetInternalValue();
+    }
+  },
+
   watch: {
-    value(newValue) {
-      this.internalValue = newValue;
+    value() {
+      // Fire updateIsEdited on both value and internal value change,
+      // as change in value may not causse internalValue to change.
+      this.updateIsEdited();
+      this.resetInternalValue();
+    },
+    internalValue() {
+      this.updateIsEdited();
+    },
+    animate(updated) {
+      if (updated) {
+        this.animateUpdate = true;
+        setTimeout(() => {
+          this.animateUpdate = false;
+          this.$emit('animationShown');
+        }, 700);
+      }
     }
   },
   computed: {
@@ -170,6 +206,10 @@ export default {
   },
 
   methods: {
+    resetInternalValue: function() {
+      // stringify and parse to ensure no internal mutation for objects
+      this.internalValue = JSON.parse(JSON.stringify(this.value));
+    },
     requestUpdate: async function() {
       this.$emit("requestUpdate")
     },
@@ -195,7 +235,23 @@ export default {
       if (event.keyCode == 13) {
         this.sendValue();
       }
+    },
+    updateIsEdited: function() {
+      this.isEdited = this.deepStringify(this.internalValue) !== this.deepStringify(this.value);
+    },
+    deepStringify: function(val) {
+      if (Array.isArray(val)) {
+        return JSON.stringify(val.map(String));
+      }
+      if (val && typeof val === 'object') {
+        const normalized = Object.fromEntries(
+          Object.entries(val).map(([k, v]) => [k, String(v)])
+        );
+        return JSON.stringify(normalized);
+      }
+      return JSON.stringify(String(val));
     }
+
   }
 };
 </script>
@@ -214,5 +270,15 @@ export default {
   margin-left: 5px;
   margin-right: 5px;
   width: 6em;
+}
+.edited {
+  background-color: #fff3cd;
+}
+@keyframes green-flash {
+  0%   { background-color: #3fda63; }
+  100% { background-color: white; }
+}
+.flash {
+  animation: green-flash 0.7s ease;
 }
 </style>

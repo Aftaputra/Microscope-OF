@@ -10,8 +10,10 @@
               v-model="backgroundDetectorStatus.settings"
               :data-schema="backgroundDetectorStatus.settings_schema"
               label=""
+              :animate="animate"
               @requestUpdate="readSettings"
               @sendValue="writeSettings"
+              @animationShown="resetAnimate"
             />
           </div>
         </li>
@@ -57,6 +59,7 @@ export default {
   data() {
     return {
       backgroundDetectorStatus: undefined,
+      animate: false
     };
   },
 
@@ -87,6 +90,11 @@ export default {
         "update_detector_settings",
         {"data": requestedValue}
       );
+      this.animate = true;
+      this.readSettings();
+    },
+    resetAnimate: function() {
+        this.animate = false;
     }
   },
   async created() {
