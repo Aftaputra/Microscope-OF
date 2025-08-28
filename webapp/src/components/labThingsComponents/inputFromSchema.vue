@@ -111,7 +111,10 @@ export default {
 
   data() {
     return {
-      // Initialise with a copy. As this is faster than stringifying and parsing.
+      // Initialise with a copy to try to prevent the this.value prop being mutated if
+      // the value is an array or object. For future updates we stringify and parse
+      // (see resetInternalValue). If we do this here there is a chance we get errors
+      // as internalValue is still null when rendering starts.
       internalValue: Array.isArray(this.value)
           ? [...this.value]
           : typeof this.value === 'object'
@@ -206,7 +209,9 @@ export default {
 
   methods: {
     resetInternalValue: function() {
-      // stringify and parse to ensure no internal mutation for objects
+      // Whenever updatirng th internal value stringify and parse as a form of deepcopy.
+      // This ensure that the this.value prop is not mutated for when elements of arrays
+      // or objects are updated.
       this.internalValue = JSON.parse(JSON.stringify(this.value));
     },
     requestUpdate: async function() {
@@ -243,6 +248,11 @@ export default {
       this.$emit('animationShown');
     },
     deepStringify: function(val) {
+      // Create a json string where all internal numbers are also JSON strings. This is
+      // needed to robustly check if the value is updated because the raw value may be a
+      // number but anything typed in the input is a string. In the case of arrays or
+      // objects even with JSON.stringify we end up comparing ["1", 3] with [1, 3] and
+      // find them as not equal.
       if (Array.isArray(val)) {
         return JSON.stringify(val.map(String));
       }
