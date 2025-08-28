@@ -11,6 +11,7 @@
           @focusin="focusIn"
           @focusout="focusOut"
           @keydown="keyDown"
+          @animationend="animationEnd"
         />
         <sync-property-button @click="requestUpdate" />
       </div>
@@ -42,6 +43,7 @@
           @focusin="focusIn"
           @focusout="focusOut"
           @keydown="keyDown"
+          @animationend="animationEnd"
         />
         <sync-property-button @click="requestUpdate" />
       </div>
@@ -60,6 +62,7 @@
             @focusin="focusIn"
             @focusout="focusOut"
             @keydown="keyDown"
+            @animationend="animationEnd"
           />
           <sync-property-button @click="requestUpdate" />
         </div>
@@ -139,10 +142,6 @@ export default {
     animate(updated) {
       if (updated) {
         this.animateUpdate = true;
-        setTimeout(() => {
-          this.animateUpdate = false;
-          this.$emit('animationShown');
-        }, 700);
       }
     }
   },
@@ -239,6 +238,10 @@ export default {
     updateIsEdited: function() {
       this.isEdited = this.deepStringify(this.internalValue) !== this.deepStringify(this.value);
     },
+    animationEnd: function() {
+      this.animateUpdate = false;
+      this.$emit('animationShown');
+    },
     deepStringify: function(val) {
       if (Array.isArray(val)) {
         return JSON.stringify(val.map(String));
@@ -280,5 +283,7 @@ export default {
 }
 .flash {
   animation: green-flash 0.7s ease;
+  /*Without this background-colour chrome will ignore the animation colour.*/
+  background-color: white;
 }
 </style>
