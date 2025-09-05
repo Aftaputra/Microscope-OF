@@ -1,5 +1,5 @@
 <template>
-  <div class="uk-padding-small">
+  <div class="uk-padding-small" v-observe-visibility="visibilityChanged">
     <div>
       <ul uk-accordion="multiple: true">
         <li>
@@ -30,7 +30,7 @@
         />
       </div>
       <div class="uk-margin">
-        <!--Once status is read this should be disabled id not ready..-->
+        <!--Once status is read this should be disabled if not ready..-->
         <action-button
           thing="camera"
           action="image_is_sample"
@@ -71,6 +71,11 @@ export default {
   },
 
   methods: {
+    visibilityChanged(isVisible) {
+      if (isVisible) {
+        this.readSettings();
+      }
+    },
     alertBackgroundSet() {
       this.modalNotify(`Background image has been updated`);
     },
