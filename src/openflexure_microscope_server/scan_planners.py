@@ -19,12 +19,6 @@ XYPosList: TypeAlias = list[XYPos]
 XYZPosList: TypeAlias = list[XYZPos]
 
 
-# how many times the minimum distance between images to include as a "nearby" image
-# default 1.4 includes images offset in x or y, but not diagonally.
-# This wis based of a 4:3 aspect ratio. So x moves are 1.33 times larger than y
-NEIGHBOUR_CUTOFF = 1.4
-
-
 def enforce_xy_tuple(value: XYPos) -> XYPos:
     """Check input is a tuple and is of length 2.
 
@@ -242,17 +236,29 @@ class SmartSpiral(ScanPlanner):
 
     Each time and image is taken the four neighbouring images are added
     to the list of positions to image (unless they are already listed or
-    tried). However, if a location is not imaged due no sample being detected
-    then neibouring positions are not imaged.
+    tried). However, if a location is not imaged due no sample being detected,
+    then neighbouring positions are not imaged.
 
-    The next image taken is the closes to the centre (considering the largest
-    of vertical or horizontal distance), ties are broken by the distance from
-    the current position.
+    The next image taken is the fewest scan sites (moves in dx and dy) from the current
+    site, with ties broken by minimising the moves away from the start of the scan.
+    Final tiebreak is the distance to each site, in motor steps rather than multiple of
+    dx and dy.
     """
 
     _max_dist: int = 0
     _dx: int = 0
     _dy: int = 0
+
+    def __init__(
+        self, initial_position: XYPos, planner_settings: Optional[dict] = None
+    ) -> None:
+        """Set up the lists inherited from ScanPlanner, plus a distance cutoff.
+
+        Use the supplied _dx and _dy to set a distance cutoff for an image to be
+        considered neighbouring another
+        """
+        super().__init__(initial_position, planner_settings)
+        self._distance_cutoff: float = max([self._dx, self._dy]) * 1.1
 
     def _parse(self, planner_settings: Optional[dict] = None) -> None:
         """Parse SmartSpiral Settings dictionary.
@@ -369,10 +375,12 @@ class SmartSpiral(ScanPlanner):
 
         Lowest position is best, as starting too high causes smart stacking to
         autofocus and restart. Starting too low just requires extra movements in +z.
-        Nearby is defined as within NEIGHBOUR_CUTOFF times the distance to the closest
-        neighbour.
+        Nearby is defined as within 1.1 times the larger of the x and y scan offsets.
 
-        Returns None if there if no focused locations are present
+        If no focused sites are within this range, use the height of the nearest
+        focused site.
+
+        Returns None if no focused locations are present
         """
         if not self._focused_locations:
             return None
@@ -385,9 +393,16 @@ class SmartSpiral(ScanPlanner):
         # Note linalg.norm always uses float64
         dists = np.linalg.norm((path_pos - current_pos), axis=1)
 
-        # Get indices of all focused sites within NEIGHBOUR_CUTOFF the minimum distance.
+        # Get indices of all focused sites within distance_cutoff.
         # Note np.where always returns a tuple of arrays, hence the trailing [0]
-        indices = np.where(dists <= NEIGHBOUR_CUTOFF * np.min(dists))[0]
+        indices = np.where(dists <= self._distance_cutoff)[0]
+
+        # Handle the case that no focused positions are within this range, and
+        # instead use the nearest focused position. This will always return a
+        # height, due to the check that self._focused_locations exists.
+        if len(indices) == 0:
+            distance_cutoff = min(dists)
+            indices = np.where(dists <= distance_cutoff)[0]
 
         # Turning into an array allows slicing based on a list
         focused_locations_array = np.array(self._focused_locations)
