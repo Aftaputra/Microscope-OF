@@ -19,13 +19,6 @@ XYPosList: TypeAlias = list[XYPos]
 XYZPosList: TypeAlias = list[XYZPos]
 
 
-# how many times the minimum distance between images to include as a "nearby" image
-# default 1.6 includes images offset in x or y, but not diagonally.
-# This wis based of a 4:3 aspect ratio. So x moves are 1.33 times larger than y
-# testing revealed that asymmetric CSM led to anything below 1.5 being insufficient
-NEIGHBOUR_CUTOFF = 1.6
-
-
 def enforce_xy_tuple(value: XYPos) -> XYPos:
     """Check input is a tuple and is of length 2.
 
@@ -243,17 +236,29 @@ class SmartSpiral(ScanPlanner):
 
     Each time and image is taken the four neighbouring images are added
     to the list of positions to image (unless they are already listed or
-    tried). However, if a location is not imaged due no sample being detected
-    then neibouring positions are not imaged.
+    tried). However, if a location is not imaged due no sample being detected,
+    then neighbouring positions are not imaged.
 
-    The next image taken is the closes to the centre (considering the largest
-    of vertical or horizontal distance), ties are broken by the distance from
-    the current position.
+    The next image taken is the fewest scan sites (moves in dx and dy) from the current
+    site, with ties broken by minimising the moves away from the start of the scan.
+    Final tiebreak is the distance to each site, in motor steps rather than multiple of
+    dx and dy.
     """
 
     _max_dist: int = 0
     _dx: int = 0
     _dy: int = 0
+
+    def __init__(
+        self, initial_position: XYPos, planner_settings: Optional[dict] = None
+    ):
+        """Set up the lists inherited from ScanPlanner, plus a distance cutoff.
+
+        Use the supplied _dx and _dy to set a distance cutoff for an image to be
+        considered neighbouring another
+        """
+        super().__init__(initial_position, planner_settings)
+        self._distance_cutoff = max([self._dx, self._dy]) * 1.1
 
     def _parse(self, planner_settings: Optional[dict] = None) -> None:
         """Parse SmartSpiral Settings dictionary.
@@ -388,13 +393,9 @@ class SmartSpiral(ScanPlanner):
         # Note linalg.norm always uses float64
         dists = np.linalg.norm((path_pos - current_pos), axis=1)
 
-        # distance_cutoff is the larger of the x and y offsets, times 1.1 to ensure
-        # that rounding at any point doesn't cause problems
-        distance_cutoff = max([self._dx, self._dy]) * 1.1
-
         # Get indices of all focused sites within distance_cutoff.
         # Note np.where always returns a tuple of arrays, hence the trailing [0]
-        indices = np.where(dists <= distance_cutoff)[0]
+        indices = np.where(dists <= self._distance_cutoff)[0]
 
         # Handle the case that no focused positions are within this range, and
         # instead use the nearest focused position. This will always return a
