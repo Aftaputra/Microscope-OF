@@ -22,7 +22,7 @@
         :disabled="isDisabled"
         :hidden="taskStarted && hideOnRun"
         class="uk-button uk-width-1-1"
-        :class="[buttonPrimary ? 'uk-button-primary' : 'uk-button-default']"
+        :class="[isDisabled ? 'uk-button-disabled' : '', buttonPrimary ? 'uk-button-primary' : 'uk-button-default']"
         @click="bootstrapTask()"
       >
         {{ submitLabel }}
