@@ -74,7 +74,7 @@ class ScanPlanner:
 
     def __init__(
         self, initial_position: XYPos, planner_settings: Optional[dict] = None
-    ):
+    ) -> None:
         """Set up lists for the path planning, and scan history."""
         self._initial_position = enforce_xy_tuple(initial_position)
         self._parse(planner_settings)
@@ -251,14 +251,14 @@ class SmartSpiral(ScanPlanner):
 
     def __init__(
         self, initial_position: XYPos, planner_settings: Optional[dict] = None
-    ):
+    ) -> None:
         """Set up the lists inherited from ScanPlanner, plus a distance cutoff.
 
         Use the supplied _dx and _dy to set a distance cutoff for an image to be
         considered neighbouring another
         """
         super().__init__(initial_position, planner_settings)
-        self._distance_cutoff = max([self._dx, self._dy]) * 1.1
+        self._distance_cutoff: float = max([self._dx, self._dy]) * 1.1
 
     def _parse(self, planner_settings: Optional[dict] = None) -> None:
         """Parse SmartSpiral Settings dictionary.
