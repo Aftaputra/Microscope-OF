@@ -374,7 +374,7 @@ def _motion_detection(
 
 
 def _collate_data(data: dict, time: float, csm: CSMDep) -> dict:
-    """Collate anmd calculate all useful data from ROM test.
+    """Collate and calculate all useful data from ROM test.
 
     :param data: Dictionary created from ROM test.
     :param time: Total time of the range of motion test.
@@ -522,6 +522,11 @@ class RangeofMotionThing(lt.Thing):
 
         except ParasiticMotionError:
             logger.info("Parasitic motion detected.")
+            return {
+                "correlation_lateral_steps": 0,
+                "stage_positions": 0,
+                "final_position": {"x": 0, "y": 0, "z": 0},
+            }
         finally:
             stage.move_absolute(
                 x=starting_position[0],
@@ -555,7 +560,7 @@ class RangeofMotionThing(lt.Thing):
                     Please ensure you are using a big enough sample."
         )
         start_time = time.time()
-        rom_results = {}
+        rom_json = {}
 
         # Loop through all axes and directions.
         for axis_dir in [["x", 1], ["x", -1], ["y", 1], ["y", -1]]:
@@ -569,14 +574,16 @@ class RangeofMotionThing(lt.Thing):
                 direction=axis_dir[1],
             )
             # Save results from single axis and direction
-            rom_results[
+            rom_json[
                 f"{'positive' if axis_dir[1] == 1 else 'negative'} {axis_dir[0]}"
             ] = axis_dir_results
 
         end_time = time.time()
         total_time = (end_time - start_time) / 60
 
-        rom_results = _collate_data(data=rom_results, time=total_time, csm=csm)
+        rom_results = _collate_data(
+            data=rom_json, time=total_time, csm=csm, logger=logger
+        )
 
         logger.info(
             f"Range of motion is {rom_results['Step Range'][0]} X {rom_results['Step Range'][1]} steps"
