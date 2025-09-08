@@ -11,6 +11,7 @@
 </template>
 
 <script>
+import { formatValue } from "@/js_utils/formatter.mjs";
 import InputFromSchema from "./inputFromSchema.vue";
 
 export default {
@@ -105,7 +106,7 @@ export default {
           } else {
             this.animate = true;
             await this.modalNotify(
-              `Set ${this.label} to ${newVal} (closest valid value to requested ${requestedValue}).`
+              `Set ${this.label} to ${formatValue(newVal)} (closest valid value to requested ${formatValue(requestedValue)}).`
             );
           }
         } else {
