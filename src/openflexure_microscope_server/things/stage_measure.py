@@ -429,8 +429,8 @@ class RangeofMotionThing(lt.Thing):
 
         try:
             logger.info(
-                f"Beginning the {axis}-axis in the {'positive' if direction == 1 else 'negative'}\
-                    direction"
+                f"Beginning the {axis}-axis in the {'positive' if direction == 1 else 'negative'} "
+                "direction"
             )
 
             # Generate required dictionaries for step sizes and minimum offsets
@@ -556,8 +556,8 @@ class RangeofMotionThing(lt.Thing):
         :return: Results dictionary separated into keys of each axis and direction.
         """
         logger.info(
-            "Using the stage to measure the Range of Motion.\
-                    Please ensure you are using a big enough sample."
+            "Using the stage to measure the Range of Motion. "
+            "Please ensure you are using a big enough sample."
         )
         start_time = time.time()
         rom_json = {}
@@ -581,12 +581,10 @@ class RangeofMotionThing(lt.Thing):
         end_time = time.time()
         total_time = (end_time - start_time) / 60
 
-        rom_results = _collate_data(
-            data=rom_json, time=total_time, csm=csm, logger=logger
-        )
+        rom_results = _collate_data(data=rom_json, time=total_time, csm=csm)
 
         logger.info(
-            f"Range of motion is {rom_results['Step Range'][0]} X {rom_results['Step Range'][1]} steps"
+            f"Range of motion is {rom_results['Step Range'][0]} x {rom_results['Step Range'][1]} steps"
         )
 
         self.last_calibration = DenumpifyingDict(rom_results).model_dump()
