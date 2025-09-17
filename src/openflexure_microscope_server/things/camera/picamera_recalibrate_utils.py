@@ -89,7 +89,7 @@ def set_minimum_exposure(camera: Picamera2) -> None:
     # Setting the shutter speed to 1us will result in it being set
     # to the minimum possible, which is ~8us for PiCamera v2
     camera.set_controls({"AeEnable": False, "AnalogueGain": 1, "ExposureTime": 1})
-    time.sleep(0.5)
+    time.sleep(1)
 
 
 class ExposureTest(BaseModel):
@@ -142,7 +142,7 @@ def check_convergence(test: ExposureTest, target: int, tolerance: float) -> bool
 
 def adjust_shutter_and_gain_from_raw(
     camera: Picamera2,
-    target_white_level: int = 700,
+    target_white_level: int = 3000,
     max_iterations: int = 20,
     tolerance: float = 0.05,
     percentile: float = 99.9,
@@ -167,14 +167,14 @@ def adjust_shutter_and_gain_from_raw(
 
     """
     # TODO: read black level and bit depth from camera?
-    if target_white_level * (tolerance + 1) >= 959:
+    if target_white_level * (tolerance + 1) >= 3850:
         raise ValueError(
             "The target level is too high - a saturated image would be "
             "considered successful.  target_white_level * (tolerance + 1) "
-            "must be less than 959."
+            "must be less than 3850."
         )
 
-    config = camera.create_still_configuration(raw={"format": "SBGGR10"})
+    config = camera.create_still_configuration(raw={"format": "SBGGR12"})
     camera.configure(config)
     camera.start()
     set_minimum_exposure(camera)
@@ -194,7 +194,7 @@ def adjust_shutter_and_gain_from_raw(
         new_time = int(test.exposure_time * min(target_white_level / test.level, 8))
         camera.controls.ExposureTime = new_time
         camera.controls.AeEnable = False
-        time.sleep(0.5)
+        time.sleep(1)
 
         # Check whether the shutter speed is still going up - if not, we've hit a maximum
         if camera.capture_metadata()["ExposureTime"] == test.exposure_time:
@@ -212,7 +212,7 @@ def adjust_shutter_and_gain_from_raw(
         camera.controls.AnalogueGain = test.analog_gain * min(
             target_white_level / test.level, 2
         )
-        time.sleep(0.5)
+        time.sleep(1)
 
         # Check the gain is still changing - if not, we have probably hit the maximum
         if camera.capture_metadata()["AnalogueGain"] == test.analog_gain:
@@ -245,12 +245,12 @@ def adjust_white_balance_from_raw(
     We should probably have better logic to verify the channels really
     are BGGR...
     """
-    config = camera.create_still_configuration(raw={"format": "SBGGR10"})
+    config = camera.create_still_configuration(raw={"format": "SBGGR12"})
     camera.configure(config)
     camera.start()
     channels = channels_from_bayer_array(camera.capture_array("raw"))
     # TODO: read black level from camera rather than hard-coding 64
-    blacklevel = 64
+    blacklevel = 256
     if luminance is not None and Cr is not None and Cb is not None:
         # Reconstruct a low-resolution image from the lens shading tables
         # and use it to normalise the raw image, to compensate for
@@ -297,7 +297,7 @@ def adjust_white_balance_from_raw(
     )
     camera.controls.AwbEnable = False
     camera.controls.ColourGains = new_awb_gains
-    time.sleep(0.2)
+    time.sleep(1)
     m = camera.capture_metadata()
     print(f"Camera confirms gains are now {m['ColourGains']}")
     return new_awb_gains
@@ -354,7 +354,7 @@ def upsample_channels(grids: np.ndarray, shape: tuple[int]) -> np.ndarray:
 
 
 def downsampled_channels(
-    channels: np.ndarray, blacklevel: int = 64
+    channels: np.ndarray, blacklevel: int = 256
 ) -> list[np.ndarray]:
     """Generate a downsampled, un-normalised image from which to calculate the LST.
 
@@ -534,7 +534,7 @@ def raw_channels_from_camera(camera: Picamera2) -> LensShadingTables:
     # format below requests. Bit depth and Bayer order may be overwritten.
     # TODO: don't assume 10-bit - the high quality camera uses 12.
     # TODO: what's the best mode to use here?
-    config = camera.create_still_configuration(raw={"format": "SBGGR10"})
+    config = camera.create_still_configuration(raw={"format": "SBGGR12"})
     camera.configure(config)
     camera.start()
     raw_image = camera.capture_array("raw")

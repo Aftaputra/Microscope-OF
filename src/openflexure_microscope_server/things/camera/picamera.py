@@ -646,7 +646,7 @@ class StreamingPiCamera2(BaseCamera):
     @lt.thing_action
     def auto_expose_from_minimum(
         self,
-        target_white_level: int = 700,
+        target_white_level: int = 3000,
         percentile: float = 99.9,
     ) -> None:
         """Adjust exposure until a the target white level is reached.
