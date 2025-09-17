@@ -1,6 +1,11 @@
 {
     "things": {
-        "/camera/": "openflexure_microscope_server.things.camera.picamera:StreamingPiCamera2",
+        "/camera/": {
+            "class": "openflexure_microscope_server.things.camera.picamera:StreamingPiCamera2",
+            "kwargs": {
+                "sensor_model": "imx219"
+            }
+        },
         "/stage/": "openflexure_microscope_server.things.stage.sangaboard:SangaboardThing",
         "/autofocus/": "openflexure_microscope_server.things.autofocus:AutofocusThing",
         "/camera_stage_mapping/": "openflexure_microscope_server.things.camera_stage_mapping:CameraStageMapper",
