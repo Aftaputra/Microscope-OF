@@ -43,6 +43,8 @@ from openflexure_microscope_server.ui import (
     property_control_for,
 )
 from . import picamera_recalibrate_utils as recalibrate_utils
+from . import picamera_tuning_file_utils as tf_utils
+
 from . import BaseCamera, ArrayModel
 
 
@@ -144,7 +146,7 @@ class StreamingPiCamera2(BaseCamera):
         self._picamera = None
         logging.info("Starting & reconfiguring camera to populate sensor_modes.")
         with Picamera2(camera_num=self.camera_num) as cam:
-            self.default_tuning = recalibrate_utils.load_default_tuning(cam)
+            self.default_tuning = tf_utils.load_default_tuning(cam)
         logging.info("Done reading sensor modes & default tuning.")
         # Set tuning to default tuning. This will be overwritten when the Thing is
         # connects to the server if tuning is saved to disk.
@@ -718,7 +720,7 @@ class StreamingPiCamera2(BaseCamera):
             # luminance (L), red-difference chroma (Cr), and blue-difference chroma
             # (Cb).
             L, Cr, Cb = recalibrate_utils.lst_from_camera(cam)  # noqa: N806
-            recalibrate_utils.set_static_lst(self.tuning, L, Cr, Cb)
+            tf_utils.set_static_lst(self.tuning, L, Cr, Cb)
             self._initialise_picamera()
 
     @lt.thing_property
@@ -735,14 +737,14 @@ class StreamingPiCamera2(BaseCamera):
 
         See page Raspberry Pi Camera Algorithm and Tuning Guide, page 45.
         """
-        return tuple(recalibrate_utils.get_static_ccm(self.tuning)[0]["ccm"])
+        return tuple(tf_utils.get_static_ccm(self.tuning)[0]["ccm"])
 
     @colour_correction_matrix.setter  # type: ignore
     def colour_correction_matrix(
         self,
         value: tuple[float, float, float, float, float, float, float, float, float],
     ) -> None:
-        recalibrate_utils.set_static_ccm(self.tuning, value)
+        tf_utils.set_static_ccm(self.tuning, value)
 
         if self._picamera is not None:
             with self._streaming_picamera(pause_stream=True):
@@ -781,7 +783,7 @@ class StreamingPiCamera2(BaseCamera):
         A value of 0 here does nothing, a value of 65535 is maximum correction.
         """
         with self._streaming_picamera(pause_stream=True):
-            recalibrate_utils.set_static_geq(self.tuning, offset)
+            tf_utils.set_static_geq(self.tuning, offset)
             self._initialise_picamera()
 
     @lt.thing_action
@@ -820,9 +822,7 @@ class StreamingPiCamera2(BaseCamera):
         with self._streaming_picamera(pause_stream=True):
             # Generate and array of ones of the correct size for each channel
             flat_array = np.ones((12, 16))
-            recalibrate_utils.set_static_lst(
-                self.tuning, flat_array, flat_array, flat_array
-            )
+            tf_utils.set_static_lst(self.tuning, flat_array, flat_array, flat_array)
             self._initialise_picamera()
 
     @lt.thing_property
@@ -945,7 +945,7 @@ class StreamingPiCamera2(BaseCamera):
     def lens_shading_tables(self, lst: LensShading) -> None:
         """Set the lens shading tables."""
         with self._streaming_picamera(pause_stream=True):
-            recalibrate_utils.set_static_lst(
+            tf_utils.set_static_lst(
                 self.tuning,
                 luminance=lst.luminance,
                 cr=lst.Cr,
@@ -996,7 +996,7 @@ class StreamingPiCamera2(BaseCamera):
             alsc = self.get_tuning_algo("rpi.alsc")
             luminance = alsc["luminance_lut"]
             flat = np.ones((12, 16))
-            recalibrate_utils.set_static_lst(self.tuning, luminance, flat, flat)
+            tf_utils.set_static_lst(self.tuning, luminance, flat, flat)
             self._initialise_picamera()
 
     @lt.thing_action
@@ -1007,7 +1007,7 @@ class StreamingPiCamera2(BaseCamera):
         by the Raspberry Pi camera.
         """
         with self._streaming_picamera(pause_stream=True):
-            recalibrate_utils.copy_alsc_section(self.default_tuning, self.tuning)
+            tf_utils.copy_alsc_section(self.default_tuning, self.tuning)
             self._initialise_picamera()
 
     @lt.thing_property
@@ -1019,4 +1019,4 @@ class StreamingPiCamera2(BaseCamera):
         The default LST is not static, but all the calibration controls will set it
         to be static (except "reset")
         """
-        return recalibrate_utils.lst_is_static(self.tuning)
+        return tf_utils.lst_is_static(self.tuning)
