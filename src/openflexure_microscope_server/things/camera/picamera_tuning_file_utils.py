@@ -8,20 +8,14 @@ from picamera2 import Picamera2
 import numpy as np
 
 
-def load_default_tuning(cam: Picamera2) -> dict:
+def load_default_tuning(sensor_model: str) -> dict:
     """Load the default tuning file for the camera.
 
-    This will open and close the camera to determine its model. If you are
-    using a model that's supported by ``picamera2`` it should have a tuning
-    file built in. If not, this will probably crash with an error.
-
-    Error handling for unsupported cameras is not something we are likely
-    to test in the short term.
+    This will loat the tuning file based on the specified sensor model.
     """
-    cp = cam.camera_properties
-    fname = f"{cp['Model']}.json"
+    fname = f"{sensor_model}.json"
     try:
-        return cam.load_tuning_file(fname)
+        return Picamera2.load_tuning_file(fname)
     except RuntimeError:
         tuning_dir = "/usr/share/libcamera/ipa/raspberrypi"
         # from picamera2 v0.3.9
@@ -29,7 +23,7 @@ def load_default_tuning(cam: Picamera2) -> dict:
         # odd - as that's where the files currently are on a default
         # Raspbian image. This may need updating if the files have moved
         # in future updates to the system libcamera package
-        return cam.load_tuning_file(fname, dir=tuning_dir)
+        return Picamera2.load_tuning_file(fname, dir=tuning_dir)
 
 
 def set_static_lst(
