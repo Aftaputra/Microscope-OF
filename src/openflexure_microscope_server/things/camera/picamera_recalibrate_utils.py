@@ -90,7 +90,7 @@ IMX477_SENSOR_INFO = SensorInfo(
     blacklevel=256,
     default_target_white_level=2800,
     short_pause=0.2,
-    long_pause=0.5,
+    long_pause=1.0,
 )
 
 
@@ -116,7 +116,7 @@ def adjust_shutter_and_gain_from_raw(
         sensor bit depth. We recommend values of 700 for 10-bit sensors and 2800 for
         12-bit sensors. This is about 70% of saturated once the blacklevel is
         subtracted. The maximum possible value depends on the sensor bit depth, the
-        sensor blackleve, the tolerance argument.
+        sensor blacklevel and the tolerance argument.
     :param max_iterations: We will terminate once we perform this many iterations,
         whether or not we converge.  More than 10 shouldn't happen.
     :param tolerance: How close to the target value we consider "done".  Expressed as a
@@ -127,6 +127,7 @@ def adjust_shutter_and_gain_from_raw(
         than just ``np.max()``.
 
     """
+    # Calculate the maximum possible pixel value once blacklevel is subtracted.
     max_level = 2**sensor_info.bit_depth - 1 - sensor_info.blacklevel
     if target_white_level * (tolerance + 1) >= max_level:
         raise ValueError(
