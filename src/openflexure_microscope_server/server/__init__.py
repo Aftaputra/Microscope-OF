@@ -14,6 +14,8 @@ from .serve_static_files import add_static_files
 from .legacy_api import add_v2_endpoints
 from ..logging import configure_logging, retrieve_log, retrieve_log_from_file
 
+LOGGER = logging.getLogger(__name__)
+
 
 def set_shutdown_function(shutdown_function: Callable[[], None]) -> None:
     """Ensure a function is called before the shutdown.
@@ -93,7 +95,7 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
                 # Catch anything and log as it is essential that this
                 # function cannot raise an unhandled exception or Uvicorn
                 # will never get a shutdown signal.
-                logging.error(e, exc_info=True)
+                LOGGER.error(e, exc_info=True)
 
         # Monkey patch uvicorn's exit handling to stop the MJPEG Streams
         # before waiting for background tasks to complete.
@@ -109,9 +111,11 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
 
     except BaseException as e:
         if args.fallback:
-            print(f"Error: {e}")
+            # Allow printing to the terminal for fallback errors so they are not
+            # presented in the fallback logs.
+            print(f"Error: {e}")  # noqa: T201
             fallback_server = "labthings_fastapi.server.fallback:app"
-            print(f"Starting fallback server {fallback_server}.")
+            print(f"Starting fallback server {fallback_server}.")  # noqa: T201
             app = lt.cli.object_reference_to_object(fallback_server)
             app.labthings_config = config
             app.labthings_server = server

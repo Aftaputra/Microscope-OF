@@ -52,6 +52,8 @@ from scipy.ndimage import zoom
 from picamera2 import Picamera2
 import picamera2
 
+LOGGER = logging.getLogger(__name__)
+
 
 class SensorInfo(BaseModel):
     """Information about the sensor used for calibration and property setting."""
@@ -167,7 +169,7 @@ def adjust_shutter_and_gain_from_raw(
 
         # Check whether the shutter speed is still going up - if not, we've hit a maximum
         if camera.capture_metadata()["ExposureTime"] == test.exposure_time:
-            logging.info(f"Shutter speed has maxed out at {test.exposure_time}")
+            LOGGER.info(f"Shutter speed has maxed out at {test.exposure_time}")
             break
 
     # Now, if we've not converged, increase gain until we converge or run out of options.
@@ -185,13 +187,13 @@ def adjust_shutter_and_gain_from_raw(
 
         # Check the gain is still changing - if not, we have probably hit the maximum
         if camera.capture_metadata()["AnalogueGain"] == test.analog_gain:
-            logging.info(f"Gain has maxed out at {test.analog_gain}")
+            LOGGER.info(f"Gain has maxed out at {test.analog_gain}")
             break
 
     if _check_convergence(test, target_white_level, tolerance):
-        logging.info(f"Brightness has converged to within {tolerance * 100:.0f}%.")
+        LOGGER.info(f"Brightness has converged to within {tolerance * 100:.0f}%.")
     else:
-        logging.warning(
+        LOGGER.warning(
             f"Failed to reach target brightness of {target_white_level}."
             f"Brightness reached {test.level} after {iterations} iterations."
         )
@@ -230,11 +232,9 @@ def adjust_white_balance_from_raw(
         channel_gains = 1 / grids
         if channel_gains.shape[1:] != channels.shape[1:]:
             channel_gains = _upsample_channels(channel_gains, channels.shape[1:])
-        logging.info(
-            f"Before gains, channel maxima are {np.max(channels, axis=(1, 2))}"
-        )
+        LOGGER.info(f"Before gains, channel maxima are {np.max(channels, axis=(1, 2))}")
         channels = channels * channel_gains
-        logging.info(f"After gains, channel maxima are {np.max(channels, axis=(1, 2))}")
+        LOGGER.info(f"After gains, channel maxima are {np.max(channels, axis=(1, 2))}")
     if method == "centre":
         _, height, width = channels.shape
         # Cut out the central 10% from 9/20 to 11/20...
@@ -261,7 +261,7 @@ def adjust_white_balance_from_raw(
         # Here, we decrease the gains by the minimum value of Cr and Cb.
         new_awb_gains = (green / red * np.min(Cr), green / blue * np.min(Cb))
 
-    logging.info(
+    LOGGER.info(
         f"Raw white point is R: {red} G: {green} B: {blue}, "
         f"setting AWB gains to ({new_awb_gains[0]:.2f}, "
         f"{new_awb_gains[1]:.2f})."
@@ -270,7 +270,7 @@ def adjust_white_balance_from_raw(
     camera.controls.ColourGains = new_awb_gains
     time.sleep(sensor_info.long_pause)
     m = camera.capture_metadata()
-    print(f"Camera confirms gains are now {m['ColourGains']}")
+    LOGGER.debug(f"Camera confirms gains are now {m['ColourGains']}")
     return new_awb_gains
 
 
@@ -334,7 +334,7 @@ def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTe
     # because of black level compensation.  The line below forces a
     # minimum value of 1 which will keep things well-behaved!
     if max_brightness < 1:
-        logging.warning(
+        LOGGER.warning(
             f"Measured brightness of {max_brightness}. "
             "This should normally be >= 1, and may indicate the "
             "camera's black level compensation has gone wrong."
@@ -346,7 +346,7 @@ def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTe
         exposure_time=int(metadata["ExposureTime"]),
         analog_gain=float(metadata["AnalogueGain"]),
     )
-    logging.info(f"{result.model_dump()}")
+    LOGGER.info(f"{result.model_dump()}")
     return result
 
 
@@ -490,5 +490,5 @@ def _raw_channels_from_camera(
     # de-mosaicing has been done, so 2/3 of the values are zero (3/4 for R and B
     # channels, 1/2 for green because there's twice as many green pixels).
     raw_format = camera.camera_configuration()["raw"]["format"]
-    print(f"Acquired a raw image in format {raw_format}")
+    LOGGER.debug(f"Acquired a raw image in format {raw_format}")
     return _channels_from_bayer_array(raw_image)

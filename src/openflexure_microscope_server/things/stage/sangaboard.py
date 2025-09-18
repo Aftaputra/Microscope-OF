@@ -15,6 +15,8 @@ import labthings_fastapi as lt
 
 from . import BaseStage
 
+LOGGER = logging.getLogger(__name__)
+
 
 class SangaboardThing(BaseStage):
     """A Thing to manage a Sangaboard motor controller.
@@ -168,7 +170,7 @@ class SangaboardThing(BaseStage):
             # cannot be used.
             intended_brightness = float(return_value[7:])
             on_brightness = 0.32
-            logging.warning(
+            LOGGER.warning(
                 "Brightness control is not yet implemented. Desired brightness: "
                 f"{intended_brightness}. Set brightness: {on_brightness}"
             )

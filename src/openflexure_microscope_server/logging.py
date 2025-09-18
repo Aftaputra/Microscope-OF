@@ -18,6 +18,7 @@ import os
 from fastapi.responses import PlainTextResponse
 from fastapi import HTTPException
 
+LOGGER = logging.getLogger(__name__)
 OFM_LOG_FILE = None
 
 
@@ -58,12 +59,9 @@ def configure_logging(log_folder: str) -> None:
         root_logger.addHandler(handler)
 
     except PermissionError as e:
-        logging.error(f"Cannot create log file at {OFM_LOG_FILE}: {e}")
+        LOGGER.error(f"Cannot create log file at {OFM_LOG_FILE}: {e}")
 
-    logging.info("")
-    logging.info("****************************************************")
-    logging.info("OFM server root logger has been set up at INFO level")
-    logging.info("****************************************************")
+    LOGGER.info("OFM server root logger has been set up at INFO level")
 
 
 def retrieve_log() -> PlainTextResponse:
