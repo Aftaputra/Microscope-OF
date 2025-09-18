@@ -21,10 +21,9 @@ def add_v2_endpoints(thing_server: lt.ThingServer) -> None:
     """Add the v2 API endpoints for OpenFlexure Connect discoverability."""
     app = thing_server.app
 
-    # TODO: update openflexure connect to make this unnecessary!!
     # The endpoints below fool OpenFlexure Connect into thinking we are a
     # v2 microscope, so we show up correctly.
-    # This is necessary until Connect is rebuilt.
+    # This is necessary until Connect is rebuilt. See #557.
     @app.get("/routes")
     def routes_stub() -> dict[str, dict]:
         """Return a stub list of routes.
