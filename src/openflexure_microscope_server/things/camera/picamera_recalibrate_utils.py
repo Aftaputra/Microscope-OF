@@ -56,6 +56,9 @@ import picamera2
 class SensorInfo(BaseModel):
     """Information about the sensor used for calibration and property setting."""
 
+    sensor_model: str
+    """The model of the sensor, as specified by the Picamera2 library."""
+
     unpacked_pixel_format: str
     """The format of the unpacked pixels."""
 
@@ -76,6 +79,7 @@ class SensorInfo(BaseModel):
 
 
 IMX219_SENSOR_INFO = SensorInfo(
+    sensor_model="imx219",
     unpacked_pixel_format="SBGGR10",
     bit_depth=10,
     blacklevel=64,
@@ -85,6 +89,7 @@ IMX219_SENSOR_INFO = SensorInfo(
 )
 
 IMX477_SENSOR_INFO = SensorInfo(
+    sensor_model="imx477",
     unpacked_pixel_format="SBGGR12",
     bit_depth=12,
     blacklevel=256,

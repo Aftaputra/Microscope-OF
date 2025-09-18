@@ -47,9 +47,9 @@ from . import picamera_tuning_file_utils as tf_utils
 
 from . import BaseCamera, ArrayModel
 
-SUPPORTED_SENSOR_INFO = {
-    "imx219": recalibrate_utils.IMX219_SENSOR_INFO,
-    "imx477": recalibrate_utils.IMX477_SENSOR_INFO,
+SUPPORTED_CAMS_SENSOR_INFO = {
+    "picamera_v2": recalibrate_utils.IMX219_SENSOR_INFO,
+    "picamera_hq": recalibrate_utils.IMX477_SENSOR_INFO,
 }
 
 
@@ -139,29 +139,33 @@ class StreamingPiCamera2(BaseCamera):
     generalisation.
     """
 
-    def __init__(self, camera_num: int = 0, sensor_model: str = "imx219") -> None:
+    def __init__(self, camera_num: int = 0, camera_board: str = "picamera_v2") -> None:
         """Initialise the camera with the given camera number.
 
         This makes no connection to the camera (except to get the default tuning file).
 
         :param camera_num: The number of the camera. This should generally be left as 0
             as most Raspberry Pi boards only support 1 camera.
-        :param sensor_model: The sensor model of the image sensor on this picamera.
+        :param camera_board: The camera board used. Supported options are "picamera_v2"
+           and "picamera_hq".
         """
         super().__init__()
         self._setting_save_in_progress = False
         self._camera_num = camera_num
-        self._sensor_model = sensor_model
-        if sensor_model not in SUPPORTED_SENSOR_INFO:
+        self._camera_board = camera_board
+        if camera_board not in SUPPORTED_CAMS_SENSOR_INFO:
             raise PicameraModelError(
-                f"The sensor model {sensor_model} is not supported."
+                f"The camera_board {camera_board} is not supported. Supported boards "
+                f"are {SUPPORTED_CAMS_SENSOR_INFO.keys()}."
             )
-        self._sensor_info = SUPPORTED_SENSOR_INFO[sensor_model]
+        self._sensor_info = SUPPORTED_CAMS_SENSOR_INFO[camera_board]
         self._picamera_lock = None
         self._picamera = None
 
         # Load the tuning file for the specified sensor mode.
-        self.default_tuning = tf_utils.load_default_tuning(sensor_model)
+        self.default_tuning = tf_utils.load_default_tuning(
+            self._sensor_info.sensor_model
+        )
 
         # Set tuning to default tuning. This will be overwritten when the Thing is
         # connects to the server if tuning is saved to disk.
@@ -410,10 +414,10 @@ class StreamingPiCamera2(BaseCamera):
             )
             if check_sensor_model:
                 hw_sensor_model = self._picamera.camera_properties["Model"]
-                if hw_sensor_model != self._sensor_model:
+                if hw_sensor_model != self._sensor_info.sensor_model:
                     raise PicameraModelError(
-                        f"Wrong Picamera model. Expecting {self._sensor_model}, but "
-                        f"found {hw_sensor_model}."
+                        f"Wrong Picamera model. Expecting {self._sensor_info.sensor_model}, "
+                        f"but found {hw_sensor_model}."
                     )
         self._picamera_lock = RLock()
 

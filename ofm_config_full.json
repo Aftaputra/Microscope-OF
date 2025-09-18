@@ -3,7 +3,7 @@
         "/camera/": {
             "class": "openflexure_microscope_server.things.camera.picamera:StreamingPiCamera2",
             "kwargs": {
-                "sensor_model": "imx219"
+                "camera_board": "picamera_v2"
             }
         },
         "/stage/": "openflexure_microscope_server.things.stage.sangaboard:SangaboardThing",
