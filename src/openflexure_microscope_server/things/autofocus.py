@@ -706,7 +706,10 @@ class AutofocusThing(lt.Thing):
             sharpness=cam.grab_jpeg_size(stream_name="lores"),
         )
 
-    def check_stack_result(
+    # Silence too many returns in this situation as refactoring to reduce returns is
+    # unlikely to improve readability. This function is basically a complex switch
+    # statement, having an explicit return after each option is clear.
+    def check_stack_result(  # noqa: PLR0911
         self, captures: list[CaptureInfo]
     ) -> tuple[Literal["success", "continue", "restart"], int]:
         """Check if the sharpest image in a list of captures is central enough.

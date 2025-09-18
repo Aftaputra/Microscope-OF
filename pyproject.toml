@@ -108,7 +108,7 @@ select = [
     "E", # pycodestyle errors
     "W", #pycodestyle warnings
     "F", # PyFlakes
-#    "PL", # Pylint (a subset of, catches far less than pylint does)
+    "PL", # Pylint (a subset of, catches far less than pylint does)
     "B", # Flake8 bugbear
     "A", # Flake8 builtins checker
     "C", # Flake8 comprehensions
@@ -137,6 +137,9 @@ ignore = [
     "D400",  # A stricter version of #415 that doesn't allow !
     "ANN401", # Disalows Any, Any is needed at times, Once MyPy is running Any will be
               # handled appropriately
+    "PLR2004", # Ignore magic values in comparison for now. It doesn't seem we can set
+               # allowed magic values and a number of our magic values are not really
+               # magic (such as 255 when doing uint8 maths)
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -146,7 +149,8 @@ ignore = [
     "ANN", # Tests are not typehinted for fixtures etc
     "S101", # Allow asserts in tests
     "T20", # Allow prints in tests
-    "LOG015",# Allow tests to use the root logger.
+    "LOG015", # Allow tests to use the root logger.
+    "PLC0415", # Allow tests to import later as this is needed for mocking
 ]
 # Developer CLI scripts
 "{pull_webapp,picamera_tests,change_log_helper}.py" = [
@@ -157,3 +161,7 @@ ignore = [
 # This lets the D401 checker understand that decorated thing properties and thing
 # settings act like properties so should be documented as such.
 property-decorators = ["labthings_fastapi.thing_property", "labthings_fastapi.thing_setting"]
+
+[tool.ruff.lint.pylint]
+max-args = 7
+max-positional-args = 5

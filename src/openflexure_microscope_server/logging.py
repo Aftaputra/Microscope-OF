@@ -34,7 +34,7 @@ def configure_logging(log_folder: str) -> None:
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
     # Explicitly make OFM_LOG_FILE a global so it can be updated based on log settings
-    global OFM_LOG_FILE
+    global OFM_LOG_FILE  # noqa: PLW0603
     OFM_LOG_FILE = os.path.join(log_folder, "openflexure_microscope.log")
 
     # Add OFM_HANDLER first so it can capture the error log if the

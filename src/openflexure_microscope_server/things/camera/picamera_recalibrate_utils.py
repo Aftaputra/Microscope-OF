@@ -201,9 +201,13 @@ def adjust_shutter_and_gain_from_raw(
     return test.level
 
 
-def adjust_white_balance_from_raw(
+# Explicitly allow this to have 8 arguments as the later arguments are keyword only
+# We should be able to enforce this without noqa once PyLint moves PLR0917 out of
+# preview
+def adjust_white_balance_from_raw(  # noqa: PLR0913
     camera: Picamera2,
     sensor_info: SensorInfo,
+    *,
     percentile: float = 99,
     luminance: Optional[np.ndarray] = None,
     Cr: Optional[np.ndarray] = None,
