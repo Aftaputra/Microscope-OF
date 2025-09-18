@@ -334,9 +334,8 @@ class SmartScanThing(lt.Thing):
         """Manage the stitching threads, starting them if needed and not already running."""
         # Assume 4 images means at least one offset in x and y, making the stitching
         # well constrained.
-        if self._scan_data.image_count > 3:
-            if not self._preview_stitcher.running:
-                self._preview_stitcher.start()
+        if self._scan_data.image_count > 3 and not self._preview_stitcher.running:
+            self._preview_stitcher.start()
 
     @_scan_running
     def _run_scan(self) -> None:

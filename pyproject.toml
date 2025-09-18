@@ -119,7 +119,7 @@ select = [
     "PT", # pytest linting
     "RET", # Consistent clear return statements
     "RSE", # Raise parentheses
-#    "SIM", # Simplifications detected
+    "SIM", # Simplifications detected
     "ARG", # unused arguments
     "C90", # McCabe complexity!
     "NPY", # Numpy linting
@@ -142,6 +142,8 @@ ignore = [
                # magic (such as 255 when doing uint8 maths)
     "PT011", # Ifnore pytest.raises being used on too gereneral expectations without a
              # match. We may need to revisit this.
+    "SIM105", # Not enforcing use of `contextlib.suppress(NotConnectedToServerError)`
+              # instead of `try`-`except`-`pass`
 ]
 
 [tool.ruff.lint.per-file-ignores]

@@ -163,10 +163,7 @@ class ScanPlanner:
 
         # If focussed locations exist return closest location, favouring most recent
         closest_pos = self.closest_focus_site(next_location)
-        if closest_pos is None:
-            z = None
-        else:
-            z = closest_pos[2]
+        z = None if closest_pos is None else closest_pos[2]
 
         return next_location, z
 
@@ -363,10 +360,7 @@ class SmartSpiral(ScanPlanner):
 
         # If focused locations exist, return the neighbour with the lowest z position
         closest_pos = self.select_nearby_focus_site(next_location)
-        if closest_pos is None:
-            z = None
-        else:
-            z = closest_pos[2]
+        z = None if closest_pos is None else closest_pos[2]
 
         return next_location, z
 

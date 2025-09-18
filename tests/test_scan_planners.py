@@ -23,8 +23,8 @@ def test_enforce_xy_tuple():
         with pytest.raises(TypeError):
             scan_planners.enforce_xy_tuple(value)
 
-    assert (1, 6) == scan_planners.enforce_xy_tuple((1, 6))
-    assert (1, 6) == scan_planners.enforce_xy_tuple([1, 6])
+    assert scan_planners.enforce_xy_tuple((1, 6)) == (1, 6)
+    assert scan_planners.enforce_xy_tuple([1, 6]) == (1, 6)
 
 
 def test_enforce_xyz_tuple():
@@ -39,8 +39,8 @@ def test_enforce_xyz_tuple():
         with pytest.raises(TypeError):
             scan_planners.enforce_xyz_tuple(value)
 
-    assert (1, 6, 2) == scan_planners.enforce_xyz_tuple((1, 6, 2))
-    assert (1, 6, 6) == scan_planners.enforce_xyz_tuple([1, 6, 6])
+    assert scan_planners.enforce_xyz_tuple((1, 6, 2)) == (1, 6, 2)
+    assert scan_planners.enforce_xyz_tuple([1, 6, 6]) == (1, 6, 6)
 
 
 def test_base_class_not_implemented():
