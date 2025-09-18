@@ -161,13 +161,13 @@ FAKE_UVICORN_LOGGER = logging.getLogger("uvicorn.error")
 
 
 @pytest.mark.parametrize(
-    "log_command, names_in_log, names_not_in_log",
+    ("log_command", "names_in_log", "names_not_in_log"),
     [
-        [FAKE_UVICORN_LOGGER.debug, [], ["<uvicorn>", "<uvicorn.error>"]],
-        [FAKE_UVICORN_LOGGER.info, ["<uvicorn>"], ["<uvicorn.error>"]],
-        [FAKE_UVICORN_LOGGER.warning, ["<uvicorn>"], ["<uvicorn.error>"]],
-        [FAKE_UVICORN_LOGGER.error, ["<uvicorn.error>"], ["<uvicorn>"]],
-        [FAKE_UVICORN_LOGGER.exception, ["<uvicorn.error>"], ["<uvicorn>"]],
+        (FAKE_UVICORN_LOGGER.debug, [], ["<uvicorn>", "<uvicorn.error>"]),
+        (FAKE_UVICORN_LOGGER.info, ["<uvicorn>"], ["<uvicorn.error>"]),
+        (FAKE_UVICORN_LOGGER.warning, ["<uvicorn>"], ["<uvicorn.error>"]),
+        (FAKE_UVICORN_LOGGER.error, ["<uvicorn.error>"], ["<uvicorn>"]),
+        (FAKE_UVICORN_LOGGER.exception, ["<uvicorn.error>"], ["<uvicorn>"]),
     ],
 )
 def test_uvicorn_error_only_says_error_on_error(

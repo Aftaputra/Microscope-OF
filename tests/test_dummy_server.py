@@ -43,7 +43,7 @@ def thing_server():
     assert os.path.exists(os.path.join(temp_folder.name, "camera/"))
     # Note: yield is important. If return is used the temp folder gets deleted
     # before the test runs
-    yield server
+    yield server  # noqa: PT022
 
 
 @pytest.fixture

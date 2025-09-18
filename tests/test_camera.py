@@ -54,7 +54,11 @@ def test_handle_broken_frame():
         portal = lt.get_blocking_portal(camera)
 
         # Check that this does cause broken frames.
-        with pytest.raises(OSError, match="broken data stream when reading image file"):
+        # The noqa is because we don't know exactly when the error is thrown so we
+        # can't have a single simple statements in the pytest raises.
+        with pytest.raises(  # noqa PT012
+            OSError, match="broken data stream when reading image file"
+        ):
             for _i in range(15):
                 jpeg = camera.grab_jpeg(portal)
                 np.asarray(Image.open(jpeg.open()))

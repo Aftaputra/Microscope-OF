@@ -116,7 +116,7 @@ select = [
            # If they are not fixed before merge they should be converted to GitLab issues
     "LOG", # Flake8 logging issues (pedantic logger formatting issues can be added with "G")
     "T20", # Warns for print statements, production code should log
-#    "PT", # pytest linting
+    "PT", # pytest linting
     "RET", # Consistent clear return statements
     "RSE", # Raise parentheses
 #    "SIM", # Simplifications detected
@@ -140,6 +140,8 @@ ignore = [
     "PLR2004", # Ignore magic values in comparison for now. It doesn't seem we can set
                # allowed magic values and a number of our magic values are not really
                # magic (such as 255 when doing uint8 maths)
+    "PT011", # Ifnore pytest.raises being used on too gereneral expectations without a
+             # match. We may need to revisit this.
 ]
 
 [tool.ruff.lint.per-file-ignores]

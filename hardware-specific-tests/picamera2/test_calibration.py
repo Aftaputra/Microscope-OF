@@ -14,7 +14,7 @@ from openflexure_microscope_server.things.camera.picamera import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def picamera_thing() -> StreamingPiCamera2:
     """Return a StreamingPiCamera2 Thing.
 
@@ -24,7 +24,7 @@ def picamera_thing() -> StreamingPiCamera2:
     return StreamingPiCamera2()
 
 
-@pytest.fixture()
+@pytest.fixture
 def client(picamera_thing) -> lt.ThingClient:
     """Initialise a test client for the StreamingPiCamera2 Thing.
 

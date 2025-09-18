@@ -3,14 +3,14 @@
 from fastapi.testclient import TestClient
 from PIL import Image
 import numpy as np
-from pytest import fixture
+import pytest
 
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
 
 
-@fixture(scope="module")
+@pytest.fixture(scope="module")
 def client() -> lt.ThingClient:
     """Initialise a test client for the StreamingPiCamera2 Thing.
 
