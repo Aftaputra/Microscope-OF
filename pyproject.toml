@@ -100,10 +100,6 @@ testpaths = ["tests"]
 line-ending = "native"
 
 [tool.ruff.lint]
-
-# Slowly add linting rules from ruff-increased-checking.toml commented
-# out rules can be checked by running
-# ruff --config ruff-increased-checking.toml check
 select = [
     "E", # pycodestyle errors
     "W", #pycodestyle warnings
