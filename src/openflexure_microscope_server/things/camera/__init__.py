@@ -632,7 +632,7 @@ class BaseCamera(lt.Thing):
     @lt.thing_action
     def image_is_sample(self, portal: lt.deps.BlockingPortal) -> tuple[bool, str]:
         """Label the current image as either background or sample."""
-        current_image = self.grab_as_array(portal)
+        current_image = self.grab_as_array(portal, stream_name="lores")
         return self.active_detector.image_is_sample(current_image)
 
     @lt.thing_action
@@ -645,7 +645,7 @@ class BaseCamera(lt.Thing):
         future images to the distribution, to determine if each pixel is
         foreground or background.
         """
-        background = self.grab_as_array(portal)
+        background = self.grab_as_array(portal, stream_name="lores")
         self.active_detector.set_background(background)
         # Manually save settings as the setter is not called.
         self.save_settings()
