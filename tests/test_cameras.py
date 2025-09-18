@@ -27,10 +27,7 @@ def mock_picam_thing(mocker):
             "picamera2.outputs": mocker.Mock(),
         },
     )
-    mocker.patch(
-        "openflexure_microscope_server.things.camera.picamera.recalibrate_utils.load_default_tuning",
-        return_value={"mock": "tuning"},
-    )
+
     from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
 
     return StreamingPiCamera2()

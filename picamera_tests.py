@@ -21,6 +21,7 @@ HASHED_FILES = [
     os.path.join(CAM_DIR, "__init__.py"),
     os.path.join(CAM_DIR, "picamera.py"),
     os.path.join(CAM_DIR, "picamera_recalibrate_utils.py"),
+    os.path.join(CAM_DIR, "picamera_tuning_file_utils.py"),
 ]
 
 

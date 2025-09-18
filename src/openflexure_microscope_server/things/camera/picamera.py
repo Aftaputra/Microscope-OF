@@ -43,7 +43,18 @@ from openflexure_microscope_server.ui import (
     property_control_for,
 )
 from . import picamera_recalibrate_utils as recalibrate_utils
+from . import picamera_tuning_file_utils as tf_utils
+
 from . import BaseCamera, ArrayModel
+
+SUPPORTED_CAMS_SENSOR_INFO = {
+    "picamera_v2": recalibrate_utils.IMX219_SENSOR_INFO,
+    "picamera_hq": recalibrate_utils.IMX477_SENSOR_INFO,
+}
+
+
+class PicameraModelError(RuntimeError):
+    """There is a problem Picamera sensor model set by the configuration."""
 
 
 class MissingCalibrationError(RuntimeError):
@@ -128,24 +139,34 @@ class StreamingPiCamera2(BaseCamera):
     generalisation.
     """
 
-    def __init__(self, camera_num: int = 0) -> None:
+    def __init__(self, camera_num: int = 0, camera_board: str = "picamera_v2") -> None:
         """Initialise the camera with the given camera number.
 
         This makes no connection to the camera (except to get the default tuning file).
 
         :param camera_num: The number of the camera. This should generally be left as 0
             as most Raspberry Pi boards only support 1 camera.
+        :param camera_board: The camera board used. Supported options are "picamera_v2"
+           and "picamera_hq".
         """
         super().__init__()
         self._setting_save_in_progress = False
-        self.camera_num = camera_num
-        self.camera_configs: dict[str, dict] = {}
+        self._camera_num = camera_num
+        self._camera_board = camera_board
+        if camera_board not in SUPPORTED_CAMS_SENSOR_INFO:
+            raise PicameraModelError(
+                f"The camera_board {camera_board} is not supported. Supported boards "
+                f"are {SUPPORTED_CAMS_SENSOR_INFO.keys()}."
+            )
+        self._sensor_info = SUPPORTED_CAMS_SENSOR_INFO[camera_board]
         self._picamera_lock = None
         self._picamera = None
-        logging.info("Starting & reconfiguring camera to populate sensor_modes.")
-        with Picamera2(camera_num=self.camera_num) as cam:
-            self.default_tuning = recalibrate_utils.load_default_tuning(cam)
-        logging.info("Done reading sensor modes & default tuning.")
+
+        # Load the tuning file for the specified sensor mode.
+        self.default_tuning = tf_utils.load_default_tuning(
+            self._sensor_info.sensor_model
+        )
+
         # Set tuning to default tuning. This will be overwritten when the Thing is
         # connects to the server if tuning is saved to disk.
         try:
@@ -354,11 +375,18 @@ class StreamingPiCamera2(BaseCamera):
                 ) from e
             return None
 
-    def _initialise_picamera(self) -> None:
+    def _initialise_picamera(self, check_sensor_model: bool = False) -> None:
         """Acquire the picamera device and store it as ``self._picamera``.
 
         This duplicates logic in ``Picamera2.__init__`` to provide a tuning file that
         will be read when the camera system initialises.
+
+        :param check_sensor_model: Set to true to check the sensor model is the
+            expected sensor model. This is used on ``__enter__`` to confirm that the
+            real camera matches the expected camera.
+
+        :raises PicameraModelError: If check_sensor_model is True and the real
+            camera sensor model doesn't match the expected sensor model.
         """
         if self._picamera_lock is not None:
             # Don't close the camera if it's in use
@@ -381,9 +409,16 @@ class StreamingPiCamera2(BaseCamera):
             logging.info("Creating new Picamera2 object")
             # Specify tuning file otherwise it will be overwritten with None.
             self._picamera = Picamera2(
-                camera_num=self.camera_num,
+                camera_num=self._camera_num,
                 tuning=self.tuning,
             )
+            if check_sensor_model:
+                hw_sensor_model = self._picamera.camera_properties["Model"]
+                if hw_sensor_model != self._sensor_info.sensor_model:
+                    raise PicameraModelError(
+                        f"Wrong Picamera model. Expecting {self._sensor_info.sensor_model}, "
+                        f"but found {hw_sensor_model}."
+                    )
         self._picamera_lock = RLock()
 
     def __enter__(self) -> None:
@@ -392,7 +427,7 @@ class StreamingPiCamera2(BaseCamera):
         This opens the picamera connection, initialises the camera, sets the
         sensor_modes property, and then starts the streams.
         """
-        self._initialise_picamera()
+        self._initialise_picamera(check_sensor_model=True)
         # Sensor modes is a cached property read it once after initialising the camera
         _modes = self.sensor_modes
         self.start_streaming()
@@ -529,7 +564,7 @@ class StreamingPiCamera2(BaseCamera):
                 logging.info("Stopped MJPEG stream.")
 
             # Adding a sleep to prevent camera getting confused by rapid commands
-            time.sleep(0.2)
+            time.sleep(self._sensor_info.short_pause)
 
     @lt.thing_action
     def discard_frames(self) -> None:
@@ -547,7 +582,7 @@ class StreamingPiCamera2(BaseCamera):
             logging.debug("Reconfiguring camera for full resolution capture")
             cam.configure(cam.create_still_configuration(sensor=self._sensor_mode))
             cam.start()
-            time.sleep(0.2)
+            time.sleep(self._sensor_info.short_pause)
             yield cam
 
     def capture_image(
@@ -646,7 +681,7 @@ class StreamingPiCamera2(BaseCamera):
     @lt.thing_action
     def auto_expose_from_minimum(
         self,
-        target_white_level: int = 700,
+        target_white_level: Optional[int] = None,
         percentile: float = 99.9,
     ) -> None:
         """Adjust exposure until a the target white level is reached.
@@ -654,17 +689,21 @@ class StreamingPiCamera2(BaseCamera):
         Starting from the minimum exposure, gradually increase exposure until
         the image reaches the specified white level.
 
-        :param target_white_level: The target 10bit white level. 10-bit data has a
-            theoretical maximum of 1023, but with black level correction the true
-            maximum is about 950. Default is 700 as this is approximately 70%
-            saturated.
+        :param target_white_level: Raw target white level, this should be an integer
+            within the range set by the bit-depth of the camera sensor (10-bit for
+            PiCamera v2, 12 Bit for Picamera HQ. If None the default will be used for
+            the current sensor. This is approximately 70% saturated.
         :param percentile: The percentile to use instead of maximum. Default 99.9. When
             calculating the brightest pixel, a percentile is used rather than the
             maximum in order to be robust to a small number of noisy/bright pixels.
         """
+        if target_white_level is None:
+            target_white_level = self._sensor_info.default_target_white_level
+
         with self._streaming_picamera(pause_stream=True) as cam:
             recalibrate_utils.adjust_shutter_and_gain_from_raw(
                 cam,
+                self._sensor_info,
                 target_white_level=target_white_level,
                 percentile=percentile,
             )
@@ -691,6 +730,7 @@ class StreamingPiCamera2(BaseCamera):
                 lst: LensShading = self.lens_shading_tables
                 recalibrate_utils.adjust_white_balance_from_raw(
                     cam,
+                    self._sensor_info,
                     percentile=99,
                     luminance=lst.luminance,
                     Cr=lst.Cr,
@@ -700,7 +740,7 @@ class StreamingPiCamera2(BaseCamera):
                 )
             else:
                 recalibrate_utils.adjust_white_balance_from_raw(
-                    cam, percentile=99, method=method
+                    cam, self._sensor_info, percentile=99, method=method
                 )
 
     @lt.thing_action
@@ -717,8 +757,8 @@ class StreamingPiCamera2(BaseCamera):
             # the standard mathematical terms for:
             # luminance (L), red-difference chroma (Cr), and blue-difference chroma
             # (Cb).
-            L, Cr, Cb = recalibrate_utils.lst_from_camera(cam)  # noqa: N806
-            recalibrate_utils.set_static_lst(self.tuning, L, Cr, Cb)
+            L, Cr, Cb = recalibrate_utils.lst_from_camera(cam, self._sensor_info)  # noqa: N806
+            tf_utils.set_static_lst(self.tuning, L, Cr, Cb)
             self._initialise_picamera()
 
     @lt.thing_property
@@ -735,14 +775,14 @@ class StreamingPiCamera2(BaseCamera):
 
         See page Raspberry Pi Camera Algorithm and Tuning Guide, page 45.
         """
-        return tuple(recalibrate_utils.get_static_ccm(self.tuning)[0]["ccm"])
+        return tuple(tf_utils.get_static_ccm(self.tuning)[0]["ccm"])
 
     @colour_correction_matrix.setter  # type: ignore
     def colour_correction_matrix(
         self,
         value: tuple[float, float, float, float, float, float, float, float, float],
     ) -> None:
-        recalibrate_utils.set_static_ccm(self.tuning, value)
+        tf_utils.set_static_ccm(self.tuning, value)
 
         if self._picamera is not None:
             with self._streaming_picamera(pause_stream=True):
@@ -781,7 +821,7 @@ class StreamingPiCamera2(BaseCamera):
         A value of 0 here does nothing, a value of 65535 is maximum correction.
         """
         with self._streaming_picamera(pause_stream=True):
-            recalibrate_utils.set_static_geq(self.tuning, offset)
+            tf_utils.set_static_geq(self.tuning, offset)
             self._initialise_picamera()
 
     @lt.thing_action
@@ -820,9 +860,7 @@ class StreamingPiCamera2(BaseCamera):
         with self._streaming_picamera(pause_stream=True):
             # Generate and array of ones of the correct size for each channel
             flat_array = np.ones((12, 16))
-            recalibrate_utils.set_static_lst(
-                self.tuning, flat_array, flat_array, flat_array
-            )
+            tf_utils.set_static_lst(self.tuning, flat_array, flat_array, flat_array)
             self._initialise_picamera()
 
     @lt.thing_property
@@ -945,7 +983,7 @@ class StreamingPiCamera2(BaseCamera):
     def lens_shading_tables(self, lst: LensShading) -> None:
         """Set the lens shading tables."""
         with self._streaming_picamera(pause_stream=True):
-            recalibrate_utils.set_static_lst(
+            tf_utils.set_static_lst(
                 self.tuning,
                 luminance=lst.luminance,
                 cr=lst.Cr,
@@ -996,7 +1034,7 @@ class StreamingPiCamera2(BaseCamera):
             alsc = self.get_tuning_algo("rpi.alsc")
             luminance = alsc["luminance_lut"]
             flat = np.ones((12, 16))
-            recalibrate_utils.set_static_lst(self.tuning, luminance, flat, flat)
+            tf_utils.set_static_lst(self.tuning, luminance, flat, flat)
             self._initialise_picamera()
 
     @lt.thing_action
@@ -1007,7 +1045,7 @@ class StreamingPiCamera2(BaseCamera):
         by the Raspberry Pi camera.
         """
         with self._streaming_picamera(pause_stream=True):
-            recalibrate_utils.copy_alsc_section(self.default_tuning, self.tuning)
+            tf_utils.copy_alsc_section(self.default_tuning, self.tuning)
             self._initialise_picamera()
 
     @lt.thing_property
@@ -1019,4 +1057,4 @@ class StreamingPiCamera2(BaseCamera):
         The default LST is not static, but all the calibration controls will set it
         to be static (except "reset")
         """
-        return recalibrate_utils.lst_is_static(self.tuning)
+        return tf_utils.lst_is_static(self.tuning)
