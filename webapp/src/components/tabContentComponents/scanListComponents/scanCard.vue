@@ -8,7 +8,7 @@
           <img
             id="thumbnail-stitched-image"
             class="thumbnail-fit"
-            :src="thumbnailPath(scanData.name)"
+            :src="thumbnailPath"
             onerror="this.src='/titleiconpink.svg';"
             @click="requestViewer"
           />
@@ -32,13 +32,13 @@
           class="uk-width-1-2"
           :buttonPrimary=true
           :isDisabled=!scanData.stitch_available
-          :URL="downloadStitchFile( scanData.name )"
+          :URL="downloadStitchFile"
           buttonLabel="Download JPEG"
           />
       </div>
       <button
         class="uk-button uk-button-default uk-width-1-1"
-        @click="deleteScan(scanData.name)"
+        @click="deleteScan"
       >
         Delete
       </button>
@@ -95,16 +95,16 @@ export default {
     }
   },
 
+  computed: {
+    downloadStitchFile() {
+      return `${this.$store.getters.baseUri}/smart_scan/get_stitch/${this.scanData.name}`;
+    },
+    thumbnailPath() {
+      return `${this.$store.getters.baseUri}/smart_scan/scans/stitched_thumbnail.jpg?scan_name=${this.scanData.name}&modified=${this.scanData.modified}`;
+    },
+  },
+
   methods: {
-    downloadStitchFile: function(name) {
-      return `${this.$store.getters.baseUri}/smart_scan/get_stitch/${name}`;
-    },
-    thumbnailPath(scan_name) {
-      return (
-        `${this.$store.getters.baseUri}/smart_scan/scans/stitched_thumbnail.jpg?scan_name=` +
-        scan_name
-      );
-    },
     formatDate(timestamp) {
       // Multiply by 1000 as JS uses ms not s
       let d = new Date(timestamp*1000);
@@ -126,12 +126,12 @@ export default {
       // Notify parent that thumbnail was clicked
       this.$emit('viewer-requested', this.scanData);
     },
-    async deleteScan(name) {
+    async deleteScan() {
       try {
-        await this.modalConfirm(`Are you sure you want to delete ${name}?`);
-        await axios.delete(`${this.scansUri}/${name}`);
+        await this.modalConfirm(`Are you sure you want to delete ${this.scanData.name}?`);
+        await axios.delete(`${this.scansUri}/${this.scanData.name}`);
         this.$emit('update-requested');
-        this.modalNotify(`Deleted ${name}`);
+        this.modalNotify(`Deleted ${this.scanData.name}`);
       } catch (e) {
         // if the confirmation was cancelled, it's rejected with null error
         if (e) this.modalError(e);
