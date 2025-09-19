@@ -55,7 +55,7 @@ def test_handle_broken_frame():
 
         # Check that this does cause broken frames.
         # The noqa is because we don't know exactly when the error is thrown so we
-        # can't have a single simple statements in the pytest raises.
+        # can't have a single simple statement in the pytest raises.
         with pytest.raises(  # noqa PT012
             OSError, match="broken data stream when reading image file"
         ):
