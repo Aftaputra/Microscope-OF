@@ -14,61 +14,64 @@
           />
         </div>
       </div>
-      <h3 class="uk-card-title" style="text-align: center;">{{ scanData.name }}</h3>
-      <div class="button-container">
-      <div class="uk-button-group" style="width:100%">
-        <action-button
-        class="uk-width-1-2"
-        thing="smart_scan"
-        action="download_zip"
-        submit-label="Download All"
-        :can-terminate="false"
-        :submit-data="{ scan_name: scanData.name }"
-        :button-primary="true"
-        @response="downloadZipFile"
-        @error="modalError"
-        />
-        <EndpointButton
+      <h3 class="uk-card-title scan-card-title">{{ scanData.name }}</h3>
+      <h4 class="ongoing-msg" v-if="ongoing">Scan in progress</h4>
+      <div class="button-container" v-if="!ongoing">
+        <div class="uk-button-group scan-card-buttons">
+          <action-button
           class="uk-width-1-2"
-          :buttonPrimary=true
-          :isDisabled=!scanData.stitch_available
-          :URL="downloadStitchFile"
-          buttonLabel="Download JPEG"
+          thing="smart_scan"
+          action="download_zip"
+          submit-label="Download All"
+          :can-terminate="false"
+          :submit-data="{ scan_name: scanData.name }"
+          :button-primary="true"
+          @response="downloadZipFile"
+          @error="modalError"
           />
-      </div>
-      <button
-        class="uk-button uk-button-default uk-width-1-1"
-        @click="deleteScan"
-      >
-        Delete
-      </button>
-      <action-button
-        submit-label="Stitch Images"
-        thing="smart_scan"
-        action="stitch_scan"
-        v-if="scanData.can_stitch | (scanData.stitch_available & !scanData.dzi)"
-        :can-terminate="true"
-        :submit-data="{ scan_name: scanData.name }"
-        :button-primary="false"
-        :modal-progress="true"
-        @error="modalError"
-      />
-      <button
-        v-if="scanData.dzi" class="uk-button uk-button-default uk-width-1-1"
-        @click="requestViewer"
-      >
-      Show Stitched Scan
-      </button>
+          <EndpointButton
+            class="uk-width-1-2"
+            :buttonPrimary=true
+            :isDisabled=!scanData.stitch_available
+            :URL="downloadStitchFile"
+            buttonLabel="Download JPEG"
+            />
+        </div>
+        <button
+          class="uk-button uk-button-default uk-width-1-1"
+          @click="deleteScan"
+        >
+          Delete
+        </button>
+        <action-button
+          submit-label="Stitch Images"
+          thing="smart_scan"
+          action="stitch_scan"
+          v-if="scanData.can_stitch | (scanData.stitch_available & !scanData.dzi)"
+          :can-terminate="true"
+          :submit-data="{ scan_name: scanData.name }"
+          :button-primary="false"
+          :modal-progress="true"
+          @error="modalError"
+        />
+        <button
+          v-if="scanData.dzi" class="uk-button uk-button-default uk-width-1-1"
+          @click="requestViewer"
+        >
+        Show Stitched Scan
+        </button>
       </div>
       <div>
-      <ul>
-        <li>{{ scanData.number_of_images }} images</li>
-        <li>created: {{ formatDate(scanData.created) }}</li>
-        <li>modified: {{ formatDate(scanData.modified) }}</li>
-      </ul>
-        <li v-if="scanData.number_of_images<3" class="warning-msg">Not enough images to stitch</li>
-        <li v-else-if="!scanData.dzi & scanData.stitch_available" class="alert-msg">Interactive preview not available</li> 
-        <li v-else-if=!scanData.stitch_available class="alert-msg">High quality stitch not available</li>  
+        <ul>
+          <li>{{ scanData.number_of_images }} images</li>
+          <li>created: {{ formatDate(scanData.created) }}</li>
+          <li>modified: {{ formatDate(scanData.modified) }}</li>
+        </ul>
+        <ul v-if="!ongoing">
+          <li v-if="scanData.number_of_images<3" class="warning-msg">Not enough images to stitch</li>
+          <li v-else-if="!scanData.dzi & scanData.stitch_available" class="alert-msg">Interactive preview not available</li> 
+          <li v-else-if=!scanData.stitch_available class="alert-msg">High quality stitch not available</li>  
+        </ul>
       </div>
     </div>
   </div>
@@ -91,6 +94,10 @@ export default {
     },
     scansUri: {
       type: String,
+      required: true
+    },
+    ongoing: {
+      type: Boolean,
       required: true
     }
   },
@@ -124,7 +131,9 @@ export default {
     },
     requestViewer() {
       // Notify parent that thumbnail was clicked
-      this.$emit('viewer-requested', this.scanData);
+      if (!this.ongoing) {
+        this.$emit('viewer-requested', this.scanData);
+      }
     },
     async deleteScan() {
       try {
@@ -165,9 +174,23 @@ ul {
   font-weight: bold;
 }
 
-.alert-msg{
+.alert-msg {
   color: orange;
   text-align: center;
   font-weight: bold;
 }
+
+.scan-card-buttons {
+  width: 100%;
+}
+
+.scan-card-title {
+  text-align: center;
+}
+
+.ongoing-msg {
+  text-align: center;
+  padding: 2rem 0;
+}
+
 </style>

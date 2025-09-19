@@ -88,6 +88,7 @@
           <scan-card
             :scan-data="scanData"
             :scans-uri="scansUri"
+            :ongoing="isOngoing(scanData.name)"
             @viewer-requested="showScan"
             @update-requested="updateScans"
           />
@@ -112,6 +113,7 @@ export default {
   data: function() {
     return {
       scans: [],
+      ongoing: null,
       selectedScan: null,
       osdViewer: null
     };
@@ -191,7 +193,9 @@ export default {
     },
     async updateScans() {
       try {
-        let scans = await this.readThingProperty("smart_scan", "scans");
+        let scans_information = await this.readThingProperty("smart_scan", "scans");
+        let scans = scans_information.scans
+        this.ongoing = scans_information.ongoing
         if (!scans | (scans.length == 0)) {
           this.scans = scans;
         }
@@ -207,6 +211,9 @@ export default {
         console.error(err);
         this.scans = [];
       }
+    },
+    isOngoing(name) {
+      return name === this.ongoing
     },
     async deleteAllScans() {
       try {
