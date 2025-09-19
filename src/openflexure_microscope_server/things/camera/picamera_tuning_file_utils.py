@@ -38,7 +38,8 @@ def set_static_lst(
     adaptive tweaking by the algorithm.
     """
     for table in luminance, cr, cb:
-        assert np.array(table).shape == (12, 16), "Lens shading tables must be 12x16!"
+        if np.array(table).shape != (12, 16):
+            raise ValueError("Lens shading tables must be 12x16!")
     alsc = Picamera2.find_tuning_algo(tuning, "rpi.alsc")
     alsc["n_iter"] = 0  # disable the adaptive part
     alsc["luminance_strength"] = 1.0

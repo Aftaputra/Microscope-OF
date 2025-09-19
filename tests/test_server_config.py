@@ -86,8 +86,8 @@ def test_customise_server(mocker):
 
 
 @pytest.mark.parametrize(
-    "config_file, expected_scan_dir",
-    [[FULL_CONFIG, "/var/openflexure/scans/"], [SIM_CONFIG, "./openflexure/scans/"]],
+    ("config_file", "expected_scan_dir"),
+    [(FULL_CONFIG, "/var/openflexure/scans/"), (SIM_CONFIG, "./openflexure/scans/")],
 )
 def test_get_scans_dir_ok(config_file, expected_scan_dir):
     """Test the _get_scans_dir function and also check the standard config files."""

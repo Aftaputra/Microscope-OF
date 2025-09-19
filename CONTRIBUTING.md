@@ -41,7 +41,7 @@ Ideally, python code should be:
 
 The server code is going through significant flux during the transition from v2 to v3, so currently our test coverage is being rebuilt and type checking does not yet pass.
 
-[Ruff](https://docs.astral.sh/ruff/) is used both for linting and formatting the codebase. Our custom linter rules are in our `pyproject.toml`. As we improve the codebase, more rules are being added to the linter; see `ruff-increased-checking.toml` for checks that we plan to get passing.
+[Ruff](https://docs.astral.sh/ruff/) is used both for linting and formatting the codebase. Our custom linter rules are in our `pyproject.toml`.
 
 Run `ruff format` to format the code in a way that will pass on our CI.
 

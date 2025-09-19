@@ -14,7 +14,8 @@ with open(os.path.join("webapp", "package.json"), "r", encoding="utf-8") as json
 py_ver = pyproject_data["project"]["version"]
 js_ver = webapp_data["version"]
 
-assert py_ver == js_ver, (
+# Allow an assert here as this is a CI script, not production code.
+assert py_ver == js_ver, (  # noqa S101
     "The python and javascript version numbers should match.\n"
     f"Python version: {py_ver}\n"
     f"Javascript version: {js_ver}\n"

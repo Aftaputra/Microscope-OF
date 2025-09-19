@@ -25,6 +25,8 @@ from .camera import RawCameraDependency as RawCamera
 from .camera import CameraDependency as CameraClient
 from .stage import StageDependency as Stage
 
+LOGGER = logging.getLogger(__name__)
+
 
 class NotStreamingError(RuntimeError):
     """No images captured from stream. The camera is almost certainly not streaming."""
@@ -228,7 +230,7 @@ class JPEGSharpnessMonitor:
         self.camera = camera
         self.stage = stage
         self.portal = portal
-        print(f"Created sharpness monitor with {stage}, {camera}, {portal}")
+        LOGGER.debug(f"Created sharpness monitor with {stage}, {camera}, {portal}")
         self.stage_positions: list[Mapping[str, int]] = []
         self.stage_times: list[float] = []
         self.jpeg_times: list[float] = []
@@ -307,7 +309,7 @@ class JPEGSharpnessMonitor:
             raise e
         if stop < 1:
             stop = len(jpeg_times)
-            logging.debug("changing stop to %s", (stop))
+            LOGGER.debug("changing stop to %s", (stop))
         jpeg_times = jpeg_times[start:stop]
         jpeg_heights: np.ndarray = np.interp(jpeg_times, stage_times, stage_heights)
         return jpeg_times, jpeg_heights, jpeg_sizes[start:stop]
@@ -704,7 +706,10 @@ class AutofocusThing(lt.Thing):
             sharpness=cam.grab_jpeg_size(stream_name="lores"),
         )
 
-    def check_stack_result(
+    # Silence too many returns in this situation as refactoring to reduce returns is
+    # unlikely to improve readability. This function is basically a complex switch
+    # statement, having an explicit return after each option is clear.
+    def check_stack_result(  # noqa: PLR0911
         self, captures: list[CaptureInfo]
     ) -> tuple[Literal["success", "continue", "restart"], int]:
         """Check if the sharpest image in a list of captures is central enough.

@@ -26,12 +26,12 @@ def mock_static_dir():
 
 
 @pytest.mark.parametrize(
-    "filename, allow_cache",
+    ("filename", "allow_cache"),
     [
-        ["foo", False],
-        ["woff2.foo", False],
-        ["strange_file_ending_in_woff2", False],
-        ["fontfile.woff2", True],
+        ("foo", False),
+        ("woff2.foo", False),
+        ("strange_file_ending_in_woff2", False),
+        ("fontfile.woff2", True),
     ],
 )
 def test_add_static_file(filename, allow_cache, mocker):

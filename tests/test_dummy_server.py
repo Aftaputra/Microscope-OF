@@ -42,8 +42,8 @@ def thing_server():
     server.add_thing(CameraStageMapper(), "/camera_stage_mapping/")
     assert os.path.exists(os.path.join(temp_folder.name, "camera/"))
     # Note: yield is important. If return is used the temp folder gets deleted
-    # before the test runs
-    yield server
+    # before the test runs. Silence PT022 as ruff doesn't think yield is needed.
+    yield server  # noqa: PT022
 
 
 @pytest.fixture

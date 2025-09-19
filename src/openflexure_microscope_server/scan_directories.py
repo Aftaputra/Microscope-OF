@@ -210,9 +210,8 @@ class ScanDirectoryManager:
         not exist.
         """
         file_path = os.path.join(self.path_for(scan_name), filename)
-        if check_exists:
-            if not os.path.exists(file_path):
-                return None
+        if check_exists and not os.path.exists(file_path):
+            return None
         return file_path
 
     @requires_lock
@@ -225,9 +224,8 @@ class ScanDirectoryManager:
         then the path is returned anyway
         """
         file_path = os.path.join(self.img_dir_for(scan_name), filename)
-        if check_exists:
-            if not os.path.exists(file_path):
-                return None
+        if check_exists and not os.path.exists(file_path):
+            return None
         return file_path
 
     def get_final_stitch_path(self, scan_name: str) -> Optional[str]:
@@ -528,7 +526,8 @@ class ScanDirectory:
         """
         zip_fname = os.path.join(self.dir_path, "images.zip")
 
-        if os.path.isfile(zip_fname):
+        # Use noqa as converting this into a 1 liner is not more readable.
+        if os.path.isfile(zip_fname):  # noqa: SIM108
             # get a list of files in the existing zip
             zip_files = get_files_in_zip(zip_fname)
         else:

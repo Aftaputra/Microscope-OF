@@ -120,20 +120,20 @@ def test_public_delete_scan(smart_scan_thing, caplog):
         # Attempt to delete the fake scan. Expect it to fail
     with pytest.raises(HTTPException) as exc_info:
         smart_scan_thing.delete_scan(fake_scan_name, LOGGER)
-        # Should raise a 400 error if the scan doesn't exist, not a 404 as the server
-        # was not expecting to receive the scan files
-        assert exc_info.value.status_code == 400
-        assert len(caplog.records) == 1
-        assert caplog.records[0].levelname == "WARNING"
-        assert caplog.records[0].name == "mock-invocation_logger"
+    # Should raise a 400 error if the scan doesn't exist, not a 404 as the server
+    # was not expecting to receive the scan files
+    assert exc_info.value.status_code == 400
+    assert len(caplog.records) == 1
+    assert caplog.records[0].levelname == "WARNING"
+    assert caplog.records[0].name == "mock-invocation_logger"
 
-        # Make a dir for the fake scan and delete it.
-        os.makedirs(fake_scan_path)
-        assert os.path.exists(fake_scan_path)
-        smart_scan_thing.delete_scan(fake_scan_name, LOGGER)
-        assert not os.path.exists(fake_scan_path)
-        # Check no extra logs generated
-        assert len(caplog.records) == 1
+    # Make a dir for the fake scan and delete it.
+    os.makedirs(fake_scan_path)
+    assert os.path.exists(fake_scan_path)
+    smart_scan_thing.delete_scan(fake_scan_name, LOGGER)
+    assert not os.path.exists(fake_scan_path)
+    # Check no extra logs generated
+    assert len(caplog.records) == 1
 
 
 def test_delete_all_scans(smart_scan_thing, caplog):

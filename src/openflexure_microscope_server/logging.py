@@ -18,6 +18,7 @@ import os
 from fastapi.responses import PlainTextResponse
 from fastapi import HTTPException
 
+LOGGER = logging.getLogger(__name__)
 OFM_LOG_FILE = None
 
 
@@ -33,7 +34,8 @@ def configure_logging(log_folder: str) -> None:
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
     # Explicitly make OFM_LOG_FILE a global so it can be updated based on log settings
-    global OFM_LOG_FILE
+    # This requires silencing PLW0603 which disallows globals.
+    global OFM_LOG_FILE  # noqa: PLW0603
     OFM_LOG_FILE = os.path.join(log_folder, "openflexure_microscope.log")
 
     # Add OFM_HANDLER first so it can capture the error log if the
@@ -58,12 +60,9 @@ def configure_logging(log_folder: str) -> None:
         root_logger.addHandler(handler)
 
     except PermissionError as e:
-        logging.error(f"Cannot create log file at {OFM_LOG_FILE}: {e}")
+        LOGGER.error(f"Cannot create log file at {OFM_LOG_FILE}: {e}")
 
-    logging.info("")
-    logging.info("****************************************************")
-    logging.info("OFM server root logger has been set up at INFO level")
-    logging.info("****************************************************")
+    LOGGER.info("OFM server root logger has been set up at INFO level")
 
 
 def retrieve_log() -> PlainTextResponse:

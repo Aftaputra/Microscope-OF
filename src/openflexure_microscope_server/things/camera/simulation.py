@@ -30,6 +30,8 @@ from openflexure_microscope_server.ui import (
 from . import BaseCamera, ArrayModel
 from ..stage import BaseStage
 
+LOGGER = logging.getLogger(__name__)
+
 # The ratio between "motor" steps and pixels
 # higher related to a faster movement
 RATIO = 0.2
@@ -204,7 +206,7 @@ class SimulatedCamera(BaseCamera):
         try:
             pos = self.get_stage_position()
         except Exception as e:
-            print(f"Failed to get stage position: {e}")
+            LOGGER.debug(f"Failed to get stage position: {e}")
             pos = {"x": 0, "y": 0, "z": 0}
         return self.generate_image((pos["y"], pos["x"], pos["z"]))
 
@@ -238,7 +240,7 @@ class SimulatedCamera(BaseCamera):
         If called while already streaming, the warning will be emitted and no other
         action will be taken.
         """
-        logging.warning(
+        LOGGER.warning(
             f"Simulation camera doesn't respect {main_resolution=} or {buffer_count=} "
             "arguments."
         )
@@ -271,7 +273,7 @@ class SimulatedCamera(BaseCamera):
                 jpeg_lores = cv2.imencode(".jpg", ds_frame)[1].tobytes()
                 self.lores_mjpeg_stream.add_frame(jpeg_lores, portal)
             except Exception as e:
-                logging.exception(f"Failed to capture frame: {e}, retrying...")
+                LOGGER.exception(f"Failed to capture frame: {e}, retrying...")
 
     @lt.thing_action
     def discard_frames(self) -> None:
@@ -293,8 +295,8 @@ class SimulatedCamera(BaseCamera):
         binary image formats will be added in due course.
         """
         if wait is not None:
-            logging.warning("Simulation camera has no wait option. Use None.")
-        logging.warning(f"Simulation camera camera doesn't respect {stream_name=}")
+            LOGGER.warning("Simulation camera has no wait option. Use None.")
+        LOGGER.warning(f"Simulation camera camera doesn't respect {stream_name=}")
         return self.generate_frame()
 
     def capture_image(
@@ -307,8 +309,8 @@ class SimulatedCamera(BaseCamera):
         It is used for capture to memory.
         """
         if wait is not None:
-            logging.warning("Simulation camera has no wait option. Use None.")
-        logging.warning(f"Simulation camera camera doesn't respect {stream_name=}")
+            LOGGER.warning("Simulation camera has no wait option. Use None.")
+        LOGGER.warning(f"Simulation camera camera doesn't respect {stream_name=}")
         return Image.fromarray(self.generate_frame())
 
     @lt.thing_action

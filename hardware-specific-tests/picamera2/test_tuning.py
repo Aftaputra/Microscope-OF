@@ -68,9 +68,6 @@ def _test_bad_tuning_after_good_tuning(configure: bool = False):
     with pytest.raises(IndexError):
         # The bad version should cause a problem
         cam = Picamera2(tuning=bad_tuning)
-        print_tuning()
-        print("Success (not expected)!")
-        del cam
     recalibrate_utils.recreate_camera_manager()
     with Picamera2(tuning=default_tuning) as cam:
         # Reload the camera with working tuning, or it will stop responding

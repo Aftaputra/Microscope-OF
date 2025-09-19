@@ -22,15 +22,14 @@ def test_no_warnings_if_correct_permissions(caplog):
     """
     # Reset handler at start of test
     ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
-    with caplog.at_level(logging.WARNING):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            ofm_logging.configure_logging(tmpdir)
-            assert len(caplog.records) == 0
-            with open(ofm_logging.OFM_LOG_FILE, "r", encoding="utf-8") as log_file:
-                log_txt = log_file.read()
-            assert "OFM server root logger has been set up at INFO level" in log_txt
-            root_logger = logging.getLogger()
-            assert ofm_logging.OFM_HANDLER in root_logger.handlers
+    with caplog.at_level(logging.WARNING), tempfile.TemporaryDirectory() as tmpdir:
+        ofm_logging.configure_logging(tmpdir)
+        assert len(caplog.records) == 0
+        with open(ofm_logging.OFM_LOG_FILE, "r", encoding="utf-8") as log_file:
+            log_txt = log_file.read()
+        assert "OFM server root logger has been set up at INFO level" in log_txt
+        root_logger = logging.getLogger()
+        assert ofm_logging.OFM_HANDLER in root_logger.handlers
 
 
 def test_permission_error_raises_warning(mocker, caplog):
@@ -41,26 +40,24 @@ def test_permission_error_raises_warning(mocker, caplog):
     )
     # Reset handler at start of test
     ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
-    with caplog.at_level(logging.WARNING):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            ofm_logging.configure_logging(tmpdir)
-            assert len(caplog.records) == 1
-            # Check OFM logger is added even if the file logger couldn't be.
-            root_logger = logging.getLogger()
-            assert ofm_logging.OFM_HANDLER in root_logger.handlers
+    with caplog.at_level(logging.WARNING), tempfile.TemporaryDirectory() as tmpdir:
+        ofm_logging.configure_logging(tmpdir)
+        assert len(caplog.records) == 1
+        # Check OFM logger is added even if the file logger couldn't be.
+        root_logger = logging.getLogger()
+        assert ofm_logging.OFM_HANDLER in root_logger.handlers
 
 
 def test_making_log_dir(caplog):
     """Check that configure_logging will make a dir if needed."""
     # Reset handler at start of test
     ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
-    with caplog.at_level(logging.WARNING):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            log_dir = os.path.join(tmpdir, "new_dir")
-            assert not os.path.isdir(log_dir)
-            ofm_logging.configure_logging(log_dir)
-            assert len(caplog.records) == 0
-            assert os.path.isdir(log_dir)
+    with caplog.at_level(logging.WARNING), tempfile.TemporaryDirectory() as tmpdir:
+        log_dir = os.path.join(tmpdir, "new_dir")
+        assert not os.path.isdir(log_dir)
+        ofm_logging.configure_logging(log_dir)
+        assert len(caplog.records) == 0
+        assert os.path.isdir(log_dir)
 
 
 def test_max_logs():
@@ -161,13 +158,13 @@ FAKE_UVICORN_LOGGER = logging.getLogger("uvicorn.error")
 
 
 @pytest.mark.parametrize(
-    "log_command, names_in_log, names_not_in_log",
+    ("log_command", "names_in_log", "names_not_in_log"),
     [
-        [FAKE_UVICORN_LOGGER.debug, [], ["<uvicorn>", "<uvicorn.error>"]],
-        [FAKE_UVICORN_LOGGER.info, ["<uvicorn>"], ["<uvicorn.error>"]],
-        [FAKE_UVICORN_LOGGER.warning, ["<uvicorn>"], ["<uvicorn.error>"]],
-        [FAKE_UVICORN_LOGGER.error, ["<uvicorn.error>"], ["<uvicorn>"]],
-        [FAKE_UVICORN_LOGGER.exception, ["<uvicorn.error>"], ["<uvicorn>"]],
+        (FAKE_UVICORN_LOGGER.debug, [], ["<uvicorn>", "<uvicorn.error>"]),
+        (FAKE_UVICORN_LOGGER.info, ["<uvicorn>"], ["<uvicorn.error>"]),
+        (FAKE_UVICORN_LOGGER.warning, ["<uvicorn>"], ["<uvicorn.error>"]),
+        (FAKE_UVICORN_LOGGER.error, ["<uvicorn.error>"], ["<uvicorn>"]),
+        (FAKE_UVICORN_LOGGER.exception, ["<uvicorn.error>"], ["<uvicorn>"]),
     ],
 )
 def test_uvicorn_error_only_says_error_on_error(

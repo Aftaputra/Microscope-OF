@@ -82,7 +82,9 @@ def git_repo(temp_dir):
     _git("add -A")
     _git("commit -m 'message2'")
 
-    yield temp_dir
+    # Yielding here as tempdir is yielding and we want to stay in the tempdir
+    # context manager. Silencing ruff saying it should be return.
+    yield temp_dir  # noqa: PT022
 
 
 def test_version_data_git_and_toml(mocker, git_repo):

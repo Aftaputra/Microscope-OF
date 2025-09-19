@@ -88,18 +88,6 @@ ruff-checks:
     - ruff format --check
   # Only run on changed python files
 
-# Increased checking of the code with ruff this is allowed to fail
-# while we improve the code quality. Rules from this are
-# slowly moved into the main check
-# Only runs when a .py file is edited
-ruff-lint-increased:
-  stage: analysis
-  extends: .python
-  allow_failure: true
-  script:
-    - ruff --config ruff-increased-checking.toml check
-
-
 # Python type checking with Mypy
 # Only runs when a .py file is edited
 mypy:

@@ -165,9 +165,7 @@ class PreviewStitcher(BaseStitcher):
         with self._popen_lock:
             if self._popen_obj is None:
                 return False
-            if self._popen_obj.poll() is None:
-                return True
-            return False
+            return self._popen_obj.poll() is None
 
     def wait(self, cancel: lt.deps.CancelHook) -> None:
         """Wait for this preview stitch to return.

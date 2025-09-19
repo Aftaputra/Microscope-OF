@@ -21,6 +21,8 @@ from labthings_fastapi.types.numpy import NDArray
 
 from . import BaseCamera
 
+LOGGER = logging.getLogger(__name__)
+
 
 class OpenCVCamera(BaseCamera):
     """A Thing that provides and interface to an OpenCV Camera."""
@@ -70,9 +72,7 @@ class OpenCVCamera(BaseCamera):
         while self._capture_enabled:
             ret, frame = self.cap.read()
             if not ret:
-                logging.error(
-                    f"Failed to capture frame from camera {self.camera_index}"
-                )
+                LOGGER.error(f"Failed to capture frame from camera {self.camera_index}")
                 break
             jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
             self.mjpeg_stream.add_frame(jpeg, portal)
@@ -99,8 +99,8 @@ class OpenCVCamera(BaseCamera):
         binary image formats will be added in due course.
         """
         if wait is not None:
-            logging.warning("OpenCV camera has no wait option. Use None.")
-        logging.warning(f"OpenCV camera doesn't respect {stream_name=}")
+            LOGGER.warning("OpenCV camera has no wait option. Use None.")
+        LOGGER.warning(f"OpenCV camera doesn't respect {stream_name=}")
         ret, frame = self.cap.read()
         if not ret:
             raise RuntimeError(
@@ -118,6 +118,6 @@ class OpenCVCamera(BaseCamera):
         This function will produce a JPEG image.
         """
         if wait is not None:
-            logging.warning("OpenCV camera has no wait option. Use None.")
-        logging.warning(f"OpenCV camera doesn't respect {stream_name=}")
+            LOGGER.warning("OpenCV camera has no wait option. Use None.")
+        LOGGER.warning(f"OpenCV camera doesn't respect {stream_name=}")
         return Image.fromarray(self.capture_array())

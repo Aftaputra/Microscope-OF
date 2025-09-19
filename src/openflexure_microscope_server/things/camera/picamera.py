@@ -47,6 +47,8 @@ from . import picamera_tuning_file_utils as tf_utils
 
 from . import BaseCamera, ArrayModel
 
+LOGGER = logging.getLogger(__name__)
+
 SUPPORTED_CAMS_SENSOR_INFO = {
     "picamera_v2": recalibrate_utils.IMX219_SENSOR_INFO,
     "picamera_hq": recalibrate_utils.IMX477_SENSOR_INFO,
@@ -397,16 +399,16 @@ class StreamingPiCamera2(BaseCamera):
             os.environ["LIBCAMERA_RPI_TUNING_FILE"] = tuning_file.name
 
             if self._picamera is not None:
-                logging.info("Closing picamera object for reinitialisation")
-                logging.info(
+                LOGGER.info("Closing picamera object for reinitialisation")
+                LOGGER.info(
                     "Camera object already exists, closing for reinitialisation"
                 )
                 self._picamera.close()
-                logging.info("Picamera closed, deleting picamera")
+                LOGGER.info("Picamera closed, deleting picamera")
                 del self._picamera
                 recalibrate_utils.recreate_camera_manager()
 
-            logging.info("Creating new Picamera2 object")
+            LOGGER.info("Creating new Picamera2 object")
             # Specify tuning file otherwise it will be overwritten with None.
             self._picamera = Picamera2(
                 camera_num=self._camera_num,
@@ -519,7 +521,7 @@ class StreamingPiCamera2(BaseCamera):
                 )
                 stream_config["buffer_count"] = buffer_count
                 picam.configure(stream_config)
-                logging.info("Starting picamera MJPEG stream...")
+                LOGGER.info("Starting picamera MJPEG stream...")
                 stream_name = "lores" if main_resolution[0] > 1280 else "main"
                 picam.start_recording(
                     MJPEGEncoder(self.mjpeg_bitrate),
@@ -538,11 +540,11 @@ class StreamingPiCamera2(BaseCamera):
                     name="lores",
                 )
             except Exception as e:
-                logging.exception("Error while starting preview: {e}")
-                logging.exception(e)
+                LOGGER.exception("Error while starting preview: {e}")
+                LOGGER.exception(e)
             else:
                 self.stream_active = True
-                logging.debug(
+                LOGGER.debug(
                     "Started MJPEG stream at %s on port %s", self.stream_resolution, 1
                 )
 
@@ -553,15 +555,15 @@ class StreamingPiCamera2(BaseCamera):
             try:
                 picam.stop_recording()  # This should also stop the extra lores encoder
             except Exception as e:
-                logging.info("Stopping recording failed")
-                logging.exception(e)
+                LOGGER.info("Stopping recording failed")
+                LOGGER.exception(e)
             else:
                 self.stream_active = False
                 if stop_web_stream:
                     portal = lt.get_blocking_portal(self)
                     self.mjpeg_stream.stop(portal)
                     self.lores_mjpeg_stream.stop(portal)
-                logging.info("Stopped MJPEG stream.")
+                LOGGER.info("Stopped MJPEG stream.")
 
             # Adding a sleep to prevent camera getting confused by rapid commands
             time.sleep(self._sensor_info.short_pause)
@@ -579,7 +581,7 @@ class StreamingPiCamera2(BaseCamera):
         Restarts stream when complete.
         """
         with self._streaming_picamera(pause_stream=True) as cam:
-            logging.debug("Reconfiguring camera for full resolution capture")
+            LOGGER.debug("Reconfiguring camera for full resolution capture")
             cam.configure(cam.create_still_configuration(sensor=self._sensor_mode))
             cam.start()
             time.sleep(self._sensor_info.short_pause)
