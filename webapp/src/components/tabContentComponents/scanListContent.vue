@@ -364,39 +364,6 @@ export default {
 .gallery-folder-heading {
   margin-bottom: 30px;
 }
-/*
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 320px);
-  justify-content: center;
-  overflow-y: hidden;
-}
-
-.gallery-grid > div {
-  display: inline-block;
-  margin-bottom: 20px;
-}
-
-#openseadragon {
-  width: 100%;
-  height: 100%;
-}
-#info-panel {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background-color: rgba(255, 255, 255, 0.7);
-    padding: 5px;
-    border-radius: 1px;
-    z-index: 1000;
-}
-
-/deep/ .capture-card {
-  width: 300px;
-  height: 100%; // Used to have all cards in a row match their heights
-  margin-left: auto;
-  margin-right: auto;
-}*/
 
 ul {
   display: inline-block;
