@@ -10,7 +10,7 @@ See repository root for licensing information.
 from contextlib import contextmanager
 import logging
 import time
-from typing import Annotated, Mapping, Optional, Sequence, Literal
+from typing import Annotated, Mapping, Optional, Sequence, Literal, Type
 import os
 from dataclasses import dataclass
 
@@ -44,6 +44,7 @@ class StackParams:
         autofocus_dz: int,
         images_dir: str,
         save_resolution: tuple[int, int],
+        logger: lt.deps.InvocationLogger,
     ) -> None:
         """Initialise the parameters. All arguments are keyword only.
 
@@ -58,7 +59,18 @@ class StackParams:
         :param autofocus_dz: The number of steps in a full autofocus (when required)
         :param images_dir: The directory to save images to disk
         :param save_resolution: The resolution to save the captures to disk with
+        :param logger: A logger passed from the calling Thing
         """
+        if min_images_to_test < 3:
+            logger.warning(
+                "Can't test for focus with fewer than 3 images. Running scan with test images = 3"
+            )
+            min_images_to_test = 3
+        elif min_images_to_test > 9:
+            logger.warning(
+                "Testing with more than 9 images is likely to focus on the cover slip, or strike the sample. Running scan with test images = 9"
+            )
+            min_images_to_test = 9
         if min_images_to_test < images_to_save:
             raise ValueError("Can't save more images than the minimum number tested")
         if min_images_to_test % 2 == 0 or min_images_to_test <= 0:
@@ -467,7 +479,7 @@ class AutofocusThing(lt.Thing):
     enough more images may be captured. After new images are captured the number sets
     the number of images used for checking if focus is central.
 
-    Defaults to 9 which balances reliability and speed/
+    Defaults to 9 which balances reliability and speed.
     """
 
     stack_dz = lt.ThingSetting(initial_value=50, model=int)
@@ -481,14 +493,39 @@ class AutofocusThing(lt.Thing):
     """
 
     @lt.thing_action
+    def set_stack_params(
+        self,
+        images_dir: str,
+        autofocus_dz: int,
+        save_resolution: tuple[int, int],
+        logger: lt.deps.InvocationLogger,
+    ) -> Type[StackParams]:
+        """Set up the parameters used for all stacks in a scan.
+
+        :param images_dir: the folder to save all images
+        :param autofocus_dz: the range to autofocus over if a stack fails
+        :param save_resolution: The resolution to save the captures to disk with
+        :param logger: A logger passed from the calling Thing
+
+        :returns: A StackParams object with the required parameters.
+        """
+        return StackParams(
+            stack_dz=self.stack_dz,
+            images_to_save=self.stack_images_to_save,
+            min_images_to_test=self.stack_min_images_to_test,
+            autofocus_dz=autofocus_dz,
+            images_dir=images_dir,
+            save_resolution=save_resolution,
+            logger=logger,
+        )
+
+    @lt.thing_action
     def run_smart_stack(
         self,
         cam: CameraClient,
         stage: Stage,
         sharpness_monitor: SharpnessMonitorDep,
-        images_dir: str,
-        autofocus_dz: int,
-        save_resolution: tuple[int, int],
+        stack_parameters: Type[StackParams],
     ) -> tuple[bool, int]:
         """Run a smart stack.
 
@@ -503,27 +540,14 @@ class AutofocusThing(lt.Thing):
         :param stage: Stage Dependency supplied by LabThings dependency injection
         :param sharpness_monitor: Sharpness Monitor Dependency (for focus detection)
             supplied by LabThings dependency injection
-        :param images_dir: the folder to save all images
-        :param autofocus_dz: the range to autofocus over if a stack fails
-        :param save_resolution: The resolution the images should be saved at, the
-            images will be resampled if this doesn't match the camera's capture
-            resolution
+        :param stack_parameters: A StackParams object containing the required
+            parameters to run a stack.
 
         :returns: A tuple containing:
 
             * A boolean, True if stack was successfully
             * The z position of the sharpest image
         """
-        # Set the variables to prevent changes from the GUI or other windows
-        stack_parameters = StackParams(
-            stack_dz=self.stack_dz,
-            images_to_save=self.stack_images_to_save,
-            min_images_to_test=self.stack_min_images_to_test,
-            autofocus_dz=autofocus_dz,
-            images_dir=images_dir,
-            save_resolution=save_resolution,
-        )
-
         tries = 0
         # Loop until a stack is successful
         while tries < stack_parameters.max_attempts:
