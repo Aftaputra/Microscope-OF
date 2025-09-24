@@ -55,7 +55,7 @@ class SimulatedCamera(BaseCamera):
         shape: tuple[int, int, int] = (616, 820, 3),
         glyph_shape: tuple[int, int, int] = (151, 151, 3),
         canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
-        sample_limits: tuple[int, int, int] = (2000, 3000, 3),
+        sample_limits: tuple[int, int, int] = (1000, 1500, 3),
         frame_interval: float = 0.1,
     ) -> None:
         """Initialise the simulated with settings for how images are generated.
@@ -117,23 +117,23 @@ class SimulatedCamera(BaseCamera):
             self.sprites.append(sprite.astype(np.uint8))
 
     def generate_blobs(self, n_blobs: int = 1000) -> None:
-        """Generate coordinates of blobs and their sizes.
-
-        A 1000x3 array is returned. Each row represents (x,y) coordinate
-        of the sprite and the index representing the size of the sprite.
-
-        Blobs are characterised by X, Y, sprite
-        We also generate a KD tree to rapidly find blobs in an image
-        """
+        """Generate coordinates of blobs and their sizes, centered around (0,0)."""
         self.blobs = np.zeros((n_blobs, 3))
 
         w = np.max(self.glyph_shape)
-        self.blobs[:, 0] = RNG.uniform(w / 2, self.sample_limits[0] - w / 2, n_blobs)
-        self.blobs[:, 1] = RNG.uniform(w / 2, self.sample_limits[1] - w / 2, n_blobs)
+        sample_centre_x, sample_centre_y = self.sample_limits[1], self.sample_limits[0]
+
+        # Coordinates relative to center (0,0)
+        self.blobs[:, 0] = RNG.uniform(
+            -sample_centre_x + w / 2, sample_centre_x - w / 2, n_blobs
+        )
+        self.blobs[:, 1] = RNG.uniform(
+            -sample_centre_y + w / 2, sample_centre_y - w / 2, n_blobs
+        )
         self.blobs[:, 2] = RNG.choice(len(self.sprites), n_blobs)
 
     def generate_canvas(self) -> None:
-        """Generate a canvas.
+        """Generate a canvas with generated blobs centered at the middle.
 
         Canvas is int16 so that random noise can be added to simulation image before
         changing to unit8 to stop wrapping.
@@ -143,14 +143,45 @@ class SimulatedCamera(BaseCamera):
         self.blank_canvas[:, :, 1] *= BG_COLOR[1]
         self.blank_canvas[:, :, 2] *= BG_COLOR[2]
         self.canvas = self.blank_canvas.copy()
-        w, h, _ = self.glyph_shape
-        for x, y, sprite_size_index in self.blobs:
-            self.canvas[
-                int(x) - w // 2 : int(x) - w // 2 + w,
-                int(y) - h // 2 : int(y) - h // 2 + h,
-            ] -= self.sprites[int(sprite_size_index)]
+
+        canvas_h, canvas_w, _ = self.canvas.shape
+        canvas_centre_x, canvas_centre_y = canvas_w // 2, canvas_h // 2
+
+        for blob_x, blob_y, sprite_index in self.blobs:
+            canvas_blob_x = int(round(blob_x + canvas_centre_x))
+            canvas_blob_y = int(round(blob_y + canvas_centre_y))
+            self.draw_sprite_on_canvas(
+                self.sprites[int(sprite_index)], canvas_blob_y, canvas_blob_x
+            )
+
         self.canvas[self.canvas < 0] = 0
         self.canvas[self.canvas > 255] = 255
+
+    def draw_sprite_on_canvas(
+        self, sprite: np.ndarray, center_y: int, center_x: int
+    ) -> None:
+        """Place one sprite on canvas at given centre coordinates, clipping automatically."""
+        canvas_h, canvas_w, _ = self.canvas.shape
+        sprite_h, sprite_w, _ = sprite.shape
+
+        # Compute top-left corner
+        top = max(center_y - sprite_h // 2, 0)
+        left = max(center_x - sprite_w // 2, 0)
+
+        # Compute bottom-right corner
+        bottom = min(center_y + (sprite_h - sprite_h // 2), canvas_h)
+        right = min(center_x + (sprite_w - sprite_w // 2), canvas_w)
+
+        # Compute sprite slice to match clipped canvas region
+        sprite_top = 0 if center_y - sprite_h // 2 >= 0 else sprite_h // 2 - center_y
+        sprite_left = 0 if center_x - sprite_w // 2 >= 0 else sprite_w // 2 - center_x
+        sprite_bottom = sprite_top + (bottom - top)
+        sprite_right = sprite_left + (right - left)
+
+        # Subtract sprite from canvas
+        self.canvas[top:bottom, left:right] -= sprite[
+            sprite_top:sprite_bottom, sprite_left:sprite_right
+        ]
 
     def generate_image(self, pos: tuple[int, int, int]) -> np.ndarray:
         """Generate an image with blobs based on supplied coordinates."""
