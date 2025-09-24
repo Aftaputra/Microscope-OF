@@ -34,7 +34,7 @@ LOGGER = logging.getLogger(__name__)
 
 # The ratio between "motor" steps and pixels
 # higher related to a faster movement
-RATIO = 0.2
+RATIO = (2, 2, 0.2)
 
 # Some colour variation, for bg detect.
 BG_COLOR = [220, 215, 217]
@@ -53,8 +53,9 @@ class SimulatedCamera(BaseCamera):
     def __init__(
         self,
         shape: tuple[int, int, int] = (616, 820, 3),
-        glyph_shape: tuple[int, int, int] = (91, 91, 3),
+        glyph_shape: tuple[int, int, int] = (151, 151, 3),
         canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
+        sample_limits: tuple[int, int, int] = (2000, 3000, 3),
         frame_interval: float = 0.1,
     ) -> None:
         """Initialise the simulated with settings for how images are generated.
@@ -64,6 +65,9 @@ class SimulatedCamera(BaseCamera):
         :param canvas_shape: The shape (size) of the canvas generated on initialisation
             that images are cropped from. If this is too large the it uses resources,
             but its size limits the range of motion of the simulation.
+        :param sample_limits: The shape of the sample. Outside this range, the
+            camera won't generate any blobs, preventing scanning from running
+            indefinitely and better demonstrating background detect.
         :param frame_interval: Nominally the time between frames on the MJPEG stream,
             however the rate may be slower due to calculation time for focus.
         """
@@ -71,6 +75,7 @@ class SimulatedCamera(BaseCamera):
         self.shape = shape
         self.glyph_shape = glyph_shape
         self.canvas_shape = canvas_shape
+        self.sample_limits = sample_limits
         self.frame_interval = frame_interval
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
@@ -80,7 +85,7 @@ class SimulatedCamera(BaseCamera):
 
     def generate_sprites(self) -> None:
         """Generate sprites to populate the image."""
-        sprite_sizes = [5, 7, 10, 21, 36, 40]
+        sprite_sizes = [10, 21, 36, 40, 50, 70]
         self.sprites = []
 
         channel_block = np.zeros(self.glyph_shape[0:2])
@@ -123,8 +128,8 @@ class SimulatedCamera(BaseCamera):
         self.blobs = np.zeros((n_blobs, 3))
 
         w = np.max(self.glyph_shape)
-        self.blobs[:, 0] = RNG.uniform(w / 2, self.canvas_shape[0] - w / 2, n_blobs)
-        self.blobs[:, 1] = RNG.uniform(w / 2, self.canvas_shape[1] - w / 2, n_blobs)
+        self.blobs[:, 0] = RNG.uniform(w / 2, self.sample_limits[0] - w / 2, n_blobs)
+        self.blobs[:, 1] = RNG.uniform(w / 2, self.sample_limits[1] - w / 2, n_blobs)
         self.blobs[:, 2] = RNG.choice(len(self.sprites), n_blobs)
 
     def generate_canvas(self) -> None:
@@ -151,7 +156,7 @@ class SimulatedCamera(BaseCamera):
         """Generate an image with blobs based on supplied coordinates."""
         canvas_width, canvas_height, _ = self.canvas_shape
         image_width, image_height, _ = self.shape
-        pos = tuple(x * RATIO for x in pos)
+        pos = tuple(x * s for x, s in zip(pos, RATIO, strict=True))
         top_left = (
             int(pos[0]) - image_width // 2 - canvas_width // 2,
             int(pos[1]) - image_height // 2 - canvas_height // 2,
