@@ -53,7 +53,7 @@ class SimulatedCamera(BaseCamera):
     def __init__(
         self,
         shape: tuple[int, int, int] = (616, 820, 3),
-        glyph_shape: tuple[int, int, int] = (151, 151, 3),
+        glyph_shape: tuple[int, int, int] = (121, 121, 3),
         canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
         sample_limits: Optional[tuple[int, int]] = (1000, 1500),
         frame_interval: float = 0.1,
@@ -85,7 +85,7 @@ class SimulatedCamera(BaseCamera):
 
     def generate_sprites(self) -> None:
         """Generate sprites to populate the image."""
-        sprite_sizes = [10, 21, 36, 40, 50, 70]
+        sprite_sizes = [10, 21, 36, 40, 50]
         self.sprites = []
 
         channel_block = np.zeros(self.glyph_shape[0:2])
@@ -122,17 +122,10 @@ class SimulatedCamera(BaseCamera):
         :param n_blobs: The number of blobs to generate.
         """
         self.blobs = np.zeros((n_blobs, 3))
-
         w = np.max(self.glyph_shape)
-        sample_centre_x, sample_centre_y = self.sample_limits[1], self.sample_limits[0]
 
-        # Coordinates relative to centre (0,0)
-        self.blobs[:, 0] = RNG.uniform(
-            -sample_centre_x + w / 2, sample_centre_x - w / 2, n_blobs
-        )
-        self.blobs[:, 1] = RNG.uniform(
-            -sample_centre_y + w / 2, sample_centre_y - w / 2, n_blobs
-        )
+        self.blobs[:, 0] = RNG.uniform(w // 2, self.sample_limits[1] - w // 2, n_blobs)
+        self.blobs[:, 1] = RNG.uniform(w // 2, self.sample_limits[0] - w // 2, n_blobs)
         self.blobs[:, 2] = RNG.choice(len(self.sprites), n_blobs)
 
     def generate_canvas(self) -> None:
@@ -147,14 +140,9 @@ class SimulatedCamera(BaseCamera):
         self.blank_canvas[:, :, 2] *= BG_COLOR[2]
         self.canvas = self.blank_canvas.copy()
 
-        canvas_h, canvas_w, _ = self.canvas.shape
-        canvas_centre_x, canvas_centre_y = canvas_w // 2, canvas_h // 2
-
         for blob_x, blob_y, sprite_index in self.blobs:
-            canvas_blob_x = int(round(blob_x + canvas_centre_x))
-            canvas_blob_y = int(round(blob_y + canvas_centre_y))
             self.draw_sprite_on_canvas(
-                self.sprites[int(sprite_index)], canvas_blob_y, canvas_blob_x
+                self.sprites[int(sprite_index)], int(blob_y), int(blob_x)
             )
 
         self.canvas[self.canvas < 0] = 0
@@ -180,26 +168,18 @@ class SimulatedCamera(BaseCamera):
         bottom = min(centre_y + (sprite_h - sprite_h // 2), canvas_h)
         right = min(centre_x + (sprite_w - sprite_w // 2), canvas_w)
 
-        # Size of the sprite
-        sprite_top = 0
-        sprite_left = 0
-        sprite_bottom = self.glyph_shape[0]
-        sprite_right = self.glyph_shape[1]
-
-        # Extract regions
         canvas_region = self.canvas[top:bottom, left:right]
-        sprite_region = sprite[sprite_top:sprite_bottom, sprite_left:sprite_right]
 
         # Ensure shapes are the same size before subtraction - can't have one bigger than the other
-        # In the case of a mismatch, use the smaller region
-        if canvas_region.shape != sprite_region.shape:
-            min_h = min(canvas_region.shape[0], sprite_region.shape[0])
-            min_w = min(canvas_region.shape[1], sprite_region.shape[1])
+        # In the case of a mismatch, use the smaller region.
+        if canvas_region.shape != sprite.shape:
+            min_h = min(canvas_region.shape[0], sprite.shape[0])
+            min_w = min(canvas_region.shape[1], sprite.shape[1])
             self.canvas[top : top + min_h, left : left + min_w] -= sprite[
                 :min_h, :min_w
             ]
         else:
-            self.canvas[top:bottom, left:right] -= sprite_region
+            self.canvas[top:bottom, left:right] -= sprite
 
     def generate_image(self, pos: tuple[int, int, int]) -> np.ndarray:
         """Generate an image with blobs based on supplied coordinates.
@@ -210,8 +190,8 @@ class SimulatedCamera(BaseCamera):
         image_width, image_height, _ = self.shape
         pos = tuple(x * s for x, s in zip(pos, RATIO, strict=True))
         top_left = (
-            int(pos[0]) - image_width // 2 - canvas_width // 2,
-            int(pos[1]) - image_height // 2 - canvas_height // 2,
+            int(pos[0]) - image_width // 2 + self.sample_limits[0] // 2,
+            int(pos[1]) - image_height // 2 + self.sample_limits[1] // 2,
         )
         # Create index list with modulo rather than slicing to handle wrapping at the
         # canvas edge.
@@ -354,8 +334,8 @@ class SimulatedCamera(BaseCamera):
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
 
-        :param stream_name: ignored, provided for compatibility with other server modes
-        :param wait: ignored, provided for compatibility with other server modes
+        :param main_resolution: Currently ignored, this argument exists to ensure consistent API across camera Things.
+        :param buffer_count: Currently ignored, this argument exists to ensure consistent API across camera Things.
         """
         if wait is not None:
             LOGGER.warning("Simulation camera has no wait option. Use None.")
@@ -371,8 +351,8 @@ class SimulatedCamera(BaseCamera):
 
         It is used for capture to memory.
 
-        :param stream_name: ignored, provided for compatibility with other server modes
-        :param wait: ignored, provided for compatibility with other server modes
+        :param main_resolution: Currently ignored, this argument exists to ensure consistent API across camera Things.
+        :param buffer_count: Currently ignored, this argument exists to ensure consistent API across camera Things.
         """
         if wait is not None:
             LOGGER.warning("Simulation camera has no wait option. Use None.")
