@@ -55,7 +55,7 @@ class SimulatedCamera(BaseCamera):
         shape: tuple[int, int, int] = (616, 820, 3),
         glyph_shape: tuple[int, int, int] = (151, 151, 3),
         canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
-        sample_limits: tuple[int, int, int] = (1000, 1500, 3),
+        sample_limits: Optional[tuple[int, int]] = (1000, 1500),
         frame_interval: float = 0.1,
     ) -> None:
         """Initialise the simulated with settings for how images are generated.
@@ -297,8 +297,8 @@ class SimulatedCamera(BaseCamera):
         If called while already streaming, the warning will be emitted and no other
         action will be taken.
 
-        :param main_resolution: ignored, provided for compatibility with other server modes
-        :param buffer_count: ignored, provided for compatibility with other server modes
+        :param main_resolution: Currently ignored, this argument exists to ensure consistent API across camera Things.
+        :param buffer_count: Currently ignored, this argument exists to ensure consistent API across camera Things.
         """
         LOGGER.warning(
             f"Simulation camera doesn't respect {main_resolution=} or {buffer_count=} "
