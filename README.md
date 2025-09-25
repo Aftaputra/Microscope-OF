@@ -60,14 +60,39 @@ The Pi should already come with the static files for the web application.
 
 You should install Python 3.11. If you have a different version of python we recommend using [UV](https://docs.astral.sh/uv/) to set up a Python 3.11 virtual environment.
 
+You can check your Python version by running `py --version` or `python --version` in any terminal. Your Python version should be >= 3.11.0.
+
 * Clone the source code: `git clone https://gitlab.com/openflexure/openflexure-microscope-server.git`
 * Enter the directory `cd openflexure-microscope-server`
-* Create the virtual environment, for example with `uv venv --python 3.11`
-* Activate your virtual environment with `source .venv/bin/activate` (on Linux) or `.venv\Scripts\activate.bat` (on Windows)
+* Create the virtual environment, for example with `uv venv --python 3.11` (or `py -m venv .venv` if not using uv)
+* Activate your virtual environment with `source .venv/bin/activate` (on Linux) or `.venv\Scripts\activate.bat` (on Windows CMD) or `.venv\Scripts\activate` (on Windows Powershell)
+
+_Note: If you activate the venv in a CMD terminal in VSCode on Windows, the venv will not visually show as activated until you open a new powershell window._
+
 * Install the application `uv pip install -e .[dev]` (or `pip install -e .[dev]` if you are not using UV)
 * Run `python pull_webapp.py` to get the latest static files for the web application.
 
+Full video walkthroughs of the software installation process are available below:
+
+* [Windows Walkthrough](https://www.youtube.com/watch?v=LhnOLlIk-b8)
+* [Linux Walkthrough](https://youtu.be/81jkMKOBeHQ)
+
+> If you are using Windows and you cannot activate your virtual environment from powershell, you probably need to change the execution policy. The official Microsoft docs have the right command in example #1: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.security/set-executionpolicy?view=powershell-7.5#example-1-set-an-execution-policy.
+
 ## Running the server
+
+There are two types of server available to run:
+
+* A live OpenFlexure Microscope Server, that runs on a Raspberry Pi within your OpenFlexure Microscope. This server processes real images from the microscope's camera.
+
+   | ![The View Tab in the UI for the OFM Server](/docs/images/ofm_microscope_ui_view.jpeg "The View Tab in the UI for the OFM Server") | ![The Slide Scan Tab in the UI for the OFM Server](/docs/images/ofm_microscope_ui_scan.jpeg "The Slide Scan Tab in the UI for the OFM Server")|
+   |:---:|:---:|
+
+* A Simulation Server, which replicates the software functionality of the live server, but instead runs on your computer. Instead of receiving a live feed from a camera, the server 'scans' simulated data from a simulated camera.
+
+   | ![The View Tab in the UI for the Simulated Server](/docs/images/ofm_sim_ui_view.jpg "The View Tab in the UI for the Simulated Server") | ![The Slide Scan Tab in the UI for the Simulated Server](/docs/images/ofm_sim_ui_scan.jpg "The Slide Scan Tab in the UI for the Simulated Server")|
+   |:---:|:---:|
+
 
 ### Running the server on a Raspberry Pi
 
@@ -84,9 +109,15 @@ sudo -u openflexure-ws openflexure-microscope-server --fallback -c microscope_co
 To start the simulation server:
 
 * Activate the virtual environment that was set up during installation
-* Run:
+* Run the following command:
 
     openflexure-microscope-server --fallback -c ./ofm_config_simulation.json
+
+> Note: If you are using Windows, we advise running this command in PowerShell. If it doesn't work this, might be a permission issue on managed machines, in which case try executing the command in a CMD terminal.
+
+A [full video walkthrough of running the simulation server](https://youtu.be/Z8verCqfj9s) is available on our YouTube Channel.
+
+You can find more information on using the simulation server in the [Simulation Guide](./simulation_guide.md).
 
 
 ## General development overview
@@ -108,7 +139,7 @@ Currently, the camera and stage classes are provided by external libraries, `lab
 
 ### Python: Formatting, linting, and tests
 
-All of the commands below assume that you are running in the OFM virtual environment, i.e. you have run `ofm activate` on an OpenFlexure SD card, or `source .venv/bin/activate` on Linux, or `.venv/Scripts/activate`on Windows.
+All of the commands below assume that you are running in the OFM virtual environment, i.e. you have run `ofm activate` on an OpenFlexure SD card, or `source .venv/bin/activate` on Linux, or `.venv/Scripts/activate`on Windows Powershell, or `.venv\Scripts\activate.bat` on Windows CMD.
 
 **Before committing** you should lint and auto-format your code:
 

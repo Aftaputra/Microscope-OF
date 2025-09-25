@@ -14,4 +14,7 @@ of the repository the server can be started with run:
     openflexure-microscope-server --fallback -c ./ofm_config_simulation.json
 
 
+Note: If you are using Windows, we advise running this command in PowerShell.
+If it doesn't work this, might be a permission issue on managed machines,
+in which case try executing the command in a CMD terminal.
 """
