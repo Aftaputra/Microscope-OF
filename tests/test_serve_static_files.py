@@ -60,7 +60,7 @@ def test_add_static_file(filename, allow_cache, mocker):
     # the wrapped function should return the file response
     response = wrapped()
     assert isinstance(response, FileResponse)
-    assert response.path == "bar/" + filename
+    assert response.path == os.path.join("bar", filename)
     # The file response headers always have some standard data, and if the file is
     # allowed to be cached it should also have the no_cache data
     for key, value in serve_static_files.NO_CACHE_HEADERS.items():
