@@ -75,7 +75,7 @@ class SimulatedCamera(BaseCamera):
         self.shape = shape
         self.glyph_shape = glyph_shape
         self.canvas_shape = canvas_shape
-        self.sample_limits = sample_limits
+        self.sample_limits = canvas_shape[:2] if sample_limits is None else sample_limits
         self.frame_interval = frame_interval
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
