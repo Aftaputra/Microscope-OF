@@ -126,7 +126,7 @@ class SimulatedCamera(BaseCamera):
         w = np.max(self.glyph_shape)
         sample_centre_x, sample_centre_y = self.sample_limits[1], self.sample_limits[0]
 
-        # Coordinates relative to center (0,0)
+        # Coordinates relative to centre (0,0)
         self.blobs[:, 0] = RNG.uniform(
             -sample_centre_x + w / 2, sample_centre_x - w / 2, n_blobs
         )
@@ -161,7 +161,7 @@ class SimulatedCamera(BaseCamera):
         self.canvas[self.canvas > 255] = 255
 
     def draw_sprite_on_canvas(
-        self, sprite: np.ndarray, center_y: int, center_x: int
+        self, sprite: np.ndarray, centre_y: int, centre_x: int
     ) -> None:
         """Place one sprite on canvas at given centre coordinates.
 
@@ -175,10 +175,10 @@ class SimulatedCamera(BaseCamera):
         sprite_h, sprite_w, _ = sprite.shape
 
         # Canvas region containing the sprite
-        top = max(center_y - sprite_h // 2, 0)
-        left = max(center_x - sprite_w // 2, 0)
-        bottom = min(center_y + (sprite_h - sprite_h // 2), canvas_h)
-        right = min(center_x + (sprite_w - sprite_w // 2), canvas_w)
+        top = max(centre_y - sprite_h // 2, 0)
+        left = max(centre_x - sprite_w // 2, 0)
+        bottom = min(centre_y + (sprite_h - sprite_h // 2), canvas_h)
+        right = min(centre_x + (sprite_w - sprite_w // 2), canvas_w)
 
         # Size of the sprite
         sprite_top = 0
