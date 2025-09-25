@@ -26,6 +26,8 @@ from .camera import CameraDependency as CameraClient
 from .stage import StageDependency as Stage
 
 LOGGER = logging.getLogger(__name__)
+MIN_TEST_IMAGE_COUNT = 3
+MAX_TEST_IMAGE_COUNT = 9
 
 
 class NotStreamingError(RuntimeError):
@@ -61,16 +63,16 @@ class StackParams:
         :param save_resolution: The resolution to save the captures to disk with
         :param logger: A logger passed from the calling Thing
         """
-        if min_images_to_test < 3:
+        if min_images_to_test < MIN_TEST_IMAGE_COUNT:
             logger.warning(
-                "Can't test for focus with fewer than 3 images. Running scan with test images = 3"
+                f"Can't test for focus with fewer than {MIN_TEST_IMAGE_COUNT} images. Running scan with test images = {MIN_TEST_IMAGE_COUNT}"
             )
-            min_images_to_test = 3
-        elif min_images_to_test > 9:
+            min_images_to_test = MIN_TEST_IMAGE_COUNT
+        elif min_images_to_test > MAX_TEST_IMAGE_COUNT:
             logger.warning(
-                "Testing with more than 9 images is likely to focus on the cover slip, or strike the sample. Running scan with test images = 9"
+                f"Testing with more than {MAX_TEST_IMAGE_COUNT} images is likely to focus on the cover slip, or strike the sample. Running scan with test images = {MAX_TEST_IMAGE_COUNT}"
             )
-            min_images_to_test = 9
+            min_images_to_test = MAX_TEST_IMAGE_COUNT
         if min_images_to_test < images_to_save:
             raise ValueError("Can't save more images than the minimum number tested")
         if min_images_to_test % 2 == 0 or min_images_to_test <= 0:
