@@ -117,7 +117,10 @@ class SimulatedCamera(BaseCamera):
             self.sprites.append(sprite.astype(np.uint8))
 
     def generate_blobs(self, n_blobs: int = 1000) -> None:
-        """Generate coordinates of blobs and their sizes, centered around (0,0)."""
+        """Generate coordinates of blobs and their sizes, centered around (0,0).
+
+        :param n_blobs: The number of blobs to generate.
+        """
         self.blobs = np.zeros((n_blobs, 3))
 
         w = np.max(self.glyph_shape)
@@ -160,31 +163,49 @@ class SimulatedCamera(BaseCamera):
     def draw_sprite_on_canvas(
         self, sprite: np.ndarray, center_y: int, center_x: int
     ) -> None:
-        """Place one sprite on canvas at given centre coordinates, clipping automatically."""
+        """Place one sprite on canvas at given centre coordinates.
+
+        Note that self.canvas is modified in place.
+
+        :param sprite: The sprite array to place on the canvas.
+        :param centre_y: The y coordinate to place the centre of the sprite.
+        :param centre_x: The x coordinate to place the centre of the sprite.
+        """
         canvas_h, canvas_w, _ = self.canvas.shape
         sprite_h, sprite_w, _ = sprite.shape
 
-        # Compute top-left corner
+        # Canvas region containing the sprite
         top = max(center_y - sprite_h // 2, 0)
         left = max(center_x - sprite_w // 2, 0)
-
-        # Compute bottom-right corner
         bottom = min(center_y + (sprite_h - sprite_h // 2), canvas_h)
         right = min(center_x + (sprite_w - sprite_w // 2), canvas_w)
 
-        # Compute sprite slice to match clipped canvas region
-        sprite_top = 0 if center_y - sprite_h // 2 >= 0 else sprite_h // 2 - center_y
-        sprite_left = 0 if center_x - sprite_w // 2 >= 0 else sprite_w // 2 - center_x
-        sprite_bottom = sprite_top + (bottom - top)
-        sprite_right = sprite_left + (right - left)
+        # Size of the sprite
+        sprite_top = 0
+        sprite_left = 0
+        sprite_bottom = self.glyph_shape[0]
+        sprite_right = self.glyph_shape[1]
 
-        # Subtract sprite from canvas
-        self.canvas[top:bottom, left:right] -= sprite[
-            sprite_top:sprite_bottom, sprite_left:sprite_right
-        ]
+        # Extract regions
+        canvas_region = self.canvas[top:bottom, left:right]
+        sprite_region = sprite[sprite_top:sprite_bottom, sprite_left:sprite_right]
+
+        # Ensure shapes are the same size before subtraction - can't have one bigger than the other
+        # In the case of a mismatch, use the smaller region
+        if canvas_region.shape != sprite_region.shape:
+            min_h = min(canvas_region.shape[0], sprite_region.shape[0])
+            min_w = min(canvas_region.shape[1], sprite_region.shape[1])
+            self.canvas[top : top + min_h, left : left + min_w] -= sprite[
+                :min_h, :min_w
+            ]
+        else:
+            self.canvas[top:bottom, left:right] -= sprite_region
 
     def generate_image(self, pos: tuple[int, int, int]) -> np.ndarray:
-        """Generate an image with blobs based on supplied coordinates."""
+        """Generate an image with blobs based on supplied coordinates.
+
+        :param pos: a 3-item tuple containing the x,y,z coordinates of the 'stage'
+        """
         canvas_width, canvas_height, _ = self.canvas_shape
         image_width, image_height, _ = self.shape
         pos = tuple(x * s for x, s in zip(pos, RATIO, strict=True))
@@ -275,6 +296,9 @@ class SimulatedCamera(BaseCamera):
         It will always issue a warning that the resolution is not respected.
         If called while already streaming, the warning will be emitted and no other
         action will be taken.
+
+        :param main_resolution: ignored, provided for compatibility with other server modes
+        :param buffer_count: ignored, provided for compatibility with other server modes
         """
         LOGGER.warning(
             f"Simulation camera doesn't respect {main_resolution=} or {buffer_count=} "
@@ -329,6 +353,9 @@ class SimulatedCamera(BaseCamera):
         This function will produce a nested list containing an uncompressed RGB image.
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
+
+        :param stream_name: ignored, provided for compatibility with other server modes
+        :param wait: ignored, provided for compatibility with other server modes
         """
         if wait is not None:
             LOGGER.warning("Simulation camera has no wait option. Use None.")
@@ -343,6 +370,9 @@ class SimulatedCamera(BaseCamera):
         """Capture to a PIL image. This is not exposed as a ThingAction.
 
         It is used for capture to memory.
+
+        :param stream_name: ignored, provided for compatibility with other server modes
+        :param wait: ignored, provided for compatibility with other server modes
         """
         if wait is not None:
             LOGGER.warning("Simulation camera has no wait option. Use None.")
