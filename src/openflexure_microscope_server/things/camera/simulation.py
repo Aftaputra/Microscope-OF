@@ -336,8 +336,8 @@ class SimulatedCamera(BaseCamera):
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
 
-        :param main_resolution: Currently ignored, this argument exists to ensure consistent API across camera Things.
-        :param buffer_count: Currently ignored, this argument exists to ensure consistent API across camera Things.
+        :param stream_name: Currently ignored, this argument exists to ensure consistent API across camera Things.
+        :param wait: Currently ignored, this argument exists to ensure consistent API across camera Things.
         """
         if wait is not None:
             LOGGER.warning("Simulation camera has no wait option. Use None.")
@@ -353,8 +353,8 @@ class SimulatedCamera(BaseCamera):
 
         It is used for capture to memory.
 
-        :param main_resolution: Currently ignored, this argument exists to ensure consistent API across camera Things.
-        :param buffer_count: Currently ignored, this argument exists to ensure consistent API across camera Things.
+        :param stream_name: Currently ignored, this argument exists to ensure consistent API across camera Things.
+        :param wait: Currently ignored, this argument exists to ensure consistent API across camera Things.
         """
         if wait is not None:
             LOGGER.warning("Simulation camera has no wait option. Use None.")
