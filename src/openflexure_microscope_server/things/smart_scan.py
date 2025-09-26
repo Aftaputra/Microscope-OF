@@ -179,6 +179,9 @@ class SmartScanThing(lt.Thing):
             # Ensure any PreviewStitcher created cannot be reused.
             self._preview_stitcher = None
 
+        # Remove any scan folders containing zero images.
+        self.purge_empty_scans(logger=logger)
+
     @_scan_running
     def _check_background_and_csm_set(self) -> None:
         """Before starting a scan, check that background and camera-stage-mapping are set.
@@ -385,9 +388,6 @@ class SmartScanThing(lt.Thing):
         # user cancels it.
         self._return_to_starting_position()
         self._perform_final_stitch()
-
-        # Remove any scan folders containing zero images
-        self.purge_empty_scans(logger=self._scan_logger)
 
     @_scan_running
     def _main_scan_loop(self) -> None:

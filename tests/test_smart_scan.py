@@ -331,9 +331,8 @@ def test_save_final_scan_data(scan_thing_mocked_for_scan_data):
 def scan_thing_mocked_for_run_scan(scan_thing_mocked_for_scan_data, mocker):
     """Return a scan_thing mocked so _run_scan works.
 
-    main_scan_loop(), _return_to_starting_position(), _perform_final_stitch(), and
-    purge_empty_scans() are Mocks
-    _cam is a MockCameraThing
+    main_scan_loop(), _return_to_starting_position(), and _perform_final_stitch() are
+    Mocks and _cam is a MockCameraThing
     """
     scan_thing = scan_thing_mocked_for_scan_data
     scan_thing._cam = MockCameraThing()
@@ -341,7 +340,6 @@ def scan_thing_mocked_for_run_scan(scan_thing_mocked_for_scan_data, mocker):
     mocker.patch.object(scan_thing, "_main_scan_loop")
     mocker.patch.object(scan_thing, "_return_to_starting_position")
     mocker.patch.object(scan_thing, "_perform_final_stitch")
-    mocker.patch.object(scan_thing, "purge_empty_scans")
 
     return scan_thing
 
@@ -373,7 +371,6 @@ def check_run_scan(scan_thing, caplog, expected_exception=None):
         "main_scan_loop_calls": scan_thing._main_scan_loop.call_count,
         "return_to_start_calls": scan_thing._return_to_starting_position.call_count,
         "perform_final_stitch_calls": scan_thing._perform_final_stitch.call_count,
-        "purge_empty_scans_calls": scan_thing.purge_empty_scans.call_count,
         "save_scan_data_calls": scan_thing._ongoing_scan.save_scan_data.call_count,
     }
     return final_scan_data.scan_result, caplog.records, calls
@@ -391,7 +388,6 @@ def test_run_scan(scan_thing_mocked_for_run_scan, caplog):
         "main_scan_loop_calls": 1,
         "return_to_start_calls": 1,
         "perform_final_stitch_calls": 1,
-        "purge_empty_scans_calls": 1,
         "save_scan_data_calls": 2,
     }
     assert calls == expected_calls_numbers
@@ -417,7 +413,6 @@ def test_run_scan_err_in_main_loop(scan_thing_mocked_for_run_scan, caplog, mocke
         "main_scan_loop_calls": 1,
         "return_to_start_calls": 0,
         "perform_final_stitch_calls": 0,
-        "purge_empty_scans_calls": 0,
         "save_scan_data_calls": 2,
     }
     assert calls == expected_calls_numbers
@@ -443,7 +438,6 @@ def test_run_scan_cancelled(scan_thing_mocked_for_run_scan, caplog, mocker):
         "main_scan_loop_calls": 1,
         "return_to_start_calls": 1,
         "perform_final_stitch_calls": 1,
-        "purge_empty_scans_calls": 1,
         "save_scan_data_calls": 2,
     }
     assert calls == expected_calls_numbers
@@ -469,7 +463,6 @@ def test_run_scan_fill_disk(scan_thing_mocked_for_run_scan, caplog, mocker):
         "main_scan_loop_calls": 1,
         "return_to_start_calls": 0,
         "perform_final_stitch_calls": 0,
-        "purge_empty_scans_calls": 0,
         "save_scan_data_calls": 2,
     }
     assert calls == expected_calls_numbers
