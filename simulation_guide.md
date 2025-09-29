@@ -5,11 +5,12 @@ This guide walks you through running the simulation server for the OpenFlexure M
 The simulation server GUI is a copy of the GUI you would find on the hardware with a simulated sample you can explore. Most functionality included in the hardware operates on the simulation server. This includes:
 
 * Camera stage mapping and 'click to move'
-* Scanning and stitching
+* Scanning and stitching*
 * Autofocus
 * Image capture
 * Stage navigation
 
+**Please note: the final stitch at the end of a scan currently doesn't work on Windows.*
 
 ---
 

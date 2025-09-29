@@ -112,11 +112,10 @@ To start the simulation server:
 * Activate the virtual environment that was set up during installation
 * Run the following command:
 
-    `openflexure-microscope-server --fallback -c ./ofm_config_simulation.json`
+`openflexure-microscope-server --fallback -c ./ofm_config_simulation.json`
 
 * Open the address displayed in the terminal in any browser.
 * To close the simulation server, return to the terminal and press `ctrl + c`.
-
 
 > Note: If you are using Windows, we advise running this command in PowerShell. If it doesn't work this, might be a permission issue on managed machines, in which case try executing the command in a CMD terminal.
 
