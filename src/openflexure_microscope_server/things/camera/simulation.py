@@ -81,9 +81,24 @@ class SimulatedCamera(BaseCamera):
         self.frame_interval = frame_interval
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
+        self.validate_inputs()
         self.generate_sprites()
         self.generate_blobs()
         self.generate_canvas()
+
+    def validate_inputs(self) -> None:
+        """Validate the inputs passed to the simulation, and raises an error if invalid.
+
+        Currently only tests that the sample size is not greater than the canvas size in any dimension.
+        """
+        # Iterate through elements in both tuples. As strict is False, will use the shorter of the two tuples
+        for _i, (a, b) in enumerate(
+            zip(self.canvas_shape, self.sample_limits, strict=False)
+        ):
+            if a < b:
+                raise ValueError(
+                    "Canvas size must be bigger than or equal to canvas size"
+                )
 
     def generate_sprites(self) -> None:
         """Generate sprites to populate the image."""
@@ -120,6 +135,10 @@ class SimulatedCamera(BaseCamera):
 
     def generate_blobs(self, n_blobs: int = 1000) -> None:
         """Generate coordinates of blobs and their sizes, centered around (0,0).
+
+        Note that blob density is determined by sample size and n_blobs, and for larger
+        samples n_blobs will need increasing to keep a high level of sample coverage per
+        field of view.
 
         :param n_blobs: The number of blobs to generate.
         """
@@ -170,18 +189,7 @@ class SimulatedCamera(BaseCamera):
         bottom = min(centre_y + (sprite_h - sprite_h // 2), canvas_h)
         right = min(centre_x + (sprite_w - sprite_w // 2), canvas_w)
 
-        canvas_region = self.canvas[top:bottom, left:right]
-
-        # Ensure shapes are the same size before subtraction - can't have one bigger than the other
-        # In the case of a mismatch, use the smaller region.
-        if canvas_region.shape != sprite.shape:
-            min_h = min(canvas_region.shape[0], sprite.shape[0])
-            min_w = min(canvas_region.shape[1], sprite.shape[1])
-            self.canvas[top : top + min_h, left : left + min_w] -= sprite[
-                :min_h, :min_w
-            ]
-        else:
-            self.canvas[top:bottom, left:right] -= sprite
+        self.canvas[top:bottom, left:right] -= sprite
 
     def generate_image(self, pos: tuple[int, int, int]) -> np.ndarray:
         """Generate an image with blobs based on supplied coordinates.

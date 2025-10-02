@@ -33,7 +33,7 @@ def thing_server():
     server = lt.ThingServer(settings_folder=temp_folder.name)
     server.add_thing(
         SimulatedCamera(
-            shape=(240, 320, 3), canvas_shape=(1920, 2480, 3), frame_interval=0.01
+            shape=(240, 320, 3), canvas_shape=(1000, 1500, 3), frame_interval=0.01
         ),
         "/camera/",
     )
