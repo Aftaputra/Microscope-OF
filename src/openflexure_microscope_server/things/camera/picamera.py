@@ -885,16 +885,19 @@ class StreamingPiCamera2(BaseCamera):
                 self.auto_expose_from_minimum,
                 submit_label="Auto Gain & Shutter Speed",
                 can_terminate=False,
+                button_primary=False,
             ),
             action_button_for(
                 self.calibrate_white_balance,
                 submit_label="Auto White Balance",
                 can_terminate=False,
+                button_primary=False,
             ),
             action_button_for(
                 self.calibrate_lens_shading,
                 submit_label="Auto Flat Field Correction",
                 can_terminate=False,
+                button_primary=False,
                 requires_confirmation=True,
                 confirmation_message=(
                     "Is the microscope looking at an evenly illuminated, empty field "
@@ -912,11 +915,13 @@ class StreamingPiCamera2(BaseCamera):
                 self.flat_lens_shading,
                 submit_label="Disable Flat Field Correction",
                 can_terminate=False,
+                button_primary=False,
             ),
             action_button_for(
                 self.reset_lens_shading,
                 submit_label="Reset Flat Field Correction",
                 can_terminate=False,
+                button_primary=False,
             ),
         ]
 
