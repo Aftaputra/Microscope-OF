@@ -92,9 +92,7 @@ class SimulatedCamera(BaseCamera):
         Currently only tests that the sample size is not greater than the canvas size in any dimension.
         """
         # Iterate through elements in both tuples. As strict is False, will use the shorter of the two tuples
-        for _i, (a, b) in enumerate(
-            zip(self.canvas_shape, self.sample_limits, strict=False)
-        ):
+        for a, b in zip(self.canvas_shape, self.sample_limits, strict=False):
             if a < b:
                 raise ValueError(
                     "Canvas size must be bigger than or equal to canvas size"
