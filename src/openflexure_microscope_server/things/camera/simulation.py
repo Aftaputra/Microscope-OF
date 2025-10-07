@@ -34,7 +34,7 @@ LOGGER = logging.getLogger(__name__)
 
 # The ratio between "motor" steps and pixels
 # higher related to a faster movement
-RATIO = 0.2
+RATIO = (2, 2, 0.2)
 
 # Some colour variation, for bg detect.
 BG_COLOR = [220, 215, 217]
@@ -53,8 +53,9 @@ class SimulatedCamera(BaseCamera):
     def __init__(
         self,
         shape: tuple[int, int, int] = (616, 820, 3),
-        glyph_shape: tuple[int, int, int] = (91, 91, 3),
+        glyph_shape: tuple[int, int, int] = (121, 121, 3),
         canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
+        sample_limits: Optional[tuple[int, int]] = (1000, 1500),
         frame_interval: float = 0.1,
     ) -> None:
         """Initialise the simulated with settings for how images are generated.
@@ -64,6 +65,9 @@ class SimulatedCamera(BaseCamera):
         :param canvas_shape: The shape (size) of the canvas generated on initialisation
             that images are cropped from. If this is too large the it uses resources,
             but its size limits the range of motion of the simulation.
+        :param sample_limits: The shape of the sample. Outside this range, the
+            camera won't generate any blobs, preventing scanning from running
+            indefinitely and better demonstrating background detect.
         :param frame_interval: Nominally the time between frames on the MJPEG stream,
             however the rate may be slower due to calculation time for focus.
         """
@@ -71,16 +75,32 @@ class SimulatedCamera(BaseCamera):
         self.shape = shape
         self.glyph_shape = glyph_shape
         self.canvas_shape = canvas_shape
+        self.sample_limits = (
+            canvas_shape[:2] if sample_limits is None else sample_limits
+        )
         self.frame_interval = frame_interval
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
+        self.validate_inputs()
         self.generate_sprites()
         self.generate_blobs()
         self.generate_canvas()
 
+    def validate_inputs(self) -> None:
+        """Validate the inputs passed to the simulation, and raises an error if invalid.
+
+        Currently only tests that the sample size is not greater than the canvas size in any dimension.
+        """
+        # Iterate through elements in both tuples. As strict is False, will use the shorter of the two tuples
+        for a, b in zip(self.canvas_shape, self.sample_limits, strict=False):
+            if a < b:
+                raise ValueError(
+                    "Canvas size must be bigger than or equal to canvas size"
+                )
+
     def generate_sprites(self) -> None:
         """Generate sprites to populate the image."""
-        sprite_sizes = [5, 7, 10, 21, 36, 40]
+        sprite_sizes = [10, 21, 36, 40, 50]
         self.sprites = []
 
         channel_block = np.zeros(self.glyph_shape[0:2])
@@ -112,23 +132,23 @@ class SimulatedCamera(BaseCamera):
             self.sprites.append(sprite.astype(np.uint8))
 
     def generate_blobs(self, n_blobs: int = 1000) -> None:
-        """Generate coordinates of blobs and their sizes.
+        """Generate coordinates of blobs and their sizes, centered around (0,0).
 
-        A 1000x3 array is returned. Each row represents (x,y) coordinate
-        of the sprite and the index representing the size of the sprite.
+        Note that blob density is determined by sample size and n_blobs, and for larger
+        samples n_blobs will need increasing to keep a high level of sample coverage per
+        field of view.
 
-        Blobs are characterised by X, Y, sprite
-        We also generate a KD tree to rapidly find blobs in an image
+        :param n_blobs: The number of blobs to generate.
         """
         self.blobs = np.zeros((n_blobs, 3))
-
         w = np.max(self.glyph_shape)
-        self.blobs[:, 0] = RNG.uniform(w / 2, self.canvas_shape[0] - w / 2, n_blobs)
-        self.blobs[:, 1] = RNG.uniform(w / 2, self.canvas_shape[1] - w / 2, n_blobs)
+
+        self.blobs[:, 0] = RNG.uniform(w // 2, self.sample_limits[1] - w // 2, n_blobs)
+        self.blobs[:, 1] = RNG.uniform(w // 2, self.sample_limits[0] - w // 2, n_blobs)
         self.blobs[:, 2] = RNG.choice(len(self.sprites), n_blobs)
 
     def generate_canvas(self) -> None:
-        """Generate a canvas.
+        """Generate a canvas with generated blobs centered at the middle.
 
         Canvas is int16 so that random noise can be added to simulation image before
         changing to unit8 to stop wrapping.
@@ -138,23 +158,48 @@ class SimulatedCamera(BaseCamera):
         self.blank_canvas[:, :, 1] *= BG_COLOR[1]
         self.blank_canvas[:, :, 2] *= BG_COLOR[2]
         self.canvas = self.blank_canvas.copy()
-        w, h, _ = self.glyph_shape
-        for x, y, sprite_size_index in self.blobs:
-            self.canvas[
-                int(x) - w // 2 : int(x) - w // 2 + w,
-                int(y) - h // 2 : int(y) - h // 2 + h,
-            ] -= self.sprites[int(sprite_size_index)]
+
+        for blob_x, blob_y, sprite_index in self.blobs:
+            self.draw_sprite_on_canvas(
+                self.sprites[int(sprite_index)], int(blob_y), int(blob_x)
+            )
+
         self.canvas[self.canvas < 0] = 0
         self.canvas[self.canvas > 255] = 255
 
+    def draw_sprite_on_canvas(
+        self, sprite: np.ndarray, centre_y: int, centre_x: int
+    ) -> None:
+        """Place one sprite on canvas at given centre coordinates.
+
+        Note that self.canvas is modified in place.
+
+        :param sprite: The sprite array to place on the canvas.
+        :param centre_y: The y coordinate to place the centre of the sprite.
+        :param centre_x: The x coordinate to place the centre of the sprite.
+        """
+        canvas_h, canvas_w, _ = self.canvas.shape
+        sprite_h, sprite_w, _ = sprite.shape
+
+        # Canvas region containing the sprite
+        top = max(centre_y - sprite_h // 2, 0)
+        left = max(centre_x - sprite_w // 2, 0)
+        bottom = min(centre_y + (sprite_h - sprite_h // 2), canvas_h)
+        right = min(centre_x + (sprite_w - sprite_w // 2), canvas_w)
+
+        self.canvas[top:bottom, left:right] -= sprite
+
     def generate_image(self, pos: tuple[int, int, int]) -> np.ndarray:
-        """Generate an image with blobs based on supplied coordinates."""
+        """Generate an image with blobs based on supplied coordinates.
+
+        :param pos: a 3-item tuple containing the x,y,z coordinates of the 'stage'
+        """
         canvas_width, canvas_height, _ = self.canvas_shape
         image_width, image_height, _ = self.shape
-        pos = tuple(x * RATIO for x in pos)
+        pos = tuple(x * s for x, s in zip(pos, RATIO, strict=True))
         top_left = (
-            int(pos[0]) - image_width // 2 - canvas_width // 2,
-            int(pos[1]) - image_height // 2 - canvas_height // 2,
+            int(pos[0]) - image_width // 2 + self.sample_limits[0] // 2,
+            int(pos[1]) - image_height // 2 + self.sample_limits[1] // 2,
         )
         # Create index list with modulo rather than slicing to handle wrapping at the
         # canvas edge.
@@ -239,6 +284,9 @@ class SimulatedCamera(BaseCamera):
         It will always issue a warning that the resolution is not respected.
         If called while already streaming, the warning will be emitted and no other
         action will be taken.
+
+        :param main_resolution: Currently ignored, this argument exists to ensure consistent API across camera Things.
+        :param buffer_count: Currently ignored, this argument exists to ensure consistent API across camera Things.
         """
         LOGGER.warning(
             f"Simulation camera doesn't respect {main_resolution=} or {buffer_count=} "
@@ -293,6 +341,9 @@ class SimulatedCamera(BaseCamera):
         This function will produce a nested list containing an uncompressed RGB image.
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
+
+        :param stream_name: Currently ignored, this argument exists to ensure consistent API across camera Things.
+        :param wait: Currently ignored, this argument exists to ensure consistent API across camera Things.
         """
         if wait is not None:
             LOGGER.warning("Simulation camera has no wait option. Use None.")
@@ -307,6 +358,9 @@ class SimulatedCamera(BaseCamera):
         """Capture to a PIL image. This is not exposed as a ThingAction.
 
         It is used for capture to memory.
+
+        :param stream_name: Currently ignored, this argument exists to ensure consistent API across camera Things.
+        :param wait: Currently ignored, this argument exists to ensure consistent API across camera Things.
         """
         if wait is not None:
             LOGGER.warning("Simulation camera has no wait option. Use None.")
