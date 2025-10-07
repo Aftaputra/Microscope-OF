@@ -881,6 +881,12 @@ class StreamingPiCamera2(BaseCamera):
                 notify_on_success=True,
                 success_message="Finished recalibration.",
             ),
+        ]
+
+    @lt.thing_property
+    def secondary_calibration_actions(self) -> list[ActionButton]:
+        """The calibration actions that appear only in settings panel."""
+        return [
             action_button_for(
                 self.auto_expose_from_minimum,
                 submit_label="Auto Gain & Shutter Speed",
@@ -905,12 +911,6 @@ class StreamingPiCamera2(BaseCamera):
                     "images captured afterwards."
                 ),
             ),
-        ]
-
-    @lt.thing_property
-    def secondary_calibration_actions(self) -> list[ActionButton]:
-        """The calibration actions that appear only in settings panel."""
-        return [
             action_button_for(
                 self.flat_lens_shading,
                 submit_label="Disable Flat Field Correction",
