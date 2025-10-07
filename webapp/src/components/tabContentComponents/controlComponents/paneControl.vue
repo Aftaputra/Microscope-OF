@@ -119,7 +119,7 @@
                   action="fast_autofocus"
                   :submit-data="{ dz: 2000 }"
                   :submit-label="'Autofocus'"
-                  :button-primary="false"
+                  :button-primary="true"
                   :submit-on-event="'globalFastAutofocusEvent'"
                   @taskStarted="isAutofocusing = 1"
                   @finished="
