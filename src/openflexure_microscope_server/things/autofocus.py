@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 from fastapi import Depends
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, computed_field, model_validator
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
@@ -34,60 +34,16 @@ class NotStreamingError(RuntimeError):
     """No images captured from stream. The camera is almost certainly not streaming."""
 
 
-class StackParams:
+class StackParams(BaseModel):
     """A class for holding for stack parameters, and returning computed ones."""
 
-    def __init__(
-        self,
-        *,
-        stack_dz: int,
-        images_to_save: int,
-        min_images_to_test: int,
-        autofocus_dz: int,
-        images_dir: str,
-        save_resolution: tuple[int, int],
-        logger: lt.deps.InvocationLogger,
-    ) -> None:
-        """Initialise the parameters. All arguments are keyword only.
-
-        :param stack_dz: The number of motor steps between images
-        :param images_to_save: The number of images to save to disk
-        :param min_images_to_test: The minimum number of images in the stack before,
-            the stack is evaluated for focus. As more images are captured evaluation
-            of the focus is always evaluated with the same number of images. i.e. if
-            ``min_images_to_test=9``, then 9 images are captured, if the stack is not
-            well focused, a 10th image is captured and images 2 to 10 are evaluated
-            for focus
-        :param autofocus_dz: The number of steps in a full autofocus (when required)
-        :param images_dir: The directory to save images to disk
-        :param save_resolution: The resolution to save the captures to disk with
-        :param logger: A logger passed from the calling Thing
-        """
-        if min_images_to_test < MIN_TEST_IMAGE_COUNT:
-            logger.warning(
-                f"Can't test for focus with fewer than {MIN_TEST_IMAGE_COUNT} images. Running scan with test images = {MIN_TEST_IMAGE_COUNT}"
-            )
-            min_images_to_test = MIN_TEST_IMAGE_COUNT
-        elif min_images_to_test > MAX_TEST_IMAGE_COUNT:
-            logger.warning(
-                f"Testing with more than {MAX_TEST_IMAGE_COUNT} images is likely to focus on the cover slip, or strike the sample. Running scan with test images = {MAX_TEST_IMAGE_COUNT}"
-            )
-            min_images_to_test = MAX_TEST_IMAGE_COUNT
-        if min_images_to_test < images_to_save:
-            raise ValueError("Can't save more images than the minimum number tested")
-        if min_images_to_test % 2 == 0 or min_images_to_test <= 0:
-            raise ValueError(
-                "Minimum number of images to test should be positive and odd"
-            )
-        if images_to_save % 2 == 0 or images_to_save <= 0:
-            raise ValueError("Images to save must be positive and odd")
-
-        self.stack_dz = stack_dz
-        self.images_to_save = images_to_save
-        self.min_images_to_test = min_images_to_test
-        self.autofocus_dz = autofocus_dz
-        self.images_dir = images_dir
-        self.save_resolution = save_resolution
+    stack_dz: int
+    images_to_save: int
+    min_images_to_test: int
+    autofocus_dz: int
+    images_dir: str
+    save_resolution: tuple[int, int]
+    logger: lt.deps.InvocationLogger
 
     # Using docstrings under variables as this is how pdoc would expect
     # attributed to be documented
@@ -116,6 +72,41 @@ class StackParams:
     max_attempts: int = 3
     """Maximum number of times to attempt fast stack"""
 
+    @field_validator("min_images_to_test")
+    def check_images_to_test(self, min_images_to_test: int) -> int:
+        """Verify that the images to test parameter matches various constraints."""
+        if min_images_to_test < MIN_TEST_IMAGE_COUNT:
+            self.logger.warning(
+                f"Can't test for focus with fewer than {MIN_TEST_IMAGE_COUNT} images. Running scan with test images = {MIN_TEST_IMAGE_COUNT}"
+            )
+            min_images_to_test = MIN_TEST_IMAGE_COUNT
+        elif min_images_to_test > MAX_TEST_IMAGE_COUNT:
+            self.logger.warning(
+                f"Testing with more than {MAX_TEST_IMAGE_COUNT} images is likely to focus on the cover slip, or strike the sample. Running scan with test images = {MAX_TEST_IMAGE_COUNT}"
+            )
+            min_images_to_test = MAX_TEST_IMAGE_COUNT
+
+        if min_images_to_test % 2 == 0 or min_images_to_test <= 0:
+            raise ValueError(
+                "Minimum number of images to test should be positive and odd"
+            )
+        return min_images_to_test
+
+    @field_validator("images_to_save")
+    def check_images_to_save(self, images_to_save: int) -> int:
+        """Verify that the images to save parameter is positive and odd."""
+        if images_to_save % 2 == 0 or images_to_save <= 0:
+            raise ValueError("Images to save must be positive and odd")
+        return images_to_save
+
+    @model_validator(mode="after")
+    def check_image_limits(self) -> "StackParams":
+        """Ensure the number of images to save isn't more than the minimum tested."""
+        if self.images_to_save > self.min_images_to_test:
+            raise ValueError("Can't save more images than the minimum number tested.")
+        return self
+
+    @computed_field
     @property
     def stack_z_range(self) -> int:
         """The range of the z stack, in steps.
@@ -126,6 +117,7 @@ class StackParams:
         """
         return self.stack_dz * (self.min_images_to_test - 1)
 
+    @computed_field
     @property
     def steps_undershoot(self) -> int:
         """The distance to deliberately undershoot the estimated optimal starting point."""
@@ -135,6 +127,7 @@ class StackParams:
         # requires extra +z movements and captures.
         return self.stack_dz * self.img_undershoot
 
+    @computed_field
     @property
     def max_images_to_test(self) -> int:
         """The maximum number of images that will be captured and tested in a stack.
