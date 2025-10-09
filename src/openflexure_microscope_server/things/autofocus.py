@@ -43,7 +43,6 @@ class StackParams(BaseModel):
     autofocus_dz: int
     images_dir: str
     save_resolution: tuple[int, int]
-    logger: lt.deps.InvocationLogger
 
     # Using docstrings under variables as this is how pdoc would expect
     # attributed to be documented
@@ -73,19 +72,17 @@ class StackParams(BaseModel):
     """Maximum number of times to attempt fast stack"""
 
     @field_validator("min_images_to_test")
-    def check_images_to_test(self, min_images_to_test: int) -> int:
+    @classmethod
+    def check_images_to_test(cls, min_images_to_test: int) -> int:
         """Verify that the images to test parameter matches various constraints."""
         if min_images_to_test < MIN_TEST_IMAGE_COUNT:
-            self.logger.warning(
-                f"Can't test for focus with fewer than {MIN_TEST_IMAGE_COUNT} images. Running scan with test images = {MIN_TEST_IMAGE_COUNT}"
+            raise ValueError(
+                f"Can't test for focus with fewer than {MIN_TEST_IMAGE_COUNT} images."
             )
-            min_images_to_test = MIN_TEST_IMAGE_COUNT
-        elif min_images_to_test > MAX_TEST_IMAGE_COUNT:
-            self.logger.warning(
-                f"Testing with more than {MAX_TEST_IMAGE_COUNT} images is likely to focus on the cover slip, or strike the sample. Running scan with test images = {MAX_TEST_IMAGE_COUNT}"
+        if min_images_to_test > MAX_TEST_IMAGE_COUNT:
+            raise ValueError(
+                f"Testing with more than {MAX_TEST_IMAGE_COUNT} images is likely to focus on the cover slip, or strike the sample."
             )
-            min_images_to_test = MAX_TEST_IMAGE_COUNT
-
         if min_images_to_test % 2 == 0 or min_images_to_test <= 0:
             raise ValueError(
                 "Minimum number of images to test should be positive and odd"
@@ -93,7 +90,8 @@ class StackParams(BaseModel):
         return min_images_to_test
 
     @field_validator("images_to_save")
-    def check_images_to_save(self, images_to_save: int) -> int:
+    @classmethod
+    def check_images_to_save(cls, images_to_save: int) -> int:
         """Verify that the images to save parameter is positive and odd."""
         if images_to_save % 2 == 0 or images_to_save <= 0:
             raise ValueError("Images to save must be positive and odd")
