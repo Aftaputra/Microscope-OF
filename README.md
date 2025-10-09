@@ -108,12 +108,20 @@ sudo -u openflexure-ws openflexure-microscope-server --fallback -c microscope_co
 
 To start the simulation server:
 
+* Ensure all steps of the installation for your platform of choice are complete.
 * Activate the virtual environment that was set up during installation
 * Run the following command:
 
-    openflexure-microscope-server --fallback -c ./ofm_config_simulation.json
+`openflexure-microscope-server --fallback -c ./ofm_config_simulation.json`
+
+* Open the address displayed in the terminal in any browser.
+* To close the simulation server, return to the terminal and press `ctrl + c`.
 
 > Note: If you are using Windows, we advise running this command in PowerShell. If it doesn't work this, might be a permission issue on managed machines, in which case try executing the command in a CMD terminal.
+
+> Note: If you receive an error saying that port 5000 is already in use, you can specify a different port to run the simulation on using `--port`:
+>
+>    `openflexure-microscope-server --fallback --port 8081 -c ./ofm_config_simulation.json`
 
 A [full video walkthrough of running the simulation server](https://youtu.be/Z8verCqfj9s) is available on our YouTube Channel.
 

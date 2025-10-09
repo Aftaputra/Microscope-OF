@@ -2,6 +2,16 @@
 
 This guide walks you through running the simulation server for the OpenFlexure Microscope, along with useful tips for using the simulation features.
 
+The simulation server GUI is a copy of the GUI you would find on the hardware with a simulated sample you can explore. Most functionality included in the hardware operates on the simulation server. This includes:
+
+* Camera stage mapping and 'click to move'
+* Scanning and stitching*
+* Autofocus
+* Image capture
+* Stage navigation
+
+**Please note: the final stitch at the end of a scan currently doesn't work on Windows.*
+
 ---
 
 ## Starting the Simulation Server
@@ -22,6 +32,20 @@ This can fail with an error that the chosen port is already in use. In that case
 ## Video Walkthrough
 
 For a step-by-step demonstration, watch the [full video walkthrough on running the simulation server](https://youtu.be/Z8verCqfj9s).
+
+---
+
+## Running a simulated scan
+
+To run a simulated scan, you first need to set a background image:
+
+1. Click on the settings tab on the left
+2. Navigate to the **Camera** settings under **Microscope Settings**
+3. Click `Remove Sample`. This removes the simulated sample from the camera stream
+4. Click on the **Background Detect** tab on the left and click `Set Background`
+5. Repeat the steps 1 and 2 to return to the camera settings and click `Add Sample`
+
+You are now ready to start a simulated scan in the Slide Scan tab.
 
 ---
 
@@ -70,3 +94,4 @@ For a step-by-step demonstration, watch the [full video walkthrough on running t
 ---
 
 If you need further help, reach out to the community on the [OpenFlexure Forum](https://openflexure.discourse.group/).
+
