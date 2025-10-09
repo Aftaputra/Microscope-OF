@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 from fastapi import Depends
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, computed_field, model_validator
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
@@ -26,54 +26,23 @@ from .camera import CameraDependency as CameraClient
 from .stage import StageDependency as Stage
 
 LOGGER = logging.getLogger(__name__)
+MIN_TEST_IMAGE_COUNT = 3
+MAX_TEST_IMAGE_COUNT = 9
 
 
 class NotStreamingError(RuntimeError):
     """No images captured from stream. The camera is almost certainly not streaming."""
 
 
-class StackParams:
+class StackParams(BaseModel):
     """A class for holding for stack parameters, and returning computed ones."""
 
-    def __init__(
-        self,
-        *,
-        stack_dz: int,
-        images_to_save: int,
-        min_images_to_test: int,
-        autofocus_dz: int,
-        images_dir: str,
-        save_resolution: tuple[int, int],
-    ) -> None:
-        """Initialise the parameters. All arguments are keyword only.
-
-        :param stack_dz: The number of motor steps between images
-        :param images_to_save: The number of images to save to disk
-        :param min_images_to_test: The minimum number of images in the stack before,
-            the stack is evaluated for focus. As more images are captured evaluation
-            of the focus is always evaluated with the same number of images. i.e. if
-            ``min_images_to_test=9``, then 9 images are captured, if the stack is not
-            well focused, a 10th image is captured and images 2 to 10 are evaluated
-            for focus
-        :param autofocus_dz: The number of steps in a full autofocus (when required)
-        :param images_dir: The directory to save images to disk
-        :param save_resolution: The resolution to save the captures to disk with
-        """
-        if min_images_to_test < images_to_save:
-            raise ValueError("Can't save more images than the minimum number tested")
-        if min_images_to_test % 2 == 0 or min_images_to_test <= 0:
-            raise ValueError(
-                "Minimum number of images to test should be positive and odd"
-            )
-        if images_to_save % 2 == 0 or images_to_save <= 0:
-            raise ValueError("Images to save must be positive and odd")
-
-        self.stack_dz = stack_dz
-        self.images_to_save = images_to_save
-        self.min_images_to_test = min_images_to_test
-        self.autofocus_dz = autofocus_dz
-        self.images_dir = images_dir
-        self.save_resolution = save_resolution
+    stack_dz: int
+    images_to_save: int
+    min_images_to_test: int
+    autofocus_dz: int
+    images_dir: str
+    save_resolution: tuple[int, int]
 
     # Using docstrings under variables as this is how pdoc would expect
     # attributed to be documented
@@ -102,6 +71,41 @@ class StackParams:
     max_attempts: int = 3
     """Maximum number of times to attempt fast stack"""
 
+    @field_validator("min_images_to_test")
+    @classmethod
+    def check_images_to_test(cls, min_images_to_test: int) -> int:
+        """Verify that the images to test parameter matches various constraints."""
+        if min_images_to_test < MIN_TEST_IMAGE_COUNT:
+            raise ValueError(
+                f"Can't test for focus with fewer than {MIN_TEST_IMAGE_COUNT} images."
+            )
+        if min_images_to_test > MAX_TEST_IMAGE_COUNT:
+            raise ValueError(
+                f"Testing with more than {MAX_TEST_IMAGE_COUNT} images is likely to focus on the cover slip, or strike the sample."
+            )
+        if min_images_to_test % 2 == 0 or min_images_to_test <= 0:
+            raise ValueError(
+                "Minimum number of images to test should be positive and odd"
+            )
+        return min_images_to_test
+
+    @field_validator("images_to_save")
+    @classmethod
+    def check_images_to_save(cls, images_to_save: int) -> int:
+        """Verify that the images to save parameter is positive and odd."""
+        if images_to_save % 2 == 0 or images_to_save <= 0:
+            raise ValueError("Images to save must be positive and odd")
+        return images_to_save
+
+    @model_validator(mode="after")
+    def check_image_limits(self) -> "StackParams":
+        """Ensure the number of images to save isn't more than the minimum tested."""
+        if self.images_to_save > self.min_images_to_test:
+            raise ValueError("Can't save more images than the minimum number tested.")
+        return self
+
+    # Note MyPy doesn't support decorating properties. See MyPy Pull #16571 and issue #14461.
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def stack_z_range(self) -> int:
         """The range of the z stack, in steps.
@@ -112,6 +116,7 @@ class StackParams:
         """
         return self.stack_dz * (self.min_images_to_test - 1)
 
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def steps_undershoot(self) -> int:
         """The distance to deliberately undershoot the estimated optimal starting point."""
@@ -121,6 +126,7 @@ class StackParams:
         # requires extra +z movements and captures.
         return self.stack_dz * self.img_undershoot
 
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def max_images_to_test(self) -> int:
         """The maximum number of images that will be captured and tested in a stack.
@@ -467,7 +473,7 @@ class AutofocusThing(lt.Thing):
     enough more images may be captured. After new images are captured the number sets
     the number of images used for checking if focus is central.
 
-    Defaults to 9 which balances reliability and speed/
+    Defaults to 9 which balances reliability and speed.
     """
 
     stack_dz = lt.ThingSetting(initial_value=50, model=int)
@@ -481,14 +487,85 @@ class AutofocusThing(lt.Thing):
     """
 
     @lt.thing_action
+    def create_stack_params(
+        self,
+        images_dir: str,
+        autofocus_dz: int,
+        save_resolution: tuple[int, int],
+        logger: lt.deps.InvocationLogger,
+    ) -> StackParams:
+        """Set up the parameters used for all stacks in a scan.
+
+        :param images_dir: the folder to save all images
+        :param autofocus_dz: the range to autofocus over if a stack fails
+        :param save_resolution: The resolution to save the captures to disk with
+        :param logger: A logger passed from the calling Thing
+
+        :returns: A StackParams object with the required parameters.
+        """
+        # Coerce min_images_to_test parameter
+        min_images_to_test = self.stack_min_images_to_test
+        if min_images_to_test < MIN_TEST_IMAGE_COUNT:
+            logger.warning(
+                f"Cannot test only {min_images_to_test} image(s) as this will fail. "
+                "Setting min images to test to lowest possible value of"
+                f"{MIN_TEST_IMAGE_COUNT}."
+            )
+            min_images_to_test = MIN_TEST_IMAGE_COUNT
+        elif min_images_to_test > MAX_TEST_IMAGE_COUNT:
+            logger.warning(
+                f"Testing {min_images_to_test} images will cause defocus. "
+                "Setting min images to test to highest possible value of "
+                f"{MAX_TEST_IMAGE_COUNT}."
+            )
+            min_images_to_test = MAX_TEST_IMAGE_COUNT
+        elif min_images_to_test % 2 == 0:
+            min_images_to_test += 1
+            logger.warning(
+                "Minimum number of images to test should be odd, setting to "
+                f"{min_images_to_test}."
+            )
+        # Set the Thing property to the coerced value
+        self.stack_min_images_to_test = min_images_to_test
+
+        # Coerce the images to save parameter to be positive, odd, and less than
+        # min_images_to_save
+        images_to_save = self.stack_images_to_save
+        if images_to_save <= 0:
+            logger.warning(
+                "At least 1 images must be saved. Setting images to save to 1."
+            )
+            images_to_save = 1
+        elif images_to_save > min_images_to_test:
+            logger.warning(
+                f"Cannot save {images_to_save} images as this above the minimum "
+                f"number to test. Setting images to save to {MAX_TEST_IMAGE_COUNT}."
+            )
+            images_to_save = min_images_to_test
+        elif images_to_save % 2 == 0:
+            images_to_save += 1
+            logger.warning(
+                f"Images to save should be odd, setting to {images_to_save}."
+            )
+        # Set the Thing property to the coerced value
+        self.stack_images_to_save = images_to_save
+
+        return StackParams(
+            stack_dz=self.stack_dz,
+            images_to_save=self.stack_images_to_save,
+            min_images_to_test=self.stack_min_images_to_test,
+            autofocus_dz=autofocus_dz,
+            images_dir=images_dir,
+            save_resolution=save_resolution,
+        )
+
+    @lt.thing_action
     def run_smart_stack(
         self,
         cam: CameraClient,
         stage: Stage,
         sharpness_monitor: SharpnessMonitorDep,
-        images_dir: str,
-        autofocus_dz: int,
-        save_resolution: tuple[int, int],
+        stack_parameters: StackParams,
     ) -> tuple[bool, int]:
         """Run a smart stack.
 
@@ -503,27 +580,14 @@ class AutofocusThing(lt.Thing):
         :param stage: Stage Dependency supplied by LabThings dependency injection
         :param sharpness_monitor: Sharpness Monitor Dependency (for focus detection)
             supplied by LabThings dependency injection
-        :param images_dir: the folder to save all images
-        :param autofocus_dz: the range to autofocus over if a stack fails
-        :param save_resolution: The resolution the images should be saved at, the
-            images will be resampled if this doesn't match the camera's capture
-            resolution
+        :param stack_parameters: A StackParams object containing the required
+            parameters to run a stack.
 
         :returns: A tuple containing:
 
             * A boolean, True if stack was successfully
             * The z position of the sharpest image
         """
-        # Set the variables to prevent changes from the GUI or other windows
-        stack_parameters = StackParams(
-            stack_dz=self.stack_dz,
-            images_to_save=self.stack_images_to_save,
-            min_images_to_test=self.stack_min_images_to_test,
-            autofocus_dz=autofocus_dz,
-            images_dir=images_dir,
-            save_resolution=save_resolution,
-        )
-
         tries = 0
         # Loop until a stack is successful
         while tries < stack_parameters.max_attempts:

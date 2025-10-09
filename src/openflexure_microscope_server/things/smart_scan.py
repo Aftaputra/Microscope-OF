@@ -26,7 +26,7 @@ from openflexure_microscope_server import scan_planners
 from openflexure_microscope_server import stitching
 
 # Things
-from .autofocus import AutofocusThing
+from .autofocus import AutofocusThing, StackParams
 from .camera_stage_mapping import CameraStageMapper
 from .camera import CameraDependency as CameraClient
 from .stage import StageDependency as StageDep
@@ -121,7 +121,7 @@ class SmartScanThing(lt.Thing):
         self._stage: Optional[StageDep] = None
         self._cam: Optional[CameraClient] = None
         self._csm: Optional[CSMDep] = None
-
+        self._stack_params: Optional[StackParams] = None
         self._ongoing_scan: Optional[scan_directories.ScanDirectory] = None
         self._scan_data: Optional[scan_directories.ScanData] = None
         self._preview_stitcher: Optional[stitching.PreviewStitcher] = None
@@ -189,6 +189,7 @@ class SmartScanThing(lt.Thing):
             self._scan_lock.release()
             # Ensure any PreviewStitcher created cannot be reused.
             self._preview_stitcher = None
+            self._stack_params = None
 
         # Remove any scan folders containing zero images.
         self.purge_empty_scans(logger=logger)
@@ -363,6 +364,12 @@ class SmartScanThing(lt.Thing):
             self._cam.start_streaming(main_resolution=(3280, 2464))
             self._scan_data = self._collect_scan_data()
             self._ongoing_scan.save_scan_data(self._scan_data)
+            self._stack_params = self._autofocus.create_stack_params(
+                images_dir=self._ongoing_scan.images_dir,
+                autofocus_dz=self.autofocus_dz,
+                save_resolution=self._scan_data.save_resolution,
+                logger=self._scan_logger,
+            )
             self._preview_stitcher = stitching.PreviewStitcher(
                 self._ongoing_scan.images_dir,
                 overlap=self._scan_data.overlap,
@@ -451,9 +458,7 @@ class SmartScanThing(lt.Thing):
                 continue
 
             focused, focused_height = self._autofocus.run_smart_stack(
-                images_dir=self._ongoing_scan.images_dir,
-                autofocus_dz=self._scan_data.autofocus_dz,
-                save_resolution=self._scan_data.save_resolution,
+                stack_parameters=self._stack_params
             )
 
             current_pos_xyz = (new_pos_xyz[0], new_pos_xyz[1], focused_height)
