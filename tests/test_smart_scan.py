@@ -292,8 +292,11 @@ def scan_thing_mocked_for_scan_data(smart_scan_thing, mocker):
     mock_stage = mocker.Mock()
     type(mock_stage).position = mocker.PropertyMock(return_value=MOCK_START_POS)
 
+    mock_autofocus = mocker.Mock()
+
     smart_scan_thing._ongoing_scan = mock_ongoing_scan
     smart_scan_thing._stage = mock_stage
+    smart_scan_thing._autofocus = mock_autofocus
     return smart_scan_thing
 
 

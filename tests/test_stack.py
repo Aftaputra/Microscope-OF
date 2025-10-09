@@ -4,20 +4,29 @@ Currently these tests don't test the Thing itself, just surrounding functionalit
 """
 
 from typing import Optional
+import tempfile
 from random import randint
+import logging
 
 import pytest
 import numpy as np
 from hypothesis import given, strategies as st
+from fastapi.testclient import TestClient
+
+import labthings_fastapi as lt
 
 from openflexure_microscope_server.things.autofocus import (
+    AutofocusThing,
     StackParams,
     CaptureInfo,
+    MIN_TEST_IMAGE_COUNT,
+    MAX_TEST_IMAGE_COUNT,
     _get_capture_by_id,
     _get_capture_index_by_id,
 )
 from openflexure_microscope_server.scan_directories import IMAGE_REGEX
 
+LOGGER = logging.getLogger("mock-invocation_logger")
 RANDOM_GENERATOR = np.random.default_rng()
 
 
@@ -42,21 +51,24 @@ def even_integers(min_value=0, max_value=1000):
 
 
 @given(
-    save_ims=odd_integers(min_value=0, max_value=10),
+    save_ims=odd_integers(min_value=1, max_value=9),
     extra_ims=even_integers(min_value=0, max_value=10),
 )
 def test_stack_params_validation(save_ims, extra_ims):
-    """Test the validation of the image numbers for a stack.
+    """Test the validation of the image numbers for a stack for valid combinations.
 
     save_ims is the number to save (must be odd and positive)
     extra_ims is how many more images there are in min_images_to_test than
     images_to_save. (even so that, min_images_to_test is odd and larger than
     images_to_save
     """
+    # Coerce min_images_to_test as the max extra ims depends on save_ims so is hard
+    # to do automatically in hypothesis. This clamps the number between 3 and 9.
+    min_images_to_test = max(min(save_ims + extra_ims, 9), 3)
     StackParams(
         stack_dz=50,
         images_to_save=save_ims,
-        min_images_to_test=save_ims + extra_ims,
+        min_images_to_test=min_images_to_test,
         autofocus_dz=2000,
         images_dir="/this/is/fake",
         save_resolution=(1640, 1232),
@@ -228,3 +240,95 @@ def test_retrieval_of_captures(start):
         _get_capture_by_id(captures, start - 1)
     with pytest.raises(ValueError):
         _get_capture_by_id(captures, start + 21)
+
+
+@pytest.fixture
+def autofocus_thing():
+    """Yield an autofocus thing connected to a server."""
+    autofocus_thing = AutofocusThing()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        server = lt.ThingServer(settings_folder=tmpdir)
+        server.add_thing(autofocus_thing, "/autofocus/")
+        with TestClient(server.app):
+            yield autofocus_thing
+
+
+def test_create_stack(autofocus_thing, caplog):
+    """Run create stack with default values and check there is no coercion or logging."""
+    initial_min_images_to_test = autofocus_thing.stack_min_images_to_test
+    initial_images_to_save = autofocus_thing.stack_images_to_save
+    with caplog.at_level(logging.INFO):
+        stack_params = autofocus_thing.create_stack_params(
+            autofocus_dz=2000,
+            images_dir="/this/is/fake",
+            save_resolution=(1640, 1232),
+            logger=LOGGER,
+        )
+
+    assert len(caplog.records) == 0
+    assert autofocus_thing.stack_min_images_to_test == initial_min_images_to_test
+    assert autofocus_thing.stack_images_to_save == initial_images_to_save
+    assert stack_params.min_images_to_test == autofocus_thing.stack_min_images_to_test
+    assert stack_params.images_to_save == autofocus_thing.stack_images_to_save
+
+
+@pytest.mark.parametrize(
+    ("initial_test_ims", "coerced_test_ims", "expected_log_start"),
+    [
+        (0, MIN_TEST_IMAGE_COUNT, "Cannot test only 0"),
+        (-1, MIN_TEST_IMAGE_COUNT, "Cannot test only -1"),
+        (10, MAX_TEST_IMAGE_COUNT, "Testing 10 images will"),
+        (4, 5, "Minimum number of images to test should be odd"),
+    ],
+)
+def test_coercing_stack_test_ims(
+    initial_test_ims, coerced_test_ims, expected_log_start, autofocus_thing, caplog
+):
+    """Run create stack with images to test set to values requiring coercion, and check result."""
+    autofocus_thing.stack_min_images_to_test = initial_test_ims
+
+    with caplog.at_level(logging.WARNING):
+        stack_params = autofocus_thing.create_stack_params(
+            autofocus_dz=2000,
+            images_dir="/this/is/fake",
+            save_resolution=(1640, 1232),
+            logger=LOGGER,
+        )
+
+    assert len(caplog.records) == 1
+    assert str(caplog.records[0].msg).startswith(expected_log_start)
+    # Check the value is coerced in the stack_params
+    assert stack_params.min_images_to_test == coerced_test_ims
+    # Check that the setting in the Thing was updated to the coerced value
+    assert stack_params.min_images_to_test == autofocus_thing.stack_min_images_to_test
+
+
+@pytest.mark.parametrize(
+    ("initial_save_ims", "coerced_save_ims", "expected_log_start"),
+    [
+        (0, 1, "At least 1 images must be saved"),
+        (-1, 1, "At least 1 images must be saved"),
+        (10, 9, "Cannot save 10 images"),
+        (4, 5, "Images to save should be odd, setting to 5"),
+    ],
+)
+def test_coercing_stack_save_ims(
+    initial_save_ims, coerced_save_ims, expected_log_start, autofocus_thing, caplog
+):
+    """Run create stack with images to save set to values requiring coercion, and check result."""
+    autofocus_thing.stack_images_to_save = initial_save_ims
+
+    with caplog.at_level(logging.WARNING):
+        stack_params = autofocus_thing.create_stack_params(
+            autofocus_dz=2000,
+            images_dir="/this/is/fake",
+            save_resolution=(1640, 1232),
+            logger=LOGGER,
+        )
+
+    assert len(caplog.records) == 1
+    assert str(caplog.records[0].msg).startswith(expected_log_start)
+    # Check the value is coerced in the stack_params
+    assert stack_params.images_to_save == coerced_save_ims
+    # Check that the setting in the Thing was updated to the coerced value
+    assert stack_params.images_to_save == autofocus_thing.stack_images_to_save

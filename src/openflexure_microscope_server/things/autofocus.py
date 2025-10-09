@@ -538,7 +538,7 @@ class AutofocusThing(lt.Thing):
             images_to_save = 1
         elif images_to_save > min_images_to_test:
             logger.warning(
-                f"Cannot save {min_images_to_test} images as this above the minimum "
+                f"Cannot save {images_to_save} images as this above the minimum "
                 f"number to test. Setting images to save to {MAX_TEST_IMAGE_COUNT}."
             )
             images_to_save = min_images_to_test
