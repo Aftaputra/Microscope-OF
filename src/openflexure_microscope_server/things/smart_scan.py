@@ -122,7 +122,6 @@ class SmartScanThing(lt.Thing):
         self._cam: Optional[CameraClient] = None
         self._csm: Optional[CSMDep] = None
         self._stack_params: Optional[StackParams] = None
-
         self._ongoing_scan: Optional[scan_directories.ScanDirectory] = None
         self._scan_data: Optional[scan_directories.ScanData] = None
         self._preview_stitcher: Optional[stitching.PreviewStitcher] = None
@@ -365,7 +364,7 @@ class SmartScanThing(lt.Thing):
             self._cam.start_streaming(main_resolution=(3280, 2464))
             self._scan_data = self._collect_scan_data()
             self._ongoing_scan.save_scan_data(self._scan_data)
-            self._stack_params = self._autofocus.set_stack_params(
+            self._stack_params = self._autofocus.create_stack_params(
                 images_dir=self._ongoing_scan.images_dir,
                 autofocus_dz=self.autofocus_dz,
                 save_resolution=self._scan_data.save_resolution,

@@ -10,7 +10,7 @@ See repository root for licensing information.
 from contextlib import contextmanager
 import logging
 import time
-from typing import Annotated, Mapping, Optional, Sequence, Literal, Type
+from typing import Annotated, Mapping, Optional, Sequence, Literal
 import os
 from dataclasses import dataclass
 
@@ -105,7 +105,7 @@ class StackParams(BaseModel):
         return self
 
     # Note MyPy doesn't support decorating properties. See MyPy Pull #16571 and issue #14461.
-    @computed_field # type: ignore[prop-decorator]
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def stack_z_range(self) -> int:
         """The range of the z stack, in steps.
@@ -116,7 +116,7 @@ class StackParams(BaseModel):
         """
         return self.stack_dz * (self.min_images_to_test - 1)
 
-    @computed_field # type: ignore[prop-decorator]
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def steps_undershoot(self) -> int:
         """The distance to deliberately undershoot the estimated optimal starting point."""
@@ -126,7 +126,7 @@ class StackParams(BaseModel):
         # requires extra +z movements and captures.
         return self.stack_dz * self.img_undershoot
 
-    @computed_field # type: ignore[prop-decorator]
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def max_images_to_test(self) -> int:
         """The maximum number of images that will be captured and tested in a stack.
@@ -487,7 +487,7 @@ class AutofocusThing(lt.Thing):
     """
 
     @lt.thing_action
-    def set_stack_params(
+    def create_stack_params(
         self,
         images_dir: str,
         autofocus_dz: int,
@@ -503,6 +503,53 @@ class AutofocusThing(lt.Thing):
 
         :returns: A StackParams object with the required parameters.
         """
+        # Coerce min_images_to_test parameter
+        min_images_to_test = self.stack_min_images_to_test
+        if min_images_to_test < MIN_TEST_IMAGE_COUNT:
+            logger.warning(
+                f"Cannot test only {min_images_to_test} image(s) as this will fail. "
+                "Setting min images to test to lowest possible value of"
+                f"{MIN_TEST_IMAGE_COUNT}."
+            )
+            min_images_to_test = MIN_TEST_IMAGE_COUNT
+        elif min_images_to_test > MAX_TEST_IMAGE_COUNT:
+            logger.warning(
+                f"Testing {min_images_to_test} images will cause defocus. "
+                "Setting min images to test to highest possible value of "
+                f"{MAX_TEST_IMAGE_COUNT}."
+            )
+            min_images_to_test = MAX_TEST_IMAGE_COUNT
+        elif min_images_to_test % 2 == 0:
+            min_images_to_test += 1
+            logger.warning(
+                "Minimum number of images to test should be odd, setting to "
+                f"{min_images_to_test}."
+            )
+        # Set the Thing property to the coerced value
+        self.stack_min_images_to_test = min_images_to_test
+
+        # Coerce the images to save parameter to be positive, odd, and less than
+        # min_images_to_save
+        images_to_save = self.stack_images_to_save
+        if images_to_save <= 0:
+            logger.warning(
+                "At least 1 images must be saved. Setting images to save to 1."
+            )
+            images_to_save = 1
+        elif images_to_save > min_images_to_test:
+            logger.warning(
+                f"Cannot save {min_images_to_test} images as this above the minimum "
+                f"number to test. Setting images to save to {MAX_TEST_IMAGE_COUNT}."
+            )
+            images_to_save = min_images_to_test
+        elif images_to_save % 2 == 0:
+            images_to_save += 1
+            logger.warning(
+                f"Images to save should be odd, setting to {images_to_save}."
+            )
+        # Set the Thing property to the coerced value
+        self.stack_images_to_save = images_to_save
+
         return StackParams(
             stack_dz=self.stack_dz,
             images_to_save=self.stack_images_to_save,
@@ -510,7 +557,6 @@ class AutofocusThing(lt.Thing):
             autofocus_dz=autofocus_dz,
             images_dir=images_dir,
             save_resolution=save_resolution,
-            logger=logger,
         )
 
     @lt.thing_action
