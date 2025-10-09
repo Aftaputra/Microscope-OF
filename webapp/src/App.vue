@@ -331,6 +331,7 @@ html {
 .control-component {
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-gutter: stable;
   width: 300px;
   height: 100%;
   padding: 0;
