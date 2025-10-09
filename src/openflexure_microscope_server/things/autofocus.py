@@ -104,7 +104,8 @@ class StackParams(BaseModel):
             raise ValueError("Can't save more images than the minimum number tested.")
         return self
 
-    @computed_field
+    # Note MyPy doesn't support decorating properties. See MyPy Pull #16571 and issue #14461.
+    @computed_field # type: ignore[prop-decorator]
     @property
     def stack_z_range(self) -> int:
         """The range of the z stack, in steps.
@@ -115,7 +116,7 @@ class StackParams(BaseModel):
         """
         return self.stack_dz * (self.min_images_to_test - 1)
 
-    @computed_field
+    @computed_field # type: ignore[prop-decorator]
     @property
     def steps_undershoot(self) -> int:
         """The distance to deliberately undershoot the estimated optimal starting point."""
@@ -125,7 +126,7 @@ class StackParams(BaseModel):
         # requires extra +z movements and captures.
         return self.stack_dz * self.img_undershoot
 
-    @computed_field
+    @computed_field # type: ignore[prop-decorator]
     @property
     def max_images_to_test(self) -> int:
         """The maximum number of images that will be captured and tested in a stack.
@@ -492,7 +493,7 @@ class AutofocusThing(lt.Thing):
         autofocus_dz: int,
         save_resolution: tuple[int, int],
         logger: lt.deps.InvocationLogger,
-    ) -> Type[StackParams]:
+    ) -> StackParams:
         """Set up the parameters used for all stacks in a scan.
 
         :param images_dir: the folder to save all images
@@ -518,7 +519,7 @@ class AutofocusThing(lt.Thing):
         cam: CameraClient,
         stage: Stage,
         sharpness_monitor: SharpnessMonitorDep,
-        stack_parameters: Type[StackParams],
+        stack_parameters: StackParams,
     ) -> tuple[bool, int]:
         """Run a smart stack.
 
