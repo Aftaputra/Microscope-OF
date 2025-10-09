@@ -107,15 +107,13 @@ def geq_is_static(tuning: dict) -> bool:
 def set_ce_to_disabled(
     tuning: dict,
 ) -> None:
-    """Update the ``rpi.ce_enable`` section of a camera tuning dict.
+    """Set ``ce_enable`` in ``rpi.contrast`` to zero to disable adaptive contrast enhancement.
 
     :param tuning: the raspberry pi tuning file. This will be updated in-place to
         set ce_enable to 0.
     """
     contrast = Picamera2.find_tuning_algo(tuning, "rpi.contrast")
-    contrast["ce_enable"] = (
-        0  # disable ce_enable to prevent adaptive contrast enhancement
-    )
+    contrast["ce_enable"] = 0
 
 
 def ce_enable_is_static(tuning: dict) -> bool:
