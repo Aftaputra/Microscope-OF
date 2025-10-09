@@ -19,7 +19,7 @@ THIS_DIR = os.path.dirname(__file__)
 TRUE_REPO_DIR = os.path.dirname(THIS_DIR)
 
 # For explicit version checking.
-VER_STRING = "3.0.0-alpha2"
+VER_STRING = "3.0.0-alpha3"
 
 # This is the regex provided by https://semver.org/
 SEMVER_REGEX = re.compile(

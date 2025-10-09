@@ -1,3 +1,63 @@
+# [v3.0.0-alpha3](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v3.0.0-alpha2...v3.0.0-alpha3) (2025-10-10)
+
+The third alpha release of the server. The focus has been on stability and documentation. Some highlights are:
+
+* Experimental support for the High Quality Raspberry Pi Camera.
+* UI improvements including:
+  * Updating property controls to show visibly when they are set
+  * Reducing the number of modal confirmations, and improving formatting for the remaining
+  * Renaming navigate tab to control tab
+  * Improving consistency of which buttons are primary, and that disabled displays in dark mode
+  * Reloading settings more in the UI when they change in server (ongoing)
+  * Fixing a number of caching issues in the UI.
+* Calibration modal improvements:
+  * A button to reopen the modal
+  * An interface to focus the sample before camera stage mapping.
+* The user can now cancel the preview thread (waiting for background processes)
+* A number of improved error messages and logs.
+* A number of changes to the documentation and the addition of walkthroughs to help new devs set up their environment.
+
+The following merge requests have been merged into v3:
+
+* !355 Changed navigate tab to control tab
+* !356 No longer use LabThings-FastAPI dev dependencies
+* !358 Add flake8 bugbear checks
+* !360 Button added to launch calibration menu manually
+* !359 Allow preview to cancel!
+* !357 Update gitlab ci file
+* !365 Adjust z height in calibration modal
+* !361 Request no cache
+* !366 Change all CameraDeps to CameraClients
+* !367 Typehints and better variable names for autofocus
+* !368 Check static files exist or throw a useful error
+* !351 Custom sigkill error
+* !373 Fix picamera default tuning being updated by calibrations, add tests
+* !374 Prevent broken frames ending scans
+* !377 Add fullscreen toggle button.
+* !376 Tweak a few error types.
+* !375 Stop reporting uvicorn.error in log file unless log it is an error
+* !381 Update BaseModels to use ConfigDict rather than directly use a dictionary
+* !379 Test server startup
+* !380 Make simulation image wrap to prevent errors when moving out of range.
+* !378 Deduplicating camera functionality
+* !382 Enable ruff checks for type annotations
+* !383 Improve property control UI
+* !371 Change neighbour ratio to dx and dy
+* !384 Format values in value confirmation modal to prevent overflow.
+* !385 Reload background detect settings when tab opened
+* !387 Start swapping streams when checking background
+* !394 Allow both HQ camera or PiCamera v2
+* !395 Enable all lint checkers, remove ruff-increased-checking job!
+* !386 Action buttons can show as disabled in dark mode
+* !399 Resolve "Make Walkthroughs for Software Installation"
+* !398 Fix error trying to purge empty scans if current scan has no images
+* !397 Scan list improvements
+* !401 Simulate a rectangular sample
+* !402 Clean up primary vs secondary buttons
+* !400 Verify stack params at start of scan main loop
+* !403 Ce disable
+* !390 Improve documentation for simulation server
+
 # [v3.0.0-alpha2](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v3.0.0-alpha1...v3.0.0-alpha2) (2025-08-08)
 
 This is the second alpha release the v3 server, the main focus has been higher resolution scans with more reliable focus. There have been many other changes, some highlights are:
@@ -72,7 +132,7 @@ The following merge requests have been merged into v3:
 * !342 Break up SmartScan further so it can be tested
 * !353 Speed up `tests/test_stage.py` significantly
 * !352 Update to stitching 0.2
-
+* !354 Final v3 alpha2 things
 
 
 # [v3.0.0-alpha1](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v2.11.0...v3.0.0-alpha1) (2025-06-09)
