@@ -114,6 +114,7 @@ def test_thing_description_equivalence(mock_picam_thing):
     picamera_extra_actions = {
         "flat_lens_shading_chrominance",
         "set_static_green_equalisation",
+        "set_ce_enable_to_off",
         "stop_streaming",
         "reset_ccm",
     }

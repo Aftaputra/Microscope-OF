@@ -104,6 +104,24 @@ def geq_is_static(tuning: dict) -> bool:
     return geq["offset"] == 65535
 
 
+def set_ce_to_disabled(
+    tuning: dict,
+) -> None:
+    """Set ``ce_enable`` in ``rpi.contrast`` to zero to disable adaptive contrast enhancement.
+
+    :param tuning: the raspberry pi tuning file. This will be updated in-place to
+        set ce_enable to 0.
+    """
+    contrast = Picamera2.find_tuning_algo(tuning, "rpi.contrast")
+    contrast["ce_enable"] = 0
+
+
+def ce_enable_is_static(tuning: dict) -> bool:
+    """Whether the ce_enable flag is disabled."""
+    contrast = Picamera2.find_tuning_algo(tuning, "rpi.contrast")
+    return contrast["ce_enable"] == 0
+
+
 def copy_alsc_section(from_tuning: dict, to_tuning: dict) -> None:
     """Copy the ``rpi.alsc`` algorithm from one tuning to another.
 
