@@ -827,6 +827,17 @@ class StreamingPiCamera2(BaseCamera):
             self._initialise_picamera()
 
     @lt.thing_action
+    def set_ce_enable_to_off(self) -> None:
+        """Set the contrast enhancement to disabled.
+
+        Adaptive contrast enhancement modifies settings to adapt to each field
+        of view, causing inconsistent settings when capturing.
+        """
+        with self._streaming_picamera(pause_stream=True):
+            tf_utils.set_ce_to_disabled(self.tuning)
+            self._initialise_picamera()
+
+    @lt.thing_action
     def full_auto_calibrate(self, portal: lt.deps.BlockingPortal) -> None:
         """Perform a full auto-calibration.
 
@@ -843,6 +854,7 @@ class StreamingPiCamera2(BaseCamera):
         self.flat_lens_shading()
         self.auto_expose_from_minimum()
         self.set_static_green_equalisation()
+        self.set_ce_enable_to_off()
         self.calibrate_lens_shading()
         self.reset_ccm()
         self.calibrate_white_balance()
