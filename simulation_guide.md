@@ -84,14 +84,5 @@ You are now ready to start a simulated scan in the Slide Scan tab.
 
 ---
 
-### Screen Size
-
-* During a Smart Scan (performed in the **Slide Scan tab**), some screen sizes can cause unwanted jitter as shown in the animation below.
-* If this happens, change the size of your window until the UI stabilises.
-
-    ![Jitter in the OFM Simulator caused by screen size](/docs/images/ofm_sim_jitter.gif "Jitter in the OFM Simulator caused by screen size")
-
----
-
 If you need further help, reach out to the community on the [OpenFlexure Forum](https://openflexure.discourse.group/).
 
