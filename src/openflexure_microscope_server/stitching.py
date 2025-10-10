@@ -300,7 +300,7 @@ class FinalStitcher(BaseStitcher):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             bufsize=1,
-            universal_newlines=True,
+            text=True,
         )
         # Stop opening pipe blocking writing to it
         os.set_blocking(process.stdout.fileno(), False)
@@ -344,5 +344,7 @@ class FinalStitcher(BaseStitcher):
 
     def log_buffer(self, buffer: TextIOWrapper) -> None:
         """Log everything in the buffer at INFO level."""
+        # Use rstrip to remove newlines from each line, as logging provides its own
+        # new lines
         while line := buffer.readline():
-            self.logger.info(line)
+            self.logger.info(line.rstrip())
