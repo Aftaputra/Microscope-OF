@@ -61,16 +61,16 @@
         Show Stitched Scan
         </button>
       </div>
-      <div>
+      <div class="scan-info">
         <ul>
           <li>{{ scanData.number_of_images }} images</li>
           <li>created: {{ formatDate(scanData.created) }}</li>
-          <li>modified: {{ formatDate(scanData.modified) }}</li>
+          <li>duration: {{ scanData.duration }}</li>
         </ul>
         <ul v-if="!ongoing">
           <li v-if="scanData.number_of_images<3" class="warning-msg">Not enough images to stitch</li>
-          <li v-else-if="!scanData.dzi & scanData.stitch_available" class="alert-msg">Interactive preview not available</li> 
-          <li v-else-if=!scanData.stitch_available class="alert-msg">High quality stitch not available</li>  
+          <li v-else-if="!scanData.dzi && scanData.stitch_available" class="alert-msg">Interactive preview not available</li> 
+          <li v-else-if="!scanData.stitch_available" class="alert-msg">High quality stitch not available</li>  
         </ul>
       </div>
     </div>
@@ -162,10 +162,11 @@ export default {
 </script>
 <style lang="less" scoped>
 ul {
-  display: inline-block;
+  display: block;
   text-align: center;
   list-style-type:none;
   margin: 5px 0px 10px 0px;
+  padding: 0;
 }
 
 .warning-msg {
