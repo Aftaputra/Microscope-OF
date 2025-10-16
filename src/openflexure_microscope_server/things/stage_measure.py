@@ -24,7 +24,6 @@ import numpy.typing as npt
 
 from camera_stage_mapping import fft_image_tracking
 import labthings_fastapi as lt
-from labthings_fastapi.types.numpy import DenumpifyingDict
 
 from openflexure_microscope_server.utilities import quadratic
 
@@ -48,6 +47,7 @@ BIG_STEP = 200
 class RomDataTracker:
     """Class for tracking range of motion data."""
 
+    # TODO: Find out what these variable are
     def __init__(
         self,
         stage_coords: Optional[list[dict[str, int]]] = None,
@@ -63,11 +63,6 @@ class RomDataTracker:
         """Store useful data."""
         self.stage_coords.append(current_pos)
         self.cor_lat_steps.append(cor)
-
-    def reset_tracker(self) -> None:
-        """Empty the rom tracker."""
-        self.stage_coords.clear()
-        self.cor_lat_steps.clear()
 
 
 @dataclass
@@ -366,33 +361,12 @@ def _motion_detection(
     return rom_deps.stage.position
 
 
-def _collate_data(data: dict, total_time: float, csm: CSMDep) -> dict[str, Any]:
-    """Collate and calculate all useful data from ROM test.
-
-    :param data: Dictionary created from ROM test.
-    :param total_time: Total time of the range of motion test.
-    :param csm: A direct_thing_client dependency for camera stage mapping.
-    """
-    x_range = abs(
-        data["positive x"]["final_position"]["x"]
-        - data["negative x"]["final_position"]["x"]
-    )
-    y_range = abs(
-        data["positive y"]["final_position"]["y"]
-        - data["negative y"]["final_position"]["y"]
-    )
-    step_range = [x_range, y_range]
-
-    data["Time"] = total_time
-    data["CSM Matrix"] = csm.image_to_stage_displacement_matrix
-    data["Step Range"] = step_range
-    return data
-
-
 class RangeofMotionThing(lt.Thing):
     """A class used to measure the range of motion of the stage in X and Y."""
 
-    last_calibration = lt.ThingSetting(initial_value=None, model=dict, readonly=True)
+    calibrated_range = lt.ThingSetting(
+        initial_value=None, model=Optional[list[int, int]], readonly=True
+    )
 
     def rom_axis(
         self,
@@ -482,6 +456,7 @@ class RangeofMotionThing(lt.Thing):
                 direction=direction,
                 rom_deps=rom_deps,
             )
+
             rom_data.stage_coords[np.shape(np.array(rom_data.stage_coords))[0] - 1] = (
                 final_pos
             )
@@ -492,15 +467,6 @@ class RangeofMotionThing(lt.Thing):
                 "final_position": final_pos,
             }
 
-            rom_data.reset_tracker()
-
-        except ParasiticMotionError:
-            rom_deps.logger.error("Parasitic motion detected.")
-            return {
-                "correlation_lateral_steps": 0,
-                "stage_positions": 0,
-                "final_position": {"x": 0, "y": 0, "z": 0},
-            }
         finally:
             rom_deps.stage.move_absolute(
                 x=starting_position[0],
@@ -554,12 +520,22 @@ class RangeofMotionThing(lt.Thing):
         end_time = time.time()
         total_time = (end_time - start_time) / 60
 
-        rom_results = _collate_data(data=rom_json, total_time=total_time, csm=csm)
-
-        logger.info(
-            f"Range of motion is {rom_results['Step Range'][0]} x {rom_results['Step Range'][1]} steps"
+        x_range = abs(
+            rom_json["positive x"]["final_position"]["x"]
+            - rom_json["negative x"]["final_position"]["x"]
         )
+        y_range = abs(
+            rom_json["positive y"]["final_position"]["y"]
+            - rom_json["negative y"]["final_position"]["y"]
+        )
+        step_range = [x_range, y_range]
 
-        self.last_calibration = DenumpifyingDict(rom_results).model_dump()
+        logger.info(f"Range of motion is {step_range[0]} x {step_range[1]} steps")
 
-        return rom_results
+        self.calibrated_range = step_range
+
+        return {
+            "Time": total_time,
+            "CSM Matrix": csm.image_to_stage_displacement_matrix.tolist(),
+            "Step Range": step_range,
+        }
