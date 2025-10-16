@@ -57,21 +57,21 @@ class RomDataTracker:
     def __init__(self) -> None:
         """Define useful data tracked throughout test."""
         self.stage_coords: list[dict[str, int]] = []
-        self.displacements: list[dict[str, int]] = []
+        self.offsets: list[dict[str, float]] = []
 
     def record_movement(
         self, current_pos: dict[str, int], offset: dict[str, int]
     ) -> None:
         """Record the current position and the measured offset of the last move."""
         self.stage_coords.append(current_pos)
-        self.displacements.append(offset)
+        self.offsets.append(offset)
 
     @property
     def final_position(self) -> dict[str, int]:
         """The last stage coordinate recorded."""
         return self.stage_coords[-1].copy()
 
-    def _predict_z_displacament(
+    def predict_z_displacament(
         self,
         movement: dict[str, int],
         stage_position: dict[str, int],
@@ -356,7 +356,7 @@ class RangeofMotionThing(lt.Thing):
         big_movement = self._movement_in_img_coords(
             fov_perc=BIG_STEP, axis=axis, direction=direction
         )
-        z_disp = self._rom_data._predict_z_displacament(
+        z_disp = self._rom_data.predict_z_displacament(
             movement=big_movement[axis],
             stage_position=rom_deps.stage.position,
             csm_matrix=rom_deps.csm.image_to_stage_displacement_matrix,
@@ -541,6 +541,10 @@ def _axis_from_movement_dict(movement: dict[str, float], return_other: bool = Fa
         axis and the second being the other axis. Default is False
     :return: The movement axis (and optionally the other axis) as strings.
     """
+    # Not exclusive or, this errors if both axes are zero or neither axes are zero.
+    if not ((movement["x"] == 0) ^ (movement["y"] == 0)):
+        raise ValueError("Either x or y movement should be zero, but not both.")
+
     if return_other:
         return ("y", "x") if movement["x"] == 0 else ("x", "y")
     return "y" if movement["x"] == 0 else "x"

@@ -1,24 +1,10 @@
 """File contains unit tests for stage_measure."""
 
+import logging
 import pytest
-from openflexure_microscope_server.things import stage_measure as sm
-from .mock_things.mock_csm import MockCSMThing
-from .mock_things.mock_stage import MockStageThing
+from openflexure_microscope_server.things import stage_measure
 
-stage_mock = MockStageThing()
-csm_mock = MockCSMThing()
-
-
-def test_generate_move_dicts():
-    """Check that the dictionary generated for moves is correct."""
-    mock_perc = 50
-    mock_res = [820, 616]
-    mock_dir = 1
-    mock_dict = sm._generate_move_dicts(
-        fov_perc=mock_perc, stream_resolution=mock_res, direction=mock_dir
-    )
-    expected_dict = {"x": 410, "y": 308}
-    assert mock_dict == expected_dict
+LOGGER = logging.getLogger("mock-invocation_logger")
 
 
 def test_predict_z():
@@ -31,38 +17,100 @@ def test_predict_z():
         {"x": 2908, "y": 8, "z": 509},
         {"x": 3635, "y": 10, "z": 617},
     ]
-    mock_axis = "x"
-    mock_move = 2908
-    mock_z_diff = sm._predict_z(
-        positions=mock_positions,
-        axis=mock_axis,
-        relative_move=mock_move,
-        stage=stage_mock,
-        csm=csm_mock,
+    rom_data = stage_measure.RomDataTracker()
+
+    for position in mock_positions:
+        offset = {"x": 54.4, "y": 0}
+        rom_data.record_movement(position, offset)
+
+    csm_matrix = [
+        [0.03061156624485296, 1.8031242270940833],
+        [1.773236372778601, 0.006660431608601435],
+    ]
+
+    mock_z_diff = rom_data.predict_z_displacament(
+        movement={"x": 2908, "y": 0},
+        stage_position={"x": 3635, "y": 10, "z": 617},
+        csm_matrix=csm_matrix,
     )
     expected_z_diff = 1343.1625053206606
     assert mock_z_diff == expected_z_diff
 
 
+@pytest.mark.parametrize(
+    ("movement", "axis", "other_axis"),
+    [
+        ({"x": 2908, "y": 0}, "x", "y"),
+        ({"x": -29, "y": 0}, "x", "y"),
+        ({"x": 0, "y": 123}, "y", "x"),
+        ({"x": 0, "y": -456}, "y", "x"),
+    ],
+)
+def test_axis_from_movement_dict(movement, axis, other_axis):
+    """Test that _axis_from_movement_dict identifies the correct axes."""
+    assert stage_measure._axis_from_movement_dict(movement) == axis
+
+    ret_axes = stage_measure._axis_from_movement_dict(movement, return_other=True)
+    assert ret_axes == (axis, other_axis)
+
+
+@pytest.mark.parametrize("movement", [{"x": 0, "y": 0}, {"x": 10, "y": 10}])
+def test_error_on_axis_from_movement_dict(movement):
+    """Check _axis_from_movement_dict errors if both axes are zero, or both are non-zero."""
+    with pytest.raises(ValueError, match="Either x or y movement should be zero"):
+        assert stage_measure._axis_from_movement_dict(movement)
+
+
 def test_parasitic_detect():
     """Check that the parasitic error is raised correctly."""
-    mock_delta = 100
-    mock_max = 50
-    with pytest.raises(sm.ParasiticMotionError):
-        sm._parasitic_detect(delta=mock_delta, max_allowed_delta=mock_max)
+    with pytest.raises(stage_measure.ParasiticMotionError):
+        stage_measure._detect_parasitic_motion(
+            movement={"x": 2908, "y": 0}, offset={"x": 2908, "y": 300}
+        )
 
 
-def test_collate_data():
-    """Check that the data is being collected and calculated correctly."""
-    mock_data = {
-        "positive x": {"final_position": {"x": 100}},
-        "negative x": {"final_position": {"x": 50}},
-        "positive y": {"final_position": {"y": 100}},
-        "negative y": {"final_position": {"y": 50}},
-    }
+@pytest.fixture
+def rom_thing() -> stage_measure.RangeofMotionThing:
+    """Return a RangeofMotionThing."""
+    return stage_measure.RangeofMotionThing()
 
-    mock_step_range = [50, 50]
-    mock_time = 123
-    mock_dict = sm._collate_data(data=mock_data, time=mock_time, csm=MockCSMThing)
 
-    assert mock_dict["Step Range"] == mock_step_range
+@pytest.fixture
+def mock_rom_deps(mocker) -> stage_measure.RomDeps:
+    """Return a RomDeps object full of mocks, except the logger which is LOGGER."""
+    return stage_measure.RomDeps(
+        autofocus=mocker.Mock(),
+        stage=mocker.Mock(),
+        cam=mocker.Mock(),
+        csm=mocker.Mock(),
+        logger=LOGGER,
+    )
+
+
+def test_offset_from(rom_thing, mock_rom_deps, mocker):
+    """Check the calls and returns for RangeofMotionThing._offset_from."""
+    # Set up mock for the FFT displacement
+    disp_between_route = (
+        "openflexure_microscope_server.things.stage_measure."
+        "fft_image_tracking.displacement_between_images"
+    )
+    mock_disp_between = mocker.patch(
+        disp_between_route,
+        side_effect=([123, 456],),
+    )
+
+    # Run it
+    offset = rom_thing._offset_from(before_img="MOCK_IMAGE", rom_deps=mock_rom_deps)
+
+    # Check the offset is a dictionary with the correct values for the axes
+    assert offset["x"] == 456
+    assert offset["y"] == 123
+    # Check 1 image was taken
+    assert mock_rom_deps.cam.grab_as_array.call_count == 1
+    mock_after_image = mock_rom_deps.cam.grab_as_array.return_value
+    # Check the FFT displacement was called once
+    assert mock_disp_between.call_count == 1
+    displacement_kwargs = mock_disp_between.call_args.kwargs
+    # Check the image inputs
+    assert displacement_kwargs["image_0"] == "MOCK_IMAGE"
+    assert displacement_kwargs["image_1"] == mock_after_image
