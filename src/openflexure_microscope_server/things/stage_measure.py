@@ -368,7 +368,70 @@ class RangeofMotionThing(lt.Thing):
         initial_value=None, model=Optional[list[int, int]], readonly=True
     )
 
-    def rom_axis(
+    @lt.thing_action
+    def rom_main(
+        self,
+        autofocus: AutofocusDep,
+        stage: StageDep,
+        cam: CamDep,
+        csm: CSMDep,
+        logger: lt.deps.InvocationLogger,
+    ) -> dict[str, Any]:
+        """Measures the range of motion of the stage across the x and y axes.
+
+        :param autofocus: A raw_thing_client dependency for autofocus.
+        :param stage: A raw_thing_client depeendency for the microscope stage.
+        :param cam: A raw_thing_client depeendency for the camera.
+        :param csm: A raw_thing_client depeendency for camera stage mapping.
+        :param logger: A raw_thing_client depeendency for the logger.
+        :return: Results dictionary separated into keys of each axis and direction.
+        """
+        rom_deps = RomDeps(
+            autofocus=autofocus, stage=stage, csm=csm, cam=cam, logger=logger
+        )
+        logger.info(
+            "Using the stage to measure the Range of Motion. "
+            "Please ensure you are using a big enough sample."
+        )
+        start_time = time.time()
+        rom_json = {}
+
+        # Loop through all axes and directions.
+        for axis_dir in [["x", 1], ["x", -1], ["y", 1], ["y", -1]]:
+            axis_dir_results = self._rom_axis(
+                axis=axis_dir[0],
+                direction=axis_dir[1],
+                rom_deps=rom_deps,
+            )
+            # Save results from single axis and direction
+            rom_json[
+                f"{'positive' if axis_dir[1] == 1 else 'negative'} {axis_dir[0]}"
+            ] = axis_dir_results
+
+        end_time = time.time()
+        total_time = (end_time - start_time) / 60
+
+        x_range = abs(
+            rom_json["positive x"]["final_position"]["x"]
+            - rom_json["negative x"]["final_position"]["x"]
+        )
+        y_range = abs(
+            rom_json["positive y"]["final_position"]["y"]
+            - rom_json["negative y"]["final_position"]["y"]
+        )
+        step_range = [x_range, y_range]
+
+        logger.info(f"Range of motion is {step_range[0]} x {step_range[1]} steps")
+
+        self.calibrated_range = step_range
+
+        return {
+            "Time": total_time,
+            "CSM Matrix": csm.image_to_stage_displacement_matrix.tolist(),
+            "Step Range": step_range,
+        }
+
+    def _rom_axis(
         self,
         axis: Literal["x", "y"],
         direction: Literal[1, -1],
@@ -476,66 +539,3 @@ class RangeofMotionThing(lt.Thing):
             )
 
         return axis_results
-
-    @lt.thing_action
-    def rom_main(
-        self,
-        autofocus: AutofocusDep,
-        stage: StageDep,
-        cam: CamDep,
-        csm: CSMDep,
-        logger: lt.deps.InvocationLogger,
-    ) -> dict[str, Any]:
-        """Measures the range of motion of the stage across the x and y axes.
-
-        :param autofocus: A raw_thing_client dependency for autofocus.
-        :param stage: A raw_thing_client depeendency for the microscope stage.
-        :param cam: A raw_thing_client depeendency for the camera.
-        :param csm: A raw_thing_client depeendency for camera stage mapping.
-        :param logger: A raw_thing_client depeendency for the logger.
-        :return: Results dictionary separated into keys of each axis and direction.
-        """
-        rom_deps = RomDeps(
-            autofocus=autofocus, stage=stage, csm=csm, cam=cam, logger=logger
-        )
-        logger.info(
-            "Using the stage to measure the Range of Motion. "
-            "Please ensure you are using a big enough sample."
-        )
-        start_time = time.time()
-        rom_json = {}
-
-        # Loop through all axes and directions.
-        for axis_dir in [["x", 1], ["x", -1], ["y", 1], ["y", -1]]:
-            axis_dir_results = self.rom_axis(
-                axis=axis_dir[0],
-                direction=axis_dir[1],
-                rom_deps=rom_deps,
-            )
-            # Save results from single axis and direction
-            rom_json[
-                f"{'positive' if axis_dir[1] == 1 else 'negative'} {axis_dir[0]}"
-            ] = axis_dir_results
-
-        end_time = time.time()
-        total_time = (end_time - start_time) / 60
-
-        x_range = abs(
-            rom_json["positive x"]["final_position"]["x"]
-            - rom_json["negative x"]["final_position"]["x"]
-        )
-        y_range = abs(
-            rom_json["positive y"]["final_position"]["y"]
-            - rom_json["negative y"]["final_position"]["y"]
-        )
-        step_range = [x_range, y_range]
-
-        logger.info(f"Range of motion is {step_range[0]} x {step_range[1]} steps")
-
-        self.calibrated_range = step_range
-
-        return {
-            "Time": total_time,
-            "CSM Matrix": csm.image_to_stage_displacement_matrix.tolist(),
-            "Step Range": step_range,
-        }
