@@ -9,7 +9,9 @@ from copy import deepcopy
 
 from picamera2 import Picamera2
 import numpy as np
+import os
 
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def load_default_tuning(sensor_model: str) -> dict:
     """Load the default tuning file for the camera.
@@ -17,6 +19,11 @@ def load_default_tuning(sensor_model: str) -> dict:
     This will load the tuning file based on the specified sensor model.
     """
     fname = f"{sensor_model}.json"
+    custom_path = os.path.join(THIS_DIR, 'tuning_files', fname)
+
+    # Attempt to load custom tuning file from OpenFlexure settings
+    if os.path.isfile(custom_path):
+        return Picamera2.load_tuning_file(fname, dir=os.path.join(THIS_DIR, 'tuning_files'))
     try:
         return Picamera2.load_tuning_file(fname)
     except RuntimeError:
