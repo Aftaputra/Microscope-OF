@@ -98,8 +98,8 @@
               Brightness
               <input
                 type="range"
-                min="0"
-                max="2"
+                min="0.2"
+                max="1.8"
                 step="0.01"
                 v-model.number="brightness"
                 @input="updateViewerFilter"
@@ -109,8 +109,8 @@
               Contrast
               <input
                 type="range"
-                min="0"
-                max="2"
+                min="0.2"
+                max="1.8"
                 step="0.01"
                 v-model.number="contrast"
                 @input="updateViewerFilter"
@@ -343,5 +343,11 @@ export default {
 .gallery-folder-heading {
   margin-bottom: 30px;
 }
+
+input[type="range"] {
+  pointer-events: auto;
+  z-index: 1001;
+}
+
 
 </style>
