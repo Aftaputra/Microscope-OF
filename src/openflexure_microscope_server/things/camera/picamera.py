@@ -170,7 +170,7 @@ class StreamingPiCamera2(BaseCamera):
         )
 
         # Set tuning to default tuning. This will be overwritten when the Thing is
-        # connects to the server if tuning is saved to disk.
+        # connected to the server if tuning is saved to disk.
         try:
             self.tuning = copy.deepcopy(self.default_tuning)
         except NotConnectedToServerError:
@@ -837,7 +837,7 @@ class StreamingPiCamera2(BaseCamera):
         * ``auto_expose_from_minimum``
         * ``set_static_green_equalisation`` to set geq offset to max
         * ``calibrate_lens_shading`` (also sets colour gains for white balance)
-        * ``reset_ccm``
+
         * ``set_background``
         """
         self.flat_lens_shading()
@@ -845,7 +845,6 @@ class StreamingPiCamera2(BaseCamera):
         self.set_static_green_equalisation()
         self.set_ce_enable_to_off()
         self.calibrate_lens_shading()
-        self.reset_ccm()
         time.sleep(0.5)
         self.set_background(portal)
 
