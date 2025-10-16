@@ -7,10 +7,8 @@
 <script>
 import OpenSeaDragon from "openseadragon";
 
-// Export main app
 export default {
   name: "OpenSeadragonViewer",
-  components: {  },
 
   props: {
     src: {
@@ -21,7 +19,10 @@ export default {
 
   data: function() {
     return {
-      osdViewer: null
+      osdViewer: null,
+      brightness: 1,
+      contrast: 1,
+      saturation: 1,
     };
   },
 
@@ -67,6 +68,19 @@ export default {
             clickToZoom: false
         }
       });
+
+      this.updateFilter();
+    },
+
+    updateFilter() {
+      const viewerEl = document.getElementById("openseadragon");
+      if (viewerEl) {
+        viewerEl.style.filter = `
+          brightness(${this.brightness})
+          contrast(${this.contrast})
+          saturate(${this.saturation})
+        `;
+      }
     },
     openFullscreen() {
       if (this.osdViewer) {
@@ -82,15 +96,6 @@ export default {
   width: 100%;
   height: 100%;
   background-color: black;
-  z-index:1;
-}
-#info-panel {
-    position: relative;
-    top: 10px;
-    left: 10px;
-    background-color: rgba(255, 255, 255, 0.7);
-    padding: 5px;
-    border-radius: 1px;
-    z-index: 1000;
+  z-index: 1;
 }
 </style>
