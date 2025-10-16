@@ -13,16 +13,19 @@ is tracked and an error is raised if it exceeds a minimum amount. Currently
 this is 10% of the expected motion is the measured axis.
 """
 
-import numpy as np
-from typing import Literal
-from PIL import Image
+from typing import Literal, Any, Optional
 import time
-from ..utilities import quadratic
+
 from scipy.optimize import curve_fit
+from PIL import Image
+import numpy as np
+import numpy.typing as npt
+
 from camera_stage_mapping import fft_image_tracking
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import DenumpifyingDict
-import numpy.typing as npt
+
+from openflexure_microscope_server.utilities import quadratic
 
 # Things
 from .autofocus import AutofocusThing
@@ -41,21 +44,21 @@ class RomDataTracker:
 
     def __init__(
         self,
-        stage_coords: list[dict[str, int]] = [],
-        cor_lat_steps: list[npt.ArrayLike] = [],
-        delta: dict = {"x": 0, "y": 0},
-    ):
+        stage_coords: Optional[list[dict[str, int]]] = None,
+        cor_lat_steps: Optional[list[npt.ArrayLike]] = None,
+        delta: Optional[dict[str, int]] = None,
+    ) -> None:
         """Define useful data tracked throughout test."""
-        self.stage_coords = stage_coords
-        self.cor_lat_steps = cor_lat_steps
-        self.delta = delta
+        self.stage_coords = [] if stage_coords is None else stage_coords
+        self.cor_lat_steps = [] if cor_lat_steps is None else cor_lat_steps
+        self.delta = {"x": 0, "y": 0} if delta is None else delta
 
-    def measure(self, current_pos: dict[str, int], cor: npt.ArrayLike):
+    def measure(self, current_pos: dict[str, int], cor: npt.ArrayLike) -> None:
         """Store useful data."""
         self.stage_coords.append(current_pos)
         self.cor_lat_steps.append(cor)
 
-    def reset_tracker(self):
+    def reset_tracker(self) -> None:
         """Empty the rom tracker."""
         self.stage_coords.clear()
         self.cor_lat_steps.clear()
@@ -114,10 +117,10 @@ def _predict_z(
     """Predict the next z position for a move using previous positions.
 
     :param positions: The list of positions used for predicting z.
-    This will be a list of all previous positions.
+        This will be a list of all previous positions.
     :param axis: The axis in which the stage is moving. This must be 'x' or 'y'.
     :param relative_move: The move which the function is trying to predict z for.
-    Here, this is inputted with units of pixels.
+        Here, this is inputted with units of pixels.
     :param stage: A direct_thing_client dependency for the the microscope stage.
     :param csm: A direct_thing_client dependency for camera stage mapping.
     :return: A number of pixels the stage needs to move in z.
@@ -140,7 +143,7 @@ def _predict_z(
 def _move_and_measure(
     step_size: dict[str, float],
     axis: Literal["x", "y"],
-    data,
+    data: RomDataTracker,
     image1: npt.ArrayLike,
     autofocus_proc: bool,
     csm: CSMDep,
@@ -158,7 +161,7 @@ def _move_and_measure(
     :param autofocus: A direct_thing_client dependency for autofocus.
     :param cam: A raw_thing_client depeendency for the camera.
     :return: All required data for the next move. This includes the updated delta value and offset.
-    Also returns what wrong_axis is i.e. if the direction is 'x', wrong_axis = 'y'.
+        Also returns what wrong_axis is i.e. if the direction is 'x', wrong_axis = 'y'.
     """
     if axis == "x":
         csm.move_in_image_coordinates(x=step_size["x"], y=0)
@@ -191,6 +194,8 @@ def _acquire_z_predict_points(
 ) -> None:
     """Complete 5 medium sized steps to collect stage coordinates for prediction.
 
+    Delta is updated and tracked after each move.
+
     :params stream_resolution: The resolution of the stream from the camera.
     :param direction: The direction the stage moves.
     :params axis: The axis which is being measured. This must be 'x' or 'y'.
@@ -200,7 +205,6 @@ def _acquire_z_predict_points(
     :param stage: A raw_thing_client depeendency for the microscope stage.
     :param autofocus: A direct_thing_client dependency for autofocus.
     :return: Stage_coords and cor_lat_steps are lists of data tracked throughout the test.
-    Delta is updated and tracked after each move.
     """
     medium_step = 50
     wrong_axis_max_medium = _generate_move_dicts(
@@ -234,7 +238,7 @@ def _check_stage_operation(
     stream_resolution: list[int],
     direction: Literal[1, -1],
     axis: Literal["x", "y"],
-    data,
+    data: RomDataTracker,
     minimum_offset_small: dict[str, float],
     csm: CSMDep,
     cam: CamDep,
@@ -256,7 +260,7 @@ def _check_stage_operation(
     :params axis: The axis which is being measured. This must be 'x' or 'y'.
     :params data: The object used to track stage coordinates, correlation and delta.
     :params minimum_offset_small: A dictionary containing the minimum values for
-    a successful correlation.
+        a successful correlation.
     :param csm: A direct_thing_client dependency for camera stage mapping.
     :param camera: A raw_thing_client depeendency for the camera.
     :param stage: A raw_thing_client depeendency for the microscope stage.
@@ -335,7 +339,7 @@ def _motion_detection(
 
     :params axis: The axis in which the stage is moving. This must be 'x' or 'y'.
     :params direction: The direction in which the stage was moving
-    previous to motion detection being used.
+        previous to motion detection being used.
     :param csm: A direct_thing_client dependency for camera stage mapping.
     :param stage: A raw_thing_client depeendency for the microscope stage.
     :param camera: A raw_thing_client depeendency for the camera.
@@ -373,7 +377,7 @@ def _motion_detection(
     return stage.position
 
 
-def _collate_data(data: dict, time: float, csm: CSMDep) -> dict:
+def _collate_data(data: dict, time: float, csm: CSMDep) -> dict[str, Any]:
     """Collate and calculate all useful data from ROM test.
 
     :param data: Dictionary created from ROM test.
@@ -418,7 +422,7 @@ class RangeofMotionThing(lt.Thing):
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
         :param direction: The direction which is being measured. This must be 1 or -1.
         :return: Results dictionary containing stage positions,
-        correlations and the final position.
+           correlations and the final position.
         """
         autofocus.looping_autofocus(dz=1000)
 
@@ -545,7 +549,7 @@ class RangeofMotionThing(lt.Thing):
         cam: CamDep,
         csm: CSMDep,
         logger: lt.deps.InvocationLogger,
-    ):
+    ) -> dict[str, Any]:
         """Measures the range of motion of the stage across the x and y axes.
 
         :param autofocus: A raw_thing_client dependency for autofocus.
