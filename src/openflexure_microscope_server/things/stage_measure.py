@@ -13,15 +13,13 @@ is tracked and an error is raised if it exceeds a minimum amount. Currently
 this is 10% of the expected motion is the measured axis.
 """
 
-from typing import Literal, Any, Optional
+from typing import Literal, Any, Optional, overload
 import time
 from dataclasses import dataclass
 from threading import Lock
 
 from scipy.optimize import curve_fit
-from PIL import Image
 import numpy as np
-import numpy.typing as npt
 
 from camera_stage_mapping import fft_image_tracking
 import labthings_fastapi as lt
@@ -44,31 +42,63 @@ SMALL_STEP = 20
 MEDIUM_STEP = 50
 BIG_STEP = 200
 
+PARASITIC_MOTION_TOL = 0.1
+
 
 class RomDataTracker:
-    """Class for tracking range of motion data."""
+    """Class for tracking range of motion data.
 
-    # TODO: Find out what these variable are
-    def __init__(
-        self,
-        stage_coords: Optional[list[dict[str, int]]] = None,
-        cor_lat_steps: Optional[list[npt.ArrayLike]] = None,
-        delta: Optional[dict[str, int]] = None,
-    ) -> None:
+    The attributes storing data are:
+
+    * ``stage_coords`` A list of the the stage coordinates at each measurement location
+    * ``displacements`` A list of the displacement calculated after each movement
+    """
+
+    def __init__(self) -> None:
         """Define useful data tracked throughout test."""
-        self.stage_coords = [] if stage_coords is None else stage_coords
-        self.cor_lat_steps = [] if cor_lat_steps is None else cor_lat_steps
-        self.delta = {"x": 0, "y": 0} if delta is None else delta
+        self.stage_coords: list[dict[str, int]] = []
+        self.displacements: list[dict[str, int]] = []
 
-    def measure(self, current_pos: dict[str, int], cor: npt.ArrayLike) -> None:
-        """Store useful data."""
+    def record_movement(
+        self, current_pos: dict[str, int], offset: dict[str, int]
+    ) -> None:
+        """Record the current position and the measured offset of the last move."""
         self.stage_coords.append(current_pos)
-        self.cor_lat_steps.append(cor)
+        self.displacements.append(offset)
 
     @property
     def final_position(self) -> dict[str, int]:
         """The last stage coordinate recorded."""
         return self.stage_coords[-1].copy()
+
+    def _predict_z_displacament(
+        self,
+        movement: dict[str, int],
+        stage_position: dict[str, int],
+        csm_matrix: np.ndarray,
+    ) -> float:
+        """Predict the z-displacement needed for a given movement.
+
+        :param movement: The movement to be performed in image coordinates.
+        :param stage_position: The current stage position in stage coordinates.
+        :param csm_matrix: The camera stage mapping matrix.
+        :returns: The predicted relative z displacement needed to stay in focus.
+        """
+        pixel_step = {
+            "x": 1 / csm_matrix[0][1],
+            "y": 1 / csm_matrix[1][0],
+        }
+
+        axis = _axis_from_movement_dict(movement)
+
+        lateral_positions = [i[axis] for i in self.stage_coords]  # x or y positions
+        z_positions = [i["z"] for i in self.stage_coords]
+        fit_params, *_others = curve_fit(quadratic, lateral_positions, z_positions)
+        z_dest = quadratic(
+            stage_position[axis] + (movement[axis] / pixel_step[axis]), *fit_params
+        )
+
+        return z_dest - stage_position["z"]
 
 
 @dataclass
@@ -93,280 +123,6 @@ class ParasiticMotionError(Exception):
     """
 
 
-def _parasitic_detect(delta: float, max_allowed_delta: float) -> None:
-    """Compare two values and raise parasitic motion error."""
-    if delta > max_allowed_delta:
-        raise ParasiticMotionError(
-            f"Parasitic motion detected. {delta} is greater than {max_allowed_delta}"
-        )
-
-
-def _generate_move_dicts(
-    fov_perc: int,
-    stream_resolution: list[int],
-    direction: Literal[1, -1],
-    factor: float = 1,
-) -> dict[str, float]:
-    """Create a single dictionary of x and y moves for moving in image coordinates.
-
-    This can either be used to create move sizes or minimum move sizes. For example,
-    the stage must move a minimum distance for a move to be considered successful.
-    We define the minimum with this function. This is also used to define the maximally
-    allowed motion in the wrong axis.
-
-    :param fov_perc: The percentage of field of view the stage should move by.
-    :param stream_resolution: The resolution of the stream from the camera.
-    :param direction: The direction the stage moves.
-    :param factor: Reduction factor which allows for minimum move sizes to be created.
-    :return: A dictionary with keys 'x' and 'y' with a pixel distance move the stage can make.
-    """
-    return {
-        "x": (fov_perc / 100) * stream_resolution[0] * factor * direction,
-        "y": (fov_perc / 100) * stream_resolution[1] * factor * direction,
-    }  # factor used for creating minimum offsets.
-
-
-def _predict_z(
-    positions: list,
-    axis: Literal["x", "y"],
-    relative_move: float,
-    stage: StageDep,
-    csm: CSMDep,
-) -> float:
-    """Predict the next z position for a move using previous positions.
-
-    :param positions: The list of positions used for predicting z.
-        This will be a list of all previous positions.
-    :param axis: The axis in which the stage is moving. This must be 'x' or 'y'.
-    :param relative_move: The move which the function is trying to predict z for.
-        Here, this is inputted with units of pixels.
-    :param stage: A direct_thing_client dependency for the the microscope stage.
-    :param csm: A direct_thing_client dependency for camera stage mapping.
-    :return: A number of pixels the stage needs to move in z.
-    """
-    pixel_step = {
-        "x": 1 / csm.image_to_stage_displacement_matrix[0][1],
-        "y": 1 / csm.image_to_stage_displacement_matrix[1][0],
-    }
-
-    lateral_positions = [i[axis] for i in positions]  # x or y positions
-    z_positions = [i["z"] for i in positions]
-    fit_params, *_others = curve_fit(quadratic, lateral_positions, z_positions)
-    z_dest = quadratic(
-        stage.position[axis] + (relative_move / pixel_step[axis]), *fit_params
-    )
-
-    return z_dest - stage.position["z"]
-
-
-def _move_and_measure(
-    step_size: dict[str, float],
-    axis: Literal["x", "y"],
-    data: RomDataTracker,
-    image1: npt.ArrayLike,
-    autofocus_proc: bool,
-    rom_deps: RomDeps,
-) -> tuple[npt.ArrayLike, str]:
-    """Move the stage and measure the offset between the two positions.
-
-    :param step_size: A dictionary with keys 'x' and 'y' with pixel distances.
-    :param axis: The axis in which the stage is moving. This must be 'x' or 'y'.
-    :param data: The object used to track stage coordinates, correlation and delta.
-    :param image1: An image taken before moving to be correlated with image2.
-    :param rom_deps: All dependencies that were passed to the calling Action
-    :return: All required data for the next move. This includes the updated delta value and offset.
-        Also returns what wrong_axis is i.e. if the direction is 'x', wrong_axis = 'y'.
-    """
-    if axis == "x":
-        rom_deps.csm.move_in_image_coordinates(x=step_size["x"], y=0)
-        wrong_axis = "y"
-    else:
-        rom_deps.csm.move_in_image_coordinates(x=0, y=step_size["y"])
-        wrong_axis = "x"
-    if autofocus_proc:
-        rom_deps.autofocus.looping_autofocus(dz=800)
-    image2 = np.array(Image.open(rom_deps.cam.grab_jpeg().open()))
-    offset = fft_image_tracking.displacement_between_images(
-        image_0=image1, image_1=image2, sigma=10, fractional_threshold=0.1, pad=True
-    )  # Units is pixels
-    data.delta["x"] = int(offset[1])
-    data.delta["y"] = int(offset[0])
-
-    return offset, wrong_axis
-
-
-def _acquire_z_predict_points(
-    stream_resolution: list[int],
-    direction: Literal[1, -1],
-    axis: Literal["x", "y"],
-    data: RomDataTracker,
-    rom_deps: RomDeps,
-) -> None:
-    """Complete 5 medium sized steps to collect stage coordinates for prediction.
-
-    Delta is updated and tracked after each move.
-
-    :params stream_resolution: The resolution of the stream from the camera.
-    :param direction: The direction the stage moves.
-    :params axis: The axis which is being measured. This must be 'x' or 'y'.
-    :params data: The object used to track stage coordinates, correlation and delta.
-    :param rom_deps: All dependencies that were passed to the calling Action
-    :return: Stage_coords and cor_lat_steps are lists of data tracked throughout the test.
-    """
-    wrong_axis_max_medium = _generate_move_dicts(
-        MEDIUM_STEP, stream_resolution, direction, factor=0.1
-    )
-    for _loop in range(5):
-        image1 = rom_deps.cam.grab_as_array()
-        offset, wrong_axis = _move_and_measure(
-            step_size=_generate_move_dicts(MEDIUM_STEP, stream_resolution, direction),
-            axis=axis,
-            data=data,
-            image1=image1,
-            autofocus_proc=True,
-            rom_deps=rom_deps,
-        )
-
-        rom_deps.logger.info(f"Offset measured as {data.delta[axis]}")
-
-        data.measure(rom_deps.stage.position, offset)
-
-        _parasitic_detect(
-            delta=abs(data.delta[wrong_axis]),
-            max_allowed_delta=abs(wrong_axis_max_medium[wrong_axis]),
-        )
-
-
-def _check_stage_operation(
-    stream_resolution: list[int],
-    direction: Literal[1, -1],
-    axis: Literal["x", "y"],
-    data: RomDataTracker,
-    minimum_offset_small: dict[str, float],
-    rom_deps: RomDeps,
-) -> None:
-    """Carries out 3 small moves in a given direction and axis.
-
-    Each position after the first is correlated with the previous position
-    to check the stage has moved as far as it should. If the correlation is
-    less than expected, 3 attempts are made to refocus the image to ensure that
-    image quality is not causing the correlation to be unsuccessful. If the correlation
-    is still too low then the edge is found.
-
-    Delta is updated and tracked after each move.
-
-    :params stream_resolution: The resolution of the stream from the camera.
-    :param direction: The direction the stage moves.
-    :params axis: The axis which is being measured. This must be 'x' or 'y'.
-    :params data: The object used to track stage coordinates, correlation and delta.
-    :params minimum_offset_small: A dictionary containing the minimum values for
-        a successful correlation.
-    :param rom_deps: All dependencies that were passed to the calling Action
-    :return: Stage_coords and cor_lat_steps are lists of data tracked throughout the test.
-    """
-    failure_count = 0
-
-    for _loop in range(3):
-        image1 = rom_deps.cam.grab_as_array()
-        offset, wrong_axis = _move_and_measure(
-            step_size=_generate_move_dicts(SMALL_STEP, stream_resolution, direction),
-            axis=axis,
-            data=data,
-            image1=image1,
-            autofocus_proc=False,
-            rom_deps=rom_deps,
-        )
-        rom_deps.logger.info(f"Offset measured as {data.delta[axis]}")
-
-        # If correlation is too small, refocuses and capture new image 3 times.
-        while (
-            np.abs(data.delta[axis]) < np.abs(minimum_offset_small[axis])
-            and failure_count < 3
-        ):
-            rom_deps.logger.info(
-                f"Correlation failed. Refocusing to check. Attempt {failure_count + 1}/3"
-            )
-            rom_deps.autofocus.looping_autofocus(dz=1000)
-            image2 = rom_deps.cam.grab_as_array()
-            failure_count += 1
-            offset = fft_image_tracking.displacement_between_images(
-                image_0=image1,
-                image_1=image2,
-                sigma=10,
-                fractional_threshold=0.1,
-                pad=True,
-            )
-            # Units is pixels
-            data.delta["x"] = int(offset[1])
-            data.delta["y"] = int(offset[0])
-            rom_deps.logger.info(
-                f"Displacement found was {data.delta[axis]}.\
-                Minimum offset is {minimum_offset_small[axis]}"
-            )
-
-        data.measure(rom_deps.stage.position, offset)
-
-        _parasitic_detect(
-            abs(data.delta[wrong_axis]),
-            abs(
-                _generate_move_dicts(
-                    SMALL_STEP, stream_resolution, direction, factor=0.1
-                )[wrong_axis]
-            ),
-        )
-
-        # this means the edge has been found
-        if np.abs(data.delta[axis]) < np.abs(minimum_offset_small[axis]):
-            rom_deps.logger.info("Edge has been found.")
-            break
-
-
-def _motion_detection(
-    axis: Literal["x", "y"],
-    direction: Literal[1, -1],
-    rom_deps: RomDeps,
-) -> dict[str, int]:
-    """Move the stage until motion is detected along a specified axis and direction.
-
-    :params axis: The axis in which the stage is moving. This must be 'x' or 'y'.
-    :params direction: The direction in which the stage was moving
-        previous to motion detection being used.
-    :param rom_deps: All dependencies that were passed to the calling Action
-    """
-    # Array of increasing pixel sizes (powers of 2 from 1 to 512)
-    displacements = [2**i for i in range(10)]
-
-    motion_minimum = 20  # minimum number of pixels for motion to be detected
-
-    this_motion_step = {"x": 0, "y": 0}
-
-    delta = {"x": 0, "y": 0}
-
-    for loop in range(np.shape(displacements)[0]):
-        this_motion_step[axis] = displacements[loop] * direction * -1
-        rom_deps.logger.info(f"Testing with step size {this_motion_step[axis]}")
-        image1 = rom_deps.cam.grab_as_array()
-        rom_deps.csm.move_in_image_coordinates(
-            x=this_motion_step["x"], y=this_motion_step["y"]
-        )
-        image2 = rom_deps.cam.grab_as_array()
-        offset = fft_image_tracking.displacement_between_images(
-            image_0=image1,
-            image_1=image2,
-            sigma=10,
-            fractional_threshold=0.1,
-            pad=True,
-        )
-        delta["x"] = int(offset[1])
-        delta["y"] = int(offset[0])
-        rom_deps.logger.info(f"Offset measured as {np.abs(delta[axis])}")
-        if np.abs(delta[axis]) > motion_minimum:
-            rom_deps.logger.info("Motion detected.")
-            break
-
-    return rom_deps.stage.position
-
-
 class RangeofMotionThing(lt.Thing):
     """A class used to measure the range of motion of the stage in X and Y."""
 
@@ -375,9 +131,11 @@ class RangeofMotionThing(lt.Thing):
     )
 
     def __init__(self) -> None:
-        """Initalise and create the lock."""
+        """Initialise and create the lock."""
         super().__init__()
         self._lock = Lock()
+        self._stream_resolution: Optional[tuple[int, int]] = None
+        self._rom_data = RomDataTracker()
 
     @lt.thing_action
     def perform_rom_test(
@@ -410,6 +168,8 @@ class RangeofMotionThing(lt.Thing):
         )
         start_time = time.time()
 
+        self._set_stream_resolution(cam)
+
         # The total range for the two axes under test
         step_range = []
 
@@ -417,19 +177,16 @@ class RangeofMotionThing(lt.Thing):
             # The final position of the axis under test in the given direction
             axis_limits = []
             for axis_dir in [1, -1]:
-                axis_data = self._rom_axis(
-                    axis=axis, direction=axis_dir, rom_deps=rom_deps
-                )
-                # Append final position
-                axis_limits.append(axis_data.final_position[axis])
+                # Create a new tracker at start of measurement.
+                self._rom_data = RomDataTracker()
+                self._move_until_edge(axis=axis, direction=axis_dir, rom_deps=rom_deps)
+                # Append final position from tracker
+                axis_limits.append(self._rom_data.final_position[axis])
             # Calculate step range.
             step_range.append(abs(axis_limits[0] - axis_limits[1]))
 
-        end_time = time.time()
-        total_time = end_time - start_time
-
+        total_time = time.time() - start_time
         logger.info(f"Range of motion is {step_range[0]} x {step_range[1]} steps")
-
         self.calibrated_range = step_range
 
         return {
@@ -438,13 +195,22 @@ class RangeofMotionThing(lt.Thing):
             "Step Range": step_range,
         }
 
-    def _rom_axis(
+    def _set_stream_resolution(self, cam: CamDep) -> None:
+        """Set the self._stream_reolution attribute by reading camera.
+
+        :param cam: The camera dependency.
+        """
+        stream_shape = cam.grab_as_array().shape
+        # Swap axes as numpy is [y, x]
+        self._stream_resolution = [stream_shape[1], stream_shape[0]]
+
+    def _move_until_edge(
         self,
         axis: Literal["x", "y"],
         direction: Literal[1, -1],
         rom_deps: RomDeps,
     ) -> dict:
-        """Measure the range of motion in a single axis and direction.
+        """Move in one direction until no movement is detected.
 
         :param rom_deps: All dependencies that were passed to the calling Action
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
@@ -452,11 +218,9 @@ class RangeofMotionThing(lt.Thing):
         :return: Results dictionary containing stage positions,
            correlations and the final position.
         """
+        # Start by performing an autofocus and recording starting position
         rom_deps.autofocus.looping_autofocus(dz=1000)
-
         starting_position = list(rom_deps.stage.position.values())
-
-        rom_data = RomDataTracker()  # initialise data tracking object
 
         try:
             dir_str = "positive" if direction == 1 else "negative"
@@ -464,69 +228,46 @@ class RangeofMotionThing(lt.Thing):
                 f"Beginning the {axis}-axis in the {dir_str} direction"
             )
 
-            # Generate required dictionaries for step sizes and minimum offsets
-            stream_resolution = [820, 616]
-            step_sizes_big = _generate_move_dicts(
-                BIG_STEP, stream_resolution, direction
-            )
-
-            rom_data.stage_coords.append(rom_deps.stage.position)
+            self._rom_data.stage_coords.append(rom_deps.stage.position)
 
             rom_deps.logger.info("Moving the stage in 5 medium sized steps.")
-            _acquire_z_predict_points(
-                stream_resolution=stream_resolution,
+            self._initial_moves_for_z_prediction(
                 direction=direction,
                 axis=axis,
-                data=rom_data,
                 rom_deps=rom_deps,
             )
 
-            # 1 big step followed by 3 small steps
-
-            minimum_offset_small = _generate_move_dicts(
-                SMALL_STEP, stream_resolution, direction, factor=0.65
-            )
-
-            while np.abs(rom_data.delta[axis]) > np.abs(minimum_offset_small[axis]):
-                z_diff = _predict_z(
-                    positions=rom_data.stage_coords,
-                    axis=axis,
-                    relative_move=step_sizes_big[axis],
-                    stage=rom_deps.stage,
-                    csm=rom_deps.csm,
+            still_moving = True
+            # Loop taking 1 big step followed by 3 small steps to check if the
+            # stage is moving as expected or has reached end of range of motion.
+            # Stop once end of range of motion is detected.
+            while still_moving:
+                self._big_z_corrected_movement(
+                    axis=axis, direction=direction, rom_deps=rom_deps
                 )
 
-                rom_deps.logger.info("Z calibration complete.")
-                rom_deps.stage.move_relative(z=z_diff)
-                rom_deps.logger.info(f"Moved in z by {z_diff}")
-
-                # Big step
-                if axis == "x":
-                    rom_deps.csm.move_in_image_coordinates(x=step_sizes_big["x"], y=0)
-                else:
-                    rom_deps.csm.move_in_image_coordinates(x=0, y=step_sizes_big["y"])
-
+                # Autofocus and record position
                 rom_deps.autofocus.looping_autofocus(dz=800)
-                rom_data.stage_coords.append(rom_deps.stage.position)
+                self._rom_data.stage_coords.append(rom_deps.stage.position)
 
-                _check_stage_operation(
-                    stream_resolution=stream_resolution,
-                    direction=direction,
+                # Perform small moves to check stage is still moving.
+                still_moving = self._stage_still_moves(
                     axis=axis,
-                    data=rom_data,
-                    minimum_offset_small=minimum_offset_small,
+                    direction=direction,
                     rom_deps=rom_deps,
                 )
 
-            # Motion detection
-            rom_deps.logger.info("Running motion detection")
-            final_pos = _motion_detection(
+            # Stage may have crashed during a large move. Move stage back until motion
+            # is detected
+            rom_deps.logger.info("Moving stage back until motion is detect")
+            self._move_back_until_motion_detected(
                 axis=axis,
                 direction=direction,
                 rom_deps=rom_deps,
             )
 
-            rom_data.stage_coords[-1] = final_pos
+            # Replace final position.
+            self._rom_data.stage_coords[-1] = rom_deps.stage.position
 
         finally:
             rom_deps.stage.move_absolute(
@@ -536,4 +277,288 @@ class RangeofMotionThing(lt.Thing):
                 block_cancellation=True,
             )
 
-        return rom_data
+    def _img_percentate_to_img_coords(
+        self, fov_perc: int, axis: Literal["x", "y"]
+    ) -> float:
+        """For a given image percentage and axis return the distance in img coords.
+
+        :param fov_perc: The percentage of field of view the stage should move by.
+        :param axis: The resolution of the stream from the camera.
+        :return: Distance in image coordinates (pixels)
+        """
+        if self._stream_resolution is None:
+            raise RuntimeError(
+                "Stream resolution mut be set before generating movement in coords"
+            )
+
+        img_index = 0 if axis == "x" else 1
+        return (fov_perc / 100) * self._stream_resolution[img_index]
+
+    def _movement_in_img_coords(
+        self,
+        fov_perc: int,
+        axis: Literal["x", "y"],
+        direction: Literal[1, -1],
+    ) -> dict[str, float]:
+        """Return the dictionary for a move in image coordinates.
+
+        This dictionary can be passed directly to csm.move_in_image_coordinates
+
+        :param fov_perc: The percentage of field of view the stage should move by.
+        :param axis: The resolution of the stream from the camera.
+        :param direction: The direction the stage moves.
+
+        :return: The movement size in image coordinates
+        """
+        distance = self._img_percentate_to_img_coords(fov_perc=fov_perc, axis=axis)
+        if axis == "x":
+            return {"x": distance * direction, "y": 0}
+        return {"x": 0, "y": distance * direction}
+
+    def _initial_moves_for_z_prediction(
+        self,
+        direction: Literal[1, -1],
+        axis: Literal["x", "y"],
+        rom_deps: RomDeps,
+    ) -> None:
+        """Perform 5 medium sized moves with autofocus for z feed-forward.
+
+        z-feed forward allows prediction of the z-position as the stage moves. For the
+        feed forward calculation to work an initial number of measurements must be
+        taken. This method performs these initial measurements.
+
+        :param direction: The direction the stage moves.
+        :param axis: The axis which is being measured. This must be 'x' or 'y'.
+        :param rom_deps: All dependencies that were passed to the calling Action
+        """
+        movement = self._movement_in_img_coords(
+            fov_perc=MEDIUM_STEP, axis=axis, direction=direction
+        )
+        for _loop in range(5):
+            offset = self._move_and_measure(movement=movement, rom_deps=rom_deps)
+
+            rom_deps.logger.info(f"Offset measured as {offset[axis]}")
+
+            self._rom_data.record_movement(rom_deps.stage.position, offset)
+            _detect_parasitic_motion(movement, offset)
+
+    def _big_z_corrected_movement(
+        self, axis: Literal["x", "y"], direction: Literal[1, -1], rom_deps: RomDeps
+    ) -> None:
+        """Take one big move with feed-forward z-correction.
+
+        The size is defined by the BIG_STEP constant.
+
+        :param axis: The axis to move in.
+        :param direction: The direction to move in.
+        :param rom_deps: All dependencies that were passed to the calling Action
+        """
+        big_movement = self._movement_in_img_coords(
+            fov_perc=BIG_STEP, axis=axis, direction=direction
+        )
+        z_disp = self._rom_data._predict_z_displacament(
+            movement=big_movement[axis],
+            stage_position=rom_deps.stage.position,
+            csm_matrix=rom_deps.csm.image_to_stage_displacement_matrix,
+        )
+        rom_deps.stage.move_relative(z=z_disp)
+        rom_deps.csm.move_in_image_coordinates(**big_movement)
+
+    def _stage_still_moves(
+        self,
+        axis: Literal["x", "y"],
+        direction: Literal[1, -1],
+        rom_deps: RomDeps,
+    ) -> bool:
+        """Carry out 3 small moves in a given direction and axis.
+
+        Each position after the first is correlated with the previous position
+        to check the stage has moved as far as it should. If the correlation is
+        less than expected, 3 attempts are made to refocus the image to ensure that
+        image quality is not causing the correlation to be unsuccessful. If the correlation
+        is still too low then the edge is found.
+
+        Delta is updated and tracked after each move.
+
+        :param stream_resolution: The resolution of the stream from the camera.
+        :param direction: The direction the stage moves.
+        :param axis: The axis which is being measured. This must be 'x' or 'y'.
+        :param rom_deps: All dependencies that were passed to the calling Action
+        """
+        movement = self._movement_in_img_coords(
+            fov_perc=SMALL_STEP, axis=axis, direction=direction
+        )
+        abs_min_offset = abs(movement[axis] * 0.65)
+
+        for _loop in range(3):
+            offset = self._move_and_measure(
+                movement=movement,
+                rom_deps=rom_deps,
+                # Don't autofocus initially
+                perform_autofocus=False,
+                # But retry focus 3 times if detected motion is too small
+                max_autofocus_repeats=3,
+                abs_min_offset=abs_min_offset,
+            )
+            rom_deps.logger.info(f"Offset measured as {offset[axis]}")
+
+            self._rom_data.record_movement(rom_deps.stage.position, offset)
+            _detect_parasitic_motion(movement, offset)
+
+            if abs(offset[axis]) < abs_min_offset:
+                # If the offset is below the abs min offset, the edge has been found.
+                rom_deps.logger.info("Edge has been found.")
+                return False
+        # If we reached here the stage is still moving fine
+        return True
+
+    def _move_back_until_motion_detected(
+        self,
+        axis: Literal["x", "y"],
+        direction: Literal[1, -1],
+        rom_deps: RomDeps,
+    ) -> None:
+        """Move the stage against the direction of test unil motion is detected.
+
+        In the case that the stage has reached the end of the motion, this method moves
+        the motor in the opposite direction until motion is detected.
+
+        :param axis: The axis in which the stage is moving. This must be 'x' or 'y'.
+        :param direction: The direction in which the stage was moving during the test,
+            this method will move in the opposite direction.
+        :param rom_deps: All dependencies that were passed to the calling Action
+        """
+        # Array of increasing pixel sizes (powers of 2 from 1 to 512)
+        displacements = [2**i for i in range(10)]
+
+        motion_minimum = 20  # minimum number of pixels for motion to be detected
+
+        movement = {"x": 0, "y": 0}
+
+        for displacement in displacements:
+            # Increment movement
+            movement[axis] = displacement * direction * -1
+            rom_deps.logger.info(f"Testing with step size {movement[axis]}")
+
+            offset = self._move_and_measure(
+                movement=movement, rom_deps=rom_deps, perform_autofocus=False
+            )
+
+            rom_deps.logger.info(f"Offset measured as {abs(offset[axis])}")
+            if abs(offset[axis]) > motion_minimum:
+                rom_deps.logger.info("Motion detected.")
+                return
+        # If this point is reached then motion is never detected
+        raise RuntimeError("Cannot detect motion again after reaching end of range.")
+
+    def _move_and_measure(
+        self,
+        movement: dict[str, float],
+        rom_deps: RomDeps,
+        perform_autofocus: bool = True,
+        max_autofocus_repeats: int = 0,
+        abs_min_offset: float = 0.0,
+    ) -> dict[str, float]:
+        """Move the stage and measure the offset between the two positions.
+
+        :param movement: A dictionary containing the distance to move in image coords.
+        :param rom_deps: All dependencies that were passed to the calling Action
+        :param perform_autofocus: Set to False to disable atutofocus after move.
+            Default is  True
+        :param max_autofocus_repeats: The number of times to repeat the focus if the
+            detected (on-axis) offset is below ``abs_min_offset``. This will only work
+            if ``abs_min_offset`` is also set
+        :param abs_min_offset: The absolute minimum (on-axis) offset, under which the
+            autofocus is repeated.
+        :return: All required data for the next move. This includes the updated delta
+            value and offset.
+        """
+        # Take image before move
+        before_img = rom_deps.cam.grab_as_array()
+        # Move and autofocus if required
+        rom_deps.csm.move_in_image_coordinates(**movement)
+        if perform_autofocus:
+            rom_deps.autofocus.looping_autofocus(dz=800)
+        # Take image and calculate offset
+        offset = self._offset_from(before_img, rom_deps=rom_deps)
+
+        if max_autofocus_repeats > 0:
+            axis = _axis_from_movement_dict(movement)
+            af_repeats = 0
+            while abs(offset[axis]) < abs_min_offset:
+                af_repeats += 1
+                rom_deps.logger.info(
+                    f"Motion not detected. Refocusing to check. Attempt {af_repeats}/3."
+                )
+                rom_deps.autofocus.looping_autofocus(dz=800)
+                # Re-take image and calculate offset
+                offset = self._offset_from(before_img, rom_deps=rom_deps)
+                if af_repeats >= max_autofocus_repeats:
+                    # break if the maximum number of tries are exceeded.
+                    break
+
+        return offset
+
+    def _offset_from(
+        self, before_img: np.ndarray, rom_deps: RomDeps
+    ) -> dict[str, float]:
+        """Take an image and calculate the offset from an input image.
+
+        :param before_img: The image the offset should be calculated with respect to.
+        :param rom_deps: All dependencies that were passed to the calling Action
+        :return: The calculated offset as a dictionary in pixels
+        """
+        after_img = rom_deps.cam.grab_as_array()
+        offset = fft_image_tracking.displacement_between_images(
+            image_0=before_img,
+            image_1=after_img,
+            sigma=10,
+            fractional_threshold=0.1,
+            pad=True,
+        )
+        return {"x": offset[1], "y": offset[0]}
+
+
+@overload
+def _axis_from_movement_dict(
+    movement: dict[str, float], return_other: bool = False
+) -> str: ...
+
+
+@overload
+def _axis_from_movement_dict(
+    movement: dict[str, float], return_other: bool = True
+) -> tuple[str, str]: ...
+
+
+def _axis_from_movement_dict(movement: dict[str, float], return_other: bool = False):
+    """Return the axis that a given movement dictionary moves in.
+
+    For example: ``_axis_from_movement_dict({"x": 10, "y":0})`` will return ``x``.
+
+    :param movement: The movement dictionary.
+    :param return_other: If True return a tuple with the first value being the movement
+        axis and the second being the other axis. Default is False
+    :return: The movement axis (and optionally the other axis) as strings.
+    """
+    if return_other:
+        return ("y", "x") if movement["x"] == 0 else ("x", "y")
+    return "y" if movement["x"] == 0 else "x"
+
+
+def _detect_parasitic_motion(
+    movement: dict[str, float], offset: dict[str, float]
+) -> None:
+    """Compare a desired movement to measured offset and error if parasitic motion is too high.
+
+    :param movement: The movement dictionary in image coordinates.
+    :param offset: The offset calculated from correlation.
+    """
+    movement_axis, other_axis = _axis_from_movement_dict(movement, return_other=True)
+    parasitic_motion = abs(offset[other_axis])
+    max_parasitic_motion = abs(movement[movement_axis] * PARASITIC_MOTION_TOL)
+    if parasitic_motion > max_parasitic_motion:
+        raise ParasiticMotionError(
+            f"Parasitic motion detected. Detected motion of {parasitic_motion} pixels "
+            f"this exceeds a maximum for this move of {max_parasitic_motion} pixels."
+        )
