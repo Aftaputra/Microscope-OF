@@ -16,6 +16,7 @@ this is 10% of the expected motion is the measured axis.
 from typing import Literal, Any, Optional
 import time
 from dataclasses import dataclass
+from threading import Lock
 
 from scipy.optimize import curve_fit
 from PIL import Image
@@ -63,6 +64,11 @@ class RomDataTracker:
         """Store useful data."""
         self.stage_coords.append(current_pos)
         self.cor_lat_steps.append(cor)
+
+    @property
+    def final_position(self) -> dict[str, int]:
+        """The last stage coordinate recorded."""
+        return self.stage_coords[-1].copy()
 
 
 @dataclass
@@ -368,8 +374,13 @@ class RangeofMotionThing(lt.Thing):
         initial_value=None, model=Optional[list[int, int]], readonly=True
     )
 
+    def __init__(self) -> None:
+        """Initalise and create the lock."""
+        super().__init__()
+        self._lock = Lock()
+
     @lt.thing_action
-    def rom_main(
+    def perform_rom_test(
         self,
         autofocus: AutofocusDep,
         stage: StageDep,
@@ -386,6 +397,10 @@ class RangeofMotionThing(lt.Thing):
         :param logger: A raw_thing_client depeendency for the logger.
         :return: Results dictionary separated into keys of each axis and direction.
         """
+        got_lock = self._lock.acquire(blocking=False)
+        if not got_lock:
+            raise RuntimeError("Trying to run ROM test when a test is already running.")
+
         rom_deps = RomDeps(
             autofocus=autofocus, stage=stage, csm=csm, cam=cam, logger=logger
         )
@@ -394,32 +409,24 @@ class RangeofMotionThing(lt.Thing):
             "Please ensure you are using a big enough sample."
         )
         start_time = time.time()
-        rom_json = {}
 
-        # Loop through all axes and directions.
-        for axis_dir in [["x", 1], ["x", -1], ["y", 1], ["y", -1]]:
-            axis_dir_results = self._rom_axis(
-                axis=axis_dir[0],
-                direction=axis_dir[1],
-                rom_deps=rom_deps,
-            )
-            # Save results from single axis and direction
-            rom_json[
-                f"{'positive' if axis_dir[1] == 1 else 'negative'} {axis_dir[0]}"
-            ] = axis_dir_results
+        # The total range for the two axes under test
+        step_range = []
+
+        for axis in ["x", "y"]:
+            # The final position of the axis under test in the given direction
+            axis_limits = []
+            for axis_dir in [1, -1]:
+                axis_data = self._rom_axis(
+                    axis=axis, direction=axis_dir, rom_deps=rom_deps
+                )
+                # Append final position
+                axis_limits.append(axis_data.final_position[axis])
+            # Calculate step range.
+            step_range.append(abs(axis_limits[0] - axis_limits[1]))
 
         end_time = time.time()
-        total_time = (end_time - start_time) / 60
-
-        x_range = abs(
-            rom_json["positive x"]["final_position"]["x"]
-            - rom_json["negative x"]["final_position"]["x"]
-        )
-        y_range = abs(
-            rom_json["positive y"]["final_position"]["y"]
-            - rom_json["negative y"]["final_position"]["y"]
-        )
-        step_range = [x_range, y_range]
+        total_time = end_time - start_time
 
         logger.info(f"Range of motion is {step_range[0]} x {step_range[1]} steps")
 
@@ -450,7 +457,6 @@ class RangeofMotionThing(lt.Thing):
         starting_position = list(rom_deps.stage.position.values())
 
         rom_data = RomDataTracker()  # initialise data tracking object
-        axis_results = {}
 
         try:
             dir_str = "positive" if direction == 1 else "negative"
@@ -520,15 +526,7 @@ class RangeofMotionThing(lt.Thing):
                 rom_deps=rom_deps,
             )
 
-            rom_data.stage_coords[np.shape(np.array(rom_data.stage_coords))[0] - 1] = (
-                final_pos
-            )
-
-            axis_results = {
-                "correlation_lateral_steps": rom_data.cor_lat_steps.copy(),
-                "stage_positions": rom_data.stage_coords.copy(),
-                "final_position": final_pos,
-            }
+            rom_data.stage_coords[-1] = final_pos
 
         finally:
             rom_deps.stage.move_absolute(
@@ -538,4 +536,4 @@ class RangeofMotionThing(lt.Thing):
                 block_cancellation=True,
             )
 
-        return axis_results
+        return rom_data
