@@ -380,9 +380,8 @@ class RangeofMotionThing(lt.Thing):
 
         Delta is updated and tracked after each move.
 
-        :param stream_resolution: The resolution of the stream from the camera.
-        :param direction: The direction the stage moves.
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
+        :param direction: The direction the stage moves.
         :param rom_deps: All dependencies that were passed to the calling Action
         """
         movement = self._movement_in_img_coords(
@@ -428,16 +427,19 @@ class RangeofMotionThing(lt.Thing):
             this method will move in the opposite direction.
         :param rom_deps: All dependencies that were passed to the calling Action
         """
+
+        def _reverse_move_dict(displacement: float) -> dict[str, float]:
+            move = {"x": 0, "y": 0}
+            move[axis] = displacement * direction * -1
+            return move
+
         # Array of increasing pixel sizes (powers of 2 from 1 to 512)
-        displacements = [2**i for i in range(10)]
+        movements = [_reverse_move_dict(2**i) for i in range(10)]
 
         motion_minimum = 20  # minimum number of pixels for motion to be detected
 
-        movement = {"x": 0, "y": 0}
-
-        for displacement in displacements:
+        for movement in movements:
             # Increment movement
-            movement[axis] = displacement * direction * -1
             rom_deps.logger.info(f"Testing with step size {movement[axis]}")
 
             offset = self._move_and_measure(
@@ -463,7 +465,7 @@ class RangeofMotionThing(lt.Thing):
 
         :param movement: A dictionary containing the distance to move in image coords.
         :param rom_deps: All dependencies that were passed to the calling Action
-        :param perform_autofocus: Set to False to disable atutofocus after move.
+        :param perform_autofocus: Set to False to disable autofocus after move.
             Default is  True
         :param max_autofocus_repeats: The number of times to repeat the focus if the
             detected (on-axis) offset is below ``abs_min_offset``. This will only work
