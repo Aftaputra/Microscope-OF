@@ -1,5 +1,6 @@
 """File contains unit tests for stage_measure."""
 
+from copy import copy
 import logging
 import pytest
 from openflexure_microscope_server.things import stage_measure
@@ -7,8 +8,18 @@ from openflexure_microscope_server.things import stage_measure
 LOGGER = logging.getLogger("mock-invocation_logger")
 
 
-def test_predict_z():
-    """Check that the prediction for the next z position is correct."""
+@pytest.fixture
+def csm_matrix():
+    """Return an example CSM matrix."""
+    return [
+        [0.03061156624485296, 1.8031242270940833],
+        [1.773236372778601, 0.006660431608601435],
+    ]
+
+
+@pytest.fixture
+def example_rom_data():
+    """Return some example data in a RomDataTracker."""
     mock_positions = [
         {"x": 0, "y": 0, "z": 42},
         {"x": 727, "y": 2, "z": 154},
@@ -19,21 +30,21 @@ def test_predict_z():
     ]
     rom_data = stage_measure.RomDataTracker()
 
+    # loop through mock positions recording them with an offset.
     for position in mock_positions:
         offset = {"x": 54.4, "y": 0}
         rom_data.record_movement(position, offset)
+    return rom_data
 
-    csm_matrix = [
-        [0.03061156624485296, 1.8031242270940833],
-        [1.773236372778601, 0.006660431608601435],
-    ]
 
-    mock_z_diff = rom_data.predict_z_displacament(
+def test_predict_z(csm_matrix, example_rom_data):
+    """Check that the prediction for the next z position is correct."""
+    mock_z_diff = example_rom_data.predict_z_displacement(
         movement={"x": 2908, "y": 0},
         stage_position={"x": 3635, "y": 10, "z": 617},
         csm_matrix=csm_matrix,
     )
-    expected_z_diff = 1343.1625053206606
+    expected_z_diff = 1343
     assert mock_z_diff == expected_z_diff
 
 
@@ -61,28 +72,56 @@ def test_error_on_axis_from_movement_dict(movement):
         assert stage_measure._axis_from_movement_dict(movement)
 
 
-def test_parasitic_detect():
-    """Check that the parasitic error is raised correctly."""
-    with pytest.raises(stage_measure.ParasiticMotionError):
-        stage_measure._detect_parasitic_motion(
-            movement={"x": 2908, "y": 0}, offset={"x": 2908, "y": 300}
-        )
+@pytest.mark.parametrize(
+    ("par_fraction", "should_error"),
+    [
+        (-0.20, True),
+        (-0.11, True),
+        (-0.09, False),
+        (-0.05, False),
+        (0.00, False),
+        (0.05, False),
+        (0.09, False),
+        (0.11, True),
+        (0.20, True),
+    ],
+)
+def test_parasitic_detect(par_fraction, should_error):
+    """Check error is raised if the fraction of parastitic motion is too high."""
+    movement = {"x": 2908, "y": 0}
+
+    offset = copy(movement)
+    offset["y"] = movement["x"] * par_fraction
+    if should_error:
+        with pytest.raises(stage_measure.ParasiticMotionError):
+            stage_measure._detect_parasitic_motion(movement=movement, offset=offset)
+    else:
+        # Nothing to check here as the only job of _detect_parasitic_motion is to
+        # error if there is too much motion
+        stage_measure._detect_parasitic_motion(movement=movement, offset=offset)
 
 
 @pytest.fixture
-def rom_thing() -> stage_measure.RangeofMotionThing:
-    """Return a RangeofMotionThing."""
-    return stage_measure.RangeofMotionThing()
+def rom_thing(example_rom_data) -> stage_measure.RangeofMotionThing:
+    """Return a RangeofMotionThing already populated with some example rom_data."""
+    rom_thing = stage_measure.RangeofMotionThing()
+    rom_thing._stream_resolution = [800, 600]
+    rom_thing._rom_data = example_rom_data
+    return rom_thing
 
 
 @pytest.fixture
-def mock_rom_deps(mocker) -> stage_measure.RomDeps:
+def mock_rom_deps(csm_matrix, mocker) -> stage_measure.RomDeps:
     """Return a RomDeps object full of mocks, except the logger which is LOGGER."""
+    mock_csm = mocker.Mock()
+    # Set up mock csm to return a CSM matrix
+    mock_csm.image_to_stage_displacement_matrix = csm_matrix
+
     return stage_measure.RomDeps(
         autofocus=mocker.Mock(),
         stage=mocker.Mock(),
         cam=mocker.Mock(),
-        csm=mocker.Mock(),
+        csm=mock_csm,
         logger=LOGGER,
     )
 
@@ -247,7 +286,6 @@ def test_stage_still_moves(
     mocker,
 ):
     """Test _stage_still_moves correctly detects stage movement."""
-    rom_thing._stream_resolution = [800, 600]
     min_offset = 800 * stage_measure.SMALL_STEP / 100 * stage_measure.DETECT_MOTION_TOL
 
     def gen_offsets(*_args, **_kwargs):
@@ -269,3 +307,25 @@ def test_stage_still_moves(
     )
     assert still_moves is expected_to_detect_motion
     assert mock_offset_from.call_count == offset_calls
+
+
+def test_big_z_corrected_movement(rom_thing, mock_rom_deps):
+    """Check big z corrected move moves in x/y and z the expected distances."""
+    mock_rom_deps.stage.position = {"x": 5000, "y": 30, "z": 500}
+
+    rom_thing._big_z_corrected_movement("x", direction=1, rom_deps=mock_rom_deps)
+
+    expected_movement = {"x": 800 * stage_measure.BIG_STEP / 100, "y": 0}
+
+    # Check there is one z move in steps
+    assert mock_rom_deps.stage.move_relative.call_count == 1
+    move_kwargs = mock_rom_deps.stage.move_relative.call_args.kwargs
+    assert "x" not in move_kwargs
+    assert "y" not in move_kwargs
+    assert "z" in move_kwargs
+    move_kwargs["z"] = 1162
+
+    # And one move in image coordinates
+    assert mock_rom_deps.csm.move_in_image_coordinates.call_count == 1
+    lat_mov_kwargs = mock_rom_deps.csm.move_in_image_coordinates.call_args.kwargs
+    assert lat_mov_kwargs == expected_movement

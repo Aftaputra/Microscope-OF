@@ -72,12 +72,12 @@ class RomDataTracker:
         """The last stage coordinate recorded."""
         return self.stage_coords[-1].copy()
 
-    def predict_z_displacament(
+    def predict_z_displacement(
         self,
         movement: dict[str, int],
         stage_position: dict[str, int],
         csm_matrix: np.ndarray,
-    ) -> float:
+    ) -> int:
         """Predict the z-displacement needed for a given movement.
 
         :param movement: The movement to be performed in image coordinates.
@@ -99,7 +99,7 @@ class RomDataTracker:
             stage_position[axis] + (movement[axis] / pixel_step[axis]), *fit_params
         )
 
-        return z_dest - stage_position["z"]
+        return int(z_dest - stage_position["z"])
 
 
 @dataclass
@@ -357,8 +357,8 @@ class RangeofMotionThing(lt.Thing):
         big_movement = self._movement_in_img_coords(
             fov_perc=BIG_STEP, axis=axis, direction=direction
         )
-        z_disp = self._rom_data.predict_z_displacament(
-            movement=big_movement[axis],
+        z_disp = self._rom_data.predict_z_displacement(
+            movement=big_movement,
             stage_position=rom_deps.stage.position,
             csm_matrix=rom_deps.csm.image_to_stage_displacement_matrix,
         )
