@@ -233,8 +233,8 @@ class RangeofMotionThing(lt.Thing):
 
             rom_deps.logger.info("Moving the stage in 5 medium sized steps.")
             self._initial_moves_for_z_prediction(
-                direction=direction,
                 axis=axis,
+                direction=direction,
                 rom_deps=rom_deps,
             )
 
@@ -318,8 +318,8 @@ class RangeofMotionThing(lt.Thing):
 
     def _initial_moves_for_z_prediction(
         self,
-        direction: Literal[1, -1],
         axis: Literal["x", "y"],
+        direction: Literal[1, -1],
         rom_deps: RomDeps,
     ) -> None:
         """Perform 5 medium sized moves with autofocus for z feed-forward.

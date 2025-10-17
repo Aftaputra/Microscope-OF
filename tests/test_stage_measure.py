@@ -8,6 +8,31 @@ from openflexure_microscope_server.things import stage_measure
 LOGGER = logging.getLogger("mock-invocation_logger")
 
 
+# Useful generators
+def increasing_xy_dict_generator(*_args, **_kwargs):
+    """Generate x-y dictionaries of incremening sizes.
+
+    These don't simulate expected effects, but allow checking sequential reads of a
+    function/property were used.
+    """
+    i = 0
+    while True:
+        yield {"x": i, "y": i}
+        i += 1
+
+
+def increasing_xyz_dict_generator(*_args, **_kwargs):
+    """Generate x-y-z dictionaries of incremening sizes.
+
+    These don't simulate expected effects, but allow checking sequential reads of a
+    function/property were used.
+    """
+    i = 0
+    while True:
+        yield {"x": i, "y": i, "z": i}
+        i += 1
+
+
 @pytest.fixture
 def csm_matrix():
     """Return an example CSM matrix."""
@@ -135,7 +160,7 @@ def test_offset_from(rom_thing, mock_rom_deps, mocker):
     )
     mock_disp_between = mocker.patch(
         disp_between_route,
-        side_effect=([123, 456],),
+        return_value=[123, 456],
     )
 
     # Run it
@@ -162,7 +187,7 @@ def test_move_and_measure(perform_autofocus, rom_thing, mock_rom_deps, mocker):
     This doesn't test with the repeate autofocus if motion isn't detected
     """
     mock_offset_value = {"x": 100, "y": 3}
-    mocker.patch.object(rom_thing, "_offset_from", side_effect=(mock_offset_value,))
+    mocker.patch.object(rom_thing, "_offset_from", return_value=mock_offset_value)
     movement = {"x": 100, "y": 0}
     offset = rom_thing._move_and_measure(
         movement=movement, rom_deps=mock_rom_deps, perform_autofocus=perform_autofocus
@@ -329,3 +354,36 @@ def test_big_z_corrected_movement(rom_thing, mock_rom_deps):
     assert mock_rom_deps.csm.move_in_image_coordinates.call_count == 1
     lat_mov_kwargs = mock_rom_deps.csm.move_in_image_coordinates.call_args.kwargs
     assert lat_mov_kwargs == expected_movement
+
+
+def test_initial_moves_for_z_prediction(rom_thing, mock_rom_deps, mocker):
+    """Check the initial moves are of the correct size and are recorded."""
+    # Mock the _offset_from and stage.position to return generated dictionaries that
+    # increment each time they are called. (All values 0 the first time, all values 1
+    # the second time ...)
+    mocker.patch.object(
+        rom_thing, "_offset_from", side_effect=increasing_xy_dict_generator()
+    )
+    type(mock_rom_deps.stage).position = mocker.PropertyMock(
+        side_effect=increasing_xyz_dict_generator()
+    )
+
+    expected_movement = {"x": -800 * stage_measure.MEDIUM_STEP / 100, "y": 0}
+
+    # Remove the mock RomData before starting
+    rom_thing._rom_data = stage_measure.RomDataTracker()
+
+    # Run it!
+    rom_thing._initial_moves_for_z_prediction("x", direction=-1, rom_deps=mock_rom_deps)
+
+    # Check that _rom_data now contains the 5 mocked returns in order.
+    assert rom_thing._rom_data.offsets == [{"x": i, "y": i} for i in range(5)]
+    assert rom_thing._rom_data.stage_coords == [
+        {"x": i, "y": i, "z": i} for i in range(5)
+    ]
+
+    # Check that the csm movement function is called 5 times
+    assert mock_rom_deps.csm.move_in_image_coordinates.call_count == 5
+    # Each time with the expected movement
+    for arg_list in mock_rom_deps.csm.move_in_image_coordinates.call_args_list:
+        assert arg_list.kwargs == expected_movement
