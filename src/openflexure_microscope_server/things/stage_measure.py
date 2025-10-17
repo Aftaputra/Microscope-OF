@@ -43,6 +43,7 @@ MEDIUM_STEP = 50
 BIG_STEP = 200
 
 PARASITIC_MOTION_TOL = 0.1
+DETECT_MOTION_TOL = 0.65
 
 
 class RomDataTracker:
@@ -196,7 +197,7 @@ class RangeofMotionThing(lt.Thing):
         }
 
     def _set_stream_resolution(self, cam: CamDep) -> None:
-        """Set the self._stream_reolution attribute by reading camera.
+        """Set the self._stream_resolution attribute by reading camera.
 
         :param cam: The camera dependency.
         """
@@ -288,7 +289,7 @@ class RangeofMotionThing(lt.Thing):
         """
         if self._stream_resolution is None:
             raise RuntimeError(
-                "Stream resolution mut be set before generating movement in coords"
+                "Stream resolution must be set before generating movement in coords"
             )
 
         img_index = 0 if axis == "x" else 1
@@ -372,13 +373,11 @@ class RangeofMotionThing(lt.Thing):
     ) -> bool:
         """Carry out 3 small moves in a given direction and axis.
 
-        Each position after the first is correlated with the previous position
-        to check the stage has moved as far as it should. If the correlation is
-        less than expected, 3 attempts are made to refocus the image to ensure that
-        image quality is not causing the correlation to be unsuccessful. If the correlation
-        is still too low then the edge is found.
-
-        Delta is updated and tracked after each move.
+        An image is taken before and after each move to check has moved as far as it
+        should. If the offset (calculated by cross correlation) is less than expected,
+        3 attempts are made to refocus the image to ensure that image quality is not
+        causing the offset to mistakenly be reported as too low be unsuccessful. If the
+        calculated offset is still too low then the edge is found.
 
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
         :param direction: The direction the stage moves.
@@ -387,7 +386,7 @@ class RangeofMotionThing(lt.Thing):
         movement = self._movement_in_img_coords(
             fov_perc=SMALL_STEP, axis=axis, direction=direction
         )
-        abs_min_offset = abs(movement[axis] * 0.65)
+        abs_min_offset = abs(movement[axis] * DETECT_MOTION_TOL)
 
         for _loop in range(3):
             offset = self._move_and_measure(
@@ -472,8 +471,7 @@ class RangeofMotionThing(lt.Thing):
             if ``abs_min_offset`` is also set
         :param abs_min_offset: The absolute minimum (on-axis) offset, under which the
             autofocus is repeated.
-        :return: All required data for the next move. This includes the updated delta
-            value and offset.
+        :return: The calculated offset from cross correlation.
         """
         # Take image before move
         before_img = rom_deps.cam.grab_as_array()

@@ -219,3 +219,53 @@ def test_move_back_until_motion_detected(rom_thing, mock_rom_deps, mocker):
     for i, call_args in enumerate(mock_move_n_meas.call_args_list):
         call_args.kwargs["movement"] = {"x": -(2**i), "y": 0}
         call_args.kwargs["perform_autofocus"] = False
+
+
+@pytest.mark.parametrize(
+    ("good_moves", "expected_to_detect_motion", "offset_calls"),
+    [
+        ([0, 1, 2], True, 3),  # First 3 pass all good
+        ([1, 2, 3], True, 4),  # First is bad, will refocus, still complete
+        ([2, 3, 4], True, 5),  # First 2 are bad, will refocus twice, still complete
+        ([3, 4, 5], True, 6),  # First 3 are bad, will refocus 3 times, still complete
+        ([4, 5, 6], False, 4),  # First 4 are bad, fails
+        # Check second and 3rd measurement can fail after first fails 3 times
+        ([3, 5, 7], True, 8),
+        ([3, 6, 9], True, 10),
+        ([3, 7, 11], True, 12),
+        # But they can't fail 4 times
+        ([3, 8, 9], False, 8),
+        ([3, 7, 12], False, 12),
+    ],
+)
+def test_stage_still_moves(
+    good_moves,
+    expected_to_detect_motion,
+    offset_calls,
+    rom_thing,
+    mock_rom_deps,
+    mocker,
+):
+    """Test _stage_still_moves correctly detects stage movement."""
+    rom_thing._stream_resolution = [800, 600]
+    min_offset = 800 * stage_measure.SMALL_STEP / 100 * stage_measure.DETECT_MOTION_TOL
+
+    def gen_offsets(*_args, **_kwargs):
+        """Generate offset dictionaries with small moves unless count matches ``good_moves``."""
+        i = 0
+        while True:
+            x = min_offset * 1.2 if i in good_moves else 0.1
+            yield {"x": x, "y": 0}
+            i += 1
+
+    mock_offset_from = mocker.patch.object(
+        rom_thing, "_offset_from", side_effect=gen_offsets()
+    )
+
+    still_moves = rom_thing._stage_still_moves(
+        axis="x",
+        direction=1,
+        rom_deps=mock_rom_deps,
+    )
+    assert still_moves is expected_to_detect_motion
+    assert mock_offset_from.call_count == offset_calls
