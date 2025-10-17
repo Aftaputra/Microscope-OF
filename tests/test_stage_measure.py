@@ -2,7 +2,15 @@
 
 from copy import copy
 import logging
+import dataclasses
+import tempfile
+
+from fastapi.testclient import TestClient
+import numpy as np
 import pytest
+
+import labthings_fastapi as lt
+
 from openflexure_microscope_server.things import stage_measure
 
 LOGGER = logging.getLogger("mock-invocation_logger")
@@ -36,10 +44,12 @@ def increasing_xyz_dict_generator(*_args, **_kwargs):
 @pytest.fixture
 def csm_matrix():
     """Return an example CSM matrix."""
-    return [
-        [0.03061156624485296, 1.8031242270940833],
-        [1.773236372778601, 0.006660431608601435],
-    ]
+    return np.array(
+        [
+            [0.03061156624485296, 1.8031242270940833],
+            [1.773236372778601, 0.006660431608601435],
+        ]
+    )
 
 
 @pytest.fixture
@@ -126,13 +136,24 @@ def test_parasitic_detect(par_fraction, should_error):
         stage_measure._detect_parasitic_motion(movement=movement, offset=offset)
 
 
+def test_error_if_no_stream_res_set_when_requesting_img_coords():
+    """Check a RuntimeError thrown when requesting image coordinates if resolution unset."""
+    with pytest.raises(RuntimeError, match="Stream resolution must be set"):
+        stage_measure.RangeofMotionThing()._img_percentate_to_img_coords(20, "x")
+
+
 @pytest.fixture
 def rom_thing(example_rom_data) -> stage_measure.RangeofMotionThing:
-    """Return a RangeofMotionThing already populated with some example rom_data."""
+    """Yield a RangeofMotionThing already populated with some example rom_data."""
     rom_thing = stage_measure.RangeofMotionThing()
     rom_thing._stream_resolution = [800, 600]
     rom_thing._rom_data = example_rom_data
-    return rom_thing
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        server = lt.ThingServer(settings_folder=tmpdir)
+        server.add_thing(rom_thing, "/rom_thing/")
+        with TestClient(server.app):
+            yield rom_thing
 
 
 @pytest.fixture
@@ -387,3 +408,160 @@ def test_initial_moves_for_z_prediction(rom_thing, mock_rom_deps, mocker):
     # Each time with the expected movement
     for arg_list in mock_rom_deps.csm.move_in_image_coordinates.call_args_list:
         assert arg_list.kwargs == expected_movement
+
+
+def test_move_until_edge_error(rom_thing, mock_rom_deps, mocker):
+    """Check that if there is an error while moving to the edge the stage returns to start."""
+    mock_position_dict = {"x": 123, "y": 456, "z": 789}
+    type(mock_rom_deps.stage).position = mocker.PropertyMock(
+        return_value=mock_position_dict
+    )
+    mocker.patch.object(
+        rom_thing, "_initial_moves_for_z_prediction", side_effect=RuntimeError("Mock")
+    )
+
+    # Remove the mock RomData before starting
+    rom_thing._rom_data = stage_measure.RomDataTracker()
+
+    # Error should be raised even though it is in the Try:
+    with pytest.raises(RuntimeError, match="Mock"):
+        rom_thing._move_until_edge("y", direction=-1, rom_deps=mock_rom_deps)
+    # However the "finally" should have executed returning to the starting position
+    assert mock_rom_deps.stage.move_absolute.call_count == 1
+    abs_move_kwargs = mock_rom_deps.stage.move_absolute.call_args.kwargs
+    expected_abs_move_kwargs = dict(**mock_position_dict, block_cancellation=True)
+    assert abs_move_kwargs == expected_abs_move_kwargs
+
+
+def test_move_until_edge(rom_thing, mock_rom_deps, mocker):
+    """Check move until edge runs the correct movement sequence."""
+    # Remove the mock RomData before starting
+    rom_thing._rom_data = stage_measure.RomDataTracker()
+
+    mock_rom_deps.stage.position = {"x": "mock", "y": "starting", "z": "pos"}
+
+    def add_fake_initial_positions(*_args, **_kwargs):
+        """Rather than run initial moves just add some fake data."""
+        for i in range(5):
+            rom_thing._rom_data.record_movement(f"mock-init-pos{i + 1}", "mock-offset")
+
+    def update_stage_pos_on_big_move(*_args, **_kwargs):
+        """With big moves update the stage position."""
+        big_move_count = 1
+        while True:
+            mock_rom_deps.stage.position = f"mocked-big-move-pos{big_move_count}"
+            yield
+            big_move_count += 1
+
+    def set_final_pos(*_args, **_kwargs):
+        """When move_back_until_motion_detected is run set a final stage position."""
+        mock_rom_deps.stage.position = "mock-final-pos"
+
+    # Mock the main movement functions
+    mock_init_moves = mocker.patch.object(
+        rom_thing,
+        "_initial_moves_for_z_prediction",
+        side_effect=add_fake_initial_positions,
+    )
+    mock_big_moves = mocker.patch.object(
+        rom_thing,
+        "_big_z_corrected_movement",
+        side_effect=update_stage_pos_on_big_move(),
+    )
+    mock_move_check = mocker.patch.object(
+        rom_thing, "_stage_still_moves", side_effect=[True] * 9 + [False]
+    )
+    mock_move_back = mocker.patch.object(
+        rom_thing, "_move_back_until_motion_detected", side_effect=set_final_pos
+    )
+
+    # Remove the mock RomData before starting
+    rom_thing._rom_data = stage_measure.RomDataTracker()
+
+    # Run function
+    rom_thing._move_until_edge("y", direction=-1, rom_deps=mock_rom_deps)
+
+    # Check the call counts are as expected
+    # One call of initial moves
+    assert mock_init_moves.call_count == 1
+    # Big moves and the check the stage is moving are each called 10 times as the mock
+    # for _stage_still_moves replies False on the 10th call.
+    assert mock_big_moves.call_count == 10
+    assert mock_move_check.call_count == 10
+    # And one call of _move_back_until_motion_detected
+    assert mock_move_back.call_count == 1
+
+    assert rom_thing._rom_data.stage_coords == [
+        {"x": "mock", "y": "starting", "z": "pos"},
+        "mock-init-pos1",
+        "mock-init-pos2",
+        "mock-init-pos3",
+        "mock-init-pos4",
+        "mock-init-pos5",
+        "mocked-big-move-pos1",
+        "mocked-big-move-pos2",
+        "mocked-big-move-pos3",
+        "mocked-big-move-pos4",
+        "mocked-big-move-pos5",
+        "mocked-big-move-pos6",
+        "mocked-big-move-pos7",
+        "mocked-big-move-pos8",
+        "mocked-big-move-pos9",
+        "mock-final-pos",  # This overwrites the 10th big move position recording.
+    ]
+
+
+def test_perform_rom_test_locked(rom_thing, mock_rom_deps):
+    """Check the error if the Rom test is locked."""
+    # Not an RLock so no need to thread.
+    rom_thing._lock.acquire()
+    err_msg = "Trying to run ROM test when a test is already running."
+    with pytest.raises(RuntimeError, match=err_msg):
+        rom_thing.perform_rom_test(**dataclasses.asdict(mock_rom_deps))
+
+
+def test_perform_rom_test_(rom_thing, mock_rom_deps, mocker):
+    """Check that perform Rom Test runs the expected high level algorithm."""
+
+    def check_and_modify_rom_data(axis: str, direction: int, **_kwargs):
+        """Check the rom_data is empty each time, and add a final position."""
+        # check rom_data was cleared at the start of this run
+        assert len(rom_thing._rom_data.stage_coords) == 0
+        dist = 1111 if axis == "x" else 2222
+        final_pos = {"x": 0, "y": 0}
+        final_pos[axis] = dist * direction
+        rom_thing._rom_data.stage_coords.append(final_pos)
+
+    mock_move_until_edge = mocker.patch.object(
+        rom_thing, "_move_until_edge", side_effect=check_and_modify_rom_data
+    )
+
+    mocker.patch.object(
+        mock_rom_deps.cam, "grab_as_array", return_value=np.zeros([123, 456, 3])
+    )
+    final_dict = rom_thing.perform_rom_test(**dataclasses.asdict(mock_rom_deps))
+
+    # This should take less than 1 sec
+    assert final_dict["Time"] <= 1
+    # CSM should be 2x2 list
+    assert isinstance(final_dict["CSM Matrix"], list)
+    assert len(final_dict["CSM Matrix"]) == 2
+    assert len(final_dict["CSM Matrix"][0]) == 2
+    assert len(final_dict["CSM Matrix"][1]) == 2
+    # And step range should be [2222, 4444]
+    assert final_dict["Step Range"] == [2222, 4444]
+
+    # Check that the axes were called in the expected order.
+    assert mock_move_until_edge.call_count == 4
+
+    assert mock_move_until_edge.call_args_list[0].kwargs["axis"] == "x"
+    assert mock_move_until_edge.call_args_list[0].kwargs["direction"] == 1
+
+    assert mock_move_until_edge.call_args_list[1].kwargs["axis"] == "x"
+    assert mock_move_until_edge.call_args_list[1].kwargs["direction"] == -1
+
+    assert mock_move_until_edge.call_args_list[2].kwargs["axis"] == "y"
+    assert mock_move_until_edge.call_args_list[2].kwargs["direction"] == 1
+
+    assert mock_move_until_edge.call_args_list[3].kwargs["axis"] == "y"
+    assert mock_move_until_edge.call_args_list[3].kwargs["direction"] == -1

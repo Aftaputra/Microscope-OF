@@ -225,15 +225,14 @@ class RangeofMotionThing(lt.Thing):
         """
         # Start by performing an autofocus and recording starting position
         rom_deps.autofocus.looping_autofocus(dz=1000)
-        starting_position = list(rom_deps.stage.position.values())
+        starting_position = rom_deps.stage.position
+        self._rom_data.stage_coords.append(starting_position)
 
         try:
             dir_str = "positive" if direction == 1 else "negative"
             rom_deps.logger.info(
                 f"Beginning the {axis}-axis in the {dir_str} direction"
             )
-
-            self._rom_data.stage_coords.append(rom_deps.stage.position)
 
             rom_deps.logger.info("Moving the stage in 5 medium sized steps.")
             self._initial_moves_for_z_prediction(
@@ -275,12 +274,7 @@ class RangeofMotionThing(lt.Thing):
             self._rom_data.stage_coords[-1] = rom_deps.stage.position
 
         finally:
-            rom_deps.stage.move_absolute(
-                x=starting_position[0],
-                y=starting_position[1],
-                z=starting_position[2],
-                block_cancellation=True,
-            )
+            rom_deps.stage.move_absolute(**starting_position, block_cancellation=True)
 
     def _img_percentate_to_img_coords(
         self, fov_perc: int, axis: Literal["x", "y"]
@@ -377,10 +371,10 @@ class RangeofMotionThing(lt.Thing):
     ) -> bool:
         """Carry out 3 small moves in a given direction and axis.
 
-        An image is taken before and after each move to check has moved as far as it
-        should. If the offset (calculated by cross correlation) is less than expected,
-        3 attempts are made to refocus the image to ensure that image quality is not
-        causing the offset to mistakenly be reported as a low value. If the
+        An image is taken before and after each move to check the stage has moved as
+        far as it should. If the offset (calculated by cross correlation) is less than
+        expected, 3 attempts are made to refocus the image to ensure that image quality
+        is not causing the offset to mistakenly be reported as a low value. If the
         calculated offset is still too low then this is taken as an indication that the
         edge has been found.
 
