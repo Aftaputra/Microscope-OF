@@ -1,14 +1,14 @@
 """File contains all the functions used to measure the range of motion.
 
-The range of motion is measured by first taking 5 'medium' sized steps which gives enough positions
-to predict future z positions. Next, one 'big' step is taken followed by 3
-'small' steps to test that the stage is still moving as expected and has not reached the edge.
-Once the edge has been found and to account for the possibility that a 'big'
-step was taken just before the edge was reached, the stage is moved in a sequence
-of increasing pixel sizes in the opposite direction until motion is detected. This is
+The range of motion is measured by first taking 5 'medium' sized steps which gives
+enough positions to predict future z positions. Next, one 'big' step is taken followed
+by 3 'small' steps to test that the stage is still moving as expected and has not
+reached the edge. Once the edge has been found and to account for the possibility that
+the edge was reached during a "big" step, the stage is moved in a sequence of steps
+(incrementing in size) in the opposite direction until motion is detected. This is
 position is taken as the true final position.
 
-Throughout the test, parasitic motion(motion in the axis not being measured)
+Throughout the test, parasitic motion (motion in the axis not being measured)
 is tracked and an error is raised if it exceeds a minimum amount. Currently
 this is 10% of the expected motion is the measured axis.
 """
@@ -211,7 +211,11 @@ class RangeofMotionThing(lt.Thing):
         direction: Literal[1, -1],
         rom_deps: RomDeps,
     ) -> dict:
-        """Move in one direction until no movement is detected.
+        """Move in one direction until movement per step decreases significantly.
+
+        This should move until the edge of the stage. Once the edge is reached there
+        will be some movement as there is no hard stop, but it will reduce
+        significantly.
 
         :param rom_deps: All dependencies that were passed to the calling Action
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
@@ -376,8 +380,9 @@ class RangeofMotionThing(lt.Thing):
         An image is taken before and after each move to check has moved as far as it
         should. If the offset (calculated by cross correlation) is less than expected,
         3 attempts are made to refocus the image to ensure that image quality is not
-        causing the offset to mistakenly be reported as too low be unsuccessful. If the
-        calculated offset is still too low then the edge is found.
+        causing the offset to mistakenly be reported as a low value. If the
+        calculated offset is still too low then this is taken as an indication that the
+        edge has been found.
 
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
         :param direction: The direction the stage moves.
