@@ -79,7 +79,7 @@ class FutureScanLocation:  # noqa PLW1641
         """The xy position tuple."""
         return self._xy_pos
 
-    def __eq__(self, other: XYPos | FutureScanLocation) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Check for equality, only checks the xy position.
 
         Will check against tuple or other FutureScanLocation object.
@@ -128,9 +128,7 @@ class VisitedScanLocation:  # noqa PLW1641
         """The xy position tuple."""
         return self._xyz_pos[:2]
 
-    def __eq__(
-        self, other: XYPos | XYZPos | FutureScanLocation | VisitedScanLocation
-    ) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Check for equality, only checks the xyz-position or xy-position if z isn't available.
 
         Will check xyz-position against 3-value tuples and other VisitedScanLocation
@@ -223,12 +221,22 @@ class ScanPlanner:
         """
         raise NotImplementedError("Did you call the ScanPlanner base class?")
 
-    def position_visited(self, position: FutureScanLocation) -> bool:
+    def position_visited(self, position: XYPos | FutureScanLocation) -> bool:
         """Return True if input scan position has been visited before."""
         # Ensure tuple for correct matching!
         return position in self._path_history
 
-    def position_planned(self, position: FutureScanLocation) -> bool:
+    def get_visited_location(
+        self, position: XYPos | XYZPos | FutureScanLocation
+    ) -> VisitedScanLocation:
+        """Return the scan location from the history that matches the input position."""
+        # Ignoring type as self._path_history has type List[VisitedScanLocation], and
+        # VisitedScanLocation implements __eq__ for XYPos & XYZPos & FutureScanLocation
+        # however this is not statically detectable by MyPy
+        index = self._path_history.index(position)  # type: ignore[arg-type]
+        return self._path_history[index]
+
+    def position_planned(self, position: XYPos | FutureScanLocation) -> bool:
         """Return True if input scan position position is planned."""
         # Ensure tuple for correct matching!
         return position in self._remaining_locations
@@ -341,7 +349,9 @@ class SmartSpiral(ScanPlanner):
         super().__init__(initial_position, planner_settings)
         self._distance_cutoff: float = max([self._dx, self._dy]) * 1.1
 
-    def _is_primary_location(self, location: FutureScanLocation) -> bool:
+    def _is_primary_location(
+        self, location: FutureScanLocation | VisitedScanLocation
+    ) -> bool:
         """Return True if input is a primary location not a secondary (intermediate) location."""
         return location.planner_data["primary"]
 
@@ -423,7 +433,7 @@ class SmartSpiral(ScanPlanner):
                 continue
             if self.position_visited(new_pos):
                 # Get the VisitedScanLocation object if already visited
-                visited = self._path_history[self._path_history.index(new_pos)]
+                visited = self.get_visited_location(new_pos)
                 if visited.imaged:
                     # If this adjacent position was imaged succsfully already then skip.
                     continue
@@ -460,7 +470,7 @@ class SmartSpiral(ScanPlanner):
         for surr_pos in surrounding_positions:
             if self.position_visited(surr_pos):
                 # Get the VisitedScanLocation object if already visited
-                visited = self._path_history[self._path_history.index(surr_pos)]
+                visited = self.get_visited_location(surr_pos)
                 if not visited.imaged:
                     # If it wasn't imaged then skip this position
                     continue
@@ -484,13 +494,15 @@ class SmartSpiral(ScanPlanner):
 
     def _intermediate_position(self, xy_pos1: XYPos, xy_pos2: XYPos) -> XYPos:
         """Return an (x,y) position halfway between two input positions."""
-        return tuple((i + j) // 2 for i, j in zip(xy_pos1, xy_pos2, strict=True))
+        x = (xy_pos1[0] + xy_pos2[0]) // 2
+        y = (xy_pos1[1] + xy_pos2[1]) // 2
+        return (x, y)
 
     def _re_sort_remaining_locations(self, current_pos: XYPos) -> None:
         """Sort the remaining positions based on the current location."""
 
         # Defined rather than use a lambda for readability
-        def sort_key(pos: XYPos) -> tuple[float, float, float]:
+        def sort_key(pos: FutureScanLocation) -> tuple[float, float, float]:
             return (
                 self.moves_between(current_pos, pos),
                 self.moves_between(self._initial_position, pos),
