@@ -254,17 +254,27 @@ def test_closest_focus_with_large_numbers():
     planner = scan_planners.SmartSpiral(
         initial_position=initial_position, planner_settings=planner_settings
     )
-    # Directly overwrite the private focussed locations list for test
+    # Directly overwrite the private path history locations list for test
 
     # For two points 1m points away it should choose the last as they are equal
-    planner._focused_locations = [(1000000, 0, 0), (0, 1000000, 0)]
+
+    planner._path_history = [
+        scan_planners.VisitedScanLocation((1000000, 0, 0), imaged=True, focused=True),
+        scan_planners.VisitedScanLocation((0, 1000000, 0), imaged=True, focused=True),
+    ]
     assert planner.closest_focus_site((0, 0)) == (0, 1000000, 0)
     # Try similar
-    planner._focused_locations = [(1234567, 0, 0), (-1234567, 0, 0)]
+    planner._path_history = [
+        scan_planners.VisitedScanLocation((1234567, 0, 0), imaged=True, focused=True),
+        scan_planners.VisitedScanLocation((-1234567, 0, 0), imaged=True, focused=True),
+    ]
     assert planner.closest_focus_site((0, 0)) == (-1234567, 0, 0)
 
     # Make the first point 1 step closer
-    planner._focused_locations = [(1234566, 0, 0), (-1234567, 0, 0)]
+    planner._path_history = [
+        scan_planners.VisitedScanLocation((1234566, 0, 0), imaged=True, focused=True),
+        scan_planners.VisitedScanLocation((-1234567, 0, 0), imaged=True, focused=True),
+    ]
     assert planner.closest_focus_site((0, 0)) == (1234566, 0, 0)
 
 
@@ -292,5 +302,14 @@ def test_example_smart_spiral():
         expected_planner = (
             scan_test_helpers.get_expected_result_for_example_smart_spiral(sample_name)
         )
-        assert planner.path_history == expected_planner.path_history
-        assert planner.imaged_locations == expected_planner.imaged_locations
+        # Use hasattr to check if the saved test data is the old object where imaged
+        # locations were saved directly as a list of tuples rather than being generated
+        # from a history of VisitedScanLocation objects.
+        # This "if" section of this if-else block can be deleted once we are confident
+        # of the new format and the pickles are updated
+        if hasattr(expected_planner, "_imaged_locations"):
+            assert planner.path_history == expected_planner._path_history
+            assert planner.imaged_locations == expected_planner._imaged_locations
+        else:
+            assert planner.path_history == expected_planner.path_history
+            assert planner.imaged_locations == expected_planner.imaged_locations

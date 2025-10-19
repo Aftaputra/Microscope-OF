@@ -60,8 +60,8 @@ def visualise_scan(sample: FakeSample, planner: scan_planners.ScanPlanner) -> Fi
     """For a given sample and scanner object return a matplotlib figure of the scan."""
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.add_artist(sample.patch)
-    xh, yh = zip(*planner._path_history, strict=True)
-    xi, yi, _ = zip(*planner._imaged_locations, strict=True)
+    xh, yh = zip(*planner.path_history, strict=True)
+    xi, yi, _zi = zip(*planner.imaged_locations, strict=True)
 
     # convert history to numpy array so can calculate quiver arrows
     xh = np.array(xh)
@@ -99,7 +99,7 @@ def interp_closed_path(xy_points: list[tuple[int, int]], n_points: int) -> MatPa
 
     # fit splines to x=f(u) and y=g(u), treating both as periodic. also note that s=0
     # is needed in order to force the spline fit to pass through all the input points.
-    spline_data, _ = interpolate.splprep([x, y], s=0, per=True)
+    spline_data, *_extra = interpolate.splprep([x, y], s=0, per=True)
 
     # evaluate the spline
     xi, yi = interpolate.splev(np.linspace(0, 1, n_points), spline_data)
