@@ -341,6 +341,19 @@ class SmartSpiral(ScanPlanner):
         super().__init__(initial_position, planner_settings)
         self._distance_cutoff: float = max([self._dx, self._dy]) * 1.1
 
+    def _is_primary_location(self, location: FutureScanLocation) -> bool:
+        """Return True if input is a primary location not a secondary (intermediate) location."""
+        return location.planner_data["primary"]
+
+    @property
+    def secondary_locations(self) -> XYZPosList:
+        """A list of all secondary (intermediate) locations."""
+        return [
+            loc.xyz_tuple
+            for loc in self._path_history
+            if not self._is_primary_location(loc)
+        ]
+
     def _parse(self, planner_settings: Optional[dict] = None) -> None:
         """Parse SmartSpiral Settings dictionary.
 
@@ -366,7 +379,7 @@ class SmartSpiral(ScanPlanner):
 
         For smart spiral this is just the first point
         """
-        return [FutureScanLocation(self._initial_position)]
+        return [FutureScanLocation(self._initial_position, primary=True)]
 
     def mark_location_visited(
         self, xyz_pos: XYZPos, imaged: bool = True, focused: bool = True
@@ -381,8 +394,11 @@ class SmartSpiral(ScanPlanner):
         super().mark_location_visited(xyz_pos, imaged, focused)
 
         xy_pos = enforce_xy_tuple(xyz_pos[:2])
-        if imaged:
-            self._add_surrounding_positions(xy_pos)
+        if self._is_primary_location(self._path_history[-1]):
+            if imaged:
+                self._add_surrounding_positions(xy_pos)
+            else:
+                self._add_intermediate_positions(xy_pos)
         self._re_sort_remaining_locations(xy_pos)
 
     def _add_surrounding_positions(self, xy_pos: XYPos) -> None:
@@ -394,24 +410,81 @@ class SmartSpiral(ScanPlanner):
         * too far away
         * already planned
         * already visited
+
+        If the already visited position was not imaged then an intermediate location is
+        added. See also self._add_intermediate_positions() for adding intermediate
+        locations after visiting a location that was not imaged.
         """
-        new_positions = [
-            FutureScanLocation((xy_pos[0] - self._dx, xy_pos[1])),
-            FutureScanLocation((xy_pos[0] + self._dx, xy_pos[1])),
-            FutureScanLocation((xy_pos[0], xy_pos[1] - self._dy)),
-            FutureScanLocation((xy_pos[0], xy_pos[1] + self._dy)),
-        ]
+        new_positions = self._adjacent_positions(xy_pos)
 
         for new_pos in new_positions:
-            # Skip position if already planned or visited
-            if self.position_planned(new_pos) or self.position_visited(new_pos):
+            # Skip position if already planned
+            if self.position_planned(new_pos):
+                continue
+            if self.position_visited(new_pos):
+                # Get the VisitedScanLocation object if already visited
+                visited = self._path_history[self._path_history.index(new_pos)]
+                if visited.imaged:
+                    # If this adjacent position was imaged succsfully already then skip.
+                    continue
+                # If it wasn't imaged add an intimediate location between the
+                # last imaged position and this one.
+                i_pos = self._intermediate_position(xy_pos, new_pos)
+                # Set primary=False surrounding images are not added once imaged.
+                i_loc = FutureScanLocation(i_pos, primary=False)
+                # Append instantly without checking max_distance as this is between
+                # imaged points.
+                self._remaining_locations.append(i_loc)
                 continue
 
             dist = distance_between(new_pos, self._initial_position)
             if dist > self._max_dist:
                 LOGGER.debug("Rejected moving to %s as it is out of range", new_pos)
                 continue
-            self._remaining_locations.append(new_pos)
+            new_loc = FutureScanLocation(new_pos, primary=True)
+            self._remaining_locations.append(new_loc)
+
+    def _add_intermediate_positions(self, xy_pos: XYPos) -> None:
+        """Add intermediate points after locating a background location.
+
+        This is called after an image is recorded that was background. Intermediate
+        locations are added between any adjacent locations that were successfully
+        imaged.
+
+        Note that in the case that an imaged location has an adjacent background image
+        then adding the intermediate image will be handled by
+        _add_surrounding_positions().
+        """
+        surrounding_positions = self._adjacent_positions(xy_pos)
+
+        for surr_pos in surrounding_positions:
+            if self.position_visited(surr_pos):
+                # Get the VisitedScanLocation object if already visited
+                visited = self._path_history[self._path_history.index(surr_pos)]
+                if not visited.imaged:
+                    # If it wasn't imaged then skip this position
+                    continue
+                # If surrpounding location was imaged add an intimediate location
+                # between the most recent position and this imaged position.
+                i_pos = self._intermediate_position(xy_pos, surr_pos)
+                # Set primary=False surrounding images are not added once imaged.
+                i_loc = FutureScanLocation(i_pos, primary=False)
+                # Append instantly without checking max_distance as this is between
+                # imaged points.
+                self._remaining_locations.append(i_loc)
+
+    def _adjacent_positions(self, xy_pos: XYPos) -> XYPosList:
+        """Return 4 points +/-dx and +/-dy from the input location."""
+        return [
+            (xy_pos[0] - self._dx, xy_pos[1]),
+            (xy_pos[0] + self._dx, xy_pos[1]),
+            (xy_pos[0], xy_pos[1] - self._dy),
+            (xy_pos[0], xy_pos[1] + self._dy),
+        ]
+
+    def _intermediate_position(self, xy_pos1: XYPos, xy_pos2: XYPos) -> XYPos:
+        """Return an (x,y) position halfway between two input positions."""
+        return tuple((i + j) // 2 for i, j in zip(xy_pos1, xy_pos2, strict=True))
 
     def _re_sort_remaining_locations(self, current_pos: XYPos) -> None:
         """Sort the remaining positions based on the current location."""

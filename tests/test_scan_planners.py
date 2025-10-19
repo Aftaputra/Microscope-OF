@@ -302,14 +302,6 @@ def test_example_smart_spiral():
         expected_planner = (
             scan_test_helpers.get_expected_result_for_example_smart_spiral(sample_name)
         )
-        # Use hasattr to check if the saved test data is the old object where imaged
-        # locations were saved directly as a list of tuples rather than being generated
-        # from a history of VisitedScanLocation objects.
-        # This "if" section of this if-else block can be deleted once we are confident
-        # of the new format and the pickles are updated
-        if hasattr(expected_planner, "_imaged_locations"):
-            assert planner.path_history == expected_planner._path_history
-            assert planner.imaged_locations == expected_planner._imaged_locations
-        else:
-            assert planner.path_history == expected_planner.path_history
-            assert planner.imaged_locations == expected_planner.imaged_locations
+
+        assert planner.path_history == expected_planner.path_history
+        assert planner.imaged_locations == expected_planner.imaged_locations

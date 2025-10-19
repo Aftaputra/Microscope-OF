@@ -62,6 +62,7 @@ def visualise_scan(sample: FakeSample, planner: scan_planners.ScanPlanner) -> Fi
     ax.add_artist(sample.patch)
     xh, yh = zip(*planner.path_history, strict=True)
     xi, yi, _zi = zip(*planner.imaged_locations, strict=True)
+    xs, ys, _zs = zip(*planner.secondary_locations, strict=True)
 
     # convert history to numpy array so can calculate quiver arrows
     xh = np.array(xh)
@@ -78,6 +79,7 @@ def visualise_scan(sample: FakeSample, planner: scan_planners.ScanPlanner) -> Fi
     )
     plt.plot(xh, yh, "r.")
     plt.plot(xi, yi, "g*")
+    plt.plot(xs, ys, "o", mfc="none", mec="blue")
     ax.axis("equal")
     return fig
 
