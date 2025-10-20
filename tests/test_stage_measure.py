@@ -106,7 +106,7 @@ def test_error_on_axis_from_movement_dict(movement):
 
 
 @pytest.mark.parametrize(
-    ("par_fraction", "should_error"),
+    ("par_fraction", "too_high"),
     [
         (-0.20, True),
         (-0.11, True),
@@ -119,19 +119,17 @@ def test_error_on_axis_from_movement_dict(movement):
         (0.20, True),
     ],
 )
-def test_parasitic_detect(par_fraction, should_error):
-    """Check error is raised if the fraction of parastitic motion is too high."""
+def test_parasitic_detect(par_fraction, too_high):
+    """Check parasitic motion is detected if the fraction of parasitic motion is too high."""
     movement = {"x": 2908, "y": 0}
 
     offset = copy(movement)
     offset["y"] = movement["x"] * par_fraction
-    if should_error:
-        with pytest.raises(stage_measure.ParasiticMotionError):
-            stage_measure._detect_parasitic_motion(movement=movement, offset=offset)
-    else:
-        # Nothing to check here as the only job of _detect_parasitic_motion is to
-        # error if there is too much motion
-        stage_measure._detect_parasitic_motion(movement=movement, offset=offset)
+
+    detected = stage_measure._parasitic_motion_detected(
+        movement=movement, offset=offset
+    )
+    assert detected == too_high
 
 
 def test_error_if_no_stream_res_set_when_requesting_img_coords():
@@ -163,6 +161,9 @@ def mock_rom_deps(csm_matrix, mocker) -> stage_measure.RomDeps:
         vec = np.dot(np.array([y, x]), np.array(csm_matrix))
         return {"x": int(vec[0]), "y": int(vec[1])}
 
+    mock_cam = mocker.Mock()
+    mock_cam.image_is_sample.return_value = (True, "Mocked not measured.")
+
     mock_csm = mocker.Mock()
     # Set up mock csm to return a CSM matrix
     mock_csm.image_to_stage_displacement_matrix = csm_matrix
@@ -171,7 +172,7 @@ def mock_rom_deps(csm_matrix, mocker) -> stage_measure.RomDeps:
     return stage_measure.RomDeps(
         autofocus=mocker.Mock(),
         stage=mocker.Mock(),
-        cam=mocker.Mock(),
+        cam=mock_cam,
         csm=mock_csm,
         logger=LOGGER,
     )

@@ -329,7 +329,13 @@ class RangeofMotionThing(lt.Thing):
             rom_deps.logger.info(f"Offset measured as {offset[axis]}")
 
             self._rom_data.record_movement(rom_deps.stage.position, offset)
-            _detect_parasitic_motion(movement, offset)
+            if _parasitic_motion_detected(movement, offset):
+                raise ParasiticMotionError(
+                    "Parasitic motion detected during initial images to calculate "
+                    "z-curvature. This may indicate you have started at the end of the "
+                    "range of travel, or that camera stage mapping is poorly "
+                    "calibrated."
+                )
 
     def _big_z_corrected_movement(
         self, axis: Literal["x", "y"], direction: Literal[1, -1], rom_deps: RomDeps
@@ -386,17 +392,17 @@ class RangeofMotionThing(lt.Thing):
                 rom_deps=rom_deps,
                 # Don't autofocus initially
                 perform_autofocus=False,
-                # But retry focus 3 times if detected motion is too small
+                # But retry focus 3 times if detected motion is too small or parasitic
                 max_autofocus_repeats=3,
                 abs_min_offset=abs_min_offset,
             )
+            parasitic_motion = _parasitic_motion_detected(movement, offset)
             rom_deps.logger.info(f"Offset measured as {offset[axis]}")
-
             self._rom_data.record_movement(rom_deps.stage.position, offset)
-            _detect_parasitic_motion(movement, offset)
 
-            if abs(offset[axis]) < abs_min_offset:
-                # If the offset is below the abs min offset, the edge has been found.
+            if abs(offset[axis]) < abs_min_offset or parasitic_motion:
+                # If the offset is below the abs min offset, or significant
+                # parasitic motion is detected then the edge has been found.
                 rom_deps.logger.info("Edge has been found.")
                 return False
         # If we reached here the stage is still moving fine
@@ -477,7 +483,8 @@ class RangeofMotionThing(lt.Thing):
         if max_autofocus_repeats > 0:
             axis = _axis_from_movement_dict(movement)
             af_repeats = 0
-            while abs(offset[axis]) < abs_min_offset:
+            parasitic_motion = _parasitic_motion_detected(movement, offset)
+            while abs(offset[axis]) < abs_min_offset or parasitic_motion:
                 af_repeats += 1
                 rom_deps.logger.info(
                     f"Motion not detected. Refocusing to check. Attempt {af_repeats}/3."
@@ -485,6 +492,7 @@ class RangeofMotionThing(lt.Thing):
                 rom_deps.autofocus.looping_autofocus(dz=800)
                 # Re-take image and calculate offset
                 offset = self._offset_from(before_img, rom_deps=rom_deps)
+                parasitic_motion = _parasitic_motion_detected(movement, offset)
                 if af_repeats >= max_autofocus_repeats:
                     # break if the maximum number of tries are exceeded.
                     break
@@ -500,6 +508,11 @@ class RangeofMotionThing(lt.Thing):
         :param rom_deps: All dependencies that were passed to the calling Action
         :return: The calculated offset as a dictionary in pixels
         """
+        is_sample, _bg_message = rom_deps.cam.image_is_sample()
+        if not is_sample:
+            raise RuntimeError(
+                "No sample detected. Sample must cover the whole range of motion."
+            )
         after_img = rom_deps.cam.grab_as_array()
         offset = fft_image_tracking.displacement_between_images(
             image_0=before_img,
@@ -542,7 +555,7 @@ def _axis_from_movement_dict(movement: dict[str, float], return_other: bool = Fa
     return "y" if movement["x"] == 0 else "x"
 
 
-def _detect_parasitic_motion(
+def _parasitic_motion_detected(
     movement: dict[str, float], offset: dict[str, float]
 ) -> None:
     """Compare a desired movement to measured offset and error if parasitic motion is too high.
@@ -553,8 +566,4 @@ def _detect_parasitic_motion(
     movement_axis, other_axis = _axis_from_movement_dict(movement, return_other=True)
     parasitic_motion = abs(offset[other_axis])
     max_parasitic_motion = abs(movement[movement_axis] * PARASITIC_MOTION_TOL)
-    if parasitic_motion > max_parasitic_motion:
-        raise ParasiticMotionError(
-            f"Parasitic motion detected. Detected motion of {parasitic_motion} pixels "
-            f"this exceeds a maximum for this move of {max_parasitic_motion} pixels."
-        )
+    return parasitic_motion > max_parasitic_motion
