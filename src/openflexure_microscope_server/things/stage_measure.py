@@ -74,30 +74,23 @@ class RomDataTracker:
 
     def predict_z_displacement(
         self,
-        movement: dict[str, int],
+        axis: Literal["x", "y"],
+        stage_movement: dict[str, int],
         stage_position: dict[str, int],
-        csm_matrix: list[list[int]],
     ) -> int:
         """Predict the z-displacement needed for a given movement.
 
-        :param movement: The movement to be performed in image coordinates.
+        :param axis: The axis which is being measured. This must be 'x' or 'y'.
+        :param stage_movement: The movement to be performed in stage coordinates.
         :param stage_position: The current stage position in stage coordinates.
-        :param csm_matrix: The camera stage mapping matrix.
         :returns: The predicted relative z displacement needed to stay in focus.
         """
-        pixel_step = {
-            "x": 1 / csm_matrix[0][1],
-            "y": 1 / csm_matrix[1][0],
-        }
-
-        axis = _axis_from_movement_dict(movement)
-
-        lateral_positions = [i[axis] for i in self.stage_coords]  # x or y positions
+        # x or y positions
+        lateral_positions = [i[axis] for i in self.stage_coords]
         z_positions = [i["z"] for i in self.stage_coords]
         fit_params, *_others = curve_fit(quadratic, lateral_positions, z_positions)
-        z_dest = quadratic(
-            stage_position[axis] + (movement[axis] / pixel_step[axis]), *fit_params
-        )
+        z_dest = quadratic(stage_position[axis] + stage_movement[axis], *fit_params)
+
         return int(z_dest - stage_position["z"])
 
 
@@ -248,7 +241,6 @@ class RangeofMotionThing(lt.Thing):
                 self._big_z_corrected_movement(
                     axis=axis, direction=direction, rom_deps=rom_deps
                 )
-
                 # Autofocus and record position
                 rom_deps.autofocus.looping_autofocus(dz=800)
                 self._rom_data.stage_coords.append(rom_deps.stage.position)
@@ -334,7 +326,6 @@ class RangeofMotionThing(lt.Thing):
         )
         for _loop in range(5):
             offset = self._move_and_measure(movement=movement, rom_deps=rom_deps)
-
             rom_deps.logger.info(f"Offset measured as {offset[axis]}")
 
             self._rom_data.record_movement(rom_deps.stage.position, offset)
@@ -351,16 +342,19 @@ class RangeofMotionThing(lt.Thing):
         :param direction: The direction to move in.
         :param rom_deps: All dependencies that were passed to the calling Action
         """
-        big_movement = self._movement_in_img_coords(
+        movement = self._movement_in_img_coords(
             fov_perc=BIG_STEP, axis=axis, direction=direction
         )
+        # Convert to stage coordinates
+        stage_movemenet = rom_deps.csm.convert_image_to_stage_coordinates(**movement)
+
         z_disp = self._rom_data.predict_z_displacement(
-            movement=big_movement,
+            axis=axis,
+            stage_movement=stage_movemenet,
             stage_position=rom_deps.stage.position,
-            csm_matrix=rom_deps.csm.image_to_stage_displacement_matrix,
         )
         rom_deps.stage.move_relative(z=z_disp)
-        rom_deps.csm.move_in_image_coordinates(**big_movement)
+        rom_deps.csm.move_in_image_coordinates(**movement)
 
     def _stage_still_moves(
         self,

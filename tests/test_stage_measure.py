@@ -45,7 +45,7 @@ def increasing_xyz_dict_generator(*_args, **_kwargs):
 def csm_matrix():
     """Return an example CSM matrix."""
     return [
-        [0.03061156624485296, 1.8031242270940833],
+        [0.03061156624485296, -1.8031242270940833],
         [1.773236372778601, 0.006660431608601435],
     ]
 
@@ -70,12 +70,12 @@ def example_rom_data():
     return rom_data
 
 
-def test_predict_z(csm_matrix, example_rom_data):
+def test_predict_z(example_rom_data):
     """Check that the prediction for the next z position is correct."""
     mock_z_diff = example_rom_data.predict_z_displacement(
-        movement={"x": 2908, "y": 0},
+        axis="x",
+        stage_movement={"x": 5243, "y": 0},
         stage_position={"x": 3635, "y": 10, "z": 617},
-        csm_matrix=csm_matrix,
     )
     expected_z_diff = 1343
     assert mock_z_diff == expected_z_diff
@@ -157,9 +157,16 @@ def rom_thing(example_rom_data) -> stage_measure.RangeofMotionThing:
 @pytest.fixture
 def mock_rom_deps(csm_matrix, mocker) -> stage_measure.RomDeps:
     """Return a RomDeps object full of mocks, except the logger which is LOGGER."""
+
+    def apply_csm(x: float, y: float) -> dict[str, int]:
+        """Convert image coordinates to stage coordinates."""
+        vec = np.dot(np.array([y, x]), np.array(csm_matrix))
+        return {"x": int(vec[0]), "y": int(vec[1])}
+
     mock_csm = mocker.Mock()
     # Set up mock csm to return a CSM matrix
     mock_csm.image_to_stage_displacement_matrix = csm_matrix
+    mock_csm.convert_image_to_stage_coordinates.side_effect = apply_csm
 
     return stage_measure.RomDeps(
         autofocus=mocker.Mock(),
@@ -367,7 +374,7 @@ def test_big_z_corrected_movement(rom_thing, mock_rom_deps):
     assert "x" not in move_kwargs
     assert "y" not in move_kwargs
     assert "z" in move_kwargs
-    move_kwargs["z"] = 1162
+    assert move_kwargs["z"] == 1148
 
     # And one move in image coordinates
     assert mock_rom_deps.csm.move_in_image_coordinates.call_count == 1
