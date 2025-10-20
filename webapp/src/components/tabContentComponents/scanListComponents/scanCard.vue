@@ -65,7 +65,7 @@
         <ul>
           <li>{{ scanData.number_of_images }} images</li>
           <li>created: {{ formatDate(scanData.created) }}</li>
-          <li>duration: {{ scanData.duration }}</li>
+          <li>duration: {{ formatDuration(scanData.duration) }}</li>
         </ul>
         <ul v-if="!ongoing">
           <li v-if="scanData.number_of_images<3" class="warning-msg">Not enough images to stitch</li>
@@ -128,6 +128,22 @@ export default {
         .toString()
         .padStart(2, "0");
       return `${HH}:${MM} ${dd}/${mm}/${yyyy}`;
+    },
+    formatDuration(duration) {
+      const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+
+      if (!match) return "00:00:00";
+
+      const hours = parseInt(match[1] || 0, 10);
+      const minutes = parseInt(match[2] || 0, 10);
+      const seconds = parseInt(match[3] || 0, 10);
+
+      // Format to HH:MM:SS with leading zeros
+      return [
+        String(hours).padStart(2, "0"),
+        String(minutes).padStart(2, "0"),
+        String(seconds).padStart(2, "0"),
+      ].join(":");
     },
     requestViewer() {
       // Notify parent that thumbnail was clicked
