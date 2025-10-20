@@ -435,9 +435,9 @@ class SmartSpiral(ScanPlanner):
                 # Get the VisitedScanLocation object if already visited
                 visited = self.get_visited_location(new_pos)
                 if visited.imaged:
-                    # If this adjacent position was imaged succsfully already then skip.
+                    # If this adjacent position was imaged successfully already then skip.
                     continue
-                # If it wasn't imaged add an intimediate location between the
+                # If it wasn't imaged add an intermediate location between the
                 # last imaged position and this one.
                 i_pos = self._intermediate_position(xy_pos, new_pos)
                 # Set primary=False surrounding images are not added once imaged.
@@ -459,7 +459,7 @@ class SmartSpiral(ScanPlanner):
 
         This is called after an image is recorded that was background. Intermediate
         locations are added between any adjacent locations that were successfully
-        imaged.
+        imaged due to being labelled as containing sample.
 
         Note that in the case that an imaged location has an adjacent background image
         then adding the intermediate image will be handled by
@@ -474,7 +474,7 @@ class SmartSpiral(ScanPlanner):
                 if not visited.imaged:
                     # If it wasn't imaged then skip this position
                     continue
-                # If surrpounding location was imaged add an intimediate location
+                # If surrounding location was imaged add an intermediate location
                 # between the most recent position and this imaged position.
                 i_pos = self._intermediate_position(xy_pos, surr_pos)
                 # Set primary=False surrounding images are not added once imaged.

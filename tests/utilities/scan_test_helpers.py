@@ -101,7 +101,7 @@ def interp_closed_path(xy_points: list[tuple[int, int]], n_points: int) -> MatPa
 
     # fit splines to x=f(u) and y=g(u), treating both as periodic. also note that s=0
     # is needed in order to force the spline fit to pass through all the input points.
-    spline_data, *_extra = interpolate.splprep([x, y], s=0, per=True)
+    spline_data, *_unused = interpolate.splprep([x, y], s=0, per=True)
 
     # evaluate the spline
     xi, yi = interpolate.splev(np.linspace(0, 1, n_points), spline_data)
