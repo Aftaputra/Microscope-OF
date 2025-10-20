@@ -7,7 +7,7 @@ See repository root for licensing information.
 """
 
 from __future__ import annotations
-from typing import Literal, Optional, Tuple, Any
+from typing import Literal, Optional, Tuple, Any, Mapping
 from types import TracebackType
 import json
 import io
@@ -649,6 +649,11 @@ class BaseCamera(lt.Thing):
         self.active_detector.set_background(background)
         # Manually save settings as the setter is not called.
         self.save_settings()
+
+    @property
+    def thing_state(self) -> Mapping[str, Any]:
+        """Summary metadata describing the current state of the Thing."""
+        return {"capture_time": time.time()}
 
 
 CameraDependency = lt.deps.direct_thing_client_dependency(BaseCamera, "/camera/")
