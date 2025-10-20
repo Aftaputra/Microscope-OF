@@ -61,7 +61,7 @@ class RomDataTracker:
         self.offsets: list[dict[str, float]] = []
 
     def record_movement(
-        self, current_pos: dict[str, int], offset: dict[str, int]
+        self, current_pos: dict[str, int], offset: dict[str, float]
     ) -> None:
         """Record the current position and the measured offset of the last move."""
         self.stage_coords.append(current_pos)
@@ -76,7 +76,7 @@ class RomDataTracker:
         self,
         movement: dict[str, int],
         stage_position: dict[str, int],
-        csm_matrix: np.ndarray,
+        csm_matrix: list[list[int]],
     ) -> int:
         """Predict the z-displacement needed for a given movement.
 
@@ -98,7 +98,6 @@ class RomDataTracker:
         z_dest = quadratic(
             stage_position[axis] + (movement[axis] / pixel_step[axis]), *fit_params
         )
-
         return int(z_dest - stage_position["z"])
 
 
@@ -192,7 +191,7 @@ class RangeofMotionThing(lt.Thing):
 
         return {
             "Time": total_time,
-            "CSM Matrix": csm.image_to_stage_displacement_matrix.tolist(),
+            "CSM Matrix": csm.image_to_stage_displacement_matrix,
             "Step Range": step_range,
         }
 

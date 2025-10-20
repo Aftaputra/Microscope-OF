@@ -44,12 +44,10 @@ def increasing_xyz_dict_generator(*_args, **_kwargs):
 @pytest.fixture
 def csm_matrix():
     """Return an example CSM matrix."""
-    return np.array(
-        [
-            [0.03061156624485296, 1.8031242270940833],
-            [1.773236372778601, 0.006660431608601435],
-        ]
-    )
+    return [
+        [0.03061156624485296, 1.8031242270940833],
+        [1.773236372778601, 0.006660431608601435],
+    ]
 
 
 @pytest.fixture
