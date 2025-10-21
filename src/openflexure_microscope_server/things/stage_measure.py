@@ -166,10 +166,14 @@ class RangeofMotionThing(lt.Thing):
         # The total range for the two axes under test
         step_range = []
 
-        for axis in ["x", "y"]:
+        # Strictly typed definitions to iterate over for MyPys sake.
+        axes: tuple[Literal["x"], Literal["y"]] = ("x", "y")
+        directions: tuple[Literal[1], Literal[-1]] = (1, -1)
+
+        for axis in axes:
             # The final position of the axis under test in the given direction
             axis_limits = []
-            for axis_dir in [1, -1]:
+            for axis_dir in directions:
                 # Create a new tracker at start of measurement.
                 self._rom_data = RomDataTracker()
                 self._move_until_edge(axis=axis, direction=axis_dir, rom_deps=rom_deps)
@@ -195,14 +199,14 @@ class RangeofMotionThing(lt.Thing):
         """
         stream_shape = cam.grab_as_array().shape
         # Swap axes as numpy is [y, x]
-        self._stream_resolution = [stream_shape[1], stream_shape[0]]
+        self._stream_resolution = (stream_shape[1], stream_shape[0])
 
     def _move_until_edge(
         self,
         axis: Literal["x", "y"],
         direction: Literal[1, -1],
         rom_deps: RomDeps,
-    ) -> dict:
+    ) -> None:
         """Move in one direction until movement per step decreases significantly.
 
         This should move until the edge of the stage. Once the edge is reached there
@@ -426,7 +430,7 @@ class RangeofMotionThing(lt.Thing):
         """
 
         def _reverse_move_dict(displacement: float) -> dict[str, float]:
-            move = {"x": 0, "y": 0}
+            move = {"x": 0.0, "y": 0.0}
             move[axis] = displacement * direction * -1
             return move
 
@@ -511,7 +515,8 @@ class RangeofMotionThing(lt.Thing):
         is_sample, _bg_message = rom_deps.cam.image_is_sample()
         if not is_sample:
             raise RuntimeError(
-                "No sample detected. Sample must cover the whole range of motion."
+                "No sample detected. Sample must be densely featured and cover the "
+                "whole range of motion."
             )
         after_img = rom_deps.cam.grab_as_array()
         offset = fft_image_tracking.displacement_between_images(
@@ -525,18 +530,24 @@ class RangeofMotionThing(lt.Thing):
 
 
 @overload
+def _axis_from_movement_dict(movement: dict[str, float]) -> str: ...
+
+
+@overload
 def _axis_from_movement_dict(
-    movement: dict[str, float], return_other: bool = False
+    movement: dict[str, float], return_other: Literal[False]
 ) -> str: ...
 
 
 @overload
 def _axis_from_movement_dict(
-    movement: dict[str, float], return_other: bool = True
+    movement: dict[str, float], return_other: Literal[True]
 ) -> tuple[str, str]: ...
 
 
-def _axis_from_movement_dict(movement: dict[str, float], return_other: bool = False):
+def _axis_from_movement_dict(
+    movement: dict[str, float], return_other: bool = False
+) -> str | tuple[str, str]:
     """Return the axis that a given movement dictionary moves in.
 
     For example: ``_axis_from_movement_dict({"x": 10, "y":0})`` will return ``x``.
@@ -557,7 +568,7 @@ def _axis_from_movement_dict(movement: dict[str, float], return_other: bool = Fa
 
 def _parasitic_motion_detected(
     movement: dict[str, float], offset: dict[str, float]
-) -> None:
+) -> bool:
     """Compare a desired movement to measured offset and error if parasitic motion is too high.
 
     :param movement: The movement dictionary in image coordinates.
