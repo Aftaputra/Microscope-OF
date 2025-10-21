@@ -64,7 +64,7 @@ def set_static_ccm(
     adaptive tweaking by the algorithm.
     """
     ccm = Picamera2.find_tuning_algo(tuning, "rpi.ccm")
-    ccm["ccms"] = [{"ct": 2860, "ccm": col_corr_matrix}]
+    ccm["ccms"] = [{"ct": 5000, "ccm": col_corr_matrix}]
 
 
 def get_static_ccm(tuning: dict) -> None:
