@@ -279,19 +279,18 @@ def test_move_back_until_motion_detected(rom_thing, mock_rom_deps, mocker):
     The moves for this method should be in opposite direction to the direction
     specified as this is moving back after the stage reaches end of its movement.
     """
-
-    def gen_offset(*_args, **_kwargs):
-        return {"x": 0, "y": 0}
-
     mock_move_n_meas = mocker.patch.object(
-        rom_thing, "_move_and_measure", side_effect=gen_offset
+        rom_thing, "_move_and_measure", return_value={"x": 0, "y": 0}
     )
 
     with pytest.raises(RuntimeError, match="Cannot detect motion again"):
         rom_thing._move_back_until_motion_detected("y", -1, rom_deps=mock_rom_deps)
-    assert mock_move_n_meas.call_count == 10
-    for i, call_args in enumerate(mock_move_n_meas.call_args_list):
-        call_args.kwargs["movement"] = {"x": 0, "y": 2**i}
+
+    max_tries = int(1.5 * stage_measure.BIG_STEP / stage_measure.SMALL_STEP)
+    expected_step = 800 * stage_measure.SMALL_STEP / 100
+    assert mock_move_n_meas.call_count == max_tries
+    for _i, call_args in enumerate(mock_move_n_meas.call_args_list):
+        call_args.kwargs["movement"] = {"x": 0, "y": expected_step}
         call_args.kwargs["perform_autofocus"] = False
 
     ## Reset mock and change the side effect
@@ -299,7 +298,7 @@ def test_move_back_until_motion_detected(rom_thing, mock_rom_deps, mocker):
     mock_move_n_meas.side_effect = (
         {"x": 0, "y": 0},
         {"x": 0, "y": 0},
-        {"x": 21, "y": 0},
+        {"x": expected_step * 0.8, "y": 0},
     )
 
     # Other axis and direction this time
@@ -307,8 +306,8 @@ def test_move_back_until_motion_detected(rom_thing, mock_rom_deps, mocker):
 
     # Should only be called 3 times
     assert mock_move_n_meas.call_count == 3
-    for i, call_args in enumerate(mock_move_n_meas.call_args_list):
-        call_args.kwargs["movement"] = {"x": -(2**i), "y": 0}
+    for _i, call_args in enumerate(mock_move_n_meas.call_args_list):
+        call_args.kwargs["movement"] = {"x": -expected_step, "y": 0}
         call_args.kwargs["perform_autofocus"] = False
 
 

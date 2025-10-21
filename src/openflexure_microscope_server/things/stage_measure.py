@@ -5,8 +5,8 @@ enough positions to predict future z positions. Next, one 'big' step is taken fo
 by 3 'small' steps to test that the stage is still moving as expected and has not
 reached the edge. Once the edge has been found and to account for the possibility that
 the edge was reached during a "big" step, the stage is moved in a sequence of steps
-(incrementing in size) in the opposite direction until motion is detected. This is
-position is taken as the true final position.
+in the opposite direction until motion is detected. This is position is taken as the
+true final position.
 
 Throughout the test, parasitic motion (motion in the axis not being measured)
 is tracked and an error is raised if it exceeds a minimum amount. Currently
@@ -421,30 +421,29 @@ class RangeofMotionThing(lt.Thing):
         """Move the stage against the direction of test unil motion is detected.
 
         In the case that the stage has reached the end of the motion, this method moves
-        the motor in the opposite direction until motion is detected.
+        the motor in the opposite direction until reliable motion is detected.
 
         :param axis: The axis in which the stage is moving. This must be 'x' or 'y'.
         :param direction: The direction in which the stage was moving during the test,
             this method will move in the opposite direction.
         :param rom_deps: All dependencies that were passed to the calling Action
         """
+        movement = self._movement_in_img_coords(
+            fov_perc=SMALL_STEP, axis=axis, direction=-direction
+        )
 
-        def _reverse_move_dict(displacement: float) -> dict[str, float]:
-            move = {"x": 0.0, "y": 0.0}
-            move[axis] = displacement * direction * -1
-            return move
+        max_moves = int(1.5 * BIG_STEP / SMALL_STEP)
+        # minimum number of pixels for motion to be detected as reliable
+        motion_minimum = abs(movement[axis] * DETECT_MOTION_TOL)
 
-        # Array of increasing pixel sizes (powers of 2 from 1 to 512)
-        movements = [_reverse_move_dict(2**i) for i in range(10)]
-
-        motion_minimum = 20  # minimum number of pixels for motion to be detected
-
-        for movement in movements:
+        for i in range(max_moves):
             # Increment movement
             rom_deps.logger.info(f"Testing with step size {movement[axis]}")
 
+            # Run an autofocus every 3 steps
+            run_autofocus = i % 3 == 2
             offset = self._move_and_measure(
-                movement=movement, rom_deps=rom_deps, perform_autofocus=False
+                movement=movement, rom_deps=rom_deps, perform_autofocus=run_autofocus
             )
 
             rom_deps.logger.info(f"Offset measured as {abs(offset[axis])}")
