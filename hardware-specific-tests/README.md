@@ -10,23 +10,11 @@ To test the code that interacts with the hardware itself, hardware specific test
 
 In GitLab we track our "code coverage", this tells us which lines of code have been executed during testing. The `picamera_tests.py` script in the root of the repository can be used to report the coverage from these tests. See the section below on "Reporting the coverage to GitLab".
 
-### Running these tests during development
+### Running and reporting the test coverage to GitLab (for merge requests)
 
-These are very slow as they run on hardware. They can be run with:
-
-    pytest hardware-specific-tests
-
-It is essential to stop the server first:
+It is essential to stop the server before running these tests:
 
     ofm stop
-
-However, this will not archive the tests in the Git repository for reporting the coverage. For this see the section below on reporting the coverage.
-
-When writing and debugging these unit tests it is often best to run a specific test and to use the `-s` flag to see the print statements. It is also often useful to use `--pdb` to drop you into a python debug session on any failure. For example, you might run:
-
-    pytest hardware-specific-tests/picamera2/test_exposure_time_drift.py::test_exposure_time_saves_and_loads -s --pdb
-
-### Reporting the coverage to GitLab
 
 To create a coverage report that will be included into the repository (and reported to GitLab) run:
 
@@ -40,19 +28,35 @@ This will first run `pytest` on the hardware specific tests. This creates a `.co
 
 This zip should then be committed to the repository.
 
-When the CI runs on GitLab to calculate code coverage. It will first run the tests in the `tests` directory, in one job and archive this as `.coverage.main`, and then it will run a second job that:
+### Running these tests during development
+
+As before, the server must be stopped before running these tests.
+
+The camera test are very slow as they run on hardware. They can be run with:
+
+    pytest hardware-specific-tests
+
+However, this will not archive the tests in the Git repository for reporting the coverage. For this, see the section above on reporting the coverage.
+
+When writing and debugging these unit tests, it is often best to run a specific test and to use the `-s` flag to see the print statements. It is also often useful to use `--pdb` to drop you into a python debug session on any failure. For example, you might run:
+
+    pytest hardware-specific-tests/picamera2/test_exposure_time_drift.py::test_exposure_time_saves_and_loads -s --pdb
+
+### CI explanation
+
+When the CI runs on GitLab to calculate code coverage, it will first run the tests in the `tests` directory in one job, and archive this as `.coverage.main`. Then it will run a second job that:
 
 * Imports the archive of `.coverage.main` for the tests just run on the server
 * Unzip the zip of the results of running tests on the Pi Camera (`.coverage.picamera`)
 * Check that the hashes for the Pi Camera source code have not changed. If they have changed it will error and ask for the picamera tests to be re-run on a Raspberry Pi.
-* It will then run `coverage combine` to create a single `.coverage` report that combines the coverage from both `.coverage.main` and `.coverage.picamera`.
-* It then generates the information needed to display the coverage in GitLab
+* Runs `coverage combine` to create a single `.coverage` report that combines the coverage from both `.coverage.main` and `.coverage.picamera`.
+* Generates the information needed to display the coverage in GitLab
 
 This ensures that:
 
 * Hardware specific tests are re-run if the relevant source code changes.
-* That the coverage for hardware specific tests is reported correctly
-* That the hardware specific tests do not need re-running when other code that does not affect PiCamera interaction is updated.
+* The coverage for hardware specific tests is reported correctly
+* The hardware specific tests do not need re-running when other code that does not affect PiCamera interaction is updated.
 
 ### Creating a combined report locally
 

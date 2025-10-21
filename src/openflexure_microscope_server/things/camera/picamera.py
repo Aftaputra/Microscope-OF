@@ -772,10 +772,11 @@ class StreamingPiCamera2(BaseCamera):
         This is broken out into its own property for convenience and compatibility with
         the micromanager API
 
-        Ir is a 9 value tuple used to specify the 3x3 matrix that the GPU pipeline uses
+        It is a 9 value tuple used to specify the 3x3 matrix that the GPU pipeline uses
         to convert from the camera R,G,B vector to the standard R,G,B.
 
-        See page Raspberry Pi Camera Algorithm and Tuning Guide, page 45.
+        The value here is interpolated from the IMX219 defaults for the colour temperatures
+        above and below our LED temperature of 5000K.
         """
         return tuple(tf_utils.get_static_ccm(self.tuning)[0]["ccm"])
 
@@ -798,17 +799,31 @@ class StreamingPiCamera2(BaseCamera):
         45.
         """
         # This is flattened 3x3 matrix. See `colour_correction_matrix`
-        col_corr_matrix = [
-            1.80439,
-            -0.73699,
-            -0.06739,
-            -0.36073,
-            1.83327,
-            -0.47255,
-            -0.08378,
-            -0.56403,
-            1.64781,
-        ]
+        if self._camera_board == "picamera_v2":
+            col_corr_matrix = [
+                2.222935,
+                -0.759672,
+                -0.463262,
+                -0.683489,
+                2.711882,
+                -1.028399,
+                -0.261375,
+                -0.668016,
+                1.929391,
+            ]
+        else:
+            # Note the only other option is the HQ
+            col_corr_matrix = [
+                2.164374,
+                -0.97259,
+                -0.191778,
+                -0.376957,
+                2.099377,
+                -0.722417,
+                -0.11787,
+                -0.489362,
+                1.607232,
+            ]
         self.colour_correction_matrix = col_corr_matrix
 
     @lt.thing_action
@@ -858,6 +873,7 @@ class StreamingPiCamera2(BaseCamera):
         self.calibrate_lens_shading()
         self.reset_ccm()
         self.calibrate_white_balance()
+        time.sleep(0.5)
         self.set_background(portal)
 
     @lt.thing_action
