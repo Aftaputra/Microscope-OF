@@ -1,5 +1,5 @@
 <template>
-  <a class="sync-button">
+  <a @click.prevent="$emit('click')" class="sync-button">
     <span
       class="material-symbols-outlined sync-icon"
       title="Reread value from microscope. Required if microscope is updated externally"
