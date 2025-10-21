@@ -1097,6 +1097,6 @@ class StreamingPiCamera2(BaseCamera):
     @property
     def thing_state(self) -> Mapping[str, Any]:
         """Update generic camera metadata with Picamera-specific data."""
-        state = super().thing_state
+        state = dict(super().thing_state)
         state["camera_board"] = self._camera_board
         return state
