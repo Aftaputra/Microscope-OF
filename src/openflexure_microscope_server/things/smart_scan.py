@@ -7,7 +7,16 @@ It also controls external processes for live stitching composite images, and
 the creation of the final stitched images.
 """
 
-from typing import Optional, Self, TypeVar, ParamSpec, Callable, Concatenate
+from typing import (
+    Optional,
+    Self,
+    TypeVar,
+    ParamSpec,
+    Callable,
+    Concatenate,
+    Mapping,
+    Any,
+)
 import threading
 import os
 import time
@@ -480,6 +489,13 @@ class SmartScanThing(lt.Thing):
             self._stage.move_absolute(
                 **self._scan_data.starting_position, block_cancellation=True
             )
+
+    @property
+    def thing_state(self) -> Mapping[str, Any]:
+        """Return a metadata dict for ongoing scan to populate."""
+        if self._ongoing_scan is None:
+            return {}
+        return {"scan_name": self._ongoing_scan.name}
 
     @_scan_running
     def _perform_final_stitch(self) -> None:
