@@ -1,11 +1,11 @@
 <template>
-  <div id="scan-modal" ref="scanModal" style="padding: 10px;" uk-modal>
+  <div id="scan-modal" ref="scanModal" uk-modal>
     <div
+      id="scan-modal-body"
       class="uk-modal-dialog uk-modal-body"
       v-if="selectedScan"
-      style="padding: 10px; width: 95%; height: 95%; display: flex; flex-direction: column;"
     >
-      <h2 class="uk-modal-title" style="flex: 0 0 auto;">
+      <h2 id="scan-modal-title" class="uk-modal-title">
         {{ selectedScan.name }}
         <button class="uk-modal-close uk-float-right" type="button">
           <span class="material-symbols-outlined">close</span>
@@ -71,8 +71,7 @@
 
         <button
           type="button"
-          class="uk-button uk-button-default"
-          style="margin-top: 0.5rem;"
+          class="uk-button uk-button-default reset-button"
           @click="resetFilters"
         >
           Reset Filters
@@ -139,6 +138,22 @@ input[type="range"] {
   z-index: 1001;
 }
 
+#scan-modal {
+  padding: 10px;
+}
+
+#scan-modal-body {
+  padding: 10px;
+  width: 95%;
+  height: 95%;
+  display: flex;
+  flex-direction: column;
+}
+
+#scan-modal-title {
+  flex: 0 0 auto;
+}
+
 .controlsContainer {
     display: flex;
     justify-content: center;
@@ -157,5 +172,9 @@ input[type="range"] {
     flex: 1 1 auto;
     position: relative;
     overflow: hidden;
+}
+
+.reset-button{
+  margin-top: 0.5rem;
 }
 </style>

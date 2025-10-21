@@ -10,26 +10,25 @@
       <!-- Right side buttons -->
       <div class="uk-navbar-right">
         <div class="uk-grid">
-        <div style="margin-top:5px;margin-bottom: 2px">
+          <div class="scan-list-button">
             <action-button
-                class="uk-width-1-1"
-                thing="smart_scan"
-                action="stitch_all_scans"
-                submit-label="Stitch All Remaining"
-                :can-terminate="true"
-                :button-primary="false"
-                :modal-progress="true"
-                :requires-confirmation="true"
-                :confirmation-message="
-                  '<h3>Stitch all unstitched scans?</h3><br>Depending on the number and size of scans, this may be slow, and your microscope should not be used during the stitching.'
-                "
-                @error="modalError"
-                />
+              class="uk-width-1-1"
+              thing="smart_scan"
+              action="stitch_all_scans"
+              submit-label="Stitch All Remaining"
+              :can-terminate="true"
+              :button-primary="false"
+              :modal-progress="true"
+              :requires-confirmation="true"
+              :confirmation-message="
+                '<h3>Stitch all unstitched scans?</h3><br>Depending on the number and size of scans, this may be slow, and your microscope should not be used during the stitching.'
+              "
+              @error="modalError"
+            />
           </div>
           <div>
             <button
-              class="uk-button uk-button-default uk-width-1-1"
-              style="margin-top:5px;margin-bottom: 2px"
+              class="uk-button uk-button-default uk-width-1-1 scan-list-button"
               type="button"
               @click="deleteAllScans()"
             >
@@ -38,8 +37,7 @@
           </div>
           <div>
             <button
-              class="uk-button uk-button-default uk-width-1-1"
-              style="margin-top:5px;margin-bottom: 2px"
+              class="uk-button uk-button-default uk-width-1-1 scan-list-button"
               type="button"
               @click="updateScans()"
             >
@@ -236,4 +234,8 @@ export default {
   margin-bottom: 30px;
 }
 
+.scan-list-button {
+  margin-top: 5px;
+  margin-bottom: 2px;
+}
 </style>
