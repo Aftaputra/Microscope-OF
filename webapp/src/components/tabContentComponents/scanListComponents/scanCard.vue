@@ -130,20 +130,18 @@ export default {
       return `${HH}:${MM} ${dd}/${mm}/${yyyy}`;
     },
     formatDuration(duration) {
-      const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      if (duration == null || isNaN(duration)) return "Not known";
 
-      if (!match) return "00:00:00";
+      const h = Math.floor(duration / 3600);
+      const m = Math.floor((duration % 3600) / 60);
+      const s = Math.floor(duration % 60);
 
-      const hours = parseInt(match[1] || 0, 10);
-      const minutes = parseInt(match[2] || 0, 10);
-      const seconds = parseInt(match[3] || 0, 10);
+      const m_pad = String(m).padStart(2, "0");
+      const s_pad = String(s).padStart(2, "0");
 
-      // Format to HH:MM:SS with leading zeros
-      return [
-        String(hours).padStart(2, "0"),
-        String(minutes).padStart(2, "0"),
-        String(seconds).padStart(2, "0"),
-      ].join(":");
+      if (h > 0) return `${h}h ${m_pad}m ${s_pad}s`;
+      if (m > 0) return `${m_pad}m ${s_pad}s`;
+      return `${s_pad}s`;
     },
     requestViewer() {
       // Notify parent that thumbnail was clicked
