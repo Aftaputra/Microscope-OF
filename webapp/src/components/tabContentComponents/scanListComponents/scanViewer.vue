@@ -25,6 +25,9 @@
           id="openseadragon"
           ref="openseadragon"
           :src="selectedScanDZI"
+          :brightness="brightness"
+          :contrast="contrast"
+          :saturation="saturation"
         />
       </div>
 
@@ -42,7 +45,6 @@
               max="1.8"
               step="0.01"
               v-model.number="brightness"
-              @input="updateViewerFilter"
             />
           </label>
           <label>
@@ -53,7 +55,6 @@
               max="1.8"
               step="0.01"
               v-model.number="contrast"
-              @input="updateViewerFilter"
             />
           </label>
           <label>
@@ -64,7 +65,6 @@
               max="2"
               step="0.01"
               v-model.number="saturation"
-              @input="updateViewerFilter"
             />
           </label>
         </div>
@@ -124,20 +124,10 @@ export default {
     goFullscreen() {
       this.$refs.openseadragon.openFullscreen();
     },
-    updateViewerFilter() {
-      const viewer = this.$refs.openseadragon;
-      if (viewer) {
-        viewer.brightness = this.brightness;
-        viewer.contrast = this.contrast;
-        viewer.saturation = this.saturation;
-        viewer.updateFilter();
-      }
-    },
     resetFilters() {
       this.brightness = 1;
       this.contrast = 1;
       this.saturation = 1;
-      this.updateViewerFilter();
     },
   },
 };

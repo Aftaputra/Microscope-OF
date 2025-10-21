@@ -101,10 +101,7 @@ export default {
       scans: [],
       ongoing: null,
       selectedScan: null,
-      osdViewer: null,
-      brightness: 1,
-      contrast: 1,
-      saturation: 1,
+      osdViewer: null
     };
   },
 
@@ -222,7 +219,7 @@ export default {
       } else {
         this.modalError("Scan not stitched for viewing in webapp, please download or stitch");
       }
-    },
+    }
   }
 }
 </script>
@@ -238,11 +235,5 @@ export default {
 .gallery-folder-heading {
   margin-bottom: 30px;
 }
-
-input[type="range"] {
-  pointer-events: auto;
-  z-index: 1001;
-}
-
 
 </style>

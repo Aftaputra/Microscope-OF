@@ -14,15 +14,25 @@ export default {
     src: {
       type: String,
       required: true
+      
+    },
+    brightness: {
+      type: Number,
+      required: true
+    },
+    contrast: {
+      type: Number,
+      required: true
+    },
+    saturation: {
+      type: Number,
+      required: true
     }
   },
 
   data: function() {
     return {
-      osdViewer: null,
-      brightness: 1,
-      contrast: 1,
-      saturation: 1,
+      osdViewer: null
     };
   },
 
@@ -32,6 +42,15 @@ export default {
       handler(newVal) {
         this.loadOpenSeaDragon(newVal);
       }
+    },
+    brightness() {
+      this.updateFilter();
+    },
+    contrast() {
+      this.updateFilter();
+    },
+    saturation() {
+      this.updateFilter();
     }
   },
 
