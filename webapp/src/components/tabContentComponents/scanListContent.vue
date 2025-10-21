@@ -10,26 +10,25 @@
       <!-- Right side buttons -->
       <div class="uk-navbar-right">
         <div class="uk-grid">
-        <div style="margin-top:5px;margin-bottom: 2px">
+          <div class="scan-list-button">
             <action-button
-                class="uk-width-1-1"
-                thing="smart_scan"
-                action="stitch_all_scans"
-                submit-label="Stitch All Remaining"
-                :can-terminate="true"
-                :button-primary="false"
-                :modal-progress="true"
-                :requires-confirmation="true"
-                :confirmation-message="
-                  '<h3>Stitch all unstitched scans?</h3><br>Depending on the number and size of scans, this may be slow, and your microscope should not be used during the stitching.'
-                "
-                @error="modalError"
-                />
+              class="uk-width-1-1"
+              thing="smart_scan"
+              action="stitch_all_scans"
+              submit-label="Stitch All Remaining"
+              :can-terminate="true"
+              :button-primary="false"
+              :modal-progress="true"
+              :requires-confirmation="true"
+              :confirmation-message="
+                '<h3>Stitch all unstitched scans?</h3><br>Depending on the number and size of scans, this may be slow, and your microscope should not be used during the stitching.'
+              "
+              @error="modalError"
+            />
           </div>
           <div>
             <button
-              class="uk-button uk-button-default uk-width-1-1"
-              style="margin-top:5px;margin-bottom: 2px"
+              class="uk-button uk-button-default uk-width-1-1 scan-list-button"
               type="button"
               @click="deleteAllScans()"
             >
@@ -38,8 +37,7 @@
           </div>
           <div>
             <button
-              class="uk-button uk-button-default uk-width-1-1"
-              style="margin-top:5px;margin-bottom: 2px"
+              class="uk-button uk-button-default uk-width-1-1 scan-list-button"
               type="button"
               @click="updateScans()"
             >
@@ -50,25 +48,12 @@
       </div>
     </nav>
 
-    <!-- Modal for scan display -->
-    <div id="scan-modal" ref="scanModal" style="padding: 10px;" uk-modal>
-      <div class="uk-modal-dialog uk-modal-body " v-if="selectedScan" style="padding: 10px; width: 95%; height: 95%;">
-        <h2 class="uk-modal-title">
-          {{ selectedScan.name }}
-          <button class="uk-modal-close uk-float-right" type="button"><span class="material-symbols-outlined">close</span></button>
-          <button class="uk-float-right" type="button" @click="goFullscreen">
-            <span class="material-symbols-outlined">fullscreen</span>
-          </button>
-          </h2>
-          <div v-if="selectedScanDZI" id="viewer_container" style="height: 80%;">
-            <OpenSeadragonViewer
-              id="openseadragon"
-              ref="openseadragon"
-              :src="selectedScanDZI"
-            />
-          </div>
-      </div>
-    </div>
+    <ScanViewerModal
+      ref="scanViewer"
+      :selectedScan="selectedScan"
+      :baseUri="$store.getters.baseUri"
+    />
+
 
     <!-- Gallery -->
     <div
@@ -100,15 +85,14 @@
 
 <script>
 import axios from "axios";
-import UIkit from "uikit";
 import actionButton from "../labThingsComponents/actionButton.vue";
 import scanCard from "./scanListComponents/scanCard.vue";
-import OpenSeadragonViewer from "./scanListComponents/openSeadragonViewer.vue";
+import ScanViewerModal from "./scanListComponents/scanViewer.vue";
 
 // Export main app
 export default {
   name: "ScanListContent",
-  components: { actionButton, OpenSeadragonViewer, scanCard },
+  components: { actionButton, scanCard, ScanViewerModal },
 
   data: function() {
     return {
@@ -188,9 +172,6 @@ export default {
         this.updateScans();
       }
     },
-    goFullscreen() {
-      this.$refs.openseadragon.openFullscreen();
-    },
     async updateScans() {
       try {
         let scans_information = await this.readThingProperty("smart_scan", "scans");
@@ -230,16 +211,15 @@ export default {
       }
     },
     showScan(scan) {
-      if (scan.dzi){
+      if (scan.dzi) {
         this.selectedScan = scan;
-        UIkit.modal(this.$refs.scanModal).show();
-      }
-      else {
-        this.modalError(`Scan not stitched for viewing in webapp, please download or stitch`)
+        this.$refs.scanViewer.show();
+      } else {
+        this.modalError("Scan not stitched for viewing in webapp, please download or stitch");
       }
     }
   }
-};
+}
 </script>
 
 <style lang="less" scoped>
@@ -254,4 +234,8 @@ export default {
   margin-bottom: 30px;
 }
 
+.scan-list-button {
+  margin-top: 5px;
+  margin-bottom: 2px;
+}
 </style>
