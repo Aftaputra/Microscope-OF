@@ -801,15 +801,15 @@ class StreamingPiCamera2(BaseCamera):
         # This is flattened 3x3 matrix. See `colour_correction_matrix`
         if self._camera_board == "picamera_v2":
             col_corr_matrix = [
-            2.222935,
-            -0.759672,
-            -0.463262,
-            -0.683489,
-            2.711882,
-            -1.028399,
-            -0.261375,
-            -0.668016,
-            1.929391,
+                2.222935,
+                -0.759672,
+                -0.463262,
+                -0.683489,
+                2.711882,
+                -1.028399,
+                -0.261375,
+                -0.668016,
+                1.929391,
             ]
         else:
             # Note the only other option is the HQ
@@ -822,9 +822,8 @@ class StreamingPiCamera2(BaseCamera):
                 -0.722417,
                 -0.11787,
                 -0.489362,
-                1.607232
+                1.607232,
             ]
-        
         self.colour_correction_matrix = col_corr_matrix
 
     @lt.thing_action
