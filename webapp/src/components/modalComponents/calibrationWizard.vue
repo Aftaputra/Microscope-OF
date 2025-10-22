@@ -1,152 +1,8 @@
 <template>
   <div id="modal-example" ref="calibrationModalEl" uk-modal="bg-close: false;">
-    <div v-if="ready" class="uk-modal-dialog uk-modal-body">
+    <div class="uk-modal-dialog uk-modal-body">
       <h2 class="uk-modal-title">Microscope Calibration</h2>
-      <div v-show="stepValue == 0">
-        <p>
-          <b
-            >Some important microscope calibration data is currently missing.</b
-          >
-        </p>
-        <p>
-          Your microscope will still function, however some functionality will
-          be limited, and image quality will likely suffer.
-        </p>
-        <p>
-          <b>Click Next to begin microscope calibration.</b>
-        </p>
-      </div>
-
-      <div v-show="stepValue == 1">
-        <h3>Lens-shading</h3>
-        <div v-if="isLSTCalibrated">
-          <p>
-            <b
-              >Your lens-shading table has already been calibrated. Click Next
-              to move on.</b
-            >
-          </p>
-        </div>
-        <div v-else>
-          <p>
-            <b
-              >Follow the important steps below before starting lens-shading
-              calibration!</b
-            >
-          </p>
-          <ul class="uk-list uk-list-bullet">
-            <li>Remove any samples from your microscope</li>
-            <li>Ensure your illumination is on and properly fixed in place</li>
-          </ul>
-
-          <miniStreamDisplay
-            v-if="stepValue == 1"
-            class="mini-preview"
-          ></miniStreamDisplay>
-
-          <p>Once you're ready, click auto-calibrate.</p>
-
-          <cameraCalibrationSettings
-            :show-extra-settings="false"
-            :camera-uri="cameraUri"
-          ></cameraCalibrationSettings>
-        </div>
-      </div>
-
-      <div v-show="stepValue == 2">
-        <h3>Adjust z height</h3>
-        <p>
-          Insert a sample and adjust the z position of 
-          the stage using the buttons below, until the 
-          sample is in focus.
-        </p>
-        <p>
-          You may also adjust the z position with <b>page up</b> and <b>page down</b>.
-        </p>
-
-        <miniStreamDisplay
-          v-if="stepValue == 2"
-          class="mini-preview"
-        ></miniStreamDisplay>
-        <div class="action-button-container">
-          <action-button
-          class="moveZ"
-          thing="stage"
-          action="move_relative"
-          :button-primary="false"
-          :submit-data="{ x: 0, y: 0, z: -100}"
-          :submit-label="' - '"
-          :hideOnRun="false"
-          :can-terminate="false"
-          />
-          <action-button
-          class="moveZ"
-          thing="stage"
-          action="move_relative"
-          :button-primary="false"
-          :submit-data="{ x: 0, y: 0, z: 100}"
-          :submit-label="'+'"
-          :can-terminate="false"
-          :hideOnRun="false"
-          />
-        </div>
-      </div>
-
-      <div v-show="stepValue == 3">
-        <h3>Camera-stage mapping</h3>
-        <div v-if="isCSMCalibrated">
-          <p>
-            <b
-              >Your camera-stage mapping has already been calibrated. Click Next
-              to move on.</b
-            >
-          </p>
-        </div>
-        <div v-else-if="!canCSMCalibrated">
-          <p>
-            <b
-              >No stage connected. Please skip this step, or connect a valid
-              stage, then reboot your microscope.</b
-            >
-          </p>
-        </div>
-        <div v-else>
-          <p>
-            <b
-              >Follow the important steps below before starting camera-stage
-              mapping calibration!</b
-            >
-          </p>
-          <ul class="uk-list uk-list-bullet">
-            <li>Insert a clearly visible sample to the microscope</li>
-            <li>
-              Ensure the sample is reasonably well centered on the microscope
-              camera
-            </li>
-          </ul>
-
-          <miniStreamDisplay
-            v-if="stepValue == 3"
-            class="mini-preview"
-          ></miniStreamDisplay>
-
-          <p>Once you're ready, click auto-calibrate.</p>
-
-          <CSMCalibrationSettings
-            :show-extra-settings="false"
-          ></CSMCalibrationSettings>
-        </div>
-      </div>
-
-      <div v-show="stepValue == 4">
-        <p>
-          <b>Calibration complete</b>
-        </p>
-        <p>
-          Click Finish to return to your microscope, or Restart to re-run the
-          calibration routine
-        </p>
-      </div>
+      
 
       <p class="uk-text-right">
         <button
@@ -187,75 +43,64 @@
 
 <script>
 
-import cameraCalibrationSettings from "../tabContentComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
-import CSMCalibrationSettings from "../tabContentComponents/settingsComponents/CSMSettingsComponents/CSMCalibrationSettings.vue";
-import miniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
-import ActionButton from "../labThingsComponents/actionButton.vue";
-
 export default {
   name: "calibrationWizard",
 
-  components: {
-    cameraCalibrationSettings,
-    CSMCalibrationSettings,
-    miniStreamDisplay,
-    ActionButton
-  },
+  components: {},
 
   data: function() {
     return {
-      ready: false,
       stepValue: 0,
-      isCSMCalibrated: undefined,
-      isLSTCalibrated: undefined
+      isNeeded: undefined,
+      calibrateableThings: []
     };
-  },
-
-  computed: {
-    canCSMCalibrated: function() {
-      // Assert CSM extension is enabled
-      return this.thingAvailable("camera_stage_mapping");
-    },
-    canLSTCalibrated: function() {
-      // Assert LST extension is enabled
-      return (
-        "calibrate_lens_shading" in this.thingDescription("camera").actions
-      );
-    },
-    isUseful: function() {
-      var CSMUseful = this.canCSMCalibrated && !this.isCSMCalibrated;
-      var LSTUseful = this.canLSTCalibrated && !this.isLSTCalibrated;
-      return CSMUseful || LSTUseful;
-    },
-    cameraUri: function() {
-      return `${this.$store.getters.baseUri}/camera/`;
-    }
   },
 
   mounted() {
     this.$refs["calibrationModalEl"].addEventListener("hidden", this.onHide);
+    // Check which Things are available on mount.
+    const thingsToCheck = [
+      "camera",
+      "camera_stage_mapping"
+    ];
+    this.calibrateableThings = thingsToCheck.filter(name => this.thingAvailable(name));
   },
 
   methods: {
+    /**
+     * Checks all calibratable things to see if any require calibration.
+     *
+     * Iterates over `this.calibrateableThings` (set during mounted()) and reads the
+     * `calibration_required` property.
+     * 
+     * Returns `true` if any Thing reports that calibration is required.
+     *
+     */
+    async check_if_needed() {
+      let wizardNeeded = false;
+      let thingNeedsCal = false;
+
+      for (const name of this.calibrateableThings) {
+        try {
+          thingNeedsCal = await this.readThingProperty(name, "calibration_required");
+        } catch (e) {
+          console.error(`${name}: missing calibration_required property`, e);
+          thingNeedsCal = false;
+        }
+
+        // OR it into the function-level flag
+        wizardNeeded = wizardNeeded || thingNeedsCal;
+      }
+
+      return wizardNeeded;
+    },
+
     show_if_needed: async function() {
       // Check if the camera and stage are calibrated, if they can be
-      if (this.canCSMCalibrated) {
-        let csm = await this.readThingProperty(
-          "camera_stage_mapping",
-          "image_to_stage_displacement_matrix",
-          true
-        );
-        this.isCSMCalibrated = Boolean(csm);
-      }
-      if (this.canLSTCalibrated) {
-        this.isLSTCalibrated = await this.readThingProperty(
-          "camera",
-          "lens_shading_is_static"
-        );
-      }
+      let needed = await this.check_if_needed()
+
       // Check if this calibration wizard can actually do anything useful
-      if (this.isUseful) {
-        this.ready = true;
+      if (needed) {
         this.stepValue = 0;
         this.show()
       } else {
@@ -266,7 +111,6 @@ export default {
 
     // Forces modal to show on button press
     force_show: function() {
-      this.ready = true;
       this.stepValue = 1;
       this.force = true
       this.show()
@@ -290,7 +134,6 @@ export default {
       // Show the modal
       var el = this.$refs["calibrationModalEl"];
       this.hideModalElement(el); // Calls the mixin
-      this.ready = false;
     },
 
     onHide: function() {
