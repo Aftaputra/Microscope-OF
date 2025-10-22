@@ -152,40 +152,44 @@ class RangeofMotionThing(lt.Thing):
         if not got_lock:
             raise RuntimeError("Trying to run ROM test when a test is already running.")
 
-        rom_deps = RomDeps(
-            autofocus=autofocus, stage=stage, csm=csm, cam=cam, logger=logger
-        )
-        logger.info(
-            "Using the stage to measure the Range of Motion. "
-            "Please ensure you are using a big enough sample."
-        )
-        start_time = time.time()
+        try:
+            rom_deps = RomDeps(
+                autofocus=autofocus, stage=stage, csm=csm, cam=cam, logger=logger
+            )
+            logger.info(
+                "Using the stage to measure the Range of Motion. "
+                "Please ensure you are using a big enough sample."
+            )
+            start_time = time.time()
 
-        self._set_stream_resolution(cam)
+            self._set_stream_resolution(cam)
 
-        # The total range for the two axes under test
-        step_range = []
+            # The total range for the two axes under test
+            step_range = []
 
-        # Strictly typed definitions to iterate over for MyPys sake.
-        axes: tuple[Literal["x"], Literal["y"]] = ("x", "y")
-        directions: tuple[Literal[1], Literal[-1]] = (1, -1)
+            # Strictly typed definitions to iterate over for MyPys sake.
+            axes: tuple[Literal["x"], Literal["y"]] = ("x", "y")
+            directions: tuple[Literal[1], Literal[-1]] = (1, -1)
 
-        for axis in axes:
-            # The final position of the axis under test in the given direction
-            axis_limits = []
-            for axis_dir in directions:
-                # Create a new tracker at start of measurement.
-                self._rom_data = RomDataTracker()
-                self._move_until_edge(axis=axis, direction=axis_dir, rom_deps=rom_deps)
-                # Append final position from tracker
-                axis_limits.append(self._rom_data.final_position[axis])
-            # Calculate step range.
-            step_range.append(abs(axis_limits[0] - axis_limits[1]))
+            for axis in axes:
+                # The final position of the axis under test in the given direction
+                axis_limits = []
+                for axis_dir in directions:
+                    # Create a new tracker at start of measurement.
+                    self._rom_data = RomDataTracker()
+                    self._move_until_edge(
+                        axis=axis, direction=axis_dir, rom_deps=rom_deps
+                    )
+                    # Append final position from tracker
+                    axis_limits.append(self._rom_data.final_position[axis])
+                # Calculate step range.
+                step_range.append(abs(axis_limits[0] - axis_limits[1]))
 
-        total_time = time.time() - start_time
-        logger.info(f"Range of motion is {step_range[0]} x {step_range[1]} steps")
-        self.calibrated_range = step_range
-
+            total_time = time.time() - start_time
+            logger.info(f"Range of motion is {step_range[0]} x {step_range[1]} steps")
+            self.calibrated_range = step_range
+        finally:
+            self._lock.release()
         return {
             "Time": total_time,
             "CSM Matrix": csm.image_to_stage_displacement_matrix,
