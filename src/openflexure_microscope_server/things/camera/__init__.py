@@ -491,7 +491,7 @@ class BaseCamera(lt.Thing):
     def _capture_metadata(
         self,
         metadata: dict,
-    ) -> None:
+    ) -> dict:
         """Return the metadata for a capture, from the thing states, time and known names."""
         return {
             "capture_time": datetime.now().timestamp(),
