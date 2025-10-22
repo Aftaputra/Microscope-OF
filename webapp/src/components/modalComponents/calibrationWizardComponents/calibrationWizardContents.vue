@@ -165,3 +165,26 @@ export default {
   },
 }
 </script>
+<style scoped>
+.mini-preview {
+  width: 75%;
+  margin-left: auto;
+  margin-right: auto;
+}
+.action-button-container {
+  display: flex;
+  flex-direction: row;   /* Stack vertically */
+  justify-content: center;  /* Left align */
+  gap: 8px;                  /* Small space between buttons */
+  margin-top: 4px;           /* Gap from image */
+}
+>>> .moveZ .uk-button.uk-width-1-1 {
+  line-height: 50px;
+  font-size: 50px !important;
+  height: 60px; 
+  padding-bottom: 46px;
+  margin: 0;                 /* Remove default margin */
+  width: 120px;
+  min-width: 80px;
+}
+</style>

@@ -2,46 +2,25 @@
   <div id="modal-example" ref="calibrationModalEl" uk-modal="bg-close: false;">
     <div class="uk-modal-dialog uk-modal-body">
       <h2 class="uk-modal-title">Microscope Calibration</h2>
-      
 
-      <p class="uk-text-right">
-        <button
-          v-show="stepValue == 0"
-          class="uk-button uk-button-default uk-modal-close"
-          type="button"
-        >
-          Cancel
-        </button>
-        <button
-          v-show="stepValue == 4"
-          class="uk-button uk-button-default"
-          type="button"
-          @click="restart()"
-        >
-          Restart
-        </button>
-        <button
-          v-show="stepValue < 4"
-          class="uk-button uk-button-primary uk-margin-left"
-          type="button"
-          @click="increment()"
-        >
-          Next
-        </button>
-        <button
-          v-show="stepValue == 4"
-          class="uk-button uk-button-primary uk-margin-left"
-          type="button"
-          @click="hide()"
-        >
-          Finish
-        </button>
-      </p>
+      <component
+        v-if="currentTask"
+        :is="currentTask"
+        :key="taskIndex"
+        :num="taskIndex"
+        :first="isFirstTask"
+        :final="isFinalTask"
+        :startOnLast="movingBackward"
+        @next="nextTask"
+        @back="previousTask"
+      />
+      
     </div>
   </div>
 </template>
 
 <script>
+import calibrationWizardTask from "./calibrationWizardComponents/calibrationWizardTask.vue";
 
 export default {
   name: "calibrationWizard",
@@ -50,10 +29,24 @@ export default {
 
   data: function() {
     return {
-      stepValue: 0,
       isNeeded: undefined,
-      calibrateableThings: []
+      calibrateableThings: [],
+      tasks: [],
+      taskIndex: 0,
+      movingBackward: false
     };
+  },
+
+  computed: {
+    currentTask() {
+      return this.tasks[this.taskIndex] || null;
+    },
+    isFirstTask() {
+      return this.taskIndex === 0;
+    },
+    isFinalTask() {
+      return this.taskIndex === this.tasks.length - 1;
+    }
   },
 
   mounted() {
@@ -64,11 +57,12 @@ export default {
       "camera_stage_mapping"
     ];
     this.calibrateableThings = thingsToCheck.filter(name => this.thingAvailable(name));
+    this.tasks = [calibrationWizardTask, calibrationWizardTask, calibrationWizardTask];
   },
 
   methods: {
     /**
-     * Checks all calibratable things to see if any require calibration.
+     * Check all calibratable Things to see if any require calibration.
      *
      * Iterates over `this.calibrateableThings` (set during mounted()) and reads the
      * `calibration_required` property.
@@ -95,34 +89,31 @@ export default {
       return wizardNeeded;
     },
 
+    resetData: function() {
+      this.movingBackward = false;
+      this.taskIndex = 0;
+    },
+
     show_if_needed: async function() {
       // Check if the camera and stage are calibrated, if they can be
       let needed = await this.check_if_needed()
 
       // Check if this calibration wizard can actually do anything useful
       if (needed) {
-        this.stepValue = 0;
-        this.show()
+        this.resetData();
+        this.show();
       } else {
-        // If not useful, we just return the onClose event immediately
+        // If not needed, we just return the onClose event immediately
         this.onHide();
       }
     },
 
     // Forces modal to show on button press
     force_show: function() {
-      this.stepValue = 1;
-      this.force = true
-      this.show()
+      this.resetData();
+      this.show();
     },
 
-    restart: function() {
-      if (this.force == true){
-        this.stepValue = 1
-      } else {
-        this.stepValue = 0
-      }
-    },
 
     show: function() {
       // Show the modal element
@@ -140,43 +131,29 @@ export default {
       this.$emit("onClose");
     },
 
-    decrement: function() {
-      if (this.stepValue > 0) {
-        this.stepValue = this.stepValue - 1;
+    /*
+     * Move to the previous task.
+     */
+    previousTask: function() {
+      this.movingBackward = true;
+      if (this.taskIndex > 0) {
+        this.taskIndex = this.taskIndex - 1;
       }
     },
 
-    increment: function() {
-      // Upper bound on section number
-      if (this.stepValue < 4) {
-        this.stepValue = this.stepValue + 1;
+    /*
+     * Move to the next task or close the modal if this is the final task.
+     */
+    nextTask: function() {
+      this.movingBackward = false;
+      if (this.taskIndex < this.tasks.length - 1) {
+        this.taskIndex = this.taskIndex + 1;
         return true;
+      }
+      else {
+        this.hide();
       }
     }
   }
 };
 </script>
-
-<style scoped>
-.mini-preview {
-  width: 75%;
-  margin-left: auto;
-  margin-right: auto;
-}
-.action-button-container {
-  display: flex;
-  flex-direction: row;   /* Stack vertically */
-  justify-content: center;  /* Left align */
-  gap: 8px;                  /* Small space between buttons */
-  margin-top: 4px;           /* Gap from image */
-}
->>> .moveZ .uk-button.uk-width-1-1 {
-  line-height: 50px;
-  font-size: 50px !important;
-  height: 60px; 
-  padding-bottom: 46px;
-  margin: 0;                 /* Remove default margin */
-  width: 120px;
-  min-width: 80px;
-}
-</style>
