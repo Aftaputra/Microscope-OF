@@ -465,7 +465,7 @@ class BaseCamera(lt.Thing):
         self,
         metadata_getter: lt.deps.GetThingStates,
         logger: lt.deps.InvocationLogger,
-    ) -> Image:
+    ) -> Tuple[Image, Mapping[str, Any]]:
         """Capture an image in memory and return it with metadata.
 
         This robust capturing method attempts to capture the image five times
@@ -490,7 +490,7 @@ class BaseCamera(lt.Thing):
 
     def _capture_metadata(
         self,
-        metadata: dict,
+        metadata: Mapping[str, Any],
     ) -> dict:
         """Return the metadata for a capture, from the thing states, time and known names."""
         return {
