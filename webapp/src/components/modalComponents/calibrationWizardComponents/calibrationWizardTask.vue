@@ -11,6 +11,7 @@ Tasks can be divided into multiple steps.
 -->
 <template>
   <div>
+    <h3 v-if="title">{{ title }}</h3>
     <component
       v-if="currentStep"
       :is="currentStep.component"
@@ -43,6 +44,10 @@ export default {
   name: "calibrationWizardTask",
 
   props: {
+    title: {
+      type: String,
+      default: null
+    },
     first: Boolean,
     final: Boolean,
     startOnLast: {
@@ -59,10 +64,6 @@ export default {
     return {
       stepIndex: this.startOnLast ? this.steps.length-1 : 0
     };
-  },
-
-  mounted() {
-    console.log("Steps received:", this.steps);
   },
 
   computed: {

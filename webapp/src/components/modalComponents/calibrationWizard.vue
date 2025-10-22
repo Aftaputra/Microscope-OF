@@ -22,6 +22,8 @@
 <script>
 import singleStepTask from "./calibrationWizardComponents/singleStepTask.vue";
 import welcomeStep from "./calibrationWizardComponents/welcomeStep.vue";
+import cameraCalibrationTask from "./calibrationWizardComponents/cameraCalibrationTask.vue";
+import finalStep from "./calibrationWizardComponents/finalStep.vue";
 
 export default {
   name: "calibrationWizard",
@@ -60,6 +62,8 @@ export default {
     this.calibrateableThings = thingsToCheck.filter(name => this.thingAvailable(name));
     this.tasks = [
       {component: singleStepTask, props: {stepComponent: welcomeStep}},
+      {component: cameraCalibrationTask},
+      {component: singleStepTask, props: {stepComponent: finalStep}},
     ]
   },
 
@@ -98,7 +102,7 @@ export default {
     },
 
     show_if_needed: async function() {
-      // Check if the camera and stage are calibrated, if they can be
+      // Check if the calibration modal is needed, and only show it if it is.
       let needed = await this.check_if_needed()
 
       // Check if this calibration wizard can actually do anything useful
@@ -116,7 +120,6 @@ export default {
       this.resetData();
       this.show();
     },
-
 
     show: function() {
       // Show the modal element

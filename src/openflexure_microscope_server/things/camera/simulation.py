@@ -86,6 +86,11 @@ class SimulatedCamera(BaseCamera):
         self.generate_blobs()
         self.generate_canvas()
 
+    @lt.thing_property
+    def calibration_required(self) -> bool:
+        """Whether the camera needs calibrating."""
+        return not self.background_detector_status.ready
+
     def validate_inputs(self) -> None:
         """Validate the inputs passed to the simulation, and raises an error if invalid.
 
@@ -368,6 +373,22 @@ class SimulatedCamera(BaseCamera):
         return Image.fromarray(self.generate_frame())
 
     @lt.thing_action
+    def full_auto_calibrate(self, portal: lt.deps.BlockingPortal) -> None:
+        """Perform a full auto-calibration.
+
+        For the simulation microscope the process is:
+
+        * ``remove_sample``
+        * ``set_background``
+        * ``load_sample``
+        """
+        self.remove_sample()
+        time.sleep(0.2)
+        self.set_background(portal)
+        time.sleep(0.2)
+        self.load_sample()
+
+    @lt.thing_action
     def remove_sample(self) -> None:
         """Show the simulated background with no sample."""
         if not self._show_sample:
@@ -380,6 +401,15 @@ class SimulatedCamera(BaseCamera):
         if self._show_sample:
             raise RuntimeError("Sample is already in place.")
         self._show_sample = True
+
+    @lt.thing_property
+    def primary_calibration_actions(self) -> list[ActionButton]:
+        """The calibration actions for both calibration wizard and settings panel."""
+        return [
+            action_button_for(
+                self.full_auto_calibrate, submit_label="Full Auto Calibrate"
+            ),
+        ]
 
     @lt.thing_property
     def secondary_calibration_actions(self) -> list[ActionButton]:

@@ -1,6 +1,6 @@
 <template>
   <calibrationWizardTask
-    :title="title"
+    title="Camera Calibration"
     :first="first"
     :final="final"
     :startOnLast="startOnLast"
@@ -12,37 +12,30 @@
 
 <script>
 import calibrationWizardTask from "./calibrationWizardTask.vue";
+import camCalibrationExplanation from "./cameraCalibrationSteps/camCalibrationExplanation.vue";
+import cameraMainCalibrationStep from "./cameraCalibrationSteps/cameraMainCalibrationStep.vue";
 
 export default {
-  name: "singleStepTask",
+  name: "cameraCalibrationTask",
   components: {calibrationWizardTask},
   props: {
-    // This must be sent
-    stepComponent: Object,
-    // This is optional.
-    stepProps: {
-      type: Object,
-      default: () => ({})
-    },
     // Standard calibrationWizardTask props below:
-    title: {
-      type: String,
-      default: null
-    },
     first: Boolean,
     final: Boolean,
     startOnLast: {
       type: Boolean,
       default: false
-    },
+    }
   },
 
   data: function() {
     return {
       steps: [
-        {component: this.stepComponent, props: this.stepProps}
+        {component: camCalibrationExplanation},
+        {component: cameraMainCalibrationStep},
       ]
     };
-  },
+  }
+
 }
 </script>

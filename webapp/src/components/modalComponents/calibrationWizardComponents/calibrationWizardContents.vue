@@ -3,18 +3,7 @@
   structure
 -->
 <div v-show="stepValue == 0">
-        <p>
-          <b
-            >Some important microscope calibration data is currently missing.</b
-          >
-        </p>
-        <p>
-          Your microscope will still function, however some functionality will
-          be limited, and image quality will likely suffer.
-        </p>
-        <p>
-          <b>Click Next to begin microscope calibration.</b>
-        </p>
+        
       </div>
 
       <div v-show="stepValue == 1">
@@ -28,16 +17,7 @@
           </p>
         </div>
         <div v-else>
-          <p>
-            <b
-              >Follow the important steps below before starting lens-shading
-              calibration!</b
-            >
-          </p>
-          <ul class="uk-list uk-list-bullet">
-            <li>Remove any samples from your microscope</li>
-            <li>Ensure your illumination is on and properly fixed in place</li>
-          </ul>
+          
 
           <miniStreamDisplay
             v-if="stepValue == 1"
