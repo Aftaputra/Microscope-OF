@@ -34,7 +34,7 @@ export default {
   data: function() {
     return {
       isNeeded: undefined,
-      calibrateableThings: [],
+      availableCalibrationTasks: {},
       tasks: [],
       taskIndex: 0,
       movingBackward: false
@@ -56,46 +56,42 @@ export default {
   mounted() {
     this.$refs["calibrationModalEl"].addEventListener("hidden", this.onHide);
     // Check which Things are available on mount.
-    const thingsToCheck = [
-      "camera",
-      "camera_stage_mapping"
-    ];
-    this.calibrateableThings = thingsToCheck.filter(name => this.thingAvailable(name));
-    this.tasks = [
-      {component: singleStepTask, props: {stepComponent: welcomeStep}},
-      {component: cameraCalibrationTask},
-      {component: cameraStageMappingTask},
-      {component: singleStepTask, props: {stepComponent: finalStep}},
-    ]
+    const allCalibrationTasks = {
+      camera: cameraCalibrationTask,
+      camera_stage_mapping: cameraStageMappingTask
+    };
+    this.availableCalibrationTasks = Object.fromEntries(
+      Object.entries(allCalibrationTasks)
+        .filter(([thing]) => this.thingAvailable(thing))
+    );
+ 
   },
 
   methods: {
     /**
-     * Check all calibratable Things to see if any require calibration.
+     * Check all calibratable Things to see which require calibration.
      *
-     * Iterates over `this.calibrateableThings` (set during mounted()) and reads the
+     * Iterates over `this.availableCalibrationTasks` (set during mounted()) and reads the
      * `calibration_required` property.
      * 
-     * Returns `true` if any Thing reports that calibration is required.
-     *
+     * Returns a list of thing names that report calibration is required.
      */
-    async check_if_needed() {
-      let wizardNeeded = false;
-      let thingNeedsCal = false;
+    async check_things_needing_calibration() {
+      const needsCalibration = [];
+      const calibrateableThings = Object.keys(this.availableCalibrationTasks);
 
-      for (const name of this.calibrateableThings) {
+      for (const name of calibrateableThings) {
         try {
-          thingNeedsCal = await this.readThingProperty(name, "calibration_required");
+          const thingNeedsCal = await this.readThingProperty(name, "calibration_required");
+          if (thingNeedsCal) {
+            needsCalibration.push(name);
+          }
         } catch (e) {
           console.error(`${name}: missing calibration_required property`, e);
-          thingNeedsCal = false;
         }
-
-        // OR it into the function-level flag
-        wizardNeeded = wizardNeeded || thingNeedsCal;
       }
 
-      return wizardNeeded;
+      return needsCalibration;
     },
 
     resetData: function() {
@@ -103,13 +99,38 @@ export default {
       this.taskIndex = 0;
     },
 
+    /**
+    * Create the calibration wizard task list dynamically.
+    */
+    create_task_list: function(thingsToCal, includeWelcome=true) {
+      const tasks = [];
+
+      // Optionally include the welcome screen
+      if (includeWelcome) {
+        tasks.push({ component: singleStepTask, props: { stepComponent: welcomeStep } });
+      }
+
+      // Add calibration task for each thing
+      for (const thing of thingsToCal) {
+        const taskComponent = this.availableCalibrationTasks[thing];
+        tasks.push({ component: taskComponent });
+      }
+
+      // Always include the final step
+      tasks.push({ component: singleStepTask, props: { stepComponent: finalStep } });
+
+      this.tasks = tasks;
+    },
+
     show_if_needed: async function() {
       // Check if the calibration modal is needed, and only show it if it is.
-      let needed = await this.check_if_needed()
+      let thingsToCal = await this. check_things_needing_calibration()
+      const needed = thingsToCal.length > 0;
 
       // Check if this calibration wizard can actually do anything useful
       if (needed) {
         this.resetData();
+        this.create_task_list(thingsToCal);
         this.show();
       } else {
         // If not needed, we just return the onClose event immediately
@@ -119,7 +140,10 @@ export default {
 
     // Forces modal to show on button press
     force_show: function() {
+      const allThings = Object.keys(this.availableCalibrationTasks);
+  
       this.resetData();
+      this.create_task_list(allThings, false);
       this.show();
     },
 
