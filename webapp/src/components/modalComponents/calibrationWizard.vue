@@ -5,9 +5,9 @@
 
       <component
         v-if="currentTask"
-        :is="currentTask"
+        :is="currentTask.component"
         :key="taskIndex"
-        :num="taskIndex"
+        v-bind="currentTask.props"
         :first="isFirstTask"
         :final="isFinalTask"
         :startOnLast="movingBackward"
@@ -20,7 +20,8 @@
 </template>
 
 <script>
-import calibrationWizardTask from "./calibrationWizardComponents/calibrationWizardTask.vue";
+import singleStepTask from "./calibrationWizardComponents/singleStepTask.vue";
+import welcomeStep from "./calibrationWizardComponents/welcomeStep.vue";
 
 export default {
   name: "calibrationWizard",
@@ -57,7 +58,9 @@ export default {
       "camera_stage_mapping"
     ];
     this.calibrateableThings = thingsToCheck.filter(name => this.thingAvailable(name));
-    this.tasks = [calibrationWizardTask, calibrationWizardTask, calibrationWizardTask];
+    this.tasks = [
+      {component: singleStepTask, props: {stepComponent: welcomeStep}},
+    ]
   },
 
   methods: {

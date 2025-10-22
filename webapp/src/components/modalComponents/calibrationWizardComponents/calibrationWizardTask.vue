@@ -1,6 +1,22 @@
+<!-- The base component for a wizard task.
+
+Do not import this directly into CalibrationWizard as the list of steps and props
+will be confusing.
+
+A task should be used for higher level groupings of individual steps in the wizard,
+such as calibrating a Thing.
+
+Tasks can be divided into multiple steps.
+
+-->
 <template>
   <div>
-    <p>{{num}}.{{stepIndex}}</p>
+    <component
+      v-if="currentStep"
+      :is="currentStep.component"
+      :key="stepIndex"
+      v-bind="currentStep.props"
+    />
     <p class="uk-text-right">
       <button
         v-if="showBackButton"
@@ -22,11 +38,11 @@
 </template>
 
 <script>
+
 export default {
   name: "calibrationWizardTask",
 
   props: {
-    num: Number,
     first: Boolean,
     final: Boolean,
     startOnLast: {
@@ -34,23 +50,30 @@ export default {
       default: false
     },
     steps: {
-      type: Number,
-      default: 2
+      type: Array,
+      required: true
     }
   },
 
   data() {
     return {
-      stepIndex: this.startOnLast ? this.steps-1 : 0
+      stepIndex: this.startOnLast ? this.steps.length-1 : 0
     };
   },
 
+  mounted() {
+    console.log("Steps received:", this.steps);
+  },
+
   computed: {
+    currentStep() {
+      return this.steps[this.stepIndex] || null;
+    },
     showBackButton() {
       return !this.first || this.stepIndex > 0;
     },
     nextButtonText() {
-      return this.final && this.stepIndex === this.steps - 1 ? "Finish" : "Next";
+      return this.final && this.stepIndex === this.steps.length - 1 ? "Finish" : "Next";
     }
   },
 
@@ -70,7 +93,7 @@ export default {
      * Move to the next step in this task, or the next task if final step.
      */
     nextStep: function() {
-      if (this.stepIndex < this.steps - 1) {
+      if (this.stepIndex < this.steps.length - 1) {
         this.stepIndex = this.stepIndex + 1;
         return true;
       } else {

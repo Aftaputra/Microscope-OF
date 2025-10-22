@@ -3,7 +3,6 @@
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <calibrationWizard
       ref="calibrationWizard"
-      @onClose="enterApp()"
     ></calibrationWizard>
     <div class="settings-nav">
       <ul class="uk-nav uk-nav-default">
