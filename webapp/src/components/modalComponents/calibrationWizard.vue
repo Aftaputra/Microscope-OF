@@ -186,13 +186,14 @@
 </template>
 
 <script>
+
 import cameraCalibrationSettings from "../tabContentComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
 import CSMCalibrationSettings from "../tabContentComponents/settingsComponents/CSMSettingsComponents/CSMCalibrationSettings.vue";
 import miniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
 import ActionButton from "../labThingsComponents/actionButton.vue";
 
 export default {
-  name: "CalibrationModal",
+  name: "calibrationWizard",
 
   components: {
     cameraCalibrationSettings,
@@ -236,7 +237,7 @@ export default {
   },
 
   methods: {
-    show: async function() {
+    show_if_needed: async function() {
       // Check if the camera and stage are calibrated, if they can be
       if (this.canCSMCalibrated) {
         let csm = await this.readThingProperty(
@@ -256,9 +257,7 @@ export default {
       if (this.isUseful) {
         this.ready = true;
         this.stepValue = 0;
-        // Show the modal
-        var el = this.$refs["calibrationModalEl"];
-        this.showModalElement(el); // Calls the mixin
+        this.show()
       } else {
         // If not useful, we just return the onClose event immediately
         this.onHide();
@@ -270,9 +269,7 @@ export default {
       this.ready = true;
       this.stepValue = 1;
       this.force = true
-        // Show the modal
-        var el = this.$refs["calibrationModalEl"];
-        this.showModalElement(el); // Calls the mixin
+      this.show()
     },
 
     restart: function() {
@@ -281,6 +278,12 @@ export default {
       } else {
         this.stepValue = 0
       }
+    },
+
+    show: function() {
+      // Show the modal element
+      var el = this.$refs["calibrationModalEl"];
+      this.showModalElement(el); // Calls the mixin
     },
 
     hide: function() {
