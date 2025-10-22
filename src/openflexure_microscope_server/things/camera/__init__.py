@@ -523,7 +523,7 @@ class BaseCamera(lt.Thing):
             "%Y:%m:%d %H:%M:%S"
         )
 
-        # Update all relevant EXIF date fields
+        # Update the three EXIF date fields used as "created" by different platforms
         exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = capture_time_str
         exif_dict["Exif"][piexif.ExifIFD.DateTimeDigitized] = capture_time_str
         exif_dict["0th"][piexif.ImageIFD.DateTime] = capture_time_str
