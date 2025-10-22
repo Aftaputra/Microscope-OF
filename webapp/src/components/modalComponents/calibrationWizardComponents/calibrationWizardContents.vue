@@ -132,7 +132,7 @@
 import cameraCalibrationSettings from "../tabContentComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
 import CSMCalibrationSettings from "../tabContentComponents/settingsComponents/CSMSettingsComponents/CSMCalibrationSettings.vue";
 import miniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
-import ActionButton from "../labThingsComponents/actionButton.vue";
+
 
 export default {
   name: "calibrationWizard",
@@ -146,11 +146,7 @@ export default {
 }
 </script>
 <style scoped>
-.mini-preview {
-  width: 75%;
-  margin-left: auto;
-  margin-right: auto;
-}
+
 .action-button-container {
   display: flex;
   flex-direction: row;   /* Stack vertically */

@@ -2,6 +2,7 @@
   <div>
     <slot></slot>
     <miniStreamDisplay class="mini-preview" />
+    <slot name="below-stream"></slot>
   </div>
 </template>
 

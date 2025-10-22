@@ -407,7 +407,7 @@ class SimulatedCamera(BaseCamera):
         """The calibration actions for both calibration wizard and settings panel."""
         return [
             action_button_for(
-                self.full_auto_calibrate, submit_label="Full Auto Calibrate"
+                self.full_auto_calibrate, submit_label="Full Auto-Calibrate"
             ),
         ]
 

@@ -23,6 +23,7 @@
 import singleStepTask from "./calibrationWizardComponents/singleStepTask.vue";
 import welcomeStep from "./calibrationWizardComponents/welcomeStep.vue";
 import cameraCalibrationTask from "./calibrationWizardComponents/cameraCalibrationTask.vue";
+import cameraStageMappingTask from "./calibrationWizardComponents/cameraStageMappingTask.vue";
 import finalStep from "./calibrationWizardComponents/finalStep.vue";
 
 export default {
@@ -63,6 +64,7 @@ export default {
     this.tasks = [
       {component: singleStepTask, props: {stepComponent: welcomeStep}},
       {component: cameraCalibrationTask},
+      {component: cameraStageMappingTask},
       {component: singleStepTask, props: {stepComponent: finalStep}},
     ]
   },

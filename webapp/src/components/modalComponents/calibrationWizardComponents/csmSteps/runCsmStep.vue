@@ -1,15 +1,11 @@
 <template>
   <stepTemplateWithStream>
     <p>
-      <b>Once you're ready, click Full Auto-calibrate.</b>
+      <b>Once you're ready, click Auto-Calibrate Using Camera.</b>
     </p>
-
     <template #below-stream>
       <div class="action-button-container">
-        <cameraCalibrationSettings
-          :show-extra-settings="false"
-          :camera-uri="cameraUri"
-        />
+        <CSMCalibrationSettings :show-extra-settings="false" />
       </div>
     </template>
   </stepTemplateWithStream>
@@ -17,14 +13,14 @@
 
 <script>
 import stepTemplateWithStream from "../stepTemplateWithStream.vue"
-import cameraCalibrationSettings from "../../../tabContentComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
+import CSMCalibrationSettings from "../../../tabContentComponents/settingsComponents/CSMSettingsComponents/CSMCalibrationSettings.vue";
 
 export default {
   name: "cameraMainCalibrationStep",
 
   components: {
     stepTemplateWithStream,
-    cameraCalibrationSettings
+    CSMCalibrationSettings
   },
 
   computed: {
