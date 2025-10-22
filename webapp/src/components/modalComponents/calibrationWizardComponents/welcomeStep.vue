@@ -6,8 +6,8 @@
       </b>
     </p>
     <p>
-        Your microscope will still function, however some functionality will
-        be limited, and image quality will likely suffer.
+      Your microscope will still function, however some functionality will be
+      limited, and image quality will likely suffer.
     </p>
     <p>
       <b>Click Next to begin microscope calibration.</b>
@@ -16,8 +16,7 @@
 </template>
 
 <script>
-
 export default {
   name: "welcomeStep"
-}
+};
 </script>

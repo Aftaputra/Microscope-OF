@@ -14,7 +14,6 @@
         @next="nextTask"
         @back="previousTask"
       />
-      
     </div>
   </div>
 </template>
@@ -61,10 +60,10 @@ export default {
       camera_stage_mapping: cameraStageMappingTask
     };
     this.availableCalibrationTasks = Object.fromEntries(
-      Object.entries(allCalibrationTasks)
-        .filter(([thing]) => this.thingAvailable(thing))
+      Object.entries(allCalibrationTasks).filter(([thing]) =>
+        this.thingAvailable(thing)
+      )
     );
- 
   },
 
   methods: {
@@ -73,7 +72,7 @@ export default {
      *
      * Iterates over `this.availableCalibrationTasks` (set during mounted()) and reads the
      * `calibration_required` property.
-     * 
+     *
      * Returns a list of thing names that report calibration is required.
      */
     async check_things_needing_calibration() {
@@ -82,7 +81,10 @@ export default {
 
       for (const name of calibrateableThings) {
         try {
-          const thingNeedsCal = await this.readThingProperty(name, "calibration_required");
+          const thingNeedsCal = await this.readThingProperty(
+            name,
+            "calibration_required"
+          );
           if (thingNeedsCal) {
             needsCalibration.push(name);
           }
@@ -100,14 +102,17 @@ export default {
     },
 
     /**
-    * Create the calibration wizard task list dynamically.
-    */
-    create_task_list: function(thingsToCal, includeWelcome=true) {
+     * Create the calibration wizard task list dynamically.
+     */
+    create_task_list: function(thingsToCal, includeWelcome = true) {
       const tasks = [];
 
       // Optionally include the welcome screen
       if (includeWelcome) {
-        tasks.push({ component: singleStepTask, props: { stepComponent: welcomeStep } });
+        tasks.push({
+          component: singleStepTask,
+          props: { stepComponent: welcomeStep }
+        });
       }
 
       // Add calibration task for each thing
@@ -117,14 +122,17 @@ export default {
       }
 
       // Always include the final step
-      tasks.push({ component: singleStepTask, props: { stepComponent: finalStep } });
+      tasks.push({
+        component: singleStepTask,
+        props: { stepComponent: finalStep }
+      });
 
       this.tasks = tasks;
     },
 
     show_if_needed: async function() {
       // Check if the calibration modal is needed, and only show it if it is.
-      let thingsToCal = await this. check_things_needing_calibration()
+      let thingsToCal = await this.check_things_needing_calibration();
       const needed = thingsToCal.length > 0;
 
       // Check if this calibration wizard can actually do anything useful
@@ -141,7 +149,7 @@ export default {
     // Forces modal to show on button press
     force_show: function() {
       const allThings = Object.keys(this.availableCalibrationTasks);
-  
+
       this.resetData();
       this.create_task_list(allThings, false);
       this.show();
@@ -181,8 +189,7 @@ export default {
       if (this.taskIndex < this.tasks.length - 1) {
         this.taskIndex = this.taskIndex + 1;
         return true;
-      }
-      else {
+      } else {
         this.hide();
       }
     }

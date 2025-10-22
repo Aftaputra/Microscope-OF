@@ -15,10 +15,13 @@ import calibrationWizardTask from "./calibrationWizardTask.vue";
 
 export default {
   name: "singleStepTask",
-  components: {calibrationWizardTask},
+  components: { calibrationWizardTask },
   props: {
     // This must be sent
-    stepComponent: Object,
+    stepComponent: {
+      type: Object,
+      required: true
+    },
     // This is optional.
     stepProps: {
       type: Object,
@@ -34,15 +37,13 @@ export default {
     startOnLast: {
       type: Boolean,
       default: false
-    },
+    }
   },
 
   data: function() {
     return {
-      steps: [
-        {component: this.stepComponent, props: this.stepProps}
-      ]
+      steps: [{ component: this.stepComponent, props: this.stepProps }]
     };
-  },
-}
+  }
+};
 </script>

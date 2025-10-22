@@ -17,7 +17,7 @@ import cameraMainCalibrationStep from "./cameraCalibrationSteps/cameraMainCalibr
 
 export default {
   name: "cameraCalibrationTask",
-  components: {calibrationWizardTask},
+  components: { calibrationWizardTask },
   props: {
     // Standard calibrationWizardTask props below:
     first: Boolean,
@@ -31,11 +31,10 @@ export default {
   data: function() {
     return {
       steps: [
-        {component: camCalibrationExplanation},
-        {component: cameraMainCalibrationStep},
+        { component: camCalibrationExplanation },
+        { component: cameraMainCalibrationStep }
       ]
     };
   }
-
-}
+};
 </script>

@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import stepTemplateWithStream from "../stepTemplateWithStream.vue"
+import stepTemplateWithStream from "../stepTemplateWithStream.vue";
 import cameraCalibrationSettings from "../../../tabContentComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
 
 export default {
@@ -32,11 +32,10 @@ export default {
       return `${this.$store.getters.baseUri}/camera/`;
     }
   }
-}
+};
 </script>
 
 <style scoped>
-
 .action-button-container {
   padding: 4px;
 }

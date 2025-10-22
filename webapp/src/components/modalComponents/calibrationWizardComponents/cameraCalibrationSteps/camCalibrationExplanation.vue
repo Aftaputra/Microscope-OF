@@ -13,8 +13,7 @@
 </template>
 
 <script>
-
 export default {
   name: "camCalibrationExplanation"
-}
+};
 </script>

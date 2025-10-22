@@ -39,7 +39,6 @@ Tasks can be divided into multiple steps.
 </template>
 
 <script>
-
 export default {
   name: "calibrationWizardTask",
 
@@ -62,7 +61,7 @@ export default {
 
   data() {
     return {
-      stepIndex: this.startOnLast ? this.steps.length-1 : 0
+      stepIndex: this.startOnLast ? this.steps.length - 1 : 0
     };
   },
 
@@ -74,7 +73,9 @@ export default {
       return !this.first || this.stepIndex > 0;
     },
     nextButtonText() {
-      return this.final && this.stepIndex === this.steps.length - 1 ? "Finish" : "Next";
+      return this.final && this.stepIndex === this.steps.length - 1
+        ? "Finish"
+        : "Next";
     }
   },
 
@@ -102,5 +103,5 @@ export default {
       }
     }
   }
-}
+};
 </script>

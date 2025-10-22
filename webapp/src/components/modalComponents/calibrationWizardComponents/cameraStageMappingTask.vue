@@ -18,7 +18,7 @@ import runCsmStep from "./csmSteps/runCsmStep.vue";
 
 export default {
   name: "cameraCalibrationTask",
-  components: {calibrationWizardTask},
+  components: { calibrationWizardTask },
   props: {
     // Standard calibrationWizardTask props below:
     first: Boolean,
@@ -32,12 +32,11 @@ export default {
   data: function() {
     return {
       steps: [
-        {component: csmExplanation},
-        {component: focusStep},
-        {component: runCsmStep}
+        { component: csmExplanation },
+        { component: focusStep },
+        { component: runCsmStep }
       ]
     };
   }
-
-}
+};
 </script>

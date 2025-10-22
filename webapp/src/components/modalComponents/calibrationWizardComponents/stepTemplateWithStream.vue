@@ -7,7 +7,6 @@
 </template>
 
 <script>
-
 import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
 
 export default {
@@ -16,7 +15,7 @@ export default {
   components: {
     miniStreamDisplay
   }
-}
+};
 </script>
 
 <style scoped>
