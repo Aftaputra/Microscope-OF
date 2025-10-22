@@ -213,6 +213,11 @@ class StreamingPiCamera2(BaseCamera):
         finally:
             self._setting_save_in_progress = False
 
+    @lt.thing_property
+    def calibration_required(self) -> bool:
+        """Whether the camera needs calibrating."""
+        return not self.lens_shading_is_static
+
     ## Persistent controls! These are settings
 
     _analogue_gain: float = 1.0
