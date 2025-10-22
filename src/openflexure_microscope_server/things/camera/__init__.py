@@ -79,7 +79,10 @@ class CameraMemoryBuffer:
         self._latest_id: int = 0
 
     def add_image(
-        self, image: Any, metadata: Optional[dict] = None, buffer_max: int = 1
+        self,
+        image: Any,
+        metadata: Optional[Mapping[str, Any]] = None,
+        buffer_max: int = 1,
     ) -> int:
         """Add an image to the Memory buffer.
 
@@ -493,8 +496,10 @@ class BaseCamera(lt.Thing):
         metadata: Mapping[str, Any],
     ) -> dict:
         """Return the metadata for a capture, from the thing states, time and known names."""
+        current_time = datetime.now()
         return {
-            "capture_time": datetime.now().timestamp(),
+            "capture_time": current_time.timestamp(),
+            "timezone": current_time.astimezone().utcoffset(),
             "make": "OpenFlexure",
             "model": "OpenFlexure Microscope",
             "things_states": metadata,
@@ -513,6 +518,13 @@ class BaseCamera(lt.Thing):
 
         user_metadata = capture_metadata["things_states"]
         capture_time = capture_metadata["capture_time"]
+        timezone = capture_metadata["timezone"]
+
+        # Convert timezone into bytes with required formatting
+        hours = int(timezone.total_seconds() // 3600)
+        minutes = int((abs(timezone.total_seconds()) % 3600) // 60)
+        sign = "+" if hours >= 0 else "-"
+        offset_str = f"{sign}{abs(hours):02d}:{minutes:02d}"
 
         # Update UserComment with JSON-encoded metadata
         exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(
@@ -527,6 +539,9 @@ class BaseCamera(lt.Thing):
         exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = capture_time_str
         exif_dict["Exif"][piexif.ExifIFD.DateTimeDigitized] = capture_time_str
         exif_dict["0th"][piexif.ImageIFD.DateTime] = capture_time_str
+
+        exif_dict["Exif"][piexif.ExifIFD.OffsetTimeOriginal] = offset_str.encode()
+        exif_dict["Exif"][piexif.ExifIFD.OffsetTimeDigitized] = offset_str.encode()
 
         # Update Make and Model
         exif_dict["0th"][piexif.ImageIFD.Make] = capture_metadata["make"]
