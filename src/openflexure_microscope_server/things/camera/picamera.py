@@ -716,41 +716,6 @@ class StreamingPiCamera2(BaseCamera):
             )
 
     @lt.thing_action
-    def calibrate_white_balance(
-        self,
-        method: Literal["percentile", "centre"] = "centre",
-        luminance_power: float = 1.0,
-    ) -> None:
-        """Correct the white balance of the image.
-
-        This calibration requires a neutral image, such that the 99th centile
-        of each colour channel should correspond to white. We calculate the
-        centiles and use this to set the colour gains. This is done on the raw
-        image with the lens shading correction applied, which should mean
-        that the image is uniform, rather than weighted towards the centre.
-
-        If ``method`` is ``"centre"``, we will correct the mean of the central 10%
-        of the image.
-        """
-        with self._streaming_picamera(pause_stream=True) as cam:
-            if self.lens_shading_is_static:
-                lst: LensShading = self.lens_shading_tables
-                recalibrate_utils.adjust_white_balance_from_raw(
-                    cam,
-                    self._sensor_info,
-                    percentile=99,
-                    luminance=lst.luminance,
-                    Cr=lst.Cr,
-                    Cb=lst.Cb,
-                    luminance_power=luminance_power,
-                    method=method,
-                )
-            else:
-                recalibrate_utils.adjust_white_balance_from_raw(
-                    cam, self._sensor_info, percentile=99, method=method
-                )
-
-    @lt.thing_action
     def calibrate_lens_shading(self) -> None:
         """Take an image and use it for flat-field correction.
 
@@ -766,7 +731,11 @@ class StreamingPiCamera2(BaseCamera):
             # (Cb).
             L, Cr, Cb = recalibrate_utils.lst_from_camera(cam, self._sensor_info)  # noqa: N806
             tf_utils.set_static_lst(self.tuning, L, Cr, Cb)
+
             self._initialise_picamera()
+
+        with self._streaming_picamera(pause_stream=True) as cam:
+            self.colour_gains = (float(np.min(Cr)), float(np.min(Cb)))
 
     @lt.thing_property
     def colour_correction_matrix(
@@ -877,7 +846,6 @@ class StreamingPiCamera2(BaseCamera):
         self.set_ce_enable_to_off()
         self.calibrate_lens_shading()
         self.reset_ccm()
-        self.calibrate_white_balance()
         time.sleep(0.5)
         self.set_background(portal)
 
@@ -923,12 +891,6 @@ class StreamingPiCamera2(BaseCamera):
             action_button_for(
                 self.auto_expose_from_minimum,
                 submit_label="Auto Gain & Shutter Speed",
-                can_terminate=False,
-                button_primary=False,
-            ),
-            action_button_for(
-                self.calibrate_white_balance,
-                submit_label="Auto White Balance",
                 can_terminate=False,
                 button_primary=False,
             ),

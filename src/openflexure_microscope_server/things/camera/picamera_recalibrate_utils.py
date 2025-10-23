@@ -44,7 +44,7 @@ from __future__ import annotations
 import gc
 import logging
 import time
-from typing import List, Literal, Optional, Tuple
+from typing import List, Tuple
 from pydantic import BaseModel
 import numpy as np
 from scipy.ndimage import zoom
@@ -199,83 +199,6 @@ def adjust_shutter_and_gain_from_raw(
         )
 
     return test.level
-
-
-# Explicitly allow this to have 8 arguments as the later arguments are keyword only
-# We should be able to enforce this without noqa once PyLint moves PLR0917 out of
-# preview
-def adjust_white_balance_from_raw(  # noqa: PLR0913
-    camera: Picamera2,
-    sensor_info: SensorInfo,
-    *,
-    percentile: float = 99,
-    luminance: Optional[np.ndarray] = None,
-    Cr: Optional[np.ndarray] = None,
-    Cb: Optional[np.ndarray] = None,
-    luminance_power: float = 1.0,
-    method: Literal["percentile", "centre"] = "centre",
-) -> Tuple[float, float]:
-    """Adjust the white balance in a single shot, based on the raw image.
-
-    NB if ``channels_from_raw_image`` is broken, this will go haywire.
-    We should probably have better logic to verify the channels really
-    are BGGR...
-    """
-    config = camera.create_still_configuration(
-        raw={"format": sensor_info.unpacked_pixel_format}
-    )
-    camera.configure(config)
-    camera.start()
-    channels = _channels_from_bayer_array(camera.capture_array("raw"))
-
-    if luminance is not None and Cr is not None and Cb is not None:
-        # Reconstruct a low-resolution image from the lens shading tables
-        # and use it to normalise the raw image, to compensate for
-        # the brightest pixels in each channel not coinciding.
-        grids = _grids_from_lst(np.array(luminance) ** luminance_power, Cr, Cb)
-        channel_gains = 1 / grids
-        if channel_gains.shape[1:] != channels.shape[1:]:
-            channel_gains = _upsample_channels(channel_gains, channels.shape[1:])
-        LOGGER.info(f"Before gains, channel maxima are {np.max(channels, axis=(1, 2))}")
-        channels = channels * channel_gains
-        LOGGER.info(f"After gains, channel maxima are {np.max(channels, axis=(1, 2))}")
-    if method == "centre":
-        _, height, width = channels.shape
-        # Cut out the central 10% from 9/20 to 11/20...
-        low_y_range = 9 * height // 20
-        hi_y_range = 11 * height // 20
-        low_x_range = 9 * width // 20
-        hi_x_range = 11 * width // 20
-        # ...  and then take the mean of each bayer channel.
-        centre_means = np.mean(
-            channels[:, low_y_range:hi_y_range, low_x_range:hi_x_range],
-            axis=(1, 2),
-        )
-        # Subtract blacklevel before splitting into channels
-        blue, g1, g2, red = centre_means - sensor_info.blacklevel
-    else:
-        blue, g1, g2, red = (
-            np.percentile(channels, percentile, axis=(1, 2)) - sensor_info.blacklevel
-        )
-    green = (g1 + g2) / 2.0
-    new_awb_gains = (green / red, green / blue)
-    if Cr is not None and Cb is not None:
-        # The LST algorithm normalises Cr and Cb by their minimum.
-        # The lens shading correction only ever boosts the red and blue values.
-        # Here, we decrease the gains by the minimum value of Cr and Cb.
-        new_awb_gains = (green / red * np.min(Cr), green / blue * np.min(Cb))
-
-    LOGGER.info(
-        f"Raw white point is R: {red} G: {green} B: {blue}, "
-        f"setting AWB gains to ({new_awb_gains[0]:.2f}, "
-        f"{new_awb_gains[1]:.2f})."
-    )
-    camera.controls.AwbEnable = False
-    camera.controls.ColourGains = new_awb_gains
-    time.sleep(sensor_info.long_pause)
-    m = camera.capture_metadata()
-    LOGGER.debug(f"Camera confirms gains are now {m['ColourGains']}")
-    return new_awb_gains
 
 
 def lst_from_camera(camera: Picamera2, sensor_info: SensorInfo) -> LensShadingTables:
