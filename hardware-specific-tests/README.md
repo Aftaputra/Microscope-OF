@@ -58,6 +58,55 @@ This ensures that:
 * The coverage for hardware specific tests is reported correctly
 * The hardware specific tests do not need re-running when other code that does not affect PiCamera interaction is updated.
 
+### Keeping your branch up to date
+
+One of the downsides of this form of testing is that if both the target and the source branch have changes to the camera files, then the merged result will fail on CI. This is because the tests were not run against the merged result.
+
+As such, any branches making camera changes need to kept in sync with their target branch. It is preferable to do this with rebasing, to prevent a very confusing series of merge commits.
+
+To rebase your branch, first make sure it is checked out by running (with BRANCH_NAME updated):
+
+`git checkout BRANCH_NAME`
+
+Make sure your computer knows the server's current state by fetching:
+
+`git fetch`
+
+Then run the rebase (assuming `v3` is the target branch):
+
+`git rebase origin/v3`
+
+**Note:** If both branches have updated the zip, you may have a `both modified` conflict on the zip itself. The best way to resolve this is to just to use the file from the branch you are rebasing on. You can do this by running the slightly confusing command of:
+
+`git checkout --ours -- picamera_coverage.zip`
+
+if you then run:
+
+`git add -A`  
+`git status`
+
+You should see that there is now no conflict and that `picamera_coverage.zip` is not listed as modified at all. To carry on rebasing run:
+
+`git rebase --continue`
+
+Once done you can push your rebased changes with:
+
+`git push --force-with-lease`
+
+Do **not** just run `git push` and then follow the instructions to first "pull". This can create a horrible mess.
+
+
+**If you want to use a branch that has been rebased on another computer.**
+
+If you try to pull this branch on another computer that already had an older version checked out, you will get a warning about the force push. In this case, we want the server's history exactly and want to forget the history on that computer.
+
+**First:** Check you have no unsaved work on this branch, as we are about to delete it!
+
+Then you can replace the local history by running (with BRANCH_NAME updated):
+
+`git reset --hard origin/BRANCH_NAME`
+
+
 ### Creating a combined report locally
 
 To create a combined coverage report locally (similar to the one created on CI) first run all normal tests with `pytest`.
