@@ -106,7 +106,7 @@
         </div>
       </div>
       <div v-show="scanning">
-        <h2 v-if="displayImageOnRight">
+        <h2 v-if="displayImageOnRight" style="text-align: center;">
           Live stitching preview
         </h2>
         <mini-stream-display v-if="displayImageOnRight" />

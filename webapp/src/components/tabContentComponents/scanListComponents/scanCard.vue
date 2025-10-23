@@ -61,16 +61,16 @@
         Show Stitched Scan
         </button>
       </div>
-      <div>
+      <div class="scan-info">
         <ul>
           <li>{{ scanData.number_of_images }} images</li>
           <li>created: {{ formatDate(scanData.created) }}</li>
-          <li>modified: {{ formatDate(scanData.modified) }}</li>
+          <li>duration: {{ formatDuration(scanData.duration) }}</li>
         </ul>
         <ul v-if="!ongoing">
           <li v-if="scanData.number_of_images<3" class="warning-msg">Not enough images to stitch</li>
-          <li v-else-if="!scanData.dzi & scanData.stitch_available" class="alert-msg">Interactive preview not available</li> 
-          <li v-else-if=!scanData.stitch_available class="alert-msg">High quality stitch not available</li>  
+          <li v-else-if="!scanData.dzi && scanData.stitch_available" class="alert-msg">Interactive preview not available</li> 
+          <li v-else-if="!scanData.stitch_available" class="alert-msg">High quality stitch not available</li>  
         </ul>
       </div>
     </div>
@@ -129,6 +129,20 @@ export default {
         .padStart(2, "0");
       return `${HH}:${MM} ${dd}/${mm}/${yyyy}`;
     },
+    formatDuration(duration) {
+      if (duration == null || isNaN(duration)) return "Not known";
+
+      const h = Math.floor(duration / 3600);
+      const m = Math.floor((duration % 3600) / 60);
+      const s = Math.floor(duration % 60);
+
+      const m_pad = String(m).padStart(2, "0");
+      const s_pad = String(s).padStart(2, "0");
+
+      if (h > 0) return `${h}h ${m_pad}m ${s_pad}s`;
+      if (m > 0) return `${m_pad}m ${s_pad}s`;
+      return `${s_pad}s`;
+    },
     requestViewer() {
       // Notify parent that thumbnail was clicked
       if (!this.ongoing) {
@@ -162,10 +176,11 @@ export default {
 </script>
 <style lang="less" scoped>
 ul {
-  display: inline-block;
+  display: block;
   text-align: center;
   list-style-type:none;
   margin: 5px 0px 10px 0px;
+  padding: 0;
 }
 
 .warning-msg {

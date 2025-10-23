@@ -8,11 +8,20 @@ import zipfile
 import threading
 import json
 from datetime import datetime, timedelta
+import logging
 
-from pydantic import BaseModel, field_validator, field_serializer, ConfigDict
+from pydantic import (
+    BaseModel,
+    field_validator,
+    field_serializer,
+    ConfigDict,
+    ValidationError,
+)
 
 from openflexure_microscope_server.utilities import requires_lock
 from openflexure_microscope_server.utilities import make_name_safe
+
+LOGGER = logging.getLogger(__name__)
 
 IMG_DIR_NAME = "images"
 SCAN_ZERO_PAD_DIGITS = 4
@@ -28,11 +37,12 @@ class NotEnoughFreeSpaceError(IOError):
 
 
 class ScanInfo(BaseModel):
-    """Summary information about a scan folder."""
+    """Summary information for the UI about a scan folder."""
 
     name: str
     created: float
     modified: float
+    duration: Optional[float]
     number_of_images: int
     stitch_available: bool
     dzi: Optional[str]
@@ -257,14 +267,7 @@ class ScanDirectoryManager:
         This is a dictionary not a base model as the data format has changed
         somewhat over time.
         """
-        json_fpath = self.get_scan_data_path(scan_name)
-        if json_fpath is None:
-            return None
-        try:
-            with open(json_fpath, "r", encoding="utf-8") as data_file:
-                return json.load(data_file)
-        except (json.decoder.JSONDecodeError, IOError):
-            return None
+        return ScanDirectory(scan_name, self.base_dir).get_scan_data_dict()
 
     @property
     @requires_lock
@@ -469,8 +472,40 @@ class ScanDirectory:
         """Return the modified time of the directory."""
         return max(os.stat(root).st_mtime for root, _, _ in os.walk(self.dir_path))
 
+    def get_scan_data_dict(self) -> Optional[dict[str, Any]]:
+        """Return the scan data from the json file as a dictionary.
+
+        This is safer than get_scan_data for older scans before a defined model was
+        used.
+
+        :return: The data as a dictionary or None if it couldn't be loaded.
+        """
+        if self.scan_data_path is None:
+            return None
+        try:
+            with open(self.scan_data_path, "r", encoding="utf-8") as data_file:
+                return json.load(data_file)
+        except (json.decoder.JSONDecodeError, IOError):
+            return None
+
+    def get_scan_data(self) -> Optional[ScanData]:
+        """Return the scan data from the json file as a ScanData model.
+
+        :return: The data as a ScanData model or None if it couldn't be loaded or
+            valdiated.
+        """
+        data_dict = self.get_scan_data_dict()
+        if data_dict is None:
+            LOGGER.warning(f"Could not load scan data for {self.name}.")
+            return None
+        try:
+            return ScanData(**data_dict)
+        except ValidationError:
+            LOGGER.warning(f"Could not validate scan data for {self.name}.")
+            return None
+
     def scan_info(self) -> ScanInfo:
-        """Return the information for the scan directory as a ScanInfo object."""
+        """Return the information to be used in the UI for the scan."""
         scan_files = self.get_scan_files()
         scan_images = self._extract_scan_images(scan_files)
         stitches = self._extract_final_stitches(scan_files)
@@ -479,10 +514,18 @@ class ScanDirectory:
         stitch_available = len(stitches) > 0
         dzi = None if not dzi_files else str(dzi_files[0])
 
+        scan_data = self.get_scan_data()
+        duration = (
+            None
+            if scan_data is None or scan_data.duration is None
+            else scan_data.duration.total_seconds()
+        )
+
         return ScanInfo(
             name=self.name,
             created=self.created_time,
             modified=self.get_modified_time(),
+            duration=duration,
             number_of_images=number_of_images,
             stitch_available=stitch_available,
             dzi=dzi,
