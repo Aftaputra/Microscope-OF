@@ -730,7 +730,7 @@ class StreamingPiCamera2(BaseCamera):
             # luminance (L), red-difference chroma (Cr), and blue-difference chroma
             # (Cb).
             L, Cr, Cb = recalibrate_utils.lst_from_camera(cam, self._sensor_info)  # noqa: N806
-            tf_utils.set_static_lst(self.tuning, L, Cr, Cb)
+            self.tuning = tf_utils.set_static_lst(self.tuning, L, Cr, Cb)
 
             # Re-initialise the picamera to reload the tuning file.
             self._initialise_picamera()
@@ -760,7 +760,7 @@ class StreamingPiCamera2(BaseCamera):
         self,
         value: tuple[float, float, float, float, float, float, float, float, float],
     ) -> None:
-        tf_utils.set_static_ccm(self.tuning, value)
+        self.tuning = tf_utils.set_static_ccm(self.tuning, value)
 
         if self._picamera is not None:
             with self._streaming_picamera(pause_stream=True):
@@ -813,7 +813,7 @@ class StreamingPiCamera2(BaseCamera):
         A value of 0 here does nothing, a value of 65535 is maximum correction.
         """
         with self._streaming_picamera(pause_stream=True):
-            tf_utils.set_static_geq(self.tuning, offset)
+            self.tuning = tf_utils.set_static_geq(self.tuning, offset)
             self._initialise_picamera()
 
     @lt.thing_action
@@ -824,7 +824,7 @@ class StreamingPiCamera2(BaseCamera):
         of view, causing inconsistent settings when capturing.
         """
         with self._streaming_picamera(pause_stream=True):
-            tf_utils.set_ce_to_disabled(self.tuning)
+            self.tuning = tf_utils.set_ce_to_disabled(self.tuning)
             self._initialise_picamera()
 
     @lt.thing_action
@@ -863,7 +863,9 @@ class StreamingPiCamera2(BaseCamera):
         with self._streaming_picamera(pause_stream=True):
             # Generate and array of ones of the correct size for each channel
             flat_array = np.ones((12, 16))
-            tf_utils.set_static_lst(self.tuning, flat_array, flat_array, flat_array)
+            self.tuning = tf_utils.set_static_lst(
+                self.tuning, flat_array, flat_array, flat_array
+            )
             self._initialise_picamera()
 
     @lt.thing_property
@@ -985,7 +987,7 @@ class StreamingPiCamera2(BaseCamera):
     def lens_shading_tables(self, lst: LensShading) -> None:
         """Set the lens shading tables."""
         with self._streaming_picamera(pause_stream=True):
-            tf_utils.set_static_lst(
+            self.tuning = tf_utils.set_static_lst(
                 self.tuning,
                 luminance=lst.luminance,
                 cr=lst.Cr,
@@ -1005,7 +1007,7 @@ class StreamingPiCamera2(BaseCamera):
             alsc = self.get_tuning_algo("rpi.alsc")
             luminance = alsc["luminance_lut"]
             flat = np.ones((12, 16))
-            tf_utils.set_static_lst(self.tuning, luminance, flat, flat)
+            self.tuning = tf_utils.set_static_lst(self.tuning, luminance, flat, flat)
             self._initialise_picamera()
 
     @lt.thing_action
@@ -1016,7 +1018,9 @@ class StreamingPiCamera2(BaseCamera):
         by the Raspberry Pi camera.
         """
         with self._streaming_picamera(pause_stream=True):
-            tf_utils.copy_alsc_section(self.default_tuning, self.tuning)
+            self.tuning = tf_utils.copy_tuning_with_alsc_section_from_other(
+                base_tuning_file=self.tuning, copy_alsc_from=self.default_tuning
+            )
             self._initialise_picamera()
 
     @lt.thing_property

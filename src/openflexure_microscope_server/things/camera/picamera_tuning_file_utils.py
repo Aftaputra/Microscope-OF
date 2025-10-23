@@ -4,6 +4,8 @@ The functions that edit the tuning files edit them in place. This will change in
 the future.
 """
 
+from copy import deepcopy
+
 from picamera2 import Picamera2
 import numpy as np
 
@@ -31,16 +33,17 @@ def set_static_lst(
     luminance: np.ndarray,
     cr: np.ndarray,
     cb: np.ndarray,
-) -> None:
+) -> dict:
     """Update the ``rpi.alsc`` section of a camera tuning dict to use a static correction.
 
     ``tuning`` will be updated in-place to set its shading to static, and disable any
     adaptive tweaking by the algorithm.
     """
+    output_tuning = deepcopy(tuning)
     for table in luminance, cr, cb:
         if np.array(table).shape != (12, 16):
             raise ValueError("Lens shading tables must be 12x16!")
-    alsc = Picamera2.find_tuning_algo(tuning, "rpi.alsc")
+    alsc = Picamera2.find_tuning_algo(output_tuning, "rpi.alsc")
     alsc["n_iter"] = 0  # disable the adaptive part
     alsc["luminance_strength"] = 1.0
     alsc["calibrations_Cr"] = [
@@ -50,6 +53,7 @@ def set_static_lst(
         {"ct": 4500, "table": _as_flat_rounded_list(cb, round_to=3)}
     ]
     alsc["luminance_lut"] = _as_flat_rounded_list(luminance, round_to=3)
+    return output_tuning
 
 
 def set_static_ccm(
@@ -57,20 +61,22 @@ def set_static_ccm(
     col_corr_matrix: tuple[
         float, float, float, float, float, float, float, float, float
     ],
-) -> None:
+) -> dict:
     """Update the ``rpi.alsc`` section of a camera tuning dict to use a static correction.
 
     ``tuning`` will be updated in-place to set its shading to static, and disable any
     adaptive tweaking by the algorithm.
     """
-    ccm = Picamera2.find_tuning_algo(tuning, "rpi.ccm")
+    output_tuning = deepcopy(tuning)
+    ccm = Picamera2.find_tuning_algo(output_tuning, "rpi.ccm")
     ccm["ccms"] = [{"ct": 5000, "ccm": col_corr_matrix}]
+    return output_tuning
 
 
 def get_static_ccm(tuning: dict) -> None:
-    """Get the ``rpi.ccm`` section of a camera tuning dict."""
+    """Get a copy of the the ``rpi.ccm`` section of a camera tuning dict."""
     ccm = Picamera2.find_tuning_algo(tuning, "rpi.ccm")
-    return ccm["ccms"]
+    return deepcopy(ccm["ccms"])
 
 
 def lst_is_static(tuning: dict) -> bool:
@@ -82,7 +88,7 @@ def lst_is_static(tuning: dict) -> bool:
 def set_static_geq(
     tuning: dict,
     offset: int = 65535,
-) -> None:
+) -> dict:
     """Update the ``rpi.geq`` section of a camera tuning dict.
 
     :param tuning: the raspberry pi tuning file. This will be updated in-place to
@@ -94,8 +100,11 @@ def set_static_geq(
         chief ray angle compensation issue when the the stock lens is replaced by an
         objective.
     """
-    geq = Picamera2.find_tuning_algo(tuning, "rpi.geq")
-    geq["offset"] = offset  # max out offset to disable the adaptive green equalisation
+    output_tuning = deepcopy(tuning)
+    geq = Picamera2.find_tuning_algo(output_tuning, "rpi.geq")
+    # max out offset to disable the adaptive green equalisation
+    geq["offset"] = offset
+    return output_tuning
 
 
 def geq_is_static(tuning: dict) -> bool:
@@ -106,14 +115,16 @@ def geq_is_static(tuning: dict) -> bool:
 
 def set_ce_to_disabled(
     tuning: dict,
-) -> None:
+) -> dict:
     """Set ``ce_enable`` in ``rpi.contrast`` to zero to disable adaptive contrast enhancement.
 
-    :param tuning: the raspberry pi tuning file. This will be updated in-place to
-        set ce_enable to 0.
+    :param tuning: The raspberry pi tuning file.
+    :returns: A deepcopu of the input file set ce_enable to 0.
     """
-    contrast = Picamera2.find_tuning_algo(tuning, "rpi.contrast")
+    output_tuning = deepcopy(tuning)
+    contrast = Picamera2.find_tuning_algo(output_tuning, "rpi.contrast")
     contrast["ce_enable"] = 0
+    return output_tuning
 
 
 def ce_enable_is_static(tuning: dict) -> bool:
@@ -122,16 +133,25 @@ def ce_enable_is_static(tuning: dict) -> bool:
     return contrast["ce_enable"] == 0
 
 
-def copy_alsc_section(from_tuning: dict, to_tuning: dict) -> None:
-    """Copy the ``rpi.alsc`` algorithm from one tuning to another.
+def copy_tuning_with_alsc_section_from_other(
+    *, base_tuning_file: dict, copy_alsc_from: dict
+) -> dict:
+    """Return a copy of tuning_file with the lens shading correction from another file.
 
-    This is done in-place, i.e. modifying to_tuning.
+    All parameters are keyword only for clarity.
+
+    :param base_tuning_file: The tuning file to copy.
+    :param copy_alsc_from: The tuning file to take the alsc section from.
+    :return: A deep copy of base_tuning_file with the alsc section copied in from the
+        other tuning file.
     """
+    output_tuning = deepcopy(base_tuning_file)
     # Using Picamera2 function to find the relevant sub-dict for each tuning file
-    from_i = _index_of_algorithm(from_tuning["algorithms"], "rpi.alsc")
-    to_i = _index_of_algorithm(to_tuning["algorithms"], "rpi.alsc")
+    from_i = _index_of_algorithm(copy_alsc_from["algorithms"], "rpi.alsc")
+    to_i = _index_of_algorithm(base_tuning_file["algorithms"], "rpi.alsc")
     # Updating the dictionary in place.
-    to_tuning["algorithms"][to_i] = from_tuning["algorithms"][from_i]
+    output_tuning["algorithms"][to_i] = deepcopy(copy_alsc_from["algorithms"][from_i])
+    return output_tuning
 
 
 def _index_of_algorithm(algorithms: list[dict], algorithm: str) -> int:
