@@ -21,12 +21,6 @@ export default {
   components: {
     stepTemplateWithStream,
     CSMCalibrationSettings
-  },
-
-  computed: {
-    cameraUri: function() {
-      return `${this.$store.getters.baseUri}/camera/`;
-    }
   }
 };
 </script>
