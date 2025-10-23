@@ -19,7 +19,7 @@ None of these individual steps makes sense in the wizard on their own, hence the
 - Have a consistent subtitle during a task
 - Skip entire task rather than make the user click next through each pane of the task (not yet implemented)
 
-Some simple task such as the welcome screen will have only one step.
+Some simple tasks such as the welcome screen will have only one step.
 
 
 ## Components
@@ -32,8 +32,8 @@ The calibration wizard is a modal. The top level component in `calibrationWizard
 * Checking which Things that have calibration tasks are on the server
 * Checking which of these Things need calibrating
 * Starting modal on startup if not all Things are calibrated (with a welcome screen and just those tasks)
-* Starting the modal when launched from settings, with all tasks but now welcome screen.
-* Before starting the modal a list of task components is dynamically generated.
+* Starting the modal when launched from settings, with all tasks but no welcome screen.
+* Before starting the modal, a list of task components is dynamically generated.
 
 ### The main task component
 
@@ -47,7 +47,7 @@ Examples of this pattern are in `cameraCalibrationTask.vue` and `cameraStageMapp
 
 ### The single step task component
 
-For simple tasks with only one step there is no need to make both a specific task component instead `singleStepTask.vue` can be used, the step component can be supplied as a prop.
+For simple tasks with only one step there is no need to make both a specific task component. Instead `singleStepTask.vue` can be used, the step component can be supplied as a prop.
 
 This is used in the main wizard to create the welcome screen and the final page.
 
