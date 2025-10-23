@@ -732,10 +732,11 @@ class StreamingPiCamera2(BaseCamera):
             L, Cr, Cb = recalibrate_utils.lst_from_camera(cam, self._sensor_info)  # noqa: N806
             tf_utils.set_static_lst(self.tuning, L, Cr, Cb)
 
+            # Re-initialise the picamera to reload the tuning file.
             self._initialise_picamera()
 
-        with self._streaming_picamera(pause_stream=True) as cam:
-            self.colour_gains = (float(np.min(Cr)), float(np.min(Cb)))
+        # Set colour gains based on the LST results
+        self.colour_gains = (float(np.min(Cr)), float(np.min(Cb)))
 
     @lt.thing_property
     def colour_correction_matrix(
@@ -992,37 +993,6 @@ class StreamingPiCamera2(BaseCamera):
                 cb=lst.Cb,
             )
             self._initialise_picamera()
-
-    def correct_colour_gains_for_lens_shading(
-        self, colour_gains: tuple[float, float]
-    ) -> tuple[float, float]:
-        """Correct white balance gains for the effect of lens shading.
-
-        The white balance algorithm we use assumes the brightest pixels
-        should be white, and that the only thing affecting the colour of
-        said pixels is the ``colour_gains``.
-
-        The lens shading correction is normalised such that the *minimum*
-        gain in the ``Cr`` and ``Cb`` channels is 1. The white balance
-        assumption above requires that the gain for the brightest pixels
-        is 1. The solution might be that, when calibrating, we note which
-        pixels are brightest (usually the centre) and explicitly use
-        the LST values for there. However, for now I will assume that we
-        need to normalise by the **maximum** of the ``Cr`` and ``Cb``
-        channels, which is correct the majority of the time.
-        """
-        if not self.lens_shading_is_static:
-            return colour_gains
-        lst = self.lens_shading_tables
-        # The Cr and Cb corrections are normalised to have a minimum of 1,
-        # but the white balance algorithm normalises the brightest pixels
-        # to be white, assuming the brightest pixels have equal gain from
-        # the LST.
-        gain_r, gain_b = colour_gains
-        return (
-            float(gain_r / np.max(lst.Cr)),
-            float(gain_b / np.max(lst.Cb)),
-        )
 
     @lt.thing_action
     def flat_lens_shading_chrominance(self) -> None:
