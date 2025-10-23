@@ -7,7 +7,7 @@ See repository root for licensing information.
 """
 
 from __future__ import annotations
-from typing import Literal, Optional, Tuple, Any
+from typing import Literal, Optional, Tuple, Any, Mapping
 from types import TracebackType
 import json
 import io
@@ -79,7 +79,10 @@ class CameraMemoryBuffer:
         self._latest_id: int = 0
 
     def add_image(
-        self, image: Any, metadata: Optional[dict] = None, buffer_max: int = 1
+        self,
+        image: Any,
+        metadata: Optional[Mapping[str, Any]] = None,
+        buffer_max: int = 1,
     ) -> int:
         """Add an image to the Memory buffer.
 
@@ -288,10 +291,12 @@ class BaseCamera(lt.Thing):
 
         img = self.capture_image(stream_name, wait)
 
+        capture_metadata = self._capture_metadata(metadata_getter())
+
         self._save_capture(
             jpeg_path=jpeg_path,
             image=img,
-            metadata=metadata_getter(),
+            metadata=capture_metadata,
             logger=logger,
         )
 
@@ -388,7 +393,7 @@ class BaseCamera(lt.Thing):
         :param save_resolution: can be set to resize the image before saving. By
             default this is None meaning that the image is saved at original resolution.
         """
-        image, metadata = self._robust_image_capture(
+        image, capture_metadata = self._robust_image_capture(
             metadata_getter,
             logger=logger,
         )
@@ -396,7 +401,7 @@ class BaseCamera(lt.Thing):
         self._save_capture(
             jpeg_path,
             image,
-            metadata,
+            capture_metadata,
             logger,
             save_resolution,
         )
@@ -463,7 +468,7 @@ class BaseCamera(lt.Thing):
         self,
         metadata_getter: lt.deps.GetThingStates,
         logger: lt.deps.InvocationLogger,
-    ) -> Image:
+    ) -> Tuple[Image, Mapping[str, Any]]:
         """Capture an image in memory and return it with metadata.
 
         This robust capturing method attempts to capture the image five times
@@ -476,13 +481,74 @@ class BaseCamera(lt.Thing):
         for capture_attempts in range(5):
             try:
                 metadata = metadata_getter()
+                capture_metadata = self._capture_metadata(metadata)
+
                 image = self.capture_image(stream_name="main", wait=5)
-                return image, metadata
+                return image, capture_metadata
             except TimeoutError:
                 logger.warning(
                     f"Attempt {capture_attempts + 1} to capture image timed out. Do you have enough RAM?"
                 )
         raise CaptureError("An error occurred while capturing after 5 attempts")
+
+    def _capture_metadata(
+        self,
+        metadata: Mapping[str, Any],
+    ) -> dict:
+        """Return the metadata for a capture, from the thing states, time and known names."""
+        current_time = datetime.now()
+        return {
+            "capture_time": current_time.timestamp(),
+            "timezone": current_time.astimezone().utcoffset(),
+            "make": "OpenFlexure",
+            "model": "OpenFlexure Microscope",
+            "things_states": metadata,
+        }
+
+    def _add_metadata_to_capture(self, jpeg_path: str, capture_metadata: dict) -> None:
+        """Add the EXIF metadata for a JPEG image.
+
+        This adds:
+        - UserComment (JSON-encoded metadata from the Things)
+        - Capture time (DateTimeOriginal, DateTimeDigitized, 0th DateTime)
+        - Camera Make and Model
+        """
+        # Load existing EXIF
+        exif_dict = piexif.load(jpeg_path)
+
+        user_metadata = capture_metadata["things_states"]
+        capture_time = capture_metadata["capture_time"]
+        timezone = capture_metadata["timezone"]
+
+        # Convert timezone into bytes with required formatting
+        hours = int(timezone.total_seconds() // 3600)
+        minutes = int((abs(timezone.total_seconds()) % 3600) // 60)
+        sign = "+" if hours >= 0 else "-"
+        offset_str = f"{sign}{abs(hours):02d}:{minutes:02d}"
+
+        # Update UserComment with JSON-encoded metadata
+        exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(
+            user_metadata
+        ).encode("utf-8")
+
+        capture_time_str = datetime.fromtimestamp(capture_time).strftime(
+            "%Y:%m:%d %H:%M:%S"
+        )
+
+        # Update the three EXIF date fields used as "created" by different platforms
+        exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = capture_time_str
+        exif_dict["Exif"][piexif.ExifIFD.DateTimeDigitized] = capture_time_str
+        exif_dict["0th"][piexif.ImageIFD.DateTime] = capture_time_str
+
+        exif_dict["Exif"][piexif.ExifIFD.OffsetTimeOriginal] = offset_str.encode()
+        exif_dict["Exif"][piexif.ExifIFD.OffsetTimeDigitized] = offset_str.encode()
+
+        # Update Make and Model
+        exif_dict["0th"][piexif.ImageIFD.Make] = capture_metadata["make"]
+        exif_dict["0th"][piexif.ImageIFD.Model] = capture_metadata["model"]
+
+        # Write the updated EXIF back to the file
+        piexif.insert(piexif.dump(exif_dict), jpeg_path)
 
     def _save_capture(
         self,
@@ -512,12 +578,7 @@ class BaseCamera(lt.Thing):
             # disabled, file size increases and quality is barely or not affected
             image.save(jpeg_path, quality=95, subsampling=0)
             try:
-                # Load EXIF metadata from image so it can be added to.
-                exif_dict = piexif.load(jpeg_path)
-                exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(
-                    metadata
-                ).encode("utf-8")
-                piexif.insert(piexif.dump(exif_dict), jpeg_path)
+                self._add_metadata_to_capture(jpeg_path, metadata)
             except Exception:
                 # We need to capture any exception as there are many reasons metadata
                 # might not be added. We warn rather than log the error.
@@ -649,6 +710,11 @@ class BaseCamera(lt.Thing):
         self.active_detector.set_background(background)
         # Manually save settings as the setter is not called.
         self.save_settings()
+
+    @property
+    def thing_state(self) -> Mapping[str, Any]:
+        """Empty metadata dict for subclasses to populate."""
+        return {}
 
 
 CameraDependency = lt.deps.direct_thing_client_dependency(BaseCamera, "/camera/")

@@ -1093,3 +1093,10 @@ class StreamingPiCamera2(BaseCamera):
         to be static (except "reset")
         """
         return tf_utils.lst_is_static(self.tuning)
+
+    @property
+    def thing_state(self) -> Mapping[str, Any]:
+        """Update generic camera metadata with Picamera-specific data."""
+        state = dict(super().thing_state)
+        state["camera_board"] = self._camera_board
+        return state
