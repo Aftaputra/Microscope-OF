@@ -1,13 +1,23 @@
 <!-- The base component for a wizard task.
 
-Do not import this directly into CalibrationWizard as the list of steps and props
-will be confusing.
-
 A task should be used for higher level groupings of individual steps in the wizard,
-such as calibrating a Thing.
+such as calibrating a Thing. Tasks can be divided into multiple steps.
 
-Tasks can be divided into multiple steps.
+## How to use this component:
 
+*To make a task with lots of steps:*
+Create a task component for a `Thing`, that wraps just this component and passes in
+a list of steps. See `cameraCalibrationTask.vue` and `cameraStageMappingTask.vue`
+as examples.
+
+*To make a simple task with just one step:*
+See `singleStepTask.vue`. This is what is used to display the welcome task.
+
+## How not to use this component:
+
+Do not import this directly into CalibrationWizard as the list of tasks will then
+also need props to be passed with the list of step components and step props, and it
+gets very confusing.
 -->
 <template>
   <div>
