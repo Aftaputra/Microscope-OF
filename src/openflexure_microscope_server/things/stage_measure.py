@@ -158,7 +158,8 @@ class RangeofMotionThing(lt.Thing):
             )
             logger.info(
                 "Using the stage to measure the Range of Motion. "
-                "Please ensure you are using a big enough sample."
+                "Please ensure you are using a sample that covers the whole range of "
+                "motion. This should be approximately 12 x 12 mm."
             )
             start_time = time.time()
 
@@ -275,7 +276,7 @@ class RangeofMotionThing(lt.Thing):
         finally:
             rom_deps.stage.move_absolute(**starting_position, block_cancellation=True)
 
-    def _img_percentate_to_img_coords(
+    def _img_percentage_to_img_coords(
         self, fov_perc: int, axis: Literal["x", "y"]
     ) -> float:
         """For a given image percentage and axis return the distance in img coords.
@@ -308,7 +309,7 @@ class RangeofMotionThing(lt.Thing):
 
         :return: The movement size in image coordinates
         """
-        distance = self._img_percentate_to_img_coords(fov_perc=fov_perc, axis=axis)
+        distance = self._img_percentage_to_img_coords(fov_perc=fov_perc, axis=axis)
         if axis == "x":
             return {"x": distance * direction, "y": 0}
         return {"x": 0, "y": distance * direction}

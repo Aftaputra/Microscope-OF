@@ -18,7 +18,7 @@ LOGGER = logging.getLogger("mock-invocation_logger")
 
 # Useful generators
 def increasing_xy_dict_generator(*_args, **_kwargs):
-    """Generate x-y dictionaries of incremening sizes.
+    """Generate x-y dictionaries of incrementing sizes.
 
     These don't simulate expected effects, but allow checking sequential reads of a
     function/property were used.
@@ -30,7 +30,7 @@ def increasing_xy_dict_generator(*_args, **_kwargs):
 
 
 def increasing_xyz_dict_generator(*_args, **_kwargs):
-    """Generate x-y-z dictionaries of incremening sizes.
+    """Generate x-y-z dictionaries of incrementing sizes.
 
     These don't simulate expected effects, but allow checking sequential reads of a
     function/property were used.
@@ -135,7 +135,7 @@ def test_parasitic_detect(par_fraction, too_high):
 def test_error_if_no_stream_res_set_when_requesting_img_coords():
     """Check a RuntimeError thrown when requesting image coordinates if resolution unset."""
     with pytest.raises(RuntimeError, match="Stream resolution must be set"):
-        stage_measure.RangeofMotionThing()._img_percentate_to_img_coords(20, "x")
+        stage_measure.RangeofMotionThing()._img_percentage_to_img_coords(20, "x")
 
 
 @pytest.fixture
