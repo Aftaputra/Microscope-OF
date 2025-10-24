@@ -273,6 +273,34 @@ def test_move_and_measure_with_refocus(
     assert offset == expected_return
 
 
+def test_move_and_measure_with_bad_refocus_args(rom_thing, mocker):
+    """Check error if abs_min_offset is not positive when using it to determine if to autofocus."""
+    offset_from_mock = mocker.patch.object(
+        rom_thing, "_offset_from", return_value={"x": 0, "y": 0}
+    )
+
+    # First check with abs_min_offset not set. The default should be zero.
+    with pytest.raises(ValueError, match="abs_min_offset must be positive"):
+        rom_thing._move_and_measure(
+            movement={"x": 10, "y": 0},
+            rom_deps=mock_rom_deps,
+            perform_autofocus=False,
+            max_autofocus_repeats=3,
+        )
+    # Then check with abs_min_offset negative, this might happen if the the expected
+    # move calculation is not made absolute.
+    with pytest.raises(ValueError, match="abs_min_offset must be positive"):
+        rom_thing._move_and_measure(
+            movement={"x": 10, "y": 0},
+            rom_deps=mock_rom_deps,
+            perform_autofocus=False,
+            max_autofocus_repeats=3,
+            abs_min_offset=-123.456,
+        )
+    # Should have never measured and offset. Just error straight away.
+    assert offset_from_mock.call_count == 0
+
+
 def test_move_back_until_motion_detected(rom_thing, mock_rom_deps, mocker):
     """Check that _move_back_until_motion_detected is making increasing negative moves.
 

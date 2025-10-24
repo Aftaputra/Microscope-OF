@@ -83,7 +83,7 @@ class RomDataTracker:
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
         :param stage_movement: The movement to be performed in stage coordinates.
         :param stage_position: The current stage position in stage coordinates.
-        :returns: The predicted relative z displacement needed to stay in focus.
+        :return: The predicted relative z displacement needed to stay in focus.
         """
         # x or y positions
         lateral_positions = [i[axis] for i in self.stage_coords]
@@ -479,6 +479,11 @@ class RangeofMotionThing(lt.Thing):
             autofocus is repeated.
         :return: The calculated offset from cross correlation.
         """
+        if max_autofocus_repeats > 0 and abs_min_offset <= 0:
+            raise ValueError(
+                "abs_min_offset must be positive if max_autofocus_repeats > 0."
+            )
+
         # Take image before move
         before_img = rom_deps.cam.grab_as_array()
         # Move and autofocus if required
@@ -533,22 +538,26 @@ class RangeofMotionThing(lt.Thing):
         return {"x": offset[1], "y": offset[0]}
 
 
-@overload
-def _axis_from_movement_dict(movement: dict[str, float]) -> str: ...
-
-
+# The number of return arguments depends on if return_other is True or False
+# let MyPy know with overloads typed to Literal[False] and Literal[True].
 @overload
 def _axis_from_movement_dict(
     movement: dict[str, float], return_other: Literal[False]
 ) -> str: ...
-
-
 @overload
 def _axis_from_movement_dict(
     movement: dict[str, float], return_other: Literal[True]
 ) -> tuple[str, str]: ...
 
 
+# Overload the case where return_other is not specified, this is needed
+# because MyPy doesn't see that return other's default is `False` and use
+# the `Literal[False]` overload.
+@overload
+def _axis_from_movement_dict(movement: dict[str, float]) -> str: ...
+
+
+# Finally The function.
 def _axis_from_movement_dict(
     movement: dict[str, float], return_other: bool = False
 ) -> str | tuple[str, str]:
@@ -573,10 +582,12 @@ def _axis_from_movement_dict(
 def _parasitic_motion_detected(
     movement: dict[str, float], offset: dict[str, float]
 ) -> bool:
-    """Compare a desired movement to measured offset and error if parasitic motion is too high.
+    """Compare desired movement to measured offset, report if parasitic motion was detected.
 
     :param movement: The movement dictionary in image coordinates.
     :param offset: The offset calculated from correlation.
+    :return: True if too much parasitic motion is detects. False if movement is as
+        expected.
     """
     movement_axis, other_axis = _axis_from_movement_dict(movement, return_other=True)
     parasitic_motion = abs(offset[other_axis])
