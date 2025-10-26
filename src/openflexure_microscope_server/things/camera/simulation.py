@@ -305,8 +305,12 @@ class SimulatedCamera(BaseCamera):
 
     def _capture_frames(self) -> None:
         portal = lt.get_blocking_portal(self)
+        last_frame_t = time.time()
         while self._capture_enabled:
-            time.sleep(self.frame_interval)
+            wait_time = last_frame_t - time.time() - self.frame_interval
+            if wait_time > 0:
+                time.sleep(wait_time)
+            last_frame_t = time.time()
             try:
                 frame = self.generate_frame()
                 self.mjpeg_stream.add_frame(_frame2bytes(frame), portal)
