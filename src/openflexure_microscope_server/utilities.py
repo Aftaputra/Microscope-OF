@@ -398,17 +398,15 @@ def merge_patch(
     :param enforce_dict: Boolean, set True enfoces that the target and patch are both
         dictionaries.
     """
-    target_is_dict = isinstance(target, dict)
-    patch_is_dict = isinstance(patch, dict)
-    if enforce_dict and not (target_is_dict and patch_is_dict):
+    if enforce_dict and not (isinstance(target, dict) and isinstance(patch, dict)):
         raise ValueError("Both target and patch should be dictionaries.")
 
     # If patch is not a dict (object), it replaces target entirely:
-    if not patch_is_dict:
+    if not isinstance(patch, dict):
         return patch
 
     # If target is not an object, replace it with an empty object
-    if not target_is_dict:
+    if not isinstance(target, dict):
         target = {}
 
     result = {}
@@ -456,6 +454,10 @@ def load_patched_config(config_path: str) -> dict:
             config = json.load(f)
     except IOError as e:
         raise type(e)(f"Couldn't load configuration file {config_path}") from e
+    except json.JSONDecodeError as e:
+        raise json.JSONDecodeError(
+            f"Invalid JSON in configuration file {config_path}: {e}", e.doc, e.pos
+        ) from e
 
     # If base_config_file not specified then this is a normal LabThings config file
     # Just return it.
@@ -471,7 +473,11 @@ def load_patched_config(config_path: str) -> dict:
         with open(base_conf_path, "r", encoding="utf-8") as f:
             base_config = json.load(f)
     except IOError as e:
-        raise type(e)(f"Couldn't load configuration file {base_conf_path}") from e
+        raise type(e)(f"Couldn't load base configuration file {base_conf_path}") from e
+    except json.JSONDecodeError as e:
+        raise json.JSONDecodeError(
+            f"Invalid JSON in base configuration file {config_path}: {e}", e.doc, e.pos
+        ) from e
 
     if "patch" in config:
         return merge_patch(base_config, config["patch"], enforce_dict=True)
