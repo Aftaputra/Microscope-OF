@@ -9,6 +9,8 @@ from typing import (
     Concatenate,
     Self,
     overload,
+    TypeAlias,
+    Literal,
 )
 import os
 import re
@@ -24,6 +26,9 @@ import numpy as np
 
 T = TypeVar("T")
 P = ParamSpec("P")
+
+JSONScalar: TypeAlias = str | int | float | bool | None
+JSONType: TypeAlias = dict[str, "JSONType"] | list["JSONType"] | JSONScalar
 
 LOGGER = logging.getLogger(__name__)
 
@@ -359,3 +364,69 @@ def quadratic(
     :return: The quadratic, evaluated at each point in ``x``
     """
     return a * x**2 + b * x + c
+
+
+# Use overload to clarify to MyPy that if enforce_dict is true, inputs and outputs are
+# dictionaries
+@overload
+def merge_patch(
+    target: dict[str, JSONType], patch: dict[str, JSONType], enforce_dict: Literal[True]
+) -> dict[str, JSONType]: ...
+
+
+# If not they are any JSONType
+@overload
+def merge_patch(
+    target: JSONType, patch: JSONType, enforce_dict: Literal[False]
+) -> JSONType: ...
+@overload
+def merge_patch(target: JSONType, patch: JSONType) -> JSONType: ...
+
+
+def merge_patch(
+    target: JSONType, patch: JSONType, enforce_dict: bool = False
+) -> JSONType:
+    """Merge json data using the methods from IETF RFC 7396.
+
+    Primarily this is designed to merge dictionaries, but IETF RFC 7396 provides
+    defined methods for handling non-dictionary data loaded from JSON, so this
+    has been provided in full.
+
+    :param target: The target object
+    :param patch: The patch to be applied
+    :param enforce_dict: Boolean, set True enfoces that the target and patch are both
+        dictionaries.
+    """
+    target_is_dict = isinstance(target, dict)
+    patch_is_dict = isinstance(patch, dict)
+    if enforce_dict and not (target_is_dict and patch_is_dict):
+        raise ValueError("Both target and patch should be dictionaries.")
+
+    # If patch is not a dict (object), it replaces target entirely:
+    if not patch_is_dict:
+        return patch
+
+    # If target is not an object, replace it with an empty object
+    if not target_is_dict:
+        target = {}
+
+    result = {}
+    # First, keep all keys from target that are not in patch
+    for key, target_val in target.items():
+        if key not in patch:
+            result[key] = target_val
+
+    # Then apply patch keys
+    for key, patch_val in patch.items():
+        # If patch_val is None, do not add the key (deleting from target).
+        if patch_val is None:
+            continue
+
+        # Check if values are dictionaries.
+        if isinstance(patch_val, dict):
+            # If patch value is a dictionary then recurse.
+            result[key] = merge_patch(target.get(key), patch_val)
+        else:
+            # Else, use the patch value
+            result[key] = patch_val
+    return result
