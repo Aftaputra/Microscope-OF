@@ -12,8 +12,8 @@ from typing import Literal, Optional, Mapping
 from types import TracebackType
 from threading import Thread
 import time
+import io
 
-import cv2
 import numpy as np
 from PIL import Image, ImageFilter
 
@@ -188,7 +188,7 @@ class SimulatedCamera(BaseCamera):
 
         self.canvas[top:bottom, left:right] -= sprite
 
-    def generate_image(self, pos: tuple[int, int, int]) -> np.ndarray:
+    def generate_image(self, pos: tuple[int, int, int]) -> Image:
         """Generate an image with blobs based on supplied coordinates.
 
         :param pos: a 3-item tuple containing the x,y,z coordinates of the 'stage'
@@ -220,7 +220,7 @@ class SimulatedCamera(BaseCamera):
         image += RNG.normal(scale=self.noise_level, size=self.shape).astype("int16")
         image[image < 0] = 0
         image[image > 255] = 255
-        return image.astype("uint8")
+        return Image.fromarray(image.astype("uint8"))
 
     def attach_to_server(
         self, server: lt.ThingServer, path: str, setting_storage_path: str
@@ -243,7 +243,7 @@ class SimulatedCamera(BaseCamera):
             self._stage = self._server.things["/stage/"]
         return self._stage.instantaneous_position
 
-    def generate_frame(self) -> np.ndarray:
+    def generate_frame(self) -> Image:
         """Generate a frame with blobs based on the stage coordinates."""
         try:
             pos = self.get_stage_position()
@@ -309,14 +309,10 @@ class SimulatedCamera(BaseCamera):
             time.sleep(self.frame_interval)
             try:
                 frame = self.generate_frame()
-                jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
-                self.mjpeg_stream.add_frame(jpeg, portal)
-                # Downsample for lores
-                ds_frame = cv2.resize(
-                    frame, (320, 240), interpolation=cv2.INTER_NEAREST
-                )
-                jpeg_lores = cv2.imencode(".jpg", ds_frame)[1].tobytes()
-                self.lores_mjpeg_stream.add_frame(jpeg_lores, portal)
+                self.mjpeg_stream.add_frame(_frame2bytes(frame), portal)
+                ds_frame = frame.resize((320, 240), resample=Image.NEAREST)
+                self.lores_mjpeg_stream.add_frame(_frame2bytes(ds_frame), portal)
+
             except Exception as e:
                 LOGGER.exception(f"Failed to capture frame: {e}, retrying...")
 
@@ -345,7 +341,7 @@ class SimulatedCamera(BaseCamera):
         if wait is not None:
             LOGGER.warning("Simulation camera has no wait option. Use None.")
         LOGGER.warning(f"Simulation camera camera doesn't respect {stream_name=}")
-        return self.generate_frame()
+        return np.array(self.generate_frame())
 
     def capture_image(
         self,
@@ -362,7 +358,7 @@ class SimulatedCamera(BaseCamera):
         if wait is not None:
             LOGGER.warning("Simulation camera has no wait option. Use None.")
         LOGGER.warning(f"Simulation camera camera doesn't respect {stream_name=}")
-        return Image.fromarray(self.generate_frame())
+        return self.generate_frame()
 
     @lt.thing_action
     def remove_sample(self) -> None:
@@ -390,6 +386,14 @@ class SimulatedCamera(BaseCamera):
     def manual_camera_settings(self) -> list[PropertyControl]:
         """The camera settings to expose as property controls in the settings panel."""
         return [property_control_for(self, "noise_level", label="Noise Level")]
+
+
+def _frame2bytes(frame: Image) -> bytes:
+    """Convert frame to bytes."""
+    with io.BytesIO() as buf:
+        # Save in low quality for speed.
+        frame.save(buf, format="JPEG", quality=85)
+        return buf.getvalue()
 
 
 def fast_pil_blur(array: np.ndarray, sigma: float) -> np.ndarray:
