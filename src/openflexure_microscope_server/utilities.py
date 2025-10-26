@@ -20,6 +20,7 @@ import logging
 from importlib.metadata import version
 import tomllib
 from functools import wraps
+import json
 
 from pydantic import BaseModel
 import numpy as np
@@ -430,3 +431,64 @@ def merge_patch(
             # Else, use the patch value
             result[key] = patch_val
     return result
+
+
+def load_patched_config(config_path: str) -> dict:
+    """Load a json configuration file, if it a patch, return the full config.
+
+    Load a json file. If it does not contains the "base_config_file" key then return
+    the data as read.
+
+    If the configuration specifies a "base_config_file" but no "patch" then return the
+    data from reading base_config_file as json.
+
+    If the configuration specifies a "base_config_file" and "patch" then apply the
+    patch to the data in base_config_file and return the result. The patching method
+    is merge_patch()
+
+    :param config_path: The path of the configuration file.
+    :return: The contents of the configuration file after loading and patching the
+        specified base configuration file if applicable.
+
+    """
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+    except IOError as e:
+        raise type(e)(f"Couldn't load configuration file {config_path}") from e
+
+    # If base_config_file not specified then this is a normal LabThings config file
+    # Just return it.
+    if "base_config_file" not in config:
+        return config
+
+    config_dir = os.path.dirname(os.path.abspath(config_path))
+    base_conf_path = config["base_config_file"]
+
+    base_conf_path = resolve_path_from_dir(base_conf_path, config_dir)
+
+    try:
+        with open(base_conf_path, "r", encoding="utf-8") as f:
+            base_config = json.load(f)
+    except IOError as e:
+        raise type(e)(f"Couldn't load configuration file {base_conf_path}") from e
+
+    if "patch" in config:
+        return merge_patch(base_config, config["patch"], enforce_dict=True)
+
+    return base_config
+
+
+def resolve_path_from_dir(path: str, directory: str) -> str:
+    """Convert a relative or abs path specified in one dir to the working dir.
+
+    This also expands any environment variables.
+
+    :param path: The specified path (could be absolute or relative)
+    :param directory: The directory from which the path was specified
+    :return: The normalised path.
+    """
+    path = os.path.expandvars(os.path.expanduser(path))
+    if not os.path.isabs(path):
+        path = os.path.join(directory, path)
+    return os.path.normpath(path)

@@ -6,10 +6,13 @@ from typing import Optional, Callable, Any
 from functools import wraps
 from copy import copy
 import logging
+from argparse import Namespace
 
 import labthings_fastapi as lt
 import uvicorn
 from uvicorn.main import Server
+
+from openflexure_microscope_server.utilities import load_patched_config
 from .serve_static_files import add_static_files
 from .legacy_api import add_v2_endpoints
 from ..logging import configure_logging, retrieve_log, retrieve_log_from_file
@@ -81,7 +84,7 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
     config = None
     server = None
     try:
-        config = lt.cli.config_from_args(args)
+        config = _full_config_from_args(args)
         log_folder = config.get("log_folder", "./openflexure/logs")
         scans_folder = _get_scans_dir(config)
         server = lt.cli.server_from_config(config)
@@ -128,3 +131,16 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
             )
         else:
             raise e
+
+
+def _full_config_from_args(args: Namespace) -> dict:
+    """Load configuration from LabThings args allowing patching.
+
+    This provides similar functionarlity to lt.cli.config_from_args except allows the
+    configuration file to specify a base config, and optionally patches.
+    """
+    # If no config file specified let LabThings handle it.
+    if not args.config:
+        return lt.cli.config_from_args(args)
+
+    return load_patched_config(args.config)
