@@ -15,8 +15,7 @@ import time
 
 import cv2
 import numpy as np
-from PIL import Image
-from scipy.ndimage import gaussian_filter
+from PIL import Image, ImageFilter
 
 import labthings_fastapi as lt
 
@@ -209,11 +208,9 @@ class SimulatedCamera(BaseCamera):
         canvas = self.canvas if self._show_sample else self.blank_canvas
         # Use npx to make each 1d index list 3D
         focused_image = canvas[np.ix_(x_indices, y_indices, z_indices)]
-        image = gaussian_filter(
-            focused_image,
-            sigma=np.abs(pos[2]) / 5,
-            axes=(0, 1),
-        )
+
+        image = fast_pil_blur(focused_image, sigma=np.abs(pos[2]) / 5)
+
         if image.shape != self.shape:
             raise ValueError(
                 f"Image shape {image.shape} does not match intended shape {self.shape}"
@@ -393,3 +390,15 @@ class SimulatedCamera(BaseCamera):
     def manual_camera_settings(self) -> list[PropertyControl]:
         """The camera settings to expose as property controls in the settings panel."""
         return [property_control_for(self, "noise_level", label="Noise Level")]
+
+
+def fast_pil_blur(array: np.ndarray, sigma: float) -> np.ndarray:
+    """Apply Gaussian blur using PIL (faster than scipy)."""
+    if sigma < 0.5:
+        return array  # no visible blur needed
+
+    img_pil = Image.fromarray(array.astype(np.uint8))
+    img_pil = img_pil.filter(ImageFilter.GaussianBlur(radius=sigma))
+
+    # Convert back to NumPy array
+    return np.array(img_pil, dtype=array.dtype)
