@@ -31,7 +31,7 @@
             class="uk-width-1-2"
             :button-primary="true"
             :is-disabled="!scanData.stitch_available"
-            :u-r-l="downloadStitchFile"
+            :url="downloadStitchFile"
             button-label="Download JPEG"
           />
         </div>

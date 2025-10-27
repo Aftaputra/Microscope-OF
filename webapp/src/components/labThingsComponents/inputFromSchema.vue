@@ -95,9 +95,11 @@ export default {
   props: {
     dataSchema: {
       type: Object,
+      required: true,
     },
     value: {
       type: null,
+      required: true,
     },
     label: {
       type: String,

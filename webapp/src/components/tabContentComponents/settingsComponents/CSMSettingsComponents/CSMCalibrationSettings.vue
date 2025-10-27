@@ -26,7 +26,7 @@
     >
       Download Calibration Data
     </button>
-    <div v-if="this.csmMatrix != 'undefined'" style="margin:10px;">
+    <div v-if="csmMatrix != 'undefined'" style="margin:10px;">
       <details
         ><summary>Calibration Details</summary>
         <strong>CSM calculated for images with a resolution of {{ csmResolution }}</strong>

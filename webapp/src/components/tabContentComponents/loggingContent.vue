@@ -24,7 +24,7 @@
           <div>
             <EndpointButton
               class="uk-button uk-width-1-1"
-              :u-r-l="logFileURI"
+              :url="logFileURI"
               button-label="Download Log File"
               :button-primary="false"
             />

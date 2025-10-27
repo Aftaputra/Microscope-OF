@@ -5,7 +5,7 @@
       isDisabled ? 'uk-button-disabled' : '',
       buttonPrimary ? 'uk-button-primary' : 'uk-button-default',
     ]"
-    :href="URL"
+    :href="url"
     download
   >
     {{ buttonLabel }}</a
@@ -22,7 +22,7 @@ export default {
       required: false,
       default: true,
     },
-    URL: {
+    url: {
       type: String,
       required: true,
     },
