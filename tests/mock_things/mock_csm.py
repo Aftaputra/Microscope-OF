@@ -17,3 +17,7 @@ class MockCSMThing:
     """
 
     image_resolution = (123, 456)
+    image_to_stage_displacement_matrix = [
+        [0.03061156624485296, 1.8031242270940833],
+        [1.773236372778601, 0.006660431608601435],
+    ]

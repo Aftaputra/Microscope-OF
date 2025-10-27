@@ -15,7 +15,8 @@
             "kwargs": {
                 "scans_folder": "/var/openflexure/scans/"
             }
-        }
+        },
+        "/stage_measure/":"openflexure_microscope_server.things.stage_measure:RangeofMotionThing"
     },
     "settings_folder": "/var/openflexure/settings/",
     "log_folder": "/var/openflexure/logs/"

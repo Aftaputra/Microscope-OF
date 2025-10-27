@@ -268,10 +268,18 @@ class CameraStageMapper(lt.Thing):
         an image usually helps resolve any ambiguity.
         """
         self.assert_calibrated()
+        stage.move_relative(**self.convert_image_to_stage_coordinates(x=x, y=y))
+
+    @lt.thing_action
+    def convert_image_to_stage_coordinates(
+        self, x: float, y: float
+    ) -> Mapping[str, int]:
+        """Convert image coordinates to stage coordinates."""
+        self.assert_calibrated()
         relative_move: np.ndarray = np.dot(
             np.array([y, x]), np.array(self.image_to_stage_displacement_matrix)
         )
-        stage.move_relative(x=relative_move[0], y=relative_move[1])
+        return {"x": int(relative_move[0]), "y": int(relative_move[1])}
 
     @lt.thing_property
     def thing_state(self) -> Mapping[str, Any]:
