@@ -51,8 +51,8 @@
     <label v-if="dataType == 'number_object'" class="uk-form-label"
       >{{ label }}
       <div v-for="(val, key) in value" :key="key">
-        <label>{{internalLabels[key]}}</label>
-        <div class="input-and-buttons-container" >
+        <label>{{ internalLabels[key] }}</label>
+        <div class="input-and-buttons-container">
           <input
             v-model="internalValue[key]"
             class="uk-form-small numeric-setting-line-input"
@@ -89,24 +89,24 @@ export default {
   name: "InputFromSchema",
 
   components: {
-    syncPropertyButton
+    syncPropertyButton,
   },
 
   props: {
     dataSchema: {
-      type: Object
+      type: Object,
     },
     value: {
-      type: null
+      type: null,
     },
     label: {
       type: String,
-      default: ""
+      default: "",
     },
     animate: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
 
   data() {
@@ -116,44 +116,21 @@ export default {
       // (see resetInternalValue). If we do this here there is a chance we get errors
       // as internalValue is still null when rendering starts.
       internalValue: Array.isArray(this.value)
-          ? [...this.value]
-          : typeof this.value === 'object'
-            ? { ...this.value }
-            : this.value,
+        ? [...this.value]
+        : typeof this.value === "object"
+        ? { ...this.value }
+        : this.value,
       // Is edited can't be computed as we mutate internalValue
       isEdited: false,
       animateUpdate: false,
     };
   },
-
-  mounted() {
-  if (this.value !== undefined) {
-      this.resetInternalValue();
-    }
-  },
-
-  watch: {
-    value() {
-      // Fire updateIsEdited on both value and internal value change,
-      // as change in value may not causse internalValue to change.
-      this.updateIsEdited();
-      this.resetInternalValue();
-    },
-    internalValue() {
-      this.updateIsEdited();
-    },
-    animate(updated) {
-      if (updated) {
-        this.animateUpdate = true;
-      }
-    }
-  },
   computed: {
     internalLabels: function() {
       if (this.dataType == "number_object") {
         let labels = {};
-        for (const key in this.internalValue){
-          labels[key] = this.dataSchema.properties[key].title
+        for (const key in this.internalValue) {
+          labels[key] = this.dataSchema.properties[key].title;
         }
         return labels;
       }
@@ -204,6 +181,29 @@ export default {
         }
       }
       return "other";
+    },
+  },
+
+  watch: {
+    value() {
+      // Fire updateIsEdited on both value and internal value change,
+      // as change in value may not causse internalValue to change.
+      this.updateIsEdited();
+      this.resetInternalValue();
+    },
+    internalValue() {
+      this.updateIsEdited();
+    },
+    animate(updated) {
+      if (updated) {
+        this.animateUpdate = true;
+      }
+    },
+  },
+
+  mounted() {
+    if (this.value !== undefined) {
+      this.resetInternalValue();
     }
   },
 
@@ -215,10 +215,10 @@ export default {
       this.internalValue = JSON.parse(JSON.stringify(this.value));
     },
     requestUpdate: async function() {
-      this.$emit("requestUpdate")
+      this.$emit("requestUpdate");
     },
     sendValue: async function() {
-      this.$emit("sendValue", this.internalValue)
+      this.$emit("sendValue", this.internalValue);
     },
     checkboxUpdated: function() {
       if (this.internalValue != this.$refs.checkbox.checked) {
@@ -245,7 +245,7 @@ export default {
     },
     animationEnd: function() {
       this.animateUpdate = false;
-      this.$emit('animationShown');
+      this.$emit("animationShown");
     },
     deepStringify: function(val) {
       // Create a json string where all internal numbers are also JSON strings. This is
@@ -256,16 +256,13 @@ export default {
       if (Array.isArray(val)) {
         return JSON.stringify(val.map(String));
       }
-      if (val && typeof val === 'object') {
-        const normalized = Object.fromEntries(
-          Object.entries(val).map(([k, v]) => [k, String(v)])
-        );
+      if (val && typeof val === "object") {
+        const normalized = Object.fromEntries(Object.entries(val).map(([k, v]) => [k, String(v)]));
         return JSON.stringify(normalized);
       }
       return JSON.stringify(String(val));
-    }
-
-  }
+    },
+  },
 };
 </script>
 
@@ -288,8 +285,12 @@ export default {
   background-color: #fff3cd;
 }
 @keyframes green-flash {
-  0%   { background-color: #3fda63; }
-  100% { background-color: white; }
+  0% {
+    background-color: #3fda63;
+  }
+  100% {
+    background-color: white;
+  }
 }
 .flash {
   animation: green-flash 0.7s ease;

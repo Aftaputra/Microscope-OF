@@ -10,11 +10,11 @@
 import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
 
 export default {
-  name: "stepTemplateWithStream",
+  name: "StepTemplateWithStream",
 
   components: {
-    miniStreamDisplay
-  }
+    miniStreamDisplay,
+  },
 };
 </script>
 

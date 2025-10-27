@@ -22,15 +22,14 @@ export default {
   name: "ServerSpecifiedActionButton",
 
   components: {
-    ActionButton
+    ActionButton,
   },
-
 
   props: {
     actionData: {
       type: Object,
       required: true,
-    }
+    },
   },
 
   methods: {
@@ -38,8 +37,8 @@ export default {
       if (this.actionData.notify_on_success) {
         this.modalNotify(this.actionData.success_message);
       }
-    }
-  }
+    },
+  },
 };
 </script>
 

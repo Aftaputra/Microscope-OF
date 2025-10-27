@@ -18,12 +18,7 @@
                   />
                 </div>
                 <label class="uk-margin-small-right"
-                  ><input
-                    v-model="invert.x"
-                    class="uk-checkbox"
-                    type="checkbox"
-                  />
-                  Invert x</label
+                  ><input v-model="invert.x" class="uk-checkbox" type="checkbox" /> Invert x</label
                 >
               </div>
 
@@ -38,12 +33,7 @@
                   />
                 </div>
                 <label class="uk-margin-small-right"
-                  ><input
-                    v-model="invert.y"
-                    class="uk-checkbox"
-                    type="checkbox"
-                  />
-                  Invert y</label
+                  ><input v-model="invert.y" class="uk-checkbox" type="checkbox" /> Invert y</label
                 >
               </div>
 
@@ -59,7 +49,7 @@
                 </div>
               </div>
             </div>
-            <br>
+            <br />
             <action-button
               thing="stage"
               action="set_zero_position"
@@ -165,8 +155,7 @@
     <div v-else class="uk-text-warning">
       <p>Stage positioning is disabled since no stage is connected.</p>
       <p>
-        Please check all data and power connections to your motor controller
-        board.
+        Please check all data and power connections to your motor controller board.
       </p>
     </div>
   </div>
@@ -183,7 +172,7 @@ export default {
 
   components: {
     ActionButton,
-    syncPropertyButton
+    syncPropertyButton,
   },
 
   data: function() {
@@ -193,16 +182,16 @@ export default {
       stepSize: {
         x: 200,
         y: 200,
-        z: 50
+        z: 50,
       },
       invert: {
         x: false,
         y: false,
-        z: false
+        z: false,
       },
       setPosition: null,
       isAutofocusing: 0,
-      moveLock: false
+      moveLock: false,
     };
   },
 
@@ -214,11 +203,8 @@ export default {
       return `${this.baseUri}/stage/position`;
     },
     moveInImageCoordinatesUri: function() {
-      return this.thingActionUrl(
-        "camera_stage_mapping",
-        "move_in_image_coordinates"
-      );
-    }
+      return this.thingActionUrl("camera_stage_mapping", "move_in_image_coordinates");
+    },
   },
 
   watch: {
@@ -226,20 +212,19 @@ export default {
       deep: true,
       handler() {
         this.setLocalStorageObj("navigation_stepSize", this.stepSize);
-      }
+      },
     },
     invert: {
       deep: true,
       handler() {
         this.setLocalStorageObj("navigation_invert", this.invert);
-      }
-    }
+      },
+    },
   },
 
   async mounted() {
     // Reload saved settings
-    this.stepSize =
-      this.getLocalStorageObj("navigation_stepSize") || this.stepSize;
+    this.stepSize = this.getLocalStorageObj("navigation_stepSize") || this.stepSize;
     this.invert = this.getLocalStorageObj("navigation_invert") || this.invert;
     let self = this;
     // A global signal listener to perform a move action
@@ -255,7 +240,7 @@ export default {
         x_steps * this.stepSize.x * (this.invert.x ? -1 : 1),
         y_steps * this.stepSize.y * (this.invert.y ? -1 : 1),
         z_steps * this.stepSize.z * (this.invert.z ? -1 : 1),
-        false
+        false,
       );
     });
     // Update the current position in text boxes
@@ -287,7 +272,7 @@ export default {
         this.setPosition = {
           x: this.setPosition.x + x,
           y: this.setPosition.y + y,
-          z: this.setPosition.z + z
+          z: this.setPosition.z + z,
         };
       }
       await this.timeout(1); // Wait for Vue to update the position
@@ -304,7 +289,7 @@ export default {
 
         if (!this.moveInImageCoordinatesUri) {
           this.modalError(
-            "Moving in image coordinates is not supported - you will need to upgrade your microscope's software."
+            "Moving in image coordinates is not supported - you will need to upgrade your microscope's software.",
           );
         }
 
@@ -312,7 +297,7 @@ export default {
         axios
           .post(this.moveInImageCoordinatesUri, {
             x: x, // NB the coordinates are numpy/PIL style, meaning X and Y are swapped.
-            y: y
+            y: y,
           })
           .then(() => {
             this.updatePosition(); // Update the position in text boxes
@@ -346,8 +331,8 @@ export default {
       link.setAttribute("download", `OFM_${new Date().toISOString()}.jpeg`);
       document.body.appendChild(link);
       link.click();
-    }
-  }
+    },
+  },
 };
 </script>
 

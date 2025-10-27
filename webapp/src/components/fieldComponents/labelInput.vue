@@ -2,10 +2,7 @@
   <div>
     <label class="uk-form-label uk-text-bold">{{ label }}</label>
 
-    <div
-      uk-tooltip="title: Click to edit value; delay: 250"
-      @click="setEditing(true)"
-    >
+    <div uk-tooltip="title: Click to edit value; delay: 250" @click="setEditing(true)">
       <div v-show="editing == false">
         <label> {{ value }} </label>
       </div>
@@ -33,21 +30,21 @@ export default {
   props: {
     label: {
       type: String,
-      required: true
+      required: true,
     },
     name: {
       type: String,
-      required: true
+      required: true,
     },
     value: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
 
   data: function() {
     return {
-      editing: false
+      editing: false,
     };
   },
 
@@ -57,8 +54,8 @@ export default {
       if (editing == true) {
         this.$nextTick(() => this.$refs.textinput.focus());
       }
-    }
-  }
+    },
+  },
 };
 </script>
 

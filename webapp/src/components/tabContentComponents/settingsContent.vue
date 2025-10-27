@@ -1,9 +1,7 @@
 <template>
   <!-- Grid managing tab content -->
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
-    <calibrationWizard
-      ref="calibrationWizard"
-    ></calibrationWizard>
+    <calibrationWizard ref="calibrationWizard"></calibrationWizard>
     <div class="settings-nav">
       <ul class="uk-nav uk-nav-default">
         <li class="uk-nav-header">Application Settings</li>
@@ -22,11 +20,13 @@
         </li>
         <li class="uk-nav-header">Microscope Settings</li>
         <button
-        submit-label="Launch Calibration Wizard"
-        type="button"
-        class="uk-button uk-button-default uk-width-1-1"
-        @click="startModals"
-        >Launch Calibration Wizard</button>
+          submit-label="Launch Calibration Wizard"
+          type="button"
+          class="uk-button uk-button-default uk-width-1-1"
+          @click="startModals"
+        >
+          Launch Calibration Wizard
+        </button>
         <li>
           <tabIcon
             id="settings-camera-icon"
@@ -69,42 +69,26 @@
       </ul>
     </div>
     <div class="view-component uk-width-expand uk-padding-small">
-      <tabContent
-        tab-i-d="display"
-        :require-connection="false"
-        :current-tab="currentTab"
-      >
+      <tabContent tab-i-d="display" :require-connection="false" :current-tab="currentTab">
         <div class="settings-pane uk-padding-small">
           <appSettings />
           <streamSettings />
         </div>
       </tabContent>
 
-      <tabContent
-        tab-i-d="camera"
-        :require-connection="true"
-        :current-tab="currentTab"
-      >
+      <tabContent tab-i-d="camera" :require-connection="true" :current-tab="currentTab">
         <div class="settings-pane uk-padding-small">
           <cameraSettings />
         </div>
       </tabContent>
 
-      <tabContent
-        tab-i-d="stage"
-        :require-connection="true"
-        :current-tab="currentTab"
-      >
+      <tabContent tab-i-d="stage" :require-connection="true" :current-tab="currentTab">
         <div class="settings-pane uk-padding-small">
           <stageSettings />
         </div>
       </tabContent>
 
-      <tabContent
-        tab-i-d="mapping"
-        :require-connection="true"
-        :current-tab="currentTab"
-      >
+      <tabContent tab-i-d="mapping" :require-connection="true" :current-tab="currentTab">
         <div class="settings-pane uk-padding-small">
           <CSMSettings />
         </div>
@@ -136,13 +120,13 @@ export default {
     appSettings,
     tabIcon,
     tabContent,
-    calibrationWizard
+    calibrationWizard,
   },
 
   data: function() {
     return {
       selected: "display",
-      currentTab: "display"
+      currentTab: "display",
     };
   },
 
@@ -154,8 +138,8 @@ export default {
     },
     startModals: function() {
       this.$refs.calibrationWizard.force_show();
-    }
-  }
+    },
+  },
 };
 </script>
 

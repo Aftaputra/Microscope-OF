@@ -30,20 +30,20 @@ export default {
       required: false,
       default: function() {
         return [];
-      }
+      },
     },
     options: {
       type: Array,
-      required: true
+      required: true,
     },
     name: {
       type: String,
-      required: true
+      required: true,
     },
     label: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
 
   methods: {
@@ -62,8 +62,8 @@ export default {
         }
       }
       this.$emit("input", newSelected);
-    }
-  }
+    },
+  },
 };
 </script>
 

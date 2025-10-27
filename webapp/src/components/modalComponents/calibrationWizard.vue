@@ -4,13 +4,13 @@
       <h2 class="uk-modal-title">Microscope Calibration</h2>
 
       <component
-        v-if="currentTask"
         :is="currentTask.component"
+        v-if="currentTask"
         :key="taskIndex"
         v-bind="currentTask.props"
         :first="isFirstTask"
         :final="isFinalTask"
-        :startOnLast="movingBackward"
+        :start-on-last="movingBackward"
         @next="nextTask"
         @back="previousTask"
       />
@@ -26,7 +26,7 @@ import cameraStageMappingTask from "./calibrationWizardComponents/cameraStageMap
 import finalStep from "./calibrationWizardComponents/finalStep.vue";
 
 export default {
-  name: "calibrationWizard",
+  name: "CalibrationWizard",
 
   components: {},
 
@@ -36,7 +36,7 @@ export default {
       availableCalibrationTasks: {},
       tasks: [],
       taskIndex: 0,
-      movingBackward: false
+      movingBackward: false,
     };
   },
 
@@ -49,7 +49,7 @@ export default {
     },
     isFinalTask() {
       return this.taskIndex === this.tasks.length - 1;
-    }
+    },
   },
 
   mounted() {
@@ -57,12 +57,10 @@ export default {
     // Check which Things are available on mount.
     const allCalibrationTasks = {
       camera: cameraCalibrationTask,
-      camera_stage_mapping: cameraStageMappingTask
+      camera_stage_mapping: cameraStageMappingTask,
     };
     this.availableCalibrationTasks = Object.fromEntries(
-      Object.entries(allCalibrationTasks).filter(([thing]) =>
-        this.thingAvailable(thing)
-      )
+      Object.entries(allCalibrationTasks).filter(([thing]) => this.thingAvailable(thing)),
     );
   },
 
@@ -81,10 +79,7 @@ export default {
 
       for (const name of calibrateableThings) {
         try {
-          const thingNeedsCal = await this.readThingProperty(
-            name,
-            "calibration_required"
-          );
+          const thingNeedsCal = await this.readThingProperty(name, "calibration_required");
           if (thingNeedsCal) {
             needsCalibration.push(name);
           }
@@ -111,7 +106,7 @@ export default {
       if (includeWelcome) {
         tasks.push({
           component: singleStepTask,
-          props: { stepComponent: welcomeStep }
+          props: { stepComponent: welcomeStep },
         });
       }
 
@@ -124,7 +119,7 @@ export default {
       // Always include the final step
       tasks.push({
         component: singleStepTask,
-        props: { stepComponent: finalStep }
+        props: { stepComponent: finalStep },
       });
 
       this.tasks = tasks;
@@ -192,7 +187,7 @@ export default {
       } else {
         this.hide();
       }
-    }
-  }
+    },
+  },
 };
 </script>

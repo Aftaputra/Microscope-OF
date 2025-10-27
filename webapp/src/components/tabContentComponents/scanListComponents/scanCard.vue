@@ -2,9 +2,7 @@
   <div class="uk-card">
     <div class="uk-card-body">
       <div class="uk-card-media-top">
-        <div
-          class="view-image uk-padding-remove uk-height-1-1"
-        >
+        <div class="view-image uk-padding-remove uk-height-1-1">
           <img
             id="thumbnail-stitched-image"
             class="thumbnail-fit"
@@ -15,39 +13,36 @@
         </div>
       </div>
       <h3 class="uk-card-title scan-card-title">{{ scanData.name }}</h3>
-      <h4 class="ongoing-msg" v-if="ongoing">Scan in progress</h4>
-      <div class="button-container" v-if="!ongoing">
+      <h4 v-if="ongoing" class="ongoing-msg">Scan in progress</h4>
+      <div v-if="!ongoing" class="button-container">
         <div class="uk-button-group scan-card-buttons">
           <action-button
-          class="uk-width-1-2"
-          thing="smart_scan"
-          action="download_zip"
-          submit-label="Download All"
-          :can-terminate="false"
-          :submit-data="{ scan_name: scanData.name }"
-          :button-primary="true"
-          @response="downloadZipFile"
-          @error="modalError"
+            class="uk-width-1-2"
+            thing="smart_scan"
+            action="download_zip"
+            submit-label="Download All"
+            :can-terminate="false"
+            :submit-data="{ scan_name: scanData.name }"
+            :button-primary="true"
+            @response="downloadZipFile"
+            @error="modalError"
           />
           <EndpointButton
             class="uk-width-1-2"
-            :buttonPrimary=true
-            :isDisabled=!scanData.stitch_available
-            :URL="downloadStitchFile"
-            buttonLabel="Download JPEG"
-            />
+            :button-primary="true"
+            :is-disabled="!scanData.stitch_available"
+            :u-r-l="downloadStitchFile"
+            button-label="Download JPEG"
+          />
         </div>
-        <button
-          class="uk-button uk-button-default uk-width-1-1"
-          @click="deleteScan"
-        >
+        <button class="uk-button uk-button-default uk-width-1-1" @click="deleteScan">
           Delete
         </button>
         <action-button
+          v-if="scanData.can_stitch | (scanData.stitch_available & !scanData.dzi)"
           submit-label="Stitch Images"
           thing="smart_scan"
           action="stitch_scan"
-          v-if="scanData.can_stitch | (scanData.stitch_available & !scanData.dzi)"
           :can-terminate="true"
           :submit-data="{ scan_name: scanData.name }"
           :button-primary="false"
@@ -55,10 +50,11 @@
           @error="modalError"
         />
         <button
-          v-if="scanData.dzi" class="uk-button uk-button-default uk-width-1-1"
+          v-if="scanData.dzi"
+          class="uk-button uk-button-default uk-width-1-1"
           @click="requestViewer"
         >
-        Show Stitched Scan
+          Show Stitched Scan
         </button>
       </div>
       <div class="scan-info">
@@ -68,9 +64,15 @@
           <li>duration: {{ formatDuration(scanData.duration) }}</li>
         </ul>
         <ul v-if="!ongoing">
-          <li v-if="scanData.number_of_images<3" class="warning-msg">Not enough images to stitch</li>
-          <li v-else-if="!scanData.dzi && scanData.stitch_available" class="alert-msg">Interactive preview not available</li> 
-          <li v-else-if="!scanData.stitch_available" class="alert-msg">High quality stitch not available</li>  
+          <li v-if="scanData.number_of_images < 3" class="warning-msg">
+            Not enough images to stitch
+          </li>
+          <li v-else-if="!scanData.dzi && scanData.stitch_available" class="alert-msg">
+            Interactive preview not available
+          </li>
+          <li v-else-if="!scanData.stitch_available" class="alert-msg">
+            High quality stitch not available
+          </li>
         </ul>
       </div>
     </div>
@@ -90,16 +92,16 @@ export default {
   props: {
     scanData: {
       type: Object,
-      required: true
+      required: true,
     },
     scansUri: {
       type: String,
-      required: true
+      required: true,
     },
     ongoing: {
       type: Boolean,
-      required: true
-    }
+      required: true,
+    },
   },
 
   computed: {
@@ -114,7 +116,7 @@ export default {
   methods: {
     formatDate(timestamp) {
       // Multiply by 1000 as JS uses ms not s
-      let d = new Date(timestamp*1000);
+      let d = new Date(timestamp * 1000);
       // Convert to a string in a very javascript way!
       let yyyy = d.getFullYear();
       let mm = d.getMonth() + 1;
@@ -146,14 +148,14 @@ export default {
     requestViewer() {
       // Notify parent that thumbnail was clicked
       if (!this.ongoing) {
-        this.$emit('viewer-requested', this.scanData);
+        this.$emit("viewer-requested", this.scanData);
       }
     },
     async deleteScan() {
       try {
         await this.modalConfirm(`Are you sure you want to delete ${this.scanData.name}?`);
         await axios.delete(`${this.scansUri}/${this.scanData.name}`);
-        this.$emit('update-requested');
+        this.$emit("update-requested");
         this.modalNotify(`Deleted ${this.scanData.name}`);
       } catch (e) {
         // if the confirmation was cancelled, it's rejected with null error
@@ -170,15 +172,15 @@ export default {
       console.log(link);
       document.body.appendChild(link);
       link.click();
-    }
-  }
-}
+    },
+  },
+};
 </script>
 <style lang="less" scoped>
 ul {
   display: block;
   text-align: center;
-  list-style-type:none;
+  list-style-type: none;
   margin: 5px 0px 10px 0px;
   padding: 0;
 }
@@ -207,5 +209,4 @@ ul {
   text-align: center;
   padding: 2rem 0;
 }
-
 </style>

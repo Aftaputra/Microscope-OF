@@ -1,10 +1,11 @@
 <template>
-  <div
-    v-observe-visibility="visibilityChanged"
-    class="uk-margin-remove uk-padding-remove"
-  >
+  <div v-observe-visibility="visibilityChanged" class="uk-margin-remove uk-padding-remove">
     <div v-if="taskStarted" ref="isPollingElement">
-      <action-progress-bar v-if="taskStarted && hideOnRun" :progress="progress" :task-status="taskStatus" />
+      <action-progress-bar
+        v-if="taskStarted && hideOnRun"
+        :progress="progress"
+        :task-status="taskStatus"
+      />
       <!-- hideOnRun selects if the button hides, don't show progress bar if button doesn't hide. -->
       <button
         v-if="canTerminate && taskRunning"
@@ -22,7 +23,10 @@
         :disabled="isDisabled"
         :hidden="taskStarted && hideOnRun"
         class="uk-button uk-width-1-1"
-        :class="[isDisabled ? 'uk-button-disabled' : '', buttonPrimary ? 'uk-button-primary' : 'uk-button-default']"
+        :class="[
+          isDisabled ? 'uk-button-disabled' : '',
+          buttonPrimary ? 'uk-button-primary' : 'uk-button-default',
+        ]"
         @click="bootstrapTask()"
       >
         {{ submitLabel }}
@@ -35,18 +39,12 @@
       class=""
       uk-modal="bg-close: false; esc-close: false; stack: true;"
     >
-      <div
-        id="status-modal"
-        class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical"
-      >
+      <div id="status-modal" class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
         <h2>{{ submitLabel }}</h2>
         <action-log-display :log="log" :task-status="taskStatus" />
         <div id="progress-and-cancel-row">
           <div class="stretchy">
-            <action-progress-bar
-              :progress="progress"
-              :task-status="taskStatus"
-            />
+            <action-progress-bar :progress="progress" :task-status="taskStatus" />
           </div>
 
           <button
@@ -84,67 +82,67 @@ export default {
   props: {
     action: {
       type: String,
-      required: true
+      required: true,
     },
     thing: {
       type: String,
-      required: true
+      required: true,
     },
     submitData: {
       type: [Object, Array],
       required: false,
-      default: () => ({})
+      default: () => ({}),
     },
     pollInterval: {
       type: Number,
       required: false,
-      default: 1
+      default: 1,
     },
     submitLabel: {
       type: String,
       required: false,
-      default: "Submit"
+      default: "Submit",
     },
     canTerminate: {
       type: Boolean,
       required: false,
-      default: true
+      default: true,
     },
     requiresConfirmation: {
       type: Boolean,
       required: false,
-      default: false
+      default: false,
     },
     confirmationMessage: {
       type: String,
       required: false,
-      default: "Start task?"
+      default: "Start task?",
     },
     buttonPrimary: {
       type: Boolean,
       required: false,
-      default: true
+      default: true,
     },
     submitOnEvent: {
       type: String,
       required: false,
-      default: null
+      default: null,
     },
     modalProgress: {
       type: Boolean,
       required: false,
-      default: false
+      default: false,
     },
     isDisabled: {
       type: Boolean,
       required: false,
-      default: false
+      default: false,
     },
     hideOnRun: {
       type: Boolean,
       required: false,
-      default: true      
-    }
+      default: true,
+    },
   },
 
   data: function() {
@@ -154,14 +152,14 @@ export default {
       taskStarted: false,
       taskRunning: false,
       log: [],
-      taskStatus: ""
+      taskStatus: "",
     };
   },
 
   computed: {
     submitUrl() {
       return this.thingActionUrl(this.thing, this.action);
-    }
+    },
   },
 
   watch: {
@@ -179,7 +177,7 @@ export default {
     },
     taskStatus(newval) {
       this.$emit("update:taskStatus", newval);
-    }
+    },
   },
 
   mounted() {
@@ -195,13 +193,14 @@ export default {
       // Otherwise, this is just normal property access
       return this[n];
     }
-  const TypedArray = Reflect.getPrototypeOf(Int8Array);
-  for (const C of [Array, String, TypedArray]) {
-      Object.defineProperty(C.prototype, "from_index",
-        { value: from_index,
-          writable: true,
-          enumerable: false,
-          configurable: true });
+    const TypedArray = Reflect.getPrototypeOf(Int8Array);
+    for (const C of [Array, String, TypedArray]) {
+      Object.defineProperty(C.prototype, "from_index", {
+        value: from_index,
+        writable: true,
+        enumerable: false,
+        configurable: true,
+      });
     }
     // Check for already running tasks
     if (this.taskStarted != true) {
@@ -234,10 +233,7 @@ export default {
           if (task.status == "pending" || task.status == "running") {
             this.taskStarted = true;
             this.$emit("taskStarted");
-            this.startPolling(
-              task.id,
-              task.links.find(t => t.rel == "self").href
-            );
+            this.startPolling(task.id, task.links.find(t => t.rel == "self").href);
           }
         }
       });
@@ -250,7 +246,7 @@ export default {
           () => {
             this.startTask();
           },
-          () => {}
+          () => {},
         );
       } else {
         this.startTask();
@@ -271,10 +267,7 @@ export default {
           UIkit.modal(this.$refs.statusModal).show();
         }
         // Start the store polling TaskId for success
-        response = await this.startPolling(
-          response.data.id,
-          response.data.href
-        );
+        response = await this.startPolling(response.data.id, response.data.href);
         if (response.status == "completed") {
           this.$emit("response", response);
           this.$emit("completed", response.output);
@@ -312,43 +305,46 @@ export default {
 
       var checkCondition = (resolve, reject) => {
         // If the condition is met, we're done!
-        axios
-          .get(this.taskUrl, { baseURL: this.$store.getters.baseUri })
-          .then(response => {
-            var result = response.data.status;
-            this.taskStatus = result;
-            if ((result == "running") | (result == "pending")) {
-              // If the task is still running, we update progress/log,
-              // and schedule another poll
-              this.progress = response.data.progress;
-              this.log = response.data.log;
-              // Check again after timeout
-              setTimeout(checkCondition, interval, resolve, reject);
+        axios.get(this.taskUrl, { baseURL: this.$store.getters.baseUri }).then(response => {
+          var result = response.data.status;
+          this.taskStatus = result;
+          if ((result == "running") | (result == "pending")) {
+            // If the task is still running, we update progress/log,
+            // and schedule another poll
+            this.progress = response.data.progress;
+            this.log = response.data.log;
+            // Check again after timeout
+            setTimeout(checkCondition, interval, resolve, reject);
+          }
+          // If task ends with an error
+          else if (result == "error") {
+            // Pass the error string back with reject
+            if (!this.progress) this.progress = 1;
+            // Test whether the log is empty or the most recent message is not from an error
+            // If so, return a default message
+            if (
+              (response.data.log.length == 0) |
+              (response.data.log.from_index(-1).levelname != "ERROR")
+            ) {
+              var message = "Unexpected error, please check the logs";
             }
-            // If task ends with an error
-            else if (result == "error") {
-              // Pass the error string back with reject
-              if (!this.progress) this.progress = 1;
-              // Test whether the log is empty or the most recent message is not from an error
-              // If so, return a default message
-              if (response.data.log.length == 0 | response.data.log.from_index(-1).levelname != "ERROR") {
-                var message = "Unexpected error, please check the logs";
-              }
-              // As LabThings Actions add the message from any raised exception to the log, the
-              // last message in the log is the message from the Exception.
-              //If the Exception was raised with no message, use a default.
-              else {
-                message = response.data.log.from_index(-1).message||"Unexpected error, please check the logs";
-              }
-              // Raise an Error with the chosen message
-              reject(new Error(message));
-            }
-            // If task ends without reporting an error
-            // (NB this includes cancellation)
+            // As LabThings Actions add the message from any raised exception to the log, the
+            // last message in the log is the message from the Exception.
+            //If the Exception was raised with no message, use a default.
             else {
-              resolve(response.data);
+              message =
+                response.data.log.from_index(-1).message ||
+                "Unexpected error, please check the logs";
             }
-          });
+            // Raise an Error with the chosen message
+            reject(new Error(message));
+          }
+          // If task ends without reporting an error
+          // (NB this includes cancellation)
+          else {
+            resolve(response.data);
+          }
+        });
       };
 
       return new Promise(checkCondition);
@@ -362,8 +358,8 @@ export default {
     terminateTask: function() {
       axios.delete(this.taskUrl, { baseURL: this.$store.getters.baseUri });
       this.$root.$emit("modalClosed");
-    }
-  }
+    },
+  },
 };
 </script>
 

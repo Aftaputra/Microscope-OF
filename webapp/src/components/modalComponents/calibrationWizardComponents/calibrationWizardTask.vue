@@ -23,8 +23,8 @@ gets very confusing.
   <div>
     <h3 v-if="title">{{ title }}</h3>
     <component
-      v-if="currentStep"
       :is="currentStep.component"
+      v-if="currentStep"
       :key="stepIndex"
       v-bind="currentStep.props"
     />
@@ -37,11 +37,7 @@ gets very confusing.
       >
         Back
       </button>
-      <button
-        class="uk-button uk-button-primary uk-margin-left"
-        type="button"
-        @click="nextStep"
-      >
+      <button class="uk-button uk-button-primary uk-margin-left" type="button" @click="nextStep">
         {{ nextButtonText }}
       </button>
     </p>
@@ -50,28 +46,28 @@ gets very confusing.
 
 <script>
 export default {
-  name: "calibrationWizardTask",
+  name: "CalibrationWizardTask",
 
   props: {
     title: {
       type: String,
-      default: null
+      default: null,
     },
     first: Boolean,
     final: Boolean,
     startOnLast: {
       type: Boolean,
-      default: false
+      default: false,
     },
     steps: {
       type: Array,
-      required: true
-    }
+      required: true,
+    },
   },
 
   data() {
     return {
-      stepIndex: this.startOnLast ? this.steps.length - 1 : 0
+      stepIndex: this.startOnLast ? this.steps.length - 1 : 0,
     };
   },
 
@@ -83,10 +79,8 @@ export default {
       return !this.first || this.stepIndex > 0;
     },
     nextButtonText() {
-      return this.final && this.stepIndex === this.steps.length - 1
-        ? "Finish"
-        : "Next";
-    }
+      return this.final && this.stepIndex === this.steps.length - 1 ? "Finish" : "Next";
+    },
   },
 
   methods: {
@@ -111,7 +105,7 @@ export default {
       } else {
         this.$emit("next");
       }
-    }
-  }
+    },
+  },
 };
 </script>

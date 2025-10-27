@@ -3,8 +3,8 @@
     <div>
       <h3>Stream Settings</h3>
       <label
-        ><input v-model="disableStream" class="uk-checkbox" type="checkbox" />
-        Disable Web Stream</label
+        ><input v-model="disableStream" class="uk-checkbox" type="checkbox" /> Disable Web
+        Stream</label
       >
       <p class="uk-margin-small">
         This will disable the embedded web stream of the camera.
@@ -29,8 +29,8 @@ export default {
       },
       set(value) {
         this.$store.commit("changeDisableStream", value);
-      }
-    }
+      },
+    },
   },
 
   watch: {
@@ -38,8 +38,8 @@ export default {
     // (the next 3 functions all relate to this)
     disableStream: function(newValue) {
       this.setLocalStorageObj("disableStream", newValue);
-    }
-  }
+    },
+  },
 };
 </script>
 

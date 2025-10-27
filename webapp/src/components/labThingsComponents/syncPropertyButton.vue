@@ -1,5 +1,5 @@
 <template>
-  <a @click.prevent="$emit('click')" class="sync-button">
+  <a class="sync-button" @click.prevent="$emit('click')">
     <span
       class="material-symbols-outlined sync-icon"
       title="Reread value from microscope. Required if microscope is updated externally"
@@ -11,7 +11,7 @@
 
 <script>
 export default {
-  name: "syncPropertyButton"
+  name: "SyncPropertyButton",
 };
 </script>
 
@@ -24,14 +24,13 @@ export default {
   cursor: pointer;
 }
 
-.material-symbols-outlined.sync-icon{
+.material-symbols-outlined.sync-icon {
   color: #888;
   transition: transform 0.3s ease, color 0.3s ease;
 }
 
-.material-symbols-outlined.sync-icon:hover{
+.material-symbols-outlined.sync-icon:hover {
   transform: rotate(-90deg);
   color: #c5247f;
 }
-
 </style>

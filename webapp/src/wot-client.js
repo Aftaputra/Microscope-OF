@@ -5,7 +5,7 @@ export const wotStoreModule = {
   state: () => ({
     thingDescriptions: {},
     servient: null,
-    helpers: null
+    helpers: null,
   }),
   mutations: {
     addThingDescription(state, { thingName, thingDescription }) {
@@ -16,7 +16,7 @@ export const wotStoreModule = {
     },
     removeAllThingDescriptions(state) {
       state.thingDescriptions = {};
-    }
+    },
   },
   actions: {
     async start() {
@@ -36,7 +36,7 @@ export const wotStoreModule = {
           .pop();
       commit("addThingDescription", {
         thingName: thing_name,
-        thingDescription: td
+        thingDescription: td,
       });
     },
     async fetchThingDescriptions({ commit }, uri) {
@@ -47,10 +47,10 @@ export const wotStoreModule = {
         let thing_name = k.replace(/\/$/, "").replace(/^\//, "");
         commit("addThingDescription", {
           thingName: thing_name,
-          thingDescription: response.data[k]
+          thingDescription: response.data[k],
         });
       }
-    }
+    },
   },
   getters: {
     thingDescriptions: state => {
@@ -62,13 +62,7 @@ export const wotStoreModule = {
     thingAvailable: state => thingName => {
       return thingName in state.thingDescriptions;
     },
-    thingFormUrl: state => (
-      thing,
-      affordanceType,
-      affordance,
-      op,
-      allowUndefined = true
-    ) => {
+    thingFormUrl: state => (thing, affordanceType, affordance, op, allowUndefined = true) => {
       // Find the URL for a particular operation
       let td = state.thingDescriptions[thing];
       if (!td) {
@@ -91,31 +85,15 @@ export const wotStoreModule = {
       }
       return href;
     },
-    thingPropertyUrl: (_state, getters) => (
-      thing,
-      property,
-      op,
-      allowUndefined
-    ) => {
+    thingPropertyUrl: (_state, getters) => (thing, property, op, allowUndefined) => {
       // Find the URL for a particular property
-      return getters.thingFormUrl(
-        thing,
-        "properties",
-        property,
-        op,
-        allowUndefined
-      );
+      return getters.thingFormUrl(thing, "properties", property, op, allowUndefined);
     },
-    thingActionUrl: (_state, getters) => (
-      thing,
-      action,
-      op,
-      allowUndefined
-    ) => {
+    thingActionUrl: (_state, getters) => (thing, action, op, allowUndefined) => {
       // Find the URL for a particular action
       return getters.thingFormUrl(thing, "actions", action, op, allowUndefined);
-    }
-  }
+    },
+  },
 };
 
 export function findFormHref(affordance, op) {

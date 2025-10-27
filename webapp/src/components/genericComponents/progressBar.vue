@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="progress uk-margin-top uk-margin-horizontal-remove uk-padding-remove"
-  >
+  <div class="progress uk-margin-top uk-margin-horizontal-remove uk-padding-remove">
     <div class="indeterminate"></div>
   </div>
 </template>
@@ -21,16 +19,16 @@ export default {
     classObject: function() {
       return {
         "tabicon-active": this.currentTab == this.id,
-        "uk-disabled": this.requireConnection && !this.$store.getters.ready
+        "uk-disabled": this.requireConnection && !this.$store.getters.ready,
       };
-    }
+    },
   },
 
   methods: {
     setThisTab(event) {
       this.$emit("set-tab", event, this.id);
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -77,8 +75,7 @@ export default {
   left: 0;
   bottom: 0;
   will-change: left, right;
-  -webkit-animation: indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395)
-    infinite;
+  -webkit-animation: indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
   animation: indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
 }
 
@@ -90,10 +87,8 @@ export default {
   left: 0;
   bottom: 0;
   will-change: left, right;
-  -webkit-animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1)
-    infinite;
-  animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1)
-    infinite;
+  -webkit-animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
+  animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
   -webkit-animation-delay: 1.15s;
   animation-delay: 1.15s;
 }

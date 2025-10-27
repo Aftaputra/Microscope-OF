@@ -14,6 +14,6 @@
 
 <script>
 export default {
-  name: "finalStep"
+  name: "FinalStep",
 };
 </script>

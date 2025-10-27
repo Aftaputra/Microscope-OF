@@ -2,10 +2,7 @@
   <div>
     <form @submit.prevent="handleMetadataSubmit">
       <div class="uk-margin-remove uk-flex uk-flex-middle">
-        <div
-          class="uk-margin-remove-top uk-padding-remove uk-grid-small uk-width-expand"
-          uk-grid
-        >
+        <div class="uk-margin-remove-top uk-padding-remove uk-grid-small uk-width-expand" uk-grid>
           <div class="uk-margin-remove uk-width-1-2">
             <input
               ref="textboxKey"
@@ -28,10 +25,7 @@
           </div>
         </div>
 
-        <a
-          href="#"
-          class="uk-icon uk-margin-left"
-          @click="handleMetadataSubmit()"
+        <a href="#" class="uk-icon uk-margin-left" @click="handleMetadataSubmit()"
           ><span class="material-symbols-outlined">add_circle</span></a
         >
       </div>
@@ -43,12 +37,7 @@
       class="uk-width-1-1 uk-margin-small uk-margin-remove-left uk-margin-remove-right uk-flex uk-flex-middle"
     >
       <div class="uk-margin-remove-top uk-padding-remove uk-width-expand">
-        <labelInput
-          :name="key"
-          :label="key"
-          :value="value[key]"
-          @input="value[key] = $event"
-        />
+        <labelInput :name="key" :label="key" :value="value[key]" @input="value[key] = $event" />
       </div>
       <a href="#" class="uk-icon uk-width-auto" @click="delMetadataKey(key)"
         ><span class="material-symbols-outlined">delete</span></a
@@ -64,22 +53,22 @@ export default {
   name: "KeyvalList",
 
   components: {
-    labelInput
+    labelInput,
   },
 
   props: {
     value: {
       type: Object,
-      required: true
-    }
+      required: true,
+    },
   },
 
   data: function() {
     return {
       newMetadata: {
         key: "",
-        value: ""
-      }
+        value: "",
+      },
     };
   },
 
@@ -113,8 +102,8 @@ export default {
       this.$delete(newSelected, key);
 
       this.$emit("input", newSelected);
-    }
-  }
+    },
+  },
 };
 </script>
 

@@ -1,17 +1,9 @@
 <template>
-  <div
-    v-observe-visibility="visibilityChanged"
-    class="uk-padding uk-padding-remove-top"
-  >
+  <div v-observe-visibility="visibilityChanged" class="uk-padding uk-padding-remove-top">
     <!-- Logging nav bar -->
-    <nav
-      class="logging-navbar uk-navbar-container uk-navbar-transparent"
-      uk-navbar="mode: click"
-    >
+    <nav class="logging-navbar uk-navbar-container uk-navbar-transparent" uk-navbar="mode: click">
       <!-- Left side controls -->
-      <div
-        class="uk-navbar-left uk-padding-remove-top uk-padding-remove-bottom"
-      >
+      <div class="uk-navbar-left uk-padding-remove-top uk-padding-remove-bottom">
         <select v-model="filterLevel" class="uk-select">
           <option v-for="level in allLevels" :key="level">{{ level }}</option>
         </select>
@@ -30,11 +22,11 @@
             </button>
           </div>
           <div>
-          <EndpointButton
-            class="uk-button uk-width-1-1"
-            :URL="logFileURI"
-            buttonLabel="Download Log File"
-            :buttonPrimary="false"
+            <EndpointButton
+              class="uk-button uk-width-1-1"
+              :u-r-l="logFileURI"
+              button-label="Download Log File"
+              :button-primary="false"
             />
           </div>
         </div>
@@ -50,7 +42,7 @@
         class="logging-entry"
         :class="{
           'uk-alert-warning uk-alert': item.level == 'WARNING',
-          'uk-alert-danger uk-alert': item.level == 'ERROR'
+          'uk-alert-danger uk-alert': item.level == 'ERROR',
         }"
       >
         <b>{{ formatDateTime(item.timestamp) }}: {{ item.level }}</b>
@@ -64,11 +56,7 @@
             More info...
           </a>
           <!-- eslint-disable vue/no-v-html -->
-          <div
-            v-if="item.expanded"
-            class="logging-message"
-            v-html="item.message"
-          ></div>
+          <div v-if="item.expanded" class="logging-message" v-html="item.message"></div>
           <!-- eslint-enable -->
         </div>
       </div>
@@ -101,7 +89,7 @@ export default {
 
   components: {
     Paginate,
-    EndpointButton
+    EndpointButton,
   },
 
   data: function() {
@@ -110,7 +98,7 @@ export default {
       page: 1,
       logs: [],
       allLevels: ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-      filterLevel: "WARNING"
+      filterLevel: "WARNING",
     };
   },
 
@@ -142,7 +130,7 @@ export default {
     },
     numberOfPages: function() {
       return Math.floor(this.filteredItems.length / this.maxitems);
-    }
+    },
   },
 
   methods: {
@@ -172,7 +160,7 @@ export default {
               summary: m[3],
               message: this.escapeText(m[3]),
               sequence: logs.length,
-              expanded: false
+              expanded: false,
             });
           } else if (logs) {
             // If a line does not look like a log entry, append it to the last
@@ -198,9 +186,7 @@ export default {
           } else {
             // if there's no existing log message to append to, discard lines
             // until we find one.
-            console.log(
-              "Ignored non-matching lines at the start of the log file."
-            );
+            console.log("Ignored non-matching lines at the start of the log file.");
             continue;
           }
         }
@@ -216,8 +202,8 @@ export default {
       let div = document.createElement("div");
       div.innerText = unsafeText;
       return div.innerHTML;
-    }
-  }
+    },
+  },
 };
 </script>
 

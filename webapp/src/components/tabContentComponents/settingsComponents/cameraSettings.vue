@@ -33,7 +33,7 @@ export default {
   components: {
     cameraCalibrationSettings,
     miniStreamDisplay,
-    ServerSpecifiedPropertyControl
+    ServerSpecifiedPropertyControl,
   },
 
   data() {
@@ -45,15 +45,12 @@ export default {
   computed: {
     cameraUri: function() {
       return `${this.$store.getters.baseUri}/camera/`;
-    }
+    },
   },
 
   async created() {
-    this.manualCameraSettings = await this.readThingProperty(
-      "camera",
-      "manual_camera_settings"
-    );
-  }
+    this.manualCameraSettings = await this.readThingProperty("camera", "manual_camera_settings");
+  },
 };
 </script>
 

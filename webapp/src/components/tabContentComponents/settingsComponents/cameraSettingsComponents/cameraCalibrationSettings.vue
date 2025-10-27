@@ -28,44 +28,44 @@ export default {
   name: "CameraCalibrationSettings",
 
   components: {
-    ServerSpecifiedActionButton
+    ServerSpecifiedActionButton,
   },
 
   props: {
     showExtraSettings: {
       type: Boolean,
       required: false,
-      default: true
+      default: true,
     },
     cameraUri: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
 
   data() {
     return {
       primaryCalibrationActions: [],
-      secondaryCalibrationActions: []
+      secondaryCalibrationActions: [],
     };
   },
 
   computed: {
     actions() {
       return this.$store.getters["wot/thingDescription"]("camera").actions;
-    }
+    },
   },
 
   async created() {
     this.primaryCalibrationActions = await this.readThingProperty(
       "camera",
-      "primary_calibration_actions"
+      "primary_calibration_actions",
     );
     this.secondaryCalibrationActions = await this.readThingProperty(
       "camera",
-      "secondary_calibration_actions"
+      "secondary_calibration_actions",
     );
-  }
+  },
 };
 </script>
 

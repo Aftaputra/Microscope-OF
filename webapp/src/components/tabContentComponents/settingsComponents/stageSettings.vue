@@ -1,5 +1,5 @@
 <template>
-  <div id="stageSettings" class="uk-width-large" v-observe-visibility="visibilityChanged">
+  <div id="stageSettings" v-observe-visibility="visibilityChanged" class="uk-width-large">
     The microscope stage is a <b>{{ stageType }}</b>
     <div>
       <div class="uk-margin">
@@ -48,6 +48,12 @@ export default {
     };
   },
 
+  computed: {
+    stageType: function() {
+      return this.thingDescription("stage").title;
+    }
+  },
+
   methods:{
     visibilityChanged(isVisible) {
       if (isVisible) {
@@ -60,12 +66,6 @@ export default {
         "axis_inverted"
       );
       this.z_inverted = axes_inverted['z'] ? "" : "not ";
-    }
-  },
-
-  computed: {
-    stageType: function() {
-      return this.thingDescription("stage").title;
     }
   }
 };

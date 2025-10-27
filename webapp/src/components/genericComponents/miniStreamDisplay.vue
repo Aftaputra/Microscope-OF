@@ -22,20 +22,20 @@ export default {
 
   data: function() {
     return {
-      isVisible: false
+      isVisible: false,
     };
   },
 
   computed: {
     streamImgUri: function() {
       return `${this.$store.getters.baseUri}/camera/mjpeg_stream`;
-    }
+    },
   },
   methods: {
     visibilityChanged(isVisible) {
       this.isVisible = isVisible;
-    }
-  }
+    },
+  },
 };
 </script>
 

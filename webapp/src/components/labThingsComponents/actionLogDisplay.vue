@@ -1,31 +1,24 @@
 <template>
-  <div
-    class="log-wrapper"
-    @mouseenter="onMouseEnter"
-    @mouseleave="onMouseLeave"
-  >
-  <div
-    ref="logContainer"
-    class="log-container uk-margin-left uk-margin-right uk-margin"
-  >
-    <div v-if="log">
-      <div v-for="(item, index) in log" :key="`log_entry_${index}`">
-        {{ item.message }}
+  <div class="log-wrapper" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
+    <div ref="logContainer" class="log-container uk-margin-left uk-margin-right uk-margin">
+      <div v-if="log">
+        <div v-for="(item, index) in log" :key="`log_entry_${index}`">
+          {{ item.message }}
+        </div>
       </div>
-    </div>
-    <div v-if="taskStatus == 'error'" class="uk-alert uk-alert-danger">
-      The task failed due to an error. There may be more information in the log.
-    </div>
-    <div v-if="taskStatus == 'cancelled'" class="uk-alert uk-alert-warning">
-      The task was cancelled.
-    </div>
-    <div v-if="taskStatus == 'completed'" class="uk-alert uk-alert-success">
-      The task completed successfully.
+      <div v-if="taskStatus == 'error'" class="uk-alert uk-alert-danger">
+        The task failed due to an error. There may be more information in the log.
       </div>
-      
+      <div v-if="taskStatus == 'cancelled'" class="uk-alert uk-alert-warning">
+        The task was cancelled.
+      </div>
+      <div v-if="taskStatus == 'completed'" class="uk-alert uk-alert-success">
+        The task completed successfully.
+      </div>
+
       <!-- Paused banner outside scroll container, positioned relative to wrapper -->
-    <div v-if="userIsHovering" class="paused-banner">
-      Auto-scroll paused
+      <div v-if="userIsHovering" class="paused-banner">
+        Auto-scroll paused
       </div>
     </div>
   </div>
@@ -38,12 +31,12 @@ export default {
   props: {
     taskStatus: {
       type: String,
-      required: true
+      required: true,
     },
     log: {
       type: Array,
-      required: true
-    }
+      required: true,
+    },
   },
 
   data() {
@@ -58,7 +51,7 @@ export default {
     },
     taskStatus: function() {
       this.scrollToBottom();
-    }
+    },
   },
 
   methods: {
@@ -70,15 +63,15 @@ export default {
     },
 
     scrollToBottom() {
-    /*Scroll to bottom of log unless the user is hovering over the log.*/
+      /*Scroll to bottom of log unless the user is hovering over the log.*/
       this.$nextTick(() => {
         if (this.userIsHovering) return;
 
         const viewer = this.$refs.logContainer;
         viewer.scrollTop = viewer.scrollHeight;
       });
-    }
-  }
+    },
+  },
 };
 </script>
 

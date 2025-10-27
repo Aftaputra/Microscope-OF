@@ -6,19 +6,18 @@ import UIkit from "uikit";
 
 import VueObserveVisibility from "vue-observe-visibility";
 
-
 // Import MD icons
 import "material-symbols/outlined.css";
-import version from './version.js'
+import version from "./version.js";
 
 // UIKit overrides
 UIkit.mixin(
   {
     data: {
-      animation: false
-    }
+      animation: false,
+    },
   },
-  "accordion"
+  "accordion",
 );
 
 // Use visibility observer
@@ -38,12 +37,7 @@ Vue.mixin({
       return this.$store.getters["wot/thingAvailable"](thing);
     },
     async readThingProperty(thing, property, silence_errors = false) {
-      let url = this.$store.getters["wot/thingPropertyUrl"](
-        thing,
-        property,
-        "readproperty",
-        false
-      );
+      let url = this.$store.getters["wot/thingPropertyUrl"](thing, property, "readproperty", false);
       try {
         let response = await axios.get(url);
         return response.data;
@@ -57,7 +51,7 @@ Vue.mixin({
         thing,
         property,
         "writeproperty",
-        false
+        false,
       );
       // `false` fails because axios somehow eats it!
       // Other values should not be stringified or pydantic
@@ -68,12 +62,7 @@ Vue.mixin({
       await axios.put(url, value);
     },
     async invokeAction(thing, action, data) {
-      let url = this.$store.getters["wot/thingActionUrl"](
-        thing,
-        action,
-        "invokeaction",
-        false
-      );
+      let url = this.$store.getters["wot/thingActionUrl"](thing, action, "invokeaction", false);
       try {
         let response = await axios.post(url, data);
         return response;
@@ -87,7 +76,7 @@ Vue.mixin({
         thing,
         action,
         "invokeaction",
-        allow_missing
+        allow_missing,
       );
       return url;
     },
@@ -109,14 +98,14 @@ Vue.mixin({
             },
             function() {
               reject();
-            }
+            },
           )
           .finally(function() {
             // Re-enable the GPU preview, if it was active before the modal
             if (context.$store.state.autoGpuPreview) {
               context.$root.$emit("globalTogglePreview", true);
             }
-          context.$root.$emit("modalClosed");
+            context.$root.$emit("modalClosed");
           });
       };
       return new Promise(showModal);
@@ -125,7 +114,7 @@ Vue.mixin({
     modalNotify: function(message, status = "success") {
       UIkit.notification({
         message: message,
-        status: status
+        status: status,
       });
     },
 
@@ -140,7 +129,7 @@ Vue.mixin({
           <p>${message}</p>
         </div>
       `,
-        { stack: true }
+        { stack: true },
       );
     },
 
@@ -149,25 +138,25 @@ Vue.mixin({
       this.$store.commit("setErrorMessage", errormsg);
       UIkit.notification({
         message: `${errormsg}`,
-        status: "danger"
+        status: "danger",
       });
     },
 
     getErrorMessage: function(error) {
       // Format the error.
-      let data = this.getErrorData(error)
+      let data = this.getErrorData(error);
       // Get error data may get an object. Handle edge cases and if not try to use
       // JSON to get the best string. This stops "objectObject" showing as an error.
       if (data === null) return "null";
       if (data === undefined) return "undefined";
-      if (typeof data === 'string') return data;
+      if (typeof data === "string") return data;
       try {
         return JSON.stringify(data, null, 2);
       } catch (err) {
         return String(data);
       }
     },
-    getErrorData: function(error){
+    getErrorData: function(error) {
       // If a response was obtained, extract the most specific message
       if (error.response) {
         // If the response is a nicely formatted JSON response from the server
@@ -176,7 +165,7 @@ Vue.mixin({
         }
         if (error.response.data.detail) {
           try {
-            return error.response.data.detail[0].msg
+            return error.response.data.detail[0].msg;
           } catch (err) {
             return error.response.data.detail;
           }
@@ -219,11 +208,11 @@ Vue.mixin({
     setLocalStorageObj: function(keyName, object) {
       const parsed = JSON.stringify(object);
       localStorage.setItem(keyName, parsed);
-    }
-  }
+    },
+  },
 });
 
 new Vue({
   store,
-  render: h => h(App)
+  render: h => h(App),
 }).$mount("#app");

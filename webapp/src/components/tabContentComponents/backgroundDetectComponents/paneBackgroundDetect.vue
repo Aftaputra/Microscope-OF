@@ -1,5 +1,5 @@
 <template>
-  <div class="uk-padding-small" v-observe-visibility="visibilityChanged">
+  <div v-observe-visibility="visibilityChanged" class="uk-padding-small">
     <div>
       <ul uk-accordion="multiple: true">
         <li>
@@ -35,7 +35,7 @@
           thing="camera"
           action="image_is_sample"
           submit-label="Check Current Image"
-          :isDisabled="!ready"
+          :is-disabled="!ready"
           :can-terminate="false"
           :poll-interval="0.1"
           @response="alertImageLabel"
@@ -53,13 +53,13 @@ import InputFromSchema from "../../labThingsComponents/inputFromSchema.vue";
 export default {
   components: {
     ActionButton,
-    InputFromSchema
+    InputFromSchema,
   },
 
   data() {
     return {
       backgroundDetectorStatus: undefined,
-      animate: false
+      animate: false,
     };
   },
 
@@ -67,7 +67,13 @@ export default {
     ready() {
       const status = this.backgroundDetectorStatus;
       return status && status.ready === true;
-    }
+    },
+  },
+  async created() {
+    this.backgroundDetectorStatus = await this.readThingProperty(
+      "camera",
+      "background_detector_status",
+    );
   },
 
   methods: {
@@ -86,27 +92,17 @@ export default {
     readSettings: async function() {
       this.backgroundDetectorStatus = await this.readThingProperty(
         "camera",
-        "background_detector_status"
+        "background_detector_status",
       );
     },
     writeSettings: async function(requestedValue) {
-      await this.invokeAction(
-        "camera",
-        "update_detector_settings",
-        {"data": requestedValue}
-      );
+      await this.invokeAction("camera", "update_detector_settings", { data: requestedValue });
       this.animate = true;
       this.readSettings();
     },
     resetAnimate: function() {
-        this.animate = false;
-    }
+      this.animate = false;
+    },
   },
-  async created() {
-    this.backgroundDetectorStatus = await this.readThingProperty(
-      "camera",
-      "background_detector_status"
-    );
-  }
 };
 </script>

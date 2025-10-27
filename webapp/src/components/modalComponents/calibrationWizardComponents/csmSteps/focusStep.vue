@@ -3,10 +3,7 @@
     <p>
       Use the buttons below to bring the sample into focus.
     </p>
-    <p>
-      You may also adjust the z position with <b>page up</b> and
-      <b>page down</b>.
-    </p>
+    <p>You may also adjust the z position with <b>page up</b> and <b>page down</b>.</p>
     <template #below-stream>
       <div class="action-button-container">
         <action-button
@@ -16,7 +13,7 @@
           :button-primary="false"
           :submit-data="{ x: 0, y: 0, z: -100 }"
           :submit-label="' - '"
-          :hideOnRun="false"
+          :hide-on-run="false"
           :can-terminate="false"
         />
         <action-button
@@ -27,7 +24,7 @@
           :submit-data="{ x: 0, y: 0, z: 100 }"
           :submit-label="'+'"
           :can-terminate="false"
-          :hideOnRun="false"
+          :hide-on-run="false"
         />
       </div>
     </template>
@@ -38,12 +35,12 @@
 import stepTemplateWithStream from "../stepTemplateWithStream.vue";
 import ActionButton from "../../../labThingsComponents/actionButton.vue";
 export default {
-  name: "cameraMainCalibrationStep",
+  name: "CameraMainCalibrationStep",
 
   components: {
     stepTemplateWithStream,
-    ActionButton
-  }
+    ActionButton,
+  },
 };
 </script>
 <style scoped>

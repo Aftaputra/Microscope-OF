@@ -6,10 +6,7 @@
 
     <template #below-stream>
       <div class="action-button-container">
-        <cameraCalibrationSettings
-          :show-extra-settings="false"
-          :camera-uri="cameraUri"
-        />
+        <cameraCalibrationSettings :show-extra-settings="false" :camera-uri="cameraUri" />
       </div>
     </template>
   </stepTemplateWithStream>
@@ -20,18 +17,18 @@ import stepTemplateWithStream from "../stepTemplateWithStream.vue";
 import cameraCalibrationSettings from "../../../tabContentComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
 
 export default {
-  name: "cameraMainCalibrationStep",
+  name: "CameraMainCalibrationStep",
 
   components: {
     stepTemplateWithStream,
-    cameraCalibrationSettings
+    cameraCalibrationSettings,
   },
 
   computed: {
     cameraUri: function() {
       return `${this.$store.getters.baseUri}/camera/`;
-    }
-  }
+    },
+  },
 };
 </script>
 

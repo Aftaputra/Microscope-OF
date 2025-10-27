@@ -17,6 +17,6 @@
 
 <script>
 export default {
-  name: "csmExplanation"
+  name: "CsmExplanation",
 };
 </script>

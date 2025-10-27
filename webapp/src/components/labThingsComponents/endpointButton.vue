@@ -1,15 +1,18 @@
 <template>
-    <a
-      class="uk-button"
-      :class="[isDisabled ? 'uk-button-disabled' : '', buttonPrimary ? 'uk-button-primary' : 'uk-button-default']"
-      :href="URL"
-      download
-      > {{ buttonLabel }}</a
-    >
+  <a
+    class="uk-button"
+    :class="[
+      isDisabled ? 'uk-button-disabled' : '',
+      buttonPrimary ? 'uk-button-primary' : 'uk-button-default',
+    ]"
+    :href="URL"
+    download
+  >
+    {{ buttonLabel }}</a
+  >
 </template>
 
 <script>
-
 export default {
   name: "EndpointButton",
 
@@ -17,7 +20,7 @@ export default {
     buttonPrimary: {
       type: Boolean,
       required: false,
-      default: true
+      default: true,
     },
     URL: {
       type: String,
@@ -26,18 +29,18 @@ export default {
     isDisabled: {
       type: Boolean,
       required: false,
-      default: false
+      default: false,
     },
     destinationName: {
       type: String,
       required: false,
-      default: null
+      default: null,
     },
     buttonLabel: {
       type: String,
       required: false,
-      default: "Download File"
-    }
+      default: "Download File",
+    },
   },
 };
 </script>

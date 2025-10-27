@@ -4,9 +4,7 @@
       <div class="uk-margin-small uk-flex uk-flex-middle">
         <div class="uk-margin-remove-top uk-width-expand">
           <div class="uk-inline uk-width-1-1">
-            <span class="uk-form-icon"
-              ><span class="material-symbols-outlined">label</span></span
-            >
+            <span class="uk-form-icon"><span class="material-symbols-outlined">label</span></span>
             <input
               v-model="newTag"
               class="uk-input uk-form-small"
@@ -41,13 +39,13 @@ export default {
   props: {
     value: {
       type: Array,
-      required: true
-    }
+      required: true,
+    },
   },
 
   data: function() {
     return {
-      newTag: ""
+      newTag: "",
     };
   },
 
@@ -71,8 +69,8 @@ export default {
       }
 
       this.$emit("input", newSelected);
-    }
-  }
+    },
+  },
 };
 </script>
 

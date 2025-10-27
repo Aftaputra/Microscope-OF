@@ -13,17 +13,17 @@ export default {
     label: {
       type: String,
       required: false,
-      default: ""
+      default: "",
     },
     name: {
       type: String,
-      required: true
+      required: true,
     },
     content: {
       type: String,
-      required: true
-    }
-  }
+      required: true,
+    },
+  },
 };
 </script>
 
