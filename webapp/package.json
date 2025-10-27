@@ -8,7 +8,7 @@
     "gv": "genversion src/version.js",
     "serve": "npm run gv && vue-cli-service serve --mode development",
     "build": "npm run gv && vue-cli-service build --openssl-legacy-provider --mode production",
-    "lint": "vue-cli-service lint",
+    "lint": "vue-cli-service lint --no-fix --max-warnings 0",
     "lint:fix": "vue-cli-service lint --fix"
   },
   "dependencies": {
