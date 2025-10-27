@@ -242,6 +242,11 @@ class CameraStageMapper(lt.Thing):
             return None
         return self.last_calibration["image_resolution"]
 
+    @lt.thing_property
+    def calibration_required(self) -> bool:
+        """Whether the camera stage mapper needs calibrating."""
+        return self.image_to_stage_displacement_matrix is None
+
     def assert_calibrated(self) -> None:
         """Raise an exception if the image_to_stage_displacement matrix is not set."""
         if self.image_to_stage_displacement_matrix is None:

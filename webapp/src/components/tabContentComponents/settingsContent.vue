@@ -1,10 +1,9 @@
 <template>
   <!-- Grid managing tab content -->
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
-    <calibrationModal
-      ref="calibrationModal"
-      @onClose="enterApp()"
-    ></calibrationModal>
+    <calibrationWizard
+      ref="calibrationWizard"
+    ></calibrationWizard>
     <div class="settings-nav">
       <ul class="uk-nav uk-nav-default">
         <li class="uk-nav-header">Application Settings</li>
@@ -116,7 +115,7 @@
 
 <script>
 import streamSettings from "./settingsComponents/streamSettings.vue";
-import calibrationModal from "../modalComponents/calibrationModal.vue";
+import calibrationWizard from "../modalComponents/calibrationWizard.vue";
 import cameraSettings from "./settingsComponents/cameraSettings.vue";
 import appSettings from "./settingsComponents/appSettings.vue";
 import CSMSettings from "./settingsComponents/CSMSettings.vue";
@@ -137,7 +136,7 @@ export default {
     appSettings,
     tabIcon,
     tabContent,
-    calibrationModal
+    calibrationWizard
   },
 
   data: function() {
@@ -154,7 +153,7 @@ export default {
       }
     },
     startModals: function() {
-      this.$refs.calibrationModal.force_show();
+      this.$refs.calibrationWizard.force_show();
     }
   }
 };

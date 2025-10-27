@@ -37,15 +37,11 @@ For a step-by-step demonstration, watch the [full video walkthrough on running t
 
 ## Running a simulated scan
 
-To run a simulated scan, you first need to set a background image:
+To run a simulated scan, you must first complete the calibration wizard.
 
-1. Click on the settings tab on the left
-2. Navigate to the **Camera** settings under **Microscope Settings**
-3. Click `Remove Sample`. This removes the simulated sample from the camera stream
-4. Click on the **Background Detect** tab on the left and click `Set Background`
-5. Repeat the steps 1 and 2 to return to the camera settings and click `Add Sample`
-
-You are now ready to start a simulated scan in the Slide Scan tab.
+1. Go to the  **Slide Scan** tab
+2. Click the **Start Smart Scan** Button.
+3. This will scan until the whole sample has been imaged. You can cancel the scan at any time, with the **Cancel** button.
 
 ---
 
@@ -53,27 +49,31 @@ You are now ready to start a simulated scan in the Slide Scan tab.
 
 ---
 
-### Autocalibration
+### Auto-calibration
 
 * Your simulated microscope should prompt you to complete the auto-calibration wizard upon your first use of the simulated server.
-* If the stage moves in the wrong direction in the **View** or **Navigate** tabs, you can re-run **Auto-calibration** from the UI to correct it.
-* To auto-calibrate your microscope, go to: **Settings → Camera to Stage Mapping → Auto-Calibrate Using Camera**.
+* You can press the **Escape** key at any point to exit the wizard, but this will leave your simulated microscope in an uncalibrated state.
+* If your microscope is not calibrated, the wizard will launch each time you load the UI, prompting you to complete remaining calibrations.
+* You can always launch the full calibration wizard by going to: **Settings → Launch Calibration Wizard**.
+
+The calibration steps are:
+
+1. The Camera Calibration will set the background image needed for background detect.
+  * You can rerun this calibration by going to: **Settings → Camera → Full Auto-Calibrate**.
+2. The Camera-Stage Mapping calibration is used to find the relationship between stage and image coordinates.
+  * If the stage moves in the wrong direction when double clicking on the camera feed in the **View** or **Navigate** tabs, you may need to re-run Camera-Stage Mapping.
+  * To re-run Camera-Stage Mapping, go to: **Settings → Camera to Stage Mapping → Auto-Calibrate Using Camera**.
+
 
 ---
 
-### Sample Coverage
-
-* The default **sample coverage** of 25% is often too high for simulations. A figure closer to 10% performs better.
-* You can adjust this in the **Background Detect tab** under:
-  **Configure → Sample Coverage**
-
----
-
-### Background and Samples
+### Background Detect
 
 * You can **load a sample** to simulate imaging conditions, using the **Load Sample** options in the **Settings tab**.
 * To remove a sample and reset the view, use the **Remove Sample** option in the **Settings tab**.
-* You can load and remove simulated samples under: **Settings → Camera → Load/Remove Sample**
+* You can load and remove simulated samples under: **Settings → Camera → Load/Remove Sample**.
+* The Full Auto-Calibrate option in camera settings can be used to **Remove the sample → Run background detection → Re-load the sample**.
+* You can adjust the sample coverage needed for the image not to be detected as background in the **Background Detect tab** under: **Configure → Sample Coverage**. The default value is 25%.
 
 ---
 

@@ -5,10 +5,10 @@
     uk-grid
   >
     <!-- Initialisation modals -->
-    <calibrationModal
-      ref="calibrationModal"
+    <calibrationWizard
+      ref="calibrationWizard"
       @onClose="enterApp()"
-    ></calibrationModal>
+    ></calibrationWizard>
     <!-- Vertical tab bar -->
     <div id="switcher-left-container">
       <div
@@ -112,7 +112,7 @@ import loggingContent from "./tabContentComponents/loggingContent.vue";
 import powerContent from "./tabContentComponents/powerContent.vue";
 
 // Import modal components for device initialisation
-import calibrationModal from "./modalComponents/calibrationModal.vue";
+import calibrationWizard from "./modalComponents/calibrationWizard.vue";
 import TabIcon from "./genericComponents/tabIcon.vue";
 import ScanListContent from "./tabContentComponents/scanListContent.vue";
 
@@ -127,7 +127,7 @@ export default {
     slideScanContent,
     viewContent,
     settingsContent,
-    calibrationModal,
+    calibrationWizard,
     aboutContent,
     loggingContent,
     TabIcon,
@@ -246,7 +246,7 @@ export default {
       this.currentTab = newId;
     },
     startModals: function() {
-      this.$refs.calibrationModal.show();
+      this.$refs.calibrationWizard.show_if_needed();
     },
     enterApp: function() {
       // Stuff to do once connected and all init modals are finished

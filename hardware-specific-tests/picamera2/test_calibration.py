@@ -75,6 +75,8 @@ def test_get_tuning_algo(picamera_thing):
 
 def test_calibration(picamera_thing, client):
     """Check that full auto calibrate completes and set the expected values."""
+    # Check the calibration_required property used by the calibration wizard
+    assert picamera_thing.calibration_required
     # Save copy of default tuning file for end of test
     original_default = deepcopy(picamera_thing.default_tuning)
     # Tuning should start the same as the server is loading with no settings.
@@ -88,7 +90,9 @@ def test_calibration(picamera_thing, client):
     # Run full auto calibrate
     client.full_auto_calibrate()
 
-    # After calibration the tuning files should be different
+    # After calibration it should report that calibration is no longer  required
+    assert not picamera_thing.calibration_required
+    # The tuning files should be different
     assert picamera_thing.default_tuning != picamera_thing.tuning
     # The default should be unchanged
     assert picamera_thing.default_tuning == original_default

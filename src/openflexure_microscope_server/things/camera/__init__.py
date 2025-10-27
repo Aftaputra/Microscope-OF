@@ -198,6 +198,15 @@ class BaseCamera(lt.Thing):
         """Close hardware connection when the Thing context manager is closed."""
         raise NotImplementedError("CameraThings must define their own __exit__ method")
 
+    @lt.thing_property
+    def calibration_required(self) -> bool:
+        """Whether the camera needs calibrating.
+
+        This always returns False in BaseCamera. It should be reimplemented by child
+        classes if calibration is required.
+        """
+        return False
+
     @lt.thing_action
     def start_streaming(
         self, main_resolution: tuple[int, int], buffer_count: int

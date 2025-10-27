@@ -68,3 +68,14 @@ def test_handle_broken_frame():
         for _i in range(15):
             array = camera.grab_as_array(portal)
             assert isinstance(array, np.ndarray)
+
+
+def test_simulation_cam_calibration():
+    """Test that the simulated camera can be calibrated and reports calibration correctly."""
+    camera = SimulatedCamera()
+    with camera_server(camera):
+        portal = lt.get_blocking_portal(camera)
+        assert camera.calibration_required
+        camera.full_auto_calibrate(portal)
+        assert not camera.calibration_required
+        assert camera.background_detector_status.ready
