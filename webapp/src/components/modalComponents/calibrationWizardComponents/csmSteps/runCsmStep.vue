@@ -1,8 +1,9 @@
 <template>
   <stepTemplateWithStream>
     <p>
-      <b>Once you're ready, click Auto-Calibrate Using Camera.</b>
+      <b>If the sample is in focus, click Auto-Calibrate Using Camera.</b>
     </p>
+    <p>If it is not in focus, click back and re-focus.</p>
     <template #below-stream>
       <div class="action-button-container">
         <CSMCalibrationSettings :show-extra-settings="false" />

@@ -49,19 +49,19 @@ To run a simulated scan, you must first complete the calibration wizard.
 
 ---
 
-### Autocalibration
+### Auto-calibration
 
 * Your simulated microscope should prompt you to complete the auto-calibration wizard upon your first use of the simulated server.
-* You can press the **Escape** key at any point to exit the wizard but this will leave your smulated microscope in an uncalibrated state.
-* If your microscope is not calibrated the wizard will launch each time you load the UI prompting you to complete remaining calibrations.
+* You can press the **Escape** key at any point to exit the wizard, but this will leave your simulated microscope in an uncalibrated state.
+* If your microscope is not calibrated, the wizard will launch each time you load the UI, prompting you to complete remaining calibrations.
 * You can always launch the full calibration wizard by going to: **Settings → Launch Calibration Wizard**.
 
 The calibration steps are:
 
 1. The Camera Calibration will set the background image needed for background detect.
   * You can rerun this calibration by going to: **Settings → Camera → Full Auto-Calibrate**.
-2. The Camera-Stage Mapping calibration is used to find the relationship between stage and image coordinated.
-  * If the stage moves in the wrong direction when double clicking on the camera feed in the **View** or **Navigate** tabs you may need to re-run Camera-Stage Mapping.
+2. The Camera-Stage Mapping calibration is used to find the relationship between stage and image coordinates.
+  * If the stage moves in the wrong direction when double clicking on the camera feed in the **View** or **Navigate** tabs, you may need to re-run Camera-Stage Mapping.
   * To re-run Camera-Stage Mapping, go to: **Settings → Camera to Stage Mapping → Auto-Calibrate Using Camera**.
 
 
@@ -72,7 +72,7 @@ The calibration steps are:
 * You can **load a sample** to simulate imaging conditions, using the **Load Sample** options in the **Settings tab**.
 * To remove a sample and reset the view, use the **Remove Sample** option in the **Settings tab**.
 * You can load and remove simulated samples under: **Settings → Camera → Load/Remove Sample**.
-* The Full Auto-Calibratie option in camera settings can be used to **Remove the sameple → Run background detection → Re-load the sample**.
+* The Full Auto-Calibrate option in camera settings can be used to **Remove the sample → Run background detection → Re-load the sample**.
 * You can adjust the sample coverage needed for the image not to be detected as background in the **Background Detect tab** under: **Configure → Sample Coverage**. The default value is 25%.
 
 ---
