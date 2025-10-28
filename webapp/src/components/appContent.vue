@@ -56,29 +56,20 @@
     </div>
 
     <!-- Corresponding vertical tab content -->
-    <div id="container-left" class="uk-padding-remove uk-height-1-1 uk-width-expand">
-      <!-- For each top tab -->
+    <div
+      id="container-left"
+      ref="containerLeft"
+      class="uk-padding-remove uk-height-1-1 uk-width-expand"
+    >
       <tabContent
-        v-for="item in topTabs"
+        v-for="item in allTabs"
         :id="item.id + '-tab-content'"
         :key="item.id + '-tab-content'"
         :tab-i-d="item.id"
         :require-connection="true"
         :current-tab="currentTab"
       >
-        <component :is="item.component"></component>
-      </tabContent>
-
-      <!-- For each bottom tab -->
-      <tabContent
-        v-for="item in bottomTabs"
-        :id="item.id + '-tab-content'"
-        :key="item.id + '-tab-content'"
-        :tab-i-d="item.id"
-        :require-connection="true"
-        :current-tab="currentTab"
-      >
-        <component :is="item.component"></component>
+        <component :is="item.component" @scrollTop="scrollToTop"></component>
       </tabContent>
     </div>
   </div>
@@ -195,7 +186,9 @@ export default {
       }
       return tabs;
     },
-
+    allTabs() {
+      return [...this.topTabs, ...this.bottomTabs];
+    },
     currentTabIndex: function() {
       return this.tabOrder.indexOf(this.currentTab);
     },
@@ -237,6 +230,9 @@ export default {
     },
     enterApp: function() {
       // Stuff to do once connected and all init modals are finished
+    },
+    scrollToTop() {
+      this.$refs.containerLeft.scrollTo({ top: 0 });
     },
   },
 };

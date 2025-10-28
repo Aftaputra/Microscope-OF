@@ -72,7 +72,7 @@
         :page-class="'page-item'"
         :active-class="'uk-active'"
         :disabled-class="'uk-disabled'"
-        :click-handler="scrollToTop()"
+        :click-handler="scrollToTop"
       >
       </Paginate>
     </div>
@@ -135,10 +135,7 @@ export default {
 
   methods: {
     scrollToTop() {
-      const el = document.querySelector("#container-left");
-      if (el) {
-        el.scrollTop = 0;
-      }
+      this.$emit("scrollTop");
     },
     visibilityChanged(isVisible) {
       if (isVisible) {
