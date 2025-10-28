@@ -4,20 +4,15 @@ This can get very tedious. Recommend running pytest with -s option
 to monitor progress.
 """
 
-from typing import Optional, Any
+from typing import Any
 import logging
 import time
 import tempfile
 import os
 import json
-from contextlib import contextmanager
 
-from fastapi.testclient import TestClient
 
-from labthings_fastapi.server import ThingServer
-from labthings_fastapi.client import ThingClient
-
-from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
+from .cam_test_utils import camera_test_client
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -27,24 +22,6 @@ logging.basicConfig(level=logging.DEBUG)
 # The tolerance is needed in this test as when setting an arbitrary value it is rounded
 # down to a hardware compatible one.
 EXPOSURE_TOL = 30
-
-
-@contextmanager
-def camera_test_client(settings_folder: Optional[str] = None):
-    """Yield a camera ThingClient on a camera server.
-
-    This is a context manager not a pytest fixture as it needs to be created
-    multiple times in some tests.
-    """
-    cam = StreamingPiCamera2()
-    server = ThingServer(settings_folder=settings_folder)
-    server.add_thing(cam, "/camera/")
-
-    with TestClient(server.app) as test_client:
-        client = ThingClient.from_url("/camera/", client=test_client)
-        yield client
-    del server
-    del cam
 
 
 def _test_exposure_time_drift(desired_time: int) -> None:
