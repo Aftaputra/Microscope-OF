@@ -374,7 +374,7 @@ class StreamingPiCamera2(BaseCamera):
                 raise MissingCalibrationError("No tuning data is set.")
             return None
         try:
-            return Picamera2.find_tuning_algo(self.tuning, algorithm_name)
+            return tf_utils.find_tuning_algo(self.tuning, algorithm_name)
         except StopIteration as e:
             if raise_if_missing:
                 raise MissingCalibrationError(
