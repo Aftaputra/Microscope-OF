@@ -15,7 +15,7 @@ def test_enforce_xy_tuple():
     """Check that 2 value tuples (or ValueErrors) are always returned."""
     bad_len_vals = [[1], [], (1,), (2, 4, 4), [1, 4, 5, 7]]
     for value in bad_len_vals:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="2 value tuple expected"):
             scan_planners.enforce_xy_tuple(value)
 
     bad_type_vals = ["hi", 1, {"this": "that"}, {1, 2}]
@@ -31,7 +31,7 @@ def test_enforce_xyz_tuple():
     """Check that 3 value tuples (or ValueErrors) are always returned."""
     bad_len_vals = [[1], [], (1,), (2, 4), [1, 4, 5, 7]]
     for value in bad_len_vals:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="3 value tuple expected"):
             scan_planners.enforce_xyz_tuple(value)
 
     bad_type_vals = ["hi!", 1, {"this": "that"}, {1, 2, 3}]
@@ -66,7 +66,7 @@ def test_v_basic_smart_spiral():
     assert z_pos is None
 
     # Try to mark location as imaged with only xy_position
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="3 value tuple expected"):
         planner.mark_location_visited(xy_pos, imaged=False, focused=False)
     # scan still not complete
     assert not planner.scan_complete
@@ -87,7 +87,8 @@ def test_bad_smart_spiral_settings():
     initial_position = (100, 50)
 
     # Class init should raise error if no planner_settings dictionary set
-    with pytest.raises(ValueError):
+    msg = "SmartSpiral requires a planner_settings dictionary with keys"
+    with pytest.raises(ValueError, match=msg):
         scan_planners.SmartSpiral(initial_position=initial_position)
 
     planner_settings = {"dx": 50, "dy": 50, "max_dist": 10000}
@@ -108,7 +109,7 @@ def test_bad_smart_spiral_settings():
     for badkey in keys:
         bad_planner_settings = copy(planner_settings)
         bad_planner_settings[badkey] = "I can't be converted to an int"
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="invalid literal for int()"):
             scan_planners.SmartSpiral(
                 initial_position=initial_position, planner_settings=bad_planner_settings
             )

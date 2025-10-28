@@ -86,7 +86,12 @@ def test_stack_params_not_enough_test_images(save_ims, extra_ims):
 
     For arguments see test_stack_params_validation
     """
-    with pytest.raises(ValueError):
+    # Depending on the values multiple messages are possible
+    match = (
+        "(Can't test for focus with fewer than 3 images|"
+        "Can't save more images than the minimum number tested)"
+    )
+    with pytest.raises(ValueError, match=match):
         StackParams(
             stack_dz=50,
             images_to_save=save_ims,
@@ -106,7 +111,12 @@ def test_stack_params_negative_images_to_save(save_ims, extra_ims):
 
     For arguments see test_stack_params_validation
     """
-    with pytest.raises(ValueError):
+    # Depending on the values multiple messages are possible
+    match = (
+        "(Can't test for focus with fewer than 3 images|"
+        "Images to save must be positive and odd)"
+    )
+    with pytest.raises(ValueError, match=match):
         StackParams(
             stack_dz=50,
             images_to_save=save_ims,
@@ -126,7 +136,13 @@ def test_even_min_images_to_test(save_ims, extra_ims):
 
     For arguments see test_stack_params_validation
     """
-    with pytest.raises(ValueError):
+    # Depending on the values multiple messages are possible
+    match = (
+        "(Can't test for focus with fewer than 3 images|"
+        "Testing with more than 9 images is|"  # may give more than 9 which errors first
+        "Minimum number of images to test should be positive and odd)"
+    )
+    with pytest.raises(ValueError, match=match):
         StackParams(
             stack_dz=50,
             images_to_save=save_ims,
@@ -146,7 +162,11 @@ def test_even_images_to_save(save_ims, extra_ims):
 
     For arguments see test_stack_params_validation
     """
-    with pytest.raises(ValueError):
+    match = (
+        "(Can't test for focus with fewer than 3 images|"
+        "Images to save must be positive and odd)"
+    )
+    with pytest.raises(ValueError, match=match):
         StackParams(
             stack_dz=50,
             images_to_save=save_ims,
@@ -232,13 +252,13 @@ def test_retrieval_of_captures(start):
         assert _get_capture_by_id(captures, buffer_id) is capture
 
     # Check errors are raised when supplying ids that aren't in the list
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="No capture has a buffer id of"):
         _get_capture_index_by_id(captures, start - 1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="No capture has a buffer id of"):
         _get_capture_index_by_id(captures, start + 21)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="No capture has a buffer id of"):
         _get_capture_by_id(captures, start - 1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="No capture has a buffer id of"):
         _get_capture_by_id(captures, start + 21)
 
 
