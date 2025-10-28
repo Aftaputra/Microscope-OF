@@ -836,9 +836,8 @@ class StreamingPiCamera2(BaseCamera):
         * ``flat_lens_shading`` to disable flat-field
         * ``auto_expose_from_minimum``
         * ``set_static_green_equalisation`` to set geq offset to max
-        * ``calibrate_lens_shading``
+        * ``calibrate_lens_shading`` (also sets colour gains for white balance)
         * ``reset_ccm``
-        * ``calibrate_white_balance``
         * ``set_background``
         """
         self.flat_lens_shading()
