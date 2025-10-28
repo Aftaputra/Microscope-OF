@@ -44,7 +44,7 @@ export default {
       isVisible: false,
       displaySize: [0, 0],
       displayPosition: [0, 0],
-      resizeTimeoutId: setTimeout(this.doneResizing, 500)
+      resizeTimeoutId: setTimeout(this.doneResizing, 500),
     };
   },
 
@@ -58,7 +58,7 @@ export default {
     },
     streamImgUri: function() {
       return `${this.$store.getters.baseUri}/camera/mjpeg_stream`;
-    }
+    },
   },
 
   mounted() {
@@ -119,18 +119,14 @@ export default {
       // factor.
       let scale = Math.max(
         event.target.naturalWidth / event.target.offsetWidth,
-        event.target.naturalHeight / event.target.offsetHeight
+        event.target.naturalHeight / event.target.offsetHeight,
       );
 
       let xRelative = (0.5 * event.target.offsetWidth - xCoordinate) * scale;
       let yRelative = (0.5 * event.target.offsetHeight - yCoordinate) * scale;
 
       // Emit a signal to move, acted on by paneControl.vue
-      this.$root.$emit(
-        "globalMoveInImageCoordinatesEvent",
-        -xRelative,
-        -yRelative
-      );
+      this.$root.$emit("globalMoveInImageCoordinatesEvent", -xRelative, -yRelative);
     },
 
     handleResize: function() {
@@ -167,18 +163,13 @@ export default {
       let windowChromeHeight = window.outerHeight - window.innerHeight;
       let elementPositionOnDisplay = [
         Math.max(0, windowPositionOnDisplay[0] + elementPositionOnWindow[0]),
-        Math.max(
-          0,
-          windowPositionOnDisplay[1] +
-            elementPositionOnWindow[1] +
-            windowChromeHeight
-        )
+        Math.max(0, windowPositionOnDisplay[1] + elementPositionOnWindow[1] + windowChromeHeight),
       ];
 
       this.displaySize = elementSize;
       this.displayPosition = elementPositionOnDisplay;
-    }
-  }
+    },
+  },
 };
 </script>
 

@@ -1,3 +1,3 @@
 module.exports = {
-  outputDir: "../src/openflexure_microscope_server/static"
+  outputDir: "../src/openflexure_microscope_server/static",
 };

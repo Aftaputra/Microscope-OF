@@ -1,14 +1,7 @@
 <template>
-  <div
-    id="app-content"
-    class="uk-margin-remove uk-padding-remove uk-height-1-1"
-    uk-grid
-  >
+  <div id="app-content" class="uk-margin-remove uk-padding-remove uk-height-1-1" uk-grid>
     <!-- Initialisation modals -->
-    <calibrationWizard
-      ref="calibrationWizard"
-      @onClose="enterApp()"
-    ></calibrationWizard>
+    <calibrationWizard ref="calibrationWizard" @onClose="enterApp()"></calibrationWizard>
     <!-- Vertical tab bar -->
     <div id="switcher-left-container">
       <div
@@ -63,10 +56,7 @@
     </div>
 
     <!-- Corresponding vertical tab content -->
-    <div
-      id="container-left"
-      class="uk-padding-remove uk-height-1-1 uk-width-expand"
-    >
+    <div id="container-left" class="uk-padding-remove uk-height-1-1 uk-width-expand">
       <!-- For each top tab -->
       <tabContent
         v-for="item in topTabs"
@@ -78,7 +68,6 @@
       >
         <component :is="item.component"></component>
       </tabContent>
-
 
       <!-- For each bottom tab -->
       <tabContent
@@ -96,7 +85,6 @@
 </template>
 
 <script>
-
 // Import generic components
 import tabIcon from "./genericComponents/tabIcon";
 import tabContent from "./genericComponents/tabContent";
@@ -141,24 +129,24 @@ export default {
           id: "settings",
           icon: "settings",
           component: settingsContent,
-          class: "uk-margin-auto-top"
+          class: "uk-margin-auto-top",
         },
         {
           id: "logging",
           icon: "assignment_late",
-          component: loggingContent
+          component: loggingContent,
         },
         {
           id: "about",
           icon: "info",
-          component: aboutContent
+          component: aboutContent,
         },
         {
           id: "power",
           icon: "power_settings_new",
-          component: powerContent
-        }
-      ]
+          component: powerContent,
+        },
+      ],
     };
   },
 
@@ -179,28 +167,28 @@ export default {
         {
           id: "view",
           icon: "visibility",
-          component: viewContent
+          component: viewContent,
         },
         {
           id: "control",
           icon: "gamepad",
-          component: controlContent
+          component: controlContent,
         },
         {
           id: "background detect",
           icon: "background_replace",
-          component: backgroundDetectContent
+          component: backgroundDetectContent,
         },
         {
           id: "slide scan",
           icon: "settings_overscan",
-          component: slideScanContent
+          component: slideScanContent,
         },
         {
           id: "scan list",
           icon: "photo_library",
-          component: ScanListContent
-        }
+          component: ScanListContent,
+        },
       ];
       if (!this.$store.state.galleryEnabled) {
         tabs = tabs.filter(tab => tab.id != "gallery");
@@ -210,7 +198,7 @@ export default {
 
     currentTabIndex: function() {
       return this.tabOrder.indexOf(this.currentTab);
-    }
+    },
   },
 
   mounted() {
@@ -239,8 +227,7 @@ export default {
     },
     incrementTabBy: function(n) {
       const newIndex =
-        (((this.currentTabIndex + n) % this.tabOrder.length) +
-          this.tabOrder.length) %
+        (((this.currentTabIndex + n) % this.tabOrder.length) + this.tabOrder.length) %
         this.tabOrder.length;
       const newId = this.tabOrder[newIndex];
       this.currentTab = newId;
@@ -250,8 +237,8 @@ export default {
     },
     enterApp: function() {
       // Stuff to do once connected and all init modals are finished
-    }
-  }
+    },
+  },
 };
 </script>
 

@@ -14,6 +14,6 @@
 
 <script>
 export default {
-  name: "camCalibrationExplanation"
+  name: "CamCalibrationExplanation",
 };
 </script>

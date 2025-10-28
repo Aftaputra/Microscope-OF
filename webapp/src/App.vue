@@ -1,18 +1,9 @@
 <template>
-  <div
-    id="app"
-    class="uk-height-1-1 uk-margin-remove uk-padding-remove"
-    :class="handleTheme"
-  >
+  <div id="app" class="uk-height-1-1 uk-margin-remove uk-padding-remove" :class="handleTheme">
     <loadingContent v-if="!$store.getters.ready" />
     <appContent v-if="$store.getters.ready" />
     <!-- Runtime modals -->
-    <div
-      id="modal-center"
-      ref="keyboardManualModal"
-      class="uk-flex-top"
-      uk-modal
-    >
+    <div id="modal-center" ref="keyboardManualModal" class="uk-flex-top" uk-modal>
       <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
         <button class="uk-modal-close-default" type="button" uk-close></button>
         <div
@@ -62,7 +53,7 @@ export default {
 
   components: {
     appContent,
-    loadingContent
+    loadingContent,
   },
 
   data: function() {
@@ -71,16 +62,13 @@ export default {
       arrowKeysDown: {},
       keyboardManual: [],
       systemDark: undefined,
-      themeObserver: undefined
+      themeObserver: undefined,
     };
   },
 
   computed: {
     isSystemDark: function() {
-      if (
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches
-      ) {
+      if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
         return true;
       } else {
         return false;
@@ -97,9 +85,9 @@ export default {
       }
       return {
         "uk-light": isDark,
-        "uk-background-secondary": isDark
+        "uk-background-secondary": isDark,
       };
-    }
+    },
   },
 
   mounted() {
@@ -132,7 +120,7 @@ export default {
       },
       () => {
         this.checkConnection();
-      }
+      },
     );
 
     // Keyboard shortcuts
@@ -147,18 +135,18 @@ export default {
         this.arrowKeysDown[event.keyCode] = true; //Add key to array
         this.navigateKeyHandler();
       },
-      "keydown"
+      "keydown",
     );
     Mousetrap.bind(
       ["up", "down", "left", "right"],
       event => {
         delete this.arrowKeysDown[event.keyCode]; //Remove key from array
       },
-      "keyup"
+      "keyup",
     );
     this.keyboardManual.push({
       shortcut: "←↑→↓",
-      description: "Move the microscope stage"
+      description: "Move the microscope stage",
     });
 
     // Focus keys
@@ -170,7 +158,7 @@ export default {
     });
     this.keyboardManual.push({
       shortcut: "pgup / pgdn",
-      description: "Move the microscope focus"
+      description: "Move the microscope focus",
     });
 
     // Capture
@@ -179,7 +167,7 @@ export default {
     });
     this.keyboardManual.push({
       shortcut: "c",
-      description: "Take a capture"
+      description: "Take a capture",
     });
 
     // Autofocus
@@ -188,7 +176,7 @@ export default {
     });
     this.keyboardManual.push({
       shortcut: "a",
-      description: "Fast autofocus"
+      description: "Fast autofocus",
     });
 
     // Increment/decrement tab
@@ -200,7 +188,7 @@ export default {
     });
     this.keyboardManual.push({
       shortcut: "shift+↑ / shift+↓",
-      description: "Switch tab"
+      description: "Switch tab",
     });
   },
 
@@ -224,15 +212,10 @@ export default {
       // TODO: more robust check - e.g. use a microscope Thing
       // TODO: should we purge existing consumedThings?
       try {
-        await this.$store.dispatch(
-          "wot/fetchThingDescriptions",
-          `${baseUri}/thing_descriptions/`
-        );
+        await this.$store.dispatch("wot/fetchThingDescriptions", `${baseUri}/thing_descriptions/`);
         for (let requiredThing of ["camera", "stage"]) {
           if (!this.$store.getters["wot/thingAvailable"](requiredThing)) {
-            throw new Error(
-              `No ${requiredThing} found, the GUI won't work without one.`
-            );
+            throw new Error(`No ${requiredThing} found, the GUI won't work without one.`);
           }
         }
         try {
@@ -291,8 +274,8 @@ export default {
       // Make a position request
       // Emit a signal to move, acted on by panelControl.vue
       this.$root.$emit("globalMoveStepEvent", x_rel, y_rel, z_rel);
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -366,5 +349,4 @@ html {
   object-fit: contain;
   overflow-y: hidden;
 }
-
 </style>

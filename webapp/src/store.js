@@ -19,7 +19,7 @@ function getOriginFromLocation() {
 
 export default new Vuex.Store({
   modules: {
-    wot: wotStoreModule
+    wot: wotStoreModule,
   },
   state: {
     origin: getOriginFromLocation(),
@@ -32,7 +32,7 @@ export default new Vuex.Store({
     galleryEnabled: true,
     appTheme: "system",
     activeStreams: {},
-    microscopeHostname: ""
+    microscopeHostname: "",
   },
 
   mutations: {
@@ -77,13 +77,13 @@ export default new Vuex.Store({
     },
     changeMicroscopeHostname(state, value) {
       state.microscopeHostname = value;
-    }
+    },
   },
 
   actions: {},
 
   getters: {
     baseUri: state => state.origin,
-    ready: state => state.available
-  }
+    ready: state => state.available,
+  },
 });

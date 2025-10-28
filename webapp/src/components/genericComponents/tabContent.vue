@@ -15,17 +15,17 @@ export default {
   props: {
     tabID: {
       type: String,
-      required: true
+      required: true,
     },
     currentTab: {
       type: String,
-      required: true
+      required: true,
     },
-    requireConnection: Boolean
+    requireConnection: Boolean,
   },
   computed: {},
 
-  methods: {}
+  methods: {},
 };
 </script>
 

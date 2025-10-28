@@ -3,7 +3,7 @@
     title="Camera-Stage Mapping"
     :first="first"
     :final="final"
-    :startOnLast="startOnLast"
+    :start-on-last="startOnLast"
     :steps="steps"
     @next="$emit('next')"
     @back="$emit('back')"
@@ -17,7 +17,7 @@ import focusStep from "./csmSteps/focusStep.vue";
 import runCsmStep from "./csmSteps/runCsmStep.vue";
 
 export default {
-  name: "cameraCalibrationTask",
+  name: "CameraCalibrationTask",
   components: { calibrationWizardTask },
   props: {
     // Standard calibrationWizardTask props below:
@@ -25,18 +25,14 @@ export default {
     final: Boolean,
     startOnLast: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
 
   data: function() {
     return {
-      steps: [
-        { component: csmExplanation },
-        { component: focusStep },
-        { component: runCsmStep }
-      ]
+      steps: [{ component: csmExplanation }, { component: focusStep }, { component: runCsmStep }],
     };
-  }
+  },
 };
 </script>

@@ -1,10 +1,6 @@
 <template>
   <div id="scan-modal" ref="scanModal" uk-modal>
-    <div
-      id="scan-modal-body"
-      class="uk-modal-dialog uk-modal-body"
-      v-if="selectedScan"
-    >
+    <div v-if="selectedScan" id="scan-modal-body" class="uk-modal-dialog uk-modal-body">
       <h2 id="scan-modal-title" class="uk-modal-title">
         {{ selectedScan.name }}
         <button class="uk-modal-close uk-float-right" type="button">
@@ -16,11 +12,7 @@
       </h2>
 
       <!-- Viewer -->
-      <div
-        v-if="selectedScanDZI"
-        id="viewer_container"
-        class="viewer_container"
-      >
+      <div v-if="selectedScanDZI" id="viewer_container" class="viewer_container">
         <OpenSeadragonViewer
           id="openseadragon"
           ref="openseadragon"
@@ -32,40 +24,19 @@
       </div>
 
       <!-- Controls -->
-      <div
-        v-if="selectedScanDZI"
-        class="viewer-controls"
-      >
+      <div v-if="selectedScanDZI" class="viewer-controls">
         <div class="controlsContainer">
           <label>
             Brightness
-            <input
-              type="range"
-              min="0.2"
-              max="1.8"
-              step="0.01"
-              v-model.number="brightness"
-            />
+            <input v-model.number="brightness" type="range" min="0.2" max="1.8" step="0.01" />
           </label>
           <label>
             Contrast
-            <input
-              type="range"
-              min="0.2"
-              max="1.8"
-              step="0.01"
-              v-model.number="contrast"
-            />
+            <input v-model.number="contrast" type="range" min="0.2" max="1.8" step="0.01" />
           </label>
           <label>
             Saturation
-            <input
-              type="range"
-              min="0"
-              max="2"
-              step="0.01"
-              v-model.number="saturation"
-            />
+            <input v-model.number="saturation" type="range" min="0" max="2" step="0.01" />
           </label>
         </div>
 
@@ -155,26 +126,26 @@ input[type="range"] {
 }
 
 .controlsContainer {
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
 }
 
 .viewer-controls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .viewer_container {
-    flex: 1 1 auto;
-    position: relative;
-    overflow: hidden;
+  flex: 1 1 auto;
+  position: relative;
+  overflow: hidden;
 }
 
-.reset-button{
+.reset-button {
   margin-top: 0.5rem;
 }
 </style>

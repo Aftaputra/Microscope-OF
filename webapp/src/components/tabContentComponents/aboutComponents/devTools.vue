@@ -1,24 +1,10 @@
 <template>
   <div>
-    <form
-      class="uk-form-stacked"
-      action=""
-      method="GET"
-      @submit="overrideAPIHost"
-    >
+    <form class="uk-form-stacked" action="" method="GET" @submit="overrideAPIHost">
       <label class="uk-form-label">Override API origin</label>
-      <input
-        v-model="newOrigin"
-        name="overrideOrigin"
-        class="uk-input"
-        type="text"
-      />
+      <input v-model="newOrigin" name="overrideOrigin" class="uk-input" type="text" />
       <label class="uk-form-label">
-        <input
-          v-model="reloadWhenOverridingOrigin"
-          class="uk-input uk-checkbox"
-          type="checkbox"
-        />
+        <input v-model="reloadWhenOverridingOrigin" class="uk-input uk-checkbox" type="checkbox" />
         Reload web app with new origin
       </label>
       <button class="uk-button uk-button-default uk-margin-small">
@@ -38,7 +24,7 @@ export default {
   data: function() {
     return {
       newOrigin: this.$store.state.origin,
-      reloadWhenOverridingOrigin: true
+      reloadWhenOverridingOrigin: true,
     };
   },
 
@@ -62,8 +48,8 @@ export default {
         this.$store.commit("changeOrigin", this.newOrigin);
         event.preventDefault();
       }
-    }
-  }
+    },
+  },
 };
 </script>
 

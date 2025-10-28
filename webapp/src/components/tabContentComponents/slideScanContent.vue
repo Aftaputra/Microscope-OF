@@ -29,7 +29,7 @@
                   thing-name="autofocus"
                   property-name="stack_dz"
                   label="Stack dz (steps)"
-                />  
+                />
               </div>
               <div class="uk-margin">
                 <propertyControl
@@ -83,12 +83,7 @@
         </ul>
         <label class="uk-form-label" for="form-stacked-text">Sample ID</label>
         <div class="uk-form-controls">
-          <input
-            v-model="scan_name"
-            class="uk-input uk-form-small"
-            type="text"
-            name="Scan Name"
-          />
+          <input v-model="scan_name" class="uk-input uk-form-small" type="text" name="Scan Name" />
         </div>
         <div class="uk-margin">
           <action-button
@@ -110,11 +105,7 @@
           Live stitching preview
         </h2>
         <mini-stream-display v-if="displayImageOnRight" />
-        <action-log-display
-          id="log-display"
-          :log="log"
-          :task-status="taskStatus"
-        />
+        <action-log-display id="log-display" :log="log" :task-status="taskStatus" />
         <action-progress-bar :progress="progress" :task-status="taskStatus" />
         <button
           v-if="cancellable"
@@ -124,11 +115,7 @@
         >
           Cancel
         </button>
-        <div
-          v-if="!cancellable"
-          class="uk-margin uk-grid-small uk-child-width-expand"
-          uk-grid
-        >
+        <div v-if="!cancellable" class="uk-margin uk-grid-small uk-child-width-expand" uk-grid>
           <button
             type="button"
             class="uk-button"
@@ -182,7 +169,7 @@ export default {
     actionLogDisplay,
     actionProgressBar,
     MiniStreamDisplay,
-    ActionButton
+    ActionButton,
   },
 
   data() {
@@ -195,7 +182,7 @@ export default {
       progress: null,
       log: [],
       lastStitchedImage: null,
-      scan_name: ""
+      scan_name: "",
     };
   },
 
@@ -208,7 +195,7 @@ export default {
     },
     displayImageOnRight() {
       return this.scanning & (this.lastStitchedImage !== null);
-    }
+    },
   },
 
   methods: {
@@ -225,17 +212,11 @@ export default {
     async pollScan() {
       if (this.cancellable) {
         // while the scan is running
-        let mtime = await this.readThingProperty(
-          "smart_scan",
-          "latest_preview_stitch_time"
-        );
+        let mtime = await this.readThingProperty("smart_scan", "latest_preview_stitch_time");
         if (mtime !== null) {
           this.lastStitchedImage = `${this.$store.getters.baseUri}/smart_scan/latest_preview_stitch.jpg?t=${mtime}`;
         }
-        this.lastScanName = await this.readThingProperty(
-          "smart_scan",
-          "latest_scan_name"
-        );
+        this.lastScanName = await this.readThingProperty("smart_scan", "latest_scan_name");
         setTimeout(this.pollScan, 1000); // keep rescheduling until it's stopped
       }
     },
@@ -249,8 +230,8 @@ export default {
       console.log(link);
       document.body.appendChild(link);
       link.click();
-    }
-  }
+    },
+  },
 };
 </script>
 

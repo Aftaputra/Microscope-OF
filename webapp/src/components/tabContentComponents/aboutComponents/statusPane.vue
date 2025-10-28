@@ -53,9 +53,7 @@
     <div v-else-if="$store.state.waiting">
       Loading...
     </div>
-    <div v-else-if="$store.state.error">
-      <b>Error:</b> {{ $store.state.error }}
-    </div>
+    <div v-else-if="$store.state.error"><b>Error:</b> {{ $store.state.error }}</div>
     <div v-else>No active connection</div>
   </div>
 </template>
@@ -70,37 +68,33 @@ export default {
   data: function() {
     return {
       version: undefined,
-      version_source: undefined
-    }
-  },
-
-  async mounted() {
-    let version_data = await this.readThingProperty(
-      "system",
-      "version_data"
-    );
-    this.version = version_data.version;
-    this.version_source = this.truncate(version_data.version_source);
-
+      version_source: undefined,
+    };
   },
 
   computed: {
     things: function() {
       return this.$store.getters["wot/thingDescriptions"];
-    }
+    },
+  },
+
+  async mounted() {
+    let version_data = await this.readThingProperty("system", "version_data");
+    this.version = version_data.version;
+    this.version_source = this.truncate(version_data.version_source);
   },
 
   methods: {
-    truncate(string, max_length=15) {
-      if (!(typeof string === 'string' || string instanceof String)) {
+    truncate(string, max_length = 15) {
+      if (!(typeof string === "string" || string instanceof String)) {
         return string;
       }
       if (string.length <= max_length) {
         return string;
       }
       return string.slice(0, max_length - 3) + "...";
-    }
-  }
+    },
+  },
 };
 </script>
 

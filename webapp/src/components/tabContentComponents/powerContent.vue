@@ -1,11 +1,12 @@
 <template>
   <!-- Grid managing tab content -->
   <div class="container">
-    <h1 id="power-title"> Power</h1>
-    <p id="power-msg"> It's essential to turn off your OpenFlexure Microscope here before unplugging it.
-    <br>
-    <br>
-    Unplugging the microscope unexpectedly can damage the SD card or onboard computer.
+    <h1 id="power-title">Power</h1>
+    <p id="power-msg">
+      It's essential to turn off your OpenFlexure Microscope here before unplugging it.
+      <br />
+      <br />
+      Unplugging the microscope unexpectedly can damage the SD card or onboard computer.
     </p>
     <div class="buttons-container">
       <button
@@ -37,51 +38,44 @@ export default {
   data: function() {
     return {
       isRaspberrypi: undefined,
-    }
+    };
   },
-  
+
   computed: {
     things: function() {
       return this.$store.getters["wot/thingDescriptions"];
-    }
+    },
   },
 
   async mounted() {
-    this.isRaspberrypi = await this.readThingProperty(
-      "system",
-      "is_raspberrypi"
-    );
+    this.isRaspberrypi = await this.readThingProperty("system", "is_raspberrypi");
   },
 
   methods: {
     systemRequest: function(action) {
       let message = "";
       if (action == "reboot") {
-        message = "Restart microscope?"
-      }
-      else {
-        message = "Shutdown microscope?"
+        message = "Restart microscope?";
+      } else {
+        message = "Shutdown microscope?";
       }
       this.modalConfirm(message).then(
         () => {
           this.$store.commit("resetState");
           this.$store.commit("wot/deleteAllThingDescriptions");
           // Post and silence errors
-          axios
-            .post(this.thingActionUrl("system", action))
-            .catch(() => {});
+          axios.post(this.thingActionUrl("system", action)).catch(() => {});
         },
-        () => {}
+        () => {},
       );
-    }
-  }
+    },
+  },
 };
 </script>
 
 <style lang="less" scoped>
 // Custom UIkit CSS modifications
 @import "../../assets/less/theme.less";
-
 
 .container {
   display: flex;
@@ -109,7 +103,7 @@ export default {
 
 .shutdown-button {
   display: inline;
-  text-align:center;
+  text-align: center;
   margin: 30px 30px 30px 30px;
 }
 </style>

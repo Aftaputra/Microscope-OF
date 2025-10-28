@@ -1,7 +1,7 @@
 <template>
-    <div v-observe-visibility="visibilityChanged">
-        <div id="openseadragon"></div>
-    </div>
+  <div v-observe-visibility="visibilityChanged">
+    <div id="openseadragon"></div>
+  </div>
 </template>
 
 <script>
@@ -13,26 +13,25 @@ export default {
   props: {
     src: {
       type: String,
-      required: true
-      
+      required: true,
     },
     brightness: {
       type: Number,
-      required: true
+      required: true,
     },
     contrast: {
       type: Number,
-      required: true
+      required: true,
     },
     saturation: {
       type: Number,
-      required: true
-    }
+      required: true,
+    },
   },
 
   data: function() {
     return {
-      osdViewer: null
+      osdViewer: null,
     };
   },
 
@@ -41,7 +40,7 @@ export default {
       immediate: true,
       handler(newVal) {
         this.loadOpenSeaDragon(newVal);
-      }
+      },
     },
     brightness() {
       this.updateFilter();
@@ -51,7 +50,7 @@ export default {
     },
     saturation() {
       this.updateFilter();
-    }
+    },
   },
 
   async mounted() {
@@ -69,7 +68,7 @@ export default {
     visibilityChanged(isVisible) {
       if (isVisible) {
         this.loadOpenSeaDragon();
-      }else{
+      } else {
         this.osdViewer.destroy();
       }
     },
@@ -79,13 +78,13 @@ export default {
       }
       this.osdViewer = OpenSeaDragon({
         id: "openseadragon",
-        crossOriginPolicy: 'Anonymous',
+        crossOriginPolicy: "Anonymous",
         tileSources: this.src,
         showNavigationControl: false,
         maxZoomPixelRatio: 2,
         gestureSettingsMouse: {
-            clickToZoom: false
-        }
+          clickToZoom: false,
+        },
       });
 
       this.updateFilter();
@@ -106,7 +105,7 @@ export default {
         this.osdViewer.setFullScreen(true);
       }
     },
-  }
+  },
 };
 </script>
 

@@ -1,12 +1,10 @@
 <template>
   <div
     v-observe-visibility="visibilityChanged"
-    class="galleryDisplay uk-padding uk-padding-remove-top">
+    class="galleryDisplay uk-padding uk-padding-remove-top"
+  >
     <!-- Gallery nav bar -->
-    <nav
-      class="gallery-navbar uk-navbar-container uk-navbar-transparent"
-      uk-navbar="mode: click"
-    >
+    <nav class="gallery-navbar uk-navbar-container uk-navbar-transparent" uk-navbar="mode: click">
       <!-- Right side buttons -->
       <div class="uk-navbar-right">
         <div class="uk-grid">
@@ -50,10 +48,9 @@
 
     <ScanViewerModal
       ref="scanViewer"
-      :selectedScan="selectedScan"
-      :baseUri="$store.getters.baseUri"
+      :selected-scan="selectedScan"
+      :base-uri="$store.getters.baseUri"
     />
-
 
     <!-- Gallery -->
     <div
@@ -61,7 +58,7 @@
       class="uk-padding-remove-top"
       uk-lightbox="toggle: .lightbox-link"
     >
-      <!-- Gallery capture cards -->      
+      <!-- Gallery capture cards -->
       <div class="gallery-grid uk-grid-match" uk-grid>
         <div v-if="scansEmpty">
           <h2>No scans available</h2>
@@ -99,7 +96,7 @@ export default {
       scans: [],
       ongoing: null,
       selectedScan: null,
-      osdViewer: null
+      osdViewer: null,
     };
   },
 
@@ -109,19 +106,19 @@ export default {
         "smart_scan",
         "scans",
         "readproperty",
-        true
+        true,
       );
     },
     scansEmpty() {
       return this.scans.length == 0;
     },
     selectedScanDZI() {
-      if (this.selectedScan && this.selectedScan.dzi!="") {
+      if (this.selectedScan && this.selectedScan.dzi != "") {
         return `${this.$store.getters.baseUri}/scans/${this.selectedScan.name}/images/${this.selectedScan.dzi}`;
       } else {
         return null;
       }
-    }
+    },
   },
 
   async mounted() {
@@ -132,7 +129,7 @@ export default {
       this.updateScans();
     });
     this.$root.$on("modalClosed", () => {
-    // Handle the modal closed event here
+      // Handle the modal closed event here
       this.updateScans();
     });
   },
@@ -151,7 +148,7 @@ export default {
           // If the connection is now disconnected, empty capture list
           this.captures = {};
         }
-      }
+      },
     );
   },
 
@@ -175,8 +172,8 @@ export default {
     async updateScans() {
       try {
         let scans_information = await this.readThingProperty("smart_scan", "scans");
-        let scans = scans_information.scans
-        this.ongoing = scans_information.ongoing
+        let scans = scans_information.scans;
+        this.ongoing = scans_information.ongoing;
         if (!scans | (scans.length == 0)) {
           this.scans = scans;
         }
@@ -194,13 +191,13 @@ export default {
       }
     },
     isOngoing(name) {
-      return name === this.ongoing
+      return name === this.ongoing;
     },
     async deleteAllScans() {
       try {
         await this.modalConfirm(
           "Are you sure you want to delete all scans from the microscope? " +
-            "This is <b>irreversible</b>!"
+            "This is <b>irreversible</b>!",
         );
         await axios.delete(`${this.scansUri}`);
         await this.updateScans();
@@ -217,9 +214,9 @@ export default {
       } else {
         this.modalError("Scan not stitched for viewing in webapp, please download or stitch");
       }
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
 <style lang="less" scoped>

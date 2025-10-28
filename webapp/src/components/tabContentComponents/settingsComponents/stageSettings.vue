@@ -1,31 +1,30 @@
 <template>
-  <div id="stageSettings" class="uk-width-large" v-observe-visibility="visibilityChanged">
+  <div id="stageSettings" v-observe-visibility="visibilityChanged" class="uk-width-large">
     The microscope stage is a <b>{{ stageType }}</b>
     <div>
       <div class="uk-margin">
+        <p>Your z motor is currently {{ z_inverted }} inverted.</p>
         <p>
-        <br>
-        Your z motor is currently {{ this.z_inverted }} inverted.
-        <br>
-        <br>
-        We expect that moving in +z:
+          We expect that moving in +z:
+        </p>
         <ul>
-        <li> Moves your objective up, towards the sample and illumination</li>
-        <li> Turns the exposed z gear anti-clockwise (when viewed from above)</li>
+          <li>Moves your objective up, towards the sample and illumination</li>
+          <li>Turns the exposed z gear anti-clockwise (when viewed from above)</li>
         </ul>
-        If this is not the case, click the button below to switch.
+        <p>
+          If this is not the case, click the button below to switch.
         </p>
         <div class="uk-margin">
           <div class="uk-margin">
-          <action-button
-            class="uk-width-1-2"
-            thing="stage"
-            action="invert_axis_direction"
-            :submit-data="{ axis: 'z' }"
-            submit-label="Invert z"
-            @response=readAxis()
-          />
-        </div>
+            <action-button
+              class="uk-width-1-2"
+              thing="stage"
+              action="invert_axis_direction"
+              :submit-data="{ axis: 'z' }"
+              submit-label="Invert z"
+              @response="readAxis()"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -48,26 +47,23 @@ export default {
     };
   },
 
-  methods:{
+  computed: {
+    stageType: function() {
+      return this.thingDescription("stage").title;
+    },
+  },
+
+  methods: {
     visibilityChanged(isVisible) {
       if (isVisible) {
         this.readAxis();
       }
     },
     async readAxis() {
-      let axes_inverted = await this.readThingProperty(
-        "stage",
-        "axis_inverted"
-      );
-      this.z_inverted = axes_inverted['z'] ? "" : "not ";
-    }
+      let axes_inverted = await this.readThingProperty("stage", "axis_inverted");
+      this.z_inverted = axes_inverted["z"] ? "" : "not ";
+    },
   },
-
-  computed: {
-    stageType: function() {
-      return this.thingDescription("stage").title;
-    }
-  }
 };
 </script>
 

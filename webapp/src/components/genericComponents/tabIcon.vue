@@ -1,11 +1,5 @@
 <template>
-  <a
-    href="#"
-    class="uk-link"
-    :class="classObject"
-    :uk-tooltip="tooltipOptions"
-    @click="setThisTab"
-  >
+  <a href="#" class="uk-link" :class="classObject" :uk-tooltip="tooltipOptions" @click="setThisTab">
     <slot></slot>
     <div v-if="showTitle" class="tabtitle">
       {{ computedTitle }}
@@ -20,33 +14,33 @@ export default {
   props: {
     tabID: {
       type: String,
-      required: true
+      required: true,
     },
     title: {
       type: String,
       required: false,
-      default: undefined
+      default: undefined,
     },
     showTitle: {
       type: Boolean,
       required: false,
-      default: true
+      default: true,
     },
     showTooltip: {
       type: Boolean,
       required: false,
-      default: true
+      default: true,
     },
     currentTab: {
       type: String,
-      required: true
+      required: true,
     },
     clickCallback: {
       type: Function,
       required: false,
-      default: null
+      default: null,
     },
-    requireConnection: Boolean
+    requireConnection: Boolean,
   },
 
   computed: {
@@ -72,9 +66,9 @@ export default {
     classObject: function() {
       return {
         "tabicon-active": this.currentTab == this.tabID,
-        "uk-disabled": this.requireConnection && !this.$store.getters.ready
+        "uk-disabled": this.requireConnection && !this.$store.getters.ready,
       };
-    }
+    },
   },
 
   methods: {
@@ -83,8 +77,8 @@ export default {
       if (this.clickCallback) {
         this.clickCallback();
       }
-    }
-  }
+    },
+  },
 };
 </script>
 

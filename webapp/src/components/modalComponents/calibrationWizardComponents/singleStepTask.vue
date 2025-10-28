@@ -15,7 +15,7 @@ supplied by the wizard.
     :title="title"
     :first="first"
     :final="final"
-    :startOnLast="startOnLast"
+    :start-on-last="startOnLast"
     :steps="steps"
     @next="$emit('next')"
     @back="$emit('back')"
@@ -26,36 +26,36 @@ supplied by the wizard.
 import calibrationWizardTask from "./calibrationWizardTask.vue";
 
 export default {
-  name: "singleStepTask",
+  name: "SingleStepTask",
   components: { calibrationWizardTask },
   props: {
     // This must be sent
     stepComponent: {
       type: Object,
-      required: true
+      required: true,
     },
     // This is optional.
     stepProps: {
       type: Object,
-      default: () => ({})
+      default: () => ({}),
     },
     // Standard calibrationWizardTask props below:
     title: {
       type: String,
-      default: null
+      default: null,
     },
     first: Boolean,
     final: Boolean,
     startOnLast: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
 
   data: function() {
     return {
-      steps: [{ component: this.stepComponent, props: this.stepProps }]
+      steps: [{ component: this.stepComponent, props: this.stepProps }],
     };
-  }
+  },
 };
 </script>

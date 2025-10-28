@@ -17,15 +17,15 @@ export default {
   name: "ServerSpecifiedPropertyControl",
 
   components: {
-    PropertyControl
+    PropertyControl,
   },
 
   props: {
     propertyData: {
       type: Object,
       required: true,
-    }
-  }
+    },
+  },
 };
 </script>
 
