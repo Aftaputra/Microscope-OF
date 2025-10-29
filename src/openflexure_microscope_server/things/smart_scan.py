@@ -49,8 +49,8 @@ CSMDep = lt.deps.direct_thing_client_dependency(
 AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
 
 
-class ScanListData(BaseModel):
-    """The data to be sent to the Scan List tab."""
+class ScanListInfo(BaseModel):
+    """The information to be sent to the Scan List tab."""
 
     scans: list[scan_directories.ScanInfo]
     """The list of scans as ScanInfo objects"""
@@ -589,7 +589,7 @@ class SmartScanThing(lt.Thing):
     """Whether to run a final stitch at the end of a successful scan."""
 
     @lt.thing_property
-    def scans(self) -> ScanListData:
+    def scans(self) -> ScanListInfo:
         """All the available scans.
 
         Each scan has a name (which can be used to access it), along with
@@ -598,7 +598,7 @@ class SmartScanThing(lt.Thing):
         uses a regular expression, and changes to the naming scheme will
         break it.
         """
-        return ScanListData(
+        return ScanListInfo(
             scans=self._scan_dir_manager.all_scans_info(),
             ongoing=None if self._ongoing_scan is None else self._ongoing_scan.name,
         )
