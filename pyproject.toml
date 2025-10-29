@@ -136,8 +136,6 @@ ignore = [
     "PLR2004", # Ignore magic values in comparison for now. It doesn't seem we can set
                # allowed magic values and a number of our magic values are not really
                # magic (such as 255 when doing uint8 maths)
-    "PT011", # Ignore pytest.raises being used on too general expectations without a
-             # match. We may need to revisit this.
     "SIM105", # Not enforcing use of `contextlib.suppress(NotConnectedToServerError)`
               # instead of `try`-`except`-`pass`
 ]
