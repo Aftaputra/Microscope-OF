@@ -244,7 +244,8 @@ export default {
       }
     },
     changePage(page) {
-      if (page >= 1 && page <= this.totalPages) {
+      if (page >= 1 && page <= this.totalPages && this.currentPage != page) {
+        this.$emit("scrollTop");
         this.currentPage = page;
       }
     },
