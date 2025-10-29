@@ -66,7 +66,7 @@
             There are no scans available to show.
           </p>
         </div>
-        <div v-for="scanData in scans" :key="scanData.id">
+        <div v-for="scanData in paginatedScans" :key="scanData.id">
           <scan-card
             :scan-data="scanData"
             :scans-uri="scansUri"
@@ -76,6 +76,25 @@
           />
         </div>
       </div>
+    </div>
+    <div v-if="totalPages > 1" class="pagination-container uk-margin-top uk-flex uk-flex-center">
+      <ul class="uk-pagination">
+        <li :class="{ 'uk-disabled': currentPage === 1 }">
+          <a href="#" @click.prevent="changePage(currentPage - 1)">
+            <span uk-pagination-previous></span>
+          </a>
+        </li>
+
+        <li v-for="page in totalPages" :key="page" :class="{ 'uk-active': page === currentPage }">
+          <a href="#" @click.prevent="changePage(page)">{{ page }}</a>
+        </li>
+
+        <li :class="{ 'uk-disabled': currentPage === totalPages }">
+          <a href="#" @click.prevent="changePage(currentPage + 1)">
+            <span uk-pagination-next></span>
+          </a>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
@@ -97,6 +116,8 @@ export default {
       ongoing: null,
       selectedScan: null,
       osdViewer: null,
+      currentPage: 1,
+      itemsPerPage: 18,
     };
   },
 
@@ -118,6 +139,13 @@ export default {
       } else {
         return null;
       }
+    },
+    totalPages() {
+      return Math.ceil(this.scans.length / this.itemsPerPage);
+    },
+    paginatedScans() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      return this.scans.slice(start, start + this.itemsPerPage);
     },
   },
 
@@ -215,6 +243,12 @@ export default {
         this.modalError("Scan not stitched for viewing in webapp, please download or stitch");
       }
     },
+    changePage(page) {
+      if (page >= 1 && page <= this.totalPages && this.currentPage != page) {
+        this.$emit("scrollTop");
+        this.currentPage = page;
+      }
+    },
   },
 };
 </script>
@@ -234,5 +268,9 @@ export default {
 .scan-list-button {
   margin-top: 5px;
   margin-bottom: 2px;
+}
+
+.pagination-container {
+  text-align: center;
 }
 </style>
