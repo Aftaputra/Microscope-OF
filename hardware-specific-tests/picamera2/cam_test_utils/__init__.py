@@ -17,11 +17,11 @@ def camera_test_client(
 ):
     """Yield a camera ThingClient on a camera server.
 
-    This is a context manager not a pytest fixture as it needs to be created
+    This is a context manager, not a pytest fixture, as it needs to be created
     multiple times in some tests.
 
     :param cam: The camera Thing to be used. If not supplied a new one will be created.
-    :param settings_folder: The settings folder for the camera, if none is supplies new
+    :param settings_folder: The settings folder for the camera, if none is supplied, new
         temporary directory will be used as the settings folder.
     """
     if cam is None:

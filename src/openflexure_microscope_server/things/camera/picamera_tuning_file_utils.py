@@ -35,15 +35,22 @@ def find_tuning_algo(tuning: dict[str, dict], name: str) -> dict[str, Any]:
     This is the same methodolgy used in the PiCamera2 library but is provided here so
     it can be tested independently of installing picamera2
 
-    :param tuning: The camera tuningdictionary
-    :param name: The name of the algorithm
+    :param tuning: The camera tuning dictionary
+    :param name: The key for the algorithm in the tuning file
     :return: The algorithm from the tuning dictionary. Editing this will edit the
         original dictionary.
     """
     version = tuning.get("version", 1)
+    # Version 1 of the tuning files was simply a dictionary of algorithms. Later
+    # versions have an "algorithms" key, the value of which is a list of algorithms.
     if version == 1:
         return tuning[name]
-    return next(algo for algo in tuning["algorithms"] if name in algo)[name]
+    # The tuning file "algorithms" is a list of dictionaries
+    algorithms = tuning["algorithms"]
+    # The list is a list of dictionaries that have 1 key: the algorithm name
+    algo_dict = next(algo for algo in algorithms if name in algo)
+    # We want the value for that key, which is a dictionary of algorithm parameters
+    return algo_dict[name]
 
 
 def set_static_lst(
@@ -136,8 +143,8 @@ def set_ce_to_disabled(
 ) -> dict:
     """Set ``ce_enable`` in ``rpi.contrast`` to zero to disable adaptive contrast enhancement.
 
-    :param tuning: The raspberry pi tuning file.
-    :returns: A deepcopu of the input file set ce_enable to 0.
+    :param tuning: The raspberry pi camera tuning file.
+    :returns: A deepcopy of the input file with ce_enable set to 0.
     """
     output_tuning = deepcopy(tuning)
     contrast = find_tuning_algo(output_tuning, "rpi.contrast")
