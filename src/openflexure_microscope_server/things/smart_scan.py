@@ -588,6 +588,16 @@ class SmartScanThing(lt.Thing):
     )
     """Whether to run a final stitch at the end of a successful scan."""
 
+    def _get_all_scan_info(self) -> list[scan_directories.ScanInfo]:
+        """Return all the information from the scan directories.
+
+        It is preferable to use the method rather than calling
+        _scan_dir_manager.all_scans_info() directly as it will handle stopping the json
+        in any ongoing scans being read.
+        """
+        ongoing_name = None if self._ongoing_scan is None else self._ongoing_scan.name
+        return self._scan_dir_manager.all_scans_info(ongoing=ongoing_name)
+
     @lt.thing_property
     def scans(self) -> ScanListInfo:
         """All the available scans.
@@ -599,7 +609,7 @@ class SmartScanThing(lt.Thing):
         break it.
         """
         return ScanListInfo(
-            scans=self._scan_dir_manager.all_scans_info(),
+            scans=self._get_all_scan_info(),
             ongoing=None if self._ongoing_scan is None else self._ongoing_scan.name,
         )
 
@@ -667,7 +677,7 @@ class SmartScanThing(lt.Thing):
     def purge_empty_scans(self, logger: lt.deps.InvocationLogger) -> None:
         """Delete all scan folders containing no images at the top level."""
         # JSON is ignored as it's created before any images are captured
-        for scan_info in self._scan_dir_manager.all_scans_info():
+        for scan_info in self._get_all_scan_info():
             if scan_info.number_of_images == 0:
                 self._delete_scan(scan_info.name, logger)
 
@@ -791,6 +801,6 @@ class SmartScanThing(lt.Thing):
         """
         if self._scan_logger is not None:
             raise RuntimeError("Can't stitch previous scans while a scan is ongoing")
-        for scan in self._scan_dir_manager.all_scans_info():
+        for scan in self._get_all_scan_info():
             if scan.dzi is None:
                 self.stitch_scan(logger=logger, cancel=cancel, scan_name=scan.name)

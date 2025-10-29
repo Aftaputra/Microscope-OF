@@ -276,11 +276,15 @@ class ScanDirectoryManager:
         return [f.name for f in os.scandir(self._base_scan_dir) if f.is_dir()]
 
     @requires_lock
-    def all_scans_info(self) -> list[ScanInfo]:
+    def all_scans_info(self, ongoing: Optional[str] = None) -> list[ScanInfo]:
         """Return a lists of ScanInfo objects for each scan."""
         all_info: list[ScanInfo] = []
         for scan_name in self.all_scans:
-            all_info.append(ScanDirectory(scan_name, self.base_dir).scan_info())
+            # If the scan is ongoing send flag to skip reading the json data
+            skip_json = scan_name == ongoing
+            scan_dir = ScanDirectory(scan_name, self.base_dir)
+            info = scan_dir.scan_info(skip_json=skip_json)
+            all_info.append(info)
         return all_info
 
     @requires_lock
@@ -504,7 +508,7 @@ class ScanDirectory:
             LOGGER.warning(f"Could not validate scan data for {self.name}.")
             return None
 
-    def scan_info(self) -> ScanInfo:
+    def scan_info(self, skip_json: bool = False) -> ScanInfo:
         """Return the information to be used in the UI for the scan."""
         scan_files = self.get_scan_files()
         scan_images = self._extract_scan_images(scan_files)
@@ -514,7 +518,7 @@ class ScanDirectory:
         stitch_available = len(stitches) > 0
         dzi = None if not dzi_files else str(dzi_files[0])
 
-        scan_data = self.get_scan_data()
+        scan_data = None if skip_json else self.get_scan_data()
         duration = (
             None
             if scan_data is None or scan_data.duration is None
