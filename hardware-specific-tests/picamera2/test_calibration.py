@@ -1,45 +1,17 @@
 """Test data collection from the Raspberry Picamera."""
 
-import tempfile
 from copy import deepcopy
+import tempfile
 
-from fastapi.testclient import TestClient
 import pytest
 
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.things.camera.picamera import (
-    StreamingPiCamera2,
     MissingCalibrationError,
 )
 
-
-@pytest.fixture
-def picamera_thing() -> StreamingPiCamera2:
-    """Return a StreamingPiCamera2 Thing.
-
-    This is the Thing that the fixture client uses. It can be used to probe the
-    Thing directly to check actions had the expected response.
-    """
-    return StreamingPiCamera2()
-
-
-@pytest.fixture
-def client(picamera_thing) -> lt.ThingClient:
-    """Initialise a test client for the StreamingPiCamera2 Thing.
-
-    This fixture:
-
-    * Sets up a ThingServer,
-    * Registers a StreamingPiCamera2 instance at the "/camera/" endpoint
-    * Provides a ThingClient for interacting with it during tests.
-    """
-    temp_folder = tempfile.TemporaryDirectory()
-    server = lt.ThingServer(settings_folder=temp_folder.name)
-    server.add_thing(picamera_thing, "/camera/")
-    with TestClient(server.app) as test_client:
-        client = lt.ThingClient.from_url("/camera/", client=test_client)
-        yield client
+from .cam_test_utils import camera_test_client
 
 
 def test_get_tuning_algo(picamera_thing):
@@ -73,7 +45,7 @@ def test_get_tuning_algo(picamera_thing):
     assert picamera_thing.get_tuning_algo("rpi.geq", raise_if_missing=False) is None
 
 
-def test_calibration(picamera_thing, client):
+def test_calibration(picamera_thing, picamera_client):
     """Check that full auto calibrate completes and set the expected values."""
     # Check the calibration_required property used by the calibration wizard
     assert picamera_thing.calibration_required
@@ -88,7 +60,7 @@ def test_calibration(picamera_thing, client):
     assert not picamera_thing.background_detector_status.ready
 
     # Run full auto calibrate
-    client.full_auto_calibrate()
+    picamera_client.full_auto_calibrate()
 
     # After calibration it should report that calibration is no longer  required
     assert not picamera_thing.calibration_required
@@ -104,3 +76,41 @@ def test_calibration(picamera_thing, client):
     # Green equalisation offset should be set to maximum.
     assert picamera_thing.get_tuning_algo("rpi.geq")["offset"] == 65535
     assert picamera_thing.background_detector_status.ready
+
+
+def test_tuning_is_persistent():
+    """Check that tuning file adjustments are persistent."""
+    # First check full auto-calibrate is persistent if same save dir is used.
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with camera_test_client(settings_folder=tmpdir) as client:
+            initial_tuning = deepcopy(client.tuning)
+            client.full_auto_calibrate()
+            calibrated_tuning = deepcopy(client.tuning)
+            # Full auto calibrate should have saved the tuning.
+            assert initial_tuning != calibrated_tuning
+
+        # Reload the camera and server from scratch
+        with camera_test_client(settings_folder=tmpdir) as client:
+            initial_tuning = deepcopy(client.tuning)
+            # On reload the initial tuning is as it was when calibrated last run
+            assert initial_tuning == calibrated_tuning
+            # Set the lens shading to be flat
+            client.flat_lens_shading()
+            flat_tuning = deepcopy(client.tuning)
+            assert flat_tuning != calibrated_tuning
+
+        # Reload to check the flat lst persists
+        with camera_test_client(settings_folder=tmpdir) as client:
+            initial_tuning = deepcopy(client.tuning)
+            # On reload the initial tuning the flat tuning
+            assert initial_tuning == flat_tuning
+            # Reset the lens shading to what is in the default tuning file
+            client.reset_lens_shading()
+            flat_tuning = deepcopy(client.tuning)
+            assert flat_tuning != calibrated_tuning
+
+        # Reload the one more time to check the reset lst persists
+        with camera_test_client(settings_folder=tmpdir) as client:
+            initial_tuning = deepcopy(client.tuning)
+            # On reload the initial tuning the flat tuning
+            assert initial_tuning == flat_tuning
