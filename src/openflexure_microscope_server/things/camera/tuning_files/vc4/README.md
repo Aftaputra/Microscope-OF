@@ -83,11 +83,17 @@ This algorithm is used on the VC4 (Pi 4) but not on PiSP (Pi 5) which uses `rpi.
 
 Even though we don't use it, camera can't start without it being minimally populated.
 
+### rpi.agc - Automatic Gain Control / Automatic Exposure Control
+
+For calculating the shutter time of the sensor if AeEnable is on. Only the required fields are populated with minimal data as AeEnable is always off.
+
 ### rpi.alsc - Automatic Lens Shading Correction
 
 Auto lens shading correction is calibrated by our microscope. This contains the tables for luninance, and colour shading. It can contain multiple tables depending on estimated colour temperature (`ct`). As the microscope has fixed lighting  we only provide one set of tables as we don't want the correction to be adaptive.
 
 We also set `n_iter: 0` this stops it adding iterative adaptuion.
+
+As there is only one table the colour temperature is ignored. We set the colour temperature to 1234 in the tuning file to make it clear that we have not calibrated it on the microscope. We set the colour temperature to 5000 (our actual illumination colour temperature) once recalibrated.
 
 
 ### rpi.contrast - Contrast
