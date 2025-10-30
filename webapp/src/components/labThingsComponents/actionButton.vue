@@ -227,16 +227,39 @@ export default {
       }
     },
 
-    checkExistingTasks: function() {
-      axios.get(this.submitUrl).then(response => {
-        for (const task of response.data) {
-          if (task.status == "pending" || task.status == "running") {
-            this.taskStarted = true;
-            this.$emit("taskStarted");
-            this.startPolling(task.id, task.links.find(t => t.rel == "self").href);
-          }
+    /* Check if an existing task had already started when this mounts.
+     *
+     * This is called on mounted.
+     *
+     * It will emit taskStarted if it finds an ongoing task to allow parent components
+     * to act as expected if the task is started. It will then poll the action.
+     *
+     */
+    async checkExistingTasks() {
+      let response;
+      try {
+        response = await axios.get(this.submitUrl);
+      } catch (error) {
+        console.warn("checkExistingTasks: request failed", error);
+        return;
+      }
+      // Check for a task that is ongoing.
+      // We can't handle multiple tasks ongoing, so this picks the first.
+      const ongoingTask = response.data.find(t => ["pending", "running"].includes(t.status));
+      if (ongoingTask) {
+        // There is a started task
+        this.taskStarted = true;
+        this.$emit("taskStarted");
+        // Find its URL
+        const taskUrl = ongoingTask.links.find(t => t.rel == "self").href;
+        try {
+          await this.pollOngoingTask(ongoingTask.id, taskUrl);
+        } catch (error) {
+          this.$emit("error", error);
+        } finally {
+          this.onTaskEnd();
         }
-      });
+      }
     },
 
     bootstrapTask: function() {
@@ -266,27 +289,31 @@ export default {
         if (this.modalProgress) {
           UIkit.modal(this.$refs.statusModal).show();
         }
-        // Start the store polling TaskId for success
-        response = await this.startPolling(response.data.id, response.data.href);
-        if (response.status == "completed") {
-          this.$emit("response", response);
-          this.$emit("completed", response.output);
-        } else if (response.status == "cancelled") {
-          this.$emit("cancelled", response);
-          this.modalNotify(`The action '${this.submitLabel}' was cancelled.`);
-        }
+        await this.pollOngoingTask(response.data.id, response.data.href);
       } catch (error) {
         this.$emit("error", error);
       } finally {
-        // Reset taskRunning and taskId
-        this.taskRunning = false;
-        this.taskStarted = false;
-        this.$emit("finished");
-        // Update the form data if we're self-updating
-        if (this.selfUpdate) {
-          this.getFormData();
-        }
+        this.onTaskEnd();
       }
+    },
+
+    async pollOngoingTask(taskId, taskUrl) {
+      // Start the store polling TaskId for success
+      const response = await this.startPolling(taskId, taskUrl);
+      if (response.status == "completed") {
+        this.$emit("response", response);
+        this.$emit("completed", response.output);
+      } else if (response.status == "cancelled") {
+        this.$emit("cancelled", response);
+        this.modalNotify(`The action '${this.submitLabel}' was cancelled.`);
+      }
+    },
+
+    onTaskEnd: function() {
+      // Reset taskRunning and taskId
+      this.taskRunning = false;
+      this.taskStarted = false;
+      this.$emit("finished");
     },
 
     startPolling: function(taskId, taskUrl) {
@@ -330,7 +357,7 @@ export default {
             }
             // As LabThings Actions add the message from any raised exception to the log, the
             // last message in the log is the message from the Exception.
-            //If the Exception was raised with no message, use a default.
+            // If the Exception was raised with no message, use a default.
             else {
               message =
                 response.data.log.from_index(-1).message ||
@@ -340,7 +367,7 @@ export default {
             reject(new Error(message));
           }
           // If task ends without reporting an error
-          // (NB this includes cancellation)
+          // (Note: this includes cancellation)
           else {
             resolve(response.data);
           }
