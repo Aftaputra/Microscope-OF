@@ -749,9 +749,6 @@ class StreamingPiCamera2(BaseCamera):
 
         It is a 9 value tuple used to specify the 3x3 matrix that the GPU pipeline uses
         to convert from the camera R,G,B vector to the standard R,G,B.
-
-        The value here is interpolated from the IMX219 defaults for the colour temperatures
-        above and below our LED temperature of 5000K.
         """
         return tuple(tf_utils.get_static_ccm(self.tuning)[0]["ccm"])
 
@@ -766,41 +763,14 @@ class StreamingPiCamera2(BaseCamera):
             with self._streaming_picamera(pause_stream=True):
                 self._initialise_picamera()
 
-    # TODO make reset CCM reset from default tuning.
     @lt.thing_action
     def reset_ccm(self) -> None:
-        """Overwrite the colour correction matrix in camera tuning with default values.
-
-        These values are from the Raspberry Pi Camera Algorithm and Tuning Guide, page
-        45.
-        """
-        # This is flattened 3x3 matrix. See `colour_correction_matrix`
-        if self._camera_board == "picamera_v2":
-            col_corr_matrix = [
-                2.222935,
-                -0.759672,
-                -0.463262,
-                -0.683489,
-                2.711882,
-                -1.028399,
-                -0.261375,
-                -0.668016,
-                1.929391,
-            ]
-        else:
-            # Note the only other option is the HQ
-            col_corr_matrix = [
-                2.164374,
-                -0.97259,
-                -0.191778,
-                -0.376957,
-                2.099377,
-                -0.722417,
-                -0.11787,
-                -0.489362,
-                1.607232,
-            ]
-        self.colour_correction_matrix = col_corr_matrix
+        """Overwrite the colour correction matrix in camera tuning with default values."""
+        self.tuning = tf_utils.copy_algo_from_other_tuning(
+            algo="rpi.ccm",
+            base_tuning_file=self.tuning,
+            copy_from=self.default_tuning,
+        )
 
     @lt.thing_action
     def set_static_green_equalisation(self, offset: int = 65535) -> None:
@@ -1018,8 +988,10 @@ class StreamingPiCamera2(BaseCamera):
         by the Raspberry Pi camera.
         """
         with self._streaming_picamera(pause_stream=True):
-            self.tuning = tf_utils.copy_tuning_with_alsc_section_from_other(
-                base_tuning_file=self.tuning, copy_alsc_from=self.default_tuning
+            self.tuning = tf_utils.copy_algo_from_other_tuning(
+                algo="rpi.alsc",
+                base_tuning_file=self.tuning,
+                copy_from=self.default_tuning,
             )
             self._initialise_picamera()
 

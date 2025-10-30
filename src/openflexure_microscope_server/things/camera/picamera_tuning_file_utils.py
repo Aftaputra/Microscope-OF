@@ -30,8 +30,8 @@ def load_default_tuning(sensor_model: str) -> dict:
     tuning_path = os.path.join(THIS_DIR, "tuning_files", "vc4", fname)
 
     try:
-        with open(tuning_path, "r") as fp:
-            return json.load(fp)
+        with open(tuning_path, "r", encoding="utf-8") as file_obj:
+            return json.load(file_obj)
     except (json.decoder.JSONDecodeError, IOError) as e:
         raise TuningFileError(f"Could not load tuning from {tuning_path}.") from e
 
@@ -165,13 +165,14 @@ def ce_enable_is_static(tuning: dict) -> bool:
     return contrast["ce_enable"] == 0
 
 
-def copy_tuning_with_alsc_section_from_other(
-    *, base_tuning_file: dict, copy_alsc_from: dict
+def copy_algo_from_other_tuning(
+    algo: str, *, base_tuning_file: dict, copy_from: dict
 ) -> dict:
-    """Return a copy of tuning_file with the lens shading correction from another file.
+    """Return a copy of tuning_file with an algorithm copied from another file.
 
-    All parameters are keyword only for clarity.
+    Tuning dict arguments are keyword only for clarity.
 
+    :param algo: The algorithm to copy. Eg ``rpi.alsc`` for lens shading correction.
     :param base_tuning_file: The tuning file to copy.
     :param copy_alsc_from: The tuning file to take the alsc section from.
     :return: A deep copy of base_tuning_file with the alsc section copied in from the
@@ -179,10 +180,10 @@ def copy_tuning_with_alsc_section_from_other(
     """
     output_tuning = deepcopy(base_tuning_file)
     # Find the relevant sub-dict for each tuning file
-    from_i = _index_of_algorithm(copy_alsc_from["algorithms"], "rpi.alsc")
-    to_i = _index_of_algorithm(base_tuning_file["algorithms"], "rpi.alsc")
+    from_i = _index_of_algorithm(copy_from["algorithms"], algo)
+    to_i = _index_of_algorithm(base_tuning_file["algorithms"], algo)
     # Updating the dictionary in place.
-    output_tuning["algorithms"][to_i] = deepcopy(copy_alsc_from["algorithms"][from_i])
+    output_tuning["algorithms"][to_i] = deepcopy(copy_from["algorithms"][from_i])
     return output_tuning
 
 
