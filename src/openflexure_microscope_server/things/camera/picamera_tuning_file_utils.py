@@ -3,15 +3,38 @@
 The functions that edit the tuning files return a new dictionary that is updated.
 """
 
-from typing import Any
+from typing import Any, Optional
 from copy import deepcopy
 import os
 import json
 
+from pydantic import BaseModel
 import numpy as np
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# The colour temperature to use when setting a value
+CALIBRATED_COLOUR_TEMP = 5000
+
+# The colour temperature to use for default uncalibrated values
+DEFAULT_COLOUR_TEMP = 1234
+
+
+class LensShading(BaseModel):
+    """A Pydantic model holding the lens shading tables.
+
+    PiCamera needs three numpy arrays for lens shading correction. Each array is
+    (12, 16) in size. The arrays are luminance, red-difference chroma (Cr), and
+    blue-difference chroma (Cb).
+
+    This is a Pydantic model so that it can sent by FastAPI
+    """
+
+    luminance: list[list[float]]
+    Cr: list[list[float]]
+    Cb: list[list[float]]
+    colour_temp: int
 
 
 class TuningFileError(RuntimeError):
@@ -62,39 +85,90 @@ def find_tuning_algo(tuning: dict[str, dict], name: str) -> dict[str, Any]:
 def set_lst(
     tuning: dict,
     *,
-    luminance: np.ndarray,
-    cr: np.ndarray,
-    cb: np.ndarray,
-    colour_temp: int = 5000,
+    luminance: Optional[np.ndarray],
+    cr: Optional[np.ndarray],
+    cb: Optional[np.ndarray],
+    colour_temp: int,
 ) -> dict:
     """Update the ``rpi.alsc`` section of with new lens shading tables.
 
     Only one set of tables is set so no adaptive lens shading will be used.
 
     :param tuning: The current tuning file.
-    :param luminance: The table of luminance values, as (12, 16) numpy array
-    :param cr: The table of cr values, as (12, 16) numpy array
-    :param cb: The table of cb values, as (12, 16) numpy array
-    :param colour_temp: The colour temperature to set. By default this is 5000. Set a
-        different value for the PiCamera Thing to report that the lens shading is not
-        calibrated.
+    :param luminance: The table of luminance values, as (12, 16) numpy array. Or None
+        to leave unchanged.
+    :param cr: The table of cr values, as (12, 16) numpy array. Or None to leave
+        unchanged.
+    :param cb: The table of cb values, as (12, 16) numpy array. Or None to leave
+        unchanged.
+    :param colour_temp: The colour temperature to set. On calibration this should be
+        set to 5000. Set a different value for the PiCamera Thing to report that the
+        lens shading is not calibrated.
     :return: an updated tuning dict with the new lens shading tables.
     """
     output_tuning = deepcopy(tuning)
-    for table in luminance, cr, cb:
-        if np.array(table).shape != (12, 16):
-            raise ValueError("Lens shading tables must be 12x16!")
+
     alsc = find_tuning_algo(output_tuning, "rpi.alsc")
     alsc["n_iter"] = 0  # disable the adaptive part.
     alsc["luminance_strength"] = 1.0
-    alsc["calibrations_Cr"] = [
-        {"ct": colour_temp, "table": _as_flat_rounded_list(cr, round_to=3)}
-    ]
-    alsc["calibrations_Cb"] = [
-        {"ct": colour_temp, "table": _as_flat_rounded_list(cb, round_to=3)}
-    ]
-    alsc["luminance_lut"] = _as_flat_rounded_list(luminance, round_to=3)
+
+    def check_shape(table: np.ndarray) -> None:
+        """Throw error if the lens shading table is the wrong shape."""
+        if np.array(table).shape != (12, 16):
+            raise ValueError("Lens shading tables must be 12x16!")
+
+    if cr is not None:
+        check_shape(cr)
+        alsc["calibrations_Cr"] = [
+            {"ct": colour_temp, "table": _as_flat_rounded_list(cr, round_to=3)}
+        ]
+
+    if cr is not None:
+        check_shape(cb)
+        alsc["calibrations_Cb"] = [
+            {"ct": colour_temp, "table": _as_flat_rounded_list(cb, round_to=3)}
+        ]
+
+    if luminance is not None:
+        check_shape(luminance)
+        alsc["luminance_lut"] = _as_flat_rounded_list(luminance, round_to=3)
+
     return output_tuning
+
+
+def flatten_lst(tuning: dict, keep_luminance: bool = False) -> dict:
+    """Flaten the len shading table ro an array of ones.
+
+    :param tuning: The current tuning dictionary.
+    :param keep_luminance: Set to True to only flatten the cr and cb tables.
+    :return: An updated tuning dict.
+    """
+    flat = np.ones((12, 16))
+    return set_lst(
+        tuning,
+        luminance=None if keep_luminance else flat,
+        cr=flat,
+        cb=flat,
+        colour_temp=DEFAULT_COLOUR_TEMP,
+    )
+
+
+def get_lst(tuning: dict) -> LensShading:
+    """Return the lens shading as a LenSading Base Model."""
+    # Note "alsc" is the Picamera2 term for "Automatic Lens Shading Correction"
+    alsc = find_tuning_algo(tuning, "rpi.alsc")
+
+    def reshape_lst(lin: list[float]) -> list[list[float]]:
+        """Reshape the 192 element list into a 2D 16x12 list."""
+        w, h = 16, 12
+        return [lin[w * i : w * (i + 1)] for i in range(h)]
+
+    return LensShading(
+        luminance=reshape_lst(alsc["luminance_lut"]),
+        Cr=reshape_lst(alsc["calibrations_Cr"][0]["table"]),
+        Cb=reshape_lst(alsc["calibrations_Cb"][0]["table"]),
+        colour_temp=alsc["calibrations_Cb"][0]["ct"],
+    )
 
 
 def lst_calibrated(tuning: dict) -> bool:
@@ -104,7 +178,7 @@ def lst_calibrated(tuning: dict) -> bool:
     this is what we set on calibration. Our tuning file sets a temperature of 1234.
     """
     alsc = find_tuning_algo(tuning, "rpi.alsc")
-    return alsc["calibrations_Cr"][0]["ct"] == 5000
+    return alsc["calibrations_Cr"][0]["ct"] == CALIBRATED_COLOUR_TEMP
 
 
 def set_ccm(
@@ -121,7 +195,7 @@ def set_ccm(
     """
     output_tuning = deepcopy(tuning)
     ccm = find_tuning_algo(output_tuning, "rpi.ccm")
-    ccm["ccms"] = [{"ct": 5000, "ccm": col_corr_matrix}]
+    ccm["ccms"] = [{"ct": CALIBRATED_COLOUR_TEMP, "ccm": col_corr_matrix}]
     return output_tuning
 
 

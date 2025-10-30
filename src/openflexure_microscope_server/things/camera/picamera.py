@@ -15,7 +15,7 @@ https://datasheets.raspberrypi.com/camera/raspberry-pi-camera-guide.pdf
 """
 
 from __future__ import annotations
-from typing import Annotated, Iterator, Literal, Mapping, Optional, overload, Any
+from typing import Annotated, Iterator, Literal, Mapping, Optional, Any
 from types import TracebackType
 import json
 import logging
@@ -117,22 +117,6 @@ class SensorModeSelector(BaseModel):
 
     output_size: tuple[int, int]
     bit_depth: int
-
-
-class LensShading(BaseModel):
-    """A Pydantic model holding the lens shading tables.
-
-    PiCamera needs three numpy arrays for lens shading correction. Each array is
-    (12, 16) in size. The arrays are luminance, red-difference chroma (Cr), and
-    blue-difference chroma (Cb).
-
-    This is a Pydantic model so that it can sent by FastAPI
-    """
-
-    luminance: list[list[float]]
-    Cr: list[list[float]]
-    Cb: list[list[float]]
-    colour_temp: int
 
 
 class StreamingPiCamera2(BaseCamera):
@@ -347,42 +331,6 @@ class StreamingPiCamera2(BaseCamera):
 
     tuning = lt.ThingSetting(Optional[dict], None, readonly=True)
     """The Raspberry PiCamera Tuning File JSON."""
-
-    # Use overload to clarify that only a dictionary is returned if `raise_if_missing`
-    # is True
-    @overload
-    def get_tuning_algo(
-        self, algorithm_name: str, raise_if_missing: Literal[True]
-    ) -> dict: ...
-    # Otherwise may also be None
-    @overload
-    def get_tuning_algo(
-        self, algorithm_name: str, raise_if_missing: bool
-    ) -> Optional[dict]: ...
-
-    def get_tuning_algo(
-        self, algorithm_name: str, raise_if_missing: bool = True
-    ) -> Optional[dict]:
-        """Return the active tuning algorithm settings for the given algorithm.
-
-        :returns: The algorithm dictionary if found, returns None if no tuning data
-            is loaded or if the tuning algorithm is not found.
-
-        :raises MissingCalibrationError: If raise_if_missing is true and there is no
-            tuning file is available, or the requested algorithm is not present.
-        """
-        if self.tuning is None:
-            if raise_if_missing:
-                raise MissingCalibrationError("No tuning data is set.")
-            return None
-        try:
-            return tf_utils.find_tuning_algo(self.tuning, algorithm_name)
-        except StopIteration as e:
-            if raise_if_missing:
-                raise MissingCalibrationError(
-                    f"No tuning algorithm with name {algorithm_name}."
-                ) from e
-            return None
 
     def _initialise_picamera(self, check_sensor_model: bool = False) -> None:
         """Acquire the picamera device and store it as ``self._picamera``.
@@ -737,6 +685,7 @@ class StreamingPiCamera2(BaseCamera):
                 luminance=L,
                 cr=Cr,
                 cb=Cb,
+                colour_temp=tf_utils.CALIBRATED_COLOUR_TEMP,
             )
 
             # Re-initialise the picamera to reload the tuning file.
@@ -826,28 +775,6 @@ class StreamingPiCamera2(BaseCamera):
         time.sleep(0.5)
         self.set_background(portal)
 
-    @lt.thing_action
-    def flat_lens_shading(self) -> None:
-        """Disable flat-field correction.
-
-        This method will set a completely flat lens shading table. It is not the
-        same as the default behaviour, which is to use an adaptive lens shading
-        table.
-
-        This flat table is used to take an image with no lens shading so that the
-        correct lens shading table can be calibrated.
-        """
-        with self._streaming_picamera(pause_stream=True):
-            # Generate and array of ones of the correct size for each channel
-            flat_array = np.ones((12, 16))
-            self.tuning = tf_utils.set_lst(
-                self.tuning,
-                luminance=flat_array,
-                cr=flat_array,
-                cb=flat_array,
-            )
-            self._initialise_picamera()
-
     @lt.thing_property
     def primary_calibration_actions(self) -> list[ActionButton]:
         """The calibration actions for both calibration wizard and settings panel."""
@@ -895,6 +822,12 @@ class StreamingPiCamera2(BaseCamera):
                 button_primary=False,
             ),
             action_button_for(
+                self.flat_lens_shading_chrominance,
+                submit_label="Disable Flat Field Chrominance",
+                can_terminate=False,
+                button_primary=False,
+            ),
+            action_button_for(
                 self.reset_lens_shading,
                 submit_label="Reset Flat Field Correction",
                 can_terminate=False,
@@ -930,39 +863,21 @@ class StreamingPiCamera2(BaseCamera):
         ]
 
     @lt.thing_property
-    def lens_shading_tables(self) -> Optional[LensShading]:
+    def lens_shading_tables(self) -> Optional[tf_utils.LensShading]:
         """The current lens shading (i.e. flat-field correction).
 
         Return the current lens shading correction, as three 2D lists each with
-        dimensions 16x12, if a static lens shading table is in use.
+        dimensions 16x12.
 
-        Return None if:
-        - adaptive control is enabled
-        - multiple LSTs in use (for different colour temperatures),
+        The colour temperature is returned. If the colour temperature us 5000 then this
+        means the lens shading tables have been calibrated (with our illumination which
+        has a 5000k colour temperature). Other numbers are set when flatening or
+        resetting the table.
         """
-        # Note "alsc" is the Picamera2 term for "Automatic Lens Shading Correction"
-        alsc = self.get_tuning_algo("rpi.alsc")
-
-        # Check there is exactly 1 correction table for red-difference chroma (Cr)
-        # and blue-difference chroma (Cb)
-        if len(alsc["calibrations_Cr"]) != 1 or len(alsc["calibrations_Cb"]) != 1:
-            # If there is not exactly one table, then lens shading isn't static.
-            return None
-
-        def reshape_lst(lin: list[float]) -> list[list[float]]:
-            """Reshape the 192 element list into a 2D 16x12 list."""
-            w, h = 16, 12
-            return [lin[w * i : w * (i + 1)] for i in range(h)]
-
-        return LensShading(
-            luminance=reshape_lst(alsc["luminance_lut"]),
-            Cr=reshape_lst(alsc["calibrations_Cr"][0]["table"]),
-            Cb=reshape_lst(alsc["calibrations_Cb"][0]["table"]),
-            colour_temp=alsc["calibrations_Cb"][0]["ct"],
-        )
+        return tf_utils.get_lst(self.tuning)
 
     @lens_shading_tables.setter
-    def lens_shading_tables(self, lst: LensShading) -> None:
+    def lens_shading_tables(self, lst: tf_utils.LensShading) -> None:
         """Set the lens shading tables."""
         with self._streaming_picamera(pause_stream=True):
             self.tuning = tf_utils.set_lst(
@@ -975,6 +890,21 @@ class StreamingPiCamera2(BaseCamera):
             self._initialise_picamera()
 
     @lt.thing_action
+    def flat_lens_shading(self) -> None:
+        """Disable flat-field correction.
+
+        This method will set a completely flat lens shading table. It is not the
+        same as the default behaviour, which is to use an adaptive lens shading
+        table.
+
+        This flat table is used to take an image with no lens shading so that the
+        correct lens shading table can be calibrated.
+        """
+        with self._streaming_picamera(pause_stream=True):
+            self.tuning = tf_utils.flatten_lst(self.tuning)
+            self._initialise_picamera()
+
+    @lt.thing_action
     def flat_lens_shading_chrominance(self) -> None:
         """Disable flat-field correction for colour only.
 
@@ -983,16 +913,7 @@ class StreamingPiCamera2(BaseCamera):
         colour across the image.
         """
         with self._streaming_picamera(pause_stream=True):
-            alsc = self.get_tuning_algo("rpi.alsc")
-            luminance = alsc["luminance_lut"]
-            flat = np.ones((12, 16))
-            self.tuning = tf_utils.set_lst(
-                self.tuning,
-                luminance=luminance,
-                cr=flat,
-                cb=flat,
-                colour_temp=1234,
-            )
+            self.tuning = tf_utils.flatten_lst(self.tuning, keep_luminance=True)
             self._initialise_picamera()
 
     @lt.thing_action
