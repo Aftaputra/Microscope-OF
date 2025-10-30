@@ -766,6 +766,7 @@ class StreamingPiCamera2(BaseCamera):
             with self._streaming_picamera(pause_stream=True):
                 self._initialise_picamera()
 
+    # TODO make reset CCM reset from default tuning.
     @lt.thing_action
     def reset_ccm(self) -> None:
         """Overwrite the colour correction matrix in camera tuning with default values.
