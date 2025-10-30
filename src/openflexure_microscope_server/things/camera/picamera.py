@@ -706,7 +706,7 @@ class StreamingPiCamera2(BaseCamera):
         It is a 9 value tuple used to specify the 3x3 matrix that the GPU pipeline uses
         to convert from the camera R,G,B vector to the standard R,G,B.
         """
-        return tuple(tf_utils.get_ccm(self.tuning)[0]["ccm"])
+        return tuple(tf_utils.get_ccm(self.tuning))
 
     @colour_correction_matrix.setter  # type: ignore
     def colour_correction_matrix(

@@ -112,7 +112,6 @@ def test_thing_description_equivalence(mock_picam_thing):
     # defined as PiCamera specific, or by replicating the functionality for other
     # cameras.
     picamera_extra_actions = {
-        "flat_lens_shading_chrominance",
         "set_static_green_equalisation",
         "set_ce_enable_to_off",
         "stop_streaming",
@@ -130,6 +129,7 @@ def test_thing_description_equivalence(mock_picam_thing):
         "sensor_modes",
         "sensor_mode",
     }
+    # Note these are only the action not exposed as calibration actions.
     for action in picamera_extra_actions:
         assert action in picamera_actions
     for props in picamera_extra_props:

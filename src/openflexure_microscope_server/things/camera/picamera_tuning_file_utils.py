@@ -73,11 +73,20 @@ def find_tuning_algo(tuning: dict[str, dict], name: str) -> dict[str, Any]:
     # Version 1 of the tuning files was simply a dictionary of algorithms. Later
     # versions have an "algorithms" key, the value of which is a list of algorithms.
     if version == 1:
-        return tuning[name]
+        try:
+            return tuning[name]
+        except KeyError as e:
+            raise KeyError(f"No algorithm {name} in tuning.") from e
+
     # The tuning file "algorithms" is a list of dictionaries
+    if "algorithms" not in tuning:
+        raise KeyError("A v2 tuning file must specify an algorithms key")
     algorithms = tuning["algorithms"]
     # The list is a list of dictionaries that have 1 key: the algorithm name
-    algo_dict = next(algo for algo in algorithms if name in algo)
+    try:
+        algo_dict = next(algo for algo in algorithms if name in algo)
+    except StopIteration as e:
+        raise KeyError(f"No algorithm {name} in tuning.") from e
     # We want the value for that key, which is a dictionary of algorithm parameters
     return algo_dict[name]
 
@@ -183,9 +192,7 @@ def lst_calibrated(tuning: dict) -> bool:
 
 def set_ccm(
     tuning: dict,
-    col_corr_matrix: tuple[
-        float, float, float, float, float, float, float, float, float
-    ],
+    col_corr_matrix: list,
 ) -> dict:
     """Update the ``rpi.alsc`` section of a camera tuning dict set the colour correction matrix.
 
@@ -194,15 +201,17 @@ def set_ccm(
     :return: an updated tuning dict with the new colour correction matrix.
     """
     output_tuning = deepcopy(tuning)
+    if len(col_corr_matrix) != 9:
+        raise ValueError("col_corr_matrix should be a list of 9 floats")
     ccm = find_tuning_algo(output_tuning, "rpi.ccm")
-    ccm["ccms"] = [{"ct": CALIBRATED_COLOUR_TEMP, "ccm": col_corr_matrix}]
+    ccm["ccms"] = [{"ct": CALIBRATED_COLOUR_TEMP, "ccm": list(col_corr_matrix)}]
     return output_tuning
 
 
 def get_ccm(tuning: dict) -> None:
     """Get a copy of the the ``rpi.ccm`` section of a camera tuning dict."""
     ccm = find_tuning_algo(tuning, "rpi.ccm")
-    return deepcopy(ccm["ccms"])
+    return deepcopy(ccm["ccms"][0]["ccm"])
 
 
 def set_static_geq(

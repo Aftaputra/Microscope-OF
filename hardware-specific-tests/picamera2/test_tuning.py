@@ -1,7 +1,5 @@
 """Tests that check that a tuning file can be reloaded."""
 
-import os
-
 import pytest
 from picamera2 import Picamera2
 
@@ -24,24 +22,6 @@ def generate_bad_tuning():
     return bad_tuning
 
 
-def print_tuning(read_file: bool = False):
-    """Print the path of the default tuning file from the the environment variable.
-
-    :param read_file: Boolean, set true to also print the file contents.
-
-    This is useful for debugging. As pytest suppresses the printing by default the
-    -s option is needed when running pytest to see this.
-    """
-    key = "LIBCAMERA_RPI_TUNING_FILE"
-    if key in os.environ:
-        print(f"Tuning file environment variable: {os.environ[key]}")
-        if read_file:
-            with open(os.environ[key], "r") as f:
-                print(f.read())
-    else:
-        print("Tuning file environment variable not set")
-
-
 def _test_bad_tuning_after_good_tuning(configure: bool = False):
     """Test loading good, bad, then another good tuning files in sequence.
 
@@ -56,10 +36,8 @@ def _test_bad_tuning_after_good_tuning(configure: bool = False):
     """
     bad_tuning = generate_bad_tuning()
     default_tuning = tf_utils.load_default_tuning("imx219")
-    print_tuning()
     print("opening camera with default tuning")
     with Picamera2(tuning=default_tuning) as cam:
-        print_tuning()
         if configure:
             cam.configure(cam.create_preview_configuration())
     del cam
