@@ -95,6 +95,11 @@ We also set `n_iter: 0` this stops it adding iterative adaptuion.
 
 As there is only one table the colour temperature is ignored. We set the colour temperature to 1234 in the tuning file to make it clear that we have not calibrated it on the microscope. We set the colour temperature to 5000 (our actual illumination colour temperature) once recalibrated.
 
+The tables are flat 1s for luninance on for both sensors.
+
+For the IMX477 (PiCamera HQ) the Cr and Cb tables are flat, but Cb is 2.0 not 1.0 for all values. This is so that the initial colour gains are set to (1.0, 2.0)
+
+For the IMX219 (PiCamera v2) the Cr and Cb tables are symmetric tables taken from the top quadrant of a calibrated microscope. They are used to create a good enough correction that the microscope is usable for alignment.
 
 ### rpi.contrast - Contrast
 

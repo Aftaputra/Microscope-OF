@@ -44,7 +44,7 @@ def test_load_tuning(imx219_tuning, imx477_tuning):
         ("rpi.sdn", True),
         ("rpi.awb", True),
         ("rpi.agc", True),
-        ("rpi.alsc", True),
+        ("rpi.alsc", False),
         ("rpi.contrast", True),
         ("rpi.ccm", False),
         ("rpi.sharpen", True),
@@ -122,6 +122,12 @@ def test_tuning_lst_tools(imx219_tuning, imx477_tuning):
         assert isinstance(lst_model.Cb[0], list)
         # Loaded table has default lens tuning,
         assert lst_model.colour_temp == tf_utils.DEFAULT_COLOUR_TEMP
+
+
+def test_tuning_initial_colour_gains(imx219_tuning, imx477_tuning):
+    """The initial colour gains are as expected."""
+    assert tf_utils.get_colour_gains_from_lst(imx219_tuning) == (1.068, 1.259)
+    assert tf_utils.get_colour_gains_from_lst(imx477_tuning) == (1.0, 2.0)
 
 
 def test_setting_lst(imx219_tuning):

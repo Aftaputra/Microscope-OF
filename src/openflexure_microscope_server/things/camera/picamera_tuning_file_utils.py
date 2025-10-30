@@ -180,6 +180,19 @@ def get_lst(tuning: dict) -> LensShading:
     )
 
 
+def get_colour_gains_from_lst(tuning: dict) -> tuple[float, float]:
+    """Get the colour gains that are needed from the lens shading tables.
+
+    The lens shading tables are calculated to create a white balanced image, but the
+    ISP normalises by the minimum Cr and Cb value. So these need to be set as colour
+    gains.
+    """
+    alsc = find_tuning_algo(tuning, "rpi.alsc")
+    min_cr = float(min(alsc["calibrations_Cr"][0]["table"]))
+    min_cb = float(min(alsc["calibrations_Cb"][0]["table"]))
+    return (min_cr, min_cb)
+
+
 def lst_calibrated(tuning: dict) -> bool:
     """Whether the lens shading table is calibrated.
 

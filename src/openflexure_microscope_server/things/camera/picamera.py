@@ -163,6 +163,10 @@ class StreamingPiCamera2(BaseCamera):
             # a server. But we know this, so we ignore the error.
             pass
 
+        # Also set the colour gains based on the tuning. Set to _colour_gains to not
+        # trigger a NotConnectedToServerError
+        self._colour_gains = tf_utils.get_colour_gains_from_lst(self.tuning)
+
     stream_resolution = lt.ThingProperty(
         tuple[int, int],
         initial_value=(820, 616),
@@ -246,7 +250,7 @@ class StreamingPiCamera2(BaseCamera):
             with self._streaming_picamera() as cam:
                 cam.set_controls({"ColourGains": value})
 
-    _exposure_time: int = 0
+    _exposure_time: int = 500
 
     @lt.thing_setting
     def exposure_time(self) -> int:
@@ -691,8 +695,7 @@ class StreamingPiCamera2(BaseCamera):
             # Re-initialise the picamera to reload the tuning file.
             self._initialise_picamera()
 
-        # Set colour gains based on the LST results
-        self.colour_gains = (float(np.min(Cr)), float(np.min(Cb)))
+        self.colour_gains = tf_utils.get_colour_gains_from_lst(self.tuning)
 
     @lt.thing_property
     def colour_correction_matrix(
