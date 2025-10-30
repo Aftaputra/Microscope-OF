@@ -132,7 +132,7 @@ def set_lst(
             {"ct": colour_temp, "table": _as_flat_rounded_list(cr, round_to=3)}
         ]
 
-    if cr is not None:
+    if cb is not None:
         check_shape(cb)
         alsc["calibrations_Cb"] = [
             {"ct": colour_temp, "table": _as_flat_rounded_list(cb, round_to=3)}
@@ -240,7 +240,7 @@ def set_static_geq(
         equalisation to averages the green pixels in the red and blue rows due to the
         chief ray angle compensation issue when the the stock lens is replaced by an
         objective.
-    :param return: An updated tuning dictionary
+    :return: An updated tuning dictionary
     """
     output_tuning = deepcopy(tuning)
     geq = find_tuning_algo(output_tuning, "rpi.geq")
@@ -284,9 +284,9 @@ def copy_algo_from_other_tuning(
 
     :param algo: The algorithm to copy. Eg ``rpi.alsc`` for lens shading correction.
     :param base_tuning_file: The tuning file to copy.
-    :param copy_alsc_from: The tuning file to take the alsc section from.
-    :return: A deep copy of base_tuning_file with the alsc section copied in from the
-        other tuning file.
+    :param copy_from: The tuning file to copy the algorithm from section from.
+    :return: A deep copy of base_tuning_file with the specified algorithm copied in
+        from the other tuning file.
     """
     output_tuning = deepcopy(base_tuning_file)
     # Find the relevant sub-dict for each tuning file
