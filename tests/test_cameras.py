@@ -123,7 +123,6 @@ def test_thing_description_equivalence(mock_picam_thing):
         "colour_correction_matrix",
         "lens_shading_tables",
         "sensor_resolution",
-        "lens_shading_is_static",
         "capture_metadata",
         "camera_configuration",
         "stream_resolution",
@@ -131,5 +130,9 @@ def test_thing_description_equivalence(mock_picam_thing):
         "sensor_modes",
         "sensor_mode",
     }
+    for action in picamera_extra_actions:
+        assert action in picamera_actions
+    for props in picamera_extra_props:
+        assert props in picamera_props
     assert picamera_actions - base_actions == picamera_extra_actions
     assert picamera_props - base_props == picamera_extra_props

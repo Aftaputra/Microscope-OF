@@ -112,7 +112,7 @@ class SensorModeSelector(BaseModel):
 
     These values are the output size and the bit depth.
 
-    This is a Pydantic model so that it can be saved to disk.
+    This is a Pydantic model so that it can sent by FastAPI
     """
 
     output_size: tuple[int, int]
@@ -126,12 +126,13 @@ class LensShading(BaseModel):
     (12, 16) in size. The arrays are luminance, red-difference chroma (Cr), and
     blue-difference chroma (Cb).
 
-    This is a Pydantic model so that it can be saved to the disk.
+    This is a Pydantic model so that it can sent by FastAPI
     """
 
     luminance: list[list[float]]
     Cr: list[list[float]]
     Cb: list[list[float]]
+    colour_temp: int
 
 
 class StreamingPiCamera2(BaseCamera):
@@ -216,7 +217,8 @@ class StreamingPiCamera2(BaseCamera):
     @lt.thing_property
     def calibration_required(self) -> bool:
         """Whether the camera needs calibrating."""
-        return not self.lens_shading_is_static
+        # Check if the lens shading table is calibrated.
+        return not tf_utils.lst_calibrated(self.tuning)
 
     ## Persistent controls! These are settings
 
@@ -730,7 +732,12 @@ class StreamingPiCamera2(BaseCamera):
             # luminance (L), red-difference chroma (Cr), and blue-difference chroma
             # (Cb).
             L, Cr, Cb = recalibrate_utils.lst_from_camera(cam, self._sensor_info)  # noqa: N806
-            self.tuning = tf_utils.set_static_lst(self.tuning, L, Cr, Cb)
+            self.tuning = tf_utils.set_lst(
+                self.tuning,
+                luminance=L,
+                cr=Cr,
+                cb=Cb,
+            )
 
             # Re-initialise the picamera to reload the tuning file.
             self._initialise_picamera()
@@ -750,14 +757,14 @@ class StreamingPiCamera2(BaseCamera):
         It is a 9 value tuple used to specify the 3x3 matrix that the GPU pipeline uses
         to convert from the camera R,G,B vector to the standard R,G,B.
         """
-        return tuple(tf_utils.get_static_ccm(self.tuning)[0]["ccm"])
+        return tuple(tf_utils.get_ccm(self.tuning)[0]["ccm"])
 
     @colour_correction_matrix.setter  # type: ignore
     def colour_correction_matrix(
         self,
         value: tuple[float, float, float, float, float, float, float, float, float],
     ) -> None:
-        self.tuning = tf_utils.set_static_ccm(self.tuning, value)
+        self.tuning = tf_utils.set_ccm(self.tuning, value)
 
         if self._picamera is not None:
             with self._streaming_picamera(pause_stream=True):
@@ -833,8 +840,11 @@ class StreamingPiCamera2(BaseCamera):
         with self._streaming_picamera(pause_stream=True):
             # Generate and array of ones of the correct size for each channel
             flat_array = np.ones((12, 16))
-            self.tuning = tf_utils.set_static_lst(
-                self.tuning, flat_array, flat_array, flat_array
+            self.tuning = tf_utils.set_lst(
+                self.tuning,
+                luminance=flat_array,
+                cr=flat_array,
+                cb=flat_array,
             )
             self._initialise_picamera()
 
@@ -930,9 +940,6 @@ class StreamingPiCamera2(BaseCamera):
         - adaptive control is enabled
         - multiple LSTs in use (for different colour temperatures),
         """
-        if not self.lens_shading_is_static:
-            return None
-
         # Note "alsc" is the Picamera2 term for "Automatic Lens Shading Correction"
         alsc = self.get_tuning_algo("rpi.alsc")
 
@@ -951,23 +958,25 @@ class StreamingPiCamera2(BaseCamera):
             luminance=reshape_lst(alsc["luminance_lut"]),
             Cr=reshape_lst(alsc["calibrations_Cr"][0]["table"]),
             Cb=reshape_lst(alsc["calibrations_Cb"][0]["table"]),
+            colour_temp=alsc["calibrations_Cb"][0]["ct"],
         )
 
     @lens_shading_tables.setter
     def lens_shading_tables(self, lst: LensShading) -> None:
         """Set the lens shading tables."""
         with self._streaming_picamera(pause_stream=True):
-            self.tuning = tf_utils.set_static_lst(
+            self.tuning = tf_utils.set_lst(
                 self.tuning,
                 luminance=lst.luminance,
                 cr=lst.Cr,
                 cb=lst.Cb,
+                colour_temp=lst.colour_temp,
             )
             self._initialise_picamera()
 
     @lt.thing_action
     def flat_lens_shading_chrominance(self) -> None:
-        """Disable flat-field correction.
+        """Disable flat-field correction for colour only.
 
         This method will set the chrominance of the lens shading table to be
         flat, i.e. we'll correct vignetting of intensity, but not any change in
@@ -977,7 +986,13 @@ class StreamingPiCamera2(BaseCamera):
             alsc = self.get_tuning_algo("rpi.alsc")
             luminance = alsc["luminance_lut"]
             flat = np.ones((12, 16))
-            self.tuning = tf_utils.set_static_lst(self.tuning, luminance, flat, flat)
+            self.tuning = tf_utils.set_lst(
+                self.tuning,
+                luminance=luminance,
+                cr=flat,
+                cb=flat,
+                colour_temp=1234,
+            )
             self._initialise_picamera()
 
     @lt.thing_action
@@ -994,17 +1009,6 @@ class StreamingPiCamera2(BaseCamera):
                 copy_from=self.default_tuning,
             )
             self._initialise_picamera()
-
-    @lt.thing_property
-    def lens_shading_is_static(self) -> bool:
-        """Whether the lens shading is static.
-
-        This property is true if the lens shading correction has been set to use
-        a static table (i.e. the number of automatic correction iterations is zero).
-        The default LST is not static, but all the calibration controls will set it
-        to be static (except "reset")
-        """
-        return tf_utils.lst_is_static(self.tuning)
 
     @property
     def thing_state(self) -> Mapping[str, Any]:

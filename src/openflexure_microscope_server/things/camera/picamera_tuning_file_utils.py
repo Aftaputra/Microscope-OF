@@ -1,7 +1,6 @@
 """Functions for loading, adjusting, or reading from the Picamera2 tuning file.
 
-The functions that edit the tuning files edit them in place. This will change in
-the future.
+The functions that edit the tuning files return a new dictionary that is updated.
 """
 
 from typing import Any
@@ -60,44 +59,65 @@ def find_tuning_algo(tuning: dict[str, dict], name: str) -> dict[str, Any]:
     return algo_dict[name]
 
 
-def set_static_lst(
+def set_lst(
     tuning: dict,
+    *,
     luminance: np.ndarray,
     cr: np.ndarray,
     cb: np.ndarray,
+    colour_temp: int = 5000,
 ) -> dict:
-    """Update the ``rpi.alsc`` section of a camera tuning dict to use a static correction.
+    """Update the ``rpi.alsc`` section of with new lens shading tables.
 
-    ``tuning`` will be updated in-place to set its shading to static, and disable any
-    adaptive tweaking by the algorithm.
+    Only one set of tables is set so no adaptive lens shading will be used.
+
+    :param tuning: The current tuning file.
+    :param luminance: The table of luminance values, as (12, 16) numpy array
+    :param cr: The table of cr values, as (12, 16) numpy array
+    :param cb: The table of cb values, as (12, 16) numpy array
+    :param colour_temp: The colour temperature to set. By default this is 5000. Set a
+        different value for the PiCamera Thing to report that the lens shading is not
+        calibrated.
+    :return: an updated tuning dict with the new lens shading tables.
     """
     output_tuning = deepcopy(tuning)
     for table in luminance, cr, cb:
         if np.array(table).shape != (12, 16):
             raise ValueError("Lens shading tables must be 12x16!")
     alsc = find_tuning_algo(output_tuning, "rpi.alsc")
-    alsc["n_iter"] = 0  # disable the adaptive part
+    alsc["n_iter"] = 0  # disable the adaptive part.
     alsc["luminance_strength"] = 1.0
     alsc["calibrations_Cr"] = [
-        {"ct": 4500, "table": _as_flat_rounded_list(cr, round_to=3)}
+        {"ct": colour_temp, "table": _as_flat_rounded_list(cr, round_to=3)}
     ]
     alsc["calibrations_Cb"] = [
-        {"ct": 4500, "table": _as_flat_rounded_list(cb, round_to=3)}
+        {"ct": colour_temp, "table": _as_flat_rounded_list(cb, round_to=3)}
     ]
     alsc["luminance_lut"] = _as_flat_rounded_list(luminance, round_to=3)
     return output_tuning
 
 
-def set_static_ccm(
+def lst_calibrated(tuning: dict) -> bool:
+    """Whether the lens shading table is calibrated.
+
+    This checks whether the lens shading table is has a colour temperature of 5000. As
+    this is what we set on calibration. Our tuning file sets a temperature of 1234.
+    """
+    alsc = find_tuning_algo(tuning, "rpi.alsc")
+    return alsc["calibrations_Cr"][0]["ct"] == 5000
+
+
+def set_ccm(
     tuning: dict,
     col_corr_matrix: tuple[
         float, float, float, float, float, float, float, float, float
     ],
 ) -> dict:
-    """Update the ``rpi.alsc`` section of a camera tuning dict to use a static correction.
+    """Update the ``rpi.alsc`` section of a camera tuning dict set the colour correction matrix.
 
-    ``tuning`` will be updated in-place to set its shading to static, and disable any
-    adaptive tweaking by the algorithm.
+    :param tuning: The current tuning dict
+    :param col_corr_matrix: The colour correction matrix to set
+    :return: an updated tuning dict with the new colour correction matrix.
     """
     output_tuning = deepcopy(tuning)
     ccm = find_tuning_algo(output_tuning, "rpi.ccm")
@@ -105,16 +125,10 @@ def set_static_ccm(
     return output_tuning
 
 
-def get_static_ccm(tuning: dict) -> None:
+def get_ccm(tuning: dict) -> None:
     """Get a copy of the the ``rpi.ccm`` section of a camera tuning dict."""
     ccm = find_tuning_algo(tuning, "rpi.ccm")
     return deepcopy(ccm["ccms"])
-
-
-def lst_is_static(tuning: dict) -> bool:
-    """Whether the lens shading table is set to static."""
-    alsc = find_tuning_algo(tuning, "rpi.alsc")
-    return alsc["n_iter"] == 0
 
 
 def set_static_geq(
@@ -123,14 +137,14 @@ def set_static_geq(
 ) -> dict:
     """Update the ``rpi.geq`` section of a camera tuning dict.
 
-    :param tuning: the raspberry pi tuning file. This will be updated in-place to
-        set the geq offset to the given value.
+    :param tuning: the raspberry pi tuning dictionary
     :param offset: The desired green equalisation offset. Default 65535. The default is
         the maximum allowed value. This means the brightness will always be below the
         threshold where averaging is used. This is default as we always need the green
         equalisation to averages the green pixels in the red and blue rows due to the
         chief ray angle compensation issue when the the stock lens is replaced by an
         objective.
+    :param return: An updated tuning dictionary
     """
     output_tuning = deepcopy(tuning)
     geq = find_tuning_algo(output_tuning, "rpi.geq")
@@ -182,7 +196,7 @@ def copy_algo_from_other_tuning(
     # Find the relevant sub-dict for each tuning file
     from_i = _index_of_algorithm(copy_from["algorithms"], algo)
     to_i = _index_of_algorithm(base_tuning_file["algorithms"], algo)
-    # Updating the dictionary in place.
+    # Updating the output_tuning copy.
     output_tuning["algorithms"][to_i] = deepcopy(copy_from["algorithms"][from_i])
     return output_tuning
 
