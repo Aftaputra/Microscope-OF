@@ -277,14 +277,26 @@ class CameraStageMapper(lt.Thing):
 
     @lt.thing_action
     def convert_image_to_stage_coordinates(
-        self, x: float, y: float
+        self, x: float, y: float, **_kwargs: float
     ) -> Mapping[str, int]:
-        """Convert image coordinates to stage coordinates."""
+        """Convert image coordinates to stage coordinates. Only x and y are returned."""
         self.assert_calibrated()
         relative_move: np.ndarray = np.dot(
             np.array([y, x]), np.array(self.image_to_stage_displacement_matrix)
         )
         return {"x": int(relative_move[0]), "y": int(relative_move[1])}
+
+    @lt.thing_action
+    def convert_stage_to_image_coordinates(
+        self, x: float, y: float, **_kwargs: float
+    ) -> Mapping[str, int]:
+        """Convert stage coordinates to image coordinates. Only x and y are returned."""
+        self.assert_calibrated()
+        inverse_matrix = np.linalg.inv(
+            np.array(self.image_to_stage_displacement_matrix)
+        )
+        relative_move = np.dot(np.array([x, y]), inverse_matrix)
+        return {"x": int(relative_move[1]), "y": int(relative_move[0])}
 
     @lt.thing_property
     def thing_state(self) -> Mapping[str, Any]:

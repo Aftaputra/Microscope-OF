@@ -410,7 +410,7 @@ def test_big_z_corrected_movement(rom_thing, mock_rom_deps):
     assert lat_mov_kwargs == expected_movement
 
 
-def test_initial_moves_for_z_prediction(rom_thing, mock_rom_deps, mocker):
+def test_moves_for_z_prediction(rom_thing, mock_rom_deps, mocker):
     """Check the initial moves are of the correct size and are recorded."""
     # Mock the _offset_from and stage.position to return generated dictionaries that
     # increment each time they are called. (All values 0 the first time, all values 1
@@ -428,7 +428,7 @@ def test_initial_moves_for_z_prediction(rom_thing, mock_rom_deps, mocker):
     rom_thing._rom_data = stage_measure.RomDataTracker()
 
     # Run it!
-    rom_thing._initial_moves_for_z_prediction("x", direction=-1, rom_deps=mock_rom_deps)
+    rom_thing._moves_for_z_prediction("x", direction=-1, rom_deps=mock_rom_deps)
 
     # Check that _rom_data now contains the 5 mocked returns in order.
     assert rom_thing._rom_data.offsets == [{"x": i, "y": i} for i in range(5)]
@@ -450,7 +450,7 @@ def test_move_until_edge_error(rom_thing, mock_rom_deps, mocker):
         return_value=mock_position_dict
     )
     mocker.patch.object(
-        rom_thing, "_initial_moves_for_z_prediction", side_effect=RuntimeError("Mock")
+        rom_thing, "_moves_for_z_prediction", side_effect=RuntimeError("Mock")
     )
 
     # Remove the mock RomData before starting
@@ -493,7 +493,7 @@ def test_move_until_edge(rom_thing, mock_rom_deps, mocker):
     # Mock the main movement functions
     mock_init_moves = mocker.patch.object(
         rom_thing,
-        "_initial_moves_for_z_prediction",
+        "_moves_for_z_prediction",
         side_effect=add_fake_initial_positions,
     )
     mock_big_moves = mocker.patch.object(
