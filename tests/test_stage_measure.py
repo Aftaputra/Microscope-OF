@@ -56,10 +56,10 @@ def example_rom_data():
     mock_positions = [
         {"x": 0, "y": 0, "z": 42},
         {"x": 727, "y": 2, "z": 154},
-        {"x": 1454, "y": 4, "z": 228},
+        {"x": 1454, "y": 4, "z": 248},
         {"x": 2181, "y": 6, "z": 351},
-        {"x": 2908, "y": 8, "z": 509},
-        {"x": 3635, "y": 10, "z": 617},
+        {"x": 2908, "y": 8, "z": 430},
+        {"x": 3635, "y": 10, "z": 490},
     ]
     rom_data = stage_measure.RomDataTracker()
 
@@ -75,10 +75,17 @@ def test_predict_z(example_rom_data):
     mock_z_diff = example_rom_data.predict_z_displacement(
         axis="x",
         stage_movement={"x": 5243, "y": 0},
-        stage_position={"x": 3635, "y": 10, "z": 617},
+        stage_position={"x": 3635, "y": 10, "z": 490},
     )
-    expected_z_diff = 1343
+    expected_z_diff = 153
     assert mock_z_diff == expected_z_diff
+
+
+def test_find_tuning_point(example_rom_data):
+    """Check that the prediction for the tuning point and z position."""
+    mock_turn = example_rom_data.find_turning_point(axis="x")
+    expected_turning = {"x": 7580, "y": 10, "z": 661}
+    assert mock_turn == expected_turning
 
 
 @pytest.mark.parametrize(
@@ -402,7 +409,7 @@ def test_big_z_corrected_movement(rom_thing, mock_rom_deps):
     assert "x" not in move_kwargs
     assert "y" not in move_kwargs
     assert "z" in move_kwargs
-    assert move_kwargs["z"] == 1148
+    assert move_kwargs["z"] == 160
 
     # And one move in image coordinates
     assert mock_rom_deps.csm.move_in_image_coordinates.call_count == 1
