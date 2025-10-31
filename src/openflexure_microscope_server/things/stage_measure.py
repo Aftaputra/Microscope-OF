@@ -18,13 +18,10 @@ import time
 from dataclasses import dataclass
 from threading import Lock
 
-from scipy.optimize import curve_fit
 import numpy as np
 
 from camera_stage_mapping import fft_image_tracking
 import labthings_fastapi as lt
-
-from openflexure_microscope_server.utilities import quadratic
 
 # Things
 from .autofocus import AutofocusThing
@@ -72,6 +69,13 @@ class RomDataTracker:
         """The last stage coordinate recorded."""
         return self.stage_coords[-1].copy()
 
+    def fit_axis(self, axis: Literal["x", "y"]) -> np.poly1d:
+        """Quadratic fit stage coords along and axis (against z) and return poly1d of fit."""
+        lateral_positions = [i[axis] for i in self.stage_coords]
+        z_positions = [i["z"] for i in self.stage_coords]
+        fit_params = np.polyfit(lateral_positions, z_positions, 2)
+        return np.poly1d(fit_params)
+
     def predict_z_displacement(
         self,
         axis: Literal["x", "y"],
@@ -85,13 +89,22 @@ class RomDataTracker:
         :param stage_position: The current stage position in stage coordinates.
         :return: The predicted relative z displacement needed to stay in focus.
         """
-        # x or y positions
-        lateral_positions = [i[axis] for i in self.stage_coords]
-        z_positions = [i["z"] for i in self.stage_coords]
-        fit_params, *_others = curve_fit(quadratic, lateral_positions, z_positions)
-        z_dest = quadratic(stage_position[axis] + stage_movement[axis], *fit_params)
+        fit_func = self.fit_axis(axis)
+        z_dest = fit_func(stage_position[axis] + stage_movement[axis])
 
         return int(z_dest - stage_position["z"])
+
+    def find_turning_point(self, axis: Literal["x", "y"]) -> dict[str, int]:
+        """Find the turing point from the recorded coordinates."""
+        fit_func = self.fit_axis(axis)
+        turning = fit_func.deriv()
+        turning_loc = -turning[0] / (turning[1])
+        turning_z = fit_func(turning_loc)
+
+        # As we only move in 1 direction pull the other axis from the coords.
+        other_axis = "x" if axis == "y" else "y"
+        other_coord = self.stage_coords[-1]["other_axis"]
+        return {axis: int(turning_loc), other_axis: other_coord, "z": int(turning_z)}
 
 
 @dataclass
@@ -197,6 +210,51 @@ class RangeofMotionThing(lt.Thing):
             "Step Range": step_range,
         }
 
+    @lt.thing_action
+    def perform_recentre(
+        self,
+        autofocus: AutofocusDep,
+        stage: StageDep,
+        cam: CamDep,
+        csm: CSMDep,
+        logger: lt.deps.InvocationLogger,
+    ) -> None:
+        """Measures the curvature of the motion to centre x and y axes.
+
+        :param autofocus: A raw_thing_client dependency for autofocus.
+        :param stage: A raw_thing_client depeendency for the microscope stage.
+        :param cam: A raw_thing_client depeendency for the camera.
+        :param csm: A raw_thing_client depeendency for camera stage mapping.
+        :param logger: A raw_thing_client depeendency for the logger.
+        """
+        got_lock = self._lock.acquire(blocking=False)
+        if not got_lock:
+            raise RuntimeError("Trying to run recentre when a test is already running.")
+
+        try:
+            rom_deps = RomDeps(
+                autofocus=autofocus, stage=stage, csm=csm, cam=cam, logger=logger
+            )
+            logger.info(
+                "Using the stage to measure the Range of Motion. "
+                "Please ensure you are using a sample that covers the whole range of "
+                "motion. This should be approximately 12 x 12 mm."
+            )
+
+            self._set_stream_resolution(cam)
+
+            # Strictly typed definitions to iterate over for MyPys sake.
+            axes: tuple[Literal["x"], Literal["y"]] = ("x", "y")
+
+            for axis in axes:
+                self._recentre_axis(axis, rom_deps)
+
+            # Set the central position to (0,0,0)
+            rom_deps.stage.set_zero_position()
+
+        finally:
+            self._lock.release()
+
     def _set_stream_resolution(self, cam: CamDep) -> None:
         """Set the self._stream_resolution attribute by reading camera.
 
@@ -275,6 +333,22 @@ class RangeofMotionThing(lt.Thing):
 
         finally:
             rom_deps.stage.move_absolute(**starting_position, block_cancellation=True)
+
+    def _recentre_axis(self, axis: Literal["x", "y"], rom_deps: RomDeps) -> None:
+        """Recentre a single axis."""
+        rom_deps.autofocus.looping_autofocus(dz=1000)
+        self._rom_data.stage_coords.append(rom_deps.stage.position)
+
+        self._rom_data = RomDataTracker()
+        self._initial_moves_for_z_prediction(
+            axis=axis,
+            direction=+1,
+            rom_deps=rom_deps,
+        )
+        estimate = self._rom_data.find_turning_point(axis=axis)
+        here = rom_deps.stage.position
+        # Make a copy of the current for the estimate
+        raise RuntimeError(f"I should move from {here} to {estimate}")
 
     def _img_percentage_to_img_coords(
         self, fov_perc: int, axis: Literal["x", "y"]
