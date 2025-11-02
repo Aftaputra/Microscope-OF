@@ -4,8 +4,6 @@ import wotStoreModule from "./wot-client";
 
 Vue.use(Vuex);
 
-const LOCALSTORAGE_KEYS = ["appTheme"];
-
 function getOriginFromLocation() {
   // This will default to the same origin that's serving
   // the web app - but can be overridden by the URL.
@@ -49,6 +47,14 @@ function mutationToKey(mutationName) {
   return key.charAt(0).toLowerCase() + key.slice(1);
 }
 
+const LOCALSTORAGE_KEYS = [
+  "appTheme",
+  "disableStream",
+  "overrideOrigin",
+  "navigationStepSize",
+  "navigationInvert",
+];
+
 export default new Vuex.Store({
   modules: {
     wot: wotStoreModule,
@@ -58,13 +64,29 @@ export default new Vuex.Store({
     available: false,
     waiting: false,
     error: "",
-    disableStream: false,
     autoGpuPreview: false,
     trackWindow: true,
     galleryEnabled: true,
-    appTheme: "system",
     activeStreams: {},
     microscopeHostname: "",
+    // Persistent items:
+    // The app theme (e.g. light/dark)
+    appTheme: "system",
+    disableStream: false,
+    // The origin to use if overriding with dev tools
+    overrideOrigin: "http://microscope.local:5000",
+    // The step sizes for navigation via control pane/keys presses
+    navigationStepSize: {
+      x: 200,
+      y: 200,
+      z: 50,
+    },
+    // The axis inversion for navigation via control pane/keys presses
+    navigationInvert: {
+      x: false,
+      y: false,
+      z: false,
+    },
   },
 
   mutations: {
@@ -110,6 +132,15 @@ export default new Vuex.Store({
     changeMicroscopeHostname(state, value) {
       state.microscopeHostname = value;
     },
+    changeOverrideOrigin(state, value) {
+      state.overrideOrigin = value;
+    },
+    changeNavigationStepSize(state, value) {
+      state.navigationStepSize = value;
+    },
+    changeNavigationInvert(state, value) {
+      state.navigationInvert = value;
+    },
   },
 
   actions: {},
@@ -123,10 +154,17 @@ export default new Vuex.Store({
     store => {
       // Load initial state from localStorage
       LOCALSTORAGE_KEYS.forEach(key => {
+        console.log(key);
         const saved = localStorage.getItem(key);
         if (saved !== null) {
-          const mutationName = keyToMutationName(key);
-          store.commit(mutationName, JSON.parse(saved));
+          try {
+            const parsed = JSON.parse(saved);
+            const mutationName = keyToMutationName(key);
+            store.commit(mutationName, parsed);
+          } catch (e) {
+            console.warn(`Failed to parse localStorage key "${key}":`, e);
+            localStorage.removeItem(key);
+          }
         }
       });
 
