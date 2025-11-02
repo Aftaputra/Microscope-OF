@@ -1,6 +1,6 @@
 <template>
   <div v-observe-visibility="visibilityChanged">
-    <div id="openseadragon"></div>
+    <div id="openseadragon" ref="osdContainer"></div>
   </div>
 </template>
 
@@ -76,8 +76,9 @@ export default {
       if (this.osdViewer) {
         this.osdViewer.destroy();
       }
+      await this.$nextTick();
       this.osdViewer = OpenSeaDragon({
-        id: "openseadragon",
+        element: this.$refs.osdContainer,
         crossOriginPolicy: "Anonymous",
         tileSources: this.src,
         showNavigationControl: false,
