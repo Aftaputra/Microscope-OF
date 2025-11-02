@@ -4,6 +4,8 @@ import wotStoreModule from "./wot-client";
 
 Vue.use(Vuex);
 
+const LOCALSTORAGE_KEYS = ["appTheme"];
+
 function getOriginFromLocation() {
   // This will default to the same origin that's serving
   // the web app - but can be overridden by the URL.
@@ -15,6 +17,36 @@ function getOriginFromLocation() {
   } else {
     return url.origin;
   }
+}
+
+/**
+ * Converts a Vuex state key (e.g. "appTheme") into a corresponding
+ * Vuex mutation name (e.g. "changeAppTheme") using the `change<Key>`
+ * convention.
+ *
+ * @param {string} key - The Vuex state key to convert.
+ * @returns {string} - The formatted mutation name.
+ */
+function keyToMutationName(key) {
+  return `change${key.charAt(0).toUpperCase() + key.slice(1)}`;
+}
+
+/**
+ * Converts a Vuex mutation name (e.g. "changeAppTheme") back into
+ * the corresponding state key (e.g. "appTheme") using the
+ * `change<Key>` convention.
+ *
+ * @param {string} mutationName - The Vuex mutation name to reverse.
+ * @returns {string|null} - The derived state key, or null if the
+ *     mutation name doesn't match the `change<Key>` convention.
+ */
+function mutationToKey(mutationName) {
+  const prefix = "change";
+  if (!mutationName.startsWith(prefix)) {
+    return null; // Not a mutation we care about
+  }
+  const key = mutationName.slice(prefix.length);
+  return key.charAt(0).toLowerCase() + key.slice(1);
 }
 
 export default new Vuex.Store({
@@ -86,4 +118,26 @@ export default new Vuex.Store({
     baseUri: state => state.origin,
     ready: state => state.available,
   },
+
+  plugins: [
+    store => {
+      // Load initial state from localStorage
+      LOCALSTORAGE_KEYS.forEach(key => {
+        const saved = localStorage.getItem(key);
+        if (saved !== null) {
+          const mutationName = keyToMutationName(key);
+          store.commit(mutationName, JSON.parse(saved));
+        }
+      });
+
+      // Subscribe to mutations
+      store.subscribe((mutation, state) => {
+        const key = mutationToKey(mutation.type);
+        // If the mutation is chacning a local storage key then update localStorage
+        if (key && LOCALSTORAGE_KEYS.includes(key)) {
+          localStorage.setItem(key, JSON.stringify(state[key]));
+        }
+      });
+    },
+  ],
 });

@@ -38,17 +38,6 @@ export default {
     },
   },
 
-  watch: {
-    appTheme: function() {
-      this.setLocalStorageObj("appTheme", this.appTheme);
-    },
-  },
-
-  mounted() {
-    // Try loading settings from localStorage. If null, don't change.
-    this.appTheme = this.getLocalStorageObj("appTheme") || this.appTheme;
-  },
-
   methods: {
     async toggleFullscreen() {
       if (!document.fullscreenElement) {
