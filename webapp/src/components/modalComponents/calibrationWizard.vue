@@ -30,7 +30,7 @@ export default {
 
   components: {},
 
-  data: function() {
+  data: function () {
     return {
       isNeeded: undefined,
       availableCalibrationTasks: {},
@@ -91,7 +91,7 @@ export default {
       return needsCalibration;
     },
 
-    resetData: function() {
+    resetData: function () {
       this.movingBackward = false;
       this.taskIndex = 0;
     },
@@ -99,7 +99,7 @@ export default {
     /**
      * Create the calibration wizard task list dynamically.
      */
-    create_task_list: function(thingsToCal, includeWelcome = true) {
+    create_task_list: function (thingsToCal, includeWelcome = true) {
       const tasks = [];
 
       // Optionally include the welcome screen
@@ -125,7 +125,7 @@ export default {
       this.tasks = tasks;
     },
 
-    show_if_needed: async function() {
+    show_if_needed: async function () {
       // Check if the calibration modal is needed, and only show it if it is.
       let thingsToCal = await this.check_things_needing_calibration();
       const needed = thingsToCal.length > 0;
@@ -142,7 +142,7 @@ export default {
     },
 
     // Forces modal to show on button press
-    force_show: function() {
+    force_show: function () {
       const allThings = Object.keys(this.availableCalibrationTasks);
 
       this.resetData();
@@ -150,26 +150,26 @@ export default {
       this.show();
     },
 
-    show: function() {
+    show: function () {
       // Show the modal element
       var el = this.$refs["calibrationModalEl"];
       this.showModalElement(el); // Calls the mixin
     },
 
-    hide: function() {
+    hide: function () {
       // Show the modal
       var el = this.$refs["calibrationModalEl"];
       this.hideModalElement(el); // Calls the mixin
     },
 
-    onHide: function() {
+    onHide: function () {
       this.$emit("onClose");
     },
 
     /*
      * Move to the previous task.
      */
-    previousTask: function() {
+    previousTask: function () {
       this.movingBackward = true;
       if (this.taskIndex > 0) {
         this.taskIndex = this.taskIndex - 1;
@@ -179,7 +179,7 @@ export default {
     /*
      * Move to the next task or close the modal if this is the final task.
      */
-    nextTask: function() {
+    nextTask: function () {
       this.movingBackward = false;
       if (this.taskIndex < this.tasks.length - 1) {
         this.taskIndex = this.taskIndex + 1;

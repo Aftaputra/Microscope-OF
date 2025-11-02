@@ -22,12 +22,12 @@ export default {
   },
 
   computed: {
-    barWidthFromProgress: function() {
+    barWidthFromProgress: function () {
       var progress = this.progress <= 100 ? this.progress : 100;
       var styleString = `width: ${progress}%`;
       return styleString;
     },
-    indeterminateProgressBar: function() {
+    indeterminateProgressBar: function () {
       if (this.taskStatus == "pending") return true;
       if ((this.taskStatus == "running") & !this.progress) {
         return true;

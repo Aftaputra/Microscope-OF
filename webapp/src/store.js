@@ -146,14 +146,14 @@ export default new Vuex.Store({
   actions: {},
 
   getters: {
-    baseUri: state => state.origin,
-    ready: state => state.available,
+    baseUri: (state) => state.origin,
+    ready: (state) => state.available,
   },
 
   plugins: [
-    store => {
+    (store) => {
       // Load initial state from localStorage
-      LOCALSTORAGE_KEYS.forEach(key => {
+      LOCALSTORAGE_KEYS.forEach((key) => {
         console.log(key);
         const saved = localStorage.getItem(key);
         if (saved !== null) {

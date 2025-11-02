@@ -6,9 +6,7 @@
         ><input v-model="disableStream" class="uk-checkbox" type="checkbox" /> Disable Web
         Stream</label
       >
-      <p class="uk-margin-small">
-        This will disable the embedded web stream of the camera.
-      </p>
+      <p class="uk-margin-small">This will disable the embedded web stream of the camera.</p>
     </div>
   </div>
 </template>
@@ -18,7 +16,7 @@
 export default {
   name: "StreamSettings",
 
-  data: function() {
+  data: function () {
     return {};
   },
 

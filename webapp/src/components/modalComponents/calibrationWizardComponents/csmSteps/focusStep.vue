@@ -1,8 +1,6 @@
 <template>
   <stepTemplateWithStream>
-    <p>
-      Use the buttons below to bring the sample into focus.
-    </p>
+    <p>Use the buttons below to bring the sample into focus.</p>
     <p>You may also adjust the z position with <b>page up</b> and <b>page down</b>.</p>
     <template #below-stream>
       <div class="action-button-container">

@@ -4,16 +4,12 @@
     <div>
       <div class="uk-margin">
         <p>Your z motor is currently {{ z_inverted }} inverted.</p>
-        <p>
-          We expect that moving in +z:
-        </p>
+        <p>We expect that moving in +z:</p>
         <ul>
           <li>Moves your objective up, towards the sample and illumination</li>
           <li>Turns the exposed z gear anti-clockwise (when viewed from above)</li>
         </ul>
-        <p>
-          If this is not the case, click the button below to switch.
-        </p>
+        <p>If this is not the case, click the button below to switch.</p>
         <div class="uk-margin">
           <div class="uk-margin">
             <action-button
@@ -41,14 +37,14 @@ export default {
     ActionButton,
   },
 
-  data: function() {
+  data: function () {
     return {
       z_inverted: "",
     };
   },
 
   computed: {
-    stageType: function() {
+    stageType: function () {
       return this.thingDescription("stage").title;
     },
   },

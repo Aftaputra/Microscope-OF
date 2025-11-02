@@ -35,14 +35,14 @@ export default {
 
   components: {},
 
-  data: function() {
+  data: function () {
     return {
       isRaspberrypi: undefined,
     };
   },
 
   computed: {
-    things: function() {
+    things: function () {
       return this.$store.getters["wot/thingDescriptions"];
     },
   },
@@ -52,7 +52,7 @@ export default {
   },
 
   methods: {
-    systemRequest: function(action) {
+    systemRequest: function (action) {
       let message = "";
       if (action == "reboot") {
         message = "Restart microscope?";

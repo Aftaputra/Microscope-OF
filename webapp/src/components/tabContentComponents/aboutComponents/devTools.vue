@@ -7,9 +7,7 @@
         <input v-model="reloadWhenOverridingOrigin" class="uk-input uk-checkbox" type="checkbox" />
         Reload web app with new origin
       </label>
-      <button class="uk-button uk-button-default uk-margin-small">
-        Apply
-      </button>
+      <button class="uk-button uk-button-default uk-margin-small">Apply</button>
     </form>
   </div>
 </template>
@@ -21,7 +19,7 @@ export default {
 
   components: {},
 
-  data: function() {
+  data: function () {
     return {
       newOrigin: this.$store.state.overrideOrigin,
       reloadWhenOverridingOrigin: true,
@@ -29,7 +27,7 @@ export default {
   },
 
   methods: {
-    overrideAPIHost: function(event) {
+    overrideAPIHost: function (event) {
       // Save the origin override, so that if we reload the web app, you can easily
       this.$store.commit("changeOverrideOrigin", this.newOrigin);
 

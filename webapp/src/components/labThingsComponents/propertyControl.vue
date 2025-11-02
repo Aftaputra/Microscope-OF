@@ -54,7 +54,7 @@ export default {
   },
 
   computed: {
-    propertyDescription: function() {
+    propertyDescription: function () {
       try {
         return this.thingDescription(this.thingName).properties[this.propertyName];
       } catch (error) {
@@ -64,13 +64,13 @@ export default {
   },
 
   watch: {
-    propertyDescription: function() {
+    propertyDescription: function () {
       // Ensure we read the property once the URL is known
       this.readProperty();
     },
   },
 
-  mounted: function() {
+  mounted: function () {
     // Read the property when we're mounted - usually this won't
     // work because the URL isn't set yet. However, it's helpful if
     // the app is reloaded (e.g. from a dev server).
@@ -80,17 +80,17 @@ export default {
   },
 
   methods: {
-    readProperty: async function() {
+    readProperty: async function () {
       let data = await this.readThingProperty(this.thingName, this.propertyName);
       this.value = data;
       return data;
     },
-    writeProperty: async function(requestedValue) {
+    writeProperty: async function (requestedValue) {
       try {
         this.value = requestedValue;
         await this.writeThingProperty(this.thingName, this.propertyName, requestedValue);
         if (this.readBack) {
-          await new Promise(r => setTimeout(r, this.readBackDelay));
+          await new Promise((r) => setTimeout(r, this.readBackDelay));
           let newVal = await this.readProperty();
           if (newVal == requestedValue) {
             this.animate = true;
@@ -112,7 +112,7 @@ export default {
         this.readProperty();
       }
     },
-    resetAnimate: function() {
+    resetAnimate: function () {
       this.animate = false;
     },
   },

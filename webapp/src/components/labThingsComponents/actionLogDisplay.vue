@@ -17,9 +17,7 @@
       </div>
 
       <!-- Paused banner outside scroll container, positioned relative to wrapper -->
-      <div v-if="userIsHovering" class="paused-banner">
-        Auto-scroll paused
-      </div>
+      <div v-if="userIsHovering" class="paused-banner">Auto-scroll paused</div>
     </div>
   </div>
 </template>
@@ -46,10 +44,10 @@ export default {
   },
 
   watch: {
-    log: function() {
+    log: function () {
       this.scrollToBottom();
     },
-    taskStatus: function() {
+    taskStatus: function () {
       this.scrollToBottom();
     },
   },

@@ -80,7 +80,7 @@ Vue.mixin({
       );
       return url;
     },
-    modalConfirm: function(modalText) {
+    modalConfirm: function (modalText) {
       var context = this;
 
       // Stop GPU preview to show modal
@@ -89,18 +89,18 @@ Vue.mixin({
       // force OK to be capitalised
       UIkit.modal.i18n = { ok: "OK", cancel: "Cancel" };
 
-      var showModal = function(resolve, reject) {
+      var showModal = function (resolve, reject) {
         UIkit.modal
           .confirm(modalText, { stack: true })
           .then(
-            function() {
+            function () {
               resolve();
             },
-            function() {
+            function () {
               reject();
             },
           )
-          .finally(function() {
+          .finally(function () {
             // Re-enable the GPU preview, if it was active before the modal
             if (context.$store.state.autoGpuPreview) {
               context.$root.$emit("globalTogglePreview", true);
@@ -111,14 +111,14 @@ Vue.mixin({
       return new Promise(showModal);
     },
 
-    modalNotify: function(message, status = "success") {
+    modalNotify: function (message, status = "success") {
       UIkit.notification({
         message: message,
         status: status,
       });
     },
 
-    modalDialog: function(title, message) {
+    modalDialog: function (title, message) {
       UIkit.modal.dialog(
         `
         <button class="uk-modal-close-default" type="button" uk-close></button>
@@ -133,7 +133,7 @@ Vue.mixin({
       );
     },
 
-    modalError: function(error) {
+    modalError: function (error) {
       var errormsg = this.getErrorMessage(error);
       this.$store.commit("setErrorMessage", errormsg);
       UIkit.notification({
@@ -142,7 +142,7 @@ Vue.mixin({
       });
     },
 
-    getErrorMessage: function(error) {
+    getErrorMessage: function (error) {
       // Format the error.
       let data = this.getErrorData(error);
       // Get error data may get an object. Handle edge cases and if not try to use
@@ -156,7 +156,7 @@ Vue.mixin({
         return String(data);
       }
     },
-    getErrorData: function(error) {
+    getErrorData: function (error) {
       // If a response was obtained, extract the most specific message
       if (error.response) {
         // If the response is a nicely formatted JSON response from the server
@@ -182,15 +182,15 @@ Vue.mixin({
       return error;
     },
 
-    showModalElement: function(element) {
+    showModalElement: function (element) {
       UIkit.modal(element).show();
     },
 
-    hideModalElement: function(element) {
+    hideModalElement: function (element) {
       UIkit.modal(element).hide();
     },
 
-    toggleModalElement: function(element) {
+    toggleModalElement: function (element) {
       UIkit.modal(element).toggle();
     },
   },
@@ -198,5 +198,5 @@ Vue.mixin({
 
 new Vue({
   store,
-  render: h => h(App),
+  render: (h) => h(App),
 }).$mount("#app");

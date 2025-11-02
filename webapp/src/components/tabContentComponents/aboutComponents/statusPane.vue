@@ -50,9 +50,7 @@
 
       <hr />
     </div>
-    <div v-else-if="$store.state.waiting">
-      Loading...
-    </div>
+    <div v-else-if="$store.state.waiting">Loading...</div>
     <div v-else-if="$store.state.error"><b>Error:</b> {{ $store.state.error }}</div>
     <div v-else>No active connection</div>
   </div>
@@ -65,7 +63,7 @@ export default {
   name: "StatusPane",
   components: { ActionButton },
 
-  data: function() {
+  data: function () {
     return {
       version: undefined,
       version_source: undefined,
@@ -73,7 +71,7 @@ export default {
   },
 
   computed: {
-    things: function() {
+    things: function () {
       return this.$store.getters["wot/thingDescriptions"];
     },
   },

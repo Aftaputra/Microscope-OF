@@ -87,7 +87,7 @@ export default {
     /*
      * Move to the previous step in this task, or the previous task if first step.
      */
-    previousStep: function() {
+    previousStep: function () {
       if (this.stepIndex > 0) {
         this.stepIndex = this.stepIndex - 1;
       } else {
@@ -98,7 +98,7 @@ export default {
     /*
      * Move to the next step in this task, or the next task if final step.
      */
-    nextStep: function() {
+    nextStep: function () {
       if (this.stepIndex < this.steps.length - 1) {
         this.stepIndex = this.stepIndex + 1;
         return true;

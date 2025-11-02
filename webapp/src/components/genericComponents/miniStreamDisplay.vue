@@ -20,14 +20,14 @@
 export default {
   name: "MiniStreamDisplay",
 
-  data: function() {
+  data: function () {
     return {
       isVisible: false,
     };
   },
 
   computed: {
-    streamImgUri: function() {
+    streamImgUri: function () {
       return `${this.$store.getters.baseUri}/camera/mjpeg_stream`;
     },
   },

@@ -22,7 +22,7 @@
           >
             <img
               v-if="item.iconURL"
-              style="filter: grayscale(100%);width: 22px;margin-top: 5px;margin-bottom: 8px;"
+              style="filter: grayscale(100%); width: 22px; margin-top: 5px; margin-bottom: 8px"
               :src="item.iconURL"
             />
             <span v-if="!item.iconURL" class="material-symbols-outlined">
@@ -112,7 +112,7 @@ export default {
     TabIcon,
     powerContent,
   },
-  data: function() {
+  data: function () {
     return {
       currentTab: "view",
       bottomTabs: [
@@ -142,7 +142,7 @@ export default {
   },
 
   computed: {
-    tabOrder: function() {
+    tabOrder: function () {
       var ind = [];
       for (const tab of this.topTabs) {
         ind.push(tab.id);
@@ -153,7 +153,7 @@ export default {
       return ind;
     },
 
-    topTabs: function() {
+    topTabs: function () {
       let tabs = [
         {
           id: "view",
@@ -182,21 +182,21 @@ export default {
         },
       ];
       if (!this.$store.state.galleryEnabled) {
-        tabs = tabs.filter(tab => tab.id != "gallery");
+        tabs = tabs.filter((tab) => tab.id != "gallery");
       }
       return tabs;
     },
     allTabs() {
       return [...this.topTabs, ...this.bottomTabs];
     },
-    currentTabIndex: function() {
+    currentTabIndex: function () {
       return this.tabOrder.indexOf(this.currentTab);
     },
   },
 
   mounted() {
     // A global signal listener to switch tab
-    this.$root.$on("globalSwitchTab", tabID => {
+    this.$root.$on("globalSwitchTab", (tabID) => {
       this.currentTab = tabID;
     });
     // A global signal listener to increment tab
@@ -213,22 +213,22 @@ export default {
   },
 
   methods: {
-    setTab: function(event, tab) {
+    setTab: function (event, tab) {
       if (!(this.currentTab == tab)) {
         this.currentTab = tab;
       }
     },
-    incrementTabBy: function(n) {
+    incrementTabBy: function (n) {
       const newIndex =
         (((this.currentTabIndex + n) % this.tabOrder.length) + this.tabOrder.length) %
         this.tabOrder.length;
       const newId = this.tabOrder[newIndex];
       this.currentTab = newId;
     },
-    startModals: function() {
+    startModals: function () {
       this.$refs.calibrationWizard.show_if_needed();
     },
-    enterApp: function() {
+    enterApp: function () {
       // Stuff to do once connected and all init modals are finished
     },
     scrollToTop() {

@@ -52,7 +52,7 @@ export default {
     },
   },
 
-  data: function() {
+  data: function () {
     return {
       steps: [{ component: this.stepComponent, props: this.stepProps }],
     };

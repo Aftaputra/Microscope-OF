@@ -27,7 +27,7 @@ import loadingContent from "./components/loadingContent.vue";
 
 var Mousetrap = require("mousetrap");
 
-Mousetrap.prototype.stopCallback = function(e, element) {
+Mousetrap.prototype.stopCallback = function (e, element) {
   // if the element has the class "mousetrap" then no need to stop
   if ((" " + element.className + " ").indexOf(" mousetrap ") > -1) {
     return false;
@@ -56,7 +56,7 @@ export default {
     loadingContent,
   },
 
-  data: function() {
+  data: function () {
     return {
       appAvailable: false,
       arrowKeysDown: {},
@@ -67,14 +67,14 @@ export default {
   },
 
   computed: {
-    isSystemDark: function() {
+    isSystemDark: function () {
       if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
         return true;
       } else {
         return false;
       }
     },
-    handleTheme: function() {
+    handleTheme: function () {
       var isDark = false;
       if (this.$store.state.appTheme == "dark") {
         isDark = true;
@@ -98,7 +98,7 @@ export default {
       this.systemDark = true;
     }
     // Create a theme observer to watch for changes
-    this.themeObserver = mql.addListener(e => {
+    this.themeObserver = mql.addListener((e) => {
       if (e.matches) {
         this.systemDark = true;
       } else {
@@ -109,7 +109,7 @@ export default {
     this.checkConnection();
   },
 
-  created: function() {
+  created: function () {
     window.addEventListener("beforeunload", this.handleExit);
     // Scrollwheel listener
     window.addEventListener("wheel", this.wheelMonitor);
@@ -131,7 +131,7 @@ export default {
     // Arrow keys
     Mousetrap.bind(
       ["up", "down", "left", "right"],
-      event => {
+      (event) => {
         this.arrowKeysDown[event.keyCode] = true; //Add key to array
         this.navigateKeyHandler();
       },
@@ -139,7 +139,7 @@ export default {
     );
     Mousetrap.bind(
       ["up", "down", "left", "right"],
-      event => {
+      (event) => {
         delete this.arrowKeysDown[event.keyCode]; //Remove key from array
       },
       "keyup",
@@ -192,7 +192,7 @@ export default {
     });
   },
 
-  beforeDestroy: function() {
+  beforeDestroy: function () {
     // Disconnect the theme observer
     if (this.themeObserver) {
       this.themeObserver.disconnect();
@@ -233,12 +233,12 @@ export default {
         this.$store.commit("changeWaiting", false);
       }
     },
-    handleExit: function() {
+    handleExit: function () {
       this.$root.$emit("globalTogglePreview", false);
     },
 
     // Handle global mouse wheel events to be associated with navigation
-    wheelMonitor: function(event) {
+    wheelMonitor: function (event) {
       // Only capture scroll if the event target's parent contains the "scrollTarget" class
       if (
         event.target.parentNode.classList.contains("scrollTarget") ||
@@ -250,7 +250,7 @@ export default {
       }
     },
 
-    navigateKeyHandler: function() {
+    navigateKeyHandler: function () {
       // Calculate movement array
       var x_rel = 0;
       var y_rel = 0;

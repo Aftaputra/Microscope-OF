@@ -89,18 +89,18 @@ export default {
       let label = r.output[0] ? "sample" : "background";
       this.modalNotify(`Current image is ${label} (${r.output[1]})`);
     },
-    readSettings: async function() {
+    readSettings: async function () {
       this.backgroundDetectorStatus = await this.readThingProperty(
         "camera",
         "background_detector_status",
       );
     },
-    writeSettings: async function(requestedValue) {
+    writeSettings: async function (requestedValue) {
       await this.invokeAction("camera", "update_detector_settings", { data: requestedValue });
       this.animate = true;
       this.readSettings();
     },
-    resetAnimate: function() {
+    resetAnimate: function () {
       this.animate = false;
     },
   },

@@ -1,9 +1,7 @@
 <template>
   <div>
     <p>
-      <b>
-        Some important microscope calibration data is currently missing.
-      </b>
+      <b> Some important microscope calibration data is currently missing. </b>
     </p>
     <p>
       Your microscope will still function, however some functionality will be limited, and image

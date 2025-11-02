@@ -128,7 +128,7 @@ export default {
     };
   },
   computed: {
-    internalLabels: function() {
+    internalLabels: function () {
       if (this.dataType == "number_object") {
         let labels = {};
         for (const key in this.internalValue) {
@@ -138,7 +138,7 @@ export default {
       }
       return [];
     },
-    valueLength: function() {
+    valueLength: function () {
       if (this.dataType == "number_array") {
         if (this.internalValue == undefined) {
           return 0;
@@ -148,7 +148,7 @@ export default {
         return 1;
       }
     },
-    dataType: function() {
+    dataType: function () {
       let prop = this.dataSchema;
       if (prop == undefined) {
         return "undefined";
@@ -162,7 +162,7 @@ export default {
           return "number_array";
         }
         if (Array.isArray(prop.items)) {
-          if (prop.items.every(t => num_types.includes(t.type))) {
+          if (prop.items.every((t) => num_types.includes(t.type))) {
             return "number_array";
           }
         }
@@ -210,46 +210,46 @@ export default {
   },
 
   methods: {
-    resetInternalValue: function() {
+    resetInternalValue: function () {
       // Whenever updatirng th internal value stringify and parse as a form of deepcopy.
       // This ensure that the this.value prop is not mutated for when elements of arrays
       // or objects are updated.
       this.internalValue = JSON.parse(JSON.stringify(this.value));
     },
-    requestUpdate: async function() {
+    requestUpdate: async function () {
       this.$emit("requestUpdate");
     },
-    sendValue: async function() {
+    sendValue: async function () {
       this.$emit("sendValue", this.internalValue);
     },
-    checkboxUpdated: function() {
+    checkboxUpdated: function () {
       if (this.internalValue != this.$refs.checkbox.checked) {
         this.internalValue = this.$refs.checkbox.checked;
         this.sendValue();
       }
     },
-    focusIn: function(event) {
+    focusIn: function (event) {
       this.valueOnEnter = event.target.value;
     },
-    focusOut: function(event) {
+    focusOut: function (event) {
       if (this.valueOnEnter != event.target.value) {
         this.sendValue(event.target.value);
       }
     },
-    keyDown: function(event) {
+    keyDown: function (event) {
       // Pressing enter should set the property, whether or not we think it's changed.
       if (event.keyCode == 13) {
         this.sendValue();
       }
     },
-    updateIsEdited: function() {
+    updateIsEdited: function () {
       this.isEdited = this.deepStringify(this.internalValue) !== this.deepStringify(this.value);
     },
-    animationEnd: function() {
+    animationEnd: function () {
       this.animateUpdate = false;
       this.$emit("animationShown");
     },
-    deepStringify: function(val) {
+    deepStringify: function (val) {
       // Create a json string where all internal numbers are also JSON strings. This is
       // needed to robustly check if the value is updated because the raw value may be a
       // number but anything typed in the input is a string. In the case of arrays or
