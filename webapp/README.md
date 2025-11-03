@@ -18,12 +18,9 @@
 
 _Note: If you are using a Windows OS, the following commands must be executed in a Powershell terminal._
 
-* Install Node.js (and npm)
-* Install dependencies with `npm install`
-* Node v18 changes SSL, and so you need a legacy version for compatibility:
-    * On Windows:  `$env:NODE_OPTIONS = "--openssl-legacy-provider"`
-    * On Linux/MacOS `export NODE_OPTIONS=--openssl-legacy-provider`
+* Install Node.js v18 (and npm)
 * Navigate into the webapp directory with `cd webapp`
+* Install dependencies with `npm install`
 * Build the static web app with `npm run build`
 
 # Developing
