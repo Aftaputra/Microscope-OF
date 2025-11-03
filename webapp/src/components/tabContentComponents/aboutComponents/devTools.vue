@@ -23,23 +23,15 @@ export default {
 
   data: function() {
     return {
-      newOrigin: this.$store.state.origin,
+      newOrigin: this.$store.state.overrideOrigin,
       reloadWhenOverridingOrigin: true,
     };
-  },
-
-  mounted() {
-    if (localStorage.overrideOrigin) {
-      this.newOrigin = localStorage.overrideOrigin;
-    } else {
-      this.newOrigin = "http://microscope.local:5000";
-    }
   },
 
   methods: {
     overrideAPIHost: function(event) {
       // Save the origin override, so that if we reload the web app, you can easily
-      localStorage.overrideOrigin = this.newOrigin;
+      this.$store.commit("changeOverrideOrigin", this.newOrigin);
 
       // If we have elected not to reload the interface, just update the origin
       // in the store.  Otherwise, the form's default action will do the job for us.

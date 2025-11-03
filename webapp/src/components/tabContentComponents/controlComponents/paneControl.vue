@@ -10,12 +10,7 @@
               <div>
                 <label class="uk-form-label" for="form-stacked-text">x</label>
                 <div class="uk-form-controls">
-                  <input
-                    v-model="stepSize.x"
-                    class="uk-input uk-form-small"
-                    type="number"
-                    name="inputStepXy"
-                  />
+                  <input v-model="stepSize.x" class="uk-input uk-form-small" type="number" />
                 </div>
                 <label class="uk-margin-small-right"
                   ><input v-model="invert.x" class="uk-checkbox" type="checkbox" /> Invert x</label
@@ -25,12 +20,7 @@
               <div>
                 <label class="uk-form-label" for="form-stacked-text">y</label>
                 <div class="uk-form-controls">
-                  <input
-                    v-model="stepSize.y"
-                    class="uk-input uk-form-small"
-                    type="number"
-                    name="inputStepY"
-                  />
+                  <input v-model="stepSize.y" class="uk-input uk-form-small" type="number" />
                 </div>
                 <label class="uk-margin-small-right"
                   ><input v-model="invert.y" class="uk-checkbox" type="checkbox" /> Invert y</label
@@ -40,12 +30,7 @@
               <div>
                 <label class="uk-form-label" for="form-stacked-text">z</label>
                 <div class="uk-form-controls">
-                  <input
-                    v-model="stepSize.z"
-                    class="uk-input uk-form-small"
-                    type="number"
-                    name="inputStepZz"
-                  />
+                  <input v-model="stepSize.z" class="uk-input uk-form-small" type="number" />
                 </div>
               </div>
             </div>
@@ -177,18 +162,6 @@ export default {
 
   data: function() {
     return {
-      stepXy: 200,
-      stepZz: 50,
-      stepSize: {
-        x: 200,
-        y: 200,
-        z: 50,
-      },
-      invert: {
-        x: false,
-        y: false,
-        z: false,
-      },
       setPosition: null,
       isAutofocusing: 0,
       moveLock: false,
@@ -196,6 +169,15 @@ export default {
   },
 
   computed: {
+    // Note that as stepSize and invert are set based on internals we can use
+    // get() and set() to interact with the store. Instead use a deep watcher to
+    // update the store (see ``watch:`` below)
+    stepSize() {
+      return this.$store.state.navigationStepSize;
+    },
+    invert() {
+      return this.$store.state.navigationInvert;
+    },
     baseUri: function() {
       return this.$store.getters.baseUri;
     },
@@ -210,22 +192,19 @@ export default {
   watch: {
     stepSize: {
       deep: true,
-      handler() {
-        this.setLocalStorageObj("navigation_stepSize", this.stepSize);
+      handler(newVal) {
+        this.$store.commit("changeNavigationStepSize", newVal);
       },
     },
     invert: {
       deep: true,
-      handler() {
-        this.setLocalStorageObj("navigation_invert", this.invert);
+      handler(newVal) {
+        this.$store.commit("changeNavigationInvert", newVal);
       },
     },
   },
 
   async mounted() {
-    // Reload saved settings
-    this.stepSize = this.getLocalStorageObj("navigation_stepSize") || this.stepSize;
-    this.invert = this.getLocalStorageObj("navigation_invert") || this.invert;
     let self = this;
     // A global signal listener to perform a move action
     this.$root.$on("globalMoveEvent", self.move);

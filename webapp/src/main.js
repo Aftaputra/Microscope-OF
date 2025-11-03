@@ -193,22 +193,6 @@ Vue.mixin({
     toggleModalElement: function(element) {
       UIkit.modal(element).toggle();
     },
-
-    getLocalStorageObj: function(keyName) {
-      if (localStorage.getItem(keyName)) {
-        try {
-          return JSON.parse(localStorage.getItem(keyName));
-        } catch (e) {
-          localStorage.removeItem(keyName);
-          return null;
-        }
-      }
-    },
-
-    setLocalStorageObj: function(keyName, object) {
-      const parsed = JSON.stringify(object);
-      localStorage.setItem(keyName, parsed);
-    },
   },
 });
 

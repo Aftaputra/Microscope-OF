@@ -32,14 +32,6 @@ export default {
       },
     },
   },
-
-  watch: {
-    // Cache the stream settings to local storage for persistence
-    // (the next 3 functions all relate to this)
-    disableStream: function(newValue) {
-      this.setLocalStorageObj("disableStream", newValue);
-    },
-  },
 };
 </script>
 
