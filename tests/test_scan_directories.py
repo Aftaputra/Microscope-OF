@@ -170,15 +170,23 @@ def test_bad_scan_names():
     assert scan_dir.name == "fake_scan_rm_-rf____0001"
 
 
-def test_scan_sequence_and_listing():
+def test_scan_sequence_and_listing(caplog):
     """Check created scans are added in order and listed correctly."""
     _clear_scan_dir()
     scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
+
+    # Create some scan data and mark it as successful to get an end date.
+    scan_data = _fake_scan_data()
+    scan_data.set_final_data(result="Success")
     # Make 4 scans
-    scan_dir_manager.new_scan_dir("fake_scan")
-    scan_dir_manager.new_scan_dir("fake_scan")
-    scan_dir_manager.new_scan_dir("fake_scan")
-    scan_dir_manager.new_scan_dir("fake_scan")
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
+    scan_dir.save_scan_data(scan_data)
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
+    scan_dir.save_scan_data(scan_data)
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
+    scan_dir.save_scan_data(scan_data)
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
+    scan_dir.save_scan_data(scan_data)
 
     # Check they exist and are numbered sequentially
     all_scans = scan_dir_manager.all_scans
@@ -188,13 +196,55 @@ def test_scan_sequence_and_listing():
     assert "fake_scan_0003" in all_scans
     assert "fake_scan_0004" in all_scans
 
-    # Check scan data can be read for all of them
-    # (more detailed scan_info tests below)
-    all_scan_info = scan_dir_manager.all_scans_info()
-    for scan_info in all_scan_info:
-        assert isinstance(scan_info, ScanInfo)
-        assert scan_info.name.startswith("fake_scan_000")
-        assert scan_info.number_of_images == 0
+    # Start capturing warnings
+    with caplog.at_level(logging.WARNING):
+        # Check scan data can be read for all of them
+        # (more detailed scan_info tests below)
+        all_scan_info = scan_dir_manager.all_scans_info()
+        for scan_info in all_scan_info:
+            assert isinstance(scan_info, ScanInfo)
+            assert scan_info.name.startswith("fake_scan_000")
+            assert scan_info.number_of_images == 0
+            assert scan_info.duration is not None
+        # There are no warnings or errors
+        assert len(caplog.records) == 0
+
+        # Mess up the JSON of the final scan
+        with open(scan_dir.scan_data_path, "w", encoding="utf-8") as f:
+            f.write("Mock JSON")
+
+        # Re-read the data with bad data for fake_scan_0004
+        all_scan_info = scan_dir_manager.all_scans_info()
+        for scan_info in all_scan_info:
+            assert isinstance(scan_info, ScanInfo)
+            assert scan_info.name.startswith("fake_scan_000")
+            assert scan_info.number_of_images == 0
+            # Bad data for scan 0004. So duration is None.
+            if scan_info.name == "fake_scan_0004":
+                assert scan_info.duration is None
+            else:
+                assert scan_info.duration is not None
+        # This should have warned about the bad data
+        assert len(caplog.records) == 1
+        assert (
+            caplog.records[0].message == "Could not load scan data for fake_scan_0004."
+        )
+
+        # Clear the warning logs
+        caplog.clear()
+        # Re-read the data again claiming fake_scan_0004 is ongoing
+        all_scan_info = scan_dir_manager.all_scans_info(ongoing="fake_scan_0004")
+        for scan_info in all_scan_info:
+            assert isinstance(scan_info, ScanInfo)
+            assert scan_info.name.startswith("fake_scan_000")
+            assert scan_info.number_of_images == 0
+            # scan 0004 is marked as ongoing, so duration is None.
+            if scan_info.name == "fake_scan_0004":
+                assert scan_info.duration is None
+            else:
+                assert scan_info.duration is not None
+        # This time there is no warning
+        assert len(caplog.records) == 0
 
 
 def test_scan_name_non_sequential():

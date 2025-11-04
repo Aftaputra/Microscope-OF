@@ -58,8 +58,9 @@
       <div class="scan-info">
         <ul>
           <li>{{ scanData.number_of_images }} images</li>
-          <li>created: {{ formatDate(scanData.created) }}</li>
-          <li>duration: {{ formatDuration(scanData.duration) }}</li>
+          <li>Created: {{ formatDate(scanData.created) }}</li>
+          <li v-if="!ongoing">Duration: {{ formatDuration(scanData.duration) }}</li>
+          <li v-if="ongoing">Duration: <i>Ongoing</i></li>
         </ul>
         <ul v-if="!ongoing">
           <li v-if="scanData.number_of_images < 3" class="warning-msg">
