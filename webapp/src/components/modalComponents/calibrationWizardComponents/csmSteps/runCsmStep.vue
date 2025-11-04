@@ -6,7 +6,10 @@
     <p>If it is not in focus, click back and re-focus.</p>
     <template #below-stream>
       <div class="action-button-container">
-        <CSMCalibrationSettings :show-extra-settings="false" />
+        <CSMCalibrationSettings
+          :show-extra-settings="false"
+          @recalibrateResponse="checkCalibrationState"
+        />
       </div>
     </template>
   </stepTemplateWithStream>
@@ -22,6 +25,17 @@ export default {
   components: {
     stepTemplateWithStream,
     CSMCalibrationSettings,
+  },
+
+  mounted() {
+    this.checkCalibrationState();
+  },
+
+  methods: {
+    async checkCalibrationState() {
+      const needsCal = await this.readThingProperty("camera_stage_mapping", "calibration_required");
+      this.$emit("awaiting-user", needsCal);
+    },
   },
 };
 </script>

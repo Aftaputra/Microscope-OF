@@ -124,9 +124,10 @@ export default {
         ];
       }
     },
-    onRecalibrateResponse: function () {
+    onRecalibrateResponse: function (response) {
       this.modalNotify("Finished stage-to-camera calibration.");
       this.updateDisplayedCSM();
+      this.$emit("recalibrateResponse", response);
     },
   },
 };
