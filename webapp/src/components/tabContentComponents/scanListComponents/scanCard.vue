@@ -35,9 +35,7 @@
             button-label="Download JPEG"
           />
         </div>
-        <button class="uk-button uk-button-default uk-width-1-1" @click="deleteScan">
-          Delete
-        </button>
+        <button class="uk-button uk-button-default uk-width-1-1" @click="deleteScan">Delete</button>
         <action-button
           v-if="scanData.can_stitch | (scanData.stitch_available & !scanData.dzi)"
           submit-label="Stitch Images"
@@ -121,14 +119,8 @@ export default {
       let yyyy = d.getFullYear();
       let mm = d.getMonth() + 1;
       let dd = d.getDate();
-      let HH = d
-        .getHours()
-        .toString()
-        .padStart(2, "0");
-      let MM = d
-        .getMinutes()
-        .toString()
-        .padStart(2, "0");
+      let HH = d.getHours().toString().padStart(2, "0");
+      let MM = d.getMinutes().toString().padStart(2, "0");
       return `${HH}:${MM} ${dd}/${mm}/${yyyy}`;
     },
     formatDuration(duration) {

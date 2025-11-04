@@ -18,9 +18,7 @@
               :button-primary="false"
               :modal-progress="true"
               :requires-confirmation="true"
-              :confirmation-message="
-                '<h3>Stitch all unstitched scans?</h3><br>Depending on the number and size of scans, this may be slow, and your microscope should not be used during the stitching.'
-              "
+              :confirmation-message="'<h3>Stitch all unstitched scans?</h3><br>Depending on the number and size of scans, this may be slow, and your microscope should not be used during the stitching.'"
               @error="modalError"
             />
           </div>
@@ -62,9 +60,7 @@
       <div class="gallery-grid uk-grid-match" uk-grid>
         <div v-if="scansEmpty">
           <h2>No scans available</h2>
-          <p>
-            There are no scans available to show.
-          </p>
+          <p>There are no scans available to show.</p>
         </div>
         <div v-for="scanData in paginatedScans" :key="scanData.id">
           <scan-card
@@ -110,7 +106,7 @@ export default {
   name: "ScanListContent",
   components: { actionButton, scanCard, ScanViewerModal },
 
-  data: function() {
+  data: function () {
     return {
       scans: [],
       ongoing: null,
@@ -162,13 +158,13 @@ export default {
     });
   },
 
-  created: function() {
+  created: function () {
     // Watch for host 'ready', then update status
     this.unwatchStoreFunction = this.$store.watch(
       (state, getters) => {
         return getters.ready;
       },
-      ready => {
+      (ready) => {
         if (ready) {
           // If the connection is now ready, update capture list
           this.updateScans();
@@ -205,7 +201,7 @@ export default {
         if (!scans | (scans.length == 0)) {
           this.scans = scans;
         }
-        scans.forEach(scan => {
+        scans.forEach((scan) => {
           scan.can_stitch = !scan.stitch_available && scan.number_of_images > 3;
         });
         scans.sort((a, b) => {

@@ -1,12 +1,8 @@
 <template>
   <div>
+    <p>Camera-stage mapping will calibrate the stage movement using the camera.</p>
     <p>
-      Camera-stage mapping will calibrate the stage movement using the camera.
-    </p>
-    <p>
-      <b>
-        Before starting camera-stage mapping:
-      </b>
+      <b> Before starting camera-stage mapping: </b>
     </p>
     <ul class="uk-list uk-list-bullet">
       <li>Add a sample with dense features to the microscope.</li>

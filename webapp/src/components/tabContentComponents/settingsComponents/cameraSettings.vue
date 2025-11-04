@@ -43,7 +43,7 @@ export default {
   },
 
   computed: {
-    cameraUri: function() {
+    cameraUri: function () {
       return `${this.$store.getters.baseUri}/camera/`;
     },
   },

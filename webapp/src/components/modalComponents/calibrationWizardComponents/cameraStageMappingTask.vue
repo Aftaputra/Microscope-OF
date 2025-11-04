@@ -29,7 +29,7 @@ export default {
     },
   },
 
-  data: function() {
+  data: function () {
     return {
       steps: [{ component: csmExplanation }, { component: focusStep }, { component: runCsmStep }],
     };

@@ -1,7 +1,5 @@
 <template>
-  <div v-if="!backendOK" class="uk-alert-danger">
-    No scan back-end found.
-  </div>
+  <div v-if="!backendOK" class="uk-alert-danger">No scan back-end found.</div>
   <!-- Grid managing tab content -->
   <div v-else uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <div class="control-component uk-padding-small">
@@ -101,9 +99,7 @@
         </div>
       </div>
       <div v-show="scanning">
-        <h2 v-if="displayImageOnRight" style="text-align: center;">
-          Live stitching preview
-        </h2>
+        <h2 v-if="displayImageOnRight" style="text-align: center">Live stitching preview</h2>
         <mini-stream-display v-if="displayImageOnRight" />
         <action-log-display id="log-display" :log="log" :task-status="taskStatus" />
         <action-progress-bar :progress="progress" :task-status="taskStatus" />
@@ -199,7 +195,7 @@ export default {
   },
 
   methods: {
-    onScanError: function(error) {
+    onScanError: function (error) {
       this.scanRunning = false;
       this.modalError(error);
     },

@@ -11,12 +11,12 @@ export default {
   props: {},
 
   computed: {
-    tooltipOptions: function() {
+    tooltipOptions: function () {
       var title = this.id.charAt(0).toUpperCase() + this.id.slice(1);
       return `pos: right; title: ${title}; delay: 500`;
     },
 
-    classObject: function() {
+    classObject: function () {
       return {
         "tabicon-active": this.currentTab == this.id,
         "uk-disabled": this.requireConnection && !this.$store.getters.ready,

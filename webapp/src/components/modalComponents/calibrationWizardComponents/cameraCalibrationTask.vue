@@ -28,7 +28,7 @@ export default {
     },
   },
 
-  data: function() {
+  data: function () {
     return {
       steps: [{ component: camCalibrationExplanation }, { component: cameraMainCalibrationStep }],
     };

@@ -92,7 +92,7 @@ export default {
     EndpointButton,
   },
 
-  data: function() {
+  data: function () {
     return {
       maxitems: 20,
       page: 1,
@@ -103,11 +103,11 @@ export default {
   },
 
   computed: {
-    filteredLevels: function() {
+    filteredLevels: function () {
       let cutoffIndex = this.allLevels.indexOf(this.filterLevel);
       return this.allLevels.slice(cutoffIndex, -1);
     },
-    filteredItems: function() {
+    filteredItems: function () {
       var items = [];
       for (var item of this.logs) {
         // Add to capture list if matched
@@ -118,17 +118,17 @@ export default {
 
       return items;
     },
-    logURI: function() {
+    logURI: function () {
       return `${this.$store.getters.baseUri}/log/`;
     },
-    logFileURI: function() {
+    logFileURI: function () {
       return `${this.$store.getters.baseUri}/logfile/`;
     },
-    pagedItems: function() {
+    pagedItems: function () {
       let startIndex = (this.page - 1) * this.maxitems;
       return this.filteredItems.slice(startIndex, startIndex + this.maxitems);
     },
-    numberOfPages: function() {
+    numberOfPages: function () {
       return Math.floor(this.filteredItems.length / this.maxitems);
     },
   },
@@ -190,12 +190,12 @@ export default {
       }
       this.logs = logs.reverse(); // Display in reverse chronological order
     },
-    formatDateTime: function(isoDateTimeString) {
+    formatDateTime: function (isoDateTimeString) {
       isoDateTimeString = isoDateTimeString.replace(",", ".");
       let date = new Date(isoDateTimeString);
       return date.toLocaleDateString() + " " + date.toLocaleTimeString();
     },
-    escapeText: function(unsafeText) {
+    escapeText: function (unsafeText) {
       let div = document.createElement("div");
       div.innerText = unsafeText;
       return div.innerHTML;

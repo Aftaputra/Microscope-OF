@@ -139,9 +139,7 @@
     </div>
     <div v-else class="uk-text-warning">
       <p>Stage positioning is disabled since no stage is connected.</p>
-      <p>
-        Please check all data and power connections to your motor controller board.
-      </p>
+      <p>Please check all data and power connections to your motor controller board.</p>
     </div>
   </div>
 </template>
@@ -160,7 +158,7 @@ export default {
     syncPropertyButton,
   },
 
-  data: function() {
+  data: function () {
     return {
       setPosition: null,
       isAutofocusing: 0,
@@ -178,13 +176,13 @@ export default {
     invert() {
       return this.$store.state.navigationInvert;
     },
-    baseUri: function() {
+    baseUri: function () {
       return this.$store.getters.baseUri;
     },
-    positionStatusUri: function() {
+    positionStatusUri: function () {
       return `${this.baseUri}/stage/position`;
     },
-    moveInImageCoordinatesUri: function() {
+    moveInImageCoordinatesUri: function () {
       return this.thingActionUrl("camera_stage_mapping", "move_in_image_coordinates");
     },
   },
@@ -235,7 +233,7 @@ export default {
 
   methods: {
     timeout(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
+      return new Promise((resolve) => setTimeout(resolve, ms));
     },
     async move(x, y, z, absolute) {
       // Move the stage, by updating the controls and starting a move task
@@ -260,7 +258,7 @@ export default {
     async startMoveTask() {
       await this.$refs.moveButton.startTask();
     },
-    moveInImageCoordinatesRequest: function(x, y) {
+    moveInImageCoordinatesRequest: function (x, y) {
       // If not movement-locked
       if (!this.moveLock) {
         // Lock move requests
@@ -281,7 +279,7 @@ export default {
           .then(() => {
             this.updatePosition(); // Update the position in text boxes
           })
-          .catch(error => {
+          .catch((error) => {
             this.modalError(error); // Let mixin handle error
           })
           .then(() => {
@@ -294,7 +292,7 @@ export default {
       this.setPosition = await this.readThingProperty("stage", "position");
     },
 
-    handleCaptureResponse: async function(response) {
+    handleCaptureResponse: async function (response) {
       // Retrieve the captured image and save it
       let imageUri = response.output.href;
       if (!imageUri) {

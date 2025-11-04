@@ -39,7 +39,7 @@
 export default {
   name: "StreamDisplay",
 
-  data: function() {
+  data: function () {
     return {
       isVisible: false,
       displaySize: [0, 0],
@@ -49,14 +49,14 @@ export default {
   },
 
   computed: {
-    streamEnabled: function() {
+    streamEnabled: function () {
       return this.$store.getters.ready && !this.$store.state.disableStream;
     },
-    thisStreamOpen: function() {
+    thisStreamOpen: function () {
       // Only a single MJPEG connection should be open at a time
       return !(this.displaySize[0] == 0) && !(this.displaySize[1] == 0);
     },
-    streamImgUri: function() {
+    streamImgUri: function () {
       return `${this.$store.getters.baseUri}/camera/mjpeg_stream`;
     },
   },
@@ -77,11 +77,11 @@ export default {
     this.sizeObserver.observe(streamDisplayElement);
   },
 
-  created: function() {
+  created: function () {
     // Do nothing: preview stream now runs all the time
   },
 
-  beforeDestroy: function() {
+  beforeDestroy: function () {
     // Remove global signal listener to change the GPU preview state
     this.$root.$off("globalTogglePreview");
     // Remove global signal listener to flash the stream element
@@ -96,18 +96,18 @@ export default {
     visibilityChanged(isVisible) {
       this.isVisible = isVisible;
     },
-    flashStream: function() {
+    flashStream: function () {
       // Run an animation that flashes the stream (for capture feedback)
       let element = this.$refs.streamDisplay;
       element.classList.remove("uk-animation-fade");
       element.offsetHeight; /* trigger reflow */
       element.classList.add("uk-animation-fade");
-      setTimeout(function() {
+      setTimeout(function () {
         element.classList.remove("uk-animation-fade");
       }, 800);
     },
 
-    clickMonitor: function(event) {
+    clickMonitor: function (event) {
       // Calculate steps from event coordinates
       let xCoordinate = event.offsetX;
       let yCoordinate = event.offsetY;
@@ -129,13 +129,13 @@ export default {
       this.$root.$emit("globalMoveInImageCoordinatesEvent", -xRelative, -yRelative);
     },
 
-    handleResize: function() {
+    handleResize: function () {
       // Only fires resize event after no resize in 500ms (prevents resize event spam)
       clearTimeout(this.resizeTimeoutId);
       this.resizeTimeoutId = setTimeout(this.handleDoneResize, 250);
     },
 
-    handleDoneResize: function() {
+    handleDoneResize: function () {
       // Recalculate size
 
       this.recalculateSize();
@@ -151,7 +151,7 @@ export default {
       }
     },
 
-    recalculateSize: function() {
+    recalculateSize: function () {
       // Calculate stream size
       let element = this.$refs.streamDisplay.parentNode;
       let bound = element.getBoundingClientRect();

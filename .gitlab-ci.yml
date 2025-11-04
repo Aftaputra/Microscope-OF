@@ -161,7 +161,6 @@ build:
     - .javascript_webapp
     - .rules_common
   script:
-    - export NODE_OPTIONS=--openssl-legacy-provider
     # Build JS application for production
     - npm run build
   artifacts:

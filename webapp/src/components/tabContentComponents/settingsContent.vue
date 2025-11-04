@@ -123,7 +123,7 @@ export default {
     calibrationWizard,
   },
 
-  data: function() {
+  data: function () {
     return {
       selected: "display",
       currentTab: "display",
@@ -131,12 +131,12 @@ export default {
   },
 
   methods: {
-    setTab: function(event, tab) {
+    setTab: function (event, tab) {
       if (!(this.currentTab == tab)) {
         this.currentTab = tab;
       }
     },
-    startModals: function() {
+    startModals: function () {
       this.$refs.calibrationWizard.force_show();
     },
   },

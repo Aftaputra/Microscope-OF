@@ -21,7 +21,7 @@ export default {
 
   components: { devTools },
 
-  data: function() {
+  data: function () {
     return {};
   },
 };

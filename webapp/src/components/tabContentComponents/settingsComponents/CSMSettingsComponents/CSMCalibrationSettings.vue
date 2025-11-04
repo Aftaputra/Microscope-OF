@@ -6,9 +6,7 @@
         :button-primary="true"
         :can-terminate="true"
         :requires-confirmation="true"
-        :confirmation-message="
-          'Start recalibration of the stage to the camera? This may take a while, and the microscope will be locked during this time.'
-        "
+        :confirmation-message="'Start recalibration of the stage to the camera? This may take a while, and the microscope will be locked during this time.'"
         thing="camera_stage_mapping"
         action="calibrate_xy"
         :submit-label="'Auto-Calibrate Using Camera'"
@@ -26,9 +24,9 @@
     >
       Download Calibration Data
     </button>
-    <div v-if="csmMatrix != 'undefined'" style="margin:10px;">
-      <details
-        ><summary>Calibration Details</summary>
+    <div v-if="csmMatrix != 'undefined'" style="margin: 10px">
+      <details>
+        <summary>Calibration Details</summary>
         <strong>CSM calculated for images with a resolution of {{ csmResolution }}</strong>
         <ul>
           <li>
@@ -84,7 +82,7 @@ export default {
         this.updateDisplayedCSM();
       }
     },
-    getCalibrationData: async function() {
+    getCalibrationData: async function () {
       try {
         let data = await this.readThingProperty("camera_stage_mapping", "last_calibration");
         if (data == {}) {
@@ -101,7 +99,7 @@ export default {
         this.modalError(error); // Let mixin handle error
       }
     },
-    updateDisplayedCSM: async function() {
+    updateDisplayedCSM: async function () {
       let csmMatrix = await this.readThingProperty(
         "camera_stage_mapping",
         "image_to_stage_displacement_matrix",
@@ -121,7 +119,7 @@ export default {
         Number(((streamResolution[1] ** 2 * this.csmRatio) / this.csmResolution[0]).toFixed(0)),
       ];
     },
-    onRecalibrateResponse: function() {
+    onRecalibrateResponse: function () {
       this.modalNotify("Finished stage-to-camera calibration.");
       this.updateDisplayedCSM();
     },

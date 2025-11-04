@@ -33,7 +33,7 @@ export default {
   },
 
   methods: {
-    actionResponse: function() {
+    actionResponse: function () {
       if (this.actionData.notify_on_success) {
         this.modalNotify(this.actionData.success_message);
       }

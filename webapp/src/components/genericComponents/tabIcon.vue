@@ -44,7 +44,7 @@ export default {
   },
 
   computed: {
-    computedTitle: function() {
+    computedTitle: function () {
       if (this.title !== undefined) {
         return this.title;
       } else {
@@ -55,7 +55,7 @@ export default {
       }
     },
 
-    tooltipOptions: function() {
+    tooltipOptions: function () {
       if (this.showTooltip) {
         return `pos: right; title: ${this.computedTitle}; delay: 500`;
       } else {
@@ -63,7 +63,7 @@ export default {
       }
     },
 
-    classObject: function() {
+    classObject: function () {
       return {
         "tabicon-active": this.currentTab == this.tabID,
         "uk-disabled": this.requireConnection && !this.$store.getters.ready,

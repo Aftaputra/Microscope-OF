@@ -145,7 +145,7 @@ export default {
     },
   },
 
-  data: function() {
+  data: function () {
     return {
       taskUrl: null,
       progress: null,
@@ -245,13 +245,13 @@ export default {
       }
       // Check for a task that is ongoing.
       // We can't handle multiple tasks ongoing, so this picks the first.
-      const ongoingTask = response.data.find(t => ["pending", "running"].includes(t.status));
+      const ongoingTask = response.data.find((t) => ["pending", "running"].includes(t.status));
       if (ongoingTask) {
         // There is a started task
         this.taskStarted = true;
         this.$emit("taskStarted");
         // Find its URL
-        const taskUrl = ongoingTask.links.find(t => t.rel == "self").href;
+        const taskUrl = ongoingTask.links.find((t) => t.rel == "self").href;
         try {
           await this.pollOngoingTask(ongoingTask.id, taskUrl);
         } catch (error) {
@@ -262,7 +262,7 @@ export default {
       }
     },
 
-    bootstrapTask: function() {
+    bootstrapTask: function () {
       // Starts the process of creating a new Actiont ask
       if (this.requiresConfirmation) {
         this.modalConfirm(this.confirmationMessage).then(
@@ -309,14 +309,14 @@ export default {
       }
     },
 
-    onTaskEnd: function() {
+    onTaskEnd: function () {
       // Reset taskRunning and taskId
       this.taskRunning = false;
       this.taskStarted = false;
       this.$emit("finished");
     },
 
-    startPolling: function(taskId, taskUrl) {
+    startPolling: function (taskId, taskUrl) {
       if (this.taskRunning != true) {
         // Starts polling an existing Action task
         this.taskUrl = taskUrl;
@@ -327,12 +327,12 @@ export default {
       }
     },
 
-    pollTask: function(taskId, interval) {
+    pollTask: function (taskId, interval) {
       interval = interval * 1000 || 500;
 
       var checkCondition = (resolve, reject) => {
         // If the condition is met, we're done!
-        axios.get(this.taskUrl, { baseURL: this.$store.getters.baseUri }).then(response => {
+        axios.get(this.taskUrl, { baseURL: this.$store.getters.baseUri }).then((response) => {
           var result = response.data.status;
           this.taskStatus = result;
           if ((result == "running") | (result == "pending")) {
@@ -382,7 +382,7 @@ export default {
       this.$root.$emit("modalClosed");
     },
 
-    terminateTask: function() {
+    terminateTask: function () {
       axios.delete(this.taskUrl, { baseURL: this.$store.getters.baseUri });
       this.$root.$emit("modalClosed");
     },

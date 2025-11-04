@@ -1,9 +1,7 @@
 <template>
   <div>
     <p>
-      <b>
-        Before starting camera calibration:
-      </b>
+      <b> Before starting camera calibration: </b>
     </p>
     <ul class="uk-list uk-list-bullet">
       <li>Remove any samples from your microscope</li>

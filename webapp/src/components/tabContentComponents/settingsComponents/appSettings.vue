@@ -23,7 +23,7 @@
 export default {
   name: "AppSettings",
 
-  data: function() {
+  data: function () {
     return {};
   },
 
