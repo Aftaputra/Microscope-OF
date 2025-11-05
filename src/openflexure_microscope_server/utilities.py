@@ -11,6 +11,7 @@ from typing import (
     overload,
     TypeAlias,
     Literal,
+    Mapping,
 )
 import os
 import re
@@ -22,6 +23,7 @@ import tomllib
 from functools import wraps
 import json
 
+import numpy as np
 from pydantic import BaseModel
 
 T = TypeVar("T")
@@ -475,3 +477,54 @@ def resolve_path_from_dir(path: str, directory: str) -> str:
     if not os.path.isabs(path):
         path = os.path.join(directory, path)
     return os.path.normpath(path)
+
+
+# Use overload to that the dict is either of integers or of float depending on the
+# to_int argument
+@overload
+def apply_2d_matrix_to_mapping(
+    matrix: np.ndarray,
+    *,
+    x: float | int,
+    y: float | int,
+    to_int: Literal[False],
+    **_kwargs: int,
+) -> Mapping[str, float]: ...
+@overload
+def apply_2d_matrix_to_mapping(
+    matrix: np.ndarray,
+    *,
+    x: float | int,
+    y: float | int,
+    to_int: Literal[True],
+    **_kwargs: int,
+) -> Mapping[str, int]: ...
+@overload
+def apply_2d_matrix_to_mapping(
+    matrix: np.ndarray, *, x: float | int, y: float | int, **_kwargs: int
+) -> Mapping[str, float]: ...
+
+
+def apply_2d_matrix_to_mapping(
+    matrix: np.ndarray,
+    *,
+    x: float | int,
+    y: float | int,
+    to_int: bool = False,
+    **_kwargs: int,
+) -> Mapping[str, int] | Mapping[str, float]:
+    """Perform a dot product with a (x,y) vector and a matrix. The result is a mapping.
+
+    This is designed x and y must be kwargs and extra kwargs are ignored allowing:
+    ``apply_2d_matrix_to_mapping(matrix, **position)`` to run for a mapping position.
+
+    :param matrix: The matrix to use in the calculation
+    :param x: the x coordinate (keyword only)
+    :param y: the y coordinate (keyword only)
+    :param to_int: Whether to convert the resulting coordinates to integers
+    :return: The resulting coordinates as a mapping.
+    """
+    relative_move: np.ndarray = np.dot(np.array([y, x]), np.array(matrix))
+    if to_int:
+        return {"x": round(relative_move[0]), "y": round(relative_move[1])}
+    return {"x": float(relative_move[0]), "y": float(relative_move[1])}

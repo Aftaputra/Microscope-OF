@@ -12,6 +12,7 @@ import pytest
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.things import stage_measure
+from openflexure_microscope_server.utilities import apply_2d_matrix_to_mapping
 
 LOGGER = logging.getLogger("mock-invocation_logger")
 
@@ -162,11 +163,15 @@ def rom_thing(example_rom_data) -> stage_measure.RangeofMotionThing:
 @pytest.fixture
 def mock_rom_deps(csm_matrix, mocker) -> stage_measure.RomDeps:
     """Return a RomDeps object full of mocks, except the logger which is LOGGER."""
+    inverse_matrix = np.linalg.inv(csm_matrix)
 
-    def apply_csm(x: float, y: float) -> dict[str, int]:
+    def apply_csm(x: float, y: float, **_kwargs: float) -> dict[str, int]:
         """Convert image coordinates to stage coordinates."""
-        vec = np.dot(np.array([y, x]), np.array(csm_matrix))
-        return {"x": int(vec[0]), "y": int(vec[1])}
+        return apply_2d_matrix_to_mapping(csm_matrix, x=x, y=y, to_int=True)
+
+    def un_apply_csm(x: float, y: float, **_kwargs: float) -> dict[str, float]:
+        """Convert stage coordinates to image coordinates."""
+        return apply_2d_matrix_to_mapping(inverse_matrix, x=x, y=y, to_int=True)
 
     mock_cam = mocker.Mock()
     mock_cam.image_is_sample.return_value = (True, "Mocked not measured.")
@@ -175,6 +180,7 @@ def mock_rom_deps(csm_matrix, mocker) -> stage_measure.RomDeps:
     # Set up mock csm to return a CSM matrix
     mock_csm.image_to_stage_displacement_matrix = csm_matrix
     mock_csm.convert_image_to_stage_coordinates.side_effect = apply_csm
+    mock_csm.convert_stage_to_image_coordinates.side_effect = un_apply_csm
 
     return stage_measure.RomDeps(
         autofocus=mocker.Mock(),
@@ -183,6 +189,53 @@ def mock_rom_deps(csm_matrix, mocker) -> stage_measure.RomDeps:
         csm=mock_csm,
         logger=LOGGER,
     )
+
+
+@pytest.mark.parametrize(
+    ("pos", "target_pos", "axis", "expected_dir"),
+    [
+        ({"x": 5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", 1),
+        ({"x": -5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", -1),
+        ({"x": 0, "y": 0, "z": 0}, {"x": 5000, "y": 0, "z": 0}, "x", -1),
+        # Y is flipped due to CSM sign
+        ({"x": 0, "y": 5000, "z": 0}, {"x": 0, "y": 0, "z": 0}, "y", -1),
+    ],
+)
+def test_img_dir_from_stage_coords(
+    pos, target_pos, axis, expected_dir, rom_thing, mock_rom_deps
+):
+    """Check image direction is correctly generated."""
+    mock_rom_deps.stage.position = pos
+    direction = rom_thing._img_dir_from_stage_coords(target_pos, axis, mock_rom_deps)
+    assert direction == expected_dir
+
+
+def test_distance_in_img_percentage_err(rom_thing, mock_rom_deps):
+    """Check that _distance_in_img_percentage throws error if stream res is not set."""
+    rom_thing._stream_resolution = None
+    with pytest.raises(RuntimeError):
+        rom_thing._distance_in_img_percentage(
+            {"x": 0, "y": 0, "z": 0}, "x", mock_rom_deps
+        )
+
+
+@pytest.mark.parametrize(
+    ("pos", "target_pos", "axis", "expected_perc"),
+    [
+        ({"x": 5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", 346.625),
+        ({"x": -5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", -346.625),
+        ({"x": 0, "y": 0, "z": 0}, {"x": 5000, "y": 0, "z": 0}, "x", -346.625),
+        # Y is flipped due to CSM sign
+        ({"x": 0, "y": 5000, "z": 0}, {"x": 0, "y": 0, "z": 0}, "y", -470.0),
+    ],
+)
+def test_distance_in_img_percentage(
+    pos, target_pos, axis, expected_perc, rom_thing, mock_rom_deps
+):
+    """Check _distance_in_img_percentage calculates expected values based on mock CSM."""
+    mock_rom_deps.stage.position = pos
+    img_perc = rom_thing._distance_in_img_percentage(target_pos, axis, mock_rom_deps)
+    assert expected_perc == img_perc
 
 
 def test_offset_from(rom_thing, mock_rom_deps, mocker):
@@ -551,13 +604,16 @@ def test_move_until_edge(rom_thing, mock_rom_deps, mocker):
     ]
 
 
-def test_perform_rom_test_locked(rom_thing, mock_rom_deps):
-    """Check the error if the Rom test is locked."""
+def test_perform_rom_actions_locked(rom_thing, mock_rom_deps):
+    """Check the error if running one of the calibration actions while locked."""
     # Not an RLock so no need to thread.
     rom_thing._lock.acquire()
     err_msg = "Trying to run ROM test when a test is already running."
     with pytest.raises(RuntimeError, match=err_msg):
         rom_thing.perform_rom_test(**dataclasses.asdict(mock_rom_deps))
+    err_msg = "Trying to run recentre when a test is already running."
+    with pytest.raises(RuntimeError, match=err_msg):
+        rom_thing.perform_recentre(**dataclasses.asdict(mock_rom_deps))
 
 
 def test_perform_rom_test_(rom_thing, mock_rom_deps, mocker):

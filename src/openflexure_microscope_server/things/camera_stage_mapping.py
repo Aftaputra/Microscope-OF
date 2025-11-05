@@ -31,8 +31,9 @@ from camera_stage_mapping.exceptions import MappingError
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import DenumpifyingDict
-
 from camera_stage_mapping.camera_stage_tracker import Tracker
+
+from openflexure_microscope_server.utilities import apply_2d_matrix_to_mapping
 from .camera import CameraDependency as CameraClient
 from .stage import StageDependency as Stage
 
@@ -218,8 +219,8 @@ class CameraStageMapper(lt.Thing):
         .. code-block:: python
 
             stage_disp = np.dot(
-                np.array(image_to_stage_displacement_matrix),
                 np.array([dy,dx]),
+                np.array(image_to_stage_displacement_matrix),
             )
 
         """
@@ -281,22 +282,20 @@ class CameraStageMapper(lt.Thing):
     ) -> Mapping[str, int]:
         """Convert image coordinates to stage coordinates. Only x and y are returned."""
         self.assert_calibrated()
-        relative_move: np.ndarray = np.dot(
-            np.array([y, x]), np.array(self.image_to_stage_displacement_matrix)
+        return apply_2d_matrix_to_mapping(
+            self.image_to_stage_displacement_matrix, x=x, y=y, to_int=True
         )
-        return {"x": int(relative_move[0]), "y": int(relative_move[1])}
 
     @lt.thing_action
     def convert_stage_to_image_coordinates(
-        self, x: float, y: float, **_kwargs: float
-    ) -> Mapping[str, int]:
+        self, x: int, y: int, **_kwargs: int
+    ) -> Mapping[str, float]:
         """Convert stage coordinates to image coordinates. Only x and y are returned."""
         self.assert_calibrated()
         inverse_matrix = np.linalg.inv(
             np.array(self.image_to_stage_displacement_matrix)
         )
-        relative_move = np.dot(np.array([x, y]), inverse_matrix)
-        return {"x": int(relative_move[1]), "y": int(relative_move[0])}
+        return apply_2d_matrix_to_mapping(inverse_matrix, x=x, y=y, to_int=False)
 
     @lt.thing_property
     def thing_state(self) -> Mapping[str, Any]:
