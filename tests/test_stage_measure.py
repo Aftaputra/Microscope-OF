@@ -661,3 +661,35 @@ def test_perform_rom_test_(rom_thing, mock_rom_deps, mocker):
 
     assert mock_move_until_edge.call_args_list[3].kwargs["axis"] == "y"
     assert mock_move_until_edge.call_args_list[3].kwargs["direction"] == -1
+
+
+def test_perform_recenter(rom_thing, mock_rom_deps, mocker):
+    """Check that performing the recentre runs through expected operations."""
+
+    def check_lock(*_args, **_kwargs):
+        """Check the thing is locked."""
+        assert not rom_thing._lock.acquire(blocking=False)
+
+    mock_set_stream_res = mocker.patch.object(
+        rom_thing, "_set_stream_resolution", side_effect=check_lock
+    )
+    mock_recentre_axis = mocker.patch.object(rom_thing, "_recentre_axis")
+
+    # Unpack the dict and save because it the dictionary is a copy so we can't check
+    # mocks from `mock_rom_deps`
+    mock_deps_dict = dataclasses.asdict(mock_rom_deps)
+    rom_thing.perform_recentre(**mock_deps_dict)
+
+    # Check the lock was freed
+    assert rom_thing._lock.acquire(blocking=False)
+    rom_thing._lock.release()
+
+    assert mock_set_stream_res.call_count == 1
+
+    # Recentre called first in x then in y
+    assert mock_recentre_axis.call_count == 2
+    assert mock_recentre_axis.call_args_list[0].args[0] == "x"
+    assert mock_recentre_axis.call_args_list[1].args[0] == "y"
+
+    # check that the position set to zero once
+    assert mock_deps_dict["stage"].set_zero_position.call_count == 1
