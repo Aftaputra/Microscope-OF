@@ -194,10 +194,11 @@ def mock_rom_deps(csm_matrix, mocker) -> stage_measure.RomDeps:
 @pytest.mark.parametrize(
     ("pos", "target_pos", "axis", "expected_dir"),
     [
+        # X is flipped due to CSM sign
         ({"x": 5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", 1),
         ({"x": -5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", -1),
         ({"x": 0, "y": 0, "z": 0}, {"x": 5000, "y": 0, "z": 0}, "x", -1),
-        # Y is flipped due to CSM sign
+        # Y is not flipped due to CSM sign
         ({"x": 0, "y": 5000, "z": 0}, {"x": 0, "y": 0, "z": 0}, "y", -1),
     ],
 )
@@ -693,3 +694,68 @@ def test_perform_recenter(rom_thing, mock_rom_deps, mocker):
 
     # check that the position set to zero once
     assert mock_deps_dict["stage"].set_zero_position.call_count == 1
+
+
+@pytest.mark.parametrize("true_on", [1, 4, 9, 10])
+def test_recentre_axis(true_on, rom_thing, mock_rom_deps, mocker):
+    """Test the high level algorithm of recentring an axis.
+
+    This doesn't include deciding if we are centred or choosing the direction to move.
+    """
+    ## Start such that movement starts negative
+    mock_rom_deps.stage.position = {"x": -10000, "y": 10000, "z": 0}
+    mock_moves = mocker.patch.object(rom_thing, "_moves_for_z_prediction")
+
+    # Mock _recentre_decision so it returns (False, 1) a number of times then finally
+    # (True, 1).
+    decisions = [(False, 1)] * (true_on - 1) + [(True, 1)]
+    mock_recentre_decision = mocker.patch.object(
+        rom_thing, "_recentre_decision", side_effect=decisions
+    )
+
+    if true_on > 9:
+        with pytest.raises(RuntimeError, match="Couldn't find centre"):
+            rom_thing._recentre_axis("x", mock_rom_deps)
+    else:
+        rom_thing._recentre_axis("x", mock_rom_deps)
+
+    # _recentre_decision is called until True or exits after 9 goes
+    assert mock_recentre_decision.call_count == min(true_on, 9)
+
+    # The _moves_for_z_prediction is called twice before any decision, and not called
+    # After a decision of centred, but the max call count is 10
+    assert mock_moves.call_count == min(true_on + 1, 10)
+    for i, arg_list in enumerate(mock_moves.call_args_list):
+        # First two directions are -ve due to starting pos, then it changes direction
+        # as the mock always returns 1
+        expected_dir = -1 if i <= 1 else 1
+        assert arg_list.kwargs["direction"] == expected_dir
+
+
+@pytest.mark.parametrize(
+    ("dist", "direction", "expected_decision"),
+    [
+        (500, 1, (False, 1)),  # Big step is 200% this is over, movement is positive.
+        (-500, -1, (False, -1)),
+        (200, 1, (False, 1)),
+        (199, 1, (True, 1)),  # Less than 200% FOV movement return centred=True
+        (-199, -1, (True, 1)),  # Always return 1 when c
+    ],
+)
+def test_recentre_decision(
+    dist, direction, expected_decision, rom_thing, mock_rom_deps, mocker
+):
+    """What the algorithm decides to do in different situations."""
+    # Mock find turning point just because there is no _rom_data
+    mocker.patch.object(rom_thing._rom_data, "find_turning_point")
+
+    # As _distance_in_img_percentage and _img_dir_from_stage_coords are tested
+    # this test mocks their values and checks the return is as expected
+    mocker.patch.object(rom_thing, "_distance_in_img_percentage", return_value=dist)
+    mocker.patch.object(rom_thing, "_img_dir_from_stage_coords", return_value=direction)
+
+    assert rom_thing._recentre_decision("x", mock_rom_deps) == expected_decision
+
+    # Check that we make an absolute move (to the centre) before returning centred.
+    centred = expected_decision[0]
+    mock_rom_deps.stage.move_absolute.call_count == 1 if centred else 0

@@ -331,7 +331,11 @@ class RangeofMotionThing(lt.Thing):
             rom_deps.stage.move_absolute(**starting_position, block_cancellation=True)
 
     def _recentre_axis(self, axis: Literal["x", "y"], rom_deps: RomDeps) -> None:
-        """Recentre a single axis."""
+        """Recentre a single axis.
+
+        :param axis: The axis to recentre
+        :param rom_deps: All dependencies that were passed to the calling Action.
+        """
         rom_deps.logger.info(f"Finding centre in {axis}.")
         # A new tracker for this axis.
         self._rom_data = RomDataTracker()
@@ -356,22 +360,9 @@ class RangeofMotionThing(lt.Thing):
             # Try to estimate position/direction the first time, skip to making a big
             # move in the same direction
             if i > 1:
-                estimate = self._rom_data.find_turning_point(axis=axis)
-                img_perc = self._distance_in_img_percentage(estimate, axis, rom_deps)
-
-                # if the distance is less than 1 big step away then move to it and exit
-                if abs(img_perc) < BIG_STEP:
-                    rom_deps.logger.info(
-                        f"Estimated centre of {axis}-axis is {estimate[axis]}"
-                    )
-                    rom_deps.stage.move_absolute(**estimate)
+                centred, direction = self._recentre_decision(axis, rom_deps)
+                if centred:
                     break
-                rom_deps.logger.info(
-                    f"Estimated centre {abs(img_perc):.0f}% of a field of view away, "
-                    "that is too far to move in one move."
-                )
-                # Else calculate the desired direction in image coordinates.
-                direction = self._img_dir_from_stage_coords(estimate, axis, rom_deps)
 
             # If still going at iteration 9 exit
             if i > 9:
@@ -379,6 +370,41 @@ class RangeofMotionThing(lt.Thing):
 
             # Make a big z-corrected move towards estimate of centre.
             self._big_z_corrected_movement(axis, direction, rom_deps)
+
+    def _recentre_decision(
+        self, axis: Literal["x", "y"], rom_deps: RomDeps
+    ) -> tuple[bool, Literal[1, -1]]:
+        """Decide what to do next during recentreing.
+
+        The algorithm here:
+
+        * Estimate turning point location
+        * Check if distance to point is further than a "BIG_STEP"
+        * If smaller, move to estimated centre, and return that it is centred
+        * If larger, return that it is not centred, and the direction to move in.
+
+        :param axis: The axis to recentre
+        :param rom_deps: All dependencies that were passed to the calling Action.
+        :return: A tuple. The first value is True for "the stage is now centred" and
+            False for "the stage is not centred". The second value is the direction to
+            move in, this only has meaning if the first value is False.
+        """
+        estimate = self._rom_data.find_turning_point(axis=axis)
+        img_perc = self._distance_in_img_percentage(estimate, axis, rom_deps)
+
+        # if the distance is less than 1 big step away then move to it and exit
+        if abs(img_perc) < BIG_STEP:
+            rom_deps.logger.info(f"Estimated centre of {axis}-axis is {estimate[axis]}")
+            rom_deps.stage.move_absolute(**estimate)
+            # Note the second return, the direction, is meaningless here.
+            return True, 1
+        rom_deps.logger.info(
+            f"Estimated centre {abs(img_perc):.0f}% of a field of view away, "
+            "that is too far to move in one move."
+        )
+        # Else calculate the desired direction in image coordinates.
+        direction = self._img_dir_from_stage_coords(estimate, axis, rom_deps)
+        return False, direction
 
     def _img_percentage_to_img_coords(
         self, fov_perc: int, axis: Literal["x", "y"]
