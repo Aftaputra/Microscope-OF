@@ -8,7 +8,6 @@ import VueObserveVisibility from "vue-observe-visibility";
 
 // Import MD icons
 import "material-symbols/outlined.css";
-import version from "./version.js";
 
 // UIKit overrides
 UIkit.mixin(
@@ -27,9 +26,6 @@ Vue.config.productionTip = false;
 
 Vue.mixin({
   methods: {
-    app_version() {
-      return version;
-    },
     thingDescription(thing) {
       return this.$store.getters["wot/thingDescription"](thing);
     },
