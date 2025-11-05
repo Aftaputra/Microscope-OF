@@ -436,7 +436,6 @@ class RangeofMotionThing(lt.Thing):
         target_im_coords = rom_deps.csm.convert_stage_to_image_coordinates(**target)
         here = rom_deps.stage.position
         here_im_coords = rom_deps.csm.convert_stage_to_image_coordinates(**here)
-
         return -1 if target_im_coords[axis] < here_im_coords[axis] else 1
 
     def _distance_in_img_percentage(

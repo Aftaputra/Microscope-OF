@@ -33,7 +33,6 @@ import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import DenumpifyingDict
 from camera_stage_mapping.camera_stage_tracker import Tracker
 
-from openflexure_microscope_server.utilities import apply_2d_matrix_to_mapping
 from .camera import CameraDependency as CameraClient
 from .stage import StageDependency as Stage
 
@@ -282,9 +281,7 @@ class CameraStageMapper(lt.Thing):
     ) -> Mapping[str, int]:
         """Convert image coordinates to stage coordinates. Only x and y are returned."""
         self.assert_calibrated()
-        return apply_2d_matrix_to_mapping(
-            self.image_to_stage_displacement_matrix, x=x, y=y, to_int=True
-        )
+        return csm_img_to_stage(self.image_to_stage_displacement_matrix, x=x, y=y)
 
     @lt.thing_action
     def convert_stage_to_image_coordinates(
@@ -292,10 +289,7 @@ class CameraStageMapper(lt.Thing):
     ) -> Mapping[str, float]:
         """Convert stage coordinates to image coordinates. Only x and y are returned."""
         self.assert_calibrated()
-        inverse_matrix = np.linalg.inv(
-            np.array(self.image_to_stage_displacement_matrix)
-        )
-        return apply_2d_matrix_to_mapping(inverse_matrix, x=x, y=y, to_int=False)
+        return csm_stage_to_img(self.image_to_stage_displacement_matrix, x=x, y=y)
 
     @lt.thing_property
     def thing_state(self) -> Mapping[str, Any]:
@@ -304,3 +298,54 @@ class CameraStageMapper(lt.Thing):
             k: getattr(self, k)
             for k in ["image_to_stage_displacement_matrix", "image_resolution"]
         }
+
+
+def csm_img_to_stage(
+    matrix: np.ndarray | list[list[float]],
+    *,
+    x: float | int,
+    y: float | int,
+    **_kwargs: int,
+) -> Mapping[str, int]:
+    """Apply any CSM matrix to image coordinates.
+
+    This is designed x and y must be kwargs and extra kwargs are ignored allowing:
+    ``csm_img_to_stage(matrix, **position)`` to run for a mapping position.
+
+    Note that x and y are the actual (x, y) of the image, not the (m, n) indices used
+    numpy
+
+    :param matrix: The matrix to use in the calculation
+    :param x: the x image coordinate (keyword only)
+    :param y: the y image coordinate (keyword only)
+    :return: The resulting stage coordinates as a mapping.
+    """
+    # Note this is (y,x) not x,y to put it in numpy image indices
+    relative_move: np.ndarray = np.dot(np.array([y, x]), np.array(matrix))
+    return {"x": round(relative_move[0]), "y": round(relative_move[1])}
+
+
+def csm_stage_to_img(
+    matrix: np.ndarray | list[list[float]],
+    *,
+    x: float | int,
+    y: float | int,
+    **_kwargs: int,
+) -> Mapping[str, float]:
+    """Apply any CSM matrix to stage coordinates to get image coordinates.
+
+    This is designed x and y must be kwargs and extra kwargs are ignored allowing:
+    ``csm_img_to_stage(matrix, **position)`` to run for a mapping position.
+
+    Note that x and y are the actual (x, y) of the image, not the (m, n) indices used
+    numpy
+
+    :param matrix: The matrix to use in the calculation
+    :param x: the x stage coordinate (keyword only)
+    :param y: the y stage coordinate (keyword only)
+    :return: The resulting img coordinates as a mapping.
+    """
+    inverse_matrix = np.linalg.inv(np.array(matrix))
+    relative_move = np.dot(np.array([x, y]), inverse_matrix)
+    # Note that the relative move (y, x) as it is from numpy and is in matrix coords.
+    return {"x": float(relative_move[1]), "y": float(relative_move[0])}

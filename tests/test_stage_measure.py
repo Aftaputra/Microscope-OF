@@ -12,7 +12,10 @@ import pytest
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.things import stage_measure
-from openflexure_microscope_server.utilities import apply_2d_matrix_to_mapping
+from openflexure_microscope_server.things.camera_stage_mapping import (
+    csm_img_to_stage,
+    csm_stage_to_img,
+)
 
 LOGGER = logging.getLogger("mock-invocation_logger")
 
@@ -163,15 +166,14 @@ def rom_thing(example_rom_data) -> stage_measure.RangeofMotionThing:
 @pytest.fixture
 def mock_rom_deps(csm_matrix, mocker) -> stage_measure.RomDeps:
     """Return a RomDeps object full of mocks, except the logger which is LOGGER."""
-    inverse_matrix = np.linalg.inv(csm_matrix)
 
     def apply_csm(x: float, y: float, **_kwargs: float) -> dict[str, int]:
         """Convert image coordinates to stage coordinates."""
-        return apply_2d_matrix_to_mapping(csm_matrix, x=x, y=y, to_int=True)
+        return csm_img_to_stage(csm_matrix, x=x, y=y)
 
     def un_apply_csm(x: float, y: float, **_kwargs: float) -> dict[str, float]:
         """Convert stage coordinates to image coordinates."""
-        return apply_2d_matrix_to_mapping(inverse_matrix, x=x, y=y, to_int=True)
+        return csm_stage_to_img(csm_matrix, x=x, y=y)
 
     mock_cam = mocker.Mock()
     mock_cam.image_is_sample.return_value = (True, "Mocked not measured.")
@@ -194,12 +196,11 @@ def mock_rom_deps(csm_matrix, mocker) -> stage_measure.RomDeps:
 @pytest.mark.parametrize(
     ("pos", "target_pos", "axis", "expected_dir"),
     [
-        # X is flipped due to CSM sign
-        ({"x": 5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", 1),
-        ({"x": -5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", -1),
-        ({"x": 0, "y": 0, "z": 0}, {"x": 5000, "y": 0, "z": 0}, "x", -1),
-        # Y is not flipped due to CSM sign
-        ({"x": 0, "y": 5000, "z": 0}, {"x": 0, "y": 0, "z": 0}, "y", -1),
+        ({"x": 5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", -1),
+        ({"x": -5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", 1),
+        ({"x": 0, "y": 0, "z": 0}, {"x": 5000, "y": 0, "z": 0}, "x", 1),
+        # Y is flipped due to CSM sign
+        ({"x": 0, "y": 5000, "z": 0}, {"x": 0, "y": 0, "z": 0}, "y", 1),
     ],
 )
 def test_img_dir_from_stage_coords(
@@ -223,11 +224,11 @@ def test_distance_in_img_percentage_err(rom_thing, mock_rom_deps):
 @pytest.mark.parametrize(
     ("pos", "target_pos", "axis", "expected_perc"),
     [
-        ({"x": 5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", 346.625),
-        ({"x": -5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", -346.625),
-        ({"x": 0, "y": 0, "z": 0}, {"x": 5000, "y": 0, "z": 0}, "x", -346.625),
+        ({"x": 5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", -352.44),
+        ({"x": -5000, "y": 0, "z": 0}, {"x": 0, "y": 0, "z": 0}, "x", 352.44),
+        ({"x": 0, "y": 0, "z": 0}, {"x": 5000, "y": 0, "z": 0}, "x", 352.44),
         # Y is flipped due to CSM sign
-        ({"x": 0, "y": 5000, "z": 0}, {"x": 0, "y": 0, "z": 0}, "y", -470.0),
+        ({"x": 0, "y": 5000, "z": 0}, {"x": 0, "y": 0, "z": 0}, "y", 462.131),
     ],
 )
 def test_distance_in_img_percentage(
@@ -236,7 +237,7 @@ def test_distance_in_img_percentage(
     """Check _distance_in_img_percentage calculates expected values based on mock CSM."""
     mock_rom_deps.stage.position = pos
     img_perc = rom_thing._distance_in_img_percentage(target_pos, axis, mock_rom_deps)
-    assert expected_perc == img_perc
+    assert round(img_perc, 3) == expected_perc
 
 
 def test_offset_from(rom_thing, mock_rom_deps, mocker):
@@ -703,7 +704,7 @@ def test_recentre_axis(true_on, rom_thing, mock_rom_deps, mocker):
     This doesn't include deciding if we are centred or choosing the direction to move.
     """
     ## Start such that movement starts negative
-    mock_rom_deps.stage.position = {"x": -10000, "y": 10000, "z": 0}
+    mock_rom_deps.stage.position = {"x": 10000, "y": 10000, "z": 0}
     mock_moves = mocker.patch.object(rom_thing, "_moves_for_z_prediction")
 
     # Mock _recentre_decision so it returns (False, 1) a number of times then finally
