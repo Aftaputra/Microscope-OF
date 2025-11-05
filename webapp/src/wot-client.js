@@ -57,6 +57,13 @@ export const wotStoreModule = {
     thingAvailable: (state) => (thingName) => {
       return thingName in state.thingDescriptions;
     },
+    thingAffordanceAvailable: (state) => (thing, affordanceType, affordance) => {
+      let td = state.thingDescriptions[thing];
+      if (!td) {
+        return false;
+      }
+      return affordance in td[affordanceType];
+    },
     thingFormUrl:
       (state) =>
       (thing, affordanceType, affordance, op, allowUndefined = true) => {

@@ -52,7 +52,7 @@ export default {
 
   computed: {
     actions() {
-      return this.$store.getters["wot/thingDescription"]("camera").actions;
+      return this.thingDescription("camera").actions;
     },
   },
 

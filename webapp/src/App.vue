@@ -214,7 +214,7 @@ export default {
       try {
         await this.$store.dispatch("wot/fetchThingDescriptions", `${baseUri}/thing_descriptions/`);
         for (let requiredThing of ["camera", "stage"]) {
-          if (!this.$store.getters["wot/thingAvailable"](requiredThing)) {
+          if (!this.thingAvailable(requiredThing)) {
             throw new Error(`No ${requiredThing} found, the GUI won't work without one.`);
           }
         }

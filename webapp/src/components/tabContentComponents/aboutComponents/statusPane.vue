@@ -34,18 +34,16 @@
       <div class="uk-margin-small-bottom">
         <b>Camera:</b>
         <br />
-        <div v-if="'camera' in things">
-          {{ things.camera.title }}
+        <div>
+          {{ cameraType }}
         </div>
-        <div v-else class="uk-text-danger"><b>No camera configured</b></div>
       </div>
-      <div>
+      <div v-if="stageType">
         <b>Stage:</b>
         <br />
-        <div v-if="'stage' in things">
-          {{ things.stage.title }}
+        <div>
+          {{ stageType }}
         </div>
-        <div v-else class="uk-text-danger"><b>No stage configured</b></div>
       </div>
 
       <hr />
@@ -71,8 +69,12 @@ export default {
   },
 
   computed: {
-    things: function () {
-      return this.$store.getters["wot/thingDescriptions"];
+    cameraType() {
+      // No need to check as the microscope won't start up without a camera defined
+      return this.thingDescription("camera").title;
+    },
+    stageType() {
+      return this.thingAvailable("stage") ? this.thingDescription("stage").title : undefined;
     },
   },
 

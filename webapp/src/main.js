@@ -36,13 +36,27 @@ Vue.mixin({
     thingAvailable(thing) {
       return this.$store.getters["wot/thingAvailable"](thing);
     },
-    async readThingProperty(thing, property, silence_errors = false) {
+    thingPropertyUrl(thing, property, allowUndefined = false) {
+      return this.$store.getters["wot/thingPropertyUrl"](
+        thing,
+        property,
+        "readproperty",
+        allowUndefined,
+      );
+    },
+    thingActionAvailable(thing, action) {
+      return this.$store.getters["wot/thingAffordanceAvailable"](thing, "actions", action);
+    },
+    thingPropertyAvailable(thing, property) {
+      return this.$store.getters["wot/thingAffordanceAvailable"](thing, "properties", property);
+    },
+    async readThingProperty(thing, property, silenceErrors = false) {
       let url = this.$store.getters["wot/thingPropertyUrl"](thing, property, "readproperty", false);
       try {
         let response = await axios.get(url);
         return response.data;
       } catch (error) {
-        if (!silence_errors) this.modalError(error);
+        if (!silenceErrors) this.modalError(error);
         return undefined;
       }
     },
@@ -71,12 +85,12 @@ Vue.mixin({
         return undefined;
       }
     },
-    thingActionUrl(thing, action, allow_missing = false) {
+    thingActionUrl(thing, action, allowUndefined = false) {
       let url = this.$store.getters["wot/thingActionUrl"](
         thing,
         action,
         "invokeaction",
-        allow_missing,
+        allowUndefined,
       );
       return url;
     },

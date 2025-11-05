@@ -119,12 +119,7 @@ export default {
 
   computed: {
     scansUri() {
-      return this.$store.getters["wot/thingPropertyUrl"](
-        "smart_scan",
-        "scans",
-        "readproperty",
-        true,
-      );
+      return this.thingPropertyUrl("smart_scan", "scans");
     },
     scansEmpty() {
       return this.scans.length == 0;
