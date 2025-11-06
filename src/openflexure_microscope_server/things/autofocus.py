@@ -421,15 +421,17 @@ class AutofocusThing(lt.Thing):
         is close to focus, but not quite within ``dz/2``. It will attempt to autofocus
         up to 10 times.
         """
-        repeat = True
         attempts = 0
         backlash = 200
 
         with sharpness_monitor.run():
-            while repeat and attempts < 10:
+            while attempts < 10:
                 if start == "centre":
                     stage.move_relative(x=0, y=0, z=-(backlash + dz / 2))
                     stage.move_relative(x=0, y=0, z=backlash)
+
+                # Always start centrally for future runs
+                start = "centre"
 
                 focus_data_index, _ = sharpness_monitor.focus_rel(
                     dz, block_cancellation=True
@@ -437,21 +439,17 @@ class AutofocusThing(lt.Thing):
                 _times, heights, sizes = sharpness_monitor.move_data(focus_data_index)
 
                 peak_height = heights[np.argmax(sizes)]
-                height_min = np.min(heights)
-                height_max = np.max(heights)
+                target_min = np.min(heights) + dz / 5
+                target_max = np.max(heights) - dz / 5
 
-                if (
-                    peak_height - height_min < dz / 5
-                    or height_max - peak_height < dz / 5
-                ):
-                    attempts += 1
-                    start = "centre"
-                    stage.move_absolute(z=peak_height - backlash)
-                    stage.move_absolute(z=peak_height)
-                else:
-                    repeat = False
-                    stage.move_relative(x=0, y=0, z=-(dz + backlash))
-                    stage.move_absolute(z=peak_height)
+                # move to the peak
+                stage.move_absolute(z=peak_height - backlash)
+                stage.move_absolute(z=peak_height)
+
+                if target_min < peak_height < target_max:
+                    # If it is within the target range then break.
+                    break
+
             return heights.tolist(), sizes.tolist()
 
     stack_images_to_save = lt.ThingSetting(
@@ -566,7 +564,8 @@ class AutofocusThing(lt.Thing):
         stage: Stage,
         sharpness_monitor: SharpnessMonitorDep,
         stack_parameters: StackParams,
-    ) -> tuple[bool, int]:
+        save_on_failure: bool = False,
+    ) -> tuple[bool, Optional[int]]:
         """Run a smart stack.
 
         A smart stack captures images offset in z, testing whether the sharpest image
@@ -582,15 +581,16 @@ class AutofocusThing(lt.Thing):
             supplied by LabThings dependency injection
         :param stack_parameters: A StackParams object containing the required
             parameters to run a stack.
+        :param save_on_failure: Whether to save an image even if the capture failed
 
         :returns: A tuple containing:
 
             * A boolean, True if stack was successfully
             * The z position of the sharpest image
         """
-        tries = 0
-        # Loop until a stack is successful
-        while tries < stack_parameters.max_attempts:
+        attempt = 0
+        while True:
+            attempt += 1
             success, captures, sharpest_id = self.z_stack(
                 stack_parameters=stack_parameters,
                 cam=cam,
@@ -598,6 +598,9 @@ class AutofocusThing(lt.Thing):
             )
 
             if success:
+                break
+
+            if attempt >= stack_parameters.max_attempts:
                 break
 
             # The z position of the first images in the previous attempt.
@@ -613,15 +616,14 @@ class AutofocusThing(lt.Thing):
         # Save stack_parameters.image_to_save images centred on the sharpest capture.
         # If the smart_stack failed the exact number of images saved may not be
         # stack_parameters.image_to_save
-        self.save_stack(
-            sharpest_id=sharpest_id,
-            captures=captures,
-            stack_parameters=stack_parameters,
-            cam=cam,
-        )
+        if success or save_on_failure:
+            self.save_stack(
+                sharpest_id=sharpest_id,
+                captures=captures,
+                stack_parameters=stack_parameters,
+                cam=cam,
+            )
 
-        # Return whether or not the smart stack was successful, and the z position of
-        # the sharpest image, for path planning and tracking
         return success, _get_capture_by_id(captures, sharpest_id).position["z"]
 
     def reset_stack(
@@ -683,7 +685,7 @@ class AutofocusThing(lt.Thing):
         stack_parameters: StackParams,
         cam: CameraClient,
         stage: Stage,
-    ) -> tuple[bool, list[CaptureInfo], Optional[int]]:
+    ) -> tuple[bool, list[CaptureInfo], int]:
         """Capture a series of images checking that sharpest image central.
 
         The images are separated in z offset by stack_parameters.stack_dz, as they
@@ -699,7 +701,7 @@ class AutofocusThing(lt.Thing):
 
             * the stack result (True for successful stack, False for failed stack),
             * a list of CaptureInfo objects,
-            * the buffer_id of the sharpest image (or None if the stack failed).
+            * the buffer_id of the sharpest image
         """
         # Move down by the height of the z stack, plus an overshoot
         # Better to start too low and take too many images than too high and need to refocus
@@ -739,10 +741,10 @@ class AutofocusThing(lt.Thing):
                     return True, captures, capture_id
 
                 if result == "restart":
-                    return False, captures, None
+                    return False, captures, capture_id
                 # If reached here the result was "continue"
             stage.move_relative(z=stack_parameters.stack_dz)
-        return False, captures, None
+        return False, captures, capture_id
 
     def capture_stack_image(
         self,
