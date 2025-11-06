@@ -795,28 +795,59 @@ class AutofocusThing(lt.Thing):
 
             * capture_id - the buffer id of the sharpest image
         """
-        sharpest_index = np.argmax([capture.sharpness for capture in captures])
+        sharpnesses = np.array([capture.sharpness for capture in captures])
+        sharpest_index = np.argmax(sharpnesses)
         # The buffer id of the sharpest image
         capture_id = captures[sharpest_index].buffer_id
-        sharpness_length = len(captures)
+        n_imgs = len(captures)
 
         # If only testing one image, then by definition the sharpest is central
-        if sharpness_length == 1:
+        if n_imgs == 1:
             return "success", capture_id
         # If testing three images, test if the centre is the sharpest
-        if sharpness_length == 3:
+        if n_imgs == 3:
             if sharpest_index == 1:
                 return "success", capture_id
             if sharpest_index == 0:
                 return "restart", capture_id
             return "continue", capture_id
 
-        # For larger stacks, test if the best image is not within two of the edge of the stack
-        # ie for a stack of 7 images, best image must be between 3rd and and 5th
-        exclusion_range = 2
+        # Fint the peak
+        x = range(n_imgs)
+        coeffs, cov = np.polyfit(x, sharpnesses, deg=2, cov=True)
+        a = float(coeffs[0])
+        fit_func = np.poly1d(coeffs)
 
-        if sharpest_index < exclusion_range:
-            return "restart", capture_id
-        if sharpest_index >= sharpness_length - exclusion_range:
+        # find the peaks's x-position
+        turning = float(fit_func.deriv().roots[0])
+        sigma_a = float(np.sqrt(cov[0, 0]))
+        # Estimate the upper 95% confidence bound for the x^2 term
+        ci_high = a + 2 * sigma_a
+
+        # If the high 95% confindence interval of the peak is not negative then the
+        # fit isn't sure if this is a peak or a U shape, so we continue.
+        if ci_high >= 0:
             return "continue", capture_id
+
+        # For larger stacks, test if the best image is not within two of the edge of
+        # the stack ie for a stack of 7 images, best image must be between 3rd and 5th
+        edge_size = 2
+
+        # Check both the peak from fitting and the sharpest image are not the
+        if turning < edge_size - 0.5 or sharpest_index < edge_size:
+            return "restart", capture_id
+        if turning > n_imgs - (edge_size - 0.5) or sharpest_index >= n_imgs - edge_size:
+            return "continue", capture_id
+
+        # Also take the difference of neghboring points to check for turning points
+        d_sharpnesses = sharpnesses[1:] - sharpnesses[:-1]
+        # Filter out any points that are not prominent
+        prominent = abs(d_sharpnesses) / np.mean(abs(d_sharpnesses)) > 0.5
+        d_sharpnesses = d_sharpnesses[prominent]
+        # count the sign changes
+        turning_points = int(np.sum(d_sharpnesses[1:] * d_sharpnesses[:-1] < 0))
+
+        if turning_points > 1:
+            return "continue", capture_id
+
         return "success", capture_id
