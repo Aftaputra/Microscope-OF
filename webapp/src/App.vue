@@ -1,5 +1,7 @@
 <template>
   <div id="app" class="uk-height-1-1 uk-margin-remove uk-padding-remove" :class="handleTheme">
+    <!-- this stops the app loading until setConnected is committed in the store, this means
+     other components will not load until we have Thing Descriptions. -->
     <loadingContent v-if="!$store.getters.ready" />
     <appContent v-if="$store.getters.ready" />
     <!-- Runtime modals -->
@@ -213,7 +215,7 @@ export default {
       // TODO: should we purge existing consumedThings?
       try {
         await this.$store.dispatch("wot/fetchThingDescriptions", `${baseUri}/thing_descriptions/`);
-        for (let requiredThing of ["camera", "stage"]) {
+        for (let requiredThing of ["camera", "system"]) {
           if (!this.thingAvailable(requiredThing)) {
             throw new Error(`No ${requiredThing} found, the GUI won't work without one.`);
           }
@@ -225,6 +227,7 @@ export default {
         } catch {
           this.$store.commit("changeMicroscopeHostname", null);
         }
+        // start rendering components
         this.$store.commit("setConnected");
         this.$store.commit("setErrorMessage", null);
       } catch (error) {
