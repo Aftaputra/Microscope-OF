@@ -28,6 +28,7 @@ from labthings_fastapi.types.numpy import NDArray
 from openflexure_microscope_server.ui import ActionButton, PropertyControl
 from openflexure_microscope_server.background_detect import (
     ColourChannelDetectLUV,
+    ChannelDeviationLUV,
     BackgroundDetectAlgorithm,
     BackgroundDetectorStatus,
 )
@@ -182,8 +183,11 @@ class BaseCamera(lt.Thing):
         dictionary in this function. Configuration will be added at a later date.
         """
         super().__init__()
-        self.background_detectors = {"Colour Channels (LUV)": ColourChannelDetectLUV()}
-        self._detector_name = "Colour Channels (LUV)"
+        self.background_detectors = {
+            "Colour Channels (LUV)": ColourChannelDetectLUV(),
+            "Channel Deviations (LUV)": ChannelDeviationLUV(),
+        }
+        self._detector_name = "Channel Deviations (LUV)"
 
     def __enter__(self) -> None:
         """Open hardware connection when the Thing context manager is opened."""

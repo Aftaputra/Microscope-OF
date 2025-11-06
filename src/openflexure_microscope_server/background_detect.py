@@ -262,3 +262,90 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         self.background_data = ChannelDistributions(
             means=mu.tolist(), standard_deviations=std.tolist()
         )
+
+
+class ChannelDeviationLUV(BackgroundDetectAlgorithm):
+    """Compare the standard deviations of the LUV channels in a grid to background data.
+
+    This uses an LUV colour space, each image is divided into an 8x8 grid of images
+    each the standard deviation of each channel of each image is calculates and compared
+    to the median standard deviation for a grid of background images.
+    """
+
+    # Note we don't use the means in this algorithm but we use the same channel
+    # distributions model
+    background_data_model: BaseModel = ChannelDistributions
+    settings_data_model: BaseModel = ColourChannelDetectSettings
+
+    def get_sample_coverage(self, image: np.ndarray) -> float:
+        """Return the percentage of the input image that is background.
+
+        Evaluate whether it is foreground or background by comparing the standard
+        deviations of an 8x8 grid of sub-images to the median standard deviation
+        from a background image.
+
+        :returns: A value (between 0 and 100) is the percentage of the image that is
+            sample.
+        """
+        image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
+        stds = _chunked_stds(image_luv, 8, 8)
+
+        bg_stds = self.background_data.standard_deviations
+        l_cut = bg_stds[0] * self.settings.channel_tolerance
+        u_cut = bg_stds[1] * self.settings.channel_tolerance
+        v_cut = bg_stds[2] * self.settings.channel_tolerance
+
+        decisions = (
+            (stds[:, :, 0] > l_cut) | (stds[:, :, 1] > u_cut) | (stds[:, :, 2] > v_cut)
+        )
+
+        return float(100 * np.sum(decisions) / 64)
+
+    def image_is_sample(self, image: np.ndarray) -> tuple[bool, str]:
+        """Label the current image as either background or sample.
+
+        :returns: A tuple of the result (boolean), and explanation string. The
+            explanation string is formatted so it can be added into a sentence such as
+            ``An action was taken because the image is {message}.``
+        """
+        sample_coverage = self.get_sample_coverage(image)
+
+        # Use bool otherwise get numpy variants of True and False.
+        is_sample = bool(sample_coverage > self.settings.min_sample_coverage)
+        message = f"{sample_coverage:0.1f}% sample"
+        if not is_sample:
+            message = "only " + message
+        return is_sample, message
+
+    def set_background(self, image: np.ndarray) -> None:
+        """Use the input image to update the background distributions."""
+        image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
+
+        mu = np.zeros(3)
+        std = np.median(_chunked_stds(image_luv, 8, 8), axis=(0, 1))
+
+        self.background_data = ChannelDistributions(
+            means=mu.tolist(), standard_deviations=std.tolist()
+        )
+
+
+def _chunked_stds(img: np.ndarray, n_rows: int = 8, n_cols: int = 8) -> np.ndarray:
+    """Split image into a grid and calculated std of each channel in each chunk.
+
+    :param img: The image to analyse
+    :param n_rows: The number of rows in the grid
+    :param n_cols: The number of cols in the grid
+    :return: A nummpy array of the grid of standard deviations.
+    """
+    h, w = img.shape[:2]
+    row_height = h // n_rows
+    col_width = w // n_cols
+    out = np.zeros((n_rows, n_cols, 3))
+    for i in range(n_rows):
+        for j in range(n_cols):
+            chunk = img[
+                i * row_height : (i + 1) * row_height,
+                j * col_width : (j + 1) * col_width,
+            ]
+            out[i, j, :] = np.std(chunk, axis=(0, 1))
+    return out
