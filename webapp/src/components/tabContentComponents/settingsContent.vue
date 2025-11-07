@@ -59,6 +59,7 @@
 
 <script>
 import displaySettings from "./settingsComponents/displaySettings.vue";
+import stageControlSettings from "./settingsComponents/stageControlSettings.vue";
 import calibrationWizard from "../modalComponents/calibrationWizard.vue";
 import cameraSettings from "./settingsComponents/cameraSettings.vue";
 import CSMSettings from "./settingsComponents/CSMSettings.vue";
@@ -72,10 +73,6 @@ export default {
   name: "SettingsContent",
 
   components: {
-    displaySettings,
-    cameraSettings,
-    stageSettings,
-    CSMSettings,
     tabIcon,
     tabContent,
     calibrationWizard,
@@ -92,6 +89,13 @@ export default {
           requireConnection: false,
           component: displaySettings,
           requiredThings: [],
+        },
+        {
+          id: "stage-control",
+          title: "Stage Control Preferences",
+          requireConnection: false,
+          component: stageControlSettings,
+          requiredThings: ["stage"],
         },
       ],
       coreCalibrationTabs: [
@@ -125,7 +129,6 @@ export default {
       return [...this.appTabs, ...this.calibrationTabs];
     },
     appTabs() {
-      console.log(this.coreAppTabs);
       // Filter core top tabs based on available Things.
       return this.coreAppTabs.filter((tab) => {
         if (!tab.requiredThings || tab.requiredThings.length === 0) return true;

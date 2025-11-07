@@ -11,7 +11,7 @@ import streamSettings from "./displaySetttingsComponents/streamSettings.vue";
 
 // Export main app
 export default {
-  name: "SettingsContent",
+  name: "DisplaySettings",
 
   components: {
     streamSettings,

@@ -2,50 +2,6 @@
   <div id="paneControl" class="uk-padding-small">
     <div v-if="stageAvailable">
       <ul uk-accordion="multiple: true">
-        <li>
-          <a class="uk-accordion-title" href="#">Configure</a>
-          <div class="uk-accordion-content">
-            <b>Keyboard Step Size</b>
-            <div class="uk-grid-small uk-child-width-1-3" uk-grid>
-              <div>
-                <label class="uk-form-label" for="form-stacked-text">x</label>
-                <div class="uk-form-controls">
-                  <input v-model="stepSize.x" class="uk-input uk-form-small" type="number" />
-                </div>
-                <label class="uk-margin-small-right"
-                  ><input v-model="invert.x" class="uk-checkbox" type="checkbox" /> Invert x</label
-                >
-              </div>
-
-              <div>
-                <label class="uk-form-label" for="form-stacked-text">y</label>
-                <div class="uk-form-controls">
-                  <input v-model="stepSize.y" class="uk-input uk-form-small" type="number" />
-                </div>
-                <label class="uk-margin-small-right"
-                  ><input v-model="invert.y" class="uk-checkbox" type="checkbox" /> Invert y</label
-                >
-              </div>
-
-              <div>
-                <label class="uk-form-label" for="form-stacked-text">z</label>
-                <div class="uk-form-controls">
-                  <input v-model="stepSize.z" class="uk-input uk-form-small" type="number" />
-                </div>
-              </div>
-            </div>
-            <br />
-            <action-button
-              thing="stage"
-              action="set_zero_position"
-              submit-label="Zero Coordinates"
-              :can-terminate="false"
-              @finished="updatePosition"
-              @error="modalError"
-            />
-          </div>
-        </li>
-
         <li class="uk-open">
           <a class="uk-accordion-title" href="#">Position</a>
           <div class="uk-accordion-content">
@@ -80,9 +36,16 @@
                 />
               </p>
             </form>
+            <action-button
+              thing="stage"
+              action="set_zero_position"
+              submit-label="Zero Coordinates"
+              :can-terminate="false"
+              @finished="updatePosition"
+              @error="modalError"
+            />
           </div>
         </li>
-
         <!--Show autofocus if default plugin is enabled-->
         <li class="uk-open">
           <a class="uk-accordion-title" href="#">Autofocus</a>
@@ -170,15 +133,6 @@ export default {
     stageAvailable() {
       return this.thingAvailable("stage");
     },
-    // Note that as stepSize and invert are set based on internals we can use
-    // get() and set() to interact with the store. Instead use a deep watcher to
-    // update the store (see ``watch:`` below)
-    stepSize() {
-      return this.$store.state.navigationStepSize;
-    },
-    invert() {
-      return this.$store.state.navigationInvert;
-    },
     baseUri: function () {
       return this.$store.getters.baseUri;
     },
@@ -187,21 +141,6 @@ export default {
     },
     moveInImageCoordinatesUri: function () {
       return this.thingActionUrl("camera_stage_mapping", "move_in_image_coordinates");
-    },
-  },
-
-  watch: {
-    stepSize: {
-      deep: true,
-      handler(newVal) {
-        this.$store.commit("changeNavigationStepSize", newVal);
-      },
-    },
-    invert: {
-      deep: true,
-      handler(newVal) {
-        this.$store.commit("changeNavigationInvert", newVal);
-      },
     },
   },
 
@@ -215,13 +154,12 @@ export default {
     });
     // A global signal listener to perform a move in multiples of a step size
     this.$root.$on("globalMoveStepEvent", (x_steps, y_steps, z_steps) => {
-      this.$root.$emit(
-        "globalMoveEvent",
-        x_steps * this.stepSize.x * (this.invert.x ? -1 : 1),
-        y_steps * this.stepSize.y * (this.invert.y ? -1 : 1),
-        z_steps * this.stepSize.z * (this.invert.z ? -1 : 1),
-        false,
-      );
+      const navigationStepSize = this.$store.state.navigationStepSize;
+      const navigationInvert = this.$store.state.navigationInvert;
+      const x = x_steps * navigationStepSize.x * (navigationInvert.x ? -1 : 1);
+      const y = y_steps * navigationStepSize.y * (navigationInvert.y ? -1 : 1);
+      const z = z_steps * navigationStepSize.z * (navigationInvert.z ? -1 : 1);
+      this.$root.$emit("globalMoveEvent", x, y, z, false);
     });
     // Update the current position in text boxes
     await this.updatePosition();
