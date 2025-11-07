@@ -5,17 +5,17 @@
     <div class="settings-nav">
       <ul class="uk-nav uk-nav-default">
         <li class="uk-nav-header">Application Settings</li>
-        <li>
+        <li v-for="item in appTabs" :key="'setting' + item.id + '-tab-content'">
           <tabIcon
-            id="settings-display-icon"
-            tab-i-d="display"
+            :id="'setting' + item.id + '-tab-content'"
+            :tab-i-d="item.id"
             :show-title="false"
             :show-tooltip="false"
-            :require-connection="false"
+            :require-connection="item.requireConnection"
             :current-tab="currentTab"
             @set-tab="setTab"
           >
-            Display
+            {{ item.title }}
           </tabIcon>
         </li>
         <li class="uk-nav-header">Microscope Settings</li>
@@ -27,81 +27,40 @@
         >
           Launch Calibration Wizard
         </button>
-        <li>
+        <li v-for="item in calibrationTabs" :key="'setting' + item.id + '-tab-content'">
           <tabIcon
-            id="settings-camera-icon"
-            tab-i-d="camera"
+            :id="'setting' + item.id + '-tab-content'"
+            :tab-i-d="item.id"
             :show-title="false"
             :show-tooltip="false"
-            :require-connection="true"
+            :require-connection="item.requireConnection"
             :current-tab="currentTab"
             @set-tab="setTab"
           >
-            Camera
-          </tabIcon>
-        </li>
-        <li>
-          <tabIcon
-            id="settings-stage-icon"
-            tab-i-d="stage"
-            :show-title="false"
-            :show-tooltip="false"
-            :require-connection="true"
-            :current-tab="currentTab"
-            @set-tab="setTab"
-          >
-            Stage
-          </tabIcon>
-        </li>
-        <li>
-          <tabIcon
-            id="settings-mapping-icon"
-            tab-i-d="mapping"
-            :show-title="false"
-            :show-tooltip="false"
-            :require-connection="true"
-            :current-tab="currentTab"
-            @set-tab="setTab"
-          >
-            Camera to Stage Mapping
+            {{ item.title }}
           </tabIcon>
         </li>
       </ul>
     </div>
     <div class="view-component uk-width-expand uk-padding-small">
-      <tabContent tab-i-d="display" :require-connection="false" :current-tab="currentTab">
-        <div class="settings-pane uk-padding-small">
-          <appSettings />
-          <streamSettings />
-        </div>
-      </tabContent>
-
-      <tabContent tab-i-d="camera" :require-connection="true" :current-tab="currentTab">
-        <div class="settings-pane uk-padding-small">
-          <cameraSettings />
-        </div>
-      </tabContent>
-
-      <tabContent tab-i-d="stage" :require-connection="true" :current-tab="currentTab">
-        <div class="settings-pane uk-padding-small">
-          <stageSettings />
-        </div>
-      </tabContent>
-
-      <tabContent tab-i-d="mapping" :require-connection="true" :current-tab="currentTab">
-        <div class="settings-pane uk-padding-small">
-          <CSMSettings />
-        </div>
+      <tabContent
+        v-for="item in allTabs"
+        :id="'setting' + item.id + '-tab-content'"
+        :key="'setting' + item.id + '-tab-content'"
+        :tab-i-d="item.id"
+        :require-connection="item.requireConnection"
+        :current-tab="currentTab"
+      >
+        <component :is="item.component"></component>
       </tabContent>
     </div>
   </div>
 </template>
 
 <script>
-import streamSettings from "./settingsComponents/streamSettings.vue";
+import displaySettings from "./settingsComponents/displaySettings.vue";
 import calibrationWizard from "../modalComponents/calibrationWizard.vue";
 import cameraSettings from "./settingsComponents/cameraSettings.vue";
-import appSettings from "./settingsComponents/appSettings.vue";
 import CSMSettings from "./settingsComponents/CSMSettings.vue";
 import stageSettings from "./settingsComponents/stageSettings.vue";
 // Import generic components
@@ -113,11 +72,10 @@ export default {
   name: "SettingsContent",
 
   components: {
-    streamSettings,
+    displaySettings,
     cameraSettings,
     stageSettings,
     CSMSettings,
-    appSettings,
     tabIcon,
     tabContent,
     calibrationWizard,
@@ -127,9 +85,61 @@ export default {
     return {
       selected: "display",
       currentTab: "display",
+      coreAppTabs: [
+        {
+          id: "display",
+          title: "Display",
+          requireConnection: false,
+          component: displaySettings,
+          requiredThings: [],
+        },
+      ],
+      coreCalibrationTabs: [
+        {
+          id: "camera",
+          title: "Camera",
+          requireConnection: true,
+          component: cameraSettings,
+          requiredThings: [],
+        },
+        {
+          id: "stage",
+          title: "Stage",
+          requireConnection: true,
+          component: stageSettings,
+          requiredThings: ["stage"],
+        },
+        {
+          id: "mapping",
+          title: "Camera to Stage Mapping",
+          requireConnection: true,
+          component: CSMSettings,
+          requiredThings: ["camera_stage_mapping"],
+        },
+      ],
     };
   },
 
+  computed: {
+    allTabs() {
+      return [...this.appTabs, ...this.calibrationTabs];
+    },
+    appTabs() {
+      console.log(this.coreAppTabs);
+      // Filter core top tabs based on available Things.
+      return this.coreAppTabs.filter((tab) => {
+        if (!tab.requiredThings || tab.requiredThings.length === 0) return true;
+        return tab.requiredThings.every((thing) => this.thingAvailable(thing));
+      });
+    },
+    calibrationTabs() {
+      // Filter core top tabs based on available Things.
+      return this.coreCalibrationTabs.filter((tab) => {
+        if (!tab.requiredThings || tab.requiredThings.length === 0) return true;
+        return tab.requiredThings.every((thing) => this.thingAvailable(thing));
+      });
+    },
+  },
   methods: {
     setTab: function (event, tab) {
       if (!(this.currentTab == tab)) {
