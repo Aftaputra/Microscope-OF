@@ -101,7 +101,11 @@ def set_lst(
 ) -> dict:
     """Update the ``rpi.alsc`` section of with new lens shading tables.
 
-    Only one set of tables is set so no adaptive lens shading will be used.
+    Only one set of tables is set so that the camera pipeline does not adaptively
+    switch between lens shading tables based on its estimation of colour temperature.
+    Also ``n_iter`` is set to 0 so that the pipeline doesn't perform an iterative
+    adaption of our table to try to "correct" if interprets the image as having
+    different types of lighting.
 
     :param tuning: The current tuning file.
     :param luminance: The table of luminance values, as (12, 16) numpy array. Or None
@@ -207,7 +211,7 @@ def set_ccm(
     tuning: dict,
     col_corr_matrix: list,
 ) -> dict:
-    """Update the ``rpi.alsc`` section of a camera tuning dict set the colour correction matrix.
+    """Update the ``rpi.ccm`` section of a camera tuning dict set the colour correction matrix.
 
     :param tuning: The current tuning dict
     :param col_corr_matrix: The colour correction matrix to set

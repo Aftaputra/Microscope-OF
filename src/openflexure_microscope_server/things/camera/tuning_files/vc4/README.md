@@ -6,7 +6,7 @@ More data is available in this datasheet: https://datasheets.raspberrypi.com/cam
 
 ## version:
 
-This needs to be 2.0, version one was a normal dictionary of algorithms, tather than this current structure with the algorithms as a list.
+This needs to be 2.0, version one was a normal dictionary of algorithms, rather than this current structure with the algorithms as a list.
 
 ## target
 
@@ -43,13 +43,13 @@ Values from the default tuning files for imx219 and imx477 are:
 "reference_slope": 3.67
 ```
 
-These can be optimised using the methods in the camera tuning tool shipped with libcamera. Though most of the camera tuning tool methods make assumptions that are invalid for a microscope. As such any tuning would further consideration.
+These can be optimised using the methods in the camera tuning tool shipped with libcamera. Though most of the camera tuning tool methods make assumptions that are invalid for a microscope. As such any tuning would need further consideration.
 
 ### rpi.geq - Green Equalisation
 
 #### The problems with green equalisation
 
-This tried to calculate whether adjacent grren pixels should be equal. This interacts very porly with the chief ray angle compesation when using the camera. The imx219 has a lenslet array:
+This tried to calculate whether adjacent grren pixels should be equal. This interacts very porly with the chief ray angle compensation when using the camera. The imx219 has a lenslet array:
 
 ![](../../../../../../docs/images/ChiefRayAngle.png)
 
