@@ -135,6 +135,45 @@ export default {
           component: powerContent,
         },
       ],
+      coreTopTabs: [
+        {
+          id: "view",
+          title: "View",
+          icon: "visibility",
+          component: viewContent,
+          requiredThings: [],
+        },
+        {
+          id: "control",
+          title: "Control",
+          icon: "gamepad",
+          component: controlContent,
+          requiredThings: [],
+        },
+        {
+          id: "background-detect",
+          title: "Background Detect",
+          icon: "background_replace",
+          component: backgroundDetectContent,
+          // While stage isn't needed; automatic background detect has little function
+          // for a manual microscope.
+          requiredThings: ["stage"],
+        },
+        {
+          id: "slide-scan",
+          title: "Slide Scan",
+          icon: "settings_overscan",
+          component: slideScanContent,
+          requiredThings: ["smart_scan"],
+        },
+        {
+          id: "scan-list",
+          title: "Scan List",
+          icon: "photo_library",
+          component: scanListContent,
+          requiredThings: ["smart_scan"],
+        },
+      ],
     };
   },
 
@@ -151,39 +190,12 @@ export default {
     },
 
     topTabs: function () {
-      let tabs = [
-        {
-          id: "view",
-          title: "View",
-          icon: "visibility",
-          component: viewContent,
-        },
-        {
-          id: "control",
-          title: "Control",
-          icon: "gamepad",
-          component: controlContent,
-        },
-        {
-          id: "background-detect",
-          title: "Background Detect",
-          icon: "background_replace",
-          component: backgroundDetectContent,
-        },
-        {
-          id: "slide-scan",
-          title: "Slide Scan",
-          icon: "settings_overscan",
-          component: slideScanContent,
-        },
-        {
-          id: "scan-list",
-          title: "Scan List",
-          icon: "photo_library",
-          component: scanListContent,
-        },
-      ];
-      return tabs;
+      // Filter core top tabs based on available Things. Once Things can specify a
+      // custom tab those will need to be added here
+      return this.coreTopTabs.filter((tab) => {
+        if (!tab.requiredThings || tab.requiredThings.length === 0) return true;
+        return tab.requiredThings.every((thing) => this.thingAvailable(thing));
+      });
     },
     allTabs() {
       return [...this.topTabs, ...this.bottomTabs];

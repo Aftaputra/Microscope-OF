@@ -13,6 +13,9 @@ export default {
     thingDescription(thing) {
       return this.$store.getters["wot/thingDescription"](thing);
     },
+    thingList() {
+      return this.$store.getters["wot/thingList"];
+    },
     thingAvailable(thing) {
       return this.$store.getters["wot/thingAvailable"](thing);
     },

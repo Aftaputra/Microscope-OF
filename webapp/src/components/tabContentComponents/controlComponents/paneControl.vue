@@ -1,6 +1,6 @@
 <template>
   <div id="paneControl" class="uk-padding-small">
-    <div v-if="setPosition">
+    <div v-if="stageAvailable">
       <ul uk-accordion="multiple: true">
         <li>
           <a class="uk-accordion-title" href="#">Configure</a>
@@ -167,6 +167,9 @@ export default {
   },
 
   computed: {
+    stageAvailable() {
+      return this.thingAvailable("stage");
+    },
     // Note that as stepSize and invert are set based on internals we can use
     // get() and set() to interact with the store. Instead use a deep watcher to
     // update the store (see ``watch:`` below)
