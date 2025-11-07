@@ -1,7 +1,7 @@
 <template>
   <div id="paneControl" class="uk-padding-small">
-    <positionControl />
-    <autofocusControl />
+    <positionControl v-if="stageAvailable" />
+    <autofocusControl v-if="autofocusAvailable" />
     <p>Image Capture</p>
 
     <div class="uk-margin">
@@ -43,6 +43,15 @@ export default {
     ActionButton,
     positionControl,
     autofocusControl,
+  },
+
+  computed: {
+    stageAvailable() {
+      return this.thingAvailable("stage");
+    },
+    autofocusAvailable() {
+      return this.thingAvailable("autofocus");
+    },
   },
 
   methods: {
