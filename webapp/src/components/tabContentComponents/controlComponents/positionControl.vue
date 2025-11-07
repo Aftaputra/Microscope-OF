@@ -1,58 +1,66 @@
 <template>
-  <ul uk-accordion="multiple: true">
-    <li class="uk-closed">
-      <a class="uk-accordion-title" href="#">Position</a>
-      <div class="uk-accordion-content">
-        <form>
-          <!-- Text boxes to set and view position -->
-          <div class="input-and-buttons-container">
-            <input
-              v-for="(_v, key) in setPosition"
-              :key="`setPosition_${key}`"
-              v-model="setPosition[key]"
-              class="uk-form-small numeric-setting-line-input"
-              type="number"
-              @keyup.enter="startMoveTask"
-            />
-            <sync-property-button @click="updatePosition" />
+  <div>
+    <ul uk-accordion="multiple: true">
+      <li class="uk-closed">
+        <a class="uk-accordion-title" href="#">Position</a>
+        <div class="uk-accordion-content">
+          <form>
+            <!-- Text boxes to set and view position -->
+            <div class="input-and-buttons-container">
+              <input
+                v-for="(_v, key) in setPosition"
+                :key="`setPosition_${key}`"
+                v-model="setPosition[key]"
+                class="uk-form-small numeric-setting-line-input"
+                type="number"
+                @keyup.enter="startMoveTask"
+              />
+              <sync-property-button @click="updatePosition" />
+            </div>
+            <p>
+              <action-button
+                ref="moveButton"
+                thing="stage"
+                action="move_absolute"
+                :submit-data="setPosition"
+                :submit-label="'Move'"
+                :can-terminate="true"
+                :poll-interval="0.05"
+                @finished="moveComplete"
+                @error="modalError"
+              />
+            </p>
+          </form>
+          <action-button
+            thing="stage"
+            action="set_zero_position"
+            submit-label="Zero Coordinates"
+            :can-terminate="false"
+            @finished="updatePosition"
+            @error="modalError"
+          />
+          <div class="uk-flex uk-flex-center uk-margin">
+            <hr class="uk-divider-small" />
           </div>
-          <p>
-            <action-button
-              ref="moveButton"
-              thing="stage"
-              action="move_absolute"
-              :submit-data="setPosition"
-              :submit-label="'Move'"
-              :can-terminate="true"
-              :poll-interval="0.05"
-              @finished="moveComplete"
-              @error="modalError"
-            />
-          </p>
-        </form>
-        <action-button
-          thing="stage"
-          action="set_zero_position"
-          submit-label="Zero Coordinates"
-          :can-terminate="false"
-          @finished="updatePosition"
-          @error="modalError"
-        />
-      </div>
-    </li>
-  </ul>
+        </div>
+      </li>
+    </ul>
+
+    <stageControlButtons />
+  </div>
 </template>
 
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 import syncPropertyButton from "../../labThingsComponents/syncPropertyButton.vue";
-
+import stageControlButtons from "./stageControlButtons.vue";
 export default {
   name: "PaneControl",
 
   components: {
     ActionButton,
     syncPropertyButton,
+    stageControlButtons,
   },
 
   data: function () {
