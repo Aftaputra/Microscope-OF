@@ -81,19 +81,18 @@ import tabIcon from "./genericComponents/tabIcon";
 import tabContent from "./genericComponents/tabContent";
 
 // Import new content components
-import controlContent from "./tabContentComponents/controlContent.vue";
-import slideScanContent from "./tabContentComponents/slideScanContent.vue";
-import backgroundDetectContent from "./tabContentComponents/backgroundDetectContent.vue";
-import viewContent from "./tabContentComponents/viewContent.vue";
-import settingsContent from "./tabContentComponents/settingsContent.vue";
 import aboutContent from "./tabContentComponents/aboutContent.vue";
+import backgroundDetectContent from "./tabContentComponents/backgroundDetectContent.vue";
+import controlContent from "./tabContentComponents/controlContent.vue";
 import loggingContent from "./tabContentComponents/loggingContent.vue";
 import powerContent from "./tabContentComponents/powerContent.vue";
+import scanListContent from "./tabContentComponents/scanListContent.vue";
+import settingsContent from "./tabContentComponents/settingsContent.vue";
+import slideScanContent from "./tabContentComponents/slideScanContent.vue";
+import viewContent from "./tabContentComponents/viewContent.vue";
 
 // Import modal components for device initialisation
 import calibrationWizard from "./modalComponents/calibrationWizard.vue";
-import TabIcon from "./genericComponents/tabIcon.vue";
-import ScanListContent from "./tabContentComponents/scanListContent.vue";
 
 // Export main app
 export default {
@@ -102,15 +101,7 @@ export default {
   components: {
     tabIcon,
     tabContent,
-    controlContent,
-    slideScanContent,
-    viewContent,
-    settingsContent,
     calibrationWizard,
-    aboutContent,
-    loggingContent,
-    TabIcon,
-    powerContent,
   },
   data: function () {
     return {
@@ -178,12 +169,9 @@ export default {
         {
           id: "scan list",
           icon: "photo_library",
-          component: ScanListContent,
+          component: scanListContent,
         },
       ];
-      if (!this.$store.state.galleryEnabled) {
-        tabs = tabs.filter((tab) => tab.id != "gallery");
-      }
       return tabs;
     },
     allTabs() {

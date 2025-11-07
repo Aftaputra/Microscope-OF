@@ -51,6 +51,9 @@ export const wotStoreModule = {
     thingDescriptions: (state) => {
       return state.thingDescriptions;
     },
+    thingList: (state) => {
+      return Object.keys(state.thingDescriptions);
+    },
     thingDescription: (state) => (thingName) => {
       return state.thingDescriptions[thingName];
     },
