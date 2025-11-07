@@ -72,6 +72,7 @@ export default {
     let self = this;
     // A global signal listener to perform a move action
     this.$root.$on("globalMoveEvent", self.move);
+    this.$root.$on("globalUpdatePositionEvent", self.updatePosition);
     // A global signal listener to perform a move action in pixels
     this.$root.$on("globalMoveInImageCoordinatesEvent", (x, y, absolute) => {
       this.moveInImageCoordinatesRequest(x, y, absolute);
@@ -94,6 +95,7 @@ export default {
     this.$root.$off("globalMoveEvent");
     this.$root.$off("globalMoveInImageCoordinatesEvent");
     this.$root.$off("globalMoveStepEvent");
+    this.$root.$off("globalUpdatePositionEvent");
   },
 
   methods: {

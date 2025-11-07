@@ -1,28 +1,7 @@
 <template>
   <div id="paneControl" class="uk-padding-small">
     <positionControl />
-
-    <p>Autofocus</p>
-
-    <div class="uk-grid-small uk-child-width-expand" uk-grid>
-      <div v-show="!isAutofocusing || isAutofocusing == 1">
-        <action-button
-          thing="autofocus"
-          action="fast_autofocus"
-          :submit-data="{ dz: 2000 }"
-          :submit-label="'Autofocus'"
-          :button-primary="true"
-          :submit-on-event="'globalFastAutofocusEvent'"
-          @taskStarted="isAutofocusing = 1"
-          @finished="
-            updatePosition();
-            isAutofocusing = 0;
-          "
-          @error="modalError"
-        />
-      </div>
-    </div>
-
+    <autofocusControl />
     <p>Image Capture</p>
 
     <div class="uk-margin">
@@ -55,6 +34,7 @@
 import axios from "axios";
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 import positionControl from "./positionControl.vue";
+import autofocusControl from "./autofocusControl.vue";
 
 export default {
   name: "PaneControl",
@@ -62,12 +42,7 @@ export default {
   components: {
     ActionButton,
     positionControl,
-  },
-
-  data: function () {
-    return {
-      isAutofocusing: 0,
-    };
+    autofocusControl,
   },
 
   methods: {

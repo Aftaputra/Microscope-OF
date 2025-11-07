@@ -209,6 +209,8 @@ export default {
     // A global signal listener to perform the action
     if (this.submitOnEvent) {
       this.$root.$on(this.submitOnEvent, () => {
+        if (this.isDisabled) return;
+        // Bootstrap task if button is not disabled.
         this.bootstrapTask();
       });
     }
