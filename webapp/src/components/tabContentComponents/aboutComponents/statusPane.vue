@@ -13,6 +13,7 @@
           {{ $store.state.origin }}
         </div>
         <action-button
+          v-if="stageType"
           thing="stage"
           action="flash_led"
           submit-label="Flash Illumination"
