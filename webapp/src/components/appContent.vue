@@ -15,6 +15,7 @@
             :id="item.id + '-tab-icon'"
             :key="item.id + '-tab-icon'"
             :tab-i-d="item.id"
+            :title="item.title"
             :require-connection="true"
             :current-tab="currentTab"
             :class="item.class"
@@ -42,6 +43,7 @@
             :id="item.id + '-tab-icon'"
             :key="item.id + '-tab-icon'"
             :tab-i-d="item.id"
+            :title="item.title"
             :require-connection="true"
             :current-tab="currentTab"
             :class="item.class"
@@ -109,22 +111,26 @@ export default {
       bottomTabs: [
         {
           id: "settings",
+          title: "Settings",
           icon: "settings",
           component: settingsContent,
           class: "uk-margin-auto-top",
         },
         {
           id: "logging",
+          title: "Logging",
           icon: "assignment_late",
           component: loggingContent,
         },
         {
           id: "about",
+          title: "About",
           icon: "info",
           component: aboutContent,
         },
         {
           id: "power",
+          title: "Power",
           icon: "power_settings_new",
           component: powerContent,
         },
@@ -148,26 +154,31 @@ export default {
       let tabs = [
         {
           id: "view",
+          title: "View",
           icon: "visibility",
           component: viewContent,
         },
         {
           id: "control",
+          title: "Control",
           icon: "gamepad",
           component: controlContent,
         },
         {
-          id: "background detect",
+          id: "background-detect",
+          title: "Background Detect",
           icon: "background_replace",
           component: backgroundDetectContent,
         },
         {
-          id: "slide scan",
+          id: "slide-scan",
+          title: "Slide Scan",
           icon: "settings_overscan",
           component: slideScanContent,
         },
         {
-          id: "scan list",
+          id: "scan-list",
+          title: "Scan List",
           icon: "photo_library",
           component: scanListContent,
         },
