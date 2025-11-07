@@ -9,6 +9,12 @@
 import axios from "axios";
 
 export default {
+  data() {
+    return {
+      pollTimers: {},
+    };
+  },
+
   methods: {
     thingDescription(thing) {
       return this.$store.getters["wot/thingDescription"](thing);
@@ -68,6 +74,28 @@ export default {
         return undefined;
       }
     },
+    async pollUntilComplete(taskUrl, ongoingMethod, finalMethod, interval = 500) {
+      try {
+        const response = await axios.get(taskUrl, { baseURL: this.$store.getters.baseUri });
+        const result = response.data.status;
+
+        if ((result == "running") | (result == "pending")) {
+          ongoingMethod?.(response);
+          this.pollTimers[taskUrl] = setTimeout(() => {
+            this.pollUntilComplete(taskUrl, ongoingMethod, finalMethod, interval);
+          }, interval);
+        } else {
+          clearTimeout(this.pollTimers[taskUrl]);
+          delete this.pollTimers[taskUrl];
+          finalMethod?.(response);
+        }
+      } catch (error) {
+        clearTimeout(this.pollTimers[taskUrl]);
+        delete this.pollTimers[taskUrl];
+        this.modalError(error);
+      }
+    },
+
     thingActionUrl(thing, action, allowUndefined = false) {
       let url = this.$store.getters["wot/thingActionUrl"](
         thing,

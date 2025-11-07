@@ -25,11 +25,7 @@
               :submit-label="'Move'"
               :can-terminate="true"
               :poll-interval="0.05"
-              @taskStarted="moveLock = true"
-              @finished="
-                updatePosition();
-                moveLock = false;
-              "
+              @finished="moveComplete"
               @error="modalError"
             />
           </p>
@@ -48,7 +44,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 import syncPropertyButton from "../../labThingsComponents/syncPropertyButton.vue";
 
@@ -68,14 +63,8 @@ export default {
   },
 
   computed: {
-    baseUri: function () {
-      return this.$store.getters.baseUri;
-    },
     positionStatusUri: function () {
-      return `${this.baseUri}/stage/position`;
-    },
-    moveInImageCoordinatesUri: function () {
-      return this.thingActionUrl("camera_stage_mapping", "move_in_image_coordinates");
+      return this.thingActionUrl("stage", "position");
     },
   },
 
@@ -132,35 +121,32 @@ export default {
       await this.startMoveTask();
     },
     async startMoveTask() {
+      this.moveLock = true;
       await this.$refs.moveButton.startTask();
     },
-    moveInImageCoordinatesRequest: function (x, y) {
+    moveComplete() {
+      this.updatePosition();
+      this.moveLock = false;
+    },
+    async moveInImageCoordinatesRequest(x, y) {
       // If not movement-locked
       if (!this.moveLock) {
         // Lock move requests
         this.moveLock = true;
-
-        if (!this.moveInImageCoordinatesUri) {
-          this.modalError(
-            "Moving in image coordinates is not supported - you will need to upgrade your microscope's software.",
-          );
-        }
-
-        // Send move request
-        axios
-          .post(this.moveInImageCoordinatesUri, {
-            x: x, // NB the coordinates are numpy/PIL style, meaning X and Y are swapped.
+        const response = await this.invokeAction(
+          "camera_stage_mapping",
+          "move_in_image_coordinates",
+          {
+            x: x,
             y: y,
-          })
-          .then(() => {
-            this.updatePosition(); // Update the position in text boxes
-          })
-          .catch((error) => {
-            this.modalError(error); // Let mixin handle error
-          })
-          .then(() => {
-            this.moveLock = false; // Release the move lock
-          });
+          },
+        );
+        this.pollUntilComplete(
+          response.data.href,
+          null, // Nothing to do while ongoing
+          this.moveComplete, // Call move complete once done.
+          200,
+        );
       }
     },
 
