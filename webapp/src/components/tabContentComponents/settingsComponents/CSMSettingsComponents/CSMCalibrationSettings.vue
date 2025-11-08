@@ -27,13 +27,22 @@
     <div v-if="csmMatrix != 'undefined'" style="margin: 10px">
       <details>
         <summary>Calibration Details</summary>
-        <strong>CSM calculated for images with a resolution of {{ csmResolution }}</strong>
+        <strong>CSM calculated for images with a resolution of:</strong>
+        <br />
+        <matrixDisplay :matrix="csmResolution" :bracket-height="1.5" />
+
         <ul>
           <li>
-            Current CSM Matrix: <tt>{{ csmMatrix }}</tt>
+            Current CSM Matrix:
+            <br />
+            <matrixDisplay :matrix="csmMatrix" />
           </li>
           <li>Pixels per motor step: {{ csmRatio }}</li>
-          <li>Full field of view: {{ csmFOV }} motor steps</li>
+          <li>
+            Full field of view in motor steps:
+            <br />
+            <matrixDisplay :matrix="csmFOV" :bracket-height="1.5" />
+          </li>
         </ul>
       </details>
     </div>
@@ -41,7 +50,8 @@
 </template>
 
 <script>
-import ActionButton from "../../../labThingsComponents/actionButton.vue";
+import ActionButton from "@/components/labThingsComponents/actionButton.vue";
+import matrixDisplay from "@/components/ui/matrixDisplay.vue";
 
 // Export main app
 export default {
@@ -49,6 +59,7 @@ export default {
 
   components: {
     ActionButton,
+    matrixDisplay,
   },
 
   props: {

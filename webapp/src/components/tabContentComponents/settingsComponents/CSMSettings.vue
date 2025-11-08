@@ -1,6 +1,6 @@
 <template>
   <div id="CSMSettings" class="uk-grid uk-grid-divider uk-child-width-expand" uk-grid>
-    <div class="uk-width-xlarge">
+    <div class="uk-width-large">
       <h3>Camera to Stage Mapping</h3>
       <p>
         Camera-stage mapping allows the stage to move relative to the camera view. This enables
