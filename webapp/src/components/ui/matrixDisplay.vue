@@ -93,7 +93,9 @@ export default {
 };
 </script>
 
-<style scoped>
+<style scoped lang="less">
+@import "../../assets/less/theme.less";
+
 .matrix-container {
   display: inline-block;
   padding: 8px 12px;
@@ -140,18 +142,25 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: @global-muted-color;
   transition: color 0.2s ease;
 }
 
 .copy-button:hover {
-  color: #000;
+  color: @global-color;
 }
-.copy-button {
-  transition: background-color 0.3s ease, color 0.3s ease;
+
+.hook-inverse() {
+  .copy-button:hover {
+    color: @inverse-global-color;
+  }
 }
 
 .copy-button.success {
   color: #4caf50;
+
+  &:hover {
+    color: #4caf50;
+  }
 }
 </style>
