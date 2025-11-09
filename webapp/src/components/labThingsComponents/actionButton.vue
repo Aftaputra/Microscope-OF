@@ -156,27 +156,6 @@ export default {
   },
 
   mounted() {
-    //Define .from_index() as a custom function, working similar to .at()
-    //For backwards compatibility, not using in-built .at() until updates to Connect
-    function from_index(n) {
-      // ToInteger() abstract op
-      n = Math.trunc(n) || 0;
-      // Allow negative indexing from the end
-      if (n < 0) n += this.length;
-      // Out of bounds access is guaranteed to return undefined
-      if (n < 0 || n >= this.length) return undefined;
-      // Otherwise, this is just normal property access
-      return this[n];
-    }
-    const TypedArray = Reflect.getPrototypeOf(Int8Array);
-    for (const C of [Array, String, TypedArray]) {
-      Object.defineProperty(C.prototype, "from_index", {
-        value: from_index,
-        writable: true,
-        enumerable: false,
-        configurable: true,
-      });
-    }
     // Check for already running tasks
     if (this.taskStarted != true) {
       this.checkExistingTasks();
@@ -282,7 +261,6 @@ export default {
         this.onPollingResponse,
         this.onTaskEnd, // Method to run after task (even if error)
         500, // Interval
-        false, // Don't handle errors,
       );
     },
 
@@ -305,40 +283,12 @@ export default {
     },
 
     onPollingResponse(response) {
+      // While the task is still running, we update progress/log,
+      // and schedule another poll
       var result = response.data.status;
       this.taskStatus = result;
-      if ((result == "running") | (result == "pending")) {
-        // If the task is still running, we update progress/log,
-        // and schedule another poll
-        this.progress = response.data.progress;
-        this.log = response.data.log;
-      }
-      // If task ends with an error
-      else if (result == "error") {
-        this.handleErrorResponse(response);
-      }
-    },
-
-    handleErrorResponse(response) {
-      // Pass the error string back with reject
-      if (!this.progress) this.progress = 1;
-      // Test whether the log is empty or the most recent message is not from an error
-      // If so, return a default message
-      if (
-        (response.data.log.length == 0) |
-        (response.data.log.from_index(-1).levelname != "ERROR")
-      ) {
-        var message = "Unexpected error, please check the logs";
-      }
-      // As LabThings Actions add the message from any raised exception to the log, the
-      // last message in the log is the message from the Exception.
-      // If the Exception was raised with no message, use a default.
-      else {
-        message =
-          response.data.log.from_index(-1).message || "Unexpected error, please check the logs";
-      }
-      // Raise an Error with the chosen message
-      throw new Error(message);
+      this.progress = response.data.progress;
+      this.log = response.data.log;
     },
 
     terminateTask: function () {
