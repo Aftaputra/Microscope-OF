@@ -106,7 +106,7 @@ class OpenCVCamera(BaseCamera):
             raise RuntimeError(
                 f"Failed to capture frame from camera {self.camera_index}"
             )
-        return frame
+        return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     def capture_image(
         self,
