@@ -47,8 +47,6 @@
 </template>
 
 <script>
-import axios from "axios";
-
 import ActionProgressBar from "./actionProgressBar.vue";
 import ActionStatusModal from "./actionStatusModal.vue";
 
@@ -165,7 +163,7 @@ export default {
       n = Math.trunc(n) || 0;
       // Allow negative indexing from the end
       if (n < 0) n += this.length;
-      // OOB access is guaranteed to return undefined
+      // Out of bounds access is guaranteed to return undefined
       if (n < 0 || n >= this.length) return undefined;
       // Otherwise, this is just normal property access
       return this[n];
@@ -215,13 +213,9 @@ export default {
      *
      */
     async checkExistingTasks() {
-      let response;
-      try {
-        response = await axios.get(this.submitUrl);
-      } catch (error) {
-        console.warn("checkExistingTasks: request failed", error);
-        return;
-      }
+      let response = await this.findOngoingAction(this.thing, this.action);
+      // Exit if response is null, due to an error.
+      if (response == null) return;
       // Check for a task that is ongoing.
       // We can't handle multiple tasks ongoing, so this picks the first.
       const ongoingTask = response.data.find((t) => ["pending", "running"].includes(t.status));
@@ -231,13 +225,7 @@ export default {
         this.$emit("taskStarted");
         // Find its URL
         const taskUrl = ongoingTask.links.find((t) => t.rel == "self").href;
-        try {
-          await this.pollOngoingTask(ongoingTask.id, taskUrl);
-        } catch (error) {
-          this.$emit("error", error);
-        } finally {
-          this.onTaskEnd();
-        }
+        this.startPollingTask(ongoingTask.id, taskUrl);
       }
     },
 
@@ -257,108 +245,106 @@ export default {
 
     async startTask() {
       // Starts a new Action task
-
       this.$emit("submit", this.submitData);
       // Send a request to start a task
-
       this.taskStarted = true;
       this.$emit("taskStarted");
+      let response;
       try {
-        let response = await axios.post(this.submitUrl, this.submitData);
-        if (this.modalProgress) {
-          this.$refs.statusModal.show();
-        }
-        await this.pollOngoingTask(response.data.id, response.data.href);
+        response = await this.invokeAction(
+          this.thing,
+          this.action,
+          this.submitData,
+          false, // Stop invokeAction handling the error.
+        );
       } catch (error) {
         this.$emit("error", error);
-      } finally {
         this.onTaskEnd();
+        return;
       }
+      if (this.modalProgress) {
+        this.$refs.statusModal.show();
+      }
+      // This just starts the polling. No need to await it.
+      this.startPollingTask(response.data.id, response.data.href);
     },
 
-    async pollOngoingTask(taskId, taskUrl) {
+    async startPollingTask(taskId, taskUrl) {
+      // Return if taskRunning already set.
+      if (this.taskRunning) return;
+      // Starts polling an existing Action task
+      this.taskUrl = taskUrl;
       // Start the store polling TaskId for success
-      const response = await this.startPolling(taskId, taskUrl);
-      if (response.status == "completed") {
-        this.$emit("response", response);
-        this.$emit("completed", response.output);
-      } else if (response.status == "cancelled") {
-        this.$emit("cancelled", response);
-        this.modalNotify(`The action '${this.submitLabel}' was cancelled.`);
-      }
+      this.taskRunning = true;
+      this.$emit("taskRunning", taskId);
+      this.pollUntilComplete(
+        taskUrl,
+        this.onPollingResponse,
+        this.onTaskEnd, // Method to run after task (even if error)
+        500, // Interval
+        false, // Don't handle errors,
+      );
     },
 
-    onTaskEnd: function () {
-      // Reset taskRunning and taskId
+    onTaskEnd: function (response) {
+      if (response) {
+        this.taskStatus = response.data.status;
+        this.log = response.data.log;
+        if (response.data.status == "completed") {
+          this.$emit("response", response.data);
+          this.$emit("completed", response.data.output);
+        } else if (response.data.status == "cancelled") {
+          this.$emit("cancelled", response.data);
+          this.modalNotify(`The action '${this.submitLabel}' was cancelled.`);
+        }
+      }
+      this.taskUrl = null;
       this.taskRunning = false;
       this.taskStarted = false;
       this.$emit("finished");
     },
 
-    startPolling: function (taskId, taskUrl) {
-      if (this.taskRunning != true) {
-        // Starts polling an existing Action task
-        this.taskUrl = taskUrl;
-        // Start the store polling TaskId for success
-        this.taskRunning = true;
-        this.$emit("taskRunning", taskId);
-        return this.pollTask(taskId, this.pollInterval);
+    onPollingResponse(response) {
+      var result = response.data.status;
+      this.taskStatus = result;
+      if ((result == "running") | (result == "pending")) {
+        // If the task is still running, we update progress/log,
+        // and schedule another poll
+        this.progress = response.data.progress;
+        this.log = response.data.log;
+      }
+      // If task ends with an error
+      else if (result == "error") {
+        this.handleErrorResponse(response);
       }
     },
 
-    pollTask: function (taskId, interval) {
-      interval = interval * 1000 || 500;
-
-      var checkCondition = (resolve, reject) => {
-        // If the condition is met, we're done!
-        axios.get(this.taskUrl, { baseURL: this.$store.getters.baseUri }).then((response) => {
-          var result = response.data.status;
-          this.taskStatus = result;
-          if ((result == "running") | (result == "pending")) {
-            // If the task is still running, we update progress/log,
-            // and schedule another poll
-            this.progress = response.data.progress;
-            this.log = response.data.log;
-            // Check again after timeout
-            setTimeout(checkCondition, interval, resolve, reject);
-          }
-          // If task ends with an error
-          else if (result == "error") {
-            // Pass the error string back with reject
-            if (!this.progress) this.progress = 1;
-            // Test whether the log is empty or the most recent message is not from an error
-            // If so, return a default message
-            if (
-              (response.data.log.length == 0) |
-              (response.data.log.from_index(-1).levelname != "ERROR")
-            ) {
-              var message = "Unexpected error, please check the logs";
-            }
-            // As LabThings Actions add the message from any raised exception to the log, the
-            // last message in the log is the message from the Exception.
-            // If the Exception was raised with no message, use a default.
-            else {
-              message =
-                response.data.log.from_index(-1).message ||
-                "Unexpected error, please check the logs";
-            }
-            // Raise an Error with the chosen message
-            reject(new Error(message));
-          }
-          // If task ends without reporting an error
-          // (Note: this includes cancellation)
-          else {
-            resolve(response.data);
-          }
-        });
-      };
-
-      return new Promise(checkCondition);
+    handleErrorResponse(response) {
+      // Pass the error string back with reject
+      if (!this.progress) this.progress = 1;
+      // Test whether the log is empty or the most recent message is not from an error
+      // If so, return a default message
+      if (
+        (response.data.log.length == 0) |
+        (response.data.log.from_index(-1).levelname != "ERROR")
+      ) {
+        var message = "Unexpected error, please check the logs";
+      }
+      // As LabThings Actions add the message from any raised exception to the log, the
+      // last message in the log is the message from the Exception.
+      // If the Exception was raised with no message, use a default.
+      else {
+        message =
+          response.data.log.from_index(-1).message || "Unexpected error, please check the logs";
+      }
+      // Raise an Error with the chosen message
+      throw new Error(message);
     },
 
     terminateTask: function () {
-      axios.delete(this.taskUrl, { baseURL: this.$store.getters.baseUri });
-      this.$root.$emit("modalClosed");
+      if (this.taskUrl) {
+        this.terminateAction(this.taskUrl);
+      }
     },
   },
 };
