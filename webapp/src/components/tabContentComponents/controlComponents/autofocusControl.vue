@@ -9,7 +9,6 @@
         :submit-label="'Autofocus'"
         :button-primary="true"
         :submit-on-event="'globalFastAutofocusEvent'"
-        :is-disabled="isAutofocusing"
         @taskStarted="onAutofocus"
         @finished="afterAutofocus"
         @error="modalError"

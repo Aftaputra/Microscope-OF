@@ -1,37 +1,16 @@
 <template>
   <div v-observe-visibility="visibilityChanged" class="uk-margin-remove uk-padding-remove">
-    <div v-if="taskStarted" ref="isPollingElement">
-      <action-progress-bar
-        v-if="taskStarted && hideOnRun"
-        :progress="progress"
-        :task-status="taskStatus"
-      />
-      <!-- hideOnRun selects if the button hides, don't show progress bar if button doesn't hide. -->
-      <button
-        v-if="canTerminate && taskRunning"
-        type="button"
-        class="uk-button uk-button-danger uk-margin-remove uk-float-right uk-width-1-1"
-        @click="terminateTask"
-      >
-        Cancel
-      </button>
-    </div>
+    <button
+      type="button"
+      :disabled="buttonDisabled"
+      class="uk-button uk-width-1-1 uk-position-relative"
+      :class="buttonClasses"
+      @click="handleClick"
+    >
+      <action-progress-bar :progress="progress" :task-status="taskStatus" :in-button="true" />
+      {{ buttonLabel }}
+    </button>
 
-    <div>
-      <button
-        type="button"
-        :disabled="isDisabled"
-        :hidden="taskStarted && hideOnRun"
-        class="uk-button uk-width-1-1"
-        :class="[
-          isDisabled ? 'uk-button-disabled' : '',
-          buttonPrimary ? 'uk-button-primary' : 'uk-button-default',
-        ]"
-        @click="bootstrapTask"
-      >
-        {{ submitLabel }}
-      </button>
-    </div>
     <action-status-modal
       ref="statusModal"
       :title="submitLabel"
@@ -113,11 +92,6 @@ export default {
       required: false,
       default: false,
     },
-    hideOnRun: {
-      type: Boolean,
-      required: false,
-      default: true,
-    },
   },
 
   data: function () {
@@ -132,8 +106,25 @@ export default {
   },
 
   computed: {
-    submitUrl() {
-      return this.thingActionUrl(this.thing, this.action);
+    buttonDisabled() {
+      return this.isDisabled || (this.taskRunning && !this.canTerminate);
+    },
+    buttonLabel() {
+      return this.taskRunning && this.canTerminate ? "Cancel" : this.submitLabel;
+    },
+    buttonClasses() {
+      const classes = [];
+      if (this.buttonDisabled) {
+        classes.push("uk-button-disabled");
+      }
+      if (this.taskRunning && this.canTerminate) {
+        classes.push("uk-button-danger");
+      } else if (this.buttonPrimary) {
+        classes.push("uk-button-primary");
+      } else {
+        classes.push("uk-button-default");
+      }
+      return classes.join(" ");
     },
   },
 
@@ -177,6 +168,13 @@ export default {
   },
 
   methods: {
+    handleClick() {
+      if (this.taskStarted) {
+        this.terminateTask();
+      } else {
+        this.bootstrapTask();
+      }
+    },
     visibilityChanged(isVisible) {
       if (isVisible && this.taskStarted != true) {
         this.checkExistingTasks();

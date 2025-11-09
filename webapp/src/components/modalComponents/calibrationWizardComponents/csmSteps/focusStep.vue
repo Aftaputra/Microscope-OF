@@ -11,7 +11,6 @@
           :button-primary="false"
           :submit-data="{ x: 0, y: 0, z: -100 }"
           :submit-label="' - '"
-          :hide-on-run="false"
           :can-terminate="false"
         />
         <action-button
@@ -22,7 +21,6 @@
           :submit-data="{ x: 0, y: 0, z: 100 }"
           :submit-label="'+'"
           :can-terminate="false"
-          :hide-on-run="false"
         />
       </div>
     </template>
