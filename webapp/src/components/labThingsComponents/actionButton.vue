@@ -11,7 +11,7 @@
         v-if="canTerminate && taskRunning"
         type="button"
         class="uk-button uk-button-danger uk-margin-remove uk-float-right uk-width-1-1"
-        @click="terminateTask()"
+        @click="terminateTask"
       >
         Cancel
       </button>
@@ -27,57 +27,34 @@
           isDisabled ? 'uk-button-disabled' : '',
           buttonPrimary ? 'uk-button-primary' : 'uk-button-default',
         ]"
-        @click="bootstrapTask()"
+        @click="bootstrapTask"
       >
         {{ submitLabel }}
       </button>
     </div>
-
-    <div
-      id="modal-center"
+    <action-status-modal
       ref="statusModal"
-      class=""
-      uk-modal="bg-close: false; esc-close: false; stack: true;"
-    >
-      <div id="status-modal" class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
-        <h2>{{ submitLabel }}</h2>
-        <action-log-display :log="log" :task-status="taskStatus" />
-        <div id="progress-and-cancel-row">
-          <div class="stretchy">
-            <action-progress-bar :progress="progress" :task-status="taskStatus" />
-          </div>
-
-          <button
-            v-if="canTerminate && taskRunning"
-            type="button"
-            class="uk-button uk-button-danger not-stretchy"
-            @click="terminateTask()"
-          >
-            Cancel
-          </button>
-          <button
-            v-if="!taskStarted"
-            type="button"
-            class="uk-button not-stretchy"
-            @click="hideModal"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+      :title="submitLabel"
+      :log="log"
+      :progress="progress"
+      :can-terminate="canTerminate"
+      :task-running="taskRunning"
+      :task-started="taskStarted"
+      :task-status="taskStatus"
+      @terminateTask="terminateTask"
+    />
   </div>
 </template>
 
 <script>
 import axios from "axios";
-import UIkit from "uikit";
+
 import ActionProgressBar from "./actionProgressBar.vue";
-import ActionLogDisplay from "./actionLogDisplay.vue";
+import ActionStatusModal from "./actionStatusModal.vue";
 
 export default {
   name: "ActionButton",
-  components: { ActionProgressBar, ActionLogDisplay },
+  components: { ActionProgressBar, ActionStatusModal },
 
   props: {
     action: {
@@ -289,7 +266,7 @@ export default {
       try {
         let response = await axios.post(this.submitUrl, this.submitData);
         if (this.modalProgress) {
-          UIkit.modal(this.$refs.statusModal).show();
+          this.$refs.statusModal.show();
         }
         await this.pollOngoingTask(response.data.id, response.data.href);
       } catch (error) {
@@ -379,11 +356,6 @@ export default {
       return new Promise(checkCondition);
     },
 
-    hideModal() {
-      UIkit.modal(this.$refs.statusModal).hide();
-      this.$root.$emit("modalClosed");
-    },
-
     terminateTask: function () {
       axios.delete(this.taskUrl, { baseURL: this.$store.getters.baseUri });
       this.$root.$emit("modalClosed");
@@ -391,31 +363,3 @@ export default {
   },
 };
 </script>
-
-<style lang="less" scoped>
-@import "../../assets/less/theme.less";
-
-#progress-and-cancel-row {
-  display: flex;
-  flex-flow: row wrap;
-  justify-content: flex-start;
-  align-content: stretch;
-  align-items: center;
-  width: 100%;
-}
-
-#progress-and-cancel-row .stretchy {
-  flex-grow: 1;
-  margin-left: 5px;
-  margin-right: 5px;
-}
-#progress-and-cancel-row .not-stretchy {
-  flex-grow: 0;
-  margin-left: 5px;
-  margin-right: 5px;
-}
-
-#status-modal .log-container {
-  height: 10em;
-}
-</style>
