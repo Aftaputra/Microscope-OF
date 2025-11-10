@@ -27,6 +27,7 @@ gets very confusing.
       v-if="currentStep"
       :key="stepIndex"
       v-bind="currentStep.props"
+      @awaiting-user="handleAwaitingUser"
     />
     <p class="uk-text-right">
       <button
@@ -68,6 +69,7 @@ export default {
   data() {
     return {
       stepIndex: this.startOnLast ? this.steps.length - 1 : 0,
+      stepAwaitingUser: false,
     };
   },
 
@@ -79,7 +81,11 @@ export default {
       return !this.first || this.stepIndex > 0;
     },
     nextButtonText() {
-      return this.final && this.stepIndex === this.steps.length - 1 ? "Finish" : "Next";
+      const isLastStep = this.final && this.stepIndex === this.steps.length - 1;
+      if (this.stepAwaitingUser) {
+        return isLastStep ? "Skip and Finish" : "Skip";
+      }
+      return isLastStep ? "Finish" : "Next";
     },
   },
 
@@ -88,6 +94,7 @@ export default {
      * Move to the previous step in this task, or the previous task if first step.
      */
     previousStep: function () {
+      this.stepAwaitingUser = false;
       if (this.stepIndex > 0) {
         this.stepIndex = this.stepIndex - 1;
       } else {
@@ -99,12 +106,16 @@ export default {
      * Move to the next step in this task, or the next task if final step.
      */
     nextStep: function () {
+      this.stepAwaitingUser = false;
       if (this.stepIndex < this.steps.length - 1) {
         this.stepIndex = this.stepIndex + 1;
         return true;
       } else {
         this.$emit("next");
       }
+    },
+    handleAwaitingUser(isAwaiting) {
+      this.stepAwaitingUser = isAwaiting;
     },
   },
 };

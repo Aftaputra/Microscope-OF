@@ -6,7 +6,7 @@
       :key="'primary_cal' + index"
       class="uk-child-width-expand"
     >
-      <server-specified-action-button :action-data="action" />
+      <server-specified-action-button :action-data="action" @finished="$emit('actionFinished')" />
     </div>
     <div v-if="showExtraSettings">
       <div
@@ -14,7 +14,7 @@
         :key="'secondary_cal' + index"
         class="uk-child-width-expand"
       >
-        <server-specified-action-button :action-data="action" />
+        <server-specified-action-button :action-data="action" @finished="$emit('actionFinished')" />
       </div>
     </div>
   </div>

@@ -6,7 +6,11 @@
 
     <template #below-stream>
       <div class="action-button-container">
-        <cameraCalibrationSettings :show-extra-settings="false" :camera-uri="cameraUri" />
+        <cameraCalibrationSettings
+          :show-extra-settings="false"
+          :camera-uri="cameraUri"
+          @actionFinished="checkCalibrationState"
+        />
       </div>
     </template>
   </stepTemplateWithStream>
@@ -27,6 +31,17 @@ export default {
   computed: {
     cameraUri: function () {
       return `${this.$store.getters.baseUri}/camera/`;
+    },
+  },
+
+  mounted() {
+    this.checkCalibrationState();
+  },
+
+  methods: {
+    async checkCalibrationState() {
+      const needsCal = await this.readThingProperty("camera", "calibration_required");
+      this.$emit("awaiting-user", needsCal);
     },
   },
 };

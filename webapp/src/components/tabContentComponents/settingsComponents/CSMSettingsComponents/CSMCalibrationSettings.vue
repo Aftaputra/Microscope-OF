@@ -104,24 +104,30 @@ export default {
         "camera_stage_mapping",
         "image_to_stage_displacement_matrix",
       );
-      this.csmResolution = await this.readThingProperty("camera_stage_mapping", "image_resolution");
-      let streamResolution = await this.readThingProperty("camera", "stream_resolution");
-      csmMatrix[0][0] = Number(csmMatrix[0][0].toFixed(3));
-      csmMatrix[0][1] = Number(csmMatrix[0][1].toFixed(3));
-      csmMatrix[1][0] = Number(csmMatrix[1][0].toFixed(3));
-      csmMatrix[1][1] = Number(csmMatrix[1][1].toFixed(3));
-      this.csmMatrix = csmMatrix;
-      this.csmRatio = Number((Math.abs(csmMatrix[1][0]) + Math.abs(csmMatrix[0][1])) / 2).toFixed(
-        3,
-      );
-      this.csmFOV = [
-        Number(((streamResolution[0] ** 2 * this.csmRatio) / this.csmResolution[1]).toFixed(0)),
-        Number(((streamResolution[1] ** 2 * this.csmRatio) / this.csmResolution[0]).toFixed(0)),
-      ];
+      if (csmMatrix) {
+        this.csmResolution = await this.readThingProperty(
+          "camera_stage_mapping",
+          "image_resolution",
+        );
+        csmMatrix[0][0] = Number(csmMatrix[0][0].toFixed(3));
+        csmMatrix[0][1] = Number(csmMatrix[0][1].toFixed(3));
+        csmMatrix[1][0] = Number(csmMatrix[1][0].toFixed(3));
+        csmMatrix[1][1] = Number(csmMatrix[1][1].toFixed(3));
+        this.csmMatrix = csmMatrix;
+        this.csmRatio = Number((Math.abs(csmMatrix[1][0]) + Math.abs(csmMatrix[0][1])) / 2).toFixed(
+          3,
+        );
+        // Note [1] then [0] as CSM reports resolution as (y, x)
+        this.csmFOV = [
+          Number((this.csmResolution[1] * this.csmRatio).toFixed(0)),
+          Number((this.csmResolution[0] * this.csmRatio).toFixed(0)),
+        ];
+      }
     },
-    onRecalibrateResponse: function () {
+    onRecalibrateResponse: function (response) {
       this.modalNotify("Finished stage-to-camera calibration.");
       this.updateDisplayedCSM();
+      this.$emit("recalibrateResponse", response);
     },
   },
 };

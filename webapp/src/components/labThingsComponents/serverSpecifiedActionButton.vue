@@ -11,6 +11,7 @@
     :modal-progress="actionData.modal_progress"
     @response="actionResponse"
     @error="modalError"
+    @finished="actionFinished"
   />
 </template>
 
@@ -33,10 +34,26 @@ export default {
   },
 
   methods: {
-    actionResponse: function () {
+    /**
+     * Runs when the ActionButton's action completes successfully.
+     *
+     * It is used to send success notifications. It also forwards the response to the
+     * parent.
+     */
+    actionResponse: function (response) {
       if (this.actionData.notify_on_success) {
         this.modalNotify(this.actionData.success_message);
+        this.$emit("response", response);
       }
+    },
+    /**
+     * Runs when the ActionButton's action finishes in any way (error, cancel,
+     * completion).
+     *
+     * This forwards the event to the parent
+     */
+    actionFinished: function () {
+      this.$emit("finished");
     },
   },
 };
