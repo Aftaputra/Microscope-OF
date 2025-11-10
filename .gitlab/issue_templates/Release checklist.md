@@ -40,7 +40,7 @@ This phase is dedicated to intensive testing and bug fixing on the `release/vX.Y
     * [ ] Test final image on all supported hardware revisions.
     * [ ] Test functionality on the Microscope Simulator.
 * [ ] **Triage:** Triage all bugs found. Fix any release-blocking bugs.
-* [... ] **Repeat:** Re-build image and re-test as bugs are fixed. Update release date if absolutely necessary.
+* [ ] **Repeat:** Re-build image and re-test as bugs are fixed. Update release date if absolutely necessary. (Optional)
 
 ---
 
@@ -68,4 +68,4 @@ This phase is dedicated to intensive testing and bug fixing on the `release/vX.Y
 * [ ] **Communicate:** Publish the release announcement on the OpenFlexure forum.
 * [ ] **Announce:** Share the forum post on other relevant channels (e.g., LinkedIn, Emailing Collaborators).
 * [ ] **Close:** Close this issue and the corresponding GitLab Milestone.
-* [ ] **Celebrate:** 🎉
+* [ ] **Celebrate!**
