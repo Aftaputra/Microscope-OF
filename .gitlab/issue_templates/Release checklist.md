@@ -18,7 +18,7 @@ This phase focuses on planning the release and, crucially, getting any major inf
 ### Phase 2: Feature Freeze (T-2 Weeks)
 
 * [ ] **Announce:** Announce the Feature Freeze deadline one week out. This should be announced on the OpenFlexure Forum and in a message/email to the core team.
-* [ ] **Deadline:** **FEATURE FREEZE**. All feature MRs for the milestone must be merged.
+* [ ] **Deadline:** **FEATURE FREEZE**. All MRs for the milestone must be merged.
 * [ ] **Branch:** Create a `release/vX.Y.Z` branch from `main`.
     * *From this point, only bug fixes (regressions) are merged into this branch.*
 * [ ] **Communication:** Inform the team that all new feature work should target the *next* milestone.
@@ -32,7 +32,7 @@ This phase is dedicated to intensive testing and bug fixing on the `release/vX.Y
 * [ ] **Create Image:** Flash at least one SD card with the new image.
 * [ ] **Create Test Plan:** Document the specific tests to be run.
 * [ ] **Execute Test Plan:**
-    * [ ] HQ Camera Test
+    * [ ] HQ Camera Test (Optional)
     * [ ] High-Resolution Test
     * [ ] Low-Resolution Test
     * [ ] ROM Test
