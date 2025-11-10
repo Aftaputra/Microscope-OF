@@ -20,23 +20,27 @@
       v-show="showExtraSettings"
       type="button"
       class="uk-button uk-button-default uk-width-1-1"
+      :disabled="!csmMatrix"
+      :class="{ 'uk-disabled': !csmMatrix }"
       @click="getCalibrationData()"
     >
       Download Calibration Data
     </button>
-    <div v-if="csmMatrix != 'undefined'" style="margin: 10px">
+    <div v-if="csmMatrix" style="margin: 10px">
       <details>
         <summary>Calibration Details</summary>
-        <strong>CSM calculated for images with a resolution of:</strong>
-        <br />
-        <matrixDisplay :matrix="csmResolution" :bracket-height="1.5" />
-
         <ul>
           <li>
-            Current CSM Matrix:
+            <strong>Current CSM Matrix:</strong>
             <br />
             <matrixDisplay :matrix="csmMatrix" />
           </li>
+          <li>
+            CSM calculated for images with a resolution of:
+            <br />
+            <matrixDisplay :matrix="csmResolution" :bracket-height="1.5" />
+          </li>
+
           <li>Pixels per motor step: {{ csmRatio }}</li>
           <li>
             Full field of view in motor steps:
@@ -46,6 +50,7 @@
         </ul>
       </details>
     </div>
+    <p v-else><strong>No Calibration Available</strong></p>
   </div>
 </template>
 
@@ -72,9 +77,10 @@ export default {
 
   data() {
     return {
-      csmMatrix: "undefined",
-      csmResolution: "undefined",
-      csmRatio: "undefined",
+      csmMatrix: undefined,
+      csmResolution: undefined,
+      csmRatio: undefined,
+      csmFOV: undefined,
     };
   },
 
