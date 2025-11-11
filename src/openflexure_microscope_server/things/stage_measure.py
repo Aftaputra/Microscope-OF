@@ -18,13 +18,10 @@ import time
 from dataclasses import dataclass
 from threading import Lock
 
-from scipy.optimize import curve_fit
 import numpy as np
 
 from camera_stage_mapping import fft_image_tracking
 import labthings_fastapi as lt
-
-from openflexure_microscope_server.utilities import quadratic
 
 # Things
 from .autofocus import AutofocusThing
@@ -72,6 +69,18 @@ class RomDataTracker:
         """The last stage coordinate recorded."""
         return self.stage_coords[-1].copy()
 
+    def fit_axis(self, axis: Literal["x", "y"]) -> np.poly1d:
+        """Quadratic fit stage z against x or y and return poly1d of fit.
+
+        Note that this considers only one of x and y, and ignores the other coordinate. If
+        this function is used on moves where both x and y are changing, it will give misleading
+        results.
+        """
+        lateral_positions = [i[axis] for i in self.stage_coords]
+        z_positions = [i["z"] for i in self.stage_coords]
+        fit_params = np.polyfit(lateral_positions, z_positions, 2)
+        return np.poly1d(fit_params)
+
     def predict_z_displacement(
         self,
         axis: Literal["x", "y"],
@@ -85,13 +94,21 @@ class RomDataTracker:
         :param stage_position: The current stage position in stage coordinates.
         :return: The predicted relative z displacement needed to stay in focus.
         """
-        # x or y positions
-        lateral_positions = [i[axis] for i in self.stage_coords]
-        z_positions = [i["z"] for i in self.stage_coords]
-        fit_params, *_others = curve_fit(quadratic, lateral_positions, z_positions)
-        z_dest = quadratic(stage_position[axis] + stage_movement[axis], *fit_params)
+        fit_func = self.fit_axis(axis)
+        z_dest = fit_func(stage_position[axis] + stage_movement[axis])
 
         return int(z_dest - stage_position["z"])
+
+    def find_turning_point(self, axis: Literal["x", "y"]) -> dict[str, int]:
+        """Find the turing point from the recorded coordinates."""
+        fit_func = self.fit_axis(axis)
+        turning_loc = fit_func.deriv().roots[0]
+        turning_z = fit_func(turning_loc)
+
+        # As we only move in 1 direction, pull the other axis from the coords.
+        other_axis = "x" if axis == "y" else "y"
+        other_coord = self.stage_coords[-1][other_axis]
+        return {axis: int(turning_loc), other_axis: other_coord, "z": int(turning_z)}
 
 
 @dataclass
@@ -197,6 +214,51 @@ class RangeofMotionThing(lt.Thing):
             "Step Range": step_range,
         }
 
+    @lt.thing_action
+    def perform_recentre(
+        self,
+        autofocus: AutofocusDep,
+        stage: StageDep,
+        cam: CamDep,
+        csm: CSMDep,
+        logger: lt.deps.InvocationLogger,
+    ) -> None:
+        """Measures the curvature of the motion to centre x and y axes.
+
+        :param autofocus: A raw_thing_client dependency for autofocus.
+        :param stage: A raw_thing_client depeendency for the microscope stage.
+        :param cam: A raw_thing_client depeendency for the camera.
+        :param csm: A raw_thing_client depeendency for camera stage mapping.
+        :param logger: A raw_thing_client depeendency for the logger.
+        """
+        got_lock = self._lock.acquire(blocking=False)
+        if not got_lock:
+            raise RuntimeError("Trying to run recentre when a test is already running.")
+
+        try:
+            rom_deps = RomDeps(
+                autofocus=autofocus, stage=stage, csm=csm, cam=cam, logger=logger
+            )
+            logger.info("Recentring the stage.")
+
+            self._set_stream_resolution(cam)
+
+            # Strictly typed definitions to iterate over for MyPys sake.
+            axes: tuple[Literal["x"], Literal["y"]] = ("x", "y")
+
+            for axis in axes:
+                self._recentre_axis(axis, rom_deps)
+
+            centre = rom_deps.stage.position
+            centre_str = f"({centre['x']}, {centre['y']})"
+            rom_deps.logger.info(f"Centre is estimated at {centre_str}.")
+            # Set the central position to (0,0,0)
+            rom_deps.stage.set_zero_position()
+            rom_deps.logger.info("Position reset to (0, 0, 0).")
+
+        finally:
+            self._lock.release()
+
     def _set_stream_resolution(self, cam: CamDep) -> None:
         """Set the self._stream_resolution attribute by reading camera.
 
@@ -236,7 +298,7 @@ class RangeofMotionThing(lt.Thing):
             )
 
             rom_deps.logger.info("Moving the stage in 5 medium sized steps.")
-            self._initial_moves_for_z_prediction(
+            self._moves_for_z_prediction(
                 axis=axis,
                 direction=direction,
                 rom_deps=rom_deps,
@@ -276,13 +338,87 @@ class RangeofMotionThing(lt.Thing):
         finally:
             rom_deps.stage.move_absolute(**starting_position, block_cancellation=True)
 
+    def _recentre_axis(self, axis: Literal["x", "y"], rom_deps: RomDeps) -> None:
+        """Recentre a single axis.
+
+        :param axis: The axis to recentre
+        :param rom_deps: All dependencies that were passed to the calling Action.
+        """
+        rom_deps.logger.info(f"Finding centre in {axis}.")
+        # A new tracker for this axis.
+        self._rom_data = RomDataTracker()
+        # Direction is in image coords, initial assumption is that centre is at (0,0).
+        direction = self._img_dir_from_stage_coords(
+            {"x": 0, "y": 0, "z": 0}, axis, rom_deps
+        )
+
+        i = 0
+        while True:
+            i += 1
+            # Find z then make a number of moves (autofocussing and logging position)
+            # 5 moves initially (2 subsequently).
+            rom_deps.autofocus.looping_autofocus(dz=1000)
+            self._rom_data.stage_coords.append(rom_deps.stage.position)
+            self._moves_for_z_prediction(
+                axis=axis,
+                direction=direction,
+                rom_deps=rom_deps,
+                n_moves=5 if i == 1 else 2,
+            )
+
+            centred, direction = self._recentre_decision(axis, rom_deps)
+            if centred:
+                break
+
+            # If still going at iteration 9 exit
+            if i > 9:
+                raise RuntimeError(f"Couldn't find centre of {axis}-axis")
+
+            # Make a big z-corrected move towards estimate of centre.
+            self._big_z_corrected_movement(axis, direction, rom_deps)
+
+    def _recentre_decision(
+        self, axis: Literal["x", "y"], rom_deps: RomDeps
+    ) -> tuple[bool, Literal[1, -1]]:
+        """Decide what to do next during recentreing.
+
+        The algorithm here:
+
+        * Estimate turning point location
+        * Check if distance to point is further than a "BIG_STEP"
+        * If smaller, move to estimated centre, and return that it is centred
+        * If larger, return that it is not centred, and the direction to move in.
+
+        :param axis: The axis to recentre
+        :param rom_deps: All dependencies that were passed to the calling Action.
+        :return: A tuple. The first value is True for "the stage is now centred" and
+            False for "the stage is not centred". The second value is the direction to
+            move in, this only has meaning if the first value is False.
+        """
+        estimate = self._rom_data.find_turning_point(axis=axis)
+        img_perc = self._distance_in_img_percentage(estimate, axis, rom_deps)
+
+        # if the distance is less than 1 big step away then move to it and exit
+        if abs(img_perc) < BIG_STEP:
+            rom_deps.logger.info(f"Estimated centre of {axis}-axis is {estimate[axis]}")
+            rom_deps.stage.move_absolute(**estimate)
+            # Note the second return, the direction, is meaningless here.
+            return True, 1
+        rom_deps.logger.info(
+            f"Estimated centre {abs(img_perc):.0f}% of a field of view away, "
+            "that is too far to move in one move."
+        )
+        # Else calculate the desired direction in image coordinates.
+        direction = self._img_dir_from_stage_coords(estimate, axis, rom_deps)
+        return False, direction
+
     def _img_percentage_to_img_coords(
         self, fov_perc: int, axis: Literal["x", "y"]
     ) -> float:
         """For a given image percentage and axis return the distance in img coords.
 
         :param fov_perc: The percentage of field of view the stage should move by.
-        :param axis: The resolution of the stream from the camera.
+        :param axis: The axis which is being measured. This must be 'x' or 'y'.
         :return: Distance in image coordinates (pixels)
         """
         if self._stream_resolution is None:
@@ -292,6 +428,45 @@ class RangeofMotionThing(lt.Thing):
 
         img_index = 0 if axis == "x" else 1
         return (fov_perc / 100) * self._stream_resolution[img_index]
+
+    def _img_dir_from_stage_coords(
+        self, target: dict[str, int], axis: Literal["x", "y"], rom_deps: RomDeps
+    ) -> Literal[1, -1]:
+        """For a target location in stage coords, return the direction in image coordinates.
+
+        :param target: The target poisiton in stage coordinates
+        :param axis: The axis which is being measured. This must be 'x' or 'y'.
+        :param rom_deps: All dependencies that were passed to the calling Action.
+        :return: Direction to move in image coordinates.
+        """
+        target_im_coords = rom_deps.csm.convert_stage_to_image_coordinates(**target)
+        current_loc = rom_deps.stage.position
+        current_loc_im_coords = rom_deps.csm.convert_stage_to_image_coordinates(
+            **current_loc
+        )
+        return -1 if target_im_coords[axis] < current_loc_im_coords[axis] else 1
+
+    def _distance_in_img_percentage(
+        self, target: dict[str, int], axis: Literal["x", "y"], rom_deps: RomDeps
+    ) -> float:
+        """For a target location in stage coords return the distance in percentage of FOV.
+
+        :param target: The target poisiton in stage coordinates
+        :param axis: The axis which is being measured. This must be 'x' or 'y'.
+        :param rom_deps: All dependencies that were passed to the calling Action.
+        :return: Percentage of field of view the stage should move by.
+        """
+        if self._stream_resolution is None:
+            raise RuntimeError(
+                "Stream resolution must be set before converting coords to percentage"
+            )
+
+        current_loc = rom_deps.stage.position
+        move_stage = {key: target[key] - current_loc[key] for key in target}
+        move_img = rom_deps.csm.convert_stage_to_image_coordinates(**move_stage)
+
+        img_index = 0 if axis == "x" else 1
+        return (move_img[axis] / self._stream_resolution[img_index]) * 100
 
     def _movement_in_img_coords(
         self,
@@ -314,36 +489,37 @@ class RangeofMotionThing(lt.Thing):
             return {"x": distance * direction, "y": 0}
         return {"x": 0, "y": distance * direction}
 
-    def _initial_moves_for_z_prediction(
+    def _moves_for_z_prediction(
         self,
         axis: Literal["x", "y"],
         direction: Literal[1, -1],
         rom_deps: RomDeps,
+        n_moves: int = 5,
     ) -> None:
-        """Perform 5 medium sized moves with autofocus for z feed-forward.
+        """Perform medium sized moves with autofocus for z feed-forward.
 
         z-feed forward allows prediction of the z-position as the stage moves. For the
         feed forward calculation to work an initial number of measurements must be
-        taken. This method performs these initial measurements.
+        taken.
 
         :param direction: The direction the stage moves.
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
         :param rom_deps: All dependencies that were passed to the calling Action
+        :param n_moves: Number of moves to make. Default is 5 which is enough for an
+            initial z estimate.
         """
         movement = self._movement_in_img_coords(
             fov_perc=MEDIUM_STEP, axis=axis, direction=direction
         )
-        for _loop in range(5):
+        for _loop in range(n_moves):
             offset = self._move_and_measure(movement=movement, rom_deps=rom_deps)
-            rom_deps.logger.info(f"Offset measured as {offset[axis]}")
 
             self._rom_data.record_movement(rom_deps.stage.position, offset)
             if _parasitic_motion_detected(movement, offset):
                 raise ParasiticMotionError(
-                    "Parasitic motion detected during initial images to calculate "
-                    "z-curvature. This may indicate you have started at the end of the "
-                    "range of travel, or that camera stage mapping is poorly "
-                    "calibrated."
+                    "Parasitic motion detected during images to calculate z-curvature. "
+                    "This may indicate you have started at the end of the range of "
+                    "travel, or that camera stage mapping is poorly calibrated."
                 )
 
     def _big_z_corrected_movement(
@@ -361,11 +537,11 @@ class RangeofMotionThing(lt.Thing):
             fov_perc=BIG_STEP, axis=axis, direction=direction
         )
         # Convert to stage coordinates
-        stage_movemenet = rom_deps.csm.convert_image_to_stage_coordinates(**movement)
+        stage_movement = rom_deps.csm.convert_image_to_stage_coordinates(**movement)
 
         z_disp = self._rom_data.predict_z_displacement(
             axis=axis,
-            stage_movement=stage_movemenet,
+            stage_movement=stage_movement,
             stage_position=rom_deps.stage.position,
         )
         rom_deps.stage.move_relative(z=z_disp)

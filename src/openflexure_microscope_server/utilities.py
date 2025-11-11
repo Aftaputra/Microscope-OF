@@ -23,7 +23,6 @@ from functools import wraps
 import json
 
 from pydantic import BaseModel
-import numpy as np
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -343,28 +342,6 @@ def _get_version_from_toml(toml_path: str) -> str:
     except (IOError, ValueError, KeyError):
         LOGGER.error("Problem opening pyproject.toml")
         return "Undefined"
-
-
-# Let MyPy know that the output type matches x.
-@overload
-def quadratic(x: np.ndarray, a: float, b: float, c: float) -> np.ndarray: ...
-@overload
-def quadratic(x: float, a: float, b: float, c: float) -> float: ...
-
-
-def quadratic(
-    x: float | np.ndarray, a: float, b: float, c: float
-) -> float | np.ndarray:
-    """Quadratic function. Used for predicting z.
-
-    :param x: The point or points at which to evaluate the quadratic. This can be a
-        float or a numpy array. The return will be the same type.
-    :param a: The coefficient of x^2.
-    :param b: The coefficient of x.
-    :param c: The constant coefficient.
-    :return: The quadratic, evaluated at each point in ``x``
-    """
-    return a * x**2 + b * x + c
 
 
 # Use overload to clarify to MyPy that if enforce_dict is true, inputs and outputs are
