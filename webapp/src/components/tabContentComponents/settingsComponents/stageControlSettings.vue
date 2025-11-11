@@ -44,8 +44,9 @@ export default {
   name: "StageControlSettings",
 
   computed: {
-    // Note that as stepSize and invert are set based on internals we can use
-    // get() and set() to interact with the store. Instead use a deep watcher to
+    // Note that as stepSize and invert are mutated (i.e. we change stepSize.x not stepSize)
+    // rather than directly set we cannot use get() and set() computed to interact with the
+    // store as changed won't be detected by set(). Instead use a deep watcher to
     // update the store (see ``watch:`` below)
     stepSize() {
       return this.$store.state.navigationStepSize;

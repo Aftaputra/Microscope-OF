@@ -5,9 +5,9 @@
     <div class="settings-nav">
       <ul class="uk-nav uk-nav-default">
         <li class="uk-nav-header">Application Settings</li>
-        <li v-for="item in appTabs" :key="'setting' + item.id + '-tab-content'">
+        <li v-for="item in appTabs" :key="'setting-' + item.id + '-tab-content'">
           <tabIcon
-            :id="'setting' + item.id + '-tab-content'"
+            :id="'setting-' + item.id + '-tab-content'"
             :tab-i-d="item.id"
             :show-title="false"
             :show-tooltip="false"
@@ -27,9 +27,9 @@
         >
           Launch Calibration Wizard
         </button>
-        <li v-for="item in calibrationTabs" :key="'setting' + item.id + '-tab-content'">
+        <li v-for="item in calibrationTabs" :key="'setting-' + item.id + '-tab-icon'">
           <tabIcon
-            :id="'setting' + item.id + '-tab-content'"
+            :id="'setting-' + item.id + '-tab-icon'"
             :tab-i-d="item.id"
             :show-title="false"
             :show-tooltip="false"
@@ -45,8 +45,8 @@
     <div class="view-component uk-width-expand uk-padding-small">
       <tabContent
         v-for="item in allTabs"
-        :id="'setting' + item.id + '-tab-content'"
-        :key="'setting' + item.id + '-tab-content'"
+        :id="'setting-' + item.id + '-tab-content'"
+        :key="'setting-' + item.id + '-tab-content'"
         :tab-i-d="item.id"
         :require-connection="item.requireConnection"
         :current-tab="currentTab"
