@@ -665,7 +665,7 @@ def test_perform_rom_test_(rom_thing, mock_rom_deps, mocker):
     assert mock_move_until_edge.call_args_list[3].kwargs["direction"] == -1
 
 
-def test_perform_recenter(rom_thing, mock_rom_deps, mocker):
+def test_perform_recenter(rom_thing, mock_rom_deps, mocker, caplog):
     """Check that performing the recentre runs through expected operations."""
 
     def check_lock(*_args, **_kwargs):
@@ -677,10 +677,21 @@ def test_perform_recenter(rom_thing, mock_rom_deps, mocker):
     )
     mock_recentre_axis = mocker.patch.object(rom_thing, "_recentre_axis")
 
+    # Set a mock stage position, as we patch _recentre_axis this should be logged
+    # as the centre.
+    mock_rom_deps.stage.position = {"x": 4321, "y": 1234, "z": 0}
+
     # Unpack the dict and save because it the dictionary is a copy so we can't check
     # mocks from `mock_rom_deps`
     mock_deps_dict = dataclasses.asdict(mock_rom_deps)
-    rom_thing.perform_recentre(**mock_deps_dict)
+
+    with caplog.at_level(logging.INFO):
+        rom_thing.perform_recentre(**mock_deps_dict)
+
+    assert len(caplog.messages) == 3
+    assert caplog.messages[0] == "Recentring the stage."
+    assert caplog.messages[1] == "Centre is estimated at (4321, 1234)."
+    assert caplog.messages[2] == "Position reset to (0, 0, 0)."
 
     # Check the lock was freed
     assert rom_thing._lock.acquire(blocking=False)
@@ -697,7 +708,7 @@ def test_perform_recenter(rom_thing, mock_rom_deps, mocker):
     assert mock_deps_dict["stage"].set_zero_position.call_count == 1
 
 
-@pytest.mark.parametrize("true_on", [1, 4, 9, 10])
+@pytest.mark.parametrize("true_on", [1, 4, 10, 11])
 def test_recentre_axis(true_on, rom_thing, mock_rom_deps, mocker):
     """Test the high level algorithm of recentring an axis.
 
@@ -714,22 +725,22 @@ def test_recentre_axis(true_on, rom_thing, mock_rom_deps, mocker):
         rom_thing, "_recentre_decision", side_effect=decisions
     )
 
-    if true_on > 9:
+    if true_on > 10:
         with pytest.raises(RuntimeError, match="Couldn't find centre"):
             rom_thing._recentre_axis("x", mock_rom_deps)
     else:
         rom_thing._recentre_axis("x", mock_rom_deps)
 
-    # _recentre_decision is called until True or exits after 9 goes
-    assert mock_recentre_decision.call_count == min(true_on, 9)
+    # _recentre_decision is called until True or exits after 10 attempts
+    assert mock_recentre_decision.call_count == min(true_on, 10)
 
-    # The _moves_for_z_prediction is called twice before any decision, and not called
-    # After a decision of centred, but the max call count is 10
-    assert mock_moves.call_count == min(true_on + 1, 10)
+    # The _moves_for_z_prediction is called once before any decision, and not called
+    # after a decision of centred. The max call count is 10
+    assert mock_moves.call_count == min(true_on, 10)
     for i, arg_list in enumerate(mock_moves.call_args_list):
-        # First two directions are -ve due to starting pos, then it changes direction
+        # First direction is -ve due to starting pos, then it changes direction
         # as the mock always returns 1
-        expected_dir = -1 if i <= 1 else 1
+        expected_dir = -1 if i < 1 else 1
         assert arg_list.kwargs["direction"] == expected_dir
 
 
