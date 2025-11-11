@@ -70,7 +70,12 @@ class RomDataTracker:
         return self.stage_coords[-1].copy()
 
     def fit_axis(self, axis: Literal["x", "y"]) -> np.poly1d:
-        """Quadratic fit stage coords along and axis (against z) and return poly1d of fit."""
+        """Quadratic fit stage z against x or y and return poly1d of fit.
+
+        Note that this considers only one of x and y, and ignores the other coordinate. If
+        this function is used on moves where both x and y are changing, it will give misleading
+        results.
+        """
         lateral_positions = [i[axis] for i in self.stage_coords]
         z_positions = [i["z"] for i in self.stage_coords]
         fit_params = np.polyfit(lateral_positions, z_positions, 2)
