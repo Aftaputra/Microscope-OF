@@ -2,8 +2,8 @@
   <div class="uk-width-large">
     <p><b>Single Move Step Size</b></p>
     <p>
-      This sets the size (and direction) of movements within the web app. Including keyboard arrow
-      keys (and PageUp/PageDown). It also includes the navigation buttons in the control tab.
+      This sets the size (and direction) of movements made using the navigation buttons in the
+      control tab or using the keyboard (arrow keys, page up/down).
     </p>
     <p>These settings do not affect the operation of other actions your microscope performs.</p>
     <div class="uk-grid-small uk-child-width-1-3" uk-grid>
@@ -41,7 +41,7 @@
 
 <script>
 export default {
-  name: "SatgeControlSettings",
+  name: "StageControlSettings",
 
   computed: {
     // Note that as stepSize and invert are set based on internals we can use
