@@ -78,13 +78,11 @@ export default {
       const calibrateableThings = Object.keys(this.availableCalibrationTasks);
 
       for (const name of calibrateableThings) {
-        try {
+        if (this.thingPropertyAvailable(name, "calibration_required")) {
           const thingNeedsCal = await this.readThingProperty(name, "calibration_required");
           if (thingNeedsCal) {
             needsCalibration.push(name);
           }
-        } catch (e) {
-          console.error(`${name}: missing calibration_required property`, e);
         }
       }
 

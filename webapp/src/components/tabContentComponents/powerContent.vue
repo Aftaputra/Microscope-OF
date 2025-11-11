@@ -10,7 +10,7 @@
     </p>
     <div class="buttons-container">
       <button
-        v-show="'shutdown' in things.system.actions"
+        v-show="shutdownAvailable"
         class="uk-button uk-button-primary uk-width-1-3 shutdown-button"
         @click="systemRequest('shutdown')"
       >
@@ -42,8 +42,8 @@ export default {
   },
 
   computed: {
-    things: function () {
-      return this.$store.getters["wot/thingDescriptions"];
+    shutdownAvailable() {
+      return this.thingActionAvailable("system", "shutdown");
     },
   },
 

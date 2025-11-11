@@ -66,7 +66,6 @@ export default new Vuex.Store({
     error: "",
     autoGpuPreview: false,
     trackWindow: true,
-    galleryEnabled: true,
     activeStreams: {},
     microscopeHostname: "",
     // Persistent items:
@@ -107,9 +106,6 @@ export default new Vuex.Store({
     },
     changeAppTheme(state, theme) {
       state.appTheme = theme;
-    },
-    changeGalleryEnabled(state, enabled) {
-      state.galleryEnabled = enabled;
     },
     resetState(state) {
       state.waiting = false;

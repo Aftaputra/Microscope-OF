@@ -86,10 +86,10 @@ export default {
 
   computed: {
     actions() {
-      return this.$store.getters["wot/thingDescription"]("camera_stage_mapping").actions;
+      return this.thingDescription("camera_stage_mapping").actions;
     },
     properties() {
-      return this.$store.getters["wot/thingDescription"]("camera_stage_mapping").properties;
+      return this.thingDescription("camera_stage_mapping").properties;
     },
   },
 

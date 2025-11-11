@@ -23,3 +23,9 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.control-component {
+  width: 160px;
+}
+</style>

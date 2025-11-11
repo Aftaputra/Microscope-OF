@@ -1,7 +1,5 @@
 <template>
-  <div v-if="!backendOK" class="uk-alert-danger">No scan back-end found.</div>
-  <!-- Grid managing tab content -->
-  <div v-else uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
+  <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <div class="control-component uk-padding-small">
       <div v-show="!scanning" class="uk-padding-small">
         <ul uk-accordion="multiple: true">
@@ -183,9 +181,6 @@ export default {
   },
 
   computed: {
-    backendOK() {
-      return this.thingAvailable("smart_scan");
-    },
     cancellable() {
       return (this.taskStatus == "running") | (this.taskStatus == "pending");
     },

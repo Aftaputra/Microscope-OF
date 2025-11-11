@@ -51,11 +51,21 @@ export const wotStoreModule = {
     thingDescriptions: (state) => {
       return state.thingDescriptions;
     },
+    thingList: (state) => {
+      return Object.keys(state.thingDescriptions);
+    },
     thingDescription: (state) => (thingName) => {
       return state.thingDescriptions[thingName];
     },
     thingAvailable: (state) => (thingName) => {
       return thingName in state.thingDescriptions;
+    },
+    thingAffordanceAvailable: (state) => (thing, affordanceType, affordance) => {
+      let td = state.thingDescriptions[thing];
+      if (!td) {
+        return false;
+      }
+      return affordance in td[affordanceType];
     },
     thingFormUrl:
       (state) =>

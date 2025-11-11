@@ -15,6 +15,7 @@
             :id="item.id + '-tab-icon'"
             :key="item.id + '-tab-icon'"
             :tab-i-d="item.id"
+            :title="item.title"
             :require-connection="true"
             :current-tab="currentTab"
             :class="item.class"
@@ -42,6 +43,7 @@
             :id="item.id + '-tab-icon'"
             :key="item.id + '-tab-icon'"
             :tab-i-d="item.id"
+            :title="item.title"
             :require-connection="true"
             :current-tab="currentTab"
             :class="item.class"
@@ -81,19 +83,18 @@ import tabIcon from "./genericComponents/tabIcon";
 import tabContent from "./genericComponents/tabContent";
 
 // Import new content components
-import controlContent from "./tabContentComponents/controlContent.vue";
-import slideScanContent from "./tabContentComponents/slideScanContent.vue";
-import backgroundDetectContent from "./tabContentComponents/backgroundDetectContent.vue";
-import viewContent from "./tabContentComponents/viewContent.vue";
-import settingsContent from "./tabContentComponents/settingsContent.vue";
 import aboutContent from "./tabContentComponents/aboutContent.vue";
+import backgroundDetectContent from "./tabContentComponents/backgroundDetectContent.vue";
+import controlContent from "./tabContentComponents/controlContent.vue";
 import loggingContent from "./tabContentComponents/loggingContent.vue";
 import powerContent from "./tabContentComponents/powerContent.vue";
+import scanListContent from "./tabContentComponents/scanListContent.vue";
+import settingsContent from "./tabContentComponents/settingsContent.vue";
+import slideScanContent from "./tabContentComponents/slideScanContent.vue";
+import viewContent from "./tabContentComponents/viewContent.vue";
 
 // Import modal components for device initialisation
 import calibrationWizard from "./modalComponents/calibrationWizard.vue";
-import TabIcon from "./genericComponents/tabIcon.vue";
-import ScanListContent from "./tabContentComponents/scanListContent.vue";
 
 // Export main app
 export default {
@@ -102,15 +103,7 @@ export default {
   components: {
     tabIcon,
     tabContent,
-    controlContent,
-    slideScanContent,
-    viewContent,
-    settingsContent,
     calibrationWizard,
-    aboutContent,
-    loggingContent,
-    TabIcon,
-    powerContent,
   },
   data: function () {
     return {
@@ -118,24 +111,67 @@ export default {
       bottomTabs: [
         {
           id: "settings",
+          title: "Settings",
           icon: "settings",
           component: settingsContent,
           class: "uk-margin-auto-top",
         },
         {
           id: "logging",
+          title: "Logging",
           icon: "assignment_late",
           component: loggingContent,
         },
         {
           id: "about",
+          title: "About",
           icon: "info",
           component: aboutContent,
         },
         {
           id: "power",
+          title: "Power",
           icon: "power_settings_new",
           component: powerContent,
+        },
+      ],
+      coreTopTabs: [
+        {
+          id: "view",
+          title: "View",
+          icon: "visibility",
+          component: viewContent,
+          requiredThings: [],
+        },
+        {
+          id: "control",
+          title: "Control",
+          icon: "gamepad",
+          component: controlContent,
+          requiredThings: [],
+        },
+        {
+          id: "background-detect",
+          title: "Background Detect",
+          icon: "background_replace",
+          component: backgroundDetectContent,
+          // While stage isn't needed; automatic background detect has little function
+          // for a manual microscope.
+          requiredThings: ["stage"],
+        },
+        {
+          id: "slide-scan",
+          title: "Slide Scan",
+          icon: "settings_overscan",
+          component: slideScanContent,
+          requiredThings: ["smart_scan"],
+        },
+        {
+          id: "scan-list",
+          title: "Scan List",
+          icon: "photo_library",
+          component: scanListContent,
+          requiredThings: ["smart_scan"],
         },
       ],
     };
@@ -154,37 +190,12 @@ export default {
     },
 
     topTabs: function () {
-      let tabs = [
-        {
-          id: "view",
-          icon: "visibility",
-          component: viewContent,
-        },
-        {
-          id: "control",
-          icon: "gamepad",
-          component: controlContent,
-        },
-        {
-          id: "background detect",
-          icon: "background_replace",
-          component: backgroundDetectContent,
-        },
-        {
-          id: "slide scan",
-          icon: "settings_overscan",
-          component: slideScanContent,
-        },
-        {
-          id: "scan list",
-          icon: "photo_library",
-          component: ScanListContent,
-        },
-      ];
-      if (!this.$store.state.galleryEnabled) {
-        tabs = tabs.filter((tab) => tab.id != "gallery");
-      }
-      return tabs;
+      // Filter core top tabs based on available Things. Once Things can specify a
+      // custom tab those will need to be added here
+      return this.coreTopTabs.filter((tab) => {
+        if (!tab.requiredThings || tab.requiredThings.length === 0) return true;
+        return tab.requiredThings.every((thing) => this.thingAvailable(thing));
+      });
     },
     allTabs() {
       return [...this.topTabs, ...this.bottomTabs];
