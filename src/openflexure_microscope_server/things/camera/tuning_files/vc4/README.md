@@ -91,15 +91,15 @@ For calculating the shutter time of the sensor if AeEnable is on. Only the requi
 
 Auto lens shading correction is calibrated by our microscope. This contains the tables for luninance, and colour shading. It can contain multiple tables depending on estimated colour temperature (`ct`). As the microscope has fixed lighting  we only provide one set of tables as we don't want the correction to be adaptive.
 
-We also set `n_iter: 0` this stops it adding iterative adaptuion.
+We also set `n_iter: 0`. This stops it adding iterative adaptuion.
 
-As there is only one table the colour temperature is ignored. We set the colour temperature to 1234 in the tuning file to make it clear that we have not calibrated it on the microscope. We set the colour temperature to 5000 (our actual illumination colour temperature) once recalibrated.
+As there is only one table, the colour temperature is ignored. We set the colour temperature to 1234 in the tuning file to make it clear that we have not calibrated it on the microscope. We set the colour temperature to 5000 (our actual illumination colour temperature) once recalibrated.
 
-The tables are flat 1s for luninance on for both sensors.
+The tables are flat 1s for luminance on for both sensors.
 
-For the IMX477 (PiCamera HQ) the Cr and Cb tables are flat, but Cb is 2.0 not 1.0 for all values. This is so that the initial colour gains are set to (1.0, 2.0)
+For the IMX477 (PiCamera HQ), the Cr and Cb tables are flat, but Cb is 2.0 not 1.0 for all values. This is so that the initial colour gains are set to (1.0, 2.0)
 
-For the IMX219 (PiCamera v2) the Cr and Cb tables are symmetric tables taken from the top quadrant of a calibrated microscope. They are used to create a good enough correction that the microscope is usable for alignment.
+For the IMX219 (PiCamera v2), the Cr and Cb tables are symmetric tables taken from the top quadrant of a calibrated microscope. They are used to create a good enough correction that the microscope is initially usable for alignment.
 
 ### rpi.contrast - Contrast
 
@@ -113,7 +113,7 @@ We may want to adjust the gamma curve in future.
 
 It is possible tp ship different CCMs to be used based on the estimated colour temperatire. We only ship one CCM as our illumination colour temperature is fixed to 5000K, the colour temperature of the LED board. However, the diffuser might affect this.
 
-The CCMs are different for PiCamera HQ and PiCamera version 2. The default uning files for these cameras (`/usr/share/libcamera/ipa/rpi/vc4/imx219.json` or `/usr/share/libcamera/ipa/rpi/vc4/imx477.json`) specify CCMs for a number of temperatures but not for 5000k. As such we linearly interpolate between temperatures below 5k with the following code:
+The CCMs are different for PiCamera HQ and PiCamera version 2. The default tuning files for these cameras (`/usr/share/libcamera/ipa/rpi/vc4/imx219.json` or `/usr/share/libcamera/ipa/rpi/vc4/imx477.json`) specify CCMs for a number of temperatures but not for 5000K. As such we linearly interpolate between temperatures around 5000K with the following code:
 
 ```
 import numpy as np
@@ -168,7 +168,7 @@ print(np.round(ccm_interp, 6))
 
 The CCM calculation is done using a MacBeth target. Lib camera provides a method for this using the Colour Tuning Tool. We will need to adapt this algorithm as they image the target at once and pick out the areas. We have fixed lighting but do not have colour uniformity.
 
-In the future with a colour calibration slide we can take images of each colour with fixed camera settings to create a CCM using the same calculations as the Camera Tuning Tool.
+In the future, with a colour calibration slide, we can take images of each colour with fixed camera settings to create a CCM using the same calculations as the Camera Tuning Tool.
 
 ### rpi.sharpen - Sharpening
 

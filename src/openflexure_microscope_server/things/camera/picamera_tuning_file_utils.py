@@ -110,9 +110,9 @@ def set_lst(
     :param tuning: The current tuning file.
     :param luminance: The table of luminance values, as (12, 16) numpy array. Or None
         to leave unchanged.
-    :param cr: The table of cr values, as (12, 16) numpy array. Or None to leave
+    :param cr: The table of Cr values, as (12, 16) numpy array. Or None to leave
         unchanged.
-    :param cb: The table of cb values, as (12, 16) numpy array. Or None to leave
+    :param cb: The table of Cb values, as (12, 16) numpy array. Or None to leave
         unchanged.
     :param colour_temp: The colour temperature to set. On calibration this should be
         set to 5000. Set a different value for the PiCamera Thing to report that the
@@ -237,7 +237,7 @@ def set_static_geq(
 ) -> dict:
     """Update the ``rpi.geq`` section of a camera tuning dict.
 
-    :param tuning: the raspberry pi tuning dictionary
+    :param tuning: the Raspberry Pi camera tuning dictionary
     :param offset: The desired green equalisation offset. Default 65535. The default is
         the maximum allowed value. This means the brightness will always be below the
         threshold where averaging is used. This is default as we always need the green
