@@ -1,3 +1,10 @@
+<!-- This is the main position component for the control tab.
+
+Do not reuse this component until we remove global listeners for move.
+
+This component shows themotor positions in a closed accordion along with the move
+and zero position buttons. It also includes the d-pad.
+-->
 <template>
   <div>
     <ul uk-accordion="multiple: true">

@@ -1,27 +1,35 @@
 <template>
   <div class="uk-flex uk-flex-center uk-flex-middle uk-margin">
     <div class="dpad-grid">
-      <button class="uk-button uk-button-primary dpad-btn" @click="move(0, 1, 0)">
+      <button id="up-button" class="uk-button uk-button-primary dpad-btn" @click="move(0, 1, 0)">
         <span class="material-symbols-outlined sync-icon"> arrow_upward </span>
       </button>
 
-      <button class="uk-button uk-button-primary dpad-btn" @click="move(-1, 0, 0)">
+      <button id="left-button" class="uk-button uk-button-primary dpad-btn" @click="move(-1, 0, 0)">
         <span class="material-symbols-outlined sync-icon"> arrow_back </span>
       </button>
 
-      <button class="uk-button uk-button-primary dpad-btn" @click="move(1, 0, 0)">
+      <button id="right-button" class="uk-button uk-button-primary dpad-btn" @click="move(1, 0, 0)">
         <span class="material-symbols-outlined sync-icon"> arrow_forward </span>
       </button>
 
-      <button class="uk-button uk-button-primary dpad-btn" @click="move(0, -1, 0)">
+      <button id="down-button" class="uk-button uk-button-primary dpad-btn" @click="move(0, -1, 0)">
         <span class="material-symbols-outlined sync-icon"> arrow_downward </span>
       </button>
 
-      <button class="uk-button uk-button-primary dpad-btn" @click="move(0, 0, -1)">
+      <button
+        id="focus-out-button"
+        class="uk-button uk-button-primary dpad-btn"
+        @click="move(0, 0, -1)"
+      >
         <span class="material-symbols-outlined sync-icon"> remove </span>
       </button>
 
-      <button class="uk-button uk-button-primary dpad-btn" @click="move(0, 0, 1)">
+      <button
+        id="focus-in-button"
+        class="uk-button uk-button-primary dpad-btn"
+        @click="move(0, 0, 1)"
+      >
         <span class="material-symbols-outlined sync-icon"> add </span>
       </button>
     </div>
@@ -50,27 +58,27 @@ export default {
 }
 
 /* Place buttons within grid */
-.dpad-grid button:nth-child(1) {
+.dpad-grid #up-button {
   grid-column: 2;
   grid-row: 1;
 }
-.dpad-grid button:nth-child(2) {
+.dpad-grid #left-button {
   grid-column: 1;
   grid-row: 2;
 }
-.dpad-grid button:nth-child(3) {
+.dpad-grid #right-button {
   grid-column: 3;
   grid-row: 2;
 }
-.dpad-grid button:nth-child(4) {
+.dpad-grid #down-button {
   grid-column: 2;
   grid-row: 3;
 }
-.dpad-grid button:nth-child(5) {
+.dpad-grid #focus-out-button {
   grid-column: 1;
   grid-row: 5;
 }
-.dpad-grid button:nth-child(6) {
+.dpad-grid #focus-in-button {
   grid-column: 3;
   grid-row: 5;
 }

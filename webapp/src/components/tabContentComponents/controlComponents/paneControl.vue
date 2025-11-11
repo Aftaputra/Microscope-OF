@@ -10,7 +10,6 @@
         action="capture_jpeg"
         :submit-data="{ stream_name: 'main' }"
         :submit-label="'Low Resolution'"
-        :submit-on-event="'globalCaptureEvent'"
         @response="handleCaptureResponse"
         @error="modalError"
       />
