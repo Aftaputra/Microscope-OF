@@ -244,6 +244,9 @@ class RangeofMotionThing(lt.Thing):
             for axis in axes:
                 self._recentre_axis(axis, rom_deps)
 
+            centre = rom_deps.stage.position
+            centre_str = f"({centre['x']}, {centre['y']})"
+            rom_deps.logger.info(f"Centre is estimated at {centre_str}.")
             # Set the central position to (0,0,0)
             rom_deps.stage.set_zero_position()
             rom_deps.logger.info("Position reset to (0, 0, 0).")
@@ -357,12 +360,10 @@ class RangeofMotionThing(lt.Thing):
                 rom_deps=rom_deps,
                 n_moves=5 if i == 1 else 2,
             )
-            # Try to estimate position/direction the first time, skip to making a big
-            # move in the same direction
-            if i > 1:
-                centred, direction = self._recentre_decision(axis, rom_deps)
-                if centred:
-                    break
+
+            centred, direction = self._recentre_decision(axis, rom_deps)
+            if centred:
+                break
 
             # If still going at iteration 9 exit
             if i > 9:
