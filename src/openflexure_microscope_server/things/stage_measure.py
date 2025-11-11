@@ -100,7 +100,7 @@ class RomDataTracker:
         turning_loc = fit_func.deriv().roots[0]
         turning_z = fit_func(turning_loc)
 
-        # As we only move in 1 direction pull the other axis from the coords.
+        # As we only move in 1 direction, pull the other axis from the coords.
         other_axis = "x" if axis == "y" else "y"
         other_coord = self.stage_coords[-1][other_axis]
         return {axis: int(turning_loc), other_axis: other_coord, "z": int(turning_z)}
@@ -426,7 +426,7 @@ class RangeofMotionThing(lt.Thing):
     def _img_dir_from_stage_coords(
         self, target: dict[str, int], axis: Literal["x", "y"], rom_deps: RomDeps
     ) -> Literal[1, -1]:
-        """For a target location in stage coords return the direction in image coordinates.
+        """For a target location in stage coords, return the direction in image coordinates.
 
         :param target: The target poisiton in stage coordinates
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
@@ -434,9 +434,11 @@ class RangeofMotionThing(lt.Thing):
         :return: Direction to move in image coordinates.
         """
         target_im_coords = rom_deps.csm.convert_stage_to_image_coordinates(**target)
-        here = rom_deps.stage.position
-        here_im_coords = rom_deps.csm.convert_stage_to_image_coordinates(**here)
-        return -1 if target_im_coords[axis] < here_im_coords[axis] else 1
+        current_loc = rom_deps.stage.position
+        current_loc_im_coords = rom_deps.csm.convert_stage_to_image_coordinates(
+            **current_loc
+        )
+        return -1 if target_im_coords[axis] < current_loc_im_coords[axis] else 1
 
     def _distance_in_img_percentage(
         self, target: dict[str, int], axis: Literal["x", "y"], rom_deps: RomDeps
@@ -453,8 +455,8 @@ class RangeofMotionThing(lt.Thing):
                 "Stream resolution must be set before converting coords to percentage"
             )
 
-        here = rom_deps.stage.position
-        move_stage = {key: target[key] - here[key] for key in target}
+        current_loc = rom_deps.stage.position
+        move_stage = {key: target[key] - current_loc[key] for key in target}
         move_img = rom_deps.csm.convert_stage_to_image_coordinates(**move_stage)
 
         img_index = 0 if axis == "x" else 1

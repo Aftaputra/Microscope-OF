@@ -309,18 +309,18 @@ def csm_img_to_stage(
 ) -> Mapping[str, int]:
     """Apply any CSM matrix to image coordinates.
 
-    This is designed x and y must be kwargs and extra kwargs are ignored allowing:
+    x and y must be kwargs and extra kwargs are ignored, allowing:
     ``csm_img_to_stage(matrix, **position)`` to run for a mapping position.
 
     Note that x and y are the actual (x, y) of the image, not the (m, n) indices used
-    numpy
+    by numpy
 
     :param matrix: The matrix to use in the calculation
     :param x: the x image coordinate (keyword only)
     :param y: the y image coordinate (keyword only)
     :return: The resulting stage coordinates as a mapping.
     """
-    # Note this is (y,x) not x,y to put it in numpy image indices
+    # Note this is (y,x) not (x,y) to put it in numpy image indices
     relative_move: np.ndarray = np.dot(np.array([y, x]), np.array(matrix))
     return {"x": round(relative_move[0]), "y": round(relative_move[1])}
 
@@ -334,7 +334,7 @@ def csm_stage_to_img(
 ) -> Mapping[str, float]:
     """Apply any CSM matrix to stage coordinates to get image coordinates.
 
-    This is designed x and y must be kwargs and extra kwargs are ignored allowing:
+    x and y must be kwargs and extra kwargs are ignored, allowing:
     ``csm_img_to_stage(matrix, **position)`` to run for a mapping position.
 
     Note that x and y are the actual (x, y) of the image, not the (m, n) indices used
@@ -347,5 +347,5 @@ def csm_stage_to_img(
     """
     inverse_matrix = np.linalg.inv(np.array(matrix))
     relative_move = np.dot(np.array([x, y]), inverse_matrix)
-    # Note that the relative move (y, x) as it is from numpy and is in matrix coords.
+    # Note that the relative move is (y, x) as it is from numpy and is in matrix coords.
     return {"x": float(relative_move[1]), "y": float(relative_move[0])}
