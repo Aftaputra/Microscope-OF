@@ -34,10 +34,12 @@ This phase focuses on planning the release and, crucially, getting any major inf
 
 ---
 
-### Phase 2: Feature Freeze (T-2 Weeks)
+### Phase 2: Feature Freeze And Upstream Releases (T-2 Weeks)
 
 * [ ] **Announce:** Announce the Feature Freeze deadline one week out. This should be announced on the OpenFlexure Forum and in a message/email to the core team.
 * [ ] **Deadline:** **FEATURE FREEZE**. All MRs for the milestone must be merged.
+* [ ] **Deadline:** **UPSTREAM RELEASES**. Any of our repos/packages upstream of the OS and server should have a defined release, for this release to target.
+    * [ ] Stitching Released
 * [ ] **Branching Note:**  During alpha and beta development, feature freeze marks the point where only **bug fixes and release preparation** may be merged into the default branch.
 * [ ] **Communication:** Inform the team that all new feature work should target the *next* milestone.
 
@@ -47,7 +49,7 @@ This phase focuses on planning the release and, crucially, getting any major inf
 
 This phase is dedicated to intensive testing and bug fixing.
 
-* [ ] **Create Image:** Flash at least one SD card with the new image.
+* [ ] **Create Image:** Flash at least one SD card with the new image. This image should be created off the default branch.
 * [ ] **Create Test Plan:** Document the specific tests to be run.
 * [ ] **Execute Test Plan:**
     * [ ] Camera Calibration
@@ -63,7 +65,9 @@ This phase is dedicated to intensive testing and bug fixing.
         * [ ] v7 Microscope
         * [ ] Simulation
     * [ ] Smart Scan + stitching
-        * [ ] v7 Microscope (we probably need a bit of detail here RE slides)
+        * [ ] v7 Microscope
+            * [ ] At least 2 different H&E stained slides
+            * [ ] A blue stained biology slide, such as a wheat stem
         * [ ] Simulation
     * [ ] Recentre and ROM (v7 Microscope only)
     * [ ] Opening each tab and sub-tab and checking things look as expected
@@ -77,19 +81,43 @@ This phase is dedicated to intensive testing and bug fixing.
 
 ### Phase 4: Release Day (T-0)
 
-* [ ] **Final Version Bump:**
-    * [ ] **Server Package:** Update version number (add specific files).
-    * [ ] **Stitching Package:** Update version number (add specific files).
-    * [ ] Commit and merge the final version bumps into default branch.
-* [ ] **Final Build:** Generate the final, official release image from the default branch.
-* [ ] **Draft Notes:** Draft the release notes and forum post.
-* [ ] **Tag:** Create a new Git tag on the default branch (e.g., `vX.Y.Z`).
-* [ ] **Publish:**
-    * [ ] Push the tag to GitLab.
-    * [ ] Publish new versions of software sub-packages, such as openflexure-stitching, on PyPi.
-    * [ ] Create a new **GitLab Release** from the tag.
-    * [ ] Upload the final release image and other artifacts to the GitLab Release.
-    * [ ] Paste the release notes into the GitLab Release description.
+By this stage:
+
+* All upstream packages are released.
+* We will release the exact image used for testing.
+
+* [ ] **Draft Notes:** Draft the release notes for:
+    * [ ] High level summary for the sever release notes/changelog
+    * [ ] High level summary for the OS release notes
+    * [ ] Combined summary for the forum
+* [ ] **Final Server Repo Commit:**
+    * [ ] Update version string in:
+        * [ ] `pyproject.toml`
+        * [ ] `test_version_strings.py`
+        * [ ] `package.json`
+        * [ ] `package-lock.json` (in 2 places!)
+    * [ ] Create `CHANGELOG` entry
+        * [ ] Add a title that is a link to the GitLab compare between the last release tag and this soon-to-be-made tag.
+        * [ ] Add the a high level summary of the server changes
+        * [ ] Run changelog helper to generate the list of MRs since the last tag `python change_log_helper.py -b v3 <LAST-TAG-NAME>` and copy these in below the summary.
+        * [ ] Run `codespell` on the changelog and use `<!-- codespell:ignore XYZ -->` to silence codespell on any spelling errors in MR titles.
+    * [ ] Commit, Push, and Merge
+* [ ]  **Release:**
+    * [ ] On `build.openflexure.org` copy the image that passed testing from `/raspbian-openflexure/testing/` to `/raspbian-openflexure/v3_pre_release/`.
+    * [ ] **OS RELEASE**
+        * [ ] Go to the OS Customiser *Releases* page on GitLab and select New Release
+        * [ ] Create a new Tag Name in the format `vX.Y.Z` or `vX.Y.Z-(alpha|beta)A`
+        * [ ] **Important!** Enter a simple description into the `create tag` dialog, or GitLab only creates a lightweight tag. `Release for vX.Y.Z-(alpha|beta)A` is minimal and can be used. Check it is targeted at the correct branch, and save the tag.
+        * [ ] Copy in the High level summary for the OS into release notes
+        * [ ] Enter the URL to the OS image into the box at the bottom. with "Link Title" as `SD Card Image`.
+        * [ ] Create the release (This will create the tag)
+    * [ ] **SERVER RELEASE**
+        * [ ] Go to the Sever *Releases* page on GitLab and select New Release
+        * [ ] Create a new Tag Name in the format `vX.Y.Z` or `vX.Y.Z-(alpha|beta)A`
+        * [ ] **Important!** Enter a simple description into the `create tag` dialog, or GitLab only creates a lightweight tag. `Release for vX.Y.Z-(alpha|beta)A` is minimal and can be used. Check it is targeted at the correct branch, and save the tag.
+        * [ ] Copy in the relevant section from the `CHANGELOG`
+        * [ ] Enter the URL to the OS image into the box at the bottom. with "Link Title" as `SD Card Image`.
+        * [ ] Create the release (This will create the tag)
 
 ---
 
