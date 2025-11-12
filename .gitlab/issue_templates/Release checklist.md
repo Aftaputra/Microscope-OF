@@ -8,9 +8,14 @@ This checklist tracks the process for releasing version **vX.Y.Z** of the OpenFl
 
 This phase focuses on planning the release and, crucially, getting any major infrastructure or build system changes merged *before* the feature freeze.
 
-* [ ] **Define Scope:** Create the `vX.Y.Z` milestone in GitLab and tag all intended feature MRs with it. Thisn is often done in a planning meeting with the core team.
+* [ ] **Prepare: **Create the `Server vX.Y.Z`/`Server vX.Y.Z-(alpha|beta)A` milestone in GitLab at organisation level, and create an issue with this template.
+* [ ] **Define Scope:**  Tag all intended Issues and feature MRs with it. This is often done in a planning meeting with the core team. Issues and MRs should be tagged in:
+    * [ ] Server repo
+    * [ ] Stitching repo
+    * [ ] OS customiser repo
+    * [ ] OFM CLI tools
+* [ ] **Define upstream versions:** Does this release depend on a major dependency change (such as new LabThings version)? If so these must have issues.
 * [ ] **Schedule:** Set and announce the **Feature Freeze** and **Release Date**. Feature freeze should be at least 2 weeks before the release date.
-* [ ] **Build System:** Identify all required OS-level, build system, or OS customiser changes.
 * [ ] **Build System:** **Deadline:** All build system MRs must be merged and tested. (This should happen *as early as possible* in the cycle).
 
 ---
@@ -32,13 +37,26 @@ This phase is dedicated to intensive testing and bug fixing on the `release/vX.Y
 * [ ] **Create Image:** Flash at least one SD card with the new image.
 * [ ] **Create Test Plan:** Document the specific tests to be run.
 * [ ] **Execute Test Plan:**
-    * [ ] HQ Camera Test (Optional)
-    * [ ] High-Resolution Test
-    * [ ] Low-Resolution Test
-    * [ ] ROM Test
-    * [ ] Stitching Tests
-    * [ ] Test final image on all supported hardware revisions.
-    * [ ] Test functionality on the Microscope Simulator.
+    * [ ] Camera Calibration
+        * [ ] Picamera v2
+        * [ ] Picamera HQ
+    * [ ] Camera Stage Mapping
+        * [ ] v7 Microscope
+        * [ ] Simulation
+    * [ ] Movement
+        * [ ] v7 Microscope
+        * [ ] Simulation
+    * [ ] Autofocus
+        * [ ] v7 Microscope
+        * [ ] Simulation
+    * [ ] Smart Scan + stitching
+        * [ ] v7 Microscope (we probably need a bit of detail here RE slides)
+        * [ ] Simulation
+    * [ ] Recentre and ROM (v7 Microscope only)
+    * [ ] Opening each tab and sub-tab and checking things look as expected
+        * [ ] v7 Microscope 
+        * [ ] Simulation
+        * [ ] Manual
 * [ ] **Triage:** Triage all bugs found. Fix any release-blocking bugs.
 * [ ] **Repeat:** Re-build image and re-test as bugs are fixed. Update release date if absolutely necessary. (Optional)
 
