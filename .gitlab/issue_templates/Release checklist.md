@@ -87,7 +87,7 @@ By this stage:
 * We will release the exact image used for testing.
 
 * [ ] **Draft Notes:** Draft the release notes for:
-    * [ ] High level summary for the sever release notes/changelog
+    * [ ] High level summary for the server release notes/changelog
     * [ ] High level summary for the OS release notes
     * [ ] Combined summary for the forum
 * [ ] **Final Server Repo Commit:**
@@ -112,7 +112,7 @@ By this stage:
         * [ ] Enter the URL to the OS image into the box at the bottom. with "Link Title" as `SD Card Image`.
         * [ ] Create the release (This will create the tag)
     * [ ] **SERVER RELEASE**
-        * [ ] Go to the Sever *Releases* page on GitLab and select New Release
+        * [ ] Go to the Server *Releases* page on GitLab and select New Release
         * [ ] Create a new Tag Name in the format `vX.Y.Z` or `vX.Y.Z-(alpha|beta)A`
         * [ ] **Important!** Enter a simple description into the `create tag` dialog, or GitLab only creates a lightweight tag. `Release for vX.Y.Z-(alpha|beta)A` is minimal and can be used. Check it is targeted at the correct branch, and save the tag.
         * [ ] Copy in the relevant section from the `CHANGELOG`
