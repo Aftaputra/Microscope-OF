@@ -812,7 +812,7 @@ class AutofocusThing(lt.Thing):
                 return "restart", capture_id
             return "continue", capture_id
 
-        # Fint the peak
+        # Fit the peak
         x = range(n_imgs)
         coeffs, cov = np.polyfit(x, sharpnesses, deg=2, cov=True)
         a = float(coeffs[0])
@@ -833,7 +833,8 @@ class AutofocusThing(lt.Thing):
         # the stack ie for a stack of 7 images, best image must be between 3rd and 5th
         edge_size = 2
 
-        # Check both the peak from fitting and the sharpest image are not the
+        # Check both the peak from fitting and the sharpest image are not at the
+        # edge of the stack.
         if turning < edge_size - 0.5 or sharpest_index < edge_size:
             return "restart", capture_id
         if turning > n_imgs - (edge_size - 0.5) or sharpest_index >= n_imgs - edge_size:

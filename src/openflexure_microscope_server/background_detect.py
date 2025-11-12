@@ -267,8 +267,8 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
 class ChannelDeviationLUV(BackgroundDetectAlgorithm):
     """Compare the standard deviations of the LUV channels in a grid to background data.
 
-    This uses an LUV colour space, each image is divided into an 8x8 grid of images
-    each the standard deviation of each channel of each image is calculates and compared
+    Using an LUV colour space, each image is divided into an 8x8 grid of images.
+    The standard deviation of each channel of each image is calculated and compared
     to the median standard deviation for a grid of background images.
     """
 
@@ -295,11 +295,11 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
         u_cut = bg_stds[1] * self.settings.channel_tolerance
         v_cut = bg_stds[2] * self.settings.channel_tolerance
 
-        decisions = (
+        populated_regions = (
             (stds[:, :, 0] > l_cut) | (stds[:, :, 1] > u_cut) | (stds[:, :, 2] > v_cut)
         )
 
-        return float(100 * np.sum(decisions) / 64)
+        return float(100 * np.sum(populated_regions) / 64)
 
     def image_is_sample(self, image: np.ndarray) -> tuple[bool, str]:
         """Label the current image as either background or sample.
@@ -330,12 +330,12 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
 
 
 def _chunked_stds(img: np.ndarray, n_rows: int = 8, n_cols: int = 8) -> np.ndarray:
-    """Split image into a grid and calculated std of each channel in each chunk.
+    """Split image into a grid and calculate std of each channel in each chunk.
 
     :param img: The image to analyse
     :param n_rows: The number of rows in the grid
     :param n_cols: The number of cols in the grid
-    :return: A nummpy array of the grid of standard deviations.
+    :return: A numpy array of the grid of standard deviations.
     """
     h, w = img.shape[:2]
     row_height = h // n_rows
