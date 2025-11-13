@@ -7,7 +7,8 @@
         </div>
       </div>
       <div v-if="taskStatus == 'error'" class="uk-alert uk-alert-danger">
-        The task failed due to an error. There may be more information in the log.
+        <p><b>The task failed due to an error:</b></p>
+        <p>{{ errorMessage }}</p>
       </div>
       <div v-if="taskStatus == 'cancelled'" class="uk-alert uk-alert-warning">
         The task was cancelled.
@@ -41,6 +42,21 @@ export default {
     return {
       userIsHovering: false,
     };
+  },
+
+  computed: {
+    errorMessage() {
+      let logLength = this.log.length;
+      var defaultMessage = "Unexpected error, please check the logs";
+      if (logLength == 0) {
+        return defaultMessage;
+      }
+      // Cannot use .at until we update OpenFlexure Connect
+      if (this.log[logLength - 1].levelname != "ERROR") {
+        return defaultMessage;
+      }
+      return this.log[logLength - 1].message || defaultMessage;
+    },
   },
 
   watch: {

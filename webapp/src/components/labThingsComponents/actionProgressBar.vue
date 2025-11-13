@@ -1,5 +1,5 @@
 <template>
-  <div class="progress uk-margin-small">
+  <div class="progress uk-margin-small" :class="inButton ? 'in-button' : 'stand-alone'">
     <div v-if="indeterminateProgressBar" class="indeterminate"></div>
     <div v-else class="determinate" :style="barWidthFromProgress"></div>
   </div>
@@ -18,6 +18,11 @@ export default {
     taskStatus: {
       type: String,
       required: true,
+    },
+    inButton: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
 
@@ -41,7 +46,20 @@ export default {
 <style lang="less" scoped>
 @import "../../assets/less/theme.less";
 
-.progress {
+.in-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background-color: transparent;
+  border-radius: 0;
+  margin: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.stand-alone {
   position: relative;
   height: 5px;
   display: block;

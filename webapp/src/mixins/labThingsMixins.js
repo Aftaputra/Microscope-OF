@@ -64,19 +64,31 @@ export default {
       }
       await axios.put(url, value);
     },
-    async invokeAction(thing, action, data) {
-      let url = this.$store.getters["wot/thingActionUrl"](thing, action, "invokeaction", false);
+    async invokeAction(thing, action, data, handleErrors = true) {
+      let url = this.thingActionUrl(thing, action);
       try {
         let response = await axios.post(url, data);
         return response;
       } catch (error) {
-        this.modalError(error);
-        return undefined;
+        if (handleErrors) {
+          this.modalError(error);
+          return undefined;
+        } else {
+          throw error;
+        }
       }
     },
-    async pollUntilComplete(taskUrl, ongoingMethod, finalMethod, interval = 500) {
+    async pollUntilComplete(
+      taskUrl,
+      ongoingMethod,
+      finalMethod,
+      interval = 500,
+      modalErrors = true,
+    ) {
+      let response;
+      let finalMethodCalled = false;
       try {
-        const response = await axios.get(taskUrl, { baseURL: this.$store.getters.baseUri });
+        response = await axios.get(taskUrl, { baseURL: this.$store.getters.baseUri });
         const result = response.data.status;
 
         if ((result == "running") | (result == "pending")) {
@@ -87,15 +99,33 @@ export default {
         } else {
           clearTimeout(this.pollTimers[taskUrl]);
           delete this.pollTimers[taskUrl];
+          finalMethodCalled = true;
           finalMethod?.(response);
         }
       } catch (error) {
+        this.$emit("error", error);
+        if (modalErrors) {
+          this.modalError(error);
+        }
         clearTimeout(this.pollTimers[taskUrl]);
         delete this.pollTimers[taskUrl];
-        this.modalError(error);
+        if (!finalMethodCalled) {
+          finalMethod?.(response);
+        }
       }
     },
-
+    terminateAction(taskUrl) {
+      axios.delete(taskUrl, { baseURL: this.$store.getters.baseUri });
+    },
+    async findOngoingActions(thing, action) {
+      let url = this.thingActionUrl(thing, action);
+      try {
+        return await axios.get(url);
+      } catch (error) {
+        console.warn("checkExistingTasks: request failed", error);
+        return null;
+      }
+    },
     thingActionUrl(thing, action, allowUndefined = false) {
       let url = this.$store.getters["wot/thingActionUrl"](
         thing,
