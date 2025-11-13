@@ -190,7 +190,7 @@ export default {
      *
      */
     async checkExistingTasks() {
-      let response = await this.findOngoingAction(this.thing, this.action);
+      let response = await this.findOngoingActions(this.thing, this.action);
       // Exit if response is null, due to an error.
       if (response == null) return;
       // Check for a task that is ongoing.

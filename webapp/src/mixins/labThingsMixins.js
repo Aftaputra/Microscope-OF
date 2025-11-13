@@ -117,7 +117,7 @@ export default {
     terminateAction(taskUrl) {
       axios.delete(taskUrl, { baseURL: this.$store.getters.baseUri });
     },
-    async findOngoingAction(thing, action) {
+    async findOngoingActions(thing, action) {
       let url = this.thingActionUrl(thing, action);
       try {
         return await axios.get(url);
