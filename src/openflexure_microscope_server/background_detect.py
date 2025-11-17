@@ -18,6 +18,14 @@ class MissingBackgroundDataError(RuntimeError):
     """An error raised if checking for sample without background data set."""
 
 
+class ChannelBlankError(RuntimeError):
+    """An error raised if a channel has no measured standard deviation.
+
+    This is not physical and usually means the camera has not yet booted or changed
+    mode fully.
+    """
+
+
 class BackgroundDetectorStatus(BaseModel):
     """The status information about a background detector instance needed for the GUI.
 
@@ -277,6 +285,12 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
     background_data_model: BaseModel = ChannelDistributions
     settings_data_model: BaseModel = ColourChannelDetectSettings
 
+    # Empirically, 0.5 seems to be approximate the standard deviation for a good image
+    # in L and V. U appears to be about 60% of this value. U is about 65% of V when
+    # converting white-noise in RGB into LUV (note that we are using cv2's internal
+    # LUV colour space not converting to the CIELUV numbers)
+    min_stds = [0.5, 0.3, 0.5]
+
     def get_sample_coverage(self, image: np.ndarray) -> float:
         """Return the percentage of the input image that is background.
 
@@ -323,6 +337,9 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
 
         mu = np.zeros(3)
         std = np.median(_chunked_stds(image_luv, 8, 8), axis=(0, 1))
+        if np.any(std == 0):
+            raise ChannelBlankError("Some LUV channels have no standard devaition.")
+        std = np.maximum(std, self.min_stds)
 
         self.background_data = ChannelDistributions(
             means=mu.tolist(), standard_deviations=std.tolist()

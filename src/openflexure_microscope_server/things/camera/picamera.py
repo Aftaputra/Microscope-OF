@@ -42,6 +42,7 @@ from openflexure_microscope_server.ui import (
     action_button_for,
     property_control_for,
 )
+from openflexure_microscope_server.background_detect import ChannelBlankError
 from . import picamera_recalibrate_utils as recalibrate_utils
 from . import picamera_tuning_file_utils as tf_utils
 
@@ -767,7 +768,6 @@ class StreamingPiCamera2(BaseCamera):
         * ``auto_expose_from_minimum``
         * ``set_static_green_equalisation`` to set geq offset to max
         * ``calibrate_lens_shading`` (also sets colour gains for white balance)
-
         * ``set_background``
         """
         self.flat_lens_shading()
@@ -775,8 +775,16 @@ class StreamingPiCamera2(BaseCamera):
         self.set_static_green_equalisation()
         self.set_ce_enable_to_off()
         self.calibrate_lens_shading()
-        time.sleep(0.5)
-        self.set_background(portal)
+        for _i in range(3):
+            try:
+                time.sleep(1)
+                self.set_background(portal)
+                # Return if background is set
+                return
+            except ChannelBlankError:
+                # If channel is blank, sleep a second and try again.
+                pass
+        raise RuntimeError("Couldn't set background")
 
     @lt.thing_property
     def primary_calibration_actions(self) -> list[ActionButton]:
