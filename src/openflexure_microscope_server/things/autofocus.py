@@ -565,6 +565,7 @@ class AutofocusThing(lt.Thing):
         sharpness_monitor: SharpnessMonitorDep,
         stack_parameters: StackParams,
         save_on_failure: bool = False,
+        check_turning_points: bool = True,
     ) -> tuple[bool, Optional[int]]:
         """Run a smart stack.
 
@@ -582,6 +583,9 @@ class AutofocusThing(lt.Thing):
         :param stack_parameters: A StackParams object containing the required
             parameters to run a stack.
         :param save_on_failure: Whether to save an image even if the capture failed
+        :param check_turning_points: Whether to check the number of turning points in
+            the sharpnesses of the images in the stack is exactly 1. (May fail with
+            thick samples)
 
         :returns: A tuple containing:
 
@@ -593,6 +597,7 @@ class AutofocusThing(lt.Thing):
             attempt += 1
             success, captures, sharpest_id = self.z_stack(
                 stack_parameters=stack_parameters,
+                check_turning_points=check_turning_points,
                 cam=cam,
                 stage=stage,
             )
@@ -683,6 +688,7 @@ class AutofocusThing(lt.Thing):
     def z_stack(
         self,
         stack_parameters: StackParams,
+        check_turning_points: bool,
         cam: CameraClient,
         stage: Stage,
     ) -> tuple[bool, list[CaptureInfo], int]:
@@ -694,6 +700,9 @@ class AutofocusThing(lt.Thing):
         completes.
 
         :param stack_parameters: a StackParams object holding stack parameters
+        :param check_turning_points: Whether to check the number of turning points in
+            the sharpnesses of the images in the stack is exactly 1. (May fail with
+            thick samples)
         :param cam: Camera Dependency to be passed through from the calling action
         :param stage: Stage Dependency to be passed through from the calling action
 
@@ -735,7 +744,9 @@ class AutofocusThing(lt.Thing):
 
             # If the number of images is enough to test, test them
             if len(captures) >= stack_parameters.min_images_to_test:
-                result, capture_id = self.check_stack_result(captures[ims_to_check])
+                result, capture_id = self.check_stack_result(
+                    captures[ims_to_check], check_turning_points=check_turning_points
+                )
 
                 if result == "success":
                     return True, captures, capture_id
@@ -776,12 +787,15 @@ class AutofocusThing(lt.Thing):
     # unlikely to improve readability. This function is basically a complex switch
     # statement, having an explicit return after each option is clear.
     def check_stack_result(  # noqa: PLR0911
-        self, captures: list[CaptureInfo]
+        self, captures: list[CaptureInfo], check_turning_points: bool
     ) -> tuple[Literal["success", "continue", "restart"], int]:
         """Check if the sharpest image in a list of captures is central enough.
 
         :param captures: a list of the capture objects to for testing if the
             sharpness has converged in the centre
+        :param check_turning_points: Whether to check the number of turning points in
+            the sharpnesses of the images in the stack is exactly 1. (May fail with
+            thick samples)
 
         :returns: A tuple with two values:
 
@@ -812,21 +826,9 @@ class AutofocusThing(lt.Thing):
                 return "restart", capture_id
             return "continue", capture_id
 
-        # Fit the peak
-        x = range(n_imgs)
-        coeffs, cov = np.polyfit(x, sharpnesses, deg=2, cov=True)
-        a = float(coeffs[0])
-        fit_func = np.poly1d(coeffs)
-
-        # find the peaks's x-position
-        turning = float(fit_func.deriv().roots[0])
-        sigma_a = float(np.sqrt(cov[0, 0]))
-        # Estimate the upper 95% confidence bound for the x^2 term
-        ci_high = a + 2 * sigma_a
-
-        # If the high 95% confindence interval of the peak is not negative then the
-        # fit isn't sure if this is a peak or a U shape, so we continue.
-        if ci_high >= 0:
+        try:
+            turning = _get_peak_turning_point(sharpnesses)
+        except NotAPeakError:
             return "continue", capture_id
 
         # For larger stacks, test if the best image is not within two of the edge of
@@ -840,15 +842,51 @@ class AutofocusThing(lt.Thing):
         if turning > n_imgs - (edge_size - 0.5) or sharpest_index >= n_imgs - edge_size:
             return "continue", capture_id
 
-        # Also take the difference of neghboring points to check for turning points
-        d_sharpnesses = sharpnesses[1:] - sharpnesses[:-1]
-        # Filter out any points that are not prominent
-        prominent = abs(d_sharpnesses) / np.mean(abs(d_sharpnesses)) > 0.5
-        d_sharpnesses = d_sharpnesses[prominent]
-        # count the sign changes
-        turning_points = int(np.sum(d_sharpnesses[1:] * d_sharpnesses[:-1] < 0))
-
-        if turning_points > 1:
-            return "continue", capture_id
+        if check_turning_points:
+            turning_points = _count_turning_points(sharpnesses)
+            if turning_points > 1:
+                return "continue", capture_id
 
         return "success", capture_id
+
+
+class NotAPeakError(RuntimeError):
+    """The data to fit isn't a peak."""
+
+
+def _get_peak_turning_point(sharpnesses: np.ndarray) -> float:
+    """Get the turing point for a sharpnesses in a z-stack.
+
+    :param sharpnesses: A numpy array of sharpnesses
+    :return: The x value of the turning point where x-axis is 0 to N-1 for the N
+        sharpness values
+
+    :raise NotAPeakError: If the fit doesn't have a maximum within 95% confidence.
+    """
+    # Fit the peak
+    x = range(len(sharpnesses))
+    coeffs, cov = np.polyfit(x, sharpnesses, deg=2, cov=True)
+    a = float(coeffs[0])
+    fit_func = np.poly1d(coeffs)
+
+    # find the peaks's x-position
+    turning = float(fit_func.deriv().roots[0])
+    sigma_a = float(np.sqrt(cov[0, 0]))
+    # Estimate the upper 95% confidence bound for the x^2 term
+    ci_high = a + 2 * sigma_a
+    # If the high 95% confindence interval of the peak is not negative then the
+    # fit isn't sure if this is a peak or a U shape, so we continue.
+    if ci_high >= 0:
+        raise NotAPeakError("Not a peak to within 95% confidence.")
+    return turning
+
+
+def _count_turning_points(sharpnesses: np.ndarray) -> int:
+    """Count the number of turing points, after rejecting those from noise."""
+    # Also take the difference of neighbouring points to check for turning points
+    d_sharpnesses = sharpnesses[1:] - sharpnesses[:-1]
+    # Filter out any points that are not prominent
+    prominent = abs(d_sharpnesses) / np.mean(abs(d_sharpnesses)) > 0.5
+    d_sharpnesses = d_sharpnesses[prominent]
+    # count the sign changes
+    return int(np.sum(d_sharpnesses[1:] * d_sharpnesses[:-1] < 0))
