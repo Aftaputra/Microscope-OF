@@ -10,7 +10,6 @@ import cv2
 import numpy as np
 from pydantic import BaseModel, Field, ConfigDict
 from pydantic.errors import PydanticUserError
-from scipy.stats import norm
 from labthings_fastapi.thing_description import type_to_dataschema
 
 
@@ -144,7 +143,7 @@ class BackgroundDetectAlgorithm:
             "Each background detect algorithm must implement an image_is_sample method."
         )
 
-    def set_background(self, image: np.ndarray) -> BaseModel:
+    def set_background(self, image: np.ndarray) -> None:
         """Use the input image to update the background data.
 
         Background data must be a Pydantic BaseModel.
@@ -195,6 +194,10 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
 
     background_data_model: BaseModel = ChannelDistributions
     settings_data_model: BaseModel = ColourChannelDetectSettings
+
+    # These are the same as those used for ChannelDeviationLUV. More detail is
+    # provided there.
+    min_stds = [0.5, 0.3, 0.5]
 
     def background_mask(self, image: np.ndarray) -> np.ndarray:
         """Calculate a binary image, showing whether each pixel is background.
@@ -258,14 +261,12 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         """Use the input image to update the background distributions."""
         image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
 
-        ch1 = (image_luv.T[0]).flatten()
-        ch2 = (image_luv.T[1]).flatten()
-        ch3 = (image_luv.T[2]).flatten()
+        mu = np.mean(image_luv, axis=(0, 1))
+        std = np.std(image_luv, axis=(0, 1))
 
-        points = np.array([np.asarray(ch1), np.asarray(ch2), np.asarray(ch3)]).T
-
-        # Get the mean and standard deviation of values in each channel
-        mu, std = np.apply_along_axis(norm.fit, 0, points)
+        if np.any(std == 0):
+            raise ChannelBlankError("Some LUV channels have no standard devaition.")
+        std = np.maximum(std, self.min_stds)
 
         self.background_data = ChannelDistributions(
             means=mu.tolist(), standard_deviations=std.tolist()
