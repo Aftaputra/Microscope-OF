@@ -337,11 +337,13 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
         image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
 
         mu = np.zeros(3)
-        std = np.median(_chunked_stds(image_luv, 8, 8), axis=(0, 1))
-        if np.any(std == 0):
+        c_stds = _chunked_stds(image_luv, 8, 8)
+        channel_blank = np.all(c_stds == 0, axis=(0, 1))
+        if np.any(channel_blank):
             raise ChannelBlankError("Some LUV channels have no standard devaition.")
-        std = np.maximum(std, self.min_stds)
 
+        std = np.median(c_stds, axis=(0, 1))
+        std = np.maximum(std, self.min_stds)
         self.background_data = ChannelDistributions(
             means=mu.tolist(), standard_deviations=std.tolist()
         )
