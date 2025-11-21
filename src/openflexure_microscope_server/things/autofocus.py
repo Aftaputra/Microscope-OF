@@ -421,11 +421,12 @@ class AutofocusThing(lt.Thing):
         is close to focus, but not quite within ``dz/2``. It will attempt to autofocus
         up to 10 times.
         """
-        attempts = 0
+        attempt = 0
         backlash = 200
 
         with sharpness_monitor.run():
-            while attempts < 10:
+            while attempt < 10:
+                attempt += 1
                 if start == "centre":
                     stage.move_relative(x=0, y=0, z=-(backlash + dz / 2))
                     stage.move_relative(x=0, y=0, z=backlash)
@@ -447,10 +448,11 @@ class AutofocusThing(lt.Thing):
                 stage.move_absolute(z=peak_height)
 
                 if target_min < peak_height < target_max:
-                    # If it is within the target range then break.
-                    break
-
-            return heights.tolist(), sizes.tolist()
+                    # If it is within the target range then return
+                    return heights.tolist(), sizes.tolist()
+        raise NoFocusFoundError(
+            "Looping autofocus couldn't converge on a focus location."
+        )
 
     stack_images_to_save = lt.ThingSetting(
         initial_value=1,
@@ -611,12 +613,15 @@ class AutofocusThing(lt.Thing):
             # The z position of the first images in the previous attempt.
             initial_z_pos = captures[0].position["z"]
             # If a stack is not successful, move to the start and autofocus
-            self.reset_stack(
-                initial_z_pos,
-                stack_parameters.autofocus_dz,
-                stage,
-                sharpness_monitor,
-            )
+            try:
+                self.reset_stack(
+                    initial_z_pos,
+                    stack_parameters.autofocus_dz,
+                    stage,
+                    sharpness_monitor,
+                )
+            except NoFocusFoundError:
+                break
 
         # Save stack_parameters.image_to_save images centred on the sharpest capture.
         # If the smart_stack failed the exact number of images saved may not be
@@ -852,6 +857,10 @@ class AutofocusThing(lt.Thing):
 
 class NotAPeakError(RuntimeError):
     """The data to fit isn't a peak."""
+
+
+class NoFocusFoundError(RuntimeError):
+    """No focus found during looping Autofocus."""
 
 
 def _get_peak_turning_point(sharpnesses: np.ndarray) -> float:
