@@ -20,6 +20,7 @@ from openflexure_microscope_server.things.autofocus import (
     MAX_TEST_IMAGE_COUNT,
     _get_capture_by_id,
     _get_capture_index_by_id,
+    EXTRA_STACK_CAPTURES,
 )
 from openflexure_microscope_server.scan_directories import IMAGE_REGEX
 
@@ -415,3 +416,94 @@ def test_run_smart_stack(pass_on, autofocus_thing, mocker):
 
     # Mock called to save image
     assert cam.save_from_memory.call_count == (1 if success else 0)
+
+
+def setup_and_run_z_stack(check_returns, check_turning_points, autofocus_thing, mocker):
+    """Set up a z_stack, run it, and return the result.
+
+    :param check_returns: The return values from check_stack_result. Note that if this
+        is a list it will be set as a side effect (and should be  a list of tuples of
+        results. If it a tuple (or anything else) it is set as a return value.
+    """
+    stack_params = autofocus_thing.create_stack_params(
+        autofocus_dz=2000,
+        images_dir="/this/is/fake",
+        save_resolution=(1640, 1232),
+        logger=LOGGER,
+    )
+    stack_params.settling_time = 0  # Don't settle or tests take forever.
+
+    stage = mocker.Mock()
+    cam = mocker.Mock()
+    autofocus_thing.capture_stack_image = mocker.Mock()
+    if isinstance(check_returns, list):
+        autofocus_thing.check_stack_result = mocker.Mock(side_effect=check_returns)
+    else:
+        autofocus_thing.check_stack_result = mocker.Mock(return_value=check_returns)
+    return autofocus_thing.z_stack(
+        stack_parameters=stack_params,
+        check_turning_points=check_turning_points,
+        cam=cam,
+        stage=stage,
+    )
+
+
+def test_z_stack_turning_toggle_passed(autofocus_thing, mocker):
+    """Check that the toggling of turning points is passed to the check."""
+    check_returns = ("success", "mock_id")
+    for check_turning in [True, False]:
+        setup_and_run_z_stack(check_returns, check_turning, autofocus_thing, mocker)
+        check_kwargs = autofocus_thing.check_stack_result.call_args.kwargs
+        assert check_kwargs["check_turning_points"] == check_turning
+
+
+def test_z_stack_returns_on_success_and_restart(autofocus_thing, mocker):
+    """Check that if the check returns success or restart then the stack exits with correct return value."""
+    for result in ["success", "restart"]:
+        check_returns = (result, "mock_id")
+        ret = setup_and_run_z_stack(check_returns, True, autofocus_thing, mocker)
+        assert autofocus_thing.check_stack_result.call_count == 1
+        # Check the number of images taken is exactly the call count.
+        ims_taken = autofocus_thing.capture_stack_image.call_count
+        assert ims_taken == autofocus_thing.stack_min_images_to_test
+        # And the result is as expected.
+        assert ret[0] == (result == "success")
+
+
+def test_z_stack_exits_if_focus_never_found(autofocus_thing, mocker):
+    """Check that if the check returns continue the stack exits eventually with a failure."""
+    check_returns = ("continue", "mock_id")
+    ret = setup_and_run_z_stack(check_returns, True, autofocus_thing, mocker)
+
+    assert autofocus_thing.check_stack_result.call_count == EXTRA_STACK_CAPTURES + 1
+    # Check the number of images taken is the maximum possible, set by the min images to
+    # test and the number of extra images that can be taken
+    ims_taken = autofocus_thing.capture_stack_image.call_count
+    max_ims = autofocus_thing.stack_min_images_to_test + EXTRA_STACK_CAPTURES
+    assert ims_taken == max_ims
+    # And the result is as expected.
+    assert not ret[0]
+
+
+def test_z_stack_return(autofocus_thing, mocker):
+    """Check z-stack returns as expected for more complex cases the fixed results above."""
+    for i in range(2, EXTRA_STACK_CAPTURES):
+        check_returns = [
+            ("restart" if j == i - 1 else "continue", f"id_{j}") for j in range(i)
+        ]
+        ret = setup_and_run_z_stack(check_returns, True, autofocus_thing, mocker)
+        # Calculate images taken
+        images_taken = autofocus_thing.stack_min_images_to_test + i - 1
+        assert autofocus_thing.capture_stack_image.call_count == images_taken
+        # Check it reports a failure
+        assert not ret[0]
+
+        # Repeat ending with a success rather than a failure
+        check_returns = [
+            ("success" if j == i - 1 else "continue", f"id_{j}") for j in range(i)
+        ]
+        ret = setup_and_run_z_stack(check_returns, True, autofocus_thing, mocker)
+        # Calculate images taken
+        assert autofocus_thing.capture_stack_image.call_count == images_taken
+        # Check it reports a success
+        assert ret[0]

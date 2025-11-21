@@ -28,6 +28,7 @@ from .stage import StageDependency as Stage
 LOGGER = logging.getLogger(__name__)
 MIN_TEST_IMAGE_COUNT = 3
 MAX_TEST_IMAGE_COUNT = 9
+EXTRA_STACK_CAPTURES = 15
 
 
 class NotStreamingError(RuntimeError):
@@ -133,7 +134,7 @@ class StackParams(BaseModel):
 
         This is 15 images more then the minimum number that are captured.
         """
-        return self.min_images_to_test + 15
+        return self.min_images_to_test + EXTRA_STACK_CAPTURES
 
     def slice_to_save(self, sharpest_index: int) -> slice:
         """Return the slice of images to save given the index of the sharpest image."""
@@ -734,7 +735,7 @@ class AutofocusThing(lt.Thing):
         ims_to_check = slice(-stack_parameters.min_images_to_test, None)
 
         # If the sharpest image isn't found within the maximum number of images
-        # end the loop and return "restart"
+        # end the loop and return False indicating the stack failed.
         while len(captures) < stack_parameters.max_images_to_test:
             time.sleep(stack_parameters.settling_time)
 
