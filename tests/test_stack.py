@@ -1,7 +1,4 @@
-"""Tests for the smart/fast stacking.
-
-Currently these tests don't test the Thing itself, just surrounding functionality
-"""
+"""Tests for the smart and fast stacking."""
 
 from typing import Optional
 import tempfile
@@ -352,3 +349,69 @@ def test_coercing_stack_save_ims(
     assert stack_params.images_to_save == coerced_save_ims
     # Check that the setting in the Thing was updated to the coerced value
     assert stack_params.images_to_save == autofocus_thing.stack_images_to_save
+
+
+@pytest.mark.parametrize("pass_on", [1, 2, 3, 4])
+def test_run_smart_stack(pass_on, autofocus_thing, mocker):
+    """Test Running smart stack with the stack passing on different attempts."""
+    cam = mocker.Mock()
+    stage = mocker.Mock()
+    sharpness_monitor = mocker.MagicMock()
+    stack_params = autofocus_thing.create_stack_params(
+        autofocus_dz=2000,
+        images_dir="/this/is/fake",
+        save_resolution=(1640, 1232),
+        logger=LOGGER,
+    )
+    assert stack_params.max_attempts == 3
+
+    # Set up returns from z-stack
+    fake_captures = [
+        CaptureInfo(
+            buffer_id="first", position={"x": 0, "y": 0, "z": -99}, sharpness=123
+        ),
+        CaptureInfo(
+            buffer_id="pick_me", position={"x": 0, "y": 0, "z": 555}, sharpness=456
+        ),
+        CaptureInfo(
+            buffer_id="last", position={"x": 0, "y": 0, "z": 999}, sharpness=123
+        ),
+    ]
+
+    successful_return = (True, fake_captures, "pick_me")
+    failed_return = (False, fake_captures, "pick_me")
+    return_list = [failed_return] * (pass_on - 1) + [successful_return]
+
+    # Mock z_stack and looping_autofocus
+    autofocus_thing.z_stack = mocker.Mock(side_effect=return_list)
+    autofocus_thing.looping_autofocus = mocker.Mock()
+
+    # Run it
+    success, final_z = autofocus_thing.run_smart_stack(
+        cam=cam,
+        stage=stage,
+        sharpness_monitor=sharpness_monitor,
+        stack_parameters=stack_params,
+        save_on_failure=False,
+        check_turning_points=True,
+    )
+
+    # Only passes if the attempt it passes on is less than max attempts
+    assert success == (pass_on <= stack_params.max_attempts)
+    # Final z is the one from the id returned by the stack "pick_me"
+    assert final_z == 555
+
+    # z_stack should run up until the time it passes. Running no more than max_attempts
+    n_stacks = min(pass_on, stack_params.max_attempts)
+    assert autofocus_thing.z_stack.call_count == n_stacks
+    # Move absolute should be 1 less time that the number of times z_stack_run
+    assert stage.move_absolute.call_count == n_stacks - 1
+    # As should looping autofocus
+    assert autofocus_thing.looping_autofocus.call_count == n_stacks - 1
+
+    # Check rest stack is moving to the first image in the stack.
+    if n_stacks > 1:
+        assert stage.move_absolute.call_args.kwargs["z"] == -99
+
+    # Mock called to save image
+    assert cam.save_from_memory.call_count == (1 if success else 0)
