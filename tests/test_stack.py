@@ -507,3 +507,22 @@ def test_z_stack_return(autofocus_thing, mocker):
         assert autofocus_thing.capture_stack_image.call_count == images_taken
         # Check it reports a success
         assert ret[0]
+
+
+def test_capture_stack_image(autofocus_thing, mocker):
+    """Check that capture stack image calls the expected functions and returns the expected data."""
+    stage = mocker.Mock()
+    stage.position = {"x": 123, "y": 456, "z": 789}
+    cam = mocker.Mock()
+    cam.capture_to_memory.return_value = "fake_buffer_id"
+    cam.grab_jpeg_size.return_value = 54321
+    buffer_max = 11
+
+    info = autofocus_thing.capture_stack_image(
+        cam=cam, stage=stage, buffer_max=buffer_max
+    )
+    assert cam.capture_to_memory.call_count == 1
+    assert cam.grab_jpeg_size.call_count == 1
+    assert info.buffer_id == "fake_buffer_id"
+    assert info.position == {"x": 123, "y": 456, "z": 789}
+    assert info.sharpness == 54321
