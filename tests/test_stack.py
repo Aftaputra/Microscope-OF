@@ -21,6 +21,9 @@ from openflexure_microscope_server.things.autofocus import (
     _get_capture_by_id,
     _get_capture_index_by_id,
     EXTRA_STACK_CAPTURES,
+    NotAPeakError,
+    _get_peak_turning_point,
+    _count_turning_points,
 )
 from openflexure_microscope_server.scan_directories import IMAGE_REGEX
 
@@ -526,3 +529,162 @@ def test_capture_stack_image(autofocus_thing, mocker):
     assert info.buffer_id == "fake_buffer_id"
     assert info.position == {"x": 123, "y": 456, "z": 789}
     assert info.sharpness == 54321
+
+
+def mock_capture(buffer_id: int, sharpness: int) -> CaptureInfo:
+    """Create a CaptureInfo instance with a dummy position."""
+    return CaptureInfo(
+        buffer_id=buffer_id,
+        position={"x": 0, "y": 0, "z": buffer_id},
+        sharpness=sharpness,
+    )
+
+
+def test_check_stack_single_image_returns_success(autofocus_thing):
+    """A single image is always successful."""
+    captures = [mock_capture("mock-id", 10)]
+    result, cap_id = autofocus_thing.check_stack_result(
+        captures, check_turning_points=False
+    )
+    assert result == "success"
+    assert cap_id == "mock-id"
+
+
+@pytest.mark.parametrize(
+    ("sharpnesses", "expected"),
+    [
+        ([5, 10, 3], "success"),
+        ([10, 4, 2], "restart"),
+        ([1, 2, 10], "continue"),
+    ],
+)
+def test_check_stack_three_image_logic(sharpnesses, expected, autofocus_thing):
+    """For 3 images, success is the highest one is central."""
+    captures = [mock_capture(i, s) for i, s in enumerate(sharpnesses)]
+    result, _ = autofocus_thing.check_stack_result(captures, check_turning_points=False)
+    assert result == expected
+
+
+def _run_check_stack_with_good_peak(autofocus_thing, count_turnings=False):
+    """Run check stack on a good peak that should pass, and return the result.
+
+    This can be used to check how other mocked results of subfunctions affects the
+    result.
+    """
+    # Create an obvious peak that would normally pass.
+    sharpnesses = [1, 2, 4, 7, 12, 7, 4, 2, 1]
+    captures = [mock_capture(i, s) for i, s in enumerate(sharpnesses)]
+
+    result, cap_id = autofocus_thing.check_stack_result(
+        captures, check_turning_points=count_turnings
+    )
+    # Nothing a mocked function does should change which is the sharpedt image.
+    assert cap_id == 4
+    return result
+
+
+def test_check_stack_continues_if_no_tuning_point(autofocus_thing, mocker):
+    """Check that continue is returned if no turning point is found."""
+    # Mock to simulate not finding a peak
+    mocker.patch(
+        "openflexure_microscope_server.things.autofocus._get_peak_turning_point",
+        side_effect=NotAPeakError,
+    )
+    result = _run_check_stack_with_good_peak(autofocus_thing)
+    # Check that the NotAPeakError causes it to continue instead.
+    assert result == "continue"
+
+
+@pytest.mark.parametrize(
+    ("location", "expected"),
+    [
+        (-10, "restart"),  # Restart if lower than 1.5 (halfway between im 2 and 3)
+        (-1, "restart"),
+        (0, "restart"),
+        (1, "restart"),
+        (1.49, "restart"),
+        (1.5, "success"),  # Success up to 6.5 (as we have 9 images, final index is 8)
+        (2.5, "success"),
+        (4.5, "success"),
+        (6.5, "success"),
+        (6.51, "continue"),  # Continue if thrung point is after 6.5
+        (7, "continue"),
+        (8.1, "continue"),
+        (123, "continue"),
+    ],
+)
+def test_check_stack_affected_by_turning_point_location(
+    location, expected, autofocus_thing, mocker
+):
+    """Check that the turning point location affects the return as expected."""
+    # Mock to give the turning point location specified
+    mocker.patch(
+        "openflexure_microscope_server.things.autofocus._get_peak_turning_point",
+        return_value=location,
+    )
+    result = _run_check_stack_with_good_peak(autofocus_thing)
+    assert result == expected
+
+
+def test_check_stack_affected_by_number_of_turning_points(autofocus_thing, mocker):
+    """Check that the turning point location affects the return as expected."""
+    # Set the turning point to the centre
+    mocker.patch(
+        "openflexure_microscope_server.things.autofocus._get_peak_turning_point",
+        return_value=5,
+    )
+    mocker.patch(
+        "openflexure_microscope_server.things.autofocus._count_turning_points",
+        return_value=1,
+    )
+    result = _run_check_stack_with_good_peak(autofocus_thing, count_turnings=True)
+    # Successful with 1 peak
+    assert result == "success"
+
+    # Change return to be 2 peaks
+    mocker.patch(
+        "openflexure_microscope_server.things.autofocus._count_turning_points",
+        return_value=2,
+    )
+    result = _run_check_stack_with_good_peak(autofocus_thing, count_turnings=True)
+    # Continue with 2 peaks
+    assert result == "continue"
+    # Unless this check is turned off
+    result = _run_check_stack_with_good_peak(autofocus_thing, count_turnings=False)
+    assert result == "success"
+
+
+def test_get_peak_turning_point():
+    """Check that the peak fitting returns expected value (or error)."""
+    with pytest.raises(NotAPeakError):
+        _get_peak_turning_point(np.ones(9))
+
+    linear = np.arange(9)
+    u_shape = 2 * (linear - 4) ** 2 + 17
+    peak = -2 * (linear - 4) ** 2 + 55
+
+    with pytest.raises(NotAPeakError):
+        _get_peak_turning_point(linear)
+
+    with pytest.raises(NotAPeakError):
+        _get_peak_turning_point(u_shape)
+
+    # Should be 4 to within a fitting error
+    assert abs(_get_peak_turning_point(peak) - 4) < 1e-7
+
+
+def test_count_turning_points():
+    """Check the turing point count works as expected."""
+    linear = np.arange(9)
+    u_shape = 2 * (linear - 4) ** 2 + 17
+    peak = -2 * (linear - 4) ** 2 + 55
+    assert _count_turning_points(np.ones(9)) == 0
+    assert _count_turning_points(linear) == 0
+    assert _count_turning_points(u_shape) == 1
+    assert _count_turning_points(peak) == 1
+
+    assert _count_turning_points(np.array([1, 2, 3, 4, 5, 4, 3, 2, 1])) == 1
+    # Double peak is 3 points
+    assert _count_turning_points(np.array([1, 2, 3, 4, 2, 4, 3, 2, 1])) == 3
+    # But only one if the dip isn't prominent
+    assert _count_turning_points(np.array([1, 2, 3, 4, 3.8, 4, 3, 2, 1])) == 1

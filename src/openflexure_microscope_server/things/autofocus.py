@@ -845,7 +845,7 @@ class AutofocusThing(lt.Thing):
         # edge of the stack.
         if turning < edge_size - 0.5 or sharpest_index < edge_size:
             return "restart", capture_id
-        if turning > n_imgs - (edge_size - 0.5) or sharpest_index >= n_imgs - edge_size:
+        if turning > n_imgs - edge_size - 0.5 or sharpest_index >= n_imgs - edge_size:
             return "continue", capture_id
 
         if check_turning_points:
@@ -886,7 +886,8 @@ def _get_peak_turning_point(sharpnesses: np.ndarray) -> float:
     ci_high = a + 2 * sigma_a
     # If the high 95% confindence interval of the peak is not negative then the
     # fit isn't sure if this is a peak or a U shape, so we continue.
-    if ci_high >= 0:
+    # -1e-9 is used to guard against weird effects for flat and straight data
+    if ci_high > -1e-9:
         raise NotAPeakError("Not a peak to within 95% confidence.")
     return turning
 
