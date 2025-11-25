@@ -207,11 +207,6 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         The image should be in LUV format, the output will be binary with the
         same shape in the first two dimensions.
         """
-        if not self.background_data:
-            raise MissingBackgroundDataError(
-                "Background is not set: you need to calibrate background detection."
-            )
-
         # The ``[1:]`` selects only the U and V channels of the image.
         # Only U and V are used as brightness (L) often changes as
         # the height of the sample changes.
@@ -236,6 +231,10 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         :returns: A value (between 0 and 100) is the percentage of the image that is
             sample.
         """
+        if not self.background_data:
+            raise MissingBackgroundDataError(
+                "Background is not set: you need to calibrate background detection."
+            )
         image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
         mask = self.background_mask(image_luv)
 
@@ -302,6 +301,10 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
         :returns: A value (between 0 and 100) is the percentage of the image that is
             sample.
         """
+        if not self.background_data:
+            raise MissingBackgroundDataError(
+                "Background is not set: you need to calibrate background detection."
+            )
         image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
         stds = _chunked_stds(image_luv, 8, 8)
 
@@ -335,7 +338,6 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
     def set_background(self, image: np.ndarray) -> None:
         """Use the input image to update the background distributions."""
         image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
-
         mu = np.zeros(3)
         c_stds = _chunked_stds(image_luv, 8, 8)
         channel_blank = np.all(c_stds == 0, axis=(0, 1))
