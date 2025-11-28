@@ -1,9 +1,12 @@
+#! /usr/bin/env python3
+
 """Utility functions for testing scan planners.
 
 These including fake sample creation, scan path visualisation, and
 persistent storage of expected scan paths for samples.
 """
 
+import argparse
 import os
 import pickle
 
@@ -17,6 +20,8 @@ from matplotlib.figure import Figure
 from openflexure_microscope_server import scan_planners
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
+
+ALL_SAMPLE_NAMES = ("lobed", "regular", "core")
 
 
 class FakeSample:
@@ -135,25 +140,16 @@ def example_smart_spiral(
     return sample, planner
 
 
-def profile_and_save_plot_for_example_smart_spiral():
-    """Run the example scan and save a plot and the profile data.
-
-    Also print the cumulative stats.
-
-    This runs if you run this file directly.
-    """
+def profile_example_smart_spiral():
+    """Profile running an example scan and print the cumulative profile stats."""
     import pstats
     import cProfile
 
     profiler = cProfile.Profile()
-    sample, planner = profiler.runcall(example_smart_spiral)
+    profiler.runcall(example_smart_spiral)
 
     stats_fname = os.path.join(THIS_DIR, "scan_example_stats.pstats")
     profiler.dump_stats(stats_fname)
-
-    png_fname = os.path.join(THIS_DIR, "scan_example_plot.png")
-    fig = visualise_scan(sample, planner)
-    fig.savefig(png_fname, dpi=200)
 
     run_stats = pstats.Stats(stats_fname)
     run_stats.strip_dirs()
@@ -161,7 +157,16 @@ def profile_and_save_plot_for_example_smart_spiral():
     run_stats.print_stats("scan_planners.py")
 
 
-def update_example_smart_spiral_pickle(sample_name: str):
+def plot_all_examples():
+    """Plot all examples as png files."""
+    for sample_name in ALL_SAMPLE_NAMES:
+        sample, planner = example_smart_spiral(sample_name)
+        png_fname = os.path.join(THIS_DIR, f"scan_example_plot_{sample_name}.png")
+        fig = visualise_scan(sample, planner)
+        fig.savefig(png_fname, dpi=200)
+
+
+def update_example_smart_spiral_pickles():
     """Pickle the ScanPlanner for the example_smart_spiral().
 
     This is done so the history can be compared by testing to check
@@ -173,10 +178,11 @@ def update_example_smart_spiral_pickle(sample_name: str):
     Takes sample, the sample type we have generated, so we can make a
     pickle for each sample type
     """
-    pkl_fname = os.path.join(THIS_DIR, f"example_smart_spiral_{sample_name}.pkl")
-    _, planner = example_smart_spiral(sample_name)
-    with open(pkl_fname, "wb") as pkl_file_obj:
-        pickle.dump(planner, pkl_file_obj, pickle.HIGHEST_PROTOCOL)
+    for sample_name in ALL_SAMPLE_NAMES:
+        pkl_fname = os.path.join(THIS_DIR, f"example_smart_spiral_{sample_name}.pkl")
+        _, planner = example_smart_spiral(sample_name)
+        with open(pkl_fname, "wb") as pkl_file_obj:
+            pickle.dump(planner, pkl_file_obj, pickle.HIGHEST_PROTOCOL)
 
 
 def get_expected_result_for_example_smart_spiral(
@@ -227,5 +233,35 @@ def load_sample_points(sample_name: str):
     return sample_options[sample_name]
 
 
+def main():
+    """Run the profiler, the plotting, or update the pickles based on command line input.
+
+    This only runs if run as a command line script.
+    """
+    parser = argparse.ArgumentParser(description="Simulated scan-planning utility")
+
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # profile
+    subparsers.add_parser("profile", help="Run simulation under cProfile")
+
+    # plot
+    subparsers.add_parser("plot", help="Run simulation and produce plots")
+
+    # update
+    subparsers.add_parser("update", help="Update stored reference pickles")
+
+    args = parser.parse_args()
+
+    if args.command == "profile":
+        profile_example_smart_spiral()
+    elif args.command == "plot":
+        plot_all_examples()
+    elif args.command == "update":
+        update_example_smart_spiral_pickles()
+    else:
+        parser.error(f"Unknown command: {args.command}")
+
+
 if __name__ == "__main__":
-    profile_and_save_plot_for_example_smart_spiral()
+    main()
