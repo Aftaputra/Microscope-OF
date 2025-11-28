@@ -504,7 +504,7 @@ class SmartSpiral(ScanPlanner):
         """Sort the remaining positions based on the current location."""
 
         # Defined rather than use a lambda for readability
-        def sort_key(pos: FutureScanLocation) -> tuple[float, float, float]:
+        def sort_key(pos: FutureScanLocation) -> tuple[bool, float, float, float]:
             return (
                 self._is_primary_location(pos),  # False sorts low
                 self.moves_between(current_pos, pos),
