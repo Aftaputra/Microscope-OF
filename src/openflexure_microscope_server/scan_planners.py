@@ -409,7 +409,9 @@ class SmartSpiral(ScanPlanner):
                 self._add_surrounding_positions(xy_pos)
             else:
                 self._add_intermediate_positions(xy_pos)
-        self._re_sort_remaining_locations(xy_pos)
+            # Don't re-sort after imaging a secondary location or it can cause scan
+            # direction to reverse, breaking the spiral.
+            self._re_sort_remaining_locations(xy_pos)
 
     def _add_surrounding_positions(self, xy_pos: XYPos) -> None:
         """Add the 4 surrounding positions to the list of remaining locations to visit.
@@ -504,6 +506,7 @@ class SmartSpiral(ScanPlanner):
         # Defined rather than use a lambda for readability
         def sort_key(pos: FutureScanLocation) -> tuple[float, float, float]:
             return (
+                self._is_primary_location(pos),  # False sorts low
                 self.moves_between(current_pos, pos),
                 self.moves_between(self._initial_position, pos),
                 distance_between(current_pos, pos),
