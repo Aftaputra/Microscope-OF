@@ -17,6 +17,8 @@ from . import BaseStage
 
 LOGGER = logging.getLogger(__name__)
 
+REQUIRED_VERSION = (1, 0, 4)
+
 
 class SangaboardThing(BaseStage):
     """A Thing to manage a Sangaboard motor controller.
@@ -49,16 +51,8 @@ class SangaboardThing(BaseStage):
         self._sangaboard = sangaboard.Sangaboard(**self.sangaboard_kwargs)
         self._sangaboard_lock = threading.RLock()
         with self.sangaboard() as sb:
-            if sb.version_tuple[0] != 1:
-                raise RuntimeError(
-                    "Please update your Sangaboard Firmware. v1 is required."
-                )
-            if sb.version_tuple[1] == 0 and sb.version_tuple[2] < 4:
-                LOGGER.error(
-                    "Sangaboard firmware is not 1.0.4 or later. "
-                    "This will affect scanning performance."
-                )
             sb.query("blocking_moves false")
+        self.check_firmware()
         self.update_position()
 
     def __exit__(
@@ -93,6 +87,42 @@ class SangaboardThing(BaseStage):
             self._hardware_position = dict(
                 zip(self.axis_names, sb.position, strict=True)
             )
+
+    def check_firmware(self) -> None:
+        """Check the Sangaboard firmware version and log warnings or info messages.
+
+        Logs a warning if the numeric firmware version is below ``REQUIRED_VERSION``.
+        Logs an info message if the version ends with ``'-dev'``. Malformed version
+        strings trigger a warning.
+        """
+        with self.sangaboard() as sb:
+            version = sb.firmware_version
+
+            # Remove '-dev' for numeric comparison
+            is_dev = version.endswith("-dev")
+            base_version = version[:-4] if is_dev else version
+
+            # Parse the numeric part
+            parts = base_version.split(".")
+            try:
+                major, minor, patch = (int(p) for p in parts)
+            except ValueError:
+                LOGGER.warning(
+                    f"Unrecognized Sangaboard firmware version format: {version}"
+                )
+                return
+
+            current = (major, minor, patch)
+
+            # Warn if version is below minimum
+            if current < REQUIRED_VERSION:
+                LOGGER.warning(
+                    f"Sangaboard firmware version {version} is below the required 1.0.4."
+                )
+
+            # Log dev info
+            if is_dev:
+                LOGGER.info(f"Firmware version {version} is a development build.")
 
     def _hardware_move_relative(
         self,
