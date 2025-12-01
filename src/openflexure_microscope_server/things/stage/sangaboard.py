@@ -53,6 +53,11 @@ class SangaboardThing(BaseStage):
                 raise RuntimeError(
                     "Please update your Sangaboard Firmware. v1 is required."
                 )
+            if sb.version_tuple[1] == 0 and sb.version_tuple[2] < 4:
+                LOGGER.error(
+                    "Sangaboard firmware is not 1.0.4 or later. "
+                    "This will affect scanning performance."
+                )
             sb.query("blocking_moves false")
         self.update_position()
 
