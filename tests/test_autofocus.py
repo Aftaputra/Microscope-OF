@@ -12,7 +12,7 @@ from openflexure_microscope_server.things.autofocus import (
 )
 
 
-def fake_sharpeness_data(
+def fake_sharpness_data(
     dz: int, start_z: int, max_loc: int, length: int = 41
 ) -> tuple[list[float], np.ndarray, np.ndarray]:
     """Create some fake data for the shapeness.
@@ -23,7 +23,7 @@ def fake_sharpeness_data(
     times = [i / 10 + 100000 for i in range(length)]
     img_dz = dz / (length - 1)
     heights = [round(start_z + i * img_dz) for i in range(length)]
-    # Shapeness is falls off linearly in this model.
+    # Sharpnesses fall off linearly in this model.
     sharpnesses = [10 * dz - abs(max_loc - h) for h in heights]
     return times, np.array(heights), np.array(sharpnesses)
 
@@ -31,7 +31,7 @@ def fake_sharpeness_data(
 @pytest.mark.parametrize(
     ("start_z", "max_loc", "centre", "attempts_expected", "passes"),
     [
-        # To complete the max must be in the central 1200, so -600 to 600 when looping
+        # To complete, the max must be in the central 1200, so -600 to 600 when looping
         # from -1000 to 1000
         (0, 550, True, 1, True),  # Found in loop1 from -1000 to 1000
         (0, 650, True, 2, True),  # Just outside the limit in loop1
@@ -67,15 +67,15 @@ def test_looping_autofocus(start_z, max_loc, centre, attempts_expected, passes, 
     sharpness_monitor = mocker.MagicMock()
     sharpness_monitor.focus_rel.return_value = (0, 0)
 
-    def return_shapness(*_args) -> tuple[list[float], np.ndarray, np.ndarray]:
-        """Generate shapenesses based on parameterised input, and mock stage position."""
-        return fake_sharpeness_data(
+    def return_sharpness(*_args) -> tuple[list[float], np.ndarray, np.ndarray]:
+        """Generate sharpnesses based on parameterised input, and mock stage position."""
+        return fake_sharpness_data(
             dz=dz,
             start_z=stage.position["z"],
             max_loc=max_loc,
         )
 
-    sharpness_monitor.move_data.side_effect = return_shapness
+    sharpness_monitor.move_data.side_effect = return_sharpness
 
     autofocus_thing = AutofocusThing()
     if passes:

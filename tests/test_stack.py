@@ -425,8 +425,8 @@ def setup_and_run_z_stack(check_returns, check_turning_points, autofocus_thing, 
     """Set up a z_stack, run it, and return the result.
 
     :param check_returns: The return values from check_stack_result. Note that if this
-        is a list it will be set as a side effect (and should be  a list of tuples of
-        results. If it a tuple (or anything else) it is set as a return value.
+        is a list, it will be set as a side effect (and should be a list of tuples of
+        results). If it a tuple (or anything else), it is set as a return value.
     """
     stack_params = autofocus_thing.create_stack_params(
         autofocus_dz=2000,
@@ -578,7 +578,7 @@ def _run_check_stack_with_good_peak(autofocus_thing, count_turnings=False):
     result, cap_id = autofocus_thing.check_stack_result(
         captures, check_turning_points=count_turnings
     )
-    # Nothing a mocked function does should change which is the sharpedt image.
+    # Nothing a mocked function does should change which is the sharpest image.
     assert cap_id == 4
     return result
 

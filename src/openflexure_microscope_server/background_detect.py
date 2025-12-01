@@ -264,7 +264,7 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         std = np.std(image_luv, axis=(0, 1))
 
         if np.any(std == 0):
-            raise ChannelBlankError("Some LUV channels have no standard devaition.")
+            raise ChannelBlankError("Some LUV channels have no standard deviation.")
         std = np.maximum(std, self.min_stds)
 
         self.background_data = ChannelDistributions(
@@ -298,7 +298,7 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
         deviations of an 8x8 grid of sub-images to the median standard deviation
         from a background image.
 
-        :returns: A value (between 0 and 100) is the percentage of the image that is
+        :returns: A value (between 0 and 100) that is the percentage of the image that is
             sample.
         """
         if not self.background_data:

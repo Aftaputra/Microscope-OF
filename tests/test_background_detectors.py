@@ -291,7 +291,7 @@ def test_channel_deviation_luv_get_sample_coverage(background_image, mocker):
     """Check _get_sample_coverage returns the values expected."""
     cd_luv = ChannelDeviationLUV()
 
-    # Create fake chunked STD data where each channel os the numbers 0 -> 31.5 in 0.5
+    # Create fake chunked STD data where each channel is the numbers 0 -> 31.5 in 0.5
     # steps
     grid = np.arange(0, 32, 0.5).reshape(8, 8)
     fake_stds = np.stack([grid, grid, grid], axis=-1)
@@ -313,7 +313,7 @@ def test_channel_deviation_luv_get_sample_coverage(background_image, mocker):
         means=[0, 0, 0], standard_deviations=[1.6, 1.6, 1.1]
     )
     assert cd_luv.get_sample_coverage(background_image) == 75
-    # This is but increases if any channels has a lower background value.
+    # But coverage increases if any channels has a lower background value.
     cd_luv.background_data = ChannelDistributions(
         means=[0, 0, 0], standard_deviations=[1.6, 0.6, 1.1]
     )

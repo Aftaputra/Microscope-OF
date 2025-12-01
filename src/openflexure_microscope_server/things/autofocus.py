@@ -865,7 +865,7 @@ class NoFocusFoundError(RuntimeError):
 
 
 def _get_peak_turning_point(sharpnesses: np.ndarray) -> float:
-    """Get the turing point for a sharpnesses in a z-stack.
+    """Get the turning point for a sharpnesses in a z-stack.
 
     :param sharpnesses: A numpy array of sharpnesses
     :return: The x value of the turning point where x-axis is 0 to N-1 for the N
