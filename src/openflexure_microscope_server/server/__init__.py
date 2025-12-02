@@ -2,20 +2,22 @@
 
 from __future__ import annotations
 
-from typing import Optional, Callable, Any
-from functools import wraps
-from copy import copy
 import logging
 from argparse import Namespace
+from copy import copy
+from functools import wraps
+from typing import Any, Callable, Optional
 
-import labthings_fastapi as lt
 import uvicorn
 from uvicorn.main import Server
 
+import labthings_fastapi as lt
+
 from openflexure_microscope_server.utilities import load_patched_config
-from .serve_static_files import add_static_files
-from .legacy_api import add_v2_endpoints
+
 from ..logging import configure_logging, retrieve_log, retrieve_log_from_file
+from .legacy_api import add_v2_endpoints
+from .serve_static_files import add_static_files
 
 LOGGER = logging.getLogger(__name__)
 

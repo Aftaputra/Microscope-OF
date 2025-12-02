@@ -7,11 +7,11 @@ For now, this file should be run directly rather than through a test framework.
 They are designed to run on CI and should work on Linux or WSL for local debugging.
 """
 
-from typing import Optional
-import subprocess
 import os
 import shutil
+import subprocess
 from time import sleep, time
+from typing import Optional
 
 from PIL import Image
 

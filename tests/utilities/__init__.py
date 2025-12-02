@@ -4,8 +4,8 @@ At the top level are some basic testing functions. More specific testing utiliti
 provided by modules inside the package.
 """
 
-from typing import Protocol, Iterable
 from collections.abc import Hashable
+from typing import Iterable, Protocol
 
 
 class SizedIterableHashable(Iterable[Hashable], Protocol):

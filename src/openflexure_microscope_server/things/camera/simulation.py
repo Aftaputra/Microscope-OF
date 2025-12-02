@@ -7,12 +7,13 @@ See repository root for licensing information.
 """
 
 from __future__ import annotations
-import logging
-from typing import Literal, Optional, Mapping
-from types import TracebackType
-from threading import Thread
-import time
+
 import io
+import logging
+import time
+from threading import Thread
+from types import TracebackType
+from typing import Literal, Mapping, Optional
 
 import numpy as np
 from PIL import Image, ImageFilter
@@ -26,8 +27,8 @@ from openflexure_microscope_server.ui import (
     property_control_for,
 )
 
-from . import BaseCamera, ArrayModel
 from ..stage import BaseStage
+from . import ArrayModel, BaseCamera
 
 LOGGER = logging.getLogger(__name__)
 

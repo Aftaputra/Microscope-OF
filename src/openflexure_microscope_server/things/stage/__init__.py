@@ -10,8 +10,9 @@ As the object will be used as a context manager create the hardware connection i
 """
 
 from __future__ import annotations
-from collections.abc import Sequence, Mapping
-from typing import Literal, Never, Any
+
+from collections.abc import Mapping, Sequence
+from typing import Any, Literal, Never
 
 import labthings_fastapi as lt
 

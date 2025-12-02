@@ -5,9 +5,9 @@ import logging
 import pytest
 
 from openflexure_microscope_server.things.stage.sangaboard import (
-    SangaboardThing,
-    REQUIRED_VERSION,
     RECOMMENDED_VERSION,
+    REQUIRED_VERSION,
+    SangaboardThing,
 )
 
 

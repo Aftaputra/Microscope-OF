@@ -1,12 +1,12 @@
 """Test the server's logging configuration and handling."""
 
+import logging
 import os
 import tempfile
-import logging
 
-from fastapi.responses import PlainTextResponse
-from fastapi import HTTPException
 import pytest
+from fastapi import HTTPException
+from fastapi.responses import PlainTextResponse
 
 from openflexure_microscope_server import logging as ofm_logging
 

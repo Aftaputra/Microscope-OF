@@ -1,12 +1,13 @@
 """Test the stage without creating a full HTTP server and socket connection."""
 
-import tempfile
 import itertools
+import tempfile
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 from httpx import HTTPStatusError
-from hypothesis import given, settings, HealthCheck, strategies as st
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 
 import labthings_fastapi as lt
 from labthings_fastapi.exceptions import NotConnectedToServerError
@@ -16,7 +17,6 @@ from openflexure_microscope_server.things.stage import (
     RedefinedBaseMovementError,
 )
 from openflexure_microscope_server.things.stage.dummy import DummyStage
-
 
 from .mock_things.mock_cancel import MockCancel
 

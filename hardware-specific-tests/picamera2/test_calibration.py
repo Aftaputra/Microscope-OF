@@ -1,7 +1,7 @@
 """Test data collection from the Raspberry Picamera."""
 
-from copy import deepcopy
 import tempfile
+from copy import deepcopy
 
 from .cam_test_utils import camera_test_client
 

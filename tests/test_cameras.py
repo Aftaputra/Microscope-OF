@@ -7,8 +7,8 @@ on camera functionality using the simulation camera are in "test_camera".
 import pytest
 
 from openflexure_microscope_server.things.camera import BaseCamera
-from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 from openflexure_microscope_server.things.camera.opencv import OpenCVCamera
+from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 
 
 @pytest.fixture

@@ -3,9 +3,9 @@
 import tempfile
 from contextlib import contextmanager
 
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
-import numpy as np
 from PIL import Image
 
 import labthings_fastapi as lt

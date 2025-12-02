@@ -7,11 +7,12 @@ The mocks do not subclass Things. Instead, they return predefined
 answers to functions.
 """
 
+from unittest.mock import Mock, PropertyMock
+
 from openflexure_microscope_server.background_detect import (
     BackgroundDetectorStatus,
     ColourChannelDetectSettings,
 )
-from unittest.mock import Mock, PropertyMock
 
 
 class MockCameraThing(Mock):

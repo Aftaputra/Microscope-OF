@@ -3,9 +3,8 @@
 from random import randint
 
 import numpy as np
-from PIL import Image
 import pytest
-
+from PIL import Image
 
 from openflexure_microscope_server.things.camera import (
     CameraMemoryBuffer,

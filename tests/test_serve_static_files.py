@@ -1,9 +1,9 @@
 """Test the code that mounts static files to the server, without creating a server."""
 
+import asyncio
 import os
 import shutil
 import tempfile
-import asyncio
 
 import pytest
 from starlette.responses import FileResponse, RedirectResponse

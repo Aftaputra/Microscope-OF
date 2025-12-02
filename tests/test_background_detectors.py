@@ -5,19 +5,19 @@ This tests both the base class an individual algorithms.
 
 import re
 
+import numpy as np
 import pytest
 from pydantic import BaseModel
-import numpy as np
 
 from openflexure_microscope_server.background_detect import (
-    MissingBackgroundDataError,
     BackgroundDetectAlgorithm,
-    ChannelDistributions,
-    ColourChannelDetectSettings,
-    ColourChannelDetectLUV,
-    _chunked_stds,
-    ChannelDeviationLUV,
     ChannelBlankError,
+    ChannelDeviationLUV,
+    ChannelDistributions,
+    ColourChannelDetectLUV,
+    ColourChannelDetectSettings,
+    MissingBackgroundDataError,
+    _chunked_stds,
 )
 
 RNG = np.random.default_rng()

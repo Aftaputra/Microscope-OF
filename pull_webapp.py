@@ -10,15 +10,14 @@ If the static directory already exists and contains data, it will be removed bef
 extraction.
 """
 
-import zipfile
+import argparse
 import io
-import sys
 import os
 import shutil
-import argparse
+import sys
+import zipfile
 
 import gitlab
-
 from gitlab.exceptions import GitlabGetError
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

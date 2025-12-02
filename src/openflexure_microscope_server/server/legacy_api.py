@@ -1,8 +1,10 @@
 """Provide endpoints that mimic the v2 API for OpenFlexure Connect discoverability."""
 
-import labthings_fastapi as lt
-from fastapi import Response
 from socket import gethostname
+
+from fastapi import Response
+
+import labthings_fastapi as lt
 
 FAKE_ROUTES = [
     "/api/v2/",

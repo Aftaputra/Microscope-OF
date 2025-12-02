@@ -13,31 +13,31 @@ For these tests to reliably represent real behaviour the mock Things will need t
 be tested for matching signatures with dynamically generated clients.
 """
 
-from typing import Callable, Optional
-import tempfile
+import logging
 import os
 import shutil
-import logging
+import tempfile
 from datetime import datetime
+from typing import Callable, Optional
 
-from fastapi import HTTPException
 import pytest
+from fastapi import HTTPException
 
 from labthings_fastapi.exceptions import InvocationCancelledError
 
-from openflexure_microscope_server.things.smart_scan import (
-    SmartScanThing,
-    ScanNotRunningError,
-)
 from openflexure_microscope_server.scan_directories import (
-    ScanData,
     NotEnoughFreeSpaceError,
+    ScanData,
+)
+from openflexure_microscope_server.things.smart_scan import (
+    ScanNotRunningError,
+    SmartScanThing,
 )
 
-from .mock_things.mock_csm import MockCSMThing
 from .mock_things.mock_autofocus import MockAutoFocusThing
-from .mock_things.mock_stage import MockStageThing
 from .mock_things.mock_camera import MockCameraThing
+from .mock_things.mock_csm import MockCSMThing
+from .mock_things.mock_stage import MockStageThing
 
 # A global logger to pass in as an Invocation Logger
 LOGGER = logging.getLogger("mock-invocation_logger")

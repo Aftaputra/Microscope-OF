@@ -6,13 +6,13 @@ CPU intensity of stitching causing scanning problems due to the Python Global
 Interpreter Lock (GIL). May be possible to shift to multiprocessing in the future.
 """
 
-from typing import Optional, Any
-import threading
-import subprocess
-import signal
 import os
-from io import TextIOWrapper
 import shlex
+import signal
+import subprocess
+import threading
+from io import TextIOWrapper
+from typing import Any, Optional
 
 import labthings_fastapi as lt
 

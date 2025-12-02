@@ -1,7 +1,7 @@
 """Test data collection from the Raspberry Picamera."""
 
-from PIL import Image
 import numpy as np
+from PIL import Image
 
 
 def test_jpeg_and_array(picamera_client):

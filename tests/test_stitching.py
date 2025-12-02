@@ -6,20 +6,20 @@ generated, and the subprocess calling works as expected.
 
 import logging
 import os
-from copy import copy
-import uuid
 import threading
 import time
+import uuid
+from copy import copy
 
 import pytest
 
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.stitching import (
-    BaseStitcher,
-    PreviewStitcher,
-    FinalStitcher,
     STITCHING_RESOLUTION,
+    BaseStitcher,
+    FinalStitcher,
+    PreviewStitcher,
     StitcherValidationError,
 )
 

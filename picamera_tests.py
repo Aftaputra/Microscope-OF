@@ -1,12 +1,12 @@
 #! /usr/bin/env python3
 """Run the Piamera tests and archive the results in the git repository."""
 
-import subprocess
-import shutil
-import os
-import posixpath
 import argparse
 import json
+import os
+import posixpath
+import shutil
+import subprocess
 import sys
 import zipfile
 

@@ -12,18 +12,18 @@ import json
 import os
 import tempfile
 
-from fastapi.testclient import TestClient
-from PIL import Image
 import numpy as np
 import piexif
 import pytest
+from fastapi.testclient import TestClient
+from PIL import Image
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
-from openflexure_microscope_server.things.stage.dummy import DummyStage
 from openflexure_microscope_server.things.autofocus import AutofocusThing
+from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
+from openflexure_microscope_server.things.stage.dummy import DummyStage
 
 
 @pytest.fixture

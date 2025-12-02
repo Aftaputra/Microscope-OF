@@ -4,14 +4,14 @@ A module to control the underlying microscope system and to expose information a
 the microscope, server, and thing states to the web API.
 """
 
-from collections.abc import Mapping
-import socket
-from typing import Optional, Any
-from uuid import UUID, uuid4
-import subprocess
 import os
-from signal import SIGTERM
+import socket
+import subprocess
 import time
+from collections.abc import Mapping
+from signal import SIGTERM
+from typing import Any, Optional
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel
 

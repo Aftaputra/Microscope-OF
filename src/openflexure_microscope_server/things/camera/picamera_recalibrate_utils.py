@@ -41,16 +41,17 @@ reliable.  The three steps above can be accomplished by:
 # ruff: noqa: N806 N803
 
 from __future__ import annotations
+
 import gc
 import logging
 import time
 from typing import List, Tuple
-from pydantic import BaseModel
-import numpy as np
-from scipy.ndimage import zoom
 
-from picamera2 import Picamera2
+import numpy as np
 import picamera2
+from picamera2 import Picamera2
+from pydantic import BaseModel
+from scipy.ndimage import zoom
 
 LOGGER = logging.getLogger(__name__)
 

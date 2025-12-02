@@ -1,13 +1,13 @@
 """File contains unit tests for stage_measure."""
 
-from copy import copy
-import logging
 import dataclasses
+import logging
 import tempfile
+from copy import copy
 
-from fastapi.testclient import TestClient
 import numpy as np
 import pytest
+from fastapi.testclient import TestClient
 
 import labthings_fastapi as lt
 

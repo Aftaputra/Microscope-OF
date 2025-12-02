@@ -10,7 +10,6 @@ from openflexure_microscope_server.things.camera import (
     picamera_tuning_file_utils as tf_utils,
 )
 
-
 MODEL = Picamera2.global_camera_info()[0]["Model"]
 
 
