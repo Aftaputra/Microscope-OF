@@ -15,23 +15,23 @@ from typing import (
     Any,
     Dict,
     List,
+    Mapping,
     NamedTuple,
     Optional,
     Tuple,
-    Mapping,
 )
-from fastapi import HTTPException
 
 import numpy as np
+from fastapi import HTTPException
+
+import labthings_fastapi as lt
 from camera_stage_mapping.camera_stage_calibration_1d import (
     calibrate_backlash_1d,
     image_to_stage_displacement_from_1d,
 )
-from camera_stage_mapping.exceptions import MappingError
-
-import labthings_fastapi as lt
-from labthings_fastapi.types.numpy import DenumpifyingDict
 from camera_stage_mapping.camera_stage_tracker import Tracker
+from camera_stage_mapping.exceptions import MappingError
+from labthings_fastapi.types.numpy import DenumpifyingDict
 
 from .camera import CameraDependency as CameraClient
 from .stage import StageDependency as Stage

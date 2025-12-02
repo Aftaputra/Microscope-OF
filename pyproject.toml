@@ -124,7 +124,8 @@ select = [
     "D", # Docstring checks
     "ERA001", # Commented out code!
     "S101",# No asserts!
-    "ANN",
+    "ANN", # Type annotations
+    "I", # Import sorting
 ]
 
 ignore = [
@@ -164,3 +165,15 @@ property-decorators = ["labthings_fastapi.thing_property", "labthings_fastapi.th
 [tool.ruff.lint.pylint]
 max-args = 7
 max-positional-args = 5
+
+
+[tool.ruff.lint.isort]
+section-order = ["future", "standard-library", "third-party", "ours", "first-party", "local-folder"]
+
+[tool.ruff.lint.isort.sections]
+ours = [
+    "camera_stage_mapping",
+    "openflexure_stitching",
+    "sangaboard",
+    "labthings_fastapi",
+]

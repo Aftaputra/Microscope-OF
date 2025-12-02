@@ -15,38 +15,39 @@ https://datasheets.raspberrypi.com/camera/raspberry-pi-camera-guide.pdf
 """
 
 from __future__ import annotations
-from typing import Annotated, Iterator, Literal, Mapping, Optional, Any
-from types import TracebackType
+
+import copy
 import json
 import logging
 import os
-import copy
 import tempfile
 import time
 from contextlib import contextmanager
 from threading import RLock
+from types import TracebackType
+from typing import Annotated, Any, Iterator, Literal, Mapping, Optional
 
-from pydantic import BaseModel, BeforeValidator
 import numpy as np
-from PIL import Image
 from picamera2 import Picamera2
 from picamera2.encoders import MJPEGEncoder
 from picamera2.outputs import Output
+from PIL import Image
+from pydantic import BaseModel, BeforeValidator
 
 import labthings_fastapi as lt
 from labthings_fastapi.exceptions import NotConnectedToServerError
 
+from openflexure_microscope_server.background_detect import ChannelBlankError
 from openflexure_microscope_server.ui import (
     ActionButton,
     PropertyControl,
     action_button_for,
     property_control_for,
 )
-from openflexure_microscope_server.background_detect import ChannelBlankError
+
+from . import ArrayModel, BaseCamera
 from . import picamera_recalibrate_utils as recalibrate_utils
 from . import picamera_tuning_file_utils as tf_utils
-
-from . import BaseCamera, ArrayModel
 
 LOGGER = logging.getLogger(__name__)
 

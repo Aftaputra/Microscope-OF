@@ -7,31 +7,32 @@ See repository root for licensing information.
 """
 
 from __future__ import annotations
-from typing import Literal, Optional, Tuple, Any, Mapping
-from types import TracebackType
-import json
+
 import io
-import time
+import json
 import logging
-from datetime import datetime
-import tempfile
 import os
+import tempfile
+import time
+from datetime import datetime
+from types import TracebackType
+from typing import Any, Literal, Mapping, Optional, Tuple
 
 import numpy as np
-from pydantic import RootModel
-from PIL import Image
 import piexif
+from PIL import Image
+from pydantic import RootModel
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from openflexure_microscope_server.ui import ActionButton, PropertyControl
 from openflexure_microscope_server.background_detect import (
-    ColourChannelDetectLUV,
-    ChannelDeviationLUV,
     BackgroundDetectAlgorithm,
     BackgroundDetectorStatus,
+    ChannelDeviationLUV,
+    ColourChannelDetectLUV,
 )
+from openflexure_microscope_server.ui import ActionButton, PropertyControl
 
 LOGGER = logging.getLogger(__name__)
 

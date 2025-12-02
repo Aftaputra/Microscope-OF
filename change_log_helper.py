@@ -2,11 +2,10 @@
 
 """Create a list of the MRs into v3 (unless specified) since the last release."""
 
-import sys
 import argparse
+import sys
 
 import gitlab
-
 from gitlab.exceptions import GitlabGetError
 
 PROJECT_ID = 9238334

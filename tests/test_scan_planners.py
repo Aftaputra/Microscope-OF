@@ -4,10 +4,12 @@ As well as low level function by function tests, this test suite also provides t
 that simulate scanning a sample, checking that the expected path is followed.
 """
 
-import pytest
 from copy import copy
 
+import pytest
+
 from openflexure_microscope_server import scan_planners
+
 from .utilities import scan_test_helpers
 
 

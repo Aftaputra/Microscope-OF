@@ -1,6 +1,6 @@
 """Functionality for communicating the required user interface for a thing."""
 
-from typing import Callable, Any
+from typing import Any, Callable
 
 from pydantic import BaseModel
 

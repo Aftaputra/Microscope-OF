@@ -12,11 +12,11 @@ output to STDOUT/STDERR are captured by ``systemd``. These can be viewed by usin
 """
 
 import logging
-from logging.handlers import RotatingFileHandler
 import os
+from logging.handlers import RotatingFileHandler
 
-from fastapi.responses import PlainTextResponse
 from fastapi import HTTPException
+from fastapi.responses import PlainTextResponse
 
 LOGGER = logging.getLogger(__name__)
 OFM_LOG_FILE = None

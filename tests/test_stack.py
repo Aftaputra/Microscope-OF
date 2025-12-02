@@ -1,31 +1,32 @@
 """Tests for the smart and fast stacking."""
 
-from typing import Optional
+import logging
 import tempfile
 from random import randint
-import logging
+from typing import Optional
 
-import pytest
 import numpy as np
-from hypothesis import given, strategies as st
+import pytest
 from fastapi.testclient import TestClient
+from hypothesis import given
+from hypothesis import strategies as st
 
 import labthings_fastapi as lt
 
+from openflexure_microscope_server.scan_directories import IMAGE_REGEX
 from openflexure_microscope_server.things.autofocus import (
-    AutofocusThing,
-    StackParams,
-    CaptureInfo,
-    MIN_TEST_IMAGE_COUNT,
+    EXTRA_STACK_CAPTURES,
     MAX_TEST_IMAGE_COUNT,
+    MIN_TEST_IMAGE_COUNT,
+    AutofocusThing,
+    CaptureInfo,
+    NotAPeakError,
+    StackParams,
+    _count_turning_points,
     _get_capture_by_id,
     _get_capture_index_by_id,
-    EXTRA_STACK_CAPTURES,
-    NotAPeakError,
     _get_peak_turning_point,
-    _count_turning_points,
 )
-from openflexure_microscope_server.scan_directories import IMAGE_REGEX
 
 LOGGER = logging.getLogger("mock-invocation_logger")
 RANDOM_GENERATOR = np.random.default_rng()

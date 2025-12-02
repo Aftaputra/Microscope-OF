@@ -1,9 +1,10 @@
 """Test the configuration handling functions in utilities."""
 
-import pytest
-import os
 import json
+import os
 from json import JSONDecodeError
+
+import pytest
 
 from openflexure_microscope_server import utilities
 

@@ -1,18 +1,20 @@
 """Provide a LabThings-FastAPI interface to the Sangaboard motor controller."""
 
 from __future__ import annotations
+
 import logging
 import threading
 import time
-from copy import copy
-from typing import Iterator, Literal, Optional, Any
-from types import TracebackType
-from contextlib import contextmanager
 from collections.abc import Mapping
+from contextlib import contextmanager
+from copy import copy
+from types import TracebackType
+from typing import Any, Iterator, Literal, Optional
 
 import semver
-import sangaboard
+
 import labthings_fastapi as lt
+import sangaboard
 
 from . import BaseStage
 

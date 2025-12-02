@@ -7,22 +7,22 @@ of images (a 'z-stack').
 See repository root for licensing information.
 """
 
-from contextlib import contextmanager
 import logging
-import time
-from typing import Annotated, Mapping, Optional, Sequence, Literal
 import os
+import time
+from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Annotated, Literal, Mapping, Optional, Sequence
 
-from fastapi import Depends
 import numpy as np
-from pydantic import BaseModel, field_validator, computed_field, model_validator
+from fastapi import Depends
+from pydantic import BaseModel, computed_field, field_validator, model_validator
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from .camera import RawCameraDependency as RawCamera
 from .camera import CameraDependency as CameraClient
+from .camera import RawCameraDependency as RawCamera
 from .stage import StageDependency as Stage
 
 LOGGER = logging.getLogger(__name__)

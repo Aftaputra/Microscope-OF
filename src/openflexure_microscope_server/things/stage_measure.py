@@ -13,20 +13,20 @@ is tracked and an error is raised if it exceeds a minimum amount. Currently
 this is 10% of the expected motion is the measured axis.
 """
 
-from typing import Literal, Any, Optional, overload
 import time
 from dataclasses import dataclass
 from threading import Lock
+from typing import Any, Literal, Optional, overload
 
 import numpy as np
 
-from camera_stage_mapping import fft_image_tracking
 import labthings_fastapi as lt
+from camera_stage_mapping import fft_image_tracking
 
 # Things
 from .autofocus import AutofocusThing
-from .camera_stage_mapping import CameraStageMapper
 from .camera import CameraDependency as CamDep
+from .camera_stage_mapping import CameraStageMapper
 from .stage import StageDependency as StageDep
 
 CSMDep = lt.deps.direct_thing_client_dependency(

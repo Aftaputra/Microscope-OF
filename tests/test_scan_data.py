@@ -1,8 +1,8 @@
 """Test the functionality in the scan_directories module."""
 
-from datetime import datetime, timedelta
-from copy import copy
 import json
+from copy import copy
+from datetime import datetime, timedelta
 from math import floor
 
 from openflexure_microscope_server.scan_directories import ScanData

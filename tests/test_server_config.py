@@ -1,7 +1,7 @@
 """Test server booting and shut down."""
 
-import os
 import json
+import os
 from copy import deepcopy
 
 import pytest

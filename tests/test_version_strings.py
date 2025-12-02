@@ -1,16 +1,16 @@
 """Tests that version strings can be produced reliably."""
 
-import subprocess
+import logging
 import os
 import re
-import tempfile
 import shutil
+import subprocess
+import tempfile
 import warnings
-import logging
 
+import pytest
 from hypothesis import strategies as st
 from hypothesis.errors import NonInteractiveExampleWarning
-import pytest
 
 from openflexure_microscope_server import utilities
 

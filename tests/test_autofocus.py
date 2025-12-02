@@ -3,8 +3,8 @@
 This doesn't check the behaviour of the JPEG shaprness monitor.
 """
 
-import pytest
 import numpy as np
+import pytest
 
 from openflexure_microscope_server.things.autofocus import (
     AutofocusThing,

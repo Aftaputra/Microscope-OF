@@ -1,8 +1,8 @@
 """Utilities to help with testing the camera."""
 
-from typing import Optional
 import tempfile
 from contextlib import contextmanager
+from typing import Optional
 
 from fastapi.testclient import TestClient
 

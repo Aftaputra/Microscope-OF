@@ -11,11 +11,11 @@ import os
 import pickle
 
 import numpy as np
-from scipy import interpolate
 from matplotlib import pyplot as plt
-from matplotlib.path import Path as MatPath
-from matplotlib.patches import PathPatch
 from matplotlib.figure import Figure
+from matplotlib.patches import PathPatch
+from matplotlib.path import Path as MatPath
+from scipy import interpolate
 
 from openflexure_microscope_server import scan_planners
 
@@ -145,8 +145,8 @@ def example_smart_spiral(
 
 def profile_example_smart_spiral():
     """Profile running an example scan and print the cumulative profile stats."""
-    import pstats
     import cProfile
+    import pstats
 
     profiler = cProfile.Profile()
     profiler.runcall(example_smart_spiral)

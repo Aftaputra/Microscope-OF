@@ -1,7 +1,7 @@
 """Test server booting and shut down."""
 
-from socket import gethostname
 import asyncio
+from socket import gethostname
 
 # Import as ofm server to attempt to minimise confusion with server as a var in other
 # functions and also FastAPI `Server`.

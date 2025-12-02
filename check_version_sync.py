@@ -2,8 +2,8 @@
 """Check that the npm version string matches the Python version string exactly."""
 
 import json
-import tomllib
 import os
+import tomllib
 
 with open("pyproject.toml", "rb") as toml_f:
     pyproject_data = tomllib.load(toml_f)

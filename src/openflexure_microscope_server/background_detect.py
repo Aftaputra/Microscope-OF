@@ -5,11 +5,13 @@ for analysis. Information from these images is used to detect whether an image f
 current camera field of view contains sample.
 """
 
-from typing import Optional, Any
+from typing import Any, Optional
+
 import cv2
 import numpy as np
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.errors import PydanticUserError
+
 from labthings_fastapi.thing_description import type_to_dataschema
 
 

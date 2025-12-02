@@ -4,13 +4,12 @@ This can get very tedious. Recommend running pytest with -s option
 to monitor progress.
 """
 
-from typing import Any
-import logging
-import time
-import tempfile
-import os
 import json
-
+import logging
+import os
+import tempfile
+import time
+from typing import Any
 
 from .cam_test_utils import camera_test_client
 

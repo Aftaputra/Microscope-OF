@@ -9,9 +9,9 @@ See repository root for licensing information.
 from __future__ import annotations
 
 import logging
-from typing import Literal, Optional
-from types import TracebackType
 from threading import Thread
+from types import TracebackType
+from typing import Literal, Optional
 
 import cv2
 from PIL import Image

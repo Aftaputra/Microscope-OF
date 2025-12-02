@@ -3,9 +3,9 @@
 import os
 from typing import Optional
 
+from fastapi import FastAPI
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_PATH = os.path.normpath(os.path.join(THIS_DIR, "..", "static"))

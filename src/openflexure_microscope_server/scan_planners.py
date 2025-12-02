@@ -9,9 +9,9 @@ subclassing the ScanPlanner
 # would be to import Union and use a string.
 from __future__ import annotations
 
-from typing import TypeAlias, Optional, Any
 import logging
 from copy import copy
+from typing import Any, Optional, TypeAlias
 
 import numpy as np
 

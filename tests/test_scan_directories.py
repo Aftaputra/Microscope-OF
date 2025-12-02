@@ -1,24 +1,24 @@
 """Test the functionality in the scan_directories module."""
 
-import tempfile
-import os
-import math
-import shutil
-import logging
-import random
-import time
 import json
+import logging
+import math
+import os
+import random
+import shutil
+import tempfile
+import time
 from collections import namedtuple
 
 import pytest
 
 from openflexure_microscope_server.scan_directories import (
-    ScanDirectoryManager,
+    SCAN_DATA_FILENAME,
+    NotEnoughFreeSpaceError,
     ScanDirectory,
+    ScanDirectoryManager,
     ScanInfo,
     get_files_in_zip,
-    NotEnoughFreeSpaceError,
-    SCAN_DATA_FILENAME,
 )
 
 from .test_scan_data import _fake_scan_data

@@ -7,37 +7,35 @@ It also controls external processes for live stitching composite images, and
 the creation of the final stitched images.
 """
 
-from typing import (
-    Optional,
-    Self,
-    TypeVar,
-    ParamSpec,
-    Callable,
-    Concatenate,
-    Mapping,
-    Any,
-)
-import threading
 import os
+import threading
 import time
 from datetime import datetime
 from subprocess import SubprocessError
+from typing import (
+    Any,
+    Callable,
+    Concatenate,
+    Mapping,
+    Optional,
+    ParamSpec,
+    Self,
+    TypeVar,
+)
 
+import numpy as np
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
-import numpy as np
 from pydantic import BaseModel
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server import scan_directories
-from openflexure_microscope_server import scan_planners
-from openflexure_microscope_server import stitching
+from openflexure_microscope_server import scan_directories, scan_planners, stitching
 
 # Things
 from .autofocus import AutofocusThing, StackParams
-from .camera_stage_mapping import CameraStageMapper
 from .camera import CameraDependency as CameraClient
+from .camera_stage_mapping import CameraStageMapper
 from .stage import StageDependency as StageDep
 
 T = TypeVar("T")

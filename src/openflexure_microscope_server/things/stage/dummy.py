@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Optional, Any
-from types import TracebackType
-from collections.abc import Mapping
 import time
+from collections.abc import Mapping
+from types import TracebackType
+from typing import Any, Optional
 
 import labthings_fastapi as lt
 

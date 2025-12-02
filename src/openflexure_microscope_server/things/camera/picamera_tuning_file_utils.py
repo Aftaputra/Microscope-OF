@@ -3,14 +3,13 @@
 The functions that edit the tuning files return a new dictionary that is updated.
 """
 
-from typing import Any, Optional
-from copy import deepcopy
-import os
 import json
+import os
+from copy import deepcopy
+from typing import Any, Optional
 
-from pydantic import BaseModel
 import numpy as np
-
+from pydantic import BaseModel
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
