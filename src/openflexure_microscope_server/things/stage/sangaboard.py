@@ -44,12 +44,12 @@ class SangaboardThing(BaseStage):
         """
         self.sangaboard_kwargs = copy(kwargs)
         self.sangaboard_kwargs["port"] = port
+        self._sangaboard_lock = threading.RLock()
         super().__init__(**kwargs)
 
     def __enter__(self) -> None:
         """Connect to the sangaboard when the Thing context manager is opened."""
         self._sangaboard = sangaboard.Sangaboard(**self.sangaboard_kwargs)
-        self._sangaboard_lock = threading.RLock()
         with self.sangaboard() as sb:
             sb.query("blocking_moves false")
         self.check_firmware()
