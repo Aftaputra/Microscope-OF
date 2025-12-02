@@ -28,6 +28,7 @@ from .stage import StageDependency as Stage
 LOGGER = logging.getLogger(__name__)
 MIN_TEST_IMAGE_COUNT = 3
 MAX_TEST_IMAGE_COUNT = 9
+EXTRA_STACK_CAPTURES = 15
 
 
 class NotStreamingError(RuntimeError):
@@ -133,7 +134,7 @@ class StackParams(BaseModel):
 
         This is 15 images more then the minimum number that are captured.
         """
-        return self.min_images_to_test + 15
+        return self.min_images_to_test + EXTRA_STACK_CAPTURES
 
     def slice_to_save(self, sharpest_index: int) -> slice:
         """Return the slice of images to save given the index of the sharpest image."""
@@ -421,15 +422,18 @@ class AutofocusThing(lt.Thing):
         is close to focus, but not quite within ``dz/2``. It will attempt to autofocus
         up to 10 times.
         """
-        repeat = True
-        attempts = 0
+        attempt = 0
         backlash = 200
 
         with sharpness_monitor.run():
-            while repeat and attempts < 10:
+            while attempt < 10:
+                attempt += 1
                 if start == "centre":
                     stage.move_relative(x=0, y=0, z=-(backlash + dz / 2))
                     stage.move_relative(x=0, y=0, z=backlash)
+
+                # Always start centrally for future runs
+                start = "centre"
 
                 focus_data_index, _ = sharpness_monitor.focus_rel(
                     dz, block_cancellation=True
@@ -437,22 +441,19 @@ class AutofocusThing(lt.Thing):
                 _times, heights, sizes = sharpness_monitor.move_data(focus_data_index)
 
                 peak_height = heights[np.argmax(sizes)]
-                height_min = np.min(heights)
-                height_max = np.max(heights)
+                target_min = np.min(heights) + dz / 5
+                target_max = np.max(heights) - dz / 5
 
-                if (
-                    peak_height - height_min < dz / 5
-                    or height_max - peak_height < dz / 5
-                ):
-                    attempts += 1
-                    start = "centre"
-                    stage.move_absolute(z=peak_height - backlash)
-                    stage.move_absolute(z=peak_height)
-                else:
-                    repeat = False
-                    stage.move_relative(x=0, y=0, z=-(dz + backlash))
-                    stage.move_absolute(z=peak_height)
-            return heights.tolist(), sizes.tolist()
+                # move to the peak
+                stage.move_absolute(z=peak_height - backlash)
+                stage.move_absolute(z=peak_height)
+
+                if target_min < peak_height < target_max:
+                    # If it is within the target range then return
+                    return heights.tolist(), sizes.tolist()
+        raise NoFocusFoundError(
+            "Looping autofocus couldn't converge on a focus location."
+        )
 
     stack_images_to_save = lt.ThingSetting(
         initial_value=1,
@@ -566,7 +567,9 @@ class AutofocusThing(lt.Thing):
         stage: Stage,
         sharpness_monitor: SharpnessMonitorDep,
         stack_parameters: StackParams,
-    ) -> tuple[bool, int]:
+        save_on_failure: bool = False,
+        check_turning_points: bool = True,
+    ) -> tuple[bool, Optional[int]]:
         """Run a smart stack.
 
         A smart stack captures images offset in z, testing whether the sharpest image
@@ -582,17 +585,22 @@ class AutofocusThing(lt.Thing):
             supplied by LabThings dependency injection
         :param stack_parameters: A StackParams object containing the required
             parameters to run a stack.
+        :param save_on_failure: Whether to save an image even if no focus was found.
+        :param check_turning_points: Whether to check the number of turning points in
+            the sharpnesses of the images in the stack is exactly 1. (May fail with
+            thick samples)
 
         :returns: A tuple containing:
 
             * A boolean, True if stack was successfully
             * The z position of the sharpest image
         """
-        tries = 0
-        # Loop until a stack is successful
-        while tries < stack_parameters.max_attempts:
+        attempt = 0
+        while True:
+            attempt += 1
             success, captures, sharpest_id = self.z_stack(
                 stack_parameters=stack_parameters,
+                check_turning_points=check_turning_points,
                 cam=cam,
                 stage=stage,
             )
@@ -600,28 +608,33 @@ class AutofocusThing(lt.Thing):
             if success:
                 break
 
+            if attempt >= stack_parameters.max_attempts:
+                break
+
             # The z position of the first images in the previous attempt.
             initial_z_pos = captures[0].position["z"]
             # If a stack is not successful, move to the start and autofocus
-            self.reset_stack(
-                initial_z_pos,
-                stack_parameters.autofocus_dz,
-                stage,
-                sharpness_monitor,
-            )
+            try:
+                self.reset_stack(
+                    initial_z_pos,
+                    stack_parameters.autofocus_dz,
+                    stage,
+                    sharpness_monitor,
+                )
+            except NoFocusFoundError:
+                break
 
         # Save stack_parameters.image_to_save images centred on the sharpest capture.
         # If the smart_stack failed the exact number of images saved may not be
         # stack_parameters.image_to_save
-        self.save_stack(
-            sharpest_id=sharpest_id,
-            captures=captures,
-            stack_parameters=stack_parameters,
-            cam=cam,
-        )
+        if success or save_on_failure:
+            self.save_stack(
+                sharpest_id=sharpest_id,
+                captures=captures,
+                stack_parameters=stack_parameters,
+                cam=cam,
+            )
 
-        # Return whether or not the smart stack was successful, and the z position of
-        # the sharpest image, for path planning and tracking
         return success, _get_capture_by_id(captures, sharpest_id).position["z"]
 
     def reset_stack(
@@ -681,9 +694,10 @@ class AutofocusThing(lt.Thing):
     def z_stack(
         self,
         stack_parameters: StackParams,
+        check_turning_points: bool,
         cam: CameraClient,
         stage: Stage,
-    ) -> tuple[bool, list[CaptureInfo], Optional[int]]:
+    ) -> tuple[bool, list[CaptureInfo], int]:
         """Capture a series of images checking that sharpest image central.
 
         The images are separated in z offset by stack_parameters.stack_dz, as they
@@ -692,6 +706,9 @@ class AutofocusThing(lt.Thing):
         completes.
 
         :param stack_parameters: a StackParams object holding stack parameters
+        :param check_turning_points: Whether to check the number of turning points in
+            the sharpnesses of the images in the stack is exactly 1. (May fail with
+            thick samples)
         :param cam: Camera Dependency to be passed through from the calling action
         :param stage: Stage Dependency to be passed through from the calling action
 
@@ -699,7 +716,7 @@ class AutofocusThing(lt.Thing):
 
             * the stack result (True for successful stack, False for failed stack),
             * a list of CaptureInfo objects,
-            * the buffer_id of the sharpest image (or None if the stack failed).
+            * the buffer_id of the sharpest image
         """
         # Move down by the height of the z stack, plus an overshoot
         # Better to start too low and take too many images than too high and need to refocus
@@ -718,7 +735,7 @@ class AutofocusThing(lt.Thing):
         ims_to_check = slice(-stack_parameters.min_images_to_test, None)
 
         # If the sharpest image isn't found within the maximum number of images
-        # end the loop and return "restart"
+        # end the loop and return False indicating the stack failed.
         while len(captures) < stack_parameters.max_images_to_test:
             time.sleep(stack_parameters.settling_time)
 
@@ -733,16 +750,18 @@ class AutofocusThing(lt.Thing):
 
             # If the number of images is enough to test, test them
             if len(captures) >= stack_parameters.min_images_to_test:
-                result, capture_id = self.check_stack_result(captures[ims_to_check])
+                result, capture_id = self.check_stack_result(
+                    captures[ims_to_check], check_turning_points=check_turning_points
+                )
 
                 if result == "success":
                     return True, captures, capture_id
 
                 if result == "restart":
-                    return False, captures, None
+                    return False, captures, capture_id
                 # If reached here the result was "continue"
             stage.move_relative(z=stack_parameters.stack_dz)
-        return False, captures, None
+        return False, captures, capture_id
 
     def capture_stack_image(
         self,
@@ -774,12 +793,15 @@ class AutofocusThing(lt.Thing):
     # unlikely to improve readability. This function is basically a complex switch
     # statement, having an explicit return after each option is clear.
     def check_stack_result(  # noqa: PLR0911
-        self, captures: list[CaptureInfo]
+        self, captures: list[CaptureInfo], check_turning_points: bool
     ) -> tuple[Literal["success", "continue", "restart"], int]:
         """Check if the sharpest image in a list of captures is central enough.
 
         :param captures: a list of the capture objects to for testing if the
             sharpness has converged in the centre
+        :param check_turning_points: Whether to check the number of turning points in
+            the sharpnesses of the images in the stack is exactly 1. (May fail with
+            thick samples)
 
         :returns: A tuple with two values:
 
@@ -793,28 +815,91 @@ class AutofocusThing(lt.Thing):
 
             * capture_id - the buffer id of the sharpest image
         """
-        sharpest_index = np.argmax([capture.sharpness for capture in captures])
+        sharpnesses = np.array([capture.sharpness for capture in captures])
+        sharpest_index = np.argmax(sharpnesses)
         # The buffer id of the sharpest image
         capture_id = captures[sharpest_index].buffer_id
-        sharpness_length = len(captures)
+        n_imgs = len(captures)
 
         # If only testing one image, then by definition the sharpest is central
-        if sharpness_length == 1:
+        if n_imgs == 1:
             return "success", capture_id
         # If testing three images, test if the centre is the sharpest
-        if sharpness_length == 3:
+        if n_imgs == 3:
             if sharpest_index == 1:
                 return "success", capture_id
             if sharpest_index == 0:
                 return "restart", capture_id
             return "continue", capture_id
 
-        # For larger stacks, test if the best image is not within two of the edge of the stack
-        # ie for a stack of 7 images, best image must be between 3rd and and 5th
-        exclusion_range = 2
-
-        if sharpest_index < exclusion_range:
-            return "restart", capture_id
-        if sharpest_index >= sharpness_length - exclusion_range:
+        try:
+            turning = _get_peak_turning_point(sharpnesses)
+        except NotAPeakError:
             return "continue", capture_id
+
+        # For larger stacks, test if the best image is not within two of the edge of
+        # the stack ie for a stack of 7 images, best image must be between 3rd and 5th
+        edge_size = 2
+
+        # Check both the peak from fitting and the sharpest image are not at the
+        # edge of the stack.
+        if turning < edge_size - 0.5 or sharpest_index < edge_size:
+            return "restart", capture_id
+        if turning > n_imgs - edge_size - 0.5 or sharpest_index >= n_imgs - edge_size:
+            return "continue", capture_id
+
+        if check_turning_points:
+            turning_points = _count_turning_points(sharpnesses)
+            if turning_points > 1:
+                return "continue", capture_id
+
         return "success", capture_id
+
+
+class NotAPeakError(RuntimeError):
+    """The data to fit isn't a peak."""
+
+
+class NoFocusFoundError(RuntimeError):
+    """No focus found during looping Autofocus."""
+
+
+def _get_peak_turning_point(sharpnesses: np.ndarray) -> float:
+    """Get the turning point for a sharpnesses in a z-stack.
+
+    :param sharpnesses: A numpy array of sharpnesses
+    :return: The x value of the turning point where x-axis is 0 to N-1 for the N
+        sharpness values
+
+    :raise NotAPeakError: If the fit doesn't have a maximum within 95% confidence.
+    """
+    # Fit the peak
+    x = range(len(sharpnesses))
+    coeffs, cov = np.polyfit(x, sharpnesses, deg=2, cov=True)
+    # a in the equation a*x^2 + bx + c
+    a = float(coeffs[0])
+    fit_func = np.poly1d(coeffs)
+
+    # find the peaks's x-position
+    turning = float(fit_func.deriv().roots[0])
+    # sigma_a the standard error of a
+    sigma_a = float(np.sqrt(cov[0, 0]))
+    # Estimate the upper 95% confidence bound for the x^2 term
+    ci_high = a + 2 * sigma_a
+    # If the high 95% confindence interval of the peak is not negative then the
+    # fit isn't sure if this is a peak or a U shape, so we continue.
+    # -1e-9 is used to guard against weird effects for flat and straight data
+    if ci_high > -1e-9:
+        raise NotAPeakError("Not a peak to within 95% confidence.")
+    return turning
+
+
+def _count_turning_points(sharpnesses: np.ndarray) -> int:
+    """Count the number of turing points, after rejecting those from noise."""
+    # Also take the difference of neighbouring points to check for turning points
+    d_sharpnesses = sharpnesses[1:] - sharpnesses[:-1]
+    # Filter out any points that are not prominent
+    prominent = abs(d_sharpnesses) / np.mean(abs(d_sharpnesses)) > 0.5
+    d_sharpnesses = d_sharpnesses[prominent]
+    # count the sign changes
+    return int(np.sum(d_sharpnesses[1:] * d_sharpnesses[:-1] < 0))

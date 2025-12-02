@@ -467,13 +467,17 @@ class SmartScanThing(lt.Thing):
                 continue
 
             focused, focused_height = self._autofocus.run_smart_stack(
-                stack_parameters=self._stack_params
+                stack_parameters=self._stack_params,
+                save_on_failure=not self._scan_data.skip_background,
             )
 
             current_pos_xyz = (new_pos_xyz[0], new_pos_xyz[1], focused_height)
 
+            # An image was captured if we are focussed or we are not skipping background.
+            imaged = focused or not self._scan_data.skip_background
+
             route_planner.mark_location_visited(
-                current_pos_xyz, imaged=True, focused=focused
+                current_pos_xyz, imaged=imaged, focused=focused
             )
 
             # increment capture counter as thread has completed

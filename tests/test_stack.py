@@ -1,7 +1,4 @@
-"""Tests for the smart/fast stacking.
-
-Currently these tests don't test the Thing itself, just surrounding functionality
-"""
+"""Tests for the smart and fast stacking."""
 
 from typing import Optional
 import tempfile
@@ -23,6 +20,10 @@ from openflexure_microscope_server.things.autofocus import (
     MAX_TEST_IMAGE_COUNT,
     _get_capture_by_id,
     _get_capture_index_by_id,
+    EXTRA_STACK_CAPTURES,
+    NotAPeakError,
+    _get_peak_turning_point,
+    _count_turning_points,
 )
 from openflexure_microscope_server.scan_directories import IMAGE_REGEX
 
@@ -352,3 +353,338 @@ def test_coercing_stack_save_ims(
     assert stack_params.images_to_save == coerced_save_ims
     # Check that the setting in the Thing was updated to the coerced value
     assert stack_params.images_to_save == autofocus_thing.stack_images_to_save
+
+
+@pytest.mark.parametrize("pass_on", [1, 2, 3, 4])
+def test_run_smart_stack(pass_on, autofocus_thing, mocker):
+    """Test Running smart stack with the stack passing on different attempts."""
+    cam = mocker.Mock()
+    stage = mocker.Mock()
+    sharpness_monitor = mocker.MagicMock()
+    stack_params = autofocus_thing.create_stack_params(
+        autofocus_dz=2000,
+        images_dir="/this/is/fake",
+        save_resolution=(1640, 1232),
+        logger=LOGGER,
+    )
+    assert stack_params.max_attempts == 3
+
+    # Set up returns from z-stack
+    fake_captures = [
+        CaptureInfo(
+            buffer_id="first", position={"x": 0, "y": 0, "z": -99}, sharpness=123
+        ),
+        CaptureInfo(
+            buffer_id="pick_me", position={"x": 0, "y": 0, "z": 555}, sharpness=456
+        ),
+        CaptureInfo(
+            buffer_id="last", position={"x": 0, "y": 0, "z": 999}, sharpness=123
+        ),
+    ]
+
+    successful_return = (True, fake_captures, "pick_me")
+    failed_return = (False, fake_captures, "pick_me")
+    return_list = [failed_return] * (pass_on - 1) + [successful_return]
+
+    # Mock z_stack and looping_autofocus
+    autofocus_thing.z_stack = mocker.Mock(side_effect=return_list)
+    autofocus_thing.looping_autofocus = mocker.Mock()
+
+    # Run it
+    success, final_z = autofocus_thing.run_smart_stack(
+        cam=cam,
+        stage=stage,
+        sharpness_monitor=sharpness_monitor,
+        stack_parameters=stack_params,
+        save_on_failure=False,
+        check_turning_points=True,
+    )
+
+    # Only passes if the attempt it passes on is less than max attempts
+    assert success == (pass_on <= stack_params.max_attempts)
+    # Final z is the one from the id returned by the stack "pick_me"
+    assert final_z == 555
+
+    # z_stack should run up until the time it passes. Running no more than max_attempts
+    n_stacks = min(pass_on, stack_params.max_attempts)
+    assert autofocus_thing.z_stack.call_count == n_stacks
+    # Move absolute should be 1 less time that the number of times z_stack_run
+    assert stage.move_absolute.call_count == n_stacks - 1
+    # As should looping autofocus
+    assert autofocus_thing.looping_autofocus.call_count == n_stacks - 1
+
+    # Check rest stack is moving to the first image in the stack.
+    if n_stacks > 1:
+        assert stage.move_absolute.call_args.kwargs["z"] == -99
+
+    # Mock called to save image
+    assert cam.save_from_memory.call_count == (1 if success else 0)
+
+
+def setup_and_run_z_stack(check_returns, check_turning_points, autofocus_thing, mocker):
+    """Set up a z_stack, run it, and return the result.
+
+    :param check_returns: The return values from check_stack_result. Note that if this
+        is a list, it will be set as a side effect (and should be a list of tuples of
+        results). If it a tuple (or anything else), it is set as a return value.
+    """
+    stack_params = autofocus_thing.create_stack_params(
+        autofocus_dz=2000,
+        images_dir="/this/is/fake",
+        save_resolution=(1640, 1232),
+        logger=LOGGER,
+    )
+    stack_params.settling_time = 0  # Don't settle or tests take forever.
+
+    stage = mocker.Mock()
+    cam = mocker.Mock()
+    autofocus_thing.capture_stack_image = mocker.Mock()
+    if isinstance(check_returns, list):
+        autofocus_thing.check_stack_result = mocker.Mock(side_effect=check_returns)
+    else:
+        autofocus_thing.check_stack_result = mocker.Mock(return_value=check_returns)
+    return autofocus_thing.z_stack(
+        stack_parameters=stack_params,
+        check_turning_points=check_turning_points,
+        cam=cam,
+        stage=stage,
+    )
+
+
+def test_z_stack_turning_toggle_passed(autofocus_thing, mocker):
+    """Check that the toggling of turning points is passed to the check."""
+    check_returns = ("success", "mock_id")
+    for check_turning in [True, False]:
+        setup_and_run_z_stack(check_returns, check_turning, autofocus_thing, mocker)
+        check_kwargs = autofocus_thing.check_stack_result.call_args.kwargs
+        assert check_kwargs["check_turning_points"] == check_turning
+
+
+def test_z_stack_returns_on_success_and_restart(autofocus_thing, mocker):
+    """Check that if the check returns success or restart then the stack exits with correct return value."""
+    for result in ["success", "restart"]:
+        check_returns = (result, "mock_id")
+        ret = setup_and_run_z_stack(check_returns, True, autofocus_thing, mocker)
+        assert autofocus_thing.check_stack_result.call_count == 1
+        # Check the number of images taken is exactly the call count.
+        ims_taken = autofocus_thing.capture_stack_image.call_count
+        assert ims_taken == autofocus_thing.stack_min_images_to_test
+        # And the result is as expected.
+        assert ret[0] == (result == "success")
+
+
+def test_z_stack_exits_if_focus_never_found(autofocus_thing, mocker):
+    """Check that if the check returns continue the stack exits eventually with a failure."""
+    check_returns = ("continue", "mock_id")
+    ret = setup_and_run_z_stack(check_returns, True, autofocus_thing, mocker)
+
+    assert autofocus_thing.check_stack_result.call_count == EXTRA_STACK_CAPTURES + 1
+    # Check the number of images taken is the maximum possible, set by the min images to
+    # test and the number of extra images that can be taken
+    ims_taken = autofocus_thing.capture_stack_image.call_count
+    max_ims = autofocus_thing.stack_min_images_to_test + EXTRA_STACK_CAPTURES
+    assert ims_taken == max_ims
+    # And the result is as expected.
+    assert not ret[0]
+
+
+def test_z_stack_return(autofocus_thing, mocker):
+    """Check z-stack returns as expected for more complex cases the fixed results above."""
+    for i in range(2, EXTRA_STACK_CAPTURES):
+        check_returns = [
+            ("restart" if j == i - 1 else "continue", f"id_{j}") for j in range(i)
+        ]
+        ret = setup_and_run_z_stack(check_returns, True, autofocus_thing, mocker)
+        # Calculate images taken
+        images_taken = autofocus_thing.stack_min_images_to_test + i - 1
+        assert autofocus_thing.capture_stack_image.call_count == images_taken
+        # Check it reports a failure
+        assert not ret[0]
+
+        # Repeat ending with a success rather than a failure
+        check_returns = [
+            ("success" if j == i - 1 else "continue", f"id_{j}") for j in range(i)
+        ]
+        ret = setup_and_run_z_stack(check_returns, True, autofocus_thing, mocker)
+        # Calculate images taken
+        assert autofocus_thing.capture_stack_image.call_count == images_taken
+        # Check it reports a success
+        assert ret[0]
+
+
+def test_capture_stack_image(autofocus_thing, mocker):
+    """Check that capture stack image calls the expected functions and returns the expected data."""
+    stage = mocker.Mock()
+    stage.position = {"x": 123, "y": 456, "z": 789}
+    cam = mocker.Mock()
+    cam.capture_to_memory.return_value = "fake_buffer_id"
+    cam.grab_jpeg_size.return_value = 54321
+    buffer_max = 11
+
+    info = autofocus_thing.capture_stack_image(
+        cam=cam, stage=stage, buffer_max=buffer_max
+    )
+    assert cam.capture_to_memory.call_count == 1
+    assert cam.grab_jpeg_size.call_count == 1
+    assert info.buffer_id == "fake_buffer_id"
+    assert info.position == {"x": 123, "y": 456, "z": 789}
+    assert info.sharpness == 54321
+
+
+def mock_capture(buffer_id: int, sharpness: int) -> CaptureInfo:
+    """Create a CaptureInfo instance with a dummy position."""
+    return CaptureInfo(
+        buffer_id=buffer_id,
+        position={"x": 0, "y": 0, "z": buffer_id},
+        sharpness=sharpness,
+    )
+
+
+def test_check_stack_single_image_returns_success(autofocus_thing):
+    """A single image is always successful."""
+    captures = [mock_capture("mock-id", 10)]
+    result, cap_id = autofocus_thing.check_stack_result(
+        captures, check_turning_points=False
+    )
+    assert result == "success"
+    assert cap_id == "mock-id"
+
+
+@pytest.mark.parametrize(
+    ("sharpnesses", "expected"),
+    [
+        ([5, 10, 3], "success"),
+        ([10, 4, 2], "restart"),
+        ([1, 2, 10], "continue"),
+    ],
+)
+def test_check_stack_three_image_logic(sharpnesses, expected, autofocus_thing):
+    """For 3 images, success is the highest one is central."""
+    captures = [mock_capture(i, s) for i, s in enumerate(sharpnesses)]
+    result, _ = autofocus_thing.check_stack_result(captures, check_turning_points=False)
+    assert result == expected
+
+
+def _run_check_stack_with_good_peak(autofocus_thing, count_turnings=False):
+    """Run check stack on a good peak that should pass, and return the result.
+
+    This can be used to check how other mocked results of subfunctions affects the
+    result.
+    """
+    # Create an obvious peak that would normally pass.
+    sharpnesses = [1, 2, 4, 7, 12, 7, 4, 2, 1]
+    captures = [mock_capture(i, s) for i, s in enumerate(sharpnesses)]
+
+    result, cap_id = autofocus_thing.check_stack_result(
+        captures, check_turning_points=count_turnings
+    )
+    # Nothing a mocked function does should change which is the sharpest image.
+    assert cap_id == 4
+    return result
+
+
+def test_check_stack_continues_if_no_tuning_point(autofocus_thing, mocker):
+    """Check that continue is returned if no turning point is found."""
+    # Mock to simulate not finding a peak
+    mocker.patch(
+        "openflexure_microscope_server.things.autofocus._get_peak_turning_point",
+        side_effect=NotAPeakError,
+    )
+    result = _run_check_stack_with_good_peak(autofocus_thing)
+    # Check that the NotAPeakError causes it to continue instead.
+    assert result == "continue"
+
+
+@pytest.mark.parametrize(
+    ("location", "expected"),
+    [
+        (-10, "restart"),  # Restart if lower than 1.5 (halfway between im 2 and 3)
+        (-1, "restart"),
+        (0, "restart"),
+        (1, "restart"),
+        (1.49, "restart"),
+        (1.5, "success"),  # Success up to 6.5 (as we have 9 images, final index is 8)
+        (2.5, "success"),
+        (4.5, "success"),
+        (6.5, "success"),
+        (6.51, "continue"),  # Continue if thrung point is after 6.5
+        (7, "continue"),
+        (8.1, "continue"),
+        (123, "continue"),
+    ],
+)
+def test_check_stack_affected_by_turning_point_location(
+    location, expected, autofocus_thing, mocker
+):
+    """Check that the turning point location affects the return as expected."""
+    # Mock to give the turning point location specified
+    mocker.patch(
+        "openflexure_microscope_server.things.autofocus._get_peak_turning_point",
+        return_value=location,
+    )
+    result = _run_check_stack_with_good_peak(autofocus_thing)
+    assert result == expected
+
+
+def test_check_stack_affected_by_number_of_turning_points(autofocus_thing, mocker):
+    """Check that the turning point location affects the return as expected."""
+    # Set the turning point to the centre
+    mocker.patch(
+        "openflexure_microscope_server.things.autofocus._get_peak_turning_point",
+        return_value=5,
+    )
+    mocker.patch(
+        "openflexure_microscope_server.things.autofocus._count_turning_points",
+        return_value=1,
+    )
+    result = _run_check_stack_with_good_peak(autofocus_thing, count_turnings=True)
+    # Successful with 1 peak
+    assert result == "success"
+
+    # Change return to be 2 peaks
+    mocker.patch(
+        "openflexure_microscope_server.things.autofocus._count_turning_points",
+        return_value=2,
+    )
+    result = _run_check_stack_with_good_peak(autofocus_thing, count_turnings=True)
+    # Continue with 2 peaks
+    assert result == "continue"
+    # Unless this check is turned off
+    result = _run_check_stack_with_good_peak(autofocus_thing, count_turnings=False)
+    assert result == "success"
+
+
+def test_get_peak_turning_point():
+    """Check that the peak fitting returns expected value (or error)."""
+    with pytest.raises(NotAPeakError):
+        _get_peak_turning_point(np.ones(9))
+
+    linear = np.arange(9)
+    u_shape = 2 * (linear - 4) ** 2 + 17
+    peak = -2 * (linear - 4) ** 2 + 55
+
+    with pytest.raises(NotAPeakError):
+        _get_peak_turning_point(linear)
+
+    with pytest.raises(NotAPeakError):
+        _get_peak_turning_point(u_shape)
+
+    # Should be 4 to within a fitting error
+    assert abs(_get_peak_turning_point(peak) - 4) < 1e-7
+
+
+def test_count_turning_points():
+    """Check the turing point count works as expected."""
+    linear = np.arange(9)
+    u_shape = 2 * (linear - 4) ** 2 + 17
+    peak = -2 * (linear - 4) ** 2 + 55
+    assert _count_turning_points(np.ones(9)) == 0
+    assert _count_turning_points(linear) == 0
+    assert _count_turning_points(u_shape) == 1
+    assert _count_turning_points(peak) == 1
+
+    assert _count_turning_points(np.array([1, 2, 3, 4, 5, 4, 3, 2, 1])) == 1
+    # Double peak is 3 points
+    assert _count_turning_points(np.array([1, 2, 3, 4, 2, 4, 3, 2, 1])) == 3
+    # But only one if the dip isn't prominent
+    assert _count_turning_points(np.array([1, 2, 3, 4, 3.8, 4, 3, 2, 1])) == 1

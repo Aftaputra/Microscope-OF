@@ -5,6 +5,9 @@
         <li>
           <a class="uk-accordion-title" href="#">Configure</a>
           <div class="uk-accordion-content">
+            <h4 v-if="backgroundDetectorName" class="detector-name">
+              {{ backgroundDetectorName }}
+            </h4>
             <input-from-schema
               v-if="backgroundDetectorStatus"
               v-model="backgroundDetectorStatus.settings"
@@ -59,6 +62,7 @@ export default {
   data() {
     return {
       backgroundDetectorStatus: undefined,
+      backgroundDetectorName: undefined,
       animate: false,
     };
   },
@@ -90,6 +94,7 @@ export default {
       this.modalNotify(`Current image is ${label} (${r.output[1]})`);
     },
     readSettings: async function () {
+      this.backgroundDetectorName = await this.readThingProperty("camera", "detector_name");
       this.backgroundDetectorStatus = await this.readThingProperty(
         "camera",
         "background_detector_status",
@@ -106,3 +111,8 @@ export default {
   },
 };
 </script>
+<style scoped lang="less">
+.detector-name {
+  margin-bottom: 0.5rem;
+}
+</style>
