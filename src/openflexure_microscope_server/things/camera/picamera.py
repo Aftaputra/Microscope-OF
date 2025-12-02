@@ -777,7 +777,7 @@ class StreamingPiCamera2(BaseCamera):
         self.calibrate_lens_shading()
         for _i in range(3):
             try:
-                time.sleep(1)
+                time.sleep(self._sensor_info.long_pause)
                 self.set_background(portal)
                 # Return if background is set
                 return

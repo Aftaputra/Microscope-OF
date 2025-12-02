@@ -585,7 +585,7 @@ class AutofocusThing(lt.Thing):
             supplied by LabThings dependency injection
         :param stack_parameters: A StackParams object containing the required
             parameters to run a stack.
-        :param save_on_failure: Whether to save an image even if the capture failed
+        :param save_on_failure: Whether to save an image even if no focus was found.
         :param check_turning_points: Whether to check the number of turning points in
             the sharpnesses of the images in the stack is exactly 1. (May fail with
             thick samples)
@@ -876,11 +876,13 @@ def _get_peak_turning_point(sharpnesses: np.ndarray) -> float:
     # Fit the peak
     x = range(len(sharpnesses))
     coeffs, cov = np.polyfit(x, sharpnesses, deg=2, cov=True)
+    # a in the equation a*x^2 + bx + c
     a = float(coeffs[0])
     fit_func = np.poly1d(coeffs)
 
     # find the peaks's x-position
     turning = float(fit_func.deriv().roots[0])
+    # sigma_a the standard error of a
     sigma_a = float(np.sqrt(cov[0, 0]))
     # Estimate the upper 95% confidence bound for the x^2 term
     ci_high = a + 2 * sigma_a
