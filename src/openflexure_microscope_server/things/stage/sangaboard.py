@@ -10,12 +10,16 @@ from types import TracebackType
 from contextlib import contextmanager
 from collections.abc import Mapping
 
+import semver
 import sangaboard
 import labthings_fastapi as lt
 
 from . import BaseStage
 
 LOGGER = logging.getLogger(__name__)
+
+REQUIRED_VERSION = semver.Version.parse("1.0.0")
+RECOMMENDED_VERSION = semver.Version.parse("1.0.4")
 
 
 class SangaboardThing(BaseStage):
@@ -42,18 +46,15 @@ class SangaboardThing(BaseStage):
         """
         self.sangaboard_kwargs = copy(kwargs)
         self.sangaboard_kwargs["port"] = port
+        self._sangaboard_lock = threading.RLock()
         super().__init__(**kwargs)
 
     def __enter__(self) -> None:
         """Connect to the sangaboard when the Thing context manager is opened."""
         self._sangaboard = sangaboard.Sangaboard(**self.sangaboard_kwargs)
-        self._sangaboard_lock = threading.RLock()
         with self.sangaboard() as sb:
-            if sb.version_tuple[0] != 1:
-                raise RuntimeError(
-                    "Please update your Sangaboard Firmware. v1 is required."
-                )
             sb.query("blocking_moves false")
+        self.check_firmware()
         self.update_position()
 
     def __exit__(
@@ -88,6 +89,33 @@ class SangaboardThing(BaseStage):
             self._hardware_position = dict(
                 zip(self.axis_names, sb.position, strict=True)
             )
+
+    def check_firmware(self) -> None:
+        """Error/warn if firmware doesn't meet requirements/recommendations.
+
+        Raise a Runtime Error if the version is below REQUIRED_VERSION
+
+        Log a warning if the version is below RECOMMENDED_VERSION
+        """
+        with self.sangaboard() as sb:
+            # This will raise a ValueError is if the firmware version cannot be parsed
+            # this error will stop the microscope booting as we cannot ensure valid
+            # firmware.
+            version = semver.Version.parse(sb.firmware_version)
+
+            # Raise an error if version is below required
+            if version < REQUIRED_VERSION:
+                raise RuntimeError(
+                    f"Sangaboard firmware version {version} is below the required "
+                    f"{REQUIRED_VERSION}."
+                )
+
+            # Warn if version is below recommended
+            if version < RECOMMENDED_VERSION:
+                LOGGER.warning(
+                    f"Sangaboard firmware version {version} is below the recommended "
+                    f"{RECOMMENDED_VERSION}."
+                )
 
     def _hardware_move_relative(
         self,
