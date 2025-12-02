@@ -103,7 +103,7 @@ class SangaboardThing(BaseStage):
             # firmware.
             version = semver.Version.parse(sb.firmware_version)
 
-            # Warn if version is below required
+            # Raise an error if version is below required
             if version < REQUIRED_VERSION:
                 raise RuntimeError(
                     f"Sangaboard firmware version {version} is below the required "
