@@ -30,6 +30,7 @@ dependencies = [
   "piexif",
   "pydantic ~= 2.10.6",
   "simplejpeg >= 1.8.2",
+  "semver ~= 3.0",
 ]
 
 [project.optional-dependencies]

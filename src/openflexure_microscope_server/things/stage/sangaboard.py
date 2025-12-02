@@ -10,6 +10,7 @@ from types import TracebackType
 from contextlib import contextmanager
 from collections.abc import Mapping
 
+import semver
 import sangaboard
 import labthings_fastapi as lt
 
@@ -17,7 +18,8 @@ from . import BaseStage
 
 LOGGER = logging.getLogger(__name__)
 
-REQUIRED_VERSION = (1, 0, 4)
+REQUIRED_VERSION = semver.Version.parse("1.0.0")
+RECOMMENDED_VERSION = semver.Version.parse("1.0.4")
 
 
 class SangaboardThing(BaseStage):
@@ -89,40 +91,31 @@ class SangaboardThing(BaseStage):
             )
 
     def check_firmware(self) -> None:
-        """Check the Sangaboard firmware version and log warnings or info messages.
+        """Error/warn if firmware doesn't meet requirements/recommendations.
 
-        Logs a warning if the numeric firmware version is below ``REQUIRED_VERSION``.
-        Logs an info message if the version ends with ``'-dev'``. Malformed version
-        strings trigger a warning.
+        Raise a Runtime Error if the version is below REQUIRED_VERSION
+
+        Log a warning if the version is below RECOMMENDED_VERSION
         """
         with self.sangaboard() as sb:
-            version = sb.firmware_version
+            # This will raise a ValueError is if the firmware version cannot be parsed
+            # this error will stop the microscope booting as we cannot ensure valid
+            # firmware.
+            version = semver.Version.parse(sb.firmware_version)
 
-            # Remove '-dev' for numeric comparison
-            is_dev = version.endswith("-dev")
-            base_version = version[:-4] if is_dev else version
-
-            # Parse the numeric part
-            parts = base_version.split(".")
-            try:
-                major, minor, patch = (int(p) for p in parts)
-            except ValueError:
-                LOGGER.warning(
-                    f"Unrecognized Sangaboard firmware version format: {version}"
-                )
-                return
-
-            current = (major, minor, patch)
-
-            # Warn if version is below minimum
-            if current < REQUIRED_VERSION:
-                LOGGER.warning(
-                    f"Sangaboard firmware version {version} is below the required 1.0.4."
+            # Warn if version is below required
+            if version < REQUIRED_VERSION:
+                raise RuntimeError(
+                    f"Sangaboard firmware version {version} is below the required "
+                    f"{REQUIRED_VERSION}."
                 )
 
-            # Log dev info
-            if is_dev:
-                LOGGER.info(f"Firmware version {version} is a development build.")
+            # Warn if version is below recommended
+            if version < RECOMMENDED_VERSION:
+                LOGGER.warning(
+                    f"Sangaboard firmware version {version} is below the recommended "
+                    f"{RECOMMENDED_VERSION}."
+                )
 
     def _hardware_move_relative(
         self,
