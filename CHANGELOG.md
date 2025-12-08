@@ -1,3 +1,65 @@
+# [v3.0.0-alpha4](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v3.0.0-alpha3...v3.0.0-alpha4) (2025-12-15)
+
+The fourth alpha release of the server. This release has concentrated on colour reproduction, scanning, and the structure of the web-app.
+
+* Improved PiCamera tuning and colour reproduction
+  * Algorithm for white-balance calculation improved. Images are grey not yellow.
+  * Improved colour correction matrices
+  * Ship our own custom picamera Tuning files, and improve handling of updating this data
+  * Add contrast and brightness sliders into scan viewer.
+* Scanning improvements
+  * Capture extra images on the boundary between sample and background to robustly capture the edges of the sample
+  * Add new default background detect method that works on localised image variation not global colour
+  * Add extra checks into smart stack for checking if stack is successful
+* Stage measuring
+  * Automatic range of motion measurements - Not yet exposed in UI
+  * A new recentre algorithm - Not yet exposed in UI
+* Improvements to the webapp
+  * Significant modernisation of the webapp build system
+  * UI customises to available Things - This allows different configurations such as manual microscopes with no stage!
+  * Overhaul of the code that runs the Calibration Wizard. This will make it easier to add new calibration steps in future
+  * Add pagination to scan list
+
+The following merge requests have been merged into v3:
+
+* !404 Fix jitter at specific screen sizes during scan
+* !406 Strip new lines when logging stitching
+* !411 Improve smart spiral scan planner to better capture the edge of scamples
+* !414 Set colour correction to interpolate value
+* !409 Colour sliders in seadragon viewer
+* !413 Fix sync button to emit click on click event.
+* !408 Scan tab show scan duration
+* !416 Add section to Picamera tests README on keeping branches up to date
+* !412 Camera metadata with basic data
+* !335 Adding automatic range of motion measurements
+* !415 Refactor Calibration Wizard
+* !419 Improve simulation frame rate
+* !420 Specify config patches rather than full config files in settings
+* !417 Set Colour Gains from lens shading tables
+* !422 Enable JS formatting checks in CI, reformat to match
+* !425 Stricter rules on pytest.raises, requiring match for generic error types
+* !424 De-duplicate HTML for tab content, add way for tab to request scroll to top
+* !421 Add pagination to scan list
+* !418 Update the picamera tuning file utilities to not modify the dictionaries in place
+* !428 Split up the action button methods for monitoring and starting a task
+* !430 Local storage in store
+* !431 Update js toolchain
+* !426 Stop reading scan_data.json for ongoing scan.
+* !433 Skip buttons on calibration wizard
+* !436 A matrix display component with copy button that copys as code. <!-- codespell:ignore copys -->
+* !410 Ship our own default tuning files
+* !435 UI customises to available Things
+* !429 Recentre using RangeOfMotionThing methods
+* !440 Resolve "Release Checklist"
+* !437 Consolidate action buton to just a button <!-- codespell:ignore buton -->
+* !439 Configuration for manual microscope
+* !444 Visit secondary locations first
+* !447 Log an error if the sangaboard firmware is below v1.0.4
+* !434 Improve the stability of scanning
+* !438 Formalise import sorting rules and enforce
+* !448 Bump required stitching version to 0.2.1
+
+
 # [v3.0.0-alpha3](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v3.0.0-alpha2...v3.0.0-alpha3) (2025-10-10)
 
 The third alpha release of the server. The focus has been on stability and documentation. Some highlights are:
@@ -57,6 +119,7 @@ The following merge requests have been merged into v3:
 * !400 Verify stack params at start of scan main loop
 * !403 Ce disable
 * !390 Improve documentation for simulation server
+* !405 Bump version for alpha3 and update changelog 
 
 # [v3.0.0-alpha2](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v3.0.0-alpha1...v3.0.0-alpha2) (2025-08-08)
 

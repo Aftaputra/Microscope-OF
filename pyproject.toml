@@ -3,7 +3,7 @@ name = "openflexure-microscope-server"
 
 # Note that version needs to match a string stored in a unit test, and
 # the package.json file in the webapp or the CI will fail.
-version = "3.0.0-alpha3"
+version = "3.0.0-alpha4"
 authors = [
   { name="Richard Bowman", email="richard.bowman@cantab.net" },
   { name="Joel Collins" },
@@ -19,10 +19,11 @@ classifiers = [
 ]
 dependencies = [
   "labthings-fastapi == 0.0.11",
+  "fastapi <= 0.123.6", # This can be removed once #216 on labthings-fastapi is fixed
   "sangaboard",
   "camera-stage-mapping ~= 0.1.10",
   "opencv-python ~= 4.11.0",
-  "openflexure-stitching[libvips]==0.2.1",
+  "openflexure-stitching[libvips]==0.2.2",
   "pillow ~= 10.4",
   "anyio ~= 4.0",
   "numpy ~= 2.2",
