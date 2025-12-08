@@ -19,6 +19,7 @@ classifiers = [
 ]
 dependencies = [
   "labthings-fastapi == 0.0.11",
+  "fastapi <= 0.123.6", # This can be removed once #216 on labthings-fastapi is fixed
   "sangaboard",
   "camera-stage-mapping ~= 0.1.10",
   "opencv-python ~= 4.11.0",
