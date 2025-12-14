@@ -20,26 +20,30 @@ from PIL import Image
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server.things.autofocus import AutofocusThing
-from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
-from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
-from openflexure_microscope_server.things.stage.dummy import DummyStage
-
 
 @pytest.fixture
 def thing_server():
     """Yield a server with a very basic configuration."""
     temp_folder = tempfile.TemporaryDirectory()
-    server = lt.ThingServer(settings_folder=temp_folder.name)
-    server.add_thing(
-        SimulatedCamera(
-            shape=(240, 320, 3), canvas_shape=(1000, 1500, 3), frame_interval=0.01
-        ),
-        "camera",
-    )
-    server.add_thing(DummyStage(step_time=0.000001), "stage")
-    server.add_thing(AutofocusThing(), "autofocus")
-    server.add_thing(CameraStageMapper(), "camera_stage_mapping")
+    thing_conf = {
+        "camera": {
+            "class": "openflexure_microscope_server.things.camera.simulation:SimulatedCamera",
+            "kwargs": {
+                "shape": (240, 320, 3),
+                "canvas_shape": (1000, 1500, 3),
+                "frame_interval": 0.01,
+            },
+        },
+        "stage": {
+            "class": "openflexure_microscope_server.things.stage.dummy:DummyStage",
+            "kwargs": {"step_time": 0.000001},
+        },
+        "autofocus": "openflexure_microscope_server.things.autofocus:AutofocusThing",
+        "camera_stage_mapping": "openflexure_microscope_server.things.camera_stage_mapping:CameraStageMapper",
+    }
+
+    server = lt.ThingServer(things=thing_conf, settings_folder=temp_folder.name)
+
     assert os.path.exists(os.path.join(temp_folder.name, "camera"))
     # Note: yield is important. If return is used the temp folder gets deleted
     # before the test runs. Silence PT022 as ruff doesn't think yield is needed.
@@ -68,20 +72,20 @@ def slower_client(thing_server):
 def test_autofocus(slower_client):
     """Test Fast Autofocus can run doesn't raise an exception."""
     client = slower_client
-    autofocus = lt.ThingClient.from_url("autofocus", client)
+    autofocus = lt.ThingClient.from_url("/autofocus/", client)
     _ = autofocus.fast_autofocus()
 
 
 def test_grab_jpeg(client):
     """Check that grab_jpeg returns a blob that can be opened."""
-    camera = lt.ThingClient.from_url("camera", client)
+    camera = lt.ThingClient.from_url("/camera/", client)
     blob = camera.grab_jpeg()
     _image = Image.open(blob.open())
 
 
 def test_capture_jpeg_metadata(client):
     """Check that the position is encoded into the image metadata."""
-    camera = lt.ThingClient.from_url("camera", client)
+    camera = lt.ThingClient.from_url("/camera/", client)
     blob = camera.capture_jpeg()
     image = Image.open(blob.open())
     exif_dict = piexif.load(image.info["exif"])
@@ -92,7 +96,7 @@ def test_capture_jpeg_metadata(client):
 
 def test_stage(client):
     """Test moving th stage forwards and backwards."""
-    stage = lt.ThingClient.from_url("stage", client)
+    stage = lt.ThingClient.from_url("/stage/", client)
     start = stage.position
     move = {"x": 1, "y": 2, "z": 3}
     stage.move_relative(**move)
@@ -107,14 +111,14 @@ def test_stage(client):
 
 def test_capture_array(client):
     """Capture array from simulation and check the size is as expected."""
-    camera = lt.ThingClient.from_url("camera", client)
+    camera = lt.ThingClient.from_url("/camera/", client)
     array = np.asarray(camera.capture_array())
     assert array.shape == (240, 320, 3)
 
 
 def test_camera_stage_mapping_calibration(client):
     """Check that camera stage mapping can run without an exception."""
-    camera = lt.ThingClient.from_url("camera", client)
+    camera = lt.ThingClient.from_url("/camera/", client)
     camera.settling_time = 0
-    camera_stage_mapping = lt.ThingClient.from_url("camera_stage_mapping", client)
+    camera_stage_mapping = lt.ThingClient.from_url("/camera_stage_mapping/", client)
     camera_stage_mapping.calibrate_xy()

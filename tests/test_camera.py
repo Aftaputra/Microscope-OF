@@ -17,12 +17,12 @@ def camera_server() -> lt.ThingClient:
     The test client will be needed for the camera to run async frame generation code.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
-        conf = {
+        thing_conf = {
             "camera": "openflexure_microscope_server.things.camera.simulation:SimulatedCamera",
             "stage": "openflexure_microscope_server.things.stage.dummy:DummyStage",
         }
 
-        server = lt.ThingServer(things=conf, settings_folder=tmpdir)
+        server = lt.ThingServer(things=thing_conf, settings_folder=tmpdir)
         yield server
 
 
