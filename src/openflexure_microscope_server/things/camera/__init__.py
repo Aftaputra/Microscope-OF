@@ -319,7 +319,6 @@ class BaseCamera(lt.Thing):
     @lt.action
     def grab_jpeg(
         self,
-        portal: lt.deps.BlockingPortal,
         stream_name: Literal["main", "lores"] = "main",
     ) -> JPEGBlob:
         """Acquire one image from the preview stream and return as blob of JPEG data.
@@ -337,13 +336,12 @@ class BaseCamera(lt.Thing):
         stream = (
             self.lores_mjpeg_stream if stream_name == "lores" else self.mjpeg_stream
         )
-        frame = portal.call(stream.grab_frame)
+        frame = self._thing_server_interface.call_async_task(stream.grab_frame)
         return JPEGBlob.from_bytes(frame)
 
     @lt.action
     def grab_as_array(
         self,
-        portal: lt.deps.BlockingPortal,
         stream_name: Literal["main", "lores"] = "main",
     ) -> ArrayModel:
         """Acquire one image from the preview stream and return as an array.
@@ -361,7 +359,7 @@ class BaseCamera(lt.Thing):
         tries = 0
         while tries < 3:
             try:
-                frame = portal.call(stream.grab_frame)
+                frame = self._thing_server_interface.call_async_task(stream.grab_frame)
                 return np.asarray(Image.open(io.BytesIO(frame)))
             except OSError:
                 tries += 1
@@ -370,14 +368,13 @@ class BaseCamera(lt.Thing):
     @lt.action
     def grab_jpeg_size(
         self,
-        portal: lt.deps.BlockingPortal,
         stream_name: Literal["main", "lores"] = "main",
     ) -> int:
         """Acquire one image from the preview stream and return its size."""
         stream = (
             self.lores_mjpeg_stream if stream_name == "lores" else self.mjpeg_stream
         )
-        return portal.call(stream.next_frame_size)
+        return self._thing_server_interface.call_async_task(stream.next_frame_size)
 
     def capture_image(
         self,
@@ -705,13 +702,13 @@ class BaseCamera(lt.Thing):
                 )
 
     @lt.action
-    def image_is_sample(self, portal: lt.deps.BlockingPortal) -> tuple[bool, str]:
+    def image_is_sample(self) -> tuple[bool, str]:
         """Label the current image as either background or sample."""
-        current_image = self.grab_as_array(portal, stream_name="lores")
+        current_image = self.grab_as_array(stream_name="lores")
         return self.active_detector.image_is_sample(current_image)
 
     @lt.action
-    def set_background(self, portal: lt.deps.BlockingPortal) -> None:
+    def set_background(self) -> None:
         """Grab an image, and use its statistics to set the background.
 
         This should be run when the microscope is looking at an empty region,
@@ -720,7 +717,7 @@ class BaseCamera(lt.Thing):
         future images to the distribution, to determine if each pixel is
         foreground or background.
         """
-        background = self.grab_as_array(portal, stream_name="lores")
+        background = self.grab_as_array(stream_name="lores")
         self.active_detector.set_background(background)
         # Manually save settings as the setter is not called.
         self.save_settings()

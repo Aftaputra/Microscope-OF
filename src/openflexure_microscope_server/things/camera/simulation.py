@@ -350,7 +350,7 @@ class SimulatedCamera(BaseCamera):
         return self.generate_frame()
 
     @lt.action
-    def full_auto_calibrate(self, portal: lt.deps.BlockingPortal) -> None:
+    def full_auto_calibrate(self) -> None:
         """Perform a full auto-calibration.
 
         For the simulation microscope the process is:
@@ -361,7 +361,7 @@ class SimulatedCamera(BaseCamera):
         """
         self.remove_sample()
         time.sleep(0.2)
-        self.set_background(portal)
+        self.set_background()
         time.sleep(0.2)
         self.load_sample()
 

@@ -1,7 +1,6 @@
 """Use the Simulation camera to test base camera functionality."""
 
 import tempfile
-from contextlib import contextmanager
 
 import numpy as np
 import pytest
@@ -10,29 +9,30 @@ from PIL import Image
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 
-
-@contextmanager
-def camera_server(camera: SimulatedCamera) -> lt.ThingClient:
+@pytest.fixture
+def camera_server() -> lt.ThingClient:
     """Add the camera to a ThingServer and start a TestClient application.
 
-    The test client application is needed for the camera to have a blocking portal.
+    The test client will be needed for the camera to run async frame generation code.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
-        server = lt.ThingServer(settings_folder=tmpdir)
-        server.add_thing(camera, "camera")
-        with TestClient(server.app):
-            yield server
+        conf = {
+            "camera": "openflexure_microscope_server.things.camera.simulation:SimulatedCamera",
+            "stage": "openflexure_microscope_server.things.stage.dummy:DummyStage",
+        }
+
+        server = lt.ThingServer(things=conf, settings_folder=tmpdir)
+        yield server
 
 
-def test_handle_broken_frame():
+def test_handle_broken_frame(camera_server):
     """Monkey patch the the mjpeg steam so 1 in 5 frames are broken, then test operation.
 
     This simulates the very occasional broken frames that can occur when grabbing
     directly from the MJPEG stream.
     """
-    camera = SimulatedCamera()
+    camera = camera_server.things["camera"]
 
     # Money patch the mjpeg_stream grab_frame to break 1 in 5 frames.
     frame_number = 0
@@ -50,7 +50,8 @@ def test_handle_broken_frame():
         return frame
 
     camera.mjpeg_stream.grab_frame = flaky_grabber
-    with camera_server(camera):
+
+    with TestClient(camera_server.app):
         # Check that this does cause broken frames.
         # The noqa is because we don't know exactly when the error is thrown so we
         # can't have a single simple statement in the pytest raises.
@@ -68,10 +69,10 @@ def test_handle_broken_frame():
             assert isinstance(array, np.ndarray)
 
 
-def test_simulation_cam_calibration():
+def test_simulation_cam_calibration(camera_server):
     """Test that the simulated camera can be calibrated and reports calibration correctly."""
-    camera = SimulatedCamera()
-    with camera_server(camera):
+    camera = camera_server.things["camera"]
+    with TestClient(camera_server.app):
         assert camera.calibration_required
         camera.full_auto_calibrate()
         assert not camera.calibration_required

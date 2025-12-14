@@ -71,10 +71,8 @@ class PicameraStreamOutput(Output):
     def __init__(self, stream: lt.outputs.MJPEGStream) -> None:
         """Create an output that puts frames in an MJPEGStream.
 
-        We need to pass the stream object, and also the blocking portal, because
-        new frame notifications happen in the anyio event loop and frames are
-        sent from a thread. The blocking portal enables thread-to-async
-        communication.
+        We need to pass the stream object, because new frame notifications happen in
+        the anyio event loop and frames are sent from a thread.
         """
         Output.__init__(self)
         self.stream = stream
@@ -744,7 +742,7 @@ class StreamingPiCamera2(BaseCamera):
             self._initialise_picamera()
 
     @lt.action
-    def full_auto_calibrate(self, portal: lt.deps.BlockingPortal) -> None:
+    def full_auto_calibrate(self) -> None:
         """Perform a full auto-calibration.
 
         This function will call the other calibration actions in sequence:
@@ -763,7 +761,7 @@ class StreamingPiCamera2(BaseCamera):
         for _i in range(3):
             try:
                 time.sleep(self._sensor_info.long_pause)
-                self.set_background(portal)
+                self.set_background()
                 # Return if background is set
                 return
             except ChannelBlankError:

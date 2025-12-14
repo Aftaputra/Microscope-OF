@@ -6,6 +6,8 @@ This doesn't check the behaviour of the JPEG shaprness monitor.
 import numpy as np
 import pytest
 
+from labthings_fastapi.testing import create_thing_without_server
+
 from openflexure_microscope_server.things.autofocus import (
     AutofocusThing,
     NoFocusFoundError,
@@ -77,7 +79,7 @@ def test_looping_autofocus(start_z, max_loc, centre, attempts_expected, passes, 
 
     sharpness_monitor.move_data.side_effect = return_sharpness
 
-    autofocus_thing = AutofocusThing()
+    autofocus_thing = create_thing_without_server(AutofocusThing)
     if passes:
         autofocus_thing.looping_autofocus(
             stage=stage,
