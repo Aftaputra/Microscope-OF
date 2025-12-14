@@ -63,7 +63,7 @@ def test_override_base_movement():
     """
 
     class BadStage1(BaseStage):
-        @lt.thing_action
+        @lt.action
         def move_relative(
             self,
             cancel: lt.deps.CancelHook,
@@ -76,7 +76,7 @@ def test_override_base_movement():
         BadStage1()
 
     class BadStage2(BaseStage):
-        @lt.thing_action
+        @lt.action
         def move_absolute(
             self,
             cancel: lt.deps.CancelHook,

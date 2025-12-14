@@ -136,9 +136,7 @@ class ParasiticMotionError(Exception):
 class RangeofMotionThing(lt.Thing):
     """A class used to measure the range of motion of the stage in X and Y."""
 
-    calibrated_range = lt.ThingSetting(
-        initial_value=None, model=Optional[list[int, int]], readonly=True
-    )
+    calibrated_range: int = lt.setting(default=None, readonly=True)
 
     def __init__(self) -> None:
         """Initialise and create the lock."""
@@ -147,7 +145,7 @@ class RangeofMotionThing(lt.Thing):
         self._stream_resolution: Optional[tuple[int, int]] = None
         self._rom_data = RomDataTracker()
 
-    @lt.thing_action
+    @lt.action
     def perform_rom_test(
         self,
         autofocus: AutofocusDep,
@@ -214,7 +212,7 @@ class RangeofMotionThing(lt.Thing):
             "Step Range": step_range,
         }
 
-    @lt.thing_action
+    @lt.action
     def perform_recentre(
         self,
         autofocus: AutofocusDep,

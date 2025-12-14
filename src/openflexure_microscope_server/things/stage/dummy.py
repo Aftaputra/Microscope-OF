@@ -43,10 +43,8 @@ class DummyStage(BaseStage):
     ) -> None:
         """Nothing to do when the Thing context manager is closed."""
 
-    axis_inverted = lt.ThingSetting(
-        initial_value={"x": True, "y": False, "z": False},
-        model=Mapping[str, bool],
-        readonly=True,
+    axis_inverted: Mapping[str, bool] = lt.setting(
+        default={"x": True, "y": False, "z": False}, readonly=True
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
 
@@ -104,7 +102,7 @@ class DummyStage(BaseStage):
             cancel, block_cancellation=block_cancellation, **displacement
         )
 
-    @lt.thing_action
+    @lt.action
     def set_zero_position(self) -> None:
         """Make the current position zero in all axes.
 

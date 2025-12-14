@@ -117,7 +117,7 @@ class SmartScanThing(lt.Thing):
         self._latest_scan_name: Optional[str] = None
 
         # Scan logger is the invocation logger labthings-fastapi creates
-        # when the `sample_scan` lt.thing_action is called. It is saved as
+        # when the `sample_scan` lt.action is called. It is saved as
         # private class variable along with many others here.
         # Access to these variables requires a scan to be running,
         # any method that calls these should be decorated with
@@ -133,7 +133,7 @@ class SmartScanThing(lt.Thing):
         self._scan_data: Optional[scan_directories.ScanData] = None
         self._preview_stitcher: Optional[stitching.PreviewStitcher] = None
 
-    @lt.thing_action
+    @lt.action
     def sample_scan(
         self,
         cancel: lt.deps.CancelHook,
@@ -231,7 +231,7 @@ class SmartScanThing(lt.Thing):
                 "of motion."
             )
 
-    @lt.thing_property
+    @lt.property
     def latest_scan_name(self) -> Optional[str]:
         """The name of the last scan to be started."""
         return self._latest_scan_name
@@ -546,48 +546,27 @@ class SmartScanThing(lt.Thing):
             raise HTTPException(404, "File not found")
         return FileResponse(preview_path)
 
-    save_resolution = lt.ThingSetting(
-        initial_value=(1640, 1232),
-        model=tuple[int, int],
-    )
+    save_resolution: tuple[int, int] = lt.setting(default=(1640, 1232))
     """A tuple of the image resolution to capture."""
 
-    max_range = lt.ThingSetting(
-        initial_value=45000,
-        model=int,
-    )
+    max_range: int = lt.setting(default=45000)
     """The maximum distance in steps from the centre of the scan."""
 
-    stitch_tiff = lt.ThingSetting(
-        initial_value=False,
-        model=bool,
-    )
+    stitch_tiff: bool = lt.setting(default=False)
     """Whether or not to also produce a pyramidal tiff at the end of a scan."""
 
-    skip_background = lt.ThingSetting(
-        initial_value=True,
-        model=bool,
-    )
+    skip_background: bool = lt.setting(default=True)
     """Whether to detect and skip empty fields of view.
 
     This uses the settings from the ``BackgroundDetectThing``."""
 
-    autofocus_dz = lt.ThingSetting(
-        initial_value=1000,
-        model=int,
-    )
+    autofocus_dz: int = lt.setting(default=1000)
     """The z distance to perform an autofocus in steps."""
 
-    overlap = lt.ThingSetting(
-        initial_value=0.45,
-        model=float,
-    )
+    overlap: float = lt.setting(default=0.45)
     """The fraction (0-1) that adjacent images should overlap in x or y."""
 
-    stitch_automatically = lt.ThingSetting(
-        initial_value=True,
-        model=bool,
-    )
+    stitch_automatically: bool = lt.setting(default=True)
     """Whether to run a final stitch at the end of a successful scan."""
 
     def _get_all_scan_info(self) -> list[scan_directories.ScanInfo]:
@@ -600,7 +579,7 @@ class SmartScanThing(lt.Thing):
         ongoing_name = None if self._ongoing_scan is None else self._ongoing_scan.name
         return self._scan_dir_manager.all_scans_info(ongoing=ongoing_name)
 
-    @lt.thing_property
+    @lt.property
     def scans(self) -> ScanListInfo:
         """All the available scans.
 
@@ -675,7 +654,7 @@ class SmartScanThing(lt.Thing):
         for scan_name in self._scan_dir_manager.all_scans:
             self._delete_scan(scan_name, logger)
 
-    @lt.thing_action
+    @lt.action
     def purge_empty_scans(self, logger: lt.deps.InvocationLogger) -> None:
         """Delete all scan folders containing no images at the top level."""
         # JSON is ignored as it's created before any images are captured
@@ -712,7 +691,7 @@ class SmartScanThing(lt.Thing):
             scan_name=self.latest_scan_name, filename="preview.jpg", check_exists=True
         )
 
-    @lt.thing_property
+    @lt.property
     def latest_preview_stitch_time(self) -> Optional[float]:
         """The modification time of the latest preview image, to allow live updating.
 
@@ -746,7 +725,7 @@ class SmartScanThing(lt.Thing):
             raise HTTPException(404, "File not found")
         return FileResponse(preview_path)
 
-    @lt.thing_action
+    @lt.action
     def stitch_scan(
         self,
         logger: lt.deps.InvocationLogger,
@@ -757,7 +736,7 @@ class SmartScanThing(lt.Thing):
     ) -> None:
         """Generate a stitched image based on stage position metadata.
 
-        Note that as this is a lt.thing_action it needs the logger passed as
+        Note that as this is a lt.action it needs the logger passed as
         a variable if called from another thing action
         """
         scan_data_dict = self._scan_dir_manager.get_scan_data_dict(scan_name)
@@ -780,7 +759,7 @@ class SmartScanThing(lt.Thing):
         except SubprocessError as e:
             self._scan_logger.error(f"Stitching failed: {e}", exc_info=e)
 
-    @lt.thing_action
+    @lt.action
     def download_zip(
         self,
         scan_name: str,
@@ -792,7 +771,7 @@ class SmartScanThing(lt.Thing):
         zip_fname = self._scan_dir_manager.zip_scan(scan_name, final_version=True)
         return ZipBlob.from_file(zip_fname)
 
-    @lt.thing_action
+    @lt.action
     def stitch_all_scans(
         self, logger: lt.deps.InvocationLogger, cancel: lt.deps.CancelHook
     ) -> None:

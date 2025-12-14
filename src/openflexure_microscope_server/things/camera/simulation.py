@@ -86,7 +86,7 @@ class SimulatedCamera(BaseCamera):
         self.generate_blobs()
         self.generate_canvas()
 
-    @lt.thing_property
+    @lt.property
     def calibration_required(self) -> bool:
         """Whether the camera needs calibrating."""
         return not self.background_detector_status.ready
@@ -274,7 +274,7 @@ class SimulatedCamera(BaseCamera):
             self._capture_enabled = False
             self._capture_thread.join()
 
-    @lt.thing_action
+    @lt.action
     def start_streaming(
         self, main_resolution: tuple[int, int] = (820, 616), buffer_count: int = 1
     ) -> None:
@@ -300,14 +300,14 @@ class SimulatedCamera(BaseCamera):
             self._capture_thread = Thread(target=self._capture_frames)
             self._capture_thread.start()
 
-    @lt.thing_property
+    @lt.property
     def stream_active(self) -> bool:
         """Whether the MJPEG stream is active."""
         if self._capture_enabled and self._capture_thread:
             return self._capture_thread.is_alive()
         return False
 
-    noise_level = lt.ThingProperty(float, 2.0)
+    noise_level: float = lt.property(default=2.0)
 
     def _capture_frames(self) -> None:
         portal = lt.get_blocking_portal(self)
@@ -326,14 +326,14 @@ class SimulatedCamera(BaseCamera):
             except Exception as e:
                 LOGGER.exception(f"Failed to capture frame: {e}, retrying...")
 
-    @lt.thing_action
+    @lt.action
     def discard_frames(self) -> None:
         """Discard frames so that the next frame captured is fresh.
 
         There is nothing to do as this is a simulation!
         """
 
-    @lt.thing_action
+    @lt.action
     def capture_array(
         self,
         stream_name: Literal["main", "full"] = "full",
@@ -370,7 +370,7 @@ class SimulatedCamera(BaseCamera):
         LOGGER.warning(f"Simulation camera camera doesn't respect {stream_name=}")
         return self.generate_frame()
 
-    @lt.thing_action
+    @lt.action
     def full_auto_calibrate(self, portal: lt.deps.BlockingPortal) -> None:
         """Perform a full auto-calibration.
 
@@ -386,21 +386,21 @@ class SimulatedCamera(BaseCamera):
         time.sleep(0.2)
         self.load_sample()
 
-    @lt.thing_action
+    @lt.action
     def remove_sample(self) -> None:
         """Show the simulated background with no sample."""
         if not self._show_sample:
             raise RuntimeError("Sample is already removed.")
         self._show_sample = False
 
-    @lt.thing_action
+    @lt.action
     def load_sample(self) -> None:
         """Show the simulated sample."""
         if self._show_sample:
             raise RuntimeError("Sample is already in place.")
         self._show_sample = True
 
-    @lt.thing_property
+    @lt.property
     def primary_calibration_actions(self) -> list[ActionButton]:
         """The calibration actions for both calibration wizard and settings panel."""
         return [
@@ -409,7 +409,7 @@ class SimulatedCamera(BaseCamera):
             ),
         ]
 
-    @lt.thing_property
+    @lt.property
     def secondary_calibration_actions(self) -> list[ActionButton]:
         """The calibration actions that appear only in settings panel."""
         return [
@@ -417,7 +417,7 @@ class SimulatedCamera(BaseCamera):
             action_button_for(self.remove_sample, submit_label="Remove Sample"),
         ]
 
-    @lt.thing_property
+    @lt.property
     def manual_camera_settings(self) -> list[PropertyControl]:
         """The camera settings to expose as property controls in the settings panel."""
         return [property_control_for(self, "noise_level", label="Noise Level")]

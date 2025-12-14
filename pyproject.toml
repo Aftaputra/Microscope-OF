@@ -161,7 +161,7 @@ ignore = [
 [tool.ruff.lint.pydocstyle]
 # This lets the D401 checker understand that decorated thing properties and thing
 # settings act like properties so should be documented as such.
-property-decorators = ["labthings_fastapi.thing_property", "labthings_fastapi.thing_setting"]
+property-decorators = ["labthings_fastapi.property", "labthings_fastapi.setting"]
 
 [tool.ruff.lint.pylint]
 max-args = 7

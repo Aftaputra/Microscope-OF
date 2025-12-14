@@ -169,30 +169,19 @@ class StreamingPiCamera2(BaseCamera):
         # trigger a NotConnectedToServerError
         self._colour_gains = tf_utils.get_colour_gains_from_lst(self.tuning)
 
-    stream_resolution = lt.ThingProperty(
-        tuple[int, int],
-        initial_value=(820, 616),
-    )
+    stream_resolution: tuple[int, int] = lt.property(default=(820, 616))
     """Resolution to use for the MJPEG stream."""
 
-    mjpeg_bitrate = lt.ThingProperty(
-        Optional[int],
-        initial_value=100000000,
-    )
+    mjpeg_bitrate: Optional[int] = lt.property(default=100000000)
     """Bitrate for MJPEG stream (None for default)."""
 
-    stream_active = lt.ThingProperty(
-        bool,
-        initial_value=False,
-        observable=True,
-        readonly=True,
-    )
+    stream_active: bool = lt.property(default=False, observable=True, readonly=True)
     """Whether the MJPEG stream is active."""
 
     def save_settings(self) -> None:
         """Override save_settings to ensure that camera properties don't recurse.
 
-        This method is run by any Thing when a ThingSetting is saved. However, the
+        This method is run by any Thing when a setting is saved. However, the
         method reads the thing_setting. As reading the thing setting talks to the
         camera and calls save_settings if the value is not as expected, this could
         cause recursion. Also this means that saving one setting causes all others
@@ -204,7 +193,7 @@ class StreamingPiCamera2(BaseCamera):
         finally:
             self._setting_save_in_progress = False
 
-    @lt.thing_property
+    @lt.property
     def calibration_required(self) -> bool:
         """Whether the camera needs calibrating."""
         # Check if the lens shading table is calibrated.
@@ -214,7 +203,7 @@ class StreamingPiCamera2(BaseCamera):
 
     _analogue_gain: float = 1.0
 
-    @lt.thing_setting
+    @lt.setting
     def analogue_gain(self) -> float:
         """The Analogue gain applied by the camera sensor."""
         if not self._setting_save_in_progress and self.streaming:
@@ -234,7 +223,7 @@ class StreamingPiCamera2(BaseCamera):
 
     _colour_gains: tuple[float, float] = (1.0, 1.0)
 
-    @lt.thing_setting
+    @lt.setting
     def colour_gains(self) -> tuple[float, float]:
         """The red and blue colour gains, must be between 0.0 and 32.0."""
         if not self._setting_save_in_progress and self.streaming:
@@ -254,7 +243,7 @@ class StreamingPiCamera2(BaseCamera):
 
     _exposure_time: int = 500
 
-    @lt.thing_setting
+    @lt.setting
     def exposure_time(self) -> int:
         """The camera exposure time in microseconds.
 
@@ -296,7 +285,7 @@ class StreamingPiCamera2(BaseCamera):
 
     _sensor_modes = None
 
-    @lt.thing_property
+    @lt.property
     def sensor_modes(self) -> list[SensorMode]:
         """All the available modes the current sensor supports."""
         if not self._sensor_modes:
@@ -306,7 +295,7 @@ class StreamingPiCamera2(BaseCamera):
 
     _sensor_mode: Optional[dict] = None
 
-    @lt.thing_property
+    @lt.property
     def sensor_mode(self) -> Optional[SensorModeSelector]:
         """The intended sensor mode of the camera."""
         if self._sensor_mode is None:
@@ -329,13 +318,13 @@ class StreamingPiCamera2(BaseCamera):
         with self._streaming_picamera(pause_stream=True):
             pass
 
-    @lt.thing_property
+    @lt.property
     def sensor_resolution(self) -> Optional[tuple[int, int]]:
         """The native resolution of the camera's sensor."""
         with self._streaming_picamera() as cam:
             return cam.sensor_resolution
 
-    tuning = lt.ThingSetting(Optional[dict], None, readonly=True)
+    tuning: Optional[dict] = lt.setting(default=None, readonly=True)
     """The Raspberry PiCamera Tuning File JSON."""
 
     def _initialise_picamera(self, check_sensor_model: bool = False) -> None:
@@ -437,7 +426,7 @@ class StreamingPiCamera2(BaseCamera):
             cam.close()
         del self._picamera
 
-    @lt.thing_action
+    @lt.action
     def start_streaming(
         self, main_resolution: tuple[int, int] = (820, 616), buffer_count: int = 6
     ) -> None:
@@ -509,7 +498,7 @@ class StreamingPiCamera2(BaseCamera):
                     "Started MJPEG stream at %s on port %s", self.stream_resolution, 1
                 )
 
-    @lt.thing_action
+    @lt.action
     def stop_streaming(self, stop_web_stream: bool = True) -> None:
         """Stop the MJPEG stream."""
         with self._streaming_picamera() as picam:
@@ -529,7 +518,7 @@ class StreamingPiCamera2(BaseCamera):
             # Adding a sleep to prevent camera getting confused by rapid commands
             time.sleep(self._sensor_info.short_pause)
 
-    @lt.thing_action
+    @lt.action
     def discard_frames(self) -> None:
         """Discard frames so that the next frame captured is fresh."""
         with self._streaming_picamera() as cam:
@@ -587,7 +576,7 @@ class StreamingPiCamera2(BaseCamera):
         else:
             raise ValueError(f'Unknown stream name "{stream_name}"')
 
-    @lt.thing_action
+    @lt.action
     def capture_array(
         self,
         stream_name: Literal["main", "lores", "raw", "full"] = "main",
@@ -620,7 +609,7 @@ class StreamingPiCamera2(BaseCamera):
         # as array
         return np.array(self.capture_image(stream_name, wait))
 
-    @lt.thing_property
+    @lt.property
     def camera_configuration(self) -> Mapping:
         """The "configuration" dictionary of the picamera2 object.
 
@@ -635,13 +624,13 @@ class StreamingPiCamera2(BaseCamera):
         with self._streaming_picamera() as cam:
             return cam.camera_configuration()
 
-    @lt.thing_property
+    @lt.property
     def capture_metadata(self) -> dict:
         """Return the metadata from the camera."""
         with self._streaming_picamera() as cam:
             return cam.capture_metadata()
 
-    @lt.thing_action
+    @lt.action
     def auto_expose_from_minimum(
         self,
         target_white_level: Optional[int] = None,
@@ -671,7 +660,7 @@ class StreamingPiCamera2(BaseCamera):
                 percentile=percentile,
             )
 
-    @lt.thing_action
+    @lt.action
     def calibrate_lens_shading(self) -> None:
         """Take an image and use it for flat-field correction.
 
@@ -699,7 +688,7 @@ class StreamingPiCamera2(BaseCamera):
 
         self.colour_gains = tf_utils.get_colour_gains_from_lst(self.tuning)
 
-    @lt.thing_property
+    @lt.property
     def colour_correction_matrix(
         self,
     ) -> tuple[float, float, float, float, float, float, float, float, float]:
@@ -724,7 +713,7 @@ class StreamingPiCamera2(BaseCamera):
             with self._streaming_picamera(pause_stream=True):
                 self._initialise_picamera()
 
-    @lt.thing_action
+    @lt.action
     def reset_ccm(self) -> None:
         """Overwrite the colour correction matrix in camera tuning with default values."""
         self.tuning = tf_utils.copy_algo_from_other_tuning(
@@ -733,7 +722,7 @@ class StreamingPiCamera2(BaseCamera):
             copy_from=self.default_tuning,
         )
 
-    @lt.thing_action
+    @lt.action
     def set_static_green_equalisation(self, offset: int = 65535) -> None:
         """Set the green equalisation to a static value.
 
@@ -748,7 +737,7 @@ class StreamingPiCamera2(BaseCamera):
             self.tuning = tf_utils.set_static_geq(self.tuning, offset)
             self._initialise_picamera()
 
-    @lt.thing_action
+    @lt.action
     def set_ce_enable_to_off(self) -> None:
         """Set the contrast enhancement to disabled.
 
@@ -759,7 +748,7 @@ class StreamingPiCamera2(BaseCamera):
             self.tuning = tf_utils.set_ce_to_disabled(self.tuning)
             self._initialise_picamera()
 
-    @lt.thing_action
+    @lt.action
     def full_auto_calibrate(self, portal: lt.deps.BlockingPortal) -> None:
         """Perform a full auto-calibration.
 
@@ -787,7 +776,7 @@ class StreamingPiCamera2(BaseCamera):
                 pass
         raise RuntimeError("Couldn't set background")
 
-    @lt.thing_property
+    @lt.property
     def primary_calibration_actions(self) -> list[ActionButton]:
         """The calibration actions for both calibration wizard and settings panel."""
         return [
@@ -805,7 +794,7 @@ class StreamingPiCamera2(BaseCamera):
             ),
         ]
 
-    @lt.thing_property
+    @lt.property
     def secondary_calibration_actions(self) -> list[ActionButton]:
         """The calibration actions that appear only in settings panel."""
         return [
@@ -847,7 +836,7 @@ class StreamingPiCamera2(BaseCamera):
             ),
         ]
 
-    @lt.thing_property
+    @lt.property
     def manual_camera_settings(self) -> list[PropertyControl]:
         """The camera settings to expose as property controls in the settings panel."""
         return [
@@ -874,7 +863,7 @@ class StreamingPiCamera2(BaseCamera):
             ),
         ]
 
-    @lt.thing_property
+    @lt.property
     def lens_shading_tables(self) -> Optional[tf_utils.LensShading]:
         """The current lens shading (i.e. flat-field correction).
 
@@ -901,7 +890,7 @@ class StreamingPiCamera2(BaseCamera):
             )
             self._initialise_picamera()
 
-    @lt.thing_action
+    @lt.action
     def flat_lens_shading(self) -> None:
         """Disable flat-field correction.
 
@@ -916,7 +905,7 @@ class StreamingPiCamera2(BaseCamera):
             self.tuning = tf_utils.flatten_lst(self.tuning)
             self._initialise_picamera()
 
-    @lt.thing_action
+    @lt.action
     def flat_lens_shading_chrominance(self) -> None:
         """Disable flat-field correction for colour only.
 
@@ -928,7 +917,7 @@ class StreamingPiCamera2(BaseCamera):
             self.tuning = tf_utils.flatten_lst(self.tuning, keep_luminance=True)
             self._initialise_picamera()
 
-    @lt.thing_action
+    @lt.action
     def reset_lens_shading(self) -> None:
         """Revert to default lens shading settings.
 

@@ -60,7 +60,7 @@ class OpenCVCamera(BaseCamera):
             self._capture_thread.join()
         self.cap.release()
 
-    @lt.thing_property
+    @lt.property
     def stream_active(self) -> bool:
         """Whether the MJPEG stream is active."""
         if self._capture_enabled and self._capture_thread:
@@ -81,12 +81,12 @@ class OpenCVCamera(BaseCamera):
             ].tobytes()
             self.lores_mjpeg_stream.add_frame(jpeg_lores, portal)
 
-    @lt.thing_action
+    @lt.action
     def discard_frames(self) -> None:
         """Discard frames so that the next frame captured is fresh."""
         self.capture_array()
 
-    @lt.thing_action
+    @lt.action
     def capture_array(
         self,
         stream_name: Literal["main", "full"] = "full",
