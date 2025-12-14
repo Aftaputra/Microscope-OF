@@ -103,13 +103,16 @@ class SmartScanThing(lt.Thing):
     past scans.
     """
 
-    def __init__(self, scans_folder: str) -> None:
+    def __init__(
+        self, thing_server_interface: lt.ThingServerInterface, scans_folder: str
+    ) -> None:
         """Initialise a SmartScanThing saving to and loading from the input directory.
 
         :param scans_folder: This is the path to the directory where all scans will be
             saved. Any scans already in this directory will be accessible through the
             HTTP interface.
         """
+        super().__init__(thing_server_interface)
         self._scan_dir_manager = scan_directories.ScanDirectoryManager(scans_folder)
         self._scan_lock = threading.Lock()
 

@@ -33,7 +33,12 @@ class SangaboardThing(BaseStage):
     functionality is accessed by directly querying the serial interface.
     """
 
-    def __init__(self, port: str = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        thing_server_interface: lt.ThingServerInterface,
+        port: str = None,
+        **kwargs: Any,
+    ) -> None:
         """Initialise SangaboardThing.
 
         Initialise the "Thing", but do not initialise an underlying
@@ -49,7 +54,7 @@ class SangaboardThing(BaseStage):
         self.sangaboard_kwargs = copy(kwargs)
         self.sangaboard_kwargs["port"] = port
         self._sangaboard_lock = threading.RLock()
-        super().__init__(**kwargs)
+        super().__init__(thing_server_interface, **kwargs)
 
     def __enter__(self) -> None:
         """Connect to the sangaboard when the Thing context manager is opened."""

@@ -128,7 +128,12 @@ class StreamingPiCamera2(BaseCamera):
     generalisation.
     """
 
-    def __init__(self, camera_num: int = 0, camera_board: str = "picamera_v2") -> None:
+    def __init__(
+        self,
+        thing_server_interface: lt.ThingServerInterface,
+        camera_num: int = 0,
+        camera_board: str = "picamera_v2",
+    ) -> None:
         """Initialise the camera with the given camera number.
 
         This makes no connection to the camera (except to get the default tuning file).
@@ -138,7 +143,7 @@ class StreamingPiCamera2(BaseCamera):
         :param camera_board: The camera board used. Supported options are "picamera_v2"
            and "picamera_hq".
         """
-        super().__init__()
+        super().__init__(thing_server_interface)
         self._setting_save_in_progress = False
         self._camera_num = camera_num
         self._camera_board = camera_board
@@ -175,7 +180,7 @@ class StreamingPiCamera2(BaseCamera):
     mjpeg_bitrate: Optional[int] = lt.property(default=100000000)
     """Bitrate for MJPEG stream (None for default)."""
 
-    stream_active: bool = lt.property(default=False, observable=True, readonly=True)
+    stream_active: bool = lt.property(default=False, readonly=True)
     """Whether the MJPEG stream is active."""
 
     def save_settings(self) -> None:

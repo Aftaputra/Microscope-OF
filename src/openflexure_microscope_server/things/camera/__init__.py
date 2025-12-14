@@ -175,7 +175,7 @@ class BaseCamera(lt.Thing):
     lores_mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     _memory_buffer = CameraMemoryBuffer()
 
-    def __init__(self) -> None:
+    def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Initialise the base camera, this creates the background detectors.
 
         This must be run by all child camera classes.
@@ -183,7 +183,7 @@ class BaseCamera(lt.Thing):
         To add a new background detector to the server it must be added to the
         dictionary in this function. Configuration will be added at a later date.
         """
-        super().__init__()
+        super().__init__(thing_server_interface)
         self.background_detectors = {
             "Colour Channels (LUV)": ColourChannelDetectLUV(),
             "Channel Deviations (LUV)": ChannelDeviationLUV(),

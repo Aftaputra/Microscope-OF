@@ -138,9 +138,9 @@ class RangeofMotionThing(lt.Thing):
 
     calibrated_range: int = lt.setting(default=None, readonly=True)
 
-    def __init__(self) -> None:
+    def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Initialise and create the lock."""
-        super().__init__()
+        super().__init__(thing_server_interface)
         self._lock = Lock()
         self._stream_resolution: Optional[tuple[int, int]] = None
         self._rom_data = RomDataTracker()

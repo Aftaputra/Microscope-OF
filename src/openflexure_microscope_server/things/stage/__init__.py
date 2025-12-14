@@ -46,7 +46,7 @@ class BaseStage(lt.Thing):
 
     _axis_names = ("x", "y", "z")
 
-    def __init__(self) -> None:
+    def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Initialise the stage.
 
         :raises RedefinedBaseMovementError: if ``move_relative`` and/or
@@ -54,6 +54,7 @@ class BaseStage(lt.Thing):
             ``_hardware_move_relative`` and/or ``_hardware_move_absolute`` instead so
             that all code in the child class uses the hardware reference frame.
         """
+        super().__init__(thing_server_interface)
         self._hardware_position = dict.fromkeys(self._axis_names, 0)
 
         # This must be the last thing the function does in case it is caught in a try.
@@ -78,7 +79,7 @@ class BaseStage(lt.Thing):
         """Current position of the stage."""
         return self._apply_axis_direction(self._hardware_position)
 
-    moving: bool = lt.property(bool, default=False, readonly=True, observable=True)
+    moving: bool = lt.property(default=False, readonly=True)
     """Whether the stage is in motion."""
 
     axis_inverted: Mapping[str, bool] = lt.setting(

@@ -27,12 +27,14 @@ LOGGER = logging.getLogger(__name__)
 class OpenCVCamera(BaseCamera):
     """A Thing that provides and interface to an OpenCV Camera."""
 
-    def __init__(self, camera_index: int = 0) -> None:
+    def __init__(
+        self, thing_server_interface: lt.ThingServerInterface, camera_index: int = 0
+    ) -> None:
         """Iniatilise the thing storing the index of the camera to use.
 
         :param camera_index: The index of the camera to use for the microscope.
         """
-        super().__init__()
+        super().__init__(thing_server_interface)
         self.camera_index = camera_index
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False

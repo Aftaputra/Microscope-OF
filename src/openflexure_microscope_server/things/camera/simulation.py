@@ -52,6 +52,7 @@ class SimulatedCamera(BaseCamera):
 
     def __init__(
         self,
+        thing_server_interface: lt.ThingServerInterface,
         shape: tuple[int, int, int] = (616, 820, 3),
         glyph_shape: tuple[int, int, int] = (121, 121, 3),
         canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
@@ -71,7 +72,7 @@ class SimulatedCamera(BaseCamera):
         :param frame_interval: Nominally the time between frames on the MJPEG stream,
             however the rate may be slower due to calculation time for focus.
         """
-        super().__init__()
+        super().__init__(thing_server_interface)
         self.shape = shape
         self.glyph_shape = glyph_shape
         self.canvas_shape = canvas_shape

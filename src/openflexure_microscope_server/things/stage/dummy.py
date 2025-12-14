@@ -19,7 +19,12 @@ class DummyStage(BaseStage):
     hardware attached.
     """
 
-    def __init__(self, step_time: float = 0.001, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        thing_server_interface: lt.ThingServerInterface,
+        step_time: float = 0.001,
+        **kwargs: Any,
+    ) -> None:
         """Initialise the Dummy stage, setting the step_time to adjust the speed.
 
         :param step_time: The time in seconds per "motor" step. The default of 0.001
@@ -27,7 +32,7 @@ class DummyStage(BaseStage):
             so the speed can be increased. Increasing it too far is problematic if
             also doing computationally heavy tasks like simulated image blurring.
         """
-        super().__init__(**kwargs)
+        super().__init__(thing_server_interface, **kwargs)
         self.step_time = step_time
         self.instantaneous_position = self._hardware_position
 
