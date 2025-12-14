@@ -38,7 +38,7 @@ def add_v2_endpoints(thing_server: lt.ThingServer) -> None:
     @app.head("/api/v2/streams/snapshot")
     async def thumbnail() -> JPEGResponse:
         """Return a low-resolution snapshot, for compatibility with OF connect."""
-        blob = await thing_server.things["/camera/"].lores_mjpeg_stream.grab_frame()
+        blob = await thing_server.things["camera"].lores_mjpeg_stream.grab_frame()
         return JPEGResponse(blob)
 
     @app.get("/api/v2/instrument/settings/name")

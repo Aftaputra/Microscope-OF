@@ -28,10 +28,10 @@ def test_successful_start(mocker, caplog):
     # Create a mock for the camera so we can check the MJPEG streams are closed on
     # shutdown.
     mock_camera = mocker.Mock()
-    mock_server.things = {"/camera/": mock_camera}
+    mock_server.things = {"camera": mock_camera}
     # Mock the LabThings function that returns the server so we have a mock server
     mocker.patch(
-        "openflexure_microscope_server.server.lt.cli.server_from_config",
+        "openflexure_microscope_server.server.lt.ThingServer.from_config",
         return_value=mock_server,
     )
     # Also mock customisation or it will try to access the hard drive and make files.
@@ -78,7 +78,7 @@ def test_failed_customise(mocker):
     mock_server = mocker.Mock()
     # Mock the LabThings function that returns the server so we have a mock server
     mocker.patch(
-        "openflexure_microscope_server.server.lt.cli.server_from_config",
+        "openflexure_microscope_server.server.lt.ThingServer.from_config",
         return_value=mock_server,
     )
     # Also mock customisation or it will try to access the hard drive and make files.
