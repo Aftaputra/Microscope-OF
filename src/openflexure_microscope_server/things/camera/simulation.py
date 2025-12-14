@@ -13,7 +13,7 @@ import logging
 import time
 from threading import Thread
 from types import TracebackType
-from typing import Literal, Mapping, Optional
+from typing import Literal, Optional
 
 import numpy as np
 from PIL import Image, ImageFilter
@@ -27,7 +27,7 @@ from openflexure_microscope_server.ui import (
     property_control_for,
 )
 
-from ..stage import BaseStage
+from ..stage.dummy import DummyStage
 from . import ArrayModel, BaseCamera
 
 LOGGER = logging.getLogger(__name__)
@@ -46,8 +46,8 @@ RNG = np.random.default_rng()
 class SimulatedCamera(BaseCamera):
     """A Thing that simulates a camera for testing."""
 
-    _stage: Optional[BaseStage] = None
-    _server: Optional[lt.ThingServer] = None
+    _stage: DummyStage = lt.thing_slot()
+
     _show_sample: bool = True
 
     def __init__(
@@ -229,31 +229,10 @@ class SimulatedCamera(BaseCamera):
         image[image > 255] = 255
         return Image.fromarray(image.astype("uint8"))
 
-    def attach_to_server(
-        self, server: lt.ThingServer, path: str, setting_storage_path: str
-    ) -> None:
-        """Wrap the attach_to_server method so the server instance can be stored.
-
-        Direct access to the server instance is needed to get the stage position while
-        maintaining the same public API as a real camera that doesn't need this access.
-        """
-        self._server = server
-        super().attach_to_server(server, path, setting_storage_path)
-
-    def get_stage_position(self) -> Mapping[str, int]:
-        """Return the stage position.
-
-        The simulation camera has access to the stage position so it can generate a
-        different image as the stage moves.
-        """
-        if not self._stage and self._server:
-            self._stage = self._server.things["/stage/"]
-        return self._stage.instantaneous_position
-
     def generate_frame(self) -> Image:
         """Generate a frame with blobs based on the stage coordinates."""
         try:
-            pos = self.get_stage_position()
+            pos = self._stage.instantaneous_position
         except Exception as e:
             LOGGER.debug(f"Failed to get stage position: {e}")
             pos = {"x": 0, "y": 0, "z": 0}
