@@ -290,7 +290,6 @@ class SimulatedCamera(BaseCamera):
     noise_level: float = lt.property(default=2.0)
 
     def _capture_frames(self) -> None:
-        portal = lt.get_blocking_portal(self)
         last_frame_t = time.time()
         while self._capture_enabled:
             wait_time = last_frame_t - time.time() - self.frame_interval
@@ -299,9 +298,9 @@ class SimulatedCamera(BaseCamera):
             last_frame_t = time.time()
             try:
                 frame = self.generate_frame()
-                self.mjpeg_stream.add_frame(_frame2bytes(frame), portal)
+                self.mjpeg_stream.add_frame(_frame2bytes(frame))
                 ds_frame = frame.resize((320, 240), resample=Image.NEAREST)
-                self.lores_mjpeg_stream.add_frame(_frame2bytes(ds_frame), portal)
+                self.lores_mjpeg_stream.add_frame(_frame2bytes(ds_frame))
 
             except Exception as e:
                 LOGGER.exception(f"Failed to capture frame: {e}, retrying...")

@@ -51,8 +51,6 @@ def test_handle_broken_frame():
 
     camera.mjpeg_stream.grab_frame = flaky_grabber
     with camera_server(camera):
-        portal = lt.get_blocking_portal(camera)
-
         # Check that this does cause broken frames.
         # The noqa is because we don't know exactly when the error is thrown so we
         # can't have a single simple statement in the pytest raises.
@@ -60,13 +58,13 @@ def test_handle_broken_frame():
             OSError, match="broken data stream when reading image file"
         ):
             for _i in range(15):
-                jpeg = camera.grab_jpeg(portal)
+                jpeg = camera.grab_jpeg()
                 np.asarray(Image.open(jpeg.open()))
 
         # Check that grab_as_array handles the broken frames and completes without
         # the same error.
         for _i in range(15):
-            array = camera.grab_as_array(portal)
+            array = camera.grab_as_array()
             assert isinstance(array, np.ndarray)
 
 
@@ -74,8 +72,7 @@ def test_simulation_cam_calibration():
     """Test that the simulated camera can be calibrated and reports calibration correctly."""
     camera = SimulatedCamera()
     with camera_server(camera):
-        portal = lt.get_blocking_portal(camera)
         assert camera.calibration_required
-        camera.full_auto_calibrate(portal)
+        camera.full_auto_calibrate()
         assert not camera.calibration_required
         assert camera.background_detector_status.ready

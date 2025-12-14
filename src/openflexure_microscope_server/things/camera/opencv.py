@@ -70,18 +70,17 @@ class OpenCVCamera(BaseCamera):
         return False
 
     def _capture_frames(self) -> None:
-        portal = lt.get_blocking_portal(self)
         while self._capture_enabled:
             ret, frame = self.cap.read()
             if not ret:
                 LOGGER.error(f"Failed to capture frame from camera {self.camera_index}")
                 break
             jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
-            self.mjpeg_stream.add_frame(jpeg, portal)
+            self.mjpeg_stream.add_frame(jpeg)
             jpeg_lores = cv2.imencode(".jpg", cv2.resize(frame, (320, 240)))[
                 1
             ].tobytes()
-            self.lores_mjpeg_stream.add_frame(jpeg_lores, portal)
+            self.lores_mjpeg_stream.add_frame(jpeg_lores)
 
     @lt.action
     def discard_frames(self) -> None:

@@ -68,9 +68,7 @@ class MissingCalibrationError(RuntimeError):
 class PicameraStreamOutput(Output):
     """An Output class that sends frames to a stream."""
 
-    def __init__(
-        self, stream: lt.outputs.MJPEGStream, portal: lt.deps.BlockingPortal
-    ) -> None:
+    def __init__(self, stream: lt.outputs.MJPEGStream) -> None:
         """Create an output that puts frames in an MJPEGStream.
 
         We need to pass the stream object, and also the blocking portal, because
@@ -80,7 +78,6 @@ class PicameraStreamOutput(Output):
         """
         Output.__init__(self)
         self.stream = stream
-        self.portal = portal
 
     def outputframe(
         self,
@@ -91,7 +88,7 @@ class PicameraStreamOutput(Output):
         _audio: bool = False,
     ) -> None:
         """Add a frame to the stream's ringbuffer."""
-        self.stream.add_frame(frame, self.portal)
+        self.stream.add_frame(frame)
 
 
 class SensorMode(BaseModel):
@@ -480,18 +477,12 @@ class StreamingPiCamera2(BaseCamera):
                 stream_name = "lores" if main_resolution[0] > 1280 else "main"
                 picam.start_recording(
                     MJPEGEncoder(self.mjpeg_bitrate),
-                    PicameraStreamOutput(
-                        self.mjpeg_stream,
-                        lt.get_blocking_portal(self),
-                    ),
+                    PicameraStreamOutput(self.mjpeg_stream),
                     name=stream_name,
                 )
                 picam.start_encoder(
                     MJPEGEncoder(100000000),
-                    PicameraStreamOutput(
-                        self.lores_mjpeg_stream,
-                        lt.get_blocking_portal(self),
-                    ),
+                    PicameraStreamOutput(self.lores_mjpeg_stream),
                     name="lores",
                 )
             except Exception as e:
@@ -515,9 +506,8 @@ class StreamingPiCamera2(BaseCamera):
             else:
                 self.stream_active = False
                 if stop_web_stream:
-                    portal = lt.get_blocking_portal(self)
-                    self.mjpeg_stream.stop(portal)
-                    self.lores_mjpeg_stream.stop(portal)
+                    self.mjpeg_stream.stop()
+                    self.lores_mjpeg_stream.stop()
                 LOGGER.info("Stopped MJPEG stream.")
 
             # Adding a sleep to prevent camera getting confused by rapid commands
