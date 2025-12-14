@@ -4,8 +4,18 @@ import os
 from signal import SIGTERM
 from uuid import UUID
 
+import pytest
+
+from labthings_fastapi.testing import create_thing_without_server
+
 from openflexure_microscope_server.things import system
 from openflexure_microscope_server.utilities import VersionData, robust_version_strings
+
+
+@pytest.fixture
+def system_thing():
+    """Return a OpenFlexureSystem with a mocked server interface."""
+    return create_thing_without_server(system.OpenFlexureSystem)
 
 
 def _is_raspberrypi() -> bool:
@@ -22,17 +32,16 @@ def _is_raspberrypi() -> bool:
     return "Raspberry Pi" in model_name
 
 
-def test_is_raspberry():
+def test_is_raspberry(system_thing):
     """Check the thing property reports whether this is a Raspberry Pi correctly."""
-    assert system.OpenFlexureSystem().is_raspberrypi == _is_raspberrypi()
+    assert system_thing.is_raspberrypi == _is_raspberrypi()
 
 
-def test_version_data():
+def test_version_data(system_thing):
     """Check VersionData is returned.
 
     The content of robust_version_strings() is tested elsewhere.
     """
-    system_thing = system.OpenFlexureSystem()
     data = system_thing.version_data
     assert isinstance(data, VersionData)
     assert data == robust_version_strings()
@@ -43,27 +52,24 @@ def test_version_data():
     assert data == fake_data
 
 
-def test_hostname(mocker):
+def test_hostname(system_thing, mocker):
     """Check the hostname matches what socket.gethostname() returns."""
     mock_gethostname = mocker.patch("socket.gethostname", return_value="foobar")
-    system_thing = system.OpenFlexureSystem()
     assert system_thing.hostname == "foobar"
     mock_gethostname.assert_called_once_with()
 
 
-def test_microscope_id():
+def test_microscope_id(system_thing):
     """Check the microscope UUID is a valid UUID and doesn't change when read again."""
-    system_thing = system.OpenFlexureSystem()
     microscope_id = system_thing.microscope_id
     assert isinstance(microscope_id, UUID)
     assert microscope_id == system_thing.microscope_id
 
 
-def test_thing_state(mocker):
+def test_thing_state(system_thing, mocker):
     """Check the thing state contains version data, hostname, and a UUID string."""
     mocker.patch("socket.gethostname", return_value="foobar")
     version_data = robust_version_strings()
-    system_thing = system.OpenFlexureSystem()
     state_dict = system_thing.thing_state
     assert state_dict["hostname"] == "foobar"
     # Check the UUID in the dictionary is a string
@@ -93,7 +99,7 @@ def test_pi_shutdown(mocker):
     # Mock the shutdown command as we don't want to shutdown when running tests.
     mocker.patch.object(system, "SHUTDOWN_CMD", new=["echo", "shutdown"])
     # Call shutdown on a MockPiSystem
-    system_thing = MockPiSystem()
+    system_thing = create_thing_without_server(MockPiSystem)
     result = system_thing.shutdown()
 
     # Check the result of the echo mock command was returned
@@ -108,7 +114,7 @@ def test_pi_reboot(mocker):
     # Mock the reboot command as we don't want to reboot when running tests.
     mocker.patch.object(system, "REBOOT_CMD", new=["echo", "restart"])
     # Call reboot on a MockPiSystem
-    system_thing = MockPiSystem()
+    system_thing = create_thing_without_server(MockPiSystem)
     result = system_thing.reboot()
 
     # Check the result of the echo mock command was returned
@@ -125,7 +131,7 @@ def test_non_pi_shutdown(mocker):
     mock_kill = mocker.patch("os.kill")
     # Get this subprocess
     pid = os.getpid()
-    system_thing = MockNonPiSystem()
+    system_thing = create_thing_without_server(MockNonPiSystem)
     result = system_thing.shutdown()
 
     # Check it tried to kill this process with SIGTERM
@@ -137,7 +143,7 @@ def test_non_pi_shutdown(mocker):
 
 def test_non_pi_reboot():
     """Check that a server not on a pi refuses to restart."""
-    system_thing = MockNonPiSystem()
+    system_thing = create_thing_without_server(MockNonPiSystem)
     result = system_thing.reboot()
 
     # Check output is an appropriate error message

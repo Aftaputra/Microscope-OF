@@ -1,17 +1,15 @@
 """Tests for the smart and fast stacking."""
 
 import logging
-import tempfile
 from random import randint
 from typing import Optional
 
 import numpy as np
 import pytest
-from fastapi.testclient import TestClient
 from hypothesis import given
 from hypothesis import strategies as st
 
-import labthings_fastapi as lt
+from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.scan_directories import IMAGE_REGEX
 from openflexure_microscope_server.things.autofocus import (
@@ -266,13 +264,8 @@ def test_retrieval_of_captures(start):
 
 @pytest.fixture
 def autofocus_thing():
-    """Yield an autofocus thing connected to a server."""
-    autofocus_thing = AutofocusThing()
-    with tempfile.TemporaryDirectory() as tmpdir:
-        server = lt.ThingServer(settings_folder=tmpdir)
-        server.add_thing(autofocus_thing, "autofocus")
-        with TestClient(server.app):
-            yield autofocus_thing
+    """Return an autofocus thing connected to a server."""
+    return create_thing_without_server(AutofocusThing)
 
 
 def test_create_stack(autofocus_thing, caplog):
