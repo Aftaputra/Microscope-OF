@@ -42,9 +42,9 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 CSMDep = lt.deps.direct_thing_client_dependency(
-    CameraStageMapper, "/camera_stage_mapping/"
+    CameraStageMapper, "camera_stage_mapping"
 )
-AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
+AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "autofocus")
 
 
 class ScanListInfo(BaseModel):

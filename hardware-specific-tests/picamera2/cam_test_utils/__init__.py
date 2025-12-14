@@ -32,10 +32,10 @@ def camera_test_client(
         if settings_folder is None:
             settings_folder = tmpdir
         server = lt.ThingServer(settings_folder=settings_folder)
-        server.add_thing(cam, "/camera/")
+        server.add_thing(cam, "camera")
 
         with TestClient(server.app) as test_client:
-            client = lt.ThingClient.from_url("/camera/", client=test_client)
+            client = lt.ThingClient.from_url("camera", client=test_client)
             yield client
     del server
     del cam

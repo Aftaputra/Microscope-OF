@@ -63,11 +63,11 @@ def customise_server(
 def _get_scans_dir(config: dict) -> Optional[str]:
     """Read the config and return the scans directory.
 
-    Return is None if there is no /smart_scan/ thing loaded.
+    Return is None if there is no smart_scan thing loaded.
     """
-    if "/smart_scan/" in config["things"]:
+    if "smart_scan" in config["things"]:
         try:
-            return config["things"]["/smart_scan/"]["kwargs"]["scans_folder"]
+            return config["things"]["smart_scan"]["kwargs"]["scans_folder"]
         except KeyError as e:
             msg = "Configuration error: smart scan should have scans_folder kwarg set"
             raise RuntimeError(msg) from e
@@ -96,7 +96,7 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
         def shutdown_call() -> None:
             try:
                 # Kill any mjpeg streams so that StreamingResponses close.
-                server.things["/camera/"].kill_mjpeg_streams()
+                server.things["camera"].kill_mjpeg_streams()
             except BaseException as e:
                 # Catch anything and log as it is essential that this
                 # function cannot raise an unhandled exception or Uvicorn

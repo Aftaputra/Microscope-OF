@@ -54,9 +54,8 @@ def action_button_for(action: Callable[..., Any], **kwargs: Any) -> ActionButton
     :param kwargs: Any attribute of `ActionButton` except for ``thing`` or ``action``.
     """
     thing = action.args[0]
-    thing_path = thing.path.strip("/")
     action_name = action.func.__name__
-    return ActionButton(thing=thing_path, action=action_name, **kwargs)
+    return ActionButton(thing=thing.name, action=action_name, **kwargs)
 
 
 class PropertyControl(BaseModel):
@@ -94,7 +93,6 @@ def property_control_for(
     :param kwargs: Any attribute of `PropertyControl` except for ``thing`` or
         ``property_name``. If label is not set here it will be the property name.
     """
-    thing_path = thing.path.strip("/")
     if "label" not in kwargs:
         kwargs["label"] = property_name
-    return PropertyControl(thing=thing_path, property_name=property_name, **kwargs)
+    return PropertyControl(thing=thing.name, property_name=property_name, **kwargs)

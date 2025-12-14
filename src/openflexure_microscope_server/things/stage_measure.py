@@ -30,9 +30,9 @@ from .camera_stage_mapping import CameraStageMapper
 from .stage import StageDependency as StageDep
 
 CSMDep = lt.deps.direct_thing_client_dependency(
-    CameraStageMapper, "/camera_stage_mapping/"
+    CameraStageMapper, "camera_stage_mapping"
 )
-AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
+AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "autofocus")
 
 ## Size of movement in percentage of field of view
 SMALL_STEP = 20

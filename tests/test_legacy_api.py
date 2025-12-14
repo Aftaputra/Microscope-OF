@@ -12,8 +12,8 @@ def test_v2_endpoints(mocker):
     """Check that the expected v2 endpoints are added."""
     mock_server = mocker.Mock()
     # Mock the camera thing to mocke the lores_mjpeg stream get_frame()
-    mock_server.things = {"/camera/": mocker.Mock()}
-    mock_server.things["/camera/"].lores_mjpeg_stream.grab_frame = mocker.AsyncMock(
+    mock_server.things = {"camera": mocker.Mock()}
+    mock_server.things["camera"].lores_mjpeg_stream.grab_frame = mocker.AsyncMock(
         return_value="Mock Frame"
     )
     mock_app = mock_server.app

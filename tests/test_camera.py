@@ -21,7 +21,7 @@ def camera_server(camera: SimulatedCamera) -> lt.ThingClient:
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         server = lt.ThingServer(settings_folder=tmpdir)
-        server.add_thing(camera, "/camera/")
+        server.add_thing(camera, "camera")
         with TestClient(server.app):
             yield server
 

@@ -270,7 +270,7 @@ def autofocus_thing():
     autofocus_thing = AutofocusThing()
     with tempfile.TemporaryDirectory() as tmpdir:
         server = lt.ThingServer(settings_folder=tmpdir)
-        server.add_thing(autofocus_thing, "/autofocus/")
+        server.add_thing(autofocus_thing, "autofocus")
         with TestClient(server.app):
             yield autofocus_thing
 

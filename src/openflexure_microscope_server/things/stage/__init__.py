@@ -228,4 +228,4 @@ class BaseStage(lt.Thing):
         self.move_absolute(cancel=cancel, x=xyz_pos[0], y=xyz_pos[1], z=xyz_pos[2])
 
 
-StageDependency = lt.deps.direct_thing_client_dependency(BaseStage, "/stage/")
+StageDependency = lt.deps.direct_thing_client_dependency(BaseStage, "stage")

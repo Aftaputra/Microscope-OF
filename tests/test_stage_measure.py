@@ -158,7 +158,7 @@ def rom_thing(example_rom_data) -> stage_measure.RangeofMotionThing:
 
     with tempfile.TemporaryDirectory() as tmpdir:
         server = lt.ThingServer(settings_folder=tmpdir)
-        server.add_thing(rom_thing, "/rom_thing/")
+        server.add_thing(rom_thing, "rom_thing")
         with TestClient(server.app):
             yield rom_thing
 

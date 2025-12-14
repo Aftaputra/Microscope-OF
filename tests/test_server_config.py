@@ -102,7 +102,7 @@ def test_get_scans_dir_no_smart_scan():
     with open(FULL_CONFIG, "r", encoding="utf-8") as f_obj:
         config_dict = json.load(f_obj)
     # Delete smart scan
-    del config_dict["things"]["/smart_scan/"]
+    del config_dict["things"]["smart_scan"]
     # No SmartScanThing, should return None
     assert ofm_server._get_scans_dir(config_dict) is None
 
@@ -116,14 +116,14 @@ def test_get_scans_dir_bad_smart_scan_config():
     # Copy the dictionary
     broken_config = deepcopy(config_dict)
     # Delete all the smart scan kwargs
-    del broken_config["things"]["/smart_scan/"]["kwargs"]
+    del broken_config["things"]["smart_scan"]["kwargs"]
     # Creates an Error
     with pytest.raises(RuntimeError):
         ofm_server._get_scans_dir(broken_config)
 
     # Same thing should happen if just the scans_folder key is deleted
     broken_config = deepcopy(config_dict)
-    del broken_config["things"]["/smart_scan/"]["kwargs"]
+    del broken_config["things"]["smart_scan"]["kwargs"]
     # Creates an Error
     with pytest.raises(RuntimeError):
         ofm_server._get_scans_dir(broken_config)

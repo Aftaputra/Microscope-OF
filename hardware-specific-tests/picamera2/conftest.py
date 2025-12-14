@@ -26,7 +26,7 @@ def picamera_client(picamera_thing) -> lt.ThingClient:
     This fixture:
 
     * Sets up a ThingServer,
-    * Registers a StreamingPiCamera2 instance at the "/camera/" endpoint
+    * Registers a StreamingPiCamera2 instance at the "camera" endpoint
     * Provides a ThingClient for interacting with it during tests.
     """
     with camera_test_client(cam=picamera_thing) as picamera_client:

@@ -41,7 +41,7 @@ def thing_server(dummy_stage):
     """Yield a server with a very basic configuration."""
     with tempfile.TemporaryDirectory() as tmpdir:
         server = lt.ThingServer(settings_folder=tmpdir)
-        server.add_thing(dummy_stage, "/stage/")
+        server.add_thing(dummy_stage, "stage")
         yield server
 
 
@@ -49,7 +49,7 @@ def thing_server(dummy_stage):
 def stage_client(thing_server):
     """Yield a labthings ThingClient for the stage."""
     with TestClient(thing_server.app) as test_client:
-        yield lt.ThingClient.from_url("/stage/", client=test_client)
+        yield lt.ThingClient.from_url("stage", client=test_client)
 
 
 def test_override_base_movement():
