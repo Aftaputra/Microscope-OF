@@ -12,6 +12,7 @@ import uvicorn
 from uvicorn.main import Server
 
 import labthings_fastapi as lt
+from labthings_fastapi.server import fallback
 
 from openflexure_microscope_server.utilities import load_patched_config
 
@@ -87,9 +88,9 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
     server = None
     try:
         config = _full_config_from_args(args)
-        log_folder = config.get("log_folder", "./openflexure/logs")
+        log_folder = config.pop("log_folder", "./openflexure/logs")
         scans_folder = _get_scans_dir(config)
-        server = lt.cli.server_from_config(config)
+        server = lt.ThingServer.from_config(config)
         customise_server(server, log_folder, scans_folder)
 
         def shutdown_call() -> None:
@@ -119,9 +120,8 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
             # Allow printing to the terminal for fallback errors so they are not
             # presented in the fallback logs.
             print(f"Error: {e}")  # noqa: T201
-            fallback_server = "labthings_fastapi.server.fallback:app"
-            print(f"Starting fallback server {fallback_server}.")  # noqa: T201
-            app = lt.cli.object_reference_to_object(fallback_server)
+            print("Starting fallback server.")  # noqa: T201
+            app = fallback.app
             app.labthings_config = config
             app.labthings_server = server
             app.labthings_error = e
