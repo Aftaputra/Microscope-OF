@@ -526,7 +526,7 @@ class SmartScanThing(lt.Thing):
                 overlap=self._scan_data.overlap,
             )
 
-    @lt.fastapi_endpoint(
+    @lt.endpoint(
         "get",
         "scans/stitched_thumbnail.jpg",
         responses={
@@ -597,7 +597,7 @@ class SmartScanThing(lt.Thing):
             ongoing=None if self._ongoing_scan is None else self._ongoing_scan.name,
         )
 
-    @lt.fastapi_endpoint(
+    @lt.endpoint(
         "get",
         "get_stitch/{scan_name}",
         responses={
@@ -621,7 +621,7 @@ class SmartScanThing(lt.Thing):
             raise HTTPException(404, "File not found")
         return FileResponse(stitch_path)
 
-    @lt.fastapi_endpoint(
+    @lt.endpoint(
         "delete",
         "scans/{scan_name}",
         responses={
@@ -643,7 +643,7 @@ class SmartScanThing(lt.Thing):
         if not deleted_scan_success:
             raise HTTPException(400, "Couldn't delete scan, check log for details")
 
-    @lt.fastapi_endpoint(
+    @lt.endpoint(
         "delete",
         "scans",
     )
@@ -710,7 +710,7 @@ class SmartScanThing(lt.Thing):
             return None
         return os.path.getmtime(self.latest_preview_stitch_path)
 
-    @lt.fastapi_endpoint(
+    @lt.endpoint(
         "get",
         "latest_preview_stitch.jpg",
         responses={
