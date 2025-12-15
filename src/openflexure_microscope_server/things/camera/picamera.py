@@ -35,7 +35,7 @@ from PIL import Image
 from pydantic import BaseModel, BeforeValidator
 
 import labthings_fastapi as lt
-from labthings_fastapi.exceptions import NotConnectedToServerError
+from labthings_fastapi.exceptions import ServerNotRunningError
 
 from openflexure_microscope_server.background_detect import ChannelBlankError
 from openflexure_microscope_server.ui import (
@@ -160,13 +160,13 @@ class StreamingPiCamera2(BaseCamera):
         # connected to the server if tuning is saved to disk.
         try:
             self.tuning = copy.deepcopy(self.default_tuning)
-        except NotConnectedToServerError:
+        except ServerNotRunningError:
             # This will throw an error after setting as we are not connected to
             # a server. But we know this, so we ignore the error.
             pass
 
         # Also set the colour gains based on the tuning. Set to _colour_gains to not
-        # trigger a NotConnectedToServerError
+        # trigger a ServerNotRunningError
         self._colour_gains = tf_utils.get_colour_gains_from_lst(self.tuning)
 
     stream_resolution: tuple[int, int] = lt.property(default=(820, 616))
