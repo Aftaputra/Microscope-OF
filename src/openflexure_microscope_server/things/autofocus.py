@@ -10,20 +10,18 @@ See repository root for licensing information.
 import logging
 import os
 import time
-from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Annotated, Literal, Mapping, Optional, Sequence
+from types import TracebackType
+from typing import Literal, Mapping, Optional, Self, Sequence
 
 import numpy as np
-from fastapi import Depends
 from pydantic import BaseModel, computed_field, field_validator, model_validator
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from .camera import CameraDependency as CameraClient
-from .camera import RawCameraDependency as RawCamera
-from .stage import StageDependency as Stage
+from .camera import BaseCamera
+from .stage import BaseStage
 
 LOGGER = logging.getLogger(__name__)
 MIN_TEST_IMAGE_COUNT = 3
@@ -224,20 +222,16 @@ class JPEGSharpnessMonitor:
     SharpnessMonitorDep as an argument is called.
     """
 
-    def __init__(
-        self, stage: Stage, camera: RawCamera, portal: lt.deps.BlockingPortal
-    ) -> None:
+    def __init__(self, stage: BaseStage, camera: BaseCamera) -> None:
         """Initialise a new JPEGSharpnessMonitor. The args are injected automatically.
 
         :param stage: A direct_thing_client dependency for the the microscope stage.
         :param camera: A raw_thing_client depeendency for the camera. This is a raw
             dependency as the underlying class needs to be
-        :param portal: The asyncio blocking portal for asynchronous task scheduling.
         """
         self.camera = camera
         self.stage = stage
-        self.portal = portal
-        LOGGER.debug(f"Created sharpness monitor with {stage}, {camera}, {portal}")
+        LOGGER.debug(f"Created sharpness monitor with {stage}, {camera}")
         self.stage_positions: list[Mapping[str, int]] = []
         self.stage_times: list[float] = []
         self.jpeg_times: list[float] = []
@@ -254,14 +248,23 @@ class JPEGSharpnessMonitor:
             if not self.running:
                 break
 
-    @contextmanager
-    def run(self) -> None:
-        """Context manager, during which we will monitor sharpness from the camera."""
-        self.portal.start_task_soon(self.monitor_sharpness)
-        try:
-            yield
-        finally:
-            self.running = False
+    def __enter__(self) -> Self:
+        """Start context manager, during which sharpness from the camera is monitored."""
+        # Use the cameras _thing_server_interface to get access to the server event loop
+        # and start a task.
+        self.camera._thing_server_interface.start_async_task_soon(
+            self.monitor_sharpness
+        )
+        return self
+
+    def __exit__(
+        self,
+        _exc_type: type[BaseException],
+        _exc_value: Optional[BaseException],
+        _traceback: Optional[TracebackType],
+    ) -> None:
+        """Clean up after context manager is closed."""
+        self.running = False
 
     def focus_rel(self, dz: int, block_cancellation: int = False) -> tuple[int, int]:
         """Move the stage by dz, monitoring the position over time.
@@ -339,9 +342,6 @@ class JPEGSharpnessMonitor:
         return SharpnessDataArrays(**data)
 
 
-SharpnessMonitorDep = Annotated[JPEGSharpnessMonitor, Depends()]
-
-
 class AutofocusThing(lt.Thing):
     """The Thing concerned with combinations of z axis movements and the camera.
 
@@ -350,10 +350,12 @@ class AutofocusThing(lt.Thing):
     field of view to assess focus (autofocus and testing the success of a z-stack)
     """
 
+    _cam: BaseCamera = lt.thing_slot()
+    _stage: BaseStage = lt.thing_slot()
+
     @lt.action
     def fast_autofocus(
         self,
-        sharpness_monitor: SharpnessMonitorDep,
         dz: int = 2000,
         start: Literal["centre", "base"] = "centre",
     ) -> SharpnessDataArrays:
@@ -363,7 +365,7 @@ class AutofocusThing(lt.Thing):
         the position where the image was sharpest. We'll then move back down, and
         finally up to the sharpest point.
         """
-        with sharpness_monitor.run():
+        with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
             # Move to (-dz / 2)
             if start == "centre":
                 sharpness_monitor.focus_rel(-dz // 2)
@@ -384,7 +386,6 @@ class AutofocusThing(lt.Thing):
     @lt.action
     def z_move_and_measure_sharpness(
         self,
-        sharpness_monitor: SharpnessMonitorDep,
         dz: Sequence[int],
         wait: float = 0,
     ) -> SharpnessDataArrays:
@@ -400,7 +401,7 @@ class AutofocusThing(lt.Thing):
         If ``wait`` is specified, we will wait for that many seconds
         between moves.
         """
-        with sharpness_monitor.run():
+        with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
             for move_index, current_dz in enumerate(dz):
                 if move_index > 0 and wait > 0:
                     time.sleep(wait)
@@ -410,8 +411,6 @@ class AutofocusThing(lt.Thing):
     @lt.action
     def looping_autofocus(
         self,
-        stage: Stage,
-        sharpness_monitor: SharpnessMonitorDep,
         dz: int = 2000,
         start: Literal["centre", "base"] = "centre",
     ) -> tuple[list[float], list[float]]:
@@ -425,12 +424,12 @@ class AutofocusThing(lt.Thing):
         attempt = 0
         backlash = 200
 
-        with sharpness_monitor.run():
+        with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
             while attempt < 10:
                 attempt += 1
                 if start == "centre":
-                    stage.move_relative(x=0, y=0, z=-(backlash + dz / 2))
-                    stage.move_relative(x=0, y=0, z=backlash)
+                    self._stage.move_relative(x=0, y=0, z=-(backlash + dz / 2))
+                    self._stage.move_relative(x=0, y=0, z=backlash)
 
                 # Always start centrally for future runs
                 start = "centre"
@@ -445,8 +444,8 @@ class AutofocusThing(lt.Thing):
                 target_max = np.max(heights) - dz / 5
 
                 # move to the peak
-                stage.move_absolute(z=peak_height - backlash)
-                stage.move_absolute(z=peak_height)
+                self._stage.move_absolute(z=peak_height - backlash)
+                self._stage.move_absolute(z=peak_height)
 
                 if target_min < peak_height < target_max:
                     # If it is within the target range then return
@@ -557,9 +556,6 @@ class AutofocusThing(lt.Thing):
     @lt.action
     def run_smart_stack(
         self,
-        cam: CameraClient,
-        stage: Stage,
-        sharpness_monitor: SharpnessMonitorDep,
         stack_parameters: StackParams,
         save_on_failure: bool = False,
         check_turning_points: bool = True,
@@ -572,11 +568,6 @@ class AutofocusThing(lt.Thing):
         The sharpest image, and optionally images around the sharpest, will be saved
         to the images_dir with their coordinates in the filename.
 
-
-        :param cam: Camera Dependency supplied by LabThings dependency injection
-        :param stage: Stage Dependency supplied by LabThings dependency injection
-        :param sharpness_monitor: Sharpness Monitor Dependency (for focus detection)
-            supplied by LabThings dependency injection
         :param stack_parameters: A StackParams object containing the required
             parameters to run a stack.
         :param save_on_failure: Whether to save an image even if no focus was found.
@@ -595,8 +586,6 @@ class AutofocusThing(lt.Thing):
             success, captures, sharpest_id = self.z_stack(
                 stack_parameters=stack_parameters,
                 check_turning_points=check_turning_points,
-                cam=cam,
-                stage=stage,
             )
 
             if success:
@@ -609,12 +598,7 @@ class AutofocusThing(lt.Thing):
             initial_z_pos = captures[0].position["z"]
             # If a stack is not successful, move to the start and autofocus
             try:
-                self.reset_stack(
-                    initial_z_pos,
-                    stack_parameters.autofocus_dz,
-                    stage,
-                    sharpness_monitor,
-                )
+                self.reset_stack(initial_z_pos, stack_parameters.autofocus_dz)
             except NoFocusFoundError:
                 break
 
@@ -626,7 +610,6 @@ class AutofocusThing(lt.Thing):
                 sharpest_id=sharpest_id,
                 captures=captures,
                 stack_parameters=stack_parameters,
-                cam=cam,
             )
 
         return success, _get_capture_by_id(captures, sharpest_id).position["z"]
@@ -635,8 +618,6 @@ class AutofocusThing(lt.Thing):
         self,
         initial_z_pos: list[int],
         autofocus_dz: int,
-        stage: Stage,
-        sharpness_monitor: SharpnessMonitorDep,
     ) -> None:
         """Return to the initial z position and run a looping autofocus.
 
@@ -646,19 +627,14 @@ class AutofocusThing(lt.Thing):
         ``stage`` and ``sharpness_monitor`` are Thing dependencies passed through
         from the calling action.
         """
-        stage.move_absolute(z=initial_z_pos)
-        self.looping_autofocus(
-            stage=stage,
-            sharpness_monitor=sharpness_monitor,
-            dz=autofocus_dz,
-        )
+        self._stage.move_absolute(z=initial_z_pos)
+        self.looping_autofocus(dz=autofocus_dz)
 
     def save_stack(
         self,
         sharpest_id: int,
         captures: list[list],
         stack_parameters: StackParams,
-        cam: CameraClient,
     ) -> int:
         """Save the required captures to disk.
 
@@ -669,28 +645,24 @@ class AutofocusThing(lt.Thing):
         :param captures: a list of captures, including file name, image data and
             metadata
         :param stack_parameters: a StackParams object holding stack parameters
-        :param cam: is a Thing dependency passed through from the calling action
-
         """
         sharpest_index = _get_capture_index_by_id(captures, sharpest_id)
         slice_to_save = stack_parameters.slice_to_save(sharpest_index)
 
         # Loop through the range, saving each capture to disk
         for capture in captures[slice_to_save]:
-            cam.save_from_memory(
+            self._cam.save_from_memory(
                 jpeg_path=os.path.join(stack_parameters.images_dir, capture.filename),
                 save_resolution=stack_parameters.save_resolution,
                 buffer_id=capture.buffer_id,
             )
-        cam.clear_buffers()
+        self._cam.clear_buffers()
         return sharpest_index
 
     def z_stack(
         self,
         stack_parameters: StackParams,
         check_turning_points: bool,
-        cam: CameraClient,
-        stage: Stage,
     ) -> tuple[bool, list[CaptureInfo], int]:
         """Capture a series of images checking that sharpest image central.
 
@@ -703,8 +675,6 @@ class AutofocusThing(lt.Thing):
         :param check_turning_points: Whether to check the number of turning points in
             the sharpnesses of the images in the stack is exactly 1. (May fail with
             thick samples)
-        :param cam: Camera Dependency to be passed through from the calling action
-        :param stage: Stage Dependency to be passed through from the calling action
 
         :returns: A tuple of
 
@@ -714,14 +684,14 @@ class AutofocusThing(lt.Thing):
         """
         # Move down by the height of the z stack, plus an overshoot
         # Better to start too low and take too many images than too high and need to refocus
-        stage.move_relative(
+        self._stage.move_relative(
             z=-(
                 stack_parameters.steps_undershoot
                 + stack_parameters.backlash_correction
                 + stack_parameters.stack_z_range / 2
             )
         )
-        stage.move_relative(z=stack_parameters.backlash_correction)
+        self._stage.move_relative(z=stack_parameters.backlash_correction)
 
         captures = []
         # Always check for focus using the the last `min_images_to_test` in the
@@ -735,11 +705,7 @@ class AutofocusThing(lt.Thing):
 
             # Append a new image to the stack
             captures.append(
-                self.capture_stack_image(
-                    cam,
-                    stage,
-                    buffer_max=stack_parameters.min_images_to_test,
-                )
+                self.capture_stack_image(buffer_max=stack_parameters.min_images_to_test)
             )
 
             # If the number of images is enough to test, test them
@@ -754,33 +720,26 @@ class AutofocusThing(lt.Thing):
                 if result == "restart":
                     return False, captures, capture_id
                 # If reached here the result was "continue"
-            stage.move_relative(z=stack_parameters.stack_dz)
+            self._stage.move_relative(z=stack_parameters.stack_dz)
         return False, captures, capture_id
 
-    def capture_stack_image(
-        self,
-        cam: CameraClient,
-        stage: Stage,
-        buffer_max: int,
-    ) -> CaptureInfo:
+    def capture_stack_image(self, buffer_max: int) -> CaptureInfo:
         """Capture another image and return the capture information.
 
         The capture is stored by the camera Thing, and can be saved by ID.
 
-        :param cam: Camera Dependency to be passed through from the calling action
-        :param stage: Stage Dependency to be passed through from the calling action
         :param buffer_max: The maximum number of images to tell the camera to keep in memory
             for saving once the stack is complete
 
         :returns: A CaptureInfo object containing the capture information including its
             camera buffer_id needed for saving.
         """
-        stage_location = stage.position
-        buffer_id = cam.capture_to_memory(buffer_max=buffer_max)
+        stage_location = self._stage.position
+        buffer_id = self._cam.capture_to_memory(buffer_max=buffer_max)
         return CaptureInfo(
             buffer_id=buffer_id,
             position=stage_location,
-            sharpness=cam.grab_jpeg_size(stream_name="lores"),
+            sharpness=self._cam.grab_jpeg_size(stream_name="lores"),
         )
 
     # Silence too many returns in this situation as refactoring to reduce returns is

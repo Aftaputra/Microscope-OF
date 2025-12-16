@@ -265,7 +265,7 @@ def test_retrieval_of_captures(start):
 @pytest.fixture
 def autofocus_thing():
     """Return an autofocus thing connected to a server."""
-    return create_thing_without_server(AutofocusThing)
+    return create_thing_without_server(AutofocusThing, mock_all_slots=True)
 
 
 def test_create_stack(autofocus_thing, caplog):
@@ -352,9 +352,6 @@ def test_coercing_stack_save_ims(
 @pytest.mark.parametrize("pass_on", [1, 2, 3, 4])
 def test_run_smart_stack(pass_on, autofocus_thing, mocker):
     """Test Running smart stack with the stack passing on different attempts."""
-    cam = mocker.Mock()
-    stage = mocker.Mock()
-    sharpness_monitor = mocker.MagicMock()
     stack_params = autofocus_thing.create_stack_params(
         autofocus_dz=2000,
         images_dir="/this/is/fake",
@@ -386,9 +383,6 @@ def test_run_smart_stack(pass_on, autofocus_thing, mocker):
 
     # Run it
     success, final_z = autofocus_thing.run_smart_stack(
-        cam=cam,
-        stage=stage,
-        sharpness_monitor=sharpness_monitor,
         stack_parameters=stack_params,
         save_on_failure=False,
         check_turning_points=True,
@@ -403,16 +397,16 @@ def test_run_smart_stack(pass_on, autofocus_thing, mocker):
     n_stacks = min(pass_on, stack_params.max_attempts)
     assert autofocus_thing.z_stack.call_count == n_stacks
     # Move absolute should be 1 less time that the number of times z_stack_run
-    assert stage.move_absolute.call_count == n_stacks - 1
+    assert autofocus_thing._stage.move_absolute.call_count == n_stacks - 1
     # As should looping autofocus
     assert autofocus_thing.looping_autofocus.call_count == n_stacks - 1
 
     # Check rest stack is moving to the first image in the stack.
     if n_stacks > 1:
-        assert stage.move_absolute.call_args.kwargs["z"] == -99
+        assert autofocus_thing._stage.move_absolute.call_args.kwargs["z"] == -99
 
     # Mock called to save image
-    assert cam.save_from_memory.call_count == (1 if success else 0)
+    assert autofocus_thing._cam.save_from_memory.call_count == (1 if success else 0)
 
 
 def setup_and_run_z_stack(check_returns, check_turning_points, autofocus_thing, mocker):
@@ -430,8 +424,6 @@ def setup_and_run_z_stack(check_returns, check_turning_points, autofocus_thing, 
     )
     stack_params.settling_time = 0  # Don't settle or tests take forever.
 
-    stage = mocker.Mock()
-    cam = mocker.Mock()
     autofocus_thing.capture_stack_image = mocker.Mock()
     if isinstance(check_returns, list):
         autofocus_thing.check_stack_result = mocker.Mock(side_effect=check_returns)
@@ -440,8 +432,6 @@ def setup_and_run_z_stack(check_returns, check_turning_points, autofocus_thing, 
     return autofocus_thing.z_stack(
         stack_parameters=stack_params,
         check_turning_points=check_turning_points,
-        cam=cam,
-        stage=stage,
     )
 
 
@@ -506,20 +496,16 @@ def test_z_stack_return(autofocus_thing, mocker):
         assert ret[0]
 
 
-def test_capture_stack_image(autofocus_thing, mocker):
+def test_capture_stack_image(autofocus_thing):
     """Check that capture stack image calls the expected functions and returns the expected data."""
-    stage = mocker.Mock()
-    stage.position = {"x": 123, "y": 456, "z": 789}
-    cam = mocker.Mock()
-    cam.capture_to_memory.return_value = "fake_buffer_id"
-    cam.grab_jpeg_size.return_value = 54321
+    autofocus_thing._stage.position = {"x": 123, "y": 456, "z": 789}
+    autofocus_thing._cam.capture_to_memory.return_value = "fake_buffer_id"
+    autofocus_thing._cam.grab_jpeg_size.return_value = 54321
     buffer_max = 11
 
-    info = autofocus_thing.capture_stack_image(
-        cam=cam, stage=stage, buffer_max=buffer_max
-    )
-    assert cam.capture_to_memory.call_count == 1
-    assert cam.grab_jpeg_size.call_count == 1
+    info = autofocus_thing.capture_stack_image(buffer_max=buffer_max)
+    assert autofocus_thing._cam.capture_to_memory.call_count == 1
+    assert autofocus_thing._cam.grab_jpeg_size.call_count == 1
     assert info.buffer_id == "fake_buffer_id"
     assert info.position == {"x": 123, "y": 456, "z": 789}
     assert info.sharpness == 54321

@@ -48,22 +48,23 @@ def fake_sharpness_data(
 def test_looping_autofocus(start_z, max_loc, centre, attempts_expected, passes, mocker):
     """Test the high level looping autofocus algorithm."""
     dz = 2000
+    autofocus_thing = create_thing_without_server(AutofocusThing, mock_all_slots=True)
+
     # Make a mock stage where move_absolute abs and relative updates the position counter.
-    stage = mocker.Mock()
-    stage.position = {"x": 0, "y": 0, "z": start_z}
+    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
 
     def set_pos(**kwargs: int) -> None:
         """Move absolute should update position. So make a side effect for the mock."""
         for axis, value in kwargs.items():
-            stage.position[axis] = value
+            autofocus_thing._stage.position[axis] = value
 
     def adjust_pos(**kwargs: int) -> None:
         """Move relative should update position. So make a side effect for the mock."""
         for axis, value in kwargs.items():
-            stage.position[axis] += value
+            autofocus_thing._stage.position[axis] += value
 
-    stage.move_absolute.side_effect = set_pos
-    stage.move_relative.side_effect = adjust_pos
+    autofocus_thing._stage.move_absolute.side_effect = set_pos
+    autofocus_thing._stage.move_relative.side_effect = adjust_pos
 
     # Make a mock sharpness monitor that can generate sharpness data.
     sharpness_monitor = mocker.MagicMock()
@@ -73,27 +74,25 @@ def test_looping_autofocus(start_z, max_loc, centre, attempts_expected, passes, 
         """Generate sharpnesses based on parameterised input, and mock stage position."""
         return fake_sharpness_data(
             dz=dz,
-            start_z=stage.position["z"],
+            start_z=autofocus_thing._stage.position["z"],
             max_loc=max_loc,
         )
 
     sharpness_monitor.move_data.side_effect = return_sharpness
 
-    autofocus_thing = create_thing_without_server(AutofocusThing)
+    # Mock the context manager call so out MagicMock sharpness monitor is returned.
+    mock_context = mocker.patch(
+        "openflexure_microscope_server.things.autofocus.JPEGSharpnessMonitor"
+    )
+    mock_context.return_value.__enter__.return_value = sharpness_monitor
+    mock_context.return_value.__exit__.return_value = None
+
     if passes:
-        autofocus_thing.looping_autofocus(
-            stage=stage,
-            sharpness_monitor=sharpness_monitor,
-            dz=dz,
-            start="centre" if centre else "base",
-        )
+        autofocus_thing.looping_autofocus(dz=dz, start="centre" if centre else "base")
     else:
         with pytest.raises(NoFocusFoundError):
             autofocus_thing.looping_autofocus(
-                stage=stage,
-                sharpness_monitor=sharpness_monitor,
-                dz=dz,
-                start="centre" if centre else "base",
+                dz=dz, start="centre" if centre else "base"
             )
     assert sharpness_monitor.focus_rel.call_count == attempts_expected
-    assert abs(max_loc - stage.position["z"]) < dz / 40
+    assert abs(max_loc - autofocus_thing._stage.position["z"]) < dz / 40
