@@ -121,9 +121,9 @@ class OpenFlexureSystem(lt.Thing):
         return CommandOutput(output=out, error=err)
 
     @lt.action
-    def get_things_state(self, metadata_getter: lt.deps.GetThingStates) -> Mapping:
+    def get_things_state(self) -> Mapping:
         """Metadata summarising the current state of all Things in the server."""
-        return metadata_getter()
+        return self._thing_server_interface.get_thing_states()
 
     @property
     def thing_state(self) -> Mapping[str, Any]:
