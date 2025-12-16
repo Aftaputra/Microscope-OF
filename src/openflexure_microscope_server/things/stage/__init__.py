@@ -133,24 +133,15 @@ class BaseStage(lt.Thing):
         self.axis_inverted = direction
 
     @lt.action
-    def move_relative(
-        self,
-        cancel: lt.deps.CancelHook,
-        block_cancellation: bool = False,
-        **kwargs: int,
-    ) -> None:
+    def move_relative(self, block_cancellation: bool = False, **kwargs: int) -> None:
         """Make a relative move. Keyword arguments should be axis names."""
         self._hardware_move_relative(
-            cancel=cancel,
             block_cancellation=block_cancellation,
             **self._apply_axis_direction(kwargs),
         )
 
     def _hardware_move_relative(
-        self,
-        cancel: lt.deps.CancelHook,
-        block_cancellation: bool = False,
-        **kwargs: int,
+        self, block_cancellation: bool = False, **kwargs: int
     ) -> Never:
         """Make a relative move in the coordinate system used by the physical hardware.
 
@@ -161,22 +152,15 @@ class BaseStage(lt.Thing):
         )
 
     @lt.action
-    def move_absolute(
-        self,
-        cancel: lt.deps.CancelHook,
-        block_cancellation: bool = False,
-        **kwargs: int,
-    ) -> None:
+    def move_absolute(self, block_cancellation: bool = False, **kwargs: int) -> None:
         """Make an absolute move. Keyword arguments should be axis names."""
         self._hardware_move_absolute(
-            cancel=cancel,
             block_cancellation=block_cancellation,
             **self._apply_axis_direction(kwargs),
         )
 
     def _hardware_move_absolute(
         self,
-        cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: int,
     ) -> Never:
@@ -212,20 +196,16 @@ class BaseStage(lt.Thing):
         return (position_dict["x"], position_dict["y"], position_dict["z"])
 
     @lt.action
-    def move_to_xyz_position(
-        self, cancel: lt.deps.CancelHook, xyz_pos: tuple[int, int, int]
-    ) -> None:
+    def move_to_xyz_position(self, xyz_pos: tuple[int, int, int]) -> None:
         """Move to the location specified by an (x, y, z) tuple.
 
-        :param cancel: A cancel hook for cancelling the move. This dependency should be
-            injected automatically by LabThings-FastAPI
         :param xyz_pos: The (x, y, z) position to move to.
 
         :raises KeyError: if this stage does not have axes named "x", "y", and "z".
 
         This method provides the interface expected by the camera_stage_mapping.
         """
-        self.move_absolute(cancel=cancel, x=xyz_pos[0], y=xyz_pos[1], z=xyz_pos[2])
+        self.move_absolute(x=xyz_pos[0], y=xyz_pos[1], z=xyz_pos[2])
 
 
 StageDependency = lt.deps.direct_thing_client_dependency(BaseStage, "stage")

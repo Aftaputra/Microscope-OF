@@ -55,7 +55,6 @@ class DummyStage(BaseStage):
 
     def _hardware_move_relative(
         self,
-        cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: int,
     ) -> None:
@@ -71,7 +70,7 @@ class DummyStage(BaseStage):
                 if block_cancellation:
                     time.sleep(dt)
                 else:
-                    cancel.sleep(dt)
+                    lt.cancellable_sleep(dt)
                 fraction_complete = (time.time() - start_time) / (dt * max_displacement)
                 self.instantaneous_position = {
                     ax: self._hardware_position[ax] + int(fraction_complete * disp)
@@ -93,7 +92,6 @@ class DummyStage(BaseStage):
 
     def _hardware_move_absolute(
         self,
-        cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: int,
     ) -> None:
@@ -104,7 +102,7 @@ class DummyStage(BaseStage):
             if axis in self.axis_names
         }
         self._hardware_move_relative(
-            cancel, block_cancellation=block_cancellation, **displacement
+            block_cancellation=block_cancellation, **displacement
         )
 
     @lt.action
