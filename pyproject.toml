@@ -18,11 +18,11 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 dependencies = [
-  "labthings-fastapi @ git+https://github.com/labthings/labthings-fastapi",
+  "labthings-fastapi==0.0.13",
   "sangaboard",
   "camera-stage-mapping ~= 0.1.10",
   "opencv-python ~= 4.11.0",
-  "openflexure-stitching[libvips]==0.2.2",
+  "openflexure-stitching[libvips]==0.2.3",
   "pillow ~= 10.4",
   "anyio ~= 4.0",
   "numpy ~= 2.2",
