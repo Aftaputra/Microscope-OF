@@ -14,7 +14,6 @@ this is 10% of the expected motion is the measured axis.
 """
 
 import time
-from dataclasses import dataclass
 from threading import Lock
 from typing import Any, Literal, Optional, overload
 
@@ -25,14 +24,9 @@ from camera_stage_mapping import fft_image_tracking
 
 # Things
 from .autofocus import AutofocusThing
-from .camera import CameraDependency as CamDep
+from .camera import BaseCamera
 from .camera_stage_mapping import CameraStageMapper
-from .stage import StageDependency as StageDep
-
-CSMDep = lt.deps.direct_thing_client_dependency(
-    CameraStageMapper, "camera_stage_mapping"
-)
-AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "autofocus")
+from .stage import BaseStage
 
 ## Size of movement in percentage of field of view
 SMALL_STEP = 20
@@ -111,20 +105,6 @@ class RomDataTracker:
         return {axis: int(turning_loc), other_axis: other_coord, "z": int(turning_z)}
 
 
-@dataclass
-class RomDeps:
-    """Grouped dependencies for the Range of motion Thing.
-
-    These are used to pass the dependencies from actions to other sub-functions.
-    """
-
-    autofocus: AutofocusDep
-    stage: StageDep
-    cam: CamDep
-    csm: CSMDep
-    logger: lt.deps.InvocationLogger
-
-
 class ParasiticMotionError(Exception):
     """Custom exception raised when parasitic motion is detected.
 
@@ -136,6 +116,11 @@ class ParasiticMotionError(Exception):
 class RangeofMotionThing(lt.Thing):
     """A class used to measure the range of motion of the stage in X and Y."""
 
+    _autofocus: AutofocusThing = lt.thing_slot()
+    _cam: BaseCamera = lt.thing_slot()
+    _csm: CameraStageMapper = lt.thing_slot()
+    _stage: BaseStage = lt.thing_slot()
+
     calibrated_range: Optional[list[int, int]] = lt.setting(default=None, readonly=True)
 
     def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
@@ -146,21 +131,9 @@ class RangeofMotionThing(lt.Thing):
         self._rom_data = RomDataTracker()
 
     @lt.action
-    def perform_rom_test(
-        self,
-        autofocus: AutofocusDep,
-        stage: StageDep,
-        cam: CamDep,
-        csm: CSMDep,
-        logger: lt.deps.InvocationLogger,
-    ) -> dict[str, Any]:
+    def perform_rom_test(self) -> dict[str, Any]:
         """Measures the range of motion of the stage across the x and y axes.
 
-        :param autofocus: A raw_thing_client dependency for autofocus.
-        :param stage: A raw_thing_client depeendency for the microscope stage.
-        :param cam: A raw_thing_client depeendency for the camera.
-        :param csm: A raw_thing_client depeendency for camera stage mapping.
-        :param logger: A raw_thing_client depeendency for the logger.
         :return: Results dictionary separated into keys of each axis and direction.
         """
         got_lock = self._lock.acquire(blocking=False)
@@ -168,17 +141,14 @@ class RangeofMotionThing(lt.Thing):
             raise RuntimeError("Trying to run ROM test when a test is already running.")
 
         try:
-            rom_deps = RomDeps(
-                autofocus=autofocus, stage=stage, csm=csm, cam=cam, logger=logger
-            )
-            logger.info(
+            self.logger.info(
                 "Using the stage to measure the Range of Motion. "
                 "Please ensure you are using a sample that covers the whole range of "
                 "motion. This should be approximately 12 x 12 mm."
             )
             start_time = time.time()
 
-            self._set_stream_resolution(cam)
+            self._set_stream_resolution()
 
             # The total range for the two axes under test
             step_range = []
@@ -193,84 +163,61 @@ class RangeofMotionThing(lt.Thing):
                 for axis_dir in directions:
                     # Create a new tracker at start of measurement.
                     self._rom_data = RomDataTracker()
-                    self._move_until_edge(
-                        axis=axis, direction=axis_dir, rom_deps=rom_deps
-                    )
+                    self._move_until_edge(axis=axis, direction=axis_dir)
                     # Append final position from tracker
                     axis_limits.append(self._rom_data.final_position[axis])
                 # Calculate step range.
                 step_range.append(abs(axis_limits[0] - axis_limits[1]))
 
             total_time = time.time() - start_time
-            logger.info(f"Range of motion is {step_range[0]} x {step_range[1]} steps")
+            self.logger.info(
+                f"Range of motion is {step_range[0]} x {step_range[1]} steps"
+            )
             self.calibrated_range = step_range
         finally:
             self._lock.release()
         return {
             "Time": total_time,
-            "CSM Matrix": csm.image_to_stage_displacement_matrix,
+            "CSM Matrix": self._csm.image_to_stage_displacement_matrix,
             "Step Range": step_range,
         }
 
     @lt.action
-    def perform_recentre(
-        self,
-        autofocus: AutofocusDep,
-        stage: StageDep,
-        cam: CamDep,
-        csm: CSMDep,
-        logger: lt.deps.InvocationLogger,
-    ) -> None:
-        """Measures the curvature of the motion to centre x and y axes.
-
-        :param autofocus: A raw_thing_client dependency for autofocus.
-        :param stage: A raw_thing_client depeendency for the microscope stage.
-        :param cam: A raw_thing_client depeendency for the camera.
-        :param csm: A raw_thing_client depeendency for camera stage mapping.
-        :param logger: A raw_thing_client depeendency for the logger.
-        """
+    def perform_recentre(self) -> None:
+        """Measures the curvature of the motion to centre x and y axes."""
         got_lock = self._lock.acquire(blocking=False)
         if not got_lock:
             raise RuntimeError("Trying to run recentre when a test is already running.")
 
         try:
-            rom_deps = RomDeps(
-                autofocus=autofocus, stage=stage, csm=csm, cam=cam, logger=logger
-            )
-            logger.info("Recentring the stage.")
+            self.logger.info("Recentring the stage.")
 
-            self._set_stream_resolution(cam)
+            self._set_stream_resolution()
 
             # Strictly typed definitions to iterate over for MyPys sake.
             axes: tuple[Literal["x"], Literal["y"]] = ("x", "y")
 
             for axis in axes:
-                self._recentre_axis(axis, rom_deps)
+                self._recentre_axis(axis)
 
-            centre = rom_deps.stage.position
+            centre = self._stage.position
             centre_str = f"({centre['x']}, {centre['y']})"
-            rom_deps.logger.info(f"Centre is estimated at {centre_str}.")
+            self.logger.info(f"Centre is estimated at {centre_str}.")
             # Set the central position to (0,0,0)
-            rom_deps.stage.set_zero_position()
-            rom_deps.logger.info("Position reset to (0, 0, 0).")
+            self._stage.set_zero_position()
+            self.logger.info("Position reset to (0, 0, 0).")
 
         finally:
             self._lock.release()
 
-    def _set_stream_resolution(self, cam: CamDep) -> None:
-        """Set the self._stream_resolution attribute by reading camera.
-
-        :param cam: The camera dependency.
-        """
-        stream_shape = cam.grab_as_array().shape
+    def _set_stream_resolution(self) -> None:
+        """Set the self._stream_resolution attribute by reading camera."""
+        stream_shape = self._cam.grab_as_array().shape
         # Swap axes as numpy is [y, x]
         self._stream_resolution = (stream_shape[1], stream_shape[0])
 
     def _move_until_edge(
-        self,
-        axis: Literal["x", "y"],
-        direction: Literal[1, -1],
-        rom_deps: RomDeps,
+        self, axis: Literal["x", "y"], direction: Literal[1, -1]
     ) -> None:
         """Move in one direction until movement per step decreases significantly.
 
@@ -278,93 +225,72 @@ class RangeofMotionThing(lt.Thing):
         will be some movement as there is no hard stop, but it will reduce
         significantly.
 
-        :param rom_deps: All dependencies that were passed to the calling Action
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
         :param direction: The direction which is being measured. This must be 1 or -1.
         :return: Results dictionary containing stage positions,
            correlations and the final position.
         """
         # Start by performing an autofocus and recording starting position
-        rom_deps.autofocus.looping_autofocus(dz=1000)
-        starting_position = rom_deps.stage.position
+        self._autofocus.looping_autofocus(dz=1000)
+        starting_position = self._stage.position
         self._rom_data.stage_coords.append(starting_position)
 
         try:
             dir_str = "positive" if direction == 1 else "negative"
-            rom_deps.logger.info(
-                f"Beginning the {axis}-axis in the {dir_str} direction"
-            )
+            self.logger.info(f"Beginning the {axis}-axis in the {dir_str} direction")
 
-            rom_deps.logger.info("Moving the stage in 5 medium sized steps.")
-            self._moves_for_z_prediction(
-                axis=axis,
-                direction=direction,
-                rom_deps=rom_deps,
-            )
+            self.logger.info("Moving the stage in 5 medium sized steps.")
+            self._moves_for_z_prediction(axis=axis, direction=direction)
 
             still_moving = True
             # Loop taking 1 big step followed by 3 small steps to check if the
             # stage is moving as expected or has reached end of range of motion.
             # Stop once end of range of motion is detected.
             while still_moving:
-                self._big_z_corrected_movement(
-                    axis=axis, direction=direction, rom_deps=rom_deps
-                )
+                self._big_z_corrected_movement(axis=axis, direction=direction)
                 # Autofocus and record position
-                rom_deps.autofocus.looping_autofocus(dz=800)
-                self._rom_data.stage_coords.append(rom_deps.stage.position)
+                self._autofocus.looping_autofocus(dz=800)
+                self._rom_data.stage_coords.append(self._stage.position)
 
                 # Perform small moves to check stage is still moving.
-                still_moving = self._stage_still_moves(
-                    axis=axis,
-                    direction=direction,
-                    rom_deps=rom_deps,
-                )
+                still_moving = self._stage_still_moves(axis=axis, direction=direction)
 
             # Stage may have crashed during a large move. Move stage back until motion
             # is detected
-            rom_deps.logger.info("Moving stage back until motion is detect")
-            self._move_back_until_motion_detected(
-                axis=axis,
-                direction=direction,
-                rom_deps=rom_deps,
-            )
+            self.logger.info("Moving stage back until motion is detect")
+            self._move_back_until_motion_detected(axis=axis, direction=direction)
 
             # Replace final position.
-            self._rom_data.stage_coords[-1] = rom_deps.stage.position
+            self._rom_data.stage_coords[-1] = self._stage.position
 
         finally:
-            rom_deps.stage.move_absolute(**starting_position, block_cancellation=True)
+            self._stage.move_absolute(**starting_position, block_cancellation=True)
 
-    def _recentre_axis(self, axis: Literal["x", "y"], rom_deps: RomDeps) -> None:
+    def _recentre_axis(self, axis: Literal["x", "y"]) -> None:
         """Recentre a single axis.
 
         :param axis: The axis to recentre
-        :param rom_deps: All dependencies that were passed to the calling Action.
         """
-        rom_deps.logger.info(f"Finding centre in {axis}.")
+        self.logger.info(f"Finding centre in {axis}.")
         # A new tracker for this axis.
         self._rom_data = RomDataTracker()
         # Direction is in image coords, initial assumption is that centre is at (0,0).
-        direction = self._img_dir_from_stage_coords(
-            {"x": 0, "y": 0, "z": 0}, axis, rom_deps
-        )
+        direction = self._img_dir_from_stage_coords({"x": 0, "y": 0, "z": 0}, axis)
 
         i = 0
         while True:
             i += 1
             # Find z then make a number of moves (autofocussing and logging position)
             # 5 moves initially (2 subsequently).
-            rom_deps.autofocus.looping_autofocus(dz=1000)
-            self._rom_data.stage_coords.append(rom_deps.stage.position)
+            self._autofocus.looping_autofocus(dz=1000)
+            self._rom_data.stage_coords.append(self._stage.position)
             self._moves_for_z_prediction(
                 axis=axis,
                 direction=direction,
-                rom_deps=rom_deps,
                 n_moves=5 if i == 1 else 2,
             )
 
-            centred, direction = self._recentre_decision(axis, rom_deps)
+            centred, direction = self._recentre_decision(axis)
             if centred:
                 break
 
@@ -373,10 +299,10 @@ class RangeofMotionThing(lt.Thing):
                 raise RuntimeError(f"Couldn't find centre of {axis}-axis")
 
             # Make a big z-corrected move towards estimate of centre.
-            self._big_z_corrected_movement(axis, direction, rom_deps)
+            self._big_z_corrected_movement(axis, direction)
 
     def _recentre_decision(
-        self, axis: Literal["x", "y"], rom_deps: RomDeps
+        self, axis: Literal["x", "y"]
     ) -> tuple[bool, Literal[1, -1]]:
         """Decide what to do next during recentreing.
 
@@ -388,26 +314,25 @@ class RangeofMotionThing(lt.Thing):
         * If larger, return that it is not centred, and the direction to move in.
 
         :param axis: The axis to recentre
-        :param rom_deps: All dependencies that were passed to the calling Action.
         :return: A tuple. The first value is True for "the stage is now centred" and
             False for "the stage is not centred". The second value is the direction to
             move in, this only has meaning if the first value is False.
         """
         estimate = self._rom_data.find_turning_point(axis=axis)
-        img_perc = self._distance_in_img_percentage(estimate, axis, rom_deps)
+        img_perc = self._distance_in_img_percentage(estimate, axis)
 
         # if the distance is less than 1 big step away then move to it and exit
         if abs(img_perc) < BIG_STEP:
-            rom_deps.logger.info(f"Estimated centre of {axis}-axis is {estimate[axis]}")
-            rom_deps.stage.move_absolute(**estimate)
+            self.logger.info(f"Estimated centre of {axis}-axis is {estimate[axis]}")
+            self._stage.move_absolute(**estimate)
             # Note the second return, the direction, is meaningless here.
             return True, 1
-        rom_deps.logger.info(
+        self.logger.info(
             f"Estimated centre {abs(img_perc):.0f}% of a field of view away, "
             "that is too far to move in one move."
         )
         # Else calculate the desired direction in image coordinates.
-        direction = self._img_dir_from_stage_coords(estimate, axis, rom_deps)
+        direction = self._img_dir_from_stage_coords(estimate, axis)
         return False, direction
 
     def _img_percentage_to_img_coords(
@@ -428,30 +353,28 @@ class RangeofMotionThing(lt.Thing):
         return (fov_perc / 100) * self._stream_resolution[img_index]
 
     def _img_dir_from_stage_coords(
-        self, target: dict[str, int], axis: Literal["x", "y"], rom_deps: RomDeps
+        self, target: dict[str, int], axis: Literal["x", "y"]
     ) -> Literal[1, -1]:
         """For a target location in stage coords, return the direction in image coordinates.
 
         :param target: The target poisiton in stage coordinates
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
-        :param rom_deps: All dependencies that were passed to the calling Action.
         :return: Direction to move in image coordinates.
         """
-        target_im_coords = rom_deps.csm.convert_stage_to_image_coordinates(**target)
-        current_loc = rom_deps.stage.position
-        current_loc_im_coords = rom_deps.csm.convert_stage_to_image_coordinates(
+        target_im_coords = self._csm.convert_stage_to_image_coordinates(**target)
+        current_loc = self._stage.position
+        current_loc_im_coords = self._csm.convert_stage_to_image_coordinates(
             **current_loc
         )
         return -1 if target_im_coords[axis] < current_loc_im_coords[axis] else 1
 
     def _distance_in_img_percentage(
-        self, target: dict[str, int], axis: Literal["x", "y"], rom_deps: RomDeps
+        self, target: dict[str, int], axis: Literal["x", "y"]
     ) -> float:
         """For a target location in stage coords return the distance in percentage of FOV.
 
         :param target: The target poisiton in stage coordinates
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
-        :param rom_deps: All dependencies that were passed to the calling Action.
         :return: Percentage of field of view the stage should move by.
         """
         if self._stream_resolution is None:
@@ -459,9 +382,9 @@ class RangeofMotionThing(lt.Thing):
                 "Stream resolution must be set before converting coords to percentage"
             )
 
-        current_loc = rom_deps.stage.position
+        current_loc = self._stage.position
         move_stage = {key: target[key] - current_loc[key] for key in target}
-        move_img = rom_deps.csm.convert_stage_to_image_coordinates(**move_stage)
+        move_img = self._csm.convert_stage_to_image_coordinates(**move_stage)
 
         img_index = 0 if axis == "x" else 1
         return (move_img[axis] / self._stream_resolution[img_index]) * 100
@@ -488,11 +411,7 @@ class RangeofMotionThing(lt.Thing):
         return {"x": 0, "y": distance * direction}
 
     def _moves_for_z_prediction(
-        self,
-        axis: Literal["x", "y"],
-        direction: Literal[1, -1],
-        rom_deps: RomDeps,
-        n_moves: int = 5,
+        self, axis: Literal["x", "y"], direction: Literal[1, -1], n_moves: int = 5
     ) -> None:
         """Perform medium sized moves with autofocus for z feed-forward.
 
@@ -502,7 +421,6 @@ class RangeofMotionThing(lt.Thing):
 
         :param direction: The direction the stage moves.
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
-        :param rom_deps: All dependencies that were passed to the calling Action
         :param n_moves: Number of moves to make. Default is 5 which is enough for an
             initial z estimate.
         """
@@ -510,9 +428,9 @@ class RangeofMotionThing(lt.Thing):
             fov_perc=MEDIUM_STEP, axis=axis, direction=direction
         )
         for _loop in range(n_moves):
-            offset = self._move_and_measure(movement=movement, rom_deps=rom_deps)
+            offset = self._move_and_measure(movement=movement)
 
-            self._rom_data.record_movement(rom_deps.stage.position, offset)
+            self._rom_data.record_movement(self._stage.position, offset)
             if _parasitic_motion_detected(movement, offset):
                 raise ParasiticMotionError(
                     "Parasitic motion detected during images to calculate z-curvature. "
@@ -521,7 +439,7 @@ class RangeofMotionThing(lt.Thing):
                 )
 
     def _big_z_corrected_movement(
-        self, axis: Literal["x", "y"], direction: Literal[1, -1], rom_deps: RomDeps
+        self, axis: Literal["x", "y"], direction: Literal[1, -1]
     ) -> None:
         """Take one big move with feed-forward z-correction.
 
@@ -529,27 +447,25 @@ class RangeofMotionThing(lt.Thing):
 
         :param axis: The axis to move in.
         :param direction: The direction to move in.
-        :param rom_deps: All dependencies that were passed to the calling Action
         """
         movement = self._movement_in_img_coords(
             fov_perc=BIG_STEP, axis=axis, direction=direction
         )
         # Convert to stage coordinates
-        stage_movement = rom_deps.csm.convert_image_to_stage_coordinates(**movement)
+        stage_movement = self._csm.convert_image_to_stage_coordinates(**movement)
 
         z_disp = self._rom_data.predict_z_displacement(
             axis=axis,
             stage_movement=stage_movement,
-            stage_position=rom_deps.stage.position,
+            stage_position=self._stage.position,
         )
-        rom_deps.stage.move_relative(z=z_disp)
-        rom_deps.csm.move_in_image_coordinates(**movement)
+        self._stage.move_relative(z=z_disp)
+        self._csm.move_in_image_coordinates(**movement)
 
     def _stage_still_moves(
         self,
         axis: Literal["x", "y"],
         direction: Literal[1, -1],
-        rom_deps: RomDeps,
     ) -> bool:
         """Carry out 3 small moves in a given direction and axis.
 
@@ -562,7 +478,6 @@ class RangeofMotionThing(lt.Thing):
 
         :param axis: The axis which is being measured. This must be 'x' or 'y'.
         :param direction: The direction the stage moves.
-        :param rom_deps: All dependencies that were passed to the calling Action
         """
         movement = self._movement_in_img_coords(
             fov_perc=SMALL_STEP, axis=axis, direction=direction
@@ -572,7 +487,6 @@ class RangeofMotionThing(lt.Thing):
         for _loop in range(3):
             offset = self._move_and_measure(
                 movement=movement,
-                rom_deps=rom_deps,
                 # Don't autofocus initially
                 perform_autofocus=False,
                 # But retry focus 3 times if detected motion is too small or parasitic
@@ -580,13 +494,13 @@ class RangeofMotionThing(lt.Thing):
                 abs_min_offset=abs_min_offset,
             )
             parasitic_motion = _parasitic_motion_detected(movement, offset)
-            rom_deps.logger.info(f"Offset measured as {offset[axis]}")
-            self._rom_data.record_movement(rom_deps.stage.position, offset)
+            self.logger.info(f"Offset measured as {offset[axis]}")
+            self._rom_data.record_movement(self._stage.position, offset)
 
             if abs(offset[axis]) < abs_min_offset or parasitic_motion:
                 # If the offset is below the abs min offset, or significant
                 # parasitic motion is detected then the edge has been found.
-                rom_deps.logger.info("Edge has been found.")
+                self.logger.info("Edge has been found.")
                 return False
         # If we reached here the stage is still moving fine
         return True
@@ -595,7 +509,6 @@ class RangeofMotionThing(lt.Thing):
         self,
         axis: Literal["x", "y"],
         direction: Literal[1, -1],
-        rom_deps: RomDeps,
     ) -> None:
         """Move the stage against the direction of test unil motion is detected.
 
@@ -605,7 +518,6 @@ class RangeofMotionThing(lt.Thing):
         :param axis: The axis in which the stage is moving. This must be 'x' or 'y'.
         :param direction: The direction in which the stage was moving during the test,
             this method will move in the opposite direction.
-        :param rom_deps: All dependencies that were passed to the calling Action
         """
         movement = self._movement_in_img_coords(
             fov_perc=SMALL_STEP, axis=axis, direction=-direction
@@ -617,17 +529,17 @@ class RangeofMotionThing(lt.Thing):
 
         for i in range(max_moves):
             # Increment movement
-            rom_deps.logger.info(f"Testing with step size {movement[axis]}")
+            self.logger.info(f"Testing with step size {movement[axis]}")
 
             # Run an autofocus every 3 steps
             run_autofocus = i % 3 == 2
             offset = self._move_and_measure(
-                movement=movement, rom_deps=rom_deps, perform_autofocus=run_autofocus
+                movement=movement, perform_autofocus=run_autofocus
             )
 
-            rom_deps.logger.info(f"Offset measured as {abs(offset[axis])}")
+            self.logger.info(f"Offset measured as {abs(offset[axis])}")
             if abs(offset[axis]) > motion_minimum:
-                rom_deps.logger.info("Motion detected.")
+                self.logger.info("Motion detected.")
                 return
         # If this point is reached then motion is never detected
         raise RuntimeError("Cannot detect motion again after reaching end of range.")
@@ -635,7 +547,6 @@ class RangeofMotionThing(lt.Thing):
     def _move_and_measure(
         self,
         movement: dict[str, float],
-        rom_deps: RomDeps,
         perform_autofocus: bool = True,
         max_autofocus_repeats: int = 0,
         abs_min_offset: float = 0.0,
@@ -643,7 +554,6 @@ class RangeofMotionThing(lt.Thing):
         """Move the stage and measure the offset between the two positions.
 
         :param movement: A dictionary containing the distance to move in image coords.
-        :param rom_deps: All dependencies that were passed to the calling Action
         :param perform_autofocus: Set to False to disable autofocus after move.
             Default is  True
         :param max_autofocus_repeats: The number of times to repeat the focus if the
@@ -659,13 +569,13 @@ class RangeofMotionThing(lt.Thing):
             )
 
         # Take image before move
-        before_img = rom_deps.cam.grab_as_array()
+        before_img = self._cam.grab_as_array()
         # Move and autofocus if required
-        rom_deps.csm.move_in_image_coordinates(**movement)
+        self._csm.move_in_image_coordinates(**movement)
         if perform_autofocus:
-            rom_deps.autofocus.looping_autofocus(dz=800)
+            self._autofocus.looping_autofocus(dz=800)
         # Take image and calculate offset
-        offset = self._offset_from(before_img, rom_deps=rom_deps)
+        offset = self._offset_from(before_img)
 
         if max_autofocus_repeats > 0:
             axis = _axis_from_movement_dict(movement)
@@ -673,12 +583,12 @@ class RangeofMotionThing(lt.Thing):
             parasitic_motion = _parasitic_motion_detected(movement, offset)
             while abs(offset[axis]) < abs_min_offset or parasitic_motion:
                 af_repeats += 1
-                rom_deps.logger.info(
+                self.logger.info(
                     f"Motion not detected. Refocusing to check. Attempt {af_repeats}/3."
                 )
-                rom_deps.autofocus.looping_autofocus(dz=800)
+                self._autofocus.looping_autofocus(dz=800)
                 # Re-take image and calculate offset
-                offset = self._offset_from(before_img, rom_deps=rom_deps)
+                offset = self._offset_from(before_img)
                 parasitic_motion = _parasitic_motion_detected(movement, offset)
                 if af_repeats >= max_autofocus_repeats:
                     # break if the maximum number of tries are exceeded.
@@ -686,22 +596,19 @@ class RangeofMotionThing(lt.Thing):
 
         return offset
 
-    def _offset_from(
-        self, before_img: np.ndarray, rom_deps: RomDeps
-    ) -> dict[str, float]:
+    def _offset_from(self, before_img: np.ndarray) -> dict[str, float]:
         """Take an image and calculate the offset from an input image.
 
         :param before_img: The image the offset should be calculated with respect to.
-        :param rom_deps: All dependencies that were passed to the calling Action
         :return: The calculated offset as a dictionary in pixels
         """
-        is_sample, _bg_message = rom_deps.cam.image_is_sample()
+        is_sample, _bg_message = self._cam.image_is_sample()
         if not is_sample:
             raise RuntimeError(
                 "No sample detected. Sample must be densely featured and cover the "
                 "whole range of motion."
             )
-        after_img = rom_deps.cam.grab_as_array()
+        after_img = self._cam.grab_as_array()
         offset = fft_image_tracking.displacement_between_images(
             image_0=before_img,
             image_1=after_img,
