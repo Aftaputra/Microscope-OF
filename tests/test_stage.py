@@ -288,11 +288,6 @@ def test_move_absolute(dummy_stage, path):
     3 paths are tried for each case of axis inversion. This checks both that the
     reported position changes as is input in path, and that the hardware position is
     inverted when appropriate.
-
-    NOTE: it is essential that `dummy_stage` is imported even if any time it is used
-    dummy stage could be used. This is because the fixture that creates stage client
-    handles adding the dummy_stage to a server. It needs to have been added to a
-    server for it not to throw errors about not being connected to a server.
     """
     # Note that the fixture is not reset. This is fine, because the stage_should work
     # no matter the starting position.

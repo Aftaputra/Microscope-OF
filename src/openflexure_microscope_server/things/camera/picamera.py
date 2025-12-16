@@ -71,8 +71,7 @@ class PicameraStreamOutput(Output):
     def __init__(self, stream: lt.outputs.MJPEGStream) -> None:
         """Create an output that puts frames in an MJPEGStream.
 
-        We need to pass the stream object, because new frame notifications happen in
-        the anyio event loop and frames are sent from a thread.
+        :param stream: The labthings MJPEGStream to send frames to.
         """
         Output.__init__(self)
         self.stream = stream
@@ -182,7 +181,7 @@ class StreamingPiCamera2(BaseCamera):
         """Override save_settings to ensure that camera properties don't recurse.
 
         This method is run by any Thing when a setting is saved. However, the
-        method reads the thing_setting. As reading the thing setting talks to the
+        method reads the setting. As reading the setting talks to the
         camera and calls save_settings if the value is not as expected, this could
         cause recursion. Also this means that saving one setting causes all others
         to be read each time.
