@@ -292,7 +292,7 @@ class SimulatedCamera(BaseCamera):
     def _capture_frames(self) -> None:
         last_frame_t = time.time()
         while self._capture_enabled:
-            wait_time = last_frame_t - time.time() - self.frame_interval
+            wait_time = self.frame_interval - (time.time() - last_frame_t)
             if wait_time > 0:
                 time.sleep(wait_time)
             last_frame_t = time.time()
