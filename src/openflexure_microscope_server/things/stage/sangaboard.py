@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 import threading
 import time
 from collections.abc import Mapping
@@ -17,8 +16,6 @@ import labthings_fastapi as lt
 import sangaboard
 
 from . import BaseStage
-
-LOGGER = logging.getLogger(__name__)
 
 REQUIRED_VERSION = semver.Version.parse("1.0.0")
 RECOMMENDED_VERSION = semver.Version.parse("1.0.4")
@@ -117,14 +114,13 @@ class SangaboardThing(BaseStage):
 
             # Warn if version is below recommended
             if version < RECOMMENDED_VERSION:
-                LOGGER.warning(
+                self.logger.warning(
                     f"Sangaboard firmware version {version} is below the recommended "
                     f"{RECOMMENDED_VERSION}."
                 )
 
     def _hardware_move_relative(
         self,
-        cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: int,
     ) -> None:
@@ -138,7 +134,7 @@ class SangaboardThing(BaseStage):
                     sb.query("notify_on_stop")
                 else:
                     while sb.query("moving?") == "true":
-                        cancel.sleep(0.1)
+                        lt.cancellable_sleep(0.1)
             except lt.exceptions.InvocationCancelledError as e:
                 # If the move has been cancelled, stop it but don't handle the exception.
                 # We need the exception to propagate in order to stop any calling tasks,
@@ -151,7 +147,6 @@ class SangaboardThing(BaseStage):
 
     def _hardware_move_absolute(
         self,
-        cancel: lt.deps.CancelHook,
         block_cancellation: bool = False,
         **kwargs: int,
     ) -> None:
@@ -164,7 +159,7 @@ class SangaboardThing(BaseStage):
                 if axis in self.axis_names
             }
             self._hardware_move_relative(
-                cancel, block_cancellation=block_cancellation, **displacement
+                block_cancellation=block_cancellation, **displacement
             )
 
     @lt.action
@@ -203,7 +198,7 @@ class SangaboardThing(BaseStage):
             # cannot be used.
             intended_brightness = float(return_value[7:])
             on_brightness = 0.32
-            LOGGER.warning(
+            self.logger.warning(
                 "Brightness control is not yet implemented. Desired brightness: "
                 f"{intended_brightness}. Set brightness: {on_brightness}"
             )
