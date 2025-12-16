@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import io
 import json
-import logging
 import os
 import tempfile
 import time
@@ -33,8 +32,6 @@ from openflexure_microscope_server.background_detect import (
     ColourChannelDetectLUV,
 )
 from openflexure_microscope_server.ui import ActionButton, PropertyControl
-
-LOGGER = logging.getLogger(__name__)
 
 
 class JPEGBlob(lt.blob.Blob):
@@ -282,8 +279,6 @@ class BaseCamera(lt.Thing):
     @lt.action
     def capture_jpeg(
         self,
-        metadata_getter: lt.deps.GetThingStates,
-        logger: lt.deps.InvocationLogger,
         stream_name: str = "main",
         wait: Optional[float] = None,
     ) -> JPEGBlob:
@@ -292,9 +287,6 @@ class BaseCamera(lt.Thing):
         This will use the internal capture image functionally of capture_image of
         the specific camera being used.
 
-        :param metadata_getter: LabThings GetThingStates dependency, automatically
-            injected.
-        :param logger: LabThings InvocationLogger dependency, automatically injected.
         :param stream_name: A stream name supported by this camera.
         :param wait: (Optional, float) Set a timeout in seconds. If None it will
             use the default for the underlying camera.
@@ -305,13 +297,12 @@ class BaseCamera(lt.Thing):
 
         img = self.capture_image(stream_name, wait)
 
-        capture_metadata = self._capture_metadata(metadata_getter())
+        capture_metadata = self._capture_metadata()
 
         self._save_capture(
             jpeg_path=jpeg_path,
             image=img,
             metadata=capture_metadata,
-            logger=logger,
         )
 
         return JPEGBlob.from_temporary_directory(directory, fname)
@@ -390,70 +381,43 @@ class BaseCamera(lt.Thing):
     def capture_and_save(
         self,
         jpeg_path: str,
-        logger: lt.deps.InvocationLogger,
-        metadata_getter: lt.deps.GetThingStates,
         save_resolution: Optional[Tuple[int, int]] = None,
     ) -> None:
         """Capture an image and save it to disk.
 
         :param jpeg_path: The path to save the file to
-        :param logger: This should be injected automatically by Labthings FastAPI
-            when calling the action
-        :param metadata_getter: This should be injected automatically by Labthings
-            FastAPI when calling the action
         :param save_resolution: can be set to resize the image before saving. By
             default this is None meaning that the image is saved at original resolution.
         """
-        image, capture_metadata = self._robust_image_capture(
-            metadata_getter,
-            logger=logger,
-        )
+        image, capture_metadata = self._robust_image_capture()
 
-        self._save_capture(
-            jpeg_path,
-            image,
-            capture_metadata,
-            logger,
-            save_resolution,
-        )
+        self._save_capture(jpeg_path, image, capture_metadata, save_resolution)
 
     @lt.action
-    def capture_to_memory(
-        self,
-        logger: lt.deps.InvocationLogger,
-        metadata_getter: lt.deps.GetThingStates,
-        buffer_max: int = 1,
-    ) -> int:
+    def capture_to_memory(self, buffer_max: int = 1) -> int:
         """Capture an image to memory. This can be saved later with ``save_from_memory``.
 
         Note that only one image is held in memory so this will overwrite any image
         in memory.
 
-        :param logger: This should be injected automatically by Labthings FastAPI
-            when calling the action
-        :param metadata_getter: This should be injected automatically by Labthings
-            FastAPI when calling the action
         :param buffer_max: The maximum number of images that should be in the buffer
             once this images is added. Default is 1.
 
         :returns: the buffer id of the image captured
         """
-        image, metadata = self._robust_image_capture(metadata_getter, logger)
+        image, metadata = self._robust_image_capture()
         return self._memory_buffer.add_image(image, metadata, buffer_max=buffer_max)
 
     @lt.action
     def save_from_memory(
         self,
         jpeg_path: str,
-        logger: lt.deps.InvocationLogger,
         save_resolution: Optional[Tuple[int, int]] = None,
         buffer_id: Optional[int] = None,
     ) -> None:
         """Save an image that has been captured to memory.
 
         :param jpeg_path: The path to save the file to
-        :param logger: This should be injected automatically by Labthings FastAPI
-            when calling the action
         :param save_resolution: can be set to resize the image before saving. By
             default this is None meaning that the image is saved at original
             resolution.
@@ -466,7 +430,6 @@ class BaseCamera(lt.Thing):
             jpeg_path=jpeg_path,
             image=image,
             metadata=metadata,
-            logger=logger,
             save_resolution=save_resolution,
         )
 
@@ -475,11 +438,7 @@ class BaseCamera(lt.Thing):
         """Clear all images in memory."""
         self._memory_buffer.clear()
 
-    def _robust_image_capture(
-        self,
-        metadata_getter: lt.deps.GetThingStates,
-        logger: lt.deps.InvocationLogger,
-    ) -> Tuple[Image, Mapping[str, Any]]:
+    def _robust_image_capture(self) -> Tuple[Image, Mapping[str, Any]]:
         """Capture an image in memory and return it with metadata.
 
         This robust capturing method attempts to capture the image five times
@@ -491,22 +450,19 @@ class BaseCamera(lt.Thing):
         """
         for capture_attempts in range(5):
             try:
-                metadata = metadata_getter()
-                capture_metadata = self._capture_metadata(metadata)
+                capture_metadata = self._capture_metadata()
 
                 image = self.capture_image(stream_name="main", wait=5)
                 return image, capture_metadata
             except TimeoutError:
-                logger.warning(
+                self.logger.warning(
                     f"Attempt {capture_attempts + 1} to capture image timed out. Do you have enough RAM?"
                 )
         raise CaptureError("An error occurred while capturing after 5 attempts")
 
-    def _capture_metadata(
-        self,
-        metadata: Mapping[str, Any],
-    ) -> dict:
+    def _capture_metadata(self) -> dict:
         """Return the metadata for a capture, from the thing states, time and known names."""
+        metadata = self._thing_server_interface.get_thing_states()
         current_time = datetime.now()
         return {
             "capture_time": current_time.timestamp(),
@@ -566,12 +522,11 @@ class BaseCamera(lt.Thing):
         jpeg_path: str,
         image: Image,
         metadata: dict,
-        logger: lt.deps.InvocationLogger,
         save_resolution: Optional[Tuple[int, int]] = None,
     ) -> None:
         """Save the captured image and metadata to disk.
 
-        A warning (via InvocationLogger) is raised if metadata is failed to be added
+        A warning is logged if metadata cannot be added.
 
         :raises IOError: if the file cannot be saved
 
@@ -593,7 +548,7 @@ class BaseCamera(lt.Thing):
             except Exception:
                 # We need to capture any exception as there are many reasons metadata
                 # might not be added. We warn rather than log the error.
-                logger.exception(f"Failed to add metadata to {jpeg_path}")
+                self.logger.exception(f"Failed to add metadata to {jpeg_path}")
         except Exception as e:
             raise IOError(f"An error occurred while saving {jpeg_path}") from e
 
@@ -639,7 +594,7 @@ class BaseCamera(lt.Thing):
     def detector_name(self, name: str) -> None:
         """Validate and set detector_name."""
         if name not in self.background_detectors:
-            LOGGER.warning(f"{name} is not a valid background detector name.")
+            self.logger.warning(f"{name} is not a valid background detector name.")
         self._detector_name = name
 
     @property
@@ -697,7 +652,7 @@ class BaseCamera(lt.Thing):
                 obj.settings = instance_data["settings"]
                 obj.background_data = instance_data["background_data"]
             else:
-                LOGGER.warning(
+                self.logger.warning(
                     f"No background detector named {name}, settings will be discarded."
                 )
 
