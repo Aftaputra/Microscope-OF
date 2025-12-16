@@ -175,7 +175,7 @@ class BaseCamera(lt.Thing):
     lores_mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     _memory_buffer = CameraMemoryBuffer()
 
-    def __init__(self) -> None:
+    def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Initialise the base camera, this creates the background detectors.
 
         This must be run by all child camera classes.
@@ -183,7 +183,7 @@ class BaseCamera(lt.Thing):
         To add a new background detector to the server it must be added to the
         dictionary in this function. Configuration will be added at a later date.
         """
-        super().__init__()
+        super().__init__(thing_server_interface)
         self.background_detectors = {
             "Colour Channels (LUV)": ColourChannelDetectLUV(),
             "Channel Deviations (LUV)": ChannelDeviationLUV(),
@@ -203,7 +203,7 @@ class BaseCamera(lt.Thing):
         """Close hardware connection when the Thing context manager is closed."""
         raise NotImplementedError("CameraThings must define their own __exit__ method")
 
-    @lt.thing_property
+    @lt.property
     def calibration_required(self) -> bool:
         """Whether the camera needs calibrating.
 
@@ -212,7 +212,7 @@ class BaseCamera(lt.Thing):
         """
         return False
 
-    @lt.thing_action
+    @lt.action
     def start_streaming(
         self, main_resolution: tuple[int, int], buffer_count: int
     ) -> None:
@@ -239,21 +239,21 @@ class BaseCamera(lt.Thing):
             self.mjpeg_stream._streaming = False
             self.lores_mjpeg_stream._streaming = False
 
-    @lt.thing_property
+    @lt.property
     def stream_active(self) -> bool:
         """Whether the MJPEG stream is active."""
         raise NotImplementedError(
             "CameraThings must define their own stream_active method"
         )
 
-    @lt.thing_action
+    @lt.action
     def discard_frames(self) -> None:
         """Discard frames so that the next frame captured is fresh."""
         raise NotImplementedError(
             "CameraThings must define their own discard_frames method"
         )
 
-    @lt.thing_action
+    @lt.action
     def capture_array(
         self,
         stream_name: Literal["main", "lores", "raw", "full"] = "main",
@@ -264,10 +264,10 @@ class BaseCamera(lt.Thing):
             "CameraThings must define their own capture_array method"
         )
 
-    downsampled_array_factor = lt.ThingProperty(int, 2)
+    downsampled_array_factor: int = lt.property(default=2)
     """The downsampling factor when calling capture_downsampled_array."""
 
-    @lt.thing_action
+    @lt.action
     def capture_downsampled_array(self) -> ArrayModel:
         """Acquire one image from the camera, downsample, and return as an array.
 
@@ -279,7 +279,7 @@ class BaseCamera(lt.Thing):
         img = self.capture_array()
         return downsample(self.downsampled_array_factor, img)
 
-    @lt.thing_action
+    @lt.action
     def capture_jpeg(
         self,
         metadata_getter: lt.deps.GetThingStates,
@@ -316,10 +316,9 @@ class BaseCamera(lt.Thing):
 
         return JPEGBlob.from_temporary_directory(directory, fname)
 
-    @lt.thing_action
+    @lt.action
     def grab_jpeg(
         self,
-        portal: lt.deps.BlockingPortal,
         stream_name: Literal["main", "lores"] = "main",
     ) -> JPEGBlob:
         """Acquire one image from the preview stream and return as blob of JPEG data.
@@ -337,13 +336,12 @@ class BaseCamera(lt.Thing):
         stream = (
             self.lores_mjpeg_stream if stream_name == "lores" else self.mjpeg_stream
         )
-        frame = portal.call(stream.grab_frame)
+        frame = self._thing_server_interface.call_async_task(stream.grab_frame)
         return JPEGBlob.from_bytes(frame)
 
-    @lt.thing_action
+    @lt.action
     def grab_as_array(
         self,
-        portal: lt.deps.BlockingPortal,
         stream_name: Literal["main", "lores"] = "main",
     ) -> ArrayModel:
         """Acquire one image from the preview stream and return as an array.
@@ -361,23 +359,22 @@ class BaseCamera(lt.Thing):
         tries = 0
         while tries < 3:
             try:
-                frame = portal.call(stream.grab_frame)
+                frame = self._thing_server_interface.call_async_task(stream.grab_frame)
                 return np.asarray(Image.open(io.BytesIO(frame)))
             except OSError:
                 tries += 1
         raise OSError("Could not open frames from MJPEG stream.")
 
-    @lt.thing_action
+    @lt.action
     def grab_jpeg_size(
         self,
-        portal: lt.deps.BlockingPortal,
         stream_name: Literal["main", "lores"] = "main",
     ) -> int:
         """Acquire one image from the preview stream and return its size."""
         stream = (
             self.lores_mjpeg_stream if stream_name == "lores" else self.mjpeg_stream
         )
-        return portal.call(stream.next_frame_size)
+        return self._thing_server_interface.call_async_task(stream.next_frame_size)
 
     def capture_image(
         self,
@@ -389,7 +386,7 @@ class BaseCamera(lt.Thing):
             "CameraThings must define their own capture_image method"
         )
 
-    @lt.thing_action
+    @lt.action
     def capture_and_save(
         self,
         jpeg_path: str,
@@ -420,7 +417,7 @@ class BaseCamera(lt.Thing):
             save_resolution,
         )
 
-    @lt.thing_action
+    @lt.action
     def capture_to_memory(
         self,
         logger: lt.deps.InvocationLogger,
@@ -444,7 +441,7 @@ class BaseCamera(lt.Thing):
         image, metadata = self._robust_image_capture(metadata_getter, logger)
         return self._memory_buffer.add_image(image, metadata, buffer_max=buffer_max)
 
-    @lt.thing_action
+    @lt.action
     def save_from_memory(
         self,
         jpeg_path: str,
@@ -473,7 +470,7 @@ class BaseCamera(lt.Thing):
             save_resolution=save_resolution,
         )
 
-    @lt.thing_action
+    @lt.action
     def clear_buffers(self) -> None:
         """Clear all images in memory."""
         self._memory_buffer.clear()
@@ -600,10 +597,10 @@ class BaseCamera(lt.Thing):
         except Exception as e:
             raise IOError(f"An error occurred while saving {jpeg_path}") from e
 
-    settling_time = lt.ThingSetting(float, 0.2)
+    settling_time: float = lt.setting(default=0.2)
     """The settling time when calling the ``settle()`` method."""
 
-    @lt.thing_action
+    @lt.action
     def settle(self) -> None:
         """Sleep for the settling time, ready to provide a fresh frame.
 
@@ -616,24 +613,24 @@ class BaseCamera(lt.Thing):
         time.sleep(self.settling_time)
         self.discard_frames()
 
-    @lt.thing_property
+    @lt.property
     def primary_calibration_actions(self) -> list[ActionButton]:
         """The calibration actions for both calibration wizard and settings panel."""
         return []
 
-    @lt.thing_property
+    @lt.property
     def secondary_calibration_actions(self) -> list[ActionButton]:
         """The calibration actions that appear only in settings panel."""
         return []
 
-    @lt.thing_property
+    @lt.property
     def manual_camera_settings(self) -> list[PropertyControl]:
         """The camera settings to expose as property controls in the settings panel."""
         return []
 
     # Note that the default detector name is set at init. This is over written if
     # setting is loaded from disk.
-    @lt.thing_setting
+    @lt.setting
     def detector_name(self) -> str:
         """The name of the active background selector."""
         return self._detector_name
@@ -650,12 +647,12 @@ class BaseCamera(lt.Thing):
         """The active background detector instance."""
         return self.background_detectors[self.detector_name]
 
-    @lt.thing_property
+    @lt.property
     def background_detector_status(self) -> BackgroundDetectorStatus:
         """The status of the active detector for the UI."""
         return self.active_detector.status
 
-    @lt.thing_action
+    @lt.action
     def update_detector_settings(self, data: dict[str, Any]) -> None:
         """Update the settings of the current detector.
 
@@ -671,7 +668,7 @@ class BaseCamera(lt.Thing):
         # Manually save settings as the setter is not called.
         self.save_settings()
 
-    @lt.thing_setting
+    @lt.setting
     def background_detector_data(self) -> dict:
         """The data for each background detector, used to save to disk."""
         data = {}
@@ -704,14 +701,14 @@ class BaseCamera(lt.Thing):
                     f"No background detector named {name}, settings will be discarded."
                 )
 
-    @lt.thing_action
-    def image_is_sample(self, portal: lt.deps.BlockingPortal) -> tuple[bool, str]:
+    @lt.action
+    def image_is_sample(self) -> tuple[bool, str]:
         """Label the current image as either background or sample."""
-        current_image = self.grab_as_array(portal, stream_name="lores")
+        current_image = self.grab_as_array(stream_name="lores")
         return self.active_detector.image_is_sample(current_image)
 
-    @lt.thing_action
-    def set_background(self, portal: lt.deps.BlockingPortal) -> None:
+    @lt.action
+    def set_background(self) -> None:
         """Grab an image, and use its statistics to set the background.
 
         This should be run when the microscope is looking at an empty region,
@@ -720,7 +717,7 @@ class BaseCamera(lt.Thing):
         future images to the distribution, to determine if each pixel is
         foreground or background.
         """
-        background = self.grab_as_array(portal, stream_name="lores")
+        background = self.grab_as_array(stream_name="lores")
         self.active_detector.set_background(background)
         # Manually save settings as the setter is not called.
         self.save_settings()
@@ -731,7 +728,7 @@ class BaseCamera(lt.Thing):
         return {}
 
 
-CameraDependency = lt.deps.direct_thing_client_dependency(BaseCamera, "/camera/")
+CameraDependency = lt.deps.direct_thing_client_dependency(BaseCamera, "camera")
 RawCameraDependency = lt.deps.raw_thing_dependency(BaseCamera)
 
 

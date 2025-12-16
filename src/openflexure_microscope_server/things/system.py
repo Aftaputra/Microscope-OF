@@ -43,7 +43,7 @@ class OpenFlexureSystem(lt.Thing):
 
     _microscope_id: Optional[str] = None
 
-    @lt.thing_setting
+    @lt.setting
     def microscope_id(self) -> UUID:
         """A unique identifier for this microscope."""
         if self._microscope_id is None:
@@ -54,14 +54,14 @@ class OpenFlexureSystem(lt.Thing):
     def microscope_id(self, uuid: UUID) -> None:
         self._microscope_id = uuid
 
-    @lt.thing_property
+    @lt.property
     def hostname(self) -> str:
         """The hostname of the microscope, as reported by its operating system."""
         return socket.gethostname()
 
     _version_data: Optional[VersionData] = None
 
-    @lt.thing_property
+    @lt.property
     def version_data(self) -> VersionData:
         """The version string and version source for the server.
 
@@ -76,12 +76,12 @@ class OpenFlexureSystem(lt.Thing):
             self._version_data = robust_version_strings()
         return self._version_data
 
-    @lt.thing_property
+    @lt.property
     def is_raspberrypi(self) -> bool:
         """Return True if running on a Raspberry Pi."""
         return os.path.exists("/usr/bin/raspi-config")
 
-    @lt.thing_action
+    @lt.action
     def shutdown(self) -> CommandOutput:
         """Attempt to shutdown the device."""
         if not self.is_raspberrypi:
@@ -103,7 +103,7 @@ class OpenFlexureSystem(lt.Thing):
         out, err = p.communicate()
         return CommandOutput(output=out, error=err)
 
-    @lt.thing_action
+    @lt.action
     def reboot(self) -> CommandOutput:
         """Attempt to reboot the device."""
         if not self.is_raspberrypi:
@@ -120,7 +120,7 @@ class OpenFlexureSystem(lt.Thing):
         out, err = p.communicate()
         return CommandOutput(output=out, error=err)
 
-    @lt.thing_action
+    @lt.action
     def get_things_state(self, metadata_getter: lt.deps.GetThingStates) -> Mapping:
         """Metadata summarising the current state of all Things in the server."""
         return metadata_getter()

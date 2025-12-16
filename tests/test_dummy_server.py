@@ -20,27 +20,31 @@ from PIL import Image
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server.things.autofocus import AutofocusThing
-from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
-from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
-from openflexure_microscope_server.things.stage.dummy import DummyStage
-
 
 @pytest.fixture
 def thing_server():
     """Yield a server with a very basic configuration."""
     temp_folder = tempfile.TemporaryDirectory()
-    server = lt.ThingServer(settings_folder=temp_folder.name)
-    server.add_thing(
-        SimulatedCamera(
-            shape=(240, 320, 3), canvas_shape=(1000, 1500, 3), frame_interval=0.01
-        ),
-        "/camera/",
-    )
-    server.add_thing(DummyStage(step_time=0.000001), "/stage/")
-    server.add_thing(AutofocusThing(), "/autofocus/")
-    server.add_thing(CameraStageMapper(), "/camera_stage_mapping/")
-    assert os.path.exists(os.path.join(temp_folder.name, "camera/"))
+    thing_conf = {
+        "camera": {
+            "class": "openflexure_microscope_server.things.camera.simulation:SimulatedCamera",
+            "kwargs": {
+                "shape": (240, 320, 3),
+                "canvas_shape": (1000, 1500, 3),
+                "frame_interval": 0.01,
+            },
+        },
+        "stage": {
+            "class": "openflexure_microscope_server.things.stage.dummy:DummyStage",
+            "kwargs": {"step_time": 0.000001},
+        },
+        "autofocus": "openflexure_microscope_server.things.autofocus:AutofocusThing",
+        "camera_stage_mapping": "openflexure_microscope_server.things.camera_stage_mapping:CameraStageMapper",
+    }
+
+    server = lt.ThingServer(things=thing_conf, settings_folder=temp_folder.name)
+
+    assert os.path.exists(os.path.join(temp_folder.name, "camera"))
     # Note: yield is important. If return is used the temp folder gets deleted
     # before the test runs. Silence PT022 as ruff doesn't think yield is needed.
     yield server  # noqa: PT022
@@ -60,7 +64,7 @@ def slower_client(thing_server):
     The step time for the stage is 100 microseconds rather than
     1 microsecond.
     """
-    thing_server.things["/stage/"].step_time = 0.0001
+    thing_server.things["stage"].step_time = 0.0001
     with TestClient(thing_server.app) as client:
         yield client
 
@@ -87,7 +91,7 @@ def test_capture_jpeg_metadata(client):
     exif_dict = piexif.load(image.info["exif"])
     encoded_metadata = exif_dict["Exif"][piexif.ExifIFD.UserComment]
     metadata = json.loads(encoded_metadata)
-    assert "position" in metadata["/stage/"]
+    assert "position" in metadata["stage"]
 
 
 def test_stage(client):

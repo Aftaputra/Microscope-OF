@@ -13,7 +13,7 @@ import logging
 import time
 from threading import Thread
 from types import TracebackType
-from typing import Literal, Mapping, Optional
+from typing import Literal, Optional
 
 import numpy as np
 from PIL import Image, ImageFilter
@@ -27,7 +27,7 @@ from openflexure_microscope_server.ui import (
     property_control_for,
 )
 
-from ..stage import BaseStage
+from ..stage.dummy import DummyStage
 from . import ArrayModel, BaseCamera
 
 LOGGER = logging.getLogger(__name__)
@@ -46,12 +46,13 @@ RNG = np.random.default_rng()
 class SimulatedCamera(BaseCamera):
     """A Thing that simulates a camera for testing."""
 
-    _stage: Optional[BaseStage] = None
-    _server: Optional[lt.ThingServer] = None
+    _stage: DummyStage = lt.thing_slot()
+
     _show_sample: bool = True
 
     def __init__(
         self,
+        thing_server_interface: lt.ThingServerInterface,
         shape: tuple[int, int, int] = (616, 820, 3),
         glyph_shape: tuple[int, int, int] = (121, 121, 3),
         canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
@@ -71,7 +72,7 @@ class SimulatedCamera(BaseCamera):
         :param frame_interval: Nominally the time between frames on the MJPEG stream,
             however the rate may be slower due to calculation time for focus.
         """
-        super().__init__()
+        super().__init__(thing_server_interface)
         self.shape = shape
         self.glyph_shape = glyph_shape
         self.canvas_shape = canvas_shape
@@ -86,7 +87,7 @@ class SimulatedCamera(BaseCamera):
         self.generate_blobs()
         self.generate_canvas()
 
-    @lt.thing_property
+    @lt.property
     def calibration_required(self) -> bool:
         """Whether the camera needs calibrating."""
         return not self.background_detector_status.ready
@@ -228,31 +229,10 @@ class SimulatedCamera(BaseCamera):
         image[image > 255] = 255
         return Image.fromarray(image.astype("uint8"))
 
-    def attach_to_server(
-        self, server: lt.ThingServer, path: str, setting_storage_path: str
-    ) -> None:
-        """Wrap the attach_to_server method so the server instance can be stored.
-
-        Direct access to the server instance is needed to get the stage position while
-        maintaining the same public API as a real camera that doesn't need this access.
-        """
-        self._server = server
-        super().attach_to_server(server, path, setting_storage_path)
-
-    def get_stage_position(self) -> Mapping[str, int]:
-        """Return the stage position.
-
-        The simulation camera has access to the stage position so it can generate a
-        different image as the stage moves.
-        """
-        if not self._stage and self._server:
-            self._stage = self._server.things["/stage/"]
-        return self._stage.instantaneous_position
-
     def generate_frame(self) -> Image:
         """Generate a frame with blobs based on the stage coordinates."""
         try:
-            pos = self.get_stage_position()
+            pos = self._stage.instantaneous_position
         except Exception as e:
             LOGGER.debug(f"Failed to get stage position: {e}")
             pos = {"x": 0, "y": 0, "z": 0}
@@ -274,7 +254,7 @@ class SimulatedCamera(BaseCamera):
             self._capture_enabled = False
             self._capture_thread.join()
 
-    @lt.thing_action
+    @lt.action
     def start_streaming(
         self, main_resolution: tuple[int, int] = (820, 616), buffer_count: int = 1
     ) -> None:
@@ -300,40 +280,39 @@ class SimulatedCamera(BaseCamera):
             self._capture_thread = Thread(target=self._capture_frames)
             self._capture_thread.start()
 
-    @lt.thing_property
+    @lt.property
     def stream_active(self) -> bool:
         """Whether the MJPEG stream is active."""
         if self._capture_enabled and self._capture_thread:
             return self._capture_thread.is_alive()
         return False
 
-    noise_level = lt.ThingProperty(float, 2.0)
+    noise_level: float = lt.property(default=2.0)
 
     def _capture_frames(self) -> None:
-        portal = lt.get_blocking_portal(self)
         last_frame_t = time.time()
         while self._capture_enabled:
-            wait_time = last_frame_t - time.time() - self.frame_interval
+            wait_time = self.frame_interval - (time.time() - last_frame_t)
             if wait_time > 0:
                 time.sleep(wait_time)
             last_frame_t = time.time()
             try:
                 frame = self.generate_frame()
-                self.mjpeg_stream.add_frame(_frame2bytes(frame), portal)
+                self.mjpeg_stream.add_frame(_frame2bytes(frame))
                 ds_frame = frame.resize((320, 240), resample=Image.NEAREST)
-                self.lores_mjpeg_stream.add_frame(_frame2bytes(ds_frame), portal)
+                self.lores_mjpeg_stream.add_frame(_frame2bytes(ds_frame))
 
             except Exception as e:
                 LOGGER.exception(f"Failed to capture frame: {e}, retrying...")
 
-    @lt.thing_action
+    @lt.action
     def discard_frames(self) -> None:
         """Discard frames so that the next frame captured is fresh.
 
         There is nothing to do as this is a simulation!
         """
 
-    @lt.thing_action
+    @lt.action
     def capture_array(
         self,
         stream_name: Literal["main", "full"] = "full",
@@ -370,8 +349,8 @@ class SimulatedCamera(BaseCamera):
         LOGGER.warning(f"Simulation camera camera doesn't respect {stream_name=}")
         return self.generate_frame()
 
-    @lt.thing_action
-    def full_auto_calibrate(self, portal: lt.deps.BlockingPortal) -> None:
+    @lt.action
+    def full_auto_calibrate(self) -> None:
         """Perform a full auto-calibration.
 
         For the simulation microscope the process is:
@@ -382,25 +361,25 @@ class SimulatedCamera(BaseCamera):
         """
         self.remove_sample()
         time.sleep(0.2)
-        self.set_background(portal)
+        self.set_background()
         time.sleep(0.2)
         self.load_sample()
 
-    @lt.thing_action
+    @lt.action
     def remove_sample(self) -> None:
         """Show the simulated background with no sample."""
         if not self._show_sample:
             raise RuntimeError("Sample is already removed.")
         self._show_sample = False
 
-    @lt.thing_action
+    @lt.action
     def load_sample(self) -> None:
         """Show the simulated sample."""
         if self._show_sample:
             raise RuntimeError("Sample is already in place.")
         self._show_sample = True
 
-    @lt.thing_property
+    @lt.property
     def primary_calibration_actions(self) -> list[ActionButton]:
         """The calibration actions for both calibration wizard and settings panel."""
         return [
@@ -409,7 +388,7 @@ class SimulatedCamera(BaseCamera):
             ),
         ]
 
-    @lt.thing_property
+    @lt.property
     def secondary_calibration_actions(self) -> list[ActionButton]:
         """The calibration actions that appear only in settings panel."""
         return [
@@ -417,7 +396,7 @@ class SimulatedCamera(BaseCamera):
             action_button_for(self.remove_sample, submit_label="Remove Sample"),
         ]
 
-    @lt.thing_property
+    @lt.property
     def manual_camera_settings(self) -> list[PropertyControl]:
         """The camera settings to expose as property controls in the settings panel."""
         return [property_control_for(self, "noise_level", label="Noise Level")]

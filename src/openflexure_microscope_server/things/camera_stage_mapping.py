@@ -118,7 +118,7 @@ class CameraStageMapper(lt.Thing):
     override the ``get_xyz_position()`` and ``move_to_xyz_position()`` methods.
     """
 
-    @lt.thing_action
+    @lt.action
     def calibrate_1d(
         self,
         camera: CameraClient,
@@ -154,7 +154,7 @@ class CameraStageMapper(lt.Thing):
         result["image_resolution"] = camera.capture_downsampled_array().shape[:2]
         return result
 
-    @lt.thing_action
+    @lt.action
     def calibrate_xy(
         self, camera: CameraClient, stage: Stage, logger: lt.deps.InvocationLogger
     ) -> DenumpifyingDict:
@@ -200,7 +200,7 @@ class CameraStageMapper(lt.Thing):
 
         return data
 
-    @lt.thing_property
+    @lt.property
     def image_to_stage_displacement_matrix(
         self,
     ) -> Optional[List[List[float]]]:  # 2x2 integer array
@@ -230,19 +230,17 @@ class CameraStageMapper(lt.Thing):
         ]
         return np.array(displacement_matrix).tolist()
 
-    last_calibration = lt.ThingSetting(
-        initial_value=None, model=Optional[dict], readonly=True
-    )
+    last_calibration: Optional[dict] = lt.setting(default=None, readonly=True)
     """The most recent CSM calibration."""
 
-    @lt.thing_property
+    @lt.property
     def image_resolution(self) -> Optional[Tuple[float, float]]:
         """The image size used to calibrate the image_to_stage_displacement_matrix."""
         if self.last_calibration is None:
             return None
         return self.last_calibration["image_resolution"]
 
-    @lt.thing_property
+    @lt.property
     def calibration_required(self) -> bool:
         """Whether the camera stage mapper needs calibrating."""
         return self.image_to_stage_displacement_matrix is None
@@ -254,7 +252,7 @@ class CameraStageMapper(lt.Thing):
             # added by CSMUncalibratedError
             raise CSMUncalibratedError()  # noqa: RSE102
 
-    @lt.thing_action
+    @lt.action
     def move_in_image_coordinates(
         self,
         stage: Stage,
@@ -275,7 +273,7 @@ class CameraStageMapper(lt.Thing):
         self.assert_calibrated()
         stage.move_relative(**self.convert_image_to_stage_coordinates(x=x, y=y))
 
-    @lt.thing_action
+    @lt.action
     def convert_image_to_stage_coordinates(
         self, x: float, y: float, **_kwargs: float
     ) -> Mapping[str, int]:
@@ -283,7 +281,7 @@ class CameraStageMapper(lt.Thing):
         self.assert_calibrated()
         return csm_img_to_stage(self.image_to_stage_displacement_matrix, x=x, y=y)
 
-    @lt.thing_action
+    @lt.action
     def convert_stage_to_image_coordinates(
         self, x: int, y: int, **_kwargs: int
     ) -> Mapping[str, float]:
@@ -291,7 +289,7 @@ class CameraStageMapper(lt.Thing):
         self.assert_calibrated()
         return csm_stage_to_img(self.image_to_stage_displacement_matrix, x=x, y=y)
 
-    @lt.thing_property
+    @lt.property
     def thing_state(self) -> Mapping[str, Any]:
         """Summary metadata describing the current state of the Thing."""
         return {

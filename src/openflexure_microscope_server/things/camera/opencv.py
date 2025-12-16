@@ -27,12 +27,14 @@ LOGGER = logging.getLogger(__name__)
 class OpenCVCamera(BaseCamera):
     """A Thing that provides and interface to an OpenCV Camera."""
 
-    def __init__(self, camera_index: int = 0) -> None:
+    def __init__(
+        self, thing_server_interface: lt.ThingServerInterface, camera_index: int = 0
+    ) -> None:
         """Iniatilise the thing storing the index of the camera to use.
 
         :param camera_index: The index of the camera to use for the microscope.
         """
-        super().__init__()
+        super().__init__(thing_server_interface)
         self.camera_index = camera_index
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
@@ -60,7 +62,7 @@ class OpenCVCamera(BaseCamera):
             self._capture_thread.join()
         self.cap.release()
 
-    @lt.thing_property
+    @lt.property
     def stream_active(self) -> bool:
         """Whether the MJPEG stream is active."""
         if self._capture_enabled and self._capture_thread:
@@ -68,25 +70,24 @@ class OpenCVCamera(BaseCamera):
         return False
 
     def _capture_frames(self) -> None:
-        portal = lt.get_blocking_portal(self)
         while self._capture_enabled:
             ret, frame = self.cap.read()
             if not ret:
                 LOGGER.error(f"Failed to capture frame from camera {self.camera_index}")
                 break
             jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
-            self.mjpeg_stream.add_frame(jpeg, portal)
+            self.mjpeg_stream.add_frame(jpeg)
             jpeg_lores = cv2.imencode(".jpg", cv2.resize(frame, (320, 240)))[
                 1
             ].tobytes()
-            self.lores_mjpeg_stream.add_frame(jpeg_lores, portal)
+            self.lores_mjpeg_stream.add_frame(jpeg_lores)
 
-    @lt.thing_action
+    @lt.action
     def discard_frames(self) -> None:
         """Discard frames so that the next frame captured is fresh."""
         self.capture_array()
 
-    @lt.thing_action
+    @lt.action
     def capture_array(
         self,
         stream_name: Literal["main", "full"] = "full",

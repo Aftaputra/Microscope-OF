@@ -4,6 +4,8 @@ import logging
 
 import pytest
 
+from labthings_fastapi.testing import create_thing_without_server
+
 from openflexure_microscope_server.things.stage.sangaboard import (
     RECOMMENDED_VERSION,
     REQUIRED_VERSION,
@@ -14,7 +16,7 @@ from openflexure_microscope_server.things.stage.sangaboard import (
 @pytest.fixture
 def mock_sanga_thing(mocker):
     """Return a Sangaboard thing with a MagicMock for self._sangaboard."""
-    sanga_thing = SangaboardThing()
+    sanga_thing = create_thing_without_server(SangaboardThing)
     sanga_thing._sangaboard = mocker.MagicMock()
     return sanga_thing
 

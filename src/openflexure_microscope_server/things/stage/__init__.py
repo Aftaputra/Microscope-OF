@@ -46,7 +46,7 @@ class BaseStage(lt.Thing):
 
     _axis_names = ("x", "y", "z")
 
-    def __init__(self) -> None:
+    def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Initialise the stage.
 
         :raises RedefinedBaseMovementError: if ``move_relative`` and/or
@@ -54,6 +54,7 @@ class BaseStage(lt.Thing):
             ``_hardware_move_relative`` and/or ``_hardware_move_absolute`` instead so
             that all code in the child class uses the hardware reference frame.
         """
+        super().__init__(thing_server_interface)
         self._hardware_position = dict.fromkeys(self._axis_names, 0)
 
         # This must be the last thing the function does in case it is caught in a try.
@@ -68,28 +69,21 @@ class BaseStage(lt.Thing):
                 "_hardware_move_relative and/or _hardware_move_absolute instead."
             )
 
-    @lt.thing_property
+    @lt.property
     def axis_names(self) -> Sequence[str]:
         """The names of the stage's axes, in order."""
         return self._axis_names
 
-    @lt.thing_property
+    @lt.property
     def position(self) -> Mapping[str, int]:
         """Current position of the stage."""
         return self._apply_axis_direction(self._hardware_position)
 
-    moving = lt.ThingProperty(
-        bool,
-        False,
-        readonly=True,
-        observable=True,
-    )
+    moving: bool = lt.property(default=False, readonly=True)
     """Whether the stage is in motion."""
 
-    axis_inverted = lt.ThingSetting(
-        initial_value={"x": False, "y": False, "z": False},
-        model=Mapping[str, bool],
-        readonly=True,
+    axis_inverted: Mapping[str, bool] = lt.setting(
+        default={"x": False, "y": False, "z": False}, readonly=True
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
 
@@ -124,7 +118,7 @@ class BaseStage(lt.Thing):
         """Summary metadata describing the current state of the stage."""
         return {"position": self.position}
 
-    @lt.thing_action
+    @lt.action
     def invert_axis_direction(self, axis: Literal["x", "y", "z"]) -> None:
         """Invert the direction setting of the given axis.
 
@@ -138,7 +132,7 @@ class BaseStage(lt.Thing):
             raise KeyError(f"The axis {axis} is not defined.") from e
         self.axis_inverted = direction
 
-    @lt.thing_action
+    @lt.action
     def move_relative(
         self,
         cancel: lt.deps.CancelHook,
@@ -166,7 +160,7 @@ class BaseStage(lt.Thing):
             "StageThings must define their own _hardware_move_relative method"
         )
 
-    @lt.thing_action
+    @lt.action
     def move_absolute(
         self,
         cancel: lt.deps.CancelHook,
@@ -194,7 +188,7 @@ class BaseStage(lt.Thing):
             "StageThings must define their own move_absolute method"
         )
 
-    @lt.thing_action
+    @lt.action
     def set_zero_position(self) -> None:
         """Make the current position zero in all axes.
 
@@ -206,7 +200,7 @@ class BaseStage(lt.Thing):
             "StageThings must define their own set_zero_position method"
         )
 
-    @lt.thing_action
+    @lt.action
     def get_xyz_position(self) -> tuple[int, int, int]:
         """Return a tuple containing (x, y, z) position.
 
@@ -217,7 +211,7 @@ class BaseStage(lt.Thing):
         position_dict = self.position
         return (position_dict["x"], position_dict["y"], position_dict["z"])
 
-    @lt.thing_action
+    @lt.action
     def move_to_xyz_position(
         self, cancel: lt.deps.CancelHook, xyz_pos: tuple[int, int, int]
     ) -> None:
@@ -234,4 +228,4 @@ class BaseStage(lt.Thing):
         self.move_absolute(cancel=cancel, x=xyz_pos[0], y=xyz_pos[1], z=xyz_pos[2])
 
 
-StageDependency = lt.deps.direct_thing_client_dependency(BaseStage, "/stage/")
+StageDependency = lt.deps.direct_thing_client_dependency(BaseStage, "stage")

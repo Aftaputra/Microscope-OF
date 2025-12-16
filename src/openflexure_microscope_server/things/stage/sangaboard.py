@@ -33,7 +33,12 @@ class SangaboardThing(BaseStage):
     functionality is accessed by directly querying the serial interface.
     """
 
-    def __init__(self, port: str = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        thing_server_interface: lt.ThingServerInterface,
+        port: str = None,
+        **kwargs: Any,
+    ) -> None:
         """Initialise SangaboardThing.
 
         Initialise the "Thing", but do not initialise an underlying
@@ -49,7 +54,7 @@ class SangaboardThing(BaseStage):
         self.sangaboard_kwargs = copy(kwargs)
         self.sangaboard_kwargs["port"] = port
         self._sangaboard_lock = threading.RLock()
-        super().__init__(**kwargs)
+        super().__init__(thing_server_interface, **kwargs)
 
     def __enter__(self) -> None:
         """Connect to the sangaboard when the Thing context manager is opened."""
@@ -78,10 +83,8 @@ class SangaboardThing(BaseStage):
         with self._sangaboard_lock:
             yield self._sangaboard
 
-    axis_inverted = lt.ThingSetting(
-        initial_value={"x": True, "y": False, "z": True},
-        model=Mapping[str, bool],
-        readonly=True,
+    axis_inverted: Mapping[str, bool] = lt.setting(
+        default={"x": True, "y": False, "z": True}, readonly=True
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
 
@@ -164,7 +167,7 @@ class SangaboardThing(BaseStage):
                 cancel, block_cancellation=block_cancellation, **displacement
             )
 
-    @lt.thing_action
+    @lt.action
     def set_zero_position(self) -> None:
         """Make the current position zero in all axes.
 
@@ -176,7 +179,7 @@ class SangaboardThing(BaseStage):
             sb.zero_position()
         self.update_position()
 
-    @lt.thing_action
+    @lt.action
     def flash_led(
         self,
         number_of_flashes: int = 10,

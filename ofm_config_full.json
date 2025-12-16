@@ -1,22 +1,22 @@
 {
     "things": {
-        "/camera/": {
+        "camera": {
             "class": "openflexure_microscope_server.things.camera.picamera:StreamingPiCamera2",
             "kwargs": {
                 "camera_board": "picamera_v2"
             }
         },
-        "/stage/": "openflexure_microscope_server.things.stage.sangaboard:SangaboardThing",
-        "/autofocus/": "openflexure_microscope_server.things.autofocus:AutofocusThing",
-        "/camera_stage_mapping/": "openflexure_microscope_server.things.camera_stage_mapping:CameraStageMapper",
-        "/system/": "openflexure_microscope_server.things.system:OpenFlexureSystem",
-        "/smart_scan/": {
+        "stage": "openflexure_microscope_server.things.stage.sangaboard:SangaboardThing",
+        "autofocus": "openflexure_microscope_server.things.autofocus:AutofocusThing",
+        "camera_stage_mapping": "openflexure_microscope_server.things.camera_stage_mapping:CameraStageMapper",
+        "system": "openflexure_microscope_server.things.system:OpenFlexureSystem",
+        "smart_scan": {
             "class": "openflexure_microscope_server.things.smart_scan:SmartScanThing",
             "kwargs": {
                 "scans_folder": "/var/openflexure/scans/"
             }
         },
-        "/stage_measure/":"openflexure_microscope_server.things.stage_measure:RangeofMotionThing"
+        "stage_measure":"openflexure_microscope_server.things.stage_measure:RangeofMotionThing"
     },
     "settings_folder": "/var/openflexure/settings/",
     "log_folder": "/var/openflexure/logs/"

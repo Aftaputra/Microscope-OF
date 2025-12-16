@@ -4,30 +4,32 @@ import pytest
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
-
-from .cam_test_utils import camera_test_client
+from .cam_test_utils import camera_test_client_and_server
 
 
 @pytest.fixture
-def picamera_thing() -> StreamingPiCamera2:
-    """Return a StreamingPiCamera2 Thing.
+def picamera_client_and_server() -> lt.ThingClient:
+    """Initialise a test picamera_client and server for the StreamingPiCamera2 Thing.
 
-    This is the Thing that the fixture picamera_client uses. It can be used to probe
-    the Thing directly to check actions had the expected response.
+    This fixture:
+
+    * Sets up a ThingServer,
+    * Registers a StreamingPiCamera2 instance at the "camera" endpoint
+    * Yields a ThingClient and the server for interacting with it during tests.
+    * The picamera thing can be found at server.things["camera"]
     """
-    return StreamingPiCamera2()
+    with camera_test_client_and_server() as client_and_server:
+        yield client_and_server
 
 
 @pytest.fixture
-def picamera_client(picamera_thing) -> lt.ThingClient:
+def picamera_client(picamera_client_and_server) -> lt.ThingClient:
     """Initialise a test picamera_client for the StreamingPiCamera2 Thing.
 
     This fixture:
 
     * Sets up a ThingServer,
-    * Registers a StreamingPiCamera2 instance at the "/camera/" endpoint
-    * Provides a ThingClient for interacting with it during tests.
+    * Registers a StreamingPiCamera2 instance at the "camera" endpoint
+    * return a ThingClient for interacting with it during tests.
     """
-    with camera_test_client(cam=picamera_thing) as picamera_client:
-        yield picamera_client
+    return picamera_client_and_server[0]

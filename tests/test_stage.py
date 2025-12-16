@@ -10,7 +10,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 import labthings_fastapi as lt
-from labthings_fastapi.exceptions import NotConnectedToServerError
+from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.things.stage import (
     BaseStage,
@@ -33,23 +33,19 @@ path3d = st.lists(point3d, min_size=5, max_size=10)
 @pytest.fixture
 def dummy_stage():
     """Return a dummy stage with a very low step time."""
-    return DummyStage(step_time=0.000001)
+    return create_thing_without_server(DummyStage, step_time=0.000001)
 
 
 @pytest.fixture
-def thing_server(dummy_stage):
+def stage_server():
     """Yield a server with a very basic configuration."""
+    thing_conf = {
+        "camera": "openflexure_microscope_server.things.camera.simulation:SimulatedCamera",
+        "stage": "openflexure_microscope_server.things.stage.dummy:DummyStage",
+    }
     with tempfile.TemporaryDirectory() as tmpdir:
-        server = lt.ThingServer(settings_folder=tmpdir)
-        server.add_thing(dummy_stage, "/stage/")
+        server = lt.ThingServer(things=thing_conf, settings_folder=tmpdir)
         yield server
-
-
-@pytest.fixture
-def stage_client(thing_server):
-    """Yield a labthings ThingClient for the stage."""
-    with TestClient(thing_server.app) as test_client:
-        yield lt.ThingClient.from_url("/stage/", client=test_client)
 
 
 def test_override_base_movement():
@@ -63,7 +59,7 @@ def test_override_base_movement():
     """
 
     class BadStage1(BaseStage):
-        @lt.thing_action
+        @lt.action
         def move_relative(
             self,
             cancel: lt.deps.CancelHook,
@@ -73,10 +69,10 @@ def test_override_base_movement():
             pass
 
     with pytest.raises(RedefinedBaseMovementError):
-        BadStage1()
+        create_thing_without_server(BadStage1)
 
     class BadStage2(BaseStage):
-        @lt.thing_action
+        @lt.action
         def move_absolute(
             self,
             cancel: lt.deps.CancelHook,
@@ -86,21 +82,13 @@ def test_override_base_movement():
             pass
 
     with pytest.raises(RedefinedBaseMovementError):
-        BadStage2()
-
-
-def _set_axis_direction(dummy_stage, direction):
-    """Set the axis direction directly even if not connected to server."""
-    try:
-        dummy_stage.axis_inverted = direction
-    except NotConnectedToServerError:
-        pass
+        create_thing_without_server(BadStage2)
 
 
 def test_apply_axis_direction_all_pos(dummy_stage):
     """Test the apply axis direction function behaves as expected when axis +v3."""
     # Directly create a stage not through a ThingServer to access private methods
-    _set_axis_direction(dummy_stage, {"x": False, "y": False, "z": False})
+    dummy_stage.axis_inverted = {"x": False, "y": False, "z": False}
 
     # A list of positions to try
     positions = [
@@ -120,7 +108,7 @@ def test_apply_axis_direction_all_pos(dummy_stage):
 def test_apply_axis_direction_mixed(dummy_stage):
     """Test the apply axis direction function behaves as expected when axis dirs are mixed."""
     # Make x and z negative
-    _set_axis_direction(dummy_stage, {"x": True, "y": False, "z": True})
+    dummy_stage.axis_inverted = {"x": True, "y": False, "z": True}
 
     # A list of (input position, output position) to try
     position_pairs = [
@@ -149,48 +137,61 @@ def test_apply_axis_errors(dummy_stage):
         dummy_stage._apply_axis_direction({"x": -1, "y": 2, "up": -3})
 
 
-def test_default_values(stage_client, dummy_stage):
+def test_default_values(dummy_stage):
     """Check the default values for the dummy stage."""
     # axes are x, y, z (note that going through the thing, client the tuple is
     # converted to a list.
-    assert stage_client.axis_names == ["x", "y", "z"]
+    assert dummy_stage.axis_names == ("x", "y", "z")
     # position starts at 0, 0, 0
-    assert stage_client.position == {"x": 0, "y": 0, "z": 0}
+    assert dummy_stage.position == {"x": 0, "y": 0, "z": 0}
     # axis direction starts is -1, 1, 1 for the dummy stage
-    assert stage_client.axis_inverted == {"x": True, "y": False, "z": False}
+    assert dummy_stage.axis_inverted == {"x": True, "y": False, "z": False}
     # And check the thing state
     assert dummy_stage.thing_state == {"position": {"x": 0, "y": 0, "z": 0}}
 
 
-def test_direction_inversion(stage_client, dummy_stage):
+def test_direction_inversion(dummy_stage):
     """Check axes invert as expected when called."""
-    # Can't set an arbitrary value via a client as read only:
-    with pytest.raises(HTTPStatusError) as excinfo:
-        stage_client.axis_inverted = {"x": 2, "y": 1, "z": 1}
-    # Read only should set a 405 error code
-    assert excinfo.value.response.status_code == 405
-    # And not modify th initial value
-    assert stage_client.axis_inverted == {"x": True, "y": False, "z": False}
-    stage_client.invert_axis_direction(axis="x")
-    assert stage_client.axis_inverted == {"x": False, "y": False, "z": False}
-    stage_client.invert_axis_direction(axis="x")
-    assert stage_client.axis_inverted == {"x": True, "y": False, "z": False}
-    stage_client.invert_axis_direction(axis="y")
-    assert stage_client.axis_inverted == {"x": True, "y": True, "z": False}
-    stage_client.invert_axis_direction(axis="y")
-    assert stage_client.axis_inverted == {"x": True, "y": False, "z": False}
-    stage_client.invert_axis_direction(axis="z")
-    assert stage_client.axis_inverted == {"x": True, "y": False, "z": True}
-    stage_client.invert_axis_direction(axis="z")
-    assert stage_client.axis_inverted == {"x": True, "y": False, "z": False}
+    # Check initial value
+    assert dummy_stage.axis_inverted == {"x": True, "y": False, "z": False}
+    # Start inverting
+    dummy_stage.invert_axis_direction(axis="x")
+    assert dummy_stage.axis_inverted == {"x": False, "y": False, "z": False}
+    dummy_stage.invert_axis_direction(axis="x")
+    assert dummy_stage.axis_inverted == {"x": True, "y": False, "z": False}
+    dummy_stage.invert_axis_direction(axis="y")
+    assert dummy_stage.axis_inverted == {"x": True, "y": True, "z": False}
+    dummy_stage.invert_axis_direction(axis="y")
+    assert dummy_stage.axis_inverted == {"x": True, "y": False, "z": False}
+    dummy_stage.invert_axis_direction(axis="z")
+    assert dummy_stage.axis_inverted == {"x": True, "y": False, "z": True}
+    dummy_stage.invert_axis_direction(axis="z")
+    assert dummy_stage.axis_inverted == {"x": True, "y": False, "z": False}
 
-    # Should error if axis doesn't exist, this is a KeyError in the server
-    with pytest.raises(KeyError):
-        dummy_stage.invert_axis_direction(axis="theta")
-    # But a 422 over HTTP
-    with pytest.raises(HTTPStatusError) as excinfo:
-        stage_client.invert_axis_direction(axis="theta")
-    assert excinfo.value.response.status_code == 422
+
+def test_direction_errors_local_and_http(stage_server):
+    """Check for expected errors both locally and over http."""
+    dummy_stage = stage_server.things["stage"]
+    with TestClient(stage_server.app) as test_client:
+        stage_client = lt.ThingClient.from_url("/stage/", client=test_client)
+
+        assert stage_client.axis_inverted == {"x": True, "y": False, "z": False}
+        # Can't set an arbitrary value via a client as read only:
+        with pytest.raises(HTTPStatusError) as excinfo:
+            stage_client.axis_inverted = {"x": 2, "y": 1, "z": 1}
+        # Read only should set a 405 error code ...
+        assert excinfo.value.response.status_code == 405
+
+        # ... and should not modify the initial value
+        assert stage_client.axis_inverted == {"x": True, "y": False, "z": False}
+
+        # Should error if axis doesn't exist, this is a KeyError in the server
+        with pytest.raises(KeyError):
+            dummy_stage.invert_axis_direction(axis="theta")
+        # But a 422 over HTTP
+        with pytest.raises(HTTPStatusError) as excinfo:
+            stage_client.invert_axis_direction(axis="theta")
+        assert excinfo.value.response.status_code == 422
 
 
 def _test_move_relative(dummy_stage, axis_inverted, path):
@@ -200,7 +201,7 @@ def _test_move_relative(dummy_stage, axis_inverted, path):
     :param path: The 3d path to move over, generated by hypothesis.
     """
     cancel = MockCancel()
-    _set_axis_direction(dummy_stage, axis_inverted)
+    dummy_stage.axis_inverted = axis_inverted
     # Explicitly do axes calculation here to check logic in main code.
     x_dir = -1 if axis_inverted["x"] else 1
     y_dir = -1 if axis_inverted["y"] else 1
@@ -225,22 +226,17 @@ def _test_move_relative(dummy_stage, axis_inverted, path):
     suppress_health_check=[HealthCheck.function_scoped_fixture],
     deadline=10000,
 )
-def test_move_relative(stage_client, dummy_stage, path):
+def test_move_relative(dummy_stage, path):
     """Loop over different inversion options and check that the stage moves as expected.
 
     3 paths are tried for each case of axis inversion. This checks both that the
     reported position changes as is input in path, and that the hardware position is
     inverted when appropriate.
-
-    NOTE: it is essential that `stage_client` is imported even if any time it is used
-    dummy stage could be used. This is because the fixture that creates stage client
-    handles adding the dummy_stage to a server. It needs to have been added to a
-    server for it not to throw errors about not being connected to a server.
     """
     # Note that the fixture is not reset. This is fine, because the stage_should work
     # no matter the starting position.
 
-    axis_names = stage_client.axis_names
+    axis_names = dummy_stage.axis_names
     # Create every combination of True/False for x,y,z.
     inversion_combinations = [
         dict(zip(axis_names, inverted, strict=True))
@@ -262,7 +258,7 @@ def _test_move_absolute(dummy_stage, axis_inverted, path):
     :param path: The 3d path to move over, generated by hypothesis.
     """
     cancel = MockCancel()
-    _set_axis_direction(dummy_stage, axis_inverted)
+    dummy_stage.axis_inverted = axis_inverted
     # Explicitly do axes calculation here to check logic in main code.
     x_dir = -1 if axis_inverted["x"] else 1
     y_dir = -1 if axis_inverted["y"] else 1
@@ -286,22 +282,17 @@ def _test_move_absolute(dummy_stage, axis_inverted, path):
     suppress_health_check=[HealthCheck.function_scoped_fixture],
     deadline=10000,
 )
-def test_move_absolute(stage_client, dummy_stage, path):
+def test_move_absolute(dummy_stage, path):
     """Loop over different inversion options and check that the stage moves as expected.
 
     3 paths are tried for each case of axis inversion. This checks both that the
     reported position changes as is input in path, and that the hardware position is
     inverted when appropriate.
-
-    NOTE: it is essential that `stage_client` is imported even if any time it is used
-    dummy stage could be used. This is because the fixture that creates stage client
-    handles adding the dummy_stage to a server. It needs to have been added to a
-    server for it not to throw errors about not being connected to a server.
     """
     # Note that the fixture is not reset. This is fine, because the stage_should work
     # no matter the starting position.
 
-    axis_names = stage_client.axis_names
+    axis_names = dummy_stage.axis_names
     # Create every combination of True/False for x,y,z.
     inversion_combinations = [
         dict(zip(axis_names, inverted, strict=True))
@@ -328,7 +319,7 @@ def test_thing_description_equivalence(dummy_stage, mocker):
     # Flash LED isn't a standard stage action, most stages do not control illumination.
     extra_sanga_actions = ["flash_led"]
 
-    base_td = BaseStage().thing_description()
+    base_td = create_thing_without_server(BaseStage).thing_description()
     base_actions = set(base_td.actions.keys())
     base_properties = set(base_td.properties.keys())
 
@@ -336,7 +327,7 @@ def test_thing_description_equivalence(dummy_stage, mocker):
     dummy_actions = set(dummy_td.actions.keys())
     dummy_properties = set(dummy_td.properties.keys())
 
-    sanga_td = SangaboardThing().thing_description()
+    sanga_td = create_thing_without_server(SangaboardThing).thing_description()
     # Remove known extra actions
     sanga_actions = list(sanga_td.actions.keys())
     for action in extra_sanga_actions:

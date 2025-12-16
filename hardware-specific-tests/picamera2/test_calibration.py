@@ -6,8 +6,10 @@ from copy import deepcopy
 from .cam_test_utils import camera_test_client
 
 
-def test_calibration(picamera_thing, picamera_client):
+def test_calibration(picamera_client_and_server):
     """Check that full auto calibrate completes and set the expected values."""
+    picamera_client, server = picamera_client_and_server
+    picamera_thing = server.things["camera"]
     # Check the calibration_required property used by the calibration wizard
     assert picamera_thing.calibration_required
     # Save copy of default tuning file for end of test

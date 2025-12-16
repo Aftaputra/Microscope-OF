@@ -350,7 +350,7 @@ class AutofocusThing(lt.Thing):
     field of view to assess focus (autofocus and testing the success of a z-stack)
     """
 
-    @lt.thing_action
+    @lt.action
     def fast_autofocus(
         self,
         sharpness_monitor: SharpnessMonitorDep,
@@ -381,7 +381,7 @@ class AutofocusThing(lt.Thing):
             # Return all focus data
             return sharpness_monitor.data_dict()
 
-    @lt.thing_action
+    @lt.action
     def z_move_and_measure_sharpness(
         self,
         sharpness_monitor: SharpnessMonitorDep,
@@ -407,7 +407,7 @@ class AutofocusThing(lt.Thing):
                 sharpness_monitor.focus_rel(current_dz)
             return sharpness_monitor.data_dict()
 
-    @lt.thing_action
+    @lt.action
     def looping_autofocus(
         self,
         stage: Stage,
@@ -455,19 +455,13 @@ class AutofocusThing(lt.Thing):
             "Looping autofocus couldn't converge on a focus location."
         )
 
-    stack_images_to_save = lt.ThingSetting(
-        initial_value=1,
-        model=int,
-    )
+    stack_images_to_save: int = lt.setting(default=1)
     """The number of images to save in a stack.
 
     Defaults to 1 unless you need to see either side of focus
     """
 
-    stack_min_images_to_test = lt.ThingSetting(
-        initial_value=9,
-        model=int,
-    )
+    stack_min_images_to_test: int = lt.setting(default=9)
     """The minimum number of images to capture in a stack.
 
     This many images are captures and tested for focus, if the focus is not central
@@ -477,7 +471,7 @@ class AutofocusThing(lt.Thing):
     Defaults to 9 which balances reliability and speed.
     """
 
-    stack_dz = lt.ThingSetting(initial_value=50, model=int)
+    stack_dz: int = lt.setting(default=50)
     """Distance in steps between images in a z-stack.
 
     Suggested values:
@@ -487,7 +481,7 @@ class AutofocusThing(lt.Thing):
     * 200 for 20x
     """
 
-    @lt.thing_action
+    @lt.action
     def create_stack_params(
         self,
         images_dir: str,
@@ -560,7 +554,7 @@ class AutofocusThing(lt.Thing):
             save_resolution=save_resolution,
         )
 
-    @lt.thing_action
+    @lt.action
     def run_smart_stack(
         self,
         cam: CameraClient,

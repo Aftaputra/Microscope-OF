@@ -30,9 +30,9 @@ from .camera_stage_mapping import CameraStageMapper
 from .stage import StageDependency as StageDep
 
 CSMDep = lt.deps.direct_thing_client_dependency(
-    CameraStageMapper, "/camera_stage_mapping/"
+    CameraStageMapper, "camera_stage_mapping"
 )
-AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "/autofocus/")
+AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "autofocus")
 
 ## Size of movement in percentage of field of view
 SMALL_STEP = 20
@@ -136,18 +136,16 @@ class ParasiticMotionError(Exception):
 class RangeofMotionThing(lt.Thing):
     """A class used to measure the range of motion of the stage in X and Y."""
 
-    calibrated_range = lt.ThingSetting(
-        initial_value=None, model=Optional[list[int, int]], readonly=True
-    )
+    calibrated_range: Optional[list[int, int]] = lt.setting(default=None, readonly=True)
 
-    def __init__(self) -> None:
+    def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Initialise and create the lock."""
-        super().__init__()
+        super().__init__(thing_server_interface)
         self._lock = Lock()
         self._stream_resolution: Optional[tuple[int, int]] = None
         self._rom_data = RomDataTracker()
 
-    @lt.thing_action
+    @lt.action
     def perform_rom_test(
         self,
         autofocus: AutofocusDep,
@@ -214,7 +212,7 @@ class RangeofMotionThing(lt.Thing):
             "Step Range": step_range,
         }
 
-    @lt.thing_action
+    @lt.action
     def perform_recentre(
         self,
         autofocus: AutofocusDep,

@@ -24,6 +24,7 @@ import pytest
 from fastapi import HTTPException
 
 from labthings_fastapi.exceptions import InvocationCancelledError
+from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.scan_directories import (
     NotEnoughFreeSpaceError,
@@ -56,7 +57,7 @@ def _clear_scan_dir() -> None:
 @pytest.fixture
 def smart_scan_thing():
     """Return a smart scan thing as a fixture."""
-    return SmartScanThing(SCAN_DIR)
+    return create_thing_without_server(SmartScanThing, scans_folder=SCAN_DIR)
 
 
 def test_initial_properties(smart_scan_thing):
@@ -198,7 +199,9 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
             assert self._csm is csm_mock
 
     # mock smart scan thing
-    mock_ss_thing = MockedSmartScanThing(SCAN_DIR)
+    mock_ss_thing = create_thing_without_server(
+        MockedSmartScanThing, scans_folder=SCAN_DIR
+    )
 
     if adjust_initial_state is not None:
         adjust_initial_state(mock_ss_thing)

@@ -18,12 +18,11 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 dependencies = [
-  "labthings-fastapi == 0.0.11",
-  "fastapi <= 0.123.6", # This can be removed once #216 on labthings-fastapi is fixed
+  "labthings-fastapi==0.0.13",
   "sangaboard",
   "camera-stage-mapping ~= 0.1.10",
   "opencv-python ~= 4.11.0",
-  "openflexure-stitching[libvips]==0.2.2",
+  "openflexure-stitching[libvips]==0.2.3",
   "pillow ~= 10.4",
   "anyio ~= 4.0",
   "numpy ~= 2.2",
@@ -161,7 +160,7 @@ ignore = [
 [tool.ruff.lint.pydocstyle]
 # This lets the D401 checker understand that decorated thing properties and thing
 # settings act like properties so should be documented as such.
-property-decorators = ["labthings_fastapi.thing_property", "labthings_fastapi.thing_setting"]
+property-decorators = ["labthings_fastapi.property", "labthings_fastapi.setting"]
 
 [tool.ruff.lint.pylint]
 max-args = 7

@@ -6,6 +6,8 @@ on camera functionality using the simulation camera are in "test_camera".
 
 import pytest
 
+from labthings_fastapi.testing import create_thing_without_server
+
 from openflexure_microscope_server.things.camera import BaseCamera
 from openflexure_microscope_server.things.camera.opencv import OpenCVCamera
 from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
@@ -30,7 +32,7 @@ def mock_picam_thing(mocker):
 
     from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
 
-    return StreamingPiCamera2()
+    return create_thing_without_server(StreamingPiCamera2)
 
 
 def _get_clean_camera_description(camera_thing):
@@ -49,8 +51,6 @@ def _get_clean_camera_description(camera_thing):
         * "manual_properties" - Properties explicitly exposed to the UI as manual
             camera settings.
     """
-    camera_thing.path = "/mock/"
-
     td = camera_thing.thing_description()
     actions = set(td.actions.keys())
     properties = set(td.properties.keys())
@@ -82,12 +82,14 @@ def test_thing_description_equivalence(mock_picam_thing):
     to this test, prompting discussion of whether the action belongs in the subclass
     or the base camera class.
     """
-    base_td = BaseCamera().thing_description()
+    base_td = create_thing_without_server(BaseCamera).thing_description()
     base_actions = set(base_td.actions.keys())
     base_props = set(base_td.properties.keys())
 
-    sim_description = _get_clean_camera_description(SimulatedCamera())
-    opencv_description = _get_clean_camera_description(OpenCVCamera())
+    sim_camera = create_thing_without_server(SimulatedCamera)
+    sim_description = _get_clean_camera_description(sim_camera)
+    opencv_camera = create_thing_without_server(OpenCVCamera)
+    opencv_description = _get_clean_camera_description(opencv_camera)
     picamera_description = _get_clean_camera_description(mock_picam_thing)
 
     # Note. These are the actions and properties that are not exposed to the UI via

@@ -2,14 +2,12 @@
 
 import dataclasses
 import logging
-import tempfile
 from copy import copy
 
 import numpy as np
 import pytest
-from fastapi.testclient import TestClient
 
-import labthings_fastapi as lt
+from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.things import stage_measure
 from openflexure_microscope_server.things.camera_stage_mapping import (
@@ -145,22 +143,18 @@ def test_parasitic_detect(par_fraction, too_high):
 
 def test_error_if_no_stream_res_set_when_requesting_img_coords():
     """Check a RuntimeError thrown when requesting image coordinates if resolution unset."""
+    rom_thing = create_thing_without_server(stage_measure.RangeofMotionThing)
     with pytest.raises(RuntimeError, match="Stream resolution must be set"):
-        stage_measure.RangeofMotionThing()._img_percentage_to_img_coords(20, "x")
+        rom_thing._img_percentage_to_img_coords(20, "x")
 
 
 @pytest.fixture
 def rom_thing(example_rom_data) -> stage_measure.RangeofMotionThing:
     """Yield a RangeofMotionThing already populated with some example rom_data."""
-    rom_thing = stage_measure.RangeofMotionThing()
+    rom_thing = create_thing_without_server(stage_measure.RangeofMotionThing)
     rom_thing._stream_resolution = [800, 600]
     rom_thing._rom_data = example_rom_data
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        server = lt.ThingServer(settings_folder=tmpdir)
-        server.add_thing(rom_thing, "/rom_thing/")
-        with TestClient(server.app):
-            yield rom_thing
+    return rom_thing
 
 
 @pytest.fixture
