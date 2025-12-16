@@ -136,7 +136,7 @@ class ParasiticMotionError(Exception):
 class RangeofMotionThing(lt.Thing):
     """A class used to measure the range of motion of the stage in X and Y."""
 
-    calibrated_range: int = lt.setting(default=None, readonly=True)
+    calibrated_range: Optional[list[int, int]] = lt.setting(default=None, readonly=True)
 
     def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Initialise and create the lock."""
