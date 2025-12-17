@@ -126,7 +126,6 @@ class SmartScanThing(lt.Thing):
         # any method that calls these should be decorated with
         # @_scan_running
         self._scan_logger: Optional[lt.deps.InvocationLogger] = None
-        self._cancel: Optional[lt.deps.CancelHook] = None
         self._autofocus: Optional[AutofocusDep] = None
         self._stage: Optional[StageDep] = None
         self._cam: Optional[CameraClient] = None
@@ -139,7 +138,6 @@ class SmartScanThing(lt.Thing):
     @lt.action
     def sample_scan(
         self,
-        cancel: lt.deps.CancelHook,
         logger: lt.deps.InvocationLogger,
         autofocus: AutofocusDep,
         stage: StageDep,
@@ -158,7 +156,6 @@ class SmartScanThing(lt.Thing):
             raise RuntimeError("Trying to run scan while scan is already running!")
 
         # Set private variables for this scan
-        self._cancel = cancel
         self._scan_logger = logger
         self._autofocus = autofocus
         self._stage = stage
@@ -188,7 +185,6 @@ class SmartScanThing(lt.Thing):
             raise e
         finally:
             # However the scan finishes, unset all variables and release lock
-            self._cancel = None
             self._scan_logger = None
             self._autofocus = None
             self._stage = None
@@ -390,8 +386,6 @@ class SmartScanThing(lt.Thing):
             self._save_final_scan_data(scan_result="success")
 
         except lt.exceptions.InvocationCancelledError:
-            # Reset the cancel event so it can be thrown again
-            self._cancel.clear()
             self._scan_logger.info("Stopping scan because it was cancelled.")
             self._save_final_scan_data(scan_result="cancelled by user")
         except Exception as e:
@@ -513,13 +507,12 @@ class SmartScanThing(lt.Thing):
         self._scan_logger.info("Waiting for background processes to finish...")
 
         if self._preview_stitcher is not None:
-            self._preview_stitcher.wait(self._cancel)
+            self._preview_stitcher.wait()
 
         if self._scan_data.stitch_automatically:
             self._scan_logger.info("Stitching final image (may take some time)...")
             self.stitch_scan(
                 logger=self._scan_logger,
-                cancel=self._cancel,
                 scan_name=self._ongoing_scan.name,
                 correlation_resize=self._scan_data.correlation_resize,
                 overlap=self._scan_data.overlap,
@@ -731,7 +724,6 @@ class SmartScanThing(lt.Thing):
     def stitch_scan(
         self,
         logger: lt.deps.InvocationLogger,
-        cancel: lt.deps.CancelHook,
         scan_name: str,
         correlation_resize: Optional[float] = None,
         overlap: Optional[float] = None,
@@ -753,8 +745,7 @@ class SmartScanThing(lt.Thing):
             scan_data_dict=scan_data_dict,
         )
         try:
-            # start the final stitch, providing the cancel hook to allow aborting
-            final_stitcher.run(cancel)
+            final_stitcher.run()
         except lt.exceptions.InvocationCancelledError:
             # Sleep for 1 second just to allow invocation logs to pass to user.
             time.sleep(1)
@@ -774,9 +765,7 @@ class SmartScanThing(lt.Thing):
         return ZipBlob.from_file(zip_fname)
 
     @lt.action
-    def stitch_all_scans(
-        self, logger: lt.deps.InvocationLogger, cancel: lt.deps.CancelHook
-    ) -> None:
+    def stitch_all_scans(self, logger: lt.deps.InvocationLogger) -> None:
         """Check the list of scans, and stitch any that don't have a DZI associated with it.
 
         :raises RuntimeError: if the microscope is currently running a scan
@@ -786,4 +775,4 @@ class SmartScanThing(lt.Thing):
             raise RuntimeError("Can't stitch previous scans while a scan is ongoing")
         for scan in self._get_all_scan_info():
             if scan.dzi is None:
-                self.stitch_scan(logger=logger, cancel=cancel, scan_name=scan.name)
+                self.stitch_scan(logger=logger, scan_name=scan.name)
