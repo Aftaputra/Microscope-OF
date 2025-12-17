@@ -316,7 +316,7 @@ class SimulatedCamera(BaseCamera):
     @lt.action
     def capture_array(
         self,
-        stream_name: Literal["main", "full"] = "full",
+        stream_name: Literal["main", "lores", "raw", "full"] = "full",
         wait: Optional[float] = None,
     ) -> NDArray:
         """Acquire one image from the camera and return as an array.
@@ -335,7 +335,7 @@ class SimulatedCamera(BaseCamera):
 
     def capture_image(
         self,
-        stream_name: Literal["main", "lores", "raw"],
+        stream_name: Literal["main", "lores", "full"],
         wait: Optional[float] = None,
     ) -> Image.Image:
         """Capture to a PIL image. This is not exposed as a ThingAction.

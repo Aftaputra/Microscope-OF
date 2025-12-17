@@ -362,7 +362,7 @@ class BaseCamera(lt.Thing):
 
     def capture_image(
         self,
-        stream_name: Literal["main", "lores", "raw"],
+        stream_name: Literal["main", "lores", "full"],
         wait: Optional[float] = None,
     ) -> Image.Image:
         """Capture a PIL image from stream stream_name with timeout wait."""

@@ -90,7 +90,7 @@ class OpenCVCamera(BaseCamera):
     @lt.action
     def capture_array(
         self,
-        stream_name: Literal["main", "full"] = "full",
+        stream_name: Literal["main", "lores", "raw", "full"] = "full",
         wait: Optional[float] = None,
     ) -> NDArray:
         """Acquire one image from the camera and return as an array.
@@ -111,7 +111,7 @@ class OpenCVCamera(BaseCamera):
 
     def capture_image(
         self,
-        stream_name: Literal["main", "full"] = "main",
+        stream_name: Literal["main", "lores", "full"] = "main",
         wait: Optional[float] = None,
     ) -> Image.Image:
         """Acquire one image from the camera and return as a PIL image.
