@@ -385,7 +385,7 @@ class SimulatedCamera(BaseCamera):
         """The calibration actions for both calibration wizard and settings panel."""
         return [
             action_button_for(
-                self.full_auto_calibrate, submit_label="Full Auto-Calibrate"
+                self, "full_auto_calibrate", submit_label="Full Auto-Calibrate"
             ),
         ]
 
@@ -393,8 +393,8 @@ class SimulatedCamera(BaseCamera):
     def secondary_calibration_actions(self) -> list[ActionButton]:
         """The calibration actions that appear only in settings panel."""
         return [
-            action_button_for(self.load_sample, submit_label="Load Sample"),
-            action_button_for(self.remove_sample, submit_label="Remove Sample"),
+            action_button_for(self, "load_sample", submit_label="Load Sample"),
+            action_button_for(self, "remove_sample", submit_label="Remove Sample"),
         ]
 
     @lt.property

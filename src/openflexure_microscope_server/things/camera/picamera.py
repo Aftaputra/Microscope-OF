@@ -770,7 +770,8 @@ class StreamingPiCamera2(BaseCamera):
         """The calibration actions for both calibration wizard and settings panel."""
         return [
             action_button_for(
-                self.full_auto_calibrate,
+                self,
+                "full_auto_calibrate",
                 submit_label="Full Auto-Calibrate",
                 can_terminate=False,
                 requires_confirmation=True,
@@ -788,13 +789,15 @@ class StreamingPiCamera2(BaseCamera):
         """The calibration actions that appear only in settings panel."""
         return [
             action_button_for(
-                self.auto_expose_from_minimum,
+                self,
+                "auto_expose_from_minimum",
                 submit_label="Auto Gain & Shutter Speed",
                 can_terminate=False,
                 button_primary=False,
             ),
             action_button_for(
-                self.calibrate_lens_shading,
+                self,
+                "calibrate_lens_shading",
                 submit_label="Auto Flat Field Correction",
                 can_terminate=False,
                 button_primary=False,
@@ -806,19 +809,22 @@ class StreamingPiCamera2(BaseCamera):
                 ),
             ),
             action_button_for(
-                self.flat_lens_shading,
+                self,
+                "flat_lens_shading",
                 submit_label="Disable Flat Field Correction",
                 can_terminate=False,
                 button_primary=False,
             ),
             action_button_for(
-                self.flat_lens_shading_chrominance,
+                self,
+                "flat_lens_shading_chrominance",
                 submit_label="Disable Flat Field Chrominance",
                 can_terminate=False,
                 button_primary=False,
             ),
             action_button_for(
-                self.reset_lens_shading,
+                self,
+                "reset_lens_shading",
                 submit_label="Reset Flat Field Correction",
                 can_terminate=False,
                 button_primary=False,
