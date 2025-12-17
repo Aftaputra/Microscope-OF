@@ -1,38 +1,32 @@
 """Use the Simulation camera to test base camera functionality."""
 
-import tempfile
-
 import numpy as np
 import pytest
-from fastapi.testclient import TestClient
 from PIL import Image
 
 import labthings_fastapi as lt
 
+from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
+from openflexure_microscope_server.things.stage.dummy import DummyStage
+
+from .utilities.lt_test_utils import LabThingsTestEnv
+
 
 @pytest.fixture
-def camera_server() -> lt.ThingClient:
-    """Add the camera to a ThingServer and start a TestClient application.
-
-    The test client will be needed for the camera to run async frame generation code.
-    """
-    with tempfile.TemporaryDirectory() as tmpdir:
-        thing_conf = {
-            "camera": "openflexure_microscope_server.things.camera.simulation:SimulatedCamera",
-            "stage": "openflexure_microscope_server.things.stage.dummy:DummyStage",
-        }
-
-        server = lt.ThingServer(things=thing_conf, settings_folder=tmpdir)
-        yield server
+def test_env() -> lt.ThingClient:
+    """Yield a test environment with the Simulated Camera and Dummy Stage."""
+    thing_conf = {"camera": SimulatedCamera, "stage": DummyStage}
+    with LabThingsTestEnv(things=thing_conf) as env:
+        yield env
 
 
-def test_handle_broken_frame(camera_server):
+def test_handle_broken_frame(test_env):
     """Monkey patch the the mjpeg steam so 1 in 5 frames are broken, then test operation.
 
     This simulates the very occasional broken frames that can occur when grabbing
     directly from the MJPEG stream.
     """
-    camera = camera_server.things["camera"]
+    camera = test_env.get_thing_by_type(SimulatedCamera)
 
     # Money patch the mjpeg_stream grab_frame to break 1 in 5 frames.
     frame_number = 0
@@ -51,29 +45,25 @@ def test_handle_broken_frame(camera_server):
 
     camera.mjpeg_stream.grab_frame = flaky_grabber
 
-    with TestClient(camera_server.app):
-        # Check that this does cause broken frames.
-        # The noqa is because we don't know exactly when the error is thrown so we
-        # can't have a single simple statement in the pytest raises.
-        with pytest.raises(  # noqa PT012
-            OSError, match="broken data stream when reading image file"
-        ):
-            for _i in range(15):
-                jpeg = camera.grab_jpeg()
-                np.asarray(Image.open(jpeg.open()))
-
-        # Check that grab_as_array handles the broken frames and completes without
-        # the same error.
+    # Check that this does cause broken frames.
+    # The noqa is because we don't know exactly when the error is thrown so we
+    # can't have a single simple statement in the pytest raises.
+    with pytest.raises(OSError, match="broken data stream when reading image file"):  # noqa PT012
         for _i in range(15):
-            array = camera.grab_as_array()
-            assert isinstance(array, np.ndarray)
+            jpeg = camera.grab_jpeg()
+            np.asarray(Image.open(jpeg.open()))
+
+    # Check that grab_as_array handles the broken frames and completes without
+    # the same error.
+    for _i in range(15):
+        array = camera.grab_as_array()
+        assert isinstance(array, np.ndarray)
 
 
-def test_simulation_cam_calibration(camera_server):
+def test_simulation_cam_calibration(test_env):
     """Test that the simulated camera can be calibrated and reports calibration correctly."""
-    camera = camera_server.things["camera"]
-    with TestClient(camera_server.app):
-        assert camera.calibration_required
-        camera.full_auto_calibrate()
-        assert not camera.calibration_required
-        assert camera.background_detector_status.ready
+    camera = test_env.get_thing_by_type(SimulatedCamera)
+    assert camera.calibration_required
+    camera.full_auto_calibrate()
+    assert not camera.calibration_required
+    assert camera.background_detector_status.ready

@@ -1,10 +1,8 @@
 """Test the stage without creating a full HTTP server and socket connection."""
 
 import itertools
-import tempfile
 
 import pytest
-from fastapi.testclient import TestClient
 from httpx import HTTPStatusError
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
@@ -12,11 +10,14 @@ from hypothesis import strategies as st
 import labthings_fastapi as lt
 from labthings_fastapi.testing import create_thing_without_server
 
+from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 from openflexure_microscope_server.things.stage import (
     BaseStage,
     RedefinedBaseMovementError,
 )
 from openflexure_microscope_server.things.stage.dummy import DummyStage
+
+from .utilities.lt_test_utils import LabThingsTestEnv
 
 # Keep the size and number of moves fairly small or the tests can take forever
 point3d = st.tuples(
@@ -32,18 +33,6 @@ path3d = st.lists(point3d, min_size=5, max_size=10)
 def dummy_stage():
     """Return a dummy stage with a very low step time."""
     return create_thing_without_server(DummyStage, step_time=0.000001)
-
-
-@pytest.fixture
-def stage_server():
-    """Yield a server with a very basic configuration."""
-    thing_conf = {
-        "camera": "openflexure_microscope_server.things.camera.simulation:SimulatedCamera",
-        "stage": "openflexure_microscope_server.things.stage.dummy:DummyStage",
-    }
-    with tempfile.TemporaryDirectory() as tmpdir:
-        server = lt.ThingServer(things=thing_conf, settings_folder=tmpdir)
-        yield server
 
 
 def test_override_base_movement():
@@ -157,11 +146,12 @@ def test_direction_inversion(dummy_stage):
     assert dummy_stage.axis_inverted == {"x": True, "y": False, "z": False}
 
 
-def test_direction_errors_local_and_http(stage_server):
+def test_direction_errors_local_and_http():
     """Check for expected errors both locally and over http."""
-    dummy_stage = stage_server.things["stage"]
-    with TestClient(stage_server.app) as test_client:
-        stage_client = lt.ThingClient.from_url("/stage/", client=test_client)
+    thing_conf = {"camera": SimulatedCamera, "stage": DummyStage}
+    with LabThingsTestEnv(things=thing_conf) as test_env:
+        dummy_stage = test_env.get_thing_by_type(DummyStage)
+        stage_client = test_env.get_thing_client("stage")
 
         assert stage_client.axis_inverted == {"x": True, "y": False, "z": False}
         # Can't set an arbitrary value via a client as read only:

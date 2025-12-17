@@ -9,22 +9,18 @@ directory in the root of the repository.
 """
 
 import json
-import os
-import tempfile
 
 import numpy as np
 import piexif
 import pytest
-from fastapi.testclient import TestClient
 from PIL import Image
 
-import labthings_fastapi as lt
+from .utilities.lt_test_utils import LabThingsTestEnv
 
 
 @pytest.fixture
-def thing_server():
+def test_env():
     """Yield a server with a very basic configuration."""
-    temp_folder = tempfile.TemporaryDirectory()
     thing_conf = {
         "camera": {
             "class": "openflexure_microscope_server.things.camera.simulation:SimulatedCamera",
@@ -41,51 +37,28 @@ def thing_server():
         "autofocus": "openflexure_microscope_server.things.autofocus:AutofocusThing",
         "camera_stage_mapping": "openflexure_microscope_server.things.camera_stage_mapping:CameraStageMapper",
     }
-
-    server = lt.ThingServer(things=thing_conf, settings_folder=temp_folder.name)
-
-    assert os.path.exists(os.path.join(temp_folder.name, "camera"))
-    # Note: yield is important. If return is used the temp folder gets deleted
-    # before the test runs. Silence PT022 as ruff doesn't think yield is needed.
-    yield server  # noqa: PT022
+    with LabThingsTestEnv(things=thing_conf) as env:
+        yield env
 
 
-@pytest.fixture
-def client(thing_server):
-    """Yield a FastAPI TestClient for the server."""
-    with TestClient(thing_server.app) as client:
-        yield client
-
-
-@pytest.fixture
-def slower_client(thing_server):
-    """Yield a FastAPI TestClient for the server with a slower moving stage.
-
-    The step time for the stage is 100 microseconds rather than
-    1 microsecond.
-    """
-    thing_server.things["stage"].step_time = 0.0001
-    with TestClient(thing_server.app) as client:
-        yield client
-
-
-def test_autofocus(slower_client):
+def test_autofocus(test_env):
     """Test Fast Autofocus can run doesn't raise an exception."""
-    client = slower_client
-    autofocus = lt.ThingClient.from_url("/autofocus/", client)
+    # Adjust the time for stage is 100 microseconds rather than 1 microsecond.
+    test_env.get_thing_by_name["stage"].step_time = 0.0001
+    autofocus = test_env.get_thing_client("autofocus")
     _ = autofocus.fast_autofocus()
 
 
-def test_grab_jpeg(client):
+def test_grab_jpeg(test_env):
     """Check that grab_jpeg returns a blob that can be opened."""
-    camera = lt.ThingClient.from_url("/camera/", client)
+    camera = test_env.get_thing_client("camera")
     blob = camera.grab_jpeg()
     _image = Image.open(blob.open())
 
 
-def test_capture_jpeg_metadata(client):
+def test_capture_jpeg_metadata(test_env):
     """Check that the position is encoded into the image metadata."""
-    camera = lt.ThingClient.from_url("/camera/", client)
+    camera = test_env.get_thing_client("camera")
     blob = camera.capture_jpeg()
     image = Image.open(blob.open())
     exif_dict = piexif.load(image.info["exif"])
@@ -94,9 +67,9 @@ def test_capture_jpeg_metadata(client):
     assert "position" in metadata["stage"]
 
 
-def test_stage(client):
+def test_stage(test_env):
     """Test moving th stage forwards and backwards."""
-    stage = lt.ThingClient.from_url("/stage/", client)
+    stage = test_env.get_thing_client("stage")
     start = stage.position
     move = {"x": 1, "y": 2, "z": 3}
     stage.move_relative(**move)
@@ -109,16 +82,16 @@ def test_stage(client):
         assert s == p
 
 
-def test_capture_array(client):
+def test_capture_array(test_env):
     """Capture array from simulation and check the size is as expected."""
-    camera = lt.ThingClient.from_url("/camera/", client)
+    camera = test_env.get_thing_client("camera")
     array = np.asarray(camera.capture_array())
     assert array.shape == (240, 320, 3)
 
 
-def test_camera_stage_mapping_calibration(client):
+def test_camera_stage_mapping_calibration(test_env):
     """Check that camera stage mapping can run without an exception."""
-    camera = lt.ThingClient.from_url("/camera/", client)
+    camera = test_env.get_thing_client("camera")
     camera.settling_time = 0
-    camera_stage_mapping = lt.ThingClient.from_url("/camera_stage_mapping/", client)
+    camera_stage_mapping = test_env.get_thing_client("camera_stage_mapping")
     camera_stage_mapping.calibrate_xy()
