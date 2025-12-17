@@ -484,28 +484,26 @@ class AutofocusThing(lt.Thing):
         images_dir: str,
         autofocus_dz: int,
         save_resolution: tuple[int, int],
-        logger: lt.deps.InvocationLogger,
     ) -> StackParams:
         """Set up the parameters used for all stacks in a scan.
 
         :param images_dir: the folder to save all images
         :param autofocus_dz: the range to autofocus over if a stack fails
         :param save_resolution: The resolution to save the captures to disk with
-        :param logger: A logger passed from the calling Thing
 
         :returns: A StackParams object with the required parameters.
         """
         # Coerce min_images_to_test parameter
         min_images_to_test = self.stack_min_images_to_test
         if min_images_to_test < MIN_TEST_IMAGE_COUNT:
-            logger.warning(
+            self.logger.warning(
                 f"Cannot test only {min_images_to_test} image(s) as this will fail. "
                 "Setting min images to test to lowest possible value of"
                 f"{MIN_TEST_IMAGE_COUNT}."
             )
             min_images_to_test = MIN_TEST_IMAGE_COUNT
         elif min_images_to_test > MAX_TEST_IMAGE_COUNT:
-            logger.warning(
+            self.logger.warning(
                 f"Testing {min_images_to_test} images will cause defocus. "
                 "Setting min images to test to highest possible value of "
                 f"{MAX_TEST_IMAGE_COUNT}."
@@ -513,7 +511,7 @@ class AutofocusThing(lt.Thing):
             min_images_to_test = MAX_TEST_IMAGE_COUNT
         elif min_images_to_test % 2 == 0:
             min_images_to_test += 1
-            logger.warning(
+            self.logger.warning(
                 "Minimum number of images to test should be odd, setting to "
                 f"{min_images_to_test}."
             )
@@ -524,19 +522,19 @@ class AutofocusThing(lt.Thing):
         # min_images_to_save
         images_to_save = self.stack_images_to_save
         if images_to_save <= 0:
-            logger.warning(
+            self.logger.warning(
                 "At least 1 images must be saved. Setting images to save to 1."
             )
             images_to_save = 1
         elif images_to_save > min_images_to_test:
-            logger.warning(
+            self.logger.warning(
                 f"Cannot save {images_to_save} images as this above the minimum "
                 f"number to test. Setting images to save to {MAX_TEST_IMAGE_COUNT}."
             )
             images_to_save = min_images_to_test
         elif images_to_save % 2 == 0:
             images_to_save += 1
-            logger.warning(
+            self.logger.warning(
                 f"Images to save should be odd, setting to {images_to_save}."
             )
         # Set the Thing property to the coerced value

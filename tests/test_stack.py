@@ -26,7 +26,6 @@ from openflexure_microscope_server.things.autofocus import (
     _get_peak_turning_point,
 )
 
-LOGGER = logging.getLogger("mock-invocation_logger")
 RANDOM_GENERATOR = np.random.default_rng()
 
 
@@ -274,10 +273,7 @@ def test_create_stack(autofocus_thing, caplog):
     initial_images_to_save = autofocus_thing.stack_images_to_save
     with caplog.at_level(logging.INFO):
         stack_params = autofocus_thing.create_stack_params(
-            autofocus_dz=2000,
-            images_dir="/this/is/fake",
-            save_resolution=(1640, 1232),
-            logger=LOGGER,
+            autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
         )
 
     assert len(caplog.records) == 0
@@ -304,10 +300,7 @@ def test_coercing_stack_test_ims(
 
     with caplog.at_level(logging.WARNING):
         stack_params = autofocus_thing.create_stack_params(
-            autofocus_dz=2000,
-            images_dir="/this/is/fake",
-            save_resolution=(1640, 1232),
-            logger=LOGGER,
+            autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
         )
 
     assert len(caplog.records) == 1
@@ -335,10 +328,7 @@ def test_coercing_stack_save_ims(
 
     with caplog.at_level(logging.WARNING):
         stack_params = autofocus_thing.create_stack_params(
-            autofocus_dz=2000,
-            images_dir="/this/is/fake",
-            save_resolution=(1640, 1232),
-            logger=LOGGER,
+            autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
         )
 
     assert len(caplog.records) == 1
@@ -353,10 +343,7 @@ def test_coercing_stack_save_ims(
 def test_run_smart_stack(pass_on, autofocus_thing, mocker):
     """Test Running smart stack with the stack passing on different attempts."""
     stack_params = autofocus_thing.create_stack_params(
-        autofocus_dz=2000,
-        images_dir="/this/is/fake",
-        save_resolution=(1640, 1232),
-        logger=LOGGER,
+        autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
     )
     assert stack_params.max_attempts == 3
 
@@ -417,10 +404,7 @@ def setup_and_run_z_stack(check_returns, check_turning_points, autofocus_thing, 
         results). If it a tuple (or anything else), it is set as a return value.
     """
     stack_params = autofocus_thing.create_stack_params(
-        autofocus_dz=2000,
-        images_dir="/this/is/fake",
-        save_resolution=(1640, 1232),
-        logger=LOGGER,
+        autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
     )
     stack_params.settling_time = 0  # Don't settle or tests take forever.
 
