@@ -36,6 +36,7 @@ from pydantic import BaseModel, BeforeValidator
 
 import labthings_fastapi as lt
 from labthings_fastapi.exceptions import ServerNotRunningError
+from labthings_fastapi.types.numpy import NDArray
 
 from openflexure_microscope_server.background_detect import ChannelBlankError
 from openflexure_microscope_server.ui import (
@@ -45,7 +46,7 @@ from openflexure_microscope_server.ui import (
     property_control_for,
 )
 
-from . import ArrayModel, BaseCamera
+from . import BaseCamera
 from . import picamera_recalibrate_utils as recalibrate_utils
 from . import picamera_tuning_file_utils as tf_utils
 
@@ -573,7 +574,7 @@ class StreamingPiCamera2(BaseCamera):
         self,
         stream_name: Literal["main", "lores", "raw", "full"] = "main",
         wait: Optional[float] = 0.9,
-    ) -> ArrayModel:
+    ) -> NDArray:
         """Acquire one image from the camera and return as an array.
 
         This function will produce a nested list containing an uncompressed RGB image.

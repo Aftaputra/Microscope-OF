@@ -20,7 +20,6 @@ from typing import Any, Literal, Mapping, Optional, Tuple
 import numpy as np
 import piexif
 from PIL import Image
-from pydantic import RootModel
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
@@ -44,12 +43,6 @@ class PNGBlob(lt.blob.Blob):
     """A class representing a PNG image as a LabThings FastAPI Blob."""
 
     media_type: str = "image/png"
-
-
-class ArrayModel(RootModel):
-    """A model for an array."""
-
-    root: NDArray
 
 
 class CaptureError(RuntimeError):
@@ -255,7 +248,7 @@ class BaseCamera(lt.Thing):
         self,
         stream_name: Literal["main", "lores", "raw", "full"] = "main",
         wait: Optional[float] = 5,
-    ) -> ArrayModel:
+    ) -> NDArray:
         """Acquire one image from the camera and return as an array."""
         raise NotImplementedError(
             "CameraThings must define their own capture_array method"
@@ -265,7 +258,7 @@ class BaseCamera(lt.Thing):
     """The downsampling factor when calling capture_downsampled_array."""
 
     @lt.action
-    def capture_downsampled_array(self) -> ArrayModel:
+    def capture_downsampled_array(self) -> NDArray:
         """Acquire one image from the camera, downsample, and return as an array.
 
         * The array is downsamples by the thing property `downsampled_array_factor`.
@@ -334,7 +327,7 @@ class BaseCamera(lt.Thing):
     def grab_as_array(
         self,
         stream_name: Literal["main", "lores"] = "main",
-    ) -> ArrayModel:
+    ) -> NDArray:
         """Acquire one image from the preview stream and return as an array.
 
         It works like ``grab_jpeg`` but reliably handles broken streams. Prefer using

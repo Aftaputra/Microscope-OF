@@ -19,6 +19,7 @@ import numpy as np
 from PIL import Image, ImageFilter
 
 import labthings_fastapi as lt
+from labthings_fastapi.types.numpy import NDArray
 
 from openflexure_microscope_server.ui import (
     ActionButton,
@@ -28,7 +29,7 @@ from openflexure_microscope_server.ui import (
 )
 
 from ..stage.dummy import DummyStage
-from . import ArrayModel, BaseCamera
+from . import BaseCamera
 
 LOGGER = logging.getLogger(__name__)
 
@@ -317,7 +318,7 @@ class SimulatedCamera(BaseCamera):
         self,
         stream_name: Literal["main", "full"] = "full",
         wait: Optional[float] = None,
-    ) -> ArrayModel:
+    ) -> NDArray:
         """Acquire one image from the camera and return as an array.
 
         This function will produce a nested list containing an uncompressed RGB image.

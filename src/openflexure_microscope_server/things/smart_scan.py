@@ -116,13 +116,63 @@ class SmartScanThing(lt.Thing):
         self._scan_dir_manager = scan_directories.ScanDirectoryManager(scans_folder)
         self._scan_lock = threading.Lock()
 
-        # Variables set by the scan
-        self._latest_scan_name: Optional[str] = None
+    # Variables set by the scan
+    _stack_params: Optional[StackParams] = None
 
-        self._stack_params: Optional[StackParams] = None
-        self._ongoing_scan: Optional[scan_directories.ScanDirectory] = None
-        self._scan_data: Optional[scan_directories.ScanData] = None
-        self._preview_stitcher: Optional[stitching.PreviewStitcher] = None
+    @property
+    def stack_params(self) -> StackParams:
+        """The parameters for z-stacking during the onging scan.
+
+        Only read this property is a scan is ongoing or it will raise an error.
+        """
+        if self._stack_params is None:
+            raise RuntimeError("Cannot get stack parameters as they are not set.")
+        return self._stack_params
+
+    _ongoing_scan: Optional[scan_directories.ScanDirectory] = None
+
+    @property
+    def ongoing_scan(self) -> scan_directories.ScanDirectory:
+        """The ScanDirectory object of the ongoing scan.
+
+        Only read this property is a scan is ongoing or it will raise an error.
+        """
+        if self._ongoing_scan is None:
+            raise ScanNotRunningError("Cannot get ongoing scan if scan is not running.")
+        return self._ongoing_scan
+
+    _scan_data: Optional[scan_directories.ScanData] = None
+
+    @property
+    def scan_data(self) -> scan_directories.ScanData:
+        """The ScanData object jolding information about the of the ongoing scan.
+
+        Only read this property is a scan is ongoing or it will raise an error.
+        """
+        if self._scan_data is None:
+            raise ScanNotRunningError("Cannot get scan data if scan is not running.")
+        return self._scan_data
+
+    _preview_stitcher: Optional[stitching.PreviewStitcher] = None
+
+    @property
+    def preview_stitcher(self) -> stitching.PreviewStitcher:
+        """The PreviewStitcher object for stitching live previews.
+
+        Only read this property is a scan is ongoing or it will raise an error.
+        """
+        if self._preview_stitcher is None:
+            raise ScanNotRunningError(
+                "No preview stitcher agailable as scan is not running."
+            )
+        return self._preview_stitcher
+
+    _latest_scan_name: Optional[str] = None
+
+    @lt.property
+    def latest_scan_name(self) -> Optional[str]:
+        """The name of the last scan to be started."""
+        return self._latest_scan_name
 
     @lt.action
     def sample_scan(self, scan_name: str = "") -> None:
@@ -143,7 +193,7 @@ class SmartScanThing(lt.Thing):
         try:
             self._check_background_and_csm_set()
             self._ongoing_scan = self._scan_dir_manager.new_scan_dir(scan_name)
-            self._latest_scan_name = self._ongoing_scan.name
+            self._latest_scan_name = self.ongoing_scan.name
             self._autofocus.looping_autofocus(dz=self.autofocus_dz, start="centre")
             self._run_scan()
         except Exception as e:
@@ -199,11 +249,6 @@ class SmartScanThing(lt.Thing):
                 "the area of interest, or (worse) leading the microscope's range "
                 "of motion."
             )
-
-    @lt.property
-    def latest_scan_name(self) -> Optional[str]:
-        """The name of the last scan to be started."""
-        return self._latest_scan_name
 
     @_scan_running
     def _move_to_next_point(
@@ -295,7 +340,7 @@ class SmartScanThing(lt.Thing):
 
         # Fix scan parameters in case UI is updated during scan.
         return scan_directories.ScanData(
-            scan_name=self._ongoing_scan.name,
+            scan_name=self.ongoing_scan.name,
             starting_position=starting_position,
             overlap=overlap,
             max_dist=self.max_range,
@@ -317,16 +362,16 @@ class SmartScanThing(lt.Thing):
         Takes scan_result, a string that is either "success", "cancelled by user",
         or the error that ended the scan.
         """
-        self._scan_data.set_final_data(result=scan_result)
-        self._ongoing_scan.save_scan_data(self._scan_data)
+        self.scan_data.set_final_data(result=scan_result)
+        self.ongoing_scan.save_scan_data(self._scan_data)
 
     @_scan_running
     def _manage_stitching_threads(self) -> None:
         """Manage the stitching threads, starting them if needed and not already running."""
         # Assume 4 images means at least one offset in x and y, making the stitching
         # well constrained.
-        if self._scan_data.image_count > 3 and not self._preview_stitcher.running:
-            self._preview_stitcher.start()
+        if self.scan_data.image_count > 3 and not self.preview_stitcher.running:
+            self.preview_stitcher.start()
 
     @_scan_running
     def _run_scan(self) -> None:
@@ -339,16 +384,16 @@ class SmartScanThing(lt.Thing):
         try:
             self._cam.start_streaming(main_resolution=(3280, 2464))
             self._scan_data = self._collect_scan_data()
-            self._ongoing_scan.save_scan_data(self._scan_data)
+            self.ongoing_scan.save_scan_data(self._scan_data)
             self._stack_params = self._autofocus.create_stack_params(
-                images_dir=self._ongoing_scan.images_dir,
+                images_dir=self.ongoing_scan.images_dir,
                 autofocus_dz=self.autofocus_dz,
-                save_resolution=self._scan_data.save_resolution,
+                save_resolution=self.scan_data.save_resolution,
             )
             self._preview_stitcher = stitching.PreviewStitcher(
-                self._ongoing_scan.images_dir,
-                overlap=self._scan_data.overlap,
-                correlation_resize=self._scan_data.correlation_resize,
+                self.ongoing_scan.images_dir,
+                overlap=self.scan_data.overlap,
+                correlation_resize=self.scan_data.correlation_resize,
             )
 
             # This is the main loop of the scan!
@@ -392,9 +437,9 @@ class SmartScanThing(lt.Thing):
         # have multiple starting positions, each of which will be visited before the
         # scan can end.
         planner_settings = {
-            "dx": self._scan_data.dx,
-            "dy": self._scan_data.dy,
-            "max_dist": self._scan_data.max_dist,
+            "dx": self.scan_data.dx,
+            "dy": self.scan_data.dy,
+            "max_dist": self.scan_data.max_dist,
         }
         route_planner = scan_planners.SmartSpiral(
             initial_position=(self._stage.position["x"], self._stage.position["y"]),
@@ -419,7 +464,7 @@ class SmartScanThing(lt.Thing):
 
             capture_image = True
             # If skipping background, take an image to check if current field of view is background
-            if self._scan_data.skip_background:
+            if self.scan_data.skip_background:
                 capture_image, bg_message = self._cam.image_is_sample()
 
             if not capture_image:
@@ -432,22 +477,22 @@ class SmartScanThing(lt.Thing):
 
             focused, focused_height = self._autofocus.run_smart_stack(
                 stack_parameters=self._stack_params,
-                save_on_failure=not self._scan_data.skip_background,
+                save_on_failure=not self.scan_data.skip_background,
             )
 
             current_pos_xyz = (new_pos_xyz[0], new_pos_xyz[1], focused_height)
 
             # An image was captured if we are focussed or we are not skipping background.
-            imaged = focused or not self._scan_data.skip_background
+            imaged = focused or not self.scan_data.skip_background
 
             route_planner.mark_location_visited(
                 current_pos_xyz, imaged=imaged, focused=focused
             )
 
             # increment capture counter as thread has completed
-            self._scan_data.image_count += 1
+            self.scan_data.image_count += 1
             # Add it to the incremental zip
-            self._ongoing_scan.zip_files()
+            self.ongoing_scan.zip_files()
 
     @_scan_running
     def _return_to_starting_position(self) -> None:
@@ -455,7 +500,7 @@ class SmartScanThing(lt.Thing):
         self.logger.info("Returning to starting position.")
         if self._scan_data is not None:
             self._stage.move_absolute(
-                **self._scan_data.starting_position, block_cancellation=True
+                **self.scan_data.starting_position, block_cancellation=True
             )
 
     @property
@@ -463,28 +508,30 @@ class SmartScanThing(lt.Thing):
         """Return a metadata dict for ongoing scan to populate."""
         if self._ongoing_scan is None:
             return {}
-        return {"scan_name": self._ongoing_scan.name}
+        return {"scan_name": self.ongoing_scan.name}
 
     @_scan_running
     def _perform_final_stitch(self) -> None:
         """Update the scan zip and perform final stitch of the data."""
-        if self._scan_data.image_count <= 3:
+        if self.scan_data.image_count <= 3:
             self.logger.info("Not performing a stitch as 3 or fewer images taken")
             return
 
-        self._ongoing_scan.zip_files()
+        self.ongoing_scan.zip_files()
 
         self.logger.info("Waiting for background processes to finish...")
 
+        # Actually check the sticher exists rather than using self.preview_sticher as
+        # this method can be called during exception handling.
         if self._preview_stitcher is not None:
             self._preview_stitcher.wait()
 
-        if self._scan_data.stitch_automatically:
+        if self.scan_data.stitch_automatically:
             self.logger.info("Stitching final image (may take some time)...")
             self.stitch_scan(
-                scan_name=self._ongoing_scan.name,
-                correlation_resize=self._scan_data.correlation_resize,
-                overlap=self._scan_data.overlap,
+                scan_name=self.ongoing_scan.name,
+                correlation_resize=self.scan_data.correlation_resize,
+                overlap=self.scan_data.overlap,
             )
 
     @lt.endpoint(
@@ -540,7 +587,7 @@ class SmartScanThing(lt.Thing):
         _scan_dir_manager.all_scans_info() directly as it will handle stopping the json
         in any ongoing scans being read.
         """
-        ongoing_name = None if self._ongoing_scan is None else self._ongoing_scan.name
+        ongoing_name = None if self._ongoing_scan is None else self.ongoing_scan.name
         return self._scan_dir_manager.all_scans_info(ongoing=ongoing_name)
 
     @lt.property
@@ -555,7 +602,7 @@ class SmartScanThing(lt.Thing):
         """
         return ScanListInfo(
             scans=self._get_all_scan_info(),
-            ongoing=None if self._ongoing_scan is None else self._ongoing_scan.name,
+            ongoing=None if self._ongoing_scan is None else self.ongoing_scan.name,
         )
 
     @lt.endpoint(
@@ -632,7 +679,7 @@ class SmartScanThing(lt.Thing):
         This is a wrapper around scan manager's delete_scan that logs to the
         things logger if there is a problem.
         """
-        if self._ongoing_scan is not None and scan_name == self._ongoing_scan.name:
+        if self._ongoing_scan is not None and scan_name == self.ongoing_scan.name:
             self.logger.error("Attempted to delete ongoing scan.")
             return False
         try:
@@ -648,7 +695,7 @@ class SmartScanThing(lt.Thing):
     @property
     def latest_preview_stitch_path(self) -> Optional[str]:
         """The path of the latest preview stitched image, or None if not available."""
-        if not self.latest_scan_name:
+        if self.latest_scan_name is None:
             return None
 
         return self._scan_dir_manager.get_file_path_from_img_dir(
