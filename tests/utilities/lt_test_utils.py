@@ -3,12 +3,14 @@
 import tempfile
 import time
 from types import TracebackType
-from typing import Any, Optional, Self
+from typing import Any, Mapping, Optional, Self, TypeVar
 
 import requests
 from fastapi.testclient import TestClient
 
 import labthings_fastapi as lt
+
+ThingSubclass = TypeVar("ThingSubclass", bound=lt.Thing)
 
 ACTION_RUNNING_KEYWORDS = ["idle", "pending", "running"]
 
@@ -29,7 +31,9 @@ class LabThingsTestEnv:
     """
 
     def __init__(
-        self, things: dict[str, lt.Thing | str], settings_folder: Optional[str] = None
+        self,
+        things: Mapping[str, lt.Thing | str],
+        settings_folder: Optional[str] = None,
     ) -> None:
         """Initialise the test environment.
 
@@ -87,10 +91,48 @@ class LabThingsTestEnv:
         if thing_name not in self.server.things:
             raise ValueError(f"No Thing named {thing_name}")
 
-    def get_thing(self, thing_name: str) -> lt.Thing:
+    def get_thing_by_name(self, thing_name: str) -> lt.Thing:
         """Get a Thing from the server by name."""
         self.check_thing_exists(thing_name)
         return self.server.things[thing_name]
+
+    def get_thing_by_type(self, thing_class: type[ThingSubclass]) -> ThingSubclass:
+        """Get a thing by type.
+
+        :param thing_class: The subclass of thing to match.
+
+        :return: The Thing that matches the subclass.
+
+        :raises RuntimeError: If there are multiple things of the same type, or no
+            matching thing. If there are multiple things of this type use
+            ``get_thing_by_name`` or ``get_all_things_by_type``.
+        """
+        matching = self.get_all_things_by_type(thing_class)
+        n_things = len(matching)
+        if n_things == 0:
+            raise RuntimeError(f"No Thing of type {thing_class} on this server.")
+        if n_things > 1:
+            raise RuntimeError(
+                f"Cannot get Thing by type as there are {n_things} of type "
+                f"{thing_class} on this server."
+            )
+        return next(iter(matching.values()))
+
+    def get_all_things_by_type(
+        self, thing_class: type[ThingSubclass]
+    ) -> Mapping[str, ThingSubclass]:
+        """Get a dictionary of all things by matching a type.
+
+        :param thing_class: The subclass of thing to match.
+
+        :return: A dictionary of Things that match the subclass. If none match this
+            will be and empty dictionary.
+        """
+        matching = {}
+        for thing_name, thing in self.server.things.items():
+            if isinstance(thing, thing_class):
+                matching[thing_name] = thing
+        return matching
 
     def get_thing_client(self, thing_name: str) -> lt.ThingClient:
         """Get a ThingClient for a Thing by name."""
@@ -102,7 +144,7 @@ class LabThingsTestEnv:
         self,
         thing_name: str,
         action_name: str,
-        action_kwargs: Optional[dict[str, Any]] = None,
+        action_kwargs: Optional[Mapping[str, Any]] = None,
     ) -> requests.Response:
         """Start an action and return the server response.
 
@@ -117,7 +159,7 @@ class LabThingsTestEnv:
 
     def poll_action(
         self, response: requests.Response, interval: float = 0.01
-    ) -> dict[str, Any]:
+    ) -> Mapping[str, Any]:
         """Poll an action until it completes and return the final response data."""
         invocation_data = response.json()
 
@@ -141,11 +183,11 @@ class LabThingsTestEnv:
         response.raise_for_status()
 
 
-def _get_link(obj: dict[str, Any], rel: str) -> dict[str, Any]:
+def _get_link(obj: Mapping[str, Any], rel: str) -> Mapping[str, Any]:
     """Retrieve a link from an object's `links` list, by its `rel` attribute."""
     return next(link for link in obj["links"] if link["rel"] == rel)
 
 
-def _invocation_href(invocation_data: dict[str, Any]) -> str:
+def _invocation_href(invocation_data: Mapping[str, Any]) -> str:
     """Get the invocation href from the invocation response data."""
     return _get_link(invocation_data, "self")["href"]
