@@ -35,11 +35,6 @@ from openflexure_microscope_server.things.smart_scan import (
     SmartScanThing,
 )
 
-from .mock_things.mock_autofocus import MockAutoFocusThing
-from .mock_things.mock_camera import MockCameraThing
-from .mock_things.mock_csm import MockCSMThing
-from .mock_things.mock_stage import MockStageThing
-
 # Use our own dir in the root temp dir not a dynamically generated one so we
 # have some control of when it is deleted
 SCAN_DIR = os.path.join(tempfile.gettempdir(), "scans")
@@ -54,7 +49,9 @@ def _clear_scan_dir() -> None:
 @pytest.fixture
 def smart_scan_thing():
     """Return a smart scan thing as a fixture."""
-    return create_thing_without_server(SmartScanThing, scans_folder=SCAN_DIR)
+    return create_thing_without_server(
+        SmartScanThing, scans_folder=SCAN_DIR, mock_all_slots=True
+    )
 
 
 def test_initial_properties(smart_scan_thing):
@@ -156,7 +153,9 @@ def test_delete_all_scans(smart_scan_thing, caplog):
         assert len(caplog.records) == 0
 
 
-def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
+def _run_only_outer_scan(
+    smart_scan_thing, mocker, adjust_initial_state: Optional[Callable] = None
+):
     """Create a subclass of SmartScanThing to mock _run_scan and run sample_scan.
 
     This should do all the set up for a scan, move into the mocked
@@ -170,69 +169,39 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
     This seems hard to do with a fixture so it is being done with a private
     function
     """
-    # cancel handle shouldn't be used. Set to arbitrary value for checking
-    af_mock = MockAutoFocusThing()
-    stage_mock = MockStageThing()
-    cam_mock = MockCameraThing()
-    csm_mock = MockCSMThing()
 
-    class MockedSmartScanThing(SmartScanThing):
-        """Mocked version of SmartScanThing with a patched _run_scan method."""
+    def check_locked(*_args, **_kwargs):
+        """Check the scan is locked."""
+        assert smart_scan_thing._scan_lock.locked()
 
-        # Counter for checking functions were called
-        mock_call_count = {"_run_scan": 0}
-
-        def _run_scan(self):
-            self.mock_call_count["_run_scan"] += 1
-
-            """Check scan vars are set up as expected"""
-            assert not self._scan_lock.acquire(timeout=0.1)
-            assert self._autofocus is af_mock
-            assert self._stage is stage_mock
-            assert self._cam is cam_mock
-            assert self._csm is csm_mock
-
-    # mock smart scan thing
-    mock_ss_thing = create_thing_without_server(
-        MockedSmartScanThing, scans_folder=SCAN_DIR
-    )
+    mocker.patch.object(smart_scan_thing, "_run_scan", side_effect=check_locked)
 
     if adjust_initial_state is not None:
-        adjust_initial_state(mock_ss_thing)
+        adjust_initial_state(smart_scan_thing)
 
     exec_info = None
     try:
-        mock_ss_thing.sample_scan(
-            autofocus=af_mock,
-            stage=stage_mock,
-            cam=cam_mock,
-            csm=csm_mock,
-            scan_name="FooBar",
-        )
+        smart_scan_thing.sample_scan(scan_name="FooBar")
+
     except Exception as e:
         exec_info = e
 
-    assert mock_ss_thing._scan_lock.acquire(timeout=0.1)
-    mock_ss_thing._scan_lock.release()
-    assert mock_ss_thing._autofocus is None
-    assert mock_ss_thing._stage is None
-    assert mock_ss_thing._cam is None
-    assert mock_ss_thing._csm is None
+    assert not smart_scan_thing._scan_lock.locked()
 
     # Return the mock thing for further state testing, and the
     # exec_info of any uncaught exceptions that were raised
-    return mock_ss_thing, exec_info
+    return smart_scan_thing, exec_info
 
 
-def test_outer_scan():
+def test_outer_scan(smart_scan_thing, mocker):
     """Test setup and teardown of the scan."""
-    mock_ss_thing, exec_info = _run_only_outer_scan()
+    mock_ss_thing, exec_info = _run_only_outer_scan(smart_scan_thing, mocker)
     assert exec_info is None
     # Checked the mocked _run_scan was run exactly once
-    assert mock_ss_thing.mock_call_count["_run_scan"] == 1
+    assert mock_ss_thing._run_scan.call_count == 1
 
 
-def test_outer_scan_wo_sample_skip():
+def test_outer_scan_wo_sample_skip(smart_scan_thing, mocker):
     """Test setup and teardown of the scan."""
 
     def _set_skip_background(mock_ss_thing):
@@ -240,11 +209,13 @@ def test_outer_scan_wo_sample_skip():
         # __dict__ to avoid triggering property emits that require a server
         mock_ss_thing.__dict__["skip_background"] = False
 
-    mock_ss_thing, exec_info = _run_only_outer_scan(_set_skip_background)
+    mock_ss_thing, exec_info = _run_only_outer_scan(
+        smart_scan_thing, mocker, _set_skip_background
+    )
 
     assert exec_info is None
     # Checked the mocked _run_scan was run exactly once
-    assert mock_ss_thing.mock_call_count["_run_scan"] == 1
+    assert mock_ss_thing._run_scan.call_count == 1
 
 
 MOCK_SCAN_NAME = "test_name_0001"
@@ -281,17 +252,14 @@ def scan_thing_mocked_for_scan_data(smart_scan_thing, mocker):
             "_calc_displacement_from_test_image",
             return_value=[100, 100],
         )
+
+        smart_scan_thing._stage.position = MOCK_START_POS
+
         mock_ongoing_scan = mocker.Mock()
         mock_ongoing_scan.name = MOCK_SCAN_NAME
         mock_ongoing_scan.images_dir = MOCK_SCAN_DIR
-        mock_stage = mocker.Mock()
-        mock_stage.position = MOCK_START_POS
-
-        mock_autofocus = mocker.Mock()
-
         smart_scan_thing._ongoing_scan = mock_ongoing_scan
-        smart_scan_thing._stage = mock_stage
-        smart_scan_thing._autofocus = mock_autofocus
+
         yield smart_scan_thing
 
 
@@ -333,7 +301,6 @@ def scan_thing_mocked_for_run_scan(scan_thing_mocked_for_scan_data, mocker):
     Mocks and _cam is a MockCameraThing
     """
     scan_thing = scan_thing_mocked_for_scan_data
-    scan_thing._cam = MockCameraThing()
     mocker.patch.object(scan_thing, "_main_scan_loop")
     mocker.patch.object(scan_thing, "_return_to_starting_position")
     mocker.patch.object(scan_thing, "_perform_final_stitch")
