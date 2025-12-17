@@ -174,7 +174,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
     function
     """
     # cancel handle shouldn't be used. Set to arbitrary value for checking
-    cancel_mock = 1  # not called
     af_mock = MockAutoFocusThing()
     stage_mock = MockStageThing()
     cam_mock = MockCameraThing()
@@ -191,7 +190,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
 
             """Check scan vars are set up as expected"""
             assert not self._scan_lock.acquire(timeout=0.1)
-            assert self._cancel is cancel_mock
             assert self._scan_logger is LOGGER
             assert self._autofocus is af_mock
             assert self._stage is stage_mock
@@ -209,7 +207,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
     exec_info = None
     try:
         mock_ss_thing.sample_scan(
-            cancel=cancel_mock,  # Shouldn't be used, can be checked
             logger=LOGGER,
             autofocus=af_mock,
             stage=stage_mock,
@@ -222,7 +219,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
 
     assert mock_ss_thing._scan_lock.acquire(timeout=0.1)
     mock_ss_thing._scan_lock.release()
-    assert mock_ss_thing._cancel is None
     assert mock_ss_thing._scan_logger is None
     assert mock_ss_thing._autofocus is None
     assert mock_ss_thing._stage is None
@@ -342,7 +338,6 @@ def scan_thing_mocked_for_run_scan(scan_thing_mocked_for_scan_data, mocker):
     """
     scan_thing = scan_thing_mocked_for_scan_data
     scan_thing._cam = MockCameraThing()
-    mocker.patch.object(scan_thing, "_cancel")
     mocker.patch.object(scan_thing, "_main_scan_loop")
     mocker.patch.object(scan_thing, "_return_to_starting_position")
     mocker.patch.object(scan_thing, "_perform_final_stitch")
