@@ -378,7 +378,6 @@ class SmartScanThing(lt.Thing):
                 images_dir=self._ongoing_scan.images_dir,
                 autofocus_dz=self.autofocus_dz,
                 save_resolution=self._scan_data.save_resolution,
-                logger=self._scan_logger,
             )
             self._preview_stitcher = stitching.PreviewStitcher(
                 self._ongoing_scan.images_dir,

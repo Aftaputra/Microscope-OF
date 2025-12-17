@@ -33,8 +33,8 @@ from camera_stage_mapping.camera_stage_tracker import Tracker
 from camera_stage_mapping.exceptions import MappingError
 from labthings_fastapi.types.numpy import DenumpifyingDict
 
-from .camera import CameraDependency as CameraClient
-from .stage import StageDependency as Stage
+from .camera import BaseCamera
+from .stage import BaseStage
 
 CoordinateType = Tuple[float, float, float]
 XYCoordinateType = Tuple[float, float]
@@ -62,13 +62,13 @@ class RecordedMove:
     for calibrating the stage as it allows measuring how long moves take.
     """
 
-    def __init__(self, stage: Stage) -> None:
+    def __init__(self, stage: BaseStage) -> None:
         """Set the stage client used for for movement.
 
         :param stage: the stage client to be used. ``stage.move_to_xyz_position`` will
             be called whenever the instance is called.
         """
-        self._stage: Stage = stage
+        self._stage = stage
         self._current_position: Optional[CoordinateType] = None
         self._history: List[Tuple[float, Optional[CoordinateType]]] = []
 
@@ -118,58 +118,53 @@ class CameraStageMapper(lt.Thing):
     override the ``get_xyz_position()`` and ``move_to_xyz_position()`` methods.
     """
 
+    _cam: BaseCamera = lt.thing_slot()
+    _stage: BaseStage = lt.thing_slot()
+
     @lt.action
-    def calibrate_1d(
-        self,
-        camera: CameraClient,
-        stage: Stage,
-        logger: lt.deps.InvocationLogger,
-        direction: Tuple[float, float, float],
-    ) -> DenumpifyingDict:
+    def calibrate_1d(self, direction: Tuple[float, float, float]) -> DenumpifyingDict:
         """Move a microscope's stage in 1D, and figure out the relationship with the camera."""
         # Record positions and times for stage calibration
-        recorded_move = RecordedMove(stage)
+        recorded_move = RecordedMove(self._stage)
         tracker = Tracker(
-            camera.capture_downsampled_array,
-            stage.get_xyz_position,
-            settle=camera.settle,
+            self._cam.capture_downsampled_array,
+            self._stage.get_xyz_position,
+            settle=self._cam.settle,
         )
         direction_array: np.ndarray = np.array(direction)
 
-        starting_position = stage.position
+        starting_position = self._stage.position
         try:
             result: dict = calibrate_backlash_1d(
-                tracker, recorded_move, direction_array, logger=logger
+                tracker, recorded_move, direction_array, logger=self.logger
             )
         except lt.exceptions.InvocationCancelledError as e:
-            logger.info("User cancelled the camera stage mapping calibration")
-            logger.info("Returning to starting position")
-            stage.move_absolute(**starting_position, block_cancellation=True)
+            self.logger.info("User cancelled the camera stage mapping calibration")
+            self.logger.info("Returning to starting position")
+            self._stage.move_absolute(**starting_position, block_cancellation=True)
             raise e
         except MappingError as e:
-            logger.info("Returning to starting position due to failed calibration")
-            stage.move_absolute(**starting_position, block_cancellation=True)
+            self.logger.info("Returning to starting position due to failed calibration")
+            self._stage.move_absolute(**starting_position, block_cancellation=True)
             raise e
         result["move_history"] = recorded_move.history
-        result["image_resolution"] = camera.capture_downsampled_array().shape[:2]
+        result["image_resolution"] = self._cam.capture_downsampled_array().shape[:2]
         return result
 
     @lt.action
-    def calibrate_xy(
-        self, camera: CameraClient, stage: Stage, logger: lt.deps.InvocationLogger
-    ) -> DenumpifyingDict:
+    def calibrate_xy(self) -> DenumpifyingDict:
         """Move the microscope's stage in X and Y, to calibrate its relationship to the camera.
 
         This performs two 1d calibrations in x and y, then combines their results.
         """
-        downsampling_factor = camera.downsampled_array_factor
+        downsampling_factor = self._cam.downsampled_array_factor
         # Calibrate y-axis first as it is more likely to fail.
         # The x-y difference is due to the camera aspect ratio, not the stage hardware.
-        logger.info("Calibrating Y axis:")
-        cal_y: dict = self.calibrate_1d(camera, stage, logger, (0, 1, 0))
-        logger.info("Calibrating X axis:")
-        cal_x: dict = self.calibrate_1d(camera, stage, logger, (1, 0, 0))
-        logger.info("Calibration complete, updating metadata.")
+        self.logger.info("Calibrating Y axis:")
+        cal_y: dict = self.calibrate_1d((0, 1, 0))
+        self.logger.info("Calibrating X axis:")
+        cal_x: dict = self.calibrate_1d((1, 0, 0))
+        self.logger.info("Calibration complete, updating metadata.")
 
         # Combine X and Y calibrations to make a 2D calibration
         cal_xy: dict = image_to_stage_displacement_from_1d([cal_x, cal_y])
@@ -185,7 +180,7 @@ class CameraStageMapper(lt.Thing):
             f"[{round(csm_matrix[0][0], 2)}, {round(csm_matrix[0][1], 2)},],"
             f"[{round(csm_matrix[1][0], 2)}, {round(csm_matrix[1][1], 2)}]"
         )
-        logger.info(f"CSM matrix is {csm_as_string}.")
+        self.logger.info(f"CSM matrix is {csm_as_string}.")
 
         data: Dict[str, dict] = {
             "camera_stage_mapping_calibration": cal_xy,
@@ -201,9 +196,7 @@ class CameraStageMapper(lt.Thing):
         return data
 
     @lt.property
-    def image_to_stage_displacement_matrix(
-        self,
-    ) -> Optional[List[List[float]]]:  # 2x2 integer array
+    def image_to_stage_displacement_matrix(self) -> Optional[List[List[float]]]:
         """A 2x2 matrix that converts displacement in image coordinates to stage coordinates.
 
         Note that this matrix is defined using "matrix coordinates", i.e. image coordinates
@@ -253,12 +246,7 @@ class CameraStageMapper(lt.Thing):
             raise CSMUncalibratedError()  # noqa: RSE102
 
     @lt.action
-    def move_in_image_coordinates(
-        self,
-        stage: Stage,
-        x: float,
-        y: float,
-    ) -> None:
+    def move_in_image_coordinates(self, x: float, y: float) -> None:
         """Move by a given number of pixels on the camera.
 
         NB x and y here refer to what is usually understood to be the horizontal and
@@ -271,7 +259,7 @@ class CameraStageMapper(lt.Thing):
         an image usually helps resolve any ambiguity.
         """
         self.assert_calibrated()
-        stage.move_relative(**self.convert_image_to_stage_coordinates(x=x, y=y))
+        self._stage.move_relative(**self.convert_image_to_stage_coordinates(x=x, y=y))
 
     @lt.action
     def convert_image_to_stage_coordinates(
