@@ -8,28 +8,14 @@ from .cam_test_utils import camera_test_client_and_server
 
 
 @pytest.fixture
-def picamera_client_and_server() -> lt.ThingClient:
-    """Initialise a test picamera_client and server for the StreamingPiCamera2 Thing.
-
-    This fixture:
-
-    * Sets up a ThingServer,
-    * Registers a StreamingPiCamera2 instance at the "camera" endpoint
-    * Yields a ThingClient and the server for interacting with it during tests.
-    * The picamera thing can be found at server.things["camera"]
-    """
-    with camera_test_client_and_server() as client_and_server:
-        yield client_and_server
+def picamera_test_env() -> lt.ThingClient:
+    """Initialise a test environment with only a StreamingPiCamera2 Thing."""
+    with camera_test_client_and_server() as env:
+        yield env
 
 
 @pytest.fixture
-def picamera_client(picamera_client_and_server) -> lt.ThingClient:
-    """Initialise a test picamera_client for the StreamingPiCamera2 Thing.
-
-    This fixture:
-
-    * Sets up a ThingServer,
-    * Registers a StreamingPiCamera2 instance at the "camera" endpoint
-    * return a ThingClient for interacting with it during tests.
-    """
-    return picamera_client_and_server[0]
+def picamera_client() -> lt.ThingClient:
+    """Initialise a test picamera_client (in a LabThings test env)."""
+    with camera_test_client_and_server() as env:
+        return env.get_thing_client["camera"]
