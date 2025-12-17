@@ -8,15 +8,12 @@ import sys
 import tomllib
 from functools import wraps
 from importlib.metadata import version
-from threading import Thread
 from typing import (
     Any,
     Callable,
     Concatenate,
     Literal,
-    Optional,
     ParamSpec,
-    Self,
     TypeAlias,
     TypeVar,
     overload,
@@ -26,6 +23,7 @@ from pydantic import BaseModel
 
 T = TypeVar("T")
 P = ParamSpec("P")
+LockableClass = TypeVar("LockableClass")
 
 JSONScalar: TypeAlias = str | int | float | bool | None
 JSONType: TypeAlias = dict[str, "JSONType"] | list["JSONType"] | JSONScalar
@@ -50,15 +48,15 @@ def _is_lock_like(obj: Any) -> bool:
 
 
 def requires_lock(
-    method: Callable[Concatenate[Self, P], T],
-) -> Callable[Concatenate[Self, P], T]:
+    method: Callable[Concatenate[LockableClass, P], T],
+) -> Callable[Concatenate[LockableClass, P], T]:
     """Decorate a class method so that it requires the class lock to run.
 
     The class should have a reentrant lock with the name ``self._lock``.
     """
 
     @wraps(method)
-    def wrapper(self: Self, *args: P.args, **kwargs: P.kwargs) -> T:
+    def wrapper(self: LockableClass, *args: P.args, **kwargs: P.kwargs) -> T:
         # Confirm the object the method is attached to has a self._lock property
         if not hasattr(self, "_lock"):
             raise AttributeError(f"{self.__class__.__name__} has no '_lock' attribute")
@@ -69,91 +67,6 @@ def requires_lock(
             return method(self, *args, **kwargs)
 
     return wrapper
-
-
-class ErrorCapturingThread(Thread):
-    """Subclass of Thread that captures exceptions from the target function.
-
-    It wraps the target function in a try-except block.
-
-    Execution will stop with an unhandled exception, but the exception will not be raised
-    until the join method is called. When the join method is called, the exception is
-    called in the calling thread.
-
-    This allows for error handling to be performed by the calling thread at the time that
-    join is run.
-    """
-
-    def __init__(
-        self,
-        group: Optional[Any] = None,
-        target: Optional[Callable[..., Any]] = None,
-        name: Optional[str] = None,
-        args: tuple[Any, ...] = (),
-        kwargs: Optional[dict[str, Any]] = None,
-        *,
-        daemon: Optional[bool] = None,
-    ) -> None:
-        """Initialise with the same arguments as Thread."""
-        # As all inputs are keywords we need to set the default values for args and kwargs:
-        if args is None:
-            args = ()
-        if kwargs is None:
-            kwargs = {}
-
-        # Make an empty list for any error.
-        # We are only ever going to have one or zero errors, this is an empty
-        # list as we need to pass the reference not the value to collect the
-        # error. If we could simply make a pointer we would have done that.
-        self._error_buffer = []
-
-        # Add the target function end error buffer to the thread to the start of
-        # the argument list so they are passed to _wrap_and_catch_errors()
-        args = (target, self._error_buffer, *args)
-        # Start the thread with _wrap_and_catch_errors() as the target
-        super().__init__(
-            group=group,
-            target=_wrap_and_catch_errors,
-            name=name,
-            args=args,
-            kwargs=kwargs,
-            daemon=daemon,
-        )
-
-    def join(self, timeout: Optional[float] = None) -> None:
-        """Join when the thread is complete.
-
-        If the thread ended due to an unhandled exception, the exception will be raised
-        when this method is called.
-        """
-        super().join(timeout)
-        # If there is an error in the error buffer clear the buffer and raise it
-        if self._error_buffer:
-            err = self._error_buffer[0]
-            self._error_buffer = []
-            raise err
-
-
-def _wrap_and_catch_errors(
-    target: Callable[..., Any], error_buffer: list, *args: Any, **kwargs: Any
-) -> None:
-    """Run target function in a try-except block.
-
-    This function is designed only to be used by ErrorCapturingThread.
-
-    It will run a target function in a try-except block catching any exception.
-    If an exception is caught it is added to ``error_buffer``.
-
-    :param target: The target function to call
-    :param error_buffer: An empty list that is used for returning the exception from
-        the thread. It is a list to ensure it is passed by reference.
-    :param ``*args``: The arguments for the target function
-    :param ``**kwargs``: The Keyword arguments for the target function
-    """
-    try:
-        target(*args, **kwargs)
-    except BaseException as e:
-        error_buffer.append(e)
 
 
 # Compiled regular expressions for unsafe characters
