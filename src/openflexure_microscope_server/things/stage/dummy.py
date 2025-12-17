@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 from collections.abc import Mapping
 from types import TracebackType
-from typing import Any, Optional
+from typing import Any, Optional, Self
 
 import labthings_fastapi as lt
 
@@ -36,9 +36,10 @@ class DummyStage(BaseStage):
         self.step_time = step_time
         self.instantaneous_position = self._hardware_position
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> Self:
         """Register the stage position when the Thing context manager is opened."""
         self.instantaneous_position = self._hardware_position
+        return self
 
     def __exit__(
         self,

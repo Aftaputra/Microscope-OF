@@ -15,7 +15,7 @@ import tempfile
 import time
 from datetime import datetime
 from types import TracebackType
-from typing import Any, Literal, Mapping, Optional, Tuple
+from typing import Any, Literal, Mapping, Optional, Self, Tuple
 
 import numpy as np
 import piexif
@@ -180,7 +180,7 @@ class BaseCamera(lt.Thing):
         }
         self._detector_name = "Channel Deviations (LUV)"
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> Self:
         """Open hardware connection when the Thing context manager is opened."""
         raise NotImplementedError("CameraThings must define their own __enter__ method")
 

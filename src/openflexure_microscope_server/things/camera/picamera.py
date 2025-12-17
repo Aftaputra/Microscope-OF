@@ -25,7 +25,7 @@ import time
 from contextlib import contextmanager
 from threading import RLock
 from types import TracebackType
-from typing import Annotated, Any, Iterator, Literal, Mapping, Optional
+from typing import Annotated, Any, Iterator, Literal, Mapping, Optional, Self
 
 import numpy as np
 from picamera2 import Picamera2
@@ -148,7 +148,7 @@ class StreamingPiCamera2(BaseCamera):
                 f"are {SUPPORTED_CAMS_SENSOR_INFO.keys()}."
             )
         self._sensor_info = SUPPORTED_CAMS_SENSOR_INFO[camera_board]
-        self._picamera_lock = None
+        self._picamera_lock = RLock()
         self._picamera = None
 
         # Load the tuning file for the specified sensor mode.
@@ -340,10 +340,7 @@ class StreamingPiCamera2(BaseCamera):
         :raises PicameraModelError: If check_sensor_model is True and the real
             camera sensor model doesn't match the expected sensor model.
         """
-        if self._picamera_lock is not None:
-            # Don't close the camera if it's in use
-            self._picamera_lock.acquire()
-        with tempfile.NamedTemporaryFile("w") as tuning_file:
+        with self._picamera_lock, tempfile.NamedTemporaryFile("w") as tuning_file:
             json.dump(self.tuning, tuning_file)
             tuning_file.flush()  # but leave it open as closing it will delete it
             os.environ["LIBCAMERA_RPI_TUNING_FILE"] = tuning_file.name
@@ -371,9 +368,8 @@ class StreamingPiCamera2(BaseCamera):
                         f"Wrong Picamera model. Expecting {self._sensor_info.sensor_model}, "
                         f"but found {hw_sensor_model}."
                     )
-        self._picamera_lock = RLock()
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> Self:
         """Start streaming when the Thing context manager is opened.
 
         This opens the picamera connection, initialises the camera, sets the

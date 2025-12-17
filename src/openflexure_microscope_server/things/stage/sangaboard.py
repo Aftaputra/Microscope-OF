@@ -8,7 +8,7 @@ from collections.abc import Mapping
 from contextlib import contextmanager
 from copy import copy
 from types import TracebackType
-from typing import Any, Iterator, Literal, Optional
+from typing import Any, Iterator, Literal, Optional, Self
 
 import semver
 
@@ -33,7 +33,7 @@ class SangaboardThing(BaseStage):
     def __init__(
         self,
         thing_server_interface: lt.ThingServerInterface,
-        port: str = None,
+        port: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """Initialise SangaboardThing.
@@ -53,13 +53,14 @@ class SangaboardThing(BaseStage):
         self._sangaboard_lock = threading.RLock()
         super().__init__(thing_server_interface, **kwargs)
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> Self:
         """Connect to the sangaboard when the Thing context manager is opened."""
         self._sangaboard = sangaboard.Sangaboard(**self.sangaboard_kwargs)
         with self.sangaboard() as sb:
             sb.query("blocking_moves false")
         self.check_firmware()
         self.update_position()
+        return self
 
     def __exit__(
         self,
