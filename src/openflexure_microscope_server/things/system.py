@@ -51,7 +51,7 @@ class OpenFlexureSystem(lt.Thing):
         return UUID(self._microscope_id)
 
     @microscope_id.setter
-    def microscope_id(self, uuid: UUID) -> None:
+    def _set_microscope_id(self, uuid: UUID) -> None:
         self._microscope_id = uuid
 
     @lt.property
@@ -98,6 +98,7 @@ class OpenFlexureSystem(lt.Thing):
             SHUTDOWN_CMD,
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
+            text=True,
         )
 
         out, err = p.communicate()
@@ -116,6 +117,7 @@ class OpenFlexureSystem(lt.Thing):
             REBOOT_CMD,
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
+            text=True,
         )
         out, err = p.communicate()
         return CommandOutput(output=out, error=err)
