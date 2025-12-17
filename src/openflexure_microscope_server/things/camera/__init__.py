@@ -683,10 +683,6 @@ class BaseCamera(lt.Thing):
         return {}
 
 
-CameraDependency = lt.deps.direct_thing_client_dependency(BaseCamera, "camera")
-RawCameraDependency = lt.deps.raw_thing_dependency(BaseCamera)
-
-
 def downsample(factor: int, image: np.ndarray) -> np.ndarray:
     """Downsample an image by taking the mean of each nxn region.
 

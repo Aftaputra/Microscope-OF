@@ -206,6 +206,3 @@ class BaseStage(lt.Thing):
         This method provides the interface expected by the camera_stage_mapping.
         """
         self.move_absolute(x=xyz_pos[0], y=xyz_pos[1], z=xyz_pos[2])
-
-
-StageDependency = lt.deps.direct_thing_client_dependency(BaseStage, "stage")

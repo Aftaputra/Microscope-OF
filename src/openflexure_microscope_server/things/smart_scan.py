@@ -34,17 +34,12 @@ from openflexure_microscope_server import scan_directories, scan_planners, stitc
 
 # Things
 from .autofocus import AutofocusThing, StackParams
-from .camera import CameraDependency as CameraClient
+from .camera import BaseCamera
 from .camera_stage_mapping import CameraStageMapper
-from .stage import StageDependency as StageDep
+from .stage import BaseStage
 
 T = TypeVar("T")
 P = ParamSpec("P")
-
-CSMDep = lt.deps.direct_thing_client_dependency(
-    CameraStageMapper, "camera_stage_mapping"
-)
-AutofocusDep = lt.deps.direct_thing_client_dependency(AutofocusThing, "autofocus")
 
 
 class ScanListInfo(BaseModel):
@@ -103,6 +98,11 @@ class SmartScanThing(lt.Thing):
     past scans.
     """
 
+    _autofocus: AutofocusThing = lt.thing_slot()
+    _cam: BaseCamera = lt.thing_slot()
+    _csm: CameraStageMapper = lt.thing_slot()
+    _stage: BaseStage = lt.thing_slot()
+
     def __init__(
         self, thing_server_interface: lt.ThingServerInterface, scans_folder: str
     ) -> None:
@@ -119,24 +119,13 @@ class SmartScanThing(lt.Thing):
         # Variables set by the scan
         self._latest_scan_name: Optional[str] = None
 
-        self._autofocus: Optional[AutofocusDep] = None
-        self._stage: Optional[StageDep] = None
-        self._cam: Optional[CameraClient] = None
-        self._csm: Optional[CSMDep] = None
         self._stack_params: Optional[StackParams] = None
         self._ongoing_scan: Optional[scan_directories.ScanDirectory] = None
         self._scan_data: Optional[scan_directories.ScanData] = None
         self._preview_stitcher: Optional[stitching.PreviewStitcher] = None
 
     @lt.action
-    def sample_scan(
-        self,
-        autofocus: AutofocusDep,
-        stage: StageDep,
-        cam: CameraClient,
-        csm: CSMDep,
-        scan_name: str = "",
-    ) -> None:
+    def sample_scan(self, scan_name: str = "") -> None:
         """Move the stage to cover an area, taking images that can be tiled together.
 
         The stage will move in a pattern that grows outwards from the starting point,
@@ -147,11 +136,6 @@ class SmartScanThing(lt.Thing):
         if not got_lock:
             raise RuntimeError("Trying to run scan while scan is already running!")
 
-        # Set private variables for this scan
-        self._autofocus = autofocus
-        self._stage = stage
-        self._cam = cam
-        self._csm = csm
         # `scan_data` should already be None. This is added as a precaution as
         # the presence of `scan_data` is used during error handling to
         # determine whether the scan started.
@@ -176,10 +160,6 @@ class SmartScanThing(lt.Thing):
             raise e
         finally:
             # However the scan finishes, unset all variables and release lock
-            self._autofocus = None
-            self._stage = None
-            self._cam = None
-            self._csm = None
             self._ongoing_scan = None
             self._scan_data = None
             self._scan_lock.release()
