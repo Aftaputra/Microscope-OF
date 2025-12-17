@@ -218,8 +218,6 @@ class JPEGSharpnessMonitor:
     ``data_dict`` and data with interpolated ``z`` positions can be retrieved with
     move_data.
 
-    A new JPEGSharpnessMonitor instance is created each time an action with the
-    SharpnessMonitorDep as an argument is called.
     """
 
     def __init__(self, stage: BaseStage, camera: BaseCamera) -> None:
