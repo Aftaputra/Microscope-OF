@@ -136,7 +136,7 @@ class CameraStageMapper(lt.Thing):
         starting_position = self._stage.position
         try:
             result: dict = calibrate_backlash_1d(
-                tracker, recorded_move, direction_array
+                tracker, recorded_move, direction_array, logger=self.logger
             )
         except lt.exceptions.InvocationCancelledError as e:
             self.logger.info("User cancelled the camera stage mapping calibration")
