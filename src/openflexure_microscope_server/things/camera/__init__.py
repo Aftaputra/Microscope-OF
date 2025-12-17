@@ -59,7 +59,7 @@ class CameraMemoryBuffer:
     However subclasses of BaseCamera can use this class to store other object types.
     """
 
-    _storage: dict[int, tuple[Any, Optional[dict]]]
+    _storage: dict[int, tuple[Any, Mapping[str, Any]]]
 
     def __init__(self) -> None:
         """Create the buffer instance."""
@@ -73,7 +73,7 @@ class CameraMemoryBuffer:
     def add_image(
         self,
         image: Any,
-        metadata: Optional[Mapping[str, Any]] = None,
+        metadata: Mapping[str, Any],
         buffer_max: int = 1,
     ) -> int:
         """Add an image to the Memory buffer.
@@ -97,7 +97,7 @@ class CameraMemoryBuffer:
 
     def get_image(
         self, buffer_id: Optional[int] = None, remove: bool = True
-    ) -> tuple[Any, Optional[dict]]:
+    ) -> tuple[Any, Mapping[str, Any]]:
         """Return the image with the given id.
 
         If no id is given the most recent image is returned. However, the
@@ -514,7 +514,7 @@ class BaseCamera(lt.Thing):
         self,
         jpeg_path: str,
         image: Image.Image,
-        metadata: dict,
+        metadata: Mapping[str, Any],
         save_resolution: Optional[Tuple[int, int]] = None,
     ) -> None:
         """Save the captured image and metadata to disk.

@@ -33,7 +33,7 @@ def test_add_and_get_image():
     """Check images can be captured and retrieved."""
     mem_buf = CameraMemoryBuffer()
     misc_image = random_image()
-    buffer_id = mem_buf.add_image(misc_image)
+    buffer_id = mem_buf.add_image(misc_image, random_metadata())
     returned_image, _ = mem_buf.get_image(buffer_id)
     # It is the same image
     assert misc_image is returned_image
@@ -46,7 +46,7 @@ def test_add_and_get_image_twice():
     """Check images can be retrieved twice if remove flag set false."""
     mem_buf = CameraMemoryBuffer()
     misc_image = random_image()
-    buffer_id = mem_buf.add_image(misc_image)
+    buffer_id = mem_buf.add_image(misc_image, random_metadata())
     returned_image, _ = mem_buf.get_image(buffer_id, remove=False)
     # It is the same image
     assert misc_image is returned_image
@@ -62,7 +62,7 @@ def test_get_without_id():
     """Check images can be captured and retrieved without ID."""
     mem_buf = CameraMemoryBuffer()
     misc_image = random_image()
-    mem_buf.add_image(misc_image)
+    mem_buf.add_image(misc_image, random_metadata())
     returned_image, _ = mem_buf.get_image()
     # It is the same image
     assert misc_image is returned_image
@@ -76,8 +76,8 @@ def test_get_two_images():
     mem_buf = CameraMemoryBuffer()
     misc_image1 = random_image()
     misc_image2 = random_image()
-    buffer_id1 = mem_buf.add_image(misc_image1, buffer_max=2)
-    buffer_id2 = mem_buf.add_image(misc_image2, buffer_max=2)
+    buffer_id1 = mem_buf.add_image(misc_image1, random_metadata(), buffer_max=2)
+    buffer_id2 = mem_buf.add_image(misc_image2, random_metadata(), buffer_max=2)
     returned_image1, _ = mem_buf.get_image(buffer_id1)
     returned_image2, _ = mem_buf.get_image(buffer_id2)
     # It they the same images
@@ -95,8 +95,8 @@ def test_get_two_images_without_setting_buffer_size():
     mem_buf = CameraMemoryBuffer()
     misc_image1 = random_image()
     misc_image2 = random_image()
-    buffer_id1 = mem_buf.add_image(misc_image1)
-    buffer_id2 = mem_buf.add_image(misc_image2)
+    buffer_id1 = mem_buf.add_image(misc_image1, random_metadata())
+    buffer_id2 = mem_buf.add_image(misc_image2, random_metadata())
     with pytest.raises(NoImageInMemoryError):
         mem_buf.get_image(buffer_id1)
     returned_image2, _ = mem_buf.get_image(buffer_id2)
@@ -110,10 +110,10 @@ def test_buffer_size_changing():
     misc_image1 = random_image()
     misc_image2 = random_image()
     misc_image3 = random_image()
-    buffer_id1 = mem_buf.add_image(misc_image1, buffer_max=3)
-    buffer_id2 = mem_buf.add_image(misc_image2, buffer_max=3)
+    buffer_id1 = mem_buf.add_image(misc_image1, random_metadata(), buffer_max=3)
+    buffer_id2 = mem_buf.add_image(misc_image2, random_metadata(), buffer_max=3)
     # Third capture doesn't set buffer size, so it will be reset
-    buffer_id3 = mem_buf.add_image(misc_image3)
+    buffer_id3 = mem_buf.add_image(misc_image3, random_metadata())
     # As buffer size was reset, images 1 and 2 are deleted
     with pytest.raises(NoImageInMemoryError):
         mem_buf.get_image(buffer_id1)
@@ -129,8 +129,8 @@ def test_capture_two_images_get_without_id():
     mem_buf = CameraMemoryBuffer()
     misc_image1 = random_image()
     misc_image2 = random_image()
-    mem_buf.add_image(misc_image1, buffer_max=2)
-    mem_buf.add_image(misc_image2, buffer_max=2)
+    mem_buf.add_image(misc_image1, random_metadata(), buffer_max=2)
+    mem_buf.add_image(misc_image2, random_metadata(), buffer_max=2)
     returned_image, _ = mem_buf.get_image()
     # When buffer_id is not specified, the most recent image (image2) is expected to
     # be retrieved
@@ -148,7 +148,7 @@ def test_buffer_size_respected():
     buffer_ids = []
     for _i in range(10):
         image = random_image()
-        buffer_id = mem_buf.add_image(image, buffer_max=5)
+        buffer_id = mem_buf.add_image(image, random_metadata(), buffer_max=5)
         images.append(image)
         buffer_ids.append(buffer_id)
 
@@ -169,7 +169,7 @@ def test_clear_buffer():
     buffer_ids = []
     for _i in range(10):
         image = random_image()
-        buffer_id = mem_buf.add_image(image, buffer_max=10)
+        buffer_id = mem_buf.add_image(image, random_metadata(), buffer_max=10)
         images.append(image)
         buffer_ids.append(buffer_id)
 
