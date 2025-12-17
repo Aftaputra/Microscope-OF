@@ -80,13 +80,13 @@ def _scan_running(
 
     This decorator is used by all methods in SmartScanThing that are using
     the variables set for the scan. It will throw a runtime error if
-    self._scan_logger is not set, as all scan variables are set at
+    self._scan_lock is not locked, as all scan variables are set at
     the same time and released with the lock
     """
 
     def scan_running_wrapper(self: Self, *args: P.args, **kwargs: P.kwargs) -> T:
-        # Only start the method is the scan logger is set
-        if self._scan_logger is not None:
+        """Only start the requested method if the scan is running."""
+        if self._scan_lock.locked():
             return method(self, *args, **kwargs)
         raise ScanNotRunningError(
             "Calling a @scan_running method can only be done while a scan is running!"
@@ -119,13 +119,6 @@ class SmartScanThing(lt.Thing):
         # Variables set by the scan
         self._latest_scan_name: Optional[str] = None
 
-        # Scan logger is the invocation logger labthings-fastapi creates
-        # when the `sample_scan` lt.action is called. It is saved as
-        # private class variable along with many others here.
-        # Access to these variables requires a scan to be running,
-        # any method that calls these should be decorated with
-        # @_scan_running
-        self._scan_logger: Optional[lt.deps.InvocationLogger] = None
         self._autofocus: Optional[AutofocusDep] = None
         self._stage: Optional[StageDep] = None
         self._cam: Optional[CameraClient] = None
@@ -138,7 +131,6 @@ class SmartScanThing(lt.Thing):
     @lt.action
     def sample_scan(
         self,
-        logger: lt.deps.InvocationLogger,
         autofocus: AutofocusDep,
         stage: StageDep,
         cam: CameraClient,
@@ -156,7 +148,6 @@ class SmartScanThing(lt.Thing):
             raise RuntimeError("Trying to run scan while scan is already running!")
 
         # Set private variables for this scan
-        self._scan_logger = logger
         self._autofocus = autofocus
         self._stage = stage
         self._cam = cam
@@ -177,7 +168,7 @@ class SmartScanThing(lt.Thing):
                 self._return_to_starting_position()
                 if not isinstance(e, scan_directories.NotEnoughFreeSpaceError):
                     # Don't stitch if drive is full (already logged)
-                    self._scan_logger.info(
+                    self.logger.info(
                         "Attempting to stitch and archive the images acquired so far."
                     )
                     self._perform_final_stitch()
@@ -185,7 +176,6 @@ class SmartScanThing(lt.Thing):
             raise e
         finally:
             # However the scan finishes, unset all variables and release lock
-            self._scan_logger = None
             self._autofocus = None
             self._stage = None
             self._cam = None
@@ -198,7 +188,7 @@ class SmartScanThing(lt.Thing):
             self._stack_params = None
 
         # Remove any scan folders containing zero images.
-        self.purge_empty_scans(logger=logger)
+        self.purge_empty_scans()
 
     @_scan_running
     def _check_background_and_csm_set(self) -> None:
@@ -222,7 +212,7 @@ class SmartScanThing(lt.Thing):
                     "Background is not set: you need to calibrate background detection."
                 )
         else:
-            self._scan_logger.warning(
+            self.logger.warning(
                 "This scan will run in a spiral from the starting point "
                 f"until you cancel it, or until it has moved by {self.max_range} steps "
                 "in every direction. Make sure you watch it run to stop it leaving "
@@ -250,7 +240,7 @@ class SmartScanThing(lt.Thing):
         if z_estimate is None:
             z_estimate = self._stage.position["z"]
 
-        self._scan_logger.info(f"Moving to {next_point}")
+        self.logger.info(f"Moving to {next_point}")
         self._stage.move_absolute(
             x=next_point[0],
             y=next_point[1],
@@ -305,19 +295,19 @@ class SmartScanThing(lt.Thing):
         dx, dy = self._calc_displacement_from_test_image(overlap)
         correlation_resize = stitching.STITCHING_RESOLUTION[0] / self.save_resolution[0]
 
-        self._scan_logger.debug(
+        self.logger.debug(
             f"Resizing images when correlating by a factor of {correlation_resize}"
         )
 
-        self._scan_logger.info(
+        self.logger.info(
             f"Based on an overlap of {overlap}, we will make steps of {dx}, {dy}"
         )
 
         autofocus_dz = self.autofocus_dz
         if autofocus_dz == 0:
-            self._scan_logger.info("Running scan without autofocus")
+            self.logger.info("Running scan without autofocus")
         elif autofocus_dz <= 200:
-            self._scan_logger.warning(
+            self.logger.warning(
                 f"Your autofocus range is {autofocus_dz} steps, which is too short to "
                 "attempt to focus. Running without autofocus"
             )
@@ -386,13 +376,13 @@ class SmartScanThing(lt.Thing):
             self._save_final_scan_data(scan_result="success")
 
         except lt.exceptions.InvocationCancelledError:
-            self._scan_logger.info("Stopping scan because it was cancelled.")
+            self.logger.info("Stopping scan because it was cancelled.")
             self._save_final_scan_data(scan_result="cancelled by user")
         except Exception as e:
             err_name = type(e).__name__
             if self._scan_data is not None:
                 self._save_final_scan_data(scan_result=f"{err_name}: {e}")
-            self._scan_logger.error(
+            self.logger.error(
                 f"The scan stopped because of an error: {e}",
                 exc_info=e,
             )
@@ -457,7 +447,7 @@ class SmartScanThing(lt.Thing):
                     new_pos_xyz, imaged=False, focused=False
                 )
                 msg = f"Skipping {new_pos_xyz} as it is {bg_message}."
-                self._scan_logger.info(msg)
+                self.logger.info(msg)
                 continue
 
             focused, focused_height = self._autofocus.run_smart_stack(
@@ -482,7 +472,7 @@ class SmartScanThing(lt.Thing):
     @_scan_running
     def _return_to_starting_position(self) -> None:
         """Return to the initial scan position, if set."""
-        self._scan_logger.info("Returning to starting position.")
+        self.logger.info("Returning to starting position.")
         if self._scan_data is not None:
             self._stage.move_absolute(
                 **self._scan_data.starting_position, block_cancellation=True
@@ -499,20 +489,19 @@ class SmartScanThing(lt.Thing):
     def _perform_final_stitch(self) -> None:
         """Update the scan zip and perform final stitch of the data."""
         if self._scan_data.image_count <= 3:
-            self._scan_logger.info("Not performing a stitch as 3 or fewer images taken")
+            self.logger.info("Not performing a stitch as 3 or fewer images taken")
             return
 
         self._ongoing_scan.zip_files()
 
-        self._scan_logger.info("Waiting for background processes to finish...")
+        self.logger.info("Waiting for background processes to finish...")
 
         if self._preview_stitcher is not None:
             self._preview_stitcher.wait()
 
         if self._scan_data.stitch_automatically:
-            self._scan_logger.info("Stitching final image (may take some time)...")
+            self.logger.info("Stitching final image (may take some time)...")
             self.stitch_scan(
-                logger=self._scan_logger,
                 scan_name=self._ongoing_scan.name,
                 correlation_resize=self._scan_data.correlation_resize,
                 overlap=self._scan_data.overlap,
@@ -621,17 +610,17 @@ class SmartScanThing(lt.Thing):
             400: {"description": "An error occurred while trying to delete scan"},
         },
     )
-    def delete_scan(self, scan_name: str, logger: lt.deps.InvocationLogger) -> None:
+    def delete_scan(self, scan_name: str) -> None:
         """Delete the folder for the specified scan.
 
         This endpoint allows scans to be deleted from disk.
 
-        Takes the scan name to delete, and the Invocation Logger
+        :param scan_name: The name of the scan to delete
         """
         if not self._scan_dir_manager.exists(scan_name):
-            logger.warning(f"Cannot find a scan of name {scan_name}")
+            self.logger.warning(f"Cannot find a scan of name {scan_name}")
             raise HTTPException(400, "Scan not found")
-        deleted_scan_success = self._delete_scan(scan_name, logger)
+        deleted_scan_success = self._delete_scan(scan_name)
         if not deleted_scan_success:
             raise HTTPException(400, "Couldn't delete scan, check log for details")
 
@@ -639,7 +628,7 @@ class SmartScanThing(lt.Thing):
         "delete",
         "scans",
     )
-    def delete_all_scans(self, logger: lt.deps.InvocationLogger) -> None:
+    def delete_all_scans(self) -> None:
         """Delete all the scans on the microscope.
 
         **This will irreversibly remove all scanned data from the
@@ -647,30 +636,30 @@ class SmartScanThing(lt.Thing):
         Use with extreme caution.
         """
         for scan_name in self._scan_dir_manager.all_scans:
-            self._delete_scan(scan_name, logger)
+            self._delete_scan(scan_name)
 
     @lt.action
-    def purge_empty_scans(self, logger: lt.deps.InvocationLogger) -> None:
+    def purge_empty_scans(self) -> None:
         """Delete all scan folders containing no images at the top level."""
         # JSON is ignored as it's created before any images are captured
         for scan_info in self._get_all_scan_info():
             if scan_info.number_of_images == 0:
-                self._delete_scan(scan_info.name, logger)
+                self._delete_scan(scan_info.name)
 
-    def _delete_scan(self, scan_name: str, logger: lt.deps.InvocationLogger) -> bool:
+    def _delete_scan(self, scan_name: str) -> bool:
         """Delete a scan.
 
         This is a wrapper around scan manager's delete_scan that logs to the
-        invocation logger id there is a problem.
+        things logger if there is a problem.
         """
         if self._ongoing_scan is not None and scan_name == self._ongoing_scan.name:
-            logger.error("Attempted to delete ongoing scan.")
+            self.logger.error("Attempted to delete ongoing scan.")
             return False
         try:
             self._scan_dir_manager.delete_scan(scan_name)
             return True
         except Exception as e:
-            logger.warning(
+            self.logger.warning(
                 "Attempted to delete scan " + scan_name + ", which failed."
                 " Server sent response" + str(e)
             )
@@ -723,22 +712,19 @@ class SmartScanThing(lt.Thing):
     @lt.action
     def stitch_scan(
         self,
-        logger: lt.deps.InvocationLogger,
         scan_name: str,
         correlation_resize: Optional[float] = None,
         overlap: Optional[float] = None,
     ) -> None:
-        """Generate a stitched image based on stage position metadata.
-
-        Note that as this is a lt.action it needs the logger passed as
-        a variable if called from another thing action
-        """
+        """Generate a stitched image based on stage position metadata."""
         scan_data_dict = self._scan_dir_manager.get_scan_data_dict(scan_name)
         if scan_data_dict is None:
-            logger.warning("Couldn't read scan data - it may be missing or corrupt.")
+            self.logger.warning(
+                "Couldn't read scan data - it may be missing or corrupt."
+            )
         final_stitcher = stitching.FinalStitcher(
             self._scan_dir_manager.img_dir_for(scan_name),
-            logger=logger,
+            logger=self.logger,
             overlap=overlap,
             correlation_resize=correlation_resize,
             stitch_tiff=self.stitch_tiff,
@@ -750,7 +736,7 @@ class SmartScanThing(lt.Thing):
             # Sleep for 1 second just to allow invocation logs to pass to user.
             time.sleep(1)
         except SubprocessError as e:
-            self._scan_logger.error(f"Stitching failed: {e}", exc_info=e)
+            self.logger.error(f"Stitching failed: {e}", exc_info=e)
 
     @lt.action
     def download_zip(
@@ -765,14 +751,13 @@ class SmartScanThing(lt.Thing):
         return ZipBlob.from_file(zip_fname)
 
     @lt.action
-    def stitch_all_scans(self, logger: lt.deps.InvocationLogger) -> None:
+    def stitch_all_scans(self) -> None:
         """Check the list of scans, and stitch any that don't have a DZI associated with it.
 
         :raises RuntimeError: if the microscope is currently running a scan
-
         """
-        if self._scan_logger is not None:
+        if self._scan_lock.locked():
             raise RuntimeError("Can't stitch previous scans while a scan is ongoing")
         for scan in self._get_all_scan_info():
             if scan.dzi is None:
-                self.stitch_scan(logger=logger, scan_name=scan.name)
+                self.stitch_scan(scan_name=scan.name)

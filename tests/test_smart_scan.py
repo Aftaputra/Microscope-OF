@@ -40,9 +40,6 @@ from .mock_things.mock_camera import MockCameraThing
 from .mock_things.mock_csm import MockCSMThing
 from .mock_things.mock_stage import MockStageThing
 
-# A global logger to pass in as an Invocation Logger
-LOGGER = logging.getLogger("mock-invocation_logger")
-
 # Use our own dir in the root temp dir not a dynamically generated one so we
 # have some control of when it is deleted
 SCAN_DIR = os.path.join(tempfile.gettempdir(), "scans")
@@ -92,16 +89,16 @@ def test_private_delete_scan(smart_scan_thing, caplog):
         # Make the outer scan dir, but not the one to delete
         os.makedirs(SCAN_DIR)
         # Attempt to delete the fake scan. Expect it to fail and provide a warning
-        deleted = smart_scan_thing._delete_scan(fake_scan_name, LOGGER)
+        deleted = smart_scan_thing._delete_scan(fake_scan_name)
         assert not deleted
         assert len(caplog.records) == 1
         assert caplog.records[0].levelname == "WARNING"
-        assert caplog.records[0].name == "mock-invocation_logger"
+        assert caplog.records[0].name == "labthings_fastapi.things.smartscanthing"
 
         # Make a dir for the fake scan and delete it.
         os.makedirs(fake_scan_path)
         assert os.path.exists(fake_scan_path)
-        deleted = smart_scan_thing._delete_scan(fake_scan_name, LOGGER)
+        deleted = smart_scan_thing._delete_scan(fake_scan_name)
         assert not os.path.exists(fake_scan_path)
         assert deleted
         # Check no extra logs generated
@@ -120,18 +117,18 @@ def test_public_delete_scan(smart_scan_thing, caplog):
 
         # Attempt to delete the fake scan. Expect it to fail
     with pytest.raises(HTTPException) as exc_info:
-        smart_scan_thing.delete_scan(fake_scan_name, LOGGER)
+        smart_scan_thing.delete_scan(fake_scan_name)
     # Should raise a 400 error if the scan doesn't exist, not a 404 as the server
     # was not expecting to receive the scan files
     assert exc_info.value.status_code == 400
     assert len(caplog.records) == 1
     assert caplog.records[0].levelname == "WARNING"
-    assert caplog.records[0].name == "mock-invocation_logger"
+    assert caplog.records[0].name == "labthings_fastapi.things.smartscanthing"
 
     # Make a dir for the fake scan and delete it.
     os.makedirs(fake_scan_path)
     assert os.path.exists(fake_scan_path)
-    smart_scan_thing.delete_scan(fake_scan_name, LOGGER)
+    smart_scan_thing.delete_scan(fake_scan_name)
     assert not os.path.exists(fake_scan_path)
     # Check no extra logs generated
     assert len(caplog.records) == 1
@@ -151,7 +148,7 @@ def test_delete_all_scans(smart_scan_thing, caplog):
             fake_scan_path = os.path.join(SCAN_DIR, fake_scan_name)
             os.makedirs(fake_scan_path)
             assert os.path.exists(fake_scan_path)
-        smart_scan_thing.delete_all_scans(LOGGER)
+        smart_scan_thing.delete_all_scans()
         for fake_scan_name in fake_scan_names:
             fake_scan_path = os.path.join(SCAN_DIR, fake_scan_name)
             assert not os.path.exists(fake_scan_path)
@@ -190,7 +187,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
 
             """Check scan vars are set up as expected"""
             assert not self._scan_lock.acquire(timeout=0.1)
-            assert self._scan_logger is LOGGER
             assert self._autofocus is af_mock
             assert self._stage is stage_mock
             assert self._cam is cam_mock
@@ -207,7 +203,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
     exec_info = None
     try:
         mock_ss_thing.sample_scan(
-            logger=LOGGER,
             autofocus=af_mock,
             stage=stage_mock,
             cam=cam_mock,
@@ -219,7 +214,6 @@ def _run_only_outer_scan(adjust_initial_state: Optional[Callable] = None):
 
     assert mock_ss_thing._scan_lock.acquire(timeout=0.1)
     mock_ss_thing._scan_lock.release()
-    assert mock_ss_thing._scan_logger is None
     assert mock_ss_thing._autofocus is None
     assert mock_ss_thing._stage is None
     assert mock_ss_thing._cam is None
@@ -280,23 +274,25 @@ def _expected_scan_data():
 @pytest.fixture
 def scan_thing_mocked_for_scan_data(smart_scan_thing, mocker):
     """Return a scan thing that is mocked so that _collect_scan_data will run."""
-    # Give the scan thing a scan invocation logger so it thinks a scan is running.
-    smart_scan_thing._scan_logger = LOGGER
-    mocker.patch.object(
-        smart_scan_thing, "_calc_displacement_from_test_image", return_value=[100, 100]
-    )
-    mock_ongoing_scan = mocker.Mock()
-    type(mock_ongoing_scan).name = mocker.PropertyMock(return_value=MOCK_SCAN_NAME)
-    type(mock_ongoing_scan).images_dir = mocker.PropertyMock(return_value=MOCK_SCAN_DIR)
-    mock_stage = mocker.Mock()
-    type(mock_stage).position = mocker.PropertyMock(return_value=MOCK_START_POS)
+    # Set the lock so it thinks the scan is running
+    with smart_scan_thing._scan_lock:
+        mocker.patch.object(
+            smart_scan_thing,
+            "_calc_displacement_from_test_image",
+            return_value=[100, 100],
+        )
+        mock_ongoing_scan = mocker.Mock()
+        mock_ongoing_scan.name = MOCK_SCAN_NAME
+        mock_ongoing_scan.images_dir = MOCK_SCAN_DIR
+        mock_stage = mocker.Mock()
+        mock_stage.position = MOCK_START_POS
 
-    mock_autofocus = mocker.Mock()
+        mock_autofocus = mocker.Mock()
 
-    smart_scan_thing._ongoing_scan = mock_ongoing_scan
-    smart_scan_thing._stage = mock_stage
-    smart_scan_thing._autofocus = mock_autofocus
-    return smart_scan_thing
+        smart_scan_thing._ongoing_scan = mock_ongoing_scan
+        smart_scan_thing._stage = mock_stage
+        smart_scan_thing._autofocus = mock_autofocus
+        yield smart_scan_thing
 
 
 def test_collect_scan_data(scan_thing_mocked_for_scan_data):

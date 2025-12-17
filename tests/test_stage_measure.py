@@ -14,8 +14,6 @@ from openflexure_microscope_server.things.camera_stage_mapping import (
     csm_stage_to_img,
 )
 
-LOGGER = logging.getLogger("mock-invocation_logger")
-
 
 # Useful generators
 def increasing_xy_dict_generator(*_args, **_kwargs):

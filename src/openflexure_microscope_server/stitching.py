@@ -244,7 +244,7 @@ class FinalStitcher(BaseStitcher):
 
         First the scan_data_dict is inspected for values to allow ``overlap`` and
         ``correlation_resize`` to be set correctly, if these values are not available
-        then default values are used, and a warning is logged to the invocation logger.
+        then default values are used, and a warning is logged to the thing logger.
 
         :param overlap: overlap as input to __init__
         :param correlation_resize: correlation_resize as input to __init__
