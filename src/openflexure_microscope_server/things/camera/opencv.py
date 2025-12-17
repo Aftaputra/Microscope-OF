@@ -113,7 +113,7 @@ class OpenCVCamera(BaseCamera):
         self,
         stream_name: Literal["main", "full"] = "main",
         wait: Optional[float] = None,
-    ) -> Image:
+    ) -> Image.Image:
         """Acquire one image from the camera and return as a PIL image.
 
         This function will produce a JPEG image.

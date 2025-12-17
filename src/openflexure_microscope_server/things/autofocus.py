@@ -555,7 +555,7 @@ class AutofocusThing(lt.Thing):
         stack_parameters: StackParams,
         save_on_failure: bool = False,
         check_turning_points: bool = True,
-    ) -> tuple[bool, Optional[int]]:
+    ) -> tuple[bool, int]:
         """Run a smart stack.
 
         A smart stack captures images offset in z, testing whether the sharpest image

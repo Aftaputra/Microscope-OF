@@ -346,7 +346,7 @@ class ScanDirectoryManager:
         shutil.rmtree(self.path_for(scan_name))
 
     @requires_lock
-    def zip_scan(self, scan_name: str, final_version: bool = False) -> "ScanDirectory":
+    def zip_scan(self, scan_name: str, final_version: bool = False) -> str:
         """Zips any images from the scan not yet zipped, return full path to zip.
 
         ``final_version`` Set true to stitch all files not just the scan images

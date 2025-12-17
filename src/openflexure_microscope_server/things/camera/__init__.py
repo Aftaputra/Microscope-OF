@@ -204,7 +204,7 @@ class BaseCamera(lt.Thing):
 
     @lt.action
     def start_streaming(
-        self, main_resolution: tuple[int, int], buffer_count: int
+        self, main_resolution: tuple[int, int] = (800, 800), buffer_count: int = 1
     ) -> None:
         """Start (or stop and restart) the camera.
 
@@ -364,7 +364,7 @@ class BaseCamera(lt.Thing):
         self,
         stream_name: Literal["main", "lores", "raw"],
         wait: Optional[float] = None,
-    ) -> Image:
+    ) -> Image.Image:
         """Capture a PIL image from stream stream_name with timeout wait."""
         raise NotImplementedError(
             "CameraThings must define their own capture_image method"
@@ -431,7 +431,7 @@ class BaseCamera(lt.Thing):
         """Clear all images in memory."""
         self._memory_buffer.clear()
 
-    def _robust_image_capture(self) -> Tuple[Image, Mapping[str, Any]]:
+    def _robust_image_capture(self) -> Tuple[Image.Image, Mapping[str, Any]]:
         """Capture an image in memory and return it with metadata.
 
         This robust capturing method attempts to capture the image five times
@@ -513,7 +513,7 @@ class BaseCamera(lt.Thing):
     def _save_capture(
         self,
         jpeg_path: str,
-        image: Image,
+        image: Image.Image,
         metadata: dict,
         save_resolution: Optional[Tuple[int, int]] = None,
     ) -> None:

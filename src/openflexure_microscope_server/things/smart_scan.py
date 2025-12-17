@@ -19,7 +19,6 @@ from typing import (
     Mapping,
     Optional,
     ParamSpec,
-    Self,
     TypeVar,
 )
 
@@ -35,7 +34,7 @@ from openflexure_microscope_server import scan_directories, scan_planners, stitc
 # Things
 from .autofocus import AutofocusThing, StackParams
 from .camera import BaseCamera
-from .camera_stage_mapping import CameraStageMapper
+from .camera_stage_mapping import CameraStageMapper, CSMUncalibratedError
 from .stage import BaseStage
 
 T = TypeVar("T")
@@ -69,8 +68,8 @@ class ScanNotRunningError(RuntimeError):
 
 
 def _scan_running(
-    method: Callable[Concatenate[Self, P], T],
-) -> Callable[Concatenate[Self, P], T]:
+    method: Callable[Concatenate["SmartScanThing", P], T],
+) -> Callable[Concatenate["SmartScanThing", P], T]:
     """Decorate a method so that it will error if a scan is not running.
 
     This decorator is used by all methods in SmartScanThing that are using
@@ -79,7 +78,9 @@ def _scan_running(
     the same time and released with the lock
     """
 
-    def scan_running_wrapper(self: Self, *args: P.args, **kwargs: P.kwargs) -> T:
+    def scan_running_wrapper(
+        self: "SmartScanThing", *args: P.args, **kwargs: P.kwargs
+    ) -> T:
         """Only start the requested method if the scan is running."""
         if self._scan_lock.locked():
             return method(self, *args, **kwargs)
@@ -230,11 +231,7 @@ class SmartScanThing(lt.Thing):
 
         Raise warning if not using background detect that scan will go on until max steps reached
         """
-        if self._csm.image_resolution is None:
-            raise RuntimeError(
-                "Camera-stage mapping is not calibrated. This is required before "
-                "scans can be carried out."
-            )
+        self._csm.assert_calibrated()
 
         if self.skip_background:
             if not self._cam.background_detector_status.ready:
@@ -275,7 +272,7 @@ class SmartScanThing(lt.Thing):
         return (next_point[0], next_point[1], z_estimate)
 
     @_scan_running
-    def _calc_displacement_from_test_image(self, overlap: int) -> tuple[int, int]:
+    def _calc_displacement_from_test_image(self, overlap: float) -> tuple[int, int]:
         """Take a test image and use camera stage mapping to calculate x and y displacement.
 
         :param overlap: The desired overlap as a fraction of the image. i.e. 0.5 means
@@ -283,9 +280,15 @@ class SmartScanThing(lt.Thing):
 
         :returns: (dx, dy) - the x and y displacements in steps
         """
+        if (
+            self._csm.image_resolution is None
+            or self._csm.image_to_stage_displacement_matrix is None
+        ):
+            raise CSMUncalibratedError("Camera stage mapping is not calibrated")
         test_image = self._cam.grab_as_array()
 
         test_image_res = list(test_image.shape)
+
         csm_image_res = [int(i) for i in self._csm.image_resolution]
 
         # If current stream width is different to csm calibration width,
@@ -363,7 +366,7 @@ class SmartScanThing(lt.Thing):
         or the error that ended the scan.
         """
         self.scan_data.set_final_data(result=scan_result)
-        self.ongoing_scan.save_scan_data(self._scan_data)
+        self.ongoing_scan.save_scan_data(self.scan_data)
 
     @_scan_running
     def _manage_stitching_threads(self) -> None:
@@ -385,13 +388,18 @@ class SmartScanThing(lt.Thing):
             self._cam.start_streaming(main_resolution=(3280, 2464))
             self._scan_data = self._collect_scan_data()
             self.ongoing_scan.save_scan_data(self._scan_data)
+            images_dir = self.ongoing_scan.images_dir
+            if images_dir is None:
+                raise RuntimeError(
+                    "Couldn't run scan, images directory was not created."
+                )
             self._stack_params = self._autofocus.create_stack_params(
-                images_dir=self.ongoing_scan.images_dir,
+                images_dir=images_dir,
                 autofocus_dz=self.autofocus_dz,
                 save_resolution=self.scan_data.save_resolution,
             )
             self._preview_stitcher = stitching.PreviewStitcher(
-                self.ongoing_scan.images_dir,
+                images_dir,
                 overlap=self.scan_data.overlap,
                 correlation_resize=self.scan_data.correlation_resize,
             )
@@ -476,7 +484,7 @@ class SmartScanThing(lt.Thing):
                 continue
 
             focused, focused_height = self._autofocus.run_smart_stack(
-                stack_parameters=self._stack_params,
+                stack_parameters=self.stack_params,
                 save_on_failure=not self.scan_data.skip_background,
             )
 

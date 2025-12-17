@@ -534,7 +534,7 @@ class StreamingPiCamera2(BaseCamera):
         self,
         stream_name: Literal["main", "lores", "full"] = "main",
         wait: Optional[float] = 0.9,
-    ) -> Image:
+    ) -> Image.Image:
         """Acquire one image from the camera and return it as a PIL Image.
 
         If the ``stream_name`` parameter is ``main`` or ``lores``, it will be captured

@@ -196,7 +196,7 @@ class SimulatedCamera(BaseCamera):
 
         self.canvas[top:bottom, left:right] -= sprite
 
-    def generate_image(self, pos: tuple[int, int, int]) -> Image:
+    def generate_image(self, pos: tuple[int, int, int]) -> Image.Image:
         """Generate an image with blobs based on supplied coordinates.
 
         :param pos: a 3-item tuple containing the x,y,z coordinates of the 'stage'
@@ -230,7 +230,7 @@ class SimulatedCamera(BaseCamera):
         image[image > 255] = 255
         return Image.fromarray(image.astype("uint8"))
 
-    def generate_frame(self) -> Image:
+    def generate_frame(self) -> Image.Image:
         """Generate a frame with blobs based on the stage coordinates."""
         try:
             pos = self._stage.instantaneous_position
@@ -337,7 +337,7 @@ class SimulatedCamera(BaseCamera):
         self,
         stream_name: Literal["main", "lores", "raw"],
         wait: Optional[float] = None,
-    ) -> Image:
+    ) -> Image.Image:
         """Capture to a PIL image. This is not exposed as a ThingAction.
 
         It is used for capture to memory.
@@ -403,7 +403,7 @@ class SimulatedCamera(BaseCamera):
         return [property_control_for(self, "noise_level", label="Noise Level")]
 
 
-def _frame2bytes(frame: Image) -> bytes:
+def _frame2bytes(frame: Image.Image) -> bytes:
     """Convert frame to bytes."""
     with io.BytesIO() as buf:
         # Save in low quality for speed.

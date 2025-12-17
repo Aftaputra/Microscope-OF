@@ -22,7 +22,6 @@ from typing import (
 )
 
 import numpy as np
-from fastapi import HTTPException
 
 import labthings_fastapi as lt
 from camera_stage_mapping.camera_stage_calibration_1d import (
@@ -91,24 +90,13 @@ class RecordedMove:
         self._history = []
 
 
-class CSMUncalibratedError(HTTPException):
-    """An HTTP Exception raised if camera stage mapping data is needed but unavailable.
+class CSMUncalibratedError(lt.exceptions.InvocationError):
+    """An Exception raised if camera stage mapping data is needed but unavailable.
 
     Camera Stage Mapping data is needed to convert from distances specified in fractions
     of the field of view to distances in motor steps. This is used when clicking on the
     live preview to move, or when performing a scan.
     """
-
-    def __init__(self) -> None:
-        """Customise the default error code and message of HTTPException."""
-        HTTPException.__init__(
-            self,
-            503,
-            (
-                "The camera_stage_mapping calibration is not yet available. "
-                "This probably means you need to run the calibration routine."
-            ),
-        )
 
 
 class CameraStageMapper(lt.Thing):
@@ -241,9 +229,10 @@ class CameraStageMapper(lt.Thing):
     def assert_calibrated(self) -> None:
         """Raise an exception if the image_to_stage_displacement matrix is not set."""
         if self.image_to_stage_displacement_matrix is None:
-            # Disable check of no message in raised exception as the message is explicitly
-            # added by CSMUncalibratedError
-            raise CSMUncalibratedError()  # noqa: RSE102
+            raise CSMUncalibratedError(
+                "The camera_stage_mapping calibration is not yet available. "
+                "This probably means you need to run the calibration routine."
+            )
 
     @lt.action
     def move_in_image_coordinates(self, x: float, y: float) -> None:
