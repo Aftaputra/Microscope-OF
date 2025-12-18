@@ -5,7 +5,7 @@ from typing import Optional
 
 from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
 
-from ..tests.utilities.lt_test_utils import LabThingsTestEnv
+from ...shared_utils.lt_test_utils import LabThingsTestEnv
 
 
 @contextmanager

@@ -52,7 +52,7 @@ def _get_hashes(include_coverage: bool = False) -> dict[str, str]:
 
 def run_tests() -> None:
     """Run the picamera tests, zip the coverage database, hash relevant source files."""
-    subprocess.run(["pytest", "hardware-specific-tests"], check=True)
+    subprocess.run(["pytest", "tests/hardware_specific_tests"], check=True)
     shutil.copyfile(".coverage", COVERAGE_FILE)
     hash_dict = _get_hashes(include_coverage=True)
     with open(HASH_FILE, "w", encoding="utf-8") as json_file:
