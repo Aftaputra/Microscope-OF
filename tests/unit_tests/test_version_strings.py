@@ -16,7 +16,7 @@ from openflexure_microscope_server import utilities
 
 # Useful for really finding the repo dir when we mock where it is.
 THIS_DIR = os.path.dirname(__file__)
-TRUE_REPO_DIR = os.path.dirname(THIS_DIR)
+TRUE_REPO_DIR = os.path.dirname(os.path.dirname(THIS_DIR))
 
 # For explicit version checking.
 VER_STRING = "3.0.0-alpha4"

@@ -94,7 +94,7 @@ addopts = [
 
 norecursedirs = [".git", "build", "node_modules"]
 pythonpath = ["."]
-testpaths = ["tests"]
+testpaths = ["tests/unit_tests"]
 
 [tool.ruff.format]
 # Use native line endings for all files

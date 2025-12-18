@@ -69,7 +69,6 @@ target/
 
 #Big-o files
 *.data
-tests/images/out/
 
 #IDE files
 .vscode/
@@ -89,8 +88,8 @@ openflexure_settings/
 /src/openflexure_microscope_server/static/
 
 # Files created by test utilities
-/tests/utilities/*.pstats
-/tests/utilities/*.png
+/tests/unit_tests/utilities/*.pstats
+/tests/unit_tests/utilities/*.png
 
 # Files created by simulator
 openflexure/

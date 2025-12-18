@@ -11,7 +11,7 @@ import pytest
 from openflexure_microscope_server import server as ofm_server
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(THIS_DIR)
+REPO_ROOT = os.path.dirname(os.path.dirname(THIS_DIR))
 FULL_CONFIG = os.path.join(REPO_ROOT, "ofm_config_full.json")
 SIM_CONFIG = os.path.join(REPO_ROOT, "ofm_config_simulation.json")
 

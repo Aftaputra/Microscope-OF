@@ -44,7 +44,7 @@ def test_env():
 def test_autofocus(test_env):
     """Test Fast Autofocus can run doesn't raise an exception."""
     # Adjust the time for stage is 100 microseconds rather than 1 microsecond.
-    test_env.get_thing_by_name["stage"].step_time = 0.0001
+    test_env.get_thing_by_name("stage").step_time = 0.0001
     autofocus = test_env.get_thing_client("autofocus")
     _ = autofocus.fast_autofocus()
 
