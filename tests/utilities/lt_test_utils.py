@@ -45,7 +45,7 @@ class LabThingsTestEnv:
         """
         self._server: Optional[lt.ThingServer]
         self._test_client: Optional[TestClient]
-        self._thing_config = things
+        self._things_config = things
         self._settings_folder = settings_folder
         self._tmp_dir_obj: Optional[tempfile.TemporaryDirectory] = None
 
@@ -55,7 +55,7 @@ class LabThingsTestEnv:
             self._tmp_dir_obj = tempfile.TemporaryDirectory()
             self._settings_folder = self._tmp_dir_obj.name
         self._server = lt.ThingServer(
-            things=self._thing_config, settings_folder=self._settings_folder
+            things=self._things_config, settings_folder=self._settings_folder
         )
         self._test_client = TestClient(self._server.app)
         self._test_client.__enter__()
@@ -92,7 +92,12 @@ class LabThingsTestEnv:
             raise ValueError(f"No Thing named {thing_name}")
 
     def get_thing_by_name(self, thing_name: str) -> lt.Thing:
-        """Get a Thing from the server by name."""
+        """Get a Thing from the server by name.
+
+        :param thing_name: The name of the thing to on the server.
+
+        :return: The Thing with the specified name.
+        """
         self.check_thing_exists(thing_name)
         return self.server.things[thing_name]
 
@@ -135,7 +140,12 @@ class LabThingsTestEnv:
         return matching
 
     def get_thing_client(self, thing_name: str) -> lt.ThingClient:
-        """Get a ThingClient for a Thing by name."""
+        """Get a ThingClient for a Thing by name.
+
+        :param thing_name: The name of the thing to on the server.
+
+        :return: A LabThings ThingClient for the Thing with the specified name.
+        """
         self.check_thing_exists(thing_name)
         thing = self.server.things[thing_name]
         return lt.ThingClient.from_url(thing.path, self.client)
@@ -148,7 +158,23 @@ class LabThingsTestEnv:
     ) -> requests.Response:
         """Start an action and return the server response.
 
-        This response can be used to poll or cancel the action.
+        For most purposes the best way to run an action is to use ``get_thing_client``
+        to create a ThingClient. At this point any actions can be run with a similar
+        Python API to calling directly. However, using ThingClient blocks the test
+        thread.
+
+        This function provides an alternative way to start actions without blocking the
+        test thread. It will return the HTTP response, this response can be used to
+        poll or cancel the action. Use this method if you:
+
+        * Want to test cancelling an action.
+        * Want to inspect the actions logs exactly as they would come to a web client
+        * Direcltly interact with the HTTP API
+
+        :param thing_name: The name of the Thing on the server.
+        :param action_name: The name of the action to start.
+        :action_kwargs: The keyword inputs to the action.
+        :return: A Response object with the HTTP response.
         """
         self.check_thing_exists(thing_name)
         url = f"/{thing_name}/{action_name}"
@@ -160,7 +186,10 @@ class LabThingsTestEnv:
     def poll_action(
         self, response: requests.Response, interval: float = 0.01
     ) -> Mapping[str, Any]:
-        """Poll an action until it completes and return the final response data."""
+        """Poll an action until it completes and return the final response data.
+
+        :param response: The response from starting this action with ``start_action``.
+        """
         invocation_data = response.json()
 
         if "status" not in invocation_data:
@@ -177,7 +206,10 @@ class LabThingsTestEnv:
         return invocation_data
 
     def cancel_action(self, response: requests.Response) -> None:
-        """Cancel an ongoing action."""
+        """Cancel an ongoing action.
+
+        :param response: The response from starting this action with ``start_action``.
+        """
         invocation_data = response.json()
         response = self.client.delete(_invocation_href(invocation_data))
         response.raise_for_status()
