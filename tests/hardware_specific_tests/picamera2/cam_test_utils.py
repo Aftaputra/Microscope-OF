@@ -34,4 +34,4 @@ def camera_test_client(settings_folder: Optional[str] = None):
         temporary directory will be used as the settings folder.
     """
     with camera_test_env(settings_folder=settings_folder) as env:
-        return env.get_thing_client("camera")
+        yield env.get_thing_client("camera")

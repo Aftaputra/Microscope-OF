@@ -10,7 +10,7 @@ from .cam_test_utils import camera_test_client
 
 def test_calibration(picamera_test_env):
     """Check that full auto calibrate completes and set the expected values."""
-    picamera_client, server = picamera_test_env.get_thing_client["camera"]
+    picamera_client = picamera_test_env.get_thing_client("camera")
     picamera_thing = picamera_test_env.get_thing_by_type(StreamingPiCamera2)
     # Check the calibration_required property used by the calibration wizard
     assert picamera_thing.calibration_required
