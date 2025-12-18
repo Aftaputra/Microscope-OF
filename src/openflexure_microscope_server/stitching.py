@@ -6,6 +6,7 @@ CPU intensity of stitching causing scanning problems due to the Python Global
 Interpreter Lock (GIL). May be possible to shift to multiprocessing in the future.
 """
 
+import logging
 import os
 import shlex
 import signal
@@ -167,14 +168,17 @@ class PreviewStitcher(BaseStitcher):
                 return False
             return self._popen_obj.poll() is None
 
-    def wait(self, cancel: lt.deps.CancelHook) -> None:
+    def wait(self) -> None:
         """Wait for this preview stitch to return.
 
         :raises InvocationCancelledError: if the action is cancelled.
         """
         while self.running:
             try:
-                cancel.sleep(0.1)
+                # This should act exactly like sleep if not started in a LabThings
+                # action thread. In an action thread it will raise
+                # InvocationCancelledError if the action is cancelled.
+                lt.cancellable_sleep(0.2)
             except lt.exceptions.InvocationCancelledError as e:
                 with self._popen_lock:
                     if self._popen_obj is not None:
@@ -189,7 +193,7 @@ class FinalStitcher(BaseStitcher):
         self,
         images_dir: str,
         *,
-        logger: lt.deps.InvocationLogger,
+        logger: logging.Logger,
         overlap: Optional[float] = None,
         correlation_resize: Optional[float] = None,
         stitch_tiff: bool = False,
@@ -200,7 +204,7 @@ class FinalStitcher(BaseStitcher):
         All args except images_dir are positional only.
 
         :param images_dir: The images directory of the scan to stitch.
-        :param logger: The invocation logger for this stitch process.
+        :param logger: The logger from the Thing that created this stitcher.
         :param overlap: The scan overlap, if not known enter None. A value will be
             chosen from the scan_data_dict, or set to a default value if no value is
             available in the scan_data.
@@ -240,7 +244,7 @@ class FinalStitcher(BaseStitcher):
 
         First the scan_data_dict is inspected for values to allow ``overlap`` and
         ``correlation_resize`` to be set correctly, if these values are not available
-        then default values are used, and a warning is logged to the invocation logger.
+        then default values are used, and a warning is logged to the thing logger.
 
         :param overlap: overlap as input to __init__
         :param correlation_resize: correlation_resize as input to __init__
@@ -281,10 +285,7 @@ class FinalStitcher(BaseStitcher):
                 )
         return overlap, correlation_resize
 
-    def run(
-        self,
-        cancel: lt.deps.CancelHook,
-    ) -> None:
+    def run(self) -> None:
         """Run the final stitch logging any output.
 
         :raises ChildProcessError: if exit code is not zero
@@ -305,7 +306,7 @@ class FinalStitcher(BaseStitcher):
         # Stop opening pipe blocking writing to it
         os.set_blocking(process.stdout.fileno(), False)
 
-        self._log_ongoing(process, cancel=cancel)
+        self._log_ongoing(process)
 
         if process.poll() == 0:
             self.logger.info("Stitching complete")
@@ -319,11 +320,7 @@ class FinalStitcher(BaseStitcher):
                 f"Subprocess {STITCHING_CMD} errored with exit code {process.poll()}."
             )
 
-    def _log_ongoing(
-        self,
-        process: subprocess.Popen,
-        cancel: lt.deps.CancelHook,
-    ) -> None:
+    def _log_ongoing(self, process: subprocess.Popen) -> None:
         """Log the ongoing process unless it is cancelled."""
         # Poll returns None while running, will return the error code when finished
         while process.poll() is None:
@@ -331,9 +328,10 @@ class FinalStitcher(BaseStitcher):
             # Once buffer is clear sleep for 0.2s before trying again.
 
             try:
-                # Note that using cancel.sleep allows the InvocationCancelledError to
-                # be thrown
-                cancel.sleep(0.2)
+                # This should act exactly like sleep if not started in a LabThings
+                # action thread. In an action thread it will raise
+                # InvocationCancelledError if the action is cancelled.
+                lt.cancellable_sleep(0.2)
             except lt.exceptions.InvocationCancelledError as e:
                 self.logger.info("Stitching cancelled by user")
                 process.kill()

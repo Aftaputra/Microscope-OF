@@ -24,9 +24,6 @@ from openflexure_microscope_server.scan_directories import (
 from .test_scan_data import _fake_scan_data
 from .utilities import assert_unique_of_length
 
-# A global logger to pass in as an Invocation Logger
-LOGGER = logging.getLogger("mock-invocation_logger")
-
 # Use our own dir in the root temp dir not a dynamically generated one so we
 # have some control of when it is deleted
 BASE_SCAN_DIR = os.path.join(tempfile.gettempdir(), "scans")

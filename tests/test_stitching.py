@@ -6,9 +6,8 @@ generated, and the subprocess calling works as expected.
 
 import logging
 import os
-import threading
+import re
 import time
-import uuid
 from copy import copy
 
 import pytest
@@ -23,8 +22,10 @@ from openflexure_microscope_server.stitching import (
     StitcherValidationError,
 )
 
-# A global logger pretending to be an Invocation Logger
-LOGGER = logging.getLogger("mock-invocation_logger")
+from .utilities.lt_test_utils import LabThingsTestEnv
+
+# A global logger pretending to the logger from a thing
+LOGGER = logging.getLogger("mock-thing_logger")
 FAKE_DIR: list[str] = os.path.join("a", "dir", "that", "is", "fake")
 THIS_DIR: str = os.path.dirname(os.path.realpath(__file__))
 MOCK_STITCHER: str = os.path.join(THIS_DIR, "mock_stitching", "mock-stitch.py")
@@ -200,7 +201,6 @@ def test_preview_stitching_command(caplog, mocker):
     mocker.patch("openflexure_microscope_server.stitching.STITCHING_CMD", mock_cmd)
 
     with caplog.at_level(logging.INFO):
-        cancel_hook = lt.deps.CancelHook(id=uuid.uuid4())
         stitcher = PreviewStitcher(FAKE_DIR, overlap=0.1, correlation_resize=0.5)
         stitcher.start()
         # Should take a second or so to run so will still be running
@@ -209,38 +209,64 @@ def test_preview_stitching_command(caplog, mocker):
         with pytest.raises(RuntimeError):
             stitcher.start()
         # Wait for it to complete
-        stitcher.wait(cancel_hook)
+        stitcher.wait()
         # It is now not running
         assert not stitcher.running
         assert len(caplog.records) == 0
 
 
-def test_preview_stitching_cancelled(caplog, mocker):
+class StitchingTestThing(lt.Thing):
+    """A Thing for running stitching in invocation threads.
+
+    This is needed to check cancellation behaviour.
+    """
+
+    @lt.action
+    def run_preview(self):
+        """Run the preview stitcher."""
+        stitcher = PreviewStitcher(FAKE_DIR, overlap=0.1, correlation_resize=0.5)
+        # Send in the argument HANG to mock-stitch and it just hang for 10s
+        stitcher._extra_args = ["HANG"]
+        stitcher.start()
+        stitcher.wait()
+
+    @lt.action
+    def run_final(self):
+        """Run the final stitcher."""
+        stitcher = FinalStitcher(FAKE_DIR, logger=self.logger)
+        # Send in the argument HANG to mock-stitch and it just hang for 10s
+        stitcher.run()
+
+
+@pytest.fixture
+def stitching_test_env():
+    """Return a test environment for a server with just StitchingTestThing."""
+    with LabThingsTestEnv(things={"stitcher": StitchingTestThing}) as env:
+        yield env
+
+
+def test_preview_stitching_cancelled(stitching_test_env, mocker):
     """Check that preview stitch can be cancelled."""
     mock_cmd = f"python {MOCK_STITCHER}"
 
     mocker.patch("openflexure_microscope_server.stitching.STITCHING_CMD", mock_cmd)
 
-    with caplog.at_level(logging.INFO):
-        stitcher = PreviewStitcher(FAKE_DIR, overlap=0.1, correlation_resize=0.5)
-        # Send in the argument HANG to mock-stitch and it just hang for 10s
-        stitcher._extra_args = ["HANG"]
-        cancel_hook = lt.deps.CancelHook(id=uuid.uuid4())
-        t_start = time.time()
-        # Start stitching
-        stitcher.start()
-        # Run wait() in a thread.
-        thread = threading.Thread(target=stitcher.wait, kwargs={"cancel": cancel_hook})
-        thread.start()
-        # Sleep long enough for at least 1 log.
-        time.sleep(0.5)
-        # use set() to cancel!
-        cancel_hook.set()
-        thread.join()
-        # If it wasn't cancelled it would hang for 10 s. Here we check the cancel killed
-        # it within 2s.
-        assert t_start - time.time() < 2
-        assert len(caplog.records) == 0
+    t_start = time.time()
+    # Start the action
+    response = stitching_test_env.start_action("stitcher", "run_preview")
+    # Sleep long enough for at least 1 log.
+    time.sleep(0.5)
+    # Cancel using a DELETE request
+    stitching_test_env.cancel_action(response)
+    invocation_data = stitching_test_env.poll_action(response)
+
+    # If it wasn't cancelled it would hang for 10 s. Here we check the cancel killed
+    # it within 2s.
+    assert time.time() - t_start < 2
+    assert invocation_data["status"] == "cancelled"
+    logs = invocation_data["log"]
+    assert len(logs) == 1
+    assert re.match(r"^Invocation [0-9a-f-]+ was cancelled", logs[0]["message"])
 
 
 def test_final_stitching_command(caplog, mocker):
@@ -255,7 +281,7 @@ def test_final_stitching_command(caplog, mocker):
             FAKE_DIR, logger=LOGGER, overlap=0.1, correlation_resize=0.5
         )
         # For the final stitcher it will always complete before returning.
-        stitcher.run(cancel=lt.deps.CancelHook(id=uuid.uuid4()))
+        stitcher.run()
         # The mock command logs the inputs (but not the initial command) and the
         # stitcher logs # "Stitching complete" when it ends.
         assert len(caplog.records) == len(FINAL_EXPECTED_COMMAND)
@@ -267,26 +293,25 @@ def test_final_stitching_command(caplog, mocker):
                 assert msg == FINAL_EXPECTED_COMMAND[i + 1]
 
 
-def test_final_stitching_command_cancelled(caplog, mocker):
+def test_final_stitching_command_cancelled(stitching_test_env, mocker):
     """Check that final stitch can be cancelled."""
     mock_cmd = f"python {MOCK_STITCHER}"
 
     mocker.patch("openflexure_microscope_server.stitching.STITCHING_CMD", mock_cmd)
 
-    with caplog.at_level(logging.INFO):
-        stitcher = FinalStitcher(FAKE_DIR, logger=LOGGER)
-        cancel_hook = lt.deps.CancelHook(id=uuid.uuid4())
+    # Start the action
+    response = stitching_test_env.start_action("stitcher", "run_final")
+    # Sleep long enough for at least 1 log.
+    time.sleep(0.5)
+    # Cancel using a DELETE request
+    stitching_test_env.cancel_action(response)
+    invocation_data = stitching_test_env.poll_action(response)
 
-        # Start stitching in a thread.
-        thread = threading.Thread(target=stitcher.run, kwargs={"cancel": cancel_hook})
-        thread.start()
-        # Sleep long enough for at least 1 log.
-        time.sleep(0.5)
-        # use set() to cancel!
-        cancel_hook.set()
-        thread.join()
-        assert len(caplog.records) < len(FINAL_EXPECTED_COMMAND) + 1
-        assert caplog.records[-1].message == "Stitching cancelled by user"
+    assert invocation_data["status"] == "cancelled"
+    logs = invocation_data["log"]
+    assert len(logs) < len(FINAL_EXPECTED_COMMAND) + 1
+    assert logs[-2]["message"] == "Stitching cancelled by user"
+    assert re.match(r"^Invocation [0-9a-f-]+ was cancelled", logs[-1]["message"])
 
 
 def test_final_stitching_command_error(caplog, mocker):
@@ -301,4 +326,4 @@ def test_final_stitching_command_error(caplog, mocker):
         # than echo.
         stitcher._extra_args = ["ERROR"]
         with pytest.raises(ChildProcessError):
-            stitcher.run(cancel=lt.deps.CancelHook(id=uuid.uuid4()))
+            stitcher.run()
