@@ -9,7 +9,7 @@ import labthings_fastapi as lt
 from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 from openflexure_microscope_server.things.stage.dummy import DummyStage
 
-from .utilities.lt_test_utils import LabThingsTestEnv
+from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
 
 @pytest.fixture

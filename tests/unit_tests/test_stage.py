@@ -17,7 +17,7 @@ from openflexure_microscope_server.things.stage import (
 )
 from openflexure_microscope_server.things.stage.dummy import DummyStage
 
-from .utilities.lt_test_utils import LabThingsTestEnv
+from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
 # Keep the size and number of moves fairly small or the tests can take forever
 point3d = st.tuples(

@@ -15,7 +15,7 @@ import piexif
 import pytest
 from PIL import Image
 
-from .utilities.lt_test_utils import LabThingsTestEnv
+from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
 
 @pytest.fixture
