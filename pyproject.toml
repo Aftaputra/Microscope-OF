@@ -37,7 +37,6 @@ dependencies = [
 dev = [
   "ruff~=0.13.0",
   "mypy[reports]",
-  "mypy-gitlab-code-quality",
 #  "pytest-gitlab-code-quality", # pytest version constraint clashes with labthings
   "pytest",
   "pytest-cov",

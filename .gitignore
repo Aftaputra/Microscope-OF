@@ -10,6 +10,8 @@ __pycache__/
 # Mypy cache
 .mypy_cache*
 .dmypy.json
+mypy/
+mypy-out.txt
 
 # C extensions
 *.so

@@ -95,12 +95,15 @@ mypy:
   extends: .python
   script:
     - mkdir -p mypy
-    # "|| true" is used for preventing job failure when mypy find errors
-    - mypy src --cobertura-xml-report mypy --no-error-summary > mypy-out.txt || true
+    - mypy src --cobertura-xml-report mypy --no-error-summary > mypy-out.txt
+  after_script:
+    # Installed here rather than with [dev] as the after_script runs in a new shell
+    - pip install mypy-gitlab-code-quality
     - mypy-gitlab-code-quality < mypy-out.txt > codequality.json
-  allow_failure: true
+    - cat mypy-out.txt
 
   artifacts:
+    when: always
     reports:
       codequality: codequality.json
       coverage_report: 
