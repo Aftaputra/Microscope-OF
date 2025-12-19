@@ -123,6 +123,9 @@ class StreamingPiCamera2(BaseCamera):
     generalisation.
     """
 
+    tuning: dict = lt.setting(default_factory=dict, readonly=True)
+    """The Raspberry PiCamera Tuning File JSON."""
+
     def __init__(
         self,
         thing_server_interface: lt.ThingServerInterface,
@@ -160,10 +163,12 @@ class StreamingPiCamera2(BaseCamera):
         # connected to the server if tuning is saved to disk.
         try:
             self.tuning = copy.deepcopy(self.default_tuning)
-        except ServerNotRunningError:
+        except ServerNotRunningError as e:
             # This will throw an error after setting as we are not connected to
-            # a server. But we know this, so we ignore the error.
-            pass
+            # a server. But we know this, so we ignore the error as long as the
+            # tuning data is set.
+            if "version" not in self.tuning:
+                raise RuntimeError("Tuning file could not be set.") from e
 
         # Also set the colour gains based on the tuning. Set to _colour_gains to not
         # trigger a ServerNotRunningError
@@ -323,9 +328,6 @@ class StreamingPiCamera2(BaseCamera):
         """The native resolution of the camera's sensor."""
         with self._streaming_picamera() as cam:
             return cam.sensor_resolution
-
-    tuning: Optional[dict] = lt.setting(default=None, readonly=True)
-    """The Raspberry PiCamera Tuning File JSON."""
 
     def _initialise_picamera(self, check_sensor_model: bool = False) -> None:
         """Acquire the picamera device and store it as ``self._picamera``.
