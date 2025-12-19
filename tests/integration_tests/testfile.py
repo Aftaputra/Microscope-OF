@@ -19,11 +19,10 @@ import labthings_fastapi as lt
 
 THIS_DIR: str = os.path.dirname(os.path.realpath(__file__))
 WORKING_DIR: str = os.path.join(THIS_DIR, "working_dir")
-REPO_DIR: str = os.path.dirname(THIS_DIR)
+REPO_DIR: str = os.path.dirname(os.path.dirname(THIS_DIR))
 CONFIG_FILE: str = os.path.join(REPO_DIR, "ofm_config_simulation.json")
 SERVER_CMD: list[str] = [
     "openflexure-microscope-server",
-    "--fallback",
     "-c",
     CONFIG_FILE,
 ]
