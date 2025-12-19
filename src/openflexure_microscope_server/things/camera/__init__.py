@@ -584,7 +584,7 @@ class BaseCamera(lt.Thing):
         return self._detector_name
 
     @detector_name.setter
-    def detector_name(self, name: str) -> None:
+    def _set_detector_name(self, name: str) -> None:
         """Validate and set detector_name."""
         if name not in self.background_detectors:
             self.logger.warning(f"{name} is not a valid background detector name.")
@@ -633,7 +633,7 @@ class BaseCamera(lt.Thing):
         return data
 
     @background_detector_data.setter
-    def background_detector_data(self, data: dict) -> None:
+    def _set_background_detector_data(self, data: dict) -> None:
         """Set the data for each detector. Only to be used as settings are loaded from disk.
 
         Do not call over HTTP. This needs to be updated once LbaThings Settings can be

@@ -215,7 +215,7 @@ class StreamingPiCamera2(BaseCamera):
         return self._analogue_gain
 
     @analogue_gain.setter
-    def analogue_gain(self, value: float) -> None:
+    def _set_analogue_gain(self, value: float) -> None:
         self._analogue_gain = value
         if self.streaming:
             with self._streaming_picamera() as cam:
@@ -235,7 +235,7 @@ class StreamingPiCamera2(BaseCamera):
         return self._colour_gains
 
     @colour_gains.setter
-    def colour_gains(self, value: tuple[float, float]) -> None:
+    def _set_colour_gains(self, value: tuple[float, float]) -> None:
         self._colour_gains = value
         if self.streaming:
             with self._streaming_picamera() as cam:
@@ -259,7 +259,7 @@ class StreamingPiCamera2(BaseCamera):
         return self._exposure_time
 
     @exposure_time.setter
-    def exposure_time(self, value: int) -> None:
+    def _set_exposure_time(self, value: int) -> None:
         self._exposure_time = value
         if self.streaming:
             with self._streaming_picamera() as cam:
@@ -303,7 +303,7 @@ class StreamingPiCamera2(BaseCamera):
         return SensorModeSelector(**self._sensor_mode)
 
     @sensor_mode.setter
-    def sensor_mode(self, new_mode: Optional[SensorModeSelector | dict]) -> None:
+    def _set_sensor_mode(self, new_mode: Optional[SensorModeSelector | dict]) -> None:
         """Change the sensor mode used."""
         if new_mode is None:
             self._sensor_mode = None
@@ -873,7 +873,7 @@ class StreamingPiCamera2(BaseCamera):
         return tf_utils.get_lst(self.tuning)
 
     @lens_shading_tables.setter
-    def lens_shading_tables(self, lst: tf_utils.LensShading) -> None:
+    def _set_lens_shading_tables(self, lst: tf_utils.LensShading) -> None:
         """Set the lens shading tables."""
         with self._streaming_picamera(pause_stream=True):
             self.tuning = tf_utils.set_lst(
