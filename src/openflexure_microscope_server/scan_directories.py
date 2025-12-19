@@ -304,7 +304,14 @@ class ScanDirectoryManager:
         else:
             last_matching_scan = sorted(matching_scans)[-1]
             # Get the first group from the regex, turn to int, and add 1
-            scan_num = int(scan_regex.match(last_matching_scan)[1]) + 1
+            scan_match = scan_regex.match(last_matching_scan)
+
+            if scan_match is None:  # pragma: no cover
+                # Type narrow, we know it is a match but mypy doesn't. This code is
+                # Not reachable hence the no cover.
+                raise RuntimeError("Internal error: regex No longer matches")
+
+            scan_num = int(scan_match[1]) + 1
 
         # Set a sensible limit for the number of scans of one name
         # based on our zero padding.
