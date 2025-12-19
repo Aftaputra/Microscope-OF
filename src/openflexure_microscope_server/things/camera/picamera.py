@@ -288,7 +288,7 @@ class StreamingPiCamera2(BaseCamera):
             "Sharpness": 1,
         }
 
-    _sensor_modes = None
+    _sensor_modes: Optional[list[SensorMode]] = None
 
     @lt.property
     def sensor_modes(self) -> list[SensorMode]:
@@ -363,6 +363,9 @@ class StreamingPiCamera2(BaseCamera):
                 camera_num=self._camera_num,
                 tuning=self.tuning,
             )
+            if self._picamera is None:
+                # Type narrow (error if failure)
+                raise RuntimeError("Failed to start Picamera")
             if check_sensor_model:
                 hw_sensor_model = self._picamera.camera_properties["Model"]
                 if hw_sensor_model != self._sensor_info.sensor_model:
@@ -861,7 +864,7 @@ class StreamingPiCamera2(BaseCamera):
         ]
 
     @lt.property
-    def lens_shading_tables(self) -> Optional[tf_utils.LensShading]:
+    def lens_shading_tables(self) -> Optional[tf_utils.LensShadingModel]:
         """The current lens shading (i.e. flat-field correction).
 
         Return the current lens shading correction, as three 2D lists each with
@@ -873,19 +876,6 @@ class StreamingPiCamera2(BaseCamera):
         resetting the table.
         """
         return tf_utils.get_lst(self.tuning)
-
-    @lens_shading_tables.setter
-    def _set_lens_shading_tables(self, lst: tf_utils.LensShading) -> None:
-        """Set the lens shading tables."""
-        with self._streaming_picamera(pause_stream=True):
-            self.tuning = tf_utils.set_lst(
-                self.tuning,
-                luminance=lst.luminance,
-                cr=lst.Cr,
-                cb=lst.Cb,
-                colour_temp=lst.colour_temp,
-            )
-            self._initialise_picamera()
 
     @lt.action
     def flat_lens_shading(self) -> None:

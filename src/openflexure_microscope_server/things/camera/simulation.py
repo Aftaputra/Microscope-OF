@@ -33,7 +33,7 @@ from . import BaseCamera
 
 LOGGER = logging.getLogger(__name__)
 
-# The ratio between "motor" steps and pixels
+# The ratio between "motor" steps and pixels in (x, y, z)
 # higher related to a faster movement
 RATIO = (2, 2, 0.2)
 
@@ -203,10 +203,11 @@ class SimulatedCamera(BaseCamera):
         """
         canvas_width, canvas_height, _ = self.canvas_shape
         image_width, image_height, _ = self.shape
-        pos = tuple(x * s for x, s in zip(pos, RATIO, strict=True))
+        # Scale position by RATIO to get position in base image.
+        im_pos = tuple(x * ratio for x, ratio in zip(pos, RATIO, strict=True))
         top_left = (
-            int(pos[0]) - image_width // 2 + self.sample_limits[0] // 2,
-            int(pos[1]) - image_height // 2 + self.sample_limits[1] // 2,
+            int(im_pos[0]) - image_width // 2 + self.sample_limits[0] // 2,
+            int(im_pos[1]) - image_height // 2 + self.sample_limits[1] // 2,
         )
         # Create index list with modulo rather than slicing to handle wrapping at the
         # canvas edge.
@@ -217,7 +218,7 @@ class SimulatedCamera(BaseCamera):
         # Use npx to make each 1d index list 3D
         focused_image = canvas[np.ix_(x_indices, y_indices, z_indices)]
 
-        image = fast_pil_blur(focused_image, sigma=np.abs(pos[2]) / 5)
+        image = fast_pil_blur(focused_image, sigma=np.abs(im_pos[2]) / 5)
 
         if image.shape != self.shape:
             raise ValueError(
@@ -251,7 +252,7 @@ class SimulatedCamera(BaseCamera):
         _traceback: Optional[TracebackType],
     ) -> None:
         """Close the capture thread when the Thing context manager is closed."""
-        if self.stream_active:
+        if self._capture_thread is not None and self._capture_thread.is_alive():
             self._capture_enabled = False
             self._capture_thread.join()
 
@@ -300,7 +301,7 @@ class SimulatedCamera(BaseCamera):
             try:
                 frame = self.generate_frame()
                 self.mjpeg_stream.add_frame(_frame2bytes(frame))
-                ds_frame = frame.resize((320, 240), resample=Image.NEAREST)
+                ds_frame = frame.resize((320, 240), resample=Image.Resampling.NEAREST)
                 self.lores_mjpeg_stream.add_frame(_frame2bytes(ds_frame))
 
             except Exception as e:

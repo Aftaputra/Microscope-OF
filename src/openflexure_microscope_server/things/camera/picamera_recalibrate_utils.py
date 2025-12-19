@@ -51,7 +51,6 @@ import numpy as np
 import picamera2
 from picamera2 import Picamera2
 from pydantic import BaseModel
-from scipy.ndimage import zoom
 
 LOGGER = logging.getLogger(__name__)
 
@@ -322,18 +321,7 @@ def _get_16x12_grid(chan: np.ndarray, dx: int, dy: int) -> np.ndarray:
     return np.reshape(np.array(grid), (12, 16))
 
 
-def _upsample_channels(grids: np.ndarray, shape: tuple[int]) -> np.ndarray:
-    """Zoom an image in the last two dimensions.
-
-    This is effectively the inverse operation of ``_get_16x12_grid``
-    """
-    zoom_factors = [
-        1,
-    ] + list(np.ceil(np.array(shape) / np.array(grids.shape[1:])))
-    return zoom(grids, zoom_factors, order=1)[:, : shape[0], : shape[1]]
-
-
-def _downsampled_channels(channels: np.ndarray, blacklevel: int) -> list[np.ndarray]:
+def _downsampled_channels(channels: np.ndarray, blacklevel: int) -> np.ndarray:
     """Generate a downsampled, un-normalised image from which to calculate the LST."""
     channel_shape = np.array(channels.shape[1:])
     lst_shape = np.array([12, 16])
@@ -398,9 +386,7 @@ def _grids_from_lst(lum: np.ndarray, Cr: np.ndarray, Cb: np.ndarray) -> np.ndarr
     return np.stack([B, G, G, R], axis=0)
 
 
-def _raw_channels_from_camera(
-    camera: Picamera2, sensor_info: SensorInfo
-) -> LensShadingTables:
+def _raw_channels_from_camera(camera: Picamera2, sensor_info: SensorInfo) -> np.ndarray:
     """Acquire a raw image and return a 4xNxM array of the colour channels."""
     if camera.started:
         camera.stop_recording()
