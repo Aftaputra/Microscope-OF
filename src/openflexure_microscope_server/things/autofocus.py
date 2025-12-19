@@ -264,7 +264,7 @@ class JPEGSharpnessMonitor:
         """Clean up after context manager is closed."""
         self.running = False
 
-    def focus_rel(self, dz: int, block_cancellation: int = False) -> tuple[int, int]:
+    def focus_rel(self, dz: int, block_cancellation: bool = False) -> tuple[int, int]:
         """Move the stage by dz, monitoring the position over time.
 
         This performs exactly one move. Multiple calls of this method

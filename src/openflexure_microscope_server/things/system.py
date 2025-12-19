@@ -52,7 +52,7 @@ class OpenFlexureSystem(lt.Thing):
 
     @microscope_id.setter
     def _set_microscope_id(self, uuid: UUID) -> None:
-        self._microscope_id = uuid
+        self._microscope_id = str(uuid)
 
     @lt.property
     def hostname(self) -> str:
