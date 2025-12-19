@@ -148,7 +148,7 @@ class CaptureInfo:
     """The information from a capture in a z_stack."""
 
     buffer_id: int
-    position: dict[str, int]
+    position: Mapping[str, int]
     sharpness: int
 
     @property
@@ -426,7 +426,7 @@ class AutofocusThing(lt.Thing):
             while attempt < 10:
                 attempt += 1
                 if start == "centre":
-                    self._stage.move_relative(x=0, y=0, z=-(backlash + dz / 2))
+                    self._stage.move_relative(x=0, y=0, z=-int(backlash + dz / 2))
                     self._stage.move_relative(x=0, y=0, z=backlash)
 
                 # Always start centrally for future runs
@@ -612,7 +612,7 @@ class AutofocusThing(lt.Thing):
 
     def reset_stack(
         self,
-        initial_z_pos: list[int],
+        initial_z_pos: int,
         autofocus_dz: int,
     ) -> None:
         """Return to the initial z position and run a looping autofocus.
@@ -629,7 +629,7 @@ class AutofocusThing(lt.Thing):
     def save_stack(
         self,
         sharpest_id: int,
-        captures: list[list],
+        captures: list[CaptureInfo],
         stack_parameters: StackParams,
     ) -> int:
         """Save the required captures to disk.
@@ -681,7 +681,7 @@ class AutofocusThing(lt.Thing):
         # Move down by the height of the z stack, plus an overshoot
         # Better to start too low and take too many images than too high and need to refocus
         self._stage.move_relative(
-            z=-(
+            z=-int(
                 stack_parameters.steps_undershoot
                 + stack_parameters.backlash_correction
                 + stack_parameters.stack_z_range / 2
@@ -689,7 +689,7 @@ class AutofocusThing(lt.Thing):
         )
         self._stage.move_relative(z=stack_parameters.backlash_correction)
 
-        captures = []
+        captures: list[CaptureInfo] = []
         # Always check for focus using the the last `min_images_to_test` in the
         # stack so check is fair
         ims_to_check = slice(-stack_parameters.min_images_to_test, None)
