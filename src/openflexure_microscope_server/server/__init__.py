@@ -13,7 +13,9 @@ from uvicorn.main import Server
 
 import labthings_fastapi as lt
 from labthings_fastapi.server import fallback
+from labthings_fastapi.server.config_model import ThingServerConfig
 
+from openflexure_microscope_server.things.camera import BaseCamera
 from openflexure_microscope_server.utilities import load_patched_config
 
 from ..logging import configure_logging, retrieve_log, retrieve_log_from_file
@@ -44,7 +46,9 @@ def set_shutdown_function(shutdown_function: Callable[[], None]) -> None:
         shutdown_function()
         original_handler(*args, **kwargs)
 
-    Server.handle_exit = handle_exit
+    # Ignore the MyPy doesn't want us monkey patching. We have to unless the
+    # FastAPI lifecycle is fixed.
+    Server.handle_exit = handle_exit  # type: ignore[method-assign]
 
 
 def customise_server(
@@ -82,21 +86,24 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
     log_config["loggers"]["uvicorn"]["propagate"] = True
     log_config["loggers"]["uvicorn.access"]["propagate"] = True
 
-    # Create server and config vars before trying to configure so they are defined
+    # Create server and lt_config vars before trying to configure so they are defined
     # if fallback is needed before they are set.
-    config = None
+    lt_config = None
     server = None
     try:
-        config = _full_config_from_args(args)
-        log_folder = config.pop("log_folder", "./openflexure/logs")
-        scans_folder = _get_scans_dir(config)
-        server = lt.ThingServer.from_config(config)
-        customise_server(server, log_folder, scans_folder)
+        lt_config, internal_config = _full_config_from_args(args)
+
+        server = lt.ThingServer.from_config(lt_config)
+        customise_server(
+            server, internal_config["log_folder"], internal_config["scans_folder"]
+        )
 
         def shutdown_call() -> None:
             try:
-                # Kill any mjpeg streams so that StreamingResponses close.
-                server.things["camera"].kill_mjpeg_streams()
+                camera_thing = server.things["camera"]
+                if not isinstance(camera_thing, BaseCamera):
+                    raise RuntimeError("Camera thing is not a BaseCamera")
+                camera_thing.kill_mjpeg_streams()
             except BaseException as e:
                 # Catch anything and log as it is essential that this
                 # function cannot raise an unhandled exception or Uvicorn
@@ -122,7 +129,7 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
             print(f"Error: {e}")  # noqa: T201
             print("Starting fallback server.")  # noqa: T201
             app = fallback.app
-            app.labthings_config = config
+            app.labthings_config = lt_config
             app.labthings_server = server
             app.labthings_error = e
             uvicorn.run(
@@ -135,14 +142,25 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
             raise e
 
 
-def _full_config_from_args(args: Namespace) -> dict:
+def _full_config_from_args(args: Namespace) -> tuple[ThingServerConfig, dict[str, Any]]:
     """Load configuration from LabThings args allowing patching.
+
+    This returns the labthings ThingServerConfig model and a dictionary of the config
+    for the microscope.
 
     This provides similar functionarlity to lt.cli.config_from_args except allows the
     configuration file to specify a base config, and optionally patches.
     """
+    internal_config = {"log_folder": "./openflexure/logs", "scans_folder": None}
     # If no config file specified let LabThings handle it.
     if not args.config:
-        return lt.cli.config_from_args(args)
+        return lt.cli.config_from_args(args), internal_config
 
-    return load_patched_config(args.config)
+    patched_config = load_patched_config(args.config)
+    log_folder = patched_config.pop("log_folder", None)
+    if log_folder is not None:
+        internal_config["log_folder"] = log_folder
+    scans_folder = _get_scans_dir(patched_config)
+    if scans_folder is not None:
+        internal_config["log_folder"] = log_folder
+    return ThingServerConfig(**patched_config), internal_config

@@ -8,6 +8,7 @@ from fastapi import FastAPI
 # Import as ofm server to attempt to minimise confusion with server as a var in other
 # functions and also FastAPI `Server`.
 from openflexure_microscope_server import server as ofm_server
+from openflexure_microscope_server.things.camera import BaseCamera
 
 from .test_server_config import FULL_CONFIG
 
@@ -27,7 +28,7 @@ def test_successful_start(mocker, caplog):
     mock_server = mocker.Mock()
     # Create a mock for the camera so we can check the MJPEG streams are closed on
     # shutdown.
-    mock_camera = mocker.Mock()
+    mock_camera = mocker.Mock(spec=BaseCamera)
     mock_server.things = {"camera": mock_camera}
     # Mock the LabThings function that returns the server so we have a mock server
     mocker.patch(
