@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import threading
 import time
-from collections.abc import Mapping
 from contextlib import contextmanager
 from copy import copy
 from types import TracebackType
@@ -81,7 +80,7 @@ class SangaboardThing(BaseStage):
         with self._sangaboard_lock:
             yield self._sangaboard
 
-    axis_inverted: Mapping[str, bool] = lt.setting(
+    axis_inverted: dict[str, bool] = lt.setting(
         default={"x": True, "y": False, "z": True}, readonly=True
     )
     """Used to convert coordinates between the program frame and the hardware frame."""

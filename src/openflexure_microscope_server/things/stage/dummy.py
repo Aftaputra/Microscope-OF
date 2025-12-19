@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Mapping
 from types import TracebackType
 from typing import Any, Optional, Self
 
@@ -49,7 +48,7 @@ class DummyStage(BaseStage):
     ) -> None:
         """Nothing to do when the Thing context manager is closed."""
 
-    axis_inverted: Mapping[str, bool] = lt.setting(
+    axis_inverted: dict[str, bool] = lt.setting(
         default={"x": True, "y": False, "z": False}, readonly=True
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
