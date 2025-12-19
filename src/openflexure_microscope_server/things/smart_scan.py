@@ -231,7 +231,7 @@ class SmartScanThing(lt.Thing):
 
         Raise warning if not using background detect that scan will go on until max steps reached
         """
-        self._csm.assert_calibrated()
+        self._csm.assert_calibration()
 
         if self.skip_background:
             if not self._cam.background_detector_status.ready:
