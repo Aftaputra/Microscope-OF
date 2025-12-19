@@ -5,14 +5,16 @@ for analysis. Information from these images is used to detect whether an image f
 current camera field of view contains sample.
 """
 
-from typing import Any, Optional
+from typing import Any, Generic, Optional, Type, TypeVar
 
 import cv2
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
-from pydantic.errors import PydanticUserError
 
 from labthings_fastapi.thing_description import type_to_dataschema
+
+SettingsType = TypeVar("SettingsType", bound=BaseModel)
+BackgroundType = TypeVar("BackgroundType", bound=BaseModel)
 
 
 class MissingBackgroundDataError(RuntimeError):
@@ -56,22 +58,24 @@ class BackgroundDetectorStatus(BaseModel):
     """
 
 
-class BackgroundDetectAlgorithm:
+class BackgroundDetectAlgorithm(Generic[SettingsType, BackgroundType]):
     """The base class for defining background detect algorithms."""
 
-    background_data_model: BaseModel = BaseModel
+    background_data_model: Type[BackgroundType]
     """The data model of the background data. This must be set by child classes"""
-    settings_data_model: BaseModel = BaseModel
+    settings_data_model: Type[SettingsType]
     """The data model of algorithm settings. This must be set by child classes"""
 
     def __init__(self) -> None:
         """Initialise the algorithm settings."""
-        try:
-            self._settings: BaseModel = self.settings_data_model()
-        except PydanticUserError as e:
+        if not hasattr(self, "background_data_model") or not hasattr(
+            self, "settings_data_model"
+        ):
             raise NotImplementedError(
-                "BackgroundDetectAlgorithms must set their own settings data model."
-            ) from e
+                "All BackgroundDetectAlgorithm subclesses must set their own settings "
+                "and background data models."
+            )
+        self._settings: SettingsType = self.settings_data_model()
 
     @property
     def status(self) -> BackgroundDetectorStatus:
@@ -86,10 +90,10 @@ class BackgroundDetectAlgorithm:
 
     # Requires a getter and a setter to support being a BaseModel but being
     # saved to file as a dict
-    _background_data: Optional[BaseModel] = None
+    _background_data: Optional[BackgroundType] = None
 
     @property
-    def background_data(self) -> Optional[BaseModel]:
+    def background_data(self) -> Optional[BackgroundType]:
         """The statistics of the background image."""
         bd = self._background_data
         if bd is None:
@@ -97,36 +101,31 @@ class BackgroundDetectAlgorithm:
         return bd
 
     @background_data.setter
-    def background_data(self, value: Optional[BaseModel | dict]) -> None:
+    def background_data(self, value: Optional[BackgroundType | dict]) -> None:
         """Set the statistics for the background image.
 
         This should be None, of no data is available. It can be set from either
         a dictionary or a base model of the type specified in
         ``self.background_data_model``.
         """
-        try:
-            if value is None:
-                self._background_data = None
-            elif isinstance(value, self.background_data_model):
-                self._background_data = value
-            elif isinstance(value, dict):
-                self._background_data = self.background_data_model(**value)
-            else:
-                raise TypeError(
-                    f"Cannot set background_data with an object of type {type(value)}"
-                )
-        except PydanticUserError as e:
-            raise NotImplementedError(
-                "BackgroundDetectAlgorithms must set their own background data model."
-            ) from e
+        if value is None:
+            self._background_data = None
+        elif isinstance(value, self.background_data_model):
+            self._background_data = value
+        elif isinstance(value, dict):
+            self._background_data = self.background_data_model(**value)
+        else:
+            raise TypeError(
+                f"Cannot set background_data with an object of type {type(value)}"
+            )
 
     @property
-    def settings(self) -> BaseModel:
+    def settings(self) -> SettingsType:
         """The statistics of the background image."""
         return self._settings
 
     @settings.setter
-    def settings(self, value: BaseModel | dict) -> None:
+    def settings(self, value: SettingsType | dict) -> None:
         if isinstance(value, self.settings_data_model):
             self._settings = value
         elif isinstance(value, dict):
@@ -186,7 +185,12 @@ class ColourChannelDetectSettings(BaseModel):
     """
 
 
-class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
+class ColourChannelDetectLUV(
+    BackgroundDetectAlgorithm[
+        ColourChannelDetectSettings,
+        ChannelDistributions,
+    ]
+):
     """Compare images with a known background in LUV colourspace.
 
     This uses an LUV colour space checking only the mean and standard deviation of the
@@ -194,8 +198,8 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
     intuitive way.
     """
 
-    background_data_model: BaseModel = ChannelDistributions
-    settings_data_model: BaseModel = ColourChannelDetectSettings
+    background_data_model: Type[ChannelDistributions] = ChannelDistributions
+    settings_data_model: Type[ColourChannelDetectSettings] = ColourChannelDetectSettings
 
     # These are the same as those used for ChannelDeviationLUV. More detail is
     # provided there.
@@ -209,6 +213,10 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         The image should be in LUV format, the output will be binary with the
         same shape in the first two dimensions.
         """
+        if self.background_data is None:
+            raise RuntimeError(
+                "Cannot calculated background mask if no background is set."
+            )
         # The ``[1:]`` selects only the U and V channels of the image.
         # Only U and V are used as brightness (L) often changes as
         # the height of the sample changes.
@@ -240,7 +248,7 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
         mask = self.background_mask(image_luv)
 
-        return (1 - np.count_nonzero(mask) / np.prod(mask.shape)) * 100
+        return float(1 - np.count_nonzero(mask) / np.prod(mask.shape)) * 100
 
     def image_is_sample(self, image: np.ndarray) -> tuple[bool, str]:
         """Label the current image as either background or sample.
@@ -274,7 +282,12 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
         )
 
 
-class ChannelDeviationLUV(BackgroundDetectAlgorithm):
+class ChannelDeviationLUV(
+    BackgroundDetectAlgorithm[
+        ColourChannelDetectSettings,
+        ChannelDistributions,
+    ]
+):
     """Compare the standard deviations of the LUV channels in a grid to background data.
 
     Using an LUV colour space, each image is divided into an 8x8 grid of images.
@@ -284,8 +297,8 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
 
     # Note we don't use the means in this algorithm but we use the same channel
     # distributions model
-    background_data_model: BaseModel = ChannelDistributions
-    settings_data_model: BaseModel = ColourChannelDetectSettings
+    background_data_model: Type[ChannelDistributions] = ChannelDistributions
+    settings_data_model: Type[ColourChannelDetectSettings] = ColourChannelDetectSettings
 
     # Empirically, 0.5 seems to be approximate the standard deviation for a good image
     # in L and V. U appears to be about 60% of this value. U is about 65% of V when
