@@ -272,7 +272,7 @@ class BaseCamera(lt.Thing):
     @lt.action
     def capture_jpeg(
         self,
-        stream_name: str = "main",
+        stream_name: Literal["main", "lores", "full"] = "main",
         wait: Optional[float] = None,
     ) -> JPEGBlob:
         """Acquire one image from the camera as a JPEG.
@@ -526,7 +526,7 @@ class BaseCamera(lt.Thing):
         nothing is returned on success
         """
         if save_resolution is not None and image.size != save_resolution:
-            image = image.resize(save_resolution, Image.BOX)
+            image = image.resize(save_resolution, Image.Resampling.BOX)
         try:
             # Per PIL documentation,
             # (https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg)
@@ -537,7 +537,7 @@ class BaseCamera(lt.Thing):
             # disabled, file size increases and quality is barely or not affected
             image.save(jpeg_path, quality=95, subsampling=0)
             try:
-                self._add_metadata_to_capture(jpeg_path, metadata)
+                self._add_metadata_to_capture(jpeg_path, dict(metadata))
             except Exception:
                 # We need to capture any exception as there are many reasons metadata
                 # might not be added. We warn rather than log the error.

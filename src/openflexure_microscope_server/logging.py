@@ -14,12 +14,13 @@ output to STDOUT/STDERR are captured by ``systemd``. These can be viewed by usin
 import logging
 import os
 from logging.handlers import RotatingFileHandler
+from typing import Optional
 
 from fastapi import HTTPException
 from fastapi.responses import PlainTextResponse
 
 LOGGER = logging.getLogger(__name__)
-OFM_LOG_FILE = None
+OFM_LOG_FILE: Optional[str] = None
 
 
 def configure_logging(log_folder: str) -> None:
@@ -128,7 +129,7 @@ class OFMHandler(logging.Handler):
             how many can be returned over HTTP.
         """
         super().__init__(level=level)
-        self._log = []
+        self._log: list[str] = []
         self._max_logs = max_logs
 
     def append_record(self, record: logging.LogRecord) -> None:
