@@ -6,6 +6,9 @@ LabThings-FastAPI code. This increases speed of testing significantly.
 
 For tests that require a full running server see the ``lifecycle_test``
 directory in the tests directory.
+
+This file used to be called test_dummy_server when it was in the unit_test suite, but
+it has been moved as it artificaially inflated coverage.
 """
 
 import json
