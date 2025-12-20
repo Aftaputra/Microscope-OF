@@ -218,6 +218,16 @@ server_lifecycle_test:
   script:
     - tests/lifecycle_test/testfile.py
 
+# Pytest integration tests, seperate from the lifecycle test
+integration_tests:
+  stage: integration
+  extends: .python
+  script:
+    - pytest tests/integration_tests
+  # Don't report this coverage to in the Merge Request or combine with other
+  # coverage.
+
+
 pages:
   needs:
     - job: build-docs
