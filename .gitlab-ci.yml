@@ -209,14 +209,14 @@ build-docs:
     - !reference [.python, rules]
 
 # Only runs when a .py file is edited
-server_integration_tests:
+server_lifecycle_test:
   extends: .python
   stage: integration
   needs:
     - job: build
       artifacts: true
   script:
-    - tests/integration_tests/testfile.py
+    - tests/lifecycle_test/testfile.py
 
 pages:
   needs:

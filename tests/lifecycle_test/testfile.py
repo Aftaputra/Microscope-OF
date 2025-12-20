@@ -1,8 +1,12 @@
 #! /usr/bin/env python3
-"""Start a server subprocess for integration tests.
+"""Start a server subprocess for testing the server's life cycle.
+
+This test spools up a server in a sub process. Connects to an MJPEG stream, runs a
+couple of other tests. Most importantly it checks the server shuts down gracefully
+despite the MJPEG stream being connected.
 
 These tests are separated from unit tests to avoid inflating test coverage.
-For now, this file should be run directly rather than through a test framework.
+This file should be run directly rather than through a test framework.
 
 They are designed to run on CI and should work on Linux or WSL for local debugging.
 """

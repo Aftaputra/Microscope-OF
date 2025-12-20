@@ -4,7 +4,7 @@ Rather than spinning up a full uvicorn webserver for each test these tests use
 the FastAPI ``TestClient`` or directly communicate with the underlying
 LabThings-FastAPI code. This increases speed of testing significantly.
 
-For tests that require a full running server see the ``integration_tests``
+For tests that require a full running server see the ``lifecycle_test``
 directory in the tests directory.
 """
 
