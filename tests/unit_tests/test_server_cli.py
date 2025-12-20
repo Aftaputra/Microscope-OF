@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from openflexure_microscope_server import server as ofm_server
 from openflexure_microscope_server.things.camera import BaseCamera
 
-from .test_server_config import FULL_CONFIG
+from .test_server_config import SIM_CONFIG
 
 
 def test_no_config():
@@ -41,7 +41,7 @@ def test_successful_start(mocker, caplog):
     mock_uvicorn_run = mocker.patch("openflexure_microscope_server.server.uvicorn.run")
 
     # Run the mock CLI
-    ofm_server.serve_from_cli(["-c", FULL_CONFIG])
+    ofm_server.serve_from_cli(["-c", SIM_CONFIG])
 
     # Check that the server was customised and the run
     assert mock_customise.call_count == 1
@@ -91,10 +91,10 @@ def test_failed_customise(mocker):
 
     # Running the mock CLI will error
     with pytest.raises(RuntimeError, match="Can't touch this"):
-        ofm_server.serve_from_cli(["-c", FULL_CONFIG])
+        ofm_server.serve_from_cli(["-c", SIM_CONFIG])
 
     # But with the fallback flag uvicorn run will be run
-    ofm_server.serve_from_cli(["-c", FULL_CONFIG, "--fallback"])
+    ofm_server.serve_from_cli(["-c", SIM_CONFIG, "--fallback"])
 
     assert mock_uvicorn_run.call_count == 1
     # Get the fallback app passed to uvicorn tun
