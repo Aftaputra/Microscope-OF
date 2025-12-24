@@ -63,8 +63,10 @@ def temp_dir():
         with tempfile.TemporaryDirectory() as tmpdir:
             os.chdir(tmpdir)
             yield tmpdir
+            # Change back to working dir before closing context manager or Windows will error
+            os.chdir(working_dir)
     finally:
-        # Return to original working dir
+        # Ensure changed to working dir
         os.chdir(working_dir)
 
 
@@ -191,8 +193,10 @@ def test_reading_hash_from_git():
             # Check out the branch and check commit changed back
             _git(f"checkout {branch_name}")
             assert utilities._get_hash_from_git_dir(git_dir) == git_hash2
+            # Change back to working dir before closing context manager or Windows will error
+            os.chdir(working_dir)
     finally:
-        # Return to original working dir
+        # Ensure changed to working dir
         os.chdir(working_dir)
 
 
