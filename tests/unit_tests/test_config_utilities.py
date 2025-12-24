@@ -53,13 +53,15 @@ def test_merge_patch(target, patch, outcome, err_if_enforce):
 @pytest.mark.parametrize(
     ("base_conf", "resolves_to"),
     [
-        ("/var/base.json", "/var/base.json"),
-        ("base.json", "/var/openflexure/settings/base.json"),
-        ("./base.json", "/var/openflexure/settings/base.json"),
-        ("../base.json", "/var/openflexure/base.json"),
+        ("/var/base.json", os.path.normpath("/var/base.json")),
+        ("base.json", os.path.normpath("/var/openflexure/settings/base.json")),
+        ("./base.json", os.path.normpath("/var/openflexure/settings/base.json")),
+        ("../base.json", os.path.normpath("/var/openflexure/base.json")),
         (
             "$OFM_LIB/base.json",
-            "/var/openflexure/application/openflexure-microscope-server/base.json",
+            os.path.normpath(
+                "/var/openflexure/application/openflexure-microscope-server/base.json"
+            ),
         ),
     ],
 )
