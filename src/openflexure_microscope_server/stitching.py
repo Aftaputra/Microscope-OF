@@ -18,6 +18,8 @@ import labthings_fastapi as lt
 
 from openflexure_microscope_server.utilities import make_path_safe
 
+IS_WINDOWS = os.name == "nt"
+
 STITCHING_CMD = "openflexure-stitch"
 STITCHING_RESOLUTION = (820, 616)
 STITCH_TILE_SIZE = 8192
@@ -95,7 +97,8 @@ class BaseStitcher:
         self.validate_path()
 
         # The command, and the mode
-        initial_args = shlex.split(STITCHING_CMD) + ["--stitching_mode", self._mode]
+        base_args = shlex.split(STITCHING_CMD, posix=not IS_WINDOWS)
+        initial_args = base_args + ["--stitching_mode", self._mode]
         # Use float() just to really ensure that anything input is a float
         setting_args = [
             "--minimum_overlap",
@@ -181,7 +184,11 @@ class PreviewStitcher(BaseStitcher):
             except lt.exceptions.InvocationCancelledError as e:
                 with self._popen_lock:
                     if self._popen_obj is not None:
-                        self._popen_obj.send_signal(signal.SIGKILL)
+                        if IS_WINDOWS:
+                            # Windows has no SIGKILL
+                            self._popen_obj.kill()
+                        else:
+                            self._popen_obj.send_signal(signal.SIGKILL)
                 raise (e)
 
 
