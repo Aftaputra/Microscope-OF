@@ -80,8 +80,6 @@ class SimulatedCamera(BaseCamera):
         thing_server_interface: lt.ThingServerInterface,
         shape: tuple[int, int, int] = (616, 820, 3),
         canvas_shape: tuple[int, int, int] = (1500, 2000, 3),
-        repeating: bool = True,
-        blob_density: int = 300,
         frame_interval: float = 0.1,
     ) -> None:
         """Initialise the simulated with settings for how images are generated.
@@ -90,11 +88,6 @@ class SimulatedCamera(BaseCamera):
         :param canvas_shape: The shape (size) of the canvas generated on initialisation
             that images are cropped from. If this is too large the it uses resources,
             but its size limits the range of motion of the simulation.
-        :param repeating: If set True, outside the canvas, the
-            camera won't generate any blobs, preventing scanning from running
-            indefinitely allowing testing of demonstrating background detect. If False
-            the canvas will repeat.
-        :param blob_density: The number of blobs per million pixels.
         :param frame_interval: Nominally the time between frames on the MJPEG stream,
             however the rate may be slower due to calculation time for focus.
         """
@@ -103,15 +96,26 @@ class SimulatedCamera(BaseCamera):
         self.ds_shape = _downsample_shape(shape)
         self.glyph_size = 101 // DOWNSAMPLE
         self.canvas_shape = _downsample_shape(canvas_shape)
-        self.repeating = repeating
+
         self.frame_interval = frame_interval
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
         self.generate_sprites()
-        self.generate_blobs(
-            int(blob_density * 1e-6 * canvas_shape[0] * canvas_shape[1])
-        )
-        self.generate_canvas()
+
+    repeating: bool = lt.property(default=False)
+
+    _blob_density: int = 400
+
+    @lt.property
+    def blob_density(self) -> int:
+        """The number of blobs per million pixels."""
+        return self._blob_density
+
+    @blob_density.setter
+    def blob_density(self, value: int) -> None:
+        self._blob_density = value
+        if self._capture_enabled:
+            self.generate_canvas()
 
     @lt.property
     def calibration_required(self) -> bool:
@@ -181,6 +185,8 @@ class SimulatedCamera(BaseCamera):
         Canvas is int16 so that random noise can be added to simulation image before
         changing to unit8 to stop wrapping.
         """
+        n_pixels = self.canvas_shape[0] * self.canvas_shape[1] * DOWNSAMPLE**2
+        self.generate_blobs(int(self.blob_density * 1e-6 * n_pixels))
         self.blank_canvas = np.ones(self.canvas_shape, dtype=np.int16)
         self.blank_canvas[:, :, 0] *= BG_COLOR[0]
         self.blank_canvas[:, :, 1] *= BG_COLOR[1]
@@ -280,6 +286,7 @@ class SimulatedCamera(BaseCamera):
 
     def __enter__(self) -> Self:
         """Start the capture thread when the Thing context manager is opened."""
+        self.generate_canvas()
         self.start_streaming()
         return self
 
@@ -439,7 +446,11 @@ class SimulatedCamera(BaseCamera):
     @lt.property
     def manual_camera_settings(self) -> list[PropertyControl]:
         """The camera settings to expose as property controls in the settings panel."""
-        return [property_control_for(self, "noise_level", label="Noise Level")]
+        return [
+            property_control_for(self, "repeating", label="Infinite Sample"),
+            property_control_for(self, "blob_density", label="Sample Density"),
+            property_control_for(self, "noise_level", label="Noise Level"),
+        ]
 
 
 def _frame2bytes(frame: Image.Image) -> bytes:
