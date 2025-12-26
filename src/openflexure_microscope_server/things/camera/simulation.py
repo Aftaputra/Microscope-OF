@@ -44,6 +44,10 @@ BG_COLOR = [220, 215, 217]
 RNG = np.random.default_rng()
 
 DOWNSAMPLE = 2
+# Upsample for sprites and then downsample to create sharp edges for each sprite
+# as these are small and calculated once there is almos no performance penalty
+# for a nice gain in quality.
+SPRITE_UPSAMPLE = 4
 
 
 @overload
@@ -75,7 +79,7 @@ class SimulatedCamera(BaseCamera):
         self,
         thing_server_interface: lt.ThingServerInterface,
         shape: tuple[int, int, int] = (616, 820, 3),
-        glyph_shape: tuple[int, int, int] = (121, 121, 3),
+        glyph_size: int = 121,
         canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
         sample_limits: Optional[tuple[int, int]] = (1000, 1500),
         frame_interval: float = 0.1,
@@ -83,7 +87,7 @@ class SimulatedCamera(BaseCamera):
         """Initialise the simulated with settings for how images are generated.
 
         :param shape: The shape (size) of the generated image.
-        :param glyph_shape: The size randomly positioned glyphs.
+        :param glyph_size: The size randomly positioned glyphs.
         :param canvas_shape: The shape (size) of the canvas generated on initialisation
             that images are cropped from. If this is too large the it uses resources,
             but its size limits the range of motion of the simulation.
@@ -96,7 +100,7 @@ class SimulatedCamera(BaseCamera):
         super().__init__(thing_server_interface)
         self.shape = shape
         self.ds_shape = _downsample_shape(shape)
-        self.glyph_shape = _downsample_shape(glyph_shape)
+        self.glyph_size = glyph_size // DOWNSAMPLE
         self.canvas_shape = _downsample_shape(canvas_shape)
         sample_limits = canvas_shape[:2] if sample_limits is None else sample_limits
         self.sample_limits = _downsample_shape(sample_limits)
@@ -128,10 +132,11 @@ class SimulatedCamera(BaseCamera):
     def generate_sprites(self) -> None:
         """Generate sprites to populate the image."""
         sprite_sizes = [10, 21, 36, 40, 50]
-        sprite_sizes = [s / DOWNSAMPLE for s in sprite_sizes]
+        sprite_sizes = [s * SPRITE_UPSAMPLE for s in sprite_sizes]
         self.sprites = []
 
-        channel_block = np.zeros(self.glyph_shape[0:2])
+        block_size = self.glyph_size * DOWNSAMPLE * SPRITE_UPSAMPLE
+        channel_block = np.zeros((block_size, block_size))
         x = np.arange(channel_block.shape[0])
         y = np.arange(channel_block.shape[1])
         # 2D grid of radii
@@ -156,8 +161,14 @@ class SimulatedCamera(BaseCamera):
             sprite_b[sprite_mask] = 70 * sprite_px
             # Stack into a negative image of the sprite
             sprite = np.stack([sprite_r, sprite_g, sprite_b], axis=2)
-            # Convert to uint8 and append to the list
-            self.sprites.append(sprite.astype(np.uint8))
+            # Convert to uint8
+            sprite = sprite.astype(np.uint8)
+            # Convert to PIL (and back) to resize then append to list of sprites
+            sprite_pil = Image.fromarray(sprite)
+            sprite_pil = sprite_pil.resize(
+                (self.glyph_size, self.glyph_size), Image.BILINEAR
+            )
+            self.sprites.append(np.array(sprite_pil))
 
     def generate_blobs(self, n_blobs: int = 1000) -> None:
         """Generate coordinates of blobs and their sizes, centered around (0,0).
@@ -169,7 +180,7 @@ class SimulatedCamera(BaseCamera):
         :param n_blobs: The number of blobs to generate.
         """
         self.blobs = np.zeros((n_blobs, 3))
-        w = np.max(self.glyph_shape)
+        w = self.glyph_size
 
         self.blobs[:, 0] = RNG.uniform(w // 2, self.sample_limits[1] - w // 2, n_blobs)
         self.blobs[:, 1] = RNG.uniform(w // 2, self.sample_limits[0] - w // 2, n_blobs)
