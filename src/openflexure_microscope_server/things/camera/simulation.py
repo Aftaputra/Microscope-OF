@@ -79,55 +79,44 @@ class SimulatedCamera(BaseCamera):
         self,
         thing_server_interface: lt.ThingServerInterface,
         shape: tuple[int, int, int] = (616, 820, 3),
-        glyph_size: int = 121,
-        canvas_shape: tuple[int, int, int] = (3000, 4000, 3),
-        sample_limits: Optional[tuple[int, int]] = (1000, 1500),
+        canvas_shape: tuple[int, int, int] = (1500, 2000, 3),
+        repeating: bool = True,
+        blob_density: int = 300,
         frame_interval: float = 0.1,
     ) -> None:
         """Initialise the simulated with settings for how images are generated.
 
         :param shape: The shape (size) of the generated image.
-        :param glyph_size: The size randomly positioned glyphs.
         :param canvas_shape: The shape (size) of the canvas generated on initialisation
             that images are cropped from. If this is too large the it uses resources,
             but its size limits the range of motion of the simulation.
-        :param sample_limits: The shape of the sample. Outside this range, the
+        :param repeating: If set True, outside the canvas, the
             camera won't generate any blobs, preventing scanning from running
-            indefinitely and better demonstrating background detect.
+            indefinitely allowing testing of demonstrating background detect. If False
+            the canvas will repeat.
+        :param blob_density: The number of blobs per million pixels.
         :param frame_interval: Nominally the time between frames on the MJPEG stream,
             however the rate may be slower due to calculation time for focus.
         """
         super().__init__(thing_server_interface)
         self.shape = shape
         self.ds_shape = _downsample_shape(shape)
-        self.glyph_size = glyph_size // DOWNSAMPLE
+        self.glyph_size = 101 // DOWNSAMPLE
         self.canvas_shape = _downsample_shape(canvas_shape)
-        sample_limits = canvas_shape[:2] if sample_limits is None else sample_limits
-        self.sample_limits = _downsample_shape(sample_limits)
+        self.repeating = repeating
         self.frame_interval = frame_interval
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
-        self.validate_inputs()
         self.generate_sprites()
-        self.generate_blobs()
+        self.generate_blobs(
+            int(blob_density * 1e-6 * canvas_shape[0] * canvas_shape[1])
+        )
         self.generate_canvas()
 
     @lt.property
     def calibration_required(self) -> bool:
         """Whether the camera needs calibrating."""
         return not self.background_detector_status.ready
-
-    def validate_inputs(self) -> None:
-        """Validate the inputs passed to the simulation, and raises an error if invalid.
-
-        Currently only tests that the sample size is not greater than the canvas size in any dimension.
-        """
-        # Iterate through elements in both tuples. As strict is False, will use the shorter of the two tuples
-        for a, b in zip(self.canvas_shape, self.sample_limits, strict=False):
-            if a < b:
-                raise ValueError(
-                    "Canvas size must be bigger than or equal to canvas size"
-                )
 
     def generate_sprites(self) -> None:
         """Generate sprites to populate the image."""
@@ -182,8 +171,8 @@ class SimulatedCamera(BaseCamera):
         self.blobs = np.zeros((n_blobs, 3))
         w = self.glyph_size
 
-        self.blobs[:, 0] = RNG.uniform(w // 2, self.sample_limits[1] - w // 2, n_blobs)
-        self.blobs[:, 1] = RNG.uniform(w // 2, self.sample_limits[0] - w // 2, n_blobs)
+        self.blobs[:, 0] = RNG.uniform(w // 2, self.canvas_shape[1] - w // 2, n_blobs)
+        self.blobs[:, 1] = RNG.uniform(w // 2, self.canvas_shape[0] - w // 2, n_blobs)
         self.blobs[:, 2] = RNG.choice(len(self.sprites), n_blobs)
 
     def generate_canvas(self) -> None:
@@ -242,13 +231,25 @@ class SimulatedCamera(BaseCamera):
         )
 
         top_left = (
-            int(im_pos[0]) - image_width // 2 + self.sample_limits[0] // 2,
-            int(im_pos[1]) - image_height // 2 + self.sample_limits[1] // 2,
+            int(im_pos[0]) - image_width // 2 + self.canvas_shape[0] // 2,
+            int(im_pos[1]) - image_height // 2 + self.canvas_shape[1] // 2,
         )
-        # Create index list with modulo rather than slicing to handle wrapping at the
-        # canvas edge.
-        x_indices = (np.arange(top_left[0], top_left[0] + image_width)) % canvas_width
-        y_indices = (np.arange(top_left[1], top_left[1] + image_height)) % canvas_height
+
+        x_indices = np.arange(top_left[0], top_left[0] + image_width)
+        y_indices = np.arange(top_left[1], top_left[1] + image_height)
+
+        if self.repeating:
+            # Create index list with modulo rather than slicing to handle wrapping at the
+            # canvas edge.
+            x_indices = x_indices % canvas_width
+            y_indices = y_indices % canvas_height
+        else:
+            # No sprites are placed right at the edge of the image so that the whole
+            # sprite is on the canvas. For a non-repeating image just clip to the
+            # first or last pixel.
+            x_indices = np.clip(x_indices, 0, canvas_width - 1)
+            y_indices = np.clip(y_indices, 0, canvas_height - 1)
+
         z_indices = np.arange(self.ds_shape[2])
         canvas = self.canvas if self._show_sample else self.blank_canvas
         # Use npx to make each 1d index list 3D
