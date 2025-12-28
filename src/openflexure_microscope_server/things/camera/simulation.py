@@ -124,7 +124,7 @@ class SimulatedCamera(BaseCamera):
         super().__init__(thing_server_interface)
         self.shape = shape
         self.ds_shape = _downsample_shape(shape)
-        self.glyph_size = 101 // DOWNSAMPLE
+        self.glyph_size = 105 // DOWNSAMPLE
         self.canvas_shape = _downsample_shape(canvas_shape)
 
         self.frame_interval = frame_interval
@@ -202,7 +202,14 @@ class SimulatedCamera(BaseCamera):
             sprite_pil = sprite_pil.resize(
                 (self.glyph_size, self.glyph_size), Image.BILINEAR
             )
-            self.sprites.append(np.array(sprite_pil))
+            # Concert back and ensure all edges are zero as these are repeated at sample
+            # edge
+            sprite = np.array(sprite_pil)
+            sprite[0, :] = 0
+            sprite[-1, :] = 0
+            sprite[:, 0] = 0
+            sprite[:, -1] = 0
+            self.sprites.append(sprite)
 
     def generate_blobs(self, n_blobs: int = 1000) -> None:
         """Generate coordinates of blobs and their sizes, centered around (0,0).
