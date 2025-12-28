@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import io
 import logging
+import re
 import time
 from threading import Thread
 from types import TracebackType
@@ -49,6 +50,8 @@ DOWNSAMPLE = 2
 # for a nice gain in quality.
 SPRITE_UPSAMPLE = 4
 
+COLOUR_REGEX = re.compile(r"^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$")
+
 
 @overload
 def _downsample_shape(shape: tuple[int, int]) -> tuple[int, int]: ...
@@ -66,6 +69,26 @@ def _downsample_shape(
     if len(shape) == 3:
         return (shape[0] // DOWNSAMPLE, shape[1] // DOWNSAMPLE, shape[2])
     raise ValueError("A shape should be a 2 or 3 element tuple.")
+
+
+def colour_str_to_colour(colour: str) -> tuple[int, int, int]:
+    """Convert a colour string into RGB colour values.
+
+    :param colour: Should be a hex colour such as #33aa33
+    :return: The colour as a tuple of 3 integers from 0 to 255 in value
+    :raises ValueError: If the hex string is not valid.
+    """
+    colour = colour.lower().strip()
+    colour_match = COLOUR_REGEX.match(colour)
+    if colour_match is None:
+        raise ValueError(
+            f"{colour} is not a valid colour. Please use HTML hex notation."
+        )
+
+    r = int("0x" + colour_match.group(1), 16)
+    g = int("0x" + colour_match.group(2), 16)
+    b = int("0x" + colour_match.group(3), 16)
+    return r, g, b
 
 
 class SimulatedCamera(BaseCamera):
@@ -117,6 +140,23 @@ class SimulatedCamera(BaseCamera):
         if self._capture_enabled:
             self.generate_canvas()
 
+    _colour: str = "#b937b9"
+
+    @lt.property
+    def colour(self) -> str:
+        """The number of colour of the blobs."""
+        return self._colour
+
+    @colour.setter
+    def colour(self, value: str) -> None:
+        if COLOUR_REGEX.match(value) is None:
+            self.logger.warning(f"{value} is not a valid colour string.")
+            return
+
+        self._colour = value
+        if self._capture_enabled:
+            self.generate_canvas()
+
     @lt.property
     def calibration_required(self) -> bool:
         """Whether the camera needs calibrating."""
@@ -140,20 +180,14 @@ class SimulatedCamera(BaseCamera):
         for sprite_size in sprite_sizes:
             # Mask of where this sprite is
             sprite_mask = r_coord < sprite_size
-            # Calculate a sharp edged circle with value varying from 0 in centre to 1
+            # Calculate a sharp edged circle with value varying from 0 in centre to 255
             # at the edge
             sprite_px = r_coord[sprite_mask]
             sprite_px -= np.min(sprite_px)
             sprite_px /= np.max(sprite_px)
-            # Create each channel. Note these will be subtracted from the white value.
-            sprite_r = channel_block.copy()
-            sprite_r[sprite_mask] = 70 * sprite_px
-            sprite_g = channel_block.copy()
-            sprite_g[sprite_mask] = 200 * sprite_px
-            sprite_b = channel_block.copy()
-            sprite_b[sprite_mask] = 70 * sprite_px
-            # Stack into a negative image of the sprite
-            sprite = np.stack([sprite_r, sprite_g, sprite_b], axis=2)
+            sprite = channel_block.copy()
+            sprite[sprite_mask] = 255 * sprite_px
+
             # Convert to uint8
             sprite = sprite.astype(np.uint8)
             # Convert to PIL (and back) to resize then append to list of sprites
@@ -213,7 +247,15 @@ class SimulatedCamera(BaseCamera):
         :param centre_x: The x coordinate to place the centre of the sprite.
         """
         canvas_h, canvas_w, _ = self.canvas.shape
-        sprite_h, sprite_w, _ = sprite.shape
+        sprite_h, sprite_w = sprite.shape
+
+        sprite_f = sprite.astype(float) / 255
+        r, g, b = colour_str_to_colour(self.colour)
+        sprite_r = (255 - r) * sprite_f
+        sprite_g = (255 - g) * sprite_f
+        sprite_b = (255 - b) * sprite_f
+        sprite_rgb = np.stack([sprite_r, sprite_g, sprite_b], axis=2)
+        sprite_rgb = sprite_rgb.astype("uint8")
 
         # Canvas region containing the sprite
         top = max(centre_y - sprite_h // 2, 0)
@@ -221,7 +263,7 @@ class SimulatedCamera(BaseCamera):
         bottom = min(centre_y + (sprite_h - sprite_h // 2), canvas_h)
         right = min(centre_x + (sprite_w - sprite_w // 2), canvas_w)
 
-        self.canvas[top:bottom, left:right] -= sprite
+        self.canvas[top:bottom, left:right] -= sprite_rgb
 
     def generate_image(self, pos: tuple[int, int, int]) -> Image.Image:
         """Generate an image with blobs based on supplied coordinates.
@@ -449,6 +491,7 @@ class SimulatedCamera(BaseCamera):
         return [
             property_control_for(self, "repeating", label="Infinite Sample"),
             property_control_for(self, "blob_density", label="Sample Density"),
+            property_control_for(self, "colour", label="Sample Colour"),
             property_control_for(self, "noise_level", label="Noise Level"),
         ]
 
