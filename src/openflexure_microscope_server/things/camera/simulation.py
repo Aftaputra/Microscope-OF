@@ -50,6 +50,9 @@ DOWNSAMPLE = 2
 # for a nice gain in quality.
 SPRITE_UPSAMPLE = 4
 
+COLOUR_LIST_REGEX = re.compile(
+    r"\s*^(#[0-9a-fA-F]{6})\s*(?:;\s*(#[0-9a-fA-F]{6})\s*)*$"
+)
 COLOUR_REGEX = re.compile(r"^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$")
 
 
@@ -71,18 +74,22 @@ def _downsample_shape(
     raise ValueError("A shape should be a 2 or 3 element tuple.")
 
 
-def colour_str_to_colour(colour: str) -> tuple[int, int, int]:
+def colour_str_to_colour(colour_str: str) -> tuple[int, int, int]:
     """Convert a colour string into RGB colour values.
 
-    :param colour: Should be a hex colour such as #33aa33
+    :param colour_str: Should be a hex colour such as #33aa33 or a list separated by
+        semicolons.
     :return: The colour as a tuple of 3 integers from 0 to 255 in value
     :raises ValueError: If the hex string is not valid.
     """
-    colour = colour.lower().strip()
-    colour_match = COLOUR_REGEX.match(colour)
+    if ";" in colour_str:
+        colours = colour_str.split(";")
+        colour_str = colours[RNG.integers(0, len(colours))]
+    colour_str = colour_str.lower().strip()
+    colour_match = COLOUR_REGEX.match(colour_str)
     if colour_match is None:
         raise ValueError(
-            f"{colour} is not a valid colour. Please use HTML hex notation."
+            f"{colour_str} is not a valid colour. Please use HTML hex notation."
         )
 
     r = int("0x" + colour_match.group(1), 16)
@@ -149,7 +156,7 @@ class SimulatedCamera(BaseCamera):
 
     @colour.setter
     def colour(self, value: str) -> None:
-        if COLOUR_REGEX.match(value) is None:
+        if COLOUR_LIST_REGEX.match(value) is None:
             self.logger.warning(f"{value} is not a valid colour string.")
             return
 
