@@ -3,12 +3,14 @@
 import tempfile
 import time
 from types import TracebackType
-from typing import Any, Optional, Self
+from typing import Any, Mapping, Optional, Self, TypeVar
 
 import requests
 from fastapi.testclient import TestClient
 
 import labthings_fastapi as lt
+
+ThingSubclass = TypeVar("ThingSubclass", bound=lt.Thing)
 
 ACTION_RUNNING_KEYWORDS = ["idle", "pending", "running"]
 
@@ -29,7 +31,9 @@ class LabThingsTestEnv:
     """
 
     def __init__(
-        self, things: dict[str, lt.Thing | str], settings_folder: Optional[str] = None
+        self,
+        things: Mapping[str, lt.Thing | str],
+        settings_folder: Optional[str] = None,
     ) -> None:
         """Initialise the test environment.
 
@@ -41,7 +45,7 @@ class LabThingsTestEnv:
         """
         self._server: Optional[lt.ThingServer]
         self._test_client: Optional[TestClient]
-        self._thing_config = things
+        self._things_config = things
         self._settings_folder = settings_folder
         self._tmp_dir_obj: Optional[tempfile.TemporaryDirectory] = None
 
@@ -51,7 +55,7 @@ class LabThingsTestEnv:
             self._tmp_dir_obj = tempfile.TemporaryDirectory()
             self._settings_folder = self._tmp_dir_obj.name
         self._server = lt.ThingServer(
-            things=self._thing_config, settings_folder=self._settings_folder
+            things=self._things_config, settings_folder=self._settings_folder
         )
         self._test_client = TestClient(self._server.app)
         self._test_client.__enter__()
@@ -87,13 +91,61 @@ class LabThingsTestEnv:
         if thing_name not in self.server.things:
             raise ValueError(f"No Thing named {thing_name}")
 
-    def get_thing(self, thing_name: str) -> lt.Thing:
-        """Get a Thing from the server by name."""
+    def get_thing_by_name(self, thing_name: str) -> lt.Thing:
+        """Get a Thing from the server by name.
+
+        :param thing_name: The name of the thing to on the server.
+
+        :return: The Thing with the specified name.
+        """
         self.check_thing_exists(thing_name)
         return self.server.things[thing_name]
 
+    def get_thing_by_type(self, thing_class: type[ThingSubclass]) -> ThingSubclass:
+        """Get a thing by type.
+
+        :param thing_class: The subclass of thing to match.
+
+        :return: The Thing that matches the subclass.
+
+        :raises RuntimeError: If there are multiple things of the same type, or no
+            matching thing. If there are multiple things of this type use
+            ``get_thing_by_name`` or ``get_all_things_by_type``.
+        """
+        matching = self.get_all_things_by_type(thing_class)
+        n_things = len(matching)
+        if n_things == 0:
+            raise RuntimeError(f"No Thing of type {thing_class} on this server.")
+        if n_things > 1:
+            raise RuntimeError(
+                f"Cannot get Thing by type as there are {n_things} of type "
+                f"{thing_class} on this server."
+            )
+        return next(iter(matching.values()))
+
+    def get_all_things_by_type(
+        self, thing_class: type[ThingSubclass]
+    ) -> Mapping[str, ThingSubclass]:
+        """Get a dictionary of all things by matching a type.
+
+        :param thing_class: The subclass of thing to match.
+
+        :return: A dictionary of Things that match the subclass. If none match this
+            will be and empty dictionary.
+        """
+        matching = {}
+        for thing_name, thing in self.server.things.items():
+            if isinstance(thing, thing_class):
+                matching[thing_name] = thing
+        return matching
+
     def get_thing_client(self, thing_name: str) -> lt.ThingClient:
-        """Get a ThingClient for a Thing by name."""
+        """Get a ThingClient for a Thing by name.
+
+        :param thing_name: The name of the thing to on the server.
+
+        :return: A LabThings ThingClient for the Thing with the specified name.
+        """
         self.check_thing_exists(thing_name)
         thing = self.server.things[thing_name]
         return lt.ThingClient.from_url(thing.path, self.client)
@@ -102,11 +154,27 @@ class LabThingsTestEnv:
         self,
         thing_name: str,
         action_name: str,
-        action_kwargs: Optional[dict[str, Any]] = None,
+        action_kwargs: Optional[Mapping[str, Any]] = None,
     ) -> requests.Response:
         """Start an action and return the server response.
 
-        This response can be used to poll or cancel the action.
+        For most purposes the best way to run an action is to use ``get_thing_client``
+        to create a ThingClient. At this point any actions can be run with a similar
+        Python API to calling directly. However, using ThingClient blocks the test
+        thread.
+
+        This function provides an alternative way to start actions without blocking the
+        test thread. It will return the HTTP response, this response can be used to
+        poll or cancel the action. Use this method if you:
+
+        * Want to test cancelling an action.
+        * Want to inspect the actions logs exactly as they would come to a web client
+        * Direcltly interact with the HTTP API
+
+        :param thing_name: The name of the Thing on the server.
+        :param action_name: The name of the action to start.
+        :action_kwargs: The keyword inputs to the action.
+        :return: A Response object with the HTTP response.
         """
         self.check_thing_exists(thing_name)
         url = f"/{thing_name}/{action_name}"
@@ -117,8 +185,11 @@ class LabThingsTestEnv:
 
     def poll_action(
         self, response: requests.Response, interval: float = 0.01
-    ) -> dict[str, Any]:
-        """Poll an action until it completes and return the final response data."""
+    ) -> Mapping[str, Any]:
+        """Poll an action until it completes and return the final response data.
+
+        :param response: The response from starting this action with ``start_action``.
+        """
         invocation_data = response.json()
 
         if "status" not in invocation_data:
@@ -135,17 +206,20 @@ class LabThingsTestEnv:
         return invocation_data
 
     def cancel_action(self, response: requests.Response) -> None:
-        """Cancel an ongoing action."""
+        """Cancel an ongoing action.
+
+        :param response: The response from starting this action with ``start_action``.
+        """
         invocation_data = response.json()
         response = self.client.delete(_invocation_href(invocation_data))
         response.raise_for_status()
 
 
-def _get_link(obj: dict[str, Any], rel: str) -> dict[str, Any]:
+def _get_link(obj: Mapping[str, Any], rel: str) -> Mapping[str, Any]:
     """Retrieve a link from an object's `links` list, by its `rel` attribute."""
     return next(link for link in obj["links"] if link["rel"] == rel)
 
 
-def _invocation_href(invocation_data: dict[str, Any]) -> str:
+def _invocation_href(invocation_data: Mapping[str, Any]) -> str:
     """Get the invocation href from the invocation response data."""
     return _get_link(invocation_data, "self")["href"]

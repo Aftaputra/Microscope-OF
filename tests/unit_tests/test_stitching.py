@@ -22,7 +22,7 @@ from openflexure_microscope_server.stitching import (
     StitcherValidationError,
 )
 
-from .utilities.lt_test_utils import LabThingsTestEnv
+from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
 # A global logger pretending to the logger from a thing
 LOGGER = logging.getLogger("mock-thing_logger")

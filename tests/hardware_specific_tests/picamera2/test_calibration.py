@@ -3,13 +3,15 @@
 import tempfile
 from copy import deepcopy
 
+from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
+
 from .cam_test_utils import camera_test_client
 
 
-def test_calibration(picamera_client_and_server):
+def test_calibration(picamera_test_env):
     """Check that full auto calibrate completes and set the expected values."""
-    picamera_client, server = picamera_client_and_server
-    picamera_thing = server.things["camera"]
+    picamera_client = picamera_test_env.get_thing_client("camera")
+    picamera_thing = picamera_test_env.get_thing_by_type(StreamingPiCamera2)
     # Check the calibration_required property used by the calibration wizard
     assert picamera_thing.calibration_required
     # Save copy of default tuning file for end of test

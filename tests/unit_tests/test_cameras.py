@@ -1,6 +1,6 @@
 """Tests for camera classes. These tests focus on checking the camera APIs are equivalent.
 
-Tests for specific camera hardware are in the hardware-specific-tests directory. Tests
+Tests for specific camera hardware are in the hardware_specific_tests directory. Tests
 on camera functionality using the simulation camera are in "test_camera".
 """
 

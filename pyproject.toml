@@ -94,7 +94,7 @@ addopts = [
 
 norecursedirs = [".git", "build", "node_modules"]
 pythonpath = ["."]
-testpaths = ["tests"]
+testpaths = ["tests/unit_tests"]
 
 [tool.ruff.format]
 # Use native line endings for all files
@@ -144,7 +144,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 # All testing dirs
-"{tests,integration-tests,hardware-specific-tests}/**" = [
+"{tests}/**" = [
     "B018", # Complaining about useless attribute access in tests, but we need them to check errors are raised
     "ANN", # Tests are not typehinted for fixtures etc
     "S101", # Allow asserts in tests

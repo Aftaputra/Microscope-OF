@@ -213,7 +213,7 @@ server_integration_tests:
     - job: build
       artifacts: true
   script:
-    - integration-tests/testfile.py
+    - tests/integration_tests/testfile.py
 
 pages:
   needs:
