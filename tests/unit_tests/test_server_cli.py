@@ -102,4 +102,4 @@ def test_failed_customise(mocker):
     # Check it really is a fastapi
     assert isinstance(fallback_app, FastAPI)
     # An that it has the error to display
-    assert str(fallback_app.labthings_error) == "Can't touch this"
+    assert str(fallback_app._context.error) == "Can't touch this"

@@ -18,7 +18,12 @@ from labthings_fastapi.server.config_model import ThingServerConfig
 from openflexure_microscope_server.things.camera import BaseCamera
 from openflexure_microscope_server.utilities import load_patched_config
 
-from ..logging import configure_logging, retrieve_log, retrieve_log_from_file
+from ..logging import (
+    OFM_HANDLER,
+    configure_logging,
+    retrieve_log,
+    retrieve_log_from_file,
+)
 from .legacy_api import add_v2_endpoints
 from .serve_static_files import add_static_files
 
@@ -128,10 +133,18 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
             # presented in the fallback logs.
             print(f"Error: {e}")  # noqa: T201
             print("Starting fallback server.")  # noqa: T201
+            try:
+                log_history = OFM_HANDLER.log_history
+            except BaseException:
+                # If log history fails for any reason carry on.
+                log_history = None
+
             app = fallback.app
-            app.labthings_config = lt_config
-            app.labthings_server = server
-            app.labthings_error = e
+            app.set_context(
+                fallback.FallbackContext(
+                    server=server, config=lt_config, error=e, log_history=log_history
+                )
+            )
             uvicorn.run(
                 app,
                 host=args.host,
