@@ -3,7 +3,6 @@
 import itertools
 
 import pytest
-from httpx import HTTPStatusError
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
@@ -155,10 +154,8 @@ def test_direction_errors_local_and_http():
 
         assert stage_client.axis_inverted == {"x": True, "y": False, "z": False}
         # Can't set an arbitrary value via a client as read only:
-        with pytest.raises(HTTPStatusError) as excinfo:
+        with pytest.raises(lt.exceptions.ClientPropertyError):
             stage_client.axis_inverted = {"x": 2, "y": 1, "z": 1}
-        # Read only should set a 405 error code ...
-        assert excinfo.value.response.status_code == 405
 
         # ... and should not modify the initial value
         assert stage_client.axis_inverted == {"x": True, "y": False, "z": False}
@@ -166,10 +163,9 @@ def test_direction_errors_local_and_http():
         # Should error if axis doesn't exist, this is a KeyError in the server
         with pytest.raises(KeyError):
             dummy_stage.invert_axis_direction(axis="theta")
-        # But a 422 over HTTP
-        with pytest.raises(HTTPStatusError) as excinfo:
+        # But a FailedToInvokeActionError over HTTP
+        with pytest.raises(lt.exceptions.FailedToInvokeActionError):
             stage_client.invert_axis_direction(axis="theta")
-        assert excinfo.value.response.status_code == 422
 
 
 def _test_move_relative(dummy_stage, axis_inverted, path):
