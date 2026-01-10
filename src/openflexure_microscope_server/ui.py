@@ -50,8 +50,11 @@ class ActionButton(BaseModel):
 def action_button_for(thing: lt.Thing, action_name: str, **kwargs: Any) -> ActionButton:
     """Create a ActionButton data for the specified Thing Action.
 
-    :param action: The thing action to create a button for.
+    :param thing:  The instance of the thing that has the action.
+    :param action_name: The name of the action to create a button for.
     :param kwargs: Any attribute of `ActionButton` except for ``thing`` or ``action``.
+    :return: An ActionButton (Pydantic Model) object with all the information the
+        webapp needs to create the action button.
     """
     return ActionButton(thing=thing.name, action=action_name, **kwargs)
 
