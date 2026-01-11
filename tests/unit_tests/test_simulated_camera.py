@@ -1,7 +1,9 @@
 """Test the functionality specific to the simulated camera."""
 
 import logging
+import time
 
+import numpy as np
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
@@ -16,11 +18,23 @@ from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
 
 @pytest.fixture
-def test_env() -> lt.ThingClient:
+def test_env() -> LabThingsTestEnv:
     """Yield a test environment with the Simulated Camera and Dummy Stage."""
     thing_conf = {"camera": SimulatedCamera, "stage": DummyStage}
     with LabThingsTestEnv(things=thing_conf) as env:
         yield env
+
+
+@pytest.fixture
+def camera(test_env) -> lt.Thing:
+    """Return the SimulatedCamera Thing set up in the test environment."""
+    return test_env.get_thing_by_type(SimulatedCamera)
+
+
+@pytest.fixture
+def stage(test_env) -> lt.Thing:
+    """Return the DummyStage Thing set up in the test environment."""
+    return test_env.get_thing_by_type(DummyStage)
 
 
 def test_downsample_shape_2d():
@@ -104,9 +118,8 @@ def test_colour_list_regex(colour_str):
         simulation.colour_str_to_colour(colour_str)
 
 
-def test_canvas_regeneration(test_env, caplog):
+def test_canvas_regeneration(camera, caplog):
     """Check canvas is regenerated if blob density of colour are changed."""
-    camera = test_env.get_thing_by_type(SimulatedCamera)
     cached_canvas = camera.canvas
     original_colour = camera.colour
 
@@ -133,9 +146,38 @@ def test_canvas_regeneration(test_env, caplog):
     assert camera.canvas is not cached_canvas
 
 
-def test_simulation_cam_calibration(test_env):
+def test_infinite_sample(camera, stage):
+    """Check that setting camera.repeating makes the sample infinite."""
+    # Turn off noise to make comparison easier
+    camera.noise_level = 0
+    assert not camera.repeating
+    cached_canvas = camera.canvas
+    array_not_repeating = camera.capture_array()
+    camera.repeating = True
+    time.sleep(0.2)  # Ensure frame regenerates
+    # Canvas shouldn't regenerate
+    assert camera.canvas is cached_canvas
+    array_repeating = camera.capture_array()
+    # Images are identical whether or not repeating
+    assert np.array_equal(array_not_repeating, array_repeating)
+
+    # Move outside the non-repeating sample area
+    stage._hardware_position["x"] = 100_000_000
+
+    camera.repeating = False
+    time.sleep(0.2)  # Ensure frame regenerates
+    # If not repeating the array is just background
+    assert np.all(camera.capture_array() == simulation.BG_COLOR)
+
+    # Turn on repeating
+    camera.repeating = True
+    time.sleep(0.2)  # Ensure frame regenerates
+    # Sample is now infitine, so not all background
+    assert not np.all(camera.capture_array() == simulation.BG_COLOR)
+
+
+def test_simulation_cam_calibration(camera):
     """Test that the simulated camera can be calibrated and reports calibration correctly."""
-    camera = test_env.get_thing_by_type(SimulatedCamera)
     assert camera.calibration_required
     camera.full_auto_calibrate()
     assert not camera.calibration_required

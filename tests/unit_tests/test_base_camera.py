@@ -9,8 +9,6 @@ import numpy as np
 import pytest
 from PIL import Image
 
-import labthings_fastapi as lt
-
 from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 from openflexure_microscope_server.things.stage.dummy import DummyStage
 
@@ -18,7 +16,7 @@ from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
 
 @pytest.fixture
-def test_env() -> lt.ThingClient:
+def test_env() -> LabThingsTestEnv:
     """Yield a test environment with the Simulated Camera and Dummy Stage."""
     thing_conf = {"camera": SimulatedCamera, "stage": DummyStage}
     with LabThingsTestEnv(things=thing_conf) as env:
