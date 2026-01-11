@@ -324,11 +324,6 @@ class SimulatedCamera(BaseCamera):
 
         np_img = fast_pil_blur(focused_np_img, sigma=np.abs(im_pos[2]) / 5)
 
-        if np_img.shape != self.ds_shape:
-            raise ValueError(
-                f"Image shape {np_img.shape} does not match intended shape {self.ds_shape}"
-            )
-
         # Add noise and convert to uint8
         np_img += RNG.normal(scale=self.noise_level, size=self.ds_shape).astype("int16")
         np.clip(np_img, 0, 255, out=np_img)
@@ -337,11 +332,7 @@ class SimulatedCamera(BaseCamera):
 
     def generate_frame(self) -> Image.Image:
         """Generate a frame with blobs based on the stage coordinates."""
-        try:
-            pos = self._stage.instantaneous_position
-        except Exception as e:
-            LOGGER.debug(f"Failed to get stage position: {e}")
-            pos = {"x": 0, "y": 0, "z": 0}
+        pos = self._stage.instantaneous_position
         return self.generate_image((pos["y"], pos["x"], pos["z"]))
 
     def __enter__(self) -> Self:
@@ -403,14 +394,11 @@ class SimulatedCamera(BaseCamera):
             if wait_time > 0:
                 time.sleep(wait_time)
             last_frame_t = time.time()
-            try:
-                frame = self.generate_frame()
-                self.mjpeg_stream.add_frame(_frame2bytes(frame))
-                ds_frame = frame.resize((320, 240), resample=Image.Resampling.NEAREST)
-                self.lores_mjpeg_stream.add_frame(_frame2bytes(ds_frame))
 
-            except Exception as e:
-                LOGGER.exception(f"Failed to capture frame: {e}, retrying...")
+            frame = self.generate_frame()
+            self.mjpeg_stream.add_frame(_frame2bytes(frame))
+            ds_frame = frame.resize((320, 240), resample=Image.Resampling.NEAREST)
+            self.lores_mjpeg_stream.add_frame(_frame2bytes(ds_frame))
 
     @lt.action
     def discard_frames(self) -> None:
