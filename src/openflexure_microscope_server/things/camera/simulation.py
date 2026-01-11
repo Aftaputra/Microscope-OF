@@ -142,7 +142,7 @@ class SimulatedCamera(BaseCamera):
         return self._blob_density
 
     @blob_density.setter
-    def blob_density(self, value: int) -> None:
+    def _set_blob_density(self, value: int) -> None:
         self._blob_density = value
         if self._capture_enabled:
             self.generate_canvas()
@@ -155,7 +155,7 @@ class SimulatedCamera(BaseCamera):
         return self._colour
 
     @colour.setter
-    def colour(self, value: str) -> None:
+    def _set_colour(self, value: str) -> None:
         if COLOUR_LIST_REGEX.match(value) is None:
             self.logger.warning(f"{value} is not a valid colour string.")
             return
@@ -200,7 +200,7 @@ class SimulatedCamera(BaseCamera):
             # Convert to PIL (and back) to resize then append to list of sprites
             sprite_pil = Image.fromarray(sprite)
             sprite_pil = sprite_pil.resize(
-                (self.glyph_size, self.glyph_size), Image.BILINEAR
+                (self.glyph_size, self.glyph_size), Image.Resampling.BILINEAR
             )
             # Concert back and ensure all edges are zero as these are repeated at sample
             # edge
@@ -245,9 +245,7 @@ class SimulatedCamera(BaseCamera):
             self.draw_sprite_on_canvas(
                 self.sprites[int(sprite_index)], int(blob_y), int(blob_x)
             )
-
-        self.canvas[self.canvas < 0] = 0
-        self.canvas[self.canvas > 255] = 255
+        np.clip(self.canvas, 0, 255, out=self.canvas)
 
     def draw_sprite_on_canvas(
         self, sprite: np.ndarray, centre_y: int, centre_x: int
@@ -269,7 +267,6 @@ class SimulatedCamera(BaseCamera):
         sprite_g = (255 - g) * sprite_f
         sprite_b = (255 - b) * sprite_f
         sprite_rgb = np.stack([sprite_r, sprite_g, sprite_b], axis=2)
-        sprite_rgb = sprite_rgb.astype("uint8")
 
         # Canvas region containing the sprite
         top = max(centre_y - sprite_h // 2, 0)
@@ -277,7 +274,7 @@ class SimulatedCamera(BaseCamera):
         bottom = min(centre_y + (sprite_h - sprite_h // 2), canvas_h)
         right = min(centre_x + (sprite_w - sprite_w // 2), canvas_w)
 
-        self.canvas[top:bottom, left:right] -= sprite_rgb
+        self.canvas[top:bottom, left:right] -= sprite_rgb.astype("int16")
 
     def generate_image(self, pos: tuple[int, int, int]) -> Image.Image:
         """Generate an image with blobs based on supplied coordinates.
@@ -315,21 +312,20 @@ class SimulatedCamera(BaseCamera):
         z_indices = np.arange(self.ds_shape[2])
         canvas = self.canvas if self._show_sample else self.blank_canvas
         # Use npx to make each 1d index list 3D
-        focused_image = canvas[np.ix_(x_indices, y_indices, z_indices)]
+        focused_np_img = canvas[np.ix_(x_indices, y_indices, z_indices)]
 
-        image = fast_pil_blur(focused_image, sigma=np.abs(im_pos[2]) / 5)
+        np_img = fast_pil_blur(focused_np_img, sigma=np.abs(im_pos[2]) / 5)
 
-        if image.shape != self.ds_shape:
+        if np_img.shape != self.ds_shape:
             raise ValueError(
-                f"Image shape {image.shape} does not match intended shape {self.ds_shape}"
+                f"Image shape {np_img.shape} does not match intended shape {self.ds_shape}"
             )
 
         # Add noise and convert to uint8
-        image += RNG.normal(scale=self.noise_level, size=self.ds_shape).astype("int16")
-        image[image < 0] = 0
-        image[image > 255] = 255
-        image = Image.fromarray(image.astype("uint8"))
-        return image.resize((self.shape[1], self.shape[0]), Image.BILINEAR)
+        np_img += RNG.normal(scale=self.noise_level, size=self.ds_shape).astype("int16")
+        np.clip(np_img, 0, 255, out=np_img)
+        pl_img = Image.fromarray(np_img.astype("uint8"))
+        return pl_img.resize((self.shape[1], self.shape[0]), Image.Resampling.BILINEAR)
 
     def generate_frame(self) -> Image.Image:
         """Generate a frame with blobs based on the stage coordinates."""
