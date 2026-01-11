@@ -17,8 +17,9 @@ import os
 import numpy as np
 import piexif
 import pytest
-from httpx import HTTPStatusError
 from PIL import Image
+
+import labthings_fastapi as lt
 
 from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
@@ -111,7 +112,7 @@ def test_camera_stage_mapping_calibration(test_env):
     assert csm.image_to_stage_displacement_matrix is None
     assert csm.last_calibration is None
     # And therefore that actions error
-    with pytest.raises(HTTPStatusError):
+    with pytest.raises(lt.exceptions.FailedToInvokeActionError):
         csm.move_in_image_coordinates(x=10)
 
     # Calibrate
