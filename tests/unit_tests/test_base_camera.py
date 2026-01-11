@@ -1,4 +1,9 @@
-"""Use the Simulation camera to test base camera functionality."""
+"""Use the Simulated camera to test base camera functionality.
+
+For tests of functionality specific to the simulated camera see
+test_simulated_camera.py and for testing the consistency of camera APIs see
+test_cameras.py.
+"""
 
 import numpy as np
 import pytest
@@ -58,12 +63,3 @@ def test_handle_broken_frame(test_env):
     for _i in range(15):
         array = camera.grab_as_array()
         assert isinstance(array, np.ndarray)
-
-
-def test_simulation_cam_calibration(test_env):
-    """Test that the simulated camera can be calibrated and reports calibration correctly."""
-    camera = test_env.get_thing_by_type(SimulatedCamera)
-    assert camera.calibration_required
-    camera.full_auto_calibrate()
-    assert not camera.calibration_required
-    assert camera.background_detector_status.ready
