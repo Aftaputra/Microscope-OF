@@ -50,10 +50,12 @@ DOWNSAMPLE = 2
 # for a nice gain in quality.
 SPRITE_UPSAMPLE = 4
 
+# A list of 6 digit hex colour codes separated by ;. Allow a trailing ;
 COLOUR_LIST_REGEX = re.compile(
-    r"\s*^(#[0-9a-fA-F]{6})\s*(?:;\s*(#[0-9a-fA-F]{6})\s*)*$"
+    r"^\s*(#[0-9a-fA-F]{6})\s*(?:;\s*(#[0-9a-fA-F]{6})\s*)*;?\s*$"
 )
 COLOUR_REGEX = re.compile(r"^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$")
+# regex to capture R, G and B
 
 
 @overload
@@ -71,7 +73,7 @@ def _downsample_shape(
         return (shape[0] // DOWNSAMPLE, shape[1] // DOWNSAMPLE)
     if len(shape) == 3:
         return (shape[0] // DOWNSAMPLE, shape[1] // DOWNSAMPLE, shape[2])
-    raise ValueError("A shape should be a 2 or 3 element tuple.")
+    raise ValueError("Shape should be a 2 or 3 element tuple.")
 
 
 def colour_str_to_colour(colour_str: str) -> tuple[int, int, int]:
@@ -80,13 +82,19 @@ def colour_str_to_colour(colour_str: str) -> tuple[int, int, int]:
     :param colour_str: Should be a hex colour such as #33aa33 or a list separated by
         semicolons.
     :return: The colour as a tuple of 3 integers from 0 to 255 in value
-    :raises ValueError: If the hex string is not valid.
+    :raises ValueError: If the hex string is not valid. This should never happen if the
+        user enters a bad colour string as the colour property setter checks the
+        whole string regex.
     """
     if ";" in colour_str:
         colours = colour_str.split(";")
-        colour_str = colours[RNG.integers(0, len(colours))]
-    colour_str = colour_str.lower().strip()
-    colour_match = COLOUR_REGEX.match(colour_str)
+        if len(colours) > 1 and colours[-1].strip() == "":
+            colours.pop(-1)
+        single_colour_str = colours[RNG.integers(0, len(colours))]
+    else:
+        single_colour_str = colour_str
+    single_colour_str = single_colour_str.lower().strip()
+    colour_match = COLOUR_REGEX.match(single_colour_str)
     if colour_match is None:
         raise ValueError(
             f"{colour_str} is not a valid colour. Please use HTML hex notation."
