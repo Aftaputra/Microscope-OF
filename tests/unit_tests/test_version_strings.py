@@ -59,13 +59,13 @@ def _git(command: str) -> str:
 def temp_dir():
     """Return the path of a temporary directory (set as working dir)."""
     working_dir = os.getcwd()
-    try:
-        with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
             os.chdir(tmpdir)
             yield tmpdir
-    finally:
-        # Return to original working dir
-        os.chdir(working_dir)
+        finally:
+            # Change back to working dir before closing context manager or Windows will error
+            os.chdir(working_dir)
 
 
 @pytest.fixture
@@ -191,8 +191,10 @@ def test_reading_hash_from_git():
             # Check out the branch and check commit changed back
             _git(f"checkout {branch_name}")
             assert utilities._get_hash_from_git_dir(git_dir) == git_hash2
+            # Change back to working dir before closing context manager or Windows will error
+            os.chdir(working_dir)
     finally:
-        # Return to original working dir
+        # Ensure changed to working dir
         os.chdir(working_dir)
 
 

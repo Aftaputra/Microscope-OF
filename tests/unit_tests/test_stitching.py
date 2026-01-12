@@ -235,6 +235,7 @@ class StitchingTestThing(lt.Thing):
         """Run the final stitcher."""
         stitcher = FinalStitcher(FAKE_DIR, logger=self.logger)
         # Send in the argument HANG to mock-stitch and it just hang for 10s
+        stitcher._extra_args = ["HANG"]
         stitcher.run()
 
 

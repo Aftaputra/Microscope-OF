@@ -3,12 +3,33 @@
 import logging
 import os
 import tempfile
+from contextlib import contextmanager
+from logging.handlers import RotatingFileHandler
 
 import pytest
 from fastapi import HTTPException
 from fastapi.responses import PlainTextResponse
 
 from openflexure_microscope_server import logging as ofm_logging
+
+
+@contextmanager
+def tmp_logging_dir():
+    """Yield a temporary logging dir, and delete rotating file handlers before closing.
+
+    This is needed for unit tests on Windows for the temp dir to cleanup without an
+    error.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        yield tmpdir
+        root_logger = logging.getLogger()
+        # Get the rotating file handlers. There should only be 1 (or none if mocked)
+        file_handlers = [
+            h for h in root_logger.handlers if isinstance(h, RotatingFileHandler)
+        ]
+        for handler in file_handlers:
+            handler.close()
+            root_logger.removeHandler(handler)
 
 
 def test_no_warnings_if_correct_permissions(caplog):
@@ -22,7 +43,7 @@ def test_no_warnings_if_correct_permissions(caplog):
     """
     # Reset handler at start of test
     ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
-    with caplog.at_level(logging.WARNING), tempfile.TemporaryDirectory() as tmpdir:
+    with caplog.at_level(logging.WARNING), tmp_logging_dir() as tmpdir:
         ofm_logging.configure_logging(tmpdir)
         assert len(caplog.records) == 0
         with open(ofm_logging.OFM_LOG_FILE, "r", encoding="utf-8") as log_file:
@@ -40,7 +61,7 @@ def test_permission_error_raises_warning(mocker, caplog):
     )
     # Reset handler at start of test
     ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
-    with caplog.at_level(logging.WARNING), tempfile.TemporaryDirectory() as tmpdir:
+    with caplog.at_level(logging.WARNING), tmp_logging_dir() as tmpdir:
         ofm_logging.configure_logging(tmpdir)
         assert len(caplog.records) == 1
         # Check OFM logger is added even if the file logger couldn't be.
@@ -52,7 +73,7 @@ def test_making_log_dir(caplog):
     """Check that configure_logging will make a dir if needed."""
     # Reset handler at start of test
     ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
-    with caplog.at_level(logging.WARNING), tempfile.TemporaryDirectory() as tmpdir:
+    with caplog.at_level(logging.WARNING), tmp_logging_dir() as tmpdir:
         log_dir = os.path.join(tmpdir, "new_dir")
         assert not os.path.isdir(log_dir)
         ofm_logging.configure_logging(log_dir)
@@ -64,7 +85,7 @@ def test_max_logs():
     """Proclaim that only the most recent 250 logs are stored in memory."""
     # Reset handler at start of test
     ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tmp_logging_dir() as tmpdir:
         ofm_logging.configure_logging(tmpdir)
         # But I would log five hundred times.
         for i in range(500):
@@ -90,7 +111,7 @@ def test_ofm_handler_ignores_uvicorn_access():
     """
     # Reset handler at start of test
     ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tmp_logging_dir() as tmpdir:
         ofm_logging.configure_logging(tmpdir)
         logs = ofm_logging.OFM_HANDLER.log_history.split("\n")
         starting_len = len(logs)
@@ -114,7 +135,7 @@ def test_server_responses():
     """
     # Reset handler at start of test
     ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tmp_logging_dir() as tmpdir:
         ofm_logging.configure_logging(tmpdir)
         for i in range(500):
             logging.info("log %s", i)
@@ -142,7 +163,7 @@ def test_server_response_with_no_log_file():
 def test_server_response_with_no_log_dir():
     """Check that an HTTP exception is raised if the log file cannot be accessed."""
     ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tmp_logging_dir() as tmpdir:
         ofm_logging.configure_logging(tmpdir)
         for i in range(500):
             logging.info("log %s", i)
@@ -176,7 +197,7 @@ def test_uvicorn_error_only_says_error_on_error(
     error logs as <uvicorn.error>.
     """
     ofm_logging.OFM_HANDLER = ofm_logging.OFMHandler()
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tmp_logging_dir() as tmpdir:
         ofm_logging.configure_logging(tmpdir)
         log_command("Mockety mock mock!")
         with open(ofm_logging.OFM_LOG_FILE, "r", encoding="utf-8") as log_file:

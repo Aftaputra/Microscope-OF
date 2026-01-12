@@ -97,12 +97,14 @@ def test_pi_shutdown(mocker):
     # Check the shutdown command is as expected.
     assert system.SHUTDOWN_CMD == ["sudo", "shutdown", "-h", "now"]
     # Mock the shutdown command as we don't want to shutdown when running tests.
-    mocker.patch.object(system, "SHUTDOWN_CMD", new=["echo", "shutdown"])
+    mocker.patch.object(
+        system, "SHUTDOWN_CMD", new=["python", "-c", "print('shutdown')"]
+    )
     # Call shutdown on a MockPiSystem
     system_thing = create_thing_without_server(MockPiSystem)
     result = system_thing.shutdown()
 
-    # Check the result of the echo mock command was returned
+    # Check the result of the mock command was returned
     assert result.output.strip() == "shutdown"
     assert result.error.strip() == ""
 
@@ -112,12 +114,12 @@ def test_pi_reboot(mocker):
     # Check the reboot command is as expected.
     assert system.REBOOT_CMD == ["sudo", "shutdown", "-r", "now"]
     # Mock the reboot command as we don't want to reboot when running tests.
-    mocker.patch.object(system, "REBOOT_CMD", new=["echo", "restart"])
+    mocker.patch.object(system, "REBOOT_CMD", new=["python", "-c", "print('restart')"])
     # Call reboot on a MockPiSystem
     system_thing = create_thing_without_server(MockPiSystem)
     result = system_thing.reboot()
 
-    # Check the result of the echo mock command was returned
+    # Check the result of the mock command was returned
     assert result.output.strip() == "restart"
     assert result.error.strip() == ""
 
