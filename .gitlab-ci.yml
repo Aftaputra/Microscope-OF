@@ -209,14 +209,24 @@ build-docs:
     - !reference [.python, rules]
 
 # Only runs when a .py file is edited
-server_integration_tests:
+server_lifecycle_test:
   extends: .python
   stage: integration
   needs:
     - job: build
       artifacts: true
   script:
-    - tests/integration_tests/testfile.py
+    - tests/lifecycle_test/testfile.py
+
+# Pytest integration tests, seperate from the lifecycle test
+integration_tests:
+  stage: integration
+  extends: .python
+  script:
+    - pytest tests/integration_tests
+  # Don't report this coverage to in the Merge Request or combine with other
+  # coverage.
+
 
 pages:
   needs:
