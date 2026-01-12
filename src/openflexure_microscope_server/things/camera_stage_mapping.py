@@ -10,19 +10,11 @@ This module is only intended to be called from the OpenFlexure Microscope
 server, and depends on that server and its underlying LabThings library.
 """
 
+import json
 import time
-from typing import (
-    Any,
-    Dict,
-    List,
-    Mapping,
-    NamedTuple,
-    Optional,
-    Tuple,
-)
+from typing import Any, List, Mapping, NamedTuple, Optional, Tuple, cast
 
 import numpy as np
-from fastapi import HTTPException
 
 import labthings_fastapi as lt
 from camera_stage_mapping.camera_stage_calibration_1d import (
@@ -36,9 +28,6 @@ from labthings_fastapi.types.numpy import DenumpifyingDict
 from .camera import BaseCamera
 from .stage import BaseStage
 
-CoordinateType = Tuple[float, float, float]
-XYCoordinateType = Tuple[float, float]
-
 
 class MoveHistory(NamedTuple):
     """A named tuple containing the position over time for a single move.
@@ -50,7 +39,27 @@ class MoveHistory(NamedTuple):
     """
 
     times: List[float]
-    stage_positions: List[CoordinateType]
+    stage_positions: List[tuple[int, int, int]]
+
+
+def _array_to_stage_tuple(pos: np.ndarray) -> tuple[int, int, int]:
+    """Convert a numpy array into a tuple of ints.
+
+    :param pos: Input position array must be 3 elements long.
+    :return: a tuple of 3 integers
+    :raises ValueError: If the array is not of length 3.
+    """
+    pos_tuple = tuple(int(i) for i in pos)
+    if len(pos_tuple) == 3:
+        return cast(tuple[int, int, int], pos_tuple)
+    raise ValueError("Input array was not 3 elements long.")
+
+
+def _serialise_numpy_in_dict(dict_with_numpy: dict) -> dict:
+    serialised = json.loads(DenumpifyingDict(dict_with_numpy).model_dump_json())
+    if not isinstance(serialised, dict):
+        raise TypeError(f"Expecting a dictionary to serialise not a {type(serialised)}")
+    return serialised
 
 
 class RecordedMove:
@@ -69,21 +78,24 @@ class RecordedMove:
             be called whenever the instance is called.
         """
         self._stage = stage
-        self._current_position: Optional[CoordinateType] = None
-        self._history: List[Tuple[float, Optional[CoordinateType]]] = []
+        self._current_position: Optional[tuple[int, int, int]] = None
+        self._history: List[Tuple[float, tuple[int, int, int]]] = []
 
-    def __call__(self, new_position: CoordinateType) -> None:
+    def __call__(self, new_position: np.ndarray) -> None:
         """Move to a new position, and record it."""
-        self._history.append((time.time(), self._current_position))
-        self._stage.move_to_xyz_position(xyz_pos=new_position)
-        self._current_position = new_position
-        self._history.append((time.time(), self._current_position))
+        new_stage_pos = _array_to_stage_tuple(new_position)
+        starting_pos = self._current_position
+        if starting_pos is not None:
+            self._history.append((time.time(), starting_pos))
+        self._stage.move_to_xyz_position(xyz_pos=new_stage_pos)
+        self._current_position = new_stage_pos
+        self._history.append((time.time(), new_stage_pos))
 
     @property
     def history(self) -> MoveHistory:
         """The history, as a numpy array of times and another of positions."""
-        times: List[float] = [t for t, p in self._history if p is not None]
-        positions: List[CoordinateType] = [p for t, p in self._history if p is not None]
+        times: List[float] = [t for t, p in self._history]
+        positions: List[tuple[int, int, int]] = [p for t, p in self._history]
         return MoveHistory(times, positions)
 
     def clear_history(self) -> None:
@@ -91,24 +103,13 @@ class RecordedMove:
         self._history = []
 
 
-class CSMUncalibratedError(HTTPException):
-    """An HTTP Exception raised if camera stage mapping data is needed but unavailable.
+class CSMUncalibratedError(lt.exceptions.InvocationError):
+    """An Exception raised if camera stage mapping data is needed but unavailable.
 
     Camera Stage Mapping data is needed to convert from distances specified in fractions
     of the field of view to distances in motor steps. This is used when clicking on the
     live preview to move, or when performing a scan.
     """
-
-    def __init__(self) -> None:
-        """Customise the default error code and message of HTTPException."""
-        HTTPException.__init__(
-            self,
-            503,
-            (
-                "The camera_stage_mapping calibration is not yet available. "
-                "This probably means you need to run the calibration routine."
-            ),
-        )
 
 
 class CameraStageMapper(lt.Thing):
@@ -121,8 +122,7 @@ class CameraStageMapper(lt.Thing):
     _cam: BaseCamera = lt.thing_slot()
     _stage: BaseStage = lt.thing_slot()
 
-    @lt.action
-    def calibrate_1d(self, direction: Tuple[float, float, float]) -> DenumpifyingDict:
+    def calibrate_1d(self, direction: Tuple[int, int, int]) -> dict:
         """Move a microscope's stage in 1D, and figure out the relationship with the camera."""
         # Record positions and times for stage calibration
         recorded_move = RecordedMove(self._stage)
@@ -152,7 +152,7 @@ class CameraStageMapper(lt.Thing):
         return result
 
     @lt.action
-    def calibrate_xy(self) -> DenumpifyingDict:
+    def calibrate_xy(self) -> dict:
         """Move the microscope's stage in X and Y, to calibrate its relationship to the camera.
 
         This performs two 1d calibrations in x and y, then combines their results.
@@ -182,7 +182,7 @@ class CameraStageMapper(lt.Thing):
         )
         self.logger.info(f"CSM matrix is {csm_as_string}.")
 
-        data: Dict[str, dict] = {
+        data = {
             "camera_stage_mapping_calibration": cal_xy,
             "linear_calibration_x": cal_x,
             "linear_calibration_y": cal_y,
@@ -191,7 +191,8 @@ class CameraStageMapper(lt.Thing):
             "downsampling": downsampling_factor,
         }
 
-        self.last_calibration = DenumpifyingDict(data).model_dump()
+        data = _serialise_numpy_in_dict(data)
+        self.last_calibration = data
 
         return data
 
@@ -238,12 +239,14 @@ class CameraStageMapper(lt.Thing):
         """Whether the camera stage mapper needs calibrating."""
         return self.image_to_stage_displacement_matrix is None
 
-    def assert_calibrated(self) -> None:
-        """Raise an exception if the image_to_stage_displacement matrix is not set."""
+    def assert_calibration(self) -> List[List[float]]:
+        """Return image_to_stage_displacement matrix or raise error if it's not set."""
         if self.image_to_stage_displacement_matrix is None:
-            # Disable check of no message in raised exception as the message is explicitly
-            # added by CSMUncalibratedError
-            raise CSMUncalibratedError()  # noqa: RSE102
+            raise CSMUncalibratedError(
+                "The camera_stage_mapping calibration is not yet available. "
+                "This probably means you need to run the calibration routine."
+            )
+        return self.image_to_stage_displacement_matrix
 
     @lt.action
     def move_in_image_coordinates(self, x: float, y: float) -> None:
@@ -258,24 +261,26 @@ class CameraStageMapper(lt.Thing):
         and ``y`` to the shorter one. Checking what shape your chosen toolkit reports for
         an image usually helps resolve any ambiguity.
         """
-        self.assert_calibrated()
-        self._stage.move_relative(**self.convert_image_to_stage_coordinates(x=x, y=y))
+        self._stage.move_relative(
+            **self.convert_image_to_stage_coordinates(x=x, y=y),
+            block_cancellation=False,
+        )
 
     @lt.action
     def convert_image_to_stage_coordinates(
         self, x: float, y: float, **_kwargs: float
     ) -> Mapping[str, int]:
         """Convert image coordinates to stage coordinates. Only x and y are returned."""
-        self.assert_calibrated()
-        return csm_img_to_stage(self.image_to_stage_displacement_matrix, x=x, y=y)
+        csm_matrix = self.assert_calibration()
+        return csm_img_to_stage(csm_matrix, x=x, y=y)
 
     @lt.action
     def convert_stage_to_image_coordinates(
         self, x: int, y: int, **_kwargs: int
     ) -> Mapping[str, float]:
         """Convert stage coordinates to image coordinates. Only x and y are returned."""
-        self.assert_calibrated()
-        return csm_stage_to_img(self.image_to_stage_displacement_matrix, x=x, y=y)
+        csm_matrix = self.assert_calibration()
+        return csm_stage_to_img(csm_matrix, x=x, y=y)
 
     @lt.property
     def thing_state(self) -> Mapping[str, Any]:

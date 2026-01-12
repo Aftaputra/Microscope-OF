@@ -111,7 +111,7 @@ def test_tuning_lst_tools(imx219_tuning, imx477_tuning):
         assert not tf_utils.lst_calibrated(tuning)
 
         lst_model = tf_utils.get_lst(tuning)
-        assert isinstance(lst_model, tf_utils.LensShading)
+        assert isinstance(lst_model, tf_utils.LensShadingModel)
         # Check the tables are lists of lists
         assert isinstance(lst_model.luminance, list)
         assert isinstance(lst_model.luminance[0], list)

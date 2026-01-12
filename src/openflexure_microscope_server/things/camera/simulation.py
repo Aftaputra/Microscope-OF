@@ -13,12 +13,13 @@ import logging
 import time
 from threading import Thread
 from types import TracebackType
-from typing import Literal, Optional
+from typing import Literal, Optional, Self
 
 import numpy as np
 from PIL import Image, ImageFilter
 
 import labthings_fastapi as lt
+from labthings_fastapi.types.numpy import NDArray
 
 from openflexure_microscope_server.ui import (
     ActionButton,
@@ -28,11 +29,11 @@ from openflexure_microscope_server.ui import (
 )
 
 from ..stage.dummy import DummyStage
-from . import ArrayModel, BaseCamera
+from . import BaseCamera
 
 LOGGER = logging.getLogger(__name__)
 
-# The ratio between "motor" steps and pixels
+# The ratio between "motor" steps and pixels in (x, y, z)
 # higher related to a faster movement
 RATIO = (2, 2, 0.2)
 
@@ -195,17 +196,18 @@ class SimulatedCamera(BaseCamera):
 
         self.canvas[top:bottom, left:right] -= sprite
 
-    def generate_image(self, pos: tuple[int, int, int]) -> Image:
+    def generate_image(self, pos: tuple[int, int, int]) -> Image.Image:
         """Generate an image with blobs based on supplied coordinates.
 
         :param pos: a 3-item tuple containing the x,y,z coordinates of the 'stage'
         """
         canvas_width, canvas_height, _ = self.canvas_shape
         image_width, image_height, _ = self.shape
-        pos = tuple(x * s for x, s in zip(pos, RATIO, strict=True))
+        # Scale position by RATIO to get position in base image.
+        im_pos = tuple(x * ratio for x, ratio in zip(pos, RATIO, strict=True))
         top_left = (
-            int(pos[0]) - image_width // 2 + self.sample_limits[0] // 2,
-            int(pos[1]) - image_height // 2 + self.sample_limits[1] // 2,
+            int(im_pos[0]) - image_width // 2 + self.sample_limits[0] // 2,
+            int(im_pos[1]) - image_height // 2 + self.sample_limits[1] // 2,
         )
         # Create index list with modulo rather than slicing to handle wrapping at the
         # canvas edge.
@@ -216,7 +218,7 @@ class SimulatedCamera(BaseCamera):
         # Use npx to make each 1d index list 3D
         focused_image = canvas[np.ix_(x_indices, y_indices, z_indices)]
 
-        image = fast_pil_blur(focused_image, sigma=np.abs(pos[2]) / 5)
+        image = fast_pil_blur(focused_image, sigma=np.abs(im_pos[2]) / 5)
 
         if image.shape != self.shape:
             raise ValueError(
@@ -229,7 +231,7 @@ class SimulatedCamera(BaseCamera):
         image[image > 255] = 255
         return Image.fromarray(image.astype("uint8"))
 
-    def generate_frame(self) -> Image:
+    def generate_frame(self) -> Image.Image:
         """Generate a frame with blobs based on the stage coordinates."""
         try:
             pos = self._stage.instantaneous_position
@@ -238,7 +240,7 @@ class SimulatedCamera(BaseCamera):
             pos = {"x": 0, "y": 0, "z": 0}
         return self.generate_image((pos["y"], pos["x"], pos["z"]))
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> Self:
         """Start the capture thread when the Thing context manager is opened."""
         self.start_streaming()
         return self
@@ -250,7 +252,7 @@ class SimulatedCamera(BaseCamera):
         _traceback: Optional[TracebackType],
     ) -> None:
         """Close the capture thread when the Thing context manager is closed."""
-        if self.stream_active:
+        if self._capture_thread is not None and self._capture_thread.is_alive():
             self._capture_enabled = False
             self._capture_thread.join()
 
@@ -299,7 +301,7 @@ class SimulatedCamera(BaseCamera):
             try:
                 frame = self.generate_frame()
                 self.mjpeg_stream.add_frame(_frame2bytes(frame))
-                ds_frame = frame.resize((320, 240), resample=Image.NEAREST)
+                ds_frame = frame.resize((320, 240), resample=Image.Resampling.NEAREST)
                 self.lores_mjpeg_stream.add_frame(_frame2bytes(ds_frame))
 
             except Exception as e:
@@ -315,9 +317,9 @@ class SimulatedCamera(BaseCamera):
     @lt.action
     def capture_array(
         self,
-        stream_name: Literal["main", "full"] = "full",
+        stream_name: Literal["main", "lores", "raw", "full"] = "full",
         wait: Optional[float] = None,
-    ) -> ArrayModel:
+    ) -> NDArray:
         """Acquire one image from the camera and return as an array.
 
         This function will produce a nested list containing an uncompressed RGB image.
@@ -334,9 +336,9 @@ class SimulatedCamera(BaseCamera):
 
     def capture_image(
         self,
-        stream_name: Literal["main", "lores", "raw"],
+        stream_name: Literal["main", "lores", "full"],
         wait: Optional[float] = None,
-    ) -> Image:
+    ) -> Image.Image:
         """Capture to a PIL image. This is not exposed as a ThingAction.
 
         It is used for capture to memory.
@@ -384,7 +386,7 @@ class SimulatedCamera(BaseCamera):
         """The calibration actions for both calibration wizard and settings panel."""
         return [
             action_button_for(
-                self.full_auto_calibrate, submit_label="Full Auto-Calibrate"
+                self, "full_auto_calibrate", submit_label="Full Auto-Calibrate"
             ),
         ]
 
@@ -392,8 +394,8 @@ class SimulatedCamera(BaseCamera):
     def secondary_calibration_actions(self) -> list[ActionButton]:
         """The calibration actions that appear only in settings panel."""
         return [
-            action_button_for(self.load_sample, submit_label="Load Sample"),
-            action_button_for(self.remove_sample, submit_label="Remove Sample"),
+            action_button_for(self, "load_sample", submit_label="Load Sample"),
+            action_button_for(self, "remove_sample", submit_label="Remove Sample"),
         ]
 
     @lt.property
@@ -402,7 +404,7 @@ class SimulatedCamera(BaseCamera):
         return [property_control_for(self, "noise_level", label="Noise Level")]
 
 
-def _frame2bytes(frame: Image) -> bytes:
+def _frame2bytes(frame: Image.Image) -> bytes:
     """Convert frame to bytes."""
     with io.BytesIO() as buf:
         # Save in low quality for speed.

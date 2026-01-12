@@ -18,7 +18,7 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 dependencies = [
-  "labthings-fastapi==0.0.13",
+  "labthings-fastapi==0.0.14",
   "sangaboard",
   "camera-stage-mapping ~= 0.1.10",
   "opencv-python ~= 4.11.0",
@@ -37,7 +37,6 @@ dependencies = [
 dev = [
   "ruff~=0.13.0",
   "mypy[reports]",
-  "mypy-gitlab-code-quality",
 #  "pytest-gitlab-code-quality", # pytest version constraint clashes with labthings
   "pytest",
   "pytest-cov",

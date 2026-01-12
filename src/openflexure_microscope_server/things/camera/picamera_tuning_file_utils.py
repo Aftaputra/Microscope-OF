@@ -20,8 +20,11 @@ CALIBRATED_COLOUR_TEMP = 5000
 DEFAULT_COLOUR_TEMP = 1234
 
 
-class LensShading(BaseModel):
+class LensShadingModel(BaseModel):
     """A Pydantic model holding the lens shading tables.
+
+    Note this shouldn't be confused with the typehint for LensShadingTables in
+    recalibrate utils which is for the arrays.
 
     PiCamera needs three numpy arrays for lens shading correction. Each array is
     (12, 16) in size. The arrays are luminance, red-difference chroma (Cr), and
@@ -165,7 +168,7 @@ def flatten_lst(tuning: dict, keep_luminance: bool = False) -> dict:
     )
 
 
-def get_lst(tuning: dict) -> LensShading:
+def get_lst(tuning: dict) -> LensShadingModel:
     """Return the lens shading as a LenSading Base Model."""
     # Note "alsc" is the Picamera2 term for "Automatic Lens Shading Correction"
     alsc = find_tuning_algo(tuning, "rpi.alsc")
@@ -175,7 +178,7 @@ def get_lst(tuning: dict) -> LensShading:
         w, h = 16, 12
         return [lin[w * i : w * (i + 1)] for i in range(h)]
 
-    return LensShading(
+    return LensShadingModel(
         luminance=reshape_lst(alsc["luminance_lut"]),
         Cr=reshape_lst(alsc["calibrations_Cr"][0]["table"]),
         Cb=reshape_lst(alsc["calibrations_Cb"][0]["table"]),

@@ -6,6 +6,8 @@ from fastapi import Response
 
 import labthings_fastapi as lt
 
+from openflexure_microscope_server.things.camera import BaseCamera
+
 FAKE_ROUTES = [
     "/api/v2/",
     "/api/v2/streams/snapshot",
@@ -38,7 +40,10 @@ def add_v2_endpoints(thing_server: lt.ThingServer) -> None:
     @app.head("/api/v2/streams/snapshot")
     async def thumbnail() -> JPEGResponse:
         """Return a low-resolution snapshot, for compatibility with OF connect."""
-        blob = await thing_server.things["camera"].lores_mjpeg_stream.grab_frame()
+        camera_thing = thing_server.things["camera"]
+        if not isinstance(camera_thing, BaseCamera):
+            raise RuntimeError("Camera thing is not a BaseCamera")
+        blob = await camera_thing.lores_mjpeg_stream.grab_frame()
         return JPEGResponse(blob)
 
     @app.get("/api/v2/instrument/settings/name")

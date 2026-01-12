@@ -12,8 +12,7 @@ import shlex
 import signal
 import subprocess
 import threading
-from io import TextIOWrapper
-from typing import Any, Optional
+from typing import IO, Any, Optional
 
 import labthings_fastapi as lt
 
@@ -87,7 +86,7 @@ class BaseStitcher:
         self.min_overlap = round(overlap * 0.9, 2)
         self.correlation_resize = float(correlation_resize)
         self._mode = "all"
-        self._extra_args = []
+        self._extra_args: list[str] = []
 
     @property
     def command(self) -> list[str]:
@@ -236,8 +235,8 @@ class FinalStitcher(BaseStitcher):
 
     def _process_inputs(
         self,
-        overlap: float,
-        correlation_resize: float,
+        overlap: Optional[float],
+        correlation_resize: Optional[float],
         scan_data_dict: Optional[dict[str, Any]],
     ) -> tuple[float, float]:
         """Process inputs to ensure ``overlap`` and ``correlation_resize`` have values.
@@ -296,13 +295,15 @@ class FinalStitcher(BaseStitcher):
 
         # Run the command piping stdout into the process for reading and
         # forwarding the stdrerr to stdout
-        process = subprocess.Popen(
+        process: subprocess.Popen[str] = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             bufsize=1,
             text=True,
         )
+        if process.stdout is None:  # pragma: no cover - impossible with stdout=PIPE
+            raise RuntimeError("stdout pipe was not created")
         # Stop opening pipe blocking writing to it
         os.set_blocking(process.stdout.fileno(), False)
 
@@ -320,8 +321,11 @@ class FinalStitcher(BaseStitcher):
                 f"Subprocess {STITCHING_CMD} errored with exit code {process.poll()}."
             )
 
-    def _log_ongoing(self, process: subprocess.Popen) -> None:
+    def _log_ongoing(self, process: subprocess.Popen[str]) -> None:
         """Log the ongoing process unless it is cancelled."""
+        if process.stdout is None:  # pragma: no cover - impossible with stdout=PIPE
+            raise RuntimeError("stdout pipe was not created")
+
         # Poll returns None while running, will return the error code when finished
         while process.poll() is None:
             self.log_buffer(process.stdout)
@@ -340,7 +344,7 @@ class FinalStitcher(BaseStitcher):
         # Print everything in the buffer when program finishes
         self.log_buffer(process.stdout)
 
-    def log_buffer(self, buffer: TextIOWrapper) -> None:
+    def log_buffer(self, buffer: IO[str]) -> None:
         """Log everything in the buffer at INFO level."""
         # Use rstrip to remove newlines from each line, as logging provides its own
         # new lines

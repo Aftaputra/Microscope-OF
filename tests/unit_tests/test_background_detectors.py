@@ -58,34 +58,38 @@ def test_bg_detect_base_class():
         BackgroundDetectAlgorithm()
 
 
-def test_partial_base_class(background_image):
-    """Create a partial class to initialise the base class and test other methods.
-
-    This test is to check that if the necessary methods are not set, that an
-    appropriate error is raised.
-    """
+def test_partial_base_classes():
+    """Create a partial classes and check they raise the correct errors."""
 
     class BadAlgo1(BackgroundDetectAlgorithm):
-        """Only has a settings model so it can initialise."""
+        """Only has a settings model so it cannot initialise."""
 
-        settings_data_model: BaseModel = ColourChannelDetectSettings
-
-    bad_algo1 = BadAlgo1()
-    status = bad_algo1.status
-    assert not status.ready
-    # Check the settings dictionary can be validated as ``ColourChannelDetectSettings``
-    ColourChannelDetectSettings(**status.settings)
+        settings_data_model = ColourChannelDetectSettings
 
     with pytest.raises(NotImplementedError):
-        # Should error on any dictionary input. This simulates loading settings from
-        # disk
-        bad_algo1.background_data = {"key": 1}
+        BadAlgo1()
+
+    class BadAlgo2(BackgroundDetectAlgorithm):
+        """Only has a background model so it cannot initialise."""
+
+        background_data_model = ChannelDistributions
 
     with pytest.raises(NotImplementedError):
-        bad_algo1.set_background(background_image)
+        BadAlgo2()
+
+    class BadAlgo3(BackgroundDetectAlgorithm):
+        """Has both models, intalises by cannot run set_background or image_is_sample."""
+
+        settings_data_model = ColourChannelDetectSettings
+        background_data_model = ChannelDistributions
+
+    bad_algo3 = BadAlgo3()
 
     with pytest.raises(NotImplementedError):
-        bad_algo1.image_is_sample(background_image)
+        bad_algo3.set_background(background_image)
+
+    with pytest.raises(NotImplementedError):
+        bad_algo3.image_is_sample(background_image)
 
 
 def test_colour_channel_luv(background_image, sample_image):

@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from threading import Thread
 from types import TracebackType
-from typing import Literal, Optional
+from typing import Literal, Optional, Self
 
 import cv2
 from PIL import Image
@@ -39,7 +39,7 @@ class OpenCVCamera(BaseCamera):
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> Self:
         """Start the capture thread when the Thing context manager is opened."""
         self.cap = cv2.VideoCapture(self.camera_index)
         self._capture_enabled = True
@@ -59,7 +59,8 @@ class OpenCVCamera(BaseCamera):
         """
         if self.stream_active:
             self._capture_enabled = False
-            self._capture_thread.join()
+            if self._capture_thread is not None:
+                self._capture_thread.join()
         self.cap.release()
 
     @lt.property
@@ -90,7 +91,7 @@ class OpenCVCamera(BaseCamera):
     @lt.action
     def capture_array(
         self,
-        stream_name: Literal["main", "full"] = "full",
+        stream_name: Literal["main", "lores", "raw", "full"] = "full",
         wait: Optional[float] = None,
     ) -> NDArray:
         """Acquire one image from the camera and return as an array.
@@ -111,9 +112,9 @@ class OpenCVCamera(BaseCamera):
 
     def capture_image(
         self,
-        stream_name: Literal["main", "full"] = "main",
+        stream_name: Literal["main", "lores", "full"] = "main",
         wait: Optional[float] = None,
-    ) -> Image:
+    ) -> Image.Image:
         """Acquire one image from the camera and return as a PIL image.
 
         This function will produce a JPEG image.

@@ -6,13 +6,14 @@ from socket import gethostname
 # Import as ofm server to attempt to minimise confusion with server as a var in other
 # functions and also FastAPI `Server`.
 from openflexure_microscope_server.server import legacy_api
+from openflexure_microscope_server.things.camera import BaseCamera
 
 
 def test_v2_endpoints(mocker):
     """Check that the expected v2 endpoints are added."""
     mock_server = mocker.Mock()
     # Mock the camera thing to mocke the lores_mjpeg stream get_frame()
-    mock_server.things = {"camera": mocker.Mock()}
+    mock_server.things = {"camera": mocker.Mock(spec=BaseCamera)}
     mock_server.things["camera"].lores_mjpeg_stream.grab_frame = mocker.AsyncMock(
         return_value="Mock Frame"
     )

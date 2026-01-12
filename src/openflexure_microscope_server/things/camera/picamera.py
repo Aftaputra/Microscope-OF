@@ -25,7 +25,7 @@ import time
 from contextlib import contextmanager
 from threading import RLock
 from types import TracebackType
-from typing import Annotated, Any, Iterator, Literal, Mapping, Optional
+from typing import Annotated, Any, Iterator, Literal, Mapping, Optional, Self
 
 import numpy as np
 from picamera2 import Picamera2
@@ -36,6 +36,7 @@ from pydantic import BaseModel, BeforeValidator
 
 import labthings_fastapi as lt
 from labthings_fastapi.exceptions import ServerNotRunningError
+from labthings_fastapi.types.numpy import NDArray
 
 from openflexure_microscope_server.background_detect import ChannelBlankError
 from openflexure_microscope_server.ui import (
@@ -45,7 +46,7 @@ from openflexure_microscope_server.ui import (
     property_control_for,
 )
 
-from . import ArrayModel, BaseCamera
+from . import BaseCamera
 from . import picamera_recalibrate_utils as recalibrate_utils
 from . import picamera_tuning_file_utils as tf_utils
 
@@ -122,6 +123,9 @@ class StreamingPiCamera2(BaseCamera):
     generalisation.
     """
 
+    tuning: dict = lt.setting(default_factory=dict, readonly=True)
+    """The Raspberry PiCamera Tuning File JSON."""
+
     def __init__(
         self,
         thing_server_interface: lt.ThingServerInterface,
@@ -147,7 +151,7 @@ class StreamingPiCamera2(BaseCamera):
                 f"are {SUPPORTED_CAMS_SENSOR_INFO.keys()}."
             )
         self._sensor_info = SUPPORTED_CAMS_SENSOR_INFO[camera_board]
-        self._picamera_lock = None
+        self._picamera_lock = RLock()
         self._picamera = None
 
         # Load the tuning file for the specified sensor mode.
@@ -159,10 +163,12 @@ class StreamingPiCamera2(BaseCamera):
         # connected to the server if tuning is saved to disk.
         try:
             self.tuning = copy.deepcopy(self.default_tuning)
-        except ServerNotRunningError:
+        except ServerNotRunningError as e:
             # This will throw an error after setting as we are not connected to
-            # a server. But we know this, so we ignore the error.
-            pass
+            # a server. But we know this, so we ignore the error as long as the
+            # tuning data is set.
+            if "version" not in self.tuning:
+                raise RuntimeError("Tuning file could not be set.") from e
 
         # Also set the colour gains based on the tuning. Set to _colour_gains to not
         # trigger a ServerNotRunningError
@@ -214,7 +220,7 @@ class StreamingPiCamera2(BaseCamera):
         return self._analogue_gain
 
     @analogue_gain.setter
-    def analogue_gain(self, value: float) -> None:
+    def _set_analogue_gain(self, value: float) -> None:
         self._analogue_gain = value
         if self.streaming:
             with self._streaming_picamera() as cam:
@@ -234,7 +240,7 @@ class StreamingPiCamera2(BaseCamera):
         return self._colour_gains
 
     @colour_gains.setter
-    def colour_gains(self, value: tuple[float, float]) -> None:
+    def _set_colour_gains(self, value: tuple[float, float]) -> None:
         self._colour_gains = value
         if self.streaming:
             with self._streaming_picamera() as cam:
@@ -258,7 +264,7 @@ class StreamingPiCamera2(BaseCamera):
         return self._exposure_time
 
     @exposure_time.setter
-    def exposure_time(self, value: int) -> None:
+    def _set_exposure_time(self, value: int) -> None:
         self._exposure_time = value
         if self.streaming:
             with self._streaming_picamera() as cam:
@@ -282,7 +288,7 @@ class StreamingPiCamera2(BaseCamera):
             "Sharpness": 1,
         }
 
-    _sensor_modes = None
+    _sensor_modes: Optional[list[SensorMode]] = None
 
     @lt.property
     def sensor_modes(self) -> list[SensorMode]:
@@ -302,7 +308,7 @@ class StreamingPiCamera2(BaseCamera):
         return SensorModeSelector(**self._sensor_mode)
 
     @sensor_mode.setter
-    def sensor_mode(self, new_mode: Optional[SensorModeSelector | dict]) -> None:
+    def _set_sensor_mode(self, new_mode: Optional[SensorModeSelector | dict]) -> None:
         """Change the sensor mode used."""
         if new_mode is None:
             self._sensor_mode = None
@@ -323,9 +329,6 @@ class StreamingPiCamera2(BaseCamera):
         with self._streaming_picamera() as cam:
             return cam.sensor_resolution
 
-    tuning: Optional[dict] = lt.setting(default=None, readonly=True)
-    """The Raspberry PiCamera Tuning File JSON."""
-
     def _initialise_picamera(self, check_sensor_model: bool = False) -> None:
         """Acquire the picamera device and store it as ``self._picamera``.
 
@@ -339,10 +342,7 @@ class StreamingPiCamera2(BaseCamera):
         :raises PicameraModelError: If check_sensor_model is True and the real
             camera sensor model doesn't match the expected sensor model.
         """
-        if self._picamera_lock is not None:
-            # Don't close the camera if it's in use
-            self._picamera_lock.acquire()
-        with tempfile.NamedTemporaryFile("w") as tuning_file:
+        with self._picamera_lock, tempfile.NamedTemporaryFile("w") as tuning_file:
             json.dump(self.tuning, tuning_file)
             tuning_file.flush()  # but leave it open as closing it will delete it
             os.environ["LIBCAMERA_RPI_TUNING_FILE"] = tuning_file.name
@@ -363,6 +363,9 @@ class StreamingPiCamera2(BaseCamera):
                 camera_num=self._camera_num,
                 tuning=self.tuning,
             )
+            if self._picamera is None:
+                # Type narrow (error if failure)
+                raise RuntimeError("Failed to start Picamera")
             if check_sensor_model:
                 hw_sensor_model = self._picamera.camera_properties["Model"]
                 if hw_sensor_model != self._sensor_info.sensor_model:
@@ -370,9 +373,8 @@ class StreamingPiCamera2(BaseCamera):
                         f"Wrong Picamera model. Expecting {self._sensor_info.sensor_model}, "
                         f"but found {hw_sensor_model}."
                     )
-        self._picamera_lock = RLock()
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> Self:
         """Start streaming when the Thing context manager is opened.
 
         This opens the picamera connection, initialises the camera, sets the
@@ -533,7 +535,7 @@ class StreamingPiCamera2(BaseCamera):
         self,
         stream_name: Literal["main", "lores", "full"] = "main",
         wait: Optional[float] = 0.9,
-    ) -> Image:
+    ) -> Image.Image:
         """Acquire one image from the camera and return it as a PIL Image.
 
         If the ``stream_name`` parameter is ``main`` or ``lores``, it will be captured
@@ -573,7 +575,7 @@ class StreamingPiCamera2(BaseCamera):
         self,
         stream_name: Literal["main", "lores", "raw", "full"] = "main",
         wait: Optional[float] = 0.9,
-    ) -> ArrayModel:
+    ) -> NDArray:
         """Acquire one image from the camera and return as an array.
 
         This function will produce a nested list containing an uncompressed RGB image.
@@ -773,7 +775,8 @@ class StreamingPiCamera2(BaseCamera):
         """The calibration actions for both calibration wizard and settings panel."""
         return [
             action_button_for(
-                self.full_auto_calibrate,
+                self,
+                "full_auto_calibrate",
                 submit_label="Full Auto-Calibrate",
                 can_terminate=False,
                 requires_confirmation=True,
@@ -791,13 +794,15 @@ class StreamingPiCamera2(BaseCamera):
         """The calibration actions that appear only in settings panel."""
         return [
             action_button_for(
-                self.auto_expose_from_minimum,
+                self,
+                "auto_expose_from_minimum",
                 submit_label="Auto Gain & Shutter Speed",
                 can_terminate=False,
                 button_primary=False,
             ),
             action_button_for(
-                self.calibrate_lens_shading,
+                self,
+                "calibrate_lens_shading",
                 submit_label="Auto Flat Field Correction",
                 can_terminate=False,
                 button_primary=False,
@@ -809,19 +814,22 @@ class StreamingPiCamera2(BaseCamera):
                 ),
             ),
             action_button_for(
-                self.flat_lens_shading,
+                self,
+                "flat_lens_shading",
                 submit_label="Disable Flat Field Correction",
                 can_terminate=False,
                 button_primary=False,
             ),
             action_button_for(
-                self.flat_lens_shading_chrominance,
+                self,
+                "flat_lens_shading_chrominance",
                 submit_label="Disable Flat Field Chrominance",
                 can_terminate=False,
                 button_primary=False,
             ),
             action_button_for(
-                self.reset_lens_shading,
+                self,
+                "reset_lens_shading",
                 submit_label="Reset Flat Field Correction",
                 can_terminate=False,
                 button_primary=False,
@@ -856,7 +864,7 @@ class StreamingPiCamera2(BaseCamera):
         ]
 
     @lt.property
-    def lens_shading_tables(self) -> Optional[tf_utils.LensShading]:
+    def lens_shading_tables(self) -> Optional[tf_utils.LensShadingModel]:
         """The current lens shading (i.e. flat-field correction).
 
         Return the current lens shading correction, as three 2D lists each with
@@ -868,19 +876,6 @@ class StreamingPiCamera2(BaseCamera):
         resetting the table.
         """
         return tf_utils.get_lst(self.tuning)
-
-    @lens_shading_tables.setter
-    def lens_shading_tables(self, lst: tf_utils.LensShading) -> None:
-        """Set the lens shading tables."""
-        with self._streaming_picamera(pause_stream=True):
-            self.tuning = tf_utils.set_lst(
-                self.tuning,
-                luminance=lst.luminance,
-                cr=lst.Cr,
-                cb=lst.Cb,
-                colour_temp=lst.colour_temp,
-            )
-            self._initialise_picamera()
 
     @lt.action
     def flat_lens_shading(self) -> None:

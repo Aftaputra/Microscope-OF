@@ -14,8 +14,9 @@ this is 10% of the expected motion is the measured axis.
 """
 
 import time
+from copy import copy
 from threading import Lock
-from typing import Any, Literal, Optional, overload
+from typing import Any, Literal, Mapping, Optional, overload
 
 import numpy as np
 
@@ -48,20 +49,20 @@ class RomDataTracker:
 
     def __init__(self) -> None:
         """Define useful data tracked throughout test."""
-        self.stage_coords: list[dict[str, int]] = []
-        self.offsets: list[dict[str, float]] = []
+        self.stage_coords: list[Mapping[str, int]] = []
+        self.offsets: list[Mapping[str, float]] = []
 
     def record_movement(
-        self, current_pos: dict[str, int], offset: dict[str, float]
+        self, current_pos: Mapping[str, int], offset: Mapping[str, float]
     ) -> None:
         """Record the current position and the measured offset of the last move."""
         self.stage_coords.append(current_pos)
         self.offsets.append(offset)
 
     @property
-    def final_position(self) -> dict[str, int]:
+    def final_position(self) -> Mapping[str, int]:
         """The last stage coordinate recorded."""
-        return self.stage_coords[-1].copy()
+        return copy(self.stage_coords[-1])
 
     def fit_axis(self, axis: Literal["x", "y"]) -> np.poly1d:
         """Quadratic fit stage z against x or y and return poly1d of fit.
@@ -78,8 +79,8 @@ class RomDataTracker:
     def predict_z_displacement(
         self,
         axis: Literal["x", "y"],
-        stage_movement: dict[str, int],
-        stage_position: dict[str, int],
+        stage_movement: Mapping[str, int],
+        stage_position: Mapping[str, int],
     ) -> int:
         """Predict the z-displacement needed for a given movement.
 
@@ -93,7 +94,7 @@ class RomDataTracker:
 
         return int(z_dest - stage_position["z"])
 
-    def find_turning_point(self, axis: Literal["x", "y"]) -> dict[str, int]:
+    def find_turning_point(self, axis: Literal["x", "y"]) -> Mapping[str, int]:
         """Find the turing point from the recorded coordinates."""
         fit_func = self.fit_axis(axis)
         turning_loc = fit_func.deriv().roots[0]
@@ -121,7 +122,9 @@ class RangeofMotionThing(lt.Thing):
     _csm: CameraStageMapper = lt.thing_slot()
     _stage: BaseStage = lt.thing_slot()
 
-    calibrated_range: Optional[list[int, int]] = lt.setting(default=None, readonly=True)
+    calibrated_range: Optional[tuple[int, int]] = lt.setting(
+        default=None, readonly=True
+    )
 
     def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Initialise and create the lock."""
@@ -131,7 +134,7 @@ class RangeofMotionThing(lt.Thing):
         self._rom_data = RomDataTracker()
 
     @lt.action
-    def perform_rom_test(self) -> dict[str, Any]:
+    def perform_rom_test(self) -> Mapping[str, Any]:
         """Measures the range of motion of the stage across the x and y axes.
 
         :return: Results dictionary separated into keys of each axis and direction.
@@ -173,7 +176,7 @@ class RangeofMotionThing(lt.Thing):
             self.logger.info(
                 f"Range of motion is {step_range[0]} x {step_range[1]} steps"
             )
-            self.calibrated_range = step_range
+            self.calibrated_range = (step_range[0], step_range[1])
         finally:
             self._lock.release()
         return {
@@ -324,7 +327,7 @@ class RangeofMotionThing(lt.Thing):
         # if the distance is less than 1 big step away then move to it and exit
         if abs(img_perc) < BIG_STEP:
             self.logger.info(f"Estimated centre of {axis}-axis is {estimate[axis]}")
-            self._stage.move_absolute(**estimate)
+            self._stage.move_absolute(**estimate, block_cancellation=False)
             # Note the second return, the direction, is meaningless here.
             return True, 1
         self.logger.info(
@@ -353,7 +356,7 @@ class RangeofMotionThing(lt.Thing):
         return (fov_perc / 100) * self._stream_resolution[img_index]
 
     def _img_dir_from_stage_coords(
-        self, target: dict[str, int], axis: Literal["x", "y"]
+        self, target: Mapping[str, int], axis: Literal["x", "y"]
     ) -> Literal[1, -1]:
         """For a target location in stage coords, return the direction in image coordinates.
 
@@ -369,7 +372,7 @@ class RangeofMotionThing(lt.Thing):
         return -1 if target_im_coords[axis] < current_loc_im_coords[axis] else 1
 
     def _distance_in_img_percentage(
-        self, target: dict[str, int], axis: Literal["x", "y"]
+        self, target: Mapping[str, int], axis: Literal["x", "y"]
     ) -> float:
         """For a target location in stage coords return the distance in percentage of FOV.
 
@@ -394,7 +397,7 @@ class RangeofMotionThing(lt.Thing):
         fov_perc: int,
         axis: Literal["x", "y"],
         direction: Literal[1, -1],
-    ) -> dict[str, float]:
+    ) -> Mapping[str, float]:
         """Return the dictionary for a move in image coordinates.
 
         This dictionary can be passed directly to csm.move_in_image_coordinates
@@ -546,11 +549,11 @@ class RangeofMotionThing(lt.Thing):
 
     def _move_and_measure(
         self,
-        movement: dict[str, float],
+        movement: Mapping[str, float],
         perform_autofocus: bool = True,
         max_autofocus_repeats: int = 0,
         abs_min_offset: float = 0.0,
-    ) -> dict[str, float]:
+    ) -> Mapping[str, float]:
         """Move the stage and measure the offset between the two positions.
 
         :param movement: A dictionary containing the distance to move in image coords.
@@ -596,7 +599,7 @@ class RangeofMotionThing(lt.Thing):
 
         return offset
 
-    def _offset_from(self, before_img: np.ndarray) -> dict[str, float]:
+    def _offset_from(self, before_img: np.ndarray) -> Mapping[str, float]:
         """Take an image and calculate the offset from an input image.
 
         :param before_img: The image the offset should be calculated with respect to.
@@ -623,11 +626,11 @@ class RangeofMotionThing(lt.Thing):
 # let MyPy know with overloads typed to Literal[False] and Literal[True].
 @overload
 def _axis_from_movement_dict(
-    movement: dict[str, float], return_other: Literal[False]
+    movement: Mapping[str, float], return_other: Literal[False]
 ) -> str: ...
 @overload
 def _axis_from_movement_dict(
-    movement: dict[str, float], return_other: Literal[True]
+    movement: Mapping[str, float], return_other: Literal[True]
 ) -> tuple[str, str]: ...
 
 
@@ -635,12 +638,12 @@ def _axis_from_movement_dict(
 # because MyPy doesn't see that return other's default is `False` and use
 # the `Literal[False]` overload.
 @overload
-def _axis_from_movement_dict(movement: dict[str, float]) -> str: ...
+def _axis_from_movement_dict(movement: Mapping[str, float]) -> str: ...
 
 
 # Finally The function.
 def _axis_from_movement_dict(
-    movement: dict[str, float], return_other: bool = False
+    movement: Mapping[str, float], return_other: bool = False
 ) -> str | tuple[str, str]:
     """Return the axis that a given movement dictionary moves in.
 
@@ -661,7 +664,7 @@ def _axis_from_movement_dict(
 
 
 def _parasitic_motion_detected(
-    movement: dict[str, float], offset: dict[str, float]
+    movement: Mapping[str, float], offset: Mapping[str, float]
 ) -> bool:
     """Compare desired movement to measured offset, report if parasitic motion was detected.
 

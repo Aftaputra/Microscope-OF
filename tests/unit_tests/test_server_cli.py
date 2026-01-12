@@ -8,8 +8,9 @@ from fastapi import FastAPI
 # Import as ofm server to attempt to minimise confusion with server as a var in other
 # functions and also FastAPI `Server`.
 from openflexure_microscope_server import server as ofm_server
+from openflexure_microscope_server.things.camera import BaseCamera
 
-from .test_server_config import FULL_CONFIG
+from .test_server_config import SIM_CONFIG
 
 
 def test_no_config():
@@ -27,7 +28,7 @@ def test_successful_start(mocker, caplog):
     mock_server = mocker.Mock()
     # Create a mock for the camera so we can check the MJPEG streams are closed on
     # shutdown.
-    mock_camera = mocker.Mock()
+    mock_camera = mocker.Mock(spec=BaseCamera)
     mock_server.things = {"camera": mock_camera}
     # Mock the LabThings function that returns the server so we have a mock server
     mocker.patch(
@@ -40,7 +41,7 @@ def test_successful_start(mocker, caplog):
     mock_uvicorn_run = mocker.patch("openflexure_microscope_server.server.uvicorn.run")
 
     # Run the mock CLI
-    ofm_server.serve_from_cli(["-c", FULL_CONFIG])
+    ofm_server.serve_from_cli(["-c", SIM_CONFIG])
 
     # Check that the server was customised and the run
     assert mock_customise.call_count == 1
@@ -90,10 +91,10 @@ def test_failed_customise(mocker):
 
     # Running the mock CLI will error
     with pytest.raises(RuntimeError, match="Can't touch this"):
-        ofm_server.serve_from_cli(["-c", FULL_CONFIG])
+        ofm_server.serve_from_cli(["-c", SIM_CONFIG])
 
     # But with the fallback flag uvicorn run will be run
-    ofm_server.serve_from_cli(["-c", FULL_CONFIG, "--fallback"])
+    ofm_server.serve_from_cli(["-c", SIM_CONFIG, "--fallback"])
 
     assert mock_uvicorn_run.call_count == 1
     # Get the fallback app passed to uvicorn tun
@@ -101,4 +102,4 @@ def test_failed_customise(mocker):
     # Check it really is a fastapi
     assert isinstance(fallback_app, FastAPI)
     # An that it has the error to display
-    assert str(fallback_app.labthings_error) == "Can't touch this"
+    assert str(fallback_app._context.error) == "Can't touch this"

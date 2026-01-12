@@ -12,7 +12,7 @@ As the object will be used as a context manager create the hardware connection i
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Literal, Never
+from typing import Any, Literal, overload
 
 import labthings_fastapi as lt
 
@@ -82,10 +82,18 @@ class BaseStage(lt.Thing):
     moving: bool = lt.property(default=False, readonly=True)
     """Whether the stage is in motion."""
 
-    axis_inverted: Mapping[str, bool] = lt.setting(
+    axis_inverted: dict[str, bool] = lt.setting(
         default={"x": False, "y": False, "z": False}, readonly=True
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
+
+    @overload
+    def _apply_axis_direction(self, position: list[int] | tuple[int]) -> list[int]: ...
+
+    @overload
+    def _apply_axis_direction(
+        self, position: Mapping[str, int]
+    ) -> Mapping[str, int]: ...
 
     def _apply_axis_direction(
         self, position: list[int] | tuple[int] | Mapping[str, int]
@@ -142,7 +150,7 @@ class BaseStage(lt.Thing):
 
     def _hardware_move_relative(
         self, block_cancellation: bool = False, **kwargs: int
-    ) -> Never:
+    ) -> None:
         """Make a relative move in the coordinate system used by the physical hardware.
 
         Make sure to use and update ``self._hardware_position`` not ``self.position``.
@@ -163,7 +171,7 @@ class BaseStage(lt.Thing):
         self,
         block_cancellation: bool = False,
         **kwargs: int,
-    ) -> Never:
+    ) -> None:
         """Make a absolute move in the coordinate system used by the physical hardware.
 
         Make sure to use and update ``self._hardware_position`` not ``self.position``.

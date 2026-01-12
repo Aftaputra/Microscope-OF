@@ -1,6 +1,6 @@
 """Functionality for communicating the required user interface for a thing."""
 
-from typing import Any, Callable
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -47,14 +47,15 @@ class ActionButton(BaseModel):
     """The message to show on successful completion."""
 
 
-def action_button_for(action: Callable[..., Any], **kwargs: Any) -> ActionButton:
+def action_button_for(thing: lt.Thing, action_name: str, **kwargs: Any) -> ActionButton:
     """Create a ActionButton data for the specified Thing Action.
 
-    :param action: The thing action to create a button for.
+    :param thing:  The instance of the thing that has the action.
+    :param action_name: The name of the action to create a button for.
     :param kwargs: Any attribute of `ActionButton` except for ``thing`` or ``action``.
+    :return: An ActionButton (Pydantic Model) object with all the information the
+        webapp needs to create the action button.
     """
-    thing = action.args[0]
-    action_name = action.func.__name__
     return ActionButton(thing=thing.name, action=action_name, **kwargs)
 
 

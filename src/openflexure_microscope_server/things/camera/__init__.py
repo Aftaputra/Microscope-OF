@@ -15,12 +15,11 @@ import tempfile
 import time
 from datetime import datetime
 from types import TracebackType
-from typing import Any, Literal, Mapping, Optional, Tuple
+from typing import Any, Literal, Mapping, Optional, Self, Tuple
 
 import numpy as np
 import piexif
 from PIL import Image
-from pydantic import RootModel
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
@@ -46,12 +45,6 @@ class PNGBlob(lt.blob.Blob):
     media_type: str = "image/png"
 
 
-class ArrayModel(RootModel):
-    """A model for an array."""
-
-    root: NDArray
-
-
 class CaptureError(RuntimeError):
     """An error trying to capture from a CameraThing."""
 
@@ -66,7 +59,7 @@ class CameraMemoryBuffer:
     However subclasses of BaseCamera can use this class to store other object types.
     """
 
-    _storage: dict[int, tuple[Any, Optional[dict]]]
+    _storage: dict[int, tuple[Any, Mapping[str, Any]]]
 
     def __init__(self) -> None:
         """Create the buffer instance."""
@@ -80,7 +73,7 @@ class CameraMemoryBuffer:
     def add_image(
         self,
         image: Any,
-        metadata: Optional[Mapping[str, Any]] = None,
+        metadata: Mapping[str, Any],
         buffer_max: int = 1,
     ) -> int:
         """Add an image to the Memory buffer.
@@ -104,7 +97,7 @@ class CameraMemoryBuffer:
 
     def get_image(
         self, buffer_id: Optional[int] = None, remove: bool = True
-    ) -> tuple[Any, Optional[dict]]:
+    ) -> tuple[Any, Mapping[str, Any]]:
         """Return the image with the given id.
 
         If no id is given the most recent image is returned. However, the
@@ -187,7 +180,7 @@ class BaseCamera(lt.Thing):
         }
         self._detector_name = "Channel Deviations (LUV)"
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> Self:
         """Open hardware connection when the Thing context manager is opened."""
         raise NotImplementedError("CameraThings must define their own __enter__ method")
 
@@ -211,12 +204,15 @@ class BaseCamera(lt.Thing):
 
     @lt.action
     def start_streaming(
-        self, main_resolution: tuple[int, int], buffer_count: int
+        self, main_resolution: tuple[int, int] = (800, 800), buffer_count: int = 1
     ) -> None:
         """Start (or stop and restart) the camera.
 
         :param main_resolution: the resolution to use for the main stream.
         :param buffer_count: number of images in the stream buffer.
+
+        Note that the default values for both parameters should be set appropriately
+        for the specific camera when defining a new Camera Thing.
         """
         raise NotImplementedError(
             "CameraThings must define their own start_streaming method"
@@ -255,7 +251,7 @@ class BaseCamera(lt.Thing):
         self,
         stream_name: Literal["main", "lores", "raw", "full"] = "main",
         wait: Optional[float] = 5,
-    ) -> ArrayModel:
+    ) -> NDArray:
         """Acquire one image from the camera and return as an array."""
         raise NotImplementedError(
             "CameraThings must define their own capture_array method"
@@ -265,7 +261,7 @@ class BaseCamera(lt.Thing):
     """The downsampling factor when calling capture_downsampled_array."""
 
     @lt.action
-    def capture_downsampled_array(self) -> ArrayModel:
+    def capture_downsampled_array(self) -> NDArray:
         """Acquire one image from the camera, downsample, and return as an array.
 
         * The array is downsamples by the thing property `downsampled_array_factor`.
@@ -279,7 +275,7 @@ class BaseCamera(lt.Thing):
     @lt.action
     def capture_jpeg(
         self,
-        stream_name: str = "main",
+        stream_name: Literal["main", "lores", "full"] = "main",
         wait: Optional[float] = None,
     ) -> JPEGBlob:
         """Acquire one image from the camera as a JPEG.
@@ -334,7 +330,7 @@ class BaseCamera(lt.Thing):
     def grab_as_array(
         self,
         stream_name: Literal["main", "lores"] = "main",
-    ) -> ArrayModel:
+    ) -> NDArray:
         """Acquire one image from the preview stream and return as an array.
 
         It works like ``grab_jpeg`` but reliably handles broken streams. Prefer using
@@ -369,9 +365,9 @@ class BaseCamera(lt.Thing):
 
     def capture_image(
         self,
-        stream_name: Literal["main", "lores", "raw"],
+        stream_name: Literal["main", "lores", "full"],
         wait: Optional[float] = None,
-    ) -> Image:
+    ) -> Image.Image:
         """Capture a PIL image from stream stream_name with timeout wait."""
         raise NotImplementedError(
             "CameraThings must define their own capture_image method"
@@ -438,7 +434,7 @@ class BaseCamera(lt.Thing):
         """Clear all images in memory."""
         self._memory_buffer.clear()
 
-    def _robust_image_capture(self) -> Tuple[Image, Mapping[str, Any]]:
+    def _robust_image_capture(self) -> Tuple[Image.Image, Mapping[str, Any]]:
         """Capture an image in memory and return it with metadata.
 
         This robust capturing method attempts to capture the image five times
@@ -520,8 +516,8 @@ class BaseCamera(lt.Thing):
     def _save_capture(
         self,
         jpeg_path: str,
-        image: Image,
-        metadata: dict,
+        image: Image.Image,
+        metadata: Mapping[str, Any],
         save_resolution: Optional[Tuple[int, int]] = None,
     ) -> None:
         """Save the captured image and metadata to disk.
@@ -533,7 +529,7 @@ class BaseCamera(lt.Thing):
         nothing is returned on success
         """
         if save_resolution is not None and image.size != save_resolution:
-            image = image.resize(save_resolution, Image.BOX)
+            image = image.resize(save_resolution, Image.Resampling.BOX)
         try:
             # Per PIL documentation,
             # (https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg)
@@ -544,7 +540,7 @@ class BaseCamera(lt.Thing):
             # disabled, file size increases and quality is barely or not affected
             image.save(jpeg_path, quality=95, subsampling=0)
             try:
-                self._add_metadata_to_capture(jpeg_path, metadata)
+                self._add_metadata_to_capture(jpeg_path, dict(metadata))
             except Exception:
                 # We need to capture any exception as there are many reasons metadata
                 # might not be added. We warn rather than log the error.
@@ -591,7 +587,7 @@ class BaseCamera(lt.Thing):
         return self._detector_name
 
     @detector_name.setter
-    def detector_name(self, name: str) -> None:
+    def _set_detector_name(self, name: str) -> None:
         """Validate and set detector_name."""
         if name not in self.background_detectors:
             self.logger.warning(f"{name} is not a valid background detector name.")
@@ -640,7 +636,7 @@ class BaseCamera(lt.Thing):
         return data
 
     @background_detector_data.setter
-    def background_detector_data(self, data: dict) -> None:
+    def _set_background_detector_data(self, data: dict) -> None:
         """Set the data for each detector. Only to be used as settings are loaded from disk.
 
         Do not call over HTTP. This needs to be updated once LbaThings Settings can be
