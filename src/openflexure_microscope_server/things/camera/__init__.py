@@ -210,6 +210,9 @@ class BaseCamera(lt.Thing):
 
         :param main_resolution: the resolution to use for the main stream.
         :param buffer_count: number of images in the stream buffer.
+
+        Note that the default values for both parameters should be set appropriately
+        for the specific camera when defining a new Camera Thing.
         """
         raise NotImplementedError(
             "CameraThings must define their own start_streaming method"

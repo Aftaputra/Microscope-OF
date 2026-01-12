@@ -5,7 +5,7 @@ for analysis. Information from these images is used to detect whether an image f
 current camera field of view contains sample.
 """
 
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Any, Generic, Optional, TypeVar
 
 import cv2
 import numpy as np
@@ -61,9 +61,9 @@ class BackgroundDetectorStatus(BaseModel):
 class BackgroundDetectAlgorithm(Generic[SettingsType, BackgroundType]):
     """The base class for defining background detect algorithms."""
 
-    background_data_model: Type[BackgroundType]
+    background_data_model: type[BackgroundType]
     """The data model of the background data. This must be set by child classes"""
-    settings_data_model: Type[SettingsType]
+    settings_data_model: type[SettingsType]
     """The data model of algorithm settings. This must be set by child classes"""
 
     def __init__(self) -> None:
@@ -198,8 +198,8 @@ class ColourChannelDetectLUV(
     intuitive way.
     """
 
-    background_data_model: Type[ChannelDistributions] = ChannelDistributions
-    settings_data_model: Type[ColourChannelDetectSettings] = ColourChannelDetectSettings
+    background_data_model: type[ChannelDistributions] = ChannelDistributions
+    settings_data_model: type[ColourChannelDetectSettings] = ColourChannelDetectSettings
 
     # These are the same as those used for ChannelDeviationLUV. More detail is
     # provided there.
@@ -297,8 +297,8 @@ class ChannelDeviationLUV(
 
     # Note we don't use the means in this algorithm but we use the same channel
     # distributions model
-    background_data_model: Type[ChannelDistributions] = ChannelDistributions
-    settings_data_model: Type[ColourChannelDetectSettings] = ColourChannelDetectSettings
+    background_data_model: type[ChannelDistributions] = ChannelDistributions
+    settings_data_model: type[ColourChannelDetectSettings] = ColourChannelDetectSettings
 
     # Empirically, 0.5 seems to be approximate the standard deviation for a good image
     # in L and V. U appears to be about 60% of this value. U is about 65% of V when
