@@ -59,15 +59,13 @@ def _git(command: str) -> str:
 def temp_dir():
     """Return the path of a temporary directory (set as working dir)."""
     working_dir = os.getcwd()
-    try:
-        with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
             os.chdir(tmpdir)
             yield tmpdir
+        finally:
             # Change back to working dir before closing context manager or Windows will error
             os.chdir(working_dir)
-    finally:
-        # Ensure changed to working dir
-        os.chdir(working_dir)
 
 
 @pytest.fixture
