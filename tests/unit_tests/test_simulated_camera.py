@@ -77,13 +77,13 @@ def all_colours_present(
         if col_tuple not in colours:
             raise ValueError("Unexpected colour returned.")
         found[colours.index(col_tuple)] = True
-        # Don't exit early or we don't confrm that extra colours are not returned.
+        # Don't exit early or we don't confirm that extra colours are not returned.
     return all(found)
 
 
 def test_colour_str_to_colour():
     """Test colour_str_to_colour with some basic predefined test cases."""
-    # A basic test
+    # A basic test to convert a single str to the expected colour
     assert simulation.colour_str_to_colour("#123456") == (0x12, 0x34, 0x56)
     # A basic test with a trailing semicolon and surrounding spacing
     assert simulation.colour_str_to_colour("  #123456 ; ") == (0x12, 0x34, 0x56)
@@ -109,8 +109,8 @@ def test_colour_str_to_colour():
 def test_colour_list_regex(colour_str):
     """Check that anything matching the regex doesn't error when generating colours.
 
-    This will error if colour_str when splot into individual colours produces
-    # an incorrect colour. Trying 100 times for each colour_str as the returned colour
+    This will error if splitting colour_str into individual colours produces
+    an incorrect colour. Trying 100 times for each colour_str as the returned colour
     is randomised. Hypothesis will try to create the strings that match the regex but
     break the test.
     """
@@ -119,7 +119,7 @@ def test_colour_list_regex(colour_str):
 
 
 def test_canvas_regeneration(camera, caplog):
-    """Check canvas is regenerated if blob density of colour are changed."""
+    """Check canvas is regenerated if blob density or colour are changed."""
     cached_canvas = camera.canvas
     original_colour = camera.colour
 
@@ -172,7 +172,7 @@ def test_infinite_sample(camera, stage):
     # Turn on repeating
     camera.repeating = True
     time.sleep(0.2)  # Ensure frame regenerates
-    # Sample is now infitine, so not all background
+    # Sample is now infinite, so not all background
     assert not np.all(camera.capture_array() == simulation.BG_COLOR)
 
 

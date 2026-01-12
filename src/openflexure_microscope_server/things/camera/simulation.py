@@ -46,16 +46,17 @@ RNG = np.random.default_rng()
 
 DOWNSAMPLE = 2
 # Upsample for sprites and then downsample to create sharp edges for each sprite
-# as these are small and calculated once there is almos no performance penalty
+# as these are small and calculated once there is almost no performance penalty
 # for a nice gain in quality.
 SPRITE_UPSAMPLE = 4
 
 # A list of 6 digit hex colour codes separated by ;. Allow a trailing ;
+# For example, OpenFlexure pink would be #C5247F;
 COLOUR_LIST_REGEX = re.compile(
     r"^\s*(#[0-9a-fA-F]{6})\s*(?:;\s*(#[0-9a-fA-F]{6})\s*)*;?\s*$"
 )
+# regex to separate R, G and B from a 6 digit hex code with preceding #
 COLOUR_REGEX = re.compile(r"^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$")
-# regex to capture R, G and B
 
 
 @overload
@@ -159,16 +160,21 @@ class SimulatedCamera(BaseCamera):
 
     @lt.property
     def colour(self) -> str:
-        """The number of colour of the blobs."""
+        """The colour of the blobs as a HTML hex string.
+
+        The string can either be a single colour (e.g. "#c5247f") or a list of
+        colours separated by semicolons (e.g. "#c5247f; #b937b9"). Additional
+        spaces are allowed between colours.
+        """
         return self._colour
 
     @colour.setter
-    def _set_colour(self, value: str) -> None:
-        if COLOUR_LIST_REGEX.match(value) is None:
-            self.logger.warning(f"{value} is not a valid colour string.")
+    def _set_colour(self, colour_value: str) -> None:
+        if COLOUR_LIST_REGEX.match(colour_value) is None:
+            self.logger.warning(f"{colour_value} is not a valid colour string.")
             return
 
-        self._colour = value
+        self._colour = colour_value
         if self._capture_enabled:
             self.generate_canvas()
 
@@ -210,7 +216,7 @@ class SimulatedCamera(BaseCamera):
             sprite_pil = sprite_pil.resize(
                 (self.glyph_size, self.glyph_size), Image.Resampling.BILINEAR
             )
-            # Concert back and ensure all edges are zero as these are repeated at sample
+            # Convert back and ensure all edges are zero as these are repeated at sample
             # edge
             sprite = np.array(sprite_pil)
             sprite[0, :] = 0
@@ -311,9 +317,10 @@ class SimulatedCamera(BaseCamera):
             x_indices = x_indices % canvas_width
             y_indices = y_indices % canvas_height
         else:
-            # No sprites are placed right at the edge of the image so that the whole
-            # sprite is on the canvas. For a non-repeating image just clip to the
-            # first or last pixel.
+            # Rather than use a modulo for the index list, as above when wrapping,
+            # this uses np.clip to coerce all out of bound indices to repeat the
+            # first or last pixel in the canvas. This works because no sprite touches
+            # the very edge of the canvas (to prevent partial sprites).
             x_indices = np.clip(x_indices, 0, canvas_width - 1)
             y_indices = np.clip(y_indices, 0, canvas_height - 1)
 
