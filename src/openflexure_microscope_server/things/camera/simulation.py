@@ -253,16 +253,16 @@ class SimulatedCamera(BaseCamera):
         self.blank_canvas[:, :, 0] *= BG_COLOR[0]
         self.blank_canvas[:, :, 1] *= BG_COLOR[1]
         self.blank_canvas[:, :, 2] *= BG_COLOR[2]
-        self.canvas = self.blank_canvas.copy()
+        new_canvas = self.blank_canvas.copy()
 
         for blob_x, blob_y, sprite_index in self.blobs:
             self.draw_sprite_on_canvas(
-                self.sprites[int(sprite_index)], int(blob_y), int(blob_x)
+                new_canvas, self.sprites[int(sprite_index)], int(blob_y), int(blob_x)
             )
-        np.clip(self.canvas, 0, 255, out=self.canvas)
+        self.canvas = np.clip(new_canvas, 0, 255)
 
     def draw_sprite_on_canvas(
-        self, sprite: np.ndarray, centre_y: int, centre_x: int
+        self, canvas: np.ndarray, sprite: np.ndarray, centre_y: int, centre_x: int
     ) -> None:
         """Place one sprite on canvas at given centre coordinates.
 
@@ -272,7 +272,7 @@ class SimulatedCamera(BaseCamera):
         :param centre_y: The y coordinate to place the centre of the sprite.
         :param centre_x: The x coordinate to place the centre of the sprite.
         """
-        canvas_h, canvas_w, _ = self.canvas.shape
+        canvas_h, canvas_w, _ = canvas.shape
         sprite_h, sprite_w = sprite.shape
 
         sprite_f = sprite.astype(float) / 255
@@ -288,7 +288,7 @@ class SimulatedCamera(BaseCamera):
         bottom = min(centre_y + (sprite_h - sprite_h // 2), canvas_h)
         right = min(centre_x + (sprite_w - sprite_w // 2), canvas_w)
 
-        self.canvas[top:bottom, left:right] -= sprite_rgb.astype("int16")
+        canvas[top:bottom, left:right] -= sprite_rgb.astype("int16")
 
     def generate_image(self, pos: tuple[int, int, int]) -> Image.Image:
         """Generate an image with blobs based on supplied coordinates.
