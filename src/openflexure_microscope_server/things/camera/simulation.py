@@ -80,8 +80,8 @@ def _downsample_shape(
 def colour_str_to_colour(colour_str: str) -> tuple[int, int, int]:
     """Convert a colour string into RGB colour values.
 
-    :param colour_str: Should be a hex colour such as #33aa33 or a list separated by
-        semicolons.
+    :param colour_str: Should be a hex colour such as #33aa33 or a list of hex
+        colours separated by semicolons (with optional spaces).
     :return: The colour as a tuple of 3 integers from 0 to 255 in value
     :raises ValueError: If the hex string is not valid. This should never happen if the
         user enters a bad colour string as the colour property setter checks the
