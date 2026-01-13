@@ -175,5 +175,5 @@ def _full_config_from_args(args: Namespace) -> tuple[ThingServerConfig, dict[str
         internal_config["log_folder"] = log_folder
     scans_folder = _get_scans_dir(patched_config)
     if scans_folder is not None:
-        internal_config["log_folder"] = log_folder
+        internal_config["scans_folder"] = scans_folder
     return ThingServerConfig(**patched_config), internal_config
