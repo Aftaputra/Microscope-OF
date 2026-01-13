@@ -181,7 +181,7 @@ class SimulatedCamera(BaseCamera):
     @lt.property
     def calibration_required(self) -> bool:
         """Whether the camera needs calibrating."""
-        return not self.background_detector_status.ready
+        return not self.active_detector.ready
 
     def generate_sprites(self) -> None:
         """Generate sprites to populate the image."""

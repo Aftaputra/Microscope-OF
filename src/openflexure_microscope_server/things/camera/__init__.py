@@ -173,6 +173,10 @@ class BaseCamera(lt.Thing):
         dictionary in this function. Configuration will be added at a later date.
         """
         super().__init__(thing_server_interface)
+        # Default is never updated but is used if the value set from settings is
+        # incorrect. In the future a better way to set defaults for thing slot mappings
+        # would be ideal.
+        self._default_detector = "bg_channel_deviations_luv"
         self._detector_name = "bg_channel_deviations_luv"
 
     def __enter__(self) -> Self:
@@ -591,6 +595,9 @@ class BaseCamera(lt.Thing):
     @property
     def active_detector(self) -> BackgroundDetectAlgorithm:
         """The active background detector instance."""
+        if self.detector_name not in self.background_detectors:
+            self.logger.warning(f"No detector named {self.detector_name}")
+            self.detector_name = self._default_detector
         return self.background_detectors[self.detector_name]
 
     @lt.action

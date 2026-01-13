@@ -13,6 +13,8 @@ from pydantic import BaseModel
 
 import labthings_fastapi as lt
 
+from openflexure_microscope_server.ui import PropertyControl, property_control_for
+
 SettingsType = TypeVar("SettingsType", bound=BaseModel)
 BackgroundType = TypeVar("BackgroundType", bound=BaseModel)
 
@@ -31,6 +33,8 @@ class ChannelBlankError(RuntimeError):
 
 class BackgroundDetectAlgorithm(lt.Thing):
     """The base class for defining background detect algorithms."""
+
+    display_name: str = lt.property(default="Base Detector", readonly=True)
 
     @lt.property
     def ready(self) -> bool:
@@ -59,6 +63,13 @@ class BackgroundDetectAlgorithm(lt.Thing):
             "Each background detect algorithm must implement an set_background method."
         )
 
+    @lt.property
+    def settings_ui(self) -> list[PropertyControl]:
+        """A list of PropertyControl objects to create the settings in the UI."""
+        raise NotImplementedError(
+            "Each background detect algorithm must implement an settings_ui method."
+        )
+
 
 class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
     """Compare images with a known background in LUV colourspace.
@@ -67,6 +78,8 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
     U and V channels. The LUV colourspace as it collect colours together in a human-
     intuitive way.
     """
+
+    display_name: str = lt.property(default="Colour Channel (LUV)", readonly=True)
 
     background_means: Optional[list[float]] = lt.setting(default=None, readonly=True)
     """The mean of each channel in the colourspace."""
@@ -92,9 +105,19 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
     """
 
     @lt.property
+    def settings_ui(self) -> list[PropertyControl]:
+        """A list of PropertyControl objects to create the settings in the UI."""
+        return [
+            property_control_for(self, "channel_tolerance", label="Channel Tolerance"),
+            property_control_for(
+                self, "min_sample_coverage", label="Sample Coverage Required (%)"
+            ),
+        ]
+
+    @lt.property
     def ready(self) -> bool:
         """Whether the background detector is ready."""
-        return not (self.background_means is None or self.background_stds is None)
+        return self.background_means is not None and self.background_stds is not None
 
     def background_mask(self, image: np.ndarray) -> np.ndarray:
         """Calculate a binary image, showing whether each pixel is background.
@@ -180,6 +203,8 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
     to the median standard deviation for a grid of background images.
     """
 
+    display_name: str = lt.property(default="Channel Deviation (LUV)", readonly=True)
+
     background_stds: Optional[list[float]] = lt.setting(default=None, readonly=True)
     """The standard deviation of each channel in the colourspace."""
 
@@ -202,6 +227,21 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
     The minimum percentage of the image that needs to be identified as sample for the
     image to be labeled as containing sample.
     """
+
+    @lt.property
+    def settings_ui(self) -> list[PropertyControl]:
+        """A list of PropertyControl objects to create the settings in the UI."""
+        return [
+            property_control_for(self, "channel_tolerance", label="Channel Tolerance"),
+            property_control_for(
+                self, "min_sample_coverage", label="Sample Coverage Required (%)"
+            ),
+        ]
+
+    @lt.property
+    def ready(self) -> bool:
+        """Whether the background detector is ready."""
+        return self.background_stds is not None
 
     def get_sample_coverage(self, image: np.ndarray) -> float:
         """Return the percentage of the input image that is background.
