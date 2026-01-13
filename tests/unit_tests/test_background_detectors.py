@@ -19,6 +19,7 @@ from openflexure_microscope_server.things.background_detect import (
     MissingBackgroundDataError,
     _chunked_stds,
 )
+from openflexure_microscope_server.ui import PropertyControl
 
 RNG = np.random.default_rng()
 IMG_SHAPE = (820, 616, 3)
@@ -246,3 +247,21 @@ def test_channel_deviation_luv_get_sample_coverage(background_image, mocker):
     # Returns to 75% if that channel is empty
     fake_stds[:, :, 1] = 0
     assert cd_luv.get_sample_coverage(background_image) == 75
+
+
+@pytest.mark.parametrize("detector_cls", [ColourChannelDetectLUV, ChannelDeviationLUV])
+def test_background_detect_settings_ui(detector_cls):
+    """Check that both background detectors provide the expected UI to the webapp.
+
+    As both have identical settings they can be tested together
+    """
+    detector = create_thing_without_server(detector_cls)
+    ui = detector.settings_ui
+
+    assert len(ui) == 2
+    assert isinstance(ui[0], PropertyControl)
+    assert ui[0].property_name == "channel_tolerance"
+    assert ui[0].label == "Channel Tolerance"
+    assert isinstance(ui[1], PropertyControl)
+    assert ui[1].property_name == "min_sample_coverage"
+    assert ui[1].label == "Sample Coverage Required (%)"
