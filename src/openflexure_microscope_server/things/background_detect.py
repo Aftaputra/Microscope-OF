@@ -36,6 +36,15 @@ class BackgroundDetectAlgorithm(lt.Thing):
 
     display_name: str = lt.property(default="Base Detector", readonly=True)
 
+    def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
+        """Initialise and create the lock."""
+        if self.display_name == "Base Detector":
+            raise NotImplementedError(
+                "Do not try to use the BackgroungDetectAlgorithm directly. "
+                " Use a subclass"
+            )
+        super().__init__(thing_server_interface)
+
     @lt.property
     def ready(self) -> bool:
         """Whether the background detector is ready."""

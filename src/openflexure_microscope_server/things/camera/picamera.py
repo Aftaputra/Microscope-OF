@@ -38,7 +38,7 @@ import labthings_fastapi as lt
 from labthings_fastapi.exceptions import ServerNotRunningError
 from labthings_fastapi.types.numpy import NDArray
 
-from openflexure_microscope_server.background_detect import ChannelBlankError
+from openflexure_microscope_server.things.background_detect import ChannelBlankError
 from openflexure_microscope_server.ui import (
     ActionButton,
     PropertyControl,
