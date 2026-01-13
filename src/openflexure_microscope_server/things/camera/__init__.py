@@ -24,11 +24,8 @@ from PIL import Image
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from openflexure_microscope_server.background_detect import (
+from openflexure_microscope_server.things.background_detect import (
     BackgroundDetectAlgorithm,
-    BackgroundDetectorStatus,
-    ChannelDeviationLUV,
-    ColourChannelDetectLUV,
 )
 from openflexure_microscope_server.ui import ActionButton, PropertyControl
 
@@ -161,6 +158,8 @@ class BaseCamera(lt.Thing):
     ``__init__`` method of the subclass.
     """
 
+    background_detectors: Mapping[str, BackgroundDetectAlgorithm] = lt.thing_slot()
+
     mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     lores_mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     _memory_buffer = CameraMemoryBuffer()
@@ -174,11 +173,7 @@ class BaseCamera(lt.Thing):
         dictionary in this function. Configuration will be added at a later date.
         """
         super().__init__(thing_server_interface)
-        self.background_detectors = {
-            "Colour Channels (LUV)": ColourChannelDetectLUV(),
-            "Channel Deviations (LUV)": ChannelDeviationLUV(),
-        }
-        self._detector_name = "Channel Deviations (LUV)"
+        self._detector_name = "bg_channel_deviations_luv"
 
     def __enter__(self) -> Self:
         """Open hardware connection when the Thing context manager is opened."""
@@ -598,60 +593,6 @@ class BaseCamera(lt.Thing):
         """The active background detector instance."""
         return self.background_detectors[self.detector_name]
 
-    @lt.property
-    def background_detector_status(self) -> BackgroundDetectorStatus:
-        """The status of the active detector for the UI."""
-        return self.active_detector.status
-
-    @lt.action
-    def update_detector_settings(self, data: dict[str, Any]) -> None:
-        """Update the settings of the current detector.
-
-        This is an action not a setting/property as the data model depends on the
-        selected detector. As such, it cannot be specified with the necessary precision
-        to be included in a ThingDescription as a setting/property, while retaining
-        enough useful information to communicate to the UI how it is set and read.
-
-        The information on how to read the settings is exposed in
-        ``background_detector_status``.
-        """
-        self.active_detector.settings = data
-        # Manually save settings as the setter is not called.
-        self.save_settings()
-
-    @lt.setting
-    def background_detector_data(self) -> dict:
-        """The data for each background detector, used to save to disk."""
-        data = {}
-        for name, obj in self.background_detectors.items():
-            bg_data = (
-                None
-                if obj.background_data is None
-                else obj.background_data.model_dump()
-            )
-            data[name] = {
-                "settings": obj.settings.model_dump(),
-                "background_data": bg_data,
-            }
-        return data
-
-    @background_detector_data.setter
-    def _set_background_detector_data(self, data: dict) -> None:
-        """Set the data for each detector. Only to be used as settings are loaded from disk.
-
-        Do not call over HTTP. This needs to be updated once LbaThings Settings can be
-        read-only over HTTP (#484).
-        """
-        for name, instance_data in data.items():
-            if name in self.background_detectors:
-                obj = self.background_detectors[name]
-                obj.settings = instance_data["settings"]
-                obj.background_data = instance_data["background_data"]
-            else:
-                self.logger.warning(
-                    f"No background detector named {name}, settings will be discarded."
-                )
-
     @lt.action
     def image_is_sample(self) -> tuple[bool, str]:
         """Label the current image as either background or sample."""
@@ -670,8 +611,6 @@ class BaseCamera(lt.Thing):
         """
         background = self.grab_as_array(stream_name="lores")
         self.active_detector.set_background(background)
-        # Manually save settings as the setter is not called.
-        self.save_settings()
 
     @property
     def thing_state(self) -> Mapping[str, Any]:
