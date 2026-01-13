@@ -2,9 +2,12 @@
 
 import json
 import os
+from argparse import Namespace
 from copy import deepcopy
 
 import pytest
+
+from labthings_fastapi.server.config_model import ThingServerConfig
 
 # Import as ofm server to attempt to minimise confusion with server as a var in other
 # functions and also FastAPI `Server`.
@@ -127,3 +130,41 @@ def test_get_scans_dir_bad_smart_scan_config():
     # Creates an Error
     with pytest.raises(RuntimeError):
         ofm_server._get_scans_dir(broken_config)
+
+
+def test_full_config_from_args_json():
+    """Check that _full_config_from_args returns as expected if json is supplied."""
+    args = Namespace(
+        config=None,
+        json='{"things":{"example": "labthings_fastapi.example_things:MyThing"}}',
+    )
+    lt_conf, ofm_conf = ofm_server._full_config_from_args(args)
+    # If json is supplied OFM config is default. As the json is passed dircectly to
+    # The Pydantic Mocel in LabThings. No custom data allowed.
+    assert isinstance(lt_conf, ThingServerConfig)
+    assert "log_folder" in ofm_conf
+    assert ofm_conf["log_folder"] == "./openflexure/logs"
+    assert "scans_folder" in ofm_conf
+    assert ofm_conf["scans_folder"] is None
+
+
+def test_full_config_from_args_full(mocker):
+    """Check that _full_config_from_args returns as expected if json is supplied."""
+    # Mock picamera library so LabThings can create its model.
+    mocker.patch.dict(
+        "sys.modules",
+        {
+            "picamera2": mocker.MagicMock(),
+            "picamera2.encoders": mocker.Mock(),
+            "picamera2.outputs": mocker.Mock(),
+        },
+    )
+    args = Namespace(config=FULL_CONFIG, json=None)
+    lt_conf, ofm_conf = ofm_server._full_config_from_args(args)
+    # If json is supplied OFM config is default. As the json is passed dircectly to
+    # The Pydantic Mocel in LabThings. No custom data allowed.
+    assert isinstance(lt_conf, ThingServerConfig)
+    assert "log_folder" in ofm_conf
+    assert ofm_conf["log_folder"] == "/var/openflexure/logs/"
+    assert "scans_folder" in ofm_conf
+    assert ofm_conf["scans_folder"] == "/var/openflexure/scans/"
