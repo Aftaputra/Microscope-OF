@@ -68,6 +68,22 @@
         </div>
       </div>
     </label>
+    <label v-if="dataType == 'string'" class="uk-form-label"
+      >{{ label }}
+      <div class="input-and-buttons-container">
+        <input
+          v-model="internalValue"
+          class="uk-form-small numeric-setting-line-input"
+          :class="{ edited: isEdited, flash: animateUpdate }"
+          type="text"
+          @focusin="focusIn"
+          @focusout="focusOut"
+          @keydown="keyDown"
+          @animationend="animationEnd"
+        />
+        <sync-property-button @click="requestUpdate" />
+      </div>
+    </label>
     <label v-if="dataType == 'other'" class="uk-form-label"
       >{{ label }}
       <div class="input-and-buttons-container">
@@ -157,7 +173,7 @@ export default {
       if (num_types.includes(prop.type)) {
         return "number";
       }
-      if (prop.type == "array") {
+      if (prop.type === "array") {
         if (num_types.includes(prop.items.type)) {
           return "number_array";
         }
@@ -167,10 +183,13 @@ export default {
           }
         }
       }
-      if (prop.type == "boolean") {
+      if (prop.type === "boolean") {
         return "boolean";
       }
-      if (prop.type == "object") {
+      if (prop.type === "string") {
+        return "string";
+      }
+      if (prop.type === "object") {
         let numeric = true;
         for (let key in prop.properties) {
           if (!num_types.includes(prop.properties[key].type)) {
