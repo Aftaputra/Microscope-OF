@@ -13,6 +13,8 @@ from typing import (
     Callable,
     Concatenate,
     Literal,
+    Mapping,
+    Optional,
     ParamSpec,
     TypeAlias,
     TypeVar,
@@ -20,6 +22,8 @@ from typing import (
 )
 
 from pydantic import BaseModel
+
+import labthings_fastapi as lt
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -388,3 +392,43 @@ def resolve_path_from_dir(path: str, directory: str) -> str:
     if not os.path.isabs(path):
         path = os.path.join(directory, path)
     return os.path.normpath(path)
+
+
+def coerce_thing_selector(
+    thing_mapping: Mapping[str, lt.Thing],
+    selected: Optional[str],
+    default: Optional[str] = None,
+) -> Optional[str]:
+    """Return a valid selector for a mapping of things or None if empty.
+
+    :param thing_mapping: A mapping of str -> ``Thing``
+    :param selected: The key of the selected thing (or ``None``)
+    :param default: The default key to fallback to if selected is ``None`` or the key is
+        missing
+    :return: ``None`` if the mapping is empty, else a key that is in the mapping. Order
+        of preference is: selected, default, the first key.
+    """
+    if not thing_mapping:
+        # Empty mapping
+        if selected is not None:
+            LOGGER.warning(
+                f"Could not select {selected} from Thing mapping as the mapping is empty."
+            )
+        # The return is always None if the mapping is empty
+        return None
+
+    if selected in thing_mapping:
+        # Selected exists, return it.
+        return selected
+
+    if selected is not None:
+        LOGGER.warning(f"Could not select '{selected}' from Thing mapping")
+
+    if default in thing_mapping:
+        return default
+
+    if default is not None:
+        LOGGER.warning(f"Could not select default key '{default}' from Thing mapping")
+
+    # Final option is to return the first key
+    return list(thing_mapping)[0]

@@ -41,6 +41,7 @@ class OpenCVCamera(BaseCamera):
 
     def __enter__(self) -> Self:
         """Start the capture thread when the Thing context manager is opened."""
+        super().__enter__()
         self.cap = cv2.VideoCapture(self.camera_index)
         self._capture_enabled = True
         self._capture_thread = Thread(target=self._capture_frames)
@@ -49,9 +50,9 @@ class OpenCVCamera(BaseCamera):
 
     def __exit__(
         self,
-        _exc_type: type[BaseException],
-        _exc_value: Optional[BaseException],
-        _traceback: Optional[TracebackType],
+        exc_type: type[BaseException],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
     ) -> None:
         """Release the camera when the Thing context manager is closed.
 
@@ -62,6 +63,7 @@ class OpenCVCamera(BaseCamera):
             if self._capture_thread is not None:
                 self._capture_thread.join()
         self.cap.release()
+        super().__exit__(exc_type, exc_value, traceback)
 
     @lt.property
     def stream_active(self) -> bool:

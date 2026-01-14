@@ -5,13 +5,15 @@ for analysis. Information from these images is used to detect whether an image f
 current camera field of view contains sample.
 """
 
-from typing import Any, Generic, Optional, TypeVar
+from typing import Optional, TypeVar
 
 import cv2
 import numpy as np
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel
 
-from labthings_fastapi.thing_description import type_to_dataschema
+import labthings_fastapi as lt
+
+from openflexure_microscope_server.ui import PropertyControl, property_control_for
 
 SettingsType = TypeVar("SettingsType", bound=BaseModel)
 BackgroundType = TypeVar("BackgroundType", bound=BaseModel)
@@ -29,109 +31,26 @@ class ChannelBlankError(RuntimeError):
     """
 
 
-class BackgroundDetectorStatus(BaseModel):
-    """The status information about a background detector instance needed for the GUI.
-
-    Each BackgroundDetectAlgorithm must be able to return one of these models when
-    ``status`` is called.
-    """
-
-    ready: bool
-    """True if ready to be used, if False this detector isn't initialised for use.
-
-    This could be called ``has_background_data`` or similar, but the more generic
-    ``ready`` is used in case more complex methods are added in the future, which
-    need different initialisation.
-    """
-    settings: dict[str, Any]
-    """The settings for the current background detect Algorithm. These are a dictionary
-    dumped from the base model."""
-
-    # Setting schema is a dict until LabThings FastAPI issue #154 is fixed and
-    # DataSchema can be used directly. For now `model_dump()` must be used to dump schema
-    # to a dict.
-    settings_schema: dict[str, Any]
-    """The schema for the settings for the current background detect Algorithm.
-
-    This is reported so that the UI can dynamically create a UI for any background detector
-    algorithm.
-    """
-
-
-class BackgroundDetectAlgorithm(Generic[SettingsType, BackgroundType]):
+class BackgroundDetectAlgorithm(lt.Thing):
     """The base class for defining background detect algorithms."""
 
-    background_data_model: type[BackgroundType]
-    """The data model of the background data. This must be set by child classes"""
-    settings_data_model: type[SettingsType]
-    """The data model of algorithm settings. This must be set by child classes"""
+    display_name: str = lt.property(default="Base Detector", readonly=True)
 
-    def __init__(self) -> None:
-        """Initialise the algorithm settings."""
-        if not hasattr(self, "background_data_model") or not hasattr(
-            self, "settings_data_model"
-        ):
+    def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
+        """Initialise and create the lock."""
+        if self.display_name == "Base Detector":
             raise NotImplementedError(
-                "All BackgroundDetectAlgorithm subclesses must set their own settings "
-                "and background data models."
+                "Do not try to use the BackgroungDetectAlgorithm directly. "
+                " Use a subclass"
             )
-        self._settings: SettingsType = self.settings_data_model()
+        super().__init__(thing_server_interface)
 
-    @property
-    def status(self) -> BackgroundDetectorStatus:
-        """The status information needed for the GUI. Read only."""
-        return BackgroundDetectorStatus(
-            ready=self.background_data is not None,
-            settings=self.settings.model_dump(),
-            # Dump model with `model_dump()` for reason explained when defining
-            # BackgroundDetectorStatus
-            settings_schema=type_to_dataschema(self.settings_data_model).model_dump(),
+    @lt.property
+    def ready(self) -> bool:
+        """Whether the background detector is ready."""
+        raise NotImplementedError(
+            "Each background detect algorithm must implement a ready property."
         )
-
-    # Requires a getter and a setter to support being a BaseModel but being
-    # saved to file as a dict
-    _background_data: Optional[BackgroundType] = None
-
-    @property
-    def background_data(self) -> Optional[BackgroundType]:
-        """The statistics of the background image."""
-        bd = self._background_data
-        if bd is None:
-            return None
-        return bd
-
-    @background_data.setter
-    def background_data(self, value: Optional[BackgroundType | dict]) -> None:
-        """Set the statistics for the background image.
-
-        This should be None, of no data is available. It can be set from either
-        a dictionary or a base model of the type specified in
-        ``self.background_data_model``.
-        """
-        if value is None:
-            self._background_data = None
-        elif isinstance(value, self.background_data_model):
-            self._background_data = value
-        elif isinstance(value, dict):
-            self._background_data = self.background_data_model(**value)
-        else:
-            raise TypeError(
-                f"Cannot set background_data with an object of type {type(value)}"
-            )
-
-    @property
-    def settings(self) -> SettingsType:
-        """The statistics of the background image."""
-        return self._settings
-
-    @settings.setter
-    def settings(self, value: SettingsType | dict) -> None:
-        if isinstance(value, self.settings_data_model):
-            self._settings = value
-        elif isinstance(value, dict):
-            self._settings = self.settings_data_model(**value)
-        else:
-            raise TypeError(f"Cannot set settings with an object of type {type(value)}")
 
     def image_is_sample(self, image: np.ndarray) -> tuple[bool, str]:
         """Label the current image as either background or sample.
@@ -153,44 +72,15 @@ class BackgroundDetectAlgorithm(Generic[SettingsType, BackgroundType]):
             "Each background detect algorithm must implement an set_background method."
         )
 
-
-class ChannelDistributions(BaseModel):
-    """A BaseModel for storing the channel distribution of a background image."""
-
-    means: list[float]
-    """The mean of each channel in the colourspace."""
-    standard_deviations: list[float]
-    """The standard deviation of each channel in the colourspace."""
+    @lt.property
+    def settings_ui(self) -> list[PropertyControl]:
+        """A list of PropertyControl objects to create the settings in the UI."""
+        raise NotImplementedError(
+            "Each background detect algorithm must implement an settings_ui method."
+        )
 
 
-class ColourChannelDetectSettings(BaseModel):
-    """A BaseModel for storing the settings for colour channel detectors."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    channel_tolerance: float = 7.0
-    """Channel Tolerance
-
-    The number of standard deviations a pixel value must be from the background mean
-    to be considered sample.
-    """
-
-    # Use Field to set Title reported to UI. By default Pydantic will convert the name
-    # from snake_case to Title Case.
-    min_sample_coverage: float = Field(25, title="Sample Coverage Required (%)")
-    """Sample Coverage Required (%)
-
-    The minimum percentage of the image that needs to be identified as sample for the
-    image to be labeled as containing sample.
-    """
-
-
-class ColourChannelDetectLUV(
-    BackgroundDetectAlgorithm[
-        ColourChannelDetectSettings,
-        ChannelDistributions,
-    ]
-):
+class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
     """Compare images with a known background in LUV colourspace.
 
     This uses an LUV colour space checking only the mean and standard deviation of the
@@ -198,12 +88,45 @@ class ColourChannelDetectLUV(
     intuitive way.
     """
 
-    background_data_model: type[ChannelDistributions] = ChannelDistributions
-    settings_data_model: type[ColourChannelDetectSettings] = ColourChannelDetectSettings
+    display_name: str = lt.property(default="Colour Channel (LUV)", readonly=True)
+
+    background_means: Optional[list[float]] = lt.setting(default=None, readonly=True)
+    """The mean of each channel in the colourspace."""
+    background_stds: Optional[list[float]] = lt.setting(default=None, readonly=True)
+    """The standard deviation of each channel in the colourspace."""
 
     # These are the same as those used for ChannelDeviationLUV. More detail is
     # provided there.
     min_stds = [0.5, 0.3, 0.5]
+
+    channel_tolerance: float = lt.setting(default=7.0)
+    """Channel Tolerance
+
+    The number of standard deviations a pixel value must be from the background mean
+    to be considered sample.
+    """
+
+    min_sample_coverage: float = lt.setting(default=25)
+    """Sample Coverage Required (%)
+
+    The minimum percentage of the image that needs to be identified as sample for the
+    image to be labeled as containing sample.
+    """
+
+    @lt.property
+    def settings_ui(self) -> list[PropertyControl]:
+        """A list of PropertyControl objects to create the settings in the UI."""
+        return [
+            property_control_for(self, "channel_tolerance", label="Channel Tolerance"),
+            property_control_for(
+                self, "min_sample_coverage", label="Sample Coverage Required (%)"
+            ),
+        ]
+
+    @lt.property
+    def ready(self) -> bool:
+        """Whether the background detector is ready."""
+        return self.background_means is not None and self.background_stds is not None
 
     def background_mask(self, image: np.ndarray) -> np.ndarray:
         """Calculate a binary image, showing whether each pixel is background.
@@ -213,7 +136,7 @@ class ColourChannelDetectLUV(
         The image should be in LUV format, the output will be binary with the
         same shape in the first two dimensions.
         """
-        if self.background_data is None:
+        if self.background_means is None or self.background_stds is None:
             raise RuntimeError(
                 "Cannot calculated background mask if no background is set."
             )
@@ -222,13 +145,13 @@ class ColourChannelDetectLUV(
         # the height of the sample changes.
         # Wrapping in ``[[ ]]`` forces the colour channels to the numpy axis 2
         # (3rd axis) so they are compared to the colour channel of each pixel.
-        means = np.array([[self.background_data.means[1:]]])
-        stds = np.array([[self.background_data.standard_deviations[1:]]])
+        means = np.array([[self.background_means[1:]]])
+        stds = np.array([[self.background_stds[1:]]])
 
         # Compare each image in the pixel with the mean and standard deviation along
         # axis to (the colour channels).
         return np.all(
-            np.abs(image[:, :, 1:] - means) < stds * self.settings.channel_tolerance,
+            np.abs(image[:, :, 1:] - means) < stds * self.channel_tolerance,
             axis=2,
         )
 
@@ -241,7 +164,7 @@ class ColourChannelDetectLUV(
         :returns: A value (between 0 and 100) is the percentage of the image that is
             sample.
         """
-        if not self.background_data:
+        if self.background_means is None or self.background_stds is None:
             raise MissingBackgroundDataError(
                 "Background is not set: you need to calibrate background detection."
             )
@@ -260,7 +183,7 @@ class ColourChannelDetectLUV(
         sample_coverage = self.get_sample_coverage(image)
 
         # Use bool otherwise get numpy variants of True and False.
-        is_sample = bool(sample_coverage > self.settings.min_sample_coverage)
+        is_sample = bool(sample_coverage > self.min_sample_coverage)
         message = f"{sample_coverage:0.1f}% sample"
         if not is_sample:
             message = "only " + message
@@ -277,17 +200,11 @@ class ColourChannelDetectLUV(
             raise ChannelBlankError("Some LUV channels have no standard deviation.")
         std = np.maximum(std, self.min_stds)
 
-        self.background_data = ChannelDistributions(
-            means=mu.tolist(), standard_deviations=std.tolist()
-        )
+        self.background_means = mu.tolist()
+        self.background_stds = std.tolist()
 
 
-class ChannelDeviationLUV(
-    BackgroundDetectAlgorithm[
-        ColourChannelDetectSettings,
-        ChannelDistributions,
-    ]
-):
+class ChannelDeviationLUV(BackgroundDetectAlgorithm):
     """Compare the standard deviations of the LUV channels in a grid to background data.
 
     Using an LUV colour space, each image is divided into an 8x8 grid of images.
@@ -295,16 +212,45 @@ class ChannelDeviationLUV(
     to the median standard deviation for a grid of background images.
     """
 
-    # Note we don't use the means in this algorithm but we use the same channel
-    # distributions model
-    background_data_model: type[ChannelDistributions] = ChannelDistributions
-    settings_data_model: type[ColourChannelDetectSettings] = ColourChannelDetectSettings
+    display_name: str = lt.property(default="Channel Deviation (LUV)", readonly=True)
+
+    background_stds: Optional[list[float]] = lt.setting(default=None, readonly=True)
+    """The standard deviation of each channel in the colourspace."""
 
     # Empirically, 0.5 seems to be approximate the standard deviation for a good image
     # in L and V. U appears to be about 60% of this value. U is about 65% of V when
     # converting white-noise in RGB into LUV (note that we are using cv2's internal
     # LUV colour space not converting to the CIELUV numbers)
     min_stds = [0.5, 0.3, 0.5]
+
+    channel_tolerance: float = lt.setting(default=7.0)
+    """Channel Tolerance
+
+    The number of standard deviations a pixel value must be from the background mean
+    to be considered sample.
+    """
+
+    min_sample_coverage: float = lt.setting(default=25)
+    """Sample Coverage Required (%)
+
+    The minimum percentage of the image that needs to be identified as sample for the
+    image to be labeled as containing sample.
+    """
+
+    @lt.property
+    def settings_ui(self) -> list[PropertyControl]:
+        """A list of PropertyControl objects to create the settings in the UI."""
+        return [
+            property_control_for(self, "channel_tolerance", label="Channel Tolerance"),
+            property_control_for(
+                self, "min_sample_coverage", label="Sample Coverage Required (%)"
+            ),
+        ]
+
+    @lt.property
+    def ready(self) -> bool:
+        """Whether the background detector is ready."""
+        return self.background_stds is not None
 
     def get_sample_coverage(self, image: np.ndarray) -> float:
         """Return the percentage of the input image that is background.
@@ -316,17 +262,17 @@ class ChannelDeviationLUV(
         :returns: A value (between 0 and 100) that is the percentage of the image that is
             sample.
         """
-        if not self.background_data:
+        if self.background_stds is None:
             raise MissingBackgroundDataError(
                 "Background is not set: you need to calibrate background detection."
             )
         image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
         stds = _chunked_stds(image_luv, 8, 8)
 
-        bg_stds = self.background_data.standard_deviations
-        l_cut = bg_stds[0] * self.settings.channel_tolerance
-        u_cut = bg_stds[1] * self.settings.channel_tolerance
-        v_cut = bg_stds[2] * self.settings.channel_tolerance
+        bg_stds = self.background_stds
+        l_cut = bg_stds[0] * self.channel_tolerance
+        u_cut = bg_stds[1] * self.channel_tolerance
+        v_cut = bg_stds[2] * self.channel_tolerance
 
         populated_regions = (
             (stds[:, :, 0] > l_cut) | (stds[:, :, 1] > u_cut) | (stds[:, :, 2] > v_cut)
@@ -344,7 +290,7 @@ class ChannelDeviationLUV(
         sample_coverage = self.get_sample_coverage(image)
 
         # Use bool otherwise get numpy variants of True and False.
-        is_sample = bool(sample_coverage > self.settings.min_sample_coverage)
+        is_sample = bool(sample_coverage > self.min_sample_coverage)
         message = f"{sample_coverage:0.1f}% sample"
         if not is_sample:
             message = "only " + message
@@ -353,7 +299,6 @@ class ChannelDeviationLUV(
     def set_background(self, image: np.ndarray) -> None:
         """Use the input image to update the background distributions."""
         image_luv = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
-        mu = np.zeros(3)
         c_stds = _chunked_stds(image_luv, 8, 8)
         channel_blank = np.all(c_stds == 0, axis=(0, 1))
         if np.any(channel_blank):
@@ -361,9 +306,7 @@ class ChannelDeviationLUV(
 
         std = np.median(c_stds, axis=(0, 1))
         std = np.maximum(std, self.min_stds)
-        self.background_data = ChannelDistributions(
-            means=mu.tolist(), standard_deviations=std.tolist()
-        )
+        self.background_stds = std.tolist()
 
 
 def _chunked_stds(img: np.ndarray, n_rows: int = 8, n_cols: int = 8) -> np.ndarray:

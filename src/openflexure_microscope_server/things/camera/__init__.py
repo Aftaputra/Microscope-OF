@@ -24,13 +24,11 @@ from PIL import Image
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from openflexure_microscope_server.background_detect import (
+from openflexure_microscope_server.things.background_detect import (
     BackgroundDetectAlgorithm,
-    BackgroundDetectorStatus,
-    ChannelDeviationLUV,
-    ColourChannelDetectLUV,
 )
 from openflexure_microscope_server.ui import ActionButton, PropertyControl
+from openflexure_microscope_server.utilities import coerce_thing_selector
 
 
 class JPEGBlob(lt.blob.Blob):
@@ -161,6 +159,8 @@ class BaseCamera(lt.Thing):
     ``__init__`` method of the subclass.
     """
 
+    _all_background_detectors: Mapping[str, BackgroundDetectAlgorithm] = lt.thing_slot()
+
     mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     lores_mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     _memory_buffer = CameraMemoryBuffer()
@@ -174,15 +174,20 @@ class BaseCamera(lt.Thing):
         dictionary in this function. Configuration will be added at a later date.
         """
         super().__init__(thing_server_interface)
-        self.background_detectors = {
-            "Colour Channels (LUV)": ColourChannelDetectLUV(),
-            "Channel Deviations (LUV)": ChannelDeviationLUV(),
-        }
-        self._detector_name = "Channel Deviations (LUV)"
+        # Default is never updated but is used if the value set from settings is
+        # incorrect. In the future a better way to set defaults for thing slot mappings
+        # would be ideal.
+        self._default_background_detector = "bg_channel_deviations_luv"
+        self._background_detector_name: Optional[str] = None
 
     def __enter__(self) -> Self:
         """Open hardware connection when the Thing context manager is opened."""
-        raise NotImplementedError("CameraThings must define their own __enter__ method")
+        self._background_detector_name = coerce_thing_selector(
+            thing_mapping=self._all_background_detectors,
+            selected=self._background_detector_name,
+            default=self._default_background_detector,
+        )
+        return self
 
     def __exit__(
         self,
@@ -191,7 +196,7 @@ class BaseCamera(lt.Thing):
         _traceback: Optional[TracebackType],
     ) -> None:
         """Close hardware connection when the Thing context manager is closed."""
-        raise NotImplementedError("CameraThings must define their own __exit__ method")
+        pass
 
     @lt.property
     def calibration_required(self) -> bool:
@@ -582,81 +587,31 @@ class BaseCamera(lt.Thing):
     # Note that the default detector name is set at init. This is over written if
     # setting is loaded from disk.
     @lt.setting
-    def detector_name(self) -> str:
+    def background_detector_name(self) -> Optional[str]:
         """The name of the active background selector."""
-        return self._detector_name
+        return self._background_detector_name
 
-    @detector_name.setter
-    def _set_detector_name(self, name: str) -> None:
-        """Validate and set detector_name."""
-        if name not in self.background_detectors:
+    @background_detector_name.setter
+    def _set_background_detector_name(self, name: str) -> None:
+        """Validate and set background_detector_name."""
+        if name not in self._all_background_detectors:
             self.logger.warning(f"{name} is not a valid background detector name.")
-        self._detector_name = name
+        self._background_detector_name = name
 
     @property
-    def active_detector(self) -> BackgroundDetectAlgorithm:
+    def background_detector(self) -> Optional[BackgroundDetectAlgorithm]:
         """The active background detector instance."""
-        return self.background_detectors[self.detector_name]
-
-    @lt.property
-    def background_detector_status(self) -> BackgroundDetectorStatus:
-        """The status of the active detector for the UI."""
-        return self.active_detector.status
-
-    @lt.action
-    def update_detector_settings(self, data: dict[str, Any]) -> None:
-        """Update the settings of the current detector.
-
-        This is an action not a setting/property as the data model depends on the
-        selected detector. As such, it cannot be specified with the necessary precision
-        to be included in a ThingDescription as a setting/property, while retaining
-        enough useful information to communicate to the UI how it is set and read.
-
-        The information on how to read the settings is exposed in
-        ``background_detector_status``.
-        """
-        self.active_detector.settings = data
-        # Manually save settings as the setter is not called.
-        self.save_settings()
-
-    @lt.setting
-    def background_detector_data(self) -> dict:
-        """The data for each background detector, used to save to disk."""
-        data = {}
-        for name, obj in self.background_detectors.items():
-            bg_data = (
-                None
-                if obj.background_data is None
-                else obj.background_data.model_dump()
-            )
-            data[name] = {
-                "settings": obj.settings.model_dump(),
-                "background_data": bg_data,
-            }
-        return data
-
-    @background_detector_data.setter
-    def _set_background_detector_data(self, data: dict) -> None:
-        """Set the data for each detector. Only to be used as settings are loaded from disk.
-
-        Do not call over HTTP. This needs to be updated once LbaThings Settings can be
-        read-only over HTTP (#484).
-        """
-        for name, instance_data in data.items():
-            if name in self.background_detectors:
-                obj = self.background_detectors[name]
-                obj.settings = instance_data["settings"]
-                obj.background_data = instance_data["background_data"]
-            else:
-                self.logger.warning(
-                    f"No background detector named {name}, settings will be discarded."
-                )
+        if self.background_detector_name is None:
+            return None
+        return self._all_background_detectors[self.background_detector_name]
 
     @lt.action
     def image_is_sample(self) -> tuple[bool, str]:
         """Label the current image as either background or sample."""
+        if self.background_detector is None:
+            raise RuntimeError("No background detectors available.")
         current_image = self.grab_as_array(stream_name="lores")
-        return self.active_detector.image_is_sample(current_image)
+        return self.background_detector.image_is_sample(current_image)
 
     @lt.action
     def set_background(self) -> None:
@@ -668,10 +623,10 @@ class BaseCamera(lt.Thing):
         future images to the distribution, to determine if each pixel is
         foreground or background.
         """
+        if self.background_detector is None:
+            raise RuntimeError("No background detectors available.")
         background = self.grab_as_array(stream_name="lores")
-        self.active_detector.set_background(background)
-        # Manually save settings as the setter is not called.
-        self.save_settings()
+        self.background_detector.set_background(background)
 
     @property
     def thing_state(self) -> Mapping[str, Any]:

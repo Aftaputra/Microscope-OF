@@ -16,7 +16,9 @@
                 "scans_folder": "/var/openflexure/scans/"
             }
         },
-        "stage_measure":"openflexure_microscope_server.things.stage_measure:RangeofMotionThing"
+        "stage_measure": "openflexure_microscope_server.things.stage_measure:RangeofMotionThing",
+        "bg_color_channels_luv": "openflexure_microscope_server.things.background_detect:ColourChannelDetectLUV",
+        "bg_channel_deviations_luv": "openflexure_microscope_server.things.background_detect:ChannelDeviationLUV"
     },
     "settings_folder": "/var/openflexure/settings/",
     "log_folder": "/var/openflexure/logs/"

@@ -10,7 +10,9 @@
             "kwargs": {
                 "scans_folder": "./openflexure/scans/"
             }
-        }
+        },
+        "bg_color_channels_luv": "openflexure_microscope_server.things.background_detect:ColourChannelDetectLUV",
+        "bg_channel_deviations_luv": "openflexure_microscope_server.things.background_detect:ChannelDeviationLUV"
     },
     "settings_folder": "./openflexure/settings/",
     "log_folder": "./openflexure/logs/"

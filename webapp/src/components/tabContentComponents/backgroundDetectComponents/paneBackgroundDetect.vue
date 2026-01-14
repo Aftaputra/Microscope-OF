@@ -5,18 +5,13 @@
         <li>
           <a class="uk-accordion-title" href="#">Configure</a>
           <div class="uk-accordion-content">
-            <h4 v-if="backgroundDetectorName" class="detector-name">
-              {{ backgroundDetectorName }}
+            <h4 v-if="backgroundDetectorDisplayName" class="detector-name">
+              {{ backgroundDetectorDisplayName }}
             </h4>
-            <input-from-schema
-              v-if="backgroundDetectorStatus"
-              v-model="backgroundDetectorStatus.settings"
-              :data-schema="backgroundDetectorStatus.settings_schema"
-              label=""
-              :animate="animate"
-              @requestUpdate="readSettings"
-              @sendValue="writeSettings"
-              @animationShown="resetAnimate"
+            <server-specified-property-control
+              v-for="(setting, index) in backgroundDetectorSettings"
+              :key="'detector_setting' + index"
+              :property-data="setting"
             />
           </div>
         </li>
@@ -51,33 +46,26 @@
 
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
-import InputFromSchema from "../../labThingsComponents/inputFromSchema.vue";
+import ServerSpecifiedPropertyControl from "../../labThingsComponents/serverSpecifiedPropertyControl.vue";
 
 export default {
   components: {
     ActionButton,
-    InputFromSchema,
+    ServerSpecifiedPropertyControl,
   },
 
   data() {
     return {
-      backgroundDetectorStatus: undefined,
+      ready: false,
       backgroundDetectorName: undefined,
+      backgroundDetectorDisplayName: undefined,
+      backgroundDetectorSettings: [],
       animate: false,
     };
   },
 
-  computed: {
-    ready() {
-      const status = this.backgroundDetectorStatus;
-      return status && status.ready === true;
-    },
-  },
   async created() {
-    this.backgroundDetectorStatus = await this.readThingProperty(
-      "camera",
-      "background_detector_status",
-    );
+    this.readSettings();
   },
 
   methods: {
@@ -94,19 +82,21 @@ export default {
       this.modalNotify(`Current image is ${label} (${r.output[1]})`);
     },
     readSettings: async function () {
-      this.backgroundDetectorName = await this.readThingProperty("camera", "detector_name");
-      this.backgroundDetectorStatus = await this.readThingProperty(
+      this.backgroundDetectorName = await this.readThingProperty(
         "camera",
-        "background_detector_status",
+        "background_detector_name",
       );
-    },
-    writeSettings: async function (requestedValue) {
-      await this.invokeAction("camera", "update_detector_settings", { data: requestedValue });
-      this.animate = true;
-      this.readSettings();
-    },
-    resetAnimate: function () {
-      this.animate = false;
+      if (this.backgroundDetectorName) {
+        this.ready = await this.readThingProperty(this.backgroundDetectorName, "ready");
+        this.backgroundDetectorSettings = await this.readThingProperty(
+          this.backgroundDetectorName,
+          "settings_ui",
+        );
+        this.backgroundDetectorDisplayName = await this.readThingProperty(
+          this.backgroundDetectorName,
+          "display_name",
+        );
+      }
     },
   },
 };

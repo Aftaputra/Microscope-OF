@@ -10,6 +10,7 @@ from hypothesis import strategies as st
 
 import labthings_fastapi as lt
 
+from openflexure_microscope_server.things.background_detect import ChannelDeviationLUV
 from openflexure_microscope_server.things.camera import simulation
 from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 from openflexure_microscope_server.things.stage.dummy import DummyStage
@@ -20,7 +21,11 @@ from ..shared_utils.lt_test_utils import LabThingsTestEnv
 @pytest.fixture
 def test_env() -> LabThingsTestEnv:
     """Yield a test environment with the Simulated Camera and Dummy Stage."""
-    thing_conf = {"camera": SimulatedCamera, "stage": DummyStage}
+    thing_conf = {
+        "camera": SimulatedCamera,
+        "stage": DummyStage,
+        "bg_channel_deviations_luv": ChannelDeviationLUV,
+    }
     with LabThingsTestEnv(things=thing_conf) as env:
         yield env
 
@@ -181,4 +186,4 @@ def test_simulation_cam_calibration(camera):
     assert camera.calibration_required
     camera.full_auto_calibrate()
     assert not camera.calibration_required
-    assert camera.background_detector_status.ready
+    assert camera.background_detector.ready

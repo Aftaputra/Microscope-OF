@@ -3,6 +3,7 @@
 from contextlib import contextmanager
 from typing import Optional
 
+from openflexure_microscope_server.things.background_detect import ChannelDeviationLUV
 from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
 
 from ...shared_utils.lt_test_utils import LabThingsTestEnv
@@ -18,7 +19,10 @@ def camera_test_env(settings_folder: Optional[str] = None):
     :param settings_folder: The settings folder for the camera, if none is supplied, new
         temporary directory will be used as the settings folder.
     """
-    thing_conf = {"camera": StreamingPiCamera2}
+    thing_conf = {
+        "camera": StreamingPiCamera2,
+        "bg_channel_deviations_luv": ChannelDeviationLUV,
+    }
     with LabThingsTestEnv(things=thing_conf, settings_folder=settings_folder) as env:
         yield env
 

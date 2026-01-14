@@ -181,7 +181,9 @@ class SimulatedCamera(BaseCamera):
     @lt.property
     def calibration_required(self) -> bool:
         """Whether the camera needs calibrating."""
-        return not self.background_detector_status.ready
+        if self.background_detector is None:
+            return True
+        return not self.background_detector.ready
 
     def generate_sprites(self) -> None:
         """Generate sprites to populate the image."""
@@ -344,20 +346,22 @@ class SimulatedCamera(BaseCamera):
 
     def __enter__(self) -> Self:
         """Start the capture thread when the Thing context manager is opened."""
+        super().__enter__()
         self.generate_canvas()
         self.start_streaming()
         return self
 
     def __exit__(
         self,
-        _exc_type: type[BaseException],
-        _exc_value: Optional[BaseException],
-        _traceback: Optional[TracebackType],
+        exc_type: type[BaseException],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
     ) -> None:
         """Close the capture thread when the Thing context manager is closed."""
         if self._capture_thread is not None and self._capture_thread.is_alive():
             self._capture_enabled = False
             self._capture_thread.join()
+        super().__exit__(exc_type, exc_value, traceback)
 
     @lt.action
     def start_streaming(
@@ -463,7 +467,8 @@ class SimulatedCamera(BaseCamera):
         """
         self.remove_sample()
         time.sleep(0.2)
-        self.set_background()
+        if self.background_detector is not None:
+            self.set_background()
         time.sleep(0.2)
         self.load_sample()
 
