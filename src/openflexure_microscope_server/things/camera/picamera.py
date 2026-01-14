@@ -380,6 +380,7 @@ class StreamingPiCamera2(BaseCamera):
         This opens the picamera connection, initialises the camera, sets the
         sensor_modes property, and then starts the streams.
         """
+        super().__enter__()
         self._initialise_picamera(check_sensor_model=True)
         # Sensor modes is a cached property read it once after initialising the camera
         _modes = self.sensor_modes
@@ -417,15 +418,16 @@ class StreamingPiCamera2(BaseCamera):
 
     def __exit__(
         self,
-        _exc_type: type[BaseException],
-        _exc_value: Optional[BaseException],
-        _traceback: Optional[TracebackType],
+        exc_type: type[BaseException],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
     ) -> None:
         """Close the picamera connection when the Thing context manager is closed."""
         self.stop_streaming()
         with self._streaming_picamera() as cam:
             cam.close()
         del self._picamera
+        super().__exit__(exc_type, exc_value, traceback)
 
     @lt.action
     def start_streaming(
@@ -759,15 +761,16 @@ class StreamingPiCamera2(BaseCamera):
         self.set_static_green_equalisation()
         self.set_ce_enable_to_off()
         self.calibrate_lens_shading()
-        for _i in range(3):
-            try:
-                time.sleep(self._sensor_info.long_pause)
-                self.set_background()
-                # Return if background is set
-                return
-            except ChannelBlankError:
-                # If channel is blank, sleep a second and try again.
-                pass
+        if self.background_detector is not None:
+            for _i in range(3):
+                try:
+                    time.sleep(self._sensor_info.long_pause)
+                    self.set_background()
+                    # Return if background is set
+                    return
+                except ChannelBlankError:
+                    # If channel is blank, sleep a second and try again.
+                    pass
         raise RuntimeError("Couldn't set background")
 
     @lt.property

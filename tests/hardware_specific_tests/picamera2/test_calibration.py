@@ -19,7 +19,7 @@ def test_calibration(picamera_test_env):
     # Tuning should start the same as the server is loading with no settings.
     assert picamera_thing.default_tuning == picamera_thing.tuning
     # The background detector isn't ready as there is no background image.
-    assert not picamera_thing.active_detector.ready
+    assert not picamera_thing.background_detector.ready
 
     # Run full auto calibrate
     picamera_client.full_auto_calibrate()
@@ -31,7 +31,7 @@ def test_calibration(picamera_test_env):
     # The default should be unchanged
     assert picamera_thing.default_tuning == original_default
 
-    assert picamera_thing.active_detector.ready
+    assert picamera_thing.background_detector.ready
 
 
 def test_tuning_is_persistent():

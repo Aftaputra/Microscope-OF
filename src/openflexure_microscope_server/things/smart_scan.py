@@ -234,7 +234,10 @@ class SmartScanThing(lt.Thing):
         self._csm.assert_calibration()
 
         if self.skip_background:
-            if not self._cam.active_detector.ready:
+            if (
+                self._cam.background_detector is None
+                or not self._cam.background_detector.ready
+            ):
                 raise RuntimeError(
                     "Background is not set: you need to calibrate background detection."
                 )

@@ -186,4 +186,4 @@ def test_simulation_cam_calibration(camera):
     assert camera.calibration_required
     camera.full_auto_calibrate()
     assert not camera.calibration_required
-    assert camera.active_detector.ready
+    assert camera.background_detector.ready

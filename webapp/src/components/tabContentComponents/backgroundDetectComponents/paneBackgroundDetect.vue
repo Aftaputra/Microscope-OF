@@ -82,16 +82,21 @@ export default {
       this.modalNotify(`Current image is ${label} (${r.output[1]})`);
     },
     readSettings: async function () {
-      this.backgroundDetectorName = await this.readThingProperty("camera", "detector_name");
-      this.ready = await this.readThingProperty(this.backgroundDetectorName, "ready");
-      this.backgroundDetectorSettings = await this.readThingProperty(
-        this.backgroundDetectorName,
-        "settings_ui",
+      this.backgroundDetectorName = await this.readThingProperty(
+        "camera",
+        "background_detector_name",
       );
-      this.backgroundDetectorDisplayName = await this.readThingProperty(
-        this.backgroundDetectorName,
-        "display_name",
-      );
+      if (this.backgroundDetectorName) {
+        this.ready = await this.readThingProperty(this.backgroundDetectorName, "ready");
+        this.backgroundDetectorSettings = await this.readThingProperty(
+          this.backgroundDetectorName,
+          "settings_ui",
+        );
+        this.backgroundDetectorDisplayName = await this.readThingProperty(
+          this.backgroundDetectorName,
+          "display_name",
+        );
+      }
     },
   },
 };
