@@ -35,6 +35,7 @@ from openflexure_microscope_server import scan_directories, scan_planners, stitc
 from .autofocus import AutofocusThing, StackParams
 from .camera import BaseCamera
 from .camera_stage_mapping import CameraStageMapper, CSMUncalibratedError
+from .scan_workflows import HistoScanWorkflow, ScanWorkflow
 from .stage import BaseStage
 
 T = TypeVar("T")
@@ -103,6 +104,7 @@ class SmartScanThing(lt.Thing):
     _cam: BaseCamera = lt.thing_slot()
     _csm: CameraStageMapper = lt.thing_slot()
     _stage: BaseStage = lt.thing_slot()
+    _workflow: HistoScanWorkflow = lt.thing_slot()
 
     def __init__(
         self, thing_server_interface: lt.ThingServerInterface, scans_folder: str
@@ -195,7 +197,6 @@ class SmartScanThing(lt.Thing):
             self._check_background_and_csm_set()
             self._ongoing_scan = self._scan_dir_manager.new_scan_dir(scan_name)
             self._latest_scan_name = self.ongoing_scan.name
-            self._autofocus.looping_autofocus(dz=self.autofocus_dz, start="centre")
             self._run_scan()
         except Exception as e:
             # If _scan_data is set then scan started
@@ -388,8 +389,11 @@ class SmartScanThing(lt.Thing):
         starting x,y,z position.
         """
         try:
+            # probably make workflow a context manager with a lock?
+            workflow = self._workflow
             self._cam.start_streaming(main_resolution=(3280, 2464))
             self._scan_data = self._collect_scan_data()
+            workflow.pre_scan_routine(self._scan_data)
             self.ongoing_scan.save_scan_data(self._scan_data)
             images_dir = self.ongoing_scan.images_dir
             if images_dir is None:
@@ -398,7 +402,7 @@ class SmartScanThing(lt.Thing):
                 )
             self._stack_params = self._autofocus.create_stack_params(
                 images_dir=images_dir,
-                autofocus_dz=self.autofocus_dz,
+                autofocus_dz=self.scan_data.autofocus_dz,
                 save_resolution=self.scan_data.save_resolution,
             )
             self._preview_stitcher = stitching.PreviewStitcher(
@@ -408,7 +412,7 @@ class SmartScanThing(lt.Thing):
             )
 
             # This is the main loop of the scan!
-            self._main_scan_loop()
+            self._main_scan_loop(workflow)
             self._save_final_scan_data(scan_result="success")
 
         except lt.exceptions.InvocationCancelledError:
@@ -437,7 +441,7 @@ class SmartScanThing(lt.Thing):
         self._perform_final_stitch()
 
     @_scan_running
-    def _main_scan_loop(self) -> None:
+    def _main_scan_loop(self, workflow: ScanWorkflow) -> None:
         """Run the main loop of the scan.
 
         This loop runs during a scan, until no more scan x,y positions
@@ -580,10 +584,8 @@ class SmartScanThing(lt.Thing):
     skip_background: bool = lt.setting(default=True)
     """Whether to detect and skip empty fields of view.
 
-    This uses the settings from the ``BackgroundDetectThing``."""
-
-    autofocus_dz: int = lt.setting(default=1000)
-    """The z distance to perform an autofocus in steps."""
+    This uses the settings from the ``BackgroundDetectThing``.
+    """
 
     overlap: float = lt.setting(default=0.45)
     """The fraction (0-1) that adjacent images should overlap in x or y."""
