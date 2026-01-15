@@ -1,3 +1,9 @@
+"""Scan workflows set different ways that smart scan can behave.
+
+This module contains the base ``ScanWorkflow`` class that all workflows should subclass,
+as well as specific workflows.
+"""
+
 from __future__ import annotations
 
 from typing import (
@@ -11,9 +17,11 @@ from pydantic import BaseModel
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server.scan_directories import StitchingData
 from openflexure_microscope_server.scan_planners import ScanPlanner, SmartSpiral
-from openflexure_microscope_server.stitching import STITCHING_RESOLUTION
+from openflexure_microscope_server.stitching import (
+    STITCHING_RESOLUTION,
+    StitchingSettings,
+)
 from openflexure_microscope_server.things.autofocus import (
     MAX_TEST_IMAGE_COUNT,
     MIN_TEST_IMAGE_COUNT,
@@ -64,12 +72,12 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
 
     def all_settings(
         self, images_dir: str
-    ) -> tuple[SettingModelType, Optional[StitchingData]]:
+    ) -> tuple[SettingModelType, Optional[StitchingSettings]]:
         """Return the scan settings and the stitching settings.
 
         - The specific settings for this scan workflow are returned as a Base Model of
             the type set when defining the class.
-        - Stitiching settings are returned either as a StitchingData object or None
+        - Stitiching settings are returned either as a StitchingSettings object or None
             is returned if it is not possible to stitch the scan.
         """
         raise NotImplementedError(
@@ -77,6 +85,7 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
         )
 
     def pre_scan_routine(self, settings: SettingModelType) -> None:
+        """Overload to set the routine that happens before each scan."""
         raise NotImplementedError(
             "Each specific ScanWorkflow must implement a pre-scan routine."
         )
@@ -84,6 +93,7 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     def new_scan_planner(
         self, settings: SettingModelType, position: Mapping[str, int]
     ) -> ScanPlanner:
+        """Return the a new scan planner object for a scan."""
         raise NotImplementedError(
             "Each specific ScanWorkflow must implement a ``new_scan_planner`` method."
         )
@@ -91,13 +101,14 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     def aquisition_routine(
         self, settings: SettingModelType, xyz_pos: tuple[int, int, int]
     ) -> tuple[bool, Optional[int]]:
+        """Overload to set the aquisition routine that happens at each scan site."""
         raise NotImplementedError(
             "Each specific ScanWorkflow must implement an aquisition routine"
         )
 
 
 class HistoScanSettingsModel(BaseModel):
-    """The settings including needed for running a HistoScan.
+    """The settings for a scan with the HistoScanWorkflow.
 
     This includes settings caluclated when starting. This will be held by smart scan
     during a scan and serialised to disk.
@@ -112,6 +123,12 @@ class HistoScanSettingsModel(BaseModel):
 
 
 class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
+    """A workflow optimised for scanning Histopathology samples.
+
+    This workflow automatically plans its own path around a sample spiralling out from
+    the centre position, scanning only where it detects sample.
+    """
+
     _settings_model = HistoScanSettingsModel
     _planner_cls: type[ScanPlanner] = SmartSpiral
     # Thing Slots
@@ -128,14 +145,20 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
     This uses the settings from the ``BackgroundDetectThing``.
     """
 
-    autofocus_dz: int = lt.setting(default=1000)
-    """The z distance to perform an autofocus in steps."""
+    autofocus_dz: int = lt.setting(default=1000, ge=200, le=2000)
+    """The z distance to perform an autofocus in steps.
+
+    Must be greater than or equal to 200, and less than or equal to 2000.
+    """
 
     max_range: int = lt.setting(default=45000)
     """The maximum distance in steps from the centre of the scan."""
 
-    overlap: float = lt.setting(default=0.45)
-    """The fraction (0-1) that adjacent images should overlap in x or y."""
+    overlap: float = lt.setting(default=0.45, ge=0.1, le=0.7)
+    """The fraction that adjacent images should overlap in x or y.
+
+    This must be between 0.1 and 0.7.
+    """
 
     # Stacking settings
 
@@ -204,8 +227,14 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
 
     def all_settings(
         self, images_dir: str
-    ) -> tuple[HistoScanSettingsModel, StitchingData]:
-        stitching_settings = StitchingData(
+    ) -> tuple[HistoScanSettingsModel, StitchingSettings]:
+        """Return the workflow and stitching settings.
+
+        :param images_dir: The directory that images are to be written to.
+        :return: A tuple containing the settings model for this workflow and the
+            settings model for stitching.
+        """
+        stitching_settings = StitchingSettings(
             overlap=self.overlap,
             correlation_resize=STITCHING_RESOLUTION[0] / self.save_resolution[0],
         )
@@ -216,20 +245,9 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
             f"{dx}, {dy}"
         )
 
-        # TODO: set a min on the property
-        autofocus_dz = self.autofocus_dz
-        if autofocus_dz == 0:
-            self.logger.info("Running scan without autofocus")
-        elif autofocus_dz <= 200:
-            self.logger.warning(
-                f"Your autofocus range is {autofocus_dz} steps, which is too short to "
-                "attempt to focus. Running without autofocus"
-            )
-            autofocus_dz = 0
-
         smart_stack_params = self.create_smart_stack_params(
             images_dir=images_dir,
-            autofocus_dz=autofocus_dz,
+            autofocus_dz=self.autofocus_dz,
             save_resolution=self.save_resolution,
         )
 
@@ -341,6 +359,10 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
         )
 
     def pre_scan_routine(self, settings: HistoScanSettingsModel) -> None:
+        """Autofocus before starting the scan.
+
+        :param settings: The settings for this scan as a HistoScanSettingsModel
+        """
         self._autofocus.looping_autofocus(
             dz=settings.smart_stack_params.autofocus_dz, start="centre"
         )
@@ -348,6 +370,11 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
     def new_scan_planner(
         self, settings: HistoScanSettingsModel, position: Mapping[str, int]
     ) -> ScanPlanner:
+        """Return a new scan planner object.
+
+        :param settings: The settings for this scan as a HistoScanSettingsModel
+        :param position: The starting position as a mapping of axes names to int.
+        """
         # The initial plan for the scan should be a single x,y position. All future
         # moves will be planned around this point. In future, route planner could
         # have multiple starting positions, each of which will be visited before the
@@ -367,6 +394,8 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
     ) -> tuple[bool, Optional[int]]:
         """Perform aquisition routine. This is run at each scan location.
 
+        :param settings: The settings for this scan as a HistoScanSettingsModel
+        :param xyz_position: The current position as a tuple or 3 ints.
         :return: A tuple of whether an image was taken, and the z-position for focus.
             If failed to find focus, returns for the focus z-position.
         """

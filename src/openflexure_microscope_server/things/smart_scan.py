@@ -48,6 +48,13 @@ AnyModel = Annotated[
 
 
 class ActiveScanData(scan_directories.BaseScanData):
+    """A Model for the ScanData during an ongoing scan.
+
+    This differs from HistoricScanData as in this model ``workflow_settings`` are the
+    model specified for the current ScanWorkflow. HistoricScanData loads
+    ``workflow_settings`` into a dictionary.
+    """
+
     workflow_settings: AnyModel
     """The settings for the ongoing workflow."""
 
@@ -432,11 +439,7 @@ class SmartScanThing(lt.Thing):
         stitching_settings = self.scan_data.stitching_settings
         if self.scan_data.stitch_automatically and stitching_settings is not None:
             self.logger.info("Stitching final image (may take some time)...")
-            self.stitch_scan(
-                scan_name=self.ongoing_scan.name,
-                correlation_resize=stitching_settings.correlation_resize,
-                overlap=stitching_settings.overlap,
-            )
+            self.stitch_scan(scan_name=self.ongoing_scan.name)
 
     @lt.endpoint(
         "get",
@@ -624,25 +627,24 @@ class SmartScanThing(lt.Thing):
         return FileResponse(preview_path)
 
     @lt.action
-    def stitch_scan(
-        self,
-        scan_name: str,
-        correlation_resize: Optional[float] = None,
-        overlap: Optional[float] = None,
-    ) -> None:
+    def stitch_scan(self, scan_name: str) -> None:
         """Generate a stitched image based on stage position metadata."""
-        scan_data_dict = self._scan_dir_manager.get_scan_data_dict(scan_name)
-        if scan_data_dict is None:
+        scan_data = self._scan_dir_manager.get_scan_data(scan_name)
+        if scan_data is None:
             self.logger.warning(
                 "Couldn't read scan data - it may be missing or corrupt."
             )
+            return
+        if scan_data.stitching_settings is None:
+            # If the stitching settings are none then this type of scan cannot be
+            # stitiched.
+            return
+
         final_stitcher = stitching.FinalStitcher(
             self._scan_dir_manager.img_dir_for(scan_name),
             logger=self.logger,
-            overlap=overlap,
-            correlation_resize=correlation_resize,
             stitch_tiff=self.stitch_tiff,
-            scan_data_dict=scan_data_dict,
+            stitching_settings=scan_data.stitching_settings,
         )
         try:
             final_stitcher.run()

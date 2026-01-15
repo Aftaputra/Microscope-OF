@@ -19,6 +19,7 @@ from pydantic import (
     model_validator,
 )
 
+from openflexure_microscope_server.stitching import StitchingSettings
 from openflexure_microscope_server.utilities import make_name_safe, requires_lock
 
 LOGGER = logging.getLogger(__name__)
@@ -47,16 +48,6 @@ class ScanInfo(BaseModel):
     number_of_images: int
     stitch_available: bool
     dzi: Optional[str]
-
-
-class StitchingData(BaseModel):
-    """The data needed to stitch a scan."""
-
-    correlation_resize: float
-    """The resize factor applied to images when the stitching program is correlating."""
-
-    overlap: float
-    """The overlap between adjacent images as a fraction of the image size."""
 
 
 class BaseScanData(BaseModel):
@@ -116,7 +107,7 @@ class BaseScanData(BaseModel):
     This should be set with ``set_final_data()`` to ensure duration is set.
     """
 
-    stitching_settings: Optional[StitchingData]
+    stitching_settings: Optional[StitchingSettings]
     """The data needed to stitch a scan.
 
     Set to None for types of scan that cannot be stitched.
@@ -185,6 +176,13 @@ class BaseScanData(BaseModel):
 
 
 class HistoricScanData(BaseScanData):
+    """A Model for the ScanData that has been loaded from disk.
+
+    Any workflow specific settings are loaded as an arbitrary dictionary. Other
+    settings such as those which are needed for the UI or stitching are loaded and
+    validated by the parent class ``BaseScanData``.
+    """
+
     workflow_settings: dict
     """A dictionary of the settings for the workflow that was used workflow."""
 
@@ -204,7 +202,7 @@ class HistoricScanData(BaseScanData):
             # This is done because in future workflows the stitching overlap may be a
             # directly set setting or something that is calculated from other settings.
             overlap = data["overlap"]
-            data["stitching_settings"] = StitchingData(
+            data["stitching_settings"] = StitchingSettings(
                 correlation_resize=correlation_resize,
                 overlap=overlap,
             )
@@ -320,13 +318,9 @@ class ScanDirectoryManager:
             return None
         return scan_data_path
 
-    def get_scan_data_dict(self, scan_name: str) -> Optional[dict[str, Any]]:
-        """Return the scan data read from a JSON file as a dict.
-
-        This is a dictionary not a base model as the data format has changed
-        somewhat over time.
-        """
-        return ScanDirectory(scan_name, self.base_dir).get_scan_data_dict()
+    def get_scan_data(self, scan_name: str) -> Optional[HistoricScanData]:
+        """Return the scan data read from a JSON file as a dict."""
+        return ScanDirectory(scan_name, self.base_dir).get_scan_data()
 
     @property
     @requires_lock
@@ -542,7 +536,7 @@ class ScanDirectory:
         """Return the modified time of the directory."""
         return max(os.stat(root).st_mtime for root, _, _ in os.walk(self.dir_path))
 
-    def get_scan_data_dict(self) -> Optional[dict[str, Any]]:
+    def _get_scan_data_dict(self) -> Optional[dict[str, Any]]:
         """Return the scan data from the json file as a dictionary.
 
         This is safer than get_scan_data for older scans before a defined model was
@@ -564,7 +558,7 @@ class ScanDirectory:
         :return: The data as a HistoricScanData model or None if it couldn't be loaded or
             valdiated.
         """
-        data_dict = self.get_scan_data_dict()
+        data_dict = self._get_scan_data_dict()
         if data_dict is None:
             LOGGER.warning(f"Could not load scan data for {self.name}.")
             return None
