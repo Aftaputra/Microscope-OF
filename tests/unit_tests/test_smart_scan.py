@@ -26,11 +26,9 @@ from fastapi import HTTPException
 from labthings_fastapi.exceptions import InvocationCancelledError
 from labthings_fastapi.testing import create_thing_without_server
 
-from openflexure_microscope_server.scan_directories import (
-    NotEnoughFreeSpaceError,
-    ScanData,
-)
+from openflexure_microscope_server.scan_directories import NotEnoughFreeSpaceError
 from openflexure_microscope_server.things.smart_scan import (
+    ActiveScanData,
     ScanNotRunningError,
     SmartScanThing,
 )
@@ -224,7 +222,7 @@ MOCK_START_POS = {"x": 123, "y": 456, "z": 789}
 
 
 def _expected_scan_data():
-    """Return the expected ScanData object for a SmartScan with default properties."""
+    """Return the expected ActiveScanData object for a SmartScan with default properties."""
     expected_dict = {
         "scan_name": MOCK_SCAN_NAME,
         "starting_position": MOCK_START_POS,
@@ -239,7 +237,7 @@ def _expected_scan_data():
         "correlation_resize": 0.5,
         "save_resolution": (1640, 1232),
     }
-    return ScanData(start_time=datetime.now(), **expected_dict)
+    return ActiveScanData(start_time=datetime.now(), **expected_dict)
 
 
 @pytest.fixture
@@ -264,7 +262,7 @@ def scan_thing_mocked_for_scan_data(smart_scan_thing, mocker):
 
 
 def test_collect_scan_data(scan_thing_mocked_for_scan_data):
-    """Run _collect_scan_data, and check the ScanData object has the expected values."""
+    """Run _collect_scan_data, and check the ActiveScanData object has the expected values."""
     scan_thing = scan_thing_mocked_for_scan_data
 
     data = scan_thing._collect_scan_data()
@@ -277,7 +275,7 @@ def test_collect_scan_data(scan_thing_mocked_for_scan_data):
 
 
 def test_save_final_scan_data(scan_thing_mocked_for_scan_data):
-    """Run _save_final_scan_data, check save is called with final results in ScanData."""
+    """Run _save_final_scan_data, check save is called with final results in ActiveScanData."""
     scan_thing = scan_thing_mocked_for_scan_data
 
     scan_thing._scan_data = scan_thing._collect_scan_data()
@@ -287,7 +285,7 @@ def test_save_final_scan_data(scan_thing_mocked_for_scan_data):
     # the value
     scan_thing._ongoing_scan.save_scan_data.assert_called()
     final_data = scan_thing._ongoing_scan.save_scan_data.call_args[0][0]
-    assert isinstance(final_data, ScanData)
+    assert isinstance(final_data, ActiveScanData)
     assert final_data.scan_result == "Mocked!"
     assert final_data.image_count == 44
     assert final_data.duration.total_seconds() < 1
@@ -341,7 +339,7 @@ def check_run_scan(scan_thing, caplog, expected_exception=None):
 
 
 def test_run_scan(scan_thing_mocked_for_run_scan, caplog):
-    """Run _save_final_scan_data, check save is called with final results in ScanData."""
+    """Run _save_final_scan_data, check save is called with final results in ActiveScanData."""
     result, logs, calls = check_run_scan(scan_thing_mocked_for_run_scan, caplog)
 
     assert result == "success"

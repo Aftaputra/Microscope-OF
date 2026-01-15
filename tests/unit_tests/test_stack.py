@@ -19,7 +19,7 @@ from openflexure_microscope_server.things.autofocus import (
     AutofocusThing,
     CaptureInfo,
     NotAPeakError,
-    StackParams,
+    SmartStackParams,
     _count_turning_points,
     _get_capture_by_id,
     _get_capture_index_by_id,
@@ -64,7 +64,7 @@ def test_stack_params_validation(save_ims, extra_ims):
     # Coerce min_images_to_test as the max extra ims depends on save_ims so is hard
     # to do automatically in hypothesis. This clamps the number between 3 and 9.
     min_images_to_test = max(min(save_ims + extra_ims, 9), 3)
-    StackParams(
+    SmartStackParams(
         stack_dz=50,
         images_to_save=save_ims,
         min_images_to_test=min_images_to_test,
@@ -91,7 +91,7 @@ def test_stack_params_not_enough_test_images(save_ims, extra_ims):
         "Can't save more images than the minimum number tested)"
     )
     with pytest.raises(ValueError, match=match):
-        StackParams(
+        SmartStackParams(
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
@@ -116,7 +116,7 @@ def test_stack_params_negative_images_to_save(save_ims, extra_ims):
         "Images to save must be positive and odd)"
     )
     with pytest.raises(ValueError, match=match):
-        StackParams(
+        SmartStackParams(
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
@@ -142,7 +142,7 @@ def test_even_min_images_to_test(save_ims, extra_ims):
         "Minimum number of images to test should be positive and odd)"
     )
     with pytest.raises(ValueError, match=match):
-        StackParams(
+        SmartStackParams(
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
@@ -166,7 +166,7 @@ def test_even_images_to_save(save_ims, extra_ims):
         "Images to save must be positive and odd)"
     )
     with pytest.raises(ValueError, match=match):
-        StackParams(
+        SmartStackParams(
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
@@ -177,11 +177,11 @@ def test_even_images_to_save(save_ims, extra_ims):
 
 
 def test_computed_stack_params():
-    """Test StackParams computed properties are as expected.
+    """Test SmartStackParams computed properties are as expected.
 
     Not using hypothesis or we will just copy in the same formulas.
     """
-    stack_parameters = StackParams(
+    stack_parameters = SmartStackParams(
         stack_dz=50,
         images_to_save=5,
         min_images_to_test=9,

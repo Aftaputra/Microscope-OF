@@ -48,7 +48,7 @@ AnyModel = Annotated[
 
 
 class ActiveScanData(scan_directories.BaseScanData):
-    """A Model for the ScanData during an ongoing scan.
+    """A model for the scan data during an ongoing scan.
 
     This differs from HistoricScanData as in this model ``workflow_settings`` are the
     model specified for the current ScanWorkflow. HistoricScanData loads

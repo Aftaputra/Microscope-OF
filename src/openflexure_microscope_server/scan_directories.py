@@ -176,7 +176,7 @@ class BaseScanData(BaseModel):
 
 
 class HistoricScanData(BaseScanData):
-    """A Model for the ScanData that has been loaded from disk.
+    """A Model for the scan data that has been loaded from disk.
 
     Any workflow specific settings are loaded as an arbitrary dictionary. Other
     settings such as those which are needed for the UI or stitching are loaded and
