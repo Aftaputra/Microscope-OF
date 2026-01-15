@@ -7,7 +7,6 @@ from openflexure_microscope_server.scan_planners import ScanPlanner, SmartSpiral
 from openflexure_microscope_server.stitching import STITCHING_RESOLUTION
 from openflexure_microscope_server.things.autofocus import AutofocusThing
 from openflexure_microscope_server.things.background_detect import (
-    BackgroundDetectAlgorithm,
     ChannelDeviationLUV,
 )
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
@@ -20,14 +19,10 @@ class ScanWorkflow(lt.Thing):
     scan planning, aquisition routine.
     """
 
-    # All workdlows must have at least one background detector and a set class for scan
-    # planning
-    _background_detector: Optional[
-        BackgroundDetectAlgorithm | Mapping[str, BackgroundDetectAlgorithm]
-    ] = lt.thing_slot()
+    # All workdlows must have a set class for scan planning
     _planner_cls: type[ScanPlanner]
 
-    # All workdlows set a save resolution
+    # All workflows set a save resolution
     save_resolution: tuple[int, int] = lt.setting(default=(1640, 1232))
     """A tuple of the image resolution to capture."""
 
@@ -56,13 +51,24 @@ class ScanWorkflow(lt.Thing):
             is returned if it is not possible to stitch the scan.
         """
         raise NotImplementedError(
-            "Each specific ScanWorkflow must implement a `all_settings`. "
-            "method."
+            "Each specific ScanWorkflow must implement a `all_settings`. method."
         )
 
-    def pre_scan_routine(self) -> None:
+    def pre_scan_routine(self, settings: dict) -> None:
         raise NotImplementedError(
             "Each specific ScanWorkflow must implement a pre-scan routine."
+        )
+
+    def new_scan_planner(self, settings: dict, position: Mapping[str, int]) -> None:
+        raise NotImplementedError(
+            "Each specific ScanWorkflow must implement a ``new_scan_planner`` method."
+        )
+
+    def aquisition_routine(
+        self, settings: dict, xyz_pos: tuple[int, int, int]
+    ) -> tuple[bool, Optional[int]]:
+        raise NotImplementedError(
+            "Each specific ScanWorkflow must implement an aquisition routine"
         )
 
 
@@ -184,5 +190,53 @@ class HistoScanWorkflow(ScanWorkflow):
         # If not use the other stage axes
         return x_move_stage["y"], y_move_stage["x"]
 
-    def pre_scan_routine(self) -> None:
-        self._autofocus.looping_autofocus(dz=self.autofocus_dz, start="centre")
+    def pre_scan_routine(self, settings: dict) -> None:
+        self._autofocus.looping_autofocus(dz=settings["autofocus_dz"], start="centre")
+
+    def new_scan_planner(self, settings: dict, position: Mapping[str, int]) -> None:
+        # The initial plan for the scan should be a single x,y position. All future
+        # moves will be planned around this point. In future, route planner could
+        # have multiple starting positions, each of which will be visited before the
+        # scan can end.
+        planner_settings = {
+            "dx": settings["dx"],
+            "dy": settings["dy"],
+            "max_dist": settings["max_dist"],
+        }
+        return self._planner_cls(
+            initial_position=(position["x"], position["y"]),
+            planner_settings=planner_settings,
+        )
+
+    def aquisition_routine(
+        self, settings: dict, xyz_pos: tuple[int, int, int]
+    ) -> tuple[bool, Optional[int]]:
+        """Perform aquisition routine. This is run at each scan location.
+
+        :return: A tuple of whether an image was taken, and the z-position for focus.
+            If failed to find focus, returns for the focus z-position.
+        """
+        # If skipping background, take an image to check if current field of view is background
+        if settings["skip_background"]:
+            capture_image, bg_message = self._cam.image_is_sample()
+
+        if not capture_image:
+            msg = f"Skipping {xyz_pos} as it is {bg_message}."
+            self.logger.info(msg)
+            return False, None
+
+        save_on_failure = settings["skip_background"]
+
+        focused, focused_height = self._autofocus.run_smart_stack(
+            stack_parameters=self.stack_params,
+            save_on_failure=save_on_failure,
+        )
+        # An image was captured if we are focussed or we are not skipping background.
+        imaged = focused or save_on_failure
+
+        # run_smart_stage always returns a focus height for the sharpest image even
+        # if it failed to find a good focus. Set to None if not focussed.
+        if not focused:
+            focused_height = None
+
+        return imaged, focused_height

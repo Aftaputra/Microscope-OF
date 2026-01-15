@@ -22,19 +22,18 @@ from typing import (
     TypeVar,
 )
 
-import numpy as np
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server import scan_directories, scan_planners, stitching
+from openflexure_microscope_server import scan_directories, stitching
 
 # Things
 from .autofocus import AutofocusThing, StackParams
 from .camera import BaseCamera
-from .camera_stage_mapping import CameraStageMapper, CSMUncalibratedError
+from .camera_stage_mapping import CameraStageMapper
 from .scan_workflows import HistoScanWorkflow, ScanWorkflow
 from .stage import BaseStage
 
@@ -284,6 +283,9 @@ class SmartScanThing(lt.Thing):
     @_scan_running
     def _manage_stitching_threads(self) -> None:
         """Manage the stitching threads, starting them if needed and not already running."""
+        if self.scan_data.stitching_settings is None:
+            # This scan can't stitch.
+            return
         # Assume 4 images means at least one offset in x and y, making the stitching
         # well constrained.
         if self.scan_data.image_count > 3 and not self.preview_stitcher.running:
@@ -354,18 +356,9 @@ class SmartScanThing(lt.Thing):
         This loop runs during a scan, until no more scan x,y positions
         are remaining.
         """
-        # The initial plan for the scan should be a single x,y position. All future
-        # moves will be planned around this point. In future, route planner could
-        # have multiple starting positions, each of which will be visited before the
-        # scan can end.
-        planner_settings = {
-            "dx": self.scan_data.dx,
-            "dy": self.scan_data.dy,
-            "max_dist": self.scan_data.max_dist,
-        }
-        route_planner = scan_planners.SmartSpiral(
-            initial_position=(self._stage.position["x"], self._stage.position["y"]),
-            planner_settings=planner_settings,
+        workflow_settings = self.scan_data.workflow_settings
+        route_planner = workflow.new_scan_planner(
+            workflow_settings, self._stage.position
         )
 
         # The loop tests if the scan should continue, moves to the next position,
@@ -383,43 +376,30 @@ class SmartScanThing(lt.Thing):
                 new_pos_xyz[1],
                 self._stage.position["z"],
             )
-
-            capture_image = True
-            # If skipping background, take an image to check if current field of view is background
-            if self.scan_data.skip_background:
-                capture_image, bg_message = self._cam.image_is_sample()
-
-            if not capture_image:
-                route_planner.mark_location_visited(
-                    new_pos_xyz, imaged=False, focused=False
-                )
-                msg = f"Skipping {new_pos_xyz} as it is {bg_message}."
-                self.logger.info(msg)
-                continue
-
-            focused, focused_height = self._autofocus.run_smart_stack(
-                stack_parameters=self.stack_params,
-                save_on_failure=not self.scan_data.skip_background,
+            imaged, focus_height = workflow.aquisition_routine(
+                workflow_settings, current_pos_xyz
             )
 
-            current_pos_xyz = (new_pos_xyz[0], new_pos_xyz[1], focused_height)
-
-            # An image was captured if we are focussed or we are not skipping background.
-            imaged = focused or not self.scan_data.skip_background
+            if focus_height is None:
+                focused = False
+            else:
+                current_pos_xyz = (new_pos_xyz[0], new_pos_xyz[1], focus_height)
 
             route_planner.mark_location_visited(
                 current_pos_xyz, imaged=imaged, focused=focused
             )
 
-            # increment capture counter as thread has completed
-            self.scan_data.image_count += 1
-            # Add it to the incremental zip
-            self.ongoing_scan.zip_files()
+            if imaged:
+                # increment capture counter as thread has completed
+                self.scan_data.image_count += 1
+                # Add it to the incremental zip
+                self.ongoing_scan.zip_files()
 
     @_scan_running
     def _return_to_starting_position(self) -> None:
         """Return to the initial scan position, if set."""
         self.logger.info("Returning to starting position.")
+
         if self._scan_data is not None:
             self._stage.move_absolute(
                 **self.scan_data.starting_position, block_cancellation=True
