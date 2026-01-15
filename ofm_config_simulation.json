@@ -11,6 +11,7 @@
                 "scans_folder": "./openflexure/scans/"
             }
         },
+        "histo_scan_workflow": "openflexure_microscope_server.things.scan_workflows:HistoScanWorkflow",
         "bg_color_channels_luv": "openflexure_microscope_server.things.background_detect:ColourChannelDetectLUV",
         "bg_channel_deviations_luv": "openflexure_microscope_server.things.background_detect:ChannelDeviationLUV"
     },

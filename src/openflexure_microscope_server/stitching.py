@@ -218,9 +218,11 @@ class FinalStitcher(BaseStitcher):
             if not known enter None. A value will be chosen from the scan_data_dict, or
             set to a default value if no value is available in the scan_data.
         :param stitch_tiff: Whether to stitch a pyramidal TIFF.
-        :param scan_data_dict: The ScanData for this scan as a dictionary. This is used
-            to read/calculate overlap and correlation_resize if they are not provided.
+        :param scan_data_dict: The HistoricScanData for this scan as a dictionary. This
+            is used to read/calculate overlap and correlation_resize if they are not
+            provided.
         """
+        # TODO ^fix the above historic data
         self.logger = logger
         overlap, correlation_resize = self._process_inputs(
             overlap=overlap,

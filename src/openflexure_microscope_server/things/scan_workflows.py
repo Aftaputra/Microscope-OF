@@ -1,4 +1,11 @@
-from typing import Mapping, Optional
+from __future__ import annotations
+
+from typing import (
+    Generic,
+    Mapping,
+    Optional,
+    TypeVar,
+)
 
 from pydantic import BaseModel
 
@@ -16,15 +23,20 @@ from openflexure_microscope_server.things.autofocus import (
 from openflexure_microscope_server.things.background_detect import (
     ChannelDeviationLUV,
 )
+from openflexure_microscope_server.things.camera import BaseCamera
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
 
+SettingModelType = TypeVar("SettingModelType", bound=BaseModel)
 
-class ScanWorkflow(lt.Thing):
+
+class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     """A base class for all Scanworkflows.
 
     Scan workflows set the behaviour of a scan, inclduing the background detection,
     scan planning, aquisition routine.
     """
+
+    _settings_model: type[SettingModelType]
 
     # All workdlows must have a set class for scan planning
     _planner_cls: type[ScanPlanner]
@@ -50,11 +62,13 @@ class ScanWorkflow(lt.Thing):
             "Each specific ScanWorkflow must implement a ready property."
         )
 
-    # TODO should be a model
-    def all_settings(self, images_dir: str) -> tuple[dict, Optional[StitchingData]]:
+    def all_settings(
+        self, images_dir: str
+    ) -> tuple[SettingModelType, Optional[StitchingData]]:
         """Return the scan settings and the stitching settings.
 
-        - The specific settings for this scan workflow are returned as a dict.
+        - The specific settings for this scan workflow are returned as a Base Model of
+            the type set when defining the class.
         - Stitiching settings are returned either as a StitchingData object or None
             is returned if it is not possible to stitch the scan.
         """
@@ -62,18 +76,20 @@ class ScanWorkflow(lt.Thing):
             "Each specific ScanWorkflow must implement a `all_settings`. method."
         )
 
-    def pre_scan_routine(self, settings: dict) -> None:
+    def pre_scan_routine(self, settings: SettingModelType) -> None:
         raise NotImplementedError(
             "Each specific ScanWorkflow must implement a pre-scan routine."
         )
 
-    def new_scan_planner(self, settings: dict, position: Mapping[str, int]) -> None:
+    def new_scan_planner(
+        self, settings: SettingModelType, position: Mapping[str, int]
+    ) -> ScanPlanner:
         raise NotImplementedError(
             "Each specific ScanWorkflow must implement a ``new_scan_planner`` method."
         )
 
     def aquisition_routine(
-        self, settings: dict, xyz_pos: tuple[int, int, int]
+        self, settings: SettingModelType, xyz_pos: tuple[int, int, int]
     ) -> tuple[bool, Optional[int]]:
         raise NotImplementedError(
             "Each specific ScanWorkflow must implement an aquisition routine"
@@ -83,8 +99,8 @@ class ScanWorkflow(lt.Thing):
 class HistoScanSettingsModel(BaseModel):
     """The settings including needed for running a HistoScan.
 
-    This includes settings caluclated when starting. This will be serialised in
-    ScanData.
+    This includes settings caluclated when starting. This will be held by smart scan
+    during a scan and serialised to disk.
     """
 
     overlap: float
@@ -92,14 +108,16 @@ class HistoScanSettingsModel(BaseModel):
     dx: int
     dy: int
     skip_background: bool
-    smart_stack_prarams: SmartStackParams
+    smart_stack_params: SmartStackParams
 
 
-class HistoScanWorkflow(ScanWorkflow):
+class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
+    _settings_model = HistoScanSettingsModel
+    _planner_cls: type[ScanPlanner] = SmartSpiral
     # Thing Slots
     _background_detector: ChannelDeviationLUV = lt.thing_slot()
+    _cam: BaseCamera = lt.thing_slot()
     _csm: CameraStageMapper = lt.thing_slot()
-    _planner_cls: type[ScanPlanner] = SmartSpiral
     _autofocus: AutofocusThing = lt.thing_slot()
 
     # Scan settings
@@ -147,7 +165,8 @@ class HistoScanWorkflow(ScanWorkflow):
     * 200 for 20x
     """
 
-    # noqa, scan_name is unused but is needed for equivalence with other workflows.
+    # The noqa statment is because scan_name is unused but is needed for equivalence
+    # with other workflows that may want to validate the scan name.
     def check_before_start(self, scan_name: str) -> None:  # noqa: ARG002
         """Before starting a scan, check that background and camera-stage-mapping are set.
 
@@ -191,12 +210,13 @@ class HistoScanWorkflow(ScanWorkflow):
             correlation_resize=STITCHING_RESOLUTION[0] / self.save_resolution[0],
         )
 
-        dx, dy = self._calc_displacement_from_test_image(self.overlap)
+        dx, dy = self._calc_displacement_from_overlap(self.overlap)
         self.logger.info(
             f"Based on an overlap of {self.overlap}, the stage will make steps of "
             f"{dx}, {dy}"
         )
 
+        # TODO: set a min on the property
         autofocus_dz = self.autofocus_dz
         if autofocus_dz == 0:
             self.logger.info("Running scan without autofocus")
@@ -207,7 +227,7 @@ class HistoScanWorkflow(ScanWorkflow):
             )
             autofocus_dz = 0
 
-        smart_stack_prarams = self.create_smart_stack_params(
+        smart_stack_params = self.create_smart_stack_params(
             images_dir=images_dir,
             autofocus_dz=autofocus_dz,
             save_resolution=self.save_resolution,
@@ -219,9 +239,8 @@ class HistoScanWorkflow(ScanWorkflow):
             dx=dx,
             dy=dy,
             skip_background=self.skip_background,
-            smart_stack_prarams=smart_stack_prarams,
+            smart_stack_params=smart_stack_params,
         )
-        autofocus_dz = (autofocus_dz,)
 
         return scan_settings, stitching_settings
 
@@ -233,7 +252,9 @@ class HistoScanWorkflow(ScanWorkflow):
 
         :returns: (dx, dy) - the x and y displacements in steps
         """
-        csm_image_res = [int(i) for i in self._csm.image_resolution]
+        csm_image_res = self._csm.image_resolution
+        if csm_image_res is None:
+            raise RuntimeError("CSM not set. Scan shouldn't have progresses this far.")
 
         # Calculate displacements in image coordinates
         dx_img = csm_image_res[1] * (1 - overlap)
@@ -320,11 +341,13 @@ class HistoScanWorkflow(ScanWorkflow):
         )
 
     def pre_scan_routine(self, settings: HistoScanSettingsModel) -> None:
-        self._autofocus.looping_autofocus(dz=settings.autofocus_dz, start="centre")
+        self._autofocus.looping_autofocus(
+            dz=settings.smart_stack_params.autofocus_dz, start="centre"
+        )
 
     def new_scan_planner(
         self, settings: HistoScanSettingsModel, position: Mapping[str, int]
-    ) -> None:
+    ) -> ScanPlanner:
         # The initial plan for the scan should be a single x,y position. All future
         # moves will be planned around this point. In future, route planner could
         # have multiple starting positions, each of which will be visited before the
@@ -349,7 +372,11 @@ class HistoScanWorkflow(ScanWorkflow):
         """
         # If skipping background, take an image to check if current field of view is background
         if settings.skip_background:
-            capture_image, bg_message = self._cam.image_is_sample()
+            image_array = self._cam.grab_as_array(stream_name="lores")
+            capture_image, bg_message = self._background_detector.image_is_sample(
+                image_array
+            )
+            del image_array
 
         if not capture_image:
             msg = f"Skipping {xyz_pos} as it is {bg_message}."
@@ -358,7 +385,8 @@ class HistoScanWorkflow(ScanWorkflow):
 
         save_on_failure = settings.skip_background
 
-        focused, focused_height = self._autofocus.run_smart_stack(
+        focus_height: Optional[int]
+        focused, focus_height = self._autofocus.run_smart_stack(
             stack_parameters=settings.smart_stack_params,
             save_on_failure=save_on_failure,
         )
@@ -368,6 +396,6 @@ class HistoScanWorkflow(ScanWorkflow):
         # run_smart_stage always returns a focus height for the sharpest image even
         # if it failed to find a good focus. Set to None if not focussed.
         if not focused:
-            focused_height = None
+            focus_height = None
 
-        return imaged, focused_height
+        return imaged, focus_height

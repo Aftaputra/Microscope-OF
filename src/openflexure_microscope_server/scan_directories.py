@@ -8,12 +8,11 @@ import shutil
 import threading
 import zipfile
 from datetime import datetime, timedelta
-from typing import Annotated, Any, Mapping, Optional, Self
+from typing import Any, Mapping, Optional, Self
 
 from pydantic import (
     BaseModel,
     ConfigDict,
-    PlainSerializer,
     ValidationError,
     field_serializer,
     field_validator,
@@ -60,56 +59,20 @@ class StitchingData(BaseModel):
     """The overlap between adjacent images as a fraction of the image size."""
 
 
-def _coerce_lecacy_scan_data(data: dict) -> dict:
-    """Coerce any scan data from before version 2 into the version 2 format."""
-    # Before the current version no schema_version was set
-    if "schema_version" in data:
-        return data
+class BaseScanData(BaseModel):
+    """Data about a scan not including workflow specific data.
 
-    if "correlation_resize" and "overlap" in data:
-        correlation_resize = data.pop("correlation_resize")
-        # Note we don't pop overlap is a setting for the legacy workflow as well
-        # as a stitching setting.
-        # This is done because in future workflows the stitching overlap may be a
-        # directly set setting or something that is calculated from other settings.
-        overlap = data["overlap"]
-        data["stitching_settings"] = StitchingData(
-            correlation_resize=correlation_resize,
-            overlap=overlap,
-        )
-    else:
-        data["stitching_settings"] = None
+    For including workflow specific data see also:
 
-    # Add any legacy workflow settings that are found
-    legacy_keys = [
-        "overlap",
-        "max_dist",
-        "dx",
-        "dy",
-        "autofocus_dz",
-        "autofocus_on",
-        "skip_background",
-    ]
-    workflow_settings = {}
-    for key in legacy_keys:
-        if key in data:
-            workflow_settings[key] = data.pop(key)
+    * ActiveScanData which subclasses this including the BaseModel used by the
+        ScanWorkflow
+    * HistoricScanData which has the workflow specific data loaded as a dictionary.
 
-    data["workflow"] = "Legacy"
-    data["workflow_settings"] = workflow_settings
-    return data
-
-
-# This is a dictionary of a PyDantic model. It allows ScanData to hold arbitrary
-# workflow settings models during a scan.
-AnyModelOrDict = Annotated[
-    dict | BaseModel,
-    PlainSerializer(lambda v: v.model_dump(), return_type=dict),
-]
-
-
-class ScanData(BaseModel):
-    """Data about a scan to be saved to a JSON file in the directory.
+    Sepearating historic and active data allows workflows to use any BaseModel for its
+    settings, but for the data to be reloaded even if that model has updated or is not
+    available. Historic scan data loaded from disk is used for stitching and for
+    creating a ScanInfo object for  communicating with the UI. These uses are clearly
+    typed by this model.
 
     This serialises into a human readable format where possible with
 
@@ -153,31 +116,14 @@ class ScanData(BaseModel):
     This should be set with ``set_final_data()`` to ensure duration is set.
     """
 
-    workflow: str
-    """The class name of the workflow Thing."""
-
-    workflow_settings: AnyModelOrDict
-    """The settings for this workflow."""
-
     stitching_settings: Optional[StitchingData]
     """The data needed to stitch a scan.
 
     Set to None for types of scan that cannot be stitched.
     """
 
-    def set_final_data(self, result: str) -> None:
-        """Set the final data for the scan, scan duration is automatically calculated.
-
-        :param result: A string describing the result.
-        """
-        self.duration = datetime.now() - self.start_time
-        self.scan_result = result
-
-    @model_validator(mode="before")
-    @classmethod
-    def coerce_legacy(cls, data: dict) -> dict:
-        """Coerce any legacy data."""
-        return _coerce_lecacy_scan_data(data)
+    workflow: str
+    """The class name of the workflow Thing."""
 
     @model_validator(mode="after")
     def validate_schema_version(self) -> Self:
@@ -236,6 +182,53 @@ class ScanData(BaseModel):
     def serialize_none_as_unknown(self, value: Optional[str | int]) -> str | int:
         """Serialise None as "Unknown" for a more human readable result."""
         return "Unknown" if value is None else value
+
+
+class HistoricScanData(BaseScanData):
+    workflow_settings: dict
+    """A dictionary of the settings for the workflow that was used workflow."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def coerce_legacy(cls, data: dict) -> dict:
+        """Coerce any legacy data."""
+        r"""Coerce any scan data from before version 2 into the version 2 format."""
+        # Before the current version no schema_version was set
+        if "schema_version" in data:
+            return data
+
+        if "correlation_resize" and "overlap" in data:
+            correlation_resize = data.pop("correlation_resize")
+            # Note we don't pop overlap is a setting for the legacy workflow as well
+            # as a stitching setting.
+            # This is done because in future workflows the stitching overlap may be a
+            # directly set setting or something that is calculated from other settings.
+            overlap = data["overlap"]
+            data["stitching_settings"] = StitchingData(
+                correlation_resize=correlation_resize,
+                overlap=overlap,
+            )
+        else:
+            data["stitching_settings"] = None
+
+        # Add any legacy workflow settings that are found
+        legacy_keys = [
+            "overlap",
+            "max_dist",
+            "dx",
+            "dy",
+            "autofocus_dz",
+            "autofocus_on",
+            "skip_background",
+        ]
+        workflow_settings = {}
+        for key in legacy_keys:
+            if key in data:
+                workflow_settings[key] = data.pop(key)
+
+        data["workflow"] = "Legacy"
+        data["workflow_settings"] = workflow_settings
+        return data
 
 
 class ScanDirectoryManager:
@@ -565,10 +558,10 @@ class ScanDirectory:
         except (json.decoder.JSONDecodeError, IOError):
             return None
 
-    def get_scan_data(self) -> Optional[ScanData]:
-        """Return the scan data from the json file as a ScanData model.
+    def get_scan_data(self) -> Optional[HistoricScanData]:
+        """Return the scan data from the json file as a HistoricScanData model.
 
-        :return: The data as a ScanData model or None if it couldn't be loaded or
+        :return: The data as a HistoricScanData model or None if it couldn't be loaded or
             valdiated.
         """
         data_dict = self.get_scan_data_dict()
@@ -576,7 +569,7 @@ class ScanDirectory:
             LOGGER.warning(f"Could not load scan data for {self.name}.")
             return None
         try:
-            return ScanData(**data_dict)
+            return HistoricScanData(**data_dict)
         except ValidationError:
             LOGGER.warning(f"Could not validate scan data for {self.name}.")
             return None
@@ -627,7 +620,7 @@ class ScanDirectory:
                 files.append(os.path.relpath(full_path, self.dir_path))
         return files
 
-    def save_scan_data(self, scan_data: ScanData) -> None:
+    def save_scan_data(self, scan_data: BaseScanData) -> None:
         """Save the scan data for this scan to disk."""
         if self.scan_data_path is None:
             raise FileNotFoundError(
