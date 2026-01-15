@@ -40,13 +40,13 @@ SettingModelType = TypeVar("SettingModelType", bound=BaseModel)
 class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     """A base class for all Scanworkflows.
 
-    Scan workflows set the behaviour of a scan, inclduing the background detection,
-    scan planning, aquisition routine.
+    Scan workflows set the behaviour of a scan, including the background detection,
+    scan planning, acquisition routine.
     """
 
     _settings_model: type[SettingModelType]
 
-    # All workdlows must have a set class for scan planning
+    # All workflows must have a set class for scan planning
     _planner_cls: type[ScanPlanner]
 
     # All workflows set a save resolution
@@ -98,19 +98,19 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
             "Each specific ScanWorkflow must implement a ``new_scan_planner`` method."
         )
 
-    def aquisition_routine(
+    def acquisition_routine(
         self, settings: SettingModelType, xyz_pos: tuple[int, int, int]
     ) -> tuple[bool, Optional[int]]:
-        """Overload to set the aquisition routine that happens at each scan site."""
+        """Overload to set the acquisition routine that happens at each scan site."""
         raise NotImplementedError(
-            "Each specific ScanWorkflow must implement an aquisition routine"
+            "Each specific ScanWorkflow must implement an acquisition routine"
         )
 
 
 class HistoScanSettingsModel(BaseModel):
     """The settings for a scan with the HistoScanWorkflow.
 
-    This includes settings caluclated when starting. This will be held by smart scan
+    This includes settings calculated when starting. This will be held by smart scan
     during a scan and serialised to disk.
     """
 
@@ -188,7 +188,7 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
     * 200 for 20x
     """
 
-    # The noqa statment is because scan_name is unused but is needed for equivalence
+    # The noqa statement is because scan_name is unused but is needed for equivalence
     # with other workflows that may want to validate the scan name.
     def check_before_start(self, scan_name: str) -> None:  # noqa: ARG002
         """Before starting a scan, check that background and camera-stage-mapping are set.
@@ -389,13 +389,13 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
             planner_settings=planner_settings,
         )
 
-    def aquisition_routine(
+    def acquisition_routine(
         self, settings: HistoScanSettingsModel, xyz_pos: tuple[int, int, int]
     ) -> tuple[bool, Optional[int]]:
-        """Perform aquisition routine. This is run at each scan location.
+        """Perform acquisition routine. This is run at each scan location.
 
         :param settings: The settings for this scan as a HistoScanSettingsModel
-        :param xyz_position: The current position as a tuple or 3 ints.
+        :param xyz_pos: The current position as a tuple or 3 ints.
         :return: A tuple of whether an image was taken, and the z-position for focus.
             If failed to find focus, returns for the focus z-position.
         """

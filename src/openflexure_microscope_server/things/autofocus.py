@@ -567,7 +567,7 @@ class AutofocusThing(lt.Thing):
         """Capture a series of images checking that sharpest image central.
 
         This is part of run_smart_stack. This is the actual z_stackng stacking method
-        called by the action run_smart_stack. The action also handles reseting,
+        called by the action run_smart_stack. The action also handles resetting,
         autofocussing, and retrying.
 
         The images are separated in z offset by stack_parameters.stack_dz, as they

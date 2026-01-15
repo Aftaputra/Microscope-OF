@@ -179,8 +179,8 @@ class SmartScanThing(lt.Thing):
     def sample_scan(self, scan_name: str = "") -> None:
         """Move the stage to cover an area, taking images.
 
-        Depending on the way the stage moves depends on the selected worflow.
-        If images overlap for a scan workdlow then the images can be stitched together
+        Depending on the way the stage moves depends on the selected workflow.
+        If images overlap for a scan workflow then the images can be stitched together
         into a larger composite image.
         """
         got_lock = self._scan_lock.acquire(timeout=0.1)
@@ -383,7 +383,7 @@ class SmartScanThing(lt.Thing):
                 new_pos_xyz[1],
                 self._stage.position["z"],
             )
-            imaged, focus_height = workflow.aquisition_routine(
+            imaged, focus_height = workflow.acquisition_routine(
                 workflow_settings, current_pos_xyz
             )
 

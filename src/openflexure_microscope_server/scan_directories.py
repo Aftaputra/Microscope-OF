@@ -59,7 +59,7 @@ class BaseScanData(BaseModel):
         ScanWorkflow
     * HistoricScanData which has the workflow specific data loaded as a dictionary.
 
-    Sepearating historic and active data allows workflows to use any BaseModel for its
+    Separating historic and active data allows workflows to use any BaseModel for its
     settings, but for the data to be reloaded even if that model has updated or is not
     available. Historic scan data loaded from disk is used for stitching and for
     creating a ScanInfo object for  communicating with the UI. These uses are clearly
