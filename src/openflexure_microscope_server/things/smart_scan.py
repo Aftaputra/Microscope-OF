@@ -179,11 +179,11 @@ class SmartScanThing(lt.Thing):
 
     @lt.action
     def sample_scan(self, scan_name: str = "") -> None:
-        """Move the stage to cover an area, taking images that can be tiled together.
+        """Move the stage to cover an area, taking images.
 
-        The stage will move in a pattern that grows outwards from the starting point,
-        stopping once it is surrounded by "background" (as detected by the
-        camera Thing) or reaches the "max_range" measured in steps.
+        Depending on the way the stage moves depends on the selected worflow.
+        If images overlap for a scan workdlow then the images can be stitched together
+        into a larger composite image.
         """
         got_lock = self._scan_lock.acquire(timeout=0.1)
         if not got_lock:
@@ -193,11 +193,13 @@ class SmartScanThing(lt.Thing):
         # the presence of `scan_data` is used during error handling to
         # determine whether the scan started.
         self._scan_data = None
+        # probably make workflow a context manager with a lock?
+        workflow = self._workflow
         try:
-            self._check_background_and_csm_set()
+            workflow.check_before_start(scan_name)
             self._ongoing_scan = self._scan_dir_manager.new_scan_dir(scan_name)
             self._latest_scan_name = self.ongoing_scan.name
-            self._run_scan()
+            self._run_scan(workflow)
         except Exception as e:
             # If _scan_data is set then scan started
             if self._scan_data is not None:
@@ -221,35 +223,6 @@ class SmartScanThing(lt.Thing):
 
         # Remove any scan folders containing zero images.
         self.purge_empty_scans()
-
-    @_scan_running
-    def _check_background_and_csm_set(self) -> None:
-        """Before starting a scan, check that background and camera-stage-mapping are set.
-
-        Raise error if:
-          - background is to be skipped but is not set
-          - camera stage mapping is not set
-
-        Raise warning if not using background detect that scan will go on until max steps reached
-        """
-        self._csm.assert_calibration()
-
-        if self.skip_background:
-            if (
-                self._cam.background_detector is None
-                or not self._cam.background_detector.ready
-            ):
-                raise RuntimeError(
-                    "Background is not set: you need to calibrate background detection."
-                )
-        else:
-            self.logger.warning(
-                "This scan will run in a spiral from the starting point "
-                f"until you cancel it, or until it has moved by {self.max_range} steps "
-                "in every direction. Make sure you watch it run to stop it leaving "
-                "the area of interest, or (worse) leading the microscope's range "
-                "of motion."
-            )
 
     @_scan_running
     def _move_to_next_point(
@@ -276,90 +249,26 @@ class SmartScanThing(lt.Thing):
         return (next_point[0], next_point[1], z_estimate)
 
     @_scan_running
-    def _calc_displacement_from_test_image(self, overlap: float) -> tuple[int, int]:
-        """Take a test image and use camera stage mapping to calculate x and y displacement.
-
-        :param overlap: The desired overlap as a fraction of the image. i.e. 0.5 means
-            that each image should overlap its nearest neighbour by 50%.
-
-        :returns: (dx, dy) - the x and y displacements in steps
-        """
-        if (
-            self._csm.image_resolution is None
-            or self._csm.image_to_stage_displacement_matrix is None
-        ):
-            raise CSMUncalibratedError("Camera stage mapping is not calibrated")
-        test_image = self._cam.grab_as_array()
-
-        test_image_res = list(test_image.shape)
-
-        csm_image_res = [int(i) for i in self._csm.image_resolution]
-
-        # If current stream width is different to csm calibration width,
-        # perform the conversion here
-        res_ratio = csm_image_res[0] / test_image_res[0]
-
-        # get displacement matrix. note it is for (y, x) not (x, y) coordinates
-        csm_disp_matrix = np.array(self._csm.image_to_stage_displacement_matrix)
-        csm_disp_matrix *= res_ratio
-
-        # Calculate displacements in image coordinates
-        dx_img = test_image.shape[1] * (1 - overlap)
-        dy_img = test_image.shape[0] * (1 - overlap)
-
-        # Calculate displacements in steps as vectors using a dot product with the matrix
-        dx_vec = np.dot(np.array([0, dx_img]), csm_disp_matrix)
-        dy_vec = np.dot(np.array([dy_img, 0]), csm_disp_matrix)
-
-        # Assume no rotation or skew and take only the aligned axis of vector.
-        # Coerce to positive integer
-        dx = int(np.abs(dx_vec[0]))
-        dy = int(np.abs(dy_vec[1]))
-
-        return dx, dy
-
-    @_scan_running
-    def _collect_scan_data(self) -> scan_directories.ScanData:
+    def _collect_scan_data(self, workflow: ScanWorkflow) -> scan_directories.ScanData:
         """Collect and return the data for this scan so it cannot be changed mid-scan."""
         # Record starting position so it can be returned to at end of scan.
         starting_position = self._stage.position
-        overlap = self.overlap
-        dx, dy = self._calc_displacement_from_test_image(overlap)
-        correlation_resize = stitching.STITCHING_RESOLUTION[0] / self.save_resolution[0]
 
-        self.logger.debug(
-            f"Resizing images when correlating by a factor of {correlation_resize}"
-        )
+        workflow_settings, stitching_settings = workflow.all_settings()
 
-        self.logger.info(
-            f"Based on an overlap of {overlap}, we will make steps of {dx}, {dy}"
-        )
-
-        autofocus_dz = self.autofocus_dz
-        if autofocus_dz == 0:
-            self.logger.info("Running scan without autofocus")
-        elif autofocus_dz <= 200:
-            self.logger.warning(
-                f"Your autofocus range is {autofocus_dz} steps, which is too short to "
-                "attempt to focus. Running without autofocus"
-            )
-            autofocus_dz = 0
+        # If stitching settings is None then this workflow doesn't support stitching.
+        auto_stitch = self.stitch_automatically and stitching_settings is not None
 
         # Fix scan parameters in case UI is updated during scan.
         return scan_directories.ScanData(
             scan_name=self.ongoing_scan.name,
             starting_position=starting_position,
-            overlap=overlap,
-            max_dist=self.max_range,
-            dx=dx,
-            dy=dy,
-            autofocus_dz=autofocus_dz,
-            autofocus_on=bool(autofocus_dz),
             start_time=datetime.now(),
-            skip_background=self.skip_background,
-            stitch_automatically=self.stitch_automatically,
-            correlation_resize=correlation_resize,
-            save_resolution=self.save_resolution,
+            stitch_automatically=auto_stitch,
+            save_resolution=workflow.save_resolution,
+            workflow=type(workflow).__name__,
+            workflow_settings=workflow_settings,
+            stitching_settings=stitching_settings,
         )
 
     @_scan_running
@@ -381,7 +290,7 @@ class SmartScanThing(lt.Thing):
             self.preview_stitcher.start()
 
     @_scan_running
-    def _run_scan(self) -> None:
+    def _run_scan(self, workflow: ScanWorkflow) -> None:
         """Prepare and run the main scan, and perform final actions on completion.
 
         The result (or exception) from the main scan loop determines whether the
@@ -389,10 +298,8 @@ class SmartScanThing(lt.Thing):
         starting x,y,z position.
         """
         try:
-            # probably make workflow a context manager with a lock?
-            workflow = self._workflow
             self._cam.start_streaming(main_resolution=(3280, 2464))
-            self._scan_data = self._collect_scan_data()
+            self._scan_data = self._collect_scan_data(workflow)
             workflow.pre_scan_routine(self._scan_data)
             self.ongoing_scan.save_scan_data(self._scan_data)
             images_dir = self.ongoing_scan.images_dir
@@ -572,23 +479,8 @@ class SmartScanThing(lt.Thing):
             raise HTTPException(404, "File not found")
         return FileResponse(preview_path)
 
-    save_resolution: tuple[int, int] = lt.setting(default=(1640, 1232))
-    """A tuple of the image resolution to capture."""
-
-    max_range: int = lt.setting(default=45000)
-    """The maximum distance in steps from the centre of the scan."""
-
     stitch_tiff: bool = lt.setting(default=False)
     """Whether or not to also produce a pyramidal tiff at the end of a scan."""
-
-    skip_background: bool = lt.setting(default=True)
-    """Whether to detect and skip empty fields of view.
-
-    This uses the settings from the ``BackgroundDetectThing``.
-    """
-
-    overlap: float = lt.setting(default=0.45)
-    """The fraction (0-1) that adjacent images should overlap in x or y."""
 
     stitch_automatically: bool = lt.setting(default=True)
     """Whether to run a final stitch at the end of a successful scan."""

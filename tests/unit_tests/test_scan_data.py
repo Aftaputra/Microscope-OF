@@ -28,8 +28,8 @@ MOCK_END_TIME = datetime(
 )
 
 
-def _fake_scan_data(**kwargs) -> ScanData:
-    """Make fake scan data, the start time is now. Final properties are not added.
+def _fake_legacy_scan_data(**kwargs) -> ScanData:
+    """Make fake legacy scan data, the start time is now. Final properties are not added.
 
     :param **kwargs: Key word arguments can be used to override other values.
     """
@@ -55,7 +55,7 @@ def _fake_scan_data(**kwargs) -> ScanData:
 
 def test_set_final_data():
     """Check that adding final data to a ScanData object works as expected."""
-    scan_data = _fake_scan_data()
+    scan_data = _fake_legacy_scan_data()
 
     assert scan_data.image_count == 0
     assert scan_data.duration is None
@@ -76,7 +76,7 @@ def test_set_final_data():
 
 def test_custom_serialisation():
     """Check that the custom serialisation in ScanData works as expected."""
-    scan_data = _fake_scan_data()
+    scan_data = _fake_legacy_scan_data()
     # Serialise to string then load directly as json
     scan_data_dict = json.loads(scan_data.model_dump_json())
     assert scan_data_dict["start_time"] == "2024-12-25_11:00:00"
@@ -96,7 +96,7 @@ def test_custom_serialisation():
 
 def test_round_trip_not_finalised():
     """Check that ScanData without final data can be serialised and deserialised."""
-    scan_data = _fake_scan_data()
+    scan_data = _fake_legacy_scan_data()
     scan_data_dict = json.loads(scan_data.model_dump_json())
     scan_data_reloaded = ScanData(**scan_data_dict)
 
@@ -108,7 +108,7 @@ def test_round_trip_not_finalised():
 
 def test_round_trip_finalised():
     """Check that finalised ScanData can be serialised and deserialised."""
-    scan_data = _fake_scan_data()
+    scan_data = _fake_legacy_scan_data()
     # Finalise the data.
     scan_data.image_count += 123
     scan_data.set_final_data(result="Success")

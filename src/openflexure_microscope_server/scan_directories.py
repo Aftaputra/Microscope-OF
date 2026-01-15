@@ -8,7 +8,7 @@ import shutil
 import threading
 import zipfile
 from datetime import datetime, timedelta
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Self
 
 from pydantic import (
     BaseModel,
@@ -16,6 +16,7 @@ from pydantic import (
     ValidationError,
     field_serializer,
     field_validator,
+    model_validator,
 )
 
 from openflexure_microscope_server.utilities import make_name_safe, requires_lock
@@ -29,6 +30,7 @@ STITCH_REGEX = re.compile(r"stitched\.jpe?g$")
 IMAGE_REGEX = re.compile(r"-?[0-9]+_-?[0-9]+\.jpe?g$")
 
 SCAN_DATA_FILENAME = "scan_data.json"
+SCAN_DATA_SCHEMA_VERSION = 2
 
 
 class NotEnoughFreeSpaceError(IOError):
@@ -47,6 +49,56 @@ class ScanInfo(BaseModel):
     dzi: Optional[str]
 
 
+class StitchingData(BaseModel):
+    """The data needed to stitch a scan."""
+
+    correlation_resize: float
+    """The resize factor applied to images when the stitching program is correlating."""
+
+    overlap: float
+    """The overlap between adjacent images as a fraction of the image size."""
+
+
+def _coerce_lecacy_scan_data(data: dict) -> dict:
+    """Coerce any scan data from before version 2 into the version 2 format."""
+    # Before the current version no schema_version was set
+    if "schema_version" in data:
+        return data
+
+    if "correlation_resize" and "overlap" in data:
+        correlation_resize = data.pop("correlation_resize")
+        # Note we don't pop overlap is a setting for the legacy workflow as well
+        # as a stitching setting.
+        # This is done because in future workflows the stitching overlap may be a
+        # directly set setting or something that is calculated from other settings.
+        overlap = data["overlap"]
+        data["stitching_settings"] = StitchingData(
+            correlation_resize=correlation_resize,
+            overlap=overlap,
+        )
+    else:
+        data["stitching_settings"] = None
+
+    # Add any legacy workflow settings that are found
+    legacy_keys = [
+        "overlap",
+        "max_dist",
+        "dx",
+        "dy",
+        "autofocus_dz",
+        "autofocus_on",
+        "skip_background",
+    ]
+    workflow_settings = {}
+    for key in legacy_keys:
+        if key in data:
+            workflow_settings[key] = data.pop(key)
+
+    data["workflow"] = "Legacy"
+    data["workflow_settings"] = workflow_settings
+    return data
+
+
 class ScanData(BaseModel):
     """Data about a scan to be saved to a JSON file in the directory.
 
@@ -60,41 +112,19 @@ class ScanData(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    schema_version: int = SCAN_DATA_SCHEMA_VERSION
+
     scan_name: str
     """The name of the scan i.e. scan_0001"""
 
     starting_position: Mapping[str, int]
     """The starting position in dictionary format."""
 
-    overlap: float
-    """The overlap between adjacent images as a fraction of the image size."""
-
-    max_dist: int
-    """The maximum distance the scan could move (in steps) from the starting position."""
-
-    dx: int
-    """The number of steps between adjacent images in x."""
-
-    dy: int
-    """The number of steps between adjacent images in y."""
-
-    autofocus_dz: int
-    """The z range used for autofocus (in steps)."""
-
-    autofocus_on: bool
-    """Whether autofocus is on."""
-
     start_time: datetime
     """The time the scan started."""
 
-    skip_background: bool
-    """Whether automatic background detection is on, skipping locations with no sample."""
-
     stitch_automatically: bool
     """Whether the scan is set to automatically stitch when complete."""
-
-    correlation_resize: float
-    """The resize factor applied to images when the stitching program is correlating."""
 
     save_resolution: tuple[int, int]
     """The resolution that scan images are saved at."""
@@ -114,6 +144,18 @@ class ScanData(BaseModel):
     This should be set with ``set_final_data()`` to ensure duration is set.
     """
 
+    workflow: str
+    """The class name of the workflow Thing."""
+
+    workflow_settings: dict[str, Any]
+    """The settings for this workflow."""
+
+    stitching_settings: Optional[StitchingData]
+    """The data needed to stitch a scan.
+
+    Set to None for types of scan that cannot be stitched.
+    """
+
     def set_final_data(self, result: str) -> None:
         """Set the final data for the scan, scan duration is automatically calculated.
 
@@ -121,6 +163,22 @@ class ScanData(BaseModel):
         """
         self.duration = datetime.now() - self.start_time
         self.scan_result = result
+
+    @model_validator(mode="before")
+    @classmethod
+    def coerce_legacy(cls, data: dict) -> dict:
+        """Coerce any legacy data."""
+        return _coerce_lecacy_scan_data(data)
+
+    @model_validator(mode="after")
+    def validate_schema_version(self) -> Self:
+        """Validate the schema version is as the current one."""
+        if self.schema_version != SCAN_DATA_SCHEMA_VERSION:
+            raise ValueError(
+                f"Unsupported schema version {self.schema_version}, "
+                f"expected {SCAN_DATA_SCHEMA_VERSION}"
+            )
+        return self
 
     @field_validator("start_time", mode="before")
     @classmethod
