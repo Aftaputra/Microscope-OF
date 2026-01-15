@@ -8,11 +8,12 @@ import shutil
 import threading
 import zipfile
 from datetime import datetime, timedelta
-from typing import Any, Mapping, Optional, Self
+from typing import Annotated, Any, Mapping, Optional, Self
 
 from pydantic import (
     BaseModel,
     ConfigDict,
+    PlainSerializer,
     ValidationError,
     field_serializer,
     field_validator,
@@ -99,6 +100,14 @@ def _coerce_lecacy_scan_data(data: dict) -> dict:
     return data
 
 
+# This is a dictionary of a PyDantic model. It allows ScanData to hold arbitrary
+# workflow settings models during a scan.
+AnyModelOrDict = Annotated[
+    dict | BaseModel,
+    PlainSerializer(lambda v: v.model_dump(), return_type=dict),
+]
+
+
 class ScanData(BaseModel):
     """Data about a scan to be saved to a JSON file in the directory.
 
@@ -147,7 +156,7 @@ class ScanData(BaseModel):
     workflow: str
     """The class name of the workflow Thing."""
 
-    workflow_settings: dict[str, Any]
+    workflow_settings: AnyModelOrDict
     """The settings for this workflow."""
 
     stitching_settings: Optional[StitchingData]

@@ -253,7 +253,14 @@ class SmartScanThing(lt.Thing):
         # Record starting position so it can be returned to at end of scan.
         starting_position = self._stage.position
 
-        workflow_settings, stitching_settings = workflow.all_settings()
+        images_dir = self.ongoing_scan.images_dir
+        # Type narrowing
+        if images_dir is None:
+            raise RuntimeError("Couldn't run scan, images directory was not created.")
+
+        workflow_settings, stitching_settings = workflow.all_settings(
+            images_dir=images_dir
+        )
 
         # If stitching settings is None then this workflow doesn't support stitching.
         auto_stitch = self.stitch_automatically and stitching_settings is not None
@@ -305,15 +312,11 @@ class SmartScanThing(lt.Thing):
             workflow.pre_scan_routine(self._scan_data)
             self.ongoing_scan.save_scan_data(self._scan_data)
             images_dir = self.ongoing_scan.images_dir
+            # Type narrowing
             if images_dir is None:
                 raise RuntimeError(
                     "Couldn't run scan, images directory was not created."
                 )
-            self._stack_params = self._autofocus.create_stack_params(
-                images_dir=images_dir,
-                autofocus_dz=self.scan_data.autofocus_dz,
-                save_resolution=self.scan_data.save_resolution,
-            )
             self._preview_stitcher = stitching.PreviewStitcher(
                 images_dir,
                 overlap=self.scan_data.overlap,
