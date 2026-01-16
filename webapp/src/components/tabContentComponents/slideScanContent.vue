@@ -2,14 +2,14 @@
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <div class="control-component uk-padding-small">
       <div v-show="!scanning" v-observe-visibility="visibilityChanged" class="uk-padding-small">
+        <h4 v-if="workflowDisplayName" class="workflow-name">
+          {{ workflowDisplayName }}
+        </h4>
+        <p class="workflow-blurb">{{ workflowBlurb }}</p>
         <ul uk-accordion="multiple: true">
           <li>
             <a class="uk-accordion-title" href="#">Scan Settings</a>
             <div class="uk-accordion-content">
-              <h4 v-if="workflowDisplayName" class="workflow-name">
-                {{ workflowDisplayName }}
-              </h4>
-              <p class="workflow-blurb">{{ workflowBlurb }}</p>
               <div
                 v-for="(setting, index) in workflowSettings"
                 :key="'detector_setting' + index"
