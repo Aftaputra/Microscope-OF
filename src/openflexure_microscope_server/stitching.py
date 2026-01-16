@@ -225,6 +225,11 @@ class FinalStitcher(BaseStitcher):
             HistoricScanData for this scan as a dictionary.
         :param stitch_tiff: Whether to stitch a pyramidal TIFF.
         """
+        if not isinstance(stitching_settings, StitchingSettings):
+            raise StitcherValidationError(
+                "Final stitcher requires settings to be set as a StitchingSettings "
+                "model"
+            )
         self.logger = logger
         overlap = stitching_settings.overlap
         correlation_resize = stitching_settings.correlation_resize

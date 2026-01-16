@@ -22,11 +22,13 @@ from typing import Callable, Optional
 
 import pytest
 from fastapi import HTTPException
+from pydantic import BaseModel
 
 from labthings_fastapi.exceptions import InvocationCancelledError
 from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.scan_directories import NotEnoughFreeSpaceError
+from openflexure_microscope_server.stitching import StitchingSettings
 from openflexure_microscope_server.things.smart_scan import (
     ActiveScanData,
     ScanNotRunningError,
@@ -221,21 +223,28 @@ MOCK_SCAN_DIR = "scans/test_name_0001/images/"
 MOCK_START_POS = {"x": 123, "y": 456, "z": 789}
 
 
+class MockWorkflowSettingModel(BaseModel):
+    """A mock model to check that ActiveScanData can hold arbitrary models."""
+
+    foo: str = "bar"
+    bar: str = "foo"
+    dx: int = 123
+    dy: int = 456
+
+
 def _expected_scan_data():
     """Return the expected ActiveScanData object for a SmartScan with default properties."""
     expected_dict = {
         "scan_name": MOCK_SCAN_NAME,
         "starting_position": MOCK_START_POS,
-        "overlap": 0.45,
-        "max_dist": 45000,
-        "dx": 100,
-        "dy": 100,
-        "autofocus_dz": 1000,
-        "autofocus_on": True,
-        "skip_background": True,
-        "stitch_automatically": True,
-        "correlation_resize": 0.5,
         "save_resolution": (1640, 1232),
+        "stitch_automatically": True,
+        "stitching_settings": {
+            "overlap": 0.45,
+            "correlation_resize": 0.5,
+        },
+        "workflow": "Mock",
+        "workflow_settings": MockWorkflowSettingModel(),
     }
     return ActiveScanData(start_time=datetime.now(), **expected_dict)
 
@@ -245,13 +254,13 @@ def scan_thing_mocked_for_scan_data(smart_scan_thing, mocker):
     """Return a scan thing that is mocked so that _collect_scan_data will run."""
     # Set the lock so it thinks the scan is running
     with smart_scan_thing._scan_lock:
-        mocker.patch.object(
-            smart_scan_thing,
-            "_calc_displacement_from_test_image",
-            return_value=[100, 100],
-        )
-
         smart_scan_thing._stage.position = MOCK_START_POS
+
+        smart_scan_thing._workflow.all_settings.return_value = (
+            MockWorkflowSettingModel(),
+            StitchingSettings(correlation_resize=0.5, overlap=0.45),
+        )
+        smart_scan_thing._workflow.save_resolution = (1640, 1232)
 
         mock_ongoing_scan = mocker.Mock()
         mock_ongoing_scan.name = MOCK_SCAN_NAME
@@ -265,7 +274,7 @@ def test_collect_scan_data(scan_thing_mocked_for_scan_data):
     """Run _collect_scan_data, and check the ActiveScanData object has the expected values."""
     scan_thing = scan_thing_mocked_for_scan_data
 
-    data = scan_thing._collect_scan_data()
+    data = scan_thing._collect_scan_data(scan_thing._workflow)
     expected_data = _expected_scan_data()
     time_diff = expected_data.start_time - data.start_time
     assert abs(time_diff.total_seconds()) < 1
@@ -278,7 +287,7 @@ def test_save_final_scan_data(scan_thing_mocked_for_scan_data):
     """Run _save_final_scan_data, check save is called with final results in ActiveScanData."""
     scan_thing = scan_thing_mocked_for_scan_data
 
-    scan_thing._scan_data = scan_thing._collect_scan_data()
+    scan_thing._scan_data = scan_thing._collect_scan_data(scan_thing._workflow)
     scan_thing._scan_data.image_count = 44
     scan_thing._save_final_scan_data("Mocked!")
     # _ongoing_scan is a mock so we can check that save_scan data was called and get
@@ -320,10 +329,10 @@ def check_run_scan(scan_thing, caplog, expected_exception=None):
     """
     if expected_exception is None:
         with caplog.at_level(logging.WARNING):
-            scan_thing._scan_data = scan_thing._run_scan()
+            scan_thing._scan_data = scan_thing._run_scan(scan_thing._workflow)
     else:
         with pytest.raises(expected_exception), caplog.at_level(logging.WARNING):
-            scan_thing._scan_data = scan_thing._run_scan()
+            scan_thing._scan_data = scan_thing._run_scan(scan_thing._workflow)
     # The preview stitcher object should still exist. And images dir should be set.
     assert scan_thing._preview_stitcher.images_dir == MOCK_SCAN_DIR
 

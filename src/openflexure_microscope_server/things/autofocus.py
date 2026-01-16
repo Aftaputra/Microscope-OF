@@ -146,7 +146,7 @@ class SmartStackParams(BaseModel):
 
 @dataclass
 class CaptureInfo:
-    """The information from a capture in a z_stack."""
+    """The information from a capture in a smart_z_stack."""
 
     buffer_id: int
     position: Mapping[str, int]
