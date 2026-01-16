@@ -33,6 +33,7 @@ from openflexure_microscope_server.things.background_detect import (
 )
 from openflexure_microscope_server.things.camera import BaseCamera
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
+from openflexure_microscope_server.ui import PropertyControl, property_control_for
 
 SettingModelType = TypeVar("SettingModelType", bound=BaseModel)
 
@@ -43,6 +44,11 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     Scan workflows set the behaviour of a scan, including the background detection,
     scan planning, acquisition routine.
     """
+
+    display_name: str = lt.property(default="Base Workflow", readonly=True)
+    ui_blurb: str = lt.property(
+        default="If you see this message, something is wrong.", readonly=True
+    )
 
     _settings_model: type[SettingModelType]
 
@@ -106,6 +112,13 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
             "Each specific ScanWorkflow must implement an acquisition routine"
         )
 
+    @lt.property
+    def settings_ui(self) -> list[PropertyControl]:
+        """A list of PropertyControl objects to create the settings in the scan tab."""
+        raise NotImplementedError(
+            "Each scan workflow must implement a settings_ui method."
+        )
+
 
 class HistoScanSettingsModel(BaseModel):
     """The settings for a scan with the HistoScanWorkflow.
@@ -128,6 +141,16 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
     This workflow automatically plans its own path around a sample spiralling out from
     the centre position, scanning only where it detects sample.
     """
+
+    display_name: str = lt.property(default="Histo Scan", readonly=True)
+    ui_blurb: str = lt.property(
+        default=(
+            "This scan workflow is optimised for scanning H&E stained biopsies. It"
+            "spirals out from the starting location, scanning only where it detects"
+            "sample. It also works well for many other flat, well-featured samples."
+        ),
+        readonly=True,
+    )
 
     _settings_model = HistoScanSettingsModel
     _planner_cls: type[ScanPlanner] = SmartSpiral
@@ -428,3 +451,24 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
             focus_height = None
 
         return imaged, focus_height
+
+    @lt.property
+    def settings_ui(self) -> list[PropertyControl]:
+        """A list of PropertyControl objects to create the settings in the scan tab."""
+        return [
+            property_control_for(self, "overlap", label="Image Overlap (0.1-0.7)"),
+            property_control_for(
+                self, "skip_background", label="Detect and Skip Empty Fields "
+            ),
+            property_control_for(
+                self, "stack_images_to_save", label="Images in Stack to Save"
+            ),
+            property_control_for(
+                self,
+                "stack_min_images_to_test",
+                label="Minimum number of images to test for focus",
+            ),
+            property_control_for(self, "stack_dz", label="Stack dz (steps)"),
+            property_control_for(self, "autofocus_dz", label="Autofocus Range (steps)"),
+            property_control_for(self, "max_range", label="Maximum Distance (steps)"),
+        ]

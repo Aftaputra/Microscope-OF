@@ -1,8 +1,8 @@
 """The core sample scanning functionality for the OpenFlexure Microscope.
 
-SmartScan provides sample scanning functionality including automatic background
-detection (via the ``CameraThing``) and automatic path planning via
-`scan_planners`. It manages the directories of past scans via `scan_directories`.
+SmartScan provides sample scanning functionality. This functionality can be customised
+by different ``ScanWorkflow`` Things which control the path planning and acquisition
+routines. It manages the directories of past scans via `scan_directories`.
 It also controls external processes for live stitching composite images, and
 the creation of the final stitched images.
 """
@@ -20,6 +20,7 @@ from typing import (
     Mapping,
     Optional,
     ParamSpec,
+    Self,
     TypeVar,
 )
 
@@ -30,10 +31,11 @@ from pydantic import BaseModel, PlainSerializer
 import labthings_fastapi as lt
 
 from openflexure_microscope_server import scan_directories, stitching
+from openflexure_microscope_server.utilities import coerce_thing_selector
 
 # Things
 from .camera import BaseCamera
-from .scan_workflows import HistoScanWorkflow, ScanWorkflow
+from .scan_workflows import ScanWorkflow
 from .stage import BaseStage
 
 T = TypeVar("T")
@@ -127,10 +129,13 @@ class SmartScanThing(lt.Thing):
 
     _cam: BaseCamera = lt.thing_slot()
     _stage: BaseStage = lt.thing_slot()
-    _workflow: HistoScanWorkflow = lt.thing_slot()
+    _all_workflows: Mapping[str, ScanWorkflow] = lt.thing_slot()
 
     def __init__(
-        self, thing_server_interface: lt.ThingServerInterface, scans_folder: str
+        self,
+        thing_server_interface: lt.ThingServerInterface,
+        scans_folder: str,
+        default_workflow: Optional[str],
     ) -> None:
         """Initialise a SmartScanThing saving to and loading from the input directory.
 
@@ -141,6 +146,36 @@ class SmartScanThing(lt.Thing):
         super().__init__(thing_server_interface)
         self._scan_dir_manager = scan_directories.ScanDirectoryManager(scans_folder)
         self._scan_lock = threading.Lock()
+        self._default_workflow = default_workflow
+        self._workflow_name: Optional[str] = None
+
+    def __enter__(self) -> Self:
+        """Open hardware connection when the Thing context manager is opened."""
+        self._workflow_name = coerce_thing_selector(
+            thing_mapping=self._all_workflows,
+            selected=self.workflow_name,
+            default=self._default_workflow,
+        )
+        return self
+
+    # Note that the default detector name is set at init. This is over written if
+    # setting is loaded from disk.
+    @lt.setting
+    def workflow_name(self) -> Optional[str]:
+        """The name of the scan workflow selector."""
+        return self._workflow_name
+
+    @workflow_name.setter
+    def _set_workflow_name(self, name: str) -> None:
+        """Validate and set workflow_name."""
+        if name not in self._all_workflows:
+            self.logger.warning(f"{name} is not a valid scan workflow name.")
+        self._workflow_name = name
+
+    @property
+    def _workflow(self) -> ScanWorkflow:
+        """The active scan workflow object."""
+        return self._all_workflows[self.workflow_name]
 
     _ongoing_scan: Optional[scan_directories.ScanDirectory] = None
 

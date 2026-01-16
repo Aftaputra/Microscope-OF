@@ -1,51 +1,32 @@
 <template>
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <div class="control-component uk-padding-small">
-      <div v-show="!scanning" class="uk-padding-small">
+      <div v-show="!scanning" v-observe-visibility="visibilityChanged" class="uk-padding-small">
         <ul uk-accordion="multiple: true">
           <li>
-            <a class="uk-accordion-title" href="#">Configure</a>
+            <a class="uk-accordion-title" href="#">Scan Settings</a>
+            <div class="uk-accordion-content">
+              <h4 v-if="workflowDisplayName" class="workflow-name">
+                {{ workflowDisplayName }}
+              </h4>
+              <p class="workflow-blurb">{{ workflowBlurb }}</p>
+              <div
+                v-for="(setting, index) in workflowSettings"
+                :key="'detector_setting' + index"
+                class="uk-margin"
+              >
+                <server-specified-property-control :property-data="setting" />
+              </div>
+            </div>
+          </li>
+          <li class="uk-open">
+            <a class="uk-accordion-title" href="#">Stitching Settings</a>
             <div class="uk-accordion-content">
               <div class="uk-margin">
                 <propertyControl
                   thing-name="smart_scan"
-                  property-name="max_range"
-                  label="Maximum Distance (steps)"
-                />
-              </div>
-              <div class="uk-margin">
-                <propertyControl
-                  thing-name="smart_scan"
-                  property-name="autofocus_dz"
-                  label="Autofocus Range (steps)"
-                />
-              </div>
-              <div class="uk-margin">
-                <propertyControl
-                  thing-name="autofocus"
-                  property-name="stack_dz"
-                  label="Stack dz (steps)"
-                />
-              </div>
-              <div class="uk-margin">
-                <propertyControl
-                  thing-name="autofocus"
-                  property-name="stack_images_to_save"
-                  label="Images in Stack to Save"
-                />
-              </div>
-              <div class="uk-margin">
-                <propertyControl
-                  thing-name="autofocus"
-                  property-name="stack_min_images_to_test"
-                  label="Minimum number of images to test for focus"
-                />
-              </div>
-              <div class="uk-margin">
-                <propertyControl
-                  thing-name="smart_scan"
-                  property-name="overlap"
-                  label="Image Overlap (0-1)"
+                  property-name="stitch_automatically"
+                  label="Automatically Stitch Images Together"
                 />
               </div>
               <div class="uk-margin">
@@ -53,25 +34,6 @@
                   thing-name="smart_scan"
                   property-name="stitch_tiff"
                   label="When Stitching, Produce a Pyramidal TIFF"
-                />
-              </div>
-            </div>
-          </li>
-          <li class="uk-open">
-            <a class="uk-accordion-title" href="#">Scan Settings</a>
-            <div class="uk-accordion-content">
-              <div class="uk-margin">
-                <propertyControl
-                  thing-name="smart_scan"
-                  property-name="skip_background"
-                  label="Detect and Skip Empty Fields"
-                />
-              </div>
-              <div class="uk-margin">
-                <propertyControl
-                  thing-name="smart_scan"
-                  property-name="stitch_automatically"
-                  label="Automatically Stitch Images Together"
                 />
               </div>
             </div>
@@ -149,6 +111,7 @@
 <script>
 import streamDisplay from "./streamContent.vue";
 import propertyControl from "../labThingsComponents/propertyControl.vue";
+import ServerSpecifiedPropertyControl from "../labThingsComponents/serverSpecifiedPropertyControl.vue";
 import actionLogDisplay from "../labThingsComponents/actionLogDisplay.vue";
 import actionProgressBar from "../labThingsComponents/actionProgressBar.vue";
 import MiniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
@@ -160,6 +123,7 @@ export default {
   components: {
     streamDisplay,
     propertyControl,
+    ServerSpecifiedPropertyControl,
     actionLogDisplay,
     actionProgressBar,
     MiniStreamDisplay,
@@ -177,6 +141,10 @@ export default {
       log: [],
       lastStitchedImage: null,
       scan_name: "",
+      workflowName: undefined,
+      workflowSettings: [],
+      workflowDisplayName: undefined,
+      workflowBlurb: undefined,
     };
   },
 
@@ -189,12 +157,49 @@ export default {
     },
   },
 
+  async created() {
+    this.readSettings();
+  },
+
   methods: {
+    visibilityChanged(isVisible) {
+      if (isVisible) {
+        this.readSettings();
+      }
+    },
+    async readSettings() {
+      this.workflowName = await this.readThingProperty("smart_scan", "workflow_name");
+      if (this.workflowName) {
+        this.ready = await this.readThingProperty(this.workflowName, "ready");
+        this.workflowSettings = await this.readThingProperty(this.workflowName, "settings_ui");
+        console.log(this.workflowSettings);
+        this.workflowDisplayName = await this.readThingProperty(this.workflowName, "display_name");
+        this.workflowBlurb = await this.readThingProperty(this.workflowName, "ui_blurb");
+      }
+    },
     onScanError: function (error) {
       this.scanRunning = false;
       this.modalError(error);
     },
-    correlateCurrentScan() {},
+    /**
+     * Transition the UI into "scanning" mode and begin polling for scan updates.
+     *
+     * IMPORTANT:
+     * This method does NOT start a scan on the server.
+     *
+     * The <ActionButton> component is responsible for:
+     *  - initiating the scan action on the backend when the user clicks the button
+     *  - detecting and resuming an already-running scan when the page loads
+     *
+     * As a result, this method may be invoked in two cases:
+     *  1. Immediately after the user clicks "Start Smart Scan"
+     *  2. Automatically on page load if <ActionButton> detects an ongoing scan
+     *
+     * This function only:
+     *  - updates local UI state to reflect that scanning is in progress
+     *  - clears any previous preview image
+     *  - starts the polling loop that fetches scan progress and preview images
+     */
     startScanning() {
       this.lastStitchedImage = null;
       this.scanning = true;
@@ -232,5 +237,11 @@ export default {
 }
 .control-component {
   width: 33%;
+}
+.workflow-name {
+  margin-bottom: 0.5rem;
+}
+.workflow-blurb {
+  color: #a2a2a2;
 }
 </style>
