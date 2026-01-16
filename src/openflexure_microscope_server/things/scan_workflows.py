@@ -145,8 +145,8 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
     display_name: str = lt.property(default="Histo Scan", readonly=True)
     ui_blurb: str = lt.property(
         default=(
-            "This scan workflow is optimised for scanning H&E stained biopsies. It"
-            "spirals out from the starting location, scanning only where it detects"
+            "This scan workflow is optimised for scanning H&E stained biopsies. It "
+            "spirals out from the starting location, scanning only where it detects "
             "sample. It also works well for many other flat, well-featured samples."
         ),
         readonly=True,
@@ -308,8 +308,8 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
         # Coerce to positive integer, but correct if x and y are flipped
         if abs(x_move_stage["x"]) > abs(x_move_stage["y"]):
             return x_move_stage["x"], y_move_stage["y"]
-        # If not use the other stage axes
-        return x_move_stage["y"], y_move_stage["x"]
+        # If not use the other stage axes. Note "dx" will be the movement in camera y.
+        return y_move_stage["x"], x_move_stage["y"]
 
     def create_smart_stack_params(
         self,

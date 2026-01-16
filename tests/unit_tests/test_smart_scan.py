@@ -53,7 +53,7 @@ def smart_scan_thing():
         SmartScanThing,
         scans_folder=SCAN_DIR,
         default_workflow="mock-_all_workflows",
-        mock_all_slots=True
+        mock_all_slots=True,
     )
 
 
