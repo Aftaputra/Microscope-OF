@@ -135,7 +135,7 @@ class SmartScanThing(lt.Thing):
         self,
         thing_server_interface: lt.ThingServerInterface,
         scans_folder: str,
-        default_workflow: Optional[str],
+        default_workflow: str,
     ) -> None:
         """Initialise a SmartScanThing saving to and loading from the input directory.
 
@@ -147,21 +147,27 @@ class SmartScanThing(lt.Thing):
         self._scan_dir_manager = scan_directories.ScanDirectoryManager(scans_folder)
         self._scan_lock = threading.Lock()
         self._default_workflow = default_workflow
-        self._workflow_name: Optional[str] = None
+        self._workflow_name = default_workflow
 
     def __enter__(self) -> Self:
         """Open hardware connection when the Thing context manager is opened."""
-        self._workflow_name = coerce_thing_selector(
+        valid_name = coerce_thing_selector(
             thing_mapping=self._all_workflows,
             selected=self.workflow_name,
             default=self._default_workflow,
         )
+        if valid_name is None:
+            raise RuntimeError(
+                "Could not set Scan Workflow. A Scan Workflow must be present in your "
+                "configuration."
+            )
+        self._workflow_name = valid_name
         return self
 
     # Note that the default detector name is set at init. This is over written if
     # setting is loaded from disk.
     @lt.setting
-    def workflow_name(self) -> Optional[str]:
+    def workflow_name(self) -> str:
         """The name of the scan workflow selector."""
         return self._workflow_name
 
@@ -222,13 +228,14 @@ class SmartScanThing(lt.Thing):
         if not got_lock:
             raise RuntimeError("Trying to run scan while scan is already running!")
 
-        # `scan_data` should already be None. This is added as a precaution as
-        # the presence of `scan_data` is used during error handling to
-        # determine whether the scan started.
-        self._scan_data = None
-        # probably make workflow a context manager with a lock?
-        workflow = self._workflow
         try:
+            # `scan_data` should already be None. This is added as a precaution as
+            # the presence of `scan_data` is used during error handling to
+            # determine whether the scan started.
+            self._scan_data = None
+            # probably make workflow a context manager with a lock?
+            workflow = self._workflow
+
             workflow.check_before_start(scan_name)
             self._ongoing_scan = self._scan_dir_manager.new_scan_dir(scan_name)
             self._latest_scan_name = self.ongoing_scan.name

@@ -50,7 +50,10 @@ def _clear_scan_dir() -> None:
 def smart_scan_thing():
     """Return a smart scan thing as a fixture."""
     return create_thing_without_server(
-        SmartScanThing, scans_folder=SCAN_DIR, mock_all_slots=True
+        SmartScanThing,
+        scans_folder=SCAN_DIR,
+        default_workflow="mock-_all_workflows",
+        mock_all_slots=True
     )
 
 
