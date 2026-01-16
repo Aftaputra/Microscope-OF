@@ -422,20 +422,22 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
         :return: A tuple of whether an image was taken, and the z-position for focus.
             If failed to find focus, returns for the focus z-position.
         """
-        # If skipping background, take an image to check if current field of view is background
         if settings.skip_background:
+            # If skipping background, take an image to check if current field of view
+            # is background
             image_array = self._cam.grab_as_array(stream_name="lores")
             capture_image, bg_message = self._background_detector.image_is_sample(
                 image_array
             )
             del image_array
 
-        if not capture_image:
-            msg = f"Skipping {xyz_pos} as it is {bg_message}."
-            self.logger.info(msg)
-            return False, None
+            if not capture_image:
+                # Return early if the image is background.
+                msg = f"Skipping {xyz_pos} as it is {bg_message}."
+                self.logger.info(msg)
+                return False, None
 
-        save_on_failure = settings.skip_background
+        save_on_failure = not settings.skip_background
 
         focus_height: Optional[int]
         focused, focus_height = self._autofocus.run_smart_stack(
@@ -444,6 +446,10 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
         )
         # An image was captured if we are focussed or we are not skipping background.
         imaged = focused or save_on_failure
+
+        if not imaged:
+            msg = f"Stack failed at {xyz_pos} treating as background."
+            self.logger.info(msg)
 
         # run_smart_stage always returns a focus height for the sharpest image even
         # if it failed to find a good focus. Set to None if not focussed.

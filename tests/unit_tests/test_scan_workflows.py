@@ -9,6 +9,7 @@ from pydantic import BaseModel
 import labthings_fastapi as lt
 from labthings_fastapi.testing import create_thing_without_server
 
+from openflexure_microscope_server.scan_planners import SmartSpiral
 from openflexure_microscope_server.stitching import StitchingSettings
 from openflexure_microscope_server.things.autofocus import SmartStackParams
 from openflexure_microscope_server.things.camera_stage_mapping import csm_img_to_stage
@@ -188,6 +189,146 @@ def test_histo_calculate_overlap(csm_matrix, overlap, expected_steps, histo_work
     histo_workflow._csm.image_resolution = (600, 800)
     dx, dy = histo_workflow._calc_displacement_from_overlap(overlap)
     assert (dx, dy) == expected_steps
+
+
+def test_histo_pre_scan_routine(histo_workflow, mocker):
+    """Check the pre-scan routine does autofocusses."""
+    # Rather than create a whole Setting class, just create a mock with the value
+    # we need set
+    mock_settings = mocker.Mock()
+    mock_settings.smart_stack_params.autofocus_dz = 1234
+    # Run the function
+    histo_workflow.pre_scan_routine(mock_settings)
+    # Check the autofocus was run using the mocked slot.
+    assert histo_workflow._autofocus.looping_autofocus.call_count == 1
+    call_kwargs = histo_workflow._autofocus.looping_autofocus.call_args.kwargs
+    assert call_kwargs["dz"] == 1234
+    assert call_kwargs["start"] == "centre"
+
+
+def test_histo_new_scan_planner(histo_workflow, mocker):
+    """Check the pre-scan routine does autofocusses."""
+    # Rather than create a whole Setting class, just create a mock with the 3 values
+    # we need set
+    mock_settings = mocker.Mock()
+    mock_settings.dx = 666
+    mock_settings.dy = 999
+    mock_settings.max_dist = 54321
+
+    planner = histo_workflow.new_scan_planner(
+        mock_settings, position={"x": 1, "y": 2, "z": 3}
+    )
+    assert isinstance(planner, SmartSpiral)
+    # Check the settings were read
+    assert planner._dx == 666
+    assert planner._dy == 999
+    assert planner._max_dist == 54321
+
+
+def test_histo_acquisition_with_background_detected(histo_workflow, mocker, caplog):
+    """If background is detected it should return without a stack."""
+    # Mocking for settings as above
+    mock_settings = mocker.Mock()
+    mock_settings.skip_background = True
+
+    histo_workflow._background_detector.image_is_sample.return_value = (
+        False,
+        "totally empty",
+    )
+
+    with caplog.at_level(logging.INFO):
+        imaged, focus_height = histo_workflow.acquisition_routine(
+            mock_settings, xyz_pos=(1, 2, 3)
+        )
+
+    # Check returns
+    assert imaged is False
+    assert focus_height is None  # None meaning not focussed
+    # Check there is a log explaining what happened
+    assert len(caplog.records) == 1
+    assert caplog.records[0].message == "Skipping (1, 2, 3) as it is totally empty."
+    assert caplog.records[0].levelname == "INFO"
+
+    # And that smart stack never ran
+    assert histo_workflow._autofocus.run_smart_stack.call_count == 0
+
+
+def test_histo_acquisition_not_skipping_background(histo_workflow, mocker, caplog):
+    """Check when not skipping background an image is always saved."""
+    # Mocking for settings as above
+    mock_settings = mocker.Mock()
+    mock_settings.skip_background = False
+
+    # Set up background detector to say it is empty, this shouldn't stop stacking.
+    histo_workflow._background_detector.image_is_sample.return_value = (
+        False,
+        "totally empty",
+    )
+
+    with caplog.at_level(logging.INFO):
+        # First set smart stack to report failure
+        histo_workflow._autofocus.run_smart_stack.return_value = (False, 123)
+        imaged, focus_height = histo_workflow.acquisition_routine(
+            mock_settings, xyz_pos=(1, 2, 3)
+        )
+        # Check return
+        assert imaged is True  # Always images if not skipping background
+        assert focus_height is None  # None meaning didn't focus
+
+        # And again reporting a successful stack
+        histo_workflow._autofocus.run_smart_stack.return_value = (True, 123)
+        imaged, focus_height = histo_workflow.acquisition_routine(
+            mock_settings, xyz_pos=(1, 2, 3)
+        )
+        # Check return
+        assert imaged is True  # Always images if not skipping background
+        assert focus_height == 123
+
+    # Should never warn
+    assert len(caplog.records) == 0
+
+    # And that smart stack never ran
+    assert histo_workflow._autofocus.run_smart_stack.call_count == 2
+
+
+def test_histo_acquisition_on_sample(histo_workflow, mocker, caplog):
+    """Check when skipping background, but background not detected."""
+    # Mocking for settings as above
+    mock_settings = mocker.Mock()
+    mock_settings.skip_background = True
+
+    # Set up background detector to say there is sample.
+    histo_workflow._background_detector.image_is_sample.return_value = (True, None)
+
+    with caplog.at_level(logging.INFO):
+        # First set smart stack to report failure
+        histo_workflow._autofocus.run_smart_stack.return_value = (False, 123)
+        imaged, focus_height = histo_workflow.acquisition_routine(
+            mock_settings, xyz_pos=(1, 2, 3)
+        )
+        # Check return:
+        # Don't save failed stack when skipping background, assume it is actually
+        # background
+        assert imaged is False
+        assert focus_height is None  # None meaning didn't focus
+
+        # And again reporting a successful stack
+        histo_workflow._autofocus.run_smart_stack.return_value = (True, 123)
+        imaged, focus_height = histo_workflow.acquisition_routine(
+            mock_settings, xyz_pos=(1, 2, 3)
+        )
+        # Check return
+        assert imaged is True  # Always images if not skipping background
+        assert focus_height == 123
+
+    # Should never warn
+    assert len(caplog.records) == 1
+    expected_message = "Stack failed at (1, 2, 3) treating as background."
+    assert caplog.records[0].message == expected_message
+    assert caplog.records[0].levelname == "INFO"
+
+    # And that smart stack never ran
+    assert histo_workflow._autofocus.run_smart_stack.call_count == 2
 
 
 def test_histo_workflow_settings_ui(histo_workflow):
