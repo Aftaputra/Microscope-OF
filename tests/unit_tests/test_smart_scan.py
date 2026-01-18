@@ -211,12 +211,18 @@ def test_inaccessible_scan_methods(smart_scan_thing):
     """Test that method with @_scan_running decorator is inaccessible.
 
     The @_scan_running decorator makes these functions inaccessible unless
-    a scan is running.
+    a scan is running. Also test properties that raise same error.
     """
     with pytest.raises(ScanNotRunningError):
         smart_scan_thing._run_scan()
     with pytest.raises(ScanNotRunningError):
         smart_scan_thing._manage_stitching_threads()
+
+    # Properties
+    with pytest.raises(ScanNotRunningError):
+        smart_scan_thing.scan_data
+    with pytest.raises(ScanNotRunningError):
+        smart_scan_thing.ongoing_scan
 
 
 def test_private_delete_scan(smart_scan_thing, caplog):
