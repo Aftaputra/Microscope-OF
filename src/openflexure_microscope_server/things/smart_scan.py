@@ -187,7 +187,8 @@ class SmartScanThing(lt.Thing):
     def _set_workflow_name(self, name: str) -> None:
         """Validate and set workflow_name."""
         if name not in self._all_workflows:
-            self.logger.warning(f"{name} is not a valid scan workflow name.")
+            self.logger.warning(f"'{name}' is not a valid scan workflow name.")
+            return
         self._workflow_name = name
 
     @property

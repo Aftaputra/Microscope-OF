@@ -21,6 +21,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Optional
+from unittest import mock
 
 import pytest
 from fastapi import HTTPException
@@ -31,6 +32,7 @@ from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.scan_directories import NotEnoughFreeSpaceError
 from openflexure_microscope_server.stitching import StitchingSettings
+from openflexure_microscope_server.things.scan_workflows import ScanWorkflow
 from openflexure_microscope_server.things.smart_scan import (
     ActiveScanData,
     ScanNotRunningError,
@@ -59,6 +61,26 @@ def smart_scan_thing():
     )
 
 
+def custom_smart_scan_thing(default_workflow, all_workflows):
+    """Set up a custom smart scan thing with workflows adjusted.
+
+    This allows setting a default workflow and to adjust all workflows from simple
+    single item mock from `mock_all_slots`.
+    """
+    smart_scan_thing = create_thing_without_server(
+        SmartScanThing,
+        scans_folder=SCAN_DIR,
+        default_workflow=default_workflow,
+        mock_all_slots=True,
+    )
+    # Pop the existing mock workflow and add specified ones (if any)
+    smart_scan_thing._all_workflows.pop("mock-_all_workflows")
+    for key, thing in all_workflows.items():
+        smart_scan_thing._all_workflows[key] = thing
+
+    return smart_scan_thing
+
+
 def test_initial_properties(smart_scan_thing):
     """Check the initial values of properties.
 
@@ -73,7 +95,7 @@ def test_initial_properties(smart_scan_thing):
 class WorkflowSelectorTestCase:
     """The information from a capture in a smart_z_stack."""
 
-    workflows: dict
+    workflows: dict[str, mock.MagicMock]
     default_wf: str
     expected_wf: Optional[str]
     loaded_wf: Optional[str] = None
@@ -91,33 +113,48 @@ SELECTOR_CASES = [
         match="Could not set Scan Workflow",
     ),
     WorkflowSelectorTestCase(
-        workflows={"foo": "foo_workflow", "bar": "bar_workflow"},
+        workflows={
+            "foo": mock.MagicMock(spec=ScanWorkflow),
+            "bar": mock.MagicMock(spec=ScanWorkflow),
+        },
         default_wf="foo",
         expected_wf="foo",
         side_effect=None,
     ),
     WorkflowSelectorTestCase(
-        workflows={"foo": "foo_workflow", "bar": "bar_workflow"},
+        workflows={
+            "foo": mock.MagicMock(spec=ScanWorkflow),
+            "bar": mock.MagicMock(spec=ScanWorkflow),
+        },
         default_wf="bar",
         expected_wf="bar",
         side_effect=None,
     ),
     WorkflowSelectorTestCase(
-        workflows={"foo": "foo_workflow", "bar": "bar_workflow"},
+        workflows={
+            "foo": mock.MagicMock(spec=ScanWorkflow),
+            "bar": mock.MagicMock(spec=ScanWorkflow),
+        },
         default_wf="wrong",
         expected_wf="foo",
         side_effect=logging.WARNING,
         match="Could not select default key 'wrong'",
     ),
     WorkflowSelectorTestCase(
-        workflows={"foo": "foo_workflow", "bar": "bar_workflow"},
+        workflows={
+            "foo": mock.MagicMock(spec=ScanWorkflow),
+            "bar": mock.MagicMock(spec=ScanWorkflow),
+        },
         default_wf="wrong",
         loaded_wf="bar",
         expected_wf="bar",
         side_effect=None,
     ),
     WorkflowSelectorTestCase(
-        workflows={"foo": "foo_workflow", "bar": "bar_workflow"},
+        workflows={
+            "foo": mock.MagicMock(spec=ScanWorkflow),
+            "bar": mock.MagicMock(spec=ScanWorkflow),
+        },
         default_wf="wrong",
         loaded_wf="wrong",
         expected_wf="foo",
@@ -131,25 +168,43 @@ SELECTOR_CASES = [
 
 
 @pytest.mark.parametrize("case", SELECTOR_CASES)
-def test_workflow_set_on_enter(case, check_side_effect, mocker):
+def test_workflow_set_on_enter(case, check_side_effect):
     """Check workflow is set on enter."""
+    smart_scan_thing = custom_smart_scan_thing(case.default_wf, case.workflows)
     with check_side_effect(case.side_effect, match=case.match):
-        # Patch the slot before creation so we don't get caught up in LabThings errors
-        mocker.patch.object(
-            SmartScanThing, "_all_workflows", return_value=mocker.PropertyMock
-        )
-        smart_scan_thing = create_thing_without_server(
-            SmartScanThing,
-            scans_folder=SCAN_DIR,
-            default_workflow=case.default_wf,
-            mock_all_slots=False,
-        )
-        # Set the workflows
-        smart_scan_thing._all_workflows = case.workflows
         # Load in "loaded" as the sever would
         smart_scan_thing._workflow_name = case.loaded_wf
         with smart_scan_thing:
             assert smart_scan_thing._workflow_name == case.expected_wf
+
+
+def test_setting_workflows(caplog):
+    """Check that setting workflow works, or warns if incorrect."""
+    workflows = {
+        "foo": mock.MagicMock(spec=ScanWorkflow),
+        "bar": mock.MagicMock(spec=ScanWorkflow),
+    }
+
+    smart_scan_thing = custom_smart_scan_thing("foo", workflows)
+    with caplog.at_level(logging.WARNING), smart_scan_thing:
+        assert smart_scan_thing._workflow_name == "foo"
+        assert smart_scan_thing._workflow is workflows["foo"]
+        # Can't set None, warns doesn't change
+        smart_scan_thing.workflow_name = None
+        assert len(caplog.records) == 1
+        assert smart_scan_thing._workflow_name == "foo"
+        assert smart_scan_thing._workflow is workflows["foo"]
+        # Can't set a different name
+        smart_scan_thing.workflow_name = "wrong"
+        assert len(caplog.records) == 2  # another log
+        assert smart_scan_thing._workflow_name == "foo"
+        assert smart_scan_thing._workflow is workflows["foo"]
+
+        # can set a valid name
+        smart_scan_thing.workflow_name = "bar"
+        assert len(caplog.records) == 2  # No extra logs
+        assert smart_scan_thing._workflow_name == "bar"
+        assert smart_scan_thing._workflow is workflows["bar"]
 
 
 def test_inaccessible_scan_methods(smart_scan_thing):
