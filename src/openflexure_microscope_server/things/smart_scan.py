@@ -12,6 +12,7 @@ import threading
 import time
 from datetime import datetime
 from subprocess import SubprocessError
+from types import TracebackType
 from typing import (
     Annotated,
     Any,
@@ -163,6 +164,17 @@ class SmartScanThing(lt.Thing):
             )
         self._workflow_name = valid_name
         return self
+
+    def __exit__(
+        self,
+        _exc_type: type[BaseException],
+        _exc_value: Optional[BaseException],
+        _traceback: Optional[TracebackType],
+    ) -> None:
+        """Clean up after context manager is closed.
+
+        In this case it doesn't need to do anything.
+        """
 
     # Note that the default detector name is set at init. This is over written if
     # setting is loaded from disk.

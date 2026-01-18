@@ -17,6 +17,8 @@ import logging
 import os
 import shutil
 import tempfile
+from collections.abc import Iterable
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Optional
 
@@ -65,6 +67,89 @@ def test_initial_properties(smart_scan_thing):
     """
     assert smart_scan_thing._scan_dir_manager.base_dir == SCAN_DIR
     assert smart_scan_thing.latest_scan_name is None
+
+
+@dataclass
+class WorkflowSelectorTestCase:
+    """The information from a capture in a smart_z_stack."""
+
+    workflows: dict
+    default_wf: str
+    expected_wf: Optional[str]
+    loaded_wf: Optional[str] = None
+    side_effect: Optional[type | int | Iterable[int]] = None
+    """The side effect of entering the Thing (None, Logger level number, Error type)"""
+    match: Optional[str | Iterable[str]] = None
+
+
+SELECTOR_CASES = [
+    WorkflowSelectorTestCase(
+        workflows={},
+        default_wf="foo",
+        expected_wf=None,
+        side_effect=RuntimeError,
+        match="Could not set Scan Workflow",
+    ),
+    WorkflowSelectorTestCase(
+        workflows={"foo": "foo_workflow", "bar": "bar_workflow"},
+        default_wf="foo",
+        expected_wf="foo",
+        side_effect=None,
+    ),
+    WorkflowSelectorTestCase(
+        workflows={"foo": "foo_workflow", "bar": "bar_workflow"},
+        default_wf="bar",
+        expected_wf="bar",
+        side_effect=None,
+    ),
+    WorkflowSelectorTestCase(
+        workflows={"foo": "foo_workflow", "bar": "bar_workflow"},
+        default_wf="wrong",
+        expected_wf="foo",
+        side_effect=logging.WARNING,
+        match="Could not select default key 'wrong'",
+    ),
+    WorkflowSelectorTestCase(
+        workflows={"foo": "foo_workflow", "bar": "bar_workflow"},
+        default_wf="wrong",
+        loaded_wf="bar",
+        expected_wf="bar",
+        side_effect=None,
+    ),
+    WorkflowSelectorTestCase(
+        workflows={"foo": "foo_workflow", "bar": "bar_workflow"},
+        default_wf="wrong",
+        loaded_wf="wrong",
+        expected_wf="foo",
+        side_effect=[logging.WARNING, logging.WARNING],
+        match=[
+            "Could not select 'wrong' from Thing mapping",
+            "Could not select default key 'wrong'",
+        ],
+    ),
+]
+
+
+@pytest.mark.parametrize("case", SELECTOR_CASES)
+def test_workflow_set_on_enter(case, check_side_effect, mocker):
+    """Check workflow is set on enter."""
+    with check_side_effect(case.side_effect, match=case.match):
+        # Patch the slot before creation so we don't get caught up in LabThings errors
+        mocker.patch.object(
+            SmartScanThing, "_all_workflows", return_value=mocker.PropertyMock
+        )
+        smart_scan_thing = create_thing_without_server(
+            SmartScanThing,
+            scans_folder=SCAN_DIR,
+            default_workflow=case.default_wf,
+            mock_all_slots=False,
+        )
+        # Set the workflows
+        smart_scan_thing._all_workflows = case.workflows
+        # Load in "loaded" as the sever would
+        smart_scan_thing._workflow_name = case.loaded_wf
+        with smart_scan_thing:
+            assert smart_scan_thing._workflow_name == case.expected_wf
 
 
 def test_inaccessible_scan_methods(smart_scan_thing):
