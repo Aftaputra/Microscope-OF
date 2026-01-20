@@ -1,46 +1,41 @@
 {
   "name": "openflexure-microscope-jsclient",
-  "version": "3.0.0-alpha4",
+  "version": "3.0.0-alpha4_vue3_dryrun",
   "private": true,
   "description": "User client for the OpenFlexure Microscope Server",
   "author": "OpenFlexure <contact@openflexure.org> (https://www.openflexure.org)",
   "scripts": {
     "gv": "genversion src/version.js",
-    "serve": "vue-cli-service serve --mode development",
-    "build": "vue-cli-service build --mode production",
-    "lint": "vue-cli-service lint --no-fix --max-warnings 0",
-    "lint:fix": "vue-cli-service lint --fix"
+    "serve": "vite serve --mode development",
+    "build": "vite build --mode production",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --ignore-path .gitignore",
+    "lint:fix": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
   },
   "dependencies": {
+    "vue": "^3.4.0",
+    "vue-router": "4.0.0",
+    "@vue/compat": "^3.2.0",
+    "vuejs-paginate-next": "1.0.2",
     "material-design-icons": "^3.0",
     "mousetrap": "^1.6.5",
     "openseadragon": "^5.0.0",
-    "vue-observe-visibility": "^0.4"
+    "vue-observe-visibility": "^0.4",
+    "vite": "^5.0.0",
+    "uikit": "^3.24.2",
+    "vuex": "^4.0.0",
+    "axios": "^1.7.7"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.28.5",
-    "@vue/cli-plugin-babel": "^5.0.9",
-    "@vue/cli-plugin-eslint": "^5.0.9",
-    "@vue/cli-plugin-router": "^5.0.9",
-    "@vue/cli-plugin-vuex": "^5.0.9",
-    "@vue/cli-service": "^5.0.9",
-    "@vue/eslint-config-prettier": "^7.1.0",
-    "axios": "^1.13.1",
+    "@vue/eslint-config-prettier": "9.0.0",
     "core-js": "^3.46.0",
     "css-loader": "^3.6",
-    "eslint": "^7.32.0",
-    "eslint-config-prettier": "^8.10.2",
-    "eslint-plugin-prettier": "^3.4.1",
-    "eslint-plugin-vue": "^7.20.0",
-    "less": "^4.4.2",
-    "less-loader": "^11.1.4",
+    "eslint": "^9.0.0",
+    "eslint-plugin-prettier": "^5.1.0",
+    "eslint-plugin-vue": "^9.20.0",
+    "less": "^4.5.1",
     "material-symbols": "^0.39.1",
-    "prettier": "^2.8.8",
-    "uikit": "^3.24.2",
-    "vue": "^2.7",
-    "vue-template-compiler": "^2.7",
-    "vuejs-paginate": "^2.1",
-    "vuex": "^3.6"
+    "prettier": "^3.2.8"
   },
   "postcss": {
     "plugins": {
