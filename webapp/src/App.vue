@@ -1,4 +1,4 @@
-<template>
+<template :key="shortcut.shortcut">
   <div id="app" class="uk-height-1-1 uk-margin-remove uk-padding-remove" :class="handleTheme">
     <!-- this stops the app loading until setConnected is committed in the store, this means
      other components will not load until we have Thing Descriptions. -->
@@ -10,7 +10,6 @@
         <button class="uk-modal-close-default" type="button" uk-close></button>
         <div
           v-for="shortcut in keyboardManual"
-          :key="shortcut.shortcut"
           class="uk-margin-small"
           uk-grid
         >
@@ -26,10 +25,9 @@
 // Import components
 import appContent from "./components/appContent.vue";
 import loadingContent from "./components/loadingContent.vue";
+import MouseTrap from "mousetrap";
 
-var Mousetrap = require("mousetrap");
-
-Mousetrap.prototype.stopCallback = function (e, element) {
+MouseTrap.prototype.stopCallback = function (e, element) {
   // if the element has the class "mousetrap" then no need to stop
   if ((" " + element.className + " ").indexOf(" mousetrap ") > -1) {
     return false;

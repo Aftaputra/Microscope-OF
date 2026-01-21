@@ -1,4 +1,4 @@
-import Vue from "vue";
+import { createApp } from 'vue';
 import App from "./App.vue";
 import store from "./store";
 import UIkit from "uikit";
@@ -21,15 +21,19 @@ UIkit.mixin(
   "accordion",
 );
 
+// Create Vue app
+const app = createApp(App);
+
 // Use visibility observer
-Vue.use(VueObserveVisibility);
+app.use(VueObserveVisibility);
 
-Vue.config.productionTip = false;
+// Disable production tip for Vue
+app.config.productionTip = false;
 
-Vue.mixin(queryMixin);
-Vue.mixin(modalMixin);
+// Use global mixins
+app.mixin(queryMixin);
+app.mixin(modalMixin);
 
-new Vue({
-  store,
-  render: (h) => h(App),
-}).$mount("#app");
+// Use Vuex store
+app.use(store);
+app.mount("#app");
