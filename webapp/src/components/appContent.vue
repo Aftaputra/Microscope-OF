@@ -9,11 +9,10 @@
         class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1 uk-text-center"
       >
         <!-- For each top tab -->
-        <template v-for="(item, index) in topTabs">
+        <template v-for="(item, index) in topTabs" :key="item.id + '-tab-icon'">
           <!-- Render the tab icon -->
           <tabIcon
             :id="item.id + '-tab-icon'"
-            :key="item.id + '-tab-icon'"
             :tab-i-d="item.id"
             :title="item.title"
             :require-connection="true"
@@ -37,11 +36,10 @@
         <hr id="extension-tab-divider" />
 
         <!-- For each bottom tab -->
-        <template v-for="(item, index) in bottomTabs">
+        <template v-for="(item, index) in bottomTabs" :key="item.id + '-tab-icon'">
           <!-- Render the tab icon -->
           <tabIcon
             :id="item.id + '-tab-icon'"
-            :key="item.id + '-tab-icon'"
             :tab-i-d="item.id"
             :title="item.title"
             :require-connection="true"

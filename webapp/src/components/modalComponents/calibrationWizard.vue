@@ -4,10 +4,10 @@
       <h2 class="uk-modal-title">Microscope Calibration</h2>
 
       <component
+        v-bind="currentTask.props"
         :is="currentTask.component"
         v-if="currentTask"
         :key="taskIndex"
-        v-bind="currentTask.props"
         :first="isFirstTask"
         :final="isFinalTask"
         :start-on-last="movingBackward"
