@@ -8,12 +8,14 @@
 
 <script>
 import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 export default {
   name: "StepTemplateWithStream",
 
   components: {
-    miniStreamDisplay,
+    miniStreamDisplay: markRaw(miniStreamDisplay),
   },
 };
 </script>

@@ -17,14 +17,16 @@
 <script>
 import CSMCalibrationSettings from "./CSMSettingsComponents/CSMCalibrationSettings.vue";
 import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 // Export main app
 export default {
   name: "CSMSettings",
 
   components: {
-    CSMCalibrationSettings,
-    miniStreamDisplay,
+    CSMCalibrationSettings: markRaw(CSMCalibrationSettings),
+    miniStreamDisplay: markRaw(miniStreamDisplay),
   },
 };
 </script>

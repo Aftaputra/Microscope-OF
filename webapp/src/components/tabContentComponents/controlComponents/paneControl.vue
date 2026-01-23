@@ -34,14 +34,16 @@ import axios from "axios";
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 import positionControl from "./positionControl.vue";
 import autofocusControl from "./autofocusControl.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 export default {
   name: "PaneControl",
 
   components: {
-    ActionButton,
-    positionControl,
-    autofocusControl,
+    ActionButton: markRaw(ActionButton),
+    positionControl: markRaw(positionControl),
+    autofocusControl: markRaw(autofocusControl),
   },
 
   computed: {

@@ -18,13 +18,15 @@
 <script>
 import stepTemplateWithStream from "../stepTemplateWithStream.vue";
 import CSMCalibrationSettings from "../../../tabContentComponents/settingsComponents/CSMSettingsComponents/CSMCalibrationSettings.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 export default {
   name: "CameraMainCalibrationStep",
 
   components: {
-    stepTemplateWithStream,
-    CSMCalibrationSettings,
+    stepTemplateWithStream: markRaw(stepTemplateWithStream),
+    CSMCalibrationSettings: markRaw(CSMCalibrationSettings),
   },
 
   mounted() {

@@ -100,12 +100,14 @@
 
 <script>
 import syncPropertyButton from "./syncPropertyButton.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 export default {
   name: "InputFromSchema",
 
   components: {
-    syncPropertyButton,
+    syncPropertyButton: markRaw(syncPropertyButton),
   },
 
   props: {

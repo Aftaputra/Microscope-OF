@@ -77,8 +77,8 @@
 
 <script>
 // Import generic components
-import tabIcon from "./genericComponents/tabIcon";
-import tabContent from "./genericComponents/tabContent";
+import tabIcon from "./genericComponents/tabIcon.vue";
+import tabContent from "./genericComponents/tabContent.vue";
 
 // Import new content components
 import aboutContent from "./tabContentComponents/aboutContent.vue";
@@ -90,6 +90,8 @@ import scanListContent from "./tabContentComponents/scanListContent.vue";
 import settingsContent from "./tabContentComponents/settingsContent.vue";
 import slideScanContent from "./tabContentComponents/slideScanContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
+// vue3 migration
+import { shallowRef, markRaw, ref } from 'vue'
 
 // Import modal components for device initialisation
 import calibrationWizard from "./modalComponents/calibrationWizard.vue";
@@ -99,9 +101,9 @@ export default {
   name: "AppContent",
 
   components: {
-    tabIcon,
-    tabContent,
-    calibrationWizard,
+    tabIcon: markRaw(tabIcon),
+    tabContent: markRaw(tabContent),
+    calibrationWizard: markRaw(calibrationWizard),
   },
   data: function () {
     return {
@@ -111,26 +113,26 @@ export default {
           id: "settings",
           title: "Settings",
           icon: "settings",
-          component: settingsContent,
+          component: markRaw(settingsContent),
           class: "uk-margin-auto-top",
         },
         {
           id: "logging",
           title: "Logging",
           icon: "assignment_late",
-          component: loggingContent,
+          component: markRaw(loggingContent),
         },
         {
           id: "about",
           title: "About",
           icon: "info",
-          component: aboutContent,
+          component: markRaw(aboutContent),
         },
         {
           id: "power",
           title: "Power",
           icon: "power_settings_new",
-          component: powerContent,
+          component: markRaw(powerContent),
         },
       ],
       coreTopTabs: [
@@ -138,21 +140,21 @@ export default {
           id: "view",
           title: "View",
           icon: "visibility",
-          component: viewContent,
+          component: markRaw(viewContent),
           requiredThings: [],
         },
         {
           id: "control",
           title: "Control",
           icon: "gamepad",
-          component: controlContent,
+          component: markRaw(controlContent),
           requiredThings: [],
         },
         {
           id: "background-detect",
           title: "Background Detect",
           icon: "background_replace",
-          component: backgroundDetectContent,
+          component: markRaw(backgroundDetectContent),
           // While stage isn't needed; automatic background detect has little function
           // for a manual microscope.
           requiredThings: ["stage"],
@@ -161,14 +163,14 @@ export default {
           id: "slide-scan",
           title: "Slide Scan",
           icon: "settings_overscan",
-          component: slideScanContent,
+          component: markRaw(slideScanContent),
           requiredThings: ["smart_scan"],
         },
         {
           id: "scan-list",
           title: "Scan List",
           icon: "photo_library",
-          component: scanListContent,
+          component: markRaw(scanListContent),
           requiredThings: ["smart_scan"],
         },
       ],

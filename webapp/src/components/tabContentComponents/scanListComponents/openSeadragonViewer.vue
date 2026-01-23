@@ -59,7 +59,7 @@ export default {
     }
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     // Remove global signal listener to perform a gallery refresh
     this.osdViewer.destroy();
   },

@@ -26,6 +26,8 @@
 import appContent from "./components/appContent.vue";
 import loadingContent from "./components/loadingContent.vue";
 import MouseTrap from "mousetrap";
+// vue3 migration
+import { markRaw } from "vue";
 
 MouseTrap.prototype.stopCallback = function (e, element) {
   // if the element has the class "mousetrap" then no need to stop
@@ -52,8 +54,8 @@ export default {
   name: "App",
 
   components: {
-    appContent,
-    loadingContent,
+    appContent: markRaw(appContent),
+    loadingContent: markRaw(loadingContent),
   },
 
   data: function () {
@@ -192,7 +194,7 @@ export default {
     });
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     // Disconnect the theme observer
     if (this.themeObserver) {
       this.themeObserver.disconnect();

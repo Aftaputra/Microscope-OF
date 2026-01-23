@@ -83,13 +83,15 @@
 import axios from "axios";
 import Paginate from "vuejs-paginate";
 import EndpointButton from "../labThingsComponents/endpointButton.vue";
+//vue3 migration
+import { markRaw } from "vue";
 
 export default {
   name: "LoggingContent",
 
   components: {
-    Paginate,
-    EndpointButton,
+    Paginate: markRaw(Paginate),
+    EndpointButton: markRaw(EndpointButton),
   },
 
   data: function () {

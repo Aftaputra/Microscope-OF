@@ -55,10 +55,14 @@
 <script>
 import UIkit from "uikit";
 import OpenSeadragonViewer from "./openSeadragonViewer.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 export default {
   name: "ScanViewerModal",
-  components: { OpenSeadragonViewer },
+  components: { 
+    OpenSeadragonViewer: markRaw(OpenSeadragonViewer) 
+  },
   props: {
     selectedScan: {
       type: Object,

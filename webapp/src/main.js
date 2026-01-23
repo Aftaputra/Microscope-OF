@@ -27,9 +27,6 @@ const app = createApp(App);
 // Use visibility observer
 app.use(VueObserveVisibility);
 
-// Disable production tip for Vue
-app.config.productionTip = false;
-
 // Use global mixins
 app.mixin(queryMixin);
 app.mixin(modalMixin);

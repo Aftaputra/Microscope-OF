@@ -57,14 +57,16 @@
 <script>
 import ActionButton from "@/components/labThingsComponents/actionButton.vue";
 import matrixDisplay from "@/components/ui/matrixDisplay.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 // Export main app
 export default {
   name: "CSMCalibrationSettings",
 
   components: {
-    ActionButton,
-    matrixDisplay,
+    ActionButton: markRaw(ActionButton),
+    matrixDisplay: markRaw(matrixDisplay),
   },
 
   props: {

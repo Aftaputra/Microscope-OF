@@ -61,13 +61,16 @@ and zero position buttons. It also includes the d-pad.
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 import syncPropertyButton from "../../labThingsComponents/syncPropertyButton.vue";
 import stageControlButtons from "./stageControlButtons.vue";
+// vue3 migration
+import { markRaw } from "vue";
+
 export default {
   name: "PaneControl",
 
   components: {
-    ActionButton,
-    syncPropertyButton,
-    stageControlButtons,
+    ActionButton: markRaw(ActionButton),
+    syncPropertyButton: markRaw(syncPropertyButton),
+    stageControlButtons: markRaw(stageControlButtons),
   },
 
   data: function () {
@@ -105,7 +108,7 @@ export default {
     await this.updatePosition();
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     // Remove global signal listener to perform a move action
     this.$root.$off("globalMoveEvent");
     this.$root.$off("globalMoveInImageCoordinatesEvent");

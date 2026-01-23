@@ -47,11 +47,13 @@
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 import ServerSpecifiedPropertyControl from "../../labThingsComponents/serverSpecifiedPropertyControl.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 export default {
   components: {
-    ActionButton,
-    ServerSpecifiedPropertyControl,
+    ActionButton: markRaw(ActionButton),
+    ServerSpecifiedPropertyControl: markRaw(ServerSpecifiedPropertyControl),
   },
 
   data() {

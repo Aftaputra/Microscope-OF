@@ -100,11 +100,17 @@ import axios from "axios";
 import actionButton from "../labThingsComponents/actionButton.vue";
 import scanCard from "./scanListComponents/scanCard.vue";
 import ScanViewerModal from "./scanListComponents/scanViewer.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 // Export main app
 export default {
   name: "ScanListContent",
-  components: { actionButton, scanCard, ScanViewerModal },
+  components: { 
+    actionButton: markRaw(actionButton), 
+    scanCard: markRaw(scanCard), 
+    ScanViewerModal: markRaw(ScanViewerModal) 
+  },
 
   data: function () {
     return {
@@ -171,7 +177,7 @@ export default {
     );
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     // Remove global signal listener to perform a gallery refresh
     this.$root.$off("globalUpdateScans");
     // Then we call that function here to unwatch

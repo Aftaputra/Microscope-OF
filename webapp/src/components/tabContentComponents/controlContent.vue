@@ -11,15 +11,17 @@
 </template>
 
 <script>
-import paneControl from "./controlComponents/paneControl";
+import paneControl from "./controlComponents/paneControl.vue";
 import streamDisplay from "./streamContent.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 export default {
   name: "ControlContent",
 
   components: {
-    paneControl,
-    streamDisplay,
+    paneControl: markRaw(paneControl),
+    streamDisplay: markRaw(streamDisplay) ,
   },
 };
 </script>

@@ -29,12 +29,14 @@
 
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 export default {
   name: "StageSettings",
 
   components: {
-    ActionButton,
+    ActionButton: markRaw(ActionButton),
   },
 
   data: function () {

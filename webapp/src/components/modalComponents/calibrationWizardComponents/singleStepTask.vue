@@ -24,10 +24,14 @@ supplied by the wizard.
 
 <script>
 import calibrationWizardTask from "./calibrationWizardTask.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 export default {
   name: "SingleStepTask",
-  components: { calibrationWizardTask },
+  components: { 
+    calibrationWizardTask: markRaw(calibrationWizardTask) 
+  },
   props: {
     // This must be sent
     stepComponent: {
@@ -54,7 +58,7 @@ export default {
 
   data: function () {
     return {
-      steps: [{ component: this.stepComponent, props: this.stepProps }],
+      steps: [{ component: markRaw(this.stepComponent), props: this.stepProps }],
     };
   },
 };

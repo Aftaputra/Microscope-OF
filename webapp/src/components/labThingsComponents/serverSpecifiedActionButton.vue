@@ -17,13 +17,15 @@
 
 <script>
 import ActionButton from "./actionButton.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 // Export main app
 export default {
   name: "ServerSpecifiedActionButton",
 
   components: {
-    ActionButton,
+    ActionButton: markRaw(ActionButton),
   },
 
   props: {

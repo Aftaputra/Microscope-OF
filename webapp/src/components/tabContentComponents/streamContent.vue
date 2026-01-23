@@ -81,7 +81,7 @@ export default {
     // Do nothing: preview stream now runs all the time
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     // Remove global signal listener to change the GPU preview state
     this.$root.$off("globalTogglePreview");
     // Remove global signal listener to flash the stream element

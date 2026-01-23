@@ -11,13 +11,15 @@
 
 <script>
 import PropertyControl from "./propertyControl.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 // Export main app
 export default {
   name: "ServerSpecifiedPropertyControl",
 
   components: {
-    PropertyControl,
+    PropertyControl: markRaw(PropertyControl),
   },
 
   props: {

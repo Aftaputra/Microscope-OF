@@ -28,11 +28,15 @@
 import UIkit from "uikit";
 import ActionProgressBar from "./actionProgressBar.vue";
 import ActionLogDisplay from "./actionLogDisplay.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 export default {
   name: "ActionStatusModal",
-  components: { ActionProgressBar, ActionLogDisplay },
-
+  components: { 
+    ActionProgressBar: markRaw(ActionProgressBar),
+    ActionLogDisplay: markRaw(ActionLogDisplay)
+  },
   props: {
     title: {
       type: String,

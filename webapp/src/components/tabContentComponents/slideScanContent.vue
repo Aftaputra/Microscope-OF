@@ -153,17 +153,19 @@ import actionLogDisplay from "../labThingsComponents/actionLogDisplay.vue";
 import actionProgressBar from "../labThingsComponents/actionProgressBar.vue";
 import MiniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
 import ActionButton from "../labThingsComponents/actionButton.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 export default {
   name: "SlideScanContent",
 
   components: {
-    streamDisplay,
-    propertyControl,
-    actionLogDisplay,
-    actionProgressBar,
-    MiniStreamDisplay,
-    ActionButton,
+    streamDisplay: markRaw(streamDisplay),
+    propertyControl: markRaw(propertyControl),
+    actionLogDisplay: markRaw(actionLogDisplay),
+    actionProgressBar: markRaw(actionProgressBar),
+    MiniStreamDisplay: markRaw(MiniStreamDisplay),
+    ActionButton: markRaw(ActionButton),
   },
 
   data() {

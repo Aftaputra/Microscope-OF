@@ -28,10 +28,14 @@
 <script>
 import ActionProgressBar from "./actionProgressBar.vue";
 import ActionStatusModal from "./actionStatusModal.vue";
+import { markRaw } from "vue";
 
 export default {
   name: "ActionButton",
-  components: { ActionProgressBar, ActionStatusModal },
+  components: { 
+    ActionProgressBar: markRaw(ActionProgressBar),
+    ActionStatusModal: markRaw(ActionStatusModal)
+  },
 
   props: {
     action: {
@@ -161,7 +165,7 @@ export default {
     }
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     if (this.submitOnEvent) {
       this.$root.$off(this.submitOnEvent);
     }

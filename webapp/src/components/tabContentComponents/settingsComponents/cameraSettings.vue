@@ -25,15 +25,17 @@
 import cameraCalibrationSettings from "./cameraSettingsComponents/cameraCalibrationSettings.vue";
 import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
 import ServerSpecifiedPropertyControl from "../../labThingsComponents/serverSpecifiedPropertyControl.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 // Export main app
 export default {
   name: "CameraSettings",
 
   components: {
-    cameraCalibrationSettings,
-    miniStreamDisplay,
-    ServerSpecifiedPropertyControl,
+    cameraCalibrationSettings: markRaw(cameraCalibrationSettings),
+    miniStreamDisplay: markRaw(miniStreamDisplay),
+    ServerSpecifiedPropertyControl: markRaw(ServerSpecifiedPropertyControl),
   },
 
   data() {
