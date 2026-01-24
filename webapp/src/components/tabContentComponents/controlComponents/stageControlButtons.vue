@@ -41,7 +41,7 @@ export default {
   name: "StageControlButtons",
   methods: {
     move(x, y, z) {
-      this.$root.$emit("globalMoveStepEvent", x, y, z);
+      eventBus.emit("globalMoveStepEvent", x, y, z);
     },
   },
 };

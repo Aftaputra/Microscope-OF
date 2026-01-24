@@ -29,6 +29,7 @@
 import ActionProgressBar from "./actionProgressBar.vue";
 import ActionStatusModal from "./actionStatusModal.vue";
 import { markRaw } from "vue";
+import { eventBus } from "../../eventBus.js";
 
 export default {
   name: "ActionButton",
@@ -134,19 +135,19 @@ export default {
 
   watch: {
     progress(newval) {
-      this.$emit("update:progress", newval);
+      eventBus.emit("update:progress", newval);
     },
     taskStarted(newval) {
-      this.$emit("update:taskStarted", newval);
+      eventBus.emit("update:taskStarted", newval);
     },
     taskRunning(newval) {
-      this.$emit("update:taskRunning", newval);
+      eventBus.emit("update:taskRunning", newval);
     },
     log(newval) {
-      this.$emit("update:log", newval);
+      eventBus.emit("update:log", newval);
     },
     taskStatus(newval) {
-      this.$emit("update:taskStatus", newval);
+      eventBus.emit("update:taskStatus", newval);
     },
   },
 
@@ -157,7 +158,7 @@ export default {
     }
     // A global signal listener to perform the action
     if (this.submitOnEvent) {
-      this.$root.$on(this.submitOnEvent, () => {
+      eventBus.on(this.submitOnEvent, () => {
         if (this.isDisabled) return;
         // Bootstrap task if button is not disabled.
         this.bootstrapTask();
@@ -167,7 +168,11 @@ export default {
 
   beforeUnmount() {
     if (this.submitOnEvent) {
-      this.$root.$off(this.submitOnEvent);
+      eventBus.off(this.submitOnEvent, () => {
+        if (this.isDisabled) return;
+        // Bootstrap task if button is not disabled.
+        this.bootstrapTask();
+      });
     }
   },
 
@@ -203,7 +208,7 @@ export default {
       if (ongoingTask) {
         // There is a started task
         this.taskStarted = true;
-        this.$emit("taskStarted");
+        eventBus.emit("taskStarted");
         // Find its URL
         const taskUrl = ongoingTask.links.find((t) => t.rel == "self").href;
         this.startPollingTask(ongoingTask.id, taskUrl);
@@ -226,10 +231,10 @@ export default {
 
     async startTask() {
       // Starts a new Action task
-      this.$emit("submit", this.submitData);
+      eventBus.emit("submit", this.submitData);
       // Send a request to start a task
       this.taskStarted = true;
-      this.$emit("taskStarted");
+      eventBus.emit("taskStarted");
       let response;
       try {
         response = await this.invokeAction(
@@ -239,7 +244,7 @@ export default {
           false, // Stop invokeAction handling the error.
         );
       } catch (error) {
-        this.$emit("error", error);
+        eventBus.emit("error", error);
         this.onTaskEnd();
         return;
       }
@@ -257,7 +262,7 @@ export default {
       this.taskUrl = taskUrl;
       // Start the store polling TaskId for success
       this.taskRunning = true;
-      this.$emit("taskRunning", taskId);
+      eventBus.emit("taskRunning", taskId);
       this.pollUntilComplete(
         taskUrl,
         this.onPollingResponse,
@@ -271,17 +276,17 @@ export default {
         this.taskStatus = response.data.status;
         this.log = response.data.log;
         if (response.data.status == "completed") {
-          this.$emit("response", response.data);
-          this.$emit("completed", response.data.output);
+          eventBus.emit("response", response.data);
+          eventBus.emit("completed", response.data.output);
         } else if (response.data.status == "cancelled") {
-          this.$emit("cancelled", response.data);
+          eventBus.emit("cancelled", response.data);
           this.modalNotify(`The action '${this.submitLabel}' was cancelled.`);
         }
       }
       this.taskUrl = null;
       this.taskRunning = false;
       this.taskStarted = false;
-      this.$emit("finished");
+      eventBus.emit("finished");
     },
 
     onPollingResponse(response) {

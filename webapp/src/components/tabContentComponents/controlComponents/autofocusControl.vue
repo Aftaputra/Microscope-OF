@@ -40,7 +40,7 @@ export default {
     },
     afterAutofocus() {
       this.isAutofocusing = false;
-      this.$root.$emit("globalUpdatePositionEvent");
+      eventBus.emit("globalUpdatePositionEvent");
     },
   },
 };

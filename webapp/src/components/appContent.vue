@@ -92,6 +92,7 @@ import slideScanContent from "./tabContentComponents/slideScanContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
 // vue3 migration
 import { shallowRef, markRaw, ref } from 'vue'
+import { eventBus } from "../eventBus.js";
 
 // Import modal components for device initialisation
 import calibrationWizard from "./modalComponents/calibrationWizard.vue";
@@ -207,15 +208,15 @@ export default {
 
   mounted() {
     // A global signal listener to switch tab
-    this.$root.$on("globalSwitchTab", (tabID) => {
+    eventBus.on("globalSwitchTab", (tabID) => {
       this.currentTab = tabID;
     });
     // A global signal listener to increment tab
-    this.$root.$on("globalIncrementTab", () => {
+    eventBus.on("globalIncrementTab", () => {
       this.incrementTabBy(1);
     });
     // A global signal listener to decrement tab
-    this.$root.$on("globalDecrementTab", () => {
+    eventBus.on("globalDecrementTab", () => {
       this.incrementTabBy(-1);
     });
     if (this.$store.getters.ready) {

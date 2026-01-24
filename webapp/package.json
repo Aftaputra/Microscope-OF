@@ -12,10 +12,11 @@
     "lint:fix": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
   },
   "dependencies": {
-    "@vue/compat": "^3.2.0",
     "@vitejs/plugin-vue": "^5.0.0",
+    "@vue/compat": "^3.2.0",
     "axios": "^1.7.7",
     "material-design-icons": "^3.0",
+    "mitt": "^3.0.1",
     "mousetrap": "^1.6.5",
     "openseadragon": "^5.0.0",
     "uikit": "^3.24.2",

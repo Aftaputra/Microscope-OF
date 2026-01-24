@@ -35,6 +35,9 @@
 </template>
 
 <script>
+// vue3 migration
+import { eventBus } from "../../eventBus.js";
+
 // Export main app
 export default {
   name: "StreamDisplay",
@@ -63,7 +66,7 @@ export default {
 
   mounted() {
     // A global signal listener to flash the stream element
-    this.$root.$on("globalFlashStream", () => {
+    eventBus.on("globalFlashStream", () => {
       this.flashStream();
     });
 
@@ -83,9 +86,9 @@ export default {
 
   beforeUnmount: function () {
     // Remove global signal listener to change the GPU preview state
-    this.$root.$off("globalTogglePreview");
+    eventBus.off("globalTogglePreview");
     // Remove global signal listener to flash the stream element
-    this.$root.$off("globalFlashStream");
+    eventBus.off("globalFlashStream");
     // Disconnect the size observer
     this.sizeObserver.disconnect();
     // Remove from the array of active streams
@@ -126,7 +129,7 @@ export default {
       let yRelative = (0.5 * event.target.offsetHeight - yCoordinate) * scale;
 
       // Emit a signal to move, acted on by paneControl.vue
-      this.$root.$emit("globalMoveInImageCoordinatesEvent", -xRelative, -yRelative);
+      eventBus.emit("globalMoveInImageCoordinatesEvent", -xRelative, -yRelative);
     },
 
     handleResize: function () {

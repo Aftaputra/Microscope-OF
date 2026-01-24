@@ -63,6 +63,7 @@ import syncPropertyButton from "../../labThingsComponents/syncPropertyButton.vue
 import stageControlButtons from "./stageControlButtons.vue";
 // vue3 migration
 import { markRaw } from "vue";
+import { eventBus } from "../../../eventBus.js";
 
 export default {
   name: "PaneControl",
@@ -89,20 +90,20 @@ export default {
   async mounted() {
     let self = this;
     // A global signal listener to perform a move action
-    this.$root.$on("globalMoveEvent", self.move);
-    this.$root.$on("globalUpdatePositionEvent", self.updatePosition);
+    eventBus.on("globalMoveEvent", self.move);
+    eventBus.on("globalUpdatePositionEvent", self.updatePosition);
     // A global signal listener to perform a move action in pixels
-    this.$root.$on("globalMoveInImageCoordinatesEvent", (x, y, absolute) => {
+    eventBus.on("globalMoveInImageCoordinatesEvent", (x, y, absolute) => {
       this.moveInImageCoordinatesRequest(x, y, absolute);
     });
     // A global signal listener to perform a move in multiples of a step size
-    this.$root.$on("globalMoveStepEvent", (x_steps, y_steps, z_steps) => {
+    eventBus.on("globalMoveStepEvent", (x_steps, y_steps, z_steps) => {
       const navigationStepSize = this.$store.state.navigationStepSize;
       const navigationInvert = this.$store.state.navigationInvert;
       const x = x_steps * navigationStepSize.x * (navigationInvert.x ? -1 : 1);
       const y = y_steps * navigationStepSize.y * (navigationInvert.y ? -1 : 1);
       const z = z_steps * navigationStepSize.z * (navigationInvert.z ? -1 : 1);
-      this.$root.$emit("globalMoveEvent", x, y, z, false);
+      eventBus.emit("globalMoveEvent", x, y, z, false);
     });
     // Update the current position in text boxes
     await this.updatePosition();
@@ -110,10 +111,10 @@ export default {
 
   beforeUnmount() {
     // Remove global signal listener to perform a move action
-    this.$root.$off("globalMoveEvent");
-    this.$root.$off("globalMoveInImageCoordinatesEvent");
-    this.$root.$off("globalMoveStepEvent");
-    this.$root.$off("globalUpdatePositionEvent");
+    eventBus.off("globalMoveEvent");
+    eventBus.off("globalMoveInImageCoordinatesEvent");
+    eventBus.off("globalMoveStepEvent");
+    eventBus.off("globalUpdatePositionEvent");
   },
 
   methods: {

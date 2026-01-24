@@ -28,6 +28,7 @@ import loadingContent from "./components/loadingContent.vue";
 import MouseTrap from "mousetrap";
 // vue3 migration
 import { markRaw } from "vue";
+import { eventBus } from "./eventBus.js";
 
 MouseTrap.prototype.stopCallback = function (e, element) {
   // if the element has the class "mousetrap" then no need to stop
@@ -153,10 +154,10 @@ export default {
 
     // Focus keys
     Mousetrap.bind("pageup", () => {
-      this.$root.$emit("globalMoveStepEvent", 0, 0, 1);
+      eventBus.emit("globalMoveStepEvent", 0, 0, 1);
     });
     Mousetrap.bind("pagedown", () => {
-      this.$root.$emit("globalMoveStepEvent", 0, 0, -1);
+      eventBus.emit("globalMoveStepEvent", 0, 0, -1);
     });
     this.keyboardManual.push({
       shortcut: "pgup / pgdn",
@@ -165,7 +166,7 @@ export default {
 
     // Capture
     Mousetrap.bind("c", () => {
-      this.$root.$emit("globalCaptureEvent");
+      eventBus.emit("globalCaptureEvent");
     });
     this.keyboardManual.push({
       shortcut: "c",
@@ -174,7 +175,7 @@ export default {
 
     // Autofocus
     Mousetrap.bind("a", () => {
-      this.$root.$emit("globalFastAutofocusEvent");
+      eventBus.emit("globalFastAutofocusEvent");
     });
     this.keyboardManual.push({
       shortcut: "a",
@@ -183,10 +184,10 @@ export default {
 
     // Increment/decrement tab
     Mousetrap.bind("shift+down", () => {
-      this.$root.$emit("globalIncrementTab");
+      eventBus.emit("globalIncrementTab");
     });
     Mousetrap.bind("shift+up", () => {
-      this.$root.$emit("globalDecrementTab");
+      eventBus.emit("globalDecrementTab");
     });
     this.keyboardManual.push({
       shortcut: "shift+↑ / shift+↓",
@@ -237,7 +238,7 @@ export default {
       }
     },
     handleExit: function () {
-      this.$root.$emit("globalTogglePreview", false);
+      eventBus.emit("globalTogglePreview", false);
     },
 
     // Handle global mouse wheel events to be associated with navigation
@@ -249,7 +250,7 @@ export default {
       ) {
         var z_rel = event.deltaY / 100;
         // Emit a signal to move, acted on by panelControl.vue
-        this.$root.$emit("globalMoveStepEvent", 0, 0, z_rel, false);
+        eventBus.emit("globalMoveStepEvent", 0, 0, z_rel, false);
       }
     },
 
@@ -276,7 +277,7 @@ export default {
       }
       // Make a position request
       // Emit a signal to move, acted on by panelControl.vue
-      this.$root.$emit("globalMoveStepEvent", x_rel, y_rel, z_rel);
+      eventBus.emit("globalMoveStepEvent", x_rel, y_rel, z_rel);
     },
   },
 };

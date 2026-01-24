@@ -102,6 +102,7 @@ import scanCard from "./scanListComponents/scanCard.vue";
 import ScanViewerModal from "./scanListComponents/scanViewer.vue";
 // vue3 migration
 import { markRaw } from "vue";
+import { eventBus } from "../../eventBus.js";
 
 // Export main app
 export default {
@@ -150,10 +151,10 @@ export default {
     // Update on mount (does nothing if not connected)
     await this.updateScans();
     // A global signal listener to perform a gallery refresh
-    this.$root.$on("globalUpdateScans", () => {
+    eventBus.on("globalUpdateScans", () => {
       this.updateScans();
     });
-    this.$root.$on("modalClosed", () => {
+    eventBus.on("modalClosed", () => {
       // Handle the modal closed event here
       this.updateScans();
     });
@@ -179,13 +180,13 @@ export default {
 
   beforeUnmount() {
     // Remove global signal listener to perform a gallery refresh
-    this.$root.$off("globalUpdateScans");
+    eventBus.off("globalUpdateScans");
     // Then we call that function here to unwatch
     if (this.unwatchStoreFunction) {
       this.unwatchStoreFunction();
       this.unwatchStoreFunction = null;
     }
-    this.$root.$off("modalClosed"); // Clean up event listener
+    eventBus.off("modalClosed"); // Clean up event listener
   },
 
   methods: {

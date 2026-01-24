@@ -75,7 +75,7 @@ export default {
     },
     hide() {
       UIkit.modal(this.$refs.modal).hide();
-      this.$root.$emit("modalClosed");
+      eventBus.emit("modalClosed");
     },
   },
 };
