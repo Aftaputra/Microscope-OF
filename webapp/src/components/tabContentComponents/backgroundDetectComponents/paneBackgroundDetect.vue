@@ -66,14 +66,20 @@ export default {
     };
   },
 
-  async created() {
-    this.readSettings();
-  },
-
   methods: {
+    async safeReadSettings() {
+      if (!this.$store.state.connected) return;
+      
+      try {
+        await this.readSettings();
+      } catch (error) {
+        console.error("Error reading background detector settings:", error);
+      }
+    },
+
     visibilityChanged(isVisible) {
       if (isVisible) {
-        this.readSettings();
+        this.safeReadSettings();
       }
     },
     alertBackgroundSet() {

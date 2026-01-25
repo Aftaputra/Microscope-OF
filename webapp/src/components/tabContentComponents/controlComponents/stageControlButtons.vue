@@ -37,6 +37,8 @@
 </template>
 
 <script>
+import { eventBus } from "../../../eventBus.js";
+
 export default {
   name: "StageControlButtons",
   methods: {

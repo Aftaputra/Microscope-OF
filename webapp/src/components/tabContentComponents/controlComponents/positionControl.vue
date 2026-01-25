@@ -88,40 +88,49 @@ export default {
   },
 
   async mounted() {
-    let self = this;
     // A global signal listener to perform a move action
-    eventBus.on("globalMoveEvent", self.move);
-    eventBus.on("globalUpdatePositionEvent", self.updatePosition);
+    eventBus.on("globalMoveEvent", this.move);
+    
+    eventBus.on("globalUpdatePositionEvent", this.updatePosition);
     // A global signal listener to perform a move action in pixels
-    eventBus.on("globalMoveInImageCoordinatesEvent", (x, y, absolute) => {
-      this.moveInImageCoordinatesRequest(x, y, absolute);
-    });
+    
+    this.onMoveImage = (payload) => {
+      const { x, y, absolute } = payload;
+      this.moveInImageCoordinatesRequest(payload.x, payload.y, payload.absolute);
+    };
+
+    eventBus.on("globalMoveInImageCoordinatesEvent", this.onMoveImage);
     // A global signal listener to perform a move in multiples of a step size
-    eventBus.on("globalMoveStepEvent", (x_steps, y_steps, z_steps) => {
+    
+    this.onMoveStep = (payload) => {
+      const { x_steps, y_steps, z_steps } = payload;
       const navigationStepSize = this.$store.state.navigationStepSize;
       const navigationInvert = this.$store.state.navigationInvert;
       const x = x_steps * navigationStepSize.x * (navigationInvert.x ? -1 : 1);
       const y = y_steps * navigationStepSize.y * (navigationInvert.y ? -1 : 1);
       const z = z_steps * navigationStepSize.z * (navigationInvert.z ? -1 : 1);
-      eventBus.emit("globalMoveEvent", x, y, z, false);
-    });
+      eventBus.emit("globalMoveEvent", {x, y, z, absolute: false});
+    };
+    
+    eventBus.on("globalMoveStepEvent", this.onMoveStep);
     // Update the current position in text boxes
     await this.updatePosition();
   },
 
   beforeUnmount() {
     // Remove global signal listener to perform a move action
-    eventBus.off("globalMoveEvent");
-    eventBus.off("globalMoveInImageCoordinatesEvent");
-    eventBus.off("globalMoveStepEvent");
-    eventBus.off("globalUpdatePositionEvent");
+    eventBus.off("globalMoveEvent", this.move);
+    eventBus.off("globalMoveInImageCoordinatesEvent", this.onMoveImage);
+    eventBus.off("globalMoveStepEvent", this.onMoveStep);
+    eventBus.off("globalUpdatePositionEvent", this.updatePosition);
   },
 
   methods: {
     timeout(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
     },
-    async move(x, y, z, absolute) {
+    async move(payload) {
+      const { x, y, z, absolute } = payload;
       // Move the stage, by updating the controls and starting a move task
       // This is equivalent to clicking the "move" button.
       if (this.moveLock) return; // Discard move requests if we're already moving

@@ -90,9 +90,9 @@
             submit-label="Start Smart Scan"
             :can-terminate="true"
             @taskStarted="startScanning"
-            @update:taskStatus="taskStatus = $event"
-            @update:progress="progress = $event"
-            @update:log="log = $event"
+            @beforeUpdate:taskStatus="taskStatus = $event"
+            @beforeUpdate:progress="progress = $event"
+            @beforeUpdate:log="log = $event"
           />
         </div>
       </div>

@@ -180,13 +180,13 @@ export default {
 
   beforeUnmount() {
     // Remove global signal listener to perform a gallery refresh
-    eventBus.off("globalUpdateScans");
+    eventBus.off("globalUpdateScans", this.updateScans);
     // Then we call that function here to unwatch
     if (this.unwatchStoreFunction) {
       this.unwatchStoreFunction();
       this.unwatchStoreFunction = null;
     }
-    eventBus.off("modalClosed"); // Clean up event listener
+    eventBus.off("modalClosed", this.updateScans); // Clean up event listener
   },
 
   methods: {

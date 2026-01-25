@@ -135,19 +135,19 @@ export default {
 
   watch: {
     progress(newval) {
-      eventBus.emit("update:progress", newval);
+      eventBus.emit("beforeUpdate:progress", newval);
     },
     taskStarted(newval) {
-      eventBus.emit("update:taskStarted", newval);
+      eventBus.emit("beforeUpdate:taskStarted", newval);
     },
     taskRunning(newval) {
-      eventBus.emit("update:taskRunning", newval);
+      eventBus.emit("beforeUpdate:taskRunning", newval);
     },
     log(newval) {
-      eventBus.emit("update:log", newval);
+      eventBus.emit("beforeUpdate:log", newval);
     },
     taskStatus(newval) {
-      eventBus.emit("update:taskStatus", newval);
+      eventBus.emit("beforeUpdate:taskStatus", newval);
     },
   },
 

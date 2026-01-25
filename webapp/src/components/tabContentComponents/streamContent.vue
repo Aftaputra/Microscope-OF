@@ -2,7 +2,6 @@
   <div
     id="stream-display"
     ref="streamDisplay"
-    v-observe-visibility="visibilityChanged"
     class="stream-display uk-width-1-1 uk-height-1-1 scrollTarget"
   >
     <img
@@ -37,14 +36,36 @@
 <script>
 // vue3 migration
 import { eventBus } from "../../eventBus.js";
+import { ref } from "vue";
+import { useIntersectionObserver } from "@vueuse/core";
 
 // Export main app
 export default {
   name: "StreamDisplay",
 
+  setup() {
+
+    const streamDisplay = ref(null);
+    const isVisible = ref(false);
+
+    useIntersectionObserver(
+      streamDisplay,
+      ([{ isIntersecting }]) => {
+        isVisible.value = isIntersecting;
+      },
+      {
+        threshold: 0.1,
+      }
+    );
+
+    return {
+      streamDisplay,
+      isVisible,
+    };
+},
+
   data: function () {
     return {
-      isVisible: false,
       displaySize: [0, 0],
       displayPosition: [0, 0],
       resizeTimeoutId: setTimeout(this.doneResizing, 500),
@@ -66,18 +87,21 @@ export default {
 
   mounted() {
     // A global signal listener to flash the stream element
-    eventBus.on("globalFlashStream", () => {
+    this.onFlashStream = () => {
       this.flashStream();
-    });
+    };
 
+    eventBus.on("globalFlashStream", this.onFlashStream);
     // Mutation observer
     this.sizeObserver = new ResizeObserver(() => {
       this.handleResize(); // For any element attached to the observer, run handleResize() on change
     });
     // Fetch streamDisplay component by ref
-    const streamDisplayElement = this.$refs.streamDisplay.parentNode;
-    // Attach streamDisplay to the size observer
-    this.sizeObserver.observe(streamDisplayElement);
+    if (this.$refs.streamDisplay && this.$refs.streamDisplay.parentNode) {
+      const streamDisplayElement = this.$refs.streamDisplay.parentNode;
+      // Attach streamDisplay to the size observer
+      this.sizeObserver.observe(streamDisplayElement);
+    }
   },
 
   created: function () {
@@ -86,9 +110,9 @@ export default {
 
   beforeUnmount: function () {
     // Remove global signal listener to change the GPU preview state
-    eventBus.off("globalTogglePreview");
+    //eventBus.off("globalTogglePreview", true);
     // Remove global signal listener to flash the stream element
-    eventBus.off("globalFlashStream");
+    eventBus.off("globalFlashStream", this.onFlashStream);
     // Disconnect the size observer
     this.sizeObserver.disconnect();
     // Remove from the array of active streams
@@ -129,7 +153,10 @@ export default {
       let yRelative = (0.5 * event.target.offsetHeight - yCoordinate) * scale;
 
       // Emit a signal to move, acted on by paneControl.vue
-      eventBus.emit("globalMoveInImageCoordinatesEvent", -xRelative, -yRelative);
+      eventBus.emit("globalMoveInImageCoordinatesEvent", {
+        x:-xRelative,
+        y:-yRelative
+      });
     },
 
     handleResize: function () {
