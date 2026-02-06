@@ -195,8 +195,8 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
     """The minimum number of images to capture in a stack.
 
     This many images are captures and tested for focus, if the focus is not central
-    enough more images may be captured. After new images are captured the number sets
-    the number of images used for checking if focus is central.
+    enough more images may be captured. After new images are captured, this value sets
+    the number of images used for checking if focus is achieved.
 
     Defaults to 9 which balances reliability and speed.
     """
@@ -286,7 +286,7 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
         return scan_settings, stitching_settings
 
     def _calc_displacement_from_overlap(self, overlap: float) -> tuple[int, int]:
-        """Take a test image and use camera stage mapping to calculate x and y displacement.
+        """Use camera stage mapping to calculate x and y displacement.
 
         :param overlap: The desired overlap as a fraction of the image. i.e. 0.5 means
             that each image should overlap its nearest neighbour by 50%.
@@ -295,7 +295,7 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
         """
         csm_image_res = self._csm.image_resolution
         if csm_image_res is None:
-            raise RuntimeError("CSM not set. Scan shouldn't have progresses this far.")
+            raise RuntimeError("CSM not set. Scan shouldn't have progressed this far.")
 
         # Calculate displacements in image coordinates
         dx_img = csm_image_res[1] * (1 - overlap)
@@ -448,7 +448,7 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
         imaged = focused or save_on_failure
 
         if not imaged:
-            msg = f"Stack failed at {xyz_pos} treating as background."
+            msg = f"Stack failed at {xyz_pos}. Treating as background."
             self.logger.info(msg)
 
         # run_smart_stage always returns a focus height for the sharpest image even

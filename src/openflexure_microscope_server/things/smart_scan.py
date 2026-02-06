@@ -43,7 +43,7 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 
-# This  allows ActiveScanData to hold arbitrary workflow settings models during a scan.
+# This allows ActiveScanData to hold arbitrary workflow settings models during a scan.
 AnyModel = Annotated[
     BaseModel,
     PlainSerializer(lambda value: value.model_dump(), return_type=dict),
@@ -233,7 +233,7 @@ class SmartScanThing(lt.Thing):
     def sample_scan(self, scan_name: str = "") -> None:
         """Move the stage to cover an area, taking images.
 
-        Depending on the way the stage moves depends on the selected workflow.
+        The way the stage moves depends on the selected workflow.
         If images overlap for a scan workflow then the images can be stitched together
         into a larger composite image.
         """

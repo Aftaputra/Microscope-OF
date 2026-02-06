@@ -189,15 +189,14 @@ class HistoricScanData(BaseScanData):
     @model_validator(mode="before")
     @classmethod
     def coerce_legacy(cls, data: dict) -> dict:
-        """Coerce any legacy data."""
-        r"""Coerce any scan data from before version 2 into the version 2 format."""
+        """Coerce any scan data from before version 2 into the version 2 format."""
         # Before the current version no schema_version was set
         if "schema_version" in data:
             return data
 
         if "correlation_resize" and "overlap" in data:
             correlation_resize = data.pop("correlation_resize")
-            # Note we don't pop overlap is a setting for the legacy workflow as well
+            # Note we don't pop overlap, as it is a setting for the legacy workflow as well
             # as a stitching setting.
             # This is done because in future workflows the stitching overlap may be a
             # directly set setting or something that is calculated from other settings.
