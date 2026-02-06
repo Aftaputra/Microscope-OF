@@ -252,41 +252,15 @@ class ScanPlanner:
 
         next_location = self._remaining_locations[0].xy_tuple
 
-        # If focussed locations exist return closest location, favouring most recent
-        closest_pos = self.closest_focus_site(next_location)
+        # Each scanner defines its own method of choosing a representative nearby site
+        closest_pos = self.select_nearby_focus_site(next_location)
         z = None if closest_pos is None else closest_pos[2]
 
         return next_location, z
 
-    def closest_focus_site(self, xy_pos: XYPos) -> Optional[XYZPos]:
-        """Return the xyz position of the closest site where focus was achieved.
-
-        The most recently taken image is returned in the case of a tie.
-
-        :param xy_pos: The xy_position which the returned position should be closest
-            to.
-
-        Returns None if there if no focussed locations are present
-        """
-        # save to variable rather than search for focussed sites each time.
-        focused_locations = self.focused_locations
-        if not focused_locations:
-            return None
-
-        # must be float64 (double precision) to deal with the huge numbers involved!
-        current_pos = np.array(xy_pos, dtype="float64")
-        path_pos = np.array(focused_locations, dtype="float64")[:, :2]
-
-        # Use linalg.norm to calculate the direct distance bweween the points
-        # Note linalg.norm always uses float64
-        dists = np.linalg.norm((path_pos - current_pos), axis=1)
-
-        # Get indices of all minima.
-        # Note np.where always returns a tuple of arrays, hence the trailing [0]
-        indices = np.where(dists == np.min(dists))[0]
-
-        # The last index is most recent
-        return focused_locations[indices[-1]]
+    def select_nearby_focus_site(self, next_location: XYPos) -> Optional[XYZPos]:
+        """Return the focused site near xy_pos according to the tiebreak."""
+        raise NotImplementedError("Did you call the ScanPlanner base class?")
 
     def mark_location_visited(
         self, xyz_pos: XYZPos, imaged: bool, focused: bool
@@ -315,6 +289,20 @@ class ScanPlanner:
                 **expected_pos.planner_data,
             )
         )
+
+    def _grid_to_future_locations(
+        self,
+        grid: list[list[XYPos]],
+    ) -> list[FutureScanLocation]:
+        """Flatten a 2D grid of coordinates into flat list of FutureScanLocation objects.
+
+        :param grid: A 2D nested list of XY coordinates
+        """
+        path = []
+        for line in grid:
+            path += line
+
+        return [FutureScanLocation(location) for location in path]
 
 
 class SmartSpiral(ScanPlanner):
@@ -385,7 +373,7 @@ class SmartSpiral(ScanPlanner):
     def _initial_location_list(self) -> list[FutureScanLocation]:
         """Set the initial list of locations for this scan planner.
 
-        This is salled on initialisation.
+        This is called on initialisation.
 
         For smart spiral this is just the first point
         """
@@ -514,26 +502,6 @@ class SmartSpiral(ScanPlanner):
 
         self._remaining_locations.sort(key=sort_key)
 
-    def get_next_location_and_z_estimate(self) -> tuple[XYPos, Optional[int]]:
-        """Return the next location to scan and its estimated z-position.
-
-        This overrides the default behaviour of ScanPlanner to take the lowest value of
-        nearest neighbours as this works best for smart stack.
-
-        Note z-position may be None! This indicates that the current z position
-        should be used.
-        """
-        if self.scan_complete:
-            raise RuntimeError("Can't get next position, scan is complete")
-
-        next_location = self._remaining_locations[0].xy_tuple
-
-        # If focused locations exist, return the neighbour with the lowest z position
-        closest_pos = self.select_nearby_focus_site(next_location)
-        z = None if closest_pos is None else closest_pos[2]
-
-        return next_location, z
-
     def select_nearby_focus_site(self, xy_pos: XYPos) -> Optional[XYZPos]:
         """Return the xyz position of the nearby site with the lowest z position.
 
@@ -575,7 +543,11 @@ class SmartSpiral(ScanPlanner):
 
         # Choose the lowest (smallest z) of the neighbouring sites. Smart stack works best
         # if started too low, so the lowest z will perform best
-        chosen_focused_site = min(focused_locations_array[indices], key=lambda x: x[-1])
+        candidates = focused_locations_array[indices]
+        min_z = np.min(candidates[:, -1])
+
+        # Find all with the minimum z, and select the latest
+        chosen_focused_site = candidates[candidates[:, -1] == min_z][-1]
 
         # Convert back into list so values are of type int instead of np.int32
         return tuple(chosen_focused_site.tolist())
@@ -664,91 +636,16 @@ class SnakeScan(ScanPlanner):
             style="snake",
         )
 
-        # create_rectangular_scan_path provides a nested list, which is flattened here
-        path = []
-        for line in grid:
-            path += line
+        return self._grid_to_future_locations(grid)
 
-        return [FutureScanLocation(location) for location in path]
-
-    def mark_location_visited(
-        self, xyz_pos: XYZPos, imaged: bool = True, focused: bool = True
-    ) -> None:
-        """Mark the location as visited.
-
-        :param xyz_pos: the x_y_z position
-        :param imaged: true if an image was taken, false if not (due to background detect)
-        :param focused: true if autofocus completed successfully
-        """
-        # Only call the base class to update the positions
-        super().mark_location_visited(xyz_pos, imaged, focused)
-
-    def get_next_location_and_z_estimate(self) -> tuple[XYPos, Optional[int]]:
-        """Return the next location to scan and its estimated z-position.
-
-        This overrides the default behaviour of ScanPlanner to take the lowest value of
-        nearest neighbours as this works best for smart stack.
-
-        Note z-position may be None! This indicates that the current z position
-        should be used.
-        """
-        if self.scan_complete:
-            raise RuntimeError("Can't get next position, scan is complete")
-
-        next_site = self._remaining_locations[0]
-        next_location = next_site.xy_tuple
-
-        # If focused locations exist, return the neighbour with the lowest z position
-        closest_pos = self.select_nearby_focus_site(next_location)
-        z = None if closest_pos is None else closest_pos[2]
-
-        return next_location, z
-
-    def select_nearby_focus_site(self, xy_pos: XYPos) -> Optional[XYZPos]:
-        """Return the xyz position of the nearby site with the lowest z position.
-
-        Lowest position is best, as starting too high causes smart stacking to
-        autofocus and restart. Starting too low just requires extra movements in +z.
-        Nearby is defined as within 1.1 times the larger of the x and y scan offsets.
-
-        If no focused sites are within this range, use the height of the nearest
-        focused site.
-
-        Returns None if no focused locations are present
-        """
-        # save to variable rather than search for focussed sites each time.
+    # The noqa statement is because next_position is unused but is needed for equivalence
+    # with other workflows that require the next pos to select a neighbour.
+    def select_nearby_focus_site(self, next_position: XYPos) -> Optional[XYZPos]:  # noqa: ARG002
+        """For a snake scan, use the most recent focused site to predict focus."""
         focused_locations = self.focused_locations
         if not focused_locations:
             return None
-
-        # must be float64 (double precision) to deal with the huge numbers involved!
-        current_pos = np.array(xy_pos, dtype="float64")
-        path_pos = np.array(focused_locations, dtype="float64")[:, :2]
-
-        # Use linalg.norm to calculate the direct distance between the points
-        # Note linalg.norm always uses float64
-        dists = np.linalg.norm((path_pos - current_pos), axis=1)
-
-        # Get indices of all focused sites within distance_cutoff.
-        # Note np.where always returns a tuple of arrays, hence the trailing [0]
-        indices = np.where(dists <= self._distance_cutoff)[0]
-
-        # Handle the case that no focused positions are within this range, and
-        # instead use the nearest focused position. This will always return a
-        # height, due to the check that self._focused_locations exists.
-        if len(indices) == 0:
-            distance_cutoff = min(dists)
-            indices = np.where(dists <= distance_cutoff)[0]
-
-        # Turning into an array allows slicing based on a list
-        focused_locations_array = np.array(focused_locations)
-
-        # Choose the lowest (smallest z) of the neighbouring sites. Smart stack works best
-        # if started too low, so the lowest z will perform best
-        chosen_focused_site = min(focused_locations_array[indices], key=lambda x: x[-1])
-
-        # Convert back into list so values are of type int instead of np.int32
-        return tuple(chosen_focused_site.tolist())
+        return focused_locations[-1]
 
 
 def distance_between(
