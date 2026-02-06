@@ -308,3 +308,113 @@ def test_example_smart_spiral():
 
         assert planner.path_history == expected_planner.path_history
         assert planner.imaged_locations == expected_planner.imaged_locations
+
+
+def test_snake_scan_basic_grid():
+    """Check that SnakeScan generates a single point for a 1x1 scan."""
+    initial_position = (100, 50)
+    planner_settings = {"dx": 100, "dy": 100, "x_count": 1, "y_count": 1}
+
+    planner = scan_planners.SnakeScan(
+        initial_position=initial_position,
+        planner_settings=planner_settings,
+    )
+
+    assert not planner.scan_complete
+    # When we start it should want to stay in the initial pos and have
+    # no z_estimate
+    xy_pos, z_pos = planner.get_next_location_and_z_estimate()
+    assert xy_pos == initial_position
+    assert z_pos is None
+
+    # Try to mark location as imaged with only xy_position
+    with pytest.raises(ValueError, match="3 value tuple expected"):
+        planner.mark_location_visited(xy_pos, imaged=False, focused=False)
+    # scan still not complete
+    assert not planner.scan_complete
+    # if we mark this position as visited but not imaged
+    planner.mark_location_visited(
+        (xy_pos[0], xy_pos[1], 10), imaged=False, focused=False
+    )
+    # scan is now complete
+    assert planner.scan_complete
+
+    # if scan is complete, asking for the next location returns an error
+    with pytest.raises(RuntimeError):
+        planner.get_next_location_and_z_estimate()
+
+
+def test_snake_scan_basic_length():
+    """SnakeScan should generate the correct number of locations."""
+    initial_position = (100, 50)
+    planner_settings = {"dx": 100, "dy": 100, "x_count": 3, "y_count": 4}
+
+    planner = scan_planners.SnakeScan(
+        initial_position=initial_position,
+        planner_settings=planner_settings,
+    )
+
+    coords = planner.remaining_locations
+
+    assert len(coords) == 3 * 4
+
+
+def test_snake_scan_ordering():
+    """Test that snake scan returns a path in the right order."""
+    initial_position = (0, 0)
+    planner_settings = {"dx": 10, "dy": 10, "x_count": 4, "y_count": 3}
+
+    planner = scan_planners.SnakeScan(
+        initial_position=initial_position,
+        planner_settings=planner_settings,
+    )
+
+    coords = planner.remaining_locations
+
+    expected = [
+        (0, 0),
+        (10, 0),
+        (20, 0),
+        (30, 0),
+        (30, 10),
+        (20, 10),
+        (10, 10),
+        (0, 10),
+        (0, 20),
+        (10, 20),
+        (20, 20),
+        (30, 20),
+    ]
+
+    assert coords == expected
+
+
+def test_snake_scan_single_row():
+    """Test edge case of a single row scan."""
+    initial_position = (0, 0)
+    planner_settings = {"dx": 5, "dy": 5, "x_count": 4, "y_count": 1}
+
+    planner = scan_planners.SnakeScan(
+        initial_position=initial_position,
+        planner_settings=planner_settings,
+    )
+
+    assert planner.remaining_locations == [(0, 0), (5, 0), (10, 0), (15, 0)]
+
+
+def test_snake_scan_single_column():
+    """Test edge case of a single column scan."""
+    initial_position = (0, 0)
+    planner_settings = {"dx": 5, "dy": 5, "x_count": 1, "y_count": 4}
+
+    planner = scan_planners.SnakeScan(
+        initial_position=initial_position,
+        planner_settings=planner_settings,
+    )
+
+    assert planner.remaining_locations == [
+        (0, 0),
+        (0, 5),
+        (0, 10),
+        (0, 15),
+    ]
