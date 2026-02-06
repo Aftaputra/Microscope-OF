@@ -323,7 +323,7 @@ def test_histo_acquisition_on_sample(histo_workflow, mocker, caplog):
 
     # Should never warn
     assert len(caplog.records) == 1
-    expected_message = "Stack failed at (1, 2, 3) treating as background."
+    expected_message = "Stack failed at (1, 2, 3). Treating as background."
     assert caplog.records[0].message == expected_message
     assert caplog.records[0].levelname == "INFO"
 
