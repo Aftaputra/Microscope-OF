@@ -791,7 +791,7 @@ def create_rectangular_scan_path(
     :param style: Scan pattern style. Either raster or snake.
     :return: Nested list of (x, y) coordinates arranged by row.
     """
-    coords = []
+    coords: list[list[XYPos]] = []
 
     # Populate grid with coordinates in a regular grid
     for y_index in range(y_count):  # rows
@@ -799,8 +799,8 @@ def create_rectangular_scan_path(
         for x_index in range(x_count):  # cols
             # Create a coordinate tuple
             coord = (
-                starting_pos[0] + [x_index, y_index][0] * dx,
-                starting_pos[1] + [x_index, y_index][1] * dy,
+                starting_pos[0] + x_index * dx,
+                starting_pos[1] + y_index * dy,
             )
             # Append coordinate array to position grid
             coords[y_index].append(coord)
