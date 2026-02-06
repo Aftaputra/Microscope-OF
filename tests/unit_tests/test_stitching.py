@@ -11,15 +11,16 @@ import time
 from copy import copy
 
 import pytest
+from pydantic import BaseModel
 
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.stitching import (
-    STITCHING_RESOLUTION,
     BaseStitcher,
     FinalStitcher,
     PreviewStitcher,
     StitcherValidationError,
+    StitchingSettings,
 )
 
 from ..shared_utils.lt_test_utils import LabThingsTestEnv
@@ -88,87 +89,41 @@ FINAL_EXPECTED_COMMAND = [
     FAKE_DIR,
 ]
 
-
-def test_final_stitcher_command_defaults(caplog):
-    """Check the FinalStitcher stitches with expected default values.
-
-    It should warn when default values are used as they are a fallback.
-    """
-    n_logs = 0
-    # Test with no dictionary data and with irrelevant dictionary data.
-    with caplog.at_level(logging.WARNING):
-        for data_dict in [None, {"irrelevant": "data"}]:
-            stitcher = FinalStitcher(FAKE_DIR, logger=LOGGER, scan_data_dict=data_dict)
-            # Should log for overlap being None and correlation_resize being None
-            n_logs += 2
-            assert len(caplog.records) == n_logs
-        assert stitcher.command == FINAL_EXPECTED_COMMAND
+DEFAULT_SETTINGS = StitchingSettings(correlation_resize=0.5, overlap=0.1)
 
 
-def test_final_stitcher_command_tiff(caplog):
+def test_final_stitcher_command_tiff():
     """Check that the tiff can be requested."""
     # Modify defaults
     expected_command = copy(FINAL_EXPECTED_COMMAND)
     expected_command[4] = "--stitch_tiff"
-    stitcher = FinalStitcher(FAKE_DIR, logger=LOGGER, stitch_tiff=True)
-    # Should log for overlap being None and correlation_resize being None
-    assert len(caplog.records) == 2
+    stitcher = FinalStitcher(
+        FAKE_DIR, logger=LOGGER, stitching_settings=DEFAULT_SETTINGS, stitch_tiff=True
+    )
     assert stitcher.command == expected_command
 
 
-def test_final_stitcher_command_set_val_directly():
-    """Check that values are set as expected when directly input."""
-    # Modify defaults
-    expected_command = copy(FINAL_EXPECTED_COMMAND)
-    expected_command[8] = "0.36"
-    expected_command[10] = "0.25"
-    # Test with no data dictionary, irrelevant data, and also the wrong data
-    # When wrong data is submitted, it should take the directly input data.
-    dict_vals = [
-        None,
-        {"irrelevant": "data"},
-        {"overlap": 0.2, "save_resolution": [5, 5]},
-    ]
-    for data_dict in dict_vals:
-        stitcher = FinalStitcher(
-            FAKE_DIR,
-            logger=LOGGER,
-            overlap=0.4,
-            correlation_resize=0.25,
-            scan_data_dict=data_dict,
-        )
-        assert stitcher.command == expected_command
-
-
-def test_final_stitcher_command_set_with_dict():
+def test_final_stitcher_command_with_settings():
     """Check that values are set as expected when set from a ScanData dictionary."""
     # Modify defaults
     expected_command = copy(FINAL_EXPECTED_COMMAND)
     expected_command[8] = "0.36"
     expected_command[10] = "0.25"
-    # Check same thing works with a dictionary, resize is calculated from the saved image
-    # resolution. Make 4x bigger than STITCHING_RESOLUTION to get 0.25
-    resolution = [dim * 4 for dim in STITCHING_RESOLUTION]
-    # Check legacy key as well as current one:
-    for resolution_key in ["save_resolution", "capture resolution"]:
-        stitcher = FinalStitcher(
-            FAKE_DIR,
-            logger=LOGGER,
-            scan_data_dict={"overlap": 0.4, resolution_key: resolution},
-        )
-        assert stitcher.command == expected_command
+
+    stitcher = FinalStitcher(
+        FAKE_DIR,
+        logger=LOGGER,
+        stitching_settings=StitchingSettings(correlation_resize=0.25, overlap=0.4),
+    )
+    assert stitcher.command == expected_command
 
 
 def _validation_error_tester(scan_path, **kwargs):
-    """Check each type of stitcher throws a validation error for the given init args."""
-    # If scan_data_dict is in the kwargs only test the scan_data_dict
-    if "scan_data_dict" not in kwargs:
-        with pytest.raises(StitcherValidationError):
-            BaseStitcher(scan_path, **kwargs).command
-        with pytest.raises(StitcherValidationError):
-            PreviewStitcher(scan_path, **kwargs).command
+    """Check stitcher throws a validation error for the given init args."""
     with pytest.raises(StitcherValidationError):
-        FinalStitcher(scan_path, logger=LOGGER, **kwargs).command
+        BaseStitcher(scan_path, **kwargs).command
+    with pytest.raises(StitcherValidationError):
+        PreviewStitcher(scan_path, **kwargs).command
 
 
 def test_validation_error():
@@ -176,10 +131,23 @@ def test_validation_error():
 
     The stitcher should throw a validation error each attempt.
     """
+    # Tests for preview (and base) stitcher
     _validation_error_tester("/dir;rm -rf /;", overlap=".2", correlation_resize=".25")
     _validation_error_tester(FAKE_DIR, overlap=".2", correlation_resize=".25;rm -rf /;")
     _validation_error_tester(FAKE_DIR, overlap=".2;rm -rf /;", correlation_resize=".25")
-    _validation_error_tester(FAKE_DIR, scan_data_dict={"overlap": ".2;rm -rf /;"})
+
+    class EvilModel(BaseModel):
+        overlap: str
+        correlation_resize: str
+
+    with pytest.raises(StitcherValidationError):
+        FinalStitcher(
+            FAKE_DIR,
+            logger=LOGGER,
+            stitching_settings=EvilModel(
+                overlap=".2;rm -rf /;", correlation_resize=".25"
+            ),
+        )
 
 
 def test_extra_arg_validation():
@@ -188,7 +156,9 @@ def test_extra_arg_validation():
     Currently extra args do not come from user input. But this makes checks more
     future-proof.
     """
-    stitcher = FinalStitcher(FAKE_DIR, logger=LOGGER)
+    stitcher = FinalStitcher(
+        FAKE_DIR, logger=LOGGER, stitching_settings=DEFAULT_SETTINGS
+    )
     stitcher._extra_args = ["&&rm -rf /&&"]
     with pytest.raises(StitcherValidationError):
         stitcher.command
@@ -233,7 +203,9 @@ class StitchingTestThing(lt.Thing):
     @lt.action
     def run_final(self):
         """Run the final stitcher."""
-        stitcher = FinalStitcher(FAKE_DIR, logger=self.logger)
+        stitcher = FinalStitcher(
+            FAKE_DIR, logger=self.logger, stitching_settings=DEFAULT_SETTINGS
+        )
         # Send in the argument HANG to mock-stitch and it just hang for 10s
         stitcher._extra_args = ["HANG"]
         stitcher.run()
@@ -277,9 +249,8 @@ def test_final_stitching_command(caplog, mocker):
     mocker.patch("openflexure_microscope_server.stitching.STITCHING_CMD", mock_cmd)
 
     with caplog.at_level(logging.INFO):
-        # Input values to prevent logging
         stitcher = FinalStitcher(
-            FAKE_DIR, logger=LOGGER, overlap=0.1, correlation_resize=0.5
+            FAKE_DIR, logger=LOGGER, stitching_settings=DEFAULT_SETTINGS
         )
         # For the final stitcher it will always complete before returning.
         stitcher.run()
@@ -315,16 +286,17 @@ def test_final_stitching_command_cancelled(stitching_test_env, mocker):
     assert re.match(r"^Invocation [0-9a-f-]+ was cancelled", logs[-1]["message"])
 
 
-def test_final_stitching_command_error(caplog, mocker):
+def test_final_stitching_command_error(mocker):
     """Check that ChildProcessError is raised if the final stitch errors."""
     mock_cmd = f"python {MOCK_STITCHER}"
 
     mocker.patch("openflexure_microscope_server.stitching.STITCHING_CMD", mock_cmd)
 
-    with caplog.at_level(logging.INFO):
-        stitcher = FinalStitcher(FAKE_DIR, logger=LOGGER)
-        # Send in the argument ERROR to mock-stitch and it will raise an error rather
-        # than echo.
-        stitcher._extra_args = ["ERROR"]
-        with pytest.raises(ChildProcessError):
-            stitcher.run()
+    stitcher = FinalStitcher(
+        FAKE_DIR, logger=LOGGER, stitching_settings=DEFAULT_SETTINGS
+    )
+    # Send in the argument ERROR to mock-stitch and it will raise an error rather
+    # than echo.
+    stitcher._extra_args = ["ERROR"]
+    with pytest.raises(ChildProcessError):
+        stitcher.run()

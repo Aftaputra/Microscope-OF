@@ -21,7 +21,10 @@ from openflexure_microscope_server.scan_directories import (
     get_files_in_zip,
 )
 
-from .test_scan_data import _fake_scan_data
+from .test_scan_data import (
+    assert_active_and_historic_data_equivalent,
+    fake_active_scan_data,
+)
 from .utilities import assert_unique_of_length
 
 # Use our own dir in the root temp dir not a dynamically generated one so we
@@ -173,7 +176,7 @@ def test_scan_sequence_and_listing(caplog):
     scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
 
     # Create some scan data and mark it as successful to get an end date.
-    scan_data = _fake_scan_data()
+    scan_data = fake_active_scan_data()
     scan_data.set_final_data(result="Success")
     # Make 4 scans
     scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
@@ -362,26 +365,33 @@ def test_get_scan_data_path():
     assert scan_dir_manager.get_scan_data_path(scan_name) is None
 
 
-def test_get_scan_data_dict():
-    """Check that the dictionary for the scan data is returned, or None if doesn't exist."""
+def test_get_scan_data():
+    """Check that the scan data is returned, or None if doesn't exist."""
     _clear_scan_dir()
     scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
     scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
     scan_name = scan_dir.name
     # Doesn't yet exist
-    assert scan_dir_manager.get_scan_data_dict(scan_name) is None
+    assert scan_dir_manager.get_scan_data(scan_name) is None
 
-    fake_data = {"foo": 1, "bar": "foobar"}
+    fake_active_data = fake_active_scan_data()
     with open(scan_dir.scan_data_path, "w", encoding="utf-8") as json_file:
-        json.dump(fake_data, json_file)
+        json.dump(fake_active_data.model_dump(), json_file)
 
     # Should now be able to load this fake data from disk
-    assert scan_dir_manager.get_scan_data_dict(scan_name) == fake_data
+    fake_historic_data = scan_dir_manager.get_scan_data(scan_name)
+    assert_active_and_historic_data_equivalent(fake_active_data, fake_historic_data)
 
     # Check None is returned if the data cannot be read.
     with open(scan_dir.scan_data_path, "w", encoding="utf-8") as json_file:
         json_file.write("this is not json")
-    assert scan_dir_manager.get_scan_data_dict(scan_name) is None
+    assert scan_dir_manager.get_scan_data(scan_name) is None
+
+    # Check None is returned if the data cannot or is json but cannot be serialised to
+    # the data model
+    with open(scan_dir.scan_data_path, "w", encoding="utf-8") as json_file:
+        json_file.write(json.dumps({"foo": "bar"}))
+    assert scan_dir_manager.get_scan_data(scan_name) is None
 
 
 def test_empty_scan_info():
@@ -442,29 +452,6 @@ def test_zipping_scan_data():
             assert not file.endswith(".dzi")
 
 
-def test_saving_and_loading_scan_data():
-    """Test that scan data is saved and loaded as expected."""
-    _clear_scan_dir()
-    scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
-    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
-    scan_name = scan_dir.name
-
-    # Should start without a scan data file.
-    assert not os.path.isfile(scan_dir.scan_data_path)
-    # Create
-    scan_data_obj = _fake_scan_data()
-    scan_dir.save_scan_data(scan_data_obj)
-    # File should now exist
-    assert os.path.isfile(scan_dir.scan_data_path)
-
-    # Dump the scan json to a string an reload it
-    # Note that more detailed checking of the dumping and loading of ScanData is in
-    # tests/test_scan_data.py
-    scan_data_dict = json.loads(scan_data_obj.model_dump_json())
-    # What is loaded from file should be the same as from dumping and loading.
-    assert scan_dir_manager.get_scan_data_dict(scan_name) == scan_data_dict
-
-
 def test_saving_scan_data_error():
     """Test that saving scan data if there is no images directory raises FileNotFoundError."""
     _clear_scan_dir()
@@ -475,7 +462,7 @@ def test_saving_scan_data_error():
     shutil.rmtree(scan_dir.images_dir)
     # Should raise FileNotFoundError.
     with pytest.raises(FileNotFoundError):
-        scan_dir.save_scan_data(_fake_scan_data())
+        scan_dir.save_scan_data(fake_active_scan_data())
 
 
 def test_all_files():

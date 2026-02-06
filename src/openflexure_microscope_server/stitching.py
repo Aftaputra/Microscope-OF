@@ -12,7 +12,9 @@ import shlex
 import signal
 import subprocess
 import threading
-from typing import IO, Any, Optional
+from typing import IO, Optional
+
+from pydantic import BaseModel
 
 import labthings_fastapi as lt
 
@@ -26,6 +28,16 @@ STITCH_TILE_SIZE = 8192
 
 DEFAULT_OVERLAP = 0.1
 DEFAULT_RESIZE = 0.5
+
+
+class StitchingSettings(BaseModel):
+    """The data needed to stitch a scan."""
+
+    correlation_resize: float
+    """The resize factor applied to images when the stitching program is correlating."""
+
+    overlap: float
+    """The overlap between adjacent images as a fraction of the image size."""
 
 
 class ExternalSigkillError(ChildProcessError):
@@ -200,10 +212,8 @@ class FinalStitcher(BaseStitcher):
         images_dir: str,
         *,
         logger: logging.Logger,
-        overlap: Optional[float] = None,
-        correlation_resize: Optional[float] = None,
+        stitching_settings: StitchingSettings,
         stitch_tiff: bool = False,
-        scan_data_dict: Optional[dict[str, Any]] = None,
     ) -> None:
         """Initialise a final stitcher, this has more args than the base class.
 
@@ -211,22 +221,18 @@ class FinalStitcher(BaseStitcher):
 
         :param images_dir: The images directory of the scan to stitch.
         :param logger: The logger from the Thing that created this stitcher.
-        :param overlap: The scan overlap, if not known enter None. A value will be
-            chosen from the scan_data_dict, or set to a default value if no value is
-            available in the scan_data.
-        :param correlation_resize: The fraction to resize images by when correlating,
-            if not known enter None. A value will be chosen from the scan_data_dict, or
-            set to a default value if no value is available in the scan_data.
+        :param stitching_settings: A StitchingSettings model this can be loaded from a
+            HistoricScanData for this scan as a dictionary.
         :param stitch_tiff: Whether to stitch a pyramidal TIFF.
-        :param scan_data_dict: The ScanData for this scan as a dictionary. This is used
-            to read/calculate overlap and correlation_resize if they are not provided.
         """
+        if not isinstance(stitching_settings, StitchingSettings):
+            raise StitcherValidationError(
+                "Final stitcher requires settings to be set as a StitchingSettings "
+                "model"
+            )
         self.logger = logger
-        overlap, correlation_resize = self._process_inputs(
-            overlap=overlap,
-            correlation_resize=correlation_resize,
-            scan_data_dict=scan_data_dict,
-        )
+        overlap = stitching_settings.overlap
+        correlation_resize = stitching_settings.correlation_resize
         super().__init__(
             images_dir, overlap=overlap, correlation_resize=correlation_resize
         )
@@ -239,57 +245,6 @@ class FinalStitcher(BaseStitcher):
             "--tile_size",
             str(STITCH_TILE_SIZE),
         ]
-
-    def _process_inputs(
-        self,
-        overlap: Optional[float],
-        correlation_resize: Optional[float],
-        scan_data_dict: Optional[dict[str, Any]],
-    ) -> tuple[float, float]:
-        """Process inputs to ensure ``overlap`` and ``correlation_resize`` have values.
-
-        First the scan_data_dict is inspected for values to allow ``overlap`` and
-        ``correlation_resize`` to be set correctly, if these values are not available
-        then default values are used, and a warning is logged to the thing logger.
-
-        :param overlap: overlap as input to __init__
-        :param correlation_resize: correlation_resize as input to __init__
-        :param scan_data_dict: scan_data_dict as input to __init__
-
-        :returns: overlap and correlation_resize as floats.
-        """
-        if overlap is None:
-            if scan_data_dict is not None and "overlap" in scan_data_dict:
-                overlap = scan_data_dict["overlap"]
-
-            # Warn if still None and set to default.
-            if overlap is None:
-                overlap = DEFAULT_OVERLAP
-                self.logger.warning(
-                    "No value set for overlap. Attempting stitch with overlap "
-                    f"value of {DEFAULT_OVERLAP}"
-                )
-
-        if correlation_resize is None:
-            if scan_data_dict is not None:
-                # Handle "capture resolution" being used to store the save resolution
-                # in old scans.
-                key = (
-                    "capture resolution"
-                    if "capture resolution" in scan_data_dict
-                    else "save_resolution"
-                )
-                if key in scan_data_dict:
-                    save_resolution = scan_data_dict[key]
-                    correlation_resize = STITCHING_RESOLUTION[0] / save_resolution[0]
-            # Warn if still None and set to default.
-            if correlation_resize is None:
-                correlation_resize = DEFAULT_RESIZE
-                self.logger.warning(
-                    "No information available to calculate stitch resize. Attempting "
-                    f"stitch with resize value of {DEFAULT_RESIZE}"
-                )
-        return overlap, correlation_resize
 
     def run(self) -> None:
         """Run the final stitch logging any output.
