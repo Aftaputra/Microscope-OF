@@ -19,6 +19,7 @@ from pydantic import BaseModel
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.scan_planners import (
+    RasterScan,
     ScanPlanner,
     SmartSpiral,
     SnakeScan,
@@ -518,7 +519,7 @@ class SnakeSettingsModel(BaseModel):
     save_resolution: tuple[int, int]
 
 
-class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
+class SnakeWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]):
     """A workflow optimised for snaking around samples.
 
     This workflow generates a list of coordinates in a rectangle, and snakes
@@ -534,10 +535,9 @@ class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
         readonly=True,
     )
 
-    _settings_model = SnakeSettingsModel
+    _settings_model: type[SettingModelType] = SnakeSettingsModel
     _planner_cls: type[ScanPlanner] = SnakeScan
     # Thing Slots
-    _background_detector: ChannelDeviationLUV = lt.thing_slot()
     _cam: BaseCamera = lt.thing_slot()
     _csm: CameraStageMapper = lt.thing_slot()
     _autofocus: AutofocusThing = lt.thing_slot()
@@ -578,7 +578,7 @@ class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
 
     def all_settings(
         self, images_dir: str
-    ) -> tuple[SnakeSettingsModel, StitchingSettings]:
+    ) -> tuple[SettingModelType, StitchingSettings]:
         """Return the workflow and stitching settings.
 
         :param images_dir: The directory that images are to be written to.
@@ -596,7 +596,7 @@ class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
             f"{dx}, {dy}"
         )
 
-        scan_settings = SnakeSettingsModel(
+        scan_settings = self._settings_model(
             overlap=self.overlap,
             dx=dx,
             dy=dy,
@@ -609,7 +609,7 @@ class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
 
         return scan_settings, stitching_settings
 
-    def pre_scan_routine(self, settings: SnakeSettingsModel) -> None:
+    def pre_scan_routine(self, settings: SettingModelType) -> None:
         """Autofocus before starting the scan.
 
         :param settings: The settings for this scan as a SnakeSettingsModel
@@ -617,7 +617,7 @@ class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
         self._autofocus.looping_autofocus(dz=settings.autofocus_dz, start="centre")
 
     def new_scan_planner(
-        self, settings: SnakeSettingsModel, position: Mapping[str, int]
+        self, settings: SettingModelType, position: Mapping[str, int]
     ) -> ScanPlanner:
         """Return a new scan planner object.
 
@@ -640,7 +640,7 @@ class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
         )
 
     def acquisition_routine(
-        self, settings: SnakeSettingsModel, xyz_pos: tuple[int, int, int]
+        self, settings: SettingModelType, xyz_pos: tuple[int, int, int]
     ) -> tuple[bool, Optional[int]]:
         """Perform acquisition routine. This is run at each scan location.
 
@@ -669,3 +669,33 @@ class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
             property_control_for(self, "y_count", label="Number of rows"),
             property_control_for(self, "autofocus_dz", label="Autofocus Range (steps)"),
         ]
+
+
+class RasterSettingsModel(SnakeSettingsModel):
+    """The settings for a scan with the Raster Workflow.
+
+    This is identical to the SnakeSettings, but is subclassed for clarity.
+    """
+
+    pass
+
+
+class RasterWorkflow(SnakeWorkflow[RasterSettingsModel]):
+    """A workflow optimised for snaking around samples.
+
+    This workflow generates a list of coordinates in a rectangle, and always
+    moves right across a row, then moves down a row while moving to the starting
+    column (assuming positive dx and dy).
+    """
+
+    display_name: str = lt.property(default="Raster Scan", readonly=True)
+    ui_blurb: str = lt.property(
+        default=(
+            "This scan workflow is optimised for performing a raster scan over a rectangle. It "
+            "always moves down and right from the starting point, over a defined grid."
+        ),
+        readonly=True,
+    )
+
+    _settings_model = RasterSettingsModel
+    _planner_cls: type[ScanPlanner] = RasterScan

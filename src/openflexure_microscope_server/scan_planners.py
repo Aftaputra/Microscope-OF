@@ -637,14 +637,67 @@ class SnakeScan(ScanPlanner):
 
         return self._grid_to_future_locations(grid)
 
-    # The noqa statement is because next_position is unused but is needed for equivalence
-    # with other workflows that require the next pos to select a neighbour.
-    def select_nearby_focus_site(self, next_position: XYPos) -> Optional[XYZPos]:  # noqa: ARG002
-        """For a snake scan, use the most recent focused site to predict focus."""
+    def select_nearby_focus_site(self, next_position: XYPos) -> Optional[XYZPos]:
+        """Return a focused site near the given position to estimate Z for the next move.
+
+        Looks for all previously focused locations that are within the scan
+        step size (self._dx, self._dy) of `next_position`. Among these nearby focused
+        sites, it returns the most recently imaged one.
+
+        This is suitable for raster or snake scans, where the scan may move along a row
+        or column and then jump to a new row/column. If no nearby focused sites exist,
+        returns None.
+
+        :param next_position: The XY position where the next image will be taken.
+        :return: The XYZ tuple of the closest and most recent focused site, or None if
+                no focused locations exist.
+        """
         focused_locations = self.focused_locations
         if not focused_locations:
             return None
-        return focused_locations[-1]
+
+        next_pos_arr = np.array(next_position, dtype="float64")
+        path_arr = np.array(focused_locations, dtype="float64")[:, :2]
+
+        # Find all focused positions within dx and dy of next_position
+        dx_ok = np.abs(path_arr[:, 0] - next_pos_arr[0]) <= self._dx
+        dy_ok = np.abs(path_arr[:, 1] - next_pos_arr[1]) <= self._dy
+        nearby_indices = np.where(dx_ok & dy_ok)[0]
+
+        if len(nearby_indices) == 0:
+            return None
+
+        # Pick the most recent nearby site
+        return focused_locations[nearby_indices[-1]]
+
+
+class RasterScan(SnakeScan):
+    """A scan planner that performs a snake scan, always moving right and down.
+
+    This planner starts at the corner of the region to scan, and always moves right
+    to the end of the row, then down to the next row (assuming positive dx, dy).
+
+    This is subclassed from SnakeScan, as the only difference in behaviour is in
+    building the initial path.
+    """
+
+    def _initial_location_list(self) -> list[FutureScanLocation]:
+        """Set the initial list of locations for this scan planner.
+
+        This is called on initialisation.
+
+        For raster scan, this is the full grid, and none will be added during scanning.
+        """
+        grid = create_rectangular_scan_path(
+            starting_pos=self._initial_position,
+            x_count=self._x_count,
+            y_count=self._y_count,
+            dx=self._dx,
+            dy=self._dy,
+            style="raster",
+        )
+
+        return self._grid_to_future_locations(grid)
 
 
 def distance_between(
