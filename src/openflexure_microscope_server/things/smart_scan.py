@@ -208,6 +208,16 @@ class SmartScanThing(lt.Thing):
             raise ScanNotRunningError("Cannot get ongoing scan if scan is not running.")
         return self._ongoing_scan
 
+    @lt.property
+    def all_workflow_names(self) -> list[str]:
+        """Return a list of all available Scan Workflows."""
+        return list(self._all_workflows.keys())
+
+    @lt.property
+    def workflow_display_names(self) -> dict[str, str]:
+        """Return a list of the display names of all available Scan Workflows."""
+        return {name: wf.display_name for name, wf in self._all_workflows.items()}
+
     _scan_data: Optional[ActiveScanData] = None
 
     @property

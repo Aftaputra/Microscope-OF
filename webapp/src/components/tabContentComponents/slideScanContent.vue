@@ -2,6 +2,24 @@
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <div class="control-component uk-padding-small">
       <div v-show="!scanning" v-observe-visibility="visibilityChanged" class="uk-padding-small">
+          <!-- Workflow Selection Dropdown -->
+          <div class="uk-margin">
+            <label class="uk-form-label">Workflow</label>
+
+            <select
+              class="uk-select uk-form-small"
+              :value="workflowName"
+              @change="setWorkflow($event.target.value)"
+            >
+              <option
+                v-for="(label, name) in workflowOptions"
+                :key="name"
+                :value="name"
+              >
+                {{ label }}
+              </option>
+            </select>
+          </div>
         <h4 v-if="workflowDisplayName" class="workflow-name">
           {{ workflowDisplayName }}
         </h4>
@@ -145,6 +163,7 @@ export default {
       workflowSettings: [],
       workflowDisplayName: undefined,
       workflowBlurb: undefined,
+      workflowOptions: [],
     };
   },
 
@@ -159,6 +178,10 @@ export default {
 
   async created() {
     this.readSettings();
+    this.workflowOptions = await this.readThingProperty(
+      "smart_scan",
+      "workflow_display_names",
+    );
   },
 
   methods: {
@@ -214,6 +237,28 @@ export default {
         }
         this.lastScanName = await this.readThingProperty("smart_scan", "latest_scan_name");
         setTimeout(this.pollScan, 1000); // keep rescheduling until it's stopped
+      }
+    },
+    async setWorkflow(name) {
+        try {
+          this.workflowName = name;
+
+          await this.writeThingProperty(
+            "smart_scan",
+            "workflow_name",
+            name
+          );
+
+          // refresh  UI
+          await this.readSettings();
+        } catch (err) {
+          this.modalError(err);
+
+          // revert if server rejected
+          this.workflowName = await this.readThingProperty(
+            "smart_scan",
+            "workflow_name"
+          );
       }
     },
     async downloadZipFile(response) {
