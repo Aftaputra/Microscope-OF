@@ -134,22 +134,48 @@ export default {
   },
 
   watch: {
-    progress(newval) {
-      eventBus.emit("beforeUpdate:progress", newval);
+    progress: {
+      handler(newval) {
+        //this.$emit("update:progress", newval);
+        eventBus.emit("update:progress", newval);
+        //eventBus.emit("beforeUpdate:progress", newval);
+      },
+      deep: true,
+      immediate: true // Optional: triggers immediately on component load
     },
-    taskStarted(newval) {
-      eventBus.emit("beforeUpdate:taskStarted", newval);
+    taskStarted: {
+      handler(newval) {
+        //this.$emit("update:taskStarted", newval);
+        eventBus.emit("update:taskStarted", newval);
+        //eventBus.emit("beforeUpdate:taskStarted", newval);
+      },
+      deep: true
     },
-    taskRunning(newval) {
-      eventBus.emit("beforeUpdate:taskRunning", newval);
+    taskRunning: {
+      handler(newval) {
+        //this.$emit("update:taskRunning", newval);
+        eventBus.emit("update:taskRunning", newval);
+        //eventBus.emit("beforeUpdate:taskRunning", newval);
+      },
+      deep: true
     },
-    log(newval) {
-      eventBus.emit("beforeUpdate:log", newval);
+    log: {
+      handler(newval) {
+        //this.$emit("update:log", newval);
+        eventBus.emit("update:log", newval);
+        //eventBus.emit("beforeUpdate:log", newval);
+      },
+      deep: true
     },
-    taskStatus(newval) {
-      eventBus.emit("beforeUpdate:taskStatus", newval);
-    },
-  },
+    taskStatus: {
+      handler(newval) {
+        //this.$emit("update:taskStatus", newval);
+        eventBus.emit("update:taskStatus", newval);
+        //eventBus.emit("beforeUpdate:taskStatus", newval);
+      },
+      deep: true
+    }
+},
 
   mounted() {
     // Check for already running tasks
@@ -168,11 +194,7 @@ export default {
 
   beforeUnmount() {
     if (this.submitOnEvent) {
-      eventBus.off(this.submitOnEvent, () => {
-        if (this.isDisabled) return;
-        // Bootstrap task if button is not disabled.
-        this.bootstrapTask();
-      });
+      eventBus.off(this.submitOnEvent);
     }
   },
 
@@ -231,6 +253,7 @@ export default {
 
     async startTask() {
       // Starts a new Action task
+      console.log("Starting task with data:", this.submitData);
       eventBus.emit("submit", this.submitData);
       // Send a request to start a task
       this.taskStarted = true;
@@ -286,7 +309,7 @@ export default {
       this.taskUrl = null;
       this.taskRunning = false;
       this.taskStarted = false;
-      eventBus.emit("finished");
+      this.$emit("finished");
     },
 
     onPollingResponse(response) {

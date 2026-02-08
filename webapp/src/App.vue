@@ -154,10 +154,10 @@ export default {
 
     // Focus keys
     Mousetrap.bind("pageup", () => {
-      eventBus.emit("globalMoveStepEvent", 0, 0, 1);
+      eventBus.emit("globalMoveStepEvent", {x: 0, y: 0, z: 1});
     });
     Mousetrap.bind("pagedown", () => {
-      eventBus.emit("globalMoveStepEvent", 0, 0, -1);
+      eventBus.emit("globalMoveStepEvent", {x: 0, y: 0, z: -1});
     });
     this.keyboardManual.push({
       shortcut: "pgup / pgdn",
@@ -166,7 +166,7 @@ export default {
 
     // Capture
     Mousetrap.bind("c", () => {
-      eventBus.emit("globalCaptureEvent");
+      eventBus.emit("globalCaptureEvent", {});
     });
     this.keyboardManual.push({
       shortcut: "c",
@@ -175,7 +175,7 @@ export default {
 
     // Autofocus
     Mousetrap.bind("a", () => {
-      eventBus.emit("globalFastAutofocusEvent");
+      eventBus.emit("globalFastAutofocusEvent", {});
     });
     this.keyboardManual.push({
       shortcut: "a",
@@ -184,10 +184,10 @@ export default {
 
     // Increment/decrement tab
     Mousetrap.bind("shift+down", () => {
-      eventBus.emit("globalIncrementTab");
+      eventBus.emit("globalIncrementTab", {});
     });
     Mousetrap.bind("shift+up", () => {
-      eventBus.emit("globalDecrementTab");
+      eventBus.emit("globalDecrementTab", {});
     });
     this.keyboardManual.push({
       shortcut: "shift+↑ / shift+↓",
@@ -250,7 +250,7 @@ export default {
       ) {
         var z_rel = event.deltaY / 100;
         // Emit a signal to move, acted on by panelControl.vue
-        eventBus.emit("globalMoveStepEvent", 0, 0, z_rel, false);
+        eventBus.emit("globalMoveStepEvent", {x: 0, y: 0, z: z_rel, absolute: false});
       }
     },
 
@@ -277,7 +277,7 @@ export default {
       }
       // Make a position request
       // Emit a signal to move, acted on by panelControl.vue
-      eventBus.emit("globalMoveStepEvent", x_rel, y_rel, z_rel);
+      eventBus.emit("globalMoveStepEvent", {x: x_rel, y: y_rel, z: 0});
     },
   },
 };

@@ -15,8 +15,8 @@ and zero position buttons. It also includes the d-pad.
             <!-- Text boxes to set and view position -->
             <div class="input-and-buttons-container">
               <input
-                v-for="(_v, key) in setPosition"
                 :key="`setPosition_${key}`"
+                v-for="(_v, key) in setPosition"
                 v-model="setPosition[key]"
                 class="uk-form-small numeric-setting-line-input"
                 type="number"
@@ -83,6 +83,7 @@ export default {
 
   computed: {
     positionStatusUri: function () {
+      console.log("Computing position status URI", this.thingActionUrl("stage", "position"));
       return this.thingActionUrl("stage", "position");
     },
   },
@@ -90,28 +91,11 @@ export default {
   async mounted() {
     // A global signal listener to perform a move action
     eventBus.on("globalMoveEvent", this.move);
-    
+    // A global signal listener to update position text boxes
     eventBus.on("globalUpdatePositionEvent", this.updatePosition);
     // A global signal listener to perform a move action in pixels
-    
-    this.onMoveImage = (payload) => {
-      const { x, y, absolute } = payload;
-      this.moveInImageCoordinatesRequest(payload.x, payload.y, payload.absolute);
-    };
-
     eventBus.on("globalMoveInImageCoordinatesEvent", this.onMoveImage);
     // A global signal listener to perform a move in multiples of a step size
-    
-    this.onMoveStep = (payload) => {
-      const { x_steps, y_steps, z_steps } = payload;
-      const navigationStepSize = this.$store.state.navigationStepSize;
-      const navigationInvert = this.$store.state.navigationInvert;
-      const x = x_steps * navigationStepSize.x * (navigationInvert.x ? -1 : 1);
-      const y = y_steps * navigationStepSize.y * (navigationInvert.y ? -1 : 1);
-      const z = z_steps * navigationStepSize.z * (navigationInvert.z ? -1 : 1);
-      eventBus.emit("globalMoveEvent", {x, y, z, absolute: false});
-    };
-    
     eventBus.on("globalMoveStepEvent", this.onMoveStep);
     // Update the current position in text boxes
     await this.updatePosition();
@@ -120,15 +104,34 @@ export default {
   beforeUnmount() {
     // Remove global signal listener to perform a move action
     eventBus.off("globalMoveEvent", this.move);
+    eventBus.off("globalUpdatePositionEvent", this.updatePosition);
     eventBus.off("globalMoveInImageCoordinatesEvent", this.onMoveImage);
     eventBus.off("globalMoveStepEvent", this.onMoveStep);
-    eventBus.off("globalUpdatePositionEvent", this.updatePosition);
   },
 
   methods: {
     timeout(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
     },
+
+    onMoveImage(payload) {
+      console.log("Received move in image coordinates:", payload);
+      this.moveInImageCoordinatesRequest(payload.x, payload.y, payload.absolute);
+    },
+
+    onMoveStep(payload) {
+      console.log("Received key move step event:", payload);
+      const { x: x_steps, y: y_steps, z: z_steps } = payload;
+      const navigationStepSize = this.$store.state.navigationStepSize;
+      const navigationInvert = this.$store.state.navigationInvert;
+      const x = x_steps * navigationStepSize.x * (navigationInvert.x ? -1 : 1);
+      const y = y_steps * navigationStepSize.y * (navigationInvert.y ? -1 : 1);
+      const z = z_steps * navigationStepSize.z * (navigationInvert.z ? -1 : 1);
+      const movePayload = { x, y, z, absolute: false };
+      eventBus.emit("globalMoveEvent", movePayload);
+      console.log("Emitted global move event with:", movePayload);
+    },
+
     async move(payload) {
       const { x, y, z, absolute } = payload;
       // Move the stage, by updating the controls and starting a move task
@@ -146,15 +149,17 @@ export default {
           y: this.setPosition.y + y,
           z: this.setPosition.z + z,
         };
+        console.log("Updated setPosition for relative move:", this.setPosition);
       }
-      await this.timeout(1); // Wait for Vue to update the position
+      await this.$nextTick(); // Wait for Vue to update the position
       await this.startMoveTask();
     },
     async startMoveTask() {
-      this.moveLock = true;
+      //this.moveLock = true;
       await this.$refs.moveButton.startTask();
     },
     moveComplete() {
+      console.log("Move completed.");
       this.updatePosition();
       this.moveLock = false;
     },
