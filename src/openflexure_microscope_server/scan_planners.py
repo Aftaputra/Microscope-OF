@@ -691,20 +691,11 @@ def create_rectangular_scan_path(
 
     # Populate grid with coordinates in a regular grid
     for y_index in range(y_count):  # rows
-        coords.append([])
-        for x_index in range(x_count):  # cols
-            # Create a coordinate tuple
-            coord = (
-                starting_pos[0] + x_index * dx,
-                starting_pos[1] + y_index * dy,
-            )
-            # Append coordinate array to position grid
-            coords[y_index].append(coord)
-
-    # If style is snake, reverse every second row
-    if style == "snake":
-        for i, line in enumerate(coords):
-            if i % 2 != 0:
-                # Reverse the list of coordinates
-                line.reverse()
+        row = [
+            (starting_pos[0] + x_index * dx, starting_pos[1] + y_index * dy)
+            for x_index in range(x_count)
+        ]
+        if style == "snake" and y_index % 2 == 1:
+            row.reverse()
+        coords.append(row)
     return coords
