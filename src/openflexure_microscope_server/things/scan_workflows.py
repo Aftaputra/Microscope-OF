@@ -66,7 +66,7 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     """A tuple of the image resolution to capture."""
 
     # CSM may not be set, and isn't required for a workflow. Allow for it to exist or be None
-    _csm: Optional[CameraStageMapper] = None
+    _csm: Optional[CameraStageMapper] = lt.thing_slot()
 
     def check_before_start(self, scan_name: str) -> None:
         """Check before the scan starts. Throw an error if the scan shouldn't start.
