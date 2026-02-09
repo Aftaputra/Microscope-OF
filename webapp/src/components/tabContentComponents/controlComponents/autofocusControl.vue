@@ -20,6 +20,7 @@
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 // vue3 migration
 import { markRaw } from "vue";
+import { eventBus } from "../../../eventBus.js";
 
 export default {
   name: "AutofocusControl",

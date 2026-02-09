@@ -137,7 +137,7 @@ export default {
     progress: {
       handler(newval) {
         //this.$emit("update:progress", newval);
-        eventBus.emit("update:progress", newval);
+        this.$emit("update:progress", newval);
         //eventBus.emit("beforeUpdate:progress", newval);
       },
       deep: true,
@@ -146,7 +146,7 @@ export default {
     taskStarted: {
       handler(newval) {
         //this.$emit("update:taskStarted", newval);
-        eventBus.emit("update:taskStarted", newval);
+        this.$emit("update:taskStarted", newval);
         //eventBus.emit("beforeUpdate:taskStarted", newval);
       },
       deep: true
@@ -154,7 +154,7 @@ export default {
     taskRunning: {
       handler(newval) {
         //this.$emit("update:taskRunning", newval);
-        eventBus.emit("update:taskRunning", newval);
+        this.$emit("update:taskRunning", newval);
         //eventBus.emit("beforeUpdate:taskRunning", newval);
       },
       deep: true
@@ -162,7 +162,7 @@ export default {
     log: {
       handler(newval) {
         //this.$emit("update:log", newval);
-        eventBus.emit("update:log", newval);
+        this.$emit("update:log", newval);
         //eventBus.emit("beforeUpdate:log", newval);
       },
       deep: true
@@ -170,7 +170,7 @@ export default {
     taskStatus: {
       handler(newval) {
         //this.$emit("update:taskStatus", newval);
-        eventBus.emit("update:taskStatus", newval);
+        this.$emit("update:taskStatus", newval);
         //eventBus.emit("beforeUpdate:taskStatus", newval);
       },
       deep: true
@@ -230,7 +230,7 @@ export default {
       if (ongoingTask) {
         // There is a started task
         this.taskStarted = true;
-        eventBus.emit("taskStarted");
+        this.$emit("taskStarted");
         // Find its URL
         const taskUrl = ongoingTask.links.find((t) => t.rel == "self").href;
         this.startPollingTask(ongoingTask.id, taskUrl);
@@ -254,10 +254,10 @@ export default {
     async startTask() {
       // Starts a new Action task
       console.log("Starting task with data:", this.submitData);
-      eventBus.emit("submit", this.submitData);
+      this.$emit("submit", this.submitData);
       // Send a request to start a task
       this.taskStarted = true;
-      eventBus.emit("taskStarted");
+      this.$emit("taskStarted");
       let response;
       try {
         response = await this.invokeAction(
@@ -267,7 +267,7 @@ export default {
           false, // Stop invokeAction handling the error.
         );
       } catch (error) {
-        eventBus.emit("error", error);
+        this.$emit("error", error);
         this.onTaskEnd();
         return;
       }
@@ -285,7 +285,7 @@ export default {
       this.taskUrl = taskUrl;
       // Start the store polling TaskId for success
       this.taskRunning = true;
-      eventBus.emit("taskRunning", taskId);
+      this.$emit("taskRunning", taskId);
       this.pollUntilComplete(
         taskUrl,
         this.onPollingResponse,
@@ -299,10 +299,10 @@ export default {
         this.taskStatus = response.data.status;
         this.log = response.data.log;
         if (response.data.status == "completed") {
-          eventBus.emit("response", response.data);
-          eventBus.emit("completed", response.data.output);
+          this.$emit("response", response.data);
+          this.$emit("completed", response.data.output);
         } else if (response.data.status == "cancelled") {
-          eventBus.emit("cancelled", response.data);
+          this.$emit("cancelled", response.data);
           this.modalNotify(`The action '${this.submitLabel}' was cancelled.`);
         }
       }
