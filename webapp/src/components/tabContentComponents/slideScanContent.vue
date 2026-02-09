@@ -2,24 +2,20 @@
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <div class="control-component uk-padding-small">
       <div v-show="!scanning" v-observe-visibility="visibilityChanged" class="uk-padding-small">
-          <!-- Workflow Selection Dropdown -->
-          <div class="uk-margin">
-            <label class="uk-form-label">Workflow</label>
+        <!-- Workflow Selection Dropdown -->
+        <div class="uk-margin">
+          <label class="uk-form-label">Workflow</label>
 
-            <select
-              class="uk-select uk-form-small"
-              :value="workflowName"
-              @change="setWorkflow($event.target.value)"
-            >
-              <option
-                v-for="(label, name) in workflowOptions"
-                :key="name"
-                :value="name"
-              >
-                {{ label }}
-              </option>
-            </select>
-          </div>
+          <select
+            class="uk-select uk-form-small"
+            :value="workflowName"
+            @change="setWorkflow($event.target.value)"
+          >
+            <option v-for="(label, name) in workflowOptions" :key="name" :value="name">
+              {{ label }}
+            </option>
+          </select>
+        </div>
         <h4 v-if="workflowDisplayName" class="workflow-name">
           {{ workflowDisplayName }}
         </h4>
@@ -178,10 +174,7 @@ export default {
 
   async created() {
     this.readSettings();
-    this.workflowOptions = await this.readThingProperty(
-      "smart_scan",
-      "workflow_display_names",
-    );
+    this.workflowOptions = await this.readThingProperty("smart_scan", "workflow_display_names");
   },
 
   methods: {
@@ -240,25 +233,18 @@ export default {
       }
     },
     async setWorkflow(name) {
-        try {
-          this.workflowName = name;
+      try {
+        this.workflowName = name;
 
-          await this.writeThingProperty(
-            "smart_scan",
-            "workflow_name",
-            name
-          );
+        await this.writeThingProperty("smart_scan", "workflow_name", name);
 
-          // refresh  UI
-          await this.readSettings();
-        } catch (err) {
-          this.modalError(err);
+        // refresh  UI
+        await this.readSettings();
+      } catch (err) {
+        this.modalError(err);
 
-          // revert if server rejected
-          this.workflowName = await this.readThingProperty(
-            "smart_scan",
-            "workflow_name"
-          );
+        // revert if server rejected
+        this.workflowName = await this.readThingProperty("smart_scan", "workflow_name");
       }
     },
     async downloadZipFile(response) {
