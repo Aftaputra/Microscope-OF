@@ -433,7 +433,7 @@ class SmartSpiral(RectangleScan):
     def _parse(self, planner_settings: Optional[dict] = None) -> None:
         super()._parse(planner_settings)
 
-        if "max_dist" not in planner_settings:
+        if not planner_settings or "max_dist" not in planner_settings:
             raise KeyError("SmartSpiral requires max_dist")
 
         self._max_dist = int(planner_settings["max_dist"])
@@ -614,7 +614,9 @@ class SnakeScan(RectangleScan):
 
         expected_keys = ["x_count", "y_count"]
         invalid_msg = "SnakeScan requires planner_settings with keys: "
-        if not all(k in planner_settings for k in expected_keys):
+        if not planner_settings or not all(
+            k in planner_settings for k in expected_keys
+        ):
             raise KeyError(invalid_msg + ",".join(expected_keys))
 
         self._x_count = int(planner_settings["x_count"])
@@ -654,7 +656,9 @@ class RasterScan(RectangleScan):
 
         expected_keys = ["x_count", "y_count"]
         invalid_msg = "SnakeScan requires planner_settings with keys: "
-        if not all(k in planner_settings for k in expected_keys):
+        if not planner_settings or not all(
+            k in planner_settings for k in expected_keys
+        ):
             raise KeyError(invalid_msg + ",".join(expected_keys))
 
         self._x_count = int(planner_settings["x_count"])
