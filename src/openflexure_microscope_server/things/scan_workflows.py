@@ -143,6 +143,8 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
             that each image should overlap its nearest neighbour by 50%.
 
         :returns: (dx, dy) - the x and y displacements in steps
+
+        :raises RuntimeError: If there is no camera stage mapper Thing available or if CMS isn't calibrated.
         """
         csm = self._require_csm()
 

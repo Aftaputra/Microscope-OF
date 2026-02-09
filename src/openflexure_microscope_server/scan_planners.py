@@ -297,12 +297,11 @@ class ScanPlanner:
         """Flatten a 2D grid of coordinates into flat list of FutureScanLocation objects.
 
         :param grid: A 2D nested list of XY coordinates
-        """
-        path = []
-        for line in grid:
-            path += line
 
-        return [FutureScanLocation(location) for location in path]
+        :return: A flattened list of FutureScanLocations
+        """
+        # Loop over each location in each line to flatten grid into single list.
+        return [FutureScanLocation(location) for line in grid for location in line]
 
 
 class SmartSpiral(ScanPlanner):
@@ -672,7 +671,7 @@ def create_rectangular_scan_path(
     dx: int,
     dy: int,
     style: Literal["snake", "raster"],
-) -> list:
+) -> list[list[XYPos]]:
     """Generate a 2D grid of (x, y) coordinates representing a rectangular scan path.
 
     The grid is generated from starting_pos, and expanded in the
