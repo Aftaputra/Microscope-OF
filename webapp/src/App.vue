@@ -143,6 +143,7 @@ export default {
       ["up", "down", "left", "right"],
       (event) => {
         delete this.arrowKeysDown[event.keyCode]; //Remove key from array
+        this.invokeAction("stage", "jog", { stop: true });
       },
       "keyup",
     );
@@ -158,6 +159,13 @@ export default {
     Mousetrap.bind("pagedown", () => {
       eventBus.emit("globalMoveStepEvent", { x: 0, y: 0, z: -1 });
     });
+    Mousetrap.bind(
+      ["pageup", "pagedown"],
+      () => {
+        this.invokeAction("stage", "jog", { stop: true });
+      },
+      "keyup",
+    );
     this.keyboardManual.push({
       shortcut: "pgup / pgdn",
       description: "Move the microscope focus",
