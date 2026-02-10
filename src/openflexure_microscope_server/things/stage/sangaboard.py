@@ -7,7 +7,7 @@ import time
 from collections.abc import Sequence
 from contextlib import contextmanager
 from copy import copy
-from queue import Queue, Empty
+from queue import Empty, Queue
 from types import TracebackType
 from typing import Any, Iterator, Literal, Optional, Self
 
@@ -370,17 +370,20 @@ class SangaboardThing(BaseStage):
                 try:
                     waitstart = time.time()
                     command = self._jog_queue.get(timeout=duration)
-                    self.logger.info(f"Got command {command} after {time.time() - waitstart}")
+                    self.logger.info(
+                        f"Got command {command} after {time.time() - waitstart}"
+                    )
                 except Empty:
-                    self.logger.info(f"Timed out waiting for a command, waited {duration}.")
+                    self.logger.info(
+                        f"Timed out waiting for a command, waited {duration}."
+                    )
                     if self._poll_moving():
                         # If there's no new command, keep checking for new commands until
                         # we stop.
-                        self.logger.info(f"Still moving, will wait for the stage to stop.")
                         duration = 0.1
                         continue
                     # Once the stage is no longer moving, stop listening for commands.
-                    self.logger.info(f"Stage has stopped, terminating.")
+                    self.logger.info("Stage has stopped, terminating jog thread.")
                     break
                 command.received.set()  # Acknowledge the command
                 if previous_command:
