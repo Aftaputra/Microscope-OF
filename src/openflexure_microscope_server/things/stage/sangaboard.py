@@ -197,6 +197,5 @@ class SangaboardThing(BaseStage):
             if led_on:
                 on_brightness = 0.32
                 sb.query(f"{led_command} {on_brightness}")
-            else:    
+            else:
                 sb.query(f"{led_command} 0")
-            

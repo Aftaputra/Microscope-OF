@@ -341,19 +341,21 @@ class SimulatedCamera(BaseCamera):
         return pl_img.resize((self.shape[1], self.shape[0]), Image.Resampling.BILINEAR)
 
     @lt.action
-    def set_led(self, led_on: bool = True, led_channel=None):
+    def set_led(self, led_on: bool = True, led_channel: str = None) -> None:  # noqa: ARG002
+        """Set the simulated LED to on or off."""
         if led_on:
             self.mult = 1
         else:
             self.mult = 0
-
 
     def generate_frame(self) -> Image.Image:
         """Generate a frame with blobs based on the stage coordinates."""
         pos = self._stage.instantaneous_position
         frame = self.generate_image((pos["y"], pos["x"], pos["z"]))
         # Simulate LED turning off by setting all channels to 0
-        return frame * self.mult
+        if self.mult == 0:
+            return Image.new(frame.mode, frame.size, 0)
+        return frame
 
     def __enter__(self) -> Self:
         """Start the capture thread when the Thing context manager is opened."""
