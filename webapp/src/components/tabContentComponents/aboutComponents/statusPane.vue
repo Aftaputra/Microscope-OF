@@ -14,8 +14,8 @@
         </div>
         <action-button
           v-if="stageType"
-          thing="stage"
-          action="flash_led"
+          thing="illumination"
+          action="flash"
           submit-label="Flash Illumination"
           :can-terminate="false"
           :submit-data="{ dt: 0.25 }"
