@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 from typing import (
     Generic,
+    Literal,
     Mapping,
     Optional,
     TypeVar,
@@ -19,10 +20,9 @@ from pydantic import BaseModel
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.scan_planners import (
-    RasterScan,
+    RegularGridPlanner,
     ScanPlanner,
     SmartSpiral,
-    SnakeScan,
 )
 from openflexure_microscope_server.stitching import (
     STITCHING_RESOLUTION,
@@ -563,6 +563,7 @@ class RegularGridSettingsModel(BaseModel):
     dy: int
     x_count: int
     y_count: int
+    style: Literal["snake", "raster"]
     images_dir: str
     autofocus_dz: int
     save_resolution: tuple[int, int]
@@ -577,7 +578,8 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
     """The number of rows in the scan."""
 
     _settings_model = RegularGridSettingsModel
-    _planner_cls: type[SnakeScan] | type[RasterScan]
+    _planner_cls = RegularGridPlanner
+    _grid_style: Literal["snake", "raster"]
 
     def all_settings(
         self, images_dir: str
@@ -597,6 +599,7 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
             dy=dy,
             x_count=self.x_count,
             y_count=self.y_count,
+            style=self._grid_style,
             images_dir=images_dir,
             autofocus_dz=self.autofocus_dz,
             save_resolution=self.save_resolution,
@@ -626,6 +629,7 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
             "dy": settings.dy,
             "x_count": settings.x_count,
             "y_count": settings.y_count,
+            "style": settings.style,
         }
         return self._planner_cls(
             initial_position=(position["x"], position["y"]),
@@ -675,7 +679,7 @@ class SnakeWorkflow(RegularGridWorkflow):
         ),
         readonly=True,
     )
-    _planner_cls = SnakeScan
+    _grid_style = "snake"
 
 
 class RasterWorkflow(RegularGridWorkflow):
@@ -695,4 +699,4 @@ class RasterWorkflow(RegularGridWorkflow):
         readonly=True,
     )
 
-    _planner_cls = RasterScan
+    _grid_style = "raster"

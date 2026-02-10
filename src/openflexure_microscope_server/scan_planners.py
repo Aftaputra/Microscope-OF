@@ -304,7 +304,7 @@ class ScanPlanner:
         return [FutureScanLocation(location) for line in grid for location in line]
 
 
-class RectangleScan(ScanPlanner):
+class RectGridPlanner(ScanPlanner):
     """Base class for planners that operate on a rectangular grid."""
 
     _dx: int = 0
@@ -312,7 +312,7 @@ class RectangleScan(ScanPlanner):
 
     def _parse(self, planner_settings: Optional[dict] = None) -> None:
         expected_keys = ["dx", "dy"]
-        invalid_msg = "RectangleScan requires planner_settings with keys: "
+        invalid_msg = "RectGridPlanner requires planner_settings with keys: "
         if not planner_settings:
             raise ValueError(invalid_msg + ",".join(expected_keys))
         if not all(k in planner_settings for k in expected_keys):
@@ -394,7 +394,7 @@ class RectangleScan(ScanPlanner):
         return focused_locations[nearby_indices[-1]]
 
 
-class SmartSpiral(RectangleScan):
+class SmartSpiral(RectGridPlanner):
     """A scan planner that spirals outward from the centre, prioritising short moves.
 
     This planner spirals out from the centre, but prioritises short moves over rigidly
@@ -603,8 +603,10 @@ class SmartSpiral(RectangleScan):
         )
 
 
-class SnakeScan(RectangleScan):
-    """A scan planner that performs a snake scan, right and down from a corner.
+class RegularGridPlanner(RectGridPlanner):
+    """A scan planner that performs a snake or a raster scan.
+
+    Direction cannot yet be set it always scans, right and down from a corner.
 
     This planner starts at the corner of the region to scan, snaking back and forth,
     starting moving right and down (assuming positive dx and dy.)
@@ -612,11 +614,12 @@ class SnakeScan(RectangleScan):
 
     _x_count: int = 0
     _y_count: int = 0
+    _style: Literal["snake", "raster"]
 
     def _parse(self, planner_settings: Optional[dict] = None) -> None:
         super()._parse(planner_settings)
 
-        expected_keys = ["x_count", "y_count"]
+        expected_keys = ["x_count", "y_count", "style"]
         invalid_msg = "SnakeScan requires planner_settings with keys: "
         if not planner_settings or not all(
             k in planner_settings for k in expected_keys
@@ -625,6 +628,12 @@ class SnakeScan(RectangleScan):
 
         self._x_count = int(planner_settings["x_count"])
         self._y_count = int(planner_settings["y_count"])
+        style = planner_settings["style"]
+        if style not in ("snake", "raster"):
+            raise ValueError(
+                f"Unknown regular grid style {style}. Use snake or raster."
+            )
+        self._style = style
 
     def _initial_location_list(self) -> list[FutureScanLocation]:
         """Set the initial list of locations for this scan planner.
@@ -639,49 +648,7 @@ class SnakeScan(RectangleScan):
             y_count=self._y_count,
             dx=self._dx,
             dy=self._dy,
-            style="snake",
-        )
-
-        return self._grid_to_future_locations(grid)
-
-
-class RasterScan(RectangleScan):
-    """A scan planner that performs a snake scan, always moving right and down.
-
-    This planner starts at the corner of the region to scan, and always moves right
-    to the end of the row, then down to the next row (assuming positive dx, dy).
-    """
-
-    _x_count: int = 0
-    _y_count: int = 0
-
-    def _parse(self, planner_settings: Optional[dict] = None) -> None:
-        super()._parse(planner_settings)
-
-        expected_keys = ["x_count", "y_count"]
-        invalid_msg = "SnakeScan requires planner_settings with keys: "
-        if not planner_settings or not all(
-            k in planner_settings for k in expected_keys
-        ):
-            raise KeyError(invalid_msg + ",".join(expected_keys))
-
-        self._x_count = int(planner_settings["x_count"])
-        self._y_count = int(planner_settings["y_count"])
-
-    def _initial_location_list(self) -> list[FutureScanLocation]:
-        """Set the initial list of locations for this scan planner.
-
-        This is called on initialisation.
-
-        For raster scan, this is the full grid, and none will be added during scanning.
-        """
-        grid = create_rectangular_scan_path(
-            starting_pos=self._initial_position,
-            x_count=self._x_count,
-            y_count=self._y_count,
-            dx=self._dx,
-            dy=self._dy,
-            style="raster",
+            style=self._style,
         )
 
         return self._grid_to_future_locations(grid)
