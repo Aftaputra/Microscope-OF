@@ -68,6 +68,7 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
 
     # CSM may not be set, and isn't required for a workflow. Allow for it to exist or be None
     _csm: Optional[CameraStageMapper] = lt.thing_slot()
+    # Camera, stage and autofocus are all required by any scan workflow
     _cam: BaseCamera = lt.thing_slot()
     _stage: BaseStage = lt.thing_slot()
     _autofocus: AutofocusThing = lt.thing_slot()
