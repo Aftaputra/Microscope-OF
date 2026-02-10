@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import threading
-import time
 from contextlib import contextmanager
 from copy import copy
 from types import TracebackType
-from typing import Any, Iterator, Literal, Optional, Self
+from typing import Any, Iterator, Optional, Self
 
 import semver
 
@@ -173,37 +172,3 @@ class SangaboardThing(BaseStage):
         with self.sangaboard() as sb:
             sb.zero_position()
         self.update_position()
-
-    @lt.action
-    def flash_led(
-        self,
-        number_of_flashes: int = 10,
-        dt: float = 0.5,
-        led_channel: Literal["cc"] = "cc",
-    ) -> None:
-        """Flash the LED to identify the board.
-
-        This is intended to be useful in situations where there are multiple
-        Sangaboards in use, and it is necessary to identify which one is
-        being addressed.
-        """
-        led_command = f"led_{led_channel}"
-        with self.sangaboard() as sb:
-            return_value = sb.query(f"{led_command}?")
-            if not return_value.startswith("CC LED:"):
-                raise IOError("The sangaboard does not support LED control")
-
-            # Reading and setting LED brightness suffers from repeated reads and writes
-            # decreasing the value. Rather than use the value the code warns that the value
-            # cannot be used.
-            intended_brightness = float(return_value[7:])
-            on_brightness = 0.32
-            self.logger.warning(
-                "Brightness control is not yet implemented. Desired brightness: "
-                f"{intended_brightness}. Set brightness: {on_brightness}"
-            )
-            for _i in range(number_of_flashes):
-                sb.query(f"{led_command} 0")
-                time.sleep(dt)
-                sb.query(f"{led_command} {on_brightness}")
-                time.sleep(dt)
