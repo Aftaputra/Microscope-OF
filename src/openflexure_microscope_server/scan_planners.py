@@ -363,7 +363,7 @@ class RectangleScan(ScanPlanner):
         """Return a focused site near the given position to estimate Z for the next move.
 
         Looks for all previously focused locations that are within the scan
-        step size (self._dx, self._dy) of `next_position`. Among these nearby focused
+        step size (self._dx, self._dy) of ``next_position``. Among these nearby focused
         sites, it returns the most recently imaged one.
 
         This is suitable for raster or snake scans, where the scan may move along a row
