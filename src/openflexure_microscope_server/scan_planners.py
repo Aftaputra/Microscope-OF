@@ -572,6 +572,7 @@ class SmartSpiral(RectangleScan):
         if not focused_locations:
             return None
 
+        # must be float64 to deal with large coordinates
         current_pos = np.array(xy_pos, dtype="float64")
         focused_arr = np.array(focused_locations, dtype="float64")
 
@@ -580,7 +581,7 @@ class SmartSpiral(RectangleScan):
         dy_ok = np.abs(focused_arr[:, 1] - current_pos[1]) <= self._dy
         nearby_indices = np.where(dx_ok & dy_ok)[0]
 
-        # If no neighbouring sites were focused, choose the site(s) that are closest
+        # If no neighbouring sites were focused, choose the closest
         if len(nearby_indices) == 0:
             deltas = focused_arr[:, :2] - current_pos
             dists = np.linalg.norm(deltas, axis=1)
@@ -593,10 +594,13 @@ class SmartSpiral(RectangleScan):
         min_z = np.min(nearby_sites[:, 2])
 
         # Among those with min z, choose the most recent
-        best_sites = nearby_sites[nearby_sites[:, 2] == min_z]
-        chosen_site = best_sites[-1]
+        chosen_site = nearby_sites[nearby_sites[:, 2] == min_z][-1]
 
-        return tuple(chosen_site.astype(int))
+        return (
+            int(chosen_site[0]),
+            int(chosen_site[1]),
+            int(chosen_site[2]),
+        )
 
 
 class SnakeScan(RectangleScan):

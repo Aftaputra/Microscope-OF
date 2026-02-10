@@ -89,7 +89,7 @@ def test_bad_smart_spiral_settings():
     initial_position = (100, 50)
 
     # Class init should raise error if no planner_settings dictionary set
-    msg = "SmartSpiral requires a planner_settings dictionary with keys"
+    msg = "RectangleScan requires planner_settings with keys"
     with pytest.raises(ValueError, match=msg):
         scan_planners.SmartSpiral(initial_position=initial_position)
 
@@ -105,7 +105,7 @@ def test_bad_smart_spiral_settings():
                 initial_position=initial_position, planner_settings=bad_planner_settings
             )
 
-    # Class init should raise error if planner_settings if any value can't be cast
+    # Class init should raise error if any value in planner_settings can't be cast
     # to int
     keys = ["dx", "dy", "max_dist"]
     for badkey in keys:

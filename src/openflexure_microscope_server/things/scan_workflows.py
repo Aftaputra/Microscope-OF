@@ -486,9 +486,6 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
         return [
             property_control_for(self, "overlap", label="Image Overlap (0.1-0.7)"),
             property_control_for(
-                self, "skip_background", label="Detect and Skip Empty Fields "
-            ),
-            property_control_for(
                 self, "stack_images_to_save", label="Images in Stack to Save"
             ),
             property_control_for(
@@ -499,11 +496,14 @@ class HistoScanWorkflow(ScanWorkflow[HistoScanSettingsModel]):
             property_control_for(self, "stack_dz", label="Stack dz (steps)"),
             property_control_for(self, "autofocus_dz", label="Autofocus Range (steps)"),
             property_control_for(self, "max_range", label="Maximum Distance (steps)"),
+            property_control_for(
+                self, "skip_background", label="Detect and Skip Empty Fields "
+            ),
         ]
 
 
-class SnakeSettingsModel(BaseModel):
-    """The settings for a scan with the SnakeWorkflow.
+class RectangleSettingsModel(BaseModel):
+    """The settings for a scan with a regular grid of dx and dy for x_count, y_count steps.
 
     This includes settings calculated when starting. This will be held by smart scan
     during a scan and serialised to disk.
@@ -519,49 +519,39 @@ class SnakeSettingsModel(BaseModel):
     save_resolution: tuple[int, int]
 
 
-class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
-    """A workflow optimised for snaking around samples.
+TypeSettings = TypeVar("TypeSettings", bound=RectangleSettingsModel)
 
-    This workflow generates a list of coordinates in a rectangle, and snakes
-    around them from the top left (assuming positive dx and dy).
-    """
 
-    display_name: str = lt.property(default="Snake Scan", readonly=True)
-    ui_blurb: str = lt.property(
-        default=(
-            "This scan workflow is optimised for scanning over a rectangle. It "
-            "snakes down and right from the starting point, over a defined grid."
-        ),
-        readonly=True,
-    )
+class SnakeSettingsModel(RectangleSettingsModel):
+    """Settings for Snake scan."""
 
-    _settings_model = SnakeSettingsModel
-    _planner_cls: type[ScanPlanner] = SnakeScan
+    pass
+
+
+class RasterSettingsModel(RectangleSettingsModel):
+    """Settings for Raster scan."""
+
+    pass
+
+
+class RectangleWorkflow(ScanWorkflow[TypeSettings], Generic[TypeSettings]):
+    """Abstract workflow for rectangular scans."""
+
+    # Settings and planner must be set by subclass
+    _settings_model: type[TypeSettings]
+    _planner_cls: type[ScanPlanner]
     # Thing Slots
     _cam: BaseCamera = lt.thing_slot()
     _csm: CameraStageMapper = lt.thing_slot()
     _autofocus: AutofocusThing = lt.thing_slot()
     _stage: BaseStage = lt.thing_slot()
 
-    # Scan settings
-
+    # Shared scan settings
     autofocus_dz: int = lt.setting(default=1000, ge=200, le=2000)
-    """The z distance to perform an autofocus in steps.
-
-    Must be greater than or equal to 200, and less than or equal to 2000.
-    """
-
     overlap: float = lt.setting(default=0.45, ge=0.1, le=0.7)
-    """The fraction that adjacent images should overlap in x or y.
-
-    This must be between 0.1 and 0.7.
-    """
-
     x_count: int = lt.setting(default=3)
     y_count: int = lt.setting(default=2)
 
-    # The noqa statement is because scan_name is unused but is needed for equivalence
-    # with other workflows that may want to validate the scan name.
     def check_before_start(self, scan_name: str) -> None:  # noqa: ARG002
         """Before starting a scan, check that camera-stage-mapping is set.
 
@@ -576,9 +566,7 @@ class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
         """Whether this scanworkflow is ready to start."""
         return not self._csm.calibration_required
 
-    def all_settings(
-        self, images_dir: str
-    ) -> tuple[SnakeSettingsModel, StitchingSettings]:
+    def all_settings(self, images_dir: str) -> tuple[TypeSettings, StitchingSettings]:
         """Return the workflow and stitching settings.
 
         :param images_dir: The directory that images are to be written to.
@@ -609,25 +597,21 @@ class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
 
         return scan_settings, stitching_settings
 
-    def pre_scan_routine(self, settings: SnakeSettingsModel) -> None:
-        """Autofocus before starting the scan.
+    def pre_scan_routine(self, settings: TypeSettings) -> None:
+        """Perform these steps before starting the scan.
 
-        :param settings: The settings for this scan as a SnakeSettingsModel
+        In this case, only autofocus.
         """
         self._autofocus.looping_autofocus(dz=settings.autofocus_dz, start="centre")
 
     def new_scan_planner(
-        self, settings: SnakeSettingsModel, position: Mapping[str, int]
+        self, settings: TypeSettings, position: Mapping[str, int]
     ) -> ScanPlanner:
         """Return a new scan planner object.
 
         :param settings: The settings for this scan as a SnakeSettingsModel
         :param position: The starting position as a mapping of axes names to int.
         """
-        # The initial plan for the scan should be a single x,y position. All future
-        # moves will be planned around this point. In future, route planner could
-        # have multiple starting positions, each of which will be visited before the
-        # scan can end.
         planner_settings = {
             "dx": settings.dx,
             "dy": settings.dy,
@@ -640,13 +624,14 @@ class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
         )
 
     def acquisition_routine(
-        self, settings: SnakeSettingsModel, xyz_pos: tuple[int, int, int]
+        self, settings: TypeSettings, xyz_pos: tuple[int, int, int]
     ) -> tuple[bool, Optional[int]]:
         """Perform acquisition routine. This is run at each scan location.
 
-        :param settings: The settings for this scan as a SnakeSettingsModel
+        :param settings: The settings for this scan as the correct setting model
         :param xyz_pos: The current position as a tuple or 3 ints.
         :return: A tuple of whether an image was taken, and the z-position for focus.
+            In this method, image is always taken, so first return is True.
             If failed to find focus, returns for the focus z-position.
         """
         self._autofocus.fast_autofocus(dz=settings.autofocus_dz)
@@ -657,8 +642,7 @@ class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
             save_resolution=settings.save_resolution,
         )
 
-        imaged = True
-        return imaged, focus_height
+        return True, focus_height
 
     @lt.property
     def settings_ui(self) -> list[PropertyControl]:
@@ -671,23 +655,26 @@ class SnakeWorkflow(ScanWorkflow[SnakeSettingsModel]):
         ]
 
 
-class RasterSettingsModel(BaseModel):
-    """The settings for a scan with the Raster Workflow.
+class SnakeWorkflow(RectangleWorkflow[SnakeSettingsModel]):
+    """A workflow optimised for snaking around samples.
 
-    This is identical to the SnakeSettings, but is subclassed for clarity.
+    This workflow generates a list of coordinates in a rectangle, and snakes
+    around them from the top left (assuming positive dx and dy).
     """
 
-    overlap: float
-    dx: int
-    dy: int
-    x_count: int
-    y_count: int
-    images_dir: str
-    autofocus_dz: int
-    save_resolution: tuple[int, int]
+    display_name: str = lt.property(default="Snake Scan", readonly=True)
+    ui_blurb: str = lt.property(
+        default=(
+            "This scan workflow is optimised for scanning over a rectangle. It "
+            "snakes down and right from the starting point, over a defined grid."
+        ),
+        readonly=True,
+    )
+    _settings_model = SnakeSettingsModel
+    _planner_cls = SnakeScan
 
 
-class RasterWorkflow(ScanWorkflow[RasterSettingsModel]):
+class RasterWorkflow(RectangleWorkflow[RasterSettingsModel]):
     """A workflow optimised for snaking around samples.
 
     This workflow generates a list of coordinates in a rectangle, and always
@@ -705,136 +692,4 @@ class RasterWorkflow(ScanWorkflow[RasterSettingsModel]):
     )
 
     _settings_model = RasterSettingsModel
-    _planner_cls: type[ScanPlanner] = RasterScan
-    # Thing Slots
-    _cam: BaseCamera = lt.thing_slot()
-    _csm: CameraStageMapper = lt.thing_slot()
-    _autofocus: AutofocusThing = lt.thing_slot()
-    _stage: BaseStage = lt.thing_slot()
-
-    # Scan settings
-
-    autofocus_dz: int = lt.setting(default=1000, ge=200, le=2000)
-    """The z distance to perform an autofocus in steps.
-
-    Must be greater than or equal to 200, and less than or equal to 2000.
-    """
-
-    overlap: float = lt.setting(default=0.45, ge=0.1, le=0.7)
-    """The fraction that adjacent images should overlap in x or y.
-
-    This must be between 0.1 and 0.7.
-    """
-
-    x_count: int = lt.setting(default=3)
-    y_count: int = lt.setting(default=2)
-
-    # The noqa statement is because scan_name is unused but is needed for equivalence
-    # with other workflows that may want to validate the scan name.
-    def check_before_start(self, scan_name: str) -> None:  # noqa: ARG002
-        """Before starting a scan, check that camera-stage-mapping is set.
-
-        Raise error if:
-          - camera stage mapping is not set
-        """
-        if self._csm.calibration_required:
-            raise RuntimeError("Camera Stage Mapping is not calibrated.")
-
-    @lt.property
-    def ready(self) -> bool:
-        """Whether this scanworkflow is ready to start."""
-        return not self._csm.calibration_required
-
-    def all_settings(
-        self, images_dir: str
-    ) -> tuple[RasterSettingsModel, StitchingSettings]:
-        """Return the workflow and stitching settings.
-
-        :param images_dir: The directory that images are to be written to.
-        :return: A tuple containing the settings model for this workflow and the
-            settings model for stitching.
-        """
-        stitching_settings = StitchingSettings(
-            overlap=self.overlap,
-            correlation_resize=STITCHING_RESOLUTION[0] / self.save_resolution[0],
-        )
-
-        dx, dy = self._calc_displacement_from_overlap(self.overlap)
-        self.logger.info(
-            f"Based on an overlap of {self.overlap}, the stage will make steps of "
-            f"{dx}, {dy}"
-        )
-
-        scan_settings = self._settings_model(
-            overlap=self.overlap,
-            dx=dx,
-            dy=dy,
-            x_count=self.x_count,
-            y_count=self.y_count,
-            images_dir=images_dir,
-            autofocus_dz=self.autofocus_dz,
-            save_resolution=self.save_resolution,
-        )
-
-        return scan_settings, stitching_settings
-
-    def pre_scan_routine(self, settings: RasterSettingsModel) -> None:
-        """Autofocus before starting the scan.
-
-        :param settings: The settings for this scan as a SnakeSettingsModel
-        """
-        self._autofocus.looping_autofocus(dz=settings.autofocus_dz, start="centre")
-
-    def new_scan_planner(
-        self, settings: RasterSettingsModel, position: Mapping[str, int]
-    ) -> ScanPlanner:
-        """Return a new scan planner object.
-
-        :param settings: The settings for this scan as a SnakeSettingsModel
-        :param position: The starting position as a mapping of axes names to int.
-        """
-        # The initial plan for the scan should be a single x,y position. All future
-        # moves will be planned around this point. In future, route planner could
-        # have multiple starting positions, each of which will be visited before the
-        # scan can end.
-        planner_settings = {
-            "dx": settings.dx,
-            "dy": settings.dy,
-            "x_count": settings.x_count,
-            "y_count": settings.y_count,
-        }
-        return self._planner_cls(
-            initial_position=(position["x"], position["y"]),
-            planner_settings=planner_settings,
-        )
-
-    def acquisition_routine(
-        self, settings: RasterSettingsModel, xyz_pos: tuple[int, int, int]
-    ) -> tuple[bool, Optional[int]]:
-        """Perform acquisition routine. This is run at each scan location.
-
-        :param settings: The settings for this scan as a RasterSettingsModel
-        :param xyz_pos: The current position as a tuple or 3 ints.
-        :return: A tuple of whether an image was taken, and the z-position for focus.
-            If failed to find focus, returns for the focus z-position.
-        """
-        self._autofocus.fast_autofocus(dz=settings.autofocus_dz)
-        focus_height = self._stage.get_xyz_position()[2]
-        filename = f"img_{xyz_pos[0]}_{xyz_pos[1]}_{focus_height}.jpeg"
-        self._cam.capture_and_save(
-            jpeg_path=os.path.join(settings.images_dir, filename),
-            save_resolution=settings.save_resolution,
-        )
-
-        imaged = True
-        return imaged, focus_height
-
-    @lt.property
-    def settings_ui(self) -> list[PropertyControl]:
-        """A list of PropertyControl objects to create the settings in the scan tab."""
-        return [
-            property_control_for(self, "overlap", label="Image Overlap (0.1-0.7)"),
-            property_control_for(self, "x_count", label="Number of columns"),
-            property_control_for(self, "y_count", label="Number of rows"),
-            property_control_for(self, "autofocus_dz", label="Autofocus Range (steps)"),
-        ]
+    _planner_cls = RasterScan
