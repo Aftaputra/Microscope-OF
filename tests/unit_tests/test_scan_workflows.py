@@ -342,11 +342,11 @@ def test_histo_workflow_settings_ui(histo_workflow):
     names = [el.property_name for el in ui]
     expected_names = [
         "overlap",
-        "skip_background",
         "stack_images_to_save",
         "stack_min_images_to_test",
         "stack_dz",
         "autofocus_dz",
         "max_range",
+        "skip_background",
     ]
     assert names == expected_names

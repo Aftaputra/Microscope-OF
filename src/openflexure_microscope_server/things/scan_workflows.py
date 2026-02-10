@@ -548,10 +548,26 @@ class RectangleWorkflow(ScanWorkflow[TypeSettings], Generic[TypeSettings]):
 
     # Shared scan settings
     autofocus_dz: int = lt.setting(default=1000, ge=200, le=2000)
-    overlap: float = lt.setting(default=0.45, ge=0.1, le=0.7)
-    x_count: int = lt.setting(default=3)
-    y_count: int = lt.setting(default=2)
 
+    """The z distance to perform an autofocus in steps.
+
+    Must be greater than or equal to 200, and less than or equal to 2000.
+    """
+
+    overlap: float = lt.setting(default=0.45, ge=0.1, le=0.7)
+    """The fraction that adjacent images should overlap in x or y.
+
+    This must be between 0.1 and 0.7.
+    """
+
+    x_count: int = lt.setting(default=3, ge=1)
+    y_count: int = lt.setting(default=2, ge=1)
+    """The number of columns and rows in the scan.
+    Must be at least 1.
+    """
+
+    # The noqa statement is because scan_name is unused but is needed for equivalence
+    # with other workflows that may want to validate the scan name.
     def check_before_start(self, scan_name: str) -> None:  # noqa: ARG002
         """Before starting a scan, check that camera-stage-mapping is set.
 
@@ -601,6 +617,8 @@ class RectangleWorkflow(ScanWorkflow[TypeSettings], Generic[TypeSettings]):
         """Perform these steps before starting the scan.
 
         In this case, only autofocus.
+
+        :param settings: The settings for this scan as as the relevant SettingsModel type.
         """
         self._autofocus.looping_autofocus(dz=settings.autofocus_dz, start="centre")
 
