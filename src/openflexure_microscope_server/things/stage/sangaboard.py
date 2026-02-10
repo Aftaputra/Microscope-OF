@@ -7,7 +7,7 @@ import time
 from collections.abc import Sequence
 from contextlib import contextmanager
 from copy import copy
-from queue import Queue
+from queue import Queue, Empty
 from types import TracebackType
 from typing import Any, Iterator, Literal, Optional, Self
 
@@ -31,6 +31,10 @@ class JogCommand:
         self.received = threading.Event()
         self.finished = threading.Event()
 
+    def __repr__(self) -> str:
+        """Represent the command as a string."""
+        return f"<{self.__class__.__name__}>"
+
 
 class JogMoveCommand(JogCommand):
     """A command to make a jog move."""
@@ -42,6 +46,10 @@ class JogMoveCommand(JogCommand):
         """
         super().__init__()
         self.displacement = displacement
+
+    def __repr__(self) -> str:
+        """Represent the command as a string."""
+        return f"<{self.__class__.__name__} {self.displacement}>"
 
 
 class JogStopCommand(JogCommand):
@@ -290,7 +298,7 @@ class SangaboardThing(BaseStage):
         :param \**kwargs: Keyword arguments should be axis names.
         """
         if stop:
-            self._send_jog_command(JogStopCommand(), wait=True, timeout=1)
+            self._send_jog_command(JogStopCommand(), timeout=1)
         else:
             self._hardware_jog(**self._apply_axis_direction(kwargs))
 
@@ -329,13 +337,16 @@ class SangaboardThing(BaseStage):
             # Make sure the queue exists.
             # Check the background thread is running, and restart it if not.
             if self._jog_thread is None or not self._jog_thread.is_alive():
+                self.logger.info("Starting background thread for jog commands")
                 self._jog_queue = Queue[JogCommand](maxsize=1)
                 self._jog_thread = threading.Thread(target=self._jog_loop)
                 self._jog_thread.start()
             self._jog_queue.put(command)
             command.received.wait(1)
-            if timeout is not None:
-                command.finished.wait(timeout)
+        # The final wait happens after releasing the lock: this allows jog moves to
+        # be interrupted.
+        if timeout is not None:
+            command.finished.wait(timeout)
 
     def _jog_loop(self) -> None:
         r"""Execute jog commands in a background thread.
@@ -357,24 +368,29 @@ class SangaboardThing(BaseStage):
         ):  # prevent others using the sangaboard while jogging.
             while True:
                 try:
+                    waitstart = time.time()
                     command = self._jog_queue.get(timeout=duration)
-                except TimeoutError:
+                    self.logger.info(f"Got command {command} after {time.time() - waitstart}")
+                except Empty:
+                    self.logger.info(f"Timed out waiting for a command, waited {duration}.")
                     if self._poll_moving():
                         # If there's no new command, keep checking for new commands until
                         # we stop.
+                        self.logger.info(f"Still moving, will wait for the stage to stop.")
                         duration = 0.1
                         continue
                     # Once the stage is no longer moving, stop listening for commands.
+                    self.logger.info(f"Stage has stopped, terminating.")
                     break
                 command.received.set()  # Acknowledge the command
                 if previous_command:
                     previous_command.finished.set()  # Notify the last command it's superseded
+                previous_command = command
                 if isinstance(command, JogMoveCommand):
                     self._hardware_start_move_relative(command.displacement)
                     duration = self._move_duration(command.displacement)
                 elif isinstance(command, JogStopCommand):
                     self._hardware_stop()
-                    self._poll_until_stopped()
                     duration = 0.1  # Next iteration, we will probably time out.
                 else:
                     raise RuntimeError(f"Unknown jog command: {command}")
