@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from types import TracebackType
-from typing import Any, Optional, Self
+from typing import Any, Literal, Optional, Self
 
 import labthings_fastapi as lt
 
@@ -17,6 +17,8 @@ class DummyStage(BaseStage):
     This stage should work similarly to a Sangaboard stage, but without any
     hardware attached.
     """
+
+    led_on: bool = lt.property(default=True)
 
     def __init__(
         self,
@@ -115,3 +117,18 @@ class DummyStage(BaseStage):
         """
         self._hardware_position = dict.fromkeys(self.axis_names, 0)
         self.instantaneous_position = self._hardware_position
+
+    # led_channel is unused in the simulation, but must exist to match the real API
+    @lt.action
+    def flash_led(
+        self,
+        number_of_flashes: int = 10,
+        dt: float = 0.5,
+        led_channel: Literal["cc"] = "cc",  # noqa: ARG002
+    ) -> None:
+        """Flash the LED to identify the board (simulated)."""
+        for _ in range(number_of_flashes):
+            self.led_on = False
+            time.sleep(dt)
+            self.led_on = True
+            time.sleep(dt)
