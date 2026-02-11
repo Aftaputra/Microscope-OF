@@ -284,9 +284,6 @@ def test_thing_description_equivalence(dummy_stage, mocker):
     mocker.patch.dict("sys.modules", {"sangaboard": mock_sangaboard})
     from openflexure_microscope_server.things.stage.sangaboard import SangaboardThing
 
-    # Flash LED isn't a standard stage action, most stages do not control illumination.
-    extra_sanga_actions = ["flash_led"]
-
     base_td = create_thing_without_server(BaseStage).thing_description()
     base_actions = set(base_td.actions.keys())
     base_properties = set(base_td.properties.keys())
@@ -298,9 +295,6 @@ def test_thing_description_equivalence(dummy_stage, mocker):
     sanga_td = create_thing_without_server(SangaboardThing).thing_description()
     # Remove known extra actions
     sanga_actions = list(sanga_td.actions.keys())
-    for action in extra_sanga_actions:
-        index = sanga_actions.index(action)
-        sanga_actions.pop(index)
     sanga_actions = set(sanga_actions)
     sanga_properties = set(sanga_td.properties.keys())
 
