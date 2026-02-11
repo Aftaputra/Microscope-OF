@@ -397,6 +397,8 @@ class SangaboardThing(BaseStage):
                     duration = 0.1  # Next iteration, we will probably time out.
                 else:
                     raise RuntimeError(f"Unknown jog command: {command}")
+                self._update_position()
             if previous_command:
                 # Notify the last command that it finished, because we stopped moving.
                 previous_command.finished.set()
+            self._update_position()
