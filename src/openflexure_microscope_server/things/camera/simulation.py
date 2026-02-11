@@ -341,7 +341,6 @@ class SimulatedCamera(BaseCamera):
         return pl_img.resize((self.shape[1], self.shape[0]), Image.Resampling.BILINEAR)
 
     def set_led(self, led_on: bool = True) -> None:
-    def set_led(self, led_on: bool = True, led_channel: str = None) -> None:  # noqa: ARG002
         """Set the simulated LED to on or off."""
         if led_on:
             self.mult = 1

@@ -5,8 +5,8 @@ from typing import Literal
 
 import labthings_fastapi as lt
 
-from .camera import SimulatedCamera
-from .stage import SangaboardThing
+from .camera.simulation import SimulatedCamera
+from .stage.sangaboard import SangaboardThing
 
 
 class Illumination(lt.Thing):
@@ -58,15 +58,14 @@ class SimulatorIllumination(Illumination):
         self,
         number_of_flashes: int = 10,
         dt: float = 0.5,
-        led_channel: Literal["cc"] = "cc",
     ) -> None:
         """Flash an LED a given number of times.
 
-        Flashes the LED on channel led_channel number_of_flashes times,
+        Flashes the simulated LED number_of_flashes times,
         for a duration of dt each.
         """
         for _ in range(number_of_flashes):
-            self._cam.set_led(False, led_channel)
+            self._cam.set_led(False)
             time.sleep(dt)
-            self._cam.set_led(True, led_channel)
+            self._cam.set_led(True)
             time.sleep(dt)
