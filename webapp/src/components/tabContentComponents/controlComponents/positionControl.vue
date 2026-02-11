@@ -118,7 +118,6 @@ export default {
     },
 
     onMoveStep(payload) {
-      const { x: x_steps, y: y_steps, z: z_steps } = payload;
       const navigationStepSize = this.$store.state.navigationStepSize;
       const navigationInvert = this.$store.state.navigationInvert;
       const x = x_steps * navigationStepSize.x * (navigationInvert.x ? -1 : 1);

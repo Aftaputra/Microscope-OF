@@ -1,26 +1,52 @@
 <template>
   <div class="uk-flex uk-flex-center uk-flex-middle uk-margin">
     <div class="dpad-grid">
-      <button id="up-button" class="uk-button uk-button-primary dpad-btn" @click="move(0, 1, 0)">
+      <button
+        id="up-button"
+        class="uk-button uk-button-primary dpad-btn"
+        @mousedown="jog(0, 1, 0)"
+        @mouseup="jogStop()"
+        @mouseOut="jogStop()"
+      >
         <span class="material-symbols-outlined sync-icon"> arrow_upward </span>
       </button>
 
-      <button id="left-button" class="uk-button uk-button-primary dpad-btn" @click="move(-1, 0, 0)">
+      <button
+        id="left-button"
+        class="uk-button uk-button-primary dpad-btn"
+        @mousedown="jog(-1, 0, 0)"
+        @mouseup="jogStop()"
+        @mouseOut="jogStop()"
+      >
         <span class="material-symbols-outlined sync-icon"> arrow_back </span>
       </button>
 
-      <button id="right-button" class="uk-button uk-button-primary dpad-btn" @click="move(1, 0, 0)">
+      <button
+        id="right-button"
+        class="uk-button uk-button-primary dpad-btn"
+        @mousedown="jog(1, 0, 0)"
+        @mouseup="jogStop()"
+        @mouseOut="jogStop()"
+      >
         <span class="material-symbols-outlined sync-icon"> arrow_forward </span>
       </button>
 
-      <button id="down-button" class="uk-button uk-button-primary dpad-btn" @click="move(0, -1, 0)">
+      <button
+        id="down-button"
+        class="uk-button uk-button-primary dpad-btn"
+        @mousedown="jog(0, -1, 0)"
+        @mouseup="jogStop()"
+        @mouseOut="jogStop()"
+      >
         <span class="material-symbols-outlined sync-icon"> arrow_downward </span>
       </button>
 
       <button
         id="focus-out-button"
         class="uk-button uk-button-primary dpad-btn"
-        @click="move(0, 0, -1)"
+        @mousedown="jog(0, 0, -1)"
+        @mouseup="jogStop()"
+        @mouseOut="jogStop()"
       >
         <span class="material-symbols-outlined sync-icon"> remove </span>
       </button>
@@ -28,7 +54,9 @@
       <button
         id="focus-in-button"
         class="uk-button uk-button-primary dpad-btn"
-        @click="move(0, 0, 1)"
+        @mousedown="jog(0, 0, 1)"
+        @mouseup="jogStop()"
+        @mouseOut="jogStop()"
       >
         <span class="material-symbols-outlined sync-icon"> add </span>
       </button>
@@ -37,13 +65,32 @@
 </template>
 
 <script>
-import { eventBus } from "../../../eventBus.js";
-
 export default {
   name: "StageControlButtons",
+  data: () => ({
+    jogIntervalId: null,
+    jogDistance: 600,
+    jogTime: 300,
+  }),
   methods: {
-    move(x, y, z) {
-      eventBus.emit("globalMoveStepEvent", { x, y, z, absolute: false });
+    jog(x, y, z) {
+      if (this.jogIntervalId) {
+        clearInterval(this.jogIntervalId);
+      }
+      let invokeJog = () =>
+        this.invokeAction("stage", "jog", {
+          x: x * this.jogDistance,
+          y: y * this.jogDistance,
+          z: z * this.jogDistance,
+        });
+      invokeJog();
+      this.jogIntervalId = setInterval(invokeJog, this.jogTime);
+    },
+    jogStop() {
+      if (this.jogIntervalId) {
+        clearInterval(this.jogIntervalId);
+      }
+      this.invokeAction("stage", "jog", { stop: true });
     },
   },
 };

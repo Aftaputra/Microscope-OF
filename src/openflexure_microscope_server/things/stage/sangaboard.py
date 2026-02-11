@@ -366,7 +366,9 @@ class SangaboardThing(BaseStage):
         will terminate, and `self._jog_received` will be set again. This means that
         it should be safe to
         """
-        duration = 1  # How long to wait initially. This shouldn't ever need to be long.
+        duration = (
+            1.0  # How long to wait initially. This shouldn't ever need to be long.
+        )
         # On subsequent loop iterations, we'll wait long enough that we expect the last
         # move to have finished.
         previous_command: Optional[JogCommand] = None
