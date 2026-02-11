@@ -197,7 +197,12 @@ class ScanPlanner:
         return [loc.xyz_tuple for loc in self._path_history if loc.imaged]
 
     @property
-    def focused_locations(self) -> XYZPosList:
+    def focused_locations(self) -> list[VisitedScanLocation]:
+        """Property to access a copy of the focused_locations."""
+        return [loc for loc in self._path_history if loc.focused]
+
+    @property
+    def focused_locations_xyz(self) -> XYZPosList:
         """Property to access a copy of the focused_locations."""
         return [loc.xyz_tuple for loc in self._path_history if loc.focused]
 
@@ -331,8 +336,8 @@ class RectGridPlanner(ScanPlanner):
 
     def moves_between(
         self,
-        starting_pos: XYPos | np.ndarray | FutureScanLocation,
-        ending_pos: XYPos | np.ndarray | FutureScanLocation,
+        starting_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
+        ending_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
     ) -> float:
         """Return the larger of x moves or y moves between two xy positions.
 
@@ -340,9 +345,9 @@ class RectGridPlanner(ScanPlanner):
         :param ending_pos: the position to measure to
 
         """
-        if isinstance(starting_pos, FutureScanLocation):
+        if isinstance(starting_pos, (FutureScanLocation, VisitedScanLocation)):
             starting_pos = starting_pos.xy_tuple
-        if isinstance(ending_pos, FutureScanLocation):
+        if isinstance(ending_pos, (FutureScanLocation, VisitedScanLocation)):
             ending_pos = ending_pos.xy_tuple
         move_size = np.array([self._dx, self._dy])
 
@@ -378,20 +383,18 @@ class RectGridPlanner(ScanPlanner):
         if not focused_locations:
             return None
 
-        next_pos_arr = np.array(next_position, dtype="float64")
-        path_arr = np.array(focused_locations, dtype="float64")[:, :2]
+        def sort_key(pos: VisitedScanLocation) -> float:
+            return self.moves_between(next_position, pos)
 
-        # Find all focused positions within dx and dy of next_position.
-        # Don't just use _adjacent_positions as some grids might have intermediate sites.
-        dx_ok = np.abs(path_arr[:, 0] - next_pos_arr[0]) <= self._dx
-        dy_ok = np.abs(path_arr[:, 1] - next_pos_arr[1]) <= self._dy
-        nearby_indices = np.where(dx_ok & dy_ok)[0]
-
-        if len(nearby_indices) == 0:
-            return None
+        # Sort by negative number of moves between so smallest moves are at the end.
+        # The most recent once should be the last point of multiple have the same
+        # number of moves.
+        nearby_focus_locations = sorted(
+            focused_locations, key=lambda p: -self.moves_between(next_position, p)
+        )
 
         # Pick the most recent nearby site
-        return focused_locations[nearby_indices[-1]]
+        return nearby_focus_locations[-1].xyz_tuple
 
 
 class SmartSpiral(RectGridPlanner):
@@ -568,7 +571,7 @@ class SmartSpiral(RectGridPlanner):
         Returns None if no focused locations are present
         """
         # save to variable rather than search for focussed sites each time.
-        focused_locations = self.focused_locations
+        focused_locations = self.focused_locations_xyz
         if not focused_locations:
             return None
 
