@@ -333,7 +333,12 @@ class SangaboardThing(BaseStage):
         :param timeout: how long to wait for the command to be completed, or `None`
             to skip waiting.
         """
-        with self._jog_lock:
+        if not self._jog_lock.acquire(timeout=0.1):
+            self.logger.warning(
+                "Could not send a jog message, this indicates a lock error."
+            )
+            return
+        try:
             # Make sure the queue exists.
             # Check the background thread is running, and restart it if not.
             if self._jog_thread is None or not self._jog_thread.is_alive():
@@ -343,6 +348,8 @@ class SangaboardThing(BaseStage):
                 self._jog_thread.start()
             self._jog_queue.put(command)
             command.received.wait(1)
+        finally:
+            self._jog_lock.release()
         # The final wait happens after releasing the lock: this allows jog moves to
         # be interrupted.
         if timeout is not None:
@@ -397,8 +404,8 @@ class SangaboardThing(BaseStage):
                     duration = 0.1  # Next iteration, we will probably time out.
                 else:
                     raise RuntimeError(f"Unknown jog command: {command}")
-                self._update_position()
+                self.update_position()
             if previous_command:
                 # Notify the last command that it finished, because we stopped moving.
                 previous_command.finished.set()
-            self._update_position()
+            self.update_position()
