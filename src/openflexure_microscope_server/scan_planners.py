@@ -339,6 +339,28 @@ class RectGridPlanner(ScanPlanner):
             (xy_pos[0], xy_pos[1] + self._dy),
         ]
 
+    def _displacement_in_moves(
+        self,
+        starting_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
+        ending_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
+    ) -> np.ndarray:
+        """Return displacement in grid-move units as a numpy array [dx_moves, dy_moves].
+
+        :param starting_pos: the position to measure from
+        :param ending_pos: the position to measure to
+        """
+        if isinstance(starting_pos, (FutureScanLocation, VisitedScanLocation)):
+            starting_pos = starting_pos.xy_tuple
+        if isinstance(ending_pos, (FutureScanLocation, VisitedScanLocation)):
+            ending_pos = ending_pos.xy_tuple
+
+        move_size = np.array([self._dx, self._dy], dtype="float64")
+
+        starting_pos = np.array(starting_pos, dtype="float64")
+        ending_pos = np.array(ending_pos, dtype="float64")
+
+        return (ending_pos - starting_pos) / move_size
+
     def moves_between(
         self,
         starting_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
@@ -348,20 +370,22 @@ class RectGridPlanner(ScanPlanner):
 
         :param starting_pos: the position to measure from
         :param ending_pos: the position to measure to
-
         """
-        if isinstance(starting_pos, (FutureScanLocation, VisitedScanLocation)):
-            starting_pos = starting_pos.xy_tuple
-        if isinstance(ending_pos, (FutureScanLocation, VisitedScanLocation)):
-            ending_pos = ending_pos.xy_tuple
-        move_size = np.array([self._dx, self._dy])
+        displacement = self._displacement_in_moves(starting_pos, ending_pos)
+        return float(np.max(np.abs(displacement)))
 
-        starting_pos = np.array(starting_pos, dtype="float64")
-        ending_pos = np.array(ending_pos, dtype="float64")
+    def total_moves_between(
+        self,
+        starting_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
+        ending_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
+    ) -> float:
+        """Return the total x and y moves between two xy positions.
 
-        displacement_in_moves = (ending_pos - starting_pos) / move_size
-
-        return np.max(np.abs(displacement_in_moves))
+        :param starting_pos: the position to measure from
+        :param ending_pos: the position to measure to
+        """
+        displacement = self._displacement_in_moves(starting_pos, ending_pos)
+        return float(np.sum(np.abs(displacement)))
 
     def _intermediate_position(self, xy_pos1: XYPos, xy_pos2: XYPos) -> XYPos:
         """Return an (x,y) position halfway between two input positions."""
@@ -389,14 +413,11 @@ class RectGridPlanner(ScanPlanner):
             return None
 
         def sort_key(pos: VisitedScanLocation) -> float:
-            return self.moves_between(next_position, pos)
+            return self.total_moves_between(next_position, pos)
 
-        # Sort by negative number of moves between so smallest moves are at the end.
-        # The most recent once should be the last point of multiple have the same
-        # number of moves.
-        nearby_focus_locations = sorted(
-            focused_locations, key=lambda p: -self.moves_between(next_position, p)
-        )
+        # Sort by the total number of dx and dy moves between sites, then by most
+        # recent. Using reverse=True puts the most recent, nearest at the end
+        nearby_focus_locations = sorted(focused_locations, key=sort_key, reverse=True)
 
         # Pick the most recent nearby site
         return nearby_focus_locations[-1].xyz_tuple
