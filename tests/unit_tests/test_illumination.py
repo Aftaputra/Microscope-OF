@@ -5,9 +5,17 @@ import pytest
 from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.things.illumination import (
+    Illumination,
     SangaIllumination,
     SimulatorIllumination,
 )
+
+
+def test_base_illumination_flash_not_implemented():
+    """Check that calling flash on the base Illumination raises NotImplementedError."""
+    ill = create_thing_without_server(Illumination)
+    with pytest.raises(NotImplementedError, match="Flashing the LED can only be done"):
+        ill.flash(number_of_flashes=1, dt=0.01)
 
 
 @pytest.fixture
