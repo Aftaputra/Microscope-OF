@@ -1,8 +1,13 @@
 """Functionality for planning scan routes.
 
-A scan route can be planned by a ScanPlanner class currently there
-is only one type the SmartSpiral. More can be added using by
-subclassing the ScanPlanner
+A scan route can be planned by a ScanPlanner. There is a base class ``ScanPlanner``,
+and then a child class that is still generic called RectGridPlanner that helps planning
+anything where the movements are on a regtangular grid. RectGridPlanner has two usable
+child classes:
+
+* SmartSpiral - For spiralling around a samples but adjusting when background is
+    detected
+* RegularGridPlanner - For Raster and Snake scanning.
 """
 
 # Future annotations needed for typhinting same class in __eq__ method. Other option
