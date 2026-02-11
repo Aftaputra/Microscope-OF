@@ -85,7 +85,9 @@ export default {
       return this.thingAvailable("stage") ? this.thingDescription("stage").title : undefined;
     },
     illuminationType() {
-      return this.thingAvailable("illumination") ? this.thingDescription("illumination").title : undefined;
+      return this.thingAvailable("illumination")
+        ? this.thingDescription("illumination").title
+        : undefined;
     },
   },
 
