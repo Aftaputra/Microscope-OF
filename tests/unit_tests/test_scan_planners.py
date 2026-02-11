@@ -89,8 +89,8 @@ def test_bad_smart_spiral_settings():
     initial_position = (100, 50)
 
     # Class init should raise error if no planner_settings dictionary set
-    msg = "RectangleScan requires planner_settings with keys"
-    with pytest.raises(ValueError, match=msg):
+    msg = "RectGridPlanner requires planner_settings with keys"
+    with pytest.raises(KeyError, match=msg):
         scan_planners.SmartSpiral(initial_position=initial_position)
 
     planner_settings = {"dx": 50, "dy": 50, "max_dist": 10000}
@@ -317,12 +317,18 @@ def test_example_smart_spiral():
         assert planner.imaged_locations == expected_planner.imaged_locations
 
 
-def test_snake_scan_basic_grid():
-    """Check that SnakeScan generates a single point for a 1x1 scan."""
+def test_snake_planner_basic_grid():
+    """Check that snake scan planner generates a single point for a 1x1 scan."""
     initial_position = (100, 50)
-    planner_settings = {"dx": 100, "dy": 100, "x_count": 1, "y_count": 1}
+    planner_settings = {
+        "dx": 100,
+        "dy": 100,
+        "x_count": 1,
+        "y_count": 1,
+        "style": "snake",
+    }
 
-    planner = scan_planners.SnakeScan(
+    planner = scan_planners.RegularGridPlanner(
         initial_position=initial_position,
         planner_settings=planner_settings,
     )
@@ -352,11 +358,17 @@ def test_snake_scan_basic_grid():
 
 
 def test_snake_scan_basic_length():
-    """SnakeScan should generate the correct number of locations."""
+    """Snake scan planner should generate the correct number of locations."""
     initial_position = (100, 50)
-    planner_settings = {"dx": 100, "dy": 100, "x_count": 3, "y_count": 4}
+    planner_settings = {
+        "dx": 100,
+        "dy": 100,
+        "x_count": 3,
+        "y_count": 4,
+        "style": "snake",
+    }
 
-    planner = scan_planners.SnakeScan(
+    planner = scan_planners.RegularGridPlanner(
         initial_position=initial_position,
         planner_settings=planner_settings,
     )
@@ -369,9 +381,15 @@ def test_snake_scan_basic_length():
 def test_snake_scan_ordering():
     """Test that snake scan returns a path in the right order."""
     initial_position = (0, 0)
-    planner_settings = {"dx": 10, "dy": 10, "x_count": 4, "y_count": 3}
+    planner_settings = {
+        "dx": 10,
+        "dy": 10,
+        "x_count": 4,
+        "y_count": 3,
+        "style": "snake",
+    }
 
-    planner = scan_planners.SnakeScan(
+    planner = scan_planners.RegularGridPlanner(
         initial_position=initial_position,
         planner_settings=planner_settings,
     )
@@ -399,9 +417,9 @@ def test_snake_scan_ordering():
 def test_snake_scan_single_row():
     """Test edge case of a single row scan."""
     initial_position = (0, 0)
-    planner_settings = {"dx": 5, "dy": 5, "x_count": 4, "y_count": 1}
+    planner_settings = {"dx": 5, "dy": 5, "x_count": 4, "y_count": 1, "style": "snake"}
 
-    planner = scan_planners.SnakeScan(
+    planner = scan_planners.RegularGridPlanner(
         initial_position=initial_position,
         planner_settings=planner_settings,
     )
@@ -412,9 +430,9 @@ def test_snake_scan_single_row():
 def test_snake_scan_single_column():
     """Test edge case of a single column scan."""
     initial_position = (0, 0)
-    planner_settings = {"dx": 5, "dy": 5, "x_count": 1, "y_count": 4}
+    planner_settings = {"dx": 5, "dy": 5, "x_count": 1, "y_count": 4, "style": "snake"}
 
-    planner = scan_planners.SnakeScan(
+    planner = scan_planners.RegularGridPlanner(
         initial_position=initial_position,
         planner_settings=planner_settings,
     )

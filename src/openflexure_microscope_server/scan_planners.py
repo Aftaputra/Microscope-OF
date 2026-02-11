@@ -318,9 +318,9 @@ class RectGridPlanner(ScanPlanner):
     def _parse(self, planner_settings: Optional[dict] = None) -> None:
         expected_keys = ["dx", "dy"]
         invalid_msg = "RectGridPlanner requires planner_settings with keys: "
-        if not planner_settings:
-            raise ValueError(invalid_msg + ",".join(expected_keys))
-        if not all(k in planner_settings for k in expected_keys):
+        if not planner_settings or not all(
+            k in planner_settings for k in expected_keys
+        ):
             raise KeyError(invalid_msg + ",".join(expected_keys))
 
         self._dx = int(planner_settings["dx"])
@@ -623,7 +623,7 @@ class RegularGridPlanner(RectGridPlanner):
         super()._parse(planner_settings)
 
         expected_keys = ["x_count", "y_count", "style"]
-        invalid_msg = "SnakeScan requires planner_settings with keys: "
+        invalid_msg = "RegularGrid requires planner_settings with keys: "
         if not planner_settings or not all(
             k in planner_settings for k in expected_keys
         ):
