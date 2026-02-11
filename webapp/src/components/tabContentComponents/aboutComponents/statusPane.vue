@@ -13,7 +13,7 @@
           {{ $store.state.origin }}
         </div>
         <action-button
-          v-if="stageType"
+          v-if="illuminationType"
           thing="illumination"
           action="flash"
           submit-label="Flash Illumination"
@@ -46,6 +46,13 @@
           {{ stageType }}
         </div>
       </div>
+      <div v-if="illuminationType">
+        <b>Illumination:</b>
+        <br />
+        <div>
+          {{ illuminationType }}
+        </div>
+      </div>
 
       <hr />
     </div>
@@ -76,6 +83,9 @@ export default {
     },
     stageType() {
       return this.thingAvailable("stage") ? this.thingDescription("stage").title : undefined;
+    },
+    illuminationType() {
+      return this.thingAvailable("illumination") ? this.thingDescription("illumination").title : undefined;
     },
   },
 

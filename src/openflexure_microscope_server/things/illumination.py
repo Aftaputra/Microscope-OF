@@ -5,8 +5,8 @@ from typing import Literal
 
 import labthings_fastapi as lt
 
-from .camera import BaseCamera
-from .stage import BaseStage
+from .camera import SimulatedCamera
+from .stage import SangaboardThing
 
 
 class Illumination(lt.Thing):
@@ -27,7 +27,7 @@ class Illumination(lt.Thing):
 class SangaIllumination(Illumination):
     """Illumination driven by a Sangaboard."""
 
-    _stage: BaseStage = lt.thing_slot()
+    _stage: SangaboardThing = lt.thing_slot()
 
     @lt.action
     def flash(
@@ -51,7 +51,7 @@ class SangaIllumination(Illumination):
 class SimulatorIllumination(Illumination):
     """Illumination control in the simulator."""
 
-    _cam: BaseCamera = lt.thing_slot()
+    _cam: SimulatedCamera = lt.thing_slot()
 
     @lt.action
     def flash(

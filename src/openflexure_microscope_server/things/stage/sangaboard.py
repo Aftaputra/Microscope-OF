@@ -173,7 +173,6 @@ class SangaboardThing(BaseStage):
             sb.zero_position()
         self.update_position()
 
-    @lt.action
     def set_led(
         self,
         led_on: bool = True,
