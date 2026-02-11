@@ -145,7 +145,9 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
         :param images_dir: The path to the directory for saving images..
         :param save_resolution: The resolution to save images at.
 
-        :return: A tuple ready to pass out of acquisition routine.
+        :return: A tuple ready to pass out of acquisition routine. In this method,
+            image is always taken, so first return is True.
+
         """
         self._autofocus.fast_autofocus(dz=dz)
         focus_height = self._stage.get_xyz_position()[2]
