@@ -123,7 +123,7 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     ) -> tuple[bool, Optional[int]]:
         """Overload to set the acquisition routine that happens at each scan site.
 
-        :param settings: The settings for this scan as a HistoScanSettingsModel
+        :param settings: The settings for this scan, which should be a SettingModelType
         :param xyz_pos: The current position as a tuple or 3 ints.
         :return: A tuple of whether an image was taken, and the z-position for focus.
             If failed to find focus, returns for the focus z-position.
@@ -139,9 +139,9 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
         images_dir: str,
         save_resolution: tuple[int, int],
     ) -> tuple[bool, Optional[int]]:
-        """Atuofocus and then capture, this can be used as an acquisition routine.
+        """Autofocus and then capture, this can be used as an acquisition routine.
 
-        :param dz: The dz for autofoucs.
+        :param dz: The dz for autofocus.
         :param images_dir: The path to the directory for saving images..
         :param save_resolution: The resolution to save images at.
 
@@ -168,11 +168,11 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
 class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]):
     """A generic workflow for any scan that captures images on a rectilinear grid."""
 
-    # Thing Slots
+    # Redefine _csm Thing Slot, as CSM is required for any RectGridWorkflow
     _csm: CameraStageMapper = lt.thing_slot()
 
     overlap: float = lt.setting(default=0.45, ge=0.1, le=0.7)
-    """The fraction that adjacent images should overlap in x or y.
+    """The fraction that adjacent images should overlap in x and y.
 
     This must be between 0.1 and 0.7.
     """
@@ -206,7 +206,7 @@ class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]
         """
         csm_image_res = self._csm.image_resolution
         if csm_image_res is None:
-            raise RuntimeError("CSM not set. Scan shouldn't have progresses this far.")
+            raise RuntimeError("CSM not set. Scan shouldn't have progressed this far.")
 
         # Calculate displacements in image coordinates
         dx_img = csm_image_res[1] * (1 - overlap)
@@ -641,7 +641,7 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
     ) -> tuple[bool, Optional[int]]:
         """Autofocus and capture.
 
-        :param settings: The settings for this scan as a HistoScanSettingsModel
+        :param settings: The settings for this scan as a RegularGridSettingsModel
         :param xyz_pos: The current position as a tuple or 3 ints.
         :return: A tuple of whether an image was taken, and the z-position for focus.
             If failed to find focus, returns for the focus z-position.
