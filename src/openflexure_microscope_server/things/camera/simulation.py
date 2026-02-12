@@ -347,12 +347,12 @@ class SimulatedCamera(BaseCamera):
 
     def generate_frame(self) -> Image.Image:
         """Generate a frame with blobs based on the stage coordinates."""
-        pos = self._stage.instantaneous_position
-        frame = self.generate_image((pos["y"], pos["x"], pos["z"]))
         # Simulate LED turning off by setting all channels to 0
         if not self.led_on:
-            return Image.new(frame.mode, frame.size, 0)
-        return frame
+            return Image.new(mode="RGB", size=(self.shape[1], self.shape[0]), color=0)
+        # Otherwise, generate a frame from current position
+        pos = self._stage.instantaneous_position
+        return self.generate_image((pos["y"], pos["x"], pos["z"]))
 
     def __enter__(self) -> Self:
         """Start the capture thread when the Thing context manager is opened."""
