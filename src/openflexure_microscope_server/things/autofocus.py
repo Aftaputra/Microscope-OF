@@ -33,8 +33,8 @@ class NotStreamingError(RuntimeError):
     """No images captured from stream. The camera is almost certainly not streaming."""
 
 
-class StackParams(BaseModel):
-    """A class for holding for stack parameters, and returning computed ones."""
+class SmartStackParams(BaseModel):
+    """A class for holding for smart stack parameters, and returning computed ones."""
 
     stack_dz: int
     images_to_save: int
@@ -80,7 +80,8 @@ class StackParams(BaseModel):
             )
         if min_images_to_test > MAX_TEST_IMAGE_COUNT:
             raise ValueError(
-                f"Testing with more than {MAX_TEST_IMAGE_COUNT} images is likely to focus on the cover slip, or strike the sample."
+                f"Testing with more than {MAX_TEST_IMAGE_COUNT} images is likely to "
+                "focus on the cover slip, or strike the sample."
             )
         if min_images_to_test % 2 == 0 or min_images_to_test <= 0:
             raise ValueError(
@@ -97,7 +98,7 @@ class StackParams(BaseModel):
         return images_to_save
 
     @model_validator(mode="after")
-    def check_image_limits(self) -> "StackParams":
+    def check_image_limits(self) -> "SmartStackParams":
         """Ensure the number of images to save isn't more than the minimum tested."""
         if self.images_to_save > self.min_images_to_test:
             raise ValueError("Can't save more images than the minimum number tested.")
@@ -145,7 +146,7 @@ class StackParams(BaseModel):
 
 @dataclass
 class CaptureInfo:
-    """The information from a capture in a z_stack."""
+    """The information from a capture in a smart_z_stack."""
 
     buffer_id: int
     position: Mapping[str, int]
@@ -452,107 +453,10 @@ class AutofocusThing(lt.Thing):
             "Looping autofocus couldn't converge on a focus location."
         )
 
-    stack_images_to_save: int = lt.setting(default=1)
-    """The number of images to save in a stack.
-
-    Defaults to 1 unless you need to see either side of focus
-    """
-
-    stack_min_images_to_test: int = lt.setting(default=9)
-    """The minimum number of images to capture in a stack.
-
-    This many images are captures and tested for focus, if the focus is not central
-    enough more images may be captured. After new images are captured the number sets
-    the number of images used for checking if focus is central.
-
-    Defaults to 9 which balances reliability and speed.
-    """
-
-    stack_dz: int = lt.setting(default=50)
-    """Distance in steps between images in a z-stack.
-
-    Suggested values:
-
-    * 50 for 60-100x
-    * 100 for 40x
-    * 200 for 20x
-    """
-
-    @lt.action
-    def create_stack_params(
-        self,
-        images_dir: str,
-        autofocus_dz: int,
-        save_resolution: tuple[int, int],
-    ) -> StackParams:
-        """Set up the parameters used for all stacks in a scan.
-
-        :param images_dir: the folder to save all images
-        :param autofocus_dz: the range to autofocus over if a stack fails
-        :param save_resolution: The resolution to save the captures to disk with
-
-        :returns: A StackParams object with the required parameters.
-        """
-        # Coerce min_images_to_test parameter
-        min_images_to_test = self.stack_min_images_to_test
-        if min_images_to_test < MIN_TEST_IMAGE_COUNT:
-            self.logger.warning(
-                f"Cannot test only {min_images_to_test} image(s) as this will fail. "
-                "Setting min images to test to lowest possible value of"
-                f"{MIN_TEST_IMAGE_COUNT}."
-            )
-            min_images_to_test = MIN_TEST_IMAGE_COUNT
-        elif min_images_to_test > MAX_TEST_IMAGE_COUNT:
-            self.logger.warning(
-                f"Testing {min_images_to_test} images will cause defocus. "
-                "Setting min images to test to highest possible value of "
-                f"{MAX_TEST_IMAGE_COUNT}."
-            )
-            min_images_to_test = MAX_TEST_IMAGE_COUNT
-        elif min_images_to_test % 2 == 0:
-            min_images_to_test += 1
-            self.logger.warning(
-                "Minimum number of images to test should be odd, setting to "
-                f"{min_images_to_test}."
-            )
-        # Set the Thing property to the coerced value
-        self.stack_min_images_to_test = min_images_to_test
-
-        # Coerce the images to save parameter to be positive, odd, and less than
-        # min_images_to_save
-        images_to_save = self.stack_images_to_save
-        if images_to_save <= 0:
-            self.logger.warning(
-                "At least 1 images must be saved. Setting images to save to 1."
-            )
-            images_to_save = 1
-        elif images_to_save > min_images_to_test:
-            self.logger.warning(
-                f"Cannot save {images_to_save} images as this above the minimum "
-                f"number to test. Setting images to save to {MAX_TEST_IMAGE_COUNT}."
-            )
-            images_to_save = min_images_to_test
-        elif images_to_save % 2 == 0:
-            images_to_save += 1
-            self.logger.warning(
-                f"Images to save should be odd, setting to {images_to_save}."
-            )
-        # Set the Thing property to the coerced value
-        self.stack_images_to_save = images_to_save
-
-        return StackParams(
-            stack_dz=self.stack_dz,
-            images_to_save=self.stack_images_to_save,
-            min_images_to_test=self.stack_min_images_to_test,
-            autofocus_dz=autofocus_dz,
-            images_dir=images_dir,
-            save_resolution=save_resolution,
-        )
-
     @lt.action
     def run_smart_stack(
         self,
-        stack_parameters: StackParams,
+        stack_parameters: SmartStackParams,
         save_on_failure: bool = False,
         check_turning_points: bool = True,
     ) -> tuple[bool, int]:
@@ -564,7 +468,7 @@ class AutofocusThing(lt.Thing):
         The sharpest image, and optionally images around the sharpest, will be saved
         to the images_dir with their coordinates in the filename.
 
-        :param stack_parameters: A StackParams object containing the required
+        :param stack_parameters: A SmartStackParams object containing the required
             parameters to run a stack.
         :param save_on_failure: Whether to save an image even if no focus was found.
         :param check_turning_points: Whether to check the number of turning points in
@@ -579,7 +483,7 @@ class AutofocusThing(lt.Thing):
         attempt = 0
         while True:
             attempt += 1
-            success, captures, sharpest_id = self.z_stack(
+            success, captures, sharpest_id = self.smart_z_stack(
                 stack_parameters=stack_parameters,
                 check_turning_points=check_turning_points,
             )
@@ -630,7 +534,7 @@ class AutofocusThing(lt.Thing):
         self,
         sharpest_id: int,
         captures: list[CaptureInfo],
-        stack_parameters: StackParams,
+        stack_parameters: SmartStackParams,
     ) -> int:
         """Save the required captures to disk.
 
@@ -640,7 +544,7 @@ class AutofocusThing(lt.Thing):
         :param sharpest_id: the buffer id index of the sharpest image
         :param captures: a list of captures, including file name, image data and
             metadata
-        :param stack_parameters: a StackParams object holding stack parameters
+        :param stack_parameters: a SmartStackParams object holding stack parameters
         """
         sharpest_index = _get_capture_index_by_id(captures, sharpest_id)
         slice_to_save = stack_parameters.slice_to_save(sharpest_index)
@@ -655,19 +559,23 @@ class AutofocusThing(lt.Thing):
         self._cam.clear_buffers()
         return sharpest_index
 
-    def z_stack(
+    def smart_z_stack(
         self,
-        stack_parameters: StackParams,
+        stack_parameters: SmartStackParams,
         check_turning_points: bool,
     ) -> tuple[bool, list[CaptureInfo], int]:
         """Capture a series of images checking that sharpest image central.
+
+        This is part of run_smart_stack. This is the actual z_stackng stacking method
+        called by the action run_smart_stack. The action also handles resetting,
+        autofocussing, and retrying.
 
         The images are separated in z offset by stack_parameters.stack_dz, as they
         are captured the last stack_parameters.min_images_to_test images are checked
         to see if the sharpest image is central enough in the stack. If it is the stack
         completes.
 
-        :param stack_parameters: a StackParams object holding stack parameters
+        :param stack_parameters: a SmartStackParams object holding stack parameters
         :param check_turning_points: Whether to check the number of turning points in
             the sharpnesses of the images in the stack is exactly 1. (May fail with
             thick samples)
