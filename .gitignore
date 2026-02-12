@@ -65,7 +65,8 @@ picamera_test_hashes.json
 *.log
 
 # Documentation
-apidocs
+apidocs/python
+apidocs/http/*.json
 
 # PyBuilder
 target/

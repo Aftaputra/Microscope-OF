@@ -1,9 +1,0 @@
-sphinx_rtd_theme
-numpy
-labthings
-expiringdict
-sangaboard
-typing_extensions
-pillow
-piexif
-python-dateutil
