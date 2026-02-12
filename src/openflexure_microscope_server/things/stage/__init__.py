@@ -227,12 +227,7 @@ class BaseStage(lt.Thing):
         )
 
     def _hardware_start_move_relative(self, displacement: Sequence[int]) -> None:
-        """Start a relative move.
-
-        This starts the stage moving, but does not wait for the move to complete. It
-        sets ``self.moving`` to ``True``: resetting it is the responsibility of the
-        calling code.
-        """
+        """Start a relative move."""
         raise NotImplementedError(
             "StageThings must define their own hardware_start_move_relative method"
         )
@@ -243,12 +238,7 @@ class BaseStage(lt.Thing):
         )
 
     def _poll_moving(self) -> bool:
-        """Determine if the stage is still moving.
-
-        This also sets ``moving`` if the status has changed.
-
-        :return: whether the stage is still moving.
-        """
+        """Determine if the stage is still moving."""
         raise NotImplementedError(
             "StageThings must define their own _poll_moving method"
         )

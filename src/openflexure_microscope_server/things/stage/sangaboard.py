@@ -137,12 +137,6 @@ class SangaboardThing(BaseStage):
                 self.moving = moving
             return moving
 
-    def _poll_until_stopped(self) -> None:
-        """Poll the stage until it reports that it has stopped moving."""
-        with self._hardware_lock:
-            while self._poll_moving():
-                lt.cancellable_sleep(0.1)
-
     def _hardware_move_relative(
         self,
         block_cancellation: bool = False,
