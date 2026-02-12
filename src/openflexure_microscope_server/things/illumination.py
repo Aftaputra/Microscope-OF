@@ -10,18 +10,27 @@ from .stage.sangaboard import SangaboardThing
 
 
 class Illumination(lt.Thing):
-    """Abstract illumination controller."""
+    """Base class for an illumination controller."""
 
     @lt.action
-    def flash(
-        self,
-        number_of_flashes: int = 10,
-        dt: float = 0.5,
-    ) -> None:
-        """Flash the illumination source."""
+    def set_led(self, led_on: bool = True) -> None:
+        """Set the LED to on or off."""
         raise NotImplementedError(
-            "Flashing the LED can only be done from the simulator or sangaboard"
+            "Turning the LED on and off should be implemented by child classes."
         )
+
+    @lt.action
+    def flash(self, number_of_flashes: int = 10, dt: float = 0.5) -> None:
+        """Flash the illumination source.
+
+        :param number_of_flashes: Number of times to flash the LED.
+        :param dt: Flash duration in seconds.
+        """
+        for _ in range(number_of_flashes):
+            self.set_led(False)
+            time.sleep(dt)
+            self.set_led(True)
+            time.sleep(dt)
 
 
 class SangaIllumination(Illumination):
@@ -30,22 +39,13 @@ class SangaIllumination(Illumination):
     _stage: SangaboardThing = lt.thing_slot()
 
     @lt.action
-    def flash(
+    def set_led(
         self,
-        number_of_flashes: int = 10,
-        dt: float = 0.5,
+        led_on: bool = True,
         led_channel: Literal["cc"] = "cc",
     ) -> None:
-        """Flash an LED a given number of times.
-
-        Flashes the LED on channel led_channel number_of_flashes times,
-        for a duration of dt each.
-        """
-        for _ in range(number_of_flashes):
-            self._stage.set_led(False, led_channel)
-            time.sleep(dt)
-            self._stage.set_led(True, led_channel)
-            time.sleep(dt)
+        """Set the LED to on or off."""
+        self._stage.set_led(led_on, led_channel)
 
 
 class SimulatorIllumination(Illumination):
@@ -54,18 +54,6 @@ class SimulatorIllumination(Illumination):
     _cam: SimulatedCamera = lt.thing_slot()
 
     @lt.action
-    def flash(
-        self,
-        number_of_flashes: int = 10,
-        dt: float = 0.5,
-    ) -> None:
-        """Flash an LED a given number of times.
-
-        Flashes the simulated LED number_of_flashes times,
-        for a duration of dt each.
-        """
-        for _ in range(number_of_flashes):
-            self._cam.set_led(False)
-            time.sleep(dt)
-            self._cam.set_led(True)
-            time.sleep(dt)
+    def set_led(self, led_on: bool = True) -> None:
+        """Set the LED to on or off."""
+        self._cam.set_led(led_on)
