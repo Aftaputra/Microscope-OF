@@ -136,42 +136,32 @@ export default {
   watch: {
     progress: {
       handler(newval) {
-        //this.$emit("update:progress", newval);
         this.$emit("update:progress", newval);
-        //eventBus.emit("beforeUpdate:progress", newval);
       },
       deep: true,
       immediate: true // Optional: triggers immediately on component load
     },
     taskStarted: {
       handler(newval) {
-        //this.$emit("update:taskStarted", newval);
         this.$emit("update:taskStarted", newval);
-        //eventBus.emit("beforeUpdate:taskStarted", newval);
       },
       deep: true
     },
     taskRunning: {
       handler(newval) {
-        //this.$emit("update:taskRunning", newval);
         this.$emit("update:taskRunning", newval);
-        //eventBus.emit("beforeUpdate:taskRunning", newval);
       },
       deep: true
     },
     log: {
       handler(newval) {
-        //this.$emit("update:log", newval);
         this.$emit("update:log", newval);
-        //eventBus.emit("beforeUpdate:log", newval);
       },
       deep: true
     },
     taskStatus: {
       handler(newval) {
-        //this.$emit("update:taskStatus", newval);
         this.$emit("update:taskStatus", newval);
-        //eventBus.emit("beforeUpdate:taskStatus", newval);
       },
       deep: true
     }
