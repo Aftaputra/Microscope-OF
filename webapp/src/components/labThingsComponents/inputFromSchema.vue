@@ -216,13 +216,13 @@ export default {
         this.updateIsEdited();
         this.resetInternalValue();
       },
-      deep: true,
+      //deep: true,
     },
     internalValue: {
       handler() {
         this.updateIsEdited();
       },
-      deep: true,
+      //deep: true,
     },
     animate(updated) {
       if (updated) {

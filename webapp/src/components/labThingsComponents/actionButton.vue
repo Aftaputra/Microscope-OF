@@ -155,14 +155,14 @@ export default {
       handler(newval) {
         this.$emit("update:progress", newval);
       },
-      deep: true,
+      //deep: true,
       immediate: true // Optional: triggers immediately on component load
     },
     taskStarted: {
       handler(newval) {
         this.$emit("update:taskStarted", newval);
       },
-      deep: true
+      //deep: true
     },
     taskRunning: {
       handler(newval) {
@@ -180,7 +180,7 @@ export default {
       handler(newval) {
         this.$emit("update:taskStatus", newval);
       },
-      deep: true
+      //deep: true
     }
 },
 

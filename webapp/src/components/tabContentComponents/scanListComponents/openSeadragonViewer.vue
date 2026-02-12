@@ -37,6 +37,7 @@ export default {
 
   watch: {
     src: {
+      deep: true,
       immediate: true,
       handler(newVal) {
         this.loadOpenSeaDragon(newVal);

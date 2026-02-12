@@ -60,11 +60,17 @@ export default {
   },
 
   watch: {
-    log: function () {
-      this.scrollToBottom();
+    log: {
+      handler() {
+        this.scrollToBottom();
+      },
+      deep: true,
     },
-    taskStatus: function () {
-      this.scrollToBottom();
+    taskStatus: {
+      handler() {
+        this.scrollToBottom();
+      },
+      //deep: true,
     },
   },
 

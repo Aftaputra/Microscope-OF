@@ -30,6 +30,7 @@ import ActionProgressBar from "./actionProgressBar.vue";
 import ActionLogDisplay from "./actionLogDisplay.vue";
 // vue3 migration
 import { markRaw } from "vue";
+import { eventBus } from "../../eventBus.js";
 
 export default {
   name: "ActionStatusModal",
