@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+import queue
 import threading
-import time
 from collections.abc import Sequence
 from contextlib import contextmanager
 from copy import copy
-from queue import Empty, Queue
 from types import TracebackType
 from typing import Any, Iterator, Literal, Optional, Self
 
@@ -88,7 +87,7 @@ class SangaboardThing(BaseStage):
         self._sangaboard_lock = threading.RLock()
 
         self._jog_lock = threading.Lock()
-        self._jog_queue: Queue[JogCommand] = Queue[JogCommand](maxsize=1)
+        self._jog_queue: queue.Queue[JogCommand] = queue.Queue[JogCommand](maxsize=1)
         self._jog_thread: Optional[threading.Thread] = None
 
         super().__init__(thing_server_interface, **kwargs)
@@ -176,7 +175,7 @@ class SangaboardThing(BaseStage):
             sb.query("stop")
             self.moving = False
 
-    def _move_duration(self, displacement: Sequence[int]) -> float:
+    def _estimate_move_duration(self, displacement: Sequence[int]) -> float:
         """Calculate the expected duration of a move with the given displacement."""
         max_displacement = max(abs(d) for d in displacement)
         return max_displacement * 0.001  # This does not yet check the board's speed.
@@ -207,7 +206,7 @@ class SangaboardThing(BaseStage):
     ) -> None:
         """Make a relative move in the coordinate system used by the sangaboard."""
         displacement = [kwargs.get(axis, 0) for axis in self.axis_names]
-        duration = self._move_duration(displacement)
+        duration = self._estimate_move_duration(displacement)
         with self.sangaboard() as sb:
             try:
                 sb.move_rel(displacement)
@@ -316,7 +315,7 @@ class SangaboardThing(BaseStage):
         move = [kwargs.get(axis, 0) for axis in self.axis_names]
         self._send_jog_command(
             JogMoveCommand(move),
-            timeout=self._move_duration(move) + 1,
+            timeout=self._estimate_move_duration(move) + 1,
         )
 
     def _send_jog_command(
@@ -343,10 +342,13 @@ class SangaboardThing(BaseStage):
             # Check the background thread is running, and restart it if not.
             if self._jog_thread is None or not self._jog_thread.is_alive():
                 self.logger.info("Starting background thread for jog commands")
-                self._jog_queue = Queue[JogCommand](maxsize=1)
-                self._jog_thread = threading.Thread(target=self._jog_loop)
+                self._jog_queue = queue.Queue[JogCommand](maxsize=1)
+                self._jog_thread = threading.Thread(
+                    target=self._jog_loop, args=(command,)
+                )
                 self._jog_thread.start()
-            self._jog_queue.put(command)
+            else:
+                self._jog_queue.put(command)
             command.received.wait(1)
         finally:
             self._jog_lock.release()
@@ -355,7 +357,7 @@ class SangaboardThing(BaseStage):
         if timeout is not None:
             command.finished.wait(timeout)
 
-    def _jog_loop(self) -> None:
+    def _jog_loop(self, first_command: JogCommand) -> None:
         r"""Execute jog commands in a background thread.
 
         This function is intended to be run in a background thread. It will look at
@@ -366,48 +368,46 @@ class SangaboardThing(BaseStage):
         will terminate, and `self._jog_received` will be set again. This means that
         it should be safe to
         """
-        duration = (
-            1.0  # How long to wait initially. This shouldn't ever need to be long.
-        )
-        # On subsequent loop iterations, we'll wait long enough that we expect the last
-        # move to have finished.
+        # Timeout for checking queue
+        timeout = 0.1
         previous_command: Optional[JogCommand] = None
-        with (
-            self.sangaboard() as _sb
-        ):  # prevent others using the sangaboard while jogging.
-            while True:
-                try:
-                    waitstart = time.time()
-                    command = self._jog_queue.get(timeout=duration)
-                    self.logger.info(
-                        f"Got command {command} after {time.time() - waitstart}"
-                    )
-                except Empty:
-                    self.logger.info(
-                        f"Timed out waiting for a command, waited {duration}."
-                    )
-                    if self._poll_moving():
-                        # If there's no new command, keep checking for new commands until
-                        # we stop.
-                        duration = 0.1
-                        continue
-                    # Once the stage is no longer moving, stop listening for commands.
-                    self.logger.info("Stage has stopped, terminating jog thread.")
-                    break
-                command.received.set()  # Acknowledge the command
+        command: Optional[JogCommand] = first_command
+
+        # prevent others using the sangaboard while jogging.
+        with self.sangaboard() as _sb:
+            while command is not None:
+                # Acknowledge the command
+                command.received.set()
                 if previous_command:
-                    previous_command.finished.set()  # Notify the last command it's superseded
+                    # Notify the last command it's superseded
+                    previous_command.finished.set()
                 previous_command = command
                 if isinstance(command, JogMoveCommand):
                     self._hardware_start_move_relative(command.displacement)
-                    duration = self._move_duration(command.displacement)
+                    timeout = self._estimate_move_duration(command.displacement)
                 elif isinstance(command, JogStopCommand):
                     self._hardware_stop()
-                    duration = 0.1  # Next iteration, we will probably time out.
+                    # Next iteration, we will probably time out.
+                    timeout = 0.1
                 else:
                     raise RuntimeError(f"Unknown jog command: {command}")
                 self.update_position()
-            if previous_command:
-                # Notify the last command that it finished, because we stopped moving.
-                previous_command.finished.set()
-            self.update_position()
+                command = self._get_from_jog_queue(timeout)
+
+    def _get_from_jog_queue(self, timeout: int) -> Optional[JogCommand]:
+        """Get the next JogCommand from the jog queue.
+
+        :param timeout: The estimtated time the move will take for the queue timeout.
+        :return: The jog command or None if the stage stops before a command is
+            received.
+        """
+        while True:
+            try:
+                return self._jog_queue.get(timeout=timeout)
+            except queue.Empty:
+                if not self._poll_moving():
+                    # The stage is no longer moving, return None
+                    return None
+            # If we reached here then the stage is still moving shorten timeout and
+            # check again.
+            timeout = 0.1
