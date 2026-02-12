@@ -163,7 +163,7 @@ class SangaboardThing(BaseStage):
         """Start a relative move.
 
         This starts the stage moving, but does not wait for the move to complete. It
-        sets ``self.moving`` to `True`: resetting it is the responsibility of the calling code.
+        sets ``self.moving`` to ``True``: resetting it is the responsibility of the calling code.
         """
         with self.sangaboard() as sb:
             self.moving = True
@@ -183,7 +183,7 @@ class SangaboardThing(BaseStage):
     def _poll_moving(self) -> bool:
         """Determine if the stage is still moving.
 
-        This also sets `self.moving` if the status has changed.
+        This also sets ``moving`` if the status has changed.
 
         :return: whether the stage is still moving.
         """
@@ -286,15 +286,15 @@ class SangaboardThing(BaseStage):
 
     @lt.action
     def jog(self, stop: bool = False, **kwargs: int) -> None:
-        r"""Make a relative move that may be interrupted by a future ``jog``\ .
+        """Make a relative move that may be interrupted by a future ``jog``.
 
         This action makes a relative move. If another ``jog`` action is called while
         a ``jog`` is already in progress, the first will be stopped and the second
         will start immediately. This allows for responsive manual control of the
         stage, for example with a joystick.
 
-        :param stop: if this is set to `True` the jog will be terminated.
-        :param \**kwargs: Keyword arguments should be axis names.
+        :param stop: if this is set to ``True`` the jog will be terminated.
+        :param kwargs: Keyword arguments should be axis names.
         """
         if stop:
             self._send_jog_command(JogStopCommand(), timeout=1)
@@ -302,7 +302,7 @@ class SangaboardThing(BaseStage):
             self._hardware_jog(**self._apply_axis_direction(kwargs))
 
     def _hardware_jog(self, **kwargs: int) -> None:
-        r"""Make a relative move that may be interrupted by a future ``jog``\ .
+        """Make a relative move that may be interrupted by a future ``jog``.
 
         This function uses hardware coordinates, ``jog`` is the public wrapper that
         applies any neecessary transform and then calls this function. See the
@@ -310,7 +310,7 @@ class SangaboardThing(BaseStage):
 
         See `_jog_loop` for an explanation of the mechanism.
 
-        :param \**kwargs: Keyword arguments should be axis names.
+        :param kwargs: Keyword arguments should be axis names.
         """
         move = [kwargs.get(axis, 0) for axis in self.axis_names]
         self._send_jog_command(
@@ -324,12 +324,12 @@ class SangaboardThing(BaseStage):
         """Send a jog command to the background jog thread.
 
         This function will start the background thread if it is not running.
-        This function acquires `_jog_lock` and uses the `_jog_send` event to signal
+        This function acquires ``_jog_lock`` and uses the ``_jog_send`` event to signal
         the thread to read the next command. As commands interrupt each other, this
         function should never block for a long time.
 
         :param command: the jog command to send.
-        :param timeout: how long to wait for the command to be completed, or `None`
+        :param timeout: how long to wait for the command to be completed, or ``None``
             to skip waiting.
         """
         if not self._jog_lock.acquire(timeout=0.1):
@@ -358,14 +358,14 @@ class SangaboardThing(BaseStage):
             command.finished.wait(timeout)
 
     def _jog_loop(self, first_command: JogCommand) -> None:
-        r"""Execute jog commands in a background thread.
+        """Execute jog commands in a background thread.
 
         This function is intended to be run in a background thread. It will look at
-        `self._jog_command` when the `self._jog_send` event is set, and signal that
-        the command is being processed with `self._jog_received`\ .
+        ``self._jog_command`` when the ``self._jog_send`` event is set, and signal that
+        the command is being processed with ``self._jog_received``.
 
         If no new command is received before the current command finishes, the thread
-        will terminate, and `self._jog_received` will be set again. This means that
+        will terminate, and ``self._jog_received`` will be set again. This means that
         it should be safe to
         """
         # Timeout for checking queue
