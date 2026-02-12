@@ -1,14 +1,20 @@
 """Functionality for planning scan routes.
 
-A scan route can be planned by a ScanPlanner class currently there
-is only one type the SmartSpiral. More can be added using by
-subclassing the ScanPlanner
+A scan route can be planned by a ScanPlanner. There is a base class ``ScanPlanner``,
+and then a child class that is still generic called RectGridPlanner that helps planning
+anything where the movements are on a regtangular grid. RectGridPlanner has two usable
+child classes:
+
+* SmartSpiral - For spiralling around a samples but adjusting when background is
+    detected
+* RegularGridPlanner - For Raster and Snake scanning.
 """
 
 # Future annotations needed for typhinting same class in __eq__ method. Other option
 # would be to import Union and use a string.
 from __future__ import annotations
 
+import enum
 import logging
 from copy import copy
 from typing import Any, Literal, Optional, TypeAlias
@@ -21,6 +27,23 @@ XYPos: TypeAlias = tuple[int, int]
 XYZPos: TypeAlias = tuple[int, int, int]
 XYPosList: TypeAlias = list[XYPos]
 XYZPosList: TypeAlias = list[XYZPos]
+
+
+class DistanceMetric(enum.Enum):
+    """An enum for selecting distance metrics for grids.
+
+    Grid distance metrics are:
+
+    * Chebyshev (``CHEBYSHEV``) which is the larger of the number of x or y moves
+        in the grid.
+    * Manhattan (``MANHATTAN``) which is the number of moves between the two points
+        following the grid. Or
+    * Euclidean (``EUCLIDEAN``) which is the length of the direct route.
+    """
+
+    CHEBYSHEV = enum.auto()
+    MANHATTAN = enum.auto()
+    EUCLIDEAN = enum.auto()
 
 
 def enforce_xy_tuple(value: XYPos) -> XYPos:
@@ -197,7 +220,12 @@ class ScanPlanner:
         return [loc.xyz_tuple for loc in self._path_history if loc.imaged]
 
     @property
-    def focused_locations(self) -> XYZPosList:
+    def focused_locations(self) -> list[VisitedScanLocation]:
+        """Property to access a copy of the focused_locations."""
+        return [loc for loc in self._path_history if loc.focused]
+
+    @property
+    def focused_locations_xyz(self) -> XYZPosList:
         """Property to access a copy of the focused_locations."""
         return [loc.xyz_tuple for loc in self._path_history if loc.focused]
 
@@ -304,7 +332,97 @@ class ScanPlanner:
         return [FutureScanLocation(location) for line in grid for location in line]
 
 
-class SmartSpiral(ScanPlanner):
+class RectGridPlanner(ScanPlanner):
+    """Base class for planners that operate on a rectangular grid."""
+
+    _dx: int = 0
+    _dy: int = 0
+
+    def _parse(self, planner_settings: Optional[dict] = None) -> None:
+        expected_keys = ["dx", "dy"]
+        invalid_msg = "RectGridPlanner requires planner_settings with keys: "
+        if not planner_settings or not all(
+            k in planner_settings for k in expected_keys
+        ):
+            raise KeyError(invalid_msg + ",".join(expected_keys))
+
+        self._dx = int(planner_settings["dx"])
+        self._dy = int(planner_settings["dy"])
+
+    def _adjacent_positions(self, xy_pos: XYPos) -> XYPosList:
+        return [
+            (xy_pos[0] - self._dx, xy_pos[1]),
+            (xy_pos[0] + self._dx, xy_pos[1]),
+            (xy_pos[0], xy_pos[1] - self._dy),
+            (xy_pos[0], xy_pos[1] + self._dy),
+        ]
+
+    def moves_between(
+        self,
+        starting_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
+        ending_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
+        metric: DistanceMetric,
+    ) -> float:
+        """Return displacement in grid-move units as a numpy array [dx_moves, dy_moves].
+
+        :param starting_pos: the position to measure from
+        :param ending_pos: the position to measure to
+        :param metric: How the distance is calculated. See `DistanceMetric`
+        """
+        if isinstance(starting_pos, (FutureScanLocation, VisitedScanLocation)):
+            starting_pos = starting_pos.xy_tuple
+        if isinstance(ending_pos, (FutureScanLocation, VisitedScanLocation)):
+            ending_pos = ending_pos.xy_tuple
+
+        move_size = np.array([self._dx, self._dy], dtype="float64")
+
+        starting_pos = np.array(starting_pos, dtype="float64")
+        ending_pos = np.array(ending_pos, dtype="float64")
+
+        displacement = (ending_pos - starting_pos) / move_size
+        if metric == DistanceMetric.CHEBYSHEV:
+            return float(np.max(np.abs(displacement)))
+        if metric == DistanceMetric.MANHATTAN:
+            return float(np.sum(np.abs(displacement)))
+        return float(np.linalg.norm(displacement))
+
+    def _intermediate_position(self, xy_pos1: XYPos, xy_pos2: XYPos) -> XYPos:
+        """Return an (x,y) position halfway between two input positions."""
+        x = (xy_pos1[0] + xy_pos2[0]) // 2
+        y = (xy_pos1[1] + xy_pos2[1]) // 2
+        return (x, y)
+
+    def select_nearby_focus_site(self, next_position: XYPos) -> Optional[XYZPos]:
+        """Return a focused site near the given position to estimate Z for the next move.
+
+        Looks for all previously focused locations that are within the scan
+        step size (self._dx, self._dy) of ``next_position``. Among these nearby focused
+        sites, it returns the most recently imaged one.
+
+        This is suitable for raster or snake scans, where the scan may move along a row
+        or column and then jump to a new row/column. If no nearby focused sites exist,
+        returns None.
+
+        :param next_position: The XY position where the next image will be taken.
+        :return: The XYZ tuple of the closest and most recent focused site, or None if
+                no focused locations exist.
+        """
+        focused_locations = self.focused_locations
+        if not focused_locations:
+            return None
+
+        def sort_key(pos: VisitedScanLocation) -> float:
+            return self.moves_between(next_position, pos, DistanceMetric.MANHATTAN)
+
+        # Sort by the total number of dx and dy moves between sites, then by most
+        # recent. Using reverse=True puts the most recent, nearest at the end
+        nearby_focus_locations = sorted(focused_locations, key=sort_key, reverse=True)
+
+        # Pick the most recent nearby site
+        return nearby_focus_locations[-1].xyz_tuple
+
+
+class SmartSpiral(RectGridPlanner):
     """A scan planner that spirals outward from the centre, prioritising short moves.
 
     This planner spirals out from the centre, but prioritises short moves over rigidly
@@ -321,20 +439,9 @@ class SmartSpiral(ScanPlanner):
     dx and dy.
     """
 
+    # The maximum distance for the scan to run in any direction.
+    # Any future moves which would move beyond this distance are not appended.
     _max_dist: int = 0
-    _dx: int = 0
-    _dy: int = 0
-
-    def __init__(
-        self, initial_position: XYPos, planner_settings: Optional[dict] = None
-    ) -> None:
-        """Set up the lists inherited from ScanPlanner, plus a distance cutoff.
-
-        Use the supplied _dx and _dy to set a distance cutoff for an image to be
-        considered neighbouring another
-        """
-        super().__init__(initial_position, planner_settings)
-        self._distance_cutoff: float = max([self._dx, self._dy]) * 1.1
 
     def _is_primary_location(
         self, location: FutureScanLocation | VisitedScanLocation
@@ -352,21 +459,11 @@ class SmartSpiral(ScanPlanner):
         ]
 
     def _parse(self, planner_settings: Optional[dict] = None) -> None:
-        """Parse SmartSpiral Settings dictionary.
+        super()._parse(planner_settings)
 
-        * ``dx`` - the movement size in x
-        * ``dy`` - the movement size in y
-        * ``max_dist`` - The maximum distance to a location can be from the centre.
-        """
-        expected_keys = ["max_dist", "dx", "dy"]
-        invalid_msg = "SmartSpiral requires a planner_settings dictionary with keys: "
-        if not planner_settings:
-            raise ValueError(invalid_msg + ",".join(expected_keys))
-        if not all(keys in planner_settings for keys in expected_keys):
-            raise KeyError(invalid_msg + ",".join(expected_keys))
+        if not planner_settings or "max_dist" not in planner_settings:
+            raise KeyError("SmartSpiral requires max_dist")
 
-        self._dx = int(planner_settings["dx"])
-        self._dy = int(planner_settings["dy"])
         self._max_dist = int(planner_settings["max_dist"])
 
     def _initial_location_list(self) -> list[FutureScanLocation]:
@@ -472,21 +569,6 @@ class SmartSpiral(ScanPlanner):
                 # imaged points.
                 self._remaining_locations.append(i_loc)
 
-    def _adjacent_positions(self, xy_pos: XYPos) -> XYPosList:
-        """Return 4 points +/-dx and +/-dy from the input location."""
-        return [
-            (xy_pos[0] - self._dx, xy_pos[1]),
-            (xy_pos[0] + self._dx, xy_pos[1]),
-            (xy_pos[0], xy_pos[1] - self._dy),
-            (xy_pos[0], xy_pos[1] + self._dy),
-        ]
-
-    def _intermediate_position(self, xy_pos1: XYPos, xy_pos2: XYPos) -> XYPos:
-        """Return an (x,y) position halfway between two input positions."""
-        x = (xy_pos1[0] + xy_pos2[0]) // 2
-        y = (xy_pos1[1] + xy_pos2[1]) // 2
-        return (x, y)
-
     def _re_sort_remaining_locations(self, current_pos: XYPos) -> None:
         """Sort the remaining positions based on the current location."""
 
@@ -494,8 +576,10 @@ class SmartSpiral(ScanPlanner):
         def sort_key(pos: FutureScanLocation) -> tuple[bool, float, float, float]:
             return (
                 self._is_primary_location(pos),  # False sorts low
-                self.moves_between(current_pos, pos),
-                self.moves_between(self._initial_position, pos),
+                self.moves_between(current_pos, pos, DistanceMetric.CHEBYSHEV),
+                self.moves_between(
+                    self._initial_position, pos, DistanceMetric.CHEBYSHEV
+                ),
                 distance_between(current_pos, pos),
             )
 
@@ -514,110 +598,72 @@ class SmartSpiral(ScanPlanner):
         Returns None if no focused locations are present
         """
         # save to variable rather than search for focussed sites each time.
-        focused_locations = self.focused_locations
+        focused_locations = self.focused_locations_xyz
         if not focused_locations:
             return None
 
-        # must be float64 (double precision) to deal with the huge numbers involved!
+        # must be float64 to deal with large coordinates
         current_pos = np.array(xy_pos, dtype="float64")
-        path_pos = np.array(focused_locations, dtype="float64")[:, :2]
+        focused_arr = np.array(focused_locations, dtype="float64")
 
-        # Use linalg.norm to calculate the direct distance between the points
-        # Note linalg.norm always uses float64
-        dists = np.linalg.norm((path_pos - current_pos), axis=1)
+        # Find focused sites within dx and dy
+        dx_ok = np.abs(focused_arr[:, 0] - current_pos[0]) <= self._dx
+        dy_ok = np.abs(focused_arr[:, 1] - current_pos[1]) <= self._dy
+        nearby_indices = np.where(dx_ok & dy_ok)[0]
 
-        # Get indices of all focused sites within distance_cutoff.
-        # Note np.where always returns a tuple of arrays, hence the trailing [0]
-        indices = np.where(dists <= self._distance_cutoff)[0]
+        # If no neighbouring sites were focused, choose the closest
+        if len(nearby_indices) == 0:
+            deltas = focused_arr[:, :2] - current_pos
+            dists = np.linalg.norm(deltas, axis=1)
+            min_dist = np.min(dists)
+            nearby_indices = np.where(dists == min_dist)[0]
 
-        # Handle the case that no focused positions are within this range, and
-        # instead use the nearest focused position. This will always return a
-        # height, due to the check that self._focused_locations exists.
-        if len(indices) == 0:
-            distance_cutoff = min(dists)
-            indices = np.where(dists <= distance_cutoff)[0]
+        nearby_sites = focused_arr[nearby_indices]
 
-        # Turning into an array allows slicing based on a list
-        focused_locations_array = np.array(focused_locations)
+        # Choose the lowest z
+        min_z = np.min(nearby_sites[:, 2])
 
-        # Choose the lowest (smallest z) of the neighbouring sites. Smart stack works best
-        # if started too low, so the lowest z will perform best
-        candidates = focused_locations_array[indices]
-        min_z = np.min(candidates[:, -1])
+        # Among those with min z, choose the most recent
+        chosen_site = nearby_sites[nearby_sites[:, 2] == min_z][-1]
 
-        # Find all with the minimum z, and select the latest
-        chosen_focused_site = candidates[candidates[:, -1] == min_z][-1]
-
-        # Convert back into list so values are of type int instead of np.int32
-        return tuple(chosen_focused_site.tolist())
-
-    def moves_between(
-        self,
-        starting_pos: XYPos | np.ndarray | FutureScanLocation,
-        ending_pos: XYPos | np.ndarray | FutureScanLocation,
-    ) -> float:
-        """Return the larger of x moves or y moves between two xy positions.
-
-        :param starting_pos: the position to measure from
-        :param ending_pos: the position to measure to
-
-        """
-        if isinstance(starting_pos, FutureScanLocation):
-            starting_pos = starting_pos.xy_tuple
-        if isinstance(ending_pos, FutureScanLocation):
-            ending_pos = ending_pos.xy_tuple
-        move_size = np.array([self._dx, self._dy])
-
-        starting_pos = np.array(starting_pos, dtype="float64")
-        ending_pos = np.array(ending_pos, dtype="float64")
-
-        displacement_in_moves = (ending_pos - starting_pos) / move_size
-
-        return np.max(np.abs(displacement_in_moves))
+        return (
+            int(chosen_site[0]),
+            int(chosen_site[1]),
+            int(chosen_site[2]),
+        )
 
 
-class SnakeScan(ScanPlanner):
-    """A scan planner that performs a snake scan, right and down from a corner.
+class RegularGridPlanner(RectGridPlanner):
+    """A scan planner that performs a snake or a raster scan.
+
+    Direction cannot yet be set it always scans, right and down from a corner.
 
     This planner starts at the corner of the region to scan, snaking back and forth,
     starting moving right and down (assuming positive dx and dy.)
     """
 
-    _dx: int = 0
-    _dy: int = 0
     _x_count: int = 0
     _y_count: int = 0
-
-    def __init__(
-        self, initial_position: XYPos, planner_settings: Optional[dict] = None
-    ) -> None:
-        """Set up the lists inherited from ScanPlanner, plus a distance cutoff.
-
-        Use the supplied _dx and _dy to set a distance cutoff for an image to be
-        considered neighbouring another
-        """
-        super().__init__(initial_position, planner_settings)
-        self._distance_cutoff: float = max([self._dx, self._dy]) * 1.1
+    _style: Literal["snake", "raster"]
 
     def _parse(self, planner_settings: Optional[dict] = None) -> None:
-        """Parse SnakeScan Settings dictionary.
+        super()._parse(planner_settings)
 
-        * ``dx`` - the movement size in x
-        * ``dy`` - the movement size in y
-        * ``x_count`` - The number of columns in the scan.
-        * ``y_count`` - The number of rows in the scan.
-        """
-        expected_keys = ["x_count", "y_count", "dx", "dy"]
-        invalid_msg = "SnakeScan requires a planner_settings dictionary with keys: "
-        if not planner_settings:
-            raise ValueError(invalid_msg + ",".join(expected_keys))
-        if not all(keys in planner_settings for keys in expected_keys):
+        expected_keys = ["x_count", "y_count", "style"]
+        invalid_msg = "RegularGrid requires planner_settings with keys: "
+        if not planner_settings or not all(
+            k in planner_settings for k in expected_keys
+        ):
             raise KeyError(invalid_msg + ",".join(expected_keys))
 
-        self._dx = int(planner_settings["dx"])
-        self._dy = int(planner_settings["dy"])
         self._x_count = int(planner_settings["x_count"])
         self._y_count = int(planner_settings["y_count"])
+        style = planner_settings["style"]
+        if style not in ("snake", "raster"):
+            raise ValueError(
+                f"Unknown regular grid style {style}. Use snake or raster."
+            )
+        self._style = style
 
     def _initial_location_list(self) -> list[FutureScanLocation]:
         """Set the initial list of locations for this scan planner.
@@ -632,19 +678,10 @@ class SnakeScan(ScanPlanner):
             y_count=self._y_count,
             dx=self._dx,
             dy=self._dy,
-            style="snake",
+            style=self._style,
         )
 
         return self._grid_to_future_locations(grid)
-
-    # The noqa statement is because next_position is unused but is needed for equivalence
-    # with other workflows that require the next pos to select a neighbour.
-    def select_nearby_focus_site(self, next_position: XYPos) -> Optional[XYZPos]:  # noqa: ARG002
-        """For a snake scan, use the most recent focused site to predict focus."""
-        focused_locations = self.focused_locations
-        if not focused_locations:
-            return None
-        return focused_locations[-1]
 
 
 def distance_between(
