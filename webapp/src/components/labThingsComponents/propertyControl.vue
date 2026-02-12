@@ -4,6 +4,7 @@
     :data-schema="propertyDescription"
     :label="label"
     :animate="animate"
+    :options="options"
     @request-update="readProperty"
     @send-value="writeProperty"
     @animation-shown="resetAnimate"
@@ -42,6 +43,11 @@ export default {
     readBackDelay: {
       type: Number,
       default: 1000,
+      required: false,
+    },
+    options: {
+      type: Array,
+      default: () => [],
       required: false,
     },
   },

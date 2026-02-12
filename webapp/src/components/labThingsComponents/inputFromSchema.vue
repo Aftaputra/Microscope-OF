@@ -1,5 +1,20 @@
 <template>
   <div>
+    <label v-if="dataType === 'dropdown'" class="uk-form-label">
+      {{ label }}
+      <div class="input-and-buttons-container">
+        <select
+          v-model="internalValue"
+          class="uk-form-small numeric-setting-line-input"
+          @change="sendValue"
+        >
+          <option v-for="(opt, idx) in options" :key="idx" :value="opt">
+            {{ opt }}
+          </option>
+        </select>
+        <sync-property-button @click="requestUpdate" />
+      </div>
+    </label>
     <label v-if="dataType == 'number'" class="uk-form-label"
       >{{ label }}
       <div class="input-and-buttons-container">
@@ -128,6 +143,11 @@ export default {
       type: Boolean,
       default: null,
     },
+    options: {
+      type: Array,
+      default: () => [],
+      required: false,
+    },
   },
 
   emits: ["requestUpdate", "sendValue", "animationShown"],
@@ -182,6 +202,9 @@ export default {
         return "undefined";
       }
       const num_types = ["integer", "float", "number"];
+      if (this.options && this.options.length > 1) {
+        return "dropdown";
+      }
       if (num_types.includes(prop.type)) {
         return "number";
       }

@@ -83,6 +83,13 @@ class PropertyControl(BaseModel):
     read_back_delay: int = 1000
     """The delay in ms before reading back the property."""
 
+    options: list[str] = []
+    """A list of options to pass to the UI for a dropdown.
+
+    These options aren't validated in the UI in any way, and invalid
+    settings will only be rejected when selected.
+    """
+
 
 def property_control_for(
     thing: lt.Thing, property_name: str, **kwargs: Any
