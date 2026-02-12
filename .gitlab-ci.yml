@@ -180,11 +180,13 @@ build-docs:
     - |
       pydoctor -W \
       --docformat  restructuredtext \
+      --html-output apidocs/python \
       --project-name "OpenFlexure Microscope Server" \
       --project-version $CI_COMMIT_REF_NAME \
       --theme readthedocs \
       --html-viewsource-base https://gitlab.com/openflexure/openflexure-microscope-server/-/tree/$CI_COMMIT_SHA/ \
       src/openflexure_microscope_server
+    - ./generate_http_api_data.py
     - echo "JOB_ID=$CI_JOB_ID" > build-docs.env
   artifacts:
     expire_in: 1 week
