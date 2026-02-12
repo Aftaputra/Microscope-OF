@@ -13,9 +13,9 @@
           {{ $store.state.origin }}
         </div>
         <action-button
-          v-if="stageType"
-          thing="stage"
-          action="flash_led"
+          v-if="illuminationType"
+          thing="illumination"
+          action="flash"
           submit-label="Flash Illumination"
           :can-terminate="false"
           :submit-data="{ dt: 0.25 }"
@@ -44,6 +44,13 @@
         <br />
         <div>
           {{ stageType }}
+        </div>
+      </div>
+      <div v-if="illuminationType">
+        <b>Illumination:</b>
+        <br />
+        <div>
+          {{ illuminationType }}
         </div>
       </div>
 
@@ -76,6 +83,11 @@ export default {
     },
     stageType() {
       return this.thingAvailable("stage") ? this.thingDescription("stage").title : undefined;
+    },
+    illuminationType() {
+      return this.thingAvailable("illumination")
+        ? this.thingDescription("illumination").title
+        : undefined;
     },
   },
 

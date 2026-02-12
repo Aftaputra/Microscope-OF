@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import threading
-import time
 from contextlib import contextmanager
 from copy import copy
 from types import TracebackType
@@ -174,11 +173,9 @@ class SangaboardThing(BaseStage):
             sb.zero_position()
         self.update_position()
 
-    @lt.action
-    def flash_led(
+    def set_led(
         self,
-        number_of_flashes: int = 10,
-        dt: float = 0.5,
+        led_on: bool = True,
         led_channel: Literal["cc"] = "cc",
     ) -> None:
         """Flash the LED to identify the board.
@@ -196,14 +193,8 @@ class SangaboardThing(BaseStage):
             # Reading and setting LED brightness suffers from repeated reads and writes
             # decreasing the value. Rather than use the value the code warns that the value
             # cannot be used.
-            intended_brightness = float(return_value[7:])
-            on_brightness = 0.32
-            self.logger.warning(
-                "Brightness control is not yet implemented. Desired brightness: "
-                f"{intended_brightness}. Set brightness: {on_brightness}"
-            )
-            for _i in range(number_of_flashes):
-                sb.query(f"{led_command} 0")
-                time.sleep(dt)
+            if led_on:
+                on_brightness = 0.32
                 sb.query(f"{led_command} {on_brightness}")
-                time.sleep(dt)
+            else:
+                sb.query(f"{led_command} 0")

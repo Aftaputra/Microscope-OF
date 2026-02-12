@@ -10,6 +10,7 @@
         "autofocus": "openflexure_microscope_server.things.autofocus:AutofocusThing",
         "camera_stage_mapping": "openflexure_microscope_server.things.camera_stage_mapping:CameraStageMapper",
         "system": "openflexure_microscope_server.things.system:OpenFlexureSystem",
+        "illumination": "openflexure_microscope_server.things.illumination:SangaIllumination",
         "smart_scan": {
             "class": "openflexure_microscope_server.things.smart_scan:SmartScanThing",
             "kwargs": {

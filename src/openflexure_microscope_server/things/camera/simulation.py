@@ -140,6 +140,8 @@ class SimulatedCamera(BaseCamera):
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
         self.generate_sprites()
+        # Whether the LED is on
+        self.led_on = True
 
     repeating: bool = lt.property(default=False)
 
@@ -339,8 +341,16 @@ class SimulatedCamera(BaseCamera):
         pl_img = Image.fromarray(np_img.astype("uint8"))
         return pl_img.resize((self.shape[1], self.shape[0]), Image.Resampling.BILINEAR)
 
+    def set_led(self, led_on: bool = True) -> None:
+        """Set the simulated LED to on or off."""
+        self.led_on = led_on
+
     def generate_frame(self) -> Image.Image:
         """Generate a frame with blobs based on the stage coordinates."""
+        # Simulate LED turning off by setting all channels to 0
+        if not self.led_on:
+            return Image.new(mode="RGB", size=(self.shape[1], self.shape[0]), color=0)
+        # Otherwise, generate a frame from current position
         pos = self._stage.instantaneous_position
         return self.generate_image((pos["y"], pos["x"], pos["z"]))
 
