@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import queue
-import threading
 from collections.abc import Sequence
-from contextlib import contextmanager
 from copy import copy
 from types import TracebackType
-from typing import Any, Iterator, Literal, Optional, Self
+from typing import Any, Literal, Optional, Self
 
 import semver
 
@@ -19,40 +16,6 @@ from . import BaseStage
 
 REQUIRED_VERSION = semver.Version.parse("1.0.0")
 RECOMMENDED_VERSION = semver.Version.parse("1.0.4")
-
-
-class JogCommand:
-    """A base class for jog operations."""
-
-    def __init__(self) -> None:
-        """Initialise a JogCommand."""
-        super().__init__()
-        self.received = threading.Event()
-        self.finished = threading.Event()
-
-    def __repr__(self) -> str:
-        """Represent the command as a string."""
-        return f"<{self.__class__.__name__}>"
-
-
-class JogMoveCommand(JogCommand):
-    """A command to make a jog move."""
-
-    def __init__(self, displacement: Sequence[int]) -> None:
-        """Initialise a JogMoveCommand.
-
-        :param displacement: The displacement for the jog move, in hardware coordinates.
-        """
-        super().__init__()
-        self.displacement = displacement
-
-    def __repr__(self) -> str:
-        """Represent the command as a string."""
-        return f"<{self.__class__.__name__} {self.displacement}>"
-
-
-class JogStopCommand(JogCommand):
-    """A command to stop a jog move."""
 
 
 class SangaboardThing(BaseStage):
@@ -84,19 +47,14 @@ class SangaboardThing(BaseStage):
         """
         self.sangaboard_kwargs = copy(kwargs)
         self.sangaboard_kwargs["port"] = port
-        self._sangaboard_lock = threading.RLock()
-
-        self._jog_lock = threading.Lock()
-        self._jog_queue: queue.Queue[JogCommand] = queue.Queue[JogCommand](maxsize=1)
-        self._jog_thread: Optional[threading.Thread] = None
 
         super().__init__(thing_server_interface, **kwargs)
 
     def __enter__(self) -> Self:
         """Connect to the sangaboard when the Thing context manager is opened."""
         self._sangaboard = sangaboard.Sangaboard(**self.sangaboard_kwargs)
-        with self.sangaboard() as sb:
-            sb.query("blocking_moves false")
+        with self._hardware_lock:
+            self._sangaboard.query("blocking_moves false")
         self.check_firmware()
         self.update_position()
         return self
@@ -108,17 +66,8 @@ class SangaboardThing(BaseStage):
         _traceback: Optional[TracebackType],
     ) -> None:
         """Close the sangaboard connection when the Thing context manager is closed."""
-        with self.sangaboard() as sb:
-            sb.close()
-
-    @contextmanager
-    def sangaboard(self) -> Iterator[sangaboard.Sangaboard]:
-        """Return the wrapped ``sangaboard.Sangaboard`` instance.
-
-        This is protected by a ``threading.RLock``, which may change in future.
-        """
-        with self._sangaboard_lock:
-            yield self._sangaboard
+        with self._hardware_lock:
+            self._sangaboard.close()
 
     axis_inverted: dict[str, bool] = lt.setting(
         default={"x": True, "y": False, "z": True}, readonly=True
@@ -127,9 +76,9 @@ class SangaboardThing(BaseStage):
 
     def update_position(self) -> None:
         """Read position from the stage and set the corresponding property."""
-        with self.sangaboard() as sb:
+        with self._hardware_lock:
             self._hardware_position = dict(
-                zip(self.axis_names, sb.position, strict=True)
+                zip(self.axis_names, self._sangaboard.position, strict=True)
             )
 
     def check_firmware(self) -> None:
@@ -139,11 +88,11 @@ class SangaboardThing(BaseStage):
 
         Log a warning if the version is below RECOMMENDED_VERSION
         """
-        with self.sangaboard() as sb:
+        with self._hardware_lock:
             # This will raise a ValueError is if the firmware version cannot be parsed
             # this error will stop the microscope booting as we cannot ensure valid
             # firmware.
-            version = semver.Version.parse(sb.firmware_version)
+            version = semver.Version.parse(self._sangaboard.firmware_version)
 
             # Raise an error if version is below required
             if version < REQUIRED_VERSION:
@@ -165,20 +114,15 @@ class SangaboardThing(BaseStage):
         This starts the stage moving, but does not wait for the move to complete. It
         sets ``self.moving`` to ``True``: resetting it is the responsibility of the calling code.
         """
-        with self.sangaboard() as sb:
+        with self._hardware_lock:
             self.moving = True
-            sb.move_rel(displacement)
+            self._sangaboard.move_rel(displacement)
 
     def _hardware_stop(self) -> None:
         """Stop any motion of the stage as soon as possible."""
-        with self.sangaboard() as sb:
-            sb.query("stop")
+        with self._hardware_lock:
+            self._sangaboard.query("stop")
             self.moving = False
-
-    def _estimate_move_duration(self, displacement: Sequence[int]) -> float:
-        """Calculate the expected duration of a move with the given displacement."""
-        max_displacement = max(abs(d) for d in displacement)
-        return max_displacement * 0.001  # This does not yet check the board's speed.
 
     def _poll_moving(self) -> bool:
         """Determine if the stage is still moving.
@@ -187,15 +131,15 @@ class SangaboardThing(BaseStage):
 
         :return: whether the stage is still moving.
         """
-        with self.sangaboard() as sb:
-            moving = sb.query("moving?") == "true"
+        with self._hardware_lock:
+            moving = self._sangaboard.query("moving?") == "true"
             if self.moving != moving:
                 self.moving = moving
             return moving
 
     def _poll_until_stopped(self) -> None:
         """Poll the stage until it reports that it has stopped moving."""
-        with self.sangaboard():
+        with self._hardware_lock:
             while self._poll_moving():
                 lt.cancellable_sleep(0.1)
 
@@ -207,17 +151,17 @@ class SangaboardThing(BaseStage):
         """Make a relative move in the coordinate system used by the sangaboard."""
         displacement = [kwargs.get(axis, 0) for axis in self.axis_names]
         duration = self._estimate_move_duration(displacement)
-        with self.sangaboard() as sb:
+        with self._hardware_lock:
             try:
-                sb.move_rel(displacement)
+                self._sangaboard.move_rel(displacement)
                 if block_cancellation:
-                    sb.query("notify_on_stop")
+                    self._sangaboard.query("notify_on_stop")
                 else:
                     if duration > 0.2:
                         lt.cancellable_sleep(
                             duration - 0.1
                         )  # Avoid unnecessary polling
-                    while sb.query("moving?") == "true":
+                    while self._sangaboard.query("moving?") == "true":
                         lt.cancellable_sleep(0.1)
             except lt.exceptions.InvocationCancelledError as e:
                 # If the move has been cancelled, stop it but don't handle the exception.
@@ -235,7 +179,7 @@ class SangaboardThing(BaseStage):
         **kwargs: int,
     ) -> None:
         """Make a absolute move in the coordinate system used by the sangaboard."""
-        with self.sangaboard():
+        with self._hardware_lock:
             self.update_position()
             displacement = {
                 axis: int(pos) - self._hardware_position[axis]
@@ -254,8 +198,8 @@ class SangaboardThing(BaseStage):
         It is intended for use after manually or automatically recentring the
         stage.
         """
-        with self.sangaboard() as sb:
-            sb.zero_position()
+        with self._hardware_lock:
+            self._sangaboard.zero_position()
         self.update_position()
 
     def set_led(
@@ -270,8 +214,8 @@ class SangaboardThing(BaseStage):
         being addressed.
         """
         led_command = f"led_{led_channel}"
-        with self.sangaboard() as sb:
-            return_value = sb.query(f"{led_command}?")
+        with self._hardware_lock:
+            return_value = self._sangaboard.query(f"{led_command}?")
             if not return_value.startswith("CC LED:"):
                 raise IOError("The sangaboard does not support LED control")
 
@@ -280,134 +224,6 @@ class SangaboardThing(BaseStage):
             # cannot be used.
             if led_on:
                 on_brightness = 0.32
-                sb.query(f"{led_command} {on_brightness}")
+                self._sangaboard.query(f"{led_command} {on_brightness}")
             else:
-                sb.query(f"{led_command} 0")
-
-    @lt.action
-    def jog(self, stop: bool = False, **kwargs: int) -> None:
-        """Make a relative move that may be interrupted by a future ``jog``.
-
-        This action makes a relative move. If another ``jog`` action is called while
-        a ``jog`` is already in progress, the first will be stopped and the second
-        will start immediately. This allows for responsive manual control of the
-        stage, for example with a joystick.
-
-        :param stop: if this is set to ``True`` the jog will be terminated.
-        :param kwargs: Keyword arguments should be axis names.
-        """
-        if stop:
-            self._send_jog_command(JogStopCommand(), timeout=1)
-        else:
-            self._hardware_jog(**self._apply_axis_direction(kwargs))
-
-    def _hardware_jog(self, **kwargs: int) -> None:
-        """Make a relative move that may be interrupted by a future ``jog``.
-
-        This function uses hardware coordinates, ``jog`` is the public wrapper that
-        applies any neecessary transform and then calls this function. See the
-        docs for that function for more explanation.
-
-        See `_jog_loop` for an explanation of the mechanism.
-
-        :param kwargs: Keyword arguments should be axis names.
-        """
-        move = [kwargs.get(axis, 0) for axis in self.axis_names]
-        self._send_jog_command(
-            JogMoveCommand(move),
-            timeout=self._estimate_move_duration(move) + 1,
-        )
-
-    def _send_jog_command(
-        self, command: JogCommand, timeout: Optional[float] = None
-    ) -> None:
-        """Send a jog command to the background jog thread.
-
-        This function will start the background thread if it is not running.
-        This function acquires ``_jog_lock`` and uses the ``_jog_send`` event to signal
-        the thread to read the next command. As commands interrupt each other, this
-        function should never block for a long time.
-
-        :param command: the jog command to send.
-        :param timeout: how long to wait for the command to be completed, or ``None``
-            to skip waiting.
-        """
-        if not self._jog_lock.acquire(timeout=0.1):
-            self.logger.warning(
-                "Could not send a jog message, this indicates a lock error."
-            )
-            return
-        try:
-            # Make sure the queue exists.
-            # Check the background thread is running, and restart it if not.
-            if self._jog_thread is None or not self._jog_thread.is_alive():
-                self.logger.info("Starting background thread for jog commands")
-                self._jog_queue = queue.Queue[JogCommand](maxsize=1)
-                self._jog_thread = threading.Thread(
-                    target=self._jog_loop, args=(command,)
-                )
-                self._jog_thread.start()
-            else:
-                self._jog_queue.put(command)
-            command.received.wait(1)
-        finally:
-            self._jog_lock.release()
-        # The final wait happens after releasing the lock: this allows jog moves to
-        # be interrupted.
-        if timeout is not None:
-            command.finished.wait(timeout)
-
-    def _jog_loop(self, first_command: JogCommand) -> None:
-        """Execute jog commands in a background thread.
-
-        This function is intended to be run in a background thread. It will look at
-        ``self._jog_command`` when the ``self._jog_send`` event is set, and signal that
-        the command is being processed with ``self._jog_received``.
-
-        If no new command is received before the current command finishes, the thread
-        will terminate, and ``self._jog_received`` will be set again. This means that
-        it should be safe to
-        """
-        # Timeout for checking queue
-        timeout = 0.1
-        previous_command: Optional[JogCommand] = None
-        command: Optional[JogCommand] = first_command
-
-        # prevent others using the sangaboard while jogging.
-        with self.sangaboard() as _sb:
-            while command is not None:
-                # Acknowledge the command
-                command.received.set()
-                if previous_command:
-                    # Notify the last command it's superseded
-                    previous_command.finished.set()
-                previous_command = command
-                if isinstance(command, JogMoveCommand):
-                    self._hardware_start_move_relative(command.displacement)
-                    timeout = self._estimate_move_duration(command.displacement)
-                elif isinstance(command, JogStopCommand):
-                    self._hardware_stop()
-                    # Next iteration, we will probably time out.
-                    timeout = 0.1
-                else:
-                    raise RuntimeError(f"Unknown jog command: {command}")
-                self.update_position()
-                command = self._get_from_jog_queue(timeout)
-
-    def _get_from_jog_queue(self, timeout: int) -> Optional[JogCommand]:
-        """Get the next JogCommand from the jog queue.
-
-        :param timeout: The estimtated time the move will take for the queue timeout.
-        :return: The jog command or None if the stage stops before a command is
-            received.
-        """
-        while True:
-            try:
-                return self._jog_queue.get(timeout=timeout)
-            except queue.Empty:
-                if not self._poll_moving():
-                    # The stage is no longer moving, return None
-                    return None
-            # If we reached here then the stage is still moving shorten timeout and
-            # check again.
-            timeout = 0.1
+                self._sangaboard.query(f"{led_command} 0")
