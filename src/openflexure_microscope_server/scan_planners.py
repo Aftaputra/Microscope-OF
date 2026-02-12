@@ -14,6 +14,7 @@ child classes:
 # would be to import Union and use a string.
 from __future__ import annotations
 
+import enum
 import logging
 from copy import copy
 from typing import Any, Literal, Optional, TypeAlias
@@ -26,6 +27,23 @@ XYPos: TypeAlias = tuple[int, int]
 XYZPos: TypeAlias = tuple[int, int, int]
 XYPosList: TypeAlias = list[XYPos]
 XYZPosList: TypeAlias = list[XYZPos]
+
+
+class DistanceMetric(enum.Enum):
+    """An enum for selecting distance metrics for grids.
+
+    Grid distance metrics are:
+
+    * Chebyshev (``CHEBYSHEV``) which is the larger of the number of x or y moves
+        in the grid.
+    * Manhattan (``MANHATTAN``) which is the number of moves between the two points
+        following the grid. Or
+    * Euclidean (``EUCLIDEAN``) which is the length of the direct route.
+    """
+
+    CHEBYSHEV = enum.auto()
+    MANHATTAN = enum.auto()
+    EUCLIDEAN = enum.auto()
 
 
 def enforce_xy_tuple(value: XYPos) -> XYPos:
@@ -339,15 +357,17 @@ class RectGridPlanner(ScanPlanner):
             (xy_pos[0], xy_pos[1] + self._dy),
         ]
 
-    def _displacement_in_moves(
+    def moves_between(
         self,
         starting_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
         ending_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
-    ) -> np.ndarray:
+        metric: DistanceMetric,
+    ) -> float:
         """Return displacement in grid-move units as a numpy array [dx_moves, dy_moves].
 
         :param starting_pos: the position to measure from
         :param ending_pos: the position to measure to
+        :param metric: How the distance is calculated. See `DistanceMetric`
         """
         if isinstance(starting_pos, (FutureScanLocation, VisitedScanLocation)):
             starting_pos = starting_pos.xy_tuple
@@ -359,33 +379,12 @@ class RectGridPlanner(ScanPlanner):
         starting_pos = np.array(starting_pos, dtype="float64")
         ending_pos = np.array(ending_pos, dtype="float64")
 
-        return (ending_pos - starting_pos) / move_size
-
-    def moves_between(
-        self,
-        starting_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
-        ending_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
-    ) -> float:
-        """Return the larger of x moves or y moves between two xy positions.
-
-        :param starting_pos: the position to measure from
-        :param ending_pos: the position to measure to
-        """
-        displacement = self._displacement_in_moves(starting_pos, ending_pos)
-        return float(np.max(np.abs(displacement)))
-
-    def total_moves_between(
-        self,
-        starting_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
-        ending_pos: XYPos | np.ndarray | FutureScanLocation | VisitedScanLocation,
-    ) -> float:
-        """Return the total x and y moves between two xy positions.
-
-        :param starting_pos: the position to measure from
-        :param ending_pos: the position to measure to
-        """
-        displacement = self._displacement_in_moves(starting_pos, ending_pos)
-        return float(np.sum(np.abs(displacement)))
+        displacement = (ending_pos - starting_pos) / move_size
+        if metric == DistanceMetric.CHEBYSHEV:
+            return float(np.max(np.abs(displacement)))
+        if metric == DistanceMetric.MANHATTAN:
+            return float(np.sum(np.abs(displacement)))
+        return float(np.linalg.norm(displacement))
 
     def _intermediate_position(self, xy_pos1: XYPos, xy_pos2: XYPos) -> XYPos:
         """Return an (x,y) position halfway between two input positions."""
@@ -413,7 +412,7 @@ class RectGridPlanner(ScanPlanner):
             return None
 
         def sort_key(pos: VisitedScanLocation) -> float:
-            return self.total_moves_between(next_position, pos)
+            return self.moves_between(next_position, pos, DistanceMetric.MANHATTAN)
 
         # Sort by the total number of dx and dy moves between sites, then by most
         # recent. Using reverse=True puts the most recent, nearest at the end
@@ -577,8 +576,10 @@ class SmartSpiral(RectGridPlanner):
         def sort_key(pos: FutureScanLocation) -> tuple[bool, float, float, float]:
             return (
                 self._is_primary_location(pos),  # False sorts low
-                self.moves_between(current_pos, pos),
-                self.moves_between(self._initial_position, pos),
+                self.moves_between(current_pos, pos, DistanceMetric.CHEBYSHEV),
+                self.moves_between(
+                    self._initial_position, pos, DistanceMetric.CHEBYSHEV
+                ),
                 distance_between(current_pos, pos),
             )
 
