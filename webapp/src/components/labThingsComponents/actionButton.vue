@@ -33,6 +33,23 @@ import { eventBus } from "../../eventBus.js";
 
 export default {
   name: "ActionButton",
+
+  emits: [
+    'update:progress',
+    'update:taskStarted', 
+    'update:taskRunning',
+    'update:log',
+    'update:taskStatus',
+    'submit',
+    'taskStarted',
+    'taskRunning',
+    'response',
+    'completed',
+    'cancelled',
+    'finished',
+    'error'
+  ],
+
   components: { 
     ActionProgressBar: markRaw(ActionProgressBar),
     ActionStatusModal: markRaw(ActionStatusModal)
