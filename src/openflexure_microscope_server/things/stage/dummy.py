@@ -72,6 +72,16 @@ class DummyStage(BaseStage):
         }
 
     def _apply_move(self, displacement: Sequence[int]) -> None:
+        """Make a move, this function is designed to be run in a thread by jogging.
+
+        This can't be used for normal movements as the delays setting up the extra
+        threads causes autofucs to fail. As such `_hardware_move_relative` is similarly
+        structured.
+
+        Interrupt this function with the ``self._abort_move`` event.
+
+        :param displacement: The (x, y, z) position.
+        """
         try:
             fraction_complete = 0.0
             dt = self.step_time

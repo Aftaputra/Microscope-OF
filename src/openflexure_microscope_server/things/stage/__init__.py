@@ -33,7 +33,11 @@ class RedefinedBaseMovementError(RuntimeError):
 
 
 class JogCommand:
-    """A base class for jog operations."""
+    """A base class for jog operations.
+
+    This class handles threading events used to interrupt previous jog commands. There
+    are two subclasses that are used by jogging `JogMoveCommand` and `JogStopCommand`.
+    """
 
     def __init__(self) -> None:
         """Initialise a JogCommand."""
