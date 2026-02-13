@@ -179,10 +179,10 @@ class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]
     This must be between 0.1 and 0.7.
     """
 
-    autofocus_dz: int = lt.setting(default=1000, ge=200, le=2000)
+    autofocus_dz: int = lt.setting(default=1000, ge=400, le=3000)
     """The z distance to perform an autofocus in steps.
 
-    Must be greater than or equal to 200, and less than or equal to 2000.
+    Must be greater than or equal to 400, and less than or equal to 3000.
     """
 
     # The noqa statement is because scan_name is unused but is needed for equivalence
