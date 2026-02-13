@@ -1,6 +1,6 @@
 <template>
   <div>
-    <label v-if="dataType === 'dropdown'" class="uk-form-label">
+    <label v-if="useDropdown" class="uk-form-label">
       {{ label }}
       <div class="input-and-buttons-container">
         <select
@@ -15,7 +15,7 @@
         <sync-property-button @click="requestUpdate" />
       </div>
     </label>
-    <label v-if="dataType == 'number'" class="uk-form-label"
+    <label v-if="!useDropdown && dataType == 'number'" class="uk-form-label"
       >{{ label }}
       <div class="input-and-buttons-container">
         <input
@@ -33,7 +33,7 @@
         <sync-property-button @click="requestUpdate" />
       </div>
     </label>
-    <div v-if="dataType == 'boolean'" class="input-and-buttons-container">
+    <div v-if="!useDropdown && dataType == 'boolean'" class="input-and-buttons-container">
       <label class="uk-form-label numeric-setting-line-input">
         <input
           ref="checkbox"
@@ -47,7 +47,7 @@
       </label>
       <sync-property-button @click="requestUpdate" />
     </div>
-    <label v-if="dataType == 'number_array'" class="uk-form-label"
+    <label v-if="!useDropdown && dataType == 'number_array'" class="uk-form-label"
       >{{ label }}
       <div class="input-and-buttons-container">
         <input
@@ -66,7 +66,7 @@
         <sync-property-button @click="requestUpdate" />
       </div>
     </label>
-    <label v-if="dataType == 'number_object'" class="uk-form-label"
+    <label v-if="!useDropdown && dataType == 'number_object'" class="uk-form-label"
       >{{ label }}
       <div v-for="(val, key) in modelValue" :key="key">
         <label>{{ internalLabels[key] }}</label>
@@ -86,7 +86,7 @@
         </div>
       </div>
     </label>
-    <label v-if="dataType == 'string'" class="uk-form-label"
+    <label v-if="!useDropdown && dataType == 'string'" class="uk-form-label"
       >{{ label }}
       <div class="input-and-buttons-container">
         <input
@@ -102,7 +102,7 @@
         <sync-property-button @click="requestUpdate" />
       </div>
     </label>
-    <label v-if="dataType == 'other'" class="uk-form-label"
+    <label v-if="!useDropdown && dataType == 'other'" class="uk-form-label"
       >{{ label }}
       <div class="input-and-buttons-container">
         <input
@@ -145,7 +145,7 @@ export default {
     },
     options: {
       type: Array,
-      default: () => [],
+      default: undefined,
       required: false,
     },
   },
@@ -196,15 +196,15 @@ export default {
         form.op?.includes('writeproperty')
       );
     },
+    useDropdown: function () {
+      return Array.isArray(this.options) && this.options.length > 1;
+    },
     dataType: function () {
       let prop = this.dataSchema;
       if (prop == undefined) {
         return "undefined";
       }
       const num_types = ["integer", "float", "number"];
-      if (this.options && this.options.length > 1) {
-        return "dropdown";
-      }
       if (num_types.includes(prop.type)) {
         return "number";
       }

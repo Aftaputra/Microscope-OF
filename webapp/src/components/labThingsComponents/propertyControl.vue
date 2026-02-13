@@ -47,7 +47,7 @@ export default {
     },
     options: {
       type: Array,
-      default: () => [],
+      default: undefined,
       required: false,
     },
   },
