@@ -12,9 +12,9 @@
         v-if="showDpad"
         id="up-button"
         class="uk-button uk-button-primary dpad-btn"
-        @mousedown.left="jog(0, 1, 0)"
-        @mouseup="jogStop()"
-        @mouseOut="jogStop()"
+        @pointerdown="jog($event, 0, 1, 0)"
+        @pointerup="jogStop()"
+        @mouseLeave="jogStop()"
       >
         <span class="material-symbols-outlined sync-icon"> arrow_upward </span>
       </button>
@@ -23,9 +23,9 @@
         v-if="showDpad"
         id="left-button"
         class="uk-button uk-button-primary dpad-btn"
-        @mousedown.left="jog(-1, 0, 0)"
-        @mouseup="jogStop()"
-        @mouseOut="jogStop()"
+        @pointerdown="jog($event, -1, 0, 0)"
+        @pointerup="jogStop()"
+        @pointercancel="jogStop()"
       >
         <span class="material-symbols-outlined sync-icon"> arrow_back </span>
       </button>
@@ -34,9 +34,9 @@
         v-if="showDpad"
         id="right-button"
         class="uk-button uk-button-primary dpad-btn"
-        @mousedown.left="jog(1, 0, 0)"
-        @mouseup="jogStop()"
-        @mouseOut="jogStop()"
+        @pointerdown="jog($event, 1, 0, 0)"
+        @pointerup="jogStop()"
+        @pointercancel="jogStop()"
       >
         <span class="material-symbols-outlined sync-icon"> arrow_forward </span>
       </button>
@@ -45,9 +45,9 @@
         v-if="showDpad"
         id="down-button"
         class="uk-button uk-button-primary dpad-btn"
-        @mousedown.left="jog(0, -1, 0)"
-        @mouseup="jogStop()"
-        @mouseOut="jogStop()"
+        @pointerdown="jog($event, 0, -1, 0)"
+        @pointerup="jogStop()"
+        @pointercancel="jogStop()"
       >
         <span class="material-symbols-outlined sync-icon"> arrow_downward </span>
       </button>
@@ -56,9 +56,9 @@
         v-if="showFocusControls"
         id="focus-out-button"
         class="uk-button uk-button-primary dpad-btn"
-        @mousedown.left="jog(0, 0, -1)"
-        @mouseup="jogStop()"
-        @mouseOut="jogStop()"
+        @pointerdown="jog($event, 0, 0, -1)"
+        @pointerup="jogStop()"
+        @pointercancel="jogStop()"
       >
         <span class="material-symbols-outlined sync-icon"> remove </span>
       </button>
@@ -67,9 +67,9 @@
         v-if="showFocusControls"
         id="focus-in-button"
         class="uk-button uk-button-primary dpad-btn"
-        @mousedown.left="jog(0, 0, 1)"
-        @mouseup="jogStop()"
-        @mouseOut="jogStop()"
+        @pointerdown="jog($event, 0, 0, 1)"
+        @pointerup="jogStop()"
+        @pointercancel="jogStop()"
       >
         <span class="material-symbols-outlined sync-icon"> add </span>
       </button>
@@ -98,10 +98,24 @@ export default {
     jogTime: 300,
   }),
   methods: {
-    jog(x, y, z) {
+    /**
+     * Jog d-pad and focus buttons.
+     *
+     * This is a similar to the function in App.vue, however it uses an Interval rather
+     * than the one in App.vue that uses key repeats.
+     */
+    jog(keyevent, x, y, z) {
+      // Only respond to primary button (left mouse / primary touch)
+      if (keyevent.button !== 0) return;
+
       if (this.jogIntervalId) {
         clearInterval(this.jogIntervalId);
       }
+
+      // Designate this element to get the pointers next pointerup event wherever that
+      // pointer is.
+      keyevent.target.setPointerCapture(keyevent.pointerId);
+
       const navigationInvert = this.$store.state.navigationInvert;
       let invokeJog = () =>
         this.invokeAction("stage", "jog", {
@@ -112,6 +126,12 @@ export default {
       invokeJog();
       this.jogIntervalId = setInterval(invokeJog, this.jogTime);
     },
+    /**
+     * Stop jogging from d-pad and focus buttons.
+     *
+     * This is a similar to the function in App.vue, but it is designed to clear the
+     * interval used with the d-pad and focus buttons.
+     */
     jogStop() {
       if (this.jogIntervalId) {
         clearInterval(this.jogIntervalId);

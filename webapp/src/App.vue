@@ -243,7 +243,9 @@ export default {
       eventBus.emit("globalTogglePreview", false);
     },
 
-    // Handle global mouse wheel events to be associated with navigation
+    /**
+     *  Handle global mouse wheel events to be associated with navigation
+     */
     wheelMonitor: function (event) {
       // Only capture scroll if the event target's parent contains the "scrollTarget" class
       if (
@@ -261,6 +263,13 @@ export default {
       }
     },
 
+    /**
+     * Jog for key-presses.
+     *
+     * This is a similar to the function in stageControlButtons.vue however it uses
+     * uses the key repeat to fire in case a key up is missed. It debounes any
+     * request to jog that is too recent after the last jog.
+     */
     jog(x, y, z) {
       // Manually debounce extra requests from keyboard repeat rate.
       // This is used rather than and interval in case of missing a repeat.
@@ -279,6 +288,13 @@ export default {
       eventBus.emit("globalUpdatePositionEvent");
     },
 
+    /**
+     * Stop jogging on key-up
+     *
+     * This is also similar to the function in stageControlButtons.vue. It handles
+     * stopping jogging and resetting the `lastJogTime` so there is no delay when
+     * starting a new jog after an old jog finished.
+     */
     jogStop() {
       this.invokeAction("stage", "jog", { stop: true });
       this.lastJogTime = 0;
@@ -287,6 +303,9 @@ export default {
       }, 100);
     },
 
+    /**
+     * Track which keys are still down on keypress (or key repeat).
+     */
     updateJogFromKeys() {
       let x = 0,
         y = 0,
