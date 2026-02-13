@@ -12,7 +12,7 @@
         v-if="showDpad"
         id="up-button"
         class="uk-button uk-button-primary dpad-btn"
-        @mousedown="jog(0, 1, 0)"
+        @mousedown.left="jog(0, 1, 0)"
         @mouseup="jogStop()"
         @mouseOut="jogStop()"
       >
@@ -23,7 +23,7 @@
         v-if="showDpad"
         id="left-button"
         class="uk-button uk-button-primary dpad-btn"
-        @mousedown="jog(-1, 0, 0)"
+        @mousedown.left="jog(-1, 0, 0)"
         @mouseup="jogStop()"
         @mouseOut="jogStop()"
       >
@@ -34,7 +34,7 @@
         v-if="showDpad"
         id="right-button"
         class="uk-button uk-button-primary dpad-btn"
-        @mousedown="jog(1, 0, 0)"
+        @mousedown.left="jog(1, 0, 0)"
         @mouseup="jogStop()"
         @mouseOut="jogStop()"
       >
@@ -45,7 +45,7 @@
         v-if="showDpad"
         id="down-button"
         class="uk-button uk-button-primary dpad-btn"
-        @mousedown="jog(0, -1, 0)"
+        @mousedown.left="jog(0, -1, 0)"
         @mouseup="jogStop()"
         @mouseOut="jogStop()"
       >
@@ -56,7 +56,7 @@
         v-if="showFocusControls"
         id="focus-out-button"
         class="uk-button uk-button-primary dpad-btn"
-        @mousedown="jog(0, 0, -1)"
+        @mousedown.left="jog(0, 0, -1)"
         @mouseup="jogStop()"
         @mouseOut="jogStop()"
       >
@@ -67,7 +67,7 @@
         v-if="showFocusControls"
         id="focus-in-button"
         class="uk-button uk-button-primary dpad-btn"
-        @mousedown="jog(0, 0, 1)"
+        @mousedown.left="jog(0, 0, 1)"
         @mouseup="jogStop()"
         @mouseOut="jogStop()"
       >
