@@ -1,5 +1,5 @@
 <template>
-  <div id="CSMCalibrationSettings" v-observe-visibility="visibilityChanged">
+  <div id="CSMCalibrationSettings" ref="CSMCalibrationSettingsContainer" class="uk-width-large">
     <!--Show auto calibrate if default plugin is enabled-->
     <div v-if="'calibrate_xy' in actions" class="uk-margin-small">
       <action-button
@@ -58,7 +58,7 @@
 import ActionButton from "@/components/labThingsComponents/actionButton.vue";
 import matrixDisplay from "@/components/ui/matrixDisplay.vue";
 // vue3 migration
-import { markRaw } from "vue";
+import { useIntersectionObserver } from "@vueuse/core";
 
 // Export main app
 export default {
@@ -93,6 +93,16 @@ export default {
     properties() {
       return this.thingDescription("camera_stage_mapping").properties;
     },
+  },
+
+  mounted() {
+    useIntersectionObserver(
+      this.$refs.CSMCalibrationSettingsContainer,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      { threshold: 0.0 }
+    );
   },
 
   methods: {

@@ -12,7 +12,6 @@
 <script>
 import PropertyControl from "./propertyControl.vue";
 // vue3 migration
-import { markRaw } from "vue";
 
 // Export main app
 export default {

@@ -28,7 +28,13 @@ import finalStep from "./calibrationWizardComponents/finalStep.vue";
 export default {
   name: "CalibrationWizard",
 
-  components: {},
+  components: {  
+    singleStepTask,
+    welcomeStep,
+    cameraCalibrationTask,
+    cameraStageMappingTask,
+    finalStep
+  },
 
   data: function () {
     return {

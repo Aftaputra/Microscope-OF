@@ -1,6 +1,6 @@
 <template>
   <div
-    v-observe-visibility="visibilityChanged"
+    ref="galleryDisplay"
     class="galleryDisplay uk-padding uk-padding-remove-top"
   >
     <!-- Gallery nav bar -->
@@ -101,8 +101,8 @@ import actionButton from "../labThingsComponents/actionButton.vue";
 import scanCard from "./scanListComponents/scanCard.vue";
 import ScanViewerModal from "./scanListComponents/scanViewer.vue";
 // vue3 migration
-import { markRaw } from "vue";
 import { eventBus } from "../../eventBus.js";
+import { useIntersectionObserver } from "@vueuse/core";
 
 // Export main app
 export default {
@@ -148,6 +148,15 @@ export default {
   },
 
   async mounted() {
+    useIntersectionObserver(
+      this.$refs.galleryDisplay,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      {
+        threshold: 0.0, // Adjust as needed
+      },
+    );
     // Update on mount (does nothing if not connected)
     await this.updateScans();
     // A global signal listener to perform a gallery refresh

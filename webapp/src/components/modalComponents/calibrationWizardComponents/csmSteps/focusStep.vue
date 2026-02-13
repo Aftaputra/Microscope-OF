@@ -31,7 +31,6 @@
 import stepTemplateWithStream from "../stepTemplateWithStream.vue";
 import ActionButton from "../../../labThingsComponents/actionButton.vue";
 // vue3 migration
-import { markRaw } from "vue";
 
 export default {
   name: "CameraMainCalibrationStep",

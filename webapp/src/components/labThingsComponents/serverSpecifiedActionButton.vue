@@ -18,7 +18,6 @@
 <script>
 import ActionButton from "./actionButton.vue";
 // vue3 migration
-import { markRaw } from "vue";
 
 // Export main app
 export default {

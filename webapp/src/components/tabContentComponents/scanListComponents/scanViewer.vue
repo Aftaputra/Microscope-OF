@@ -56,7 +56,6 @@
 import UIkit from "uikit";
 import OpenSeadragonViewer from "./openSeadragonViewer.vue";
 // vue3 migration
-import { markRaw } from "vue";
 
 export default {
   name: "ScanViewerModal",

@@ -101,7 +101,6 @@
 <script>
 import syncPropertyButton from "./syncPropertyButton.vue";
 // vue3 migration
-import { markRaw } from "vue";
 
 export default {
   name: "InputFromSchema",
@@ -216,13 +215,11 @@ export default {
         this.updateIsEdited();
         this.resetInternalValue();
       },
-      //deep: true,
     },
     internalValue: {
       handler() {
         this.updateIsEdited();
       },
-      //deep: true,
     },
     animate(updated) {
       if (updated) {

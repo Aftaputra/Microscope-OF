@@ -14,7 +14,6 @@
 import paneControl from "./controlComponents/paneControl.vue";
 import streamDisplay from "./streamContent.vue";
 // vue3 migration
-import { markRaw } from "vue";
 
 export default {
   name: "ControlContent",

@@ -14,7 +14,6 @@
 import paneBackgroundDetect from "./backgroundDetectComponents/paneBackgroundDetect";
 import streamDisplay from "./streamContent.vue";
 // vue3 migration
-import { markRaw } from "vue";
 
 export default {
   name: "BackgroundDetectContent",

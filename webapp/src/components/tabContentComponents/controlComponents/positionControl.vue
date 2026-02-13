@@ -62,7 +62,6 @@ import ActionButton from "../../labThingsComponents/actionButton.vue";
 import syncPropertyButton from "../../labThingsComponents/syncPropertyButton.vue";
 import stageControlButtons from "./stageControlButtons.vue";
 // vue3 migration
-import { markRaw } from "vue";
 import { eventBus } from "../../../eventBus.js";
 
 export default {

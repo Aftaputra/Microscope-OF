@@ -8,7 +8,6 @@
 <script>
 import appSettings from "./displaySetttingsComponents/appSettings.vue";
 import streamSettings from "./displaySetttingsComponents/streamSettings.vue";
-import { markRaw } from "vue";
 
 // Export main app
 export default {

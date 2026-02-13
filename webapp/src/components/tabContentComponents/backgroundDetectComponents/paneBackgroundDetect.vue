@@ -1,5 +1,5 @@
 <template>
-  <div v-observe-visibility="visibilityChanged" class="uk-padding-small">
+  <div ref="backgroundDetectContent" class="uk-padding-small">
     <div>
       <ul uk-accordion="multiple: true">
         <li>
@@ -48,7 +48,7 @@
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 import ServerSpecifiedPropertyControl from "../../labThingsComponents/serverSpecifiedPropertyControl.vue";
 // vue3 migration
-import { markRaw } from "vue";
+import { useIntersectionObserver } from "@vueuse/core";
 
 export default {
   components: {
@@ -106,6 +106,18 @@ export default {
         );
       }
     },
+  },
+
+  mounted() {
+    useIntersectionObserver(
+      this.$refs.backgroundDetectContent,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      {
+        threshold: 0.0,
+      },
+    );
   },
 };
 </script>

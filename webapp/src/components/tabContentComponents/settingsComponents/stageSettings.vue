@@ -1,5 +1,5 @@
 <template>
-  <div id="stageSettings" v-observe-visibility="visibilityChanged" class="uk-width-large">
+  <div id="stageSettings" ref="stageSettingsContainer" class="uk-width-large">
     The microscope stage is a <b>{{ stageType }}</b>
     <div>
       <div class="uk-margin">
@@ -30,7 +30,7 @@
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 // vue3 migration
-import { markRaw } from "vue";
+import { useIntersectionObserver } from "@vueuse/core";
 
 export default {
   name: "StageSettings",
@@ -49,6 +49,16 @@ export default {
     stageType: function () {
       return this.thingDescription("stage").title;
     },
+  },
+
+  mounted() {
+    useIntersectionObserver(
+      this.$refs.stageSettingsContainer,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      { threshold: 0.0 }
+    );
   },
 
   methods: {

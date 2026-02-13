@@ -58,7 +58,6 @@
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 // vue3 migration
-import { markRaw } from "vue";
 
 export default {
   name: "StatusPane",

@@ -26,7 +26,6 @@ import cameraCalibrationSettings from "./cameraSettingsComponents/cameraCalibrat
 import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
 import ServerSpecifiedPropertyControl from "../../labThingsComponents/serverSpecifiedPropertyControl.vue";
 // vue3 migration
-import { markRaw } from "vue";
 
 // Export main app
 export default {

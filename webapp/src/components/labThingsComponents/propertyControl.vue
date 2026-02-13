@@ -14,7 +14,7 @@
 import { formatValue } from "@/js_utils/formatter.mjs";
 import InputFromSchema from "./inputFromSchema.vue";
 // vue3 migration
-import { markRaw } from "vue";
+
 
 export default {
   name: "PropertyControl",

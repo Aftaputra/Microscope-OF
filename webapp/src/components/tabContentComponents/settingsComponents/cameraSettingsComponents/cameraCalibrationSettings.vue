@@ -30,7 +30,7 @@ export default {
   name: "CameraCalibrationSettings",
 
   components: {
-    ServerSpecifiedActionButton,
+    ServerSpecifiedActionButton
   },
 
   props: {

@@ -1,6 +1,7 @@
 <template>
-  <div v-observe-visibility="visibilityChanged" class="uk-margin-remove uk-padding-remove">
+  <div class="uk-margin-remove uk-padding-remove">
     <button
+      ref="actionButton"
       type="button"
       :disabled="buttonDisabled"
       class="uk-button uk-width-1-1 uk-position-relative"
@@ -28,8 +29,10 @@
 <script>
 import ActionProgressBar from "./actionProgressBar.vue";
 import ActionStatusModal from "./actionStatusModal.vue";
-import { markRaw } from "vue";
+//vue3 migration 
 import { eventBus } from "../../eventBus.js";
+import { useIntersectionObserver } from "@vueuse/core";
+
 
 export default {
   name: "ActionButton",
@@ -155,20 +158,16 @@ export default {
       handler(newval) {
         this.$emit("update:progress", newval);
       },
-      //deep: true,
-      immediate: true // Optional: triggers immediately on component load
     },
     taskStarted: {
       handler(newval) {
         this.$emit("update:taskStarted", newval);
       },
-      //deep: true
     },
     taskRunning: {
       handler(newval) {
         this.$emit("update:taskRunning", newval);
       },
-      deep: true
     },
     log: {
       handler(newval) {
@@ -180,11 +179,20 @@ export default {
       handler(newval) {
         this.$emit("update:taskStatus", newval);
       },
-      //deep: true
     }
 },
 
   mounted() {
+    useIntersectionObserver(
+      this.$refs.actionButton,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      {
+        threshold: 0.0, // Adjust as needed
+      },
+    );
+
     // Check for already running tasks
     if (this.taskStarted != true) {
       this.checkExistingTasks();

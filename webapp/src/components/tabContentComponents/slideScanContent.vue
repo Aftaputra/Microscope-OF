@@ -1,7 +1,7 @@
 <template>
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <div class="control-component uk-padding-small">
-      <div v-show="!scanning" v-observe-visibility="visibilityChanged" class="uk-padding-small">
+      <div v-show="!scanning" ref="slideScanContent" class="uk-padding-small">
         <h4 v-if="workflowDisplayName" class="workflow-name">
           {{ workflowDisplayName }}
         </h4>
@@ -117,7 +117,7 @@ import actionProgressBar from "../labThingsComponents/actionProgressBar.vue";
 import MiniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
 import ActionButton from "../labThingsComponents/actionButton.vue";
 // vue3 migration
-import { markRaw } from "vue";
+import { useIntersectionObserver } from "@vueuse/core";
 
 export default {
   name: "SlideScanContent",
@@ -129,6 +129,7 @@ export default {
     actionProgressBar,
     MiniStreamDisplay,
     ActionButton,
+    ServerSpecifiedPropertyControl
   },
 
   data() {
@@ -160,6 +161,18 @@ export default {
 
   async created() {
     this.readSettings();
+  },
+
+  mounted() {
+    useIntersectionObserver(
+      this.$refs.slideScanContent,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      {
+        threshold: 0.0, // Adjust as needed
+      },
+    );
   },
 
   methods: {

@@ -25,7 +25,6 @@
 import devTools from "./aboutComponents/devTools.vue";
 import statusPane from "./aboutComponents/statusPane.vue";
 //vue3 migration
-import { markRaw } from "vue";
 
 export default {
   name: "AboutContent",

@@ -1,5 +1,5 @@
 <template>
-  <div v-observe-visibility="visibilityChanged" class="uk-padding uk-padding-remove-top">
+  <div ref="loggingDisplay" class="uk-padding uk-padding-remove-top">
     <!-- Logging nav bar -->
     <nav class="logging-navbar uk-navbar-container uk-navbar-transparent" uk-navbar="mode: click">
       <!-- Left side controls -->
@@ -84,7 +84,7 @@ import axios from "axios";
 import Paginate from "vuejs-paginate";
 import EndpointButton from "../labThingsComponents/endpointButton.vue";
 //vue3 migration
-import { markRaw } from "vue";
+import { useIntersectionObserver } from "@vueuse/core";
 
 export default {
   name: "LoggingContent",
@@ -133,6 +133,18 @@ export default {
     numberOfPages: function () {
       return Math.floor(this.filteredItems.length / this.maxitems);
     },
+  },
+
+  mounted() {
+    useIntersectionObserver(
+      this.$refs.loggingDisplay,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      {
+        threshold: 0.0,
+      },
+    );
   },
 
   methods: {

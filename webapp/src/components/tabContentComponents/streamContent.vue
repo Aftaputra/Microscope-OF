@@ -36,42 +36,21 @@
 <script>
 // vue3 migration
 import { eventBus } from "../../eventBus.js";
-import { ref } from "vue";
 import { useIntersectionObserver } from "@vueuse/core";
 
 // Export main app
 export default {
   name: "StreamDisplay",
 
-  setup() {
-
-    const streamDisplay = ref(null);
-    const isVisible = ref(false);
-
-    useIntersectionObserver(
-      streamDisplay,
-      ([{ isIntersecting }]) => {
-        isVisible.value = isIntersecting;
-      },
-      {
-        threshold: 0.1,
-      }
-    );
-
-    return {
-      streamDisplay,
-      isVisible,
-    };
-},
-
   data: function () {
     return {
+      isVisible: false,
       displaySize: [0, 0],
       displayPosition: [0, 0],
       resizeTimeoutId: setTimeout(this.doneResizing, 500),
     };
   },
-
+    
   computed: {
     streamEnabled: function () {
       return this.$store.getters.ready && !this.$store.state.disableStream;
@@ -86,12 +65,23 @@ export default {
   },
 
   mounted() {
+    //set up an intersection observer 
+    useIntersectionObserver(
+      this.$refs.streamDisplay,
+      ([{ isIntersecting }]) => {
+        this.isVisible = isIntersecting;
+      },
+      {
+        threshold: 0.0,
+      }
+    );
     // A global signal listener to flash the stream element
     this.onFlashStream = () => {
       this.flashStream();
     };
 
     eventBus.on("globalFlashStream", this.onFlashStream);
+    
     // Mutation observer
     this.sizeObserver = new ResizeObserver(() => {
       this.handleResize(); // For any element attached to the observer, run handleResize() on change
@@ -120,9 +110,6 @@ export default {
   },
 
   methods: {
-    visibilityChanged(isVisible) {
-      this.isVisible = isVisible;
-    },
     flashStream: function () {
       // Run an animation that flashes the stream (for capture feedback)
       let element = this.$refs.streamDisplay;

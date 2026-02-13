@@ -20,7 +20,6 @@
 import stepTemplateWithStream from "../stepTemplateWithStream.vue";
 import cameraCalibrationSettings from "../../../tabContentComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
 // vue3 migration
-import { markRaw } from "vue";
 
 export default {
   name: "CameraMainCalibrationStep",
