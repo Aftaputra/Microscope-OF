@@ -292,8 +292,9 @@ class FinalStitcher(BaseStitcher):
                 or "OSError: broken data stream when writing image file" in full_output
             ):
                 raise ChildProcessError(
-                    Image dimensions too big for stitching into a JPEG file. Stitched output will exceed the maximum number of pixels in a JPEG (65,535×65,535 pixels). Download the full scan "
-                    "and stitch with alternate settings."
+                    "Image dimensions too big for stitching into a JPEG file. Stitched output will "
+                    "exceed the maximum number of pixels in a JPEG (65,535x65,535 pixels). Download "
+                    "the full scan and stitch with alternate settings."
                 )
             raise ChildProcessError(
                 "Unexpected error when stitching (Exit code 1).\nCheck the logs for more information."
