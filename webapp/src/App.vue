@@ -250,14 +250,14 @@ export default {
         event.target.parentNode.classList.contains("scrollTarget") ||
         event.target.classList.contains("scrollTarget")
       ) {
-        const z_steps = event.deltaY / 100;
+        const z_rel = event.deltaY / 100;
         // Emit a signal to move, acted on by panelControl.vue
-        eventBus.emit("globalMoveStepEvent", {
-          x_steps: 0,
-          y_steps: 0,
-          z_steps: z_steps,
-          absolute: false,
-        });
+        const navigationStepSize = this.$store.state.navigationStepSize;
+        const z = z_rel * navigationStepSize.z;
+        // Don't use `jog() due to variable size of jogs here and the rate limiting in
+        // `jog()`. No need to invert on z, as navigationInvert.z isn't exposed.
+        this.invokeAction("stage", "jog", { x: 0, y: 0, z: z });
+        eventBus.emit("globalUpdatePositionEvent");
       }
     },
 
@@ -265,20 +265,26 @@ export default {
       // Manually debounce extra requests from keyboard repeat rate.
       // This is used rather than and interval in case of missing a repeat.
       const now = Date.now();
+      const navigationInvert = this.$store.state.navigationInvert;
       if (now - this.lastJogTime < this.jogTime) {
         return;
       }
       this.lastJogTime = now;
 
       this.invokeAction("stage", "jog", {
-        x: x * this.jogDistance,
-        y: y * this.jogDistance,
+        x: x * this.jogDistance * (navigationInvert.x ? -1 : 1),
+        y: y * this.jogDistance * (navigationInvert.y ? -1 : 1),
         z: z * this.jogDistance,
       });
+      eventBus.emit("globalUpdatePositionEvent");
     },
 
     jogStop() {
       this.invokeAction("stage", "jog", { stop: true });
+      this.lastJogTime = 0;
+      setTimeout(() => {
+        eventBus.emit("globalUpdatePositionEvent");
+      }, 100);
     },
 
     updateJogFromKeys() {

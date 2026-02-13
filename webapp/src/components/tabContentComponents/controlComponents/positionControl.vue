@@ -94,7 +94,6 @@ export default {
     // A global signal listener to perform a move action in pixels
     eventBus.on("globalMoveInImageCoordinatesEvent", this.onMoveImage);
     // A global signal listener to perform a move in multiples of a step size
-    eventBus.on("globalMoveStepEvent", this.onMoveStep);
 
     // Update the current position in text boxes
     await this.updatePosition();
@@ -105,7 +104,6 @@ export default {
     eventBus.off("globalMoveEvent", this.move);
     eventBus.off("globalUpdatePositionEvent", this.updatePosition);
     eventBus.off("globalMoveInImageCoordinatesEvent", this.onMoveImage);
-    eventBus.off("globalMoveStepEvent", this.onMoveStep);
   },
 
   methods: {
@@ -115,15 +113,6 @@ export default {
 
     onMoveImage(payload) {
       this.moveInImageCoordinatesRequest(payload.x, payload.y, payload.absolute);
-    },
-
-    onMoveStep(payload) {
-      const navigationStepSize = this.$store.state.navigationStepSize;
-      const navigationInvert = this.$store.state.navigationInvert;
-      const x = payload.x_steps * navigationStepSize.x * (navigationInvert.x ? -1 : 1);
-      const y = payload.y_steps * navigationStepSize.y * (navigationInvert.y ? -1 : 1);
-      const z = payload.z_steps * navigationStepSize.z * (navigationInvert.z ? -1 : 1);
-      this.invokeAction("stage", "jog", { x: x, y: y, z: z });
     },
 
     async move(payload) {

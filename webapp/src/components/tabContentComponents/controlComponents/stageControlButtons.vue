@@ -65,6 +65,8 @@
 </template>
 
 <script>
+import { eventBus } from "@/eventBus.js";
+
 export default {
   name: "StageControlButtons",
   data: () => ({
@@ -77,10 +79,11 @@ export default {
       if (this.jogIntervalId) {
         clearInterval(this.jogIntervalId);
       }
+      const navigationInvert = this.$store.state.navigationInvert;
       let invokeJog = () =>
         this.invokeAction("stage", "jog", {
-          x: x * this.jogDistance,
-          y: y * this.jogDistance,
+          x: x * this.jogDistance * (navigationInvert.x ? -1 : 1),
+          y: y * this.jogDistance * (navigationInvert.y ? -1 : 1),
           z: z * this.jogDistance,
         });
       invokeJog();
@@ -91,6 +94,9 @@ export default {
         clearInterval(this.jogIntervalId);
       }
       this.invokeAction("stage", "jog", { stop: true });
+      setTimeout(() => {
+        eventBus.emit("globalUpdatePositionEvent");
+      }, 100);
     },
   },
 };
