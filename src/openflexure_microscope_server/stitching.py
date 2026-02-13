@@ -270,7 +270,7 @@ class FinalStitcher(BaseStitcher):
         os.set_blocking(process.stdout.fileno(), False)
         output_lines = self._log_ongoing(process)
         returncode = process.wait()
-        full_output = "".join(output_lines)
+        full_output = "\n".join(output_lines)
 
         if returncode == 0:
             self.logger.info("Stitching complete")
@@ -284,17 +284,19 @@ class FinalStitcher(BaseStitcher):
         elif returncode == 1:
             if "No space left on device" in full_output or "Errno 28" in full_output:
                 raise ChildProcessError(
-                    "Not enough space on disk to stitch. Please delete some scans or increase your storage size."
+                    "Not enough space on disk to stitch. Please delete some scans or increase "
+                    "your storage size."
                 )
             if (
                 "Maximum supported image dimension" in full_output
                 or "OSError: broken data stream when writing image file" in full_output
             ):
                 raise ChildProcessError(
-                    "Scan too big for stitching into a JPEG file. Download the full scan and stitch with alternate settings."
+                    Image dimensions too big for stitching into a JPEG file. Stitched output will exceed the maximum number of pixels in a JPEG (65,535×65,535 pixels). Download the full scan "
+                    "and stitch with alternate settings."
                 )
             raise ChildProcessError(
-                "Stitching errored with exit code 1.\nCheck the logs for more information."
+                "Unexpected error when stitching (Exit code 1).\nCheck the logs for more information."
             )
         else:
             raise ChildProcessError(
@@ -333,10 +335,7 @@ class FinalStitcher(BaseStitcher):
         """Log everything currently available in the buffer and return lines."""
         lines: list[str] = []
 
-        while True:
-            line = buffer.readline()
-            if not line:
-                break
+        while line := buffer.readline():
             clean = line.rstrip()
             self.logger.info(clean)
             lines.append(line)
