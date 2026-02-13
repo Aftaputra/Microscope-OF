@@ -249,8 +249,9 @@ class BaseStage(lt.Thing):
 
     def _estimate_move_duration(self, displacement: Sequence[int]) -> float:
         """Calculate the expected duration of a move with the given displacement."""
-        max_displacement = max(abs(d) for d in displacement)
-        return max_displacement * 0.001  # This does not yet check the board's speed.
+        raise NotImplementedError(
+            "StageThings must define their own _estimate_move_duration"
+        )
 
     @lt.action
     def jog(self, stop: bool = False, **kwargs: int) -> None:

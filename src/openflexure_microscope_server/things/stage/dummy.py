@@ -131,6 +131,12 @@ class DummyStage(BaseStage):
             self.moving = moving
         return moving
 
+    def _estimate_move_duration(self, displacement: Sequence[int]) -> float:
+        """Calculate the expected duration of a move with the given displacement."""
+        max_displacement = max(abs(d) for d in displacement)
+        # This does not yet check the board's speed.
+        return max_displacement * self.step_time
+
     def _hardware_move_relative(
         self,
         block_cancellation: bool = False,
