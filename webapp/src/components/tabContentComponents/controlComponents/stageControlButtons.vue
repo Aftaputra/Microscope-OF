@@ -1,7 +1,15 @@
 <template>
   <div class="uk-flex uk-flex-center uk-flex-middle uk-margin">
-    <div class="dpad-grid">
+    <div
+      class="dpad-grid"
+      :class="{
+        'dpad-only': showDpad && !showFocusControls,
+        'focus-only': !showDpad && showFocusControls,
+        'both-controls': showDpad && showFocusControls,
+      }"
+    >
       <button
+        v-if="showDpad"
         id="up-button"
         class="uk-button uk-button-primary dpad-btn"
         @mousedown="jog(0, 1, 0)"
@@ -12,6 +20,7 @@
       </button>
 
       <button
+        v-if="showDpad"
         id="left-button"
         class="uk-button uk-button-primary dpad-btn"
         @mousedown="jog(-1, 0, 0)"
@@ -22,6 +31,7 @@
       </button>
 
       <button
+        v-if="showDpad"
         id="right-button"
         class="uk-button uk-button-primary dpad-btn"
         @mousedown="jog(1, 0, 0)"
@@ -32,6 +42,7 @@
       </button>
 
       <button
+        v-if="showDpad"
         id="down-button"
         class="uk-button uk-button-primary dpad-btn"
         @mousedown="jog(0, -1, 0)"
@@ -42,6 +53,7 @@
       </button>
 
       <button
+        v-if="showFocusControls"
         id="focus-out-button"
         class="uk-button uk-button-primary dpad-btn"
         @mousedown="jog(0, 0, -1)"
@@ -52,6 +64,7 @@
       </button>
 
       <button
+        v-if="showFocusControls"
         id="focus-in-button"
         class="uk-button uk-button-primary dpad-btn"
         @mousedown="jog(0, 0, 1)"
@@ -69,6 +82,16 @@ import { eventBus } from "@/eventBus.js";
 
 export default {
   name: "StageControlButtons",
+  props: {
+    showDpad: {
+      type: Boolean,
+      default: true,
+    },
+    showFocusControls: {
+      type: Boolean,
+      default: true,
+    },
+  },
   data: () => ({
     jogIntervalId: null,
     jogDistance: 600,
@@ -106,10 +129,21 @@ export default {
 .dpad-grid {
   display: grid;
   grid-template-columns: repeat(3, 40px);
-  grid-template-rows: 40px 40px 40px 20px 40px;
   gap: 1px;
   justify-content: center;
   align-items: center;
+}
+
+.both-controls {
+  grid-template-rows: 40px 40px 40px 20px 40px;
+}
+
+.dpad-only {
+  grid-template-rows: 40px 40px 40px;
+}
+
+.focus-only {
+  grid-template-rows: 40px;
 }
 
 /* Place buttons within grid */
@@ -129,13 +163,23 @@ export default {
   grid-column: 2;
   grid-row: 3;
 }
-.dpad-grid #focus-out-button {
+
+.both-controls #focus-out-button {
   grid-column: 1;
   grid-row: 5;
 }
-.dpad-grid #focus-in-button {
+.both-controls #focus-in-button {
   grid-column: 3;
   grid-row: 5;
+}
+
+.focus-only #focus-out-button {
+  grid-column: 1;
+  grid-row: 1;
+}
+.focus-only #focus-in-button {
+  grid-column: 3;
+  grid-row: 1;
 }
 
 .dpad-btn {
