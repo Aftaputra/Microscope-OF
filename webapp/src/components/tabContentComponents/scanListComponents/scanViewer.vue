@@ -61,7 +61,7 @@ import { markRaw } from "vue";
 export default {
   name: "ScanViewerModal",
   components: { 
-    OpenSeadragonViewer: markRaw(OpenSeadragonViewer) 
+    OpenSeadragonViewer
   },
   props: {
     selectedScan: {

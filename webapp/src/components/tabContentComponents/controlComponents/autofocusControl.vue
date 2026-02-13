@@ -26,7 +26,7 @@ export default {
   name: "AutofocusControl",
 
   components: {
-    ActionButton: markRaw(ActionButton),
+    ActionButton
   },
 
   data: function () {

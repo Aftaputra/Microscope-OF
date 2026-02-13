@@ -51,8 +51,8 @@ export default {
   ],
 
   components: { 
-    ActionProgressBar: markRaw(ActionProgressBar),
-    ActionStatusModal: markRaw(ActionStatusModal)
+    ActionProgressBar,
+    ActionStatusModal
   },
 
   props: {

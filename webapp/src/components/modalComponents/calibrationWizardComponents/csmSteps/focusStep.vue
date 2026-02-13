@@ -37,8 +37,8 @@ export default {
   name: "CameraMainCalibrationStep",
 
   components: {
-    stepTemplateWithStream: markRaw(stepTemplateWithStream),
-    ActionButton: markRaw(ActionButton),
+    stepTemplateWithStream,
+    ActionButton
   },
 };
 </script>

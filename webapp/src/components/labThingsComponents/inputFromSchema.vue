@@ -107,7 +107,7 @@ export default {
   name: "InputFromSchema",
 
   components: {
-    syncPropertyButton: markRaw(syncPropertyButton),
+    syncPropertyButton
   },
 
   props: {

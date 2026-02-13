@@ -22,7 +22,7 @@ export default {
   name: "LoadingContent",
 
   components: { 
-    devTools: markRaw(devTools) 
+    devTools 
   },
 
   data: function () {

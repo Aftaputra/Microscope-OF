@@ -31,8 +31,8 @@ export default {
   name: "AboutContent",
 
   components: {
-    devTools: markRaw(devTools),
-    statusPane: markRaw(statusPane),
+    devTools,
+    statusPane
   },
 };
 </script>

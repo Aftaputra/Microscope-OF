@@ -15,7 +15,7 @@ export default {
   name: "StepTemplateWithStream",
 
   components: {
-    miniStreamDisplay: markRaw(miniStreamDisplay),
+    miniStreamDisplay
   },
 };
 </script>

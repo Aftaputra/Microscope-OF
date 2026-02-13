@@ -76,9 +76,9 @@ export default {
   name: "SettingsContent",
 
   components: {
-    tabIcon: markRaw(tabIcon),
-    tabContent: markRaw(tabContent),
-    calibrationWizard: markRaw(calibrationWizard),
+    tabIcon,
+    tabContent,
+    calibrationWizard
   },
 
   data: function () {

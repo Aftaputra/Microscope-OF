@@ -26,8 +26,8 @@ export default {
   name: "CameraMainCalibrationStep",
 
   components: {
-    stepTemplateWithStream: markRaw(stepTemplateWithStream),
-    cameraCalibrationSettings: markRaw(cameraCalibrationSettings),
+    stepTemplateWithStream,
+    cameraCalibrationSettings
   },
 
   computed: {

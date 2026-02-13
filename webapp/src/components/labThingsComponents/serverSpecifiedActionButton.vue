@@ -25,7 +25,7 @@ export default {
   name: "ServerSpecifiedActionButton",
 
   components: {
-    ActionButton: markRaw(ActionButton),
+    ActionButton
   },
 
   props: {

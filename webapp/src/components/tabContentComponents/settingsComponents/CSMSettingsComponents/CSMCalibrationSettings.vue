@@ -65,8 +65,8 @@ export default {
   name: "CSMCalibrationSettings",
 
   components: {
-    ActionButton: markRaw(ActionButton),
-    matrixDisplay: markRaw(matrixDisplay),
+    ActionButton,
+    matrixDisplay
   },
 
   props: {

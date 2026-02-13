@@ -35,8 +35,8 @@ import { eventBus } from "../../eventBus.js";
 export default {
   name: "ActionStatusModal",
   components: { 
-    ActionProgressBar: markRaw(ActionProgressBar),
-    ActionLogDisplay: markRaw(ActionLogDisplay)
+    ActionProgressBar,
+    ActionLogDisplay
   },
   props: {
     title: {

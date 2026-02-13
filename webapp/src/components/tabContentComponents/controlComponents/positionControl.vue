@@ -69,9 +69,9 @@ export default {
   name: "PaneControl",
 
   components: {
-    ActionButton: markRaw(ActionButton),
-    syncPropertyButton: markRaw(syncPropertyButton),
-    stageControlButtons: markRaw(stageControlButtons),
+    ActionButton,
+    syncPropertyButton,
+    stageControlButtons
   },
 
   data: function () {

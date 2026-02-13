@@ -41,9 +41,9 @@ export default {
   name: "PaneControl",
 
   components: {
-    ActionButton: markRaw(ActionButton),
-    positionControl: markRaw(positionControl),
-    autofocusControl: markRaw(autofocusControl),
+    ActionButton,
+    positionControl,
+    autofocusControl
   },
 
   computed: {

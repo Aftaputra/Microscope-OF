@@ -16,7 +16,7 @@ export default {
   name: "ViewContent",
 
   components: {
-    streamDisplay: markRaw(streamDisplay),
+    streamDisplay,
   },
 };
 </script>

@@ -25,8 +25,8 @@ export default {
   name: "CSMSettings",
 
   components: {
-    CSMCalibrationSettings: markRaw(CSMCalibrationSettings),
-    miniStreamDisplay: markRaw(miniStreamDisplay),
+    CSMCalibrationSettings,
+    miniStreamDisplay
   },
 };
 </script>

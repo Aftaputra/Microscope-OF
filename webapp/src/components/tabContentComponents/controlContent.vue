@@ -20,8 +20,8 @@ export default {
   name: "ControlContent",
 
   components: {
-    paneControl: markRaw(paneControl),
-    streamDisplay: markRaw(streamDisplay) ,
+    paneControl,
+    streamDisplay
   },
 };
 </script>

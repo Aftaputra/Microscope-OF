@@ -20,7 +20,7 @@ export default {
   name: "PropertyControl",
 
   components: {
-    InputFromSchema: markRaw(InputFromSchema),
+    InputFromSchema
   },
 
   props: {

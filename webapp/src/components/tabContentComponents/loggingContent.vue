@@ -90,8 +90,8 @@ export default {
   name: "LoggingContent",
 
   components: {
-    Paginate: markRaw(Paginate),
-    EndpointButton: markRaw(EndpointButton),
+    Paginate,
+    EndpointButton
   },
 
   data: function () {

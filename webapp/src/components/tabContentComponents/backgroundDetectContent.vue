@@ -20,8 +20,8 @@ export default {
   name: "BackgroundDetectContent",
 
   components: {
-    paneBackgroundDetect: markRaw(paneBackgroundDetect),
-    streamDisplay: markRaw(streamDisplay),
+    paneBackgroundDetect,
+    streamDisplay
   },
 };
 </script>

@@ -36,7 +36,7 @@ export default {
   name: "StageSettings",
 
   components: {
-    ActionButton: markRaw(ActionButton),
+    ActionButton
   },
 
   data: function () {

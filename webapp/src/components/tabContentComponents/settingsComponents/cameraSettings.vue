@@ -33,9 +33,9 @@ export default {
   name: "CameraSettings",
 
   components: {
-    cameraCalibrationSettings: markRaw(cameraCalibrationSettings),
-    miniStreamDisplay: markRaw(miniStreamDisplay),
-    ServerSpecifiedPropertyControl: markRaw(ServerSpecifiedPropertyControl),
+    cameraCalibrationSettings,
+    miniStreamDisplay,
+    ServerSpecifiedPropertyControl
   },
 
   data() {

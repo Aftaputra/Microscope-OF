@@ -160,12 +160,12 @@ export default {
   name: "SlideScanContent",
 
   components: {
-    streamDisplay: markRaw(streamDisplay),
-    propertyControl: markRaw(propertyControl),
-    actionLogDisplay: markRaw(actionLogDisplay),
-    actionProgressBar: markRaw(actionProgressBar),
-    MiniStreamDisplay: markRaw(MiniStreamDisplay),
-    ActionButton: markRaw(ActionButton),
+    streamDisplay,
+    propertyControl,
+    actionLogDisplay,
+    actionProgressBar,
+    MiniStreamDisplay,
+    ActionButton,
   },
 
   data() {

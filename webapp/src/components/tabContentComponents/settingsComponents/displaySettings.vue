@@ -15,8 +15,8 @@ export default {
   name: "DisplaySettings",
 
   components: {
-    streamSettings: markRaw(streamSettings),
-    appSettings: markRaw(appSettings),
+    streamSettings,
+    appSettings
   },
 };
 </script>

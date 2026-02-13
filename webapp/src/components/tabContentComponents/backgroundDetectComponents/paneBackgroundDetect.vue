@@ -52,8 +52,8 @@ import { markRaw } from "vue";
 
 export default {
   components: {
-    ActionButton: markRaw(ActionButton),
-    ServerSpecifiedPropertyControl: markRaw(ServerSpecifiedPropertyControl),
+    ActionButton,
+    ServerSpecifiedPropertyControl
   },
 
   data() {

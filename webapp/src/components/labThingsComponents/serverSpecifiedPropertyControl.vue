@@ -19,7 +19,7 @@ export default {
   name: "ServerSpecifiedPropertyControl",
 
   components: {
-    PropertyControl: markRaw(PropertyControl),
+    PropertyControl
   },
 
   props: {

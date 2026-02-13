@@ -30,7 +30,7 @@ import { markRaw } from "vue";
 export default {
   name: "SingleStepTask",
   components: { 
-    calibrationWizardTask: markRaw(calibrationWizardTask) 
+    calibrationWizardTask
   },
   props: {
     // This must be sent

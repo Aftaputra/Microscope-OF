@@ -55,8 +55,8 @@ export default {
   name: "App",
 
   components: {
-    appContent: markRaw(appContent),
-    loadingContent: markRaw(loadingContent),
+    appContent,
+    loadingContent
   },
 
   data: function () {

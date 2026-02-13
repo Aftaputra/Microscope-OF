@@ -63,7 +63,7 @@ import { markRaw } from "vue";
 export default {
   name: "StatusPane",
   components: { 
-    ActionButton: markRaw(ActionButton) 
+    ActionButton
   },
 
   data: function () {

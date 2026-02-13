@@ -102,9 +102,9 @@ export default {
   name: "AppContent",
 
   components: {
-    tabIcon: markRaw(tabIcon),
-    tabContent: markRaw(tabContent),
-    calibrationWizard: markRaw(calibrationWizard),
+    tabIcon,
+    tabContent,
+    calibrationWizard
   },
   data: function () {
     return {

@@ -89,8 +89,8 @@ import { markRaw } from "vue";
 export default {
   name: "ScanCard",
   components: { 
-    actionButton: markRaw(actionButton), 
-    EndpointButton: markRaw(EndpointButton) 
+    actionButton,
+    EndpointButton
   },
 
   props: {

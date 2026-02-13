@@ -108,9 +108,9 @@ import { eventBus } from "../../eventBus.js";
 export default {
   name: "ScanListContent",
   components: { 
-    actionButton: markRaw(actionButton), 
-    scanCard: markRaw(scanCard), 
-    ScanViewerModal: markRaw(ScanViewerModal) 
+    actionButton,
+    scanCard,
+    ScanViewerModal
   },
 
   data: function () {
