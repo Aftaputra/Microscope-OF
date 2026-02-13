@@ -100,12 +100,13 @@
 
 <script>
 import syncPropertyButton from "./syncPropertyButton.vue";
+// vue3 migration
 
 export default {
   name: "InputFromSchema",
 
   components: {
-    syncPropertyButton,
+    syncPropertyButton
   },
 
   props: {
@@ -113,9 +114,10 @@ export default {
       type: Object,
       required: true,
     },
-    value: {
+    modelValue: {
       type: null,
-      required: true,
+      required: false,
+      default: undefined,
     },
     label: {
       type: String,
@@ -133,11 +135,11 @@ export default {
       // the value is an array or object. For future updates we stringify and parse
       // (see resetInternalValue). If we do this here there is a chance we get errors
       // as internalValue is still null when rendering starts.
-      internalValue: Array.isArray(this.value)
-        ? [...this.value]
-        : typeof this.value === "object"
-        ? { ...this.value }
-        : this.value,
+      internalValue: Array.isArray(this.modelValue)
+        ? [...this.modelValue]
+        : typeof this.modelValue === "object"
+        ? { ...this.modelValue }
+        : this.modelValue,
       // Is edited can't be computed as we mutate internalValue
       isEdited: false,
       animateUpdate: false,
@@ -206,14 +208,18 @@ export default {
   },
 
   watch: {
-    value() {
-      // Fire updateIsEdited on both value and internal value change,
-      // as change in value may not causse internalValue to change.
-      this.updateIsEdited();
-      this.resetInternalValue();
+    modelValue: {
+      handler() {
+        // Fire updateIsEdited on both value and internal value change,
+        // as change in value may not causse internalValue to change.
+        this.updateIsEdited();
+        this.resetInternalValue();
+      },
     },
-    internalValue() {
-      this.updateIsEdited();
+    internalValue: {
+      handler() {
+        this.updateIsEdited();
+      },
     },
     animate(updated) {
       if (updated) {
@@ -223,7 +229,7 @@ export default {
   },
 
   mounted() {
-    if (this.value !== undefined) {
+    if (this.modelValue !== undefined) {
       this.resetInternalValue();
     }
   },
@@ -233,7 +239,7 @@ export default {
       // Whenever updatirng th internal value stringify and parse as a form of deepcopy.
       // This ensure that the this.value prop is not mutated for when elements of arrays
       // or objects are updated.
-      this.internalValue = JSON.parse(JSON.stringify(this.value));
+      this.internalValue = JSON.parse(JSON.stringify(this.modelValue));
     },
     requestUpdate: async function () {
       this.$emit("requestUpdate");
@@ -262,7 +268,7 @@ export default {
       }
     },
     updateIsEdited: function () {
-      this.isEdited = this.deepStringify(this.internalValue) !== this.deepStringify(this.value);
+      this.isEdited = this.deepStringify(this.internalValue) !== this.deepStringify(this.modelValue);
     },
     animationEnd: function () {
       this.animateUpdate = false;

@@ -64,10 +64,13 @@
 
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
+// vue3 migration
 
 export default {
   name: "StatusPane",
-  components: { ActionButton },
+  components: { 
+    ActionButton
+  },
 
   data: function () {
     return {

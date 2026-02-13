@@ -28,11 +28,15 @@
 import UIkit from "uikit";
 import ActionProgressBar from "./actionProgressBar.vue";
 import ActionLogDisplay from "./actionLogDisplay.vue";
+// vue3 migration
+import { eventBus } from "../../eventBus.js";
 
 export default {
   name: "ActionStatusModal",
-  components: { ActionProgressBar, ActionLogDisplay },
-
+  components: { 
+    ActionProgressBar,
+    ActionLogDisplay
+  },
   props: {
     title: {
       type: String,
@@ -71,7 +75,7 @@ export default {
     },
     hide() {
       UIkit.modal(this.$refs.modal).hide();
-      this.$root.$emit("modalClosed");
+      eventBus.emit("modalClosed");
     },
   },
 };

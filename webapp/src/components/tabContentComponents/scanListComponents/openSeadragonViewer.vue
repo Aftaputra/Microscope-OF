@@ -1,11 +1,13 @@
 <template>
-  <div v-observe-visibility="visibilityChanged">
+  <div ref="osdViewerContainer" class="osd-viewer-container uk-height-1-1">
     <div id="openseadragon" ref="osdContainer"></div>
   </div>
 </template>
 
 <script>
 import OpenSeaDragon from "openseadragon";
+// vue3 migration
+import { useIntersectionObserver } from "@vueuse/core";
 
 export default {
   name: "OpenSeadragonViewer",
@@ -54,24 +56,43 @@ export default {
   },
 
   async mounted() {
+    useIntersectionObserver(
+      this.$refs.osdViewerContainer,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      { threshold: 0.0 }
+    );
+
     if (this.src) {
       this.loadOpenSeaDragon(this.src);
     }
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     // Remove global signal listener to perform a gallery refresh
-    this.osdViewer.destroy();
+    if (this.osdViewer) {
+      this.osdViewer.destroy();
+    }
   },
 
   methods: {
     visibilityChanged(isVisible) {
+      // adding this check to avoid error when the viewer is not yet initialized.
       if (isVisible) {
-        this.loadOpenSeaDragon();
+        
+        if (!this.osdViewer && this.src) {
+          this.loadOpenSeaDragon(this.src);
+        }
       } else {
-        this.osdViewer.destroy();
+        
+        if (this.osdViewer) {
+          this.osdViewer.destroy();
+          this.osdViewer = null;
+        }
       }
     },
+    
     async loadOpenSeaDragon() {
       if (this.osdViewer) {
         this.osdViewer.destroy();

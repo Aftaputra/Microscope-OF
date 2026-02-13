@@ -9,6 +9,8 @@
 
 <script>
 import streamDisplay from "./streamContent.vue";
+// vue3 migration
+import { markRaw } from "vue";
 
 export default {
   name: "ViewContent",

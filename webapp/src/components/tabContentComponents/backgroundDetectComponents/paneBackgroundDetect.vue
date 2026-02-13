@@ -1,5 +1,5 @@
 <template>
-  <div v-observe-visibility="visibilityChanged" class="uk-padding-small">
+  <div ref="backgroundDetectContent" class="uk-padding-small">
     <div>
       <ul uk-accordion="multiple: true">
         <li>
@@ -47,11 +47,13 @@
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 import ServerSpecifiedPropertyControl from "../../labThingsComponents/serverSpecifiedPropertyControl.vue";
+// vue3 migration
+import { useIntersectionObserver } from "@vueuse/core";
 
 export default {
   components: {
     ActionButton,
-    ServerSpecifiedPropertyControl,
+    ServerSpecifiedPropertyControl
   },
 
   data() {
@@ -64,14 +66,20 @@ export default {
     };
   },
 
-  async created() {
-    this.readSettings();
-  },
-
   methods: {
+    async safeReadSettings() {
+      if (!this.$store.state.connected) return;
+      
+      try {
+        await this.readSettings();
+      } catch (error) {
+        console.error("Error reading background detector settings:", error);
+      }
+    },
+
     visibilityChanged(isVisible) {
       if (isVisible) {
-        this.readSettings();
+        this.safeReadSettings();
       }
     },
     alertBackgroundSet() {
@@ -98,6 +106,18 @@ export default {
         );
       }
     },
+  },
+
+  mounted() {
+    useIntersectionObserver(
+      this.$refs.backgroundDetectContent,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      {
+        threshold: 0.0,
+      },
+    );
   },
 };
 </script>

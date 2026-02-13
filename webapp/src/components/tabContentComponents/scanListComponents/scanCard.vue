@@ -82,11 +82,15 @@
 import axios from "axios";
 import actionButton from "../../labThingsComponents/actionButton.vue";
 import EndpointButton from "../../labThingsComponents/endpointButton.vue";
+// vue3 migration
 
 // Export main app
 export default {
   name: "ScanCard",
-  components: { actionButton, EndpointButton },
+  components: { 
+    actionButton,
+    EndpointButton
+  },
 
   props: {
     scanData: {

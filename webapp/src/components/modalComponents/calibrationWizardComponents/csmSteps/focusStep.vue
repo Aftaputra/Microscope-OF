@@ -30,12 +30,14 @@
 <script>
 import stepTemplateWithStream from "../stepTemplateWithStream.vue";
 import ActionButton from "../../../labThingsComponents/actionButton.vue";
+// vue3 migration
+
 export default {
   name: "CameraMainCalibrationStep",
 
   components: {
     stepTemplateWithStream,
-    ActionButton,
+    ActionButton
   },
 };
 </script>
@@ -47,7 +49,7 @@ export default {
   gap: 8px; /* Small space between buttons */
   margin-top: 4px; /* Gap from image */
 }
-.moveZ >>> .uk-button.uk-width-1-1 {
+.moveZ :deep(.uk-button.uk-width-1-1) {
   line-height: 50px;
   font-size: 50px !important;
   height: 60px;

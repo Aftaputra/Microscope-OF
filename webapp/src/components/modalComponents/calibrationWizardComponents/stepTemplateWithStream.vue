@@ -8,12 +8,13 @@
 
 <script>
 import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
+// vue3 migration
 
 export default {
   name: "StepTemplateWithStream",
 
   components: {
-    miniStreamDisplay,
+    miniStreamDisplay
   },
 };
 </script>

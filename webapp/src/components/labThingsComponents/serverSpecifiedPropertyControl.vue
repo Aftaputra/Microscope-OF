@@ -11,13 +11,14 @@
 
 <script>
 import PropertyControl from "./propertyControl.vue";
+// vue3 migration
 
 // Export main app
 export default {
   name: "ServerSpecifiedPropertyControl",
 
   components: {
-    PropertyControl,
+    PropertyControl
   },
 
   props: {

@@ -24,13 +24,14 @@
 <script>
 import devTools from "./aboutComponents/devTools.vue";
 import statusPane from "./aboutComponents/statusPane.vue";
+//vue3 migration
 
 export default {
   name: "AboutContent",
 
   components: {
     devTools,
-    statusPane,
+    statusPane
   },
 };
 </script>

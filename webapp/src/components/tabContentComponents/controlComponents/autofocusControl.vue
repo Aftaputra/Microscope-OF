@@ -18,12 +18,14 @@
 </template>
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
+// vue3 migration
+import { eventBus } from "../../../eventBus.js";
 
 export default {
   name: "AutofocusControl",
 
   components: {
-    ActionButton,
+    ActionButton
   },
 
   data: function () {
@@ -38,7 +40,7 @@ export default {
     },
     afterAutofocus() {
       this.isAutofocusing = false;
-      this.$root.$emit("globalUpdatePositionEvent");
+      eventBus.emit("globalUpdatePositionEvent");
     },
   },
 };

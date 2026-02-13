@@ -23,10 +23,10 @@ gets very confusing.
   <div>
     <h3 v-if="title">{{ title }}</h3>
     <component
+      v-bind="currentStep.props"
       :is="currentStep.component"
       v-if="currentStep"
       :key="stepIndex"
-      v-bind="currentStep.props"
       @awaiting-user="handleAwaitingUser"
     />
     <p class="uk-text-right">

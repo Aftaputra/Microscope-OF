@@ -15,7 +15,7 @@ export default {
 
   components: {
     streamSettings,
-    appSettings,
+    appSettings
   },
 };
 </script>

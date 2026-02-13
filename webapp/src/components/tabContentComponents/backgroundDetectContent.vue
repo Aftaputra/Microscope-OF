@@ -13,13 +13,14 @@
 <script>
 import paneBackgroundDetect from "./backgroundDetectComponents/paneBackgroundDetect";
 import streamDisplay from "./streamContent.vue";
+// vue3 migration
 
 export default {
   name: "BackgroundDetectContent",
 
   components: {
     paneBackgroundDetect,
-    streamDisplay,
+    streamDisplay
   },
 };
 </script>

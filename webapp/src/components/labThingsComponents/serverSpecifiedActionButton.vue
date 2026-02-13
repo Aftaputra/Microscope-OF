@@ -17,13 +17,14 @@
 
 <script>
 import ActionButton from "./actionButton.vue";
+// vue3 migration
 
 // Export main app
 export default {
   name: "ServerSpecifiedActionButton",
 
   components: {
-    ActionButton,
+    ActionButton
   },
 
   props: {

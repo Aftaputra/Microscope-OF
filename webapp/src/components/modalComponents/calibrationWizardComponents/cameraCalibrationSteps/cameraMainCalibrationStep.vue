@@ -19,13 +19,14 @@
 <script>
 import stepTemplateWithStream from "../stepTemplateWithStream.vue";
 import cameraCalibrationSettings from "../../../tabContentComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
+// vue3 migration
 
 export default {
   name: "CameraMainCalibrationStep",
 
   components: {
     stepTemplateWithStream,
-    cameraCalibrationSettings,
+    cameraCalibrationSettings
   },
 
   computed: {

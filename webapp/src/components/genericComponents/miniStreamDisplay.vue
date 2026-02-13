@@ -2,7 +2,6 @@
   <div
     id="stream-display"
     ref="streamDisplay"
-    v-observe-visibility="visibilityChanged"
     class="stream-display uk-width-1-1 uk-height-1-1 scrollTarget"
   >
     <img
@@ -16,6 +15,9 @@
 </template>
 
 <script>
+//vue3 migration
+import { useIntersectionObserver } from '@vueuse/core';
+
 // Export main app
 export default {
   name: "MiniStreamDisplay",
@@ -31,10 +33,17 @@ export default {
       return `${this.$store.getters.baseUri}/camera/mjpeg_stream`;
     },
   },
-  methods: {
-    visibilityChanged(isVisible) {
-      this.isVisible = isVisible;
-    },
+
+  mounted() {
+    useIntersectionObserver(
+      this.$refs.streamDisplay,
+      ([{ isIntersecting }]) => {
+        this.isVisible = isIntersecting;
+      },
+      {
+        threshold: 0.0,
+      }
+    );
   },
 };
 </script>

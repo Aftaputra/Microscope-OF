@@ -66,9 +66,9 @@
             submit-label="Start Smart Scan"
             :can-terminate="true"
             @taskStarted="startScanning"
-            @update:taskStatus="taskStatus = $event"
-            @update:progress="progress = $event"
-            @update:log="log = $event"
+            @beforeUpdate:taskStatus="taskStatus = $event"
+            @beforeUpdate:progress="progress = $event"
+            @beforeUpdate:log="log = $event"
           />
         </div>
       </div>
@@ -130,6 +130,8 @@ import actionLogDisplay from "../labThingsComponents/actionLogDisplay.vue";
 import actionProgressBar from "../labThingsComponents/actionProgressBar.vue";
 import MiniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
 import ActionButton from "../labThingsComponents/actionButton.vue";
+// vue3 migration
+import { useIntersectionObserver } from "@vueuse/core";
 
 export default {
   name: "SlideScanContent",
@@ -137,11 +139,11 @@ export default {
   components: {
     streamDisplay,
     propertyControl,
-    ServerSpecifiedPropertyControl,
     actionLogDisplay,
     actionProgressBar,
     MiniStreamDisplay,
     ActionButton,
+    ServerSpecifiedPropertyControl
   },
 
   data() {
@@ -175,6 +177,18 @@ export default {
   async created() {
     this.readSettings();
     this.workflowOptions = await this.readThingProperty("smart_scan", "workflow_display_names");
+  },
+
+  mounted() {
+    useIntersectionObserver(
+      this.$refs.slideScanContent,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      {
+        threshold: 0.0, // Adjust as needed
+      },
+    );
   },
 
   methods: {
