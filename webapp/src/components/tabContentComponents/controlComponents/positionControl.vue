@@ -120,9 +120,9 @@ export default {
     onMoveStep(payload) {
       const navigationStepSize = this.$store.state.navigationStepSize;
       const navigationInvert = this.$store.state.navigationInvert;
-      const x = x_steps * navigationStepSize.x * (navigationInvert.x ? -1 : 1);
-      const y = y_steps * navigationStepSize.y * (navigationInvert.y ? -1 : 1);
-      const z = z_steps * navigationStepSize.z * (navigationInvert.z ? -1 : 1);
+      const x = payload.x_steps * navigationStepSize.x * (navigationInvert.x ? -1 : 1);
+      const y = payload.y_steps * navigationStepSize.y * (navigationInvert.y ? -1 : 1);
+      const z = payload.z_steps * navigationStepSize.z * (navigationInvert.z ? -1 : 1);
       this.invokeAction("stage", "jog", { x: x, y: y, z: z });
     },
 

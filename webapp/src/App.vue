@@ -29,6 +29,8 @@ import loadingContent from "./components/loadingContent.vue";
 import Mousetrap from "mousetrap";
 import { eventBus } from "./eventBus.js";
 
+const move_keys = ["up", "down", "left", "right", "pageup", "pagedown"];
+
 Mousetrap.prototype.stopCallback = function (e, element) {
   // if the element has the class "mousetrap" then no need to stop
   if ((" " + element.className + " ").indexOf(" Mousetrap ") > -1) {
@@ -65,6 +67,10 @@ export default {
       keyboardManual: [],
       systemDark: undefined,
       themeObserver: undefined,
+      keysDown: new Set(),
+      lastJogTime: 0,
+      jogDistance: 600,
+      jogTime: 300,
     };
   },
 
@@ -130,42 +136,31 @@ export default {
       this.toggleModalElement(this.$refs["keyboardManualModal"]); // Calls the mixin
     });
 
-    // Arrow keys
     Mousetrap.bind(
-      ["up", "down", "left", "right"],
-      (event) => {
-        this.arrowKeysDown[event.keyCode] = true; //Add key to array
-        this.navigateKeyHandler();
+      move_keys,
+      (event, key) => {
+        event.preventDefault();
+        this.keysDown.add(key);
+        this.updateJogFromKeys();
       },
       "keydown",
     );
+
     Mousetrap.bind(
-      ["up", "down", "left", "right"],
-      (event) => {
-        delete this.arrowKeysDown[event.keyCode]; //Remove key from array
-        this.invokeAction("stage", "jog", { stop: true });
+      move_keys,
+      (event, key) => {
+        event.preventDefault();
+        this.keysDown.delete(key);
+        this.updateJogFromKeys();
       },
       "keyup",
     );
+
     this.keyboardManual.push({
       shortcut: "←↑→↓",
       description: "Move the microscope stage",
     });
 
-    // Focus keys
-    Mousetrap.bind("pageup", () => {
-      eventBus.emit("globalMoveStepEvent", { x: 0, y: 0, z: 1 });
-    });
-    Mousetrap.bind("pagedown", () => {
-      eventBus.emit("globalMoveStepEvent", { x: 0, y: 0, z: -1 });
-    });
-    Mousetrap.bind(
-      ["pageup", "pagedown"],
-      () => {
-        this.invokeAction("stage", "jog", { stop: true });
-      },
-      "keyup",
-    );
     this.keyboardManual.push({
       shortcut: "pgup / pgdn",
       description: "Move the microscope focus",
@@ -266,29 +261,42 @@ export default {
       }
     },
 
-    navigateKeyHandler: function () {
-      // Calculate movement array
-      var x_rel = 0;
-      var y_rel = 0;
-      // 37 corresponds to the left key
-      if (37 in this.arrowKeysDown) {
-        x_rel = x_rel - 1;
+    jog(x, y, z) {
+      // Manually debounce extra requests from keyboard repeat rate.
+      // This is used rather than and interval in case of missing a repeat.
+      const now = Date.now();
+      if (now - this.lastJogTime < this.jogTime) {
+        return;
       }
-      // 39 corresponds to the right key
-      if (39 in this.arrowKeysDown) {
-        x_rel = x_rel + 1;
+      this.lastJogTime = now;
+
+      this.invokeAction("stage", "jog", {
+        x: x * this.jogDistance,
+        y: y * this.jogDistance,
+        z: z * this.jogDistance,
+      });
+    },
+
+    jogStop() {
+      this.invokeAction("stage", "jog", { stop: true });
+    },
+
+    updateJogFromKeys() {
+      let x = 0,
+        y = 0,
+        z = 0;
+      if (this.keysDown.has("left")) x -= 1;
+      if (this.keysDown.has("right")) x += 1;
+      if (this.keysDown.has("up")) y += 1;
+      if (this.keysDown.has("down")) y -= 1;
+      if (this.keysDown.has("pageup")) z += 1;
+      if (this.keysDown.has("pagedown")) z -= 1;
+
+      if (x || y || z) {
+        this.jog(x, y, z);
+      } else {
+        this.jogStop();
       }
-      // 38 corresponds to the up key
-      if (38 in this.arrowKeysDown) {
-        y_rel = y_rel + 1;
-      }
-      // 40 corresponds to the down key
-      if (40 in this.arrowKeysDown) {
-        y_rel = y_rel - 1;
-      }
-      // Make a position request
-      // Emit a signal to move, acted on by panelControl.vue
-      eventBus.emit("globalMoveStepEvent", { x: x_rel, y: y_rel, z: 0 });
     },
   },
 };
