@@ -70,6 +70,25 @@ class JogStopCommand(JogCommand):
     """A command to stop a jog move."""
 
 
+class JogQueue(queue.Queue[JogCommand]):
+    """A class queue for JogCommands. This always returns the most recent command."""
+
+    def __init__(self) -> None:
+        """Set up a queue with a max size of 1."""
+        super().__init__(maxsize=1)
+
+    def put(
+        self, item: JogCommand, block: bool = False, timeout: Optional[float] = None
+    ) -> None:
+        """Put the next command into the queue, bumping anything already there."""
+        try:
+            # First remove existing item if present
+            self.get_nowait()
+        except queue.Empty:
+            pass
+        super().put(item, block=block, timeout=timeout)
+
+
 class BaseStage(lt.Thing):
     """A base stage class for OpenFlexure translation stages.
 
@@ -97,7 +116,7 @@ class BaseStage(lt.Thing):
         super().__init__(thing_server_interface)
         self._hardware_lock = threading.RLock()
         self._jog_lock = threading.Lock()
-        self._jog_queue: queue.Queue[JogCommand] = queue.Queue[JogCommand](maxsize=1)
+        self._jog_queue = JogQueue()
         self._jog_thread: Optional[threading.Thread] = None
         self._hardware_position = dict.fromkeys(self._axis_names, 0)
 
@@ -310,7 +329,7 @@ class BaseStage(lt.Thing):
             # Check the background thread is running, and restart it if not.
             if self._jog_thread is None or not self._jog_thread.is_alive():
                 self.logger.info("Starting background thread for jog commands")
-                self._jog_queue = queue.Queue[JogCommand](maxsize=1)
+                self._jog_queue = JogQueue()
                 self._jog_thread = threading.Thread(
                     target=self._jog_loop, args=(command,)
                 )

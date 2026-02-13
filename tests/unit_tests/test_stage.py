@@ -12,6 +12,7 @@ from labthings_fastapi.testing import create_thing_without_server
 from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 from openflexure_microscope_server.things.stage import (
     BaseStage,
+    JogMoveCommand,
     RedefinedBaseMovementError,
 )
 from openflexure_microscope_server.things.stage.dummy import DummyStage
@@ -300,3 +301,17 @@ def test_thing_description_equivalence(dummy_stage, mocker):
 
     assert sanga_actions == dummy_actions == base_actions
     assert sanga_properties == dummy_properties == base_properties
+
+
+def test_get_jog_from_queue_most_recent(dummy_stage):
+    """Test that the jog queue gives the most recent Jog Command."""
+    # Try to stack 4 moves in the queue, only 1 should be queued.
+    for i in range(4):
+        dummy_stage._jog_queue.put(JogMoveCommand([i, i, i]))
+
+    command = dummy_stage._get_from_jog_queue(0.001)
+    assert isinstance(command, JogMoveCommand)
+    # Should be the last one queued
+    assert command.displacement == [3, 3, 3]
+    # Nothing else is queued
+    assert dummy_stage._get_from_jog_queue(0.001) is None
