@@ -42,7 +42,6 @@ class JogCommand:
     def __init__(self) -> None:
         """Initialise a JogCommand."""
         super().__init__()
-        self.received = threading.Event()
         self.finished = threading.Event()
 
     def __repr__(self) -> str:
@@ -336,7 +335,6 @@ class BaseStage(lt.Thing):
                 self._jog_thread.start()
             else:
                 self._jog_queue.put(command)
-            command.received.wait(1)
         finally:
             self._jog_lock.release()
         # The final wait happens after releasing the lock: this allows jog moves to
@@ -348,12 +346,7 @@ class BaseStage(lt.Thing):
         """Execute jog commands in a background thread.
 
         This function is intended to be run in a background thread. It will look at
-        ``self._jog_command`` when the ``self._jog_send`` event is set, and signal that
-        the command is being processed with ``self._jog_received``.
-
-        If no new command is received before the current command finishes, the thread
-        will terminate, and ``self._jog_received`` will be set again. This means that
-        it should be safe to
+        ``self._jog_command`` when the ``self._jog_send`` event is set.
         """
         # Timeout for checking queue
         timeout = 0.1
@@ -363,8 +356,6 @@ class BaseStage(lt.Thing):
         # prevent others using the stage while jogging.
         with self._hardware_lock:
             while command is not None:
-                # Acknowledge the command
-                command.received.set()
                 if previous_command:
                     # Notify the last command it's superseded
                     previous_command.finished.set()
