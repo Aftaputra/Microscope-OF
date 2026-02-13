@@ -33,40 +33,22 @@ class RedefinedBaseMovementError(RuntimeError):
 
 
 class JogCommand:
-    """A base class for jog operations.
+    """A base class for jog operations."""
 
-    This class handles threading events used to interrupt previous jog commands. There
-    are two subclasses that are used by jogging `JogMoveCommand` and `JogStopCommand`.
-    """
+    def __init__(self, displacement: Optional[Sequence[int]]) -> None:
+        """Initialise a JogCommand.
 
-    def __init__(self) -> None:
-        """Initialise a JogCommand."""
-        super().__init__()
-        self.finished = threading.Event()
-
-    def __repr__(self) -> str:
-        """Represent the command as a string."""
-        return f"<{self.__class__.__name__}>"
-
-
-class JogMoveCommand(JogCommand):
-    """A command to make a jog move."""
-
-    def __init__(self, displacement: Sequence[int]) -> None:
-        """Initialise a JogMoveCommand.
-
-        :param displacement: The displacement for the jog move, in hardware coordinates.
+        :param displacement: The distances as a sequence of the move for each axis.
+            None for stop motion.
         """
         super().__init__()
         self.displacement = displacement
 
     def __repr__(self) -> str:
         """Represent the command as a string."""
-        return f"<{self.__class__.__name__} {self.displacement}>"
-
-
-class JogStopCommand(JogCommand):
-    """A command to stop a jog move."""
+        if self.displacement is None:
+            return "<JogCommand>STOP"
+        return f"<JogCommand>{self.displacement}"
 
 
 class JogQueue(queue.Queue[JogCommand]):
@@ -283,7 +265,7 @@ class BaseStage(lt.Thing):
         :param kwargs: Keyword arguments should be axis names.
         """
         if stop:
-            self._send_jog_command(JogStopCommand(), timeout=1)
+            self._send_jog_command(JogCommand(None))
         else:
             self._hardware_jog(**self._apply_axis_direction(kwargs))
 
@@ -299,14 +281,9 @@ class BaseStage(lt.Thing):
         :param kwargs: Keyword arguments should be axis names.
         """
         move = [kwargs.get(axis, 0) for axis in self.axis_names]
-        self._send_jog_command(
-            JogMoveCommand(move),
-            timeout=self._estimate_move_duration(move) + 1,
-        )
+        self._send_jog_command(JogCommand(move))
 
-    def _send_jog_command(
-        self, command: JogCommand, timeout: Optional[float] = None
-    ) -> None:
+    def _send_jog_command(self, command: JogCommand) -> None:
         """Send a jog command to the background jog thread.
 
         This function will start the background thread if it is not running.
@@ -315,8 +292,6 @@ class BaseStage(lt.Thing):
         function should never block for a long time.
 
         :param command: the jog command to send.
-        :param timeout: how long to wait for the command to be completed, or ``None``
-            to skip waiting.
         """
         if not self._jog_lock.acquire(timeout=0.1):
             self.logger.warning(
@@ -337,10 +312,6 @@ class BaseStage(lt.Thing):
                 self._jog_queue.put(command)
         finally:
             self._jog_lock.release()
-        # The final wait happens after releasing the lock: this allows jog moves to
-        # be interrupted.
-        if timeout is not None:
-            command.finished.wait(timeout)
 
     def _jog_loop(self, first_command: JogCommand) -> None:
         """Execute jog commands in a background thread.
@@ -350,25 +321,18 @@ class BaseStage(lt.Thing):
         """
         # Timeout for checking queue
         timeout = 0.1
-        previous_command: Optional[JogCommand] = None
         command: Optional[JogCommand] = first_command
 
         # prevent others using the stage while jogging.
         with self._hardware_lock:
             while command is not None:
-                if previous_command:
-                    # Notify the last command it's superseded
-                    previous_command.finished.set()
-                previous_command = command
-                if isinstance(command, JogMoveCommand):
+                if command.displacement is not None:
                     self._hardware_start_move_relative(command.displacement)
                     timeout = self._estimate_move_duration(command.displacement)
-                elif isinstance(command, JogStopCommand):
+                else:
                     self._hardware_stop()
                     # Next iteration, we will probably time out.
                     timeout = 0.1
-                else:
-                    raise RuntimeError(f"Unknown jog command: {command}")
                 self.update_position()
                 command = self._get_from_jog_queue(timeout)
 
