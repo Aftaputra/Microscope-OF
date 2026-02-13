@@ -8,9 +8,12 @@
         "smart_scan": {
             "class": "openflexure_microscope_server.things.smart_scan:SmartScanThing",
             "kwargs": {
-                "scans_folder": "./openflexure/scans/"
+                "scans_folder": "./openflexure/scans/",
+                "default_workflow": "histo_scan_workflow"
             }
         },
+        "histo_scan_workflow": "openflexure_microscope_server.things.scan_workflows:HistoScanWorkflow",
+        "snake_workflow": "openflexure_microscope_server.things.scan_workflows:SnakeWorkflow",
         "bg_color_channels_luv": "openflexure_microscope_server.things.background_detect:ColourChannelDetectLUV",
         "bg_channel_deviations_luv": "openflexure_microscope_server.things.background_detect:ChannelDeviationLUV"
     },

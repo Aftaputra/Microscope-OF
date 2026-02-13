@@ -596,6 +596,7 @@ class BaseCamera(lt.Thing):
         """Validate and set background_detector_name."""
         if name not in self._all_background_detectors:
             self.logger.warning(f"{name} is not a valid background detector name.")
+            return
         self._background_detector_name = name
 
     @property

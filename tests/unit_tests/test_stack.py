@@ -19,12 +19,13 @@ from openflexure_microscope_server.things.autofocus import (
     AutofocusThing,
     CaptureInfo,
     NotAPeakError,
-    StackParams,
+    SmartStackParams,
     _count_turning_points,
     _get_capture_by_id,
     _get_capture_index_by_id,
     _get_peak_turning_point,
 )
+from openflexure_microscope_server.things.scan_workflows import HistoScanWorkflow
 
 RANDOM_GENERATOR = np.random.default_rng()
 
@@ -64,7 +65,7 @@ def test_stack_params_validation(save_ims, extra_ims):
     # Coerce min_images_to_test as the max extra ims depends on save_ims so is hard
     # to do automatically in hypothesis. This clamps the number between 3 and 9.
     min_images_to_test = max(min(save_ims + extra_ims, 9), 3)
-    StackParams(
+    SmartStackParams(
         stack_dz=50,
         images_to_save=save_ims,
         min_images_to_test=min_images_to_test,
@@ -91,7 +92,7 @@ def test_stack_params_not_enough_test_images(save_ims, extra_ims):
         "Can't save more images than the minimum number tested)"
     )
     with pytest.raises(ValueError, match=match):
-        StackParams(
+        SmartStackParams(
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
@@ -116,7 +117,7 @@ def test_stack_params_negative_images_to_save(save_ims, extra_ims):
         "Images to save must be positive and odd)"
     )
     with pytest.raises(ValueError, match=match):
-        StackParams(
+        SmartStackParams(
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
@@ -142,7 +143,7 @@ def test_even_min_images_to_test(save_ims, extra_ims):
         "Minimum number of images to test should be positive and odd)"
     )
     with pytest.raises(ValueError, match=match):
-        StackParams(
+        SmartStackParams(
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
@@ -166,7 +167,7 @@ def test_even_images_to_save(save_ims, extra_ims):
         "Images to save must be positive and odd)"
     )
     with pytest.raises(ValueError, match=match):
-        StackParams(
+        SmartStackParams(
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
@@ -177,11 +178,11 @@ def test_even_images_to_save(save_ims, extra_ims):
 
 
 def test_computed_stack_params():
-    """Test StackParams computed properties are as expected.
+    """Test SmartStackParams computed properties are as expected.
 
     Not using hypothesis or we will just copy in the same formulas.
     """
-    stack_parameters = StackParams(
+    stack_parameters = SmartStackParams(
         stack_dz=50,
         images_to_save=5,
         min_images_to_test=9,
@@ -267,20 +268,28 @@ def autofocus_thing():
     return create_thing_without_server(AutofocusThing, mock_all_slots=True)
 
 
-def test_create_stack(autofocus_thing, caplog):
+@pytest.fixture
+def histo_scan_workflow():
+    """Return an autofocus thing connected to a server."""
+    return create_thing_without_server(HistoScanWorkflow, mock_all_slots=True)
+
+
+def test_create_stack(histo_scan_workflow, caplog):
     """Run create stack with default values and check there is no coercion or logging."""
-    initial_min_images_to_test = autofocus_thing.stack_min_images_to_test
-    initial_images_to_save = autofocus_thing.stack_images_to_save
+    initial_min_images_to_test = histo_scan_workflow.stack_min_images_to_test
+    initial_images_to_save = histo_scan_workflow.stack_images_to_save
     with caplog.at_level(logging.INFO):
-        stack_params = autofocus_thing.create_stack_params(
+        stack_params = histo_scan_workflow.create_smart_stack_params(
             autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
         )
 
     assert len(caplog.records) == 0
-    assert autofocus_thing.stack_min_images_to_test == initial_min_images_to_test
-    assert autofocus_thing.stack_images_to_save == initial_images_to_save
-    assert stack_params.min_images_to_test == autofocus_thing.stack_min_images_to_test
-    assert stack_params.images_to_save == autofocus_thing.stack_images_to_save
+    assert histo_scan_workflow.stack_min_images_to_test == initial_min_images_to_test
+    assert histo_scan_workflow.stack_images_to_save == initial_images_to_save
+    assert (
+        stack_params.min_images_to_test == histo_scan_workflow.stack_min_images_to_test
+    )
+    assert stack_params.images_to_save == histo_scan_workflow.stack_images_to_save
 
 
 @pytest.mark.parametrize(
@@ -293,13 +302,13 @@ def test_create_stack(autofocus_thing, caplog):
     ],
 )
 def test_coercing_stack_test_ims(
-    initial_test_ims, coerced_test_ims, expected_log_start, autofocus_thing, caplog
+    initial_test_ims, coerced_test_ims, expected_log_start, histo_scan_workflow, caplog
 ):
     """Run create stack with images to test set to values requiring coercion, and check result."""
-    autofocus_thing.stack_min_images_to_test = initial_test_ims
+    histo_scan_workflow.stack_min_images_to_test = initial_test_ims
 
     with caplog.at_level(logging.WARNING):
-        stack_params = autofocus_thing.create_stack_params(
+        stack_params = histo_scan_workflow.create_smart_stack_params(
             autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
         )
 
@@ -308,7 +317,9 @@ def test_coercing_stack_test_ims(
     # Check the value is coerced in the stack_params
     assert stack_params.min_images_to_test == coerced_test_ims
     # Check that the setting in the Thing was updated to the coerced value
-    assert stack_params.min_images_to_test == autofocus_thing.stack_min_images_to_test
+    assert (
+        stack_params.min_images_to_test == histo_scan_workflow.stack_min_images_to_test
+    )
 
 
 @pytest.mark.parametrize(
@@ -321,13 +332,13 @@ def test_coercing_stack_test_ims(
     ],
 )
 def test_coercing_stack_save_ims(
-    initial_save_ims, coerced_save_ims, expected_log_start, autofocus_thing, caplog
+    initial_save_ims, coerced_save_ims, expected_log_start, histo_scan_workflow, caplog
 ):
     """Run create stack with images to save set to values requiring coercion, and check result."""
-    autofocus_thing.stack_images_to_save = initial_save_ims
+    histo_scan_workflow.stack_images_to_save = initial_save_ims
 
     with caplog.at_level(logging.WARNING):
-        stack_params = autofocus_thing.create_stack_params(
+        stack_params = histo_scan_workflow.create_smart_stack_params(
             autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
         )
 
@@ -336,13 +347,13 @@ def test_coercing_stack_save_ims(
     # Check the value is coerced in the stack_params
     assert stack_params.images_to_save == coerced_save_ims
     # Check that the setting in the Thing was updated to the coerced value
-    assert stack_params.images_to_save == autofocus_thing.stack_images_to_save
+    assert stack_params.images_to_save == histo_scan_workflow.stack_images_to_save
 
 
 @pytest.mark.parametrize("pass_on", [1, 2, 3, 4])
-def test_run_smart_stack(pass_on, autofocus_thing, mocker):
+def test_run_smart_stack(pass_on, histo_scan_workflow, autofocus_thing, mocker):
     """Test Running smart stack with the stack passing on different attempts."""
-    stack_params = autofocus_thing.create_stack_params(
+    stack_params = histo_scan_workflow.create_smart_stack_params(
         autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
     )
     assert stack_params.max_attempts == 3
@@ -364,8 +375,8 @@ def test_run_smart_stack(pass_on, autofocus_thing, mocker):
     failed_return = (False, fake_captures, "pick_me")
     return_list = [failed_return] * (pass_on - 1) + [successful_return]
 
-    # Mock z_stack and looping_autofocus
-    autofocus_thing.z_stack = mocker.Mock(side_effect=return_list)
+    # Mock smart_z_stack and looping_autofocus
+    autofocus_thing.smart_z_stack = mocker.Mock(side_effect=return_list)
     autofocus_thing.looping_autofocus = mocker.Mock()
 
     # Run it
@@ -380,9 +391,10 @@ def test_run_smart_stack(pass_on, autofocus_thing, mocker):
     # Final z is the one from the id returned by the stack "pick_me"
     assert final_z == 555
 
-    # z_stack should run up until the time it passes. Running no more than max_attempts
+    # smart_z_stack should run up until the time it passes. Running no more than
+    # max_attempts
     n_stacks = min(pass_on, stack_params.max_attempts)
-    assert autofocus_thing.z_stack.call_count == n_stacks
+    assert autofocus_thing.smart_z_stack.call_count == n_stacks
     # Move absolute should be 1 less time that the number of times z_stack_run
     assert autofocus_thing._stage.move_absolute.call_count == n_stacks - 1
     # As should looping autofocus
@@ -396,14 +408,16 @@ def test_run_smart_stack(pass_on, autofocus_thing, mocker):
     assert autofocus_thing._cam.save_from_memory.call_count == (1 if success else 0)
 
 
-def setup_and_run_z_stack(check_returns, check_turning_points, autofocus_thing, mocker):
-    """Set up a z_stack, run it, and return the result.
+def setup_and_run_smart_z_stack(
+    check_returns, check_turning_points, histo_scan_workflow, autofocus_thing, mocker
+):
+    """Set up a smart_z_stack, run it, and return the result.
 
     :param check_returns: The return values from check_stack_result. Note that if this
         is a list, it will be set as a side effect (and should be a list of tuples of
         results). If it a tuple (or anything else), it is set as a return value.
     """
-    stack_params = autofocus_thing.create_stack_params(
+    stack_params = histo_scan_workflow.create_smart_stack_params(
         autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
     )
     stack_params.settling_time = 0  # Don't settle or tests take forever.
@@ -413,58 +427,70 @@ def setup_and_run_z_stack(check_returns, check_turning_points, autofocus_thing, 
         autofocus_thing.check_stack_result = mocker.Mock(side_effect=check_returns)
     else:
         autofocus_thing.check_stack_result = mocker.Mock(return_value=check_returns)
-    return autofocus_thing.z_stack(
+    return autofocus_thing.smart_z_stack(
         stack_parameters=stack_params,
         check_turning_points=check_turning_points,
     )
 
 
-def test_z_stack_turning_toggle_passed(autofocus_thing, mocker):
+def test_z_stack_turning_toggle_passed(histo_scan_workflow, autofocus_thing, mocker):
     """Check that the toggling of turning points is passed to the check."""
     check_returns = ("success", "mock_id")
     for check_turning in [True, False]:
-        setup_and_run_z_stack(check_returns, check_turning, autofocus_thing, mocker)
+        setup_and_run_smart_z_stack(
+            check_returns, check_turning, histo_scan_workflow, autofocus_thing, mocker
+        )
         check_kwargs = autofocus_thing.check_stack_result.call_args.kwargs
         assert check_kwargs["check_turning_points"] == check_turning
 
 
-def test_z_stack_returns_on_success_and_restart(autofocus_thing, mocker):
+def test_z_stack_returns_on_success_and_restart(
+    histo_scan_workflow, autofocus_thing, mocker
+):
     """Check that if the check returns success or restart then the stack exits with correct return value."""
     for result in ["success", "restart"]:
         check_returns = (result, "mock_id")
-        ret = setup_and_run_z_stack(check_returns, True, autofocus_thing, mocker)
+        ret = setup_and_run_smart_z_stack(
+            check_returns, True, histo_scan_workflow, autofocus_thing, mocker
+        )
         assert autofocus_thing.check_stack_result.call_count == 1
         # Check the number of images taken is exactly the call count.
         ims_taken = autofocus_thing.capture_stack_image.call_count
-        assert ims_taken == autofocus_thing.stack_min_images_to_test
+        assert ims_taken == histo_scan_workflow.stack_min_images_to_test
         # And the result is as expected.
         assert ret[0] == (result == "success")
 
 
-def test_z_stack_exits_if_focus_never_found(autofocus_thing, mocker):
+def test_z_stack_exits_if_focus_never_found(
+    histo_scan_workflow, autofocus_thing, mocker
+):
     """Check that if the check returns continue the stack exits eventually with a failure."""
     check_returns = ("continue", "mock_id")
-    ret = setup_and_run_z_stack(check_returns, True, autofocus_thing, mocker)
+    ret = setup_and_run_smart_z_stack(
+        check_returns, True, histo_scan_workflow, autofocus_thing, mocker
+    )
 
     assert autofocus_thing.check_stack_result.call_count == EXTRA_STACK_CAPTURES + 1
     # Check the number of images taken is the maximum possible, set by the min images to
     # test and the number of extra images that can be taken
     ims_taken = autofocus_thing.capture_stack_image.call_count
-    max_ims = autofocus_thing.stack_min_images_to_test + EXTRA_STACK_CAPTURES
+    max_ims = histo_scan_workflow.stack_min_images_to_test + EXTRA_STACK_CAPTURES
     assert ims_taken == max_ims
     # And the result is as expected.
     assert not ret[0]
 
 
-def test_z_stack_return(autofocus_thing, mocker):
+def test_z_stack_return(histo_scan_workflow, autofocus_thing, mocker):
     """Check z-stack returns as expected for more complex cases the fixed results above."""
     for i in range(2, EXTRA_STACK_CAPTURES):
         check_returns = [
             ("restart" if j == i - 1 else "continue", f"id_{j}") for j in range(i)
         ]
-        ret = setup_and_run_z_stack(check_returns, True, autofocus_thing, mocker)
+        ret = setup_and_run_smart_z_stack(
+            check_returns, True, histo_scan_workflow, autofocus_thing, mocker
+        )
         # Calculate images taken
-        images_taken = autofocus_thing.stack_min_images_to_test + i - 1
+        images_taken = histo_scan_workflow.stack_min_images_to_test + i - 1
         assert autofocus_thing.capture_stack_image.call_count == images_taken
         # Check it reports a failure
         assert not ret[0]
@@ -473,7 +499,9 @@ def test_z_stack_return(autofocus_thing, mocker):
         check_returns = [
             ("success" if j == i - 1 else "continue", f"id_{j}") for j in range(i)
         ]
-        ret = setup_and_run_z_stack(check_returns, True, autofocus_thing, mocker)
+        ret = setup_and_run_smart_z_stack(
+            check_returns, True, histo_scan_workflow, autofocus_thing, mocker
+        )
         # Calculate images taken
         assert autofocus_thing.capture_stack_image.call_count == images_taken
         # Check it reports a success

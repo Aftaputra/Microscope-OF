@@ -17,20 +17,24 @@ import logging
 import os
 import shutil
 import tempfile
+from collections.abc import Iterable
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Optional
+from unittest import mock
 
 import pytest
 from fastapi import HTTPException
+from pydantic import BaseModel
 
 from labthings_fastapi.exceptions import InvocationCancelledError
 from labthings_fastapi.testing import create_thing_without_server
 
-from openflexure_microscope_server.scan_directories import (
-    NotEnoughFreeSpaceError,
-    ScanData,
-)
+from openflexure_microscope_server.scan_directories import NotEnoughFreeSpaceError
+from openflexure_microscope_server.stitching import StitchingSettings
+from openflexure_microscope_server.things.scan_workflows import ScanWorkflow
 from openflexure_microscope_server.things.smart_scan import (
+    ActiveScanData,
     ScanNotRunningError,
     SmartScanThing,
 )
@@ -50,8 +54,31 @@ def _clear_scan_dir() -> None:
 def smart_scan_thing():
     """Return a smart scan thing as a fixture."""
     return create_thing_without_server(
-        SmartScanThing, scans_folder=SCAN_DIR, mock_all_slots=True
+        SmartScanThing,
+        scans_folder=SCAN_DIR,
+        default_workflow="mock-_all_workflows",
+        mock_all_slots=True,
     )
+
+
+def custom_smart_scan_thing(default_workflow, all_workflows):
+    """Set up a custom smart scan thing with workflows adjusted.
+
+    This allows setting a default workflow and to adjust all workflows from simple
+    single item mock from `mock_all_slots`.
+    """
+    smart_scan_thing = create_thing_without_server(
+        SmartScanThing,
+        scans_folder=SCAN_DIR,
+        default_workflow=default_workflow,
+        mock_all_slots=True,
+    )
+    # Pop the existing mock workflow and add specified ones (if any)
+    smart_scan_thing._all_workflows.pop("mock-_all_workflows")
+    for key, thing in all_workflows.items():
+        smart_scan_thing._all_workflows[key] = thing
+
+    return smart_scan_thing
 
 
 def test_initial_properties(smart_scan_thing):
@@ -64,16 +91,138 @@ def test_initial_properties(smart_scan_thing):
     assert smart_scan_thing.latest_scan_name is None
 
 
+@dataclass
+class WorkflowSelectorTestCase:
+    """The information from a capture in a smart_z_stack."""
+
+    workflows: dict[str, mock.MagicMock]
+    default_wf: str
+    expected_wf: Optional[str]
+    loaded_wf: Optional[str] = None
+    side_effect: Optional[type | int | Iterable[int]] = None
+    """The side effect of entering the Thing (None, Logger level number, Error type)"""
+    match: Optional[str | Iterable[str]] = None
+
+
+SELECTOR_CASES = [
+    WorkflowSelectorTestCase(
+        workflows={},
+        default_wf="foo",
+        expected_wf=None,
+        side_effect=RuntimeError,
+        match="Could not set Scan Workflow",
+    ),
+    WorkflowSelectorTestCase(
+        workflows={
+            "foo": mock.MagicMock(spec=ScanWorkflow),
+            "bar": mock.MagicMock(spec=ScanWorkflow),
+        },
+        default_wf="foo",
+        expected_wf="foo",
+        side_effect=None,
+    ),
+    WorkflowSelectorTestCase(
+        workflows={
+            "foo": mock.MagicMock(spec=ScanWorkflow),
+            "bar": mock.MagicMock(spec=ScanWorkflow),
+        },
+        default_wf="bar",
+        expected_wf="bar",
+        side_effect=None,
+    ),
+    WorkflowSelectorTestCase(
+        workflows={
+            "foo": mock.MagicMock(spec=ScanWorkflow),
+            "bar": mock.MagicMock(spec=ScanWorkflow),
+        },
+        default_wf="wrong",
+        expected_wf="foo",
+        side_effect=logging.WARNING,
+        match="Could not select default key 'wrong'",
+    ),
+    WorkflowSelectorTestCase(
+        workflows={
+            "foo": mock.MagicMock(spec=ScanWorkflow),
+            "bar": mock.MagicMock(spec=ScanWorkflow),
+        },
+        default_wf="wrong",
+        loaded_wf="bar",
+        expected_wf="bar",
+        side_effect=None,
+    ),
+    WorkflowSelectorTestCase(
+        workflows={
+            "foo": mock.MagicMock(spec=ScanWorkflow),
+            "bar": mock.MagicMock(spec=ScanWorkflow),
+        },
+        default_wf="wrong",
+        loaded_wf="wrong",
+        expected_wf="foo",
+        side_effect=[logging.WARNING, logging.WARNING],
+        match=[
+            "Could not select 'wrong' from Thing mapping",
+            "Could not select default key 'wrong'",
+        ],
+    ),
+]
+
+
+@pytest.mark.parametrize("case", SELECTOR_CASES)
+def test_workflow_set_on_enter(case, check_side_effect):
+    """Check workflow is set on enter."""
+    smart_scan_thing = custom_smart_scan_thing(case.default_wf, case.workflows)
+    with check_side_effect(case.side_effect, match=case.match):
+        # Load in "loaded" as the sever would
+        smart_scan_thing._workflow_name = case.loaded_wf
+        with smart_scan_thing:
+            assert smart_scan_thing._workflow_name == case.expected_wf
+
+
+def test_setting_workflows(caplog):
+    """Check that setting workflow works, or warns if incorrect."""
+    workflows = {
+        "foo": mock.MagicMock(spec=ScanWorkflow),
+        "bar": mock.MagicMock(spec=ScanWorkflow),
+    }
+
+    smart_scan_thing = custom_smart_scan_thing("foo", workflows)
+    with caplog.at_level(logging.WARNING), smart_scan_thing:
+        assert smart_scan_thing._workflow_name == "foo"
+        assert smart_scan_thing._workflow is workflows["foo"]
+        # Can't set None, warns doesn't change
+        smart_scan_thing.workflow_name = None
+        assert len(caplog.records) == 1
+        assert smart_scan_thing._workflow_name == "foo"
+        assert smart_scan_thing._workflow is workflows["foo"]
+        # Can't set a different name
+        smart_scan_thing.workflow_name = "wrong"
+        assert len(caplog.records) == 2  # another log
+        assert smart_scan_thing._workflow_name == "foo"
+        assert smart_scan_thing._workflow is workflows["foo"]
+
+        # can set a valid name
+        smart_scan_thing.workflow_name = "bar"
+        assert len(caplog.records) == 2  # No extra logs
+        assert smart_scan_thing._workflow_name == "bar"
+        assert smart_scan_thing._workflow is workflows["bar"]
+
+
 def test_inaccessible_scan_methods(smart_scan_thing):
     """Test that method with @_scan_running decorator is inaccessible.
 
     The @_scan_running decorator makes these functions inaccessible unless
-    a scan is running.
+    a scan is running. Also test properties that raise same error.
     """
     with pytest.raises(ScanNotRunningError):
         smart_scan_thing._run_scan()
     with pytest.raises(ScanNotRunningError):
         smart_scan_thing._manage_stitching_threads()
+
+    # Properties
+    with pytest.raises(ScanNotRunningError):
+        smart_scan_thing.scan_data
+    with pytest.raises(ScanNotRunningError):
+        smart_scan_thing.ongoing_scan
 
 
 def test_private_delete_scan(smart_scan_thing, caplog):
@@ -223,23 +372,30 @@ MOCK_SCAN_DIR = "scans/test_name_0001/images/"
 MOCK_START_POS = {"x": 123, "y": 456, "z": 789}
 
 
+class MockWorkflowSettingModel(BaseModel):
+    """A mock model to check that ActiveScanData can hold arbitrary models."""
+
+    foo: str = "bar"
+    bar: str = "foo"
+    dx: int = 123
+    dy: int = 456
+
+
 def _expected_scan_data():
-    """Return the expected ScanData object for a SmartScan with default properties."""
+    """Return the expected ActiveScanData object for a SmartScan with default properties."""
     expected_dict = {
         "scan_name": MOCK_SCAN_NAME,
         "starting_position": MOCK_START_POS,
-        "overlap": 0.45,
-        "max_dist": 45000,
-        "dx": 100,
-        "dy": 100,
-        "autofocus_dz": 1000,
-        "autofocus_on": True,
-        "skip_background": True,
-        "stitch_automatically": True,
-        "correlation_resize": 0.5,
         "save_resolution": (1640, 1232),
+        "stitch_automatically": True,
+        "stitching_settings": {
+            "overlap": 0.45,
+            "correlation_resize": 0.5,
+        },
+        "workflow": "Mock",
+        "workflow_settings": MockWorkflowSettingModel(),
     }
-    return ScanData(start_time=datetime.now(), **expected_dict)
+    return ActiveScanData(start_time=datetime.now(), **expected_dict)
 
 
 @pytest.fixture
@@ -247,13 +403,13 @@ def scan_thing_mocked_for_scan_data(smart_scan_thing, mocker):
     """Return a scan thing that is mocked so that _collect_scan_data will run."""
     # Set the lock so it thinks the scan is running
     with smart_scan_thing._scan_lock:
-        mocker.patch.object(
-            smart_scan_thing,
-            "_calc_displacement_from_test_image",
-            return_value=[100, 100],
-        )
-
         smart_scan_thing._stage.position = MOCK_START_POS
+
+        smart_scan_thing._workflow.all_settings.return_value = (
+            MockWorkflowSettingModel(),
+            StitchingSettings(correlation_resize=0.5, overlap=0.45),
+        )
+        smart_scan_thing._workflow.save_resolution = (1640, 1232)
 
         mock_ongoing_scan = mocker.Mock()
         mock_ongoing_scan.name = MOCK_SCAN_NAME
@@ -264,10 +420,10 @@ def scan_thing_mocked_for_scan_data(smart_scan_thing, mocker):
 
 
 def test_collect_scan_data(scan_thing_mocked_for_scan_data):
-    """Run _collect_scan_data, and check the ScanData object has the expected values."""
+    """Run _collect_scan_data, and check the ActiveScanData object has the expected values."""
     scan_thing = scan_thing_mocked_for_scan_data
 
-    data = scan_thing._collect_scan_data()
+    data = scan_thing._collect_scan_data(scan_thing._workflow)
     expected_data = _expected_scan_data()
     time_diff = expected_data.start_time - data.start_time
     assert abs(time_diff.total_seconds()) < 1
@@ -277,17 +433,17 @@ def test_collect_scan_data(scan_thing_mocked_for_scan_data):
 
 
 def test_save_final_scan_data(scan_thing_mocked_for_scan_data):
-    """Run _save_final_scan_data, check save is called with final results in ScanData."""
+    """Run _save_final_scan_data, check save is called with final results in ActiveScanData."""
     scan_thing = scan_thing_mocked_for_scan_data
 
-    scan_thing._scan_data = scan_thing._collect_scan_data()
+    scan_thing._scan_data = scan_thing._collect_scan_data(scan_thing._workflow)
     scan_thing._scan_data.image_count = 44
     scan_thing._save_final_scan_data("Mocked!")
     # _ongoing_scan is a mock so we can check that save_scan data was called and get
     # the value
     scan_thing._ongoing_scan.save_scan_data.assert_called()
     final_data = scan_thing._ongoing_scan.save_scan_data.call_args[0][0]
-    assert isinstance(final_data, ScanData)
+    assert isinstance(final_data, ActiveScanData)
     assert final_data.scan_result == "Mocked!"
     assert final_data.image_count == 44
     assert final_data.duration.total_seconds() < 1
@@ -322,10 +478,10 @@ def check_run_scan(scan_thing, caplog, expected_exception=None):
     """
     if expected_exception is None:
         with caplog.at_level(logging.WARNING):
-            scan_thing._scan_data = scan_thing._run_scan()
+            scan_thing._scan_data = scan_thing._run_scan(scan_thing._workflow)
     else:
         with pytest.raises(expected_exception), caplog.at_level(logging.WARNING):
-            scan_thing._scan_data = scan_thing._run_scan()
+            scan_thing._scan_data = scan_thing._run_scan(scan_thing._workflow)
     # The preview stitcher object should still exist. And images dir should be set.
     assert scan_thing._preview_stitcher.images_dir == MOCK_SCAN_DIR
 
@@ -341,7 +497,7 @@ def check_run_scan(scan_thing, caplog, expected_exception=None):
 
 
 def test_run_scan(scan_thing_mocked_for_run_scan, caplog):
-    """Run _save_final_scan_data, check save is called with final results in ScanData."""
+    """Run _save_final_scan_data, check save is called with final results in ActiveScanData."""
     result, logs, calls = check_run_scan(scan_thing_mocked_for_run_scan, caplog)
 
     assert result == "success"
