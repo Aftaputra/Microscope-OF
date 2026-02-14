@@ -1,17 +1,17 @@
 <template>
   <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <div class="control-component uk-padding-small">
-      <div v-show="!scanning" v-observe-visibility="visibilityChanged" class="uk-padding-small">
+      <div v-show="!scanning" ref="slideScanView" class="uk-padding-small">
         <!-- Workflow Selection Dropdown -->
         <div class="uk-margin">
           <label class="uk-form-label">Workflow</label>
 
           <select
             class="uk-select uk-form-small"
-            :value="workflowName"
-            @change="setWorkflow($event.target.value)"
+            :modelValue="workflowName"
+            @change="setWorkflow($event.target.modelValue)"
           >
-            <option v-for="(label, name) in workflowOptions" :key="name" :value="name">
+            <option v-for="(label, name) in workflowOptions" :key="name" :modelValue="name">
               {{ label }}
             </option>
           </select>
@@ -176,12 +176,12 @@ export default {
 
   async created() {
     this.readSettings();
-    this.workflowOptions = await this.readThingProperty("smart_scan", "workflow_display_names");
+    this.workflowOptions = await this.readThingProperty("smart_scan", "workflow_display_names", true);
   },
 
   mounted() {
     useIntersectionObserver(
-      this.$refs.slideScanContent,
+      this.$refs.slideScanView,
       ([{ isIntersecting }]) => {
         this.visibilityChanged(isIntersecting);
       },
@@ -198,13 +198,22 @@ export default {
       }
     },
     async readSettings() {
-      this.workflowName = await this.readThingProperty("smart_scan", "workflow_name");
+      this.workflowOptions = await this.readThingProperty("smart_scan", "workflow_display_names", true) || {};
+
+      this.workflowName = await this.readThingProperty("smart_scan", "workflow_name", false);
+
+      if (!this.workflowName) {
+          console.warn("Could not read workflow_name, using default");
+          this.workflowName = "histo_scan_workflow";
+        }
+
       if (this.workflowName) {
-        this.ready = await this.readThingProperty(this.workflowName, "ready");
-        this.workflowSettings = await this.readThingProperty(this.workflowName, "settings_ui");
+        console.log("Current workflow name: ", this.workflowName);
+        this.ready = await this.readThingProperty(this.workflowName, "ready", true);
+        this.workflowSettings = await this.readThingProperty(this.workflowName, "settings_ui", true) || [];
         console.log(this.workflowSettings);
-        this.workflowDisplayName = await this.readThingProperty(this.workflowName, "display_name");
-        this.workflowBlurb = await this.readThingProperty(this.workflowName, "ui_blurb");
+        this.workflowDisplayName = await this.readThingProperty(this.workflowName, "display_name", true);
+        this.workflowBlurb = await this.readThingProperty(this.workflowName, "ui_blurb", true);
       }
     },
     onScanError: function (error) {
@@ -231,34 +240,47 @@ export default {
      *  - starts the polling loop that fetches scan progress and preview images
      */
     startScanning() {
+      console.log("Starting scan...");
       this.lastStitchedImage = null;
       this.scanning = true;
       setTimeout(this.pollScan, 1000);
     },
     async pollScan() {
+      console.log("Polling for scan progress...");
       if (this.cancellable) {
         // while the scan is running
-        let mtime = await this.readThingProperty("smart_scan", "latest_preview_stitch_time");
+        console.log("Polling for scan updates...");
+        let mtime = await this.readThingProperty("smart_scan", "latest_preview_stitch_time", true);
+        console.log("smart scan latest preview stitch time: ", mtime);
         if (mtime !== null) {
           this.lastStitchedImage = `${this.$store.getters.baseUri}/smart_scan/latest_preview_stitch.jpg?t=${mtime}`;
+          console.log("Updated preview image URL: ", this.lastStitchedImage);
         }
-        this.lastScanName = await this.readThingProperty("smart_scan", "latest_scan_name");
+        
+        this.lastScanName = await this.readThingProperty("smart_scan", "latest_scan_name", true);
         setTimeout(this.pollScan, 1000); // keep rescheduling until it's stopped
       }
     },
     async setWorkflow(name) {
+      console.log("Setting workflow to ", name);
       try {
         this.workflowName = name;
+
+        if (!this.workflowName) {
+          console.warn("Could not read workflow_name, using default");
+          this.workflowName = "histo_scan_workflow";
+        }
 
         await this.writeThingProperty("smart_scan", "workflow_name", name);
 
         // refresh  UI
         await this.readSettings();
+        console.log("readsettings values: ", this.workflowName, this.workflowSettings, this.workflowDisplayName, this.workflowBlurb);
       } catch (err) {
         this.modalError(err);
 
         // revert if server rejected
-        this.workflowName = await this.readThingProperty("smart_scan", "workflow_name");
+        this.workflowName = await this.readThingProperty("smart_scan", "workflow_name", true);
       }
     },
     async downloadZipFile(response) {

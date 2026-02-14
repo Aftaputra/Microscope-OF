@@ -59,7 +59,7 @@ export default {
       // `false` fails because axios somehow eats it!
       // Other values should not be stringified or pydantic
       // can't parse them.
-      if ((value === false) | (value === true)) {
+      if ((value === false) || (value === true)) {
         value = JSON.stringify(value);
       }
       await axios.put(url, value);
@@ -91,7 +91,7 @@ export default {
         response = await axios.get(taskUrl, { baseURL: this.$store.getters.baseUri });
         const result = response.data.status;
 
-        if ((result == "running") | (result == "pending")) {
+        if ((result === "running") || (result === "pending")) {
           ongoingMethod?.(response);
           this.pollTimers[taskUrl] = setTimeout(() => {
             this.pollUntilComplete(taskUrl, ongoingMethod, finalMethod, interval);

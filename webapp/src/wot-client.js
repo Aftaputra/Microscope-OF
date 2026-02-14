@@ -28,7 +28,7 @@ export const wotStoreModule = {
       // Deduplication should be done elsewhere.
       let response = await axios.get(uri);
       let td = response.data;
-      let thing_name = name | uri.replace(/\/$/, "").split("/").pop();
+      let thing_name = name || uri.replace(/\/$/, "").split("/").pop();
       commit("addThingDescription", {
         thingName: thing_name,
         thingDescription: td,
@@ -37,7 +37,7 @@ export const wotStoreModule = {
     async fetchThingDescriptions({ commit }, uri) {
       // Fetch thing descriptions from the given URI
       let response = await axios.get(uri);
-      if (response.status != 200) throw "Could not retrieve thing descriptions";
+      if (response.status !== 200) throw "Could not retrieve thing descriptions";
       for (const k in response.data) {
         let thing_name = k.replace(/\/$/, "").replace(/^\//, "");
         commit("addThingDescription", {
@@ -77,8 +77,14 @@ export const wotStoreModule = {
           throw `Could not find form for ${affordanceType} ${thing}/${affordance} with op ${op}`;
         }
         let affordances = td[affordanceType];
+
+        if (!affordances || !(affordance in affordances)) {
+          if (allowUndefined) return undefined;
+          throw `Could not find form for ${affordanceType} ${thing}/${affordance} with op ${op}`;
+        }
+
         let href = findFormHref(affordances[affordance], op);
-        if (href == undefined) {
+        if (href === undefined) {
           if (allowUndefined) return undefined;
           throw `Could not find form for ${affordanceType} ${thing}/${affordance} with op ${op}`;
         }
@@ -105,10 +111,10 @@ export const wotStoreModule = {
 
 export function findFormHref(affordance, op) {
   // Find the form in the affordance that matches the given operation type
-  if (affordance == undefined) return undefined;
+  if (affordance === undefined) return undefined;
   let forms = affordance.forms;
   let matchingForm = forms.find((f) => f.op == op || f.op.includes(op));
-  if (matchingForm == undefined) return undefined;
+  if (matchingForm === undefined) return undefined;
   return matchingForm.href;
 }
 

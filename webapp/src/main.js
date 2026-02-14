@@ -3,13 +3,12 @@ import App from "./App.vue";
 import store from "./store";
 import UIkit from "uikit";
 
-import VueObserveVisibility from "vue-observe-visibility";
-
 // Import MD icons
 import "material-symbols/outlined.css";
 
-import queryMixin from "@/mixins/labThingsMixins.js";
+//import queryMixin from "@/mixins/labThingsMixins.js";
 import modalMixin from "@/mixins/modalMixins.js";
+import labThingsMixins from './mixins/labThingsMixins';
 
 // UIKit overrides
 UIkit.mixin(
@@ -25,11 +24,12 @@ UIkit.mixin(
 const app = createApp(App);
 
 // Use visibility observer
-app.use(VueObserveVisibility);
+//app.use(VueObserveVisibility);
 
 // Use global mixins
-app.mixin(queryMixin);
+// app.mixin(queryMixin);
 app.mixin(modalMixin);
+app.mixin(labThingsMixins);
 
 // Use Vuex store
 app.use(store);

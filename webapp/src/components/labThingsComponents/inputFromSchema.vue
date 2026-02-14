@@ -50,7 +50,7 @@
     </label>
     <label v-if="dataType == 'number_object'" class="uk-form-label"
       >{{ label }}
-      <div v-for="(val, key) in value" :key="key">
+      <div v-for="(val, key) in modelValue" :key="key">
         <label>{{ internalLabels[key] }}</label>
         <div class="input-and-buttons-container">
           <input
@@ -109,6 +109,7 @@ export default {
     syncPropertyButton
   },
 
+  compatConfig: { COMPONENT_V_MODEL: false },
   props: {
     dataSchema: {
       type: Object,
@@ -125,14 +126,14 @@ export default {
     },
     animate: {
       type: Boolean,
-      default: false,
+      default: null,
     },
   },
 
   data() {
     return {
-      // Initialise with a copy to try to prevent the this.value prop being mutated if
-      // the value is an array or object. For future updates we stringify and parse
+      // Initialise with a copy to try to prevent the this.modelValue prop being mutated if
+      // the modelValue is an array or object. For future updates we stringify and parse
       // (see resetInternalValue). If we do this here there is a chance we get errors
       // as internalValue is still null when rendering starts.
       internalValue: Array.isArray(this.modelValue)
@@ -142,7 +143,7 @@ export default {
         : this.modelValue,
       // Is edited can't be computed as we mutate internalValue
       isEdited: false,
-      animateUpdate: false,
+      animateUpdate: null,
     };
   },
   computed: {
@@ -210,8 +211,8 @@ export default {
   watch: {
     modelValue: {
       handler() {
-        // Fire updateIsEdited on both value and internal value change,
-        // as change in value may not causse internalValue to change.
+        // Fire updateIsEdited on both modelValue and internal modelValue change,
+        // as change in modelValue may not causse internalValue to change.
         this.updateIsEdited();
         this.resetInternalValue();
       },
@@ -236,8 +237,8 @@ export default {
 
   methods: {
     resetInternalValue: function () {
-      // Whenever updatirng th internal value stringify and parse as a form of deepcopy.
-      // This ensure that the this.value prop is not mutated for when elements of arrays
+      // Whenever updatirng th internal modelValue stringify and parse as a form of deepcopy.
+      // This ensure that the this.modelValue prop is not mutated for when elements of arrays
       // or objects are updated.
       this.internalValue = JSON.parse(JSON.stringify(this.modelValue));
     },
@@ -254,11 +255,11 @@ export default {
       }
     },
     focusIn: function (event) {
-      this.valueOnEnter = event.target.value;
+      this.valueOnEnter = event.target.modelValue;
     },
     focusOut: function (event) {
-      if (this.valueOnEnter != event.target.value) {
-        this.sendValue(event.target.value);
+      if (this.valueOnEnter != event.target.modelValue) {
+        this.sendValue(event.target.modelValue);
       }
     },
     keyDown: function (event) {
@@ -271,12 +272,12 @@ export default {
       this.isEdited = this.deepStringify(this.internalValue) !== this.deepStringify(this.modelValue);
     },
     animationEnd: function () {
-      this.animateUpdate = false;
+      this.animateUpdate = null;
       this.$emit("animationShown");
     },
     deepStringify: function (val) {
       // Create a json string where all internal numbers are also JSON strings. This is
-      // needed to robustly check if the value is updated because the raw value may be a
+      // needed to robustly check if the modelValue is updated because the raw modelValue may be a
       // number but anything typed in the input is a string. In the case of arrays or
       // objects even with JSON.stringify we end up comparing ["1", 3] with [1, 3] and
       // find them as not equal.
