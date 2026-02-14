@@ -27,8 +27,12 @@ from ..logging import (
 from .legacy_api import add_v2_endpoints
 from .serve_static_files import add_static_files
 
-LOGGER = logging.getLogger(__name__)
+# vue3 migration
+from fastapi.middleware.cors import CORSMiddleware
 
+
+LOGGER = logging.getLogger(__name__)
+DEVELOPER_MODE = True
 
 def set_shutdown_function(shutdown_function: Callable[[], None]) -> None:
     """Ensure a function is called before the shutdown.
@@ -61,6 +65,17 @@ def customise_server(
 ) -> None:
     """Customise the server with additional endpoints, etc."""
     configure_logging(log_folder)
+
+    if DEVELOPER_MODE:
+        # Allow CORS in developer mode for easier testing with the webapp
+        server.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
     add_v2_endpoints(server)
     add_static_files(server.app, scans_folder)
 
