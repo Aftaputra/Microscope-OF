@@ -66,6 +66,10 @@ export default {
     };
   },
 
+  async created() {
+    await this.readSettings();
+  },
+
   methods: {
     async safeReadSettings() {
       if (!this.$store.state.connected) return;

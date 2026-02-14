@@ -210,6 +210,7 @@ export default {
 
   watch: {
     modelValue: {
+      deep: true,
       handler() {
         // Fire updateIsEdited on both modelValue and internal modelValue change,
         // as change in modelValue may not causse internalValue to change.

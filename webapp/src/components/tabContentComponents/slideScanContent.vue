@@ -8,10 +8,10 @@
 
           <select
             class="uk-select uk-form-small"
-            :modelValue="workflowName"
-            @change="setWorkflow($event.target.modelValue)"
+            :value="workflowName"
+            @change="setWorkflow($event.target.value)"
           >
-            <option v-for="(label, name) in workflowOptions" :key="name" :modelValue="name">
+            <option v-for="(label, name) in workflowOptions" :key="name" :value="name">
               {{ label }}
             </option>
           </select>
@@ -186,7 +186,7 @@ export default {
         this.visibilityChanged(isIntersecting);
       },
       {
-        threshold: 0.0, // Adjust as needed
+        threshold: 0.0,
       },
     );
   },
@@ -198,9 +198,9 @@ export default {
       }
     },
     async readSettings() {
-      this.workflowOptions = await this.readThingProperty("smart_scan", "workflow_display_names", true) || {};
+      //this.workflowOptions = await this.readThingProperty("smart_scan", "workflow_display_names", true) || {};
 
-      this.workflowName = await this.readThingProperty("smart_scan", "workflow_name", false);
+      this.workflowName = await this.readThingProperty("smart_scan", "workflow_name");
 
       if (!this.workflowName) {
           console.warn("Could not read workflow_name, using default");
@@ -265,11 +265,6 @@ export default {
       console.log("Setting workflow to ", name);
       try {
         this.workflowName = name;
-
-        if (!this.workflowName) {
-          console.warn("Could not read workflow_name, using default");
-          this.workflowName = "histo_scan_workflow";
-        }
 
         await this.writeThingProperty("smart_scan", "workflow_name", name);
 
