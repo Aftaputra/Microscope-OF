@@ -31,6 +31,7 @@ from .serve_static_files import add_static_files
 LOGGER = logging.getLogger(__name__)
 DEVELOPER_MODE = True
 
+
 def set_shutdown_function(shutdown_function: Callable[[], None]) -> None:
     """Ensure a function is called before the shutdown.
 
