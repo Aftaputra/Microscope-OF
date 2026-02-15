@@ -1,8 +1,5 @@
-import Vue from "vue";
-import Vuex from "vuex";
+import { createStore } from "vuex";
 import wotStoreModule from "./wot-client";
-
-Vue.use(Vuex);
 
 function getOriginFromLocation() {
   // This will default to the same origin that's serving
@@ -55,7 +52,7 @@ const LOCALSTORAGE_KEYS = [
   "navigationInvert",
 ];
 
-export default new Vuex.Store({
+export default createStore({
   modules: {
     wot: wotStoreModule,
   },

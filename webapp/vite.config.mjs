@@ -33,8 +33,6 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      // Use Vue 2 compatible build.
-      vue: "@vue/compat",
       // Setup path alias for src directory.
       // This allows importing modules using '@/path/to/module'.
       "@": fileURLToPath(new URL("./src", import.meta.url)),
