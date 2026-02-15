@@ -1,6 +1,6 @@
 {
   "name": "openflexure-microscope-jsclient",
-  "version": "3.0.0-alpha4_vue3_dryrun",
+  "version": "3.0.0-alpha4",
   "private": true,
   "description": "User client for the OpenFlexure Microscope Server",
   "author": "OpenFlexure <contact@openflexure.org> (https://www.openflexure.org)",
