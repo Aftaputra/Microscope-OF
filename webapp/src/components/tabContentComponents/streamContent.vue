@@ -99,9 +99,7 @@ export default {
 
   beforeUnmount: function () {
     // Remove global signal listener to change the GPU preview state
-    //eventBus.off("globalTogglePreview", true);
-    // Remove global signal listener to flash the stream element
-    eventBus.off("globalFlashStream", this.onFlashStream);
+    eventBus.off("globalTogglePreview", true);
     // Disconnect the size observer
     this.sizeObserver.disconnect();
     // Remove from the array of active streams

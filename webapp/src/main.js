@@ -6,7 +6,6 @@ import UIkit from "uikit";
 // Import MD icons
 import "material-symbols/outlined.css";
 
-//import queryMixin from "@/mixins/labThingsMixins.js";
 import modalMixin from "@/mixins/modalMixins.js";
 import labThingsMixins from "./mixins/labThingsMixins";
 
@@ -27,7 +26,6 @@ const app = createApp(App);
 //app.use(VueObserveVisibility);
 
 // Use global mixins
-// app.mixin(queryMixin);
 app.mixin(modalMixin);
 app.mixin(labThingsMixins);
 
