@@ -100,7 +100,6 @@
 
 <script>
 import syncPropertyButton from "./syncPropertyButton.vue";
-// vue3 migration
 
 export default {
   name: "InputFromSchema",

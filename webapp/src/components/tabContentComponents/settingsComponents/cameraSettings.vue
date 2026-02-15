@@ -25,7 +25,6 @@
 import cameraCalibrationSettings from "./cameraSettingsComponents/cameraCalibrationSettings.vue";
 import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
 import ServerSpecifiedPropertyControl from "../../labThingsComponents/serverSpecifiedPropertyControl.vue";
-// vue3 migration
 
 // Export main app
 export default {

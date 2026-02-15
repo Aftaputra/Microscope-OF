@@ -55,7 +55,6 @@
 <script>
 import UIkit from "uikit";
 import OpenSeadragonViewer from "./openSeadragonViewer.vue";
-// vue3 migration
 
 export default {
   name: "ScanViewerModal",

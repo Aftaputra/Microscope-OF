@@ -18,7 +18,6 @@
 </template>
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
-// vue3 migration
 import { eventBus } from "../../../eventBus.js";
 
 export default {

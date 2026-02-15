@@ -29,7 +29,6 @@
 
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
-// vue3 migration
 import { useIntersectionObserver } from "@vueuse/core";
 
 export default {

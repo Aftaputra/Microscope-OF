@@ -64,7 +64,6 @@
 
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
-// vue3 migration
 
 export default {
   name: "StatusPane",

@@ -27,7 +27,6 @@
 import appContent from "./components/appContent.vue";
 import loadingContent from "./components/loadingContent.vue";
 import Mousetrap from "mousetrap";
-// vue3 migration
 import { eventBus } from "./eventBus.js";
 
 Mousetrap.prototype.stopCallback = function (e, element) {

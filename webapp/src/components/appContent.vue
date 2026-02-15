@@ -90,7 +90,6 @@ import scanListContent from "./tabContentComponents/scanListContent.vue";
 import settingsContent from "./tabContentComponents/settingsContent.vue";
 import slideScanContent from "./tabContentComponents/slideScanContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
-// vue3 migration
 import { markRaw } from "vue";
 import { eventBus } from "../eventBus.js";
 

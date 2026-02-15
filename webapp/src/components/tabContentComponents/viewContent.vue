@@ -9,7 +9,6 @@
 
 <script>
 import streamDisplay from "./streamContent.vue";
-// vue3 migration
 
 export default {
   name: "ViewContent",

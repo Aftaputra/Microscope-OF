@@ -15,7 +15,6 @@ import calibrationWizardTask from "./calibrationWizardTask.vue";
 import csmExplanation from "./csmSteps/csmExplanation.vue";
 import focusStep from "./csmSteps/focusStep.vue";
 import runCsmStep from "./csmSteps/runCsmStep.vue";
-// vue3 migration
 import { markRaw } from "vue";
 
 export default {

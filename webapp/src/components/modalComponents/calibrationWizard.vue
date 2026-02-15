@@ -24,7 +24,6 @@ import welcomeStep from "./calibrationWizardComponents/welcomeStep.vue";
 import cameraCalibrationTask from "./calibrationWizardComponents/cameraCalibrationTask.vue";
 import cameraStageMappingTask from "./calibrationWizardComponents/cameraStageMappingTask.vue";
 import finalStep from "./calibrationWizardComponents/finalStep.vue";
-// vue3 migration
 import { markRaw } from "vue";
 
 export default {

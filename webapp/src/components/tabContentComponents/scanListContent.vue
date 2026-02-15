@@ -97,7 +97,6 @@ import axios from "axios";
 import actionButton from "../labThingsComponents/actionButton.vue";
 import scanCard from "./scanListComponents/scanCard.vue";
 import ScanViewerModal from "./scanListComponents/scanViewer.vue";
-// vue3 migration
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
 

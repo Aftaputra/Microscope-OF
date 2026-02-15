@@ -17,7 +17,6 @@
 <script>
 import CSMCalibrationSettings from "./CSMSettingsComponents/CSMCalibrationSettings.vue";
 import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
-// vue3 migration
 
 // Export main app
 export default {

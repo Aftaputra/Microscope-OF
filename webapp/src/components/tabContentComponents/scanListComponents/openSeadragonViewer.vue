@@ -6,7 +6,6 @@
 
 <script>
 import OpenSeaDragon from "openseadragon";
-// vue3 migration
 import { useIntersectionObserver } from "@vueuse/core";
 
 export default {

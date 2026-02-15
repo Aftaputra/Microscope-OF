@@ -57,7 +57,6 @@
 <script>
 import ActionButton from "@/components/labThingsComponents/actionButton.vue";
 import matrixDisplay from "@/components/ui/matrixDisplay.vue";
-// vue3 migration
 import { useIntersectionObserver } from "@vueuse/core";
 
 // Export main app

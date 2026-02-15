@@ -67,7 +67,6 @@ import stageSettings from "./settingsComponents/stageSettings.vue";
 // Import generic components
 import tabIcon from "../genericComponents/tabIcon.vue";
 import tabContent from "../genericComponents/tabContent.vue";
-// vue3 migration
 import { markRaw } from "vue";
 
 // Export main app

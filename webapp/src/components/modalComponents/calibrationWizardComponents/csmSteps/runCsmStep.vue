@@ -18,7 +18,6 @@
 <script>
 import stepTemplateWithStream from "../stepTemplateWithStream.vue";
 import CSMCalibrationSettings from "../../../tabContentComponents/settingsComponents/CSMSettingsComponents/CSMCalibrationSettings.vue";
-// vue3 migration
 
 export default {
   name: "CameraMainCalibrationStep",

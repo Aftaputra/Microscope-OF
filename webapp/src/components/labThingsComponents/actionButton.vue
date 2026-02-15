@@ -29,7 +29,6 @@
 <script>
 import ActionProgressBar from "./actionProgressBar.vue";
 import ActionStatusModal from "./actionStatusModal.vue";
-//vue3 migration
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
 

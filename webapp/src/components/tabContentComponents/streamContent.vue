@@ -34,7 +34,6 @@
 </template>
 
 <script>
-// vue3 migration
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
 

@@ -24,7 +24,6 @@ supplied by the wizard.
 
 <script>
 import calibrationWizardTask from "./calibrationWizardTask.vue";
-// vue3 migration
 import { markRaw } from "vue";
 
 export default {

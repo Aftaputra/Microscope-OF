@@ -47,7 +47,6 @@
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 import ServerSpecifiedPropertyControl from "../../labThingsComponents/serverSpecifiedPropertyControl.vue";
-// vue3 migration
 import { useIntersectionObserver } from "@vueuse/core";
 
 export default {

@@ -14,7 +14,6 @@
 
 <script>
 import devTools from "./tabContentComponents/aboutComponents/devTools.vue";
-// vue3 migration
 
 // Export main app
 export default {

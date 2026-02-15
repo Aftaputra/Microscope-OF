@@ -14,7 +14,6 @@
 import calibrationWizardTask from "./calibrationWizardTask.vue";
 import camCalibrationExplanation from "./cameraCalibrationSteps/camCalibrationExplanation.vue";
 import cameraMainCalibrationStep from "./cameraCalibrationSteps/cameraMainCalibrationStep.vue";
-// vue3 migration
 import { markRaw } from "vue";
 
 export default {

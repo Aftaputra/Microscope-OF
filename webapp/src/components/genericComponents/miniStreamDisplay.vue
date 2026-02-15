@@ -15,7 +15,6 @@
 </template>
 
 <script>
-//vue3 migration
 import { useIntersectionObserver } from "@vueuse/core";
 
 // Export main app

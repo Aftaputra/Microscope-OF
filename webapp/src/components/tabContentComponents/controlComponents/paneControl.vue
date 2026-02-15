@@ -34,7 +34,6 @@ import axios from "axios";
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 import positionControl from "./positionControl.vue";
 import autofocusControl from "./autofocusControl.vue";
-// vue3 migration
 
 export default {
   name: "PaneControl",

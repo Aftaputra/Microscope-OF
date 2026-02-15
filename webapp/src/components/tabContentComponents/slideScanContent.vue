@@ -130,7 +130,6 @@ import actionLogDisplay from "../labThingsComponents/actionLogDisplay.vue";
 import actionProgressBar from "../labThingsComponents/actionProgressBar.vue";
 import MiniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
 import ActionButton from "../labThingsComponents/actionButton.vue";
-// vue3 migration
 import { useIntersectionObserver } from "@vueuse/core";
 
 export default {
