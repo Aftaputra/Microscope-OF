@@ -29,6 +29,7 @@
     "@babel/eslint-parser": "^7.28.5",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vue/eslint-config-prettier": "9.0.0",
+    "autoprefixer": "^10.4.24",
     "core-js": "^3.46.0",
     "eslint": "^8.57.0",
     "eslint-plugin-prettier": "^5.1.0",
