@@ -235,24 +235,19 @@ export default {
      *
      */
     async checkExistingTasks() {
-      console.log("Checking for existing tasks for action ", this.action);
       let response = await this.findOngoingActions(this.thing, this.action);
       // Exit if response is null, due to an error.
       if (response == null) return;
       // Check for a task that is ongoing.
       // We can't handle multiple tasks ongoing, so this picks the first.
       const ongoingTask = response.data.find((t) => ["pending", "running"].includes(t.status));
-      console.log("Existing tasks: ", response.data, "Ongoing task: ", ongoingTask);
       if (ongoingTask) {
         // There is a started task
-        console.log("Found ongoing task, resuming polling: ", ongoingTask);
         this.taskStarted = true;
         this.$emit("taskStarted");
         // Find its URL
-        console.log("Task links: ", ongoingTask.links);
         const taskUrl = ongoingTask.links.find((t) => t.rel == "self").href;
         this.startPollingTask(ongoingTask.id, taskUrl);
-        console.log("Resumed polling on existing task with URL: ", taskUrl);
       }
     },
 
@@ -272,7 +267,6 @@ export default {
 
     async startTask() {
       // Starts a new Action task
-      console.log("Starting task with data:", this.submitData);
       this.$emit("submit", this.submitData);
       // Send a request to start a task
       this.taskStarted = true;
@@ -328,7 +322,6 @@ export default {
       this.taskUrl = null;
       this.taskRunning = false;
       this.taskStarted = false;
-      console.log("Task ended with status: ", this.taskStatus);
       this.$emit("finished");
     },
 

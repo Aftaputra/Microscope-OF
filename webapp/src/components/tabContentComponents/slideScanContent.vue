@@ -202,7 +202,6 @@ export default {
       }
     },
     async readSettings() {
-
       this.workflowName = await this.readThingProperty("smart_scan", "workflow_name");
 
       if (!this.workflowName) {
@@ -211,11 +210,9 @@ export default {
       }
 
       if (this.workflowName) {
-        console.log("Current workflow name: ", this.workflowName);
         this.ready = await this.readThingProperty(this.workflowName, "ready", true);
         this.workflowSettings =
           (await this.readThingProperty(this.workflowName, "settings_ui", true)) || [];
-        console.log(this.workflowSettings);
         this.workflowDisplayName = await this.readThingProperty(
           this.workflowName,
           "display_name",
@@ -248,21 +245,16 @@ export default {
      *  - starts the polling loop that fetches scan progress and preview images
      */
     startScanning() {
-      console.log("Starting scan...");
       this.lastStitchedImage = null;
       this.scanning = true;
       setTimeout(this.pollScan, 1000);
     },
     async pollScan() {
-      console.log("Polling for scan progress...");
       if (this.cancellable) {
         // while the scan is running
-        console.log("Polling for scan updates...");
         let mtime = await this.readThingProperty("smart_scan", "latest_preview_stitch_time", true);
-        console.log("smart scan latest preview stitch time: ", mtime);
         if (mtime !== null) {
           this.lastStitchedImage = `${this.$store.getters.baseUri}/smart_scan/latest_preview_stitch.jpg?t=${mtime}`;
-          console.log("Updated preview image URL: ", this.lastStitchedImage);
         }
 
         this.lastScanName = await this.readThingProperty("smart_scan", "latest_scan_name", true);
@@ -270,7 +262,6 @@ export default {
       }
     },
     async setWorkflow(name) {
-      console.log("Setting workflow to ", name);
       try {
         this.workflowName = name;
 
@@ -278,13 +269,6 @@ export default {
 
         // refresh  UI
         await this.readSettings();
-        console.log(
-          "readsettings values: ",
-          this.workflowName,
-          this.workflowSettings,
-          this.workflowDisplayName,
-          this.workflowBlurb,
-        );
       } catch (err) {
         this.modalError(err);
 
@@ -299,7 +283,6 @@ export default {
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", filename);
-      console.log(link);
       document.body.appendChild(link);
       link.click();
     },

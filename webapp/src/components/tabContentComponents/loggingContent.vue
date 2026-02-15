@@ -199,7 +199,6 @@ export default {
           } else {
             // if there's no existing log message to append to, discard lines
             // until we find one.
-            console.log("Ignored non-matching lines at the start of the log file.");
             continue;
           }
         }

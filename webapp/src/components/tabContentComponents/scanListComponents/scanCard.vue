@@ -168,7 +168,6 @@ export default {
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", filename);
-      console.log(link);
       document.body.appendChild(link);
       link.click();
     },

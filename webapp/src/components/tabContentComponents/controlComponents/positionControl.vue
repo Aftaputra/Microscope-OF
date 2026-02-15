@@ -82,7 +82,6 @@ export default {
 
   computed: {
     positionStatusUri: function () {
-      console.log("Computing position status URI", this.thingActionUrl("stage", "position"));
       return this.thingActionUrl("stage", "position");
     },
   },
@@ -114,12 +113,10 @@ export default {
     },
 
     onMoveImage(payload) {
-      console.log("Received move in image coordinates:", payload);
       this.moveInImageCoordinatesRequest(payload.x, payload.y, payload.absolute);
     },
 
     onMoveStep(payload) {
-      console.log("Received key move step event:", payload);
       const { x: x_steps, y: y_steps, z: z_steps } = payload;
       const navigationStepSize = this.$store.state.navigationStepSize;
       const navigationInvert = this.$store.state.navigationInvert;
@@ -128,7 +125,6 @@ export default {
       const z = z_steps * navigationStepSize.z * (navigationInvert.z ? -1 : 1);
       const movePayload = { x, y, z, absolute: false };
       eventBus.emit("globalMoveEvent", movePayload);
-      console.log("Emitted global move event with:", movePayload);
     },
 
     async move(payload) {
@@ -148,7 +144,6 @@ export default {
           y: this.setPosition.y + y,
           z: this.setPosition.z + z,
         };
-        console.log("Updated setPosition for relative move:", this.setPosition);
       }
       await this.$nextTick(); // Wait for Vue to update the position
       await this.startMoveTask();
@@ -158,7 +153,6 @@ export default {
       await this.$refs.moveButton.startTask();
     },
     moveComplete() {
-      console.log("Move completed.");
       this.updatePosition();
       this.moveLock = false;
     },

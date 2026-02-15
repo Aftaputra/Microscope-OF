@@ -147,7 +147,6 @@ export default createStore({
     (store) => {
       // Load initial state from localStorage
       LOCALSTORAGE_KEYS.forEach((key) => {
-        console.log(key);
         const saved = localStorage.getItem(key);
         if (saved !== null) {
           try {
