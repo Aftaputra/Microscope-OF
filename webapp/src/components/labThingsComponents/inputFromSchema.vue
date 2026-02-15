@@ -4,11 +4,12 @@
       >{{ label }}
       <div class="input-and-buttons-container">
         <input
+          ref="numericalInput"
           v-model="internalValue"
           class="uk-form-small numeric-setting-line-input"
           :class="{ edited: isEdited, flash: animateUpdate }"
           type="number"
-          @focusin="focusIn"
+          @input="grabFocus"
           @focusout="focusOut"
           @keydown="keyDown"
           @animationend="animationEnd"
@@ -39,8 +40,7 @@
           class="uk-form-small numeric-setting-line-input"
           :class="{ edited: isEdited, flash: animateUpdate }"
           type="number"
-          @input="updateIsEdited"
-          @focusin="focusIn"
+          @input="grabFocus"
           @focusout="focusOut"
           @keydown="keyDown"
           @animationend="animationEnd"
@@ -58,8 +58,7 @@
             class="uk-form-small numeric-setting-line-input"
             :class="{ edited: isEdited, flash: animateUpdate }"
             type="number"
-            @input="updateIsEdited"
-            @focusin="focusIn"
+            @input="grabFocus"
             @focusout="focusOut"
             @keydown="keyDown"
             @animationend="animationEnd"
@@ -76,7 +75,6 @@
           class="uk-form-small numeric-setting-line-input"
           :class="{ edited: isEdited, flash: animateUpdate }"
           type="text"
-          @focusin="focusIn"
           @focusout="focusOut"
           @keydown="keyDown"
           @animationend="animationEnd"
@@ -214,7 +212,7 @@ export default {
       deep: true,
       handler() {
         // Fire updateIsEdited on both modelValue and internal modelValue change,
-        // as change in modelValue may not causse internalValue to change.
+        // as change in modelValue may not cause internalValue to change.
         this.updateIsEdited();
         this.resetInternalValue();
       },
@@ -245,6 +243,7 @@ export default {
       this.internalValue = JSON.parse(JSON.stringify(this.modelValue));
     },
     requestUpdate: async function () {
+      this.internalValue = this.modelValue;
       this.$emit("requestUpdate");
     },
     sendValue: async function () {
@@ -256,12 +255,19 @@ export default {
         this.sendValue();
       }
     },
-    focusIn: function (event) {
-      this.valueOnEnter = event.target.modelValue;
+    /** Grab the browser focus.
+     *
+     * This is needed for numerical elements to be in focus when a spinner
+     * is clicked so that the data sends when focus is lost.
+     */
+    grabFocus(event) {
+      event.target.focus();
+      // This is needed for number objects and number arrays
+      this.updateIsEdited();
     },
     focusOut: function (event) {
-      if (this.valueOnEnter != event.target.modelValue) {
-        this.sendValue(event.target.modelValue);
+      if (this.modelValue != event.target.value) {
+        this.sendValue(event.target.value);
       }
     },
     keyDown: function (event) {
