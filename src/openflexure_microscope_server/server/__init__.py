@@ -9,6 +9,7 @@ from functools import wraps
 from typing import Any, Callable, Optional
 
 import uvicorn
+from fastapi.middleware.cors import CORSMiddleware  # vue3 migration
 from uvicorn.main import Server
 
 import labthings_fastapi as lt
@@ -26,10 +27,6 @@ from ..logging import (
 )
 from .legacy_api import add_v2_endpoints
 from .serve_static_files import add_static_files
-
-# vue3 migration
-from fastapi.middleware.cors import CORSMiddleware
-
 
 LOGGER = logging.getLogger(__name__)
 DEVELOPER_MODE = True
