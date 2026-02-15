@@ -12,7 +12,6 @@
     "lint:fix": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
   },
   "dependencies": {
-    "@vitejs/plugin-vue": "^5.0.0",
     "@vue/compat": "^3.2.0",
     "@vueuse/core": "^14.1.0",
     "axios": "^1.7.7",
@@ -21,15 +20,14 @@
     "mousetrap": "^1.6.5",
     "openseadragon": "^5.0.0",
     "uikit": "^3.24.2",
-    "vite": "^5.0.0",
     "vue": "^3.4.0",
-    "vue-observe-visibility": "^0.4",
     "vue-router": "4.0.0",
     "vuejs-paginate-next": "^1.0.2",
     "vuex": "^4.0.0"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.28.5",
+    "@vitejs/plugin-vue": "^5.2.4",
     "@vue/eslint-config-prettier": "9.0.0",
     "core-js": "^3.46.0",
     "eslint": "^8.57.0",
@@ -37,7 +35,8 @@
     "eslint-plugin-vue": "^9.20.0",
     "less": "^4.5.1",
     "material-symbols": "^0.39.1",
-    "prettier": "^3.2.8"
+    "prettier": "^3.2.8",
+    "vite": "^5.4.21"
   },
   "postcss": {
     "plugins": {
