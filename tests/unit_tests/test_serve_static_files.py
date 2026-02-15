@@ -18,8 +18,7 @@ def mock_static_dir():
     It contains enough files to be recognised as a webapp.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
-        os.makedirs(os.path.join(tmpdir, "js"))
-        os.makedirs(os.path.join(tmpdir, "css"))
+        os.makedirs(os.path.join(tmpdir, "assets"))
         with open(os.path.join(tmpdir, "index.html"), "w", encoding="utf-8") as f_obj:
             f_obj.write("<mock>mock</mock>")
         yield tmpdir
@@ -95,21 +94,21 @@ def test_check_static_dir(mock_static_dir, mocker):
     # First run shouldn't error as the mock dir has enough files.
     serve_static_files.check_static_dir()
 
-    js_path = os.path.join(mock_static_dir, "js")
+    asset_path = os.path.join(mock_static_dir, "assets")
     index_path = os.path.join(mock_static_dir, "index.html")
 
-    # Remove javascript dir and check error.
-    shutil.rmtree(js_path)
+    # Remove asset dir and check error.
+    shutil.rmtree(asset_path)
     with pytest.raises(FileNotFoundError):
         serve_static_files.check_static_dir()
-    # replace javascript dir with file, it should still error.
-    shutil.copyfile(index_path, js_path)
+    # replace asset dir with file, it should still error.
+    shutil.copyfile(index_path, asset_path)
     with pytest.raises(FileNotFoundError):
         serve_static_files.check_static_dir()
 
     # Return it to a folder and check everything works again
-    os.remove(js_path)
-    os.makedirs(js_path)
+    os.remove(asset_path)
+    os.makedirs(asset_path)
     serve_static_files.check_static_dir()
 
     # But it errors again if index.html is removed.
@@ -152,13 +151,11 @@ def test_add_static_files(mock_static_dir, mocker):
     assert second_wrapped().headers["Pragma"] == "no-cache"
 
     # Also should have mounted both dirs
-    assert mock_app.mount.call_count == 2
-    mounted_paths = [call.args[0] for call in mock_app.mount.call_args_list]
-    mounted_dirs = [call.args[1].directory for call in mock_app.mount.call_args_list]
-    assert "/css/" in mounted_paths
-    assert "/js/" in mounted_paths
-    assert os.path.join(mock_static_dir, "css") in mounted_dirs
-    assert os.path.join(mock_static_dir, "js") in mounted_dirs
+    assert mock_app.mount.call_count == 1
+    mounted_path = mock_app.mount.call_args.args[0]
+    mounted_dir = mock_app.mount.call_args.args[1].directory
+    assert "/assets/" in mounted_path
+    assert os.path.join(mock_static_dir, "assets") in mounted_dir
 
 
 def test_add_static_files_with_scan_dir(mock_static_dir, mocker):
