@@ -36,7 +36,7 @@ module.exports = {
     "vue/require-explicit-emits": "warn", // Require emits declaration
     "vue/multi-word-component-names": "warn", // Component naming
     "vue/no-v-for-template-key-on-child": "error", // Key placement
-    "vue/no-v-model-argument": "error", // Allow v-model arguments (Vue 3 feature)
+    "vue/no-v-model-argument": "off", // Allow v-model arguments (Vue 3 feature)
 
     "vue/no-unused-components": "warn",
     "vue/no-unused-vars": "warn",
