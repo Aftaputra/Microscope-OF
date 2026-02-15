@@ -81,7 +81,7 @@
 
 <script>
 import axios from "axios";
-import Paginate from "vuejs-paginate";
+import Paginate from "vuejs-paginate-next";
 import EndpointButton from "../labThingsComponents/endpointButton.vue";
 //vue3 migration
 import { useIntersectionObserver } from "@vueuse/core";
