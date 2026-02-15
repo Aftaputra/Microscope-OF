@@ -12,7 +12,6 @@
     "lint:fix": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
   },
   "dependencies": {
-    "@vue/compat": "^3.2.0",
     "@vueuse/core": "^14.1.0",
     "axios": "^1.7.7",
     "material-design-icons": "^3.0",
