@@ -23,6 +23,14 @@ export default defineConfig({
       },
     }),
   ],
+
+  build: {
+    // Output directory for production builds
+    outDir: "../src/openflexure_microscope_server/static",
+    // Clear output directory before build
+    emptyOutDir: true,
+  },
+
   resolve: {
     alias: {
       // Use Vue 2 compatible build.
