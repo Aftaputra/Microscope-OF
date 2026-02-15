@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from argparse import Namespace
 from copy import copy
 from functools import wraps
@@ -29,7 +30,7 @@ from .legacy_api import add_v2_endpoints
 from .serve_static_files import add_static_files
 
 LOGGER = logging.getLogger(__name__)
-DEVELOPER_MODE = True
+DEVELOPER_MODE = os.getenv("OFM_SERVER_DEV_MODE", "false").lower() == "true"
 
 
 def set_shutdown_function(shutdown_function: Callable[[], None]) -> None:
