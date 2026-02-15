@@ -202,7 +202,6 @@ export default {
       }
     },
     async readSettings() {
-      //this.workflowOptions = await this.readThingProperty("smart_scan", "workflow_display_names", true) || {};
 
       this.workflowName = await this.readThingProperty("smart_scan", "workflow_name");
 

@@ -154,7 +154,7 @@ export default {
       await this.startMoveTask();
     },
     async startMoveTask() {
-      //this.moveLock = true;
+      this.moveLock = true;
       await this.$refs.moveButton.startTask();
     },
     moveComplete() {
