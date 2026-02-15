@@ -1,8 +1,6 @@
 // vite.config.mjs
-// Vite configuration file for a Vue 2 webapp using the Vue 2 compatibility build.
-// Vite replaces Vue CLI as the build tool. As it is designed for Vue 3, we use the
-// @vue/compat package to enable Vue 2 maintaining compatibility syntax and features.
-// Important: This is a preliminary setup, for vue2 to vue3 migration purposes.
+
+// Vite replaces Vue CLI as the build tool for Vue 3.
 // Note: Comments are generated to explain relevant configuration options.
 
 import { fileURLToPath, URL } from "node:url";
@@ -12,16 +10,7 @@ import vue from "@vitejs/plugin-vue";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    vue({
-      template: {
-        compilerOptions: {
-          // Enable Vue 2 compatibility mode.
-          compatConfig: {
-            MODE: 2,
-          },
-        },
-      },
-    }),
+    vue(),
   ],
 
   build: {
