@@ -43,7 +43,7 @@ export default {
   name: "StageControlButtons",
   methods: {
     move(x, y, z) {
-      eventBus.emit("globalMoveStepEvent", {x, y, z, absolute: false});
+      eventBus.emit("globalMoveStepEvent", { x, y, z, absolute: false });
     },
   },
 };

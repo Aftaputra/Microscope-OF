@@ -1,4 +1,4 @@
-import { createApp } from 'vue';
+import { createApp } from "vue";
 import App from "./App.vue";
 import store from "./store";
 import UIkit from "uikit";
@@ -8,7 +8,7 @@ import "material-symbols/outlined.css";
 
 //import queryMixin from "@/mixins/labThingsMixins.js";
 import modalMixin from "@/mixins/modalMixins.js";
-import labThingsMixins from './mixins/labThingsMixins';
+import labThingsMixins from "./mixins/labThingsMixins";
 
 // UIKit overrides
 UIkit.mixin(

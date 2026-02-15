@@ -23,14 +23,13 @@
 <script>
 import ServerSpecifiedActionButton from "../../../labThingsComponents/serverSpecifiedActionButton.vue";
 // vue3 migration
-import { markRaw } from "vue";
 
 // Export main app
 export default {
   name: "CameraCalibrationSettings",
 
   components: {
-    ServerSpecifiedActionButton
+    ServerSpecifiedActionButton,
   },
 
   props: {
@@ -44,6 +43,8 @@ export default {
       required: true,
     },
   },
+
+  emits: ["actionFinished"],
 
   data() {
     return {

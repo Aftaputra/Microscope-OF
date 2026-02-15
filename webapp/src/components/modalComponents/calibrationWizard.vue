@@ -30,6 +30,8 @@ export default {
 
   components: {},
 
+  emits: ["onClose"],
+
   data: function () {
     return {
       isNeeded: undefined,

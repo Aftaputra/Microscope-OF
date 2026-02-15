@@ -20,7 +20,7 @@ export default {
 
   components: {
     paneControl,
-    streamDisplay
+    streamDisplay,
   },
 };
 </script>

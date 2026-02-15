@@ -106,10 +106,8 @@ export default {
   name: "InputFromSchema",
 
   components: {
-    syncPropertyButton
+    syncPropertyButton,
   },
-
-  compatConfig: { COMPONENT_V_MODEL: false },
   props: {
     dataSchema: {
       type: Object,
@@ -130,6 +128,10 @@ export default {
     },
   },
 
+  emits: ["requestUpdate", "sendValue", "animationShown"],
+
+  compatConfig: { COMPONENT_V_MODEL: false },
+
   data() {
     return {
       // Initialise with a copy to try to prevent the this.modelValue prop being mutated if
@@ -139,8 +141,8 @@ export default {
       internalValue: Array.isArray(this.modelValue)
         ? [...this.modelValue]
         : typeof this.modelValue === "object"
-        ? { ...this.modelValue }
-        : this.modelValue,
+          ? { ...this.modelValue }
+          : this.modelValue,
       // Is edited can't be computed as we mutate internalValue
       isEdited: false,
       animateUpdate: null,
@@ -270,7 +272,8 @@ export default {
       }
     },
     updateIsEdited: function () {
-      this.isEdited = this.deepStringify(this.internalValue) !== this.deepStringify(this.modelValue);
+      this.isEdited =
+        this.deepStringify(this.internalValue) !== this.deepStringify(this.modelValue);
     },
     animationEnd: function () {
       this.animateUpdate = null;

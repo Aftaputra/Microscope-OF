@@ -24,7 +24,7 @@ export default {
   name: "ServerSpecifiedActionButton",
 
   components: {
-    ActionButton
+    ActionButton,
   },
 
   props: {
@@ -33,6 +33,8 @@ export default {
       required: true,
     },
   },
+
+  emits: ["response", "finished"],
 
   methods: {
     /**

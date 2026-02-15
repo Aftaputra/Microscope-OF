@@ -21,7 +21,7 @@
       :task-running="taskRunning"
       :task-started="taskStarted"
       :task-status="taskStatus"
-      @terminateTask="terminateTask"
+      @terminate-task="terminateTask"
     />
   </div>
 </template>
@@ -29,33 +29,16 @@
 <script>
 import ActionProgressBar from "./actionProgressBar.vue";
 import ActionStatusModal from "./actionStatusModal.vue";
-//vue3 migration 
+//vue3 migration
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
-
 
 export default {
   name: "ActionButton",
 
-  emits: [
-    'update:progress',
-    'update:taskStarted', 
-    'update:taskRunning',
-    'update:log',
-    'update:taskStatus',
-    'submit',
-    'taskStarted',
-    'taskRunning',
-    'response',
-    'completed',
-    'cancelled',
-    'finished',
-    'error'
-  ],
-
-  components: { 
+  components: {
     ActionProgressBar,
-    ActionStatusModal
+    ActionStatusModal,
   },
 
   props: {
@@ -119,6 +102,22 @@ export default {
     },
   },
 
+  emits: [
+    "update:progress",
+    "update:taskStarted",
+    "update:taskRunning",
+    "update:log",
+    "update:taskStatus",
+    "submit",
+    "taskStarted",
+    "taskRunning",
+    "response",
+    "completed",
+    "cancelled",
+    "finished",
+    "error",
+  ],
+
   data: function () {
     return {
       taskUrl: null,
@@ -173,14 +172,14 @@ export default {
       handler(newval) {
         this.$emit("update:log", newval);
       },
-      deep: true
+      deep: true,
     },
     taskStatus: {
       handler(newval) {
         this.$emit("update:taskStatus", newval);
       },
-    }
-},
+    },
+  },
 
   mounted() {
     useIntersectionObserver(

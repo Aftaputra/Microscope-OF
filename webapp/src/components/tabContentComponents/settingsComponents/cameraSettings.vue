@@ -34,7 +34,7 @@ export default {
   components: {
     cameraCalibrationSettings,
     miniStreamDisplay,
-    ServerSpecifiedPropertyControl
+    ServerSpecifiedPropertyControl,
   },
 
   data() {

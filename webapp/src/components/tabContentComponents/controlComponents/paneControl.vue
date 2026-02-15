@@ -42,7 +42,7 @@ export default {
   components: {
     ActionButton,
     positionControl,
-    autofocusControl
+    autofocusControl,
   },
 
   computed: {

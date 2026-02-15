@@ -65,10 +65,10 @@
             :submit-data="{ scan_name: scan_name }"
             submit-label="Start Smart Scan"
             :can-terminate="true"
-            @taskStarted="startScanning"
-            @beforeUpdate:taskStatus="taskStatus = $event"
-            @beforeUpdate:progress="progress = $event"
-            @beforeUpdate:log="log = $event"
+            @task-started="startScanning"
+            @before-update:task-status="taskStatus = $event"
+            @before-update:progress="progress = $event"
+            @before-update:log="log = $event"
           />
         </div>
       </div>
@@ -143,7 +143,7 @@ export default {
     actionProgressBar,
     MiniStreamDisplay,
     ActionButton,
-    ServerSpecifiedPropertyControl
+    ServerSpecifiedPropertyControl,
   },
 
   data() {
@@ -176,7 +176,11 @@ export default {
 
   async created() {
     this.readSettings();
-    this.workflowOptions = await this.readThingProperty("smart_scan", "workflow_display_names", true);
+    this.workflowOptions = await this.readThingProperty(
+      "smart_scan",
+      "workflow_display_names",
+      true,
+    );
   },
 
   mounted() {
@@ -203,16 +207,21 @@ export default {
       this.workflowName = await this.readThingProperty("smart_scan", "workflow_name");
 
       if (!this.workflowName) {
-          console.warn("Could not read workflow_name, using default");
-          this.workflowName = "histo_scan_workflow";
-        }
+        console.warn("Could not read workflow_name, using default");
+        this.workflowName = "histo_scan_workflow";
+      }
 
       if (this.workflowName) {
         console.log("Current workflow name: ", this.workflowName);
         this.ready = await this.readThingProperty(this.workflowName, "ready", true);
-        this.workflowSettings = await this.readThingProperty(this.workflowName, "settings_ui", true) || [];
+        this.workflowSettings =
+          (await this.readThingProperty(this.workflowName, "settings_ui", true)) || [];
         console.log(this.workflowSettings);
-        this.workflowDisplayName = await this.readThingProperty(this.workflowName, "display_name", true);
+        this.workflowDisplayName = await this.readThingProperty(
+          this.workflowName,
+          "display_name",
+          true,
+        );
         this.workflowBlurb = await this.readThingProperty(this.workflowName, "ui_blurb", true);
       }
     },
@@ -256,7 +265,7 @@ export default {
           this.lastStitchedImage = `${this.$store.getters.baseUri}/smart_scan/latest_preview_stitch.jpg?t=${mtime}`;
           console.log("Updated preview image URL: ", this.lastStitchedImage);
         }
-        
+
         this.lastScanName = await this.readThingProperty("smart_scan", "latest_scan_name", true);
         setTimeout(this.pollScan, 1000); // keep rescheduling until it's stopped
       }
@@ -270,7 +279,13 @@ export default {
 
         // refresh  UI
         await this.readSettings();
-        console.log("readsettings values: ", this.workflowName, this.workflowSettings, this.workflowDisplayName, this.workflowBlurb);
+        console.log(
+          "readsettings values: ",
+          this.workflowName,
+          this.workflowSettings,
+          this.workflowDisplayName,
+          this.workflowBlurb,
+        );
       } catch (err) {
         this.modalError(err);
 

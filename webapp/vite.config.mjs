@@ -5,9 +5,9 @@
 // Important: This is a preliminary setup, for vue2 to vue3 migration purposes.
 // Note: Comments are generated to explain relevant configuration options.
 
-import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { fileURLToPath, URL } from "node:url";
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -17,27 +17,27 @@ export default defineConfig({
         compilerOptions: {
           // Enable Vue 2 compatibility mode.
           compatConfig: {
-            MODE: 2
-          }
-        }
-      }
+            MODE: 2,
+          },
+        },
+      },
     }),
   ],
   resolve: {
     alias: {
       // Use Vue 2 compatible build.
-      'vue': '@vue/compat',
+      vue: "@vue/compat",
       // Setup path alias for src directory.
       // This allows importing modules using '@/path/to/module'.
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
     // Recognize these file extensions for module resolution.
-    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue'],
+    extensions: [".mjs", ".js", ".ts", ".jsx", ".tsx", ".json", ".vue"],
   },
   server: {
     host: true,
     // Set the development server port to 8080.
-    // OFM uses port 5000, so we avoid conflicts. run, and override by using the address: 
+    // OFM uses port 5000, so we avoid conflicts. run, and override by using the address:
     // http://microscope.local:8080/?overrideOrigin=http://microscope.local:5000#
     port: 8080,
     strictPort: true,
@@ -46,12 +46,12 @@ export default defineConfig({
     preprocessorOptions: {
       less: {
         // Always include math in Less files.
-        math: 'always',
+        math: "always",
         // Enable relative URLs in Less files.
         relativeUrls: true,
         // Enable JavaScript in Less files
         javascriptEnabled: true,
-      }
-    }
-  }
-})
+      },
+    },
+  },
+});

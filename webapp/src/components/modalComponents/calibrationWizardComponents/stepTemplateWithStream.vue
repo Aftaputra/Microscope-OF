@@ -14,7 +14,7 @@ export default {
   name: "StepTemplateWithStream",
 
   components: {
-    miniStreamDisplay
+    miniStreamDisplay,
   },
 };
 </script>

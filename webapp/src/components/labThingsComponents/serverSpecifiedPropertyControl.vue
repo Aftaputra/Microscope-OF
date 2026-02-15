@@ -18,7 +18,7 @@ export default {
   name: "ServerSpecifiedPropertyControl",
 
   components: {
-    PropertyControl
+    PropertyControl,
   },
 
   props: {

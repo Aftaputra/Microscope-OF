@@ -66,7 +66,7 @@ export default {
 
   components: {
     ActionButton,
-    matrixDisplay
+    matrixDisplay,
   },
 
   props: {
@@ -76,6 +76,8 @@ export default {
       default: true,
     },
   },
+
+  emits: ["recalibrateResponse"],
 
   data() {
     return {
@@ -101,7 +103,7 @@ export default {
       ([{ isIntersecting }]) => {
         this.visibilityChanged(isIntersecting);
       },
-      { threshold: 0.0 }
+      { threshold: 0.0 },
     );
   },
 

@@ -33,10 +33,11 @@ import { eventBus } from "../../eventBus.js";
 
 export default {
   name: "ActionStatusModal",
-  components: { 
+  components: {
     ActionProgressBar,
-    ActionLogDisplay
+    ActionLogDisplay,
   },
+
   props: {
     title: {
       type: String,
@@ -68,6 +69,8 @@ export default {
       required: true,
     },
   },
+
+  emits: ["terminateTask"],
 
   methods: {
     show() {

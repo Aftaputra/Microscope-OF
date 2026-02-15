@@ -1,8 +1,5 @@
 <template>
-  <div
-    ref="galleryDisplay"
-    class="galleryDisplay uk-padding uk-padding-remove-top"
-  >
+  <div ref="galleryDisplay" class="galleryDisplay uk-padding uk-padding-remove-top">
     <!-- Gallery nav bar -->
     <nav class="gallery-navbar uk-navbar-container uk-navbar-transparent" uk-navbar="mode: click">
       <!-- Right side buttons -->
@@ -107,11 +104,13 @@ import { useIntersectionObserver } from "@vueuse/core";
 // Export main app
 export default {
   name: "ScanListContent",
-  components: { 
+  components: {
     actionButton,
     scanCard,
-    ScanViewerModal
+    ScanViewerModal,
   },
+
+  emits: ["scrollTop"],
 
   data: function () {
     return {

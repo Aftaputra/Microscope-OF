@@ -31,7 +31,7 @@ export default {
 
   components: {
     devTools,
-    statusPane
+    statusPane,
   },
 };
 </script>

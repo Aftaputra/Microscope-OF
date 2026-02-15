@@ -15,14 +15,13 @@
 <script>
 import devTools from "./tabContentComponents/aboutComponents/devTools.vue";
 // vue3 migration
-import { markRaw } from "vue";
 
 // Export main app
 export default {
   name: "LoadingContent",
 
-  components: { 
-    devTools 
+  components: {
+    devTools,
   },
 
   data: function () {

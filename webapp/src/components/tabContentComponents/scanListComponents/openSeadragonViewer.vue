@@ -61,7 +61,7 @@ export default {
       ([{ isIntersecting }]) => {
         this.visibilityChanged(isIntersecting);
       },
-      { threshold: 0.0 }
+      { threshold: 0.0 },
     );
 
     if (this.src) {
@@ -80,19 +80,17 @@ export default {
     visibilityChanged(isVisible) {
       // adding this check to avoid error when the viewer is not yet initialized.
       if (isVisible) {
-        
         if (!this.osdViewer && this.src) {
           this.loadOpenSeaDragon(this.src);
         }
       } else {
-        
         if (this.osdViewer) {
           this.osdViewer.destroy();
           this.osdViewer = null;
         }
       }
     },
-    
+
     async loadOpenSeaDragon() {
       if (this.osdViewer) {
         this.osdViewer.destroy();

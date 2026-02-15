@@ -50,7 +50,7 @@ export default {
       resizeTimeoutId: setTimeout(this.doneResizing, 500),
     };
   },
-    
+
   computed: {
     streamEnabled: function () {
       return this.$store.getters.ready && !this.$store.state.disableStream;
@@ -65,7 +65,7 @@ export default {
   },
 
   mounted() {
-    //set up an intersection observer 
+    //set up an intersection observer
     useIntersectionObserver(
       this.$refs.streamDisplay,
       ([{ isIntersecting }]) => {
@@ -73,7 +73,7 @@ export default {
       },
       {
         threshold: 0.0,
-      }
+      },
     );
     // A global signal listener to flash the stream element
     this.onFlashStream = () => {
@@ -81,7 +81,7 @@ export default {
     };
 
     eventBus.on("globalFlashStream", this.onFlashStream);
-    
+
     // Mutation observer
     this.sizeObserver = new ResizeObserver(() => {
       this.handleResize(); // For any element attached to the observer, run handleResize() on change
@@ -141,8 +141,8 @@ export default {
 
       // Emit a signal to move, acted on by paneControl.vue
       eventBus.emit("globalMoveInImageCoordinatesEvent", {
-        x:-xRelative,
-        y:-yRelative
+        x: -xRelative,
+        y: -yRelative,
       });
     },
 

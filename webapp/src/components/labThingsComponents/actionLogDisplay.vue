@@ -69,7 +69,7 @@ export default {
     taskStatus: {
       handler() {
         this.scrollToBottom();
-      }
+      },
     },
   },
 

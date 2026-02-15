@@ -91,8 +91,10 @@ export default {
 
   components: {
     Paginate,
-    EndpointButton
+    EndpointButton,
   },
+
+  emits: ["scrollTop"],
 
   data: function () {
     return {

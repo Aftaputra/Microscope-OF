@@ -59,8 +59,8 @@ import OpenSeadragonViewer from "./openSeadragonViewer.vue";
 
 export default {
   name: "ScanViewerModal",
-  components: { 
-    OpenSeadragonViewer
+  components: {
+    OpenSeadragonViewer,
   },
   props: {
     selectedScan: {

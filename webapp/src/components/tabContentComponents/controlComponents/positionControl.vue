@@ -15,8 +15,8 @@ and zero position buttons. It also includes the d-pad.
             <!-- Text boxes to set and view position -->
             <div class="input-and-buttons-container">
               <input
-                :key="`setPosition_${key}`"
                 v-for="(_v, key) in setPosition"
+                :key="`setPosition_${key}`"
                 v-model="setPosition[key]"
                 class="uk-form-small numeric-setting-line-input"
                 type="number"
@@ -70,7 +70,7 @@ export default {
   components: {
     ActionButton,
     syncPropertyButton,
-    stageControlButtons
+    stageControlButtons,
   },
 
   data: function () {

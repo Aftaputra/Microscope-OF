@@ -1,4 +1,4 @@
-<template :key="shortcut.shortcut">
+<template>
   <div id="app" class="uk-height-1-1 uk-margin-remove uk-padding-remove" :class="handleTheme">
     <!-- this stops the app loading until setConnected is committed in the store, this means
      other components will not load until we have Thing Descriptions. -->
@@ -10,6 +10,7 @@
         <button class="uk-modal-close-default" type="button" uk-close></button>
         <div
           v-for="shortcut in keyboardManual"
+          :key="shortcut.shortcut"
           class="uk-margin-small"
           uk-grid
         >
@@ -25,14 +26,13 @@
 // Import components
 import appContent from "./components/appContent.vue";
 import loadingContent from "./components/loadingContent.vue";
-import MouseTrap from "mousetrap";
+import Mousetrap from "mousetrap";
 // vue3 migration
-import { markRaw } from "vue";
 import { eventBus } from "./eventBus.js";
 
-MouseTrap.prototype.stopCallback = function (e, element) {
+Mousetrap.prototype.stopCallback = function (e, element) {
   // if the element has the class "mousetrap" then no need to stop
-  if ((" " + element.className + " ").indexOf(" mousetrap ") > -1) {
+  if ((" " + element.className + " ").indexOf(" Mousetrap ") > -1) {
     return false;
   }
 
@@ -56,7 +56,7 @@ export default {
 
   components: {
     appContent,
-    loadingContent
+    loadingContent,
   },
 
   data: function () {
@@ -154,10 +154,10 @@ export default {
 
     // Focus keys
     Mousetrap.bind("pageup", () => {
-      eventBus.emit("globalMoveStepEvent", {x: 0, y: 0, z: 1});
+      eventBus.emit("globalMoveStepEvent", { x: 0, y: 0, z: 1 });
     });
     Mousetrap.bind("pagedown", () => {
-      eventBus.emit("globalMoveStepEvent", {x: 0, y: 0, z: -1});
+      eventBus.emit("globalMoveStepEvent", { x: 0, y: 0, z: -1 });
     });
     this.keyboardManual.push({
       shortcut: "pgup / pgdn",
@@ -248,9 +248,14 @@ export default {
         event.target.parentNode.classList.contains("scrollTarget") ||
         event.target.classList.contains("scrollTarget")
       ) {
-        var z_rel = event.deltaY / 100;
+        const z_steps = event.deltaY / 100;
         // Emit a signal to move, acted on by panelControl.vue
-        eventBus.emit("globalMoveStepEvent", {x: 0, y: 0, z: z_rel, absolute: false});
+        eventBus.emit("globalMoveStepEvent", {
+          x_steps: 0,
+          y_steps: 0,
+          z_steps: z_steps,
+          absolute: false,
+        });
       }
     },
 
@@ -258,7 +263,6 @@ export default {
       // Calculate movement array
       var x_rel = 0;
       var y_rel = 0;
-      var z_rel = 0;
       // 37 corresponds to the left key
       if (37 in this.arrowKeysDown) {
         x_rel = x_rel - 1;
@@ -277,7 +281,7 @@ export default {
       }
       // Make a position request
       // Emit a signal to move, acted on by panelControl.vue
-      eventBus.emit("globalMoveStepEvent", {x: x_rel, y: y_rel, z: 0});
+      eventBus.emit("globalMoveStepEvent", { x: x_rel, y: y_rel, z: 0 });
     },
   },
 };

@@ -16,7 +16,7 @@
 
 <script>
 //vue3 migration
-import { useIntersectionObserver } from '@vueuse/core';
+import { useIntersectionObserver } from "@vueuse/core";
 
 // Export main app
 export default {
@@ -42,7 +42,7 @@ export default {
       },
       {
         threshold: 0.0,
-      }
+      },
     );
   },
 };

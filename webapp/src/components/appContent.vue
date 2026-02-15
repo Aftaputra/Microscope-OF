@@ -1,7 +1,7 @@
 <template>
   <div id="app-content" class="uk-margin-remove uk-padding-remove uk-height-1-1" uk-grid>
     <!-- Initialisation modals -->
-    <calibrationWizard ref="calibrationWizard" @onClose="enterApp()"></calibrationWizard>
+    <calibrationWizard ref="calibrationWizard" @on-close="enterApp()"></calibrationWizard>
     <!-- Vertical tab bar -->
     <div id="switcher-left-container">
       <div
@@ -69,7 +69,7 @@
         :require-connection="true"
         :current-tab="currentTab"
       >
-        <component :is="item.component" @scrollTop="scrollToTop"></component>
+        <component :is="item.component" @scroll-top="scrollToTop"></component>
       </tabContent>
     </div>
   </div>
@@ -91,7 +91,7 @@ import settingsContent from "./tabContentComponents/settingsContent.vue";
 import slideScanContent from "./tabContentComponents/slideScanContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
 // vue3 migration
-import { shallowRef, markRaw, ref } from 'vue'
+import { markRaw } from "vue";
 import { eventBus } from "../eventBus.js";
 
 // Import modal components for device initialisation
@@ -104,7 +104,7 @@ export default {
   components: {
     tabIcon,
     tabContent,
-    calibrationWizard
+    calibrationWizard,
   },
   data: function () {
     return {

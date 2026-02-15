@@ -9,7 +9,7 @@
         :submit-label="'Autofocus'"
         :button-primary="true"
         :submit-on-event="'globalFastAutofocusEvent'"
-        @taskStarted="onAutofocus"
+        @task-started="onAutofocus"
         @finished="afterAutofocus"
         @error="modalError"
       />
@@ -25,7 +25,7 @@ export default {
   name: "AutofocusControl",
 
   components: {
-    ActionButton
+    ActionButton,
   },
 
   data: function () {

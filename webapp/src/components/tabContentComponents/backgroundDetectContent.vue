@@ -20,7 +20,7 @@ export default {
 
   components: {
     paneBackgroundDetect,
-    streamDisplay
+    streamDisplay,
   },
 };
 </script>

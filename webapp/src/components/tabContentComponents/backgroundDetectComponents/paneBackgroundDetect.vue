@@ -53,7 +53,7 @@ import { useIntersectionObserver } from "@vueuse/core";
 export default {
   components: {
     ActionButton,
-    ServerSpecifiedPropertyControl
+    ServerSpecifiedPropertyControl,
   },
 
   data() {
@@ -70,10 +70,22 @@ export default {
     await this.readSettings();
   },
 
+  mounted() {
+    useIntersectionObserver(
+      this.$refs.backgroundDetectContent,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      {
+        threshold: 0.0,
+      },
+    );
+  },
+
   methods: {
     async safeReadSettings() {
       if (!this.$store.state.connected) return;
-      
+
       try {
         await this.readSettings();
       } catch (error) {
@@ -110,18 +122,6 @@ export default {
         );
       }
     },
-  },
-
-  mounted() {
-    useIntersectionObserver(
-      this.$refs.backgroundDetectContent,
-      ([{ isIntersecting }]) => {
-        this.visibilityChanged(isIntersecting);
-      },
-      {
-        threshold: 0.0,
-      },
-    );
   },
 };
 </script>

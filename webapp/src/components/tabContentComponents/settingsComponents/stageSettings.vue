@@ -36,7 +36,7 @@ export default {
   name: "StageSettings",
 
   components: {
-    ActionButton
+    ActionButton,
   },
 
   data: function () {
@@ -57,7 +57,7 @@ export default {
       ([{ isIntersecting }]) => {
         this.visibilityChanged(isIntersecting);
       },
-      { threshold: 0.0 }
+      { threshold: 0.0 },
     );
   },
 

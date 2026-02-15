@@ -4,9 +4,9 @@
     :data-schema="propertyDescription"
     :label="label"
     :animate="animate"
-    @requestUpdate="readProperty"
-    @sendValue="writeProperty"
-    @animationShown="resetAnimate"
+    @request-update="readProperty"
+    @send-value="writeProperty"
+    @animation-shown="resetAnimate"
   />
 </template>
 
@@ -15,12 +15,11 @@ import { formatValue } from "@/js_utils/formatter.mjs";
 import InputFromSchema from "./inputFromSchema.vue";
 // vue3 migration
 
-
 export default {
   name: "PropertyControl",
 
   components: {
-    InputFromSchema
+    InputFromSchema,
   },
 
   props: {

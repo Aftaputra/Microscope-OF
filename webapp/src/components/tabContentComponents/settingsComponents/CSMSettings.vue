@@ -25,7 +25,7 @@ export default {
 
   components: {
     CSMCalibrationSettings,
-    miniStreamDisplay
+    miniStreamDisplay,
   },
 };
 </script>

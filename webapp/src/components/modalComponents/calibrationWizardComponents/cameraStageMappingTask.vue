@@ -21,7 +21,7 @@ import { markRaw } from "vue";
 export default {
   name: "CameraCalibrationTask",
   components: {
-    calibrationWizardTask
+    calibrationWizardTask,
   },
   props: {
     // Standard calibrationWizardTask props below:
@@ -32,10 +32,15 @@ export default {
       default: false,
     },
   },
+  emits: ["next", "back"],
 
   data: function () {
     return {
-      steps: [{ component: markRaw(csmExplanation) }, { component: markRaw(focusStep) }, { component: markRaw(runCsmStep) }],
+      steps: [
+        { component: markRaw(csmExplanation) },
+        { component: markRaw(focusStep) },
+        { component: markRaw(runCsmStep) },
+      ],
     };
   },
 };

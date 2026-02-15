@@ -70,7 +70,6 @@ import tabContent from "../genericComponents/tabContent.vue";
 // vue3 migration
 import { markRaw } from "vue";
 
-
 // Export main app
 export default {
   name: "SettingsContent",
@@ -78,7 +77,7 @@ export default {
   components: {
     tabIcon,
     tabContent,
-    calibrationWizard
+    calibrationWizard,
   },
 
   data: function () {

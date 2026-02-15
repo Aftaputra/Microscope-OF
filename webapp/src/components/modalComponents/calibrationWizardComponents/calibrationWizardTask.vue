@@ -66,6 +66,8 @@ export default {
     },
   },
 
+  emits: ["back", "next"],
+
   data() {
     return {
       stepIndex: this.startOnLast ? this.steps.length - 1 : 0,

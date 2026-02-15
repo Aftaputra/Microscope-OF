@@ -37,7 +37,7 @@ export default {
 
   components: {
     stepTemplateWithStream,
-    ActionButton
+    ActionButton,
   },
 };
 </script>
