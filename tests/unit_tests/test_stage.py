@@ -17,6 +17,7 @@ from openflexure_microscope_server.things.stage import (
 )
 from openflexure_microscope_server.things.stage.dummy import DummyStage
 
+from ..shared_utils import get_method_name
 from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
 # Keep the size and number of moves fairly small or the tests can take forever
@@ -33,6 +34,26 @@ path3d = st.lists(point3d, min_size=5, max_size=10)
 def dummy_stage():
     """Return a dummy stage with a very low step time."""
     return create_thing_without_server(DummyStage, step_time=0.000001)
+
+
+def test_not_implemented_methods():
+    """Check all methods a child class should implement raise NotImplemented."""
+    stage = create_thing_without_server(BaseStage)
+    methods_and_args = [
+        (stage.update_position, ()),
+        (stage._hardware_move_relative, ()),
+        (stage._hardware_move_absolute, ()),
+        (stage._hardware_start_move_relative, ((1, 2, 3),)),
+        (stage._hardware_stop, ()),
+        (stage._poll_moving, ()),
+        (stage._estimate_move_duration, ((1, 2, 3),)),
+        (stage.set_zero_position, ()),
+    ]
+    for method, args in methods_and_args:
+        method_name = get_method_name(method)
+        msg = f"StageThings must define their own {method_name} method"
+        with pytest.raises(NotImplementedError, match=msg):
+            method(*args)
 
 
 def test_override_base_movement():
@@ -303,6 +324,16 @@ def test_thing_description_equivalence(dummy_stage, mocker):
     assert sanga_properties == dummy_properties == base_properties
 
 
+def test_job_repr():
+    """Test when printing a jog command the result is as expected."""
+    # Jog should represent itself the same whether displacement is set with a list or a
+    # tuple.
+    assert str(JogCommand([1, 2, 3])) == "<JogCommand>(1, 2, 3)"
+    assert str(JogCommand((1, 2, 3))) == "<JogCommand>(1, 2, 3)"
+    # Stop should be very clear.
+    assert str(JogCommand(None)) == "<JogCommand>STOP"
+
+
 def test_get_jog_from_queue_most_recent(dummy_stage):
     """Test that the jog queue gives the most recent Jog Command."""
     # Try to stack 4 moves in the queue, only 1 should be queued.
@@ -312,6 +343,6 @@ def test_get_jog_from_queue_most_recent(dummy_stage):
     command = dummy_stage._get_from_jog_queue(0.001)
     assert isinstance(command, JogCommand)
     # Should be the last one queued
-    assert command.displacement == [3, 3, 3]
+    assert command.displacement == (3, 3, 3)
     # Nothing else is queued
     assert dummy_stage._get_from_jog_queue(0.001) is None

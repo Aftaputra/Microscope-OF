@@ -42,13 +42,14 @@ class JogCommand:
             None for stop motion.
         """
         super().__init__()
-        self.displacement = displacement
+        self.displacement = None if displacement is None else tuple(displacement)
 
     def __repr__(self) -> str:
         """Represent the command as a string."""
+        class_name = type(self).__name__
         if self.displacement is None:
-            return "<JogCommand>STOP"
-        return f"<JogCommand>{self.displacement}"
+            return f"<{class_name}>STOP"
+        return f"<{class_name}>{self.displacement}"
 
 
 class JogQueue(queue.Queue[JogCommand]):
@@ -227,13 +228,13 @@ class BaseStage(lt.Thing):
         Make sure to use and update ``self._hardware_position`` not ``self.position``.
         """
         raise NotImplementedError(
-            "StageThings must define their own move_absolute method"
+            "StageThings must define their own _hardware_move_absolute method"
         )
 
     def _hardware_start_move_relative(self, displacement: Sequence[int]) -> None:
         """Start a relative move."""
         raise NotImplementedError(
-            "StageThings must define their own hardware_start_move_relative method"
+            "StageThings must define their own _hardware_start_move_relative method"
         )
 
     def _hardware_stop(self) -> None:
@@ -250,7 +251,7 @@ class BaseStage(lt.Thing):
     def _estimate_move_duration(self, displacement: Sequence[int]) -> float:
         """Calculate the expected duration of a move with the given displacement."""
         raise NotImplementedError(
-            "StageThings must define their own _estimate_move_duration"
+            "StageThings must define their own _estimate_move_duration method"
         )
 
     @lt.action
