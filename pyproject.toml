@@ -35,9 +35,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "ruff~=0.13.0",
+  "ruff~=0.15.1",
   "mypy[reports]",
-#  "pytest-gitlab-code-quality", # pytest version constraint clashes with labthings
   "pytest",
   "pytest-cov",
   "pytest-mock==3.14",

@@ -118,7 +118,6 @@ pytest:
   script:
     - pytest
     - mv .coverage .coverage.main
-#    --gitlab-code-quality-report=pytest-warnings.json # can restore when it installs ok
   artifacts:
     when: always
     paths:
