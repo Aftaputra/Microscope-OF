@@ -268,22 +268,17 @@ class BaseStage(lt.Thing):
         """
         if stop:
             self._send_jog_command(JogCommand(None))
+            return
+
+        hardware_moves = self._apply_axis_direction(kwargs)
+        move = [hardware_moves.get(axis, 0) for axis in self.axis_names]
+        if all(ax == 0 for ax in move):
+            self.logger.warning(
+                "Requested jog movement is is empty. Sending STOP instead."
+            )
+            self._send_jog_command(JogCommand(None))
         else:
-            self._hardware_jog(**self._apply_axis_direction(kwargs))
-
-    def _hardware_jog(self, **kwargs: int) -> None:
-        """Make a relative move that may be interrupted by a future ``jog``.
-
-        This function uses hardware coordinates, ``jog`` is the public wrapper that
-        applies any neecessary transform and then calls this function. See the
-        docs for that function for more explanation.
-
-        See `_jog_loop` for an explanation of the mechanism.
-
-        :param kwargs: Keyword arguments should be axis names.
-        """
-        move = [kwargs.get(axis, 0) for axis in self.axis_names]
-        self._send_jog_command(JogCommand(move))
+            self._send_jog_command(JogCommand(move))
 
     def _send_jog_command(self, command: JogCommand) -> None:
         """Send a jog command to the background jog thread.
@@ -304,7 +299,7 @@ class BaseStage(lt.Thing):
             # Make sure the queue exists.
             # Check the background thread is running, and restart it if not.
             if self._jog_thread is None or not self._jog_thread.is_alive():
-                self.logger.info("Starting background thread for jog commands")
+                self.logger.debug("Starting background thread for jog commands")
                 self._jog_queue = JogQueue()
                 self._jog_thread = threading.Thread(
                     target=self._jog_loop, args=(command,)
