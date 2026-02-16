@@ -183,6 +183,9 @@ class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]
     """The z distance to perform an autofocus in steps.
 
     Must be greater than or equal to 400, and less than or equal to 3000.
+
+    Note that 200 steps is the backlash correction size, so the value
+    must be above this. 3000 is a sensible limit for 20x objectives.
     """
 
     # The noqa statement is because scan_name is unused but is needed for equivalence
