@@ -1,6 +1,7 @@
 """Test the stage without creating a full HTTP server and socket connection."""
 
 import itertools
+import logging
 
 import pytest
 from hypothesis import HealthCheck, given, settings
@@ -332,6 +333,42 @@ def test_job_repr():
     assert str(JogCommand((1, 2, 3))) == "<JogCommand>(1, 2, 3)"
     # Stop should be very clear.
     assert str(JogCommand(None)) == "<JogCommand>STOP"
+
+
+def test_empty_jog_sends_stop(dummy_stage, mocker, caplog):
+    """Check that calling ``jog`` with no args, warns then sends STOP."""
+    mock_send = mocker.patch.object(dummy_stage, "_send_jog_command")
+    with caplog.at_level(logging.WARNING):
+        dummy_stage.jog()
+    # This should warn as stop should be sent explicitly
+    assert len(caplog.records) == 1
+    assert mock_send.call_count == 1
+    # Check it is a stop command (displacement is None)
+    assert mock_send.call_args.args[0].displacement is None
+
+
+def test_jog_commands_are_sent(dummy_stage, mocker, caplog):
+    """Check that ``jog`` forwards commands to ``_send_jog_command``."""
+    mock_send = mocker.patch.object(dummy_stage, "_send_jog_command")
+    with caplog.at_level(logging.INFO):
+        dummy_stage.jog(x=1, y=0, z=0)
+        dummy_stage.jog(x=0, y=2, z=0)
+        dummy_stage.jog(x=0, y=0, z=3)
+        dummy_stage.jog(stop=True)
+    # Normal jogging operation shouldn't be filling up the logs.
+    assert len(caplog.records) == 0
+    # All 4 commands sent
+    assert mock_send.call_count == 4
+    # Check commands are as expected
+    command_0 = mock_send.call_args_list[0].args[0]
+    # -1 as axis inversion is applied
+    assert command_0.displacement == (-1, 0, 0)
+    command_1 = mock_send.call_args_list[1].args[0]
+    assert command_1.displacement == (0, 2, 0)
+    command_2 = mock_send.call_args_list[2].args[0]
+    assert command_2.displacement == (0, 0, 3)
+    command_3 = mock_send.call_args_list[3].args[0]
+    assert command_3.displacement is None
 
 
 def test_get_jog_from_queue_most_recent(dummy_stage):
