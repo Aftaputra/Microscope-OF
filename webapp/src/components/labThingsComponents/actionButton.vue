@@ -1,6 +1,7 @@
 <template>
-  <div v-observe-visibility="visibilityChanged" class="uk-margin-remove uk-padding-remove">
+  <div class="uk-margin-remove uk-padding-remove">
     <button
+      ref="actionButton"
       type="button"
       :disabled="buttonDisabled"
       class="uk-button uk-width-1-1 uk-position-relative"
@@ -20,7 +21,7 @@
       :task-running="taskRunning"
       :task-started="taskStarted"
       :task-status="taskStatus"
-      @terminateTask="terminateTask"
+      @terminate-task="terminateTask"
     />
   </div>
 </template>
@@ -28,10 +29,16 @@
 <script>
 import ActionProgressBar from "./actionProgressBar.vue";
 import ActionStatusModal from "./actionStatusModal.vue";
+import { eventBus } from "../../eventBus.js";
+import { useIntersectionObserver } from "@vueuse/core";
 
 export default {
   name: "ActionButton",
-  components: { ActionProgressBar, ActionStatusModal },
+
+  components: {
+    ActionProgressBar,
+    ActionStatusModal,
+  },
 
   props: {
     action: {
@@ -94,6 +101,22 @@ export default {
     },
   },
 
+  emits: [
+    "update:progress",
+    "update:taskStarted",
+    "update:taskRunning",
+    "update:log",
+    "update:taskStatus",
+    "submit",
+    "taskStarted",
+    "taskRunning",
+    "response",
+    "completed",
+    "cancelled",
+    "finished",
+    "error",
+  ],
+
   data: function () {
     return {
       taskUrl: null,
@@ -129,31 +152,52 @@ export default {
   },
 
   watch: {
-    progress(newval) {
-      this.$emit("update:progress", newval);
+    progress: {
+      handler(newval) {
+        this.$emit("update:progress", newval);
+      },
     },
-    taskStarted(newval) {
-      this.$emit("update:taskStarted", newval);
+    taskStarted: {
+      handler(newval) {
+        this.$emit("update:taskStarted", newval);
+      },
     },
-    taskRunning(newval) {
-      this.$emit("update:taskRunning", newval);
+    taskRunning: {
+      handler(newval) {
+        this.$emit("update:taskRunning", newval);
+      },
     },
-    log(newval) {
-      this.$emit("update:log", newval);
+    log: {
+      handler(newval) {
+        this.$emit("update:log", newval);
+      },
+      deep: true,
     },
-    taskStatus(newval) {
-      this.$emit("update:taskStatus", newval);
+    taskStatus: {
+      handler(newval) {
+        this.$emit("update:taskStatus", newval);
+      },
     },
   },
 
   mounted() {
+    useIntersectionObserver(
+      this.$refs.actionButton,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      {
+        threshold: 0.0, // Adjust as needed
+      },
+    );
+
     // Check for already running tasks
     if (this.taskStarted != true) {
       this.checkExistingTasks();
     }
     // A global signal listener to perform the action
     if (this.submitOnEvent) {
-      this.$root.$on(this.submitOnEvent, () => {
+      eventBus.on(this.submitOnEvent, () => {
         if (this.isDisabled) return;
         // Bootstrap task if button is not disabled.
         this.bootstrapTask();
@@ -161,9 +205,9 @@ export default {
     }
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     if (this.submitOnEvent) {
-      this.$root.$off(this.submitOnEvent);
+      eventBus.off(this.submitOnEvent);
     }
   },
 

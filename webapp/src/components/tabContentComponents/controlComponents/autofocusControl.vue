@@ -9,7 +9,7 @@
         :submit-label="'Autofocus'"
         :button-primary="true"
         :submit-on-event="'globalFastAutofocusEvent'"
-        @taskStarted="onAutofocus"
+        @task-started="onAutofocus"
         @finished="afterAutofocus"
         @error="modalError"
       />
@@ -18,6 +18,7 @@
 </template>
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
+import { eventBus } from "../../../eventBus.js";
 
 export default {
   name: "AutofocusControl",
@@ -38,7 +39,7 @@ export default {
     },
     afterAutofocus() {
       this.isAutofocusing = false;
-      this.$root.$emit("globalUpdatePositionEvent");
+      eventBus.emit("globalUpdatePositionEvent");
     },
   },
 };

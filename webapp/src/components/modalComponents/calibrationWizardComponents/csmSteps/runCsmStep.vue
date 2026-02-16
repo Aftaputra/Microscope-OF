@@ -8,7 +8,7 @@
       <div class="action-button-container">
         <CSMCalibrationSettings
           :show-extra-settings="false"
-          @recalibrateResponse="checkCalibrationState"
+          @recalibrate-response="checkCalibrationState"
         />
       </div>
     </template>
@@ -26,6 +26,8 @@ export default {
     stepTemplateWithStream,
     CSMCalibrationSettings,
   },
+
+  emits: ["awaiting-user"],
 
   mounted() {
     this.checkCalibrationState();

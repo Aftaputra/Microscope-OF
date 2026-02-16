@@ -12,6 +12,8 @@
 <script>
 export default {
   name: "SyncPropertyButton",
+
+  emits: ["click"],
 };
 </script>
 
@@ -26,7 +28,9 @@ export default {
 
 .material-symbols-outlined.sync-icon {
   color: #888;
-  transition: transform 0.3s ease, color 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    color 0.3s ease;
 }
 
 .material-symbols-outlined.sync-icon:hover {

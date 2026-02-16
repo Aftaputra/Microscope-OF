@@ -67,7 +67,9 @@ import ActionButton from "../../labThingsComponents/actionButton.vue";
 
 export default {
   name: "StatusPane",
-  components: { ActionButton },
+  components: {
+    ActionButton,
+  },
 
   data: function () {
     return {

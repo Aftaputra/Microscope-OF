@@ -19,7 +19,9 @@ import devTools from "./tabContentComponents/aboutComponents/devTools.vue";
 export default {
   name: "LoadingContent",
 
-  components: { devTools },
+  components: {
+    devTools,
+  },
 
   data: function () {
     return {};

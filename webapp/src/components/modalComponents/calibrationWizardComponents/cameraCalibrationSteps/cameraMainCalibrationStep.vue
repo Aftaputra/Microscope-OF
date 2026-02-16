@@ -9,7 +9,7 @@
         <cameraCalibrationSettings
           :show-extra-settings="false"
           :camera-uri="cameraUri"
-          @actionFinished="checkCalibrationState"
+          @action-finished="checkCalibrationState"
         />
       </div>
     </template>
@@ -27,6 +27,8 @@ export default {
     stepTemplateWithStream,
     cameraCalibrationSettings,
   },
+
+  emits: ["awaiting-user"],
 
   computed: {
     cameraUri: function () {

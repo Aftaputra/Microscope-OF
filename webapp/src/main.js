@@ -1,15 +1,13 @@
-import Vue from "vue";
+import { createApp } from "vue";
 import App from "./App.vue";
 import store from "./store";
 import UIkit from "uikit";
 
-import VueObserveVisibility from "vue-observe-visibility";
-
 // Import MD icons
 import "material-symbols/outlined.css";
 
-import queryMixin from "@/mixins/labThingsMixins.js";
 import modalMixin from "@/mixins/modalMixins.js";
+import labThingsMixins from "./mixins/labThingsMixins";
 
 // UIKit overrides
 UIkit.mixin(
@@ -21,15 +19,16 @@ UIkit.mixin(
   "accordion",
 );
 
+// Create Vue app
+const app = createApp(App);
+
 // Use visibility observer
-Vue.use(VueObserveVisibility);
+//app.use(VueObserveVisibility);
 
-Vue.config.productionTip = false;
+// Use global mixins
+app.mixin(modalMixin);
+app.mixin(labThingsMixins);
 
-Vue.mixin(queryMixin);
-Vue.mixin(modalMixin);
-
-new Vue({
-  store,
-  render: (h) => h(App),
-}).$mount("#app");
+// Use Vuex store
+app.use(store);
+app.mount("#app");

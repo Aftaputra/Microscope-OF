@@ -11,7 +11,7 @@
 </template>
 
 <script>
-import paneControl from "./controlComponents/paneControl";
+import paneControl from "./controlComponents/paneControl.vue";
 import streamDisplay from "./streamContent.vue";
 
 export default {

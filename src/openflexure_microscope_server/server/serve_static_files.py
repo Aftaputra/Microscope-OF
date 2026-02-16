@@ -85,8 +85,7 @@ def check_static_dir() -> None:
             "web app."
         )
     expected = [
-        os.path.isdir(os.path.join(STATIC_PATH, "js")),
-        os.path.isdir(os.path.join(STATIC_PATH, "css")),
+        os.path.isdir(os.path.join(STATIC_PATH, "assets")),
         os.path.isfile(os.path.join(STATIC_PATH, "index.html")),
     ]
     if not all(expected):

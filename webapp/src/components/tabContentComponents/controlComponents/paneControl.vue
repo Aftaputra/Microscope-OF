@@ -59,7 +59,6 @@ export default {
       let imageUri = response.output.href;
       if (!imageUri) {
         this.modalError("No image URI returned from capture task.");
-        console.log(`Capture resulted in response ${response}`);
         return;
       }
       // To save the returned data, we make a virtual link and click it

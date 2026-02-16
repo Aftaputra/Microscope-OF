@@ -14,10 +14,14 @@
 import calibrationWizardTask from "./calibrationWizardTask.vue";
 import camCalibrationExplanation from "./cameraCalibrationSteps/camCalibrationExplanation.vue";
 import cameraMainCalibrationStep from "./cameraCalibrationSteps/cameraMainCalibrationStep.vue";
+import { markRaw } from "vue";
 
 export default {
   name: "CameraCalibrationTask",
-  components: { calibrationWizardTask },
+  components: {
+    calibrationWizardTask,
+  },
+
   props: {
     // Standard calibrationWizardTask props below:
     first: Boolean,
@@ -28,9 +32,14 @@ export default {
     },
   },
 
+  emits: ["next", "back"],
+
   data: function () {
     return {
-      steps: [{ component: camCalibrationExplanation }, { component: cameraMainCalibrationStep }],
+      steps: [
+        { component: markRaw(camCalibrationExplanation) },
+        { component: markRaw(cameraMainCalibrationStep) },
+      ],
     };
   },
 };

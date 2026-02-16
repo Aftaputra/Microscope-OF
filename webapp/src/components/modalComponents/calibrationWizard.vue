@@ -4,10 +4,10 @@
       <h2 class="uk-modal-title">Microscope Calibration</h2>
 
       <component
+        v-bind="currentTask.props"
         :is="currentTask.component"
         v-if="currentTask"
         :key="taskIndex"
-        v-bind="currentTask.props"
         :first="isFirstTask"
         :final="isFinalTask"
         :start-on-last="movingBackward"
@@ -24,11 +24,14 @@ import welcomeStep from "./calibrationWizardComponents/welcomeStep.vue";
 import cameraCalibrationTask from "./calibrationWizardComponents/cameraCalibrationTask.vue";
 import cameraStageMappingTask from "./calibrationWizardComponents/cameraStageMappingTask.vue";
 import finalStep from "./calibrationWizardComponents/finalStep.vue";
+import { markRaw } from "vue";
 
 export default {
   name: "CalibrationWizard",
 
   components: {},
+
+  emits: ["onClose"],
 
   data: function () {
     return {
@@ -103,7 +106,7 @@ export default {
       // Optionally include the welcome screen
       if (includeWelcome) {
         tasks.push({
-          component: singleStepTask,
+          component: markRaw(singleStepTask),
           props: { stepComponent: welcomeStep },
         });
       }
@@ -111,12 +114,12 @@ export default {
       // Add calibration task for each thing
       for (const thing of thingsToCal) {
         const taskComponent = this.availableCalibrationTasks[thing];
-        tasks.push({ component: taskComponent });
+        tasks.push({ component: markRaw(taskComponent), props: {} });
       }
 
       // Always include the final step
       tasks.push({
-        component: singleStepTask,
+        component: markRaw(singleStepTask),
         props: { stepComponent: finalStep },
       });
 

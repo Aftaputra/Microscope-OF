@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import logging
+import os
 from argparse import Namespace
 from copy import copy
 from functools import wraps
 from typing import Any, Callable, Optional
 
 import uvicorn
+from fastapi.middleware.cors import CORSMiddleware  # vue3 migration
 from uvicorn.main import Server
 
 import labthings_fastapi as lt
@@ -28,6 +30,7 @@ from .legacy_api import add_v2_endpoints
 from .serve_static_files import add_static_files
 
 LOGGER = logging.getLogger(__name__)
+DEVELOPER_MODE = os.getenv("OFM_SERVER_DEV_MODE", "false").lower() == "true"
 
 
 def set_shutdown_function(shutdown_function: Callable[[], None]) -> None:
@@ -61,6 +64,17 @@ def customise_server(
 ) -> None:
     """Customise the server with additional endpoints, etc."""
     configure_logging(log_folder)
+
+    if DEVELOPER_MODE:
+        # Allow CORS in developer mode for easier testing with the webapp
+        server.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
     add_v2_endpoints(server)
     add_static_files(server.app, scans_folder)
 

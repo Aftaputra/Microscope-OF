@@ -26,12 +26,12 @@
 // Import components
 import appContent from "./components/appContent.vue";
 import loadingContent from "./components/loadingContent.vue";
-
-var Mousetrap = require("mousetrap");
+import Mousetrap from "mousetrap";
+import { eventBus } from "./eventBus.js";
 
 Mousetrap.prototype.stopCallback = function (e, element) {
   // if the element has the class "mousetrap" then no need to stop
-  if ((" " + element.className + " ").indexOf(" mousetrap ") > -1) {
+  if ((" " + element.className + " ").indexOf(" Mousetrap ") > -1) {
     return false;
   }
 
@@ -153,10 +153,10 @@ export default {
 
     // Focus keys
     Mousetrap.bind("pageup", () => {
-      this.$root.$emit("globalMoveStepEvent", 0, 0, 1);
+      eventBus.emit("globalMoveStepEvent", { x: 0, y: 0, z: 1 });
     });
     Mousetrap.bind("pagedown", () => {
-      this.$root.$emit("globalMoveStepEvent", 0, 0, -1);
+      eventBus.emit("globalMoveStepEvent", { x: 0, y: 0, z: -1 });
     });
     this.keyboardManual.push({
       shortcut: "pgup / pgdn",
@@ -165,7 +165,7 @@ export default {
 
     // Capture
     Mousetrap.bind("c", () => {
-      this.$root.$emit("globalCaptureEvent");
+      eventBus.emit("globalCaptureEvent", {});
     });
     this.keyboardManual.push({
       shortcut: "c",
@@ -174,7 +174,7 @@ export default {
 
     // Autofocus
     Mousetrap.bind("a", () => {
-      this.$root.$emit("globalFastAutofocusEvent");
+      eventBus.emit("globalFastAutofocusEvent", {});
     });
     this.keyboardManual.push({
       shortcut: "a",
@@ -183,10 +183,10 @@ export default {
 
     // Increment/decrement tab
     Mousetrap.bind("shift+down", () => {
-      this.$root.$emit("globalIncrementTab");
+      eventBus.emit("globalIncrementTab", {});
     });
     Mousetrap.bind("shift+up", () => {
-      this.$root.$emit("globalDecrementTab");
+      eventBus.emit("globalDecrementTab", {});
     });
     this.keyboardManual.push({
       shortcut: "shift+↑ / shift+↓",
@@ -194,7 +194,7 @@ export default {
     });
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     // Disconnect the theme observer
     if (this.themeObserver) {
       this.themeObserver.disconnect();
@@ -237,7 +237,7 @@ export default {
       }
     },
     handleExit: function () {
-      this.$root.$emit("globalTogglePreview", false);
+      eventBus.emit("globalTogglePreview", false);
     },
 
     // Handle global mouse wheel events to be associated with navigation
@@ -247,9 +247,14 @@ export default {
         event.target.parentNode.classList.contains("scrollTarget") ||
         event.target.classList.contains("scrollTarget")
       ) {
-        var z_rel = event.deltaY / 100;
+        const z_steps = event.deltaY / 100;
         // Emit a signal to move, acted on by panelControl.vue
-        this.$root.$emit("globalMoveStepEvent", 0, 0, z_rel, false);
+        eventBus.emit("globalMoveStepEvent", {
+          x_steps: 0,
+          y_steps: 0,
+          z_steps: z_steps,
+          absolute: false,
+        });
       }
     },
 
@@ -257,7 +262,6 @@ export default {
       // Calculate movement array
       var x_rel = 0;
       var y_rel = 0;
-      var z_rel = 0;
       // 37 corresponds to the left key
       if (37 in this.arrowKeysDown) {
         x_rel = x_rel - 1;
@@ -276,7 +280,7 @@ export default {
       }
       // Make a position request
       // Emit a signal to move, acted on by panelControl.vue
-      this.$root.$emit("globalMoveStepEvent", x_rel, y_rel, z_rel);
+      eventBus.emit("globalMoveStepEvent", { x: x_rel, y: y_rel, z: 0 });
     },
   },
 };

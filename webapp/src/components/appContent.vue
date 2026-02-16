@@ -1,7 +1,7 @@
 <template>
   <div id="app-content" class="uk-margin-remove uk-padding-remove uk-height-1-1" uk-grid>
     <!-- Initialisation modals -->
-    <calibrationWizard ref="calibrationWizard" @onClose="enterApp()"></calibrationWizard>
+    <calibrationWizard ref="calibrationWizard" @on-close="enterApp()"></calibrationWizard>
     <!-- Vertical tab bar -->
     <div id="switcher-left-container">
       <div
@@ -9,11 +9,10 @@
         class="uk-flex uk-flex-column uk-padding-remove uk-width-auto uk-height-1-1 uk-text-center"
       >
         <!-- For each top tab -->
-        <template v-for="(item, index) in topTabs">
+        <template v-for="(item, index) in topTabs" :key="item.id + '-tab-icon'">
           <!-- Render the tab icon -->
           <tabIcon
             :id="item.id + '-tab-icon'"
-            :key="item.id + '-tab-icon'"
             :tab-i-d="item.id"
             :title="item.title"
             :require-connection="true"
@@ -37,11 +36,10 @@
         <hr id="extension-tab-divider" />
 
         <!-- For each bottom tab -->
-        <template v-for="(item, index) in bottomTabs">
+        <template v-for="(item, index) in bottomTabs" :key="item.id + '-tab-icon'">
           <!-- Render the tab icon -->
           <tabIcon
             :id="item.id + '-tab-icon'"
-            :key="item.id + '-tab-icon'"
             :tab-i-d="item.id"
             :title="item.title"
             :require-connection="true"
@@ -71,7 +69,7 @@
         :require-connection="true"
         :current-tab="currentTab"
       >
-        <component :is="item.component" @scrollTop="scrollToTop"></component>
+        <component :is="item.component" @scroll-top="scrollToTop"></component>
       </tabContent>
     </div>
   </div>
@@ -79,8 +77,8 @@
 
 <script>
 // Import generic components
-import tabIcon from "./genericComponents/tabIcon";
-import tabContent from "./genericComponents/tabContent";
+import tabIcon from "./genericComponents/tabIcon.vue";
+import tabContent from "./genericComponents/tabContent.vue";
 
 // Import new content components
 import aboutContent from "./tabContentComponents/aboutContent.vue";
@@ -92,6 +90,8 @@ import scanListContent from "./tabContentComponents/scanListContent.vue";
 import settingsContent from "./tabContentComponents/settingsContent.vue";
 import slideScanContent from "./tabContentComponents/slideScanContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
+import { markRaw } from "vue";
+import { eventBus } from "../eventBus.js";
 
 // Import modal components for device initialisation
 import calibrationWizard from "./modalComponents/calibrationWizard.vue";
@@ -113,26 +113,26 @@ export default {
           id: "settings",
           title: "Settings",
           icon: "settings",
-          component: settingsContent,
+          component: markRaw(settingsContent),
           class: "uk-margin-auto-top",
         },
         {
           id: "logging",
           title: "Logging",
           icon: "assignment_late",
-          component: loggingContent,
+          component: markRaw(loggingContent),
         },
         {
           id: "about",
           title: "About",
           icon: "info",
-          component: aboutContent,
+          component: markRaw(aboutContent),
         },
         {
           id: "power",
           title: "Power",
           icon: "power_settings_new",
-          component: powerContent,
+          component: markRaw(powerContent),
         },
       ],
       coreTopTabs: [
@@ -140,21 +140,21 @@ export default {
           id: "view",
           title: "View",
           icon: "visibility",
-          component: viewContent,
+          component: markRaw(viewContent),
           requiredThings: [],
         },
         {
           id: "control",
           title: "Control",
           icon: "gamepad",
-          component: controlContent,
+          component: markRaw(controlContent),
           requiredThings: [],
         },
         {
           id: "background-detect",
           title: "Background Detect",
           icon: "background_replace",
-          component: backgroundDetectContent,
+          component: markRaw(backgroundDetectContent),
           // While stage isn't needed; automatic background detect has little function
           // for a manual microscope.
           requiredThings: ["stage"],
@@ -163,14 +163,14 @@ export default {
           id: "slide-scan",
           title: "Slide Scan",
           icon: "settings_overscan",
-          component: slideScanContent,
+          component: markRaw(slideScanContent),
           requiredThings: ["smart_scan"],
         },
         {
           id: "scan-list",
           title: "Scan List",
           icon: "photo_library",
-          component: scanListContent,
+          component: markRaw(scanListContent),
           requiredThings: ["smart_scan"],
         },
       ],
@@ -207,15 +207,15 @@ export default {
 
   mounted() {
     // A global signal listener to switch tab
-    this.$root.$on("globalSwitchTab", (tabID) => {
+    eventBus.on("globalSwitchTab", (tabID) => {
       this.currentTab = tabID;
     });
     // A global signal listener to increment tab
-    this.$root.$on("globalIncrementTab", () => {
+    eventBus.on("globalIncrementTab", () => {
       this.incrementTabBy(1);
     });
     // A global signal listener to decrement tab
-    this.$root.$on("globalDecrementTab", () => {
+    eventBus.on("globalDecrementTab", () => {
       this.incrementTabBy(-1);
     });
     if (this.$store.getters.ready) {

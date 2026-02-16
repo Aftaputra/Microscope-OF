@@ -1,12 +1,12 @@
 <template>
   <input-from-schema
-    v-model="value"
+    v-model="modelValue"
     :data-schema="propertyDescription"
     :label="label"
     :animate="animate"
-    @requestUpdate="readProperty"
-    @sendValue="writeProperty"
-    @animationShown="resetAnimate"
+    @request-update="readProperty"
+    @send-value="writeProperty"
+    @animation-shown="resetAnimate"
   />
 </template>
 
@@ -48,7 +48,7 @@ export default {
 
   data() {
     return {
-      value: undefined,
+      modelValue: undefined,
       animate: false,
     };
   },
@@ -74,7 +74,7 @@ export default {
     // Read the property when we're mounted - usually this won't
     // work because the URL isn't set yet. However, it's helpful if
     // the app is reloaded (e.g. from a dev server).
-    if (this.value == undefined) {
+    if (this.modelValue == undefined) {
       this.readProperty();
     }
   },
@@ -82,12 +82,12 @@ export default {
   methods: {
     readProperty: async function () {
       let data = await this.readThingProperty(this.thingName, this.propertyName);
-      this.value = data;
+      this.modelValue = data;
       return data;
     },
     writeProperty: async function (requestedValue) {
       try {
-        this.value = requestedValue;
+        this.modelValue = requestedValue;
         await this.writeThingProperty(this.thingName, this.propertyName, requestedValue);
         if (this.readBack) {
           await new Promise((r) => setTimeout(r, this.readBackDelay));

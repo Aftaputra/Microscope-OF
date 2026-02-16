@@ -15,10 +15,13 @@ import calibrationWizardTask from "./calibrationWizardTask.vue";
 import csmExplanation from "./csmSteps/csmExplanation.vue";
 import focusStep from "./csmSteps/focusStep.vue";
 import runCsmStep from "./csmSteps/runCsmStep.vue";
+import { markRaw } from "vue";
 
 export default {
   name: "CameraCalibrationTask",
-  components: { calibrationWizardTask },
+  components: {
+    calibrationWizardTask,
+  },
   props: {
     // Standard calibrationWizardTask props below:
     first: Boolean,
@@ -28,10 +31,15 @@ export default {
       default: false,
     },
   },
+  emits: ["next", "back"],
 
   data: function () {
     return {
-      steps: [{ component: csmExplanation }, { component: focusStep }, { component: runCsmStep }],
+      steps: [
+        { component: markRaw(csmExplanation) },
+        { component: markRaw(focusStep) },
+        { component: markRaw(runCsmStep) },
+      ],
     };
   },
 };

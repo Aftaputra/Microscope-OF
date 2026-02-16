@@ -4,11 +4,12 @@
       >{{ label }}
       <div class="input-and-buttons-container">
         <input
+          ref="numericalInput"
           v-model="internalValue"
           class="uk-form-small numeric-setting-line-input"
           :class="{ edited: isEdited, flash: animateUpdate }"
           type="number"
-          @focusin="focusIn"
+          @input="grabFocus"
           @focusout="focusOut"
           @keydown="keyDown"
           @animationend="animationEnd"
@@ -39,8 +40,7 @@
           class="uk-form-small numeric-setting-line-input"
           :class="{ edited: isEdited, flash: animateUpdate }"
           type="number"
-          @input="updateIsEdited"
-          @focusin="focusIn"
+          @input="grabFocus"
           @focusout="focusOut"
           @keydown="keyDown"
           @animationend="animationEnd"
@@ -50,7 +50,7 @@
     </label>
     <label v-if="dataType == 'number_object'" class="uk-form-label"
       >{{ label }}
-      <div v-for="(val, key) in value" :key="key">
+      <div v-for="(val, key) in modelValue" :key="key">
         <label>{{ internalLabels[key] }}</label>
         <div class="input-and-buttons-container">
           <input
@@ -58,8 +58,7 @@
             class="uk-form-small numeric-setting-line-input"
             :class="{ edited: isEdited, flash: animateUpdate }"
             type="number"
-            @input="updateIsEdited"
-            @focusin="focusIn"
+            @input="grabFocus"
             @focusout="focusOut"
             @keydown="keyDown"
             @animationend="animationEnd"
@@ -76,7 +75,6 @@
           class="uk-form-small numeric-setting-line-input"
           :class="{ edited: isEdited, flash: animateUpdate }"
           type="text"
-          @focusin="focusIn"
           @focusout="focusOut"
           @keydown="keyDown"
           @animationend="animationEnd"
@@ -107,15 +105,15 @@ export default {
   components: {
     syncPropertyButton,
   },
-
   props: {
     dataSchema: {
       type: Object,
       required: true,
     },
-    value: {
+    modelValue: {
       type: null,
-      required: true,
+      required: false,
+      default: undefined,
     },
     label: {
       type: String,
@@ -123,24 +121,28 @@ export default {
     },
     animate: {
       type: Boolean,
-      default: false,
+      default: null,
     },
   },
 
+  emits: ["requestUpdate", "sendValue", "animationShown"],
+
+  compatConfig: { COMPONENT_V_MODEL: false },
+
   data() {
     return {
-      // Initialise with a copy to try to prevent the this.value prop being mutated if
-      // the value is an array or object. For future updates we stringify and parse
+      // Initialise with a copy to try to prevent the this.modelValue prop being mutated if
+      // the modelValue is an array or object. For future updates we stringify and parse
       // (see resetInternalValue). If we do this here there is a chance we get errors
       // as internalValue is still null when rendering starts.
-      internalValue: Array.isArray(this.value)
-        ? [...this.value]
-        : typeof this.value === "object"
-        ? { ...this.value }
-        : this.value,
+      internalValue: Array.isArray(this.modelValue)
+        ? [...this.modelValue]
+        : typeof this.modelValue === "object"
+          ? { ...this.modelValue }
+          : this.modelValue,
       // Is edited can't be computed as we mutate internalValue
       isEdited: false,
-      animateUpdate: false,
+      animateUpdate: null,
     };
   },
   computed: {
@@ -206,14 +208,19 @@ export default {
   },
 
   watch: {
-    value() {
-      // Fire updateIsEdited on both value and internal value change,
-      // as change in value may not causse internalValue to change.
-      this.updateIsEdited();
-      this.resetInternalValue();
+    modelValue: {
+      deep: true,
+      handler() {
+        // Fire updateIsEdited on both modelValue and internal modelValue change,
+        // as change in modelValue may not cause internalValue to change.
+        this.updateIsEdited();
+        this.resetInternalValue();
+      },
     },
-    internalValue() {
-      this.updateIsEdited();
+    internalValue: {
+      handler() {
+        this.updateIsEdited();
+      },
     },
     animate(updated) {
       if (updated) {
@@ -223,19 +230,20 @@ export default {
   },
 
   mounted() {
-    if (this.value !== undefined) {
+    if (this.modelValue !== undefined) {
       this.resetInternalValue();
     }
   },
 
   methods: {
     resetInternalValue: function () {
-      // Whenever updatirng th internal value stringify and parse as a form of deepcopy.
-      // This ensure that the this.value prop is not mutated for when elements of arrays
+      // Whenever updatirng th internal modelValue stringify and parse as a form of deepcopy.
+      // This ensure that the this.modelValue prop is not mutated for when elements of arrays
       // or objects are updated.
-      this.internalValue = JSON.parse(JSON.stringify(this.value));
+      this.internalValue = JSON.parse(JSON.stringify(this.modelValue));
     },
     requestUpdate: async function () {
+      this.internalValue = this.modelValue;
       this.$emit("requestUpdate");
     },
     sendValue: async function () {
@@ -247,11 +255,18 @@ export default {
         this.sendValue();
       }
     },
-    focusIn: function (event) {
-      this.valueOnEnter = event.target.value;
+    /** Grab the browser focus.
+     *
+     * This is needed for numerical elements to be in focus when a spinner
+     * is clicked so that the data sends when focus is lost.
+     */
+    grabFocus(event) {
+      event.target.focus();
+      // This is needed for number objects and number arrays
+      this.updateIsEdited();
     },
     focusOut: function (event) {
-      if (this.valueOnEnter != event.target.value) {
+      if (this.modelValue != event.target.value) {
         this.sendValue(event.target.value);
       }
     },
@@ -262,15 +277,16 @@ export default {
       }
     },
     updateIsEdited: function () {
-      this.isEdited = this.deepStringify(this.internalValue) !== this.deepStringify(this.value);
+      this.isEdited =
+        this.deepStringify(this.internalValue) !== this.deepStringify(this.modelValue);
     },
     animationEnd: function () {
-      this.animateUpdate = false;
+      this.animateUpdate = null;
       this.$emit("animationShown");
     },
     deepStringify: function (val) {
       // Create a json string where all internal numbers are also JSON strings. This is
-      // needed to robustly check if the value is updated because the raw value may be a
+      // needed to robustly check if the modelValue is updated because the raw modelValue may be a
       // number but anything typed in the input is a string. In the case of arrays or
       // objects even with JSON.stringify we end up comparing ["1", 3] with [1, 3] and
       // find them as not equal.

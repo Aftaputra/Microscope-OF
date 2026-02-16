@@ -65,8 +65,9 @@ import cameraSettings from "./settingsComponents/cameraSettings.vue";
 import CSMSettings from "./settingsComponents/CSMSettings.vue";
 import stageSettings from "./settingsComponents/stageSettings.vue";
 // Import generic components
-import tabIcon from "../genericComponents/tabIcon";
-import tabContent from "../genericComponents/tabContent";
+import tabIcon from "../genericComponents/tabIcon.vue";
+import tabContent from "../genericComponents/tabContent.vue";
+import { markRaw } from "vue";
 
 // Export main app
 export default {
@@ -87,14 +88,14 @@ export default {
           id: "display",
           title: "Display",
           requireConnection: false,
-          component: displaySettings,
+          component: markRaw(displaySettings),
           requiredThings: [],
         },
         {
           id: "stage-control",
           title: "Stage Control Preferences",
           requireConnection: false,
-          component: stageControlSettings,
+          component: markRaw(stageControlSettings),
           requiredThings: ["stage"],
         },
       ],
@@ -103,21 +104,21 @@ export default {
           id: "camera",
           title: "Camera",
           requireConnection: true,
-          component: cameraSettings,
+          component: markRaw(cameraSettings),
           requiredThings: [],
         },
         {
           id: "stage",
           title: "Stage",
           requireConnection: true,
-          component: stageSettings,
+          component: markRaw(stageSettings),
           requiredThings: ["stage"],
         },
         {
           id: "mapping",
           title: "Camera to Stage Mapping",
           requireConnection: true,
-          component: CSMSettings,
+          component: markRaw(CSMSettings),
           requiredThings: ["camera_stage_mapping"],
         },
       ],

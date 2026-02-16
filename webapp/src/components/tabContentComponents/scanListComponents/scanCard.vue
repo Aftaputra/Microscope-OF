@@ -7,7 +7,7 @@
             id="thumbnail-stitched-image"
             class="thumbnail-fit"
             :src="thumbnailPath"
-            onerror="this.src='/titleiconpink.svg';"
+            onerror="this.src = '/titleiconpink.svg'"
             @click="requestViewer"
           />
         </div>
@@ -86,7 +86,10 @@ import EndpointButton from "../../labThingsComponents/endpointButton.vue";
 // Export main app
 export default {
   name: "ScanCard",
-  components: { actionButton, EndpointButton },
+  components: {
+    actionButton,
+    EndpointButton,
+  },
 
   props: {
     scanData: {
@@ -102,6 +105,8 @@ export default {
       required: true,
     },
   },
+
+  emits: ["viewer-requested", "update-requested"],
 
   computed: {
     downloadStitchFile() {
@@ -162,7 +167,6 @@ export default {
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", filename);
-      console.log(link);
       document.body.appendChild(link);
       link.click();
     },

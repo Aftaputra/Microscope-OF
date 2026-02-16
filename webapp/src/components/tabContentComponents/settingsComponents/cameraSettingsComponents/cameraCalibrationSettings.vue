@@ -43,6 +43,8 @@ export default {
     },
   },
 
+  emits: ["actionFinished"],
+
   data() {
     return {
       primaryCalibrationActions: [],

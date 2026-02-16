@@ -1,6 +1,5 @@
 // Generic functions for formatting
 
-
 /**
  * Format a single number into a human-readable string.
  * Uses exponential notation for very large/small numbers.
@@ -30,7 +29,7 @@ export function formatNumber(num, maxDigits = 4) {
  */
 export function formatValue(value, maxDigits = 4) {
   if (Array.isArray(value)) {
-    const items = value.map(val => formatValue(val, maxDigits));
+    const items = value.map((val) => formatValue(val, maxDigits));
     return `[${items.join(", ")}]`;
   }
   if (typeof value === "object" && value !== null) {

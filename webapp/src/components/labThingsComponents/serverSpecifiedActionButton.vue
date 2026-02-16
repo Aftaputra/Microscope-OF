@@ -33,6 +33,8 @@ export default {
     },
   },
 
+  emits: ["response", "finished"],
+
   methods: {
     /**
      * Runs when the ActionButton's action completes successfully.

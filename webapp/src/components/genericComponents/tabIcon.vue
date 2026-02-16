@@ -1,5 +1,11 @@
 <template>
-  <a href="#" class="uk-link" :class="classObject" :uk-tooltip="tooltipOptions" @click="setThisTab">
+  <a
+    href="#"
+    class="uk-link"
+    :class="classObject"
+    :uk-tooltip="tooltipOptions ? tooltipOptions : null"
+    @click="setThisTab"
+  >
     <slot></slot>
     <div v-if="showTitle" class="tabtitle">
       {{ computedTitle }}
@@ -42,6 +48,8 @@ export default {
     },
     requireConnection: Boolean,
   },
+
+  emits: ["set-tab"],
 
   computed: {
     computedTitle: function () {

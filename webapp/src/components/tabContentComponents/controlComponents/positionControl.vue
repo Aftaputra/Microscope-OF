@@ -61,6 +61,8 @@ and zero position buttons. It also includes the d-pad.
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 import syncPropertyButton from "../../labThingsComponents/syncPropertyButton.vue";
 import stageControlButtons from "./stageControlButtons.vue";
+import { eventBus } from "../../../eventBus.js";
+
 export default {
   name: "PaneControl",
 
@@ -84,40 +86,48 @@ export default {
   },
 
   async mounted() {
-    let self = this;
     // A global signal listener to perform a move action
-    this.$root.$on("globalMoveEvent", self.move);
-    this.$root.$on("globalUpdatePositionEvent", self.updatePosition);
+    eventBus.on("globalMoveEvent", this.move);
+    // A global signal listener to update position text boxes
+    eventBus.on("globalUpdatePositionEvent", this.updatePosition);
     // A global signal listener to perform a move action in pixels
-    this.$root.$on("globalMoveInImageCoordinatesEvent", (x, y, absolute) => {
-      this.moveInImageCoordinatesRequest(x, y, absolute);
-    });
+    eventBus.on("globalMoveInImageCoordinatesEvent", this.onMoveImage);
     // A global signal listener to perform a move in multiples of a step size
-    this.$root.$on("globalMoveStepEvent", (x_steps, y_steps, z_steps) => {
-      const navigationStepSize = this.$store.state.navigationStepSize;
-      const navigationInvert = this.$store.state.navigationInvert;
-      const x = x_steps * navigationStepSize.x * (navigationInvert.x ? -1 : 1);
-      const y = y_steps * navigationStepSize.y * (navigationInvert.y ? -1 : 1);
-      const z = z_steps * navigationStepSize.z * (navigationInvert.z ? -1 : 1);
-      this.$root.$emit("globalMoveEvent", x, y, z, false);
-    });
+    eventBus.on("globalMoveStepEvent", this.onMoveStep);
     // Update the current position in text boxes
     await this.updatePosition();
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     // Remove global signal listener to perform a move action
-    this.$root.$off("globalMoveEvent");
-    this.$root.$off("globalMoveInImageCoordinatesEvent");
-    this.$root.$off("globalMoveStepEvent");
-    this.$root.$off("globalUpdatePositionEvent");
+    eventBus.off("globalMoveEvent", this.move);
+    eventBus.off("globalUpdatePositionEvent", this.updatePosition);
+    eventBus.off("globalMoveInImageCoordinatesEvent", this.onMoveImage);
+    eventBus.off("globalMoveStepEvent", this.onMoveStep);
   },
 
   methods: {
     timeout(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
     },
-    async move(x, y, z, absolute) {
+
+    onMoveImage(payload) {
+      this.moveInImageCoordinatesRequest(payload.x, payload.y, payload.absolute);
+    },
+
+    onMoveStep(payload) {
+      const { x: x_steps, y: y_steps, z: z_steps } = payload;
+      const navigationStepSize = this.$store.state.navigationStepSize;
+      const navigationInvert = this.$store.state.navigationInvert;
+      const x = x_steps * navigationStepSize.x * (navigationInvert.x ? -1 : 1);
+      const y = y_steps * navigationStepSize.y * (navigationInvert.y ? -1 : 1);
+      const z = z_steps * navigationStepSize.z * (navigationInvert.z ? -1 : 1);
+      const movePayload = { x, y, z, absolute: false };
+      eventBus.emit("globalMoveEvent", movePayload);
+    },
+
+    async move(payload) {
+      const { x, y, z, absolute } = payload;
       // Move the stage, by updating the controls and starting a move task
       // This is equivalent to clicking the "move" button.
       if (this.moveLock) return; // Discard move requests if we're already moving
@@ -134,7 +144,7 @@ export default {
           z: this.setPosition.z + z,
         };
       }
-      await this.timeout(1); // Wait for Vue to update the position
+      await this.$nextTick(); // Wait for Vue to update the position
       await this.startMoveTask();
     },
     async startMoveTask() {

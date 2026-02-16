@@ -1,5 +1,5 @@
 <template>
-  <div v-observe-visibility="visibilityChanged" class="uk-padding uk-padding-remove-top">
+  <div ref="loggingDisplay" class="uk-padding uk-padding-remove-top">
     <!-- Logging nav bar -->
     <nav class="logging-navbar uk-navbar-container uk-navbar-transparent" uk-navbar="mode: click">
       <!-- Left side controls -->
@@ -81,8 +81,9 @@
 
 <script>
 import axios from "axios";
-import Paginate from "vuejs-paginate";
+import Paginate from "vuejs-paginate-next";
 import EndpointButton from "../labThingsComponents/endpointButton.vue";
+import { useIntersectionObserver } from "@vueuse/core";
 
 export default {
   name: "LoggingContent",
@@ -91,6 +92,8 @@ export default {
     Paginate,
     EndpointButton,
   },
+
+  emits: ["scrollTop"],
 
   data: function () {
     return {
@@ -131,6 +134,18 @@ export default {
     numberOfPages: function () {
       return Math.floor(this.filteredItems.length / this.maxitems);
     },
+  },
+
+  mounted() {
+    useIntersectionObserver(
+      this.$refs.loggingDisplay,
+      ([{ isIntersecting }]) => {
+        this.visibilityChanged(isIntersecting);
+      },
+      {
+        threshold: 0.0,
+      },
+    );
   },
 
   methods: {
@@ -183,7 +198,6 @@ export default {
           } else {
             // if there's no existing log message to append to, discard lines
             // until we find one.
-            console.log("Ignored non-matching lines at the start of the log file.");
             continue;
           }
         }
