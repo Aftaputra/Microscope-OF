@@ -35,7 +35,7 @@
             :button-primary="true"
             :can-terminate="true"
             :requires-confirmation="true"
-            :confirmation-message="'Start recalibration of the stage to find the centre of the range of motion? Microscope will be locked while this runs'"
+            :confirmation-message="'Start recalibration of the stage to find the centre of the range of motion?<br><br>Calibration requires a large, dense, flat sample with a variety of features.<br>Microscope will be locked while this runs'"
             :modal-progress="true"
           />
         </div>
@@ -48,7 +48,7 @@
             :button-primary="true"
             :can-terminate="true"
             :requires-confirmation="true"
-            :confirmation-message="'Start recalibration of the stage to find the range of motion in steps? Microscope will be locked while this runs'"
+            :confirmation-message="'Start recalibration of the stage to find the range of motion in steps?<br><br>Calibration requires a large, dense, flat sample with a variety of features.<br>Microscope will be locked while this runs'"
             :modal-progress="true"
           />
         </div>
