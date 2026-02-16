@@ -371,6 +371,91 @@ def test_jog_commands_are_sent(dummy_stage, mocker, caplog):
     assert command_3.displacement is None
 
 
+def test_send_jog_commands(dummy_stage, mocker, caplog):
+    """Check that the jog command acts as expected."""
+
+    # Create a way to make mock threads.
+    def mock_thread_factory(*_args, **_kwargs):
+        """Return a mock thread instance that claims to be alive."""
+        mock_instance = mocker.Mock()
+        mock_instance.is_alive.return_value = True
+        return mock_instance
+
+    # Mock both the Queue class and threading.Thread to incercept calls.
+    mock_queue = mocker.patch(
+        "openflexure_microscope_server.things.stage.JogQueue", side_effect=mocker.Mock
+    )
+    mock_thread = mocker.patch(
+        "openflexure_microscope_server.things.stage.threading.Thread",
+        side_effect=mock_thread_factory,
+    )
+
+    commands = [
+        JogCommand([1, 1, 1]),
+        JogCommand([2, 2, 2]),
+        JogCommand([3, 3, 3]),
+        JogCommand([4, 4, 4]),
+    ]
+    # First call, will create a new thread and a new queue
+    dummy_stage._send_jog_command(commands[0])
+
+    # Both a new queue and a new thread are created
+    assert mock_queue.call_count == 1
+    assert mock_thread.call_count == 1
+    # The thread target is the jog loop
+    assert mock_thread.call_args.kwargs["target"] == dummy_stage._jog_loop
+    # Args are jut the first command
+    thread_args = mock_thread.call_args.kwargs["args"]
+    assert len(thread_args) == 1
+    assert thread_args[0] is commands[0]
+    # Nothing yet put in the thread
+    assert dummy_stage._jog_queue.put.call_count == 0
+
+    # Send second command:
+    dummy_stage._send_jog_command(commands[1])
+
+    # No new queue or thread created
+    assert mock_queue.call_count == 1
+    assert mock_thread.call_count == 1
+    # Put is used instead
+    assert dummy_stage._jog_queue.put.call_count == 1
+    # Called with the second command
+    assert dummy_stage._jog_queue.put.call_args.args[0] is commands[1]
+
+    # Make it so the thread has finished
+    dummy_stage._jog_thread.is_alive.return_value = False
+    assert not dummy_stage._jog_thread.is_alive()
+
+    # 3rd call call, will create a new thread and a new queue
+    dummy_stage._send_jog_command(commands[2])
+
+    # Thread is alive again
+    assert dummy_stage._jog_thread.is_alive()
+    # Both a new queue and a new thread are created
+    assert mock_queue.call_count == 2
+    assert mock_thread.call_count == 2
+    # The thread target is the jog loop
+    assert mock_thread.call_args.kwargs["target"] == dummy_stage._jog_loop
+    # Args are jut the first command
+    thread_args = mock_thread.call_args.kwargs["args"]
+    assert len(thread_args) == 1
+    assert thread_args[0] is commands[2]
+    # New queue is never used
+    assert dummy_stage._jog_queue.put.call_count == 0
+
+    # Finally acquire the jog lock
+    with dummy_stage._jog_lock:
+        # and check a warning is thrown
+        with caplog.at_level(logging.WARNING):
+            dummy_stage._send_jog_command(commands[3])
+        assert len(caplog.records) == 1
+        # No new thread or queue created
+        assert mock_queue.call_count == 2
+        assert mock_thread.call_count == 2
+        # And still nothing added to the queue
+        assert dummy_stage._jog_queue.put.call_count == 0
+
+
 def test_get_jog_from_queue_most_recent(dummy_stage):
     """Test that the jog queue gives the most recent Jog Command."""
     # Try to stack 4 moves in the queue, only 1 should be queued.
