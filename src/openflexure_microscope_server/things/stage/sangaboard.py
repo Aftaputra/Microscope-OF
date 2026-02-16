@@ -47,6 +47,8 @@ class SangaboardThing(BaseStage):
         """
         self.sangaboard_kwargs = copy(kwargs)
         self.sangaboard_kwargs["port"] = port
+        # Set a default step time, before reading on enter.
+        self._step_time = 0.001
 
         super().__init__(thing_server_interface, **kwargs)
 
@@ -55,8 +57,11 @@ class SangaboardThing(BaseStage):
         self._sangaboard = sangaboard.Sangaboard(**self.sangaboard_kwargs)
         with self._hardware_lock:
             self._sangaboard.query("blocking_moves false")
+            # Read step time only on enter as there is no provision for changing speed.
+            self._step_time = self._sangaboard.step_time * 1e-6
         self.check_firmware()
         self.update_position()
+
         return self
 
     def __exit__(
@@ -141,7 +146,7 @@ class SangaboardThing(BaseStage):
         """Calculate the expected duration of a move with the given displacement."""
         max_displacement = max(abs(d) for d in displacement)
         # This does not yet check the board's speed.
-        return max_displacement * 0.001
+        return max_displacement * self._step_time
 
     def _hardware_move_relative(
         self,
