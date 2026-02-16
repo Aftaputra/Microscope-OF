@@ -179,10 +179,13 @@ class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]
     This must be between 0.1 and 0.7.
     """
 
-    autofocus_dz: int = lt.setting(default=1000, ge=200, le=2000)
+    autofocus_dz: int = lt.setting(default=1000, ge=400, le=3000)
     """The z distance to perform an autofocus in steps.
 
-    Must be greater than or equal to 200, and less than or equal to 2000.
+    Must be greater than or equal to 400, and less than or equal to 3000.
+
+    Note that 200 steps is the backlash correction size, so the value
+    must be above this. 3000 is a sensible limit for 20x objectives.
     """
 
     # The noqa statement is because scan_name is unused but is needed for equivalence
