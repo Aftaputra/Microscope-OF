@@ -2,6 +2,8 @@
 
 import itertools
 import logging
+import threading
+import time
 
 import pytest
 from hypothesis import HealthCheck, given, settings
@@ -14,6 +16,7 @@ from openflexure_microscope_server.things.camera.simulation import SimulatedCame
 from openflexure_microscope_server.things.stage import (
     BaseStage,
     JogCommand,
+    JogQueue,
     RedefinedBaseMovementError,
 )
 from openflexure_microscope_server.things.stage.dummy import DummyStage
@@ -468,3 +471,78 @@ def test_get_jog_from_queue_most_recent(dummy_stage):
     assert command.displacement == (3, 3, 3)
     # Nothing else is queued
     assert dummy_stage._get_from_jog_queue(0.001) is None
+
+
+def _setup_jog_loop(command, dummy_stage, mocker):
+    """Set up a jog loop in a thread and return.
+
+    :return: The thread, and the mocks for ``_hardware_start_move_relative``,
+        ``_hardware_stop``, and ``_poll_moving``.
+    """
+    mocker.patch.object(dummy_stage, "_estimate_move_duration", return_value=0.01)
+    mock_poll = mocker.patch.object(dummy_stage, "_poll_moving", return_value=True)
+
+    def stop_mock_move(*_args, **_kwargs):
+        """Set the return value of poll to false on stop."""
+        mock_poll.return_value = False
+
+    mock_move = mocker.patch.object(dummy_stage, "_hardware_start_move_relative")
+    mock_stop = mocker.patch.object(
+        dummy_stage, "_hardware_stop", side_effect=stop_mock_move
+    )
+
+    dummy_stage._jog_queue = JogQueue()
+    thread = threading.Thread(target=dummy_stage._jog_loop, args=(command,))
+    thread.start()
+    return thread, mock_move, mock_stop, mock_poll
+
+
+def test_jog_loop_jog_once_only(dummy_stage, mocker):
+    """Check if jogging once the jog loops breaks when the move ends.
+
+    This checks there is no need for an explicit stop command.
+    """
+    command = JogCommand([1, 1, 0])
+    thread, mock_move, mock_stop, mock_poll = _setup_jog_loop(
+        command, dummy_stage, mocker
+    )
+    time.sleep(0.05)
+    assert thread.is_alive()
+    # Move was called
+    assert mock_move.call_count == 1
+    # Claim the motors have stopped
+    mock_poll.return_value = False
+    # Wait longer than 0.1s
+    time.sleep(0.15)
+    assert not thread.is_alive()
+    # Move never called again
+    assert mock_move.call_count == 1
+    # Stop never called.
+    assert mock_stop.call_count == 0
+
+
+def test_jog_loop_jog_twice_then_stop(dummy_stage, mocker):
+    """Check if jogging twice then calling stop."""
+    command = JogCommand([1, 0, 0])
+    command2 = JogCommand([2, 0, 0])
+    command3 = JogCommand(None)
+    thread, mock_move, mock_stop, mock_poll = _setup_jog_loop(
+        command, dummy_stage, mocker
+    )
+    time.sleep(0.05)
+    assert thread.is_alive()
+    # Move was called
+    assert mock_move.call_count == 1
+    assert mock_stop.call_count == 0
+
+    dummy_stage._jog_queue.put(command2)
+    time.sleep(0.05)
+    assert thread.is_alive()
+    assert mock_move.call_count == 2
+    assert mock_stop.call_count == 0
+
+    dummy_stage._jog_queue.put(command3)
+    time.sleep(0.15)
+    assert not thread.is_alive()
+    assert mock_move.call_count == 2
+    assert mock_stop.call_count == 1
