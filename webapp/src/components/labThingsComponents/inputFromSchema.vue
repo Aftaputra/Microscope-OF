@@ -8,6 +8,7 @@
           v-model="internalValue"
           class="uk-form-small numeric-setting-line-input"
           :class="{ edited: isEdited, flash: animateUpdate }"
+          :disabled="isDisabled"
           type="number"
           @input="grabFocus"
           @focusout="focusOut"
@@ -22,6 +23,7 @@
         <input
           ref="checkbox"
           v-model="internalValue"
+          :disabled="isDisabled"
           class="uk-checkbox"
           type="checkbox"
           @change="sendValue"
@@ -39,6 +41,7 @@
           v-model="internalValue[i - 1]"
           class="uk-form-small numeric-setting-line-input"
           :class="{ edited: isEdited, flash: animateUpdate }"
+          :disabled="isDisabled"
           type="number"
           @input="grabFocus"
           @focusout="focusOut"
@@ -57,6 +60,7 @@
             v-model="internalValue[key]"
             class="uk-form-small numeric-setting-line-input"
             :class="{ edited: isEdited, flash: animateUpdate }"
+            :disabled="isDisabled"
             type="number"
             @input="grabFocus"
             @focusout="focusOut"
@@ -74,6 +78,7 @@
           v-model="internalValue"
           class="uk-form-small numeric-setting-line-input"
           :class="{ edited: isEdited, flash: animateUpdate }"
+          :disabled="isDisabled"
           type="text"
           @focusout="focusOut"
           @keydown="keyDown"
@@ -165,6 +170,11 @@ export default {
       } else {
         return 1;
       }
+    },
+    isDisabled() {
+      return !this.dataSchema?.forms?.some(form =>
+        form.op?.includes('writeproperty')
+      );
     },
     dataType: function () {
       let prop = this.dataSchema;
