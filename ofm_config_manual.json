@@ -1,9 +1,6 @@
 {
     "things": {
-        "camera": {
-            "class": "openflexure_microscope_server.things.camera.opencv:OpenCVCamera",
-            "kwargs": {"camera_index": 0}
-        },
+        "camera": "openflexure_microscope_server.things.camera.opencv:OpenCVCamera",
         "system": "openflexure_microscope_server.things.system:OpenFlexureSystem"
     },
     "settings_folder": "./openflexure/settings/",

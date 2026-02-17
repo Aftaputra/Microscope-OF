@@ -19,7 +19,9 @@ from PIL import Image
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from . import BaseCamera
+from openflexure_microscope_server.ui import PropertyControl, property_control_for
+
+from . import BaseCamera, opencv_utils
 
 LOGGER = logging.getLogger(__name__)
 
@@ -27,25 +29,30 @@ LOGGER = logging.getLogger(__name__)
 class OpenCVCamera(BaseCamera):
     """A Thing that provides and interface to an OpenCV Camera."""
 
-    def __init__(
-        self, thing_server_interface: lt.ThingServerInterface, camera_index: int = 0
-    ) -> None:
+    def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Iniatilise the thing storing the index of the camera to use.
 
         :param camera_index: The index of the camera to use for the microscope.
         """
         super().__init__(thing_server_interface)
-        self.camera_index = camera_index
+
+        self.cameras: dict[str, int] = {}
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
 
     def __enter__(self) -> Self:
         """Start the capture thread when the Thing context manager is opened."""
         super().__enter__()
-        self.cap = cv2.VideoCapture(self.camera_index)
-        self._capture_enabled = True
-        self._capture_thread = Thread(target=self._capture_frames)
-        self._capture_thread.start()
+        all_camera_ids = opencv_utils.find_all_cameras()
+        if not all_camera_ids:
+            raise RuntimeError("No cameras available.")
+        self.cameras = opencv_utils.identify_cameras(all_camera_ids)
+        if self.camera_name not in self.cameras:
+            if self.camera_name:
+                self.logger.warning("{self.camera_name} not found.")
+            self._camera_name = next(iter(self.cameras))
+
+        self._start_stream()
         return self
 
     def __exit__(
@@ -58,12 +65,40 @@ class OpenCVCamera(BaseCamera):
 
         Before releasing the camera the capture thread is closed.
         """
+        self._stop_stream()
+        super().__exit__(exc_type, exc_value, traceback)
+
+    _camera_name = ""
+
+    @lt.setting
+    def camera_name(self) -> str:
+        """The name of the camera."""
+        return self._camera_name
+
+    @camera_name.setter
+    def _set_camera_name(self, value: str) -> None:
+        """Set the name of the camera."""
+        if value not in self.cameras:
+            raise ValueError("{value} is not a valid camera name.")
+        self._camera_name = value
+        self._start_stream()
+
+    def _start_stream(self) -> None:
+        """Start the camera stream or restart if running."""
+        if self.stream_active:
+            self._stop_stream()
+        self.cap = cv2.VideoCapture(self.cameras[self.camera_name])
+        self._capture_enabled = True
+        self._capture_thread = Thread(target=self._capture_frames)
+        self._capture_thread.start()
+
+    def _stop_stream(self) -> None:
+        """Stop the camera stream."""
         if self.stream_active:
             self._capture_enabled = False
             if self._capture_thread is not None:
                 self._capture_thread.join()
         self.cap.release()
-        super().__exit__(exc_type, exc_value, traceback)
 
     @lt.property
     def stream_active(self) -> bool:
@@ -76,7 +111,7 @@ class OpenCVCamera(BaseCamera):
         while self._capture_enabled:
             ret, frame = self.cap.read()
             if not ret:
-                LOGGER.error(f"Failed to capture frame from camera {self.camera_index}")
+                LOGGER.error("Failed to capture frame from camera.")
                 break
             jpeg = cv2.imencode(".jpg", frame)[1].tobytes()
             self.mjpeg_stream.add_frame(jpeg)
@@ -107,9 +142,7 @@ class OpenCVCamera(BaseCamera):
         LOGGER.warning(f"OpenCV camera doesn't respect {stream_name=}")
         ret, frame = self.cap.read()
         if not ret:
-            raise RuntimeError(
-                f"Failed to capture frame from camera {self.camera_index}"
-            )
+            raise RuntimeError("Failed to capture frame from camera.")
         return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     def capture_image(
@@ -125,3 +158,14 @@ class OpenCVCamera(BaseCamera):
             LOGGER.warning("OpenCV camera has no wait option. Use None.")
         LOGGER.warning(f"OpenCV camera doesn't respect {stream_name=}")
         return Image.fromarray(self.capture_array())
+
+    @lt.property
+    def manual_camera_settings(self) -> list[PropertyControl]:
+        """The camera settings to expose as property controls in the settings panel."""
+        return [
+            property_control_for(
+                self,
+                "camera_name",
+                label="Camera name",
+            ),
+        ]
