@@ -38,7 +38,7 @@ class JogCommand:
     def __init__(self, displacement: Optional[Sequence[int]]) -> None:
         """Initialise a JogCommand.
 
-        :param displacement: The distances as a sequence of the move for each axis.
+        :param displacement: The distances as a sequence of moves for each axis.
             None for stop motion.
         """
         super().__init__()
@@ -347,7 +347,7 @@ class BaseStage(lt.Thing):
                 if not self._poll_moving():
                     # The stage is no longer moving, return None
                     return None
-            # If we reached here then the stage is still moving shorten timeout and
+            # If we reached here then the stage is still moving. Shorten timeout and
             # check again.
             timeout = 0.1
 

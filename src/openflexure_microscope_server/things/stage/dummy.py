@@ -88,10 +88,7 @@ class DummyStage(BaseStage):
     def _set_pos_during_move(
         self, displacement: Sequence[int], fraction_complete: float
     ) -> None:
-        """Set the instantaneous position from the fraction through a move.
-
-        If this is the final set, also update hardware position
-        """
+        """Set the instantaneous position based on the completed fraction of an ongoing move."""
         self.instantaneous_position = {
             ax: self._hardware_position[ax] + int(fraction_complete * disp)
             for ax, disp in zip(self.axis_names, displacement, strict=True)
