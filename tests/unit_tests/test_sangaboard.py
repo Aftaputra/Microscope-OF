@@ -9,6 +9,7 @@ from labthings_fastapi.testing import create_thing_without_server
 from openflexure_microscope_server.things.stage.sangaboard import (
     RECOMMENDED_VERSION,
     REQUIRED_VERSION,
+    WIKI_URL,
     SangaboardThing,
 )
 
@@ -39,7 +40,7 @@ def test_firmware_before_recommended(mock_sanga_thing, caplog):
     assert len(caplog.records) == 1
     msg = (
         f"Sangaboard firmware version {REQUIRED_VERSION} is below the recommended "
-        f"{RECOMMENDED_VERSION}."
+        f"{RECOMMENDED_VERSION}. Visit {WIKI_URL} for instructions on updating."
     )
     assert caplog.records[0].message == msg
 
@@ -56,7 +57,7 @@ def test_dev_is_before_recommended(mock_sanga_thing, caplog):
     assert len(caplog.records) == 1
     msg = (
         f"Sangaboard firmware version {dev_version} is below the recommended "
-        f"{RECOMMENDED_VERSION}."
+        f"{RECOMMENDED_VERSION}. Visit {WIKI_URL} for instructions on updating."
     )
     assert caplog.records[0].message == msg
 

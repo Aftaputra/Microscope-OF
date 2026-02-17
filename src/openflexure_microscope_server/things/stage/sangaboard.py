@@ -17,6 +17,7 @@ from . import BaseStage
 
 REQUIRED_VERSION = semver.Version.parse("1.0.0")
 RECOMMENDED_VERSION = semver.Version.parse("1.0.4")
+WIKI_URL = "https://openflexure.miraheze.org/wiki/Sangaboard"
 
 
 class SangaboardThing(BaseStage):
@@ -108,14 +109,14 @@ class SangaboardThing(BaseStage):
             if version < REQUIRED_VERSION:
                 raise RuntimeError(
                     f"Sangaboard firmware version {version} is below the required "
-                    f"{REQUIRED_VERSION}."
+                    f"{REQUIRED_VERSION}. Visit {WIKI_URL} for instructions on updating."
                 )
 
             # Warn if version is below recommended
             if version < RECOMMENDED_VERSION:
                 self.logger.warning(
                     f"Sangaboard firmware version {version} is below the recommended "
-                    f"{RECOMMENDED_VERSION}."
+                    f"{RECOMMENDED_VERSION}. Visit {WIKI_URL} for instructions on updating."
                 )
 
     def _hardware_move_relative(
