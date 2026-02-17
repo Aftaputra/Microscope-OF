@@ -36,7 +36,7 @@ LOGGER = logging.getLogger(__name__)
 
 # The ratio between "motor" steps and pixels in (x, y, z)
 # higher related to a faster movement
-RATIO = (2, 2, 0.2)
+RATIO = (2, 2, 0.07)
 
 # Some colour variation, for bg detect.
 BG_COLOR = [220, 215, 217]
