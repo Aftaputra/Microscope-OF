@@ -268,30 +268,54 @@ class FinalStitcher(BaseStitcher):
             raise RuntimeError("stdout pipe was not created")
         # Stop opening pipe blocking writing to it
         os.set_blocking(process.stdout.fileno(), False)
+        output_lines = self._log_ongoing(process)
+        returncode = process.wait()
+        full_output = "\n".join(output_lines)
 
-        self._log_ongoing(process)
-
-        if process.poll() == 0:
+        if returncode == 0:
             self.logger.info("Stitching complete")
-        elif process.poll() == -9:
+
+        elif returncode == -9:
             raise ExternalSigkillError(
-                "Stitching was killed by an external process. This is "
-                "most likely due to running out of memory."
+                "Stitching was killed by an external process. "
+                "Most likely due to running out of memory."
+            )
+
+        elif returncode == 1:
+            if "No space left on device" in full_output or "Errno 28" in full_output:
+                raise ChildProcessError(
+                    "Not enough space on disk to stitch. Please delete some scans or increase "
+                    "your storage size."
+                )
+            if (
+                "Maximum supported image dimension" in full_output
+                or "OSError: broken data stream when writing image file" in full_output
+            ):
+                raise ChildProcessError(
+                    "Image dimensions too big for stitching into a JPEG file. Stitched output will "
+                    "exceed the maximum number of pixels in a JPEG (65,535x65,535 pixels). Download "
+                    "the full scan and stitch with alternate settings."
+                )
+            raise ChildProcessError(
+                "Unexpected error when stitching (Exit code 1).\nCheck the logs for more information."
             )
         else:
             raise ChildProcessError(
-                f"Subprocess {STITCHING_CMD} errored with exit code {process.poll()}."
+                f"Stitching errored with exit code {returncode}.\nCheck the logs for more information."
             )
 
-    def _log_ongoing(self, process: subprocess.Popen[str]) -> None:
-        """Log the ongoing process unless it is cancelled."""
+    def _log_ongoing(self, process: subprocess.Popen[str]) -> list[str]:
+        """Log the ongoing process unless it is cancelled.
+
+        :returns: a list of all lines
+        """
         if process.stdout is None:  # pragma: no cover - impossible with stdout=PIPE
             raise RuntimeError("stdout pipe was not created")
 
+        output_lines: list[str] = []
         # Poll returns None while running, will return the error code when finished
         while process.poll() is None:
-            self.log_buffer(process.stdout)
-            # Once buffer is clear sleep for 0.2s before trying again.
+            output_lines.extend(self.log_buffer(process.stdout))
 
             try:
                 # This should act exactly like sleep if not started in a LabThings
@@ -304,11 +328,17 @@ class FinalStitcher(BaseStitcher):
                 raise e
 
         # Print everything in the buffer when program finishes
-        self.log_buffer(process.stdout)
+        output_lines.extend(self.log_buffer(process.stdout))
 
-    def log_buffer(self, buffer: IO[str]) -> None:
-        """Log everything in the buffer at INFO level."""
-        # Use rstrip to remove newlines from each line, as logging provides its own
-        # new lines
+        return output_lines
+
+    def log_buffer(self, buffer: IO[str]) -> list[str]:
+        """Log everything currently available in the buffer and return lines."""
+        lines: list[str] = []
+
         while line := buffer.readline():
-            self.logger.info(line.rstrip())
+            clean = line.rstrip()
+            self.logger.info(clean)
+            lines.append(line)
+
+        return lines
