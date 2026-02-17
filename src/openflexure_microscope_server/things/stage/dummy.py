@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import queue
 import threading
 import time
 from collections.abc import Sequence
@@ -11,6 +12,18 @@ from typing import Any, Mapping, Optional, Self
 import labthings_fastapi as lt
 
 from . import BaseStage
+
+
+class DummyStageMovement:
+    """A class used internally to send movements to the dummy stages movement thread."""
+
+    def __init__(self, displacement: Optional[Sequence[int]]) -> None:
+        """Initialise with a displacement.
+
+        :param displacement: A sequence of integers or None to stop the motion.
+        """
+        self.started = threading.Event()
+        self.displacement = displacement
 
 
 class DummyStage(BaseStage):
@@ -34,15 +47,22 @@ class DummyStage(BaseStage):
             also doing computationally heavy tasks like simulated image blurring.
         """
         super().__init__(thing_server_interface, **kwargs)
+        self._movement_enabled = False
         self._move_thread: Optional[threading.Thread] = None
+        self._move_queue = queue.Queue[DummyStageMovement]()
+        self._movement_ongoing = False
+
         self.step_time = step_time
         self.instantaneous_position: Mapping[str, int] = self._hardware_position
         self._inst_pos_lock = threading.Lock()
         self._abort_move = threading.Event()
 
     def __enter__(self) -> Self:
-        """Register the stage position when the Thing context manager is opened."""
+        """Register the stage position and start move thread running."""
         self.instantaneous_position = self._hardware_position
+        self._movement_enabled = True
+        self._move_thread = threading.Thread(target=self._move_loop)
+        self._move_thread.start()
         return self
 
     def __exit__(
@@ -51,7 +71,10 @@ class DummyStage(BaseStage):
         _exc_value: Optional[BaseException],
         _traceback: Optional[TracebackType],
     ) -> None:
-        """Nothing to do when the Thing context manager is closed."""
+        """Stop the move thread."""
+        if self._move_thread is not None and self._move_thread.is_alive():
+            self._movement_enabled = False
+            self._move_thread.join()
 
     axis_inverted: dict[str, bool] = lt.setting(
         default={"x": True, "y": False, "z": False}, readonly=True
@@ -62,45 +85,73 @@ class DummyStage(BaseStage):
         """Read position from the stage and set the corresponding property."""
         pass
 
-    def _calc_fractional_pos(
+    def _set_pos_during_move(
         self, displacement: Sequence[int], fraction_complete: float
-    ) -> dict[str, int]:
-        """Calculate the position a fraction through a move."""
-        return {
+    ) -> None:
+        """Set the instantaneous position from the fraction through a move.
+
+        If this is the final set, also update hardware position
+        """
+        self.instantaneous_position = {
             ax: self._hardware_position[ax] + int(fraction_complete * disp)
             for ax, disp in zip(self.axis_names, displacement, strict=True)
         }
 
-    def _apply_move(self, displacement: Sequence[int]) -> None:
-        """Make a move, this function is designed to be run in a thread by jogging.
+    def _move_loop(self) -> None:
+        """Run the move loop. This should be run in a thread on enter.
 
-        This can't be used for normal movements as the delays setting up the extra
-        threads causes autofucs to fail. As such `_hardware_move_relative` is similarly
-        structured.
-
-        Interrupt this function with the ``self._abort_move`` event.
-
-        :param displacement: The (x, y, z) position.
+        This controls all movement of the dummy stage.
         """
+        # Start with no move request
+        movement_request: Optional[DummyStageMovement] = None
+        # Loop until the server ends.
+        while self._movement_enabled:
+            # First check for a new movement request. These will interrupt ongoing moves
+            movement_request = self._check_for_new_move_request()
+
+            # If there is a new movement.
+            if movement_request is not None:
+                # Set the hardware position from instantaneous before continuing.
+                self._hardware_position = self.instantaneous_position
+
+                if movement_request.displacement is None:
+                    # If it is a stop command, stop moving
+                    self._movement_ongoing = False
+                    movement_request.started.set()
+                else:
+                    # Record the displacement for future iterations
+                    displacement = movement_request.displacement
+                    # If it is a move command, set up the variables for the move
+                    self._movement_ongoing = True
+                    movement_request.started.set()
+                    fraction_complete = 0.0
+                    dt = self.step_time
+                    max_displacement = max(abs(v) for v in displacement)
+                    # Always wait at least dt
+                    total_time = max((dt * max_displacement), dt)
+                    start_time = time.time()
+                    time.sleep(dt)
+
+            # If a movement is ongoing
+            if self._movement_ongoing:
+                fraction_complete = (time.time() - start_time) / total_time
+                if fraction_complete < 1:
+                    self._set_pos_during_move(displacement, fraction_complete)
+                else:
+                    # move is complete
+                    fraction_complete = 1.0
+                    self._set_pos_during_move(displacement, fraction_complete)
+                    self._hardware_position = self.instantaneous_position
+                    self._movement_ongoing = False
+
+    def _check_for_new_move_request(self) -> Optional[DummyStageMovement]:
+        """Check for new move request to the move_loop."""
         try:
-            fraction_complete = 0.0
-            dt = self.step_time
-            max_displacement = max(abs(v) for v in displacement)
-            start_time = time.time()
-            while time.time() - start_time < dt * max_displacement:
-                if self._abort_move.is_set():
-                    break
-                fraction_complete = (time.time() - start_time) / (dt * max_displacement)
-                self.instantaneous_position = self._calc_fractional_pos(
-                    displacement, fraction_complete
-                )
-            if not self._abort_move.is_set():
-                fraction_complete = 1.0
-        finally:
-            self._hardware_position = self._calc_fractional_pos(
-                displacement, fraction_complete
-            )
-            self.instantaneous_position = self._hardware_position
+            # Timeout sets the motor speed time
+            timeout = self.step_time * 10 if self._movement_ongoing else 0.1
+            return self._move_queue.get(timeout=timeout)
+        except queue.Empty:
+            return None
 
     def _hardware_start_move_relative(self, displacement: Sequence[int]) -> None:
         """Start a relative move.
@@ -111,22 +162,16 @@ class DummyStage(BaseStage):
         """
         with self._hardware_lock:
             self.moving = True
-            self._abort_move.clear()
-            self._move_thread = threading.Thread(
-                target=self._apply_move, args=(displacement,)
-            )
-            self._move_thread.start()
+            self._move_queue.put(DummyStageMovement(displacement))
 
     def _hardware_stop(self) -> None:
         with self._hardware_lock:
-            self._abort_move.set()
+            self._move_queue.put(DummyStageMovement(None))
             self.moving = False
 
     def _poll_moving(self) -> bool:
         """Determine if the stage is still moving."""
-        if self._move_thread is None:
-            return False
-        moving = self._move_thread.is_alive()
+        moving = self._movement_ongoing
         if self.moving != moving:
             self.moving = moving
         return moving
@@ -146,38 +191,26 @@ class DummyStage(BaseStage):
         with self._hardware_lock:
             displacement = [kwargs.get(k, 0) for k in self.axis_names]
             self.moving = True
-            # This follows a similar structure to _apply_move but need a different
-            # breakning mechanism. Running apply move in a thread and breaking here
-            # results in significantly worse autofocus
-            try:
-                fraction_complete = 0.0
-                dt = self.step_time
-                max_displacement = max(abs(v) for v in displacement)
-                start_time = time.time()
-                while time.time() - start_time < dt * max_displacement:
+            move_request = DummyStageMovement(displacement)
+            self._move_queue.put(move_request)
+
+            move_request.started.wait(timeout=0.1)
+            while self._movement_ongoing:
+                try:
                     if block_cancellation:
-                        time.sleep(self.step_time)
+                        time.sleep(self.step_time * 10)
                     else:
-                        lt.cancellable_sleep(self.step_time)
-                    fraction_complete = (time.time() - start_time) / (
-                        dt * max_displacement
-                    )
-                    self.instantaneous_position = self._calc_fractional_pos(
-                        displacement, fraction_complete
-                    )
-                fraction_complete = 1.0
-            except lt.exceptions.InvocationCancelledError as e:
-                # If the move has been cancelled, stop it but don't handle the
-                # exception. We need the exception to propagate in order to stop
-                # any calling tasks, and to mark the invocation as "cancelled"
-                # rather than stopped.
-                raise e
-            finally:
-                self._hardware_position = self._calc_fractional_pos(
-                    displacement, fraction_complete
-                )
-                self.instantaneous_position = self._hardware_position
-                self.moving = False
+                        lt.cancellable_sleep(self.step_time * 10)
+
+                except lt.exceptions.InvocationCancelledError as e:
+                    # If the move has been cancelled, stop it but don't handle the
+                    # exception. We need the exception to propagate in order to stop
+                    # any calling tasks, and to mark the invocation as "cancelled"
+                    # rather than stopped.
+                    self._move_queue.put(DummyStageMovement(None))
+                    raise e
+                finally:
+                    self.moving = False
 
     def _hardware_move_absolute(
         self,

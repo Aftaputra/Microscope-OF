@@ -37,7 +37,7 @@ path3d = st.lists(point3d, min_size=5, max_size=10)
 @pytest.fixture
 def dummy_stage():
     """Return a dummy stage with a very low step time."""
-    return create_thing_without_server(DummyStage, step_time=0.000001)
+    return create_thing_without_server(DummyStage, step_time=0.0001)
 
 
 def test_not_implemented_methods():
@@ -206,15 +206,20 @@ def _test_move_relative(dummy_stage, axis_inverted, path):
     y_dir = -1 if axis_inverted["y"] else 1
     z_dir = -1 if axis_inverted["z"] else 1
 
-    position = list(dummy_stage.position.values())
-    for movement in path:
-        dummy_stage.move_relative(x=movement[0], y=movement[1], z=movement[2])
-        position = [pos + move for pos, move in zip(position, movement, strict=True)]
-        stage_pos = dummy_stage.get_xyz_position()
-        hw_pos = dummy_stage._hardware_position
-        assert position[0] == stage_pos[0] == hw_pos["x"] * x_dir
-        assert position[1] == stage_pos[1] == hw_pos["y"] * y_dir
-        assert position[2] == stage_pos[2] == hw_pos["z"] * z_dir
+    # Enter the stage to start the movement thread.
+    with dummy_stage:
+        assert dummy_stage._move_thread.is_alive()
+        position = list(dummy_stage.position.values())
+        for movement in path:
+            dummy_stage.move_relative(x=movement[0], y=movement[1], z=movement[2])
+            position = [
+                pos + move for pos, move in zip(position, movement, strict=True)
+            ]
+            stage_pos = dummy_stage.get_xyz_position()
+            hw_pos = dummy_stage._hardware_position
+            assert position[0] == stage_pos[0] == hw_pos["x"] * x_dir
+            assert position[1] == stage_pos[1] == hw_pos["y"] * y_dir
+            assert position[2] == stage_pos[2] == hw_pos["z"] * z_dir
 
 
 @given(path=path3d)
@@ -260,14 +265,18 @@ def _test_move_absolute(dummy_stage, axis_inverted, path):
     y_dir = -1 if axis_inverted["y"] else 1
     z_dir = -1 if axis_inverted["z"] else 1
     position = list(dummy_stage.position.values())
-    for move_to in path:
-        dummy_stage.move_absolute(x=move_to[0], y=move_to[1], z=move_to[2])
-        position = move_to
-        stage_pos = dummy_stage.get_xyz_position()
-        hw_pos = dummy_stage._hardware_position
-        assert position[0] == stage_pos[0] == hw_pos["x"] * x_dir
-        assert position[1] == stage_pos[1] == hw_pos["y"] * y_dir
-        assert position[2] == stage_pos[2] == hw_pos["z"] * z_dir
+
+    # Enter the stage to start the movement thread.
+    with dummy_stage:
+        assert dummy_stage._move_thread.is_alive()
+        for move_to in path:
+            dummy_stage.move_absolute(x=move_to[0], y=move_to[1], z=move_to[2])
+            position = move_to
+            stage_pos = dummy_stage.get_xyz_position()
+            hw_pos = dummy_stage._hardware_position
+            assert position[0] == stage_pos[0] == hw_pos["x"] * x_dir
+            assert position[1] == stage_pos[1] == hw_pos["y"] * y_dir
+            assert position[2] == stage_pos[2] == hw_pos["z"] * z_dir
 
 
 @given(path=path3d)

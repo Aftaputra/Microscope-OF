@@ -100,7 +100,7 @@ class BaseStage(lt.Thing):
         self._jog_lock = threading.Lock()
         self._jog_queue = JogQueue()
         self._jog_thread: Optional[threading.Thread] = None
-        self._hardware_position = dict.fromkeys(self._axis_names, 0)
+        self._hardware_position: Mapping[str, int] = dict.fromkeys(self._axis_names, 0)
 
         # This must be the last thing the function does in case it is caught in a try.
         if (
