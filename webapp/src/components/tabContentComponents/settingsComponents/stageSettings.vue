@@ -23,7 +23,7 @@
           </div>
         </div>
       </div>
-      <div v-if="stageType !== 'DummyStage'" class="uk-width-large">
+      <div v-if="stageMeasureAvailable" class="uk-width-large">
         <h4>Stage Measurement Tools</h4>
 
         <div class="uk-margin">
@@ -77,6 +77,9 @@ export default {
   computed: {
     stageType: function () {
       return this.thingDescription("stage").title;
+    },
+    stageMeasureAvailable() {
+      return this.thingAvailable("stage_measure");
     },
   },
 
