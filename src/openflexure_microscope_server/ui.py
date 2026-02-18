@@ -40,6 +40,13 @@ class ActionButton(BaseModel):
     modal_progress: bool = False
     """Specify whether to show a progress modal."""
 
+    stream_with_modal: bool = False
+    """Specify whether to show a mini stream preview in the progress modal.
+
+    This option only has an effect if `modal_progress` is True.
+    If `modal_progress` is False, no modal (and therefore no stream preview) is shown.
+    """
+
     notify_on_success: bool = False
     """Specify whether to a notification on successful completion."""
 

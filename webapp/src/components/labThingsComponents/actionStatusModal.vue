@@ -115,7 +115,11 @@ export default {
   margin-left: 5px;
   margin-right: 5px;
 }
-
+#status-modal {
+  max-height: 90vh;   // never exceed 90% of viewport height
+  display: flex;
+  flex-direction: column;
+}
 #status-modal .log-container {
   height: 10em;
 }
