@@ -85,7 +85,7 @@ IMX219_SENSOR_INFO = SensorInfo(
     unpacked_pixel_format="SBGGR10",
     bit_depth=10,
     blacklevel=64,
-    default_target_white_level=300,
+    default_target_white_level=400,
     short_pause=0.2,
     long_pause=0.5,
 )
@@ -95,7 +95,7 @@ IMX477_SENSOR_INFO = SensorInfo(
     unpacked_pixel_format="SBGGR12",
     bit_depth=12,
     blacklevel=256,
-    default_target_white_level=1200,
+    default_target_white_level=1600,
     short_pause=0.2,
     long_pause=1.0,
 )
