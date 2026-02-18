@@ -83,7 +83,7 @@ export default {
       if (typeof data === "string") return data;
       try {
         return JSON.stringify(data, null, 2);
-      } catch (err) {
+      } catch {
         return String(data);
       }
     },
@@ -97,7 +97,7 @@ export default {
         if (error.response.data.detail) {
           try {
             return error.response.data.detail[0].msg;
-          } catch (err) {
+          } catch {
             return error.response.data.detail;
           }
         }
