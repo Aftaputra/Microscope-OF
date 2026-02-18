@@ -83,11 +83,11 @@ class PropertyControl(BaseModel):
     read_back_delay: int = 1000
     """The delay in ms before reading back the property."""
 
-    options: Optional[list[str]] = None
-    """A list of options to pass to the UI for a dropdown.
+    options: Optional[dict[str, str | int | float | bool]] = None
+    """A mapping of UI display name to value use for creating a dropdown.
 
-    These options aren't validated in the UI in any way, and invalid
-    settings will only be rejected when selected.
+    These options aren't validated here in any way. Any invalid values will be rejected
+    when selected.
     """
 
 

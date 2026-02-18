@@ -5,11 +5,11 @@
       <div class="input-and-buttons-container">
         <select
           v-model="internalValue"
-          class="uk-form-small numeric-setting-line-input"
+          class="uk-form-small numeric-setting-line-input dropdown"
           @change="sendValue"
         >
-          <option v-for="(opt, idx) in options" :key="idx" :value="opt">
-            {{ opt }}
+          <option v-for="(value, display) in options" :key="value" :value="value">
+            {{ display }}
           </option>
         </select>
         <sync-property-button @click="requestUpdate" />
@@ -145,7 +145,8 @@ export default {
     },
     options: {
       type: Array,
-      default: undefined,
+      // Default is Null as None is passed from the server.
+      default: null,
       required: false,
     },
   },
@@ -197,7 +198,12 @@ export default {
       );
     },
     useDropdown: function () {
-      return Array.isArray(this.options) && this.options.length > 1;
+      if (this.options === null) return false;
+      if (["number", "string", "boolean"].includes(this.dataType)) {
+        return true;
+      }
+      console.warn(`Cannot support dropdown for datatype of ${this.dataType}`);
+      return false;
     },
     dataType: function () {
       let prop = this.dataSchema;
@@ -350,6 +356,11 @@ export default {
   margin-left: 5px;
   margin-right: 5px;
   width: 6em;
+}
+.dropdown {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  opacity: 1;
 }
 .edited {
   background-color: #fff3cd;

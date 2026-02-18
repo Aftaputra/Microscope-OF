@@ -46,7 +46,7 @@ export default {
       required: false,
     },
     options: {
-      type: Array,
+      type: Object,
       default: undefined,
       required: false,
     },
