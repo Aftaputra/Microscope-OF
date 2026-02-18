@@ -2,6 +2,10 @@
   <div ref="modal" class="" uk-modal="bg-close: false; esc-close: false; stack: true;">
     <div id="status-modal" class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
       <h2>{{ title }}</h2>
+      <mini-stream-display
+        v-if="displayStream"
+        class="uk-margin-small-bottom"
+      />
       <action-log-display :log="log" :task-status="taskStatus" />
       <div id="progress-and-cancel-row">
         <div class="stretchy">
@@ -29,12 +33,14 @@ import UIkit from "uikit";
 import ActionProgressBar from "./actionProgressBar.vue";
 import ActionLogDisplay from "./actionLogDisplay.vue";
 import { eventBus } from "../../eventBus.js";
+import miniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
 
 export default {
   name: "ActionStatusModal",
   components: {
     ActionProgressBar,
     ActionLogDisplay,
+    miniStreamDisplay,
   },
 
   props: {
@@ -66,6 +72,11 @@ export default {
     taskStatus: {
       type: String,
       required: true,
+    },
+    displayStream: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
 
@@ -104,7 +115,11 @@ export default {
   margin-left: 5px;
   margin-right: 5px;
 }
-
+#status-modal {
+  max-height: 90vh;   // never exceed 90% of viewport height
+  display: flex;
+  flex-direction: column;
+}
 #status-modal .log-container {
   height: 10em;
 }

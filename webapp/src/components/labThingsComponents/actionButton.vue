@@ -21,6 +21,7 @@
       :task-running="taskRunning"
       :task-started="taskStarted"
       :task-status="taskStatus"
+      :display-stream="modalProgress && streamWithModal"
       @terminate-task="terminateTask"
     />
   </div>
@@ -99,6 +100,11 @@ export default {
       required: false,
       default: false,
     },
+    streamWithModal: {
+      type: Boolean,
+      required: false,
+      default: false,
+    }
   },
 
   emits: [

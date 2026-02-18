@@ -13,6 +13,7 @@
         :modal-progress="true"
         @response="onRecalibrateResponse"
         @error="modalError"
+        :streamWithModal="true"
       />
     </div>
     <button

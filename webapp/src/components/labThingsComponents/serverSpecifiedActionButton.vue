@@ -9,6 +9,7 @@
     :confirmation-message="actionData.confirmation_message"
     :button-primary="actionData.button_primary"
     :modal-progress="actionData.modal_progress"
+    :stream-with-modal="actionData.stream_with_modal"
     @response="actionResponse"
     @error="modalError"
     @finished="actionFinished"
