@@ -260,7 +260,7 @@ class RangeofMotionThing(lt.Thing):
 
             # Stage may have crashed during a large move. Move stage back until motion
             # is detected
-            self.logger.info("Moving stage back until motion is detect")
+            self.logger.info("Moving stage back until motion is detected")
             self._move_back_until_motion_detected(axis=axis, direction=direction)
 
             # Replace final position.
@@ -331,8 +331,8 @@ class RangeofMotionThing(lt.Thing):
             # Note the second return, the direction, is meaningless here.
             return True, 1
         self.logger.info(
-            f"Estimated centre {abs(img_perc):.0f}% of a field of view away, "
-            "that is too far to move in one move."
+            f"Estimated centre {abs(img_perc):.0f}% of a field of view away. "
+            "Moving towards centre."
         )
         # Else calculate the desired direction in image coordinates.
         direction = self._img_dir_from_stage_coords(estimate, axis)
@@ -497,7 +497,7 @@ class RangeofMotionThing(lt.Thing):
                 abs_min_offset=abs_min_offset,
             )
             parasitic_motion = _parasitic_motion_detected(movement, offset)
-            self.logger.info(f"Offset measured as {offset[axis]}")
+            self.logger.info(f"Offset measured as {int(offset[axis])}")
             self._rom_data.record_movement(self._stage.position, offset)
 
             if abs(offset[axis]) < abs_min_offset or parasitic_motion:
@@ -532,7 +532,7 @@ class RangeofMotionThing(lt.Thing):
 
         for i in range(max_moves):
             # Increment movement
-            self.logger.info(f"Testing with step size {movement[axis]}")
+            self.logger.info(f"Testing with step size {int(movement[axis])}")
 
             # Run an autofocus every 3 steps
             run_autofocus = i % 3 == 2
@@ -540,7 +540,7 @@ class RangeofMotionThing(lt.Thing):
                 movement=movement, perform_autofocus=run_autofocus
             )
 
-            self.logger.info(f"Offset measured as {abs(offset[axis])}")
+            self.logger.info(f"Offset measured as {int(abs(offset[axis]))}")
             if abs(offset[axis]) > motion_minimum:
                 self.logger.info("Motion detected.")
                 return

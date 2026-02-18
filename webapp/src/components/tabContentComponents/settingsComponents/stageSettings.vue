@@ -23,6 +23,38 @@
           </div>
         </div>
       </div>
+      <div v-if="stageMeasureAvailable" class="uk-width-large">
+        <h4>Stage Measurement Tools</h4>
+
+        <div class="uk-margin">
+          <action-button
+            class="uk-width-1-2"
+            thing="stage_measure"
+            action="perform_recentre"
+            submit-label="Recentre Stage"
+            :button-primary="true"
+            :can-terminate="true"
+            :requires-confirmation="true"
+            :confirmation-message="'Start recalibration of the stage to find the centre of the range of motion?<br><br>Calibration requires a large, dense, flat sample with a variety of features.<br>Microscope will be locked while this runs'"
+            :modal-progress="true"
+            :stream-with-modal="true"
+          />
+        </div>
+        <div class="uk-margin">
+          <action-button
+            class="uk-width-1-2"
+            thing="stage_measure"
+            action="perform_rom_test"
+            submit-label="Run ROM Test"
+            :button-primary="true"
+            :can-terminate="true"
+            :requires-confirmation="true"
+            :confirmation-message="'Start recalibration of the stage to find the range of motion in steps?<br><br>Calibration requires a large, dense, flat sample with a variety of features.<br>Microscope will be locked while this runs'"
+            :modal-progress="true"
+            :stream-with-modal="true"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -47,6 +79,9 @@ export default {
   computed: {
     stageType: function () {
       return this.thingDescription("stage").title;
+    },
+    stageMeasureAvailable() {
+      return this.thingAvailable("stage_measure");
     },
   },
 
