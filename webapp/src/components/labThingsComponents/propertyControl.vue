@@ -47,7 +47,7 @@ export default {
     },
     options: {
       type: Object,
-      default: undefined,
+      default: null,
       required: false,
     },
   },

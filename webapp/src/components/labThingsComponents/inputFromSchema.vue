@@ -144,7 +144,7 @@ export default {
       default: null,
     },
     options: {
-      type: Array,
+      type: Object,
       // Default is Null as None is passed from the server.
       default: null,
       required: false,
