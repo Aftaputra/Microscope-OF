@@ -173,13 +173,13 @@ class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]
     # Redefine _csm Thing Slot, as CSM is required for any RectGridWorkflow
     _csm: CameraStageMapper = lt.thing_slot()
 
-    overlap: float = lt.setting(default=0.45, ge=0.1, le=0.7)
+    overlap: float = lt.setting(default=0.45, ge=0.1, le=0.7, multiple_of=0.05)
     """The fraction that adjacent images should overlap in x and y.
 
     This must be between 0.1 and 0.7.
     """
 
-    autofocus_dz: int = lt.setting(default=1000, ge=400, le=3000)
+    autofocus_dz: int = lt.setting(default=1000, ge=400, le=3000, multiple_of=200)
     """The z distance to perform an autofocus in steps.
 
     Must be greater than or equal to 400, and less than or equal to 3000.
@@ -290,18 +290,18 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
     This uses the settings from the ``BackgroundDetectThing``.
     """
 
-    max_range: int = lt.setting(default=45000)
+    max_range: int = lt.setting(default=45000, multiple_of=1000)
     """The maximum distance in steps from the centre of the scan."""
 
     # Stacking settings
 
-    stack_images_to_save: int = lt.setting(default=1)
+    stack_images_to_save: int = lt.setting(default=1, ge=1, le=9)
     """The number of images to save in a stack.
 
     Defaults to 1 unless you need to see either side of focus
     """
 
-    stack_min_images_to_test: int = lt.setting(default=9)
+    stack_min_images_to_test: int = lt.setting(default=9, ge=5, le=13)
     """The minimum number of images to capture in a stack.
 
     This many images are captures and tested for focus, if the focus is not central
@@ -311,7 +311,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
     Defaults to 9 which balances reliability and speed.
     """
 
-    stack_dz: int = lt.setting(default=50)
+    stack_dz: int = lt.setting(default=50, ge=20, le=400, multiple_of=10)
     """Distance in steps between images in a z-stack.
 
     Suggested values:

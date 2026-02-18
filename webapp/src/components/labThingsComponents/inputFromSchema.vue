@@ -25,6 +25,9 @@
           :class="{ edited: isEdited, flash: animateUpdate }"
           :disabled="isDisabled"
           type="number"
+          :min="minimum"
+          :max="maximum"
+          :step="step"
           @input="grabFocus"
           @focusout="focusOut"
           @keydown="keyDown"
@@ -241,6 +244,18 @@ export default {
         }
       }
       return "other";
+    },
+    maximum() {
+      if (this.dataType !== "number") return undefined;
+      return this.dataSchema.maximum;
+    },
+    minimum() {
+      if (this.dataType !== "number") return undefined;
+      return this.dataSchema.minimum;
+    },
+    step() {
+      if (this.dataType !== "number") return undefined;
+      return this.dataSchema.multipleOf;
     },
   },
 
