@@ -546,7 +546,19 @@ class SimulatedCamera(BaseCamera):
             property_control_for(self, "blob_density", label="Sample Density"),
             property_control_for(self, "colour", label="Sample Colour"),
             property_control_for(self, "noise_level", label="Noise Level"),
-            property_control_for(self, "objective", label="Objective Magnification"),
+            property_control_for(
+                self,
+                "objective",
+                label="Objective Magnification",
+                options={
+                    "4x": 4,
+                    "10x": 10,
+                    "20x": 20,
+                    "40x": 40,
+                    "60x": 60,
+                    "100x": 100,
+                },
+            ),
         ]
 
 
