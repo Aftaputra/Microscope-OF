@@ -84,7 +84,7 @@ class PropertyControl(BaseModel):
     """The delay in ms before reading back the property."""
 
     options: Optional[dict[str, str | int | float | bool]] = None
-    """A mapping of UI display name to value use for creating a dropdown.
+    """A mapping of UI display name to value, used for creating a dropdown.
 
     These options aren't validated here in any way. Any invalid values will be rejected
     when selected.
