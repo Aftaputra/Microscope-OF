@@ -6,6 +6,7 @@
     :label="propertyData.label"
     :read-back="propertyData.read_back"
     :read-back-delay="propertyData.read_back_delay"
+    :options="propertyData.options"
   />
 </template>
 

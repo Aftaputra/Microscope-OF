@@ -1,6 +1,6 @@
 """Functionality for communicating the required user interface for a thing."""
 
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -89,6 +89,13 @@ class PropertyControl(BaseModel):
 
     read_back_delay: int = 1000
     """The delay in ms before reading back the property."""
+
+    options: Optional[dict[str, str | int | float | bool]] = None
+    """A mapping of UI display name to value, used for creating a dropdown.
+
+    These options aren't validated here in any way. Any invalid values will be rejected
+    when selected.
+    """
 
 
 def property_control_for(

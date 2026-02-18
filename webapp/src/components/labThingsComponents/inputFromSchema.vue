@@ -1,6 +1,21 @@
 <template>
   <div>
-    <label v-if="dataType == 'number'" class="uk-form-label"
+    <label v-if="useDropdown" class="uk-form-label">
+      {{ label }}
+      <div class="input-and-buttons-container">
+        <select
+          v-model="internalValue"
+          class="uk-form-small numeric-setting-line-input dropdown"
+          @change="sendValue"
+        >
+          <option v-for="(value, display) in options" :key="value" :value="value">
+            {{ display }}
+          </option>
+        </select>
+        <sync-property-button @click="requestUpdate" />
+      </div>
+    </label>
+    <label v-if="!useDropdown && dataType == 'number'" class="uk-form-label"
       >{{ label }}
       <div class="input-and-buttons-container">
         <input
@@ -18,7 +33,7 @@
         <sync-property-button @click="requestUpdate" />
       </div>
     </label>
-    <div v-if="dataType == 'boolean'" class="input-and-buttons-container">
+    <div v-if="!useDropdown && dataType == 'boolean'" class="input-and-buttons-container">
       <label class="uk-form-label numeric-setting-line-input">
         <input
           ref="checkbox"
@@ -32,7 +47,7 @@
       </label>
       <sync-property-button @click="requestUpdate" />
     </div>
-    <label v-if="dataType == 'number_array'" class="uk-form-label"
+    <label v-if="!useDropdown && dataType == 'number_array'" class="uk-form-label"
       >{{ label }}
       <div class="input-and-buttons-container">
         <input
@@ -51,7 +66,7 @@
         <sync-property-button @click="requestUpdate" />
       </div>
     </label>
-    <label v-if="dataType == 'number_object'" class="uk-form-label"
+    <label v-if="!useDropdown && dataType == 'number_object'" class="uk-form-label"
       >{{ label }}
       <div v-for="(val, key) in modelValue" :key="key">
         <label>{{ internalLabels[key] }}</label>
@@ -71,7 +86,7 @@
         </div>
       </div>
     </label>
-    <label v-if="dataType == 'string'" class="uk-form-label"
+    <label v-if="!useDropdown && dataType == 'string'" class="uk-form-label"
       >{{ label }}
       <div class="input-and-buttons-container">
         <input
@@ -87,7 +102,7 @@
         <sync-property-button @click="requestUpdate" />
       </div>
     </label>
-    <label v-if="dataType == 'other'" class="uk-form-label"
+    <label v-if="!useDropdown && dataType == 'other'" class="uk-form-label"
       >{{ label }}
       <div class="input-and-buttons-container">
         <input
@@ -127,6 +142,12 @@ export default {
     animate: {
       type: Boolean,
       default: null,
+    },
+    options: {
+      type: Object,
+      // Default is Null as None is passed from the server.
+      default: null,
+      required: false,
     },
   },
 
@@ -175,6 +196,14 @@ export default {
       return !this.dataSchema?.forms?.some(form =>
         form.op?.includes('writeproperty')
       );
+    },
+    useDropdown: function () {
+      if (this.options === null) return false;
+      if (["number", "string", "boolean"].includes(this.dataType)) {
+        return true;
+      }
+      console.warn(`Cannot support dropdown for datatype of ${this.dataType}`);
+      return false;
     },
     dataType: function () {
       let prop = this.dataSchema;
@@ -327,6 +356,11 @@ export default {
   margin-left: 5px;
   margin-right: 5px;
   width: 6em;
+}
+.dropdown {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  opacity: 1;
 }
 .edited {
   background-color: #fff3cd;
