@@ -93,7 +93,6 @@ export default {
     eventBus.on("globalUpdatePositionEvent", this.updatePosition);
     // A global signal listener to perform a move action in pixels
     eventBus.on("globalMoveInImageCoordinatesEvent", this.onMoveImage);
-    // A global signal listener to perform a move in multiples of a step size
 
     // Update the current position in text boxes
     await this.updatePosition();

@@ -267,12 +267,12 @@ export default {
      * Jog for key-presses.
      *
      * This is a similar to the function in stageControlButtons.vue however it uses
-     * uses the key repeat to fire in case a key up is missed. It debounes any
+     * uses the key repeat to fire in case a key up is missed. It debounces any
      * request to jog that is too recent after the last jog.
      */
     jog(x, y, z) {
       // Manually debounce extra requests from keyboard repeat rate.
-      // This is used rather than and interval in case of missing a repeat.
+      // This is used rather than an interval in case of missing a repeat.
       const now = Date.now();
       const navigationInvert = this.$store.state.navigationInvert;
       if (now - this.lastJogTime < this.jogTime) {

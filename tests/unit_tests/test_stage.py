@@ -337,8 +337,11 @@ def test_thing_description_equivalence(dummy_stage, mocker):
     assert sanga_properties == dummy_properties == base_properties
 
 
-def test_job_repr():
-    """Test when printing a jog command the result is as expected."""
+def test_jog_command_repr():
+    """Test when printing a jog command the result is as expected.
+
+    This tests the ``__repr__`` method of ``JogCommand``.
+    """
     # Jog should represent itself the same whether displacement is set with a list or a
     # tuple.
     assert str(JogCommand([1, 2, 3])) == "<JogCommand>(1, 2, 3)"
@@ -416,7 +419,7 @@ def test_send_jog_commands(dummy_stage, mocker, caplog):
     assert mock_thread.call_count == 1
     # The thread target is the jog loop
     assert mock_thread.call_args.kwargs["target"] == dummy_stage._jog_loop
-    # Args are jut the first command
+    # Args are just the first command
     thread_args = mock_thread.call_args.kwargs["args"]
     assert len(thread_args) == 1
     assert thread_args[0] is commands[0]
@@ -438,7 +441,7 @@ def test_send_jog_commands(dummy_stage, mocker, caplog):
     dummy_stage._jog_thread.is_alive.return_value = False
     assert not dummy_stage._jog_thread.is_alive()
 
-    # 3rd call call, will create a new thread and a new queue
+    # call with the 3rd command, will create a new thread and a new queue
     dummy_stage._send_jog_command(commands[2])
 
     # Thread is alive again
@@ -448,7 +451,7 @@ def test_send_jog_commands(dummy_stage, mocker, caplog):
     assert mock_thread.call_count == 2
     # The thread target is the jog loop
     assert mock_thread.call_args.kwargs["target"] == dummy_stage._jog_loop
-    # Args are jut the first command
+    # Args are just the first command
     thread_args = mock_thread.call_args.kwargs["args"]
     assert len(thread_args) == 1
     assert thread_args[0] is commands[2]
