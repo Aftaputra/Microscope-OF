@@ -187,3 +187,93 @@ def test_simulation_cam_calibration(camera):
     camera.full_auto_calibrate()
     assert not camera.calibration_required
     assert camera.background_detector.ready
+
+
+def test_objective_getter_setter(camera):
+    """Verify that the objective property can be set and read.
+
+    - Defaults to 40x.
+    - Accepts only valid magnification values (4, 10, 20, 40, 60, 100).
+    - Raises ValueError for invalid magnifications.
+    """
+    # Default value
+    assert camera.objective == 40
+
+    # Valid values
+    for val in (4, 10, 20, 40, 60, 100):
+        camera.objective = val
+        assert camera.objective == val
+
+    # Invalid values should raise
+    with pytest.raises(
+        ValueError, match="Objective must be one of 4, 10, 20, 40, 60, 100."
+    ):
+        camera.objective = 15
+    with pytest.raises(
+        ValueError, match="Objective must be one of 4, 10, 20, 40, 60, 100."
+    ):
+        camera.objective = 0
+    with pytest.raises(
+        ValueError, match="Objective must be one of 4, 10, 20, 40, 60, 100."
+    ):
+        camera.objective = "twenty"
+
+
+def test_magnification_scale(camera):
+    """Verify that magnification_scale behaves as expected.
+
+    - Defaults to 1.0 when objective is 40x.
+    - Correctly computes the scale relative to 40x
+      (scale = objective / 40.0).
+    - Updates correctly when the objective changes.
+    """
+    # Default magnification scale
+    assert camera.magnification_scale == 1.0  # 40 / 40
+
+    # Check scale for different objectives
+    test_cases = {
+        4: 0.1,
+        10: 0.25,
+        20: 0.5,
+        40: 1.0,
+        60: 1.5,
+        100: 2.5,
+    }
+
+    for val, expected_scale in test_cases.items():
+        camera.objective = val
+        assert camera.magnification_scale == expected_scale
+
+
+def test_generate_image_changes_with_objective(camera):
+    """Changing the objective should change the generated image.
+
+    Higher magnification should produce a more zoomed-in image
+    (different pixel content compared to lower magnification).
+    """
+    pos = (0, 0, 0)
+    camera.noise_level = 0  # eliminate randomness
+
+    camera.objective = 10
+    img_10 = np.array(camera.generate_image(pos))
+
+    camera.objective = 40
+    img_40 = np.array(camera.generate_image(pos))
+
+    camera.objective = 100
+    img_100 = np.array(camera.generate_image(pos))
+
+    # Images at different objectives should not be identical
+    assert not np.array_equal(img_10, img_40)
+    assert not np.array_equal(img_40, img_100)
+
+
+def test_generate_image_output_size(camera):
+    """Generated image doesn't change with objective."""
+    pos = (0, 0, 0)
+
+    for objective in (4, 10, 20, 40, 60, 100):
+        camera.objective = objective
+        img = camera.generate_image(pos)
+
+        assert img.size == (camera.shape[1], camera.shape[0])
