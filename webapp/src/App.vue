@@ -29,6 +29,8 @@ import loadingContent from "./components/loadingContent.vue";
 import Mousetrap from "mousetrap";
 import { eventBus } from "./eventBus.js";
 
+const move_keys = ["up", "down", "left", "right", "pageup", "pagedown"];
+
 Mousetrap.prototype.stopCallback = function (e, element) {
   // if the element has the class "mousetrap" then no need to stop
   if ((" " + element.className + " ").indexOf(" Mousetrap ") > -1) {
@@ -65,6 +67,10 @@ export default {
       keyboardManual: [],
       systemDark: undefined,
       themeObserver: undefined,
+      keysDown: new Set(),
+      lastJogTime: 0,
+      jogDistance: 600,
+      jogTime: 300,
     };
   },
 
@@ -130,34 +136,31 @@ export default {
       this.toggleModalElement(this.$refs["keyboardManualModal"]); // Calls the mixin
     });
 
-    // Arrow keys
     Mousetrap.bind(
-      ["up", "down", "left", "right"],
-      (event) => {
-        this.arrowKeysDown[event.keyCode] = true; //Add key to array
-        this.navigateKeyHandler();
+      move_keys,
+      (event, key) => {
+        event.preventDefault();
+        this.keysDown.add(key);
+        this.updateJogFromKeys();
       },
       "keydown",
     );
+
     Mousetrap.bind(
-      ["up", "down", "left", "right"],
-      (event) => {
-        delete this.arrowKeysDown[event.keyCode]; //Remove key from array
+      move_keys,
+      (event, key) => {
+        event.preventDefault();
+        this.keysDown.delete(key);
+        this.updateJogFromKeys();
       },
       "keyup",
     );
+
     this.keyboardManual.push({
       shortcut: "←↑→↓",
       description: "Move the microscope stage",
     });
 
-    // Focus keys
-    Mousetrap.bind("pageup", () => {
-      eventBus.emit("globalMoveStepEvent", { x: 0, y: 0, z: 1 });
-    });
-    Mousetrap.bind("pagedown", () => {
-      eventBus.emit("globalMoveStepEvent", { x: 0, y: 0, z: -1 });
-    });
     this.keyboardManual.push({
       shortcut: "pgup / pgdn",
       description: "Move the microscope focus",
@@ -240,47 +243,85 @@ export default {
       eventBus.emit("globalTogglePreview", false);
     },
 
-    // Handle global mouse wheel events to be associated with navigation
+    /**
+     *  Handle global mouse wheel events to be associated with navigation
+     */
     wheelMonitor: function (event) {
       // Only capture scroll if the event target's parent contains the "scrollTarget" class
       if (
         event.target.parentNode.classList.contains("scrollTarget") ||
         event.target.classList.contains("scrollTarget")
       ) {
-        const z_steps = event.deltaY / 100;
+        const z_rel = event.deltaY / 100;
         // Emit a signal to move, acted on by panelControl.vue
-        eventBus.emit("globalMoveStepEvent", {
-          x_steps: 0,
-          y_steps: 0,
-          z_steps: z_steps,
-          absolute: false,
-        });
+        const navigationStepSize = this.$store.state.navigationStepSize;
+        const z = z_rel * navigationStepSize.z;
+        // Don't use `jog() due to variable size of jogs here and the rate limiting in
+        // `jog()`. No need to invert on z, as navigationInvert.z isn't exposed.
+        this.invokeAction("stage", "jog", { x: 0, y: 0, z: z });
+        eventBus.emit("globalUpdatePositionEvent");
       }
     },
 
-    navigateKeyHandler: function () {
-      // Calculate movement array
-      var x_rel = 0;
-      var y_rel = 0;
-      // 37 corresponds to the left key
-      if (37 in this.arrowKeysDown) {
-        x_rel = x_rel - 1;
+    /**
+     * Jog for key-presses.
+     *
+     * This is a similar to the function in stageControlButtons.vue however it uses
+     * uses the key repeat to fire in case a key up is missed. It debounces any
+     * request to jog that is too recent after the last jog.
+     */
+    jog(x, y, z) {
+      // Manually debounce extra requests from keyboard repeat rate.
+      // This is used rather than an interval in case of missing a repeat.
+      const now = Date.now();
+      const navigationInvert = this.$store.state.navigationInvert;
+      if (now - this.lastJogTime < this.jogTime) {
+        return;
       }
-      // 39 corresponds to the right key
-      if (39 in this.arrowKeysDown) {
-        x_rel = x_rel + 1;
+      this.lastJogTime = now;
+
+      this.invokeAction("stage", "jog", {
+        x: x * this.jogDistance * (navigationInvert.x ? -1 : 1),
+        y: y * this.jogDistance * (navigationInvert.y ? -1 : 1),
+        z: z * this.jogDistance,
+      });
+      eventBus.emit("globalUpdatePositionEvent");
+    },
+
+    /**
+     * Stop jogging on key-up
+     *
+     * This is also similar to the function in stageControlButtons.vue. It handles
+     * stopping jogging and resetting the `lastJogTime` so there is no delay when
+     * starting a new jog after an old jog finished.
+     */
+    jogStop() {
+      this.invokeAction("stage", "jog", { stop: true });
+      this.lastJogTime = 0;
+      setTimeout(() => {
+        eventBus.emit("globalUpdatePositionEvent");
+      }, 100);
+    },
+
+    /**
+     * Track which keys are still down on keypress (or key repeat).
+     */
+    updateJogFromKeys() {
+      let x = 0,
+        y = 0,
+        z = 0;
+      if (this.keysDown.has("left")) x -= 1;
+      if (this.keysDown.has("right")) x += 1;
+      if (this.keysDown.has("up")) y += 1;
+      if (this.keysDown.has("down")) y -= 1;
+      if (this.keysDown.has("pageup")) z += 1;
+      if (this.keysDown.has("pagedown")) z -= 1;
+
+      if (x || y || z) {
+        this.jog(x, y, z);
+      } else {
+        this.jogStop();
       }
-      // 38 corresponds to the up key
-      if (38 in this.arrowKeysDown) {
-        y_rel = y_rel + 1;
-      }
-      // 40 corresponds to the down key
-      if (40 in this.arrowKeysDown) {
-        y_rel = y_rel - 1;
-      }
-      // Make a position request
-      // Emit a signal to move, acted on by panelControl.vue
-      eventBus.emit("globalMoveStepEvent", { x: x_rel, y: y_rel, z: 0 });
     },
   },
 };

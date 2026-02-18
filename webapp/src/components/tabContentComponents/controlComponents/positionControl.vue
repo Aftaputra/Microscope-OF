@@ -76,6 +76,7 @@ export default {
     return {
       setPosition: null,
       moveLock: false,
+      jogging: false,
     };
   },
 
@@ -92,8 +93,7 @@ export default {
     eventBus.on("globalUpdatePositionEvent", this.updatePosition);
     // A global signal listener to perform a move action in pixels
     eventBus.on("globalMoveInImageCoordinatesEvent", this.onMoveImage);
-    // A global signal listener to perform a move in multiples of a step size
-    eventBus.on("globalMoveStepEvent", this.onMoveStep);
+
     // Update the current position in text boxes
     await this.updatePosition();
   },
@@ -103,7 +103,6 @@ export default {
     eventBus.off("globalMoveEvent", this.move);
     eventBus.off("globalUpdatePositionEvent", this.updatePosition);
     eventBus.off("globalMoveInImageCoordinatesEvent", this.onMoveImage);
-    eventBus.off("globalMoveStepEvent", this.onMoveStep);
   },
 
   methods: {
@@ -115,22 +114,12 @@ export default {
       this.moveInImageCoordinatesRequest(payload.x, payload.y, payload.absolute);
     },
 
-    onMoveStep(payload) {
-      const { x: x_steps, y: y_steps, z: z_steps } = payload;
-      const navigationStepSize = this.$store.state.navigationStepSize;
-      const navigationInvert = this.$store.state.navigationInvert;
-      const x = x_steps * navigationStepSize.x * (navigationInvert.x ? -1 : 1);
-      const y = y_steps * navigationStepSize.y * (navigationInvert.y ? -1 : 1);
-      const z = z_steps * navigationStepSize.z * (navigationInvert.z ? -1 : 1);
-      const movePayload = { x, y, z, absolute: false };
-      eventBus.emit("globalMoveEvent", movePayload);
-    },
-
     async move(payload) {
       const { x, y, z, absolute } = payload;
       // Move the stage, by updating the controls and starting a move task
       // This is equivalent to clicking the "move" button.
       if (this.moveLock) return; // Discard move requests if we're already moving
+      if (this.jogging) return; // Discard move requests if a jog is in progress
       // NB moveLock is just  boolean flag - it's not as safe as a "proper" lock.
       this.moveLock = true; // This will also be set by the task submitter, but
       // setting it here avoids multiple moves being requested simultaneously.

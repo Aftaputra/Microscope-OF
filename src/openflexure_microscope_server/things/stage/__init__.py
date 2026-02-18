@@ -11,8 +11,10 @@ As the object will be used as a context manager create the hardware connection i
 
 from __future__ import annotations
 
+import queue
+import threading
 from collections.abc import Mapping, Sequence
-from typing import Any, Literal, overload
+from typing import Any, Literal, Optional, overload
 
 import labthings_fastapi as lt
 
@@ -28,6 +30,45 @@ class RedefinedBaseMovementError(RuntimeError):
     does. As such, this exception can be captured by ``try`` if a stage needs to
     override these for a specific reason.
     """
+
+
+class JogCommand:
+    """A base class for jog operations."""
+
+    def __init__(self, displacement: Optional[Sequence[int]]) -> None:
+        """Initialise a JogCommand.
+
+        :param displacement: The distances as a sequence of moves for each axis.
+            None for stop motion.
+        """
+        super().__init__()
+        self.displacement = None if displacement is None else tuple(displacement)
+
+    def __repr__(self) -> str:
+        """Represent the command as a string."""
+        class_name = type(self).__name__
+        if self.displacement is None:
+            return f"<{class_name}>STOP"
+        return f"<{class_name}>{self.displacement}"
+
+
+class JogQueue(queue.Queue[JogCommand]):
+    """A class queue for JogCommands. This always returns the most recent command."""
+
+    def __init__(self) -> None:
+        """Set up a queue with a max size of 1."""
+        super().__init__(maxsize=1)
+
+    def put(
+        self, item: JogCommand, block: bool = False, timeout: Optional[float] = None
+    ) -> None:
+        """Put the next command into the queue, bumping anything already there."""
+        try:
+            # First remove existing item if present
+            self.get_nowait()
+        except queue.Empty:
+            pass
+        super().put(item, block=block, timeout=timeout)
 
 
 class BaseStage(lt.Thing):
@@ -55,7 +96,11 @@ class BaseStage(lt.Thing):
             that all code in the child class uses the hardware reference frame.
         """
         super().__init__(thing_server_interface)
-        self._hardware_position = dict.fromkeys(self._axis_names, 0)
+        self._hardware_lock = threading.RLock()
+        self._jog_lock = threading.Lock()
+        self._jog_queue = JogQueue()
+        self._jog_thread: Optional[threading.Thread] = None
+        self._hardware_position: Mapping[str, int] = dict.fromkeys(self._axis_names, 0)
 
         # This must be the last thing the function does in case it is caught in a try.
         if (
@@ -86,6 +131,12 @@ class BaseStage(lt.Thing):
         default={"x": False, "y": False, "z": False}, readonly=True
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
+
+    def update_position(self) -> None:
+        """Read position from the stage and set the corresponding property."""
+        raise NotImplementedError(
+            "StageThings must define their own update_position method"
+        )
 
     @overload
     def _apply_axis_direction(self, position: list[int] | tuple[int]) -> list[int]: ...
@@ -177,8 +228,128 @@ class BaseStage(lt.Thing):
         Make sure to use and update ``self._hardware_position`` not ``self.position``.
         """
         raise NotImplementedError(
-            "StageThings must define their own move_absolute method"
+            "StageThings must define their own _hardware_move_absolute method"
         )
+
+    def _hardware_start_move_relative(self, displacement: Sequence[int]) -> None:
+        """Start a relative move."""
+        raise NotImplementedError(
+            "StageThings must define their own _hardware_start_move_relative method"
+        )
+
+    def _hardware_stop(self) -> None:
+        raise NotImplementedError(
+            "StageThings must define their own _hardware_stop method"
+        )
+
+    def _poll_moving(self) -> bool:
+        """Determine if the stage is still moving."""
+        raise NotImplementedError(
+            "StageThings must define their own _poll_moving method"
+        )
+
+    def _estimate_move_duration(self, displacement: Sequence[int]) -> float:
+        """Calculate the expected duration of a move with the given displacement."""
+        raise NotImplementedError(
+            "StageThings must define their own _estimate_move_duration method"
+        )
+
+    @lt.action
+    def jog(self, stop: bool = False, **kwargs: int) -> None:
+        """Make a relative move that may be interrupted by a future ``jog``.
+
+        This action makes a relative move. If another ``jog`` action is called while
+        a ``jog`` is already in progress, the first will be stopped and the second
+        will start immediately. This allows for responsive manual control of the
+        stage, for example with a joystick.
+
+        :param stop: if this is set to ``True`` the jog will be terminated.
+        :param kwargs: Keyword arguments should be axis names.
+        """
+        if stop:
+            self._send_jog_command(JogCommand(None))
+            return
+
+        hardware_moves = self._apply_axis_direction(kwargs)
+        move = [hardware_moves.get(axis, 0) for axis in self.axis_names]
+        if all(ax == 0 for ax in move):
+            self.logger.warning(
+                "Requested jog movement is is empty. Sending STOP instead."
+            )
+            self._send_jog_command(JogCommand(None))
+        else:
+            self._send_jog_command(JogCommand(move))
+
+    def _send_jog_command(self, command: JogCommand) -> None:
+        """Send a jog command to the background jog thread.
+
+        This function will start the background thread if it is not running.
+        This function acquires ``_jog_lock`` and uses the ``_jog_send`` event to signal
+        the thread to read the next command. As commands interrupt each other, this
+        function should never block for a long time.
+
+        :param command: the jog command to send.
+        """
+        if not self._jog_lock.acquire(timeout=0.1):
+            self.logger.warning(
+                "Could not send a jog message, this indicates a lock error."
+            )
+            return
+        try:
+            # Make sure the queue exists.
+            # Check the background thread is running, and restart it if not.
+            if self._jog_thread is None or not self._jog_thread.is_alive():
+                self.logger.debug("Starting background thread for jog commands")
+                self._jog_queue = JogQueue()
+                self._jog_thread = threading.Thread(
+                    target=self._jog_loop, args=(command,)
+                )
+                self._jog_thread.start()
+            else:
+                self._jog_queue.put(command)
+        finally:
+            self._jog_lock.release()
+
+    def _jog_loop(self, first_command: JogCommand) -> None:
+        """Execute jog commands in a background thread.
+
+        This function is intended to be run in a background thread. It will look at
+        ``self._jog_command`` when the ``self._jog_send`` event is set.
+        """
+        # Timeout for checking queue
+        timeout = 0.1
+        command: Optional[JogCommand] = first_command
+
+        # prevent others using the stage while jogging.
+        with self._hardware_lock:
+            while command is not None:
+                if command.displacement is not None:
+                    self._hardware_start_move_relative(command.displacement)
+                    timeout = self._estimate_move_duration(command.displacement)
+                else:
+                    self._hardware_stop()
+                    # Next iteration, we will probably time out.
+                    timeout = 0.1
+                self.update_position()
+                command = self._get_from_jog_queue(timeout)
+
+    def _get_from_jog_queue(self, timeout: float) -> Optional[JogCommand]:
+        """Get the next JogCommand from the jog queue.
+
+        :param timeout: The estimtated time the move will take for the queue timeout.
+        :return: The jog command or None if the stage stops before a command is
+            received.
+        """
+        while True:
+            try:
+                return self._jog_queue.get(timeout=timeout)
+            except queue.Empty:
+                if not self._poll_moving():
+                    # The stage is no longer moving, return None
+                    return None
+            # If we reached here then the stage is still moving. Shorten timeout and
+            # check again.
+            timeout = 0.1
 
     @lt.action
     def set_zero_position(self) -> None:

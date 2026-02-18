@@ -1,6 +1,9 @@
 """Test the stage without creating a full HTTP server and socket connection."""
 
 import itertools
+import logging
+import threading
+import time
 
 import pytest
 from hypothesis import HealthCheck, given, settings
@@ -12,10 +15,13 @@ from labthings_fastapi.testing import create_thing_without_server
 from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 from openflexure_microscope_server.things.stage import (
     BaseStage,
+    JogCommand,
+    JogQueue,
     RedefinedBaseMovementError,
 )
 from openflexure_microscope_server.things.stage.dummy import DummyStage
 
+from ..shared_utils import get_method_name
 from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
 # Keep the size and number of moves fairly small or the tests can take forever
@@ -31,7 +37,27 @@ path3d = st.lists(point3d, min_size=5, max_size=10)
 @pytest.fixture
 def dummy_stage():
     """Return a dummy stage with a very low step time."""
-    return create_thing_without_server(DummyStage, step_time=0.000001)
+    return create_thing_without_server(DummyStage, step_time=0.0001)
+
+
+def test_not_implemented_methods():
+    """Check all methods a child class should implement raise NotImplemented."""
+    stage = create_thing_without_server(BaseStage)
+    methods_and_args = [
+        (stage.update_position, ()),
+        (stage._hardware_move_relative, ()),
+        (stage._hardware_move_absolute, ()),
+        (stage._hardware_start_move_relative, ((1, 2, 3),)),
+        (stage._hardware_stop, ()),
+        (stage._poll_moving, ()),
+        (stage._estimate_move_duration, ((1, 2, 3),)),
+        (stage.set_zero_position, ()),
+    ]
+    for method, args in methods_and_args:
+        method_name = get_method_name(method)
+        msg = f"StageThings must define their own {method_name} method"
+        with pytest.raises(NotImplementedError, match=msg):
+            method(*args)
 
 
 def test_override_base_movement():
@@ -180,15 +206,20 @@ def _test_move_relative(dummy_stage, axis_inverted, path):
     y_dir = -1 if axis_inverted["y"] else 1
     z_dir = -1 if axis_inverted["z"] else 1
 
-    position = list(dummy_stage.position.values())
-    for movement in path:
-        dummy_stage.move_relative(x=movement[0], y=movement[1], z=movement[2])
-        position = [pos + move for pos, move in zip(position, movement, strict=True)]
-        stage_pos = dummy_stage.get_xyz_position()
-        hw_pos = dummy_stage._hardware_position
-        assert position[0] == stage_pos[0] == hw_pos["x"] * x_dir
-        assert position[1] == stage_pos[1] == hw_pos["y"] * y_dir
-        assert position[2] == stage_pos[2] == hw_pos["z"] * z_dir
+    # Enter the stage to start the movement thread.
+    with dummy_stage:
+        assert dummy_stage._move_thread.is_alive()
+        position = list(dummy_stage.position.values())
+        for movement in path:
+            dummy_stage.move_relative(x=movement[0], y=movement[1], z=movement[2])
+            position = [
+                pos + move for pos, move in zip(position, movement, strict=True)
+            ]
+            stage_pos = dummy_stage.get_xyz_position()
+            hw_pos = dummy_stage._hardware_position
+            assert position[0] == stage_pos[0] == hw_pos["x"] * x_dir
+            assert position[1] == stage_pos[1] == hw_pos["y"] * y_dir
+            assert position[2] == stage_pos[2] == hw_pos["z"] * z_dir
 
 
 @given(path=path3d)
@@ -234,14 +265,18 @@ def _test_move_absolute(dummy_stage, axis_inverted, path):
     y_dir = -1 if axis_inverted["y"] else 1
     z_dir = -1 if axis_inverted["z"] else 1
     position = list(dummy_stage.position.values())
-    for move_to in path:
-        dummy_stage.move_absolute(x=move_to[0], y=move_to[1], z=move_to[2])
-        position = move_to
-        stage_pos = dummy_stage.get_xyz_position()
-        hw_pos = dummy_stage._hardware_position
-        assert position[0] == stage_pos[0] == hw_pos["x"] * x_dir
-        assert position[1] == stage_pos[1] == hw_pos["y"] * y_dir
-        assert position[2] == stage_pos[2] == hw_pos["z"] * z_dir
+
+    # Enter the stage to start the movement thread.
+    with dummy_stage:
+        assert dummy_stage._move_thread.is_alive()
+        for move_to in path:
+            dummy_stage.move_absolute(x=move_to[0], y=move_to[1], z=move_to[2])
+            position = move_to
+            stage_pos = dummy_stage.get_xyz_position()
+            hw_pos = dummy_stage._hardware_position
+            assert position[0] == stage_pos[0] == hw_pos["x"] * x_dir
+            assert position[1] == stage_pos[1] == hw_pos["y"] * y_dir
+            assert position[2] == stage_pos[2] == hw_pos["z"] * z_dir
 
 
 @given(path=path3d)
@@ -300,3 +335,226 @@ def test_thing_description_equivalence(dummy_stage, mocker):
 
     assert sanga_actions == dummy_actions == base_actions
     assert sanga_properties == dummy_properties == base_properties
+
+
+def test_jog_command_repr():
+    """Test when printing a jog command the result is as expected.
+
+    This tests the ``__repr__`` method of ``JogCommand``.
+    """
+    # Jog should represent itself the same whether displacement is set with a list or a
+    # tuple.
+    assert str(JogCommand([1, 2, 3])) == "<JogCommand>(1, 2, 3)"
+    assert str(JogCommand((1, 2, 3))) == "<JogCommand>(1, 2, 3)"
+    # Stop should be very clear.
+    assert str(JogCommand(None)) == "<JogCommand>STOP"
+
+
+def test_empty_jog_sends_stop(dummy_stage, mocker, caplog):
+    """Check that calling ``jog`` with no args, warns then sends STOP."""
+    mock_send = mocker.patch.object(dummy_stage, "_send_jog_command")
+    with caplog.at_level(logging.WARNING):
+        dummy_stage.jog()
+    # This should warn as stop should be sent explicitly
+    assert len(caplog.records) == 1
+    assert mock_send.call_count == 1
+    # Check it is a stop command (displacement is None)
+    assert mock_send.call_args.args[0].displacement is None
+
+
+def test_jog_commands_are_sent(dummy_stage, mocker, caplog):
+    """Check that ``jog`` forwards commands to ``_send_jog_command``."""
+    mock_send = mocker.patch.object(dummy_stage, "_send_jog_command")
+    with caplog.at_level(logging.INFO):
+        dummy_stage.jog(x=1, y=0, z=0)
+        dummy_stage.jog(x=0, y=2, z=0)
+        dummy_stage.jog(x=0, y=0, z=3)
+        dummy_stage.jog(stop=True)
+    # Normal jogging operation shouldn't be filling up the logs.
+    assert len(caplog.records) == 0
+    # All 4 commands sent
+    assert mock_send.call_count == 4
+    # Check commands are as expected
+    command_0 = mock_send.call_args_list[0].args[0]
+    # -1 as axis inversion is applied
+    assert command_0.displacement == (-1, 0, 0)
+    command_1 = mock_send.call_args_list[1].args[0]
+    assert command_1.displacement == (0, 2, 0)
+    command_2 = mock_send.call_args_list[2].args[0]
+    assert command_2.displacement == (0, 0, 3)
+    command_3 = mock_send.call_args_list[3].args[0]
+    assert command_3.displacement is None
+
+
+def test_send_jog_commands(dummy_stage, mocker, caplog):
+    """Check that the jog command acts as expected."""
+
+    # Create a way to make mock threads.
+    def mock_thread_factory(*_args, **_kwargs):
+        """Return a mock thread instance that claims to be alive."""
+        mock_instance = mocker.Mock()
+        mock_instance.is_alive.return_value = True
+        return mock_instance
+
+    # Mock both the Queue class and threading.Thread to incercept calls.
+    mock_queue = mocker.patch(
+        "openflexure_microscope_server.things.stage.JogQueue", side_effect=mocker.Mock
+    )
+    mock_thread = mocker.patch(
+        "openflexure_microscope_server.things.stage.threading.Thread",
+        side_effect=mock_thread_factory,
+    )
+
+    commands = [
+        JogCommand([1, 1, 1]),
+        JogCommand([2, 2, 2]),
+        JogCommand([3, 3, 3]),
+        JogCommand([4, 4, 4]),
+    ]
+    # First call, will create a new thread and a new queue
+    dummy_stage._send_jog_command(commands[0])
+
+    # Both a new queue and a new thread are created
+    assert mock_queue.call_count == 1
+    assert mock_thread.call_count == 1
+    # The thread target is the jog loop
+    assert mock_thread.call_args.kwargs["target"] == dummy_stage._jog_loop
+    # Args are just the first command
+    thread_args = mock_thread.call_args.kwargs["args"]
+    assert len(thread_args) == 1
+    assert thread_args[0] is commands[0]
+    # Nothing yet put in the thread
+    assert dummy_stage._jog_queue.put.call_count == 0
+
+    # Send second command:
+    dummy_stage._send_jog_command(commands[1])
+
+    # No new queue or thread created
+    assert mock_queue.call_count == 1
+    assert mock_thread.call_count == 1
+    # Put is used instead
+    assert dummy_stage._jog_queue.put.call_count == 1
+    # Called with the second command
+    assert dummy_stage._jog_queue.put.call_args.args[0] is commands[1]
+
+    # Make it so the thread has finished
+    dummy_stage._jog_thread.is_alive.return_value = False
+    assert not dummy_stage._jog_thread.is_alive()
+
+    # call with the 3rd command, will create a new thread and a new queue
+    dummy_stage._send_jog_command(commands[2])
+
+    # Thread is alive again
+    assert dummy_stage._jog_thread.is_alive()
+    # Both a new queue and a new thread are created
+    assert mock_queue.call_count == 2
+    assert mock_thread.call_count == 2
+    # The thread target is the jog loop
+    assert mock_thread.call_args.kwargs["target"] == dummy_stage._jog_loop
+    # Args are just the first command
+    thread_args = mock_thread.call_args.kwargs["args"]
+    assert len(thread_args) == 1
+    assert thread_args[0] is commands[2]
+    # New queue is never used
+    assert dummy_stage._jog_queue.put.call_count == 0
+
+    # Finally acquire the jog lock
+    with dummy_stage._jog_lock:
+        # and check a warning is thrown
+        with caplog.at_level(logging.WARNING):
+            dummy_stage._send_jog_command(commands[3])
+        assert len(caplog.records) == 1
+        # No new thread or queue created
+        assert mock_queue.call_count == 2
+        assert mock_thread.call_count == 2
+        # And still nothing added to the queue
+        assert dummy_stage._jog_queue.put.call_count == 0
+
+
+def test_get_jog_from_queue_most_recent(dummy_stage):
+    """Test that the jog queue gives the most recent Jog Command."""
+    # Try to stack 4 moves in the queue, only 1 should be queued.
+    for i in range(4):
+        dummy_stage._jog_queue.put(JogCommand([i, i, i]))
+
+    command = dummy_stage._get_from_jog_queue(0.001)
+    assert isinstance(command, JogCommand)
+    # Should be the last one queued
+    assert command.displacement == (3, 3, 3)
+    # Nothing else is queued
+    assert dummy_stage._get_from_jog_queue(0.001) is None
+
+
+def _setup_jog_loop(command, dummy_stage, mocker):
+    """Set up a jog loop in a thread and return.
+
+    :return: The thread, and the mocks for ``_hardware_start_move_relative``,
+        ``_hardware_stop``, and ``_poll_moving``.
+    """
+    mocker.patch.object(dummy_stage, "_estimate_move_duration", return_value=0.01)
+    mock_poll = mocker.patch.object(dummy_stage, "_poll_moving", return_value=True)
+
+    def stop_mock_move(*_args, **_kwargs):
+        """Set the return value of poll to false on stop."""
+        mock_poll.return_value = False
+
+    mock_move = mocker.patch.object(dummy_stage, "_hardware_start_move_relative")
+    mock_stop = mocker.patch.object(
+        dummy_stage, "_hardware_stop", side_effect=stop_mock_move
+    )
+
+    dummy_stage._jog_queue = JogQueue()
+    thread = threading.Thread(target=dummy_stage._jog_loop, args=(command,))
+    thread.start()
+    return thread, mock_move, mock_stop, mock_poll
+
+
+def test_jog_loop_jog_once_only(dummy_stage, mocker):
+    """Check if jogging once the jog loops breaks when the move ends.
+
+    This checks there is no need for an explicit stop command.
+    """
+    command = JogCommand([1, 1, 0])
+    thread, mock_move, mock_stop, mock_poll = _setup_jog_loop(
+        command, dummy_stage, mocker
+    )
+    time.sleep(0.05)
+    assert thread.is_alive()
+    # Move was called
+    assert mock_move.call_count == 1
+    # Claim the motors have stopped
+    mock_poll.return_value = False
+    # Wait longer than 0.1s
+    time.sleep(0.15)
+    assert not thread.is_alive()
+    # Move never called again
+    assert mock_move.call_count == 1
+    # Stop never called.
+    assert mock_stop.call_count == 0
+
+
+def test_jog_loop_jog_twice_then_stop(dummy_stage, mocker):
+    """Check if jogging twice then calling stop."""
+    command = JogCommand([1, 0, 0])
+    command2 = JogCommand([2, 0, 0])
+    command3 = JogCommand(None)
+    thread, mock_move, mock_stop, mock_poll = _setup_jog_loop(
+        command, dummy_stage, mocker
+    )
+    time.sleep(0.05)
+    assert thread.is_alive()
+    # Move was called
+    assert mock_move.call_count == 1
+    assert mock_stop.call_count == 0
+
+    dummy_stage._jog_queue.put(command2)
+    time.sleep(0.05)
+    assert thread.is_alive()
+    assert mock_move.call_count == 2
+    assert mock_stop.call_count == 0
+
+    dummy_stage._jog_queue.put(command3)
+    time.sleep(0.15)
+    assert not thread.is_alive()
+    assert mock_move.call_count == 2
+    assert mock_stop.call_count == 1
