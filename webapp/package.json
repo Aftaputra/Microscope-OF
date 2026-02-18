@@ -8,7 +8,7 @@
     "gv": "genversion src/version.js",
     "serve": "vite serve --mode development",
     "build": "vite build --mode production",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --ignore-pattern .gitignore",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --ignore-pattern .gitignore --max-warnings=0",
     "lint:fix": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-pattern .gitignore"
   },
   "dependencies": {

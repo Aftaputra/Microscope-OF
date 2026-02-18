@@ -11,9 +11,9 @@
         action="calibrate_xy"
         :submit-label="'Auto-Calibrate Using Camera'"
         :modal-progress="true"
+        :stream-with-modal="true"
         @response="onRecalibrateResponse"
         @error="modalError"
-        :streamWithModal="true"
       />
     </div>
     <button
