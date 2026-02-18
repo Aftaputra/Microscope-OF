@@ -37,6 +37,7 @@
             :requires-confirmation="true"
             :confirmation-message="'Start recalibration of the stage to find the centre of the range of motion?<br><br>Calibration requires a large, dense, flat sample with a variety of features.<br>Microscope will be locked while this runs'"
             :modal-progress="true"
+            :stream-with-modal="true"
           />
         </div>
         <div class="uk-margin">
@@ -50,6 +51,7 @@
             :requires-confirmation="true"
             :confirmation-message="'Start recalibration of the stage to find the range of motion in steps?<br><br>Calibration requires a large, dense, flat sample with a variety of features.<br>Microscope will be locked while this runs'"
             :modal-progress="true"
+            :stream-with-modal="true"
           />
         </div>
       </div>
