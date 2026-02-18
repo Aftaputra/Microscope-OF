@@ -33,21 +33,37 @@ class NotStreamingError(RuntimeError):
     """No images captured from stream. The camera is almost certainly not streaming."""
 
 
-class SmartStackParams(BaseModel):
-    """A class for holding for smart stack parameters, and returning computed ones."""
+class AutofocusParams(BaseModel):
+    """A class for running autofocus routines."""
+
+    dz: int
+    sharpness_method: str = "jpeg"
+
+
+class CaptureParams(BaseModel):
+    """A class for capturing at least a single image."""
+
+    images_dir: str
+    save_resolution: tuple[int, int]
+
+
+class StackParams(BaseModel):
+    """A class for holding stack parameters, and returning computed ones."""
 
     stack_dz: int
     images_to_save: int
-    min_images_to_test: int
-    autofocus_dz: int
-    images_dir: str
-    save_resolution: tuple[int, int]
 
     # Using docstrings under variables as this is how pdoc would expect
     # attributed to be documented
 
     settling_time: float = 0.3
     """Time (in seconds) between moving and capturing an image"""
+
+
+class SmartStackParams(StackParams):
+    """A class for holding smart stack parameters, and returning computed ones."""
+
+    min_images_to_test: int
 
     backlash_correction: int = 250
     """
@@ -457,6 +473,8 @@ class AutofocusThing(lt.Thing):
     def run_smart_stack(
         self,
         stack_parameters: SmartStackParams,
+        capture_parameters: CaptureParams,
+        autofocus_parameters: AutofocusParams,
         save_on_failure: bool = False,
         check_turning_points: bool = True,
     ) -> tuple[bool, int]:
@@ -498,7 +516,7 @@ class AutofocusThing(lt.Thing):
             initial_z_pos = captures[0].position["z"]
             # If a stack is not successful, move to the start and autofocus
             try:
-                self.reset_stack(initial_z_pos, stack_parameters.autofocus_dz)
+                self.reset_stack(initial_z_pos, autofocus_parameters.dz)
             except NoFocusFoundError:
                 break
 
@@ -510,6 +528,7 @@ class AutofocusThing(lt.Thing):
                 sharpest_id=sharpest_id,
                 captures=captures,
                 stack_parameters=stack_parameters,
+                capture_parameters=capture_parameters,
             )
 
         return success, _get_capture_by_id(captures, sharpest_id).position["z"]
@@ -535,6 +554,7 @@ class AutofocusThing(lt.Thing):
         sharpest_id: int,
         captures: list[CaptureInfo],
         stack_parameters: SmartStackParams,
+        capture_parameters: CaptureParams,
     ) -> int:
         """Save the required captures to disk.
 
@@ -552,8 +572,8 @@ class AutofocusThing(lt.Thing):
         # Loop through the range, saving each capture to disk
         for capture in captures[slice_to_save]:
             self._cam.save_from_memory(
-                jpeg_path=os.path.join(stack_parameters.images_dir, capture.filename),
-                save_resolution=stack_parameters.save_resolution,
+                jpeg_path=os.path.join(capture_parameters.images_dir, capture.filename),
+                save_resolution=capture_parameters.save_resolution,
                 buffer_id=capture.buffer_id,
             )
         self._cam.clear_buffers()
@@ -711,6 +731,56 @@ class AutofocusThing(lt.Thing):
                 return "continue", capture_id
 
         return "success", capture_id
+
+    @lt.action
+    def run_basic_stack(
+        self,
+        stack_parameters: StackParams,
+        capture_parameters: CaptureParams,
+    ) -> tuple[int, list[int]]:
+        """Capture a simple z-stack with no focus testing or fitting.
+
+        This performs a fixed stack of images spaced by `stack_dz`,
+        saving all images captured. No sharpness testing, restart
+        logic, or autofocus is performed.
+
+        :param stack_parameters: SmartStackParams defining stack spacing,
+            image count, directory, and save resolution.
+
+        :returns:
+            - Final z position
+            - List of z positions captured
+        """
+        captures: list[CaptureInfo] = []
+        z_positions: list[int] = []
+
+        # Capture images_to_save images
+        for _ in range(stack_parameters.images_to_save):
+            time.sleep(stack_parameters.settling_time)
+
+            capture = self.capture_stack_image(
+                buffer_max=stack_parameters.images_to_save
+            )
+            captures.append(capture)
+            z_positions.append(capture.position["z"])
+
+            self._stage.move_relative(z=stack_parameters.stack_dz)
+
+        # Save all captures
+        for capture in captures:
+            self._cam.save_from_memory(
+                jpeg_path=os.path.join(
+                    capture_parameters.images_dir,
+                    capture.filename,
+                ),
+                save_resolution=capture_parameters.save_resolution,
+                buffer_id=capture.buffer_id,
+            )
+
+        self._cam.clear_buffers()
+
+        final_z = self._stage.position["z"]
+        return final_z, z_positions
 
 
 class NotAPeakError(lt.exceptions.InvocationError):

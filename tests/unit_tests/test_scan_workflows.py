@@ -130,7 +130,7 @@ def test_histo_workflow_settings_generation(histo_workflow, mocker):
     assert workflow_settings.dx == 123
     assert workflow_settings.dy == 456
     # And that the input image dir is passed to stack the stack parameter for saving
-    assert workflow_settings.smart_stack_params.images_dir == "/this/img_dir"
+    assert workflow_settings.capture_params.images_dir == "/this/img_dir"
 
 
 # A CSM that is "normal" changing from camera maxtrix coordinates (y,x) to normal
@@ -196,7 +196,7 @@ def test_histo_pre_scan_routine(histo_workflow, mocker):
     # Rather than create a whole Setting class, just create a mock with the value
     # we need set
     mock_settings = mocker.Mock()
-    mock_settings.smart_stack_params.autofocus_dz = 1234
+    mock_settings.autofocus_params.dz = 1234
     # Run the function
     histo_workflow.pre_scan_routine(mock_settings)
     # Check the autofocus was run using the mocked slot.

@@ -66,12 +66,7 @@ def test_stack_params_validation(save_ims, extra_ims):
     # to do automatically in hypothesis. This clamps the number between 3 and 9.
     min_images_to_test = max(min(save_ims + extra_ims, 9), 3)
     SmartStackParams(
-        stack_dz=50,
-        images_to_save=save_ims,
-        min_images_to_test=min_images_to_test,
-        autofocus_dz=2000,
-        images_dir="/this/is/fake",
-        save_resolution=(1640, 1232),
+        stack_dz=50, images_to_save=save_ims, min_images_to_test=min_images_to_test
     )
 
 
@@ -96,9 +91,6 @@ def test_stack_params_not_enough_test_images(save_ims, extra_ims):
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
-            autofocus_dz=2000,
-            images_dir="/this/is/fake",
-            save_resolution=(1640, 1232),
         )
 
 
@@ -121,9 +113,6 @@ def test_stack_params_negative_images_to_save(save_ims, extra_ims):
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
-            autofocus_dz=2000,
-            images_dir="/this/is/fake",
-            save_resolution=(1640, 1232),
         )
 
 
@@ -147,9 +136,6 @@ def test_even_min_images_to_test(save_ims, extra_ims):
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
-            autofocus_dz=2000,
-            images_dir="/this/is/fake",
-            save_resolution=(1640, 1232),
         )
 
 
@@ -171,9 +157,6 @@ def test_even_images_to_save(save_ims, extra_ims):
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
-            autofocus_dz=2000,
-            images_dir="/this/is/fake",
-            save_resolution=(1640, 1232),
         )
 
 
@@ -183,12 +166,7 @@ def test_computed_stack_params():
     Not using hypothesis or we will just copy in the same formulas.
     """
     stack_parameters = SmartStackParams(
-        stack_dz=50,
-        images_to_save=5,
-        min_images_to_test=9,
-        autofocus_dz=2000,
-        images_dir="/this/is/fake",
-        save_resolution=(1640, 1232),
+        stack_dz=50, images_to_save=5, min_images_to_test=9
     )
 
     assert stack_parameters.stack_z_range == 8 * 50
@@ -279,9 +257,7 @@ def test_create_stack(histo_scan_workflow, caplog):
     initial_min_images_to_test = histo_scan_workflow.stack_min_images_to_test
     initial_images_to_save = histo_scan_workflow.stack_images_to_save
     with caplog.at_level(logging.INFO):
-        stack_params = histo_scan_workflow.create_smart_stack_params(
-            autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
-        )
+        stack_params = histo_scan_workflow.create_smart_stack_params()
 
     assert len(caplog.records) == 0
     assert histo_scan_workflow.stack_min_images_to_test == initial_min_images_to_test
@@ -308,9 +284,7 @@ def test_coercing_stack_test_ims(
     histo_scan_workflow.stack_min_images_to_test = initial_test_ims
 
     with caplog.at_level(logging.WARNING):
-        stack_params = histo_scan_workflow.create_smart_stack_params(
-            autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
-        )
+        stack_params = histo_scan_workflow.create_smart_stack_params()
 
     assert len(caplog.records) == 1
     assert str(caplog.records[0].msg).startswith(expected_log_start)
@@ -338,9 +312,7 @@ def test_coercing_stack_save_ims(
     histo_scan_workflow.stack_images_to_save = initial_save_ims
 
     with caplog.at_level(logging.WARNING):
-        stack_params = histo_scan_workflow.create_smart_stack_params(
-            autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
-        )
+        stack_params = histo_scan_workflow.create_smart_stack_params()
 
     assert len(caplog.records) == 1
     assert str(caplog.records[0].msg).startswith(expected_log_start)
@@ -353,9 +325,7 @@ def test_coercing_stack_save_ims(
 @pytest.mark.parametrize("pass_on", [1, 2, 3, 4])
 def test_run_smart_stack(pass_on, histo_scan_workflow, autofocus_thing, mocker):
     """Test Running smart stack with the stack passing on different attempts."""
-    stack_params = histo_scan_workflow.create_smart_stack_params(
-        autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
-    )
+    stack_params = histo_scan_workflow.create_smart_stack_params()
     assert stack_params.max_attempts == 3
 
     # Set up returns from z-stack
@@ -417,9 +387,7 @@ def setup_and_run_smart_z_stack(
         is a list, it will be set as a side effect (and should be a list of tuples of
         results). If it a tuple (or anything else), it is set as a return value.
     """
-    stack_params = histo_scan_workflow.create_smart_stack_params(
-        autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
-    )
+    stack_params = histo_scan_workflow.create_smart_stack_params()
     stack_params.settling_time = 0  # Don't settle or tests take forever.
 
     autofocus_thing.capture_stack_image = mocker.Mock()

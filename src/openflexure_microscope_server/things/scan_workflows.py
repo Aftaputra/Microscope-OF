@@ -31,7 +31,9 @@ from openflexure_microscope_server.stitching import (
 from openflexure_microscope_server.things.autofocus import (
     MAX_TEST_IMAGE_COUNT,
     MIN_TEST_IMAGE_COUNT,
+    AutofocusParams,
     AutofocusThing,
+    CaptureParams,
     SmartStackParams,
 )
 from openflexure_microscope_server.things.background_detect import (
@@ -101,7 +103,7 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
             is returned if it is not possible to stitch the scan.
         """
         raise NotImplementedError(
-            "Each specific ScanWorkflow must implement a `all_settings`. method."
+            "Each specific ScanWorkflow must implement a `all_settings` method."
         )
 
     def pre_scan_routine(self, settings: SettingModelType) -> None:
@@ -239,6 +241,36 @@ class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]
             correlation_resize=STITCHING_RESOLUTION[0] / self.save_resolution[0],
         )
 
+    def all_settings(
+        self, images_dir: str
+    ) -> tuple[SettingModelType, Optional[StitchingSettings]]:
+        """Return the scan settings and the stitching settings.
+
+        - `images_dir` is used to create the CaptureParams stored in the settings model.
+        - The returned SettingModelType now contains param objects:
+            * capture_params: CaptureParams
+            * autofocus_params: AutofocusParams
+            * stack_params: StackParams (if relevant)
+        """
+        stitching_settings = self._get_stitching_settings_model()
+        dx, dy = self._calc_displacement_from_overlap(self.overlap)
+
+        capture_params = CaptureParams(
+            images_dir=images_dir, save_resolution=self.save_resolution
+        )
+
+        autofocus_params = AutofocusParams(dz=self.autofocus_dz)
+
+        scan_settings = self._settings_model(
+            overlap=self.overlap,
+            dx=dx,
+            dy=dy,
+            capture_params=capture_params,
+            autofocus_params=autofocus_params,
+        )
+
+        return scan_settings, stitching_settings
+
     @lt.property
     def ready(self) -> bool:
         """Whether this scanworkflow is ready to start."""
@@ -257,6 +289,8 @@ class HistoScanSettingsModel(BaseModel):
     dy: int
     max_dist: int
     skip_background: bool
+    capture_params: CaptureParams
+    autofocus_params: AutofocusParams
     smart_stack_params: SmartStackParams
 
 
@@ -361,7 +395,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
     def all_settings(
         self, images_dir: str
     ) -> tuple[HistoScanSettingsModel, StitchingSettings]:
-        """Return the workflow and stitching settings.
+        """Return the workflow settings and stitching settings.
 
         :param images_dir: The directory that images are to be written to.
         :return: A tuple containing the settings model for this workflow and the
@@ -370,11 +404,12 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
         stitching_settings = self._get_stitching_settings_model()
         dx, dy = self._calc_displacement_from_overlap(self.overlap)
 
-        smart_stack_params = self.create_smart_stack_params(
+        capture_params = CaptureParams(
             images_dir=images_dir,
-            autofocus_dz=self.autofocus_dz,
             save_resolution=self.save_resolution,
         )
+        autofocus_params = AutofocusParams(dz=self.autofocus_dz)
+        smart_stack_params = self.create_smart_stack_params()
 
         scan_settings = HistoScanSettingsModel(
             overlap=self.overlap,
@@ -382,6 +417,8 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
             dx=dx,
             dy=dy,
             skip_background=self.skip_background,
+            capture_params=capture_params,
+            autofocus_params=autofocus_params,
             smart_stack_params=smart_stack_params,
         )
 
@@ -389,15 +426,8 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
 
     def create_smart_stack_params(
         self,
-        images_dir: str,
-        autofocus_dz: int,
-        save_resolution: tuple[int, int],
     ) -> SmartStackParams:
-        """Set up the parameters used for all stacks in a scan.
-
-        :param images_dir: the folder to save all images
-        :param autofocus_dz: the range to autofocus over if a stack fails
-        :param save_resolution: The resolution to save the captures to disk with
+        """Set up the parameters used for all smart stacks in a scan.
 
         :returns: A StackSmartParams object with the required parameters.
         """
@@ -452,9 +482,6 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
             stack_dz=self.stack_dz,
             images_to_save=self.stack_images_to_save,
             min_images_to_test=self.stack_min_images_to_test,
-            autofocus_dz=autofocus_dz,
-            images_dir=images_dir,
-            save_resolution=save_resolution,
         )
 
     def pre_scan_routine(self, settings: HistoScanSettingsModel) -> None:
@@ -463,7 +490,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
         :param settings: The settings for this scan as a HistoScanSettingsModel
         """
         self._autofocus.looping_autofocus(
-            dz=settings.smart_stack_params.autofocus_dz, start="centre"
+            dz=settings.autofocus_params.dz, start="centre"
         )
 
     def new_scan_planner(
@@ -518,6 +545,8 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
         focus_height: Optional[int]
         focused, focus_height = self._autofocus.run_smart_stack(
             stack_parameters=settings.smart_stack_params,
+            capture_parameters=settings.capture_params,
+            autofocus_parameters=settings.autofocus_params,
             save_on_failure=save_on_failure,
         )
         # An image was captured if we are focussed or we are not skipping background.
@@ -575,9 +604,8 @@ class RegularGridSettingsModel(BaseModel):
     x_count: int
     y_count: int
     style: Literal["snake", "raster"]
-    images_dir: str
-    autofocus_dz: int
-    save_resolution: tuple[int, int]
+    capture_params: CaptureParams
+    autofocus_params: AutofocusParams
 
 
 class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
@@ -604,6 +632,13 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
         stitching_settings = self._get_stitching_settings_model()
         dx, dy = self._calc_displacement_from_overlap(self.overlap)
 
+        capture_params = CaptureParams(
+            images_dir=images_dir,
+            save_resolution=self.save_resolution,
+        )
+
+        autofocus_params = AutofocusParams(dz=self.autofocus_dz)
+
         scan_settings = self._settings_model(
             overlap=self.overlap,
             dx=dx,
@@ -611,9 +646,8 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
             x_count=self.x_count,
             y_count=self.y_count,
             style=self._grid_style,
-            images_dir=images_dir,
-            autofocus_dz=self.autofocus_dz,
-            save_resolution=self.save_resolution,
+            capture_params=capture_params,
+            autofocus_params=autofocus_params,
         )
 
         return scan_settings, stitching_settings
@@ -625,7 +659,9 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
 
         :param settings: The settings for this scan as as the relevant SettingsModel type.
         """
-        self._autofocus.looping_autofocus(dz=settings.autofocus_dz, start="centre")
+        self._autofocus.looping_autofocus(
+            dz=settings.autofocus_params.dz, start="centre"
+        )
 
     def new_scan_planner(
         self, settings: RegularGridSettingsModel, position: Mapping[str, int]
@@ -659,9 +695,9 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
         """
         return self._autofocus_and_capture(
             xyz_pos=xyz_pos,
-            dz=settings.autofocus_dz,
-            images_dir=settings.images_dir,
-            save_resolution=settings.save_resolution,
+            dz=settings.autofocus_params.dz,
+            images_dir=settings.capture_params.images_dir,
+            save_resolution=settings.capture_params.save_resolution,
         )
 
     @lt.property
