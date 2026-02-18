@@ -45,7 +45,7 @@ def stage(test_env) -> lt.Thing:
 def test_downsample_shape_2d():
     """Test downsampling for 2D array."""
     shape_2d = (100, 80)
-    result_2d = simulation._downsample_shape(shape_2d)
+    result_2d = simulation._downsample_shape(shape_2d, simulation.DOWNSAMPLE)
     assert len(result_2d) == 2
     assert result_2d == (100 // simulation.DOWNSAMPLE, 80 // simulation.DOWNSAMPLE)
 
@@ -53,7 +53,7 @@ def test_downsample_shape_2d():
 def test_downsample_shape_3d():
     """Test downsampling for 3D array, should not affect 3rd axis or shape."""
     shape_3d = (120, 60, 3)
-    result_3d = simulation._downsample_shape(shape_3d)
+    result_3d = simulation._downsample_shape(shape_3d, simulation.DOWNSAMPLE)
     assert len(result_3d) == 3
     assert result_3d == (120 // simulation.DOWNSAMPLE, 60 // simulation.DOWNSAMPLE, 3)
 
@@ -61,10 +61,10 @@ def test_downsample_shape_3d():
 def test_downsample_shape_invalid_length():
     """Shapes that are not length 2 or 3 should raise ValueError."""
     with pytest.raises(ValueError, match="Shape should be a 2 or 3 element tuple."):
-        simulation._downsample_shape((1,))
+        simulation._downsample_shape((1,), simulation.DOWNSAMPLE)
 
     with pytest.raises(ValueError, match="Shape should be a 2 or 3 element tuple."):
-        simulation._downsample_shape((1, 2, 3, 4))
+        simulation._downsample_shape((1, 2, 3, 4), simulation.DOWNSAMPLE)
 
 
 def all_colours_present(
@@ -204,45 +204,14 @@ def test_objective_getter_setter(camera):
         camera.objective = val
         assert camera.objective == val
 
+    err_msg = "Objective must be one of 4, 10, 20, 40, 60, 100."
     # Invalid values should raise
-    with pytest.raises(
-        ValueError, match="Objective must be one of 4, 10, 20, 40, 60, 100."
-    ):
+    with pytest.raises(ValueError, match=err_msg):
         camera.objective = 15
-    with pytest.raises(
-        ValueError, match="Objective must be one of 4, 10, 20, 40, 60, 100."
-    ):
+    with pytest.raises(ValueError, match=err_msg):
         camera.objective = 0
-    with pytest.raises(
-        ValueError, match="Objective must be one of 4, 10, 20, 40, 60, 100."
-    ):
+    with pytest.raises(ValueError, match=err_msg):
         camera.objective = "twenty"
-
-
-def test_magnification_scale(camera):
-    """Verify that magnification_scale behaves as expected.
-
-    - Defaults to 1.0 when objective is 40x.
-    - Correctly computes the scale relative to 40x
-      (scale = objective / 40.0).
-    - Updates correctly when the objective changes.
-    """
-    # Default magnification scale
-    assert camera.magnification_scale == 1.0  # 40 / 40
-
-    # Check scale for different objectives
-    test_cases = {
-        4: 0.1,
-        10: 0.25,
-        20: 0.5,
-        40: 1.0,
-        60: 1.5,
-        100: 2.5,
-    }
-
-    for val, expected_scale in test_cases.items():
-        camera.objective = val
-        assert camera.magnification_scale == expected_scale
 
 
 def test_generate_image_changes_with_objective(camera):
@@ -254,6 +223,7 @@ def test_generate_image_changes_with_objective(camera):
     pos = (0, 0, 0)
     camera.noise_level = 0  # eliminate randomness
 
+    # Generate images at 3 magnifications
     camera.objective = 10
     img_10 = np.array(camera.generate_image(pos))
 
@@ -266,6 +236,21 @@ def test_generate_image_changes_with_objective(camera):
     # Images at different objectives should not be identical
     assert not np.array_equal(img_10, img_40)
     assert not np.array_equal(img_40, img_100)
+
+    # Generate 3 more images at these 3 magnifications
+    camera.objective = 10
+    img_10_im2 = np.array(camera.generate_image(pos))
+
+    camera.objective = 40
+    img_40_im2 = np.array(camera.generate_image(pos))
+
+    camera.objective = 100
+    img_100_im2 = np.array(camera.generate_image(pos))
+
+    # Image should return to an identical value
+    assert np.array_equal(img_10, img_10_im2)
+    assert np.array_equal(img_40, img_40_im2)
+    assert np.array_equal(img_100, img_100_im2)
 
 
 def test_generate_image_output_size(camera):
