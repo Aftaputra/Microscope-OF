@@ -57,7 +57,7 @@ export default {
     propertyDescription: function () {
       try {
         return this.thingDescription(this.thingName).properties[this.propertyName];
-      } catch (error) {
+      } catch {
         return undefined;
       }
     },
