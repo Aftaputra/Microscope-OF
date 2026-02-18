@@ -114,6 +114,24 @@ class SimulatedCamera(BaseCamera):
 
     _show_sample: bool = True
 
+    _objective: int = 40  # default 40x, our standard build
+
+    @lt.property
+    def objective(self) -> int:
+        """Objective magnification (e.g. 4, 10, 20, 40, 60, 100)."""
+        return self._objective
+
+    @objective.setter
+    def _set_objective(self, value: int) -> None:
+        if value not in (4, 10, 20, 40, 60, 100):
+            raise ValueError("Objective must be one of 4, 10, 20, 40, 60, 100.")
+        self._objective = value
+
+    @property
+    def magnification_scale(self) -> float:
+        """Magnification scale relative to 40x objective."""
+        return self._objective / 40.0
+
     def __init__(
         self,
         thing_server_interface: lt.ThingServerInterface,
@@ -300,7 +318,14 @@ class SimulatedCamera(BaseCamera):
         :param pos: a 3-item tuple containing the x,y,z coordinates of the 'stage'
         """
         canvas_width, canvas_height, _ = self.canvas_shape
-        image_width, image_height, _ = self.ds_shape
+        # Base image size
+        base_width, base_height, _ = self.ds_shape
+
+        # Scale crop size inversely with magnification
+        scale = self.magnification_scale
+        image_width = int(base_width / scale)
+        image_height = int(base_height / scale)
+
         im_pos = (
             pos[0] * RATIO[0] / DOWNSAMPLE,
             pos[1] * RATIO[1] / DOWNSAMPLE,
@@ -336,7 +361,7 @@ class SimulatedCamera(BaseCamera):
         np_img = fast_pil_blur(focused_np_img, sigma=np.abs(im_pos[2]) / 5)
 
         # Add noise and convert to uint8
-        np_img += RNG.normal(scale=self.noise_level, size=self.ds_shape).astype("int16")
+        np_img += RNG.normal(scale=self.noise_level, size=np_img.shape).astype("int16")
         np.clip(np_img, 0, 255, out=np_img)
         pl_img = Image.fromarray(np_img.astype("uint8"))
         return pl_img.resize((self.shape[1], self.shape[0]), Image.Resampling.BILINEAR)
@@ -521,6 +546,7 @@ class SimulatedCamera(BaseCamera):
             property_control_for(self, "blob_density", label="Sample Density"),
             property_control_for(self, "colour", label="Sample Colour"),
             property_control_for(self, "noise_level", label="Noise Level"),
+            property_control_for(self, "objective", label="Objective Magnification"),
         ]
 
 
