@@ -295,13 +295,13 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
 
     # Stacking settings
 
-    stack_images_to_save: int = lt.setting(default=1)
+    stack_images_to_save: int = lt.setting(default=1, ge=1, le=9)
     """The number of images to save in a stack.
 
     Defaults to 1 unless you need to see either side of focus
     """
 
-    stack_min_images_to_test: int = lt.setting(default=9)
+    stack_min_images_to_test: int = lt.setting(default=9, ge=5, le=13)
     """The minimum number of images to capture in a stack.
 
     This many images are captures and tested for focus, if the focus is not central
@@ -311,7 +311,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
     Defaults to 9 which balances reliability and speed.
     """
 
-    stack_dz: int = lt.setting(default=50)
+    stack_dz: int = lt.setting(default=50, ge=10, le=400)
     """Distance in steps between images in a z-stack.
 
     Suggested values:
@@ -538,7 +538,9 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
     def settings_ui(self) -> list[PropertyControl]:
         """A list of PropertyControl objects to create the settings in the scan tab."""
         return [
-            property_control_for(self, "overlap", label="Image Overlap (0.1-0.7)"),
+            property_control_for(
+                self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
+            ),
             property_control_for(
                 self, "stack_images_to_save", label="Images in Stack to Save"
             ),
@@ -547,9 +549,13 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
                 "stack_min_images_to_test",
                 label="Minimum number of images to test for focus",
             ),
-            property_control_for(self, "stack_dz", label="Stack dz (steps)"),
-            property_control_for(self, "autofocus_dz", label="Autofocus Range (steps)"),
-            property_control_for(self, "max_range", label="Maximum Distance (steps)"),
+            property_control_for(self, "stack_dz", label="Stack dz (steps)", step=5),
+            property_control_for(
+                self, "autofocus_dz", label="Autofocus Range (steps)", step=200
+            ),
+            property_control_for(
+                self, "max_range", label="Maximum Distance (steps)", step=1000
+            ),
             property_control_for(
                 self, "skip_background", label="Detect and Skip Empty Fields "
             ),
@@ -662,7 +668,9 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
     def settings_ui(self) -> list[PropertyControl]:
         """A list of PropertyControl objects to create the settings in the scan tab."""
         return [
-            property_control_for(self, "overlap", label="Image Overlap (0.1-0.7)"),
+            property_control_for(
+                self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
+            ),
             property_control_for(self, "x_count", label="Number of columns"),
             property_control_for(self, "y_count", label="Number of rows"),
             property_control_for(self, "autofocus_dz", label="Autofocus Range (steps)"),

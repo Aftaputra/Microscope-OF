@@ -5,7 +5,7 @@
       <div class="input-and-buttons-container">
         <select
           v-model="internalValue"
-          class="uk-form-small numeric-setting-line-input dropdown"
+          class="uk-form-small property-input dropdown"
           @change="sendValue"
         >
           <option v-for="(value, display) in options" :key="value" :value="value">
@@ -18,23 +18,31 @@
     <label v-if="!useDropdown && dataType == 'number'" class="uk-form-label"
       >{{ label }}
       <div class="input-and-buttons-container">
-        <input
-          ref="numericalInput"
-          v-model="internalValue"
-          class="uk-form-small numeric-setting-line-input"
-          :class="{ edited: isEdited, flash: animateUpdate }"
-          :disabled="isDisabled"
-          type="number"
-          @input="grabFocus"
-          @focusout="focusOut"
-          @keydown="keyDown"
-          @animationend="animationEnd"
-        />
+        <div class="uk-inline number-wrapper">
+          <input
+            ref="numericalInput"
+            v-model="internalValue"
+            class="uk-form-small property-input numeric-property"
+            :class="{ edited: isEdited, flash: animateUpdate }"
+            :disabled="isDisabled"
+            type="number"
+            :min="minimum"
+            :max="maximum"
+            @input="grabFocus"
+            @focusout="focusOut"
+            @keydown="keyDown"
+            @animationend="animationEnd"
+          />
+          <div class="spinner-buttons">
+            <button type="button" @click="increment(1)" @mousedown="spinnerClick">▲</button>
+            <button type="button" @click="increment(-1)" @mousedown="spinnerClick">▼</button>
+          </div>
+        </div>
         <sync-property-button @click="requestUpdate" />
       </div>
     </label>
     <div v-if="!useDropdown && dataType == 'boolean'" class="input-and-buttons-container">
-      <label class="uk-form-label numeric-setting-line-input">
+      <label class="uk-form-label property-input">
         <input
           ref="checkbox"
           v-model="internalValue"
@@ -54,7 +62,7 @@
           v-for="i in valueLength"
           :key="i"
           v-model="internalValue[i - 1]"
-          class="uk-form-small numeric-setting-line-input"
+          class="uk-form-small property-input"
           :class="{ edited: isEdited, flash: animateUpdate }"
           :disabled="isDisabled"
           type="number"
@@ -73,7 +81,7 @@
         <div class="input-and-buttons-container">
           <input
             v-model="internalValue[key]"
-            class="uk-form-small numeric-setting-line-input"
+            class="uk-form-small property-input"
             :class="{ edited: isEdited, flash: animateUpdate }"
             :disabled="isDisabled"
             type="number"
@@ -91,7 +99,7 @@
       <div class="input-and-buttons-container">
         <input
           v-model="internalValue"
-          class="uk-form-small numeric-setting-line-input"
+          class="uk-form-small property-input"
           :class="{ edited: isEdited, flash: animateUpdate }"
           :disabled="isDisabled"
           type="text"
@@ -107,7 +115,7 @@
       <div class="input-and-buttons-container">
         <input
           v-model="internalValue"
-          class="uk-form-small numeric-setting-line-input"
+          class="uk-form-small property-input"
           type="text"
           disabled="true"
         />
@@ -146,6 +154,11 @@ export default {
     options: {
       type: Object,
       // Default is Null as None is passed from the server.
+      default: null,
+      required: false,
+    },
+    step: {
+      type: Number,
       default: null,
       required: false,
     },
@@ -242,6 +255,27 @@ export default {
       }
       return "other";
     },
+    maximum() {
+      if (this.dataType !== "number") return undefined;
+      return this.dataSchema.maximum;
+    },
+    minimum() {
+      if (this.dataType !== "number") return undefined;
+      return this.dataSchema.minimum;
+    },
+    /**
+     * The step size for numerical spinners.
+     *
+     * If not a number this is `undefined`. If `step` is set as a prop then it is used
+     * otherwise `multipleOf` from the property `dataSchema` is used. If `multipleOf`
+     * is not set in the `dataSchema` JS will return `undefined` and the browser will
+     * use its default value.
+     */
+    spinner_step() {
+      if (this.dataType !== "number") return undefined;
+      if (this.step !== null) return this.step;
+      return this.dataSchema.multipleOf;
+    },
   },
 
   watch: {
@@ -292,6 +326,37 @@ export default {
         this.sendValue();
       }
     },
+    increment(sign) {
+      const step = this.spinner_step || 1;
+      const multipleOf = this.dataSchema.multipleOf;
+      let newValue = Number(this.internalValue) || 0;
+      newValue += sign * step;
+      // Apply minimum if defined
+      if (this.minimum !== undefined && this.minimum !== null) {
+        newValue = Math.max(newValue, this.minimum);
+      }
+      // Apply maximum if defined
+      if (this.maximum !== undefined && this.maximum !== null) {
+        newValue = Math.min(newValue, this.maximum);
+      }
+
+      // If mulipleOf is validated on server then enforce it.
+      if (multipleOf) {
+        newValue = Math.round(newValue / multipleOf) * multipleOf;
+      }
+
+      // Rounding to about 5 sig figs to stop weird javascript rounding.
+      const magnitude = Math.floor(Math.log10(Math.abs(newValue)));
+      const factor = 10 ** -(Math.floor(magnitude) - 4);
+      this.internalValue = Math.round(newValue * factor) / factor;
+    },
+    /**
+     * Grab focus for the numerical input when a spinner is clicked.
+     */
+    spinnerClick(event) {
+      event.preventDefault();
+      this.$refs.numericalInput.focus();
+    },
     /** Grab the browser focus.
      *
      * This is needed for numerical elements to be in focus when a spinner
@@ -311,6 +376,17 @@ export default {
       // Pressing enter should set the property, whether or not we think it's changed.
       if (event.keyCode == 13) {
         this.sendValue();
+      }
+      // If numeric then capture Up and Down keys for incrementing.
+      if (this.dataType === "number") {
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          this.increment(1);
+        }
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          this.increment(-1);
+        }
       }
     },
     updateIsEdited: function () {
@@ -349,11 +425,49 @@ export default {
   align-items: center;
   width: 100%;
 }
-.numeric-setting-line-input {
+.property-input {
   flex-grow: 1;
   margin-left: 5px;
   margin-right: 5px;
   width: 6em;
+}
+/*Hide standard spinners as it isn't possible to customise the browser ones.*/
+.numeric-property {
+  -moz-appearance: textfield;
+}
+.numeric-property::-webkit-outer-spin-button,
+.numeric-property::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+.number-wrapper {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: flex-start;
+  align-content: stretch;
+  align-items: center;
+  flex-grow: 1;
+}
+
+.spinner-buttons {
+  position: absolute;
+  right: 4px;
+  top: 1px;
+  bottom: 5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.spinner-buttons button {
+  height: 45%;
+  padding: 0 6px;
+  line-height: 1;
+  font-size: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #888;
 }
 .dropdown {
   background-color: #fff;

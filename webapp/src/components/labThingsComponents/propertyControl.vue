@@ -5,6 +5,7 @@
     :label="label"
     :animate="animate"
     :options="options"
+    :step="step"
     @request-update="readProperty"
     @send-value="writeProperty"
     @animation-shown="resetAnimate"
@@ -47,6 +48,11 @@ export default {
     },
     options: {
       type: Object,
+      default: null,
+      required: false,
+    },
+    step: {
+      type: Number,
       default: null,
       required: false,
     },
