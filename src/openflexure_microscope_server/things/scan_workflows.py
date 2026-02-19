@@ -481,6 +481,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
             stack_dz=self.stack_dz,
             images_to_save=self.stack_images_to_save,
             min_images_to_test=self.stack_min_images_to_test,
+            save_on_failure=not self.skip_background,
         )
 
     def pre_scan_routine(self, settings: HistoScanSettingsModel) -> None:
@@ -539,17 +540,14 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
                 self.logger.info(msg)
                 return False, None
 
-        save_on_failure = not settings.skip_background
-
         focus_height: Optional[int]
         focused, focus_height = self._autofocus.run_smart_stack(
             stack_parameters=settings.smart_stack_params,
             capture_parameters=settings.capture_params,
             autofocus_parameters=settings.autofocus_params,
-            save_on_failure=save_on_failure,
         )
         # An image was captured if we are focussed or we are not skipping background.
-        imaged = focused or save_on_failure
+        imaged = focused or settings.smart_stack_params.save_on_failure
 
         if not imaged:
             msg = f"Stack failed at {xyz_pos}. Treating as background."

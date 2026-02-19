@@ -11,6 +11,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass
+from enum import Enum
 from types import TracebackType
 from typing import Literal, Mapping, Optional, Self, Sequence
 
@@ -33,11 +34,25 @@ class NotStreamingError(RuntimeError):
     """No images captured from stream. The camera is almost certainly not streaming."""
 
 
+class SharpnessMethod(str, Enum):
+    """The possible SharpnessMethods for autofocus."""
+
+    jpeg = "jpeg"
+
+
 class AutofocusParams(BaseModel):
     """A class for running autofocus routines."""
 
     dz: int
-    sharpness_method: str = "jpeg"
+    sharpness_method: SharpnessMethod = SharpnessMethod.jpeg
+
+
+class StackOrigin(str, Enum):
+    """The position of the current location in the stack."""
+
+    START = "start"
+    CENTER = "center"
+    END = "end"
 
 
 class StackParams(BaseModel):
@@ -52,15 +67,28 @@ class StackParams(BaseModel):
     settling_time: float = 0.3
     """Time (in seconds) between moving and capturing an image"""
 
+    backlash_correction: int = 250
+    """
+    Distance (in steps) to overshoot a move and then undo, to account for backlash
+    """
+
+    origin: StackOrigin = StackOrigin.START
+    """Where the stack is positioned relative to the current z position."""
+
 
 class SmartStackParams(StackParams):
     """A class for holding smart stack parameters, and returning computed ones."""
 
     min_images_to_test: int
 
-    backlash_correction: int = 250
+    save_on_failure: bool = False
+    """Whether to save an image even if no focus was found."""
+
+    check_turning_points: bool = True
     """
-    Distance (in steps) to overshoot a move and then undo, to account for backlash
+    Whether to check the number of turning points in
+    the sharpnesses of the images in the stack is exactly 1.
+    (May fail with thick samples)
     """
 
     stack_height_limit: int = 15
@@ -468,8 +496,6 @@ class AutofocusThing(lt.Thing):
         stack_parameters: SmartStackParams,
         capture_parameters: CaptureParams,
         autofocus_parameters: AutofocusParams,
-        save_on_failure: bool = False,
-        check_turning_points: bool = True,
     ) -> tuple[bool, int]:
         """Run a smart stack.
 
@@ -481,10 +507,6 @@ class AutofocusThing(lt.Thing):
 
         :param stack_parameters: A SmartStackParams object containing the required
             parameters to run a stack.
-        :param save_on_failure: Whether to save an image even if no focus was found.
-        :param check_turning_points: Whether to check the number of turning points in
-            the sharpnesses of the images in the stack is exactly 1. (May fail with
-            thick samples)
 
         :returns: A tuple containing:
 
@@ -496,13 +518,10 @@ class AutofocusThing(lt.Thing):
             attempt += 1
             success, captures, sharpest_id = self.smart_z_stack(
                 stack_parameters=stack_parameters,
-                check_turning_points=check_turning_points,
+                check_turning_points=stack_parameters.check_turning_points,
             )
 
-            if success:
-                break
-
-            if attempt >= stack_parameters.max_attempts:
+            if success or attempt >= stack_parameters.max_attempts:
                 break
 
             # The z position of the first images in the previous attempt.
@@ -516,7 +535,7 @@ class AutofocusThing(lt.Thing):
         # Save stack_parameters.image_to_save images centred on the sharpest capture.
         # If the smart_stack failed the exact number of images saved may not be
         # stack_parameters.image_to_save
-        if success or save_on_failure:
+        if success or stack_parameters.save_on_failure:
             self.save_stack(
                 sharpest_id=sharpest_id,
                 captures=captures,
@@ -746,6 +765,24 @@ class AutofocusThing(lt.Thing):
         """
         captures: list[CaptureInfo] = []
         z_positions: list[int] = []
+
+        total_range = stack_parameters.stack_dz * (stack_parameters.images_to_save - 1)
+
+        # Determine starting offset based on stack origin
+        if stack_parameters.origin == StackOrigin.CENTER:
+            target_offset = -total_range // 2
+        elif stack_parameters.origin == StackOrigin.END:
+            target_offset = -total_range
+        else:
+            target_offset = 0
+
+        # Apply backlash correction: overshoot and move back
+        # Overshoot past the starting position
+        self._stage.move_relative(
+            z=target_offset - stack_parameters.backlash_correction
+        )
+        # Move back to the exact starting point
+        self._stage.move_relative(z=stack_parameters.backlash_correction)
 
         # Capture images_to_save images
         for _ in range(stack_parameters.images_to_save):
