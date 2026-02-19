@@ -364,8 +364,6 @@ def test_run_smart_stack(pass_on, histo_scan_workflow, autofocus_thing, mocker):
         stack_parameters=scan_settings.smart_stack_params,
         capture_parameters=scan_settings.capture_params,
         autofocus_parameters=scan_settings.autofocus_params,
-        save_on_failure=False,
-        check_turning_points=True,
     )
 
     # Only passes if the attempt it passes on is less than max attempts

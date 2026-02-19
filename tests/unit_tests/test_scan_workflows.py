@@ -258,6 +258,13 @@ def test_histo_acquisition_not_skipping_background(histo_workflow, mocker, caplo
     # Mocking for settings as above
     mock_settings = mocker.Mock()
     mock_settings.skip_background = False
+    mock_settings.smart_stack_params = SmartStackParams(
+        stack_dz=5,
+        images_to_save=3,
+        min_images_to_test=3,
+        save_on_failure=True,
+        check_turning_points=True,
+    )
 
     # Set up background detector to say it is empty, this shouldn't stop stacking.
     histo_workflow._background_detector.image_is_sample.return_value = (
@@ -296,6 +303,13 @@ def test_histo_acquisition_on_sample(histo_workflow, mocker, caplog):
     # Mocking for settings as above
     mock_settings = mocker.Mock()
     mock_settings.skip_background = True
+    mock_settings.smart_stack_params = SmartStackParams(
+        stack_dz=5,
+        images_to_save=3,
+        min_images_to_test=3,
+        save_on_failure=False,
+        check_turning_points=True,
+    )
 
     # Set up background detector to say there is sample.
     histo_workflow._background_detector.image_is_sample.return_value = (True, None)
