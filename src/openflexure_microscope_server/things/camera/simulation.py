@@ -287,7 +287,7 @@ class SimulatedCamera(BaseCamera):
             )
         self.canvas = np.clip(new_canvas, 0, 255)
         # Create a further downsized canvas for low mag. This has a minimal memory
-        # footprint bus speeds up indexing the canvas when simulation low magnification
+        # footprint but speeds up indexing the canvas when simulation uses low magnification
         # objectives
         self.canvas_low_mag = fast_resize_and_blur(
             self.canvas, sigma=0, shape=self.low_mag_canvas_shape
