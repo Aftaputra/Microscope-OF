@@ -7,11 +7,11 @@ of images (a 'z-stack').
 See repository root for licensing information.
 """
 
+import enum
 import logging
 import os
 import time
 from dataclasses import dataclass
-from enum import Enum
 from types import TracebackType
 from typing import Literal, Mapping, Optional, Self, Sequence
 
@@ -34,25 +34,25 @@ class NotStreamingError(RuntimeError):
     """No images captured from stream. The camera is almost certainly not streaming."""
 
 
-class SharpnessMethod(str, Enum):
+class SharpnessMethod(enum.Enum):
     """The possible SharpnessMethods for autofocus."""
 
-    jpeg = "jpeg"
+    JPEG = enum.auto()
 
 
 class AutofocusParams(BaseModel):
     """A class for running autofocus routines."""
 
     dz: int
-    sharpness_method: SharpnessMethod = SharpnessMethod.jpeg
+    sharpness_method: SharpnessMethod = SharpnessMethod.JPEG
 
 
-class StackOrigin(str, Enum):
+class StackOrigin(enum.Enum):
     """The position of the current location in the stack."""
 
-    START = "start"
-    CENTER = "center"
-    END = "end"
+    START = enum.auto()
+    CENTER = enum.auto()
+    END = enum.auto()
 
 
 class StackParams(BaseModel):
