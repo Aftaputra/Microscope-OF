@@ -30,18 +30,33 @@ This phase focuses on planning the release and, crucially, getting any major inf
     * [ ] OFM CLI tools
 * [ ] **Define upstream versions:** Does this release depend on a major dependency change (such as new LabThings version)? If so these must have issues.
 * [ ] **Schedule:** Set and announce the **Feature Freeze** and **Release Date**. Feature freeze should be at least 2 weeks before the release date.
-* [ ] **Build System:** **Deadline:** All build system MRs must be merged and tested. (This should happen *as early as possible* in the cycle).
+    * Feature Freeze - **_NOT SET_**
+    * Release - **_NOT SET_**
 
 ---
 
 ### Phase 2: Feature Freeze And Upstream Releases (T-2 Weeks)
 
+**Branching Note:**  During alpha and beta development, feature freeze marks the point where only bug fixes and release preparation may be merged into the default branch.
+
 * [ ] **Announce:** Announce the Feature Freeze deadline one week out. This should be announced on the OpenFlexure Forum and in a message/email to the core team.
 * [ ] **Deadline:** **FEATURE FREEZE**. All MRs for the milestone must be merged.
 * [ ] **Deadline:** **UPSTREAM RELEASES**. Any of our repos/packages upstream of the OS and server should have a defined release, for this release to target.
     * [ ] Stitching Released
-* [ ] **Branching Note:**  During alpha and beta development, feature freeze marks the point where only **bug fixes and release preparation** may be merged into the default branch.
+    * [ ] Final OS changes merged
 * [ ] **Communication:** Inform the team that all new feature work should target the *next* milestone.
+* [ ] **Final Server Repo Commit:** Create a (hopefully) final commit to the server before building the OS with the new version and updated changelog. This commit should include the following:
+    * [ ] Update version string in:
+        * [ ] `pyproject.toml`
+        * [ ] `test_version_strings.py`
+        * [ ] `package.json`
+        * [ ] `package-lock.json` (in 2 places!)
+    * [ ] Create `CHANGELOG` entry
+        * [ ] Add a title that is a link to the GitLab compare between the last release tag and this soon-to-be-made tag.
+        * [ ] Add a high level summary of the server changes
+        * [ ] Run changelog helper to generate the list of MRs since the last tag `python change_log_helper.py -b v3 <LAST-TAG-NAME>` and copy these in below the summary.
+        * [ ] Run `codespell` on the changelog and use `<!-- codespell:ignore XYZ -->` to silence codespell on any spelling errors in MR titles.
+    * [ ] Commit, Push, and Merge
 
 ---
 
@@ -50,8 +65,12 @@ This phase focuses on planning the release and, crucially, getting any major inf
 This phase is dedicated to intensive testing and bug fixing.
 
 * [ ] **Create Image:** Flash at least one SD card with the new image. This image should be created off the default branch.
-* [ ] **Create Test Plan:** Document the specific tests to be run.
-* [ ] **Execute Test Plan:**
+* [ ] **Create Release Test Plan:** Document the specific tests to be run on top of the default. *Add items in section below*
+* [ ] **Execute Release Test Plan:**
+    * [ ]  **_Add_**
+    * [ ]  **_items_**
+    * [ ]  **_here_**
+* [ ] **Execute Standard Test Plan:**
     * [ ] Camera Calibration
         * [ ] Picamera v2
         * [ ] Picamera HQ
@@ -74,8 +93,15 @@ This phase is dedicated to intensive testing and bug fixing.
         * [ ] v7 Microscope
         * [ ] Simulation
         * [ ] Manual
-* [ ] **Triage:** Triage all bugs found. Fix any release-blocking bugs.
-* [ ] **Repeat:** Re-build image and re-test as bugs are fixed. Update release date if absolutely necessary. (Optional)
+* [ ] **Capture bugs, Triage and Repeat:** *Check-off once no more bugs are found in testing.*
+    * **Record all bugs found (here and in issues)**
+        * _Describe bugs here (#issue-number)_
+    * **_If needed_ - Add any showstopper bugs or major regressions to milestone**
+        * [ ] Fix these bugs
+        * [ ] Update server changelog!
+        * [ ] Build new image
+        * [ ] Clear testing checklist and this checklist, and start testing again!
+
 
 ---
 
@@ -87,21 +113,8 @@ By this stage:
 * We will release the exact image used for testing.
 
 * [ ] **Draft Notes:** Draft the release notes for:
-    * [ ] High level summary for the server release notes/changelog
     * [ ] High level summary for the OS release notes
-    * [ ] Combined summary for the forum
-* [ ] **Final Server Repo Commit:**
-    * [ ] Update version string in:
-        * [ ] `pyproject.toml`
-        * [ ] `test_version_strings.py`
-        * [ ] `package.json`
-        * [ ] `package-lock.json` (in 2 places!)
-    * [ ] Create `CHANGELOG` entry
-        * [ ] Add a title that is a link to the GitLab compare between the last release tag and this soon-to-be-made tag.
-        * [ ] Add the a high level summary of the server changes
-        * [ ] Run changelog helper to generate the list of MRs since the last tag `python change_log_helper.py -b v3 <LAST-TAG-NAME>` and copy these in below the summary.
-        * [ ] Run `codespell` on the changelog and use `<!-- codespell:ignore XYZ -->` to silence codespell on any spelling errors in MR titles.
-    * [ ] Commit, Push, and Merge
+    * [ ] Combined server and OS summary for the forum
 * [ ]  **Release:**
     * [ ] On `build.openflexure.org` copy the image that passed testing from `/raspbian-openflexure/testing/` to `/raspbian-openflexure/v3_pre_release/`.
     * [ ] **OS RELEASE**
