@@ -45,20 +45,38 @@
           'uk-alert-danger uk-alert': item.level == 'ERROR',
         }"
       >
-        <b>{{ formatDateTime(item.timestamp) }}: {{ item.level }}</b>
-        <div class="logging-summary">
-          {{ item.summary }}
-          <a
-            v-if="(item.summary != item.message) & !item.expanded"
-            style="float: right"
-            @click="item.expanded = true"
-          >
-            More info...
-          </a>
-          <!-- eslint-disable vue/no-v-html -->
-          <div v-if="item.expanded" class="logging-message" v-html="item.message"></div>
-          <!-- eslint-enable -->
+        <div class="logging-header">
+          <span class="log-date">
+            {{ formatDateTime(item.timestamp) }}
+          </span>
+          <span class="log-level">
+            {{ item.level }}
+          </span>
         </div>
+        <div class="logging-entry-body">
+          <div class="logging-summary">
+            {{ item.summary }}
+          </div>
+          <div class="more-info-container">
+            <a
+              v-if="(item.summary != item.message) & !item.expanded"
+              class="more-info"
+              @click="item.expanded = true"
+            >
+              More info...
+            </a>
+            <a
+              v-if="(item.summary != item.message) & item.expanded"
+              class="more-info"
+              @click="item.expanded = false"
+            >
+              Hide info...
+            </a>
+          </div>
+        </div>
+        <!-- eslint-disable vue/no-v-html -->
+        <div v-if="item.expanded" class="logging-message" v-html="item.message"></div>
+        <!-- eslint-enable -->
       </div>
 
       <Paginate
@@ -219,6 +237,13 @@ export default {
 </script>
 
 <style lang="less" scoped>
+// Pinched from ui-kit
+@info-bg-color: #d5d5d5;
+@warning-color: #faa05a;
+@warning-bg-color: #fff6ee;
+@error-color: #f0506e;
+@error-bg-color: #fef4f6;
+
 .logging-navbar {
   border-width: 0 0 1px 0;
   border-style: solid;
@@ -228,10 +253,61 @@ export default {
 }
 .logging-entry {
   white-space: break-spaces;
+  padding: 0;
+  overflow: hidden;
 }
+
+.logging-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  padding: 6px 12px;
+  background: darken(@info-bg-color, 15%);
+}
+
+.uk-alert-warning .logging-header {
+  background: darken(@warning-bg-color, 15%);
+  color: darken(@warning-color, 15%);
+}
+
+.uk-alert-danger .logging-header {
+  background: darken(@error-bg-color, 15%);
+  color: darken(@error-color, 15%);
+}
+
+.logging-entry-body {
+  padding: 15px 29px 15px 15px;
+}
+
+.logging-summary {
+  font-weight: 500;
+}
+
 .logging-message {
   font-family: monospace;
   overflow-x: auto;
   text-wrap: nowrap;
+  margin-left: 15px;
+  max-height: 60vh;
+  scrollbar-width: thin;
+  scrollbar-color: #888 transparent;
+}
+
+.logging-message::-webkit-scrollbar {
+  width: 8px;
+}
+
+.logging-message::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 6px;
+}
+.more-info-container {
+  display: flex;
+}
+.more-info {
+  color: inherit;
+  text-decoration: underline;
+  margin-left: auto;
 }
 </style>
