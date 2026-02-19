@@ -79,9 +79,16 @@ class OpenCVCamera(BaseCamera):
     @camera_name.setter
     def _set_camera_name(self, value: str) -> None:
         """Set the name of the camera."""
+        if not self.cameras:
+            # Don't try to validate if cameras dict is empty, just set the value.
+            # As this is the startup behaviour. On __enter__ we check if the
+            # initial camera is valid and that at least 1 camera exists.
+            self._camera_name = value
+            # Return so we don't try to start the stream
+            return
+
         if value not in self.cameras:
-            raise ValueError("{value} is not a valid camera name.")
-        self._camera_name = value
+            raise ValueError(f"{value} is not a valid camera name.")
         self._start_stream()
 
     def _start_stream(self) -> None:
