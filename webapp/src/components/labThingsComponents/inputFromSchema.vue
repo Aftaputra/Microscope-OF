@@ -28,7 +28,6 @@
             type="number"
             :min="minimum"
             :max="maximum"
-            @wheel="handleSpiner"
             @input="grabFocus"
             @focusout="focusOut"
             @keydown="keyDown"
@@ -377,6 +376,17 @@ export default {
       // Pressing enter should set the property, whether or not we think it's changed.
       if (event.keyCode == 13) {
         this.sendValue();
+      }
+      // If numeric then capture Up and Down keys for incrementing.
+      if (this.dataType === "number") {
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          this.increment(1);
+        }
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          this.increment(-1);
+        }
       }
     },
     updateIsEdited: function () {
