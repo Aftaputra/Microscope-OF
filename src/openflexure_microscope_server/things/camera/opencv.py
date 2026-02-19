@@ -32,7 +32,8 @@ class OpenCVCamera(BaseCamera):
     def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Iniatilise the thing storing the index of the camera to use.
 
-        :param camera_index: The index of the camera to use for the microscope.
+        :param thing_server_interface: The thing server interface to be passed to to
+            the parent class.
         """
         super().__init__(thing_server_interface)
 
