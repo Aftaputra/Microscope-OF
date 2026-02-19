@@ -266,14 +266,29 @@ export default {
   background: darken(@info-bg-color, 15%);
 }
 
+.uk-light .logging-header {
+  background: darken(@info-bg-color, 35%);
+  color: lighten(@info-bg-color, 35%);
+}
+
 .uk-alert-warning .logging-header {
   background: darken(@warning-bg-color, 15%);
   color: darken(@warning-color, 15%);
 }
 
+.uk-light .uk-alert-warning .logging-header {
+  background: desaturate(darken(@warning-color, 15%), 10%);
+  color: darken(@warning-bg-color, 5%);
+}
+
 .uk-alert-danger .logging-header {
   background: darken(@error-bg-color, 15%);
   color: darken(@error-color, 15%);
+}
+
+.uk-light .uk-alert-danger .logging-header {
+  background: desaturate(darken(@error-color, 10%), 10%);
+  color: darken(@error-bg-color, 5%);
 }
 
 .logging-entry-body {
