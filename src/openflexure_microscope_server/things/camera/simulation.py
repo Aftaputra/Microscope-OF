@@ -44,7 +44,9 @@ BG_COLOR = [220, 215, 217]
 # Random Number Generator
 RNG = np.random.default_rng()
 
+
 DOWNSAMPLE = 2
+LOW_MAG_DOWNSAMPLE = 8
 # Upsample for sprites and then downsample to create sharp edges for each sprite
 # as these are small and calculated once there is almost no performance penalty
 # for a nice gain in quality.
@@ -60,20 +62,24 @@ COLOUR_REGEX = re.compile(r"^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$")
 
 
 @overload
-def _downsample_shape(shape: tuple[int, int]) -> tuple[int, int]: ...
+def _downsample_shape(
+    shape: tuple[int, int], factor: float | int
+) -> tuple[int, int]: ...
 
 
 @overload
-def _downsample_shape(shape: tuple[int, int, int]) -> tuple[int, int, int]: ...
+def _downsample_shape(
+    shape: tuple[int, int, int], factor: float | int
+) -> tuple[int, int, int]: ...
 
 
 def _downsample_shape(
-    shape: tuple[int, int] | tuple[int, int, int],
+    shape: tuple[int, int] | tuple[int, int, int], factor: float | int
 ) -> tuple[int, int] | tuple[int, int, int]:
     if len(shape) == 2:
-        return (shape[0] // DOWNSAMPLE, shape[1] // DOWNSAMPLE)
+        return (int(shape[0] // factor), int(shape[1] // factor))
     if len(shape) == 3:
-        return (shape[0] // DOWNSAMPLE, shape[1] // DOWNSAMPLE, shape[2])
+        return (int(shape[0] // factor), int(shape[1] // factor), shape[2])
     raise ValueError("Shape should be a 2 or 3 element tuple.")
 
 
@@ -114,6 +120,19 @@ class SimulatedCamera(BaseCamera):
 
     _show_sample: bool = True
 
+    _objective: int = 40  # default 40x, our standard build
+
+    @lt.property
+    def objective(self) -> int:
+        """Objective magnification (e.g. 4, 10, 20, 40, 60, 100)."""
+        return self._objective
+
+    @objective.setter
+    def _set_objective(self, value: int) -> None:
+        if value not in (4, 10, 20, 40, 60, 100):
+            raise ValueError("Objective must be one of 4, 10, 20, 40, 60, 100.")
+        self._objective = value
+
     def __init__(
         self,
         thing_server_interface: lt.ThingServerInterface,
@@ -132,10 +151,9 @@ class SimulatedCamera(BaseCamera):
         """
         super().__init__(thing_server_interface)
         self.shape = shape
-        self.ds_shape = _downsample_shape(shape)
         self.glyph_size = 105 // DOWNSAMPLE
-        self.canvas_shape = _downsample_shape(canvas_shape)
-
+        self.canvas_shape = _downsample_shape(canvas_shape, DOWNSAMPLE)
+        self.low_mag_canvas_shape = _downsample_shape(canvas_shape, LOW_MAG_DOWNSAMPLE)
         self.frame_interval = frame_interval
         self._capture_thread: Optional[Thread] = None
         self._capture_enabled = False
@@ -257,6 +275,10 @@ class SimulatedCamera(BaseCamera):
         self.blank_canvas[:, :, 0] *= BG_COLOR[0]
         self.blank_canvas[:, :, 1] *= BG_COLOR[1]
         self.blank_canvas[:, :, 2] *= BG_COLOR[2]
+        self.blank_canvas_low_mag = np.ones(self.low_mag_canvas_shape, dtype=np.int16)
+        self.blank_canvas_low_mag[:, :, 0] *= BG_COLOR[0]
+        self.blank_canvas_low_mag[:, :, 1] *= BG_COLOR[1]
+        self.blank_canvas_low_mag[:, :, 2] *= BG_COLOR[2]
         new_canvas = self.blank_canvas.copy()
 
         for blob_x, blob_y, sprite_index in self.blobs:
@@ -264,6 +286,17 @@ class SimulatedCamera(BaseCamera):
                 new_canvas, self.sprites[int(sprite_index)], int(blob_y), int(blob_x)
             )
         self.canvas = np.clip(new_canvas, 0, 255)
+        # Create a further downsized canvas for low mag. This has a minimal memory
+        # footprint but speeds up indexing the canvas when simulation uses low magnification
+        # objectives
+        self.canvas_low_mag = fast_resize_and_blur(
+            self.canvas, sigma=0, shape=self.low_mag_canvas_shape
+        )
+        # Check edge pixels are blank as these are repeated for finite samples.
+        self.canvas_low_mag[0, :, :] = self.blank_canvas_low_mag[0, :, :]
+        self.canvas_low_mag[-1, :, :] = self.blank_canvas_low_mag[-1, :, :]
+        self.canvas_low_mag[:, 0, :] = self.blank_canvas_low_mag[:, 0, :]
+        self.canvas_low_mag[:, -1, :] = self.blank_canvas_low_mag[:, -1, :]
 
     def draw_sprite_on_canvas(
         self, canvas: np.ndarray, sprite: np.ndarray, centre_y: int, centre_x: int
@@ -299,17 +332,33 @@ class SimulatedCamera(BaseCamera):
 
         :param pos: a 3-item tuple containing the x,y,z coordinates of the 'stage'
         """
-        canvas_width, canvas_height, _ = self.canvas_shape
-        image_width, image_height, _ = self.ds_shape
+        canvas_width, canvas_height, _ = self.low_mag_canvas_shape
+        # Base image size
+
+        objective_downsample = self.objective / 40
+        if objective_downsample >= 0.4:
+            canvas = self.canvas if self._show_sample else self.blank_canvas
+            canvas_width, canvas_height, _ = self.canvas_shape
+            canvas_ds = DOWNSAMPLE
+            img_downsample = DOWNSAMPLE * objective_downsample
+        else:
+            canvas = (
+                self.canvas_low_mag if self._show_sample else self.blank_canvas_low_mag
+            )
+            canvas_width, canvas_height, _ = self.low_mag_canvas_shape
+            canvas_ds = LOW_MAG_DOWNSAMPLE
+            img_downsample = LOW_MAG_DOWNSAMPLE * objective_downsample
+        image_width, image_height, _ = _downsample_shape(self.shape, img_downsample)
+
         im_pos = (
-            pos[0] * RATIO[0] / DOWNSAMPLE,
-            pos[1] * RATIO[1] / DOWNSAMPLE,
+            pos[0] * RATIO[0] / canvas_ds,
+            pos[1] * RATIO[1] / canvas_ds,
             pos[2] * RATIO[2],
         )
 
         top_left = (
-            int(im_pos[0]) - image_width // 2 + self.canvas_shape[0] // 2,
-            int(im_pos[1]) - image_height // 2 + self.canvas_shape[1] // 2,
+            int(im_pos[0]) - image_width // 2 + canvas_width // 2,
+            int(im_pos[1]) - image_height // 2 + canvas_height // 2,
         )
 
         x_indices = np.arange(top_left[0], top_left[0] + image_width)
@@ -328,18 +377,20 @@ class SimulatedCamera(BaseCamera):
             x_indices = np.clip(x_indices, 0, canvas_width - 1)
             y_indices = np.clip(y_indices, 0, canvas_height - 1)
 
-        z_indices = np.arange(self.ds_shape[2])
-        canvas = self.canvas if self._show_sample else self.blank_canvas
+        z_indices = np.arange(self.shape[2])
+
         # Use npx to make each 1d index list 3D
         focused_np_img = canvas[np.ix_(x_indices, y_indices, z_indices)]
-
-        np_img = fast_pil_blur(focused_np_img, sigma=np.abs(im_pos[2]) / 5)
-
-        # Add noise and convert to uint8
-        np_img += RNG.normal(scale=self.noise_level, size=self.ds_shape).astype("int16")
+        np_img = fast_resize_and_blur(
+            focused_np_img, sigma=np.abs(im_pos[2]) / 5, shape=self.shape
+        )
+        # Generate random noise by repeating 500 noise points, as the speed rather
+        # than randomness is important for simulation.
+        noise = RNG.normal(scale=self.noise_level, size=500).astype("int16")
+        np_img += np.resize(noise, np_img.shape)
+        # Clip then convert to uint8
         np.clip(np_img, 0, 255, out=np_img)
-        pl_img = Image.fromarray(np_img.astype("uint8"))
-        return pl_img.resize((self.shape[1], self.shape[0]), Image.Resampling.BILINEAR)
+        return Image.fromarray(np_img.astype("uint8"))
 
     def set_led(self, led_on: bool = True) -> None:
         """Set the simulated LED to on or off."""
@@ -521,6 +572,19 @@ class SimulatedCamera(BaseCamera):
             property_control_for(self, "blob_density", label="Sample Density"),
             property_control_for(self, "colour", label="Sample Colour"),
             property_control_for(self, "noise_level", label="Noise Level"),
+            property_control_for(
+                self,
+                "objective",
+                label="Objective Magnification",
+                options={
+                    "4x": 4,
+                    "10x": 10,
+                    "20x": 20,
+                    "40x": 40,
+                    "60x": 60,
+                    "100x": 100,
+                },
+            ),
         ]
 
 
@@ -532,13 +596,14 @@ def _frame2bytes(frame: Image.Image) -> bytes:
         return buf.getvalue()
 
 
-def fast_pil_blur(array: np.ndarray, sigma: float) -> np.ndarray:
+def fast_resize_and_blur(
+    array: np.ndarray, sigma: float, shape: tuple[int, ...]
+) -> np.ndarray:
     """Apply Gaussian blur using PIL (faster than scipy)."""
-    if sigma < 0.5:
-        return array  # no visible blur needed
-
     img_pil = Image.fromarray(array.astype(np.uint8))
-    img_pil = img_pil.filter(ImageFilter.GaussianBlur(radius=sigma))
+    img_pil = img_pil.resize((shape[1], shape[0]), Image.Resampling.BILINEAR)
+    if sigma > 0.5:
+        img_pil = img_pil.filter(ImageFilter.GaussianBlur(radius=sigma))
 
     # Convert back to NumPy array
     return np.array(img_pil, dtype=array.dtype)

@@ -45,7 +45,7 @@ def stage(test_env) -> lt.Thing:
 def test_downsample_shape_2d():
     """Test downsampling for 2D array."""
     shape_2d = (100, 80)
-    result_2d = simulation._downsample_shape(shape_2d)
+    result_2d = simulation._downsample_shape(shape_2d, simulation.DOWNSAMPLE)
     assert len(result_2d) == 2
     assert result_2d == (100 // simulation.DOWNSAMPLE, 80 // simulation.DOWNSAMPLE)
 
@@ -53,7 +53,7 @@ def test_downsample_shape_2d():
 def test_downsample_shape_3d():
     """Test downsampling for 3D array, should not affect 3rd axis or shape."""
     shape_3d = (120, 60, 3)
-    result_3d = simulation._downsample_shape(shape_3d)
+    result_3d = simulation._downsample_shape(shape_3d, simulation.DOWNSAMPLE)
     assert len(result_3d) == 3
     assert result_3d == (120 // simulation.DOWNSAMPLE, 60 // simulation.DOWNSAMPLE, 3)
 
@@ -61,10 +61,10 @@ def test_downsample_shape_3d():
 def test_downsample_shape_invalid_length():
     """Shapes that are not length 2 or 3 should raise ValueError."""
     with pytest.raises(ValueError, match="Shape should be a 2 or 3 element tuple."):
-        simulation._downsample_shape((1,))
+        simulation._downsample_shape((1,), simulation.DOWNSAMPLE)
 
     with pytest.raises(ValueError, match="Shape should be a 2 or 3 element tuple."):
-        simulation._downsample_shape((1, 2, 3, 4))
+        simulation._downsample_shape((1, 2, 3, 4), simulation.DOWNSAMPLE)
 
 
 def all_colours_present(
@@ -187,3 +187,78 @@ def test_simulation_cam_calibration(camera):
     camera.full_auto_calibrate()
     assert not camera.calibration_required
     assert camera.background_detector.ready
+
+
+def test_objective_getter_setter(camera):
+    """Verify that the objective property can be set and read.
+
+    - Defaults to 40x.
+    - Accepts only valid magnification values (4, 10, 20, 40, 60, 100).
+    - Raises ValueError for invalid magnifications.
+    """
+    # Default value
+    assert camera.objective == 40
+
+    # Valid values
+    for val in (4, 10, 20, 40, 60, 100):
+        camera.objective = val
+        assert camera.objective == val
+
+    err_msg = "Objective must be one of 4, 10, 20, 40, 60, 100."
+    # Invalid values should raise
+    with pytest.raises(ValueError, match=err_msg):
+        camera.objective = 15
+    with pytest.raises(ValueError, match=err_msg):
+        camera.objective = 0
+    with pytest.raises(ValueError, match=err_msg):
+        camera.objective = "twenty"
+
+
+def test_generate_image_changes_with_objective(camera):
+    """Changing the objective should change the generated image.
+
+    Higher magnification should produce a more zoomed-in image
+    (different pixel content compared to lower magnification).
+    """
+    pos = (0, 0, 0)
+    camera.noise_level = 0  # eliminate randomness
+
+    # Generate images at 3 magnifications
+    camera.objective = 10
+    img_10 = np.array(camera.generate_image(pos))
+
+    camera.objective = 40
+    img_40 = np.array(camera.generate_image(pos))
+
+    camera.objective = 100
+    img_100 = np.array(camera.generate_image(pos))
+
+    # Images at different objectives should not be identical
+    assert not np.array_equal(img_10, img_40)
+    assert not np.array_equal(img_40, img_100)
+
+    # Generate 3 more images at these 3 magnifications
+    camera.objective = 10
+    img_10_im2 = np.array(camera.generate_image(pos))
+
+    camera.objective = 40
+    img_40_im2 = np.array(camera.generate_image(pos))
+
+    camera.objective = 100
+    img_100_im2 = np.array(camera.generate_image(pos))
+
+    # Image should return to an identical value
+    assert np.array_equal(img_10, img_10_im2)
+    assert np.array_equal(img_40, img_40_im2)
+    assert np.array_equal(img_100, img_100_im2)
+
+
+def test_generate_image_output_size(camera):
+    """Generated image doesn't change with objective."""
+    pos = (0, 0, 0)
+
+    for objective in (4, 10, 20, 40, 60, 100):
+        camera.objective = objective
+        img = camera.generate_image(pos)
+
+        assert img.size == (camera.shape[1], camera.shape[0])
