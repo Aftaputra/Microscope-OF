@@ -249,7 +249,17 @@ def autofocus_thing():
 @pytest.fixture
 def histo_scan_workflow():
     """Return an autofocus thing connected to a server."""
-    return create_thing_without_server(HistoScanWorkflow, mock_all_slots=True)
+    workflow = create_thing_without_server(
+        HistoScanWorkflow,
+        mock_all_slots=True,
+    )
+
+    # Minimal CSM setup so all_settings() works
+    workflow._csm.image_resolution = (1000, 1000)
+    workflow._csm.calibration_required = False
+    workflow._csm.convert_image_to_stage_coordinates = lambda x, y: {"x": x, "y": y}
+
+    return workflow
 
 
 def test_create_stack(histo_scan_workflow, caplog):
@@ -325,8 +335,8 @@ def test_coercing_stack_save_ims(
 @pytest.mark.parametrize("pass_on", [1, 2, 3, 4])
 def test_run_smart_stack(pass_on, histo_scan_workflow, autofocus_thing, mocker):
     """Test Running smart stack with the stack passing on different attempts."""
-    stack_params = histo_scan_workflow.create_smart_stack_params()
-    assert stack_params.max_attempts == 3
+    scan_settings, _ = histo_scan_workflow.all_settings(images_dir="dummy")
+    assert scan_settings.smart_stack_params.max_attempts == 3
 
     # Set up returns from z-stack
     fake_captures = [
@@ -351,19 +361,21 @@ def test_run_smart_stack(pass_on, histo_scan_workflow, autofocus_thing, mocker):
 
     # Run it
     success, final_z = autofocus_thing.run_smart_stack(
-        stack_parameters=stack_params,
+        stack_parameters=scan_settings.smart_stack_params,
+        capture_parameters=scan_settings.capture_params,
+        autofocus_parameters=scan_settings.autofocus_params,
         save_on_failure=False,
         check_turning_points=True,
     )
 
     # Only passes if the attempt it passes on is less than max attempts
-    assert success == (pass_on <= stack_params.max_attempts)
+    assert success == (pass_on <= scan_settings.smart_stack_params.max_attempts)
     # Final z is the one from the id returned by the stack "pick_me"
     assert final_z == 555
 
     # smart_z_stack should run up until the time it passes. Running no more than
     # max_attempts
-    n_stacks = min(pass_on, stack_params.max_attempts)
+    n_stacks = min(pass_on, scan_settings.smart_stack_params.max_attempts)
     assert autofocus_thing.smart_z_stack.call_count == n_stacks
     # Move absolute should be 1 less time that the number of times z_stack_run
     assert autofocus_thing._stage.move_absolute.call_count == n_stacks - 1
