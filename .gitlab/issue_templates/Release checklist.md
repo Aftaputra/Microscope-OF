@@ -39,13 +39,13 @@ This phase focuses on planning the release and, crucially, getting any major inf
 
 **Branching Note:**  During alpha and beta development, feature freeze marks the point where only bug fixes and release preparation may be merged into the default branch.
 
-* [ ] * **Announce:** Announce the Feature Freeze deadline one week out. This should be announced on the OpenFlexure Forum and in a message/email to the core team.
+* [ ] **Announce:** Announce the Feature Freeze deadline one week out. This should be announced on the OpenFlexure Forum and in a message/email to the core team.
 * [ ] **Deadline:** **FEATURE FREEZE**. All MRs for the milestone must be merged.
 * [ ] **Deadline:** **UPSTREAM RELEASES**. Any of our repos/packages upstream of the OS and server should have a defined release, for this release to target.
     * [ ] Stitching Released
     * [ ] Final OS changes merged
 * [ ] **Communication:** Inform the team that all new feature work should target the *next* milestone.
-* [ ] **Final Server Repo Commit:** Create a (hopefully) final commit to the server before building the OS with the new version and updated changelog.
+* [ ] **Final Server Repo Commit:** Create a (hopefully) final commit to the server before building the OS with the new version and updated changelog. This commit should include the following:
     * [ ] Update version string in:
         * [ ] `pyproject.toml`
         * [ ] `test_version_strings.py`
