@@ -106,7 +106,7 @@ class RomDataTracker:
         return {axis: int(turning_loc), other_axis: other_coord, "z": int(turning_z)}
 
 
-class ParasiticMotionError(Exception):
+class ParasiticMotionError(lt.exceptions.InvocationError):
     """Custom exception raised when parasitic motion is detected.
 
     Parasitic motion is when motion in the direction not being measured
