@@ -20,7 +20,7 @@ from pydantic import BaseModel, computed_field, field_validator, model_validator
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from .camera import BaseCamera
+from .camera import BaseCamera, CaptureParams
 from .stage import BaseStage
 
 LOGGER = logging.getLogger(__name__)
@@ -38,13 +38,6 @@ class AutofocusParams(BaseModel):
 
     dz: int
     sharpness_method: str = "jpeg"
-
-
-class CaptureParams(BaseModel):
-    """A class for capturing at least a single image."""
-
-    images_dir: str
-    save_resolution: tuple[int, int]
 
 
 class StackParams(BaseModel):

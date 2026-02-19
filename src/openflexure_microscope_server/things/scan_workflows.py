@@ -33,13 +33,12 @@ from openflexure_microscope_server.things.autofocus import (
     MIN_TEST_IMAGE_COUNT,
     AutofocusParams,
     AutofocusThing,
-    CaptureParams,
     SmartStackParams,
 )
 from openflexure_microscope_server.things.background_detect import (
     ChannelDeviationLUV,
 )
-from openflexure_microscope_server.things.camera import BaseCamera
+from openflexure_microscope_server.things.camera import BaseCamera, CaptureParams
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
 from openflexure_microscope_server.things.stage import BaseStage
 from openflexure_microscope_server.ui import PropertyControl, property_control_for
