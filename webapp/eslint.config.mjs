@@ -2,7 +2,8 @@ import js from "@eslint/js";
 import vue from "eslint-plugin-vue";
 import vueParser from "vue-eslint-parser";
 import babelParser from "@babel/eslint-parser";
-import prettier from "eslint-config-prettier";
+import prettierPlugin from "eslint-plugin-prettier";
+import prettierConfig from "eslint-config-prettier";
 import globals from "globals";
 
 const isProd = process.env.NODE_ENV === "production";
@@ -19,10 +20,10 @@ export default [
 
   ...vue.configs["flat/recommended"],
 
-  prettier,
+  prettierConfig,
 
   {
-    files: ["**/*.vue", "**/*.js"],
+    files: ["**/*.vue", "**/*.js", "**/*.jsx", "**/*.cjs", "**/*.mjs"],
     languageOptions: {
       parser: vueParser,
       parserOptions: {
@@ -40,9 +41,11 @@ export default [
 
     plugins: {
       vue,
+      prettier: prettierPlugin,
     },
 
     rules: {
+      "prettier/prettier": "warn",
       // Environment-based rules
       "no-console": isProd ? "warn" : "off",
       "no-debugger": isProd ? "warn" : "off",

@@ -2,10 +2,7 @@
   <div ref="modal" class="" uk-modal="bg-close: false; esc-close: false; stack: true;">
     <div id="status-modal" class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
       <h2>{{ title }}</h2>
-      <mini-stream-display
-        v-if="displayStream"
-        class="uk-margin-small-bottom"
-      />
+      <mini-stream-display v-if="displayStream" class="uk-margin-small-bottom" />
       <action-log-display :log="log" :task-status="taskStatus" />
       <div id="progress-and-cancel-row">
         <div class="stretchy">
@@ -116,7 +113,7 @@ export default {
   margin-right: 5px;
 }
 #status-modal {
-  max-height: 90vh;   // never exceed 90% of viewport height
+  max-height: 90vh; // never exceed 90% of viewport height
   display: flex;
   flex-direction: column;
 }

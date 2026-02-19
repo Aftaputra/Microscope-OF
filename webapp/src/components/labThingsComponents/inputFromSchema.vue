@@ -193,9 +193,7 @@ export default {
       }
     },
     isDisabled() {
-      return !this.dataSchema?.forms?.some(form =>
-        form.op?.includes('writeproperty')
-      );
+      return !this.dataSchema?.forms?.some((form) => form.op?.includes("writeproperty"));
     },
     useDropdown: function () {
       if (this.options === null) return false;
