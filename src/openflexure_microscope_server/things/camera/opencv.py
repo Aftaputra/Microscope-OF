@@ -174,6 +174,7 @@ class OpenCVCamera(BaseCamera):
             property_control_for(
                 self,
                 "camera_name",
-                label="Camera name",
+                label="Camera",
+                options={key: key for key in self.cameras},
             ),
         ]
