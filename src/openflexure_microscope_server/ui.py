@@ -97,6 +97,16 @@ class PropertyControl(BaseModel):
     when selected.
     """
 
+    step: Optional[int | float] = None
+    """The step size for a numerical input.
+
+    If the property is not numeric this will be ignored.
+
+    If this is left as None, then the UI will try to use the ``multipleOf`` field in
+    the property dataSchema. If ``multipleOf`` is not set then the browser default is
+    used.
+    """
+
 
 def property_control_for(
     thing: lt.Thing, property_name: str, **kwargs: Any

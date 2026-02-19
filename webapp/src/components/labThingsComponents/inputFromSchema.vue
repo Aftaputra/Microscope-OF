@@ -27,7 +27,7 @@
           type="number"
           :min="minimum"
           :max="maximum"
-          :step="step"
+          :step="spinner_step"
           @input="grabFocus"
           @focusout="focusOut"
           @keydown="keyDown"
@@ -152,6 +152,11 @@ export default {
       default: null,
       required: false,
     },
+    step: {
+      type: Number,
+      default: null,
+      required: false,
+    },
   },
 
   emits: ["requestUpdate", "sendValue", "animationShown"],
@@ -253,8 +258,17 @@ export default {
       if (this.dataType !== "number") return undefined;
       return this.dataSchema.minimum;
     },
-    step() {
+    /**
+     * The step size for numerical spinners.
+     *
+     * If not a number this is `undefined`. If `step` is set as a prop then it is used
+     * otherwise `multipleOf` from the property `dataSchema` is used. If `multipleOf`
+     * is not set in the `dataSchema` JS will return `undefined` and the browser will
+     * use its default value.
+     */
+    spinner_step() {
       if (this.dataType !== "number") return undefined;
+      if (this.step !== null) return this.step;
       return this.dataSchema.multipleOf;
     },
   },
