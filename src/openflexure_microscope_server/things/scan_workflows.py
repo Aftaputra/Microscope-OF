@@ -311,7 +311,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
     Defaults to 9 which balances reliability and speed.
     """
 
-    stack_dz: int = lt.setting(default=50, ge=20, le=400)
+    stack_dz: int = lt.setting(default=50, ge=10, le=400)
     """Distance in steps between images in a z-stack.
 
     Suggested values:
