@@ -324,6 +324,9 @@ def _run_only_outer_scan(
         assert smart_scan_thing._scan_lock.locked()
 
     mocker.patch.object(smart_scan_thing, "_run_scan", side_effect=check_locked)
+    mock_save_logs = mocker.patch(
+        "openflexure_microscope_server.scan_directories.save_invocation_logs"
+    )
 
     if adjust_initial_state is not None:
         adjust_initial_state(smart_scan_thing)
@@ -336,6 +339,7 @@ def _run_only_outer_scan(
         exec_info = e
 
     assert not smart_scan_thing._scan_lock.locked()
+    assert mock_save_logs.call_count >= 1
 
     # Return the mock thing for further state testing, and the
     # exec_info of any uncaught exceptions that were raised
