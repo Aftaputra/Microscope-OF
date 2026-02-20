@@ -7,6 +7,7 @@ import os
 from argparse import Namespace
 from copy import copy
 from functools import wraps
+from pathlib import Path
 from typing import Any, Callable, Optional
 
 import uvicorn
@@ -31,6 +32,7 @@ from .serve_static_files import add_static_files
 
 LOGGER = logging.getLogger(__name__)
 DEVELOPER_MODE = os.getenv("OFM_SERVER_DEV_MODE", "false").lower() == "true"
+_TEMPLATE_PATH = Path(__file__).with_name("fallback.html.jinja")
 
 
 def set_shutdown_function(shutdown_function: Callable[[], None]) -> None:
@@ -154,6 +156,7 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
                 log_history = None
 
             app = fallback.app
+            app.set_template_str(_TEMPLATE_PATH.read_text(encoding="utf-8"))
             app.set_context(
                 fallback.FallbackContext(
                     server=server, config=lt_config, error=e, log_history=log_history
