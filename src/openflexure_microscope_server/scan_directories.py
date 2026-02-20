@@ -19,10 +19,15 @@ from pydantic import (
     model_validator,
 )
 
+import labthings_fastapi as lt
 from labthings_fastapi.exceptions import InvocationError
 
 from openflexure_microscope_server.stitching import StitchingSettings
-from openflexure_microscope_server.utilities import make_name_safe, requires_lock
+from openflexure_microscope_server.utilities import (
+    make_name_safe,
+    requires_lock,
+    save_invocation_logs,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -446,6 +451,7 @@ class ScanDirectory:
         :param name: the name of the scan (the scan directory basename).
         :param base_scan_dir: Path of the directory that holds all scans.
         """
+        self._log_saved_at = 0.0
         self._name = name
         self._base_scan_dir = base_scan_dir
         if not os.path.isdir(self.dir_path):
@@ -624,6 +630,19 @@ class ScanDirectory:
 
         with open(self.scan_data_path, "w", encoding="utf-8") as f:
             f.write(scan_data.model_dump_json(indent=4))
+
+    def save_scan_log(self, thing: lt.Thing) -> None:
+        """Save the scan log to file.
+
+        :param thing: The SmartScanThing. This is needed to exxtract the logs from the
+            LabThings server.
+        """
+        self._log_saved_at = save_invocation_logs(
+            filename=os.path.join(self.dir_path, "log.txt"),
+            thing=thing,
+            last_saved=self._log_saved_at,
+            append=True,
+        )
 
     def zip_files(self, final_version: bool = False) -> str:
         """Zips any images from the scan not yet zipped, return full path to zip.

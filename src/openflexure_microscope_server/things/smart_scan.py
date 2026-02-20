@@ -263,6 +263,8 @@ class SmartScanThing(lt.Thing):
             self._ongoing_scan = self._scan_dir_manager.new_scan_dir(scan_name)
             self._latest_scan_name = self.ongoing_scan.name
             self._run_scan(workflow)
+            # Save any final messages.
+            self._ongoing_scan.save_scan_log(self)
         except Exception as e:
             # If _scan_data is set then scan started
             if self._scan_data is not None:
@@ -273,6 +275,9 @@ class SmartScanThing(lt.Thing):
                         "Attempting to stitch and archive the images acquired so far."
                     )
                     self._perform_final_stitch()
+            if self._ongoing_scan is not None:
+                # Save any final messages even if there is an exception.
+                self._ongoing_scan.save_scan_log(self)
             # Error must be raised so UI gives correct output
             raise e
         finally:
@@ -467,6 +472,7 @@ class SmartScanThing(lt.Thing):
                 self.scan_data.image_count += 1
                 # Add it to the incremental zip
                 self.ongoing_scan.zip_files()
+            self.ongoing_scan.save_scan_log(self)
 
     @_scan_running
     def _return_to_starting_position(self) -> None:
