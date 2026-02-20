@@ -1,10 +1,22 @@
-"""Test selector coercion logic for Thing mappings."""
+"""Test utility functions for things."""
 
 import logging
+import os
+import re
+import tempfile
+import time
 
 import pytest
 
-from openflexure_microscope_server.utilities import coerce_thing_selector
+import labthings_fastapi as lt
+
+from openflexure_microscope_server.utilities import (
+    coerce_thing_selector,
+    get_invocation_logs,
+    save_invocation_logs,
+)
+
+from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
 
 @pytest.mark.parametrize(
@@ -57,3 +69,136 @@ def test_coerce_with_populated_mapping(
         )
     assert output == returned
     assert len(caplog.records) == warning_count
+
+
+def simple_log_format(record: logging.LogRecord):
+    """Format a log as just "[LEVEL] message"."""
+    level = record.levelname
+    msg = record.getMessage()
+    return f"[{level}] {msg}\n"
+
+
+class ThingThatLogs(lt.Thing):
+    """A thing that has has actions that log."""
+
+    @lt.action
+    def log_and_capture(self, msg: str) -> str:
+        """Log a message to the thing's logger."""
+        self.logger.info(msg)
+        self.logger.warning(msg)
+        self.logger.error(msg)
+        logs = get_invocation_logs(self)
+        logging_str = ""
+        for record in logs:
+            logging_str += simple_log_format(record)
+        return logging_str
+
+    @lt.action
+    def log_and_capture_some(self, msg: str) -> str:
+        """Log a message to the thing's logger."""
+        self.logger.info(msg)
+        self.logger.warning(msg)
+        before_err = time.time()
+        self.logger.error(msg)
+        logs = get_invocation_logs(self, logged_since=before_err)
+        logging_str = ""
+        for record in logs:
+            logging_str += simple_log_format(record)
+        return logging_str
+
+    @lt.action
+    def log_and_save(self, msg: str, filename: str, append: bool) -> float:
+        """Log a message to the thing's logger."""
+        self.logger.info(msg)
+        self.logger.warning(msg)
+        self.logger.error(msg)
+        return save_invocation_logs(
+            filename=filename,
+            thing=self,
+            append=append,
+        )
+
+
+@pytest.fixture
+def logging_thing_test_env():
+    """Yield a test environment with ThingThatLogs."""
+    thing_conf = {"logging_thing": ThingThatLogs}
+    with LabThingsTestEnv(things=thing_conf) as env:
+        yield env
+
+
+def test_get_invocation_logs(logging_thing_test_env):
+    """Test that get_invocation_logs does return logs.
+
+    This must be run in the invocation context to get the logs so the call
+    to the function under test is actually in ``ThingThatLogs``.
+    """
+    client = logging_thing_test_env.get_thing_client("logging_thing")
+    thing = logging_thing_test_env.get_thing_by_name("logging_thing")
+    result = client.log_and_capture(msg="foobar")
+    expected_message = "[INFO] foobar\n[WARNING] foobar\n[ERROR] foobar\n"
+    assert result == expected_message
+    # Can't be called directly as it must be in an action thread to get log context.
+    with pytest.raises(lt.exceptions.NoInvocationContextError):
+        thing.log_and_capture(msg="foobar")
+
+
+def test_get_some_invocation_logs(logging_thing_test_env):
+    """Test that get_invocation_logs does return logs with time filter."""
+    client = logging_thing_test_env.get_thing_client("logging_thing")
+    result = client.log_and_capture_some(msg="foobar")
+    expected_message = "[ERROR] foobar\n"
+    assert result == expected_message
+
+
+def _assert_file_contents_matches_regex(filename: str, regex: str) -> None:
+    """Assert that file contents matches a regex string."""
+    with open(filename, "r") as file_obj:
+        content = file_obj.read()
+
+    assert re.match(regex, content) is not None
+
+
+DATE_REGEX = r"\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]"
+
+INFO_REGEX = DATE_REGEX + r" \[INFO\] foobar\n"
+WARN_REGEX = DATE_REGEX + r" \[WARNING\] foobar\n"
+ERR_REGEX = DATE_REGEX + r" \[ERROR\] foobar\n"
+
+
+def test_save_invocation_logs(logging_thing_test_env):
+    """Test that get_invocation_logs saves logs."""
+    client = logging_thing_test_env.get_thing_client("logging_thing")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        logpath = os.path.join(tmpdir, "log.txt")
+        save_time = client.log_and_save(msg="foobar", filename=logpath, append=True)
+
+        # Check that the save time is now taking into account delays.
+        assert time.time() > save_time > time.time() - 0.1
+
+        # Check there are 3 messages an inf a warning and an error
+        _assert_file_contents_matches_regex(
+            logpath,
+            r"^" + INFO_REGEX + WARN_REGEX + ERR_REGEX + r"$",
+        )
+
+        # Run again with append=True and check that there are now 6 messages.
+        client.log_and_save(msg="foobar", filename=logpath, append=True)
+        _assert_file_contents_matches_regex(
+            logpath,
+            r"^"
+            + INFO_REGEX
+            + WARN_REGEX
+            + ERR_REGEX
+            + INFO_REGEX
+            + WARN_REGEX
+            + ERR_REGEX
+            + r"$",
+        )
+
+        # Run again with append=False and check that only 3 message now remain.
+        client.log_and_save(msg="foobar", filename=logpath, append=False)
+        _assert_file_contents_matches_regex(
+            logpath,
+            r"^" + INFO_REGEX + WARN_REGEX + ERR_REGEX + r"$",
+        )

@@ -453,7 +453,9 @@ def get_invocation_logs(
     :return: A list of ``LogRecord`` objects.
     """
     server = thing._thing_server_interface._server()
-    if server is None:
+    if server is None:  # pragma: no cover
+        # This should be impossible to reach, but we require this line because the
+        # server is a weak_ref which MyPy says could return None.
         raise RuntimeError("Could not retrieve server from thing_server_interface.")
     manager = server.action_manager
     inv_id = get_invocation_id()
