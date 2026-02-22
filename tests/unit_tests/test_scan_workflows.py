@@ -24,19 +24,19 @@ from openflexure_microscope_server.ui import PropertyControl
 def test_partial_base_classes():
     """Create a partial class and check it raises the correct errors."""
 
-    class MinimalSetings(BaseModel):
+    class MinimalSettings(BaseModel):
         """Some minimal settings for a workflow that doesn't work."""
 
         foo: str = "bar"
 
-    class BadWorkflow(ScanWorkflow[MinimalSetings]):
+    class BadWorkflow(ScanWorkflow[MinimalSettings]):
         """Can initialise. Other properties and methods error."""
 
         display_name: str = lt.property(default="Bad Workflow", readonly=True)
 
     bad_workflow = create_thing_without_server(BadWorkflow)
 
-    settings = MinimalSetings()
+    settings = MinimalSettings()
     with pytest.raises(NotImplementedError):
         bad_workflow.check_before_start(settings)
 

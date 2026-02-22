@@ -49,7 +49,7 @@ def test_monkey_patched_handle_exit(side_effect, mocker):
         # The error was raised so we know our custom function was run, check that
         # handle_exit wasn't.
         # Note: that the non-mocked shutdown function is entirely wrapped in a
-        # try/except BaseExcpetion, so that handle_exit will always run.
+        # try/except BaseException, so that handle_exit will always run.
         assert original_mock_handle_exit.call_count == 0
 
 

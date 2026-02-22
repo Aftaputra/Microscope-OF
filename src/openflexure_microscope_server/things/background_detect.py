@@ -40,7 +40,7 @@ class BackgroundDetectAlgorithm(lt.Thing):
         """Initialise and create the lock."""
         if self.display_name == "Base Detector":
             raise NotImplementedError(
-                "Do not try to use the BackgroungDetectAlgorithm directly. "
+                "Do not try to use the BackgroundDetectAlgorithm directly. "
                 " Use a subclass"
             )
         super().__init__(thing_server_interface)
