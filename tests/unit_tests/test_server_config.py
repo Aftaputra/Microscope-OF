@@ -1,9 +1,7 @@
 """Test server booting and shut down."""
 
-import json
 import os
 from argparse import Namespace
-from copy import deepcopy
 
 import pytest
 
@@ -12,11 +10,13 @@ from labthings_fastapi.server.config_model import ThingServerConfig
 # Import as ofm server to attempt to minimise confusion with server as a var in other
 # functions and also FastAPI `Server`.
 from openflexure_microscope_server import server as ofm_server
+from openflexure_microscope_server.server import OFMApplicationData
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(os.path.dirname(THIS_DIR))
 FULL_CONFIG = os.path.join(REPO_ROOT, "ofm_config_full.json")
 SIM_CONFIG = os.path.join(REPO_ROOT, "ofm_config_simulation.json")
+MANUAL_CONFIG = os.path.join(REPO_ROOT, "ofm_config_manual.json")
 
 
 @pytest.mark.parametrize("side_effect", [None, RuntimeError("Mock")])
@@ -68,8 +68,11 @@ def test_customise_server(mocker):
     # The wrapper returned for app.get so we can see what functions are decorated.
     wrapper = mock_app.get.return_value
 
+    application_data = OFMApplicationData(
+        log_folder="mock_log_folder", data_folder="mock_data_folder"
+    )
     # Finally we can run it!
-    ofm_server.customise_server(mock_server, "mock_log_folder", "mock_scan_folder")
+    ofm_server.customise_server(mock_server, application_data)
 
     # Check each internal customisation function is called
     assert mocked_add_static.call_count == 1
@@ -88,67 +91,26 @@ def test_customise_server(mocker):
     assert mocked_retrieve_log_file
 
 
-@pytest.mark.parametrize(
-    ("config_file", "expected_scan_dir"),
-    [(FULL_CONFIG, "/var/openflexure/scans/"), (SIM_CONFIG, "./openflexure/scans/")],
-)
-def test_get_scans_dir_ok(config_file, expected_scan_dir):
-    """Test the _get_scans_dir function and also check the standard config files."""
-    with open(config_file, "r", encoding="utf-8") as f_obj:
-        config_dict = json.load(f_obj)
-    assert ofm_server._get_scans_dir(config_dict) == expected_scan_dir
-
-
-def test_get_scans_dir_no_smart_scan():
-    """Test _get_scans_dir with no SmartScanThing."""
-    # Load the standard config dict
-    with open(FULL_CONFIG, "r", encoding="utf-8") as f_obj:
-        config_dict = json.load(f_obj)
-    # Delete smart scan
-    del config_dict["things"]["smart_scan"]
-    # No SmartScanThing, should return None
-    assert ofm_server._get_scans_dir(config_dict) is None
-
-
-def test_get_scans_dir_bad_smart_scan_config():
-    """Test _get_scans_dir with a SmartScanThing that doesn't set a config dir."""
-    # Load the standard config dict
-    with open(FULL_CONFIG, "r", encoding="utf-8") as f_obj:
-        config_dict = json.load(f_obj)
-
-    # Copy the dictionary
-    broken_config = deepcopy(config_dict)
-    # Delete all the smart scan kwargs
-    del broken_config["things"]["smart_scan"]["kwargs"]
-    # Creates an Error
-    with pytest.raises(RuntimeError):
-        ofm_server._get_scans_dir(broken_config)
-
-    # Same thing should happen if just the scans_folder key is deleted
-    broken_config = deepcopy(config_dict)
-    del broken_config["things"]["smart_scan"]["kwargs"]
-    # Creates an Error
-    with pytest.raises(RuntimeError):
-        ofm_server._get_scans_dir(broken_config)
-
-
 def test_full_config_from_args_json():
-    """Check that _full_config_from_args returns as expected if json is supplied."""
+    """Check that _full_config_from_args errors if json config is supplied."""
+    msg = "OpenFlexure Microscope Server must have a configuration file specified."
     args = Namespace(
         config=None,
         json='{"things":{"example": "labthings_fastapi.example_things:MyThing"}}',
     )
-    lt_conf, ofm_conf = ofm_server._full_config_from_args(args)
-    # If json is supplied OFM config is default. As the json is passed dircectly to
-    # The Pydantic Mocel in LabThings. No custom data allowed.
-    assert isinstance(lt_conf, ThingServerConfig)
-    assert "log_folder" in ofm_conf
-    assert ofm_conf["log_folder"] == "./openflexure/logs"
-    assert "scans_folder" in ofm_conf
-    assert ofm_conf["scans_folder"] is None
+    with pytest.raises(RuntimeError, match=msg):
+        ofm_server._full_config_from_args(args)
 
 
-def test_full_config_from_args_full(mocker):
+@pytest.mark.parametrize(
+    ("config", "log_dir", "data_dir"),
+    [
+        (FULL_CONFIG, "/var/openflexure/logs/", "/var/openflexure/data/"),
+        (SIM_CONFIG, "./openflexure/logs/", "./openflexure/data/"),
+        (MANUAL_CONFIG, "./openflexure/logs/", "./openflexure/data/"),
+    ],
+)
+def test_full_config_from_args(config, log_dir, data_dir, mocker):
     """Check that _full_config_from_args returns as expected if json is supplied."""
     # Mock picamera library so LabThings can create its model.
     mocker.patch.dict(
@@ -159,12 +121,11 @@ def test_full_config_from_args_full(mocker):
             "picamera2.outputs": mocker.Mock(),
         },
     )
-    args = Namespace(config=FULL_CONFIG, json=None)
-    lt_conf, ofm_conf = ofm_server._full_config_from_args(args)
+    args = Namespace(config=config, json=None)
+    lt_conf, application_config = ofm_server._full_config_from_args(args)
     # If json is supplied OFM config is default. As the json is passed dircectly to
     # The Pydantic Mocel in LabThings. No custom data allowed.
     assert isinstance(lt_conf, ThingServerConfig)
-    assert "log_folder" in ofm_conf
-    assert ofm_conf["log_folder"] == "/var/openflexure/logs/"
-    assert "scans_folder" in ofm_conf
-    assert ofm_conf["scans_folder"] == "/var/openflexure/scans/"
+    assert isinstance(application_config, OFMApplicationData)
+    assert application_config.log_folder == log_dir
+    assert application_config.data_folder == data_dir

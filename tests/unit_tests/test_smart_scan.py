@@ -51,25 +51,42 @@ def _clear_scan_dir() -> None:
 
 
 @pytest.fixture
-def smart_scan_thing():
+def smart_scan_thing(mocker):
     """Return a smart scan thing as a fixture."""
+    mocker.patch(
+        "openflexure_microscope_server.things.get_data_directory_from_server",
+        return_value=SCAN_DIR,
+    )
     return create_thing_without_server(
         SmartScanThing,
-        scans_folder=SCAN_DIR,
         default_workflow="mock-_all_workflows",
         mock_all_slots=True,
     )
 
 
-def custom_smart_scan_thing(default_workflow, all_workflows):
+@pytest.fixture
+def entered_smart_scan_thing(smart_scan_thing):
+    """Yield a smart scan thing as a fixture that has been entred.
+
+    This will make a scan directory manager. This fixture also clears the scan dir
+    """
+    _clear_scan_dir()
+    with smart_scan_thing:
+        yield smart_scan_thing
+
+
+def custom_smart_scan_thing(default_workflow, all_workflows, mocker):
     """Set up a custom smart scan thing with workflows adjusted.
 
     This allows setting a default workflow and to adjust all workflows from simple
     single item mock from `mock_all_slots`.
     """
+    mocker.patch(
+        "openflexure_microscope_server.things.get_data_directory_from_server",
+        return_value=SCAN_DIR,
+    )
     smart_scan_thing = create_thing_without_server(
         SmartScanThing,
-        scans_folder=SCAN_DIR,
         default_workflow=default_workflow,
         mock_all_slots=True,
     )
@@ -81,12 +98,13 @@ def custom_smart_scan_thing(default_workflow, all_workflows):
     return smart_scan_thing
 
 
-def test_initial_properties(smart_scan_thing):
+def test_initial_properties(entered_smart_scan_thing):
     """Check the initial values of properties.
 
     Test properties of SmartScanThing are available without a ThingServer
     and return expected default values.
     """
+    smart_scan_thing = entered_smart_scan_thing
     assert smart_scan_thing._scan_dir_manager.base_dir == SCAN_DIR
     assert smart_scan_thing.latest_scan_name is None
 
@@ -168,9 +186,9 @@ SELECTOR_CASES = [
 
 
 @pytest.mark.parametrize("case", SELECTOR_CASES)
-def test_workflow_set_on_enter(case, check_side_effect):
+def test_workflow_set_on_enter(case, check_side_effect, mocker):
     """Check workflow is set on enter."""
-    smart_scan_thing = custom_smart_scan_thing(case.default_wf, case.workflows)
+    smart_scan_thing = custom_smart_scan_thing(case.default_wf, case.workflows, mocker)
     with check_side_effect(case.side_effect, match=case.match):
         # Load in "loaded" as the sever would
         smart_scan_thing._workflow_name = case.loaded_wf
@@ -178,14 +196,13 @@ def test_workflow_set_on_enter(case, check_side_effect):
             assert smart_scan_thing._workflow_name == case.expected_wf
 
 
-def test_setting_workflows(caplog):
+def test_setting_workflows(caplog, mocker):
     """Check that setting workflow works, or warns if incorrect."""
     workflows = {
         "foo": mock.MagicMock(spec=ScanWorkflow),
         "bar": mock.MagicMock(spec=ScanWorkflow),
     }
-
-    smart_scan_thing = custom_smart_scan_thing("foo", workflows)
+    smart_scan_thing = custom_smart_scan_thing("foo", workflows, mocker)
     with caplog.at_level(logging.WARNING), smart_scan_thing:
         assert smart_scan_thing._workflow_name == "foo"
         assert smart_scan_thing._workflow is workflows["foo"]
@@ -225,15 +242,13 @@ def test_inaccessible_scan_methods(smart_scan_thing):
         smart_scan_thing.ongoing_scan
 
 
-def test_private_delete_scan(smart_scan_thing, caplog):
+def test_private_delete_scan(entered_smart_scan_thing, caplog):
     """Test the private _delete_scan method deletes directories or warns if it can't."""
-    _clear_scan_dir()
+    smart_scan_thing = entered_smart_scan_thing
     with caplog.at_level(logging.INFO):
         fake_scan_name = "fake_scan_0001"
         fake_scan_path = os.path.join(SCAN_DIR, fake_scan_name)
 
-        # Make the outer scan dir, but not the one to delete
-        os.makedirs(SCAN_DIR)
         # Attempt to delete the fake scan. Expect it to fail and provide a warning
         deleted = smart_scan_thing._delete_scan(fake_scan_name)
         assert not deleted
@@ -251,15 +266,12 @@ def test_private_delete_scan(smart_scan_thing, caplog):
         assert len(caplog.records) == 1
 
 
-def test_public_delete_scan(smart_scan_thing, caplog):
+def test_public_delete_scan(entered_smart_scan_thing, caplog):
     """Test the delete_scan API call deletes directories or warns if it can't."""
-    _clear_scan_dir()
+    smart_scan_thing = entered_smart_scan_thing
     with caplog.at_level(logging.INFO):
         fake_scan_name = "fake_scan_0001"
         fake_scan_path = os.path.join(SCAN_DIR, fake_scan_name)
-
-        # Make the outer scan dir, but not the one to delete
-        os.makedirs(SCAN_DIR)
 
         # Attempt to delete the fake scan. Expect it to fail
     with pytest.raises(HTTPException) as exc_info:
@@ -280,9 +292,9 @@ def test_public_delete_scan(smart_scan_thing, caplog):
     assert len(caplog.records) == 1
 
 
-def test_delete_all_scans(smart_scan_thing, caplog):
+def test_delete_all_scans(entered_smart_scan_thing, caplog):
     """Check the delete_all_scan API really does delete all the scans."""
-    _clear_scan_dir()
+    smart_scan_thing = entered_smart_scan_thing
     with caplog.at_level(logging.INFO):
         fake_scan_names = [
             "fake_scan_0001",
@@ -346,15 +358,15 @@ def _run_only_outer_scan(
     return smart_scan_thing, exec_info
 
 
-def test_outer_scan(smart_scan_thing, mocker):
+def test_outer_scan(entered_smart_scan_thing, mocker):
     """Test setup and teardown of the scan."""
-    mock_ss_thing, exec_info = _run_only_outer_scan(smart_scan_thing, mocker)
+    mock_ss_thing, exec_info = _run_only_outer_scan(entered_smart_scan_thing, mocker)
     assert exec_info is None
     # Checked the mocked _run_scan was run exactly once
     assert mock_ss_thing._run_scan.call_count == 1
 
 
-def test_outer_scan_wo_sample_skip(smart_scan_thing, mocker):
+def test_outer_scan_wo_sample_skip(entered_smart_scan_thing, mocker):
     """Test setup and teardown of the scan."""
 
     def _set_skip_background(mock_ss_thing):
@@ -363,7 +375,7 @@ def test_outer_scan_wo_sample_skip(smart_scan_thing, mocker):
         mock_ss_thing.__dict__["skip_background"] = False
 
     mock_ss_thing, exec_info = _run_only_outer_scan(
-        smart_scan_thing, mocker, _set_skip_background
+        entered_smart_scan_thing, mocker, _set_skip_background
     )
 
     assert exec_info is None

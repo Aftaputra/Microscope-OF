@@ -9,7 +9,6 @@
         "smart_scan": {
             "class": "openflexure_microscope_server.things.smart_scan:SmartScanThing",
             "kwargs": {
-                "scans_folder": "./openflexure/scans/",
                 "default_workflow": "histo_scan_workflow"
             }
         },
@@ -20,5 +19,8 @@
         "bg_channel_deviations_luv": "openflexure_microscope_server.things.background_detect:ChannelDeviationLUV"
     },
     "settings_folder": "./openflexure/settings/",
-    "log_folder": "./openflexure/logs/"
+    "application_config": {
+        "log_folder": "./openflexure/logs/",
+        "data_folder": "./openflexure/data/"
+    }
 }

@@ -15,7 +15,8 @@ from .test_server_config import SIM_CONFIG
 
 def test_no_config():
     """Check that an error is thrown if no configuration is set for the microspe via CLI."""
-    with pytest.raises(RuntimeError, match="No configuration"):
+    msg = "OpenFlexure Microscope Server must have a configuration file specified."
+    with pytest.raises(RuntimeError, match=msg):
         ofm_server.serve_from_cli([])
 
 
