@@ -239,9 +239,7 @@ export default {
         this.$store.commit("changeWaiting", false);
       }
     },
-    handleExit: function () {
-      eventBus.emit("globalTogglePreview", false);
-    },
+    handleExit: function () {},
 
     /**
      *  Handle global mouse wheel events to be associated with navigation
