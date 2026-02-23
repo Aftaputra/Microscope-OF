@@ -61,7 +61,6 @@ export default createStore({
     available: false,
     waiting: false,
     error: "",
-    autoGpuPreview: false,
     trackWindow: true,
     activeStreams: {},
     microscopeHostname: "",
@@ -94,9 +93,6 @@ export default createStore({
     },
     changeDisableStream(state, disabled) {
       state.disableStream = disabled;
-    },
-    changeAutoGpuPreview(state, enabled) {
-      state.autoGpuPreview = enabled;
     },
     changeTrackWindow(state, enabled) {
       state.trackWindow = enabled;

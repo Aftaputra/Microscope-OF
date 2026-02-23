@@ -12,11 +12,6 @@ import { eventBus } from "@/eventBus";
 export default {
   methods: {
     modalConfirm: function (modalText) {
-      var context = this;
-
-      // Stop GPU preview to show modal
-      eventBus.emit("globalTogglePreview", false);
-
       // force OK to be capitalised
       UIkit.modal.i18n = { ok: "OK", cancel: "Cancel" };
 
@@ -32,10 +27,6 @@ export default {
             },
           )
           .finally(function () {
-            // Re-enable the GPU preview, if it was active before the modal
-            if (context.$store.state.autoGpuPreview) {
-              eventBus.emit("globalTogglePreview", true);
-            }
             eventBus.emit("modalClosed");
           });
       };
