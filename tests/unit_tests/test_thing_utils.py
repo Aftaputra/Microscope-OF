@@ -29,7 +29,11 @@ from ..shared_utils.lt_test_utils import LabThingsTestEnv
     ],
 )
 def test_coerce_with_empty_mapping(selected, default, warning_count, caplog):
-    """Test None always returned for empty mappings, check warnings when appropriate."""
+    """Test None always returned for empty mappings, check warnings when expected.
+
+    We expect warnings if the code tries to set a selected value that is not None,
+    as None is the only valid answer.
+    """
     with caplog.at_level(logging.WARNING):
         output = coerce_thing_selector(
             thing_mapping={}, selected=selected, default=default
@@ -60,6 +64,16 @@ def test_coerce_with_populated_mapping(
 ):
     """Test coercion of selected key for a populated thing mapping.
 
+    The available things have names `a`, `b`, and `c`. These are the only valid
+    returns.
+
+    * If `selected` has a valid value it will be returned.
+    * If `selected` is None `default` will be read, if `default` is a valid value
+        it will be returned.
+    * If `selected` or `default` have a non-`None` value that is not valid, then a
+        warning is logged, but the value is treated as `None`.
+    * Finally if no value is set, the first option in the mapping (`a`) is returned.
+
     Check that warnings are raised when appropriate.
     """
     thing_mapping = {"a": "Foo", "b": "Bar", "c": "FooBar"}
@@ -83,7 +97,7 @@ class ThingThatLogs(lt.Thing):
 
     @lt.action
     def log_and_capture(self, msg: str) -> str:
-        """Log a message to the thing's logger."""
+        """Log messages to the thing's logger, then capture and return them."""
         self.logger.info(msg)
         self.logger.warning(msg)
         self.logger.error(msg)
@@ -95,7 +109,7 @@ class ThingThatLogs(lt.Thing):
 
     @lt.action
     def log_and_capture_some(self, msg: str) -> str:
-        """Log a message to the thing's logger."""
+        """Log messages to the thing's logger, capture the last one and return it."""
         self.logger.info(msg)
         self.logger.warning(msg)
         before_err = time.time()
