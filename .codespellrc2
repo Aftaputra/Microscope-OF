@@ -1,9 +1,9 @@
 [codespell]
-# A seperate RC file for detecting camelCase, PascalCase, and kebab-case errors
-# A little more prone to fals positives than our standard regex, aslo fails to detect
+# A separate RC file for detecting camelCase, PascalCase, and kebab-case errors
+# A little more prone to false positives than our standard regex, also fails to detect
 # hyphenated words in the dictonary.
 
-# Same as the main RC-file except for also excludes CHANGELOG as this is well covered
+# Same as the main RC-file except it also excludes CHANGELOG as this is well covered
 # by the normal RC file, and we get false positives from git hashes.
 skip = node_modules,
        *-lock.json,
