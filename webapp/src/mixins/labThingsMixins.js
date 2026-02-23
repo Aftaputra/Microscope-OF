@@ -56,10 +56,10 @@ export default {
         "writeproperty",
         false,
       );
-      // `false` fails because axios somehow eats it!
+      // `false` and 0 fail because axios turns it to ""
       // Other values should not be stringified or pydantic
       // can't parse them.
-      if (value === false || value === true) {
+      if (value === false || value === true || value === 0) {
         value = JSON.stringify(value);
       }
       await axios.put(url, value);
