@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import tomllib
+from datetime import datetime
 from functools import wraps
 from importlib.metadata import version
 from typing import (
@@ -24,6 +25,7 @@ from typing import (
 from pydantic import BaseModel
 
 import labthings_fastapi as lt
+from labthings_fastapi.invocation_contexts import get_invocation_id
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -432,3 +434,59 @@ def coerce_thing_selector(
 
     # Final option is to return the first key
     return list(thing_mapping)[0]
+
+
+def get_invocation_logs(
+    thing: lt.Thing, logged_since: float = 0.0
+) -> list[logging.LogRecord]:
+    """Get logs from an ongoing action invocation.
+
+    This must be called from the action's context (thread).
+
+    Note that only 1000 logs are stored in LabThings. For very long tasks that
+    log regularly it may be good to periodically poll this and request only
+    the logs since the last log was created.
+
+    :param thing: The thing that the action is called from.
+    :param logged_since: The timestamp that records must come after. This could be the
+        ``record.created`` time of the last log.
+    :return: A list of ``LogRecord`` objects.
+    """
+    server = thing._thing_server_interface._server()
+    if server is None:  # pragma: no cover
+        # This should be impossible to reach, but we require this line because the
+        # server is a weak_ref which MyPy says could return None.
+        raise RuntimeError("Could not retrieve server from thing_server_interface.")
+    manager = server.action_manager
+    inv_id = get_invocation_id()
+    invocation = manager.get_invocation(inv_id)
+
+    # Type ignore needed as LabThings incorrectly reports the type from invocation.log
+    # If pull request 260 on LabThings is merged we can remove this function.
+    return [record for record in invocation.log if record.created > logged_since]  # type: ignore
+
+
+def save_invocation_logs(
+    filename: str, thing: lt.Thing, last_saved: float = 0.0, append: bool = True
+) -> float:
+    """Save the invocation logs from and ongoing action.
+
+    This must be called from the action's context (thread).
+
+    :param filename: The filename to write the logs to.
+    :param thing: The thing that the action is called from.
+    :param last_saved: The timestamp that records must come after.
+    :param append: If True (default) append to the file if it exists.
+
+    :return: The timestamp of the most recent log.
+    """
+    logs = get_invocation_logs(thing, last_saved)
+    mode = "a" if append else "w"
+    with open(filename, mode, encoding="utf-8") as log_file:
+        for record in logs:
+            level = record.levelname
+            dt = datetime.fromtimestamp(record.created)
+            date_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+            msg = record.getMessage()
+            log_file.write(f"[{date_str}] [{level}] {msg}\n")
+    return 0.0 if not logs else logs[-1].created
