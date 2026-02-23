@@ -1,8 +1,8 @@
 {
-  "name": "openflexure-microscope-jsclient",
+  "name": "openflexure-microscope-server-ui",
   "version": "3.0.0-alpha4",
   "private": true,
-  "description": "User client for the OpenFlexure Microscope Server",
+  "description": "User interface for the OpenFlexure Microscope Server",
   "author": "OpenFlexure <contact@openflexure.org> (https://www.openflexure.org)",
   "scripts": {
     "gv": "genversion src/version.js",
@@ -49,7 +49,7 @@
     "not ie <= 8"
   ],
   "displayName": "OpenFlexure Microscope",
-  "homepage": "https://gitlab.com/openflexure/openflexure-microscope-jsclient",
+  "homepage": "https://openflexure.org",
   "license": "GNU General Public License v3.0 ",
-  "publisher": "Bath Open Instrumentation Group"
+  "publisher": "OpenFlexure Project"
 }
