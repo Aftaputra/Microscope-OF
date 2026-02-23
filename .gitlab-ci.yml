@@ -76,7 +76,10 @@ spelling:
     # in .rules_common overwrites any rules defined in .python
     - .rules_common
   script:
+    # Run with our standard regex, best for normal text and snake-case
     - codespell .
+    # Run again with a second regex that finds issues in camelCase, PascalCase and kebab-case
+    - codespell --config .codespellrc2 .
 
 # Python static analysis and formatting with ruff
 # Only runs when a .py file is edited

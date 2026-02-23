@@ -340,7 +340,7 @@ export default {
         newValue = Math.min(newValue, this.maximum);
       }
 
-      // If mulipleOf is validated on server then enforce it.
+      // If multipleOf is validated on server then enforce it.
       if (multipleOf) {
         newValue = Math.round(newValue / multipleOf) * multipleOf;
       }
