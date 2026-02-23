@@ -101,6 +101,8 @@ class BaseStage(lt.Thing):
         self._jog_queue = JogQueue()
         self._jog_thread: Optional[threading.Thread] = None
         self._hardware_position: Mapping[str, int] = dict.fromkeys(self._axis_names, 0)
+        # Backlash state is a dict as we mutate it during moves.
+        self._backlash_state: dict[str, float] = dict.fromkeys(self._axis_names, -1)
 
         # This must be the last thing the function does in case it is caught in a try.
         if (
@@ -124,6 +126,15 @@ class BaseStage(lt.Thing):
         """Current position of the stage."""
         return self._apply_axis_direction(self._hardware_position)
 
+    backlash_steps: dict[str, int] = lt.setting(default={"x": 200, "y": 200, "z": 200})
+    """The number of steps to elimate backlash. The sign sets the direction.
+
+    A positive number sets the direction of the second move in a backlash correction.
+    For example is z=200. If the previous move was more than +200 in z then no
+    correction is needed. If the last movement was negative then a move ov -200,
+    followed by +200 will wipe out backlash.
+    """
+
     moving: bool = lt.property(default=False, readonly=True)
     """Whether the stage is in motion."""
 
@@ -134,7 +145,20 @@ class BaseStage(lt.Thing):
 
     def update_position(self) -> None:
         """Update the position property from the stage."""
+        # Copy the position before the move.
+        pos_before = dict(self.position)
         self._hardware_update_position()
+        for axis in self._axis_names:
+            # The state delta is should be 2 for a move equal to backlash steps.
+            # moving as this will move the state from -1 (fully one direction) to
+            # 1, fully the other.
+            delta = (
+                2 * (self.position[axis] - pos_before[axis]) / self.backlash_steps[axis]
+            )
+            # apply value and clamp to within range from -1 to 1
+            self._backlash_state[axis] = max(
+                -1, min(1, self._backlash_state[axis] + delta)
+            )
 
     def _hardware_update_position(self) -> None:
         """Read position from the stage and set internal attribute _hardware_position.

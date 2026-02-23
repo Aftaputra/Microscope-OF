@@ -44,7 +44,7 @@ def test_not_implemented_methods():
     """Check all methods a child class should implement raise NotImplemented."""
     stage = create_thing_without_server(BaseStage)
     methods_and_args = [
-        (stage.update_position, ()),
+        (stage._hardware_update_position, ()),
         (stage._hardware_move_relative, ()),
         (stage._hardware_move_absolute, ()),
         (stage._hardware_start_move_relative, ((1, 2, 3),)),
@@ -307,6 +307,39 @@ def test_move_absolute(dummy_stage, path):
             axis_inverted=axis_inverted,
             path=path,
         )
+
+
+def test_backlash_state(dummy_stage):
+    """Test that the backlash state updates as the stage moves."""
+    # Use with to start the movement thread.
+    with dummy_stage:
+        assert dummy_stage._backlash_state == {"x": -1, "y": -1, "z": -1}
+        assert dummy_stage.backlash_steps == {"x": 200, "y": 200, "z": 200}
+
+        # Move 100 steps to centre of x backlash range
+        dummy_stage.move_relative(x=100)
+        assert dummy_stage._backlash_state == {"x": 0, "y": -1, "z": -1}
+        # Move 50 more steps to halfway between centre and "engaged"
+        dummy_stage.move_relative(x=50)
+        assert dummy_stage._backlash_state == {"x": 0.5, "y": -1, "z": -1}
+        # Move back 50 steps to the centre
+        dummy_stage.move_relative(x=-50)
+        assert dummy_stage._backlash_state == {"x": 0, "y": -1, "z": -1}
+        # Move 500 steps, now fully engaged
+        dummy_stage.move_relative(x=500)
+        assert dummy_stage._backlash_state == {"x": 1, "y": -1, "z": -1}
+        # Move back 100 steps in the centre of backash range again.
+        dummy_stage.move_relative(x=-100)
+        assert dummy_stage._backlash_state == {"x": 0, "y": -1, "z": -1}
+        # Move forward a load to re-engage
+        dummy_stage.move_relative(x=500)
+        assert dummy_stage._backlash_state == {"x": 1, "y": -1, "z": -1}
+        # Move back 200 to be fully at the far side of the backlash range
+        dummy_stage.move_relative(x=-200)
+        assert dummy_stage._backlash_state == {"x": -1, "y": -1, "z": -1}
+        # Further motion changes nothing in state
+        dummy_stage.move_relative(x=-200)
+        assert dummy_stage._backlash_state == {"x": -1, "y": -1, "z": -1}
 
 
 def test_thing_description_equivalence(dummy_stage, mocker):
