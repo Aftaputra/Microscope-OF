@@ -78,28 +78,18 @@
         <div v-if="item.expanded" class="logging-message" v-html="item.message"></div>
         <!-- eslint-enable -->
       </div>
-
-      <Paginate
-        v-model="page"
-        :page-count="numberOfPages"
-        :page-range="3"
-        :margin-pages="1"
-        :container-class="'uk-pagination uk-flex-center'"
-        :prev-text="'Prev'"
-        :next-text="'Next'"
-        :page-class="'page-item'"
-        :active-class="'uk-active'"
-        :disabled-class="'uk-disabled'"
-        :click-handler="scrollToTop"
-      >
-      </Paginate>
+      <PaginateLinks
+        :total-pages="totalPages"
+        :current-page="currentPage"
+        @change-page="changePage"
+      />
     </div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
-import Paginate from "vuejs-paginate-next";
+import PaginateLinks from "@/components/genericComponents/paginateLinks.vue";
 import EndpointButton from "../labThingsComponents/endpointButton.vue";
 import { useIntersectionObserver } from "@vueuse/core";
 
@@ -107,7 +97,7 @@ export default {
   name: "LoggingContent",
 
   components: {
-    Paginate,
+    PaginateLinks,
     EndpointButton,
   },
 
@@ -116,7 +106,7 @@ export default {
   data: function () {
     return {
       maxitems: 20,
-      page: 1,
+      currentPage: 1,
       logs: [],
       allLevels: ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
       filterLevel: "WARNING",
@@ -146,10 +136,10 @@ export default {
       return `${this.$store.getters.baseUri}/logfile/`;
     },
     pagedItems: function () {
-      let startIndex = (this.page - 1) * this.maxitems;
+      let startIndex = (this.currentPage - 1) * this.maxitems;
       return this.filteredItems.slice(startIndex, startIndex + this.maxitems);
     },
-    numberOfPages: function () {
+    totalPages: function () {
       return Math.floor(this.filteredItems.length / this.maxitems);
     },
   },
@@ -167,8 +157,11 @@ export default {
   },
 
   methods: {
-    scrollToTop() {
-      this.$emit("scrollTop");
+    changePage(page) {
+      if (page >= 1 && page <= this.totalPages && this.currentPage != page) {
+        this.$emit("scrollTop");
+        this.currentPage = page;
+      }
     },
     visibilityChanged(isVisible) {
       if (isVisible) {

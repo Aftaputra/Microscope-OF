@@ -70,30 +70,17 @@
         </div>
       </div>
     </div>
-    <div v-if="totalPages > 1" class="pagination-container uk-margin-top uk-flex uk-flex-center">
-      <ul class="uk-pagination">
-        <li :class="{ 'uk-disabled': currentPage === 1 }">
-          <a href="#" @click.prevent="changePage(currentPage - 1)">
-            <span uk-pagination-previous></span>
-          </a>
-        </li>
-
-        <li v-for="page in totalPages" :key="page" :class="{ 'uk-active': page === currentPage }">
-          <a href="#" @click.prevent="changePage(page)">{{ page }}</a>
-        </li>
-
-        <li :class="{ 'uk-disabled': currentPage === totalPages }">
-          <a href="#" @click.prevent="changePage(currentPage + 1)">
-            <span uk-pagination-next></span>
-          </a>
-        </li>
-      </ul>
-    </div>
+    <PaginateLinks
+      :total-pages="totalPages"
+      :current-page="currentPage"
+      @change-page="changePage"
+    />
   </div>
 </template>
 
 <script>
 import axios from "axios";
+import PaginateLinks from "@/components/genericComponents/paginateLinks.vue";
 import actionButton from "../labThingsComponents/actionButton.vue";
 import scanCard from "./scanListComponents/scanCard.vue";
 import ScanViewerModal from "./scanListComponents/scanViewer.vue";
@@ -107,6 +94,7 @@ export default {
     actionButton,
     scanCard,
     ScanViewerModal,
+    PaginateLinks,
   },
 
   emits: ["scrollTop"],
@@ -273,9 +261,5 @@ export default {
 .scan-list-button {
   margin-top: 5px;
   margin-bottom: 2px;
-}
-
-.pagination-container {
-  text-align: center;
 }
 </style>

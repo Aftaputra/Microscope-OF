@@ -21,7 +21,6 @@
     "uikit": "^3.24.2",
     "vue": "^3.4.0",
     "vue-router": "4.0.0",
-    "vuejs-paginate-next": "^1.0.2",
     "vuex": "^4.0.0"
   },
   "devDependencies": {
