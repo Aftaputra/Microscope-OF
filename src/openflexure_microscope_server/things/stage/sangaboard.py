@@ -80,8 +80,11 @@ class SangaboardThing(BaseStage):
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
 
-    def update_position(self) -> None:
-        """Read position from the stage and set the corresponding property."""
+    def _hardware_update_position(self) -> None:
+        """Read position from the stage and set internal attribute _hardware_position.
+
+        _hardware_position should only be set in this function.
+        """
         with self._hardware_lock:
             self._hardware_position = dict(
                 zip(self.axis_names, self._sangaboard.position, strict=True)

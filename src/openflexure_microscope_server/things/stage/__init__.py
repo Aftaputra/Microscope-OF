@@ -133,9 +133,16 @@ class BaseStage(lt.Thing):
     """Used to convert coordinates between the program frame and the hardware frame."""
 
     def update_position(self) -> None:
-        """Read position from the stage and set the corresponding property."""
+        """Update the position property from the stage."""
+        self._hardware_update_position()
+
+    def _hardware_update_position(self) -> None:
+        """Read position from the stage and set internal attribute _hardware_position.
+
+        _hardware_position should only be set in this function.
+        """
         raise NotImplementedError(
-            "StageThings must define their own update_position method"
+            "StageThings must define their own _hardware_update_position method"
         )
 
     @overload
