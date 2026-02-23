@@ -443,7 +443,7 @@ def get_invocation_logs(
 
     This must be called from the action's context (thread).
 
-    Note that only 1000 logs are stored in LabThings for very long tasks that
+    Note that only 1000 logs are stored in LabThings. For very long tasks that
     log regularly it may be good to periodically poll this and request only
     the logs since the last log was created.
 
