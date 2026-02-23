@@ -19,6 +19,8 @@ from pydantic import (
     model_validator,
 )
 
+from labthings_fastapi.exceptions import InvocationError
+
 from openflexure_microscope_server.stitching import StitchingSettings
 from openflexure_microscope_server.utilities import make_name_safe, requires_lock
 
@@ -34,7 +36,7 @@ SCAN_DATA_FILENAME = "scan_data.json"
 SCAN_DATA_SCHEMA_VERSION = 2
 
 
-class NotEnoughFreeSpaceError(IOError):
+class NotEnoughFreeSpaceError(InvocationError):
     """An exception raised if there is not enough free space on disk to scan."""
 
 

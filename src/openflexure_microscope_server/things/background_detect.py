@@ -19,11 +19,11 @@ SettingsType = TypeVar("SettingsType", bound=BaseModel)
 BackgroundType = TypeVar("BackgroundType", bound=BaseModel)
 
 
-class MissingBackgroundDataError(RuntimeError):
+class MissingBackgroundDataError(lt.exceptions.InvocationError):
     """An error raised if checking for sample without background data set."""
 
 
-class ChannelBlankError(RuntimeError):
+class ChannelBlankError(lt.exceptions.InvocationError):
     """An error raised if a channel has no measured standard deviation.
 
     This is not physical and usually means the camera has not yet booted or changed

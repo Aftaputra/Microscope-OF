@@ -713,11 +713,11 @@ class AutofocusThing(lt.Thing):
         return "success", capture_id
 
 
-class NotAPeakError(RuntimeError):
+class NotAPeakError(lt.exceptions.InvocationError):
     """The data to fit isn't a peak."""
 
 
-class NoFocusFoundError(RuntimeError):
+class NoFocusFoundError(lt.exceptions.InvocationError):
     """No focus found during looping Autofocus."""
 
 
