@@ -95,7 +95,9 @@ class OpenCVCamera(BaseCamera):
         """Start the camera stream or restart if running."""
         if self.stream_active:
             self._stop_stream()
-        self.cap = cv2.VideoCapture(self.cameras[self.camera_name])
+        self.cap = cv2.VideoCapture(
+            self.cameras[self.camera_name], opencv_utils.BACKEND
+        )
         self._capture_enabled = True
         self._capture_thread = Thread(target=self._capture_frames)
         self._capture_thread.start()
