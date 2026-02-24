@@ -347,7 +347,7 @@ export default {
 
       // Rounding to about 5 sig figs to stop weird javascript rounding.
       const absVal = Math.abs(newValue);
-      const magnitude = absVal > 0 ? Math.floor(Math.log10(absVal)) : 0;
+      const magnitude = absVal > Number.EPSILON ? Math.floor(Math.log10(absVal)) : 0;
       const factor = 10 ** -(Math.floor(magnitude) - 4);
       this.internalValue = Math.round(newValue * factor) / factor;
     },
