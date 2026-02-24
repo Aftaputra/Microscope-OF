@@ -290,7 +290,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
     This uses the settings from the ``BackgroundDetectThing``.
     """
 
-    max_range: int = lt.setting(default=45000)
+    max_range: int = lt.setting(default=45000, ge=0)
     """The maximum distance in steps from the centre of the scan."""
 
     # Stacking settings
