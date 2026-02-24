@@ -55,6 +55,37 @@ class CaptureParams(BaseModel):
     save_resolution: tuple[int, int]
 
 
+def validate_capture_params(capture_parameters: CaptureParams) -> None:
+    """Validate capture parameters for a capture.
+
+    Ensures that the save resolution is a tuple of two positive integers
+    and that the images directory is a non-empty string.
+
+    :param capture_parameters: CaptureParams object containing acquisition settings.
+
+    :raises ValueError: If `save_resolution` is not a tuple of two positive integers,
+        or if `images_dir` is not a non-empty string.
+    """
+    if (
+        not isinstance(capture_parameters.save_resolution, tuple)
+        or len(capture_parameters.save_resolution) != 2
+        or not all(
+            isinstance(x, int) and x > 0 for x in capture_parameters.save_resolution
+        )
+    ):
+        raise ValueError(
+            f"Invalid save_resolution: {capture_parameters.save_resolution}. Must be a tuple of two positive integers."
+        )
+
+    if (
+        not isinstance(capture_parameters.images_dir, str)
+        or not capture_parameters.images_dir
+    ):
+        raise ValueError(
+            f"Invalid images_dir: {capture_parameters.images_dir}. Must be a non-empty string."
+        )
+
+
 class NoImageInMemoryError(RuntimeError):
     """An error called if no image is in memory when accessed."""
 

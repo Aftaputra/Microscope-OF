@@ -706,7 +706,8 @@ def test_run_basic_stack_simple(
     capture_params.save_resolution = (100, 100)
 
     # Reset stage position
-    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": 0}
+    start_z = 0
+    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
 
     # Patch capture and stage movement
     autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
@@ -719,23 +720,28 @@ def test_run_basic_stack_simple(
         capture_parameters=capture_params,
     )
 
-    # Expect 3 captures from the stack at Z = 0, 10, 20
-    assert z_positions == [0, 10, 20], (
+    # Expected Z positions for the stack
+    expected_z_positions = [
+        start_z + i * stack_params.stack_dz for i in range(stack_params.images_to_save)
+    ]
+    assert z_positions == expected_z_positions, (
         "Z positions captured do not match expected values"
     )
-    assert final_z == 20, "Final Z position is incorrect"
 
-    # Check that capture_stack_image was called exactly 3 times
-    assert autofocus_thing.capture_stack_image.call_count == 3, (
-        "Incorrect number of captures"
-    )
+    # Final Z should be the last captured Z
+    expected_final_z = expected_z_positions[-1]
+    assert final_z == expected_final_z, "Final Z position is incorrect"
 
-    # Check that stage moved correctly (should match z_positions relative increments)
+    # Check that capture_stack_image was called exactly images_to_save times
+    assert (
+        autofocus_thing.capture_stack_image.call_count == stack_params.images_to_save
+    ), "Incorrect number of captures"
+
+    # Check that stage moved correctly (should match relative increments)
     moves = [
         call.kwargs["z"] for call in autofocus_thing._stage.move_relative.call_args_list
     ]
-    # Two moves in the stack, no other movement as stack began from the starting position
-    expected_moves = [stack_params.stack_dz, stack_params.stack_dz]
+    expected_moves = [stack_params.stack_dz] * (stack_params.images_to_save - 1)
     assert moves == expected_moves, (
         "Stage move_relative calls do not match expected increments"
     )
@@ -761,12 +767,12 @@ def test_run_basic_stack_center_origin(
     capture_params.images_dir = "dummy"
     capture_params.save_resolution = (100, 100)
 
-    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": 0}
+    start_z = 0
+    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
 
     # Patch capture and stage movement
     autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
     autofocus_thing._stage.move_relative = mocker.Mock(side_effect=fake_move_relative)
-
     autofocus_thing._cam.save_from_memory = mocker.Mock()
     autofocus_thing._cam.clear_buffers = mocker.Mock()
 
@@ -776,7 +782,7 @@ def test_run_basic_stack_center_origin(
         capture_parameters=capture_params,
     )
 
-    # Calculate expected starting offset - moving down by half the stack height
+    # Calculate expected starting offset - half of stack range
     total_range = stack_params.stack_dz * (stack_params.images_to_save - 1)
     expected_offset = -total_range // 2
 
@@ -785,14 +791,24 @@ def test_run_basic_stack_center_origin(
     assert first_call.kwargs["z"] == expected_offset, (
         "Center origin offset not applied correctly"
     )
-    # Check 5 images captured, at expected heights
-    assert z_positions == [-20, -10, 0, 10, 20], (
+
+    # Expected Z positions after CENTER offset
+    expected_z_positions = [
+        expected_offset + i * stack_params.stack_dz
+        for i in range(stack_params.images_to_save)
+    ]
+    assert z_positions == expected_z_positions, (
         "Z positions captured do not match expected values"
     )
-    assert final_z == 20, "Final Z position is incorrect"
+
+    # Final Z should be last captured Z
+    expected_final_z = expected_z_positions[-1]
+    assert final_z == expected_final_z, "Final Z position is incorrect"
 
 
-def test_run_basic_stack_backlash_applied(autofocus_thing, mocker, fake_capture):
+def test_run_basic_stack_backlash_applied(
+    autofocus_thing, mocker, fake_capture, fake_move_relative
+):
     """Backlash correction should overshoot first, then move back before starting stack."""
     stack_params = StackParams(
         stack_dz=10,
@@ -801,14 +817,16 @@ def test_run_basic_stack_backlash_applied(autofocus_thing, mocker, fake_capture)
         backlash_correction=50,
         origin=StackOrigin.START,
     )
-    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": 0}
 
     capture_params = mocker.Mock()
     capture_params.images_dir = "dummy"
     capture_params.save_resolution = (100, 100)
 
+    start_z = 0
+    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
+
     autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
-    autofocus_thing._stage.move_relative = mocker.Mock()
+    autofocus_thing._stage.move_relative = mocker.Mock(side_effect=fake_move_relative)
     autofocus_thing._cam.save_from_memory = mocker.Mock()
     autofocus_thing._cam.clear_buffers = mocker.Mock()
 
@@ -817,13 +835,19 @@ def test_run_basic_stack_backlash_applied(autofocus_thing, mocker, fake_capture)
     calls = autofocus_thing._stage.move_relative.call_args_list
 
     # First move is overshoot for backlash
-    assert calls[0].kwargs["z"] == -50, "Backlash overshoot not applied correctly"
+    assert calls[0].kwargs["z"] == -stack_params.backlash_correction, (
+        "Backlash overshoot not applied correctly"
+    )
 
-    # Second move corrects back to start
-    assert calls[1].kwargs["z"] == 50, "Backlash correction move not applied correctly"
+    # Second move corrects back to starting point
+    assert calls[1].kwargs["z"] == stack_params.backlash_correction, (
+        "Backlash correction move not applied correctly"
+    )
 
 
-def test_run_basic_stack_backlash_and_offset(autofocus_thing, mocker, fake_capture):
+def test_run_basic_stack_backlash_and_offset(
+    autofocus_thing, mocker, fake_capture, fake_move_relative
+):
     """Backlash correction and stack offset both applied.
 
     Stack should begin by moving down by half the height of the stack,
@@ -836,33 +860,46 @@ def test_run_basic_stack_backlash_and_offset(autofocus_thing, mocker, fake_captu
         backlash_correction=50,
         origin=StackOrigin.CENTER,
     )
-    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": 0}
 
     capture_params = mocker.Mock()
     capture_params.images_dir = "dummy"
     capture_params.save_resolution = (100, 100)
 
+    start_z = 0
+    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
+
     autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
-    autofocus_thing._stage.move_relative = mocker.Mock()
+    autofocus_thing._stage.move_relative = mocker.Mock(side_effect=fake_move_relative)
     autofocus_thing._cam.save_from_memory = mocker.Mock()
     autofocus_thing._cam.clear_buffers = mocker.Mock()
 
-    # Run stack
     autofocus_thing.run_basic_stack(stack_params, capture_params)
 
     calls = autofocus_thing._stage.move_relative.call_args_list
 
-    # First move is overshoot for backlash and stack offset
-    assert calls[0].kwargs["z"] == -150, "Combined overshoot not applied correctly"
+    # Combined initial offset + backlash overshoot
+    total_stack_range = stack_params.stack_dz * (stack_params.images_to_save - 1)
+    expected_first_move = -(total_stack_range // 2 + stack_params.backlash_correction)
+    assert calls[0].kwargs["z"] == expected_first_move, (
+        "Combined overshoot not applied correctly"
+    )
 
-    # Second move corrects back to base of stack
-    assert calls[1].kwargs["z"] == 50, "Backlash correction move not applied correctly"
+    # Backlash correction back to base of stack
+    assert calls[1].kwargs["z"] == stack_params.backlash_correction, (
+        "Backlash correction move not applied correctly"
+    )
 
-    # Third move is the first move in the stack
-    assert calls[2].kwargs["z"] == 100, "Backlash correction move not applied correctly"
+    # Subsequent moves in stack
+    expected_stack_moves = [stack_params.stack_dz] * (stack_params.images_to_save - 1)
+    actual_stack_moves = [c.kwargs["z"] for c in calls[2:]]
+    assert actual_stack_moves == expected_stack_moves, (
+        "Stack moves after backlash/offset not correct"
+    )
 
 
-def test_run_basic_stack_end_origin(autofocus_thing, mocker, fake_capture):
+def test_run_basic_stack_end_origin(
+    autofocus_thing, mocker, fake_capture, fake_move_relative
+):
     """END origin should shift stack down by full stack height before starting."""
     stack_params = StackParams(
         stack_dz=10,
@@ -871,34 +908,114 @@ def test_run_basic_stack_end_origin(autofocus_thing, mocker, fake_capture):
         backlash_correction=0,
         origin=StackOrigin.END,
     )
-    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": 0}
 
     capture_params = mocker.Mock()
     capture_params.images_dir = "dummy"
     capture_params.save_resolution = (100, 100)
 
+    start_z = 0
+    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
+
     autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
-    autofocus_thing._stage.move_relative = mocker.Mock()
+    autofocus_thing._stage.move_relative = mocker.Mock(side_effect=fake_move_relative)
     autofocus_thing._cam.save_from_memory = mocker.Mock()
     autofocus_thing._cam.clear_buffers = mocker.Mock()
 
     autofocus_thing.run_basic_stack(stack_params, capture_params)
 
-    # Calculate the stack offset based on StackOrigin.END - moving down by the full stack height
+    # Calculate the stack offset based on StackOrigin.END
     total_range = stack_params.stack_dz * (stack_params.images_to_save - 1)
-
-    # First move should shift fully down
+    expected_first_move = -total_range
     first_call = autofocus_thing._stage.move_relative.call_args_list[0]
-    assert first_call.kwargs["z"] == -total_range, (
+    assert first_call.kwargs["z"] == expected_first_move, (
         "End origin offset not applied correctly"
     )
 
     # Check number of captures
-    assert autofocus_thing.capture_stack_image.call_count == 4, (
-        "Incorrect number of captures for END origin"
-    )
+    assert (
+        autofocus_thing.capture_stack_image.call_count == stack_params.images_to_save
+    ), "Incorrect number of captures for END origin"
 
-    # Check final Z is equal to starting Z, as StackOrigin.END should finish at the starting height
+    # Check final Z is equal to starting Z
     final_z = autofocus_thing._stage.position["z"]
-    expected_final_z = 0
+    expected_final_z = start_z
     assert final_z == expected_final_z, "Final Z position for END origin incorrect"
+
+
+def test_invalid_stack_images_raises(autofocus_thing, mocker):
+    """Test basic stack raises expected error for negative or zero image count."""
+    for capture_count in [-3, 0]:
+        stack_params = StackParams(
+            stack_dz=10,
+            images_to_save=capture_count,
+            settling_time=0,
+            backlash_correction=0,
+            origin=StackOrigin.START,
+        )
+        capture_params = mocker.Mock()
+
+        with pytest.raises(ValueError, match="Invalid number of images to save"):
+            autofocus_thing.run_basic_stack(stack_params, capture_params)
+
+
+def test_invalid_stack_settling_raises(autofocus_thing, mocker):
+    """Test basic stack raises expected error for negative settling time."""
+    stack_params = StackParams(
+        stack_dz=10,
+        images_to_save=1,
+        settling_time=-10,
+        backlash_correction=0,
+        origin=StackOrigin.START,
+    )
+    capture_params = mocker.Mock()
+
+    with pytest.raises(ValueError, match="Invalid settling time"):
+        autofocus_thing.run_basic_stack(stack_params, capture_params)
+
+
+def test_invalid_capture_dir_raises(autofocus_thing, mocker):
+    """Test basic stack raises expected error for bad image dir paths."""
+    for bad_path in ["", None, 67, ["path"]]:
+        stack_params = StackParams(
+            stack_dz=10,
+            images_to_save=1,
+            settling_time=0,
+            backlash_correction=0,
+            origin=StackOrigin.START,
+        )
+        capture_params = mocker.Mock()
+        capture_params.images_dir = bad_path
+        capture_params.save_resolution = (100, 100)
+        mocker.patch.object(autofocus_thing._cam, "save_from_memory")
+        mocker.patch.object(autofocus_thing._cam, "clear_buffers")
+
+        with pytest.raises(ValueError, match="Invalid images_dir"):
+            autofocus_thing.run_basic_stack(stack_params, capture_params)
+
+
+def test_invalid_capture_res_raises(autofocus_thing, mocker):
+    """Test basic stack raises expected error for invalid save resolutions."""
+    for bad_res in [
+        "",
+        None,
+        67,
+        ["path"],
+        (-100, 50),
+        (20, 0),
+        (20, 20, 20),
+        [30, 30],
+    ]:
+        stack_params = StackParams(
+            stack_dz=10,
+            images_to_save=1,
+            settling_time=0,
+            backlash_correction=0,
+            origin=StackOrigin.START,
+        )
+        capture_params = mocker.Mock()
+        capture_params.images_dir = "dummy"
+        capture_params.save_resolution = bad_res
+        autofocus_thing.capture_stack_image = mocker.Mock()
+
+        with pytest.raises(ValueError, match="Invalid save_resolution:"):
+            autofocus_thing.run_basic_stack(stack_params, capture_params)
