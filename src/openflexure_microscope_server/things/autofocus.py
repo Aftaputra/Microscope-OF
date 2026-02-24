@@ -777,15 +777,16 @@ class AutofocusThing(lt.Thing):
             target_offset = 0
 
         # Apply backlash correction: overshoot and move back
-        # Overshoot past the starting position
-        self._stage.move_relative(
-            z=target_offset - stack_parameters.backlash_correction
-        )
-        # Move back to the exact starting point
-        self._stage.move_relative(z=stack_parameters.backlash_correction)
+        overshoot = target_offset - stack_parameters.backlash_correction
+        if overshoot != 0:
+            self._stage.move_relative(z=overshoot)
+
+        # Move back to starting point if needed
+        if stack_parameters.backlash_correction != 0:
+            self._stage.move_relative(z=stack_parameters.backlash_correction)
 
         # Capture images_to_save images
-        for _ in range(stack_parameters.images_to_save):
+        for move_count in range(stack_parameters.images_to_save):
             time.sleep(stack_parameters.settling_time)
 
             capture = self.capture_stack_image(
@@ -794,7 +795,9 @@ class AutofocusThing(lt.Thing):
             captures.append(capture)
             z_positions.append(capture.position["z"])
 
-            self._stage.move_relative(z=stack_parameters.stack_dz)
+            # Only move stage if not on the last image
+            if move_count < stack_parameters.images_to_save - 1:
+                self._stage.move_relative(z=stack_parameters.stack_dz)
 
         # Save all captures
         for capture in captures:
