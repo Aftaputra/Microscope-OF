@@ -735,7 +735,7 @@ def test_run_basic_stack_simple(
         call.kwargs["z"] for call in autofocus_thing._stage.move_relative.call_args_list
     ]
     # Two moves in the stack, no other movement as stack began from the starting position
-    expected_moves = [10, 10]
+    expected_moves = [stack_params.stack_dz, stack_params.stack_dz]
     assert moves == expected_moves, (
         "Stage move_relative calls do not match expected increments"
     )
@@ -777,7 +777,7 @@ def test_run_basic_stack_center_origin(
     )
 
     # Calculate expected starting offset - moving down by half the stack height
-    total_range = 10 * (5 - 1)
+    total_range = stack_params.stack_dz * (stack_params.images_to_save - 1)
     expected_offset = -total_range // 2
 
     # First move should apply center offset
@@ -885,7 +885,7 @@ def test_run_basic_stack_end_origin(autofocus_thing, mocker, fake_capture):
     autofocus_thing.run_basic_stack(stack_params, capture_params)
 
     # Calculate the stack offset based on StackOrigin.END - moving down by the full stack height
-    total_range = 10 * (4 - 1)
+    total_range = stack_params.stack_dz * (stack_params.images_to_save - 1)
 
     # First move should shift fully down
     first_call = autofocus_thing._stage.move_relative.call_args_list[0]
