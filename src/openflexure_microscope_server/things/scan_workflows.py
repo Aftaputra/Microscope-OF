@@ -245,11 +245,9 @@ class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]
     ) -> tuple[SettingModelType, Optional[StitchingSettings]]:
         """Return the scan settings and the stitching settings.
 
-        - `images_dir` is used to create the CaptureParams stored in the settings model.
-        - The returned SettingModelType now contains param objects:
-            * capture_params: CaptureParams
-            * autofocus_params: AutofocusParams
-            * stack_params: StackParams (if relevant)
+        :param images_dir: The directory that images are to be written to.
+        :return: A tuple containing the settings model for this workflow and the
+            settings model for stitching.
         """
         stitching_settings = self._get_stitching_settings_model()
         dx, dy = self._calc_displacement_from_overlap(self.overlap)
