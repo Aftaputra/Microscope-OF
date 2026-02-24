@@ -490,7 +490,9 @@ def test_move_until_edge_error(rom_thing, mocker):
     # However the "finally" should have executed returning to the starting position
     assert rom_thing._stage.move_absolute.call_count == 1
     abs_move_kwargs = rom_thing._stage.move_absolute.call_args.kwargs
-    expected_abs_move_kwargs = dict(**mock_position_dict, block_cancellation=True)
+    expected_abs_move_kwargs = dict(
+        **mock_position_dict, block_cancellation=True, backlash_compensation=None
+    )
     assert abs_move_kwargs == expected_abs_move_kwargs
 
 

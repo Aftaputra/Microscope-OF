@@ -481,7 +481,9 @@ class SmartScanThing(lt.Thing):
 
         if self._scan_data is not None:
             self._stage.move_absolute(
-                **self.scan_data.starting_position, block_cancellation=True
+                **self.scan_data.starting_position,
+                block_cancellation=True,
+                backlash_compensation=None,
             )
 
     @property

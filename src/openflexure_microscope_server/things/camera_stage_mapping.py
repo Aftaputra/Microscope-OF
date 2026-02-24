@@ -141,11 +141,15 @@ class CameraStageMapper(lt.Thing):
         except lt.exceptions.InvocationCancelledError as e:
             self.logger.info("User cancelled the camera stage mapping calibration")
             self.logger.info("Returning to starting position")
-            self._stage.move_absolute(**starting_position, block_cancellation=True)
+            self._stage.move_absolute(
+                **starting_position, block_cancellation=True, backlash_compensation=None
+            )
             raise e
         except MappingError as e:
             self.logger.info("Returning to starting position due to failed calibration")
-            self._stage.move_absolute(**starting_position, block_cancellation=True)
+            self._stage.move_absolute(
+                **starting_position, block_cancellation=True, backlash_compensation=None
+            )
             raise e
         result["move_history"] = recorded_move.history
         result["image_resolution"] = self._cam.capture_downsampled_array().shape[:2]
@@ -264,6 +268,7 @@ class CameraStageMapper(lt.Thing):
         self._stage.move_relative(
             **self.convert_image_to_stage_coordinates(x=x, y=y),
             block_cancellation=False,
+            backlash_compensation=None,
         )
 
     @lt.action
