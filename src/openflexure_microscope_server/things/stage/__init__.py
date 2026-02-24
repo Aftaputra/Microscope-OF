@@ -142,7 +142,9 @@ class BaseStage(lt.Thing):
         """Current position of the stage."""
         return self._apply_axis_direction(self._hardware_position)
 
-    backlash_steps: dict[str, int] = lt.setting(default={"x": 200, "y": 200, "z": 200})
+    backlash_steps: dict[str, int] = lt.setting(
+        default={"x": 200, "y": 200, "z": 200}, readonly=True
+    )
     """The number of steps to elimate backlash. The sign sets the direction.
 
     A positive number sets the direction of the second move in a backlash correction.

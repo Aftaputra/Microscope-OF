@@ -22,7 +22,7 @@ import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
 from .camera import BaseCamera, CaptureParams
-from .stage import BaseStage
+from .stage import BacklashCompensation, BaseStage
 
 LOGGER = logging.getLogger(__name__)
 MIN_TEST_IMAGE_COUNT = 3
@@ -458,14 +458,17 @@ class AutofocusThing(lt.Thing):
         up to 10 times.
         """
         attempt = 0
-        backlash = 200
 
         with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
             while attempt < 10:
                 attempt += 1
                 if start == "centre":
-                    self._stage.move_relative(x=0, y=0, z=-int(backlash + dz / 2))
-                    self._stage.move_relative(x=0, y=0, z=backlash)
+                    self._stage.move_relative(
+                        x=0,
+                        y=0,
+                        z=-int(dz / 2),
+                        backlash_compensation=BacklashCompensation.Z_ONLY,
+                    )
 
                 # Always start centrally for future runs
                 start = "centre"
@@ -480,8 +483,10 @@ class AutofocusThing(lt.Thing):
                 target_max = np.max(heights) - dz / 5
 
                 # move to the peak
-                self._stage.move_absolute(z=peak_height - backlash)
-                self._stage.move_absolute(z=peak_height)
+                self._stage.move_absolute(
+                    z=peak_height,
+                    backlash_compensation=BacklashCompensation.Z_ONLY,
+                )
 
                 if target_min < peak_height < target_max:
                     # If it is within the target range then return
@@ -622,12 +627,10 @@ class AutofocusThing(lt.Thing):
         # Better to start too low and take too many images than too high and need to refocus
         self._stage.move_relative(
             z=-int(
-                stack_parameters.steps_undershoot
-                + stack_parameters.backlash_correction
-                + stack_parameters.stack_z_range / 2
-            )
+                stack_parameters.steps_undershoot + stack_parameters.stack_z_range / 2
+            ),
+            backlash_compensation=BacklashCompensation.Z_ONLY,
         )
-        self._stage.move_relative(z=stack_parameters.backlash_correction)
 
         captures: list[CaptureInfo] = []
         # Always check for focus using the the last `min_images_to_test` in the
