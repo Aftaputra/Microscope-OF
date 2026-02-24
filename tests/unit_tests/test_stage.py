@@ -362,7 +362,9 @@ class BacklashMoveTestCase:
         if self.relative:
             return self.movement
 
-        return {ax: self.movement[ax] - self.position[ax] for ax in self.position}
+        return {
+            ax: self.movement.get(ax, pos) - pos for ax, pos in self.position.items()
+        }
 
     def validate(self):
         """Check that the total movement in the result is the relative movement requested."""
@@ -372,7 +374,7 @@ class BacklashMoveTestCase:
 
 
 BACKLASH_TEST_MOVEMENTS = [
-    # Simple test case moving 1 step in x against backlash direction
+    # Moving 1 step in x against preferred movement direction
     BacklashMoveTestCase(
         position={"x": 0, "y": 0, "z": 0},
         backlash_state={"x": 0, "y": 0, "z": 0},
@@ -382,6 +384,160 @@ BACKLASH_TEST_MOVEMENTS = [
         backlash_compensation=BacklashCompensation.MOVEMENT_AXES,
         # There are 2 moves as it is against the direction
         result=[{"x": -201, "y": 0, "z": 0}, {"x": 200, "y": 0, "z": 0}],
+    ),
+    # Moving 1 step in the preferred movement direction
+    BacklashMoveTestCase(
+        position={"x": 0, "y": 0, "z": 0},
+        backlash_state={"x": 0, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": 200, "z": 200},
+        movement={"x": 1, "y": 0, "z": 0},
+        relative=True,
+        backlash_compensation=BacklashCompensation.MOVEMENT_AXES,
+        # There are 2 moves as 1 step doesn't move the backlash state to engaged.
+        result=[{"x": -199, "y": 0, "z": 0}, {"x": 200, "y": 0, "z": 0}],
+    ),
+    # Moving 1 step in the preferred movement direction (already engaged)
+    BacklashMoveTestCase(
+        position={"x": 0, "y": 0, "z": 0},
+        backlash_state={"x": 1, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": 200, "z": 200},
+        movement={"x": 1, "y": 0, "z": 0},
+        relative=True,
+        backlash_compensation=BacklashCompensation.MOVEMENT_AXES,
+        # Already engaged
+        result=[{"x": 1, "y": 0, "z": 0}],
+    ),
+    # Moving 100 steps in the preferred movement direction partially engaged
+    BacklashMoveTestCase(
+        position={"x": 0, "y": 0, "z": 0},
+        backlash_state={"x": 0.7, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": 200, "z": 200},
+        movement={"x": 100, "y": 0, "z": 0},
+        relative=True,
+        backlash_compensation=BacklashCompensation.MOVEMENT_AXES,
+        # Already 70% to engaged 100 steps creates engagement
+        result=[{"x": 100, "y": 0, "z": 0}],
+    ),
+    # Moving 100 steps in the preferred movement direction partially engaged (again)
+    BacklashMoveTestCase(
+        position={"x": 0, "y": 0, "z": 0},
+        backlash_state={"x": 0.3, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": 200, "z": 200},
+        movement={"x": 100, "y": 0, "z": 0},
+        relative=True,
+        backlash_compensation=BacklashCompensation.MOVEMENT_AXES,
+        # Only 30% to engaged 100 steps doesn't engage, so 2 moves
+        result=[{"x": -100, "y": 0, "z": 0}, {"x": 200, "y": 0, "z": 0}],
+    ),
+    ## Absolute move versions of the same tests
+    # Moving 1 step in x against preferred movement direction
+    BacklashMoveTestCase(
+        position={"x": 123, "y": 456, "z": 789},
+        backlash_state={"x": 0, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": 200, "z": 200},
+        movement={"x": 122},
+        relative=False,
+        backlash_compensation=BacklashCompensation.MOVEMENT_AXES,
+        # There are 2 moves as it is against the direction
+        result=[{"x": -201, "y": 0, "z": 0}, {"x": 200, "y": 0, "z": 0}],
+    ),
+    # Moving 1 step in the preferred movement direction
+    BacklashMoveTestCase(
+        position={"x": 123, "y": 456, "z": 789},
+        backlash_state={"x": 0, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": 200, "z": 200},
+        movement={"x": 124},
+        relative=False,
+        backlash_compensation=BacklashCompensation.MOVEMENT_AXES,
+        # There are 2 moves as 1 step doesn't move the backlash state to engaged.
+        result=[{"x": -199, "y": 0, "z": 0}, {"x": 200, "y": 0, "z": 0}],
+    ),
+    # Moving 1 step in the preferred movement direction (already engaged)
+    BacklashMoveTestCase(
+        position={"x": 123, "y": 456, "z": 789},
+        backlash_state={"x": 1, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": 200, "z": 200},
+        movement={"x": 124},
+        relative=False,
+        backlash_compensation=BacklashCompensation.MOVEMENT_AXES,
+        # Already engaged
+        result=[{"x": 1, "y": 0, "z": 0}],
+    ),
+    # Moving 100 steps in the preferred movement direction partially engaged
+    BacklashMoveTestCase(
+        position={"x": 123, "y": 456, "z": 789},
+        backlash_state={"x": 0.7, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": 200, "z": 200},
+        movement={"x": 223},
+        relative=False,
+        backlash_compensation=BacklashCompensation.MOVEMENT_AXES,
+        # Already 70% to engaged 100 steps creates engagement
+        result=[{"x": 100, "y": 0, "z": 0}],
+    ),
+    # Moving 100 steps in the preferred movement direction partially engaged (again)
+    BacklashMoveTestCase(
+        position={"x": 123, "y": 456, "z": 789},
+        backlash_state={"x": 0.3, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": 200, "z": 200},
+        movement={"x": 223},
+        relative=False,
+        backlash_compensation=BacklashCompensation.MOVEMENT_AXES,
+        # Only 30% to engaged 100 steps doesn't engage, so 2 moves
+        result=[{"x": -100, "y": 0, "z": 0}, {"x": 200, "y": 0, "z": 0}],
+    ),
+    ## Checking axes correct even when not moving if asked to
+    BacklashMoveTestCase(
+        position={"x": 0, "y": 0, "z": 0},
+        backlash_state={"x": 0, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": 200, "z": 200},
+        movement={"x": 0, "y": 0, "z": 0},
+        relative=True,
+        backlash_compensation=BacklashCompensation.ALL_AXES,
+        # All move forward and back
+        result=[{"x": -200, "y": -200, "z": -200}, {"x": 200, "y": 200, "z": 200}],
+    ),
+    BacklashMoveTestCase(
+        position={"x": 0, "y": 0, "z": 0},
+        backlash_state={"x": 0, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": 200, "z": 200},
+        movement={"x": 0, "y": 0, "z": 0},
+        relative=True,
+        backlash_compensation=BacklashCompensation.XY_ONLY,
+        # x and y correct
+        result=[{"x": -200, "y": -200, "z": 0}, {"x": 200, "y": 200, "z": 0}],
+    ),
+    BacklashMoveTestCase(
+        position={"x": 0, "y": 0, "z": 0},
+        backlash_state={"x": 0, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": 200, "z": 200},
+        movement={"x": 0, "y": 0, "z": 0},
+        relative=True,
+        backlash_compensation=BacklashCompensation.Z_ONLY,
+        # z corrects
+        result=[{"x": 0, "y": 0, "z": -200}, {"x": 0, "y": 0, "z": 200}],
+    ),
+    ## Checking reversed backlash directions (on y)
+    # In preferred direction
+    BacklashMoveTestCase(
+        position={"x": 0, "y": 0, "z": 0},
+        backlash_state={"x": 0, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": -150, "z": 200},
+        movement={"x": 0, "y": -300, "z": 0},
+        relative=True,
+        backlash_compensation=BacklashCompensation.MOVEMENT_AXES,
+        # Only 1 move as preferred direction
+        result=[{"x": 0, "y": -300, "z": 0}],
+    ),
+    # against preferred direction
+    BacklashMoveTestCase(
+        position={"x": 0, "y": 0, "z": 0},
+        backlash_state={"x": 0, "y": 0, "z": 0},
+        backlash_steps={"x": 200, "y": -150, "z": 200},
+        movement={"x": 0, "y": 300, "z": 0},
+        relative=True,
+        backlash_compensation=BacklashCompensation.MOVEMENT_AXES,
+        # 2 moves as against preferred direction
+        result=[{"x": 0, "y": 450, "z": 0}, {"x": 0, "y": -150, "z": 0}],
     ),
 ]
 
