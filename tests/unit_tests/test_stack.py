@@ -20,8 +20,8 @@ from openflexure_microscope_server.things.autofocus import (
     CaptureInfo,
     NotAPeakError,
     SmartStackParams,
-    StackParams,
     StackOrigin,
+    StackParams,
     _count_turning_points,
     _get_capture_by_id,
     _get_capture_index_by_id,
@@ -661,25 +661,35 @@ def test_count_turning_points():
     # But only one if the dip isn't prominent
     assert _count_turning_points(np.array([1, 2, 3, 4, 3.8, 4, 3, 2, 1])) == 1
 
+
 @pytest.fixture
 def fake_capture(autofocus_thing):
-    def _fake_capture(*args, **kwargs):
+    """Return a fake capture function using the current stage Z position."""
+
+    def _fake_capture(*_args, **_kwargs):
         z = autofocus_thing._stage.position["z"]
         return CaptureInfo(
             buffer_id=f"id_{z}",
             position={"x": 0, "y": 0, "z": z},
             sharpness=1,
         )
+
     return _fake_capture
 
 
 @pytest.fixture
 def fake_move_relative(autofocus_thing):
-    def _fake_move_relative(z, **kwargs):
+    """Return a fake move_relative function updating the stage Z position."""
+
+    def _fake_move_relative(z, **_kwargs):
         autofocus_thing._stage.position["z"] += z
+
     return _fake_move_relative
 
-def test_run_basic_stack_simple(autofocus_thing, mocker, fake_capture, fake_move_relative):
+
+def test_run_basic_stack_simple(
+    autofocus_thing, mocker, fake_capture, fake_move_relative
+):
     """Basic stack captures correct number of images and saves them."""
     stack_params = StackParams(
         stack_dz=10,
@@ -695,13 +705,9 @@ def test_run_basic_stack_simple(autofocus_thing, mocker, fake_capture, fake_move
 
     autofocus_thing._stage.position = {"x": 0, "y": 0, "z": 0}
 
-    autofocus_thing.capture_stack_image = mocker.Mock(
-        side_effect=fake_capture
-    )
+    autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
 
-    autofocus_thing._stage.move_relative = mocker.Mock(
-        side_effect=fake_move_relative
-    )
+    autofocus_thing._stage.move_relative = mocker.Mock(side_effect=fake_move_relative)
 
     autofocus_thing._cam.save_from_memory = mocker.Mock()
     autofocus_thing._cam.clear_buffers = mocker.Mock()
@@ -714,9 +720,9 @@ def test_run_basic_stack_simple(autofocus_thing, mocker, fake_capture, fake_move
     assert z_positions == [0, 10, 20]
     assert final_z == 30
 
+
 def test_run_basic_stack_center_origin(autofocus_thing, mocker):
     """Stack should shift start position when origin is CENTER."""
-
     stack_params = StackParams(
         stack_dz=10,
         images_to_save=5,
@@ -748,9 +754,9 @@ def test_run_basic_stack_center_origin(autofocus_thing, mocker):
     first_call = autofocus_thing._stage.move_relative.call_args_list[0]
     assert first_call.kwargs["z"] == expected_offset
 
+
 def test_run_basic_stack_backlash_applied(autofocus_thing, mocker, fake_capture):
     """Backlash correction should overshoot and move back."""
-
     stack_params = StackParams(
         stack_dz=10,
         images_to_save=3,
@@ -763,9 +769,7 @@ def test_run_basic_stack_backlash_applied(autofocus_thing, mocker, fake_capture)
     capture_params.images_dir = "dummy"
     capture_params.save_resolution = (100, 100)
 
-    autofocus_thing.capture_stack_image = mocker.Mock(
-        side_effect=fake_capture
-    )
+    autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
 
     autofocus_thing._stage.move_relative = mocker.Mock()
     autofocus_thing._cam.save_from_memory = mocker.Mock()
@@ -780,9 +784,9 @@ def test_run_basic_stack_backlash_applied(autofocus_thing, mocker, fake_capture)
     # Second call = move back
     assert calls[1].kwargs["z"] == 50
 
+
 def test_run_basic_stack_end_origin(autofocus_thing, mocker, fake_capture):
     """END origin should shift stack fully negative before starting."""
-
     stack_params = StackParams(
         stack_dz=10,
         images_to_save=4,
@@ -795,9 +799,7 @@ def test_run_basic_stack_end_origin(autofocus_thing, mocker, fake_capture):
     capture_params.images_dir = "dummy"
     capture_params.save_resolution = (100, 100)
 
-    autofocus_thing.capture_stack_image = mocker.Mock(
-        side_effect=fake_capture
-    )
+    autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
 
     autofocus_thing._stage.move_relative = mocker.Mock()
     autofocus_thing._cam.save_from_memory = mocker.Mock()
