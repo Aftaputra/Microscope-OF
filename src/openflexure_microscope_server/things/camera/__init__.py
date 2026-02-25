@@ -74,7 +74,8 @@ def validate_capture_params(capture_parameters: CaptureParams) -> None:
         )
     ):
         raise ValueError(
-            f"Invalid save_resolution: {capture_parameters.save_resolution}. Must be a tuple of two positive integers."
+            f"Invalid save_resolution: {capture_parameters.save_resolution}. Must "
+            "be a tuple of two positive integers."
         )
 
     if (
