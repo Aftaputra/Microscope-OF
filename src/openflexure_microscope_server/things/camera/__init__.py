@@ -15,12 +15,12 @@ import tempfile
 import time
 from datetime import datetime
 from types import TracebackType
-from typing import Any, Literal, Mapping, Optional, Self, Tuple
+from typing import Annotated, Any, Literal, Mapping, Optional, Self, Tuple
 
 import numpy as np
 import piexif
 from PIL import Image
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
@@ -48,34 +48,15 @@ class CaptureError(RuntimeError):
     """An error trying to capture from a CameraThing."""
 
 
+PositiveInt = Annotated[int, Field(ge=1)]
+NonEmptyString = Annotated[str, Field(min_length=1)]
+
+
 class CaptureParams(BaseModel):
     """A class for capturing at least a single image."""
 
-    images_dir: str
-    save_resolution: tuple[int, int]
-
-    @field_validator("save_resolution")
-    @classmethod
-    def validate_save_resolution(cls, value: Tuple[int, int]) -> Tuple[int, int]:
-        """Validate that save_resolution is a tuple with exactly two positive integers."""
-        if not isinstance(value, tuple):
-            raise TypeError("Save resolution should be a tuple")
-        if len(value) != 2 or any(not isinstance(x, int) or x <= 0 for x in value):
-            raise ValueError(
-                f"Invalid save_resolution: {value}. "
-                "Must be a tuple of two positive integers."
-            )
-        return value
-
-    @field_validator("images_dir")
-    @classmethod
-    def validate_images_dir(cls, value: str) -> str:
-        """Validate that images_dir is a non-empty string."""
-        if not isinstance(value, str) or not value:
-            raise ValueError(
-                f"Invalid images_dir: {value}. Must be a non-empty string."
-            )
-        return value
+    images_dir: NonEmptyString
+    save_resolution: tuple[PositiveInt, PositiveInt]
 
 
 class NoImageInMemoryError(RuntimeError):

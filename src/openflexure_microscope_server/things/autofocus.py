@@ -16,7 +16,7 @@ from types import TracebackType
 from typing import Literal, Mapping, Optional, Self, Sequence
 
 import numpy as np
-from pydantic import BaseModel, computed_field, field_validator, model_validator
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
@@ -59,12 +59,12 @@ class StackParams(BaseModel):
     """A class for holding stack parameters, and returning computed ones."""
 
     stack_dz: int
-    images_to_save: int
+    images_to_save: int = Field(gt=0)
 
     # Using docstrings under variables as this is how pdoc would expect
     # attributed to be documented
 
-    settling_time: float = 0.3
+    settling_time: float = Field(default=0.3, ge=0)
     """Time (in seconds) between moving and capturing an image"""
 
     backlash_correction: int = 250
@@ -74,22 +74,6 @@ class StackParams(BaseModel):
 
     origin: StackOrigin = StackOrigin.START
     """Where the stack is positioned relative to the current z position."""
-
-    @field_validator("images_to_save")
-    @classmethod
-    def validate_images_to_save(cls, value: int) -> int:
-        """Validate that the number of images to save is greater than zero."""
-        if value <= 0:
-            raise ValueError(f"Invalid number of images to save: {value}. Must be > 0.")
-        return value
-
-    @field_validator("settling_time")
-    @classmethod
-    def validate_settling_time(cls, value: float) -> float:
-        """Validate that settling time is zero or positive."""
-        if value < 0:
-            raise ValueError(f"Invalid settling time: {value}. Must be positive or 0.")
-        return value
 
 
 class SmartStackParams(StackParams):

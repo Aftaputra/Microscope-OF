@@ -109,8 +109,8 @@ def test_stack_params_negative_images_to_save(save_ims, extra_ims):
     # Depending on the values multiple messages are possible
     match = (
         "(Can't test for focus with fewer than 3 images|"
-        "Images to save must be positive and odd)|"
-        "Invalid number of images to save"
+        "Images to save must be positive and odd|"
+        "Input should be greater than 0)"
     )
     with pytest.raises(ValueError, match=match):
         SmartStackParams(
@@ -154,8 +154,8 @@ def test_even_images_to_save(save_ims, extra_ims):
     """
     match = (
         "(Can't test for focus with fewer than 3 images|"
-        "Images to save must be positive and odd)|"
-        "Invalid number of images to save"
+        "Images to save must be positive and odd|"
+        "Input should be greater than 0)"
     )
     with pytest.raises(ValueError, match=match):
         SmartStackParams(
@@ -948,7 +948,7 @@ def test_run_basic_stack_end_origin(
 def test_invalid_stack_images_raises():
     """Test basic stack raises expected error for negative or zero image count."""
     for capture_count in [-3, 0]:
-        with pytest.raises(ValueError, match="Invalid number of images to save"):
+        with pytest.raises(ValueError, match="Input should be greater than 0"):
             StackParams(
                 stack_dz=10,
                 images_to_save=capture_count,
@@ -960,7 +960,7 @@ def test_invalid_stack_images_raises():
 
 def test_invalid_stack_settling_raises():
     """Test basic stack raises expected error for negative settling time."""
-    with pytest.raises(ValueError, match="Invalid settling time"):
+    with pytest.raises(ValueError, match="Input should be greater than or equal to 0"):
         StackParams(
             stack_dz=10,
             images_to_save=1,
@@ -973,7 +973,7 @@ def test_invalid_stack_settling_raises():
 @pytest.mark.parametrize(
     ("bad_path", "match_err"),
     [
-        ("", "Must be a non-empty string"),
+        ("", "String should have at least 1 character"),
         (None, "Input should be a valid string"),
         (67, "Input should be a valid string"),
     ],
@@ -987,8 +987,8 @@ def test_invalid_capture_dir_raises(bad_path, match_err):
 @pytest.mark.parametrize(
     ("bad_res", "match_err"),
     [
-        ((-100, 50), "Invalid save_resolution:"),
-        ((20, 0), "Invalid save_resolution:"),
+        ((-100, 50), "Input should be greater than or equal to 1"),
+        ((20, 0), "Input should be greater than or equal to 1"),
         ("", "Input should be a valid tuple"),
         (None, "Input should be a valid tuple"),
         (67, "Input should be a valid tuple"),
