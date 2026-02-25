@@ -168,7 +168,24 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
         )
 
 
-class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]):
+class RectGridSettingsModel(BaseModel):
+    """Base setting model for all RectGrid workflows."""
+
+    overlap: float
+    dx: int
+    dy: int
+    capture_params: CaptureParams
+    autofocus_params: AutofocusParams
+
+
+RectGridSettingModelType = TypeVar(
+    "RectGridSettingModelType", bound=RectGridSettingsModel
+)
+
+
+class RectGridWorkflow(
+    ScanWorkflow[RectGridSettingModelType], Generic[RectGridSettingModelType]
+):
     """A generic workflow for any scan that captures images on a rectilinear grid."""
 
     # Redefine _csm Thing Slot, as CSM is required for any RectGridWorkflow
@@ -240,19 +257,23 @@ class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]
             correlation_resize=STITCHING_RESOLUTION[0] / self.save_resolution[0],
         )
 
-    def _build_scan_settings(self, base_kwargs: dict) -> SettingModelType:
+    def _build_scan_settings(self, base_kwargs: dict) -> RectGridSettingModelType:
         """Construct the _settings_model."""
+        # Developer Note: This needs to be overridden if the settings model for this
+        # class contains extra keys.
         return self._settings_model(**base_kwargs)
 
     def all_settings(
         self, images_dir: str
-    ) -> tuple[SettingModelType, Optional[StitchingSettings]]:
+    ) -> tuple[RectGridSettingModelType, Optional[StitchingSettings]]:
         """Return scan settings and the stitching settings.
 
         :param images_dir: The directory that images are to be written to.
         :return: A tuple containing the settings model for this workflow and the
             settings model for stitching.
         """
+        # Developer Note: When subclassing RectGridWorkflow rather than override
+        # this method first consider overriding _build_scan_settings
         stitching_settings = self._get_stitching_settings_model()
         dx, dy = self._calc_displacement_from_overlap(self.overlap)
 
@@ -276,20 +297,15 @@ class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]
         return not self._csm.calibration_required
 
 
-class HistoScanSettingsModel(BaseModel):
+class HistoScanSettingsModel(RectGridSettingsModel):
     """The settings for a scan with the HistoScanWorkflow.
 
     This includes settings calculated when starting. This will be held by smart scan
     during a scan and serialised to disk.
     """
 
-    overlap: float
-    dx: int
-    dy: int
     max_dist: int
     skip_background: bool
-    capture_params: CaptureParams
-    autofocus_params: AutofocusParams
     smart_stack_params: SmartStackParams
 
 
@@ -392,6 +408,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
         return self._background_detector.ready
 
     def _build_scan_settings(self, base_kwargs: dict) -> HistoScanSettingsModel:
+        """Construct the SettingModel for all_settings."""
         return HistoScanSettingsModel(
             **base_kwargs,
             max_dist=self.max_range,
@@ -564,21 +581,16 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
         ]
 
 
-class RegularGridSettingsModel(BaseModel):
+class RegularGridSettingsModel(RectGridSettingsModel):
     """The settings for a scan with a regular grid of dx and dy for x_count, y_count steps.
 
     This includes settings calculated when starting. This will be held by smart scan
     during a scan and serialised to disk.
     """
 
-    overlap: float
-    dx: int
-    dy: int
     x_count: int
     y_count: int
     style: Literal["snake", "raster"]
-    capture_params: CaptureParams
-    autofocus_params: AutofocusParams
 
 
 class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
@@ -594,6 +606,7 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
     _grid_style: Literal["snake", "raster"]
 
     def _build_scan_settings(self, base_kwargs: dict) -> RegularGridSettingsModel:
+        """Construct the SettingModel for all_settings."""
         return RegularGridSettingsModel(
             **base_kwargs,
             x_count=self.x_count,
