@@ -148,8 +148,8 @@ class BaseStage(lt.Thing):
     """The number of steps to elimate backlash. The sign sets the direction.
 
     A positive number sets the direction of the second move in a backlash correction.
-    For example is z=200. If the previous move was more than +200 in z then no
-    correction is needed. If the last movement was negative then a move ov -200,
+    For example, consider z=200. If the previous move was more than +200 in z, no
+    correction is needed. If the last movement was negative then a move of -200,
     followed by +200 will wipe out backlash.
     """
 
@@ -167,7 +167,7 @@ class BaseStage(lt.Thing):
         pos_before = dict(self.position)
         self._hardware_update_position()
         for axis in self._axis_names:
-            # The state delta is should be 1 for a move equal to backlash steps.
+            # The state delta should be 1 for a move equal to backlash steps.
             # moving as this will move the state from 0 (fully disengaged) to
             # 1, fully the other.
             delta = (self.position[axis] - pos_before[axis]) / self.backlash_steps[axis]
@@ -339,7 +339,7 @@ class BaseStage(lt.Thing):
                 check_axes = ("z",)
             case _:
                 raise ValueError(
-                    f"Unknown backlash compensation method {self._axis_names}"
+                    f"Unknown backlash compensation method {backlash_compensation}"
                 )
 
         # Check the backlash state at the end of the move, no need to clip to range of
