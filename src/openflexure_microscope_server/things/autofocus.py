@@ -21,7 +21,7 @@ from pydantic import BaseModel, computed_field, field_validator, model_validator
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from .camera import BaseCamera, CaptureParams, validate_capture_params
+from .camera import BaseCamera, CaptureParams
 from .stage import BaseStage
 
 LOGGER = logging.getLogger(__name__)
@@ -74,6 +74,22 @@ class StackParams(BaseModel):
 
     origin: StackOrigin = StackOrigin.START
     """Where the stack is positioned relative to the current z position."""
+
+    @field_validator("images_to_save")
+    @classmethod
+    def validate_images_to_save(cls, value: int) -> int:
+        """Validate that the number of images to save is greater than zero."""
+        if value <= 0:
+            raise ValueError(f"Invalid number of images to save: {value}. Must be > 0.")
+        return value
+
+    @field_validator("settling_time")
+    @classmethod
+    def validate_settling_time(cls, value: float) -> float:
+        """Validate that settling time is zero or positive."""
+        if value < 0:
+            raise ValueError(f"Invalid settling time: {value}. Must be positive or 0.")
+        return value
 
 
 class SmartStackParams(StackParams):
@@ -765,10 +781,6 @@ class AutofocusThing(lt.Thing):
             - Final z position
             - List of z positions captured
         """
-        # Validate parameters and raise Exception if unsuitable
-        validate_stack_params(stack_parameters=stack_parameters)
-        validate_capture_params(capture_parameters=capture_parameters)
-
         captures: list[CaptureInfo] = []
         z_positions: list[int] = []
 
@@ -869,24 +881,3 @@ def _count_turning_points(sharpnesses: np.ndarray) -> int:
     d_sharpnesses = d_sharpnesses[prominent]
     # count the sign changes
     return int(np.sum(d_sharpnesses[1:] * d_sharpnesses[:-1] < 0))
-
-
-def validate_stack_params(stack_parameters: StackParams) -> None:
-    """Validate stack parameters for a z-stack acquisition.
-
-    Ensures that the parameters allow a physical stack, without negative or zero
-    values where they would cause crashes.
-
-    :param stack_parameters: StackParams object containing stacking settings.
-
-    :raises ValueError: If any stack_parameters are found to be unusable.
-    """
-    if stack_parameters.images_to_save <= 0:
-        raise ValueError(
-            f"Invalid number of images to save: {stack_parameters.images_to_save}. Must be > 0."
-        )
-
-    if stack_parameters.settling_time < 0:
-        raise ValueError(
-            f"Invalid settling time: {stack_parameters.settling_time}. Must be positive or 0."
-        )

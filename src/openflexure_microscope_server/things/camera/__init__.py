@@ -20,7 +20,7 @@ from typing import Any, Literal, Mapping, Optional, Self, Tuple
 import numpy as np
 import piexif
 from PIL import Image
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
@@ -54,37 +54,28 @@ class CaptureParams(BaseModel):
     images_dir: str
     save_resolution: tuple[int, int]
 
+    @field_validator("save_resolution")
+    @classmethod
+    def validate_save_resolution(cls, value: Tuple[int, int]) -> Tuple[int, int]:
+        """Validate that save_resolution is a tuple with exactly two positive integers."""
+        if not isinstance(value, tuple):
+            raise TypeError("Save resolution should be a tuple")
+        if len(value) != 2 or any(not isinstance(x, int) or x <= 0 for x in value):
+            raise ValueError(
+                f"Invalid save_resolution: {value}. "
+                "Must be a tuple of two positive integers."
+            )
+        return value
 
-def validate_capture_params(capture_parameters: CaptureParams) -> None:
-    """Validate capture parameters for a capture.
-
-    Ensures that the save resolution is a tuple of two positive integers
-    and that the images directory is a non-empty string.
-
-    :param capture_parameters: CaptureParams object containing acquisition settings.
-
-    :raises ValueError: If `save_resolution` is not a tuple of two positive integers,
-        or if `images_dir` is not a non-empty string.
-    """
-    if (
-        not isinstance(capture_parameters.save_resolution, tuple)
-        or len(capture_parameters.save_resolution) != 2
-        or not all(
-            isinstance(x, int) and x > 0 for x in capture_parameters.save_resolution
-        )
-    ):
-        raise ValueError(
-            f"Invalid save_resolution: {capture_parameters.save_resolution}. Must "
-            "be a tuple of two positive integers."
-        )
-
-    if (
-        not isinstance(capture_parameters.images_dir, str)
-        or not capture_parameters.images_dir
-    ):
-        raise ValueError(
-            f"Invalid images_dir: {capture_parameters.images_dir}. Must be a non-empty string."
-        )
+    @field_validator("images_dir")
+    @classmethod
+    def validate_images_dir(cls, value: str) -> str:
+        """Validate that images_dir is a non-empty string."""
+        if not isinstance(value, str) or not value:
+            raise ValueError(
+                f"Invalid images_dir: {value}. Must be a non-empty string."
+            )
+        return value
 
 
 class NoImageInMemoryError(RuntimeError):

@@ -240,10 +240,14 @@ class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]
             correlation_resize=STITCHING_RESOLUTION[0] / self.save_resolution[0],
         )
 
+    def _build_scan_settings(self, base_kwargs: dict) -> SettingModelType:
+        """Construct the _settings_model."""
+        return self._settings_model(**base_kwargs)
+
     def all_settings(
         self, images_dir: str
     ) -> tuple[SettingModelType, Optional[StitchingSettings]]:
-        """Return the scan settings and the stitching settings.
+        """Return scan settings and the stitching settings.
 
         :param images_dir: The directory that images are to be written to.
         :return: A tuple containing the settings model for this workflow and the
@@ -252,19 +256,17 @@ class RectGridWorkflow(ScanWorkflow[SettingModelType], Generic[SettingModelType]
         stitching_settings = self._get_stitching_settings_model()
         dx, dy = self._calc_displacement_from_overlap(self.overlap)
 
-        capture_params = CaptureParams(
-            images_dir=images_dir, save_resolution=self.save_resolution
-        )
+        base_kwargs = {
+            "overlap": self.overlap,
+            "dx": dx,
+            "dy": dy,
+            "capture_params": CaptureParams(
+                images_dir=images_dir, save_resolution=self.save_resolution
+            ),
+            "autofocus_params": AutofocusParams(dz=self.autofocus_dz),
+        }
 
-        autofocus_params = AutofocusParams(dz=self.autofocus_dz)
-
-        scan_settings = self._settings_model(
-            overlap=self.overlap,
-            dx=dx,
-            dy=dy,
-            capture_params=capture_params,
-            autofocus_params=autofocus_params,
-        )
+        scan_settings = self._build_scan_settings(base_kwargs)
 
         return scan_settings, stitching_settings
 
@@ -389,37 +391,13 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
             return True
         return self._background_detector.ready
 
-    def all_settings(
-        self, images_dir: str
-    ) -> tuple[HistoScanSettingsModel, StitchingSettings]:
-        """Return the workflow settings and stitching settings.
-
-        :param images_dir: The directory that images are to be written to.
-        :return: A tuple containing the settings model for this workflow and the
-            settings model for stitching.
-        """
-        stitching_settings = self._get_stitching_settings_model()
-        dx, dy = self._calc_displacement_from_overlap(self.overlap)
-
-        capture_params = CaptureParams(
-            images_dir=images_dir,
-            save_resolution=self.save_resolution,
-        )
-        autofocus_params = AutofocusParams(dz=self.autofocus_dz)
-        smart_stack_params = self.create_smart_stack_params()
-
-        scan_settings = HistoScanSettingsModel(
-            overlap=self.overlap,
+    def _build_scan_settings(self, base_kwargs: dict) -> HistoScanSettingsModel:
+        return HistoScanSettingsModel(
+            **base_kwargs,
             max_dist=self.max_range,
-            dx=dx,
-            dy=dy,
             skip_background=self.skip_background,
-            capture_params=capture_params,
-            autofocus_params=autofocus_params,
-            smart_stack_params=smart_stack_params,
+            smart_stack_params=self.create_smart_stack_params(),
         )
-
-        return scan_settings, stitching_settings
 
     def create_smart_stack_params(
         self,
@@ -615,37 +593,13 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
     _planner_cls = RegularGridPlanner
     _grid_style: Literal["snake", "raster"]
 
-    def all_settings(
-        self, images_dir: str
-    ) -> tuple[RegularGridSettingsModel, Optional[StitchingSettings]]:
-        """Return the workflow and stitching settings.
-
-        :param images_dir: The directory that images are to be written to.
-        :return: A tuple containing the settings model for this workflow and the
-            settings model for stitching.
-        """
-        stitching_settings = self._get_stitching_settings_model()
-        dx, dy = self._calc_displacement_from_overlap(self.overlap)
-
-        capture_params = CaptureParams(
-            images_dir=images_dir,
-            save_resolution=self.save_resolution,
-        )
-
-        autofocus_params = AutofocusParams(dz=self.autofocus_dz)
-
-        scan_settings = self._settings_model(
-            overlap=self.overlap,
-            dx=dx,
-            dy=dy,
+    def _build_scan_settings(self, base_kwargs: dict) -> RegularGridSettingsModel:
+        return RegularGridSettingsModel(
+            **base_kwargs,
             x_count=self.x_count,
             y_count=self.y_count,
             style=self._grid_style,
-            capture_params=capture_params,
-            autofocus_params=autofocus_params,
         )
-
-        return scan_settings, stitching_settings
 
     def pre_scan_routine(self, settings: RegularGridSettingsModel) -> None:
         """Perform these steps before starting the scan.

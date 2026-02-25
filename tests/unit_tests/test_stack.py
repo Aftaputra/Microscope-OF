@@ -27,6 +27,7 @@ from openflexure_microscope_server.things.autofocus import (
     _get_capture_index_by_id,
     _get_peak_turning_point,
 )
+from openflexure_microscope_server.things.camera import CaptureParams
 from openflexure_microscope_server.things.scan_workflows import HistoScanWorkflow
 
 RANDOM_GENERATOR = np.random.default_rng()
@@ -108,7 +109,8 @@ def test_stack_params_negative_images_to_save(save_ims, extra_ims):
     # Depending on the values multiple messages are possible
     match = (
         "(Can't test for focus with fewer than 3 images|"
-        "Images to save must be positive and odd)"
+        "Images to save must be positive and odd)|"
+        "Invalid number of images to save"
     )
     with pytest.raises(ValueError, match=match):
         SmartStackParams(
@@ -152,7 +154,8 @@ def test_even_images_to_save(save_ims, extra_ims):
     """
     match = (
         "(Can't test for focus with fewer than 3 images|"
-        "Images to save must be positive and odd)"
+        "Images to save must be positive and odd)|"
+        "Invalid number of images to save"
     )
     with pytest.raises(ValueError, match=match):
         SmartStackParams(
@@ -942,80 +945,61 @@ def test_run_basic_stack_end_origin(
     assert final_z == expected_final_z, "Final Z position for END origin incorrect"
 
 
-def test_invalid_stack_images_raises(autofocus_thing, mocker):
+def test_invalid_stack_images_raises():
     """Test basic stack raises expected error for negative or zero image count."""
     for capture_count in [-3, 0]:
-        stack_params = StackParams(
-            stack_dz=10,
-            images_to_save=capture_count,
-            settling_time=0,
-            backlash_correction=0,
-            origin=StackOrigin.START,
-        )
-        capture_params = mocker.Mock()
-
         with pytest.raises(ValueError, match="Invalid number of images to save"):
-            autofocus_thing.run_basic_stack(stack_params, capture_params)
+            StackParams(
+                stack_dz=10,
+                images_to_save=capture_count,
+                settling_time=0,
+                backlash_correction=0,
+                origin=StackOrigin.START,
+            )
 
 
-def test_invalid_stack_settling_raises(autofocus_thing, mocker):
+def test_invalid_stack_settling_raises():
     """Test basic stack raises expected error for negative settling time."""
-    stack_params = StackParams(
-        stack_dz=10,
-        images_to_save=1,
-        settling_time=-10,
-        backlash_correction=0,
-        origin=StackOrigin.START,
-    )
-    capture_params = mocker.Mock()
-
     with pytest.raises(ValueError, match="Invalid settling time"):
-        autofocus_thing.run_basic_stack(stack_params, capture_params)
+        StackParams(
+            stack_dz=10,
+            images_to_save=1,
+            settling_time=-1,
+            backlash_correction=0,
+            origin=StackOrigin.START,
+        )
 
 
-def test_invalid_capture_dir_raises(autofocus_thing, mocker):
+@pytest.mark.parametrize(
+    ("bad_path", "match_err"),
+    [
+        ("", "Must be a non-empty string"),
+        (None, "Input should be a valid string"),
+        (67, "Input should be a valid string"),
+    ],
+)
+def test_invalid_capture_dir_raises(bad_path, match_err):
     """Test basic stack raises expected error for bad image dir paths."""
-    for bad_path in ["", None, 67, ["path"]]:
-        stack_params = StackParams(
-            stack_dz=10,
-            images_to_save=1,
-            settling_time=0,
-            backlash_correction=0,
-            origin=StackOrigin.START,
-        )
-        capture_params = mocker.Mock()
-        capture_params.images_dir = bad_path
-        capture_params.save_resolution = (100, 100)
-        mocker.patch.object(autofocus_thing._cam, "save_from_memory")
-        mocker.patch.object(autofocus_thing._cam, "clear_buffers")
-
-        with pytest.raises(ValueError, match="Invalid images_dir"):
-            autofocus_thing.run_basic_stack(stack_params, capture_params)
+    with pytest.raises(ValueError, match=match_err):
+        CaptureParams(images_dir=bad_path, save_resolution=(20, 20))
 
 
-def test_invalid_capture_res_raises(autofocus_thing, mocker):
+@pytest.mark.parametrize(
+    ("bad_res", "match_err"),
+    [
+        ((-100, 50), "Invalid save_resolution:"),
+        ((20, 0), "Invalid save_resolution:"),
+        ("", "Input should be a valid tuple"),
+        (None, "Input should be a valid tuple"),
+        (67, "Input should be a valid tuple"),
+        (
+            ["path"],
+            "Input should be a valid integer, unable to parse string as an integer",
+        ),
+        ((20, 20, 20), "Tuple should have at most 2 items"),
+    ],
+)
+def test_invalid_capture_res_raises(bad_res, match_err):
     """Test basic stack raises expected error for invalid save resolutions."""
-    for bad_res in [
-        "",
-        None,
-        67,
-        ["path"],
-        (-100, 50),
-        (20, 0),
-        (20, 20, 20),
-        [30, 30],
-    ]:
-        stack_params = StackParams(
-            stack_dz=10,
-            images_to_save=1,
-            settling_time=0,
-            backlash_correction=0,
-            origin=StackOrigin.START,
-        )
-        capture_params = mocker.Mock()
-        capture_params.images_dir = "dummy"
-        capture_params.save_resolution = bad_res
-        autofocus_thing.capture_stack_image = mocker.Mock()
-
-        with pytest.raises(ValueError, match="Invalid save_resolution:"):
-            autofocus_thing.run_basic_stack(stack_params, capture_params)
+    with pytest.raises(ValueError, match=match_err):
+        CaptureParams(images_dir="dummy", save_resolution=bad_res)
