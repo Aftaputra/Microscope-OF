@@ -3,6 +3,7 @@
 import sys
 
 import cv2
+from cv2_enumerate_cameras import enumerate_cameras
 
 if sys.platform.startswith("win"):
     BACKEND = cv2.CAP_DSHOW
@@ -44,5 +45,13 @@ def identify_cameras(camera_ids: list[int]) -> dict[str, int]:
                     name_dict[camera_id] = f_obj.read().strip()
             except IOError:
                 pass
+
+    if BACKEND == cv2.CAP_DSHOW:
+        try:
+            for camera_info in enumerate_cameras(cv2.CAP_DSHOW):
+                name_dict[camera_info.index] = camera_info.name
+        except IOError:
+            pass
+
     # Swap order for return
     return {name: cam_id for cam_id, name in name_dict.items()}
