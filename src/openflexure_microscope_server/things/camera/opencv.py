@@ -86,7 +86,7 @@ class OpenCVCamera(BaseCamera):
             self._camera_name = value
             # Return so we don't try to start the stream
             return
-
+        self._camera_name = value
         if value not in self.cameras:
             raise ValueError(f"{value} is not a valid camera name.")
         self._start_stream()
