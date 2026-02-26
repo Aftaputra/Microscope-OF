@@ -10,7 +10,9 @@ try:
     from cv2_enumerate_cameras.camera_info import CameraInfo
 
     enumerate_cameras: Optional[Callable[[int], list[CameraInfo]]]
-    from cv2_enumerate_cameras import enumerate_cameras
+    # MyPy thinks enumerate_cameras is being redefined. We just needed to set the type
+    # before defining.
+    from cv2_enumerate_cameras import enumerate_cameras  # type: ignore[no-redef]
 except ModuleNotFoundError:
     enumerate_cameras = None
 
