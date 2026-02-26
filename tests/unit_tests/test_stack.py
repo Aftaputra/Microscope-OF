@@ -20,11 +20,14 @@ from openflexure_microscope_server.things.autofocus import (
     CaptureInfo,
     NotAPeakError,
     SmartStackParams,
+    StackOrigin,
+    StackParams,
     _count_turning_points,
     _get_capture_by_id,
     _get_capture_index_by_id,
     _get_peak_turning_point,
 )
+from openflexure_microscope_server.things.camera import CaptureParams
 from openflexure_microscope_server.things.scan_workflows import HistoScanWorkflow
 
 RANDOM_GENERATOR = np.random.default_rng()
@@ -66,12 +69,7 @@ def test_stack_params_validation(save_ims, extra_ims):
     # to do automatically in hypothesis. This clamps the number between 3 and 9.
     min_images_to_test = max(min(save_ims + extra_ims, 9), 3)
     SmartStackParams(
-        stack_dz=50,
-        images_to_save=save_ims,
-        min_images_to_test=min_images_to_test,
-        autofocus_dz=2000,
-        images_dir="/this/is/fake",
-        save_resolution=(1640, 1232),
+        stack_dz=50, images_to_save=save_ims, min_images_to_test=min_images_to_test
     )
 
 
@@ -96,9 +94,6 @@ def test_stack_params_not_enough_test_images(save_ims, extra_ims):
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
-            autofocus_dz=2000,
-            images_dir="/this/is/fake",
-            save_resolution=(1640, 1232),
         )
 
 
@@ -114,16 +109,14 @@ def test_stack_params_negative_images_to_save(save_ims, extra_ims):
     # Depending on the values multiple messages are possible
     match = (
         "(Can't test for focus with fewer than 3 images|"
-        "Images to save must be positive and odd)"
+        "Images to save must be positive and odd|"
+        "Input should be greater than 0)"
     )
     with pytest.raises(ValueError, match=match):
         SmartStackParams(
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
-            autofocus_dz=2000,
-            images_dir="/this/is/fake",
-            save_resolution=(1640, 1232),
         )
 
 
@@ -147,9 +140,6 @@ def test_even_min_images_to_test(save_ims, extra_ims):
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
-            autofocus_dz=2000,
-            images_dir="/this/is/fake",
-            save_resolution=(1640, 1232),
         )
 
 
@@ -164,16 +154,14 @@ def test_even_images_to_save(save_ims, extra_ims):
     """
     match = (
         "(Can't test for focus with fewer than 3 images|"
-        "Images to save must be positive and odd)"
+        "Images to save must be positive and odd|"
+        "Input should be greater than 0)"
     )
     with pytest.raises(ValueError, match=match):
         SmartStackParams(
             stack_dz=50,
             images_to_save=save_ims,
             min_images_to_test=save_ims + extra_ims,
-            autofocus_dz=2000,
-            images_dir="/this/is/fake",
-            save_resolution=(1640, 1232),
         )
 
 
@@ -183,12 +171,7 @@ def test_computed_stack_params():
     Not using hypothesis or we will just copy in the same formulas.
     """
     stack_parameters = SmartStackParams(
-        stack_dz=50,
-        images_to_save=5,
-        min_images_to_test=9,
-        autofocus_dz=2000,
-        images_dir="/this/is/fake",
-        save_resolution=(1640, 1232),
+        stack_dz=50, images_to_save=5, min_images_to_test=9
     )
 
     assert stack_parameters.stack_z_range == 8 * 50
@@ -271,7 +254,17 @@ def autofocus_thing():
 @pytest.fixture
 def histo_scan_workflow():
     """Return an autofocus thing connected to a server."""
-    return create_thing_without_server(HistoScanWorkflow, mock_all_slots=True)
+    workflow = create_thing_without_server(
+        HistoScanWorkflow,
+        mock_all_slots=True,
+    )
+
+    # Minimal CSM setup so all_settings() works
+    workflow._csm.image_resolution = (1000, 1000)
+    workflow._csm.calibration_required = False
+    workflow._csm.convert_image_to_stage_coordinates = lambda x, y: {"x": x, "y": y}
+
+    return workflow
 
 
 def test_create_stack(histo_scan_workflow, caplog):
@@ -279,9 +272,7 @@ def test_create_stack(histo_scan_workflow, caplog):
     initial_min_images_to_test = histo_scan_workflow.stack_min_images_to_test
     initial_images_to_save = histo_scan_workflow.stack_images_to_save
     with caplog.at_level(logging.INFO):
-        stack_params = histo_scan_workflow.create_smart_stack_params(
-            autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
-        )
+        stack_params = histo_scan_workflow.create_smart_stack_params()
 
     assert len(caplog.records) == 0
     assert histo_scan_workflow.stack_min_images_to_test == initial_min_images_to_test
@@ -308,9 +299,7 @@ def test_coercing_stack_test_ims(
     histo_scan_workflow.stack_min_images_to_test = initial_test_ims
 
     with caplog.at_level(logging.WARNING):
-        stack_params = histo_scan_workflow.create_smart_stack_params(
-            autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
-        )
+        stack_params = histo_scan_workflow.create_smart_stack_params()
 
     assert len(caplog.records) == 1
     assert str(caplog.records[0].msg).startswith(expected_log_start)
@@ -338,9 +327,7 @@ def test_coercing_stack_save_ims(
     histo_scan_workflow.stack_images_to_save = initial_save_ims
 
     with caplog.at_level(logging.WARNING):
-        stack_params = histo_scan_workflow.create_smart_stack_params(
-            autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
-        )
+        stack_params = histo_scan_workflow.create_smart_stack_params()
 
     assert len(caplog.records) == 1
     assert str(caplog.records[0].msg).startswith(expected_log_start)
@@ -353,10 +340,8 @@ def test_coercing_stack_save_ims(
 @pytest.mark.parametrize("pass_on", [1, 2, 3, 4])
 def test_run_smart_stack(pass_on, histo_scan_workflow, autofocus_thing, mocker):
     """Test Running smart stack with the stack passing on different attempts."""
-    stack_params = histo_scan_workflow.create_smart_stack_params(
-        autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
-    )
-    assert stack_params.max_attempts == 3
+    scan_settings, _ = histo_scan_workflow.all_settings(images_dir="dummy")
+    assert scan_settings.smart_stack_params.max_attempts == 3
 
     # Set up returns from z-stack
     fake_captures = [
@@ -381,19 +366,19 @@ def test_run_smart_stack(pass_on, histo_scan_workflow, autofocus_thing, mocker):
 
     # Run it
     success, final_z = autofocus_thing.run_smart_stack(
-        stack_parameters=stack_params,
-        save_on_failure=False,
-        check_turning_points=True,
+        stack_parameters=scan_settings.smart_stack_params,
+        capture_parameters=scan_settings.capture_params,
+        autofocus_parameters=scan_settings.autofocus_params,
     )
 
     # Only passes if the attempt it passes on is less than max attempts
-    assert success == (pass_on <= stack_params.max_attempts)
+    assert success == (pass_on <= scan_settings.smart_stack_params.max_attempts)
     # Final z is the one from the id returned by the stack "pick_me"
     assert final_z == 555
 
     # smart_z_stack should run up until the time it passes. Running no more than
     # max_attempts
-    n_stacks = min(pass_on, stack_params.max_attempts)
+    n_stacks = min(pass_on, scan_settings.smart_stack_params.max_attempts)
     assert autofocus_thing.smart_z_stack.call_count == n_stacks
     # Move absolute should be 1 less time that the number of times z_stack_run
     assert autofocus_thing._stage.move_absolute.call_count == n_stacks - 1
@@ -417,9 +402,7 @@ def setup_and_run_smart_z_stack(
         is a list, it will be set as a side effect (and should be a list of tuples of
         results). If it a tuple (or anything else), it is set as a return value.
     """
-    stack_params = histo_scan_workflow.create_smart_stack_params(
-        autofocus_dz=2000, images_dir="/this/is/fake", save_resolution=(1640, 1232)
-    )
+    stack_params = histo_scan_workflow.create_smart_stack_params()
     stack_params.settling_time = 0  # Don't settle or tests take forever.
 
     autofocus_thing.capture_stack_image = mocker.Mock()
@@ -680,3 +663,343 @@ def test_count_turning_points():
     assert _count_turning_points(np.array([1, 2, 3, 4, 2, 4, 3, 2, 1])) == 3
     # But only one if the dip isn't prominent
     assert _count_turning_points(np.array([1, 2, 3, 4, 3.8, 4, 3, 2, 1])) == 1
+
+
+@pytest.fixture
+def fake_capture(autofocus_thing):
+    """Return a fake capture function using the current stage Z position."""
+
+    def _fake_capture(*_args, **_kwargs):
+        z = autofocus_thing._stage.position["z"]
+        return CaptureInfo(
+            buffer_id=f"id_{z}",
+            position={"x": 0, "y": 0, "z": z},
+            sharpness=1,
+        )
+
+    return _fake_capture
+
+
+@pytest.fixture
+def fake_move_relative(autofocus_thing):
+    """Return a fake move_relative function updating the stage Z position."""
+
+    def _fake_move_relative(z, **_kwargs):
+        autofocus_thing._stage.position["z"] += z
+
+    return _fake_move_relative
+
+
+def test_run_basic_stack_simple(
+    autofocus_thing, mocker, fake_capture, fake_move_relative
+):
+    """Basic stack captures the correct number of images at correct Z positions."""
+    # Stack parameters: small 3-image stack, 10-step spacing
+    stack_params = StackParams(
+        stack_dz=10,
+        images_to_save=3,
+        settling_time=0,
+        backlash_correction=0,
+        origin=StackOrigin.START,
+    )
+
+    # Capture parameters for the test
+    capture_params = mocker.Mock()
+    capture_params.images_dir = "dummy"
+    capture_params.save_resolution = (100, 100)
+
+    # Reset stage position
+    start_z = 0
+    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
+
+    # Patch capture and stage movement
+    autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
+    autofocus_thing._stage.move_relative = mocker.Mock(side_effect=fake_move_relative)
+    autofocus_thing._cam.save_from_memory = mocker.Mock()
+    autofocus_thing._cam.clear_buffers = mocker.Mock()
+
+    final_z, z_positions = autofocus_thing.run_basic_stack(
+        stack_parameters=stack_params,
+        capture_parameters=capture_params,
+    )
+
+    # Expected Z positions for the stack
+    expected_z_positions = [
+        start_z + i * stack_params.stack_dz for i in range(stack_params.images_to_save)
+    ]
+    assert z_positions == expected_z_positions, (
+        "Z positions captured do not match expected values"
+    )
+
+    # Final Z should be the last captured Z
+    expected_final_z = expected_z_positions[-1]
+    assert final_z == expected_final_z, "Final Z position is incorrect"
+
+    # Check that capture_stack_image was called exactly images_to_save times
+    assert (
+        autofocus_thing.capture_stack_image.call_count == stack_params.images_to_save
+    ), "Incorrect number of captures"
+
+    # Check that stage moved correctly (should match relative increments)
+    moves = [
+        call.kwargs["z"] for call in autofocus_thing._stage.move_relative.call_args_list
+    ]
+    expected_moves = [stack_params.stack_dz] * (stack_params.images_to_save - 1)
+    assert moves == expected_moves, (
+        "Stage move_relative calls do not match expected increments"
+    )
+
+
+def test_run_basic_stack_center_origin(
+    autofocus_thing, mocker, fake_capture, fake_move_relative
+):
+    """Stack should shift start position when origin is CENTER.
+
+    CENTER should cause the stage to move down by half the z range before
+    the stack begins.
+    """
+    stack_params = StackParams(
+        stack_dz=10,
+        images_to_save=5,
+        settling_time=0,
+        backlash_correction=0,
+        origin=StackOrigin.CENTER,
+    )
+
+    capture_params = mocker.Mock()
+    capture_params.images_dir = "dummy"
+    capture_params.save_resolution = (100, 100)
+
+    start_z = 0
+    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
+
+    # Patch capture and stage movement
+    autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
+    autofocus_thing._stage.move_relative = mocker.Mock(side_effect=fake_move_relative)
+    autofocus_thing._cam.save_from_memory = mocker.Mock()
+    autofocus_thing._cam.clear_buffers = mocker.Mock()
+
+    # Run stack
+    final_z, z_positions = autofocus_thing.run_basic_stack(
+        stack_parameters=stack_params,
+        capture_parameters=capture_params,
+    )
+
+    # Calculate expected starting offset - half of stack range
+    total_range = stack_params.stack_dz * (stack_params.images_to_save - 1)
+    expected_offset = -total_range // 2
+
+    # First move should apply center offset
+    first_call = autofocus_thing._stage.move_relative.call_args_list[0]
+    assert first_call.kwargs["z"] == expected_offset, (
+        "Center origin offset not applied correctly"
+    )
+
+    # Expected Z positions after CENTER offset
+    expected_z_positions = [
+        expected_offset + i * stack_params.stack_dz
+        for i in range(stack_params.images_to_save)
+    ]
+    assert z_positions == expected_z_positions, (
+        "Z positions captured do not match expected values"
+    )
+
+    # Final Z should be last captured Z
+    expected_final_z = expected_z_positions[-1]
+    assert final_z == expected_final_z, "Final Z position is incorrect"
+
+
+def test_run_basic_stack_backlash_applied(
+    autofocus_thing, mocker, fake_capture, fake_move_relative
+):
+    """Backlash correction should overshoot first, then move back before starting stack."""
+    stack_params = StackParams(
+        stack_dz=10,
+        images_to_save=3,
+        settling_time=0,
+        backlash_correction=50,
+        origin=StackOrigin.START,
+    )
+
+    capture_params = mocker.Mock()
+    capture_params.images_dir = "dummy"
+    capture_params.save_resolution = (100, 100)
+
+    start_z = 0
+    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
+
+    autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
+    autofocus_thing._stage.move_relative = mocker.Mock(side_effect=fake_move_relative)
+    autofocus_thing._cam.save_from_memory = mocker.Mock()
+    autofocus_thing._cam.clear_buffers = mocker.Mock()
+
+    autofocus_thing.run_basic_stack(stack_params, capture_params)
+
+    calls = autofocus_thing._stage.move_relative.call_args_list
+
+    # First move is overshoot for backlash
+    assert calls[0].kwargs["z"] == -stack_params.backlash_correction, (
+        "Backlash overshoot not applied correctly"
+    )
+
+    # Second move corrects back to starting point
+    assert calls[1].kwargs["z"] == stack_params.backlash_correction, (
+        "Backlash correction move not applied correctly"
+    )
+
+
+def test_run_basic_stack_backlash_and_offset(
+    autofocus_thing, mocker, fake_capture, fake_move_relative
+):
+    """Backlash correction and stack offset both applied.
+
+    Stack should begin by moving down by half the height of the stack,
+    plus backlash correction, then move up by backlash correction, then run the basic stack.
+    """
+    stack_params = StackParams(
+        stack_dz=100,
+        images_to_save=3,
+        settling_time=0,
+        backlash_correction=50,
+        origin=StackOrigin.CENTER,
+    )
+
+    capture_params = mocker.Mock()
+    capture_params.images_dir = "dummy"
+    capture_params.save_resolution = (100, 100)
+
+    start_z = 0
+    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
+
+    autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
+    autofocus_thing._stage.move_relative = mocker.Mock(side_effect=fake_move_relative)
+    autofocus_thing._cam.save_from_memory = mocker.Mock()
+    autofocus_thing._cam.clear_buffers = mocker.Mock()
+
+    autofocus_thing.run_basic_stack(stack_params, capture_params)
+
+    calls = autofocus_thing._stage.move_relative.call_args_list
+
+    # Combined initial offset + backlash overshoot
+    total_stack_range = stack_params.stack_dz * (stack_params.images_to_save - 1)
+    expected_first_move = -(total_stack_range // 2 + stack_params.backlash_correction)
+    assert calls[0].kwargs["z"] == expected_first_move, (
+        "Combined overshoot not applied correctly"
+    )
+
+    # Backlash correction back to base of stack
+    assert calls[1].kwargs["z"] == stack_params.backlash_correction, (
+        "Backlash correction move not applied correctly"
+    )
+
+    # Subsequent moves in stack
+    expected_stack_moves = [stack_params.stack_dz] * (stack_params.images_to_save - 1)
+    actual_stack_moves = [c.kwargs["z"] for c in calls[2:]]
+    assert actual_stack_moves == expected_stack_moves, (
+        "Stack moves after backlash/offset not correct"
+    )
+
+
+def test_run_basic_stack_end_origin(
+    autofocus_thing, mocker, fake_capture, fake_move_relative
+):
+    """END origin should shift stack down by full stack height before starting."""
+    stack_params = StackParams(
+        stack_dz=10,
+        images_to_save=4,
+        settling_time=0,
+        backlash_correction=0,
+        origin=StackOrigin.END,
+    )
+
+    capture_params = mocker.Mock()
+    capture_params.images_dir = "dummy"
+    capture_params.save_resolution = (100, 100)
+
+    start_z = 0
+    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
+
+    autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
+    autofocus_thing._stage.move_relative = mocker.Mock(side_effect=fake_move_relative)
+    autofocus_thing._cam.save_from_memory = mocker.Mock()
+    autofocus_thing._cam.clear_buffers = mocker.Mock()
+
+    autofocus_thing.run_basic_stack(stack_params, capture_params)
+
+    # Calculate the stack offset based on StackOrigin.END
+    total_range = stack_params.stack_dz * (stack_params.images_to_save - 1)
+    expected_first_move = -total_range
+    first_call = autofocus_thing._stage.move_relative.call_args_list[0]
+    assert first_call.kwargs["z"] == expected_first_move, (
+        "End origin offset not applied correctly"
+    )
+
+    # Check number of captures
+    assert (
+        autofocus_thing.capture_stack_image.call_count == stack_params.images_to_save
+    ), "Incorrect number of captures for END origin"
+
+    # Check final Z is equal to starting Z
+    final_z = autofocus_thing._stage.position["z"]
+    expected_final_z = start_z
+    assert final_z == expected_final_z, "Final Z position for END origin incorrect"
+
+
+def test_invalid_stack_images_raises():
+    """Test basic stack raises expected error for negative or zero image count."""
+    for capture_count in [-3, 0]:
+        with pytest.raises(ValueError, match="Input should be greater than 0"):
+            StackParams(
+                stack_dz=10,
+                images_to_save=capture_count,
+                settling_time=0,
+                backlash_correction=0,
+                origin=StackOrigin.START,
+            )
+
+
+def test_invalid_stack_settling_raises():
+    """Test basic stack raises expected error for negative settling time."""
+    with pytest.raises(ValueError, match="Input should be greater than or equal to 0"):
+        StackParams(
+            stack_dz=10,
+            images_to_save=1,
+            settling_time=-1,
+            backlash_correction=0,
+            origin=StackOrigin.START,
+        )
+
+
+@pytest.mark.parametrize(
+    ("bad_path", "match_err"),
+    [
+        ("", "String should have at least 1 character"),
+        (None, "Input should be a valid string"),
+        (67, "Input should be a valid string"),
+    ],
+)
+def test_invalid_capture_dir_raises(bad_path, match_err):
+    """Test basic stack raises expected error for bad image dir paths."""
+    with pytest.raises(ValueError, match=match_err):
+        CaptureParams(images_dir=bad_path, save_resolution=(20, 20))
+
+
+@pytest.mark.parametrize(
+    ("bad_res", "match_err"),
+    [
+        ((-100, 50), "Input should be greater than or equal to 1"),
+        ((20, 0), "Input should be greater than or equal to 1"),
+        ("", "Input should be a valid tuple"),
+        (None, "Input should be a valid tuple"),
+        (67, "Input should be a valid tuple"),
+        (
+            ["path"],
+            "Input should be a valid integer, unable to parse string as an integer",
+        ),
+        ((20, 20, 20), "Tuple should have at most 2 items"),
+    ],
+)
+def test_invalid_capture_res_raises(bad_res, match_err):
+    """Test basic stack raises expected error for invalid save resolutions."""
+    with pytest.raises(ValueError, match=match_err):
+        CaptureParams(images_dir="dummy", save_resolution=bad_res)

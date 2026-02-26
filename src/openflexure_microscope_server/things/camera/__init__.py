@@ -15,11 +15,12 @@ import tempfile
 import time
 from datetime import datetime
 from types import TracebackType
-from typing import Any, Literal, Mapping, Optional, Self, Tuple
+from typing import Annotated, Any, Literal, Mapping, Optional, Self, Tuple
 
 import numpy as np
 import piexif
 from PIL import Image
+from pydantic import BaseModel, Field
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
@@ -45,6 +46,17 @@ class PNGBlob(lt.blob.Blob):
 
 class CaptureError(RuntimeError):
     """An error trying to capture from a CameraThing."""
+
+
+PositiveInt = Annotated[int, Field(ge=1)]
+NonEmptyString = Annotated[str, Field(min_length=1)]
+
+
+class CaptureParams(BaseModel):
+    """A class for capturing at least a single image."""
+
+    images_dir: NonEmptyString
+    save_resolution: tuple[PositiveInt, PositiveInt]
 
 
 class NoImageInMemoryError(RuntimeError):
