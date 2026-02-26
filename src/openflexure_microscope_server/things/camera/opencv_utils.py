@@ -1,9 +1,20 @@
 """Utilities for managing CV2 cameras."""
 
+import logging
 import sys
+from typing import Callable, Optional
 
 import cv2
-from cv2_enumerate_cameras import enumerate_cameras
+
+try:
+    from cv2_enumerate_cameras.camera_info import CameraInfo
+
+    enumerate_cameras: Optional[Callable[[int], list[CameraInfo]]]
+    from cv2_enumerate_cameras import enumerate_cameras
+except ModuleNotFoundError:
+    enumerate_cameras = None
+
+LOGGER = logging.getLogger(__name__)
 
 if sys.platform.startswith("win"):
     BACKEND = cv2.CAP_DSHOW
@@ -33,8 +44,14 @@ def identify_cameras(camera_ids: list[int]) -> dict[str, int]:
     """For a list of camera IDs return a dictionary of name -> ID."""
     # Set default names mapping -d -> camera for easy replacement if names are found.
     name_dict = {n: f"Unknown Camera {n}" for n in camera_ids}
-    # If linux try to read video4linux name
-    if BACKEND == cv2.CAP_V4L2:
+
+    # enumerate cameras works for all backends if it is installed:
+    if enumerate_cameras is not None:
+        for camera_info in enumerate_cameras(BACKEND):
+            if camera_info.index in name_dict:
+                name_dict[camera_info.index] = camera_info.name
+    elif BACKEND == cv2.CAP_V4L2:
+        # If linux try to read video4linux name
         for camera_id in camera_ids:
             try:
                 if not isinstance(camera_id, int):
@@ -45,13 +62,11 @@ def identify_cameras(camera_ids: list[int]) -> dict[str, int]:
                     name_dict[camera_id] = f_obj.read().strip()
             except IOError:
                 pass
-
-    if BACKEND == cv2.CAP_DSHOW:
-        try:
-            for camera_info in enumerate_cameras(cv2.CAP_DSHOW):
-                name_dict[camera_info.index] = camera_info.name
-        except IOError:
-            pass
+    else:
+        LOGGER.warning(
+            "Cannot determine camera names. Please install the Optional `manual` "
+            "dependencies."
+        )
 
     # Swap order for return
     return {name: cam_id for cam_id, name in name_dict.items()}
