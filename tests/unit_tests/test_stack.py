@@ -14,8 +14,6 @@ from labthings_fastapi.testing import create_thing_without_server
 from openflexure_microscope_server.scan_directories import IMAGE_REGEX
 from openflexure_microscope_server.things.autofocus import (
     EXTRA_STACK_CAPTURES,
-    MAX_TEST_IMAGE_COUNT,
-    MIN_TEST_IMAGE_COUNT,
     AutofocusThing,
     CaptureInfo,
     NotAPeakError,
@@ -286,10 +284,7 @@ def test_create_stack(histo_scan_workflow, caplog):
 @pytest.mark.parametrize(
     ("initial_test_ims", "coerced_test_ims", "expected_log_start"),
     [
-        (0, MIN_TEST_IMAGE_COUNT, "Cannot test only 0"),
-        (-1, MIN_TEST_IMAGE_COUNT, "Cannot test only -1"),
-        (10, MAX_TEST_IMAGE_COUNT, "Testing 10 images will"),
-        (4, 5, "Minimum number of images to test should be odd"),
+        (6, 7, "Minimum number of images to test should be odd"),
     ],
 )
 def test_coercing_stack_test_ims(
@@ -314,9 +309,7 @@ def test_coercing_stack_test_ims(
 @pytest.mark.parametrize(
     ("initial_save_ims", "coerced_save_ims", "expected_log_start"),
     [
-        (0, 1, "At least 1 images must be saved"),
-        (-1, 1, "At least 1 images must be saved"),
-        (10, 9, "Cannot save 10 images"),
+        (9, 7, "Cannot save 9 images"),
         (4, 5, "Images to save should be odd, setting to 5"),
     ],
 )
@@ -324,6 +317,8 @@ def test_coercing_stack_save_ims(
     initial_save_ims, coerced_save_ims, expected_log_start, histo_scan_workflow, caplog
 ):
     """Run create stack with images to save set to values requiring coercion, and check result."""
+    # First set the min images to test to 7
+    histo_scan_workflow.stack_min_images_to_test = 7
     histo_scan_workflow.stack_images_to_save = initial_save_ims
 
     with caplog.at_level(logging.WARNING):

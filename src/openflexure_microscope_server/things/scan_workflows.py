@@ -350,7 +350,9 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
     Defaults to 1 unless you need to see either side of focus
     """
 
-    stack_min_images_to_test: int = lt.setting(default=9, ge=5, le=13)
+    stack_min_images_to_test: int = lt.setting(
+        default=9, ge=MIN_TEST_IMAGE_COUNT, le=MAX_TEST_IMAGE_COUNT
+    )
     """The minimum number of images to capture in a stack.
 
     This many images are captures and tested for focus, if the focus is not central
@@ -425,21 +427,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
         """
         # Coerce min_images_to_test parameter
         min_images_to_test = self.stack_min_images_to_test
-        if min_images_to_test < MIN_TEST_IMAGE_COUNT:
-            self.logger.warning(
-                f"Cannot test only {min_images_to_test} image(s) as this will fail. "
-                "Setting min images to test to lowest possible value of"
-                f"{MIN_TEST_IMAGE_COUNT}."
-            )
-            min_images_to_test = MIN_TEST_IMAGE_COUNT
-        elif min_images_to_test > MAX_TEST_IMAGE_COUNT:
-            self.logger.warning(
-                f"Testing {min_images_to_test} images will cause defocus. "
-                "Setting min images to test to highest possible value of "
-                f"{MAX_TEST_IMAGE_COUNT}."
-            )
-            min_images_to_test = MAX_TEST_IMAGE_COUNT
-        elif min_images_to_test % 2 == 0:
+        if min_images_to_test % 2 == 0:
             min_images_to_test += 1
             self.logger.warning(
                 "Minimum number of images to test should be odd, setting to "
@@ -448,15 +436,10 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
         # Set the Thing property to the coerced value
         self.stack_min_images_to_test = min_images_to_test
 
-        # Coerce the images to save parameter to be positive, odd, and less than
+        # Coerce the images to save parameter to be odd, and less than
         # min_images_to_save
         images_to_save = self.stack_images_to_save
-        if images_to_save <= 0:
-            self.logger.warning(
-                "At least 1 images must be saved. Setting images to save to 1."
-            )
-            images_to_save = 1
-        elif images_to_save > min_images_to_test:
+        if images_to_save > min_images_to_test:
             self.logger.warning(
                 f"Cannot save {images_to_save} images as this above the minimum "
                 f"number to test. Setting images to save to {MAX_TEST_IMAGE_COUNT}."
