@@ -598,7 +598,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
                 self, "skip_background", label="Detect and Skip Empty Fields"
             ),
             property_control_for(
-                self, "equal_distances", label="Set x and y distances to equal"
+                self, "equal_distances", label="Set Equal x and y Distances"
             ),
         ]
 
