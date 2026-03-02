@@ -174,6 +174,7 @@ class SimulatedCamera(BaseCamera):
     def _set_blob_density(self, value: int) -> None:
         if value < 0:
             self.logger.warning("Sample density must be >= 0")
+            return
         self._blob_density = value
         if self._capture_enabled:
             self.generate_canvas()
@@ -459,7 +460,7 @@ class SimulatedCamera(BaseCamera):
             return self._capture_thread.is_alive()
         return False
 
-    noise_level: float = lt.property(default=2.0, ge=0)
+    noise_level: float = lt.property(default=2.0, ge=0, le=50)
 
     def _capture_frames(self) -> None:
         last_frame_t = time.time()
