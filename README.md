@@ -168,22 +168,3 @@ We use several code analysis and formatting libraries in this project. Our CI wi
 ### Python environment, build, and dependencies
 
 As of `v3` we specify dependencies in `pyproject.toml`. These are not currently frozen due to difficulties matching versions on different platforms. On Raspberry Pi, it's best to specify `--only-binary=:all:` to ensure libraries like `numpy` and `scipy` are not compiled from source (which takes many hours, and/or fails). Pinning dependencies with `requirements.txt` and/or `requirements.in` may happen in the future.
-
-
-# Notes for Maintainers
-
-## Creating releases
-
-* Update the application's internal version number
-  * Edit `pyproject.toml` to update the version number
-* Update the changelog
-* Git commit and git push
-* Create a new version tag on GitLab (e.g. `v2.6.11`) that matches the `pyproject.toml` version number.
-    * Make sure you prefix a lower case 'v', otherwise it won't be recognised as a release!
-    * This tagging will trigger a CI pipeline that builds the JS client, tarballs up the server, and deploys it
-        * Note: This also updates the build server's nginx redirect map file
-
-## Changelog generation
-
-* `npm install -g conventional-changelog-cli`
-* `npx conventional-changelog -r 1 --config ./changelog.config.js -i CHANGELOG.md -s`
