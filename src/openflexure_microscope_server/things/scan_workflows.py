@@ -424,9 +424,10 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
             min_displacement = min(dx, dy)
             base_kwargs["dx"] = min_displacement
             base_kwargs["dy"] = min_displacement
-            self.logger.info(
-                f"Equal distances requested: dx=dy={min_displacement} steps"
-            )
+
+        self.logger.info(
+            f"Scanning with steps of dx={base_kwargs['dx']} and dy={base_kwargs['dy']}."
+        )
 
         return HistoScanSettingsModel(
             **base_kwargs,
