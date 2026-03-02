@@ -104,9 +104,9 @@ export default {
      * This is a similar to the function in App.vue, however it uses an Interval rather
      * than the one in App.vue that uses key repeats.
      */
-    jog(keyevent, x, y, z) {
+    jog(pointerEvent, x, y, z) {
       // Only respond to primary button (left mouse / primary touch)
-      if (keyevent.button !== 0) return;
+      if (pointerEvent.button !== 0) return;
 
       if (this.jogIntervalId) {
         clearInterval(this.jogIntervalId);
@@ -114,7 +114,7 @@ export default {
 
       // Designate this element to get the pointers next pointerup event wherever that
       // pointer is.
-      keyevent.target.setPointerCapture(keyevent.pointerId);
+      pointerEvent.target.setPointerCapture(pointerEvent.pointerId);
 
       const navigationInvert = this.$store.state.navigationInvert;
       let invokeJog = () =>
