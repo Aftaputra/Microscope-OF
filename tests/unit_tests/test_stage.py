@@ -554,7 +554,7 @@ def test_backlash_compensated_moves(test_case, dummy_stage, mocker):
     dummy_stage._hardware_position = dummy_stage._apply_axis_direction(
         test_case.position
     )
-    # double check position is set
+    # check position is set
     assert dummy_stage.position == test_case.position
 
     dummy_stage._backlash_state = test_case.backlash_state

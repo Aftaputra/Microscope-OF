@@ -36,6 +36,10 @@ class RedefinedBaseMovementError(RuntimeError):
 class BacklashCompensation(enum.Enum):
     """The axes to apply backlash compensation to.
 
+    This will perform a correction step - if necessary - on every
+    chosen axis, even if that axis position isn't set to move in
+    the calling movement
+
     * MOVEMENT_AXES - Only the axes that are moving.
     * ALL_AXES - All axes
     * XY_ONLY - Only the x and y axes.
