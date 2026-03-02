@@ -274,7 +274,7 @@ class BaseCamera(lt.Thing):
             "CameraThings must define their own capture_array method"
         )
 
-    downsampled_array_factor: int = lt.property(default=2)
+    downsampled_array_factor: int = lt.property(default=2, ge=1)
     """The downsampling factor when calling capture_downsampled_array."""
 
     @lt.action
