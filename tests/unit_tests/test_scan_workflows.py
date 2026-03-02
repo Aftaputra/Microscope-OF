@@ -133,6 +133,36 @@ def test_histo_workflow_settings_generation(histo_workflow, mocker):
     assert workflow_settings.capture_params.images_dir == "/this/img_dir"
 
 
+def test_histo_workflow_settings_generation_equal_overlap(histo_workflow, mocker):
+    """Check the settings models generate as expected."""
+    mocker.patch.object(
+        histo_workflow, "_calc_displacement_from_overlap", return_value=(123, 456)
+    )
+    histo_workflow.equal_distances = True
+    workflow_settings, stitching_settings = histo_workflow.all_settings("/this/img_dir")
+    ## Check type
+    assert isinstance(workflow_settings, HistoScanSettingsModel)
+    assert isinstance(stitching_settings, StitchingSettings)
+    assert isinstance(workflow_settings.smart_stack_params, SmartStackParams)
+
+    # Check stitching defaults
+    assert stitching_settings.correlation_resize == 0.5
+    assert stitching_settings.overlap == 0.45
+    # Check some workflow defaults
+    assert workflow_settings.overlap == 0.45
+    assert workflow_settings.max_dist == 45000
+    assert workflow_settings.skip_background
+    assert workflow_settings.smart_stack_params.stack_dz == 50
+    assert workflow_settings.smart_stack_params.images_to_save == 1
+    assert workflow_settings.smart_stack_params.min_images_to_test == 9
+    # Check values from calculating overlap are as expected (from above mock)
+    # but are then set to the lesser of the two, as dx=dy was requested
+    assert workflow_settings.dx == 123
+    assert workflow_settings.dy == 123
+    # And that the input image dir is passed to stack the stack parameter for saving
+    assert workflow_settings.capture_params.images_dir == "/this/img_dir"
+
+
 # A CSM that is "normal" changing from camera maxtrix coordinates (y,x) to normal
 # (x, y) coordinates
 CSM_NORMAL = [
@@ -349,7 +379,7 @@ def test_histo_workflow_settings_ui(histo_workflow):
     """Check that the workflow specifies the expected controls."""
     ui = histo_workflow.settings_ui
 
-    assert len(ui) == 7
+    assert len(ui) == 8
     for element in ui:
         assert isinstance(element, PropertyControl)
 
@@ -362,5 +392,6 @@ def test_histo_workflow_settings_ui(histo_workflow):
         "autofocus_dz",
         "max_range",
         "skip_background",
+        "equal_distances",
     ]
     assert names == expected_names
