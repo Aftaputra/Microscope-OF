@@ -565,7 +565,7 @@ class BaseCamera(lt.Thing):
         except Exception as e:
             raise IOError(f"An error occurred while saving {jpeg_path}") from e
 
-    settling_time: float = lt.setting(default=0.2)
+    settling_time: float = lt.setting(default=0.2, ge=0)
     """The settling time when calling the ``settle()`` method."""
 
     @lt.action
