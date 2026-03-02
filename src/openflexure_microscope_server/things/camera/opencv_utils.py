@@ -59,7 +59,7 @@ def identify_cameras(camera_ids: list[int]) -> dict[str, int]:
             if camera_info.index in name_dict:
                 name_dict[camera_info.index] = camera_info.name
     elif BACKEND == cv2.CAP_V4L2:
-        # If linux try to read video4linux name
+        # If Linux, try to read video4linux name as a fallback option.
         for camera_id in camera_ids:
             try:
                 if not isinstance(camera_id, int):
