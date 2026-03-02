@@ -133,6 +133,31 @@ def test_histo_workflow_settings_generation(histo_workflow, mocker):
     assert workflow_settings.capture_params.images_dir == "/this/img_dir"
 
 
+def test_histo_workflow_settings_generation_equal_overlap(histo_workflow, mocker):
+    """Check that setting x and y equal behaves as expected."""
+    mocker.patch.object(
+        histo_workflow, "_calc_displacement_from_overlap", return_value=(123, 456)
+    )
+
+    # Different when False
+    histo_workflow.equal_distances = False
+    workflow_settings, _stitching_settings = histo_workflow.all_settings(
+        "/this/img_dir"
+    )
+
+    assert workflow_settings.dx == 123
+    assert workflow_settings.dy == 456
+
+    # Same when set True
+    histo_workflow.equal_distances = True
+    workflow_settings, _stitching_settings = histo_workflow.all_settings(
+        "/this/img_dir"
+    )
+
+    assert workflow_settings.dx == 123
+    assert workflow_settings.dy == 123
+
+
 # A CSM that is "normal" changing from camera maxtrix coordinates (y,x) to normal
 # (x, y) coordinates
 CSM_NORMAL = [
@@ -349,7 +374,7 @@ def test_histo_workflow_settings_ui(histo_workflow):
     """Check that the workflow specifies the expected controls."""
     ui = histo_workflow.settings_ui
 
-    assert len(ui) == 7
+    assert len(ui) == 8
     for element in ui:
         assert isinstance(element, PropertyControl)
 
@@ -362,5 +387,6 @@ def test_histo_workflow_settings_ui(histo_workflow):
         "autofocus_dz",
         "max_range",
         "skip_background",
+        "equal_distances",
     ]
     assert names == expected_names

@@ -370,6 +370,11 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
     * 200 for 20x
     """
 
+    equal_distances: bool = lt.setting(default=False)
+    """Make the distances in x and y equal in motor steps, rather than in overlap.
+
+    Uses the shorter distance (usually dy) as both dx and dy"""
+
     # The noqa statement is because scan_name is unused but is needed for equivalence
     # with other workflows that may want to validate the scan name.
     def check_before_start(self, scan_name: str) -> None:  # noqa: ARG002
@@ -408,7 +413,22 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
         return self._background_detector.ready
 
     def _build_scan_settings(self, base_kwargs: dict) -> HistoScanSettingsModel:
-        """Construct the SettingModel for all_settings."""
+        """Construct the SettingModel for all_settings.
+
+        Adjust dx and dy to be equal if `equal_distances` is set.
+        """
+        # Make dx and dy equal if requested
+        if self.equal_distances:
+            dx = abs(base_kwargs.get("dx", 0))
+            dy = abs(base_kwargs.get("dy", 0))
+            min_displacement = min(dx, dy)
+            base_kwargs["dx"] = min_displacement
+            base_kwargs["dy"] = min_displacement
+
+        self.logger.info(
+            f"Scanning with steps of dx={base_kwargs['dx']} and dy={base_kwargs['dy']}."
+        )
+
         return HistoScanSettingsModel(
             **base_kwargs,
             max_dist=self.max_range,
@@ -576,7 +596,10 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
                 self, "max_range", label="Maximum Distance (steps)", step=1000
             ),
             property_control_for(
-                self, "skip_background", label="Detect and Skip Empty Fields "
+                self, "skip_background", label="Detect and Skip Empty Fields"
+            ),
+            property_control_for(
+                self, "equal_distances", label="Set Equal x and y Distances"
             ),
         ]
 
