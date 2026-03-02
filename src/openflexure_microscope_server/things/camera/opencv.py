@@ -50,7 +50,7 @@ class OpenCVCamera(BaseCamera):
         self.cameras = opencv_utils.identify_cameras(all_camera_ids)
         if self.camera_name not in self.cameras:
             if self.camera_name:
-                self.logger.warning("{self.camera_name} not found.")
+                self.logger.warning(f"{self.camera_name} not found.")
             self._camera_name = next(iter(self.cameras))
 
         self._start_stream()
@@ -81,7 +81,7 @@ class OpenCVCamera(BaseCamera):
         """Set the name of the camera."""
         if not self.cameras:
             # Don't try to validate if cameras dict is empty, just set the value.
-            # As this is the startup behaviour. On __enter__ we check if the
+            # As this is the startup behaviour, on __enter__ we check if the
             # initial camera is valid and that at least 1 camera exists.
             self._camera_name = value
             # Return so we don't try to start the stream
@@ -171,7 +171,11 @@ class OpenCVCamera(BaseCamera):
 
     @lt.property
     def manual_camera_settings(self) -> list[PropertyControl]:
-        """The camera settings to expose as property controls in the settings panel."""
+        """The camera settings to expose as property controls in the settings panel.
+
+        The options for the camera selector are populated with camera names once the
+        server starts and available cameras are have been detected.
+        """
         return [
             property_control_for(
                 self,

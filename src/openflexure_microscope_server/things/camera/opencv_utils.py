@@ -25,7 +25,7 @@ elif sys.platform.startswith("linux"):
 elif sys.platform == "darwin":
     BACKEND = cv2.CAP_AVFOUNDATION
 else:
-    raise RuntimeError("Unsupported platform {sys.platform}")
+    raise RuntimeError(f"Unsupported platform {sys.platform}")
 
 MAX_CAMERAS = 12
 
@@ -44,7 +44,11 @@ def find_all_cameras() -> list[int]:
 
 def identify_cameras(camera_ids: list[int]) -> dict[str, int]:
     """For a list of camera IDs return a dictionary of name -> ID."""
-    # Set default names mapping -d -> camera for easy replacement if names are found.
+    # When first creating the mapping the mapping with default names it goes from
+    # id -> camera name. This makes it easy to replace the name (based on a fixed camera
+    # id as the key) if the name is then found.
+    # Before returning this is swapped to be a mapping from camera name -> id. As this
+    # is what is needed to switch the cameras based on a name.
     name_dict = {n: f"Unknown Camera {n}" for n in camera_ids}
 
     # enumerate cameras works for all backends if it is installed:
