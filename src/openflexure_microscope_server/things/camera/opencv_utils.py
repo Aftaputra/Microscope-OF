@@ -27,6 +27,8 @@ elif sys.platform == "darwin":
 else:
     raise RuntimeError(f"Unsupported platform {sys.platform}")
 
+# Max cameras is set to balance finding all cameras with not taking too long to start up.
+# Note that due to extra camera modes in Linux 1 camera can take up multiple camera numbers.
 MAX_CAMERAS = 12
 
 
@@ -44,7 +46,7 @@ def find_all_cameras() -> list[int]:
 
 def identify_cameras(camera_ids: list[int]) -> dict[str, int]:
     """For a list of camera IDs return a dictionary of name -> ID."""
-    # When first creating the mapping the mapping with default names it goes from
+    # When first creating the mapping with default names it goes from
     # id -> camera name. This makes it easy to replace the name (based on a fixed camera
     # id as the key) if the name is then found.
     # Before returning this is swapped to be a mapping from camera name -> id. As this
