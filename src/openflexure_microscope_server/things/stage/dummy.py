@@ -81,9 +81,12 @@ class DummyStage(BaseStage):
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
 
-    def update_position(self) -> None:
-        """Read position from the stage and set the corresponding property."""
-        pass
+    def _hardware_update_position(self) -> None:
+        """Read position from the stage and set internal attribute _hardware_position.
+
+        _hardware_position should only be set in this function.
+        """
+        self._hardware_position = self.instantaneous_position
 
     def _set_pos_during_move(
         self, displacement: Sequence[int], fraction_complete: float
@@ -109,7 +112,7 @@ class DummyStage(BaseStage):
             # If there is a new movement.
             if movement_request is not None:
                 # Set the hardware position from instantaneous before continuing.
-                self._hardware_position = self.instantaneous_position
+                self.update_position()
 
                 if movement_request.displacement is None:
                     # If it is a stop command, stop moving
@@ -138,7 +141,7 @@ class DummyStage(BaseStage):
                     # move is complete
                     fraction_complete = 1.0
                     self._set_pos_during_move(displacement, fraction_complete)
-                    self._hardware_position = self.instantaneous_position
+                    self.update_position()
                     self._movement_ongoing = False
 
     def _check_for_new_move_request(self) -> Optional[DummyStageMovement]:
@@ -233,5 +236,5 @@ class DummyStage(BaseStage):
         stage.
         """
         with self._hardware_lock:
-            self._hardware_position = dict.fromkeys(self.axis_names, 0)
-            self.instantaneous_position = self._hardware_position
+            self.instantaneous_position = dict.fromkeys(self.axis_names, 0)
+            self.update_position()

@@ -267,7 +267,9 @@ class RangeofMotionThing(lt.Thing):
             self._rom_data.stage_coords[-1] = self._stage.position
 
         finally:
-            self._stage.move_absolute(**starting_position, block_cancellation=True)
+            self._stage.move_absolute(
+                **starting_position, block_cancellation=True, backlash_compensation=None
+            )
 
     def _recentre_axis(self, axis: Literal["x", "y"]) -> None:
         """Recentre a single axis.
@@ -327,7 +329,9 @@ class RangeofMotionThing(lt.Thing):
         # if the distance is less than 1 big step away then move to it and exit
         if abs(img_perc) < BIG_STEP:
             self.logger.info(f"Estimated centre of {axis}-axis is {estimate[axis]}")
-            self._stage.move_absolute(**estimate, block_cancellation=False)
+            self._stage.move_absolute(
+                **estimate, block_cancellation=False, backlash_compensation=None
+            )
             # Note the second return, the direction, is meaningless here.
             return True, 1
         self.logger.info(

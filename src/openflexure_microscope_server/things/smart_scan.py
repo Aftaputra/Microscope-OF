@@ -37,7 +37,7 @@ from openflexure_microscope_server.utilities import coerce_thing_selector
 # Things
 from .camera import BaseCamera
 from .scan_workflows import ScanWorkflow
-from .stage import BaseStage
+from .stage import BacklashCompensation, BaseStage
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -311,6 +311,7 @@ class SmartScanThing(lt.Thing):
             x=next_point[0],
             y=next_point[1],
             z=z_estimate,
+            backlash_compensation=BacklashCompensation.XY_ONLY,
         )
 
         return (next_point[0], next_point[1], z_estimate)
@@ -481,7 +482,9 @@ class SmartScanThing(lt.Thing):
 
         if self._scan_data is not None:
             self._stage.move_absolute(
-                **self.scan_data.starting_position, block_cancellation=True
+                **self.scan_data.starting_position,
+                block_cancellation=True,
+                backlash_compensation=None,
             )
 
     @property

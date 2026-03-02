@@ -60,6 +60,8 @@ def test_looping_autofocus(start_z, max_loc, centre, attempts_expected, passes, 
 
     def adjust_pos(**kwargs: int) -> None:
         """Move relative should update position. So make a side effect for the mock."""
+        # Remove backlash compensation from the dict if it exists.
+        kwargs.pop("backlash_compensation", None)
         for axis, value in kwargs.items():
             autofocus_thing._stage.position[axis] += value
 

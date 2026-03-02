@@ -11,6 +11,7 @@ As the object will be used as a context manager create the hardware connection i
 
 from __future__ import annotations
 
+import enum
 import queue
 import threading
 from collections.abc import Mapping, Sequence
@@ -30,6 +31,25 @@ class RedefinedBaseMovementError(RuntimeError):
     does. As such, this exception can be captured by ``try`` if a stage needs to
     override these for a specific reason.
     """
+
+
+class BacklashCompensation(enum.Enum):
+    """The axes to apply backlash compensation to.
+
+    This will perform a correction step - if necessary - on every
+    chosen axis, even if that axis position isn't set to move in
+    the calling movement
+
+    * MOVEMENT_AXES - Only the axes that are moving.
+    * ALL_AXES - All axes
+    * XY_ONLY - Only the x and y axes.
+    * Z_ONLY - The z-axis only.
+    """
+
+    MOVEMENT_AXES = enum.auto()
+    ALL_AXES = enum.auto()
+    XY_ONLY = enum.auto()
+    Z_ONLY = enum.auto()
 
 
 class JogCommand:
@@ -101,6 +121,8 @@ class BaseStage(lt.Thing):
         self._jog_queue = JogQueue()
         self._jog_thread: Optional[threading.Thread] = None
         self._hardware_position: Mapping[str, int] = dict.fromkeys(self._axis_names, 0)
+        # Backlash state is a dict as we mutate it during moves.
+        self._backlash_state: dict[str, float] = dict.fromkeys(self._axis_names, 0)
 
         # This must be the last thing the function does in case it is caught in a try.
         if (
@@ -124,6 +146,17 @@ class BaseStage(lt.Thing):
         """Current position of the stage."""
         return self._apply_axis_direction(self._hardware_position)
 
+    backlash_steps: dict[str, int] = lt.setting(
+        default={"x": 200, "y": 200, "z": 200}, readonly=True
+    )
+    """The number of steps to elimate backlash. The sign sets the direction.
+
+    A positive number sets the direction of the second move in a backlash correction.
+    For example, consider z=200. If the previous move was more than +200 in z, no
+    correction is needed. If the last movement was negative then a move of -200,
+    followed by +200 will wipe out backlash.
+    """
+
     moving: bool = lt.property(default=False, readonly=True)
     """Whether the stage is in motion."""
 
@@ -133,9 +166,27 @@ class BaseStage(lt.Thing):
     """Used to convert coordinates between the program frame and the hardware frame."""
 
     def update_position(self) -> None:
-        """Read position from the stage and set the corresponding property."""
+        """Update the position property from the stage."""
+        # Copy the position before the move.
+        pos_before = dict(self.position)
+        self._hardware_update_position()
+        for axis in self._axis_names:
+            # The state delta should be 1 for a move equal to backlash steps.
+            # moving as this will move the state from 0 (fully disengaged) to
+            # 1, fully the other.
+            delta = (self.position[axis] - pos_before[axis]) / self.backlash_steps[axis]
+            # apply value and clamp to within range from 0 to 1
+            self._backlash_state[axis] = max(
+                0, min(1, self._backlash_state[axis] + delta)
+            )
+
+    def _hardware_update_position(self) -> None:
+        """Read position from the stage and set internal attribute _hardware_position.
+
+        _hardware_position should only be set in this function.
+        """
         raise NotImplementedError(
-            "StageThings must define their own update_position method"
+            "StageThings must define their own _hardware_update_position method"
         )
 
     @overload
@@ -192,12 +243,25 @@ class BaseStage(lt.Thing):
         self.axis_inverted = direction
 
     @lt.action
-    def move_relative(self, block_cancellation: bool = False, **kwargs: int) -> None:
+    def move_relative(
+        self,
+        block_cancellation: bool = False,
+        backlash_compensation: Optional[BacklashCompensation] = None,
+        **kwargs: int,
+    ) -> None:
         """Make a relative move. Keyword arguments should be axis names."""
-        self._hardware_move_relative(
-            block_cancellation=block_cancellation,
-            **self._apply_axis_direction(kwargs),
-        )
+        if backlash_compensation is not None:
+            self._move_with_backlash_correction(
+                block_cancellation=block_cancellation,
+                relative=True,
+                backlash_compensation=backlash_compensation,
+                **kwargs,
+            )
+        else:
+            self._hardware_move_relative(
+                block_cancellation=block_cancellation,
+                **self._apply_axis_direction(kwargs),
+            )
 
     def _hardware_move_relative(
         self, block_cancellation: bool = False, **kwargs: int
@@ -211,12 +275,25 @@ class BaseStage(lt.Thing):
         )
 
     @lt.action
-    def move_absolute(self, block_cancellation: bool = False, **kwargs: int) -> None:
+    def move_absolute(
+        self,
+        block_cancellation: bool = False,
+        backlash_compensation: Optional[BacklashCompensation] = None,
+        **kwargs: int,
+    ) -> None:
         """Make an absolute move. Keyword arguments should be axis names."""
-        self._hardware_move_absolute(
-            block_cancellation=block_cancellation,
-            **self._apply_axis_direction(kwargs),
-        )
+        if backlash_compensation is not None:
+            self._move_with_backlash_correction(
+                block_cancellation=block_cancellation,
+                relative=False,
+                backlash_compensation=backlash_compensation,
+                **kwargs,
+            )
+        else:
+            self._hardware_move_absolute(
+                block_cancellation=block_cancellation,
+                **self._apply_axis_direction(kwargs),
+            )
 
     def _hardware_move_absolute(
         self,
@@ -230,6 +307,78 @@ class BaseStage(lt.Thing):
         raise NotImplementedError(
             "StageThings must define their own _hardware_move_absolute method"
         )
+
+    def _move_with_backlash_correction(
+        self,
+        block_cancellation: bool,
+        relative: bool,
+        backlash_compensation: BacklashCompensation,
+        **kwargs: int,
+    ) -> None:
+        """Make a movement with backlash correction.
+
+        :param block_cancellation: True to prevent the move being cancelled.
+        :param relative: True if the kwargs are relative moves. False if they are
+            absolute.
+        :param backlash_compensation: A BacklashCompensation which sets which axes to
+            apply backalsh compensation to.
+        :param kwargs: A mapping of axis name to integer for the movement.
+        """
+        # Calculate relative movement
+        if relative:
+            move = {ax: kwargs.get(ax, 0) for ax in self._axis_names}
+        else:
+            move = {ax: kwargs.get(ax, pos) - pos for ax, pos in self.position.items()}
+
+        # Depending on the backlash method decide which axes to check
+        check_axes: tuple[str, ...]
+        match backlash_compensation:
+            case BacklashCompensation.MOVEMENT_AXES:
+                check_axes = tuple(ax for ax, move in move.items() if move != 0)
+            case BacklashCompensation.ALL_AXES:
+                check_axes = self._axis_names
+            case BacklashCompensation.XY_ONLY:
+                check_axes = ("x", "y")
+            case BacklashCompensation.Z_ONLY:
+                check_axes = ("z",)
+            case _:
+                raise ValueError(
+                    f"Unknown backlash compensation method {backlash_compensation}"
+                )
+
+        # Check the backlash state at the end of the move, no need to clip to range of
+        # 0-1
+        final_state = {
+            ax: self._backlash_state[ax] + move[ax] / self.backlash_steps[ax]
+            for ax in check_axes
+        }
+        # If the state is 1 or greater the motors are engaged in the preferred
+        # direction, if not a correction move is needed.
+        correction = {
+            ax: self.backlash_steps[ax]
+            for ax, state in final_state.items()
+            if state < 1
+        }
+
+        if correction:
+            # If there is a correction to apply move in two goes
+            first_move = {
+                ax: move[ax] - correction.get(ax, 0) for ax in self._axis_names
+            }
+            self._hardware_move_relative(
+                block_cancellation=block_cancellation,
+                **self._apply_axis_direction(first_move),
+            )
+            self._hardware_move_relative(
+                block_cancellation=block_cancellation,
+                **self._apply_axis_direction(correction),
+            )
+        else:
+            # Else just complete the relative move
+            self._hardware_move_relative(
+                block_cancellation=block_cancellation,
+                **self._apply_axis_direction(move),
+            )
 
     def _hardware_start_move_relative(self, displacement: Sequence[int]) -> None:
         """Start a relative move."""
