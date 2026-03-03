@@ -193,7 +193,7 @@ def get_gamma_curve(tuning: dict) -> dict[int, float]:
     Defaults to {} if gamma curve is missing.
     """
     contrast = find_tuning_algo(tuning, "rpi.contrast")
-    return contrast.get("gamma", {})
+    return contrast.get("gamma_curve", {})
 
 
 def set_gamma_curve(tuning: dict, gamma_curve: dict[int, float]) -> dict:
@@ -203,7 +203,7 @@ def set_gamma_curve(tuning: dict, gamma_curve: dict[int, float]) -> dict:
     """
     output_tuning = deepcopy(tuning)
     contrast = find_tuning_algo(output_tuning, "rpi.contrast")
-    contrast["gamma"] = {int(k): float(v) for k, v in gamma_curve.items()}
+    contrast["gamma_curve"] = {int(k): float(v) for k, v in gamma_curve.items()}
     return output_tuning
 
 
