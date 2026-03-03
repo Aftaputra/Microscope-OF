@@ -646,7 +646,7 @@ class BaseCamera(lt.Thing):
         """Return camera-specific metadata.
 
         By default, this just adds the subclass name as the camera type.
-        Subclasses can extend by overriding this property and calling `super()`.
+        Subclasses can extend by overriding this property and calling `super().thing_state`.
         """
         return {"camera": self.__class__.__name__}
 

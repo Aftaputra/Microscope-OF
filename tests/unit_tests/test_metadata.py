@@ -13,6 +13,9 @@ from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.things.background_detect import ChannelDeviationLUV
 from openflexure_microscope_server.things.camera import BaseCamera
+from openflexure_microscope_server.things.camera import (
+    picamera_tuning_file_utils as tf_utils,
+)
 from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 from openflexure_microscope_server.things.stage.dummy import DummyStage
 
@@ -138,6 +141,7 @@ def test_picamera_adds_metadata(mock_picam_thing):
     camera.exposure_time = 1234
     camera.colour_gains = (1.1, 1.2)
     camera.analogue_gain = 2.5
+    camera.tuning = tf_utils.set_gamma_curve(camera.tuning, {1: 5, 2: 10})
 
     state = camera.thing_state
 
@@ -147,6 +151,7 @@ def test_picamera_adds_metadata(mock_picam_thing):
         "exposure_time": 1234,
         "colour_gains": (1.1, 1.2),
         "analogue_gain": 2.5,
+        "gamma_correction": {1: 5, 2: 10},
     }
 
 
@@ -158,6 +163,7 @@ def test_picamera_metadata_written_to_exif(mock_picam_thing, temp_jpeg, mocker):
     camera.exposure_time = 1234
     camera.colour_gains = (1.1, 1.2)
     camera.analogue_gain = 2.5
+    camera.tuning = tf_utils.set_gamma_curve(camera.tuning, {1: 5, 2: 10})
 
     # Mock the server interface to return the camera's own state
     mock_interface = mocker.Mock()
@@ -173,8 +179,10 @@ def test_picamera_metadata_written_to_exif(mock_picam_thing, temp_jpeg, mocker):
 
     assert user_comment["camera"] == "StreamingPiCamera2"
     assert user_comment["camera_board"] == "imx219"
+    # gamma_correction keys are cast to strings
     assert user_comment["tuning"] == {
         "exposure_time": 1234,
         "colour_gains": [1.1, 1.2],
         "analogue_gain": 2.5,
+        "gamma_correction": {"1": 5, "2": 10},
     }
