@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
+from pydantic import ValidationError
 
 import labthings_fastapi as lt
 
@@ -210,7 +211,7 @@ def test_objective_getter_setter(camera):
         camera.objective = 15
     with pytest.raises(ValueError, match=err_msg):
         camera.objective = 0
-    with pytest.raises(ValueError, match=err_msg):
+    with pytest.raises(ValidationError):
         camera.objective = "twenty"
 
 
