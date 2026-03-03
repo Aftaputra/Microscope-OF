@@ -98,6 +98,7 @@ def test_thing_description_equivalence(mock_picam_thing):
     picamera_extra_props = {
         "mjpeg_bitrate",
         "colour_correction_matrix",
+        "gamma_correction",
         "lens_shading_tables",
         "sensor_resolution",
         "capture_metadata",

@@ -141,7 +141,7 @@ def test_picamera_adds_metadata(mock_picam_thing):
     camera.exposure_time = 1234
     camera.colour_gains = (1.1, 1.2)
     camera.analogue_gain = 2.5
-    camera.tuning = tf_utils.set_gamma_curve(camera.tuning, {1: 5, 2: 10})
+    camera.tuning = tf_utils.set_gamma_curve(camera.tuning, [0, 0, 5, 50])
 
     state = camera.thing_state
 
@@ -151,7 +151,7 @@ def test_picamera_adds_metadata(mock_picam_thing):
         "exposure_time": 1234,
         "colour_gains": (1.1, 1.2),
         "analogue_gain": 2.5,
-        "gamma_correction": {1: 5, 2: 10},
+        "gamma_correction": [0, 0, 5, 50],
     }
 
 
@@ -163,7 +163,7 @@ def test_picamera_metadata_written_to_exif(mock_picam_thing, temp_jpeg, mocker):
     camera.exposure_time = 1234
     camera.colour_gains = (1.1, 1.2)
     camera.analogue_gain = 2.5
-    camera.tuning = tf_utils.set_gamma_curve(camera.tuning, {1: 5, 2: 10})
+    camera.tuning = tf_utils.set_gamma_curve(camera.tuning, [0, 0, 5, 50])
 
     # Mock the server interface to return the camera's own state
     mock_interface = mocker.Mock()
@@ -184,5 +184,5 @@ def test_picamera_metadata_written_to_exif(mock_picam_thing, temp_jpeg, mocker):
         "exposure_time": 1234,
         "colour_gains": [1.1, 1.2],
         "analogue_gain": 2.5,
-        "gamma_correction": {"1": 5, "2": 10},
+        "gamma_correction": [0, 0, 5, 50],
     }
