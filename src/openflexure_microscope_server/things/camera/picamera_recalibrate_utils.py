@@ -120,10 +120,11 @@ def adjust_shutter_and_gain_from_raw(
     :param camera: A Picamera2 object.
     :param target_white_level: The raw value we aim for, the raw value of the brightest
         pixels should be approximately this bright. The value to set depends on the
-        sensor bit depth. We recommend values of 700 for 10-bit sensors and 2800 for
-        12-bit sensors. This is about 70% of saturated once the blacklevel is
+        sensor bit depth. We recommend values of 400 for 10-bit sensors and 1600 for
+        12-bit sensors. This is about 40% of saturated once the blacklevel is
         subtracted. The maximum possible value depends on the sensor bit depth, the
-        sensor blacklevel and the tolerance argument.
+        sensor blacklevel and the tolerance argument. While this only uses 40% of the
+        sensor range, after gamma this corresponds to pixel value ~200.
     :param max_iterations: We will terminate once we perform this many iterations,
         whether or not we converge.  More than 10 shouldn't happen.
     :param tolerance: How close to the target value we consider "done".  Expressed as a
