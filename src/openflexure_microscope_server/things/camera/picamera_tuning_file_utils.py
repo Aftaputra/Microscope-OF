@@ -186,24 +186,24 @@ def get_lst(tuning: dict) -> LensShadingModel:
     )
 
 
-def get_gamma_curve(tuning: dict) -> dict[int, float]:
+def get_gamma_curve(tuning: dict) -> list[int]:
     """Return the gamma curve from the rpi.contrast section of the tuning file.
 
-    Returns a dictionary mapping input levels to output levels.
-    Defaults to {} if gamma curve is missing.
+    Returns a list where each two elements are the input and output level.
+    Defaults to [] if gamma curve is missing.
     """
     contrast = find_tuning_algo(tuning, "rpi.contrast")
-    return contrast.get("gamma_curve", {})
+    return contrast.get("gamma_curve", [])
 
 
-def set_gamma_curve(tuning: dict, gamma_curve: dict[int, float]) -> dict:
+def set_gamma_curve(tuning: dict, gamma_curve: list[int]) -> dict:
     """Set the gamma curve in the rpi.contrast section of the tuning file.
 
     Returns a new tuning dictionary with the updated gamma curve.
     """
     output_tuning = deepcopy(tuning)
     contrast = find_tuning_algo(output_tuning, "rpi.contrast")
-    contrast["gamma_curve"] = {int(k): float(v) for k, v in gamma_curve.items()}
+    contrast["gamma_curve"] = gamma_curve
     return output_tuning
 
 

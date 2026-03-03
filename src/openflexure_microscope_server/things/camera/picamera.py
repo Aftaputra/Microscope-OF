@@ -719,8 +719,8 @@ class StreamingPiCamera2(BaseCamera):
         )
 
     @lt.property
-    def gamma_correction(self) -> float:
-        """Return the gamma correction from the tuning file."""
+    def gamma_correction(self) -> list[int]:
+        """Return the gamma correction curve from the tuning file."""
         return tf_utils.get_gamma_curve(self.tuning)
 
     @lt.action
