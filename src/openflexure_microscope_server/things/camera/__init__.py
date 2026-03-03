@@ -643,8 +643,12 @@ class BaseCamera(lt.Thing):
 
     @property
     def thing_state(self) -> Mapping[str, Any]:
-        """Empty metadata dict for subclasses to populate."""
-        return {}
+        """Return camera-specific metadata.
+
+        By default, this just adds the subclass name as the camera type.
+        Subclasses can extend by overriding this property and calling `super()`.
+        """
+        return {"camera": self.__class__.__name__}
 
 
 def downsample(factor: int, image: np.ndarray) -> np.ndarray:

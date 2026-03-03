@@ -927,4 +927,9 @@ class StreamingPiCamera2(BaseCamera):
         """Update generic camera metadata with Picamera-specific data."""
         state = dict(super().thing_state)
         state["camera_board"] = self._camera_board
+        state["tuning"] = {
+            "exposure_time": self.exposure_time,
+            "colour_gains": self.colour_gains,
+            "analogue_gain": self.analogue_gain,
+        }
         return state
