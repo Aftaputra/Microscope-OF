@@ -115,6 +115,9 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
         lt_config, internal_config = _full_config_from_args(args)
 
         server = lt.ThingServer.from_config(lt_config)
+
+        # If we want debug logging from labthings, the --debug argument
+        # must be used when starting the server.
         if args.debug:
             lt.logs.configure_thing_logger(logging.DEBUG)
         customise_server(
