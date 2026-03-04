@@ -17,6 +17,7 @@
                 "default_workflow": "histo_scan_workflow"
             }
         },
+        "CChip_workflow":  "openflexure_microscope_server.things.scan_workflows:CChipWorkflow",
         "histo_scan_workflow": "openflexure_microscope_server.things.scan_workflows:HistoScanWorkflow",
         "snake_workflow": "openflexure_microscope_server.things.scan_workflows:SnakeWorkflow",
         "raster_workflow": "openflexure_microscope_server.things.scan_workflows:RasterWorkflow",
