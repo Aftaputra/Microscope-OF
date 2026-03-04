@@ -103,3 +103,34 @@ def test_failed_customise(mocker):
     assert isinstance(fallback_app, FastAPI)
     # An that it has the error to display
     assert str(fallback_app._context.error) == "Can't touch this"
+
+
+def test_debug_mode(mocker):
+    """Test that --debug flag triggers lt.logs.configure_thing_logger."""
+    # Mock the LabThings function that returns the server
+    mocker.patch(
+        "openflexure_microscope_server.server.lt.ThingServer.from_config",
+        return_value=mocker.Mock(),
+    )
+    # Mock customisation to avoid side effects
+    mocker.patch.object(ofm_server, "customise_server")
+    # Mock uvicorn.run to avoid starting a server
+    mocker.patch("openflexure_microscope_server.server.uvicorn.run")
+
+    # Mock the target function
+    mock_configure_thing_logger = mocker.patch(
+        "openflexure_microscope_server.server.lt.logs.configure_thing_logger"
+    )
+
+    # 1. Run with --debug
+    ofm_server.serve_from_cli(["-c", SIM_CONFIG, "--debug"])
+
+    # Verify it was called with DEBUG level
+    mock_configure_thing_logger.assert_called_once_with(logging.DEBUG)
+
+    # 2. Run without --debug
+    mock_configure_thing_logger.reset_mock()
+    ofm_server.serve_from_cli(["-c", SIM_CONFIG])
+
+    # Verify it was NOT called
+    mock_configure_thing_logger.assert_not_called()
