@@ -34,6 +34,7 @@ class LabThingsTestEnv:
         self,
         things: Mapping[str, lt.Thing | str],
         settings_folder: Optional[str] = None,
+        application_config: Optional[Mapping[str, Any]] = None,
     ) -> None:
         """Initialise the test environment.
 
@@ -47,6 +48,7 @@ class LabThingsTestEnv:
         self._test_client: Optional[TestClient]
         self._things_config = things
         self._settings_folder = settings_folder
+        self._application_config = application_config
         self._tmp_dir_obj: Optional[tempfile.TemporaryDirectory] = None
 
     def __enter__(self) -> Self:
@@ -55,7 +57,9 @@ class LabThingsTestEnv:
             self._tmp_dir_obj = tempfile.TemporaryDirectory()
             self._settings_folder = self._tmp_dir_obj.name
         self._server = lt.ThingServer(
-            things=self._things_config, settings_folder=self._settings_folder
+            things=self._things_config,
+            settings_folder=self._settings_folder,
+            application_config=self._application_config,
         )
         self._test_client = TestClient(self._server.app)
         self._test_client.__enter__()

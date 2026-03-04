@@ -33,7 +33,10 @@ def test_env():
     """Yield a server with a very basic configuration."""
     with open(SIM_CONFIG, "r", encoding="utf-8") as f_obj:
         config_dict = json.load(f_obj)
-    with LabThingsTestEnv(things=config_dict["things"]) as env:
+    with LabThingsTestEnv(
+        things=config_dict["things"],
+        application_config=config_dict["application_config"],
+    ) as env:
         yield env
 
 
