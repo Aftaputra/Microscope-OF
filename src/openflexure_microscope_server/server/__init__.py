@@ -115,6 +115,8 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
         lt_config, internal_config = _full_config_from_args(args)
 
         server = lt.ThingServer.from_config(lt_config)
+        if args.debug:
+            lt.logs.configure_thing_logger(logging.DEBUG)
         customise_server(
             server, internal_config["log_folder"], internal_config["scans_folder"]
         )
