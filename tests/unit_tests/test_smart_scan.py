@@ -41,7 +41,7 @@ from openflexure_microscope_server.things.smart_scan import (
 
 # Use our own dir in the root temp dir not a dynamically generated one so we
 # have some control of when it is deleted
-SCAN_DIR = os.path.join(tempfile.gettempdir(), "scans")
+SCAN_DIR = os.path.join(tempfile.gettempdir(), "smartscanthing")
 
 
 def _clear_scan_dir() -> None:
@@ -53,15 +53,15 @@ def _clear_scan_dir() -> None:
 @pytest.fixture
 def smart_scan_thing(mocker):
     """Return a smart scan thing as a fixture."""
-    mocker.patch(
-        "openflexure_microscope_server.things.get_data_directory_from_server",
-        return_value=SCAN_DIR,
-    )
-    return create_thing_without_server(
+    thing = create_thing_without_server(
         SmartScanThing,
         default_workflow="mock-_all_workflows",
         mock_all_slots=True,
     )
+    type(thing._thing_server_interface).application_config = mocker.PropertyMock(
+        return_value={"data_folder": tempfile.gettempdir()}
+    )
+    return thing
 
 
 @pytest.fixture
@@ -81,14 +81,14 @@ def custom_smart_scan_thing(default_workflow, all_workflows, mocker):
     This allows setting a default workflow and to adjust all workflows from simple
     single item mock from `mock_all_slots`.
     """
-    mocker.patch(
-        "openflexure_microscope_server.things.get_data_directory_from_server",
-        return_value=SCAN_DIR,
-    )
     smart_scan_thing = create_thing_without_server(
         SmartScanThing,
         default_workflow=default_workflow,
         mock_all_slots=True,
+    )
+    interface_type = type(smart_scan_thing._thing_server_interface)
+    interface_type.application_config = mocker.PropertyMock(
+        return_value={"data_folder": tempfile.gettempdir()}
     )
     # Pop the existing mock workflow and add specified ones (if any)
     smart_scan_thing._all_workflows.pop("mock-_all_workflows")

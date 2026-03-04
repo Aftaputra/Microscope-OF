@@ -18,7 +18,7 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 dependencies = [
-  "labthings-fastapi==0.0.14",
+  "labthings-fastapi==0.0.17",
   "sangaboard",
   "camera-stage-mapping ~= 0.1.10",
   "opencv-python-headless ~= 4.13.0",

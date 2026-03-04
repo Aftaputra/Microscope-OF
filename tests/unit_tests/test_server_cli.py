@@ -36,6 +36,8 @@ def test_successful_start(mocker, caplog):
         "openflexure_microscope_server.server.lt.ThingServer.from_config",
         return_value=mock_server,
     )
+    # Also mock configure_logging or it will touch a load of code and log.
+    mock_log_configure = mocker.patch.object(ofm_server, "configure_logging")
     # Also mock customisation or it will try to access the hard drive and make files.
     mock_customise = mocker.patch.object(ofm_server, "customise_server")
     # And mock uvicorn.run as we don't want to start a server process
@@ -44,7 +46,9 @@ def test_successful_start(mocker, caplog):
     # Run the mock CLI
     ofm_server.serve_from_cli(["-c", SIM_CONFIG])
 
-    # Check that the server was customised and the run
+    # Check that the logging was configures, the server was customised, and uvicorn was
+    # run
+    assert mock_log_configure.call_count == 1
     assert mock_customise.call_count == 1
     assert mock_uvicorn_run.call_count == 1
     # Read the log config that was set

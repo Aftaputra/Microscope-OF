@@ -604,7 +604,7 @@ class BaseCamera(lt.Thing):
         return self._background_detector_name
 
     @background_detector_name.setter
-    def _set_background_detector_name(self, name: str) -> None:
+    def _set_background_detector_name(self, name: Optional[str]) -> None:
         """Validate and set background_detector_name."""
         if name not in self._all_background_detectors:
             self.logger.warning(f"{name} is not a valid background detector name.")

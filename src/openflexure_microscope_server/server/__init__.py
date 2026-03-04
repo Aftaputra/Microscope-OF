@@ -75,8 +75,6 @@ def customise_server(
     server: lt.ThingServer, application_config: OFMApplicationData
 ) -> None:
     """Customise the server with additional endpoints, etc."""
-    configure_logging(application_config.log_folder)
-
     if DEVELOPER_MODE:
         # Allow CORS in developer mode for easier testing with the webapp
         server.app.add_middleware(
@@ -108,7 +106,12 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
     lt_config = None
     server = None
     try:
-        lt_config, application_config = _full_config_from_args(args)
+        lt_config = _full_config_from_args(args)
+        # Validate our application data
+        if lt_config.application_config is None:
+            raise ValueError("No application configuration was supplied.")
+        application_config = OFMApplicationData(**lt_config.application_config)
+        configure_logging(application_config.log_folder)
 
         server = lt.ThingServer.from_config(lt_config)
         customise_server(server, application_config)
@@ -166,25 +169,18 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
             raise e
 
 
-def _full_config_from_args(
-    args: Namespace,
-) -> tuple[ThingServerConfig, OFMApplicationData]:
+def _full_config_from_args(args: Namespace) -> ThingServerConfig:
     """Load configuration from LabThings args allowing patching.
 
-    This returns the labthings ThingServerConfig model and a dictionary of the config
-    for the microscope.
+    This returns the labthings ThingServerConfig model.
 
     This provides similar functionarlity to lt.cli.config_from_args except allows the
     configuration file to specify a base config, and optionally patches.
     """
-    # Don't allow configuration to be set as an argument as then we cannot handle
-    # application_config
     if not args.config:
         raise RuntimeError(
             "OpenFlexure Microscope Server must have a configuration file specified."
         )
 
     patched_config = load_patched_config(args.config)
-    application_config = OFMApplicationData(**patched_config.pop("application_config"))
-
-    return ThingServerConfig(**patched_config), application_config
+    return ThingServerConfig(**patched_config)

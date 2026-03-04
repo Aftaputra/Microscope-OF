@@ -60,7 +60,6 @@ def test_customise_server(mocker):
     # but also to limit excess coverage reporting.
     mocked_add_static = mocker.patch.object(ofm_server, "add_static_files")
     mocked_v2_endpoints = mocker.patch.object(ofm_server, "add_v2_endpoints")
-    mocked_configure_logging = mocker.patch.object(ofm_server, "configure_logging")
     mocked_retrieve_log = mocker.patch.object(ofm_server, "retrieve_log")
     mocked_retrieve_log_file = mocker.patch.object(ofm_server, "retrieve_log_from_file")
 
@@ -77,7 +76,6 @@ def test_customise_server(mocker):
     # Check each internal customisation function is called
     assert mocked_add_static.call_count == 1
     assert mocked_v2_endpoints.call_count == 1
-    assert mocked_configure_logging.call_count == 1
     # Check app.get adds two routes
     assert mock_app.get.call_count == 2
     assert wrapper.call_count == 2
@@ -122,10 +120,12 @@ def test_full_config_from_args(config, log_dir, data_dir, mocker):
         },
     )
     args = Namespace(config=config, json=None)
-    lt_conf, application_config = ofm_server._full_config_from_args(args)
+    lt_conf = ofm_server._full_config_from_args(args)
     # If json is supplied OFM config is default. As the json is passed dircectly to
     # The Pydantic Mocel in LabThings. No custom data allowed.
     assert isinstance(lt_conf, ThingServerConfig)
-    assert isinstance(application_config, OFMApplicationData)
+    # Check the configuration validates
+    application_config = OFMApplicationData(**lt_conf.application_config)
+    # And has the correct values
     assert application_config.log_folder == log_dir
     assert application_config.data_folder == data_dir
