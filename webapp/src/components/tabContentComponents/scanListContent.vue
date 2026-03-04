@@ -119,7 +119,7 @@ export default {
     },
     selectedScanDZI() {
       if (this.selectedScan && this.selectedScan.dzi != "") {
-        return `${this.$store.getters.baseUri}/scans/${this.selectedScan.name}/images/${this.selectedScan.dzi}`;
+        return `${this.$store.getters.baseUri}/data/smart_scan/${this.selectedScan.name}/images/${this.selectedScan.dzi}`;
       } else {
         return null;
       }
