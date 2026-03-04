@@ -32,6 +32,7 @@ from pydantic import BaseModel, PlainSerializer
 import labthings_fastapi as lt
 
 from openflexure_microscope_server import scan_directories, stitching
+from openflexure_microscope_server.things import OFMThing
 from openflexure_microscope_server.utilities import coerce_thing_selector
 
 # Things
@@ -120,7 +121,7 @@ def _scan_running(
     return scan_running_wrapper
 
 
-class SmartScanThing(lt.Thing):
+class SmartScanThing(OFMThing):
     """A Thing for scanning samples and interacting with past scans.
 
     SmartScanThing exposes all functionality for automatically scanning samples,
@@ -135,23 +136,22 @@ class SmartScanThing(lt.Thing):
     def __init__(
         self,
         thing_server_interface: lt.ThingServerInterface,
-        scans_folder: str,
         default_workflow: str,
     ) -> None:
         """Initialise a SmartScanThing saving to and loading from the input directory.
 
-        :param scans_folder: This is the path to the directory where all scans will be
-            saved. Any scans already in this directory will be accessible through the
-            HTTP interface.
+        :param default_workflow: The default workflows that smart scan uses if nothing
+            is set in settings.
         """
         super().__init__(thing_server_interface)
-        self._scan_dir_manager = scan_directories.ScanDirectoryManager(scans_folder)
         self._scan_lock = threading.Lock()
         self._default_workflow = default_workflow
         self._workflow_name = default_workflow
 
     def __enter__(self) -> Self:
         """Open hardware connection when the Thing context manager is opened."""
+        super().__enter__()
+        self._scan_dir_manager = scan_directories.ScanDirectoryManager(self.data_dir)
         valid_name = coerce_thing_selector(
             thing_mapping=self._all_workflows,
             selected=self.workflow_name,

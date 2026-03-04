@@ -1,7 +1,6 @@
 """Add endpoints for static files to the underlying FastAPI server."""
 
 import os
-from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, RedirectResponse
@@ -36,7 +35,7 @@ def add_static_file(app: FastAPI, fname: str, folder: str) -> None:
     )
 
 
-def add_static_files(app: FastAPI, scans_folder: Optional[str]) -> None:
+def add_static_files(app: FastAPI, data_folder: str) -> None:
     """Add the static files responsible for the webapp app to the FastAPI app.
 
     Note that any file in the root of the static dir will not be cached. However, the
@@ -45,7 +44,7 @@ def add_static_files(app: FastAPI, scans_folder: Optional[str]) -> None:
     important file not to cache is "index.html".
 
     :param app: The FastAPI app to add to, in this case the OpenFlexure server
-    :param scans_folder: The directory for the scans.
+    :param data_folder: The directory for any data.
     """
     check_static_dir()
 
@@ -65,16 +64,17 @@ def add_static_files(app: FastAPI, scans_folder: Optional[str]) -> None:
                 name=f"static_{fname}",
             )
 
-    # If scans folder is None, there is not smart scan thing. So nothing to mount.
-    if scans_folder is not None:
-        # Mount the scan directory to .../scans/, to allow dzi viewing
-        if not os.path.isdir(scans_folder):
-            os.makedirs(scans_folder)
-        app.mount(
-            "/scans/",
-            StaticFiles(directory=scans_folder),
-            name="scans",
-        )
+    # We need a data folder
+    if data_folder is None:
+        raise ValueError("No data folder is set, cannot start server")
+    # Mount the scan directory to .../data/, to allow dzi viewing
+    if not os.path.isdir(data_folder):
+        os.makedirs(data_folder)
+    app.mount(
+        "/data/",
+        StaticFiles(directory=data_folder),
+        name="data",
+    )
 
 
 def check_static_dir() -> None:

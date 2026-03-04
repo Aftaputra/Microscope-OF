@@ -36,7 +36,7 @@ def main() -> None:
     with open(config, "r", encoding="utf-8") as file_obj:
         config_dict = json.load(file_obj)
 
-    config_dict["things"]["smart_scan"]["kwargs"]["scans_folder"] = "/tmp/scans"
+    config_dict["application_config"]["data_folder"] = "/tmp/data"
 
     server = lt.ThingServer(things=config_dict["things"])
     test_client = TestClient(server.app)

@@ -81,7 +81,7 @@ def test_add_static_with_no_static_dir(mocker):
     )
     # Should raise as the mock static dir does not exist
     with pytest.raises(FileNotFoundError):
-        serve_static_files.add_static_files(mock_app, scans_folder=None)
+        serve_static_files.add_static_files(mock_app, data_folder=None)
     assert mock_app.get.call_count == 0
 
 
@@ -126,7 +126,8 @@ def test_add_static_files(mock_static_dir, mocker):
     )
     # Get the wrapper function from the mocked decorator
     wrapper = mock_app.get.return_value
-    serve_static_files.add_static_files(mock_app, scans_folder=None)
+    with tempfile.TemporaryDirectory() as datadir:
+        serve_static_files.add_static_files(mock_app, data_folder=datadir)
 
     # Get should have been called twice to create a route for index
     assert mock_app.get.call_count == 2
@@ -151,23 +152,11 @@ def test_add_static_files(mock_static_dir, mocker):
     assert second_wrapped().headers["Pragma"] == "no-cache"
 
     # Also should have mounted both dirs
-    assert mock_app.mount.call_count == 1
-    mounted_path = mock_app.mount.call_args.args[0]
-    mounted_dir = mock_app.mount.call_args.args[1].directory
+    assert mock_app.mount.call_count == 2
+    mounted_path = mock_app.mount.call_args_list[0].args[0]
+    mounted_dir = mock_app.mount.call_args_list[0].args[1].directory
     assert "/assets/" in mounted_path
     assert os.path.join(mock_static_dir, "assets") in mounted_dir
 
-
-def test_add_static_files_with_scan_dir(mock_static_dir, mocker):
-    """Check the scan dir mounts if supplied."""
-    mock_app = mocker.Mock()
-    mocker.patch(
-        "openflexure_microscope_server.server.serve_static_files.STATIC_PATH",
-        mock_static_dir,
-    )
-    with tempfile.TemporaryDirectory() as scandir:
-        serve_static_files.add_static_files(mock_app, scans_folder=scandir)
-    # The scan dir should be the last to mount so can use call args. It should mount
-    # at /scans/
-    assert mock_app.mount.call_args.args[0] == "/scans/"
-    assert mock_app.mount.call_args.args[1].directory == scandir
+    assert mock_app.mount.call_args_list[1].args[0] == "/data/"
+    assert mock_app.mount.call_args_list[1].args[1].directory == datadir

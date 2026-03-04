@@ -81,7 +81,7 @@ export default {
   computed: {
     selectedScanDZI() {
       if (this.selectedScan && this.selectedScan.dzi) {
-        return `${this.baseUri}/scans/${this.selectedScan.name}/images/${this.selectedScan.dzi}`;
+        return `${this.baseUri}/data/smart_scan/${this.selectedScan.name}/images/${this.selectedScan.dzi}`;
       }
       return null;
     },
