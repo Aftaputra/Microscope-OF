@@ -173,8 +173,7 @@ class SimulatedCamera(BaseCamera):
     @blob_density.setter
     def _set_blob_density(self, value: int) -> None:
         if value < 0:
-            self.logger.warning("Sample density must be >= 0")
-            return
+            raise ValueError("Sample density must be >= 0")
         self._blob_density = value
         if self._capture_enabled:
             self.generate_canvas()
