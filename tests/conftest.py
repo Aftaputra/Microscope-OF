@@ -8,6 +8,8 @@ from typing import Optional
 
 import pytest
 
+from labthings_fastapi.testing import create_thing_without_server
+
 
 @pytest.fixture
 def check_side_effect(caplog):
@@ -61,3 +63,25 @@ def check_side_effect(caplog):
                 assert re.match(match, record.message) is not None
 
     return _checker
+
+
+@pytest.fixture
+def mock_picam_thing(mocker):
+    """Import PiCamera without hardware well enough to get a ThingDescription."""
+    dummy_cam = mocker.Mock()
+    mock_picamera2 = mocker.MagicMock()
+    mock_picamera2.return_value.__enter__.return_value = dummy_cam
+    mock_picamera2.return_value.__exit__.return_value = None
+
+    mocker.patch.dict(
+        "sys.modules",
+        {
+            "picamera2": mock_picamera2,
+            "picamera2.encoders": mocker.Mock(),
+            "picamera2.outputs": mocker.Mock(),
+        },
+    )
+
+    from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
+
+    return create_thing_without_server(StreamingPiCamera2)

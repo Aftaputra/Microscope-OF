@@ -718,6 +718,11 @@ class StreamingPiCamera2(BaseCamera):
             copy_from=self.default_tuning,
         )
 
+    @lt.property
+    def gamma_correction(self) -> list[int]:
+        """Return the gamma correction curve from the tuning file."""
+        return tf_utils.get_gamma_curve(self.tuning)
+
     @lt.action
     def set_static_green_equalisation(self, offset: int = 65535) -> None:
         """Set the green equalisation to a static value.
@@ -927,4 +932,10 @@ class StreamingPiCamera2(BaseCamera):
         """Update generic camera metadata with Picamera-specific data."""
         state = dict(super().thing_state)
         state["camera_board"] = self._camera_board
+        state["tuning"] = {
+            "exposure_time": self.exposure_time,
+            "colour_gains": self.colour_gains,
+            "analogue_gain": self.analogue_gain,
+            "gamma_correction": self.gamma_correction,
+        }
         return state
