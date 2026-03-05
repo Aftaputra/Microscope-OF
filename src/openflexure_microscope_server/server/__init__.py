@@ -119,7 +119,7 @@ def serve_from_cli(argv: Optional[list[str]] = None) -> None:
         configure_logging(application_config.log_folder)
 
         server = lt.ThingServer.from_config(lt_config)
-        debug = True if args.debug else False
+        debug = bool(args.debug)
         customise_server(server, application_config, debug)
 
         def shutdown_call() -> None:
