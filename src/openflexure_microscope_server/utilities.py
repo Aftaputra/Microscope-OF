@@ -83,6 +83,32 @@ _POSIX_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-/]")
 # Matches anything that isn't a-z, A-Z, 0-9, _, ., -
 _NAME_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-]")
 
+# Windows reserved names (case-insensitive)
+_WINDOWS_RESERVED_NAMES = {
+    "CON",
+    "PRN",
+    "AUX",
+    "NUL",
+    "COM1",
+    "COM2",
+    "COM3",
+    "COM4",
+    "COM5",
+    "COM6",
+    "COM7",
+    "COM8",
+    "COM9",
+    "LPT1",
+    "LPT2",
+    "LPT3",
+    "LPT4",
+    "LPT5",
+    "LPT6",
+    "LPT7",
+    "LPT8",
+    "LPT9",
+}
+
 
 def make_path_safe(unsafe_path_string: str) -> str:
     """Replace unsafe characters in a file path with underscores, preserving separators.
@@ -94,16 +120,41 @@ def make_path_safe(unsafe_path_string: str) -> str:
     including path separators (forward slash on POSIX, and forward
     slash/backslash/colon on Windows).
 
+    Additionally, it sanitises each path component for Windows reserved names and
+    trailing dots/spaces to ensure maximum cross-platform compatibility.
+
     :param unsafe_path_string: The original path string to sanitise.
 
     :returns: A version of the input string safe to use as a file path.
     """
+    # Split by separators first to sanitise components independently
+    components = re.split(r"([/\\])", unsafe_path_string)
+    sanitised_components = []
+
     unsafe_character_pattern = (
         _WINDOWS_UNSAFE_PATTERN
         if sys.platform.startswith("win")
         else _POSIX_UNSAFE_PATTERN
     )
-    return unsafe_character_pattern.sub("_", unsafe_path_string)
+
+    for component in components:
+        if component in ("/", "\\"):
+            sanitised_components.append(component)
+        elif component:
+            # 1. Strip trailing dots and spaces
+            # 2. Apply unsafe character regex
+            # 3. Check for reserved names
+            sanitised = component.rstrip(". ")
+            if not sanitised:
+                sanitised = "_"
+            else:
+                sanitised = unsafe_character_pattern.sub("_", sanitised)
+
+            sanitised_components.append(_sanitise_reserved(sanitised))
+        else:
+            sanitised_components.append(component)
+
+    return "".join(sanitised_components)
 
 
 def make_name_safe(unsafe_name_string: str) -> str:
@@ -112,11 +163,37 @@ def make_name_safe(unsafe_name_string: str) -> str:
     This excludes all path separators, ensuring the result is safe to use as a
     standalone filename or identifier component.
 
+    This also handles Windows reserved names and trailing dots/spaces.
+
     :param unsafe_name_string: The original name string to sanitise.
 
     :returns: A version of the input string safe to use as a file name or identifier.
     """
-    return _NAME_UNSAFE_PATTERN.sub("_", unsafe_name_string)
+    # 1. Strip trailing dots and spaces
+    # 2. Apply unsafe character regex
+    # 3. Check for reserved names
+    name = unsafe_name_string.rstrip(". ")
+    if not name:
+        return "_"
+
+    name = _NAME_UNSAFE_PATTERN.sub("_", name)
+    return _sanitise_reserved(name)
+
+
+def _sanitise_reserved(name: str) -> str:
+    """Check a name against Windows reserved names.
+
+    :param name: The component to check.
+    :returns: The sanitised component.
+    """
+    # Check for Windows reserved names.
+    # These are reserved even with an extension (e.g. NUL.txt).
+    # We check the part before the first dot.
+    base_name = name.split(".", maxsplit=1)[0].upper()
+    if base_name in _WINDOWS_RESERVED_NAMES:
+        return f"{name}_"
+
+    return name
 
 
 class VersionData(BaseModel):

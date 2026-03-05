@@ -48,18 +48,46 @@ class StitcherValidationError(RuntimeError):
     """The stitcher received values that it deems unsafe to create a command from."""
 
 
+# A list of commands that are forbidden in any part of a generated CLI command.
+# This provides defense-in-depth against trying to execute arbitrary shells
+# or elevation tools.
+_FORBIDDEN_COMMANDS = {
+    "sudo",
+    "sh",
+    "bash",
+    "python",
+    "python3",
+    "perl",
+    "ruby",
+    "php",
+    "nc",
+    "netcat",
+    "curl",
+    "wget",
+}
+
+
 def validate_command(cmd: list[str]) -> None:
-    """Validate that the command only characters that are allowed in a path.
+    """Validate that the command only contains characters that are allowed in a path.
 
     The values in the commands should be numbers, commandline flags, paths, and
     executables. All of these should be allowed by ``make_path_safe``.
 
+    This also checks against a blacklist of forbidden commands for defense-in-depth.
+
     :raises StitcherValidationError: if any element in the command is not safe.
     """
     for element in cmd:
+        # Check against forbidden commands (case-insensitive)
+        if element.lower() in _FORBIDDEN_COMMANDS:
+            raise StitcherValidationError(
+                f"Invalid stiching command: Forbidden element '{element}' detected."
+            )
+
+        # Ensure characters are safe for a path component
         if element != make_path_safe(element):
             raise StitcherValidationError(
-                "Invalid stiching command: Contains unsafe characters."
+                f"Invalid stiching command: Element '{element}' contains unsafe characters."
             )
 
 
