@@ -4,5 +4,8 @@
         "system": "openflexure_microscope_server.things.system:OpenFlexureSystem"
     },
     "settings_folder": "./openflexure/settings/",
-    "log_folder": "./openflexure/logs/"
+    "application_config": {
+        "log_folder": "./openflexure/logs/",
+        "data_folder": "./openflexure/data/"
+    }
 }
