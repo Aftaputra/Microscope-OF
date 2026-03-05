@@ -55,8 +55,6 @@ _FORBIDDEN_COMMANDS = {
     "sudo",
     "sh",
     "bash",
-    "python",
-    "python3",
     "perl",
     "ruby",
     "php",

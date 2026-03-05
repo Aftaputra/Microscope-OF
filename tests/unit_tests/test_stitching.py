@@ -21,6 +21,7 @@ from openflexure_microscope_server.stitching import (
     PreviewStitcher,
     StitcherValidationError,
     StitchingSettings,
+    validate_command,
 )
 
 from ..shared_utils.lt_test_utils import LabThingsTestEnv
@@ -30,6 +31,28 @@ LOGGER = logging.getLogger("mock-thing_logger")
 FAKE_DIR: list[str] = os.path.join("a", "dir", "that", "is", "fake")
 THIS_DIR: str = os.path.dirname(os.path.realpath(__file__))
 MOCK_STITCHER: str = os.path.join(THIS_DIR, "mock_stitching", "mock-stitch.py")
+
+
+def test_validate_command_success():
+    """Test valid commands pass validation."""
+    validate_command(["openflexure-stitch", "--stitching_mode", "all", "path/to/scan"])
+    validate_command(["--resize", "0.5", "8192"])
+
+
+def test_validate_command_forbidden():
+    """Test forbidden commands raise error."""
+    with pytest.raises(
+        StitcherValidationError, match="Forbidden element 'sudo' detected"
+    ):
+        validate_command(["sudo", "rm", "-rf", "/"])
+
+    with pytest.raises(StitcherValidationError, match="Forbidden element 'sh' detected"):
+        validate_command(["sh", "-c", "whoami"])
+
+    with pytest.raises(
+        StitcherValidationError, match="Forbidden element 'SUDO' detected"
+    ):
+        validate_command(["SUDO", "ls"])
 
 
 def test_base_stitcher():
