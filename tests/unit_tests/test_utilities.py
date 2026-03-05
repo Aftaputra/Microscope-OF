@@ -2,10 +2,17 @@
 
 import sys
 
-from openflexure_microscope_server.utilities import make_name_safe, make_path_safe
+import pytest
+
+from openflexure_microscope_server.utilities import (
+    _WINDOWS_RESERVED_NAMES,
+    make_name_safe,
+    make_path_safe,
+)
 
 
 def test_make_name_safe_basic():
+
     """Test basic functionality of make_name_safe."""
     assert make_name_safe("normal_name") == "normal_name"
     assert make_name_safe("name with spaces") == "name_with_spaces"
@@ -24,16 +31,24 @@ def test_make_name_safe_trailing_chars():
     assert make_name_safe(". ") == "_"
 
 
-def test_make_name_safe_reserved_names():
+@pytest.mark.parametrize("name", _WINDOWS_RESERVED_NAMES)
+def test_make_name_safe_reserved_names(name):
     """Test Windows reserved names."""
-    assert make_name_safe("CON") == "CON_"
-    assert make_name_safe("con") == "con_"
-    assert make_name_safe("NUL.txt") == "NUL.txt_"
-    assert make_name_safe("COM1") == "COM1_"
-    assert make_name_safe("LPT9.tar.gz") == "LPT9.tar.gz_"
-    # Check that names STARTING with reserved names but not followed by . or end are safe
+    # Base name should be sanitized
+    assert make_name_safe(name) == f"{name}_"
+    # Case-insensitive
+    assert make_name_safe(name.lower()) == f"{name.lower()}_"
+    # With extension
+    assert make_name_safe(f"{name}.txt") == f"{name}.txt_"
+    # Multiple extensions
+    assert make_name_safe(f"{name}.tar.gz") == f"{name}.tar.gz_"
+
+
+def test_make_name_safe_reserved_names_false_positives():
+    """Test that names containing but not equal to reserved names are safe."""
     assert make_name_safe("CONSTANT") == "CONSTANT"
     assert make_name_safe("CON2") == "CON2"
+    assert make_name_safe("ICON") == "ICON"
 
 
 def test_make_path_safe_basic():

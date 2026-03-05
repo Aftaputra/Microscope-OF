@@ -29,6 +29,22 @@ STITCH_TILE_SIZE = 8192
 DEFAULT_OVERLAP = 0.1
 DEFAULT_RESIZE = 0.5
 
+# A list of commands that are forbidden in any part of a generated CLI command.
+# This provides defense-in-depth against trying to execute arbitrary shells
+# or elevation tools.
+FORBIDDEN_COMMANDS = {
+    "sudo",
+    "sh",
+    "bash",
+    "perl",
+    "ruby",
+    "php",
+    "nc",
+    "netcat",
+    "curl",
+    "wget",
+}
+
 
 class StitchingSettings(BaseModel):
     """The data needed to stitch a scan."""
@@ -48,23 +64,6 @@ class StitcherValidationError(RuntimeError):
     """The stitcher received values that it deems unsafe to create a command from."""
 
 
-# A list of commands that are forbidden in any part of a generated CLI command.
-# This provides defense-in-depth against trying to execute arbitrary shells
-# or elevation tools.
-_FORBIDDEN_COMMANDS = {
-    "sudo",
-    "sh",
-    "bash",
-    "perl",
-    "ruby",
-    "php",
-    "nc",
-    "netcat",
-    "curl",
-    "wget",
-}
-
-
 def validate_command(cmd: list[str]) -> None:
     """Validate that the command only contains characters that are allowed in a path.
 
@@ -77,7 +76,7 @@ def validate_command(cmd: list[str]) -> None:
     """
     for element in cmd:
         # Check against forbidden commands (case-insensitive)
-        if element.lower() in _FORBIDDEN_COMMANDS:
+        if element.lower() in FORBIDDEN_COMMANDS:
             raise StitcherValidationError(
                 f"Invalid stiching command: Forbidden element '{element}' detected."
             )

@@ -16,6 +16,7 @@ from pydantic import BaseModel
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.stitching import (
+    FORBIDDEN_COMMANDS,
     BaseStitcher,
     FinalStitcher,
     PreviewStitcher,
@@ -39,22 +40,20 @@ def test_validate_command_success():
     validate_command(["--resize", "0.5", "8192"])
 
 
-def test_validate_command_forbidden():
+@pytest.mark.parametrize("cmd_name", FORBIDDEN_COMMANDS)
+def test_validate_command_forbidden(cmd_name):
     """Test forbidden commands raise error."""
+    # As the main command
     with pytest.raises(
-        StitcherValidationError, match="Forbidden element 'sudo' detected"
+        StitcherValidationError, match=f"Forbidden element '{cmd_name}' detected"
     ):
-        validate_command(["sudo", "rm", "-rf", "/"])
+        validate_command([cmd_name, "some_arg"])
 
+    # As an argument (case-insensitive)
     with pytest.raises(
-        StitcherValidationError, match="Forbidden element 'sh' detected"
+        StitcherValidationError, match=f"Forbidden element '{cmd_name.upper()}' detected"
     ):
-        validate_command(["sh", "-c", "whoami"])
-
-    with pytest.raises(
-        StitcherValidationError, match="Forbidden element 'SUDO' detected"
-    ):
-        validate_command(["SUDO", "ls"])
+        validate_command(["safe-command", cmd_name.upper()])
 
 
 def test_base_stitcher():
