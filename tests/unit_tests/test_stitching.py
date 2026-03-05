@@ -46,7 +46,9 @@ def test_validate_command_forbidden():
     ):
         validate_command(["sudo", "rm", "-rf", "/"])
 
-    with pytest.raises(StitcherValidationError, match="Forbidden element 'sh' detected"):
+    with pytest.raises(
+        StitcherValidationError, match="Forbidden element 'sh' detected"
+    ):
         validate_command(["sh", "-c", "whoami"])
 
     with pytest.raises(
