@@ -640,7 +640,8 @@ class StreamingPiCamera2(BaseCamera):
         :param target_white_level: Raw target white level, this should be an integer
             within the range set by the bit-depth of the camera sensor (10-bit for
             PiCamera v2, 12 Bit for Picamera HQ. If None the default will be used for
-            the current sensor. This is approximately 70% saturated.
+            the current sensor. This is approximately 40% saturated, but after gamma
+            curve is applied, the pixel values will have a value around 200.
         :param percentile: The percentile to use instead of maximum. Default 99.9. When
             calculating the brightest pixel, a percentile is used rather than the
             maximum in order to be robust to a small number of noisy/bright pixels.
