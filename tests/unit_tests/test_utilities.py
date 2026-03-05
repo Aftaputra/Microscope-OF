@@ -12,7 +12,6 @@ from openflexure_microscope_server.utilities import (
 
 
 def test_make_name_safe_basic():
-
     """Test basic functionality of make_name_safe."""
     assert make_name_safe("normal_name") == "normal_name"
     assert make_name_safe("name with spaces") == "name_with_spaces"

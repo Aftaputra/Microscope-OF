@@ -51,7 +51,8 @@ def test_validate_command_forbidden(cmd_name):
 
     # As an argument (case-insensitive)
     with pytest.raises(
-        StitcherValidationError, match=f"Forbidden element '{cmd_name.upper()}' detected"
+        StitcherValidationError,
+        match=f"Forbidden element '{cmd_name.upper()}' detected",
     ):
         validate_command(["safe-command", cmd_name.upper()])
 
