@@ -4,9 +4,9 @@
 
 - [ ] I have searched existing issues to ensure this hasn't been reported.
 
-**Current Behavior**:
+**Current Behaviour**:
 <!-- Summarise what you expected to happen -->
-**Expected Behavior**:
+**Expected Behaviour**:
 <!-- Summarise the bug encountered concisely -->
 
 ## Configuration
