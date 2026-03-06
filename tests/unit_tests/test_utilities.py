@@ -95,13 +95,12 @@ def test_make_path_safe_separators():
 
 
 def test_make_path_safe_relative():
-    """Test that relative path components are preserved.
-    We only allow relative paths with one dot, and at the beginning of the path,
-    to avoid issues with paths like "file./file" or "file../file
-    """
+    """Test that relative path components are preserved."""
+    # We only allow relative paths with one dot, and at the beginning of the path,
+    # to avoid issues with paths like "file./file" or "file../file.
     assert make_path_safe("./openflexure/data/") == "./openflexure/data/"
+    assert make_path_safe("../openflexure/data/") == "../openflexure/data/"
 
-    assert make_path_safe("../openflexure/data/") == "_/openflexure/data/"
     assert make_path_safe("path/./to/file") == "path/_/to/file"
     assert make_path_safe("path/../to/file") == "path/_/to/file"
     assert make_path_safe(".") == "_"
