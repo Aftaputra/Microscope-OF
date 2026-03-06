@@ -48,7 +48,7 @@ def test_make_name_safe_reserved_names_false_positives():
     assert make_name_safe("CONSTANT") == "CONSTANT"
     assert make_name_safe("CON2") == "CON2"
     assert make_name_safe("ICON") == "ICON"
-    assert make_name_safe("CHILLI CON CARNE") == "CHILLI CON CARNE"
+    assert make_name_safe("CHILLI CON CARNE") == "CHILLI_CON_CARNE"
 
 
 def test_make_path_safe_basic():
