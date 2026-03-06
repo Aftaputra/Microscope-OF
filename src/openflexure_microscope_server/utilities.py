@@ -291,7 +291,7 @@ def merge_patch(
 
     :param target: The target object
     :param patch: The patch to be applied
-    :param enforce_dict: Boolean, set True enfoces that the target and patch are both
+    :param enforce_dict: Boolean, set True enforces that the target and patch are both
         dictionaries.
     """
     if enforce_dict and not (isinstance(target, dict) and isinstance(patch, dict)):
