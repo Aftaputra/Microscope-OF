@@ -164,7 +164,9 @@ def make_path_safe(unsafe_path_string: str) -> str:
             else:
                 sanitised = unsafe_character_pattern.sub("_", sanitised)
 
-            sanitised_components.append(_sanitise_reserved(sanitised))
+            sanitised_components.append(
+                _sanitise_reserved(sanitised, is_filename=False)
+            )
         else:
             sanitised_components.append(component)
 
@@ -194,20 +196,26 @@ def make_name_safe(unsafe_name_string: str) -> str:
     return _sanitise_reserved(name)
 
 
-def _sanitise_reserved(name: str) -> str:
+def _sanitise_reserved(name: str, is_filename: bool = True) -> str:
     """Check a name against Windows reserved names.
 
     :param name: The component to check.
-    :returns: The sanitised component.
+    :param is_filename: Whether the component is a filename.
+    If True, names will be forced into lowercase.
+    :returns: The sanitised component, in lower case.
     """
     # Check for Windows reserved names.
     # These are reserved even with an extension (e.g. NUL.txt).
     # We check the part before the first dot.
     base_name = name.split(".", maxsplit=1)[0].upper()
     if base_name in _WINDOWS_RESERVED_NAMES:
-        return f"{name}_"
+        return f"{name.lower()}_" if is_filename else f"{name}_"
 
-    return name
+    # We force names to be lowercase to avoid issues on
+    # Windows where files with the same name
+    # but different case can cause problems when checking if
+    # a file already exists.
+    return name.lower() if is_filename else name
 
 
 class VersionData(BaseModel):

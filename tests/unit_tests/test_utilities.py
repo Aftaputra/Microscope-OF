@@ -17,6 +17,7 @@ def test_make_name_safe_basic():
     assert make_name_safe("name with spaces") == "name_with_spaces"
     assert make_name_safe("name/with/slashes") == "name_with_slashes"
     assert make_name_safe("name\\with\\backslashes") == "name_with_backslashes"
+    assert make_name_safe("sPoNgEmoCk") == "spongemock"
 
 
 def test_make_name_safe_trailing_chars():
@@ -34,21 +35,25 @@ def test_make_name_safe_trailing_chars():
 def test_make_name_safe_reserved_names(name):
     """Test Windows reserved names."""
     # Base name should be sanitized
-    assert make_name_safe(name) == f"{name}_"
+    assert make_name_safe(name) == f"{name.lower()}_"
     # Case-insensitive
     assert make_name_safe(name.lower()) == f"{name.lower()}_"
     # With extension
-    assert make_name_safe(f"{name}.txt") == f"{name}.txt_"
+    assert make_name_safe(f"{name}.txt") == f"{name.lower()}.txt_"
     # Multiple extensions
-    assert make_name_safe(f"{name}.tar.gz") == f"{name}.tar.gz_"
+    assert make_name_safe(f"{name}.tar.gz") == f"{name.lower()}.tar.gz_"
 
 
 def test_make_name_safe_reserved_names_false_positives():
     """Test that names containing but not equal to reserved names are safe."""
-    assert make_name_safe("CONSTANT") == "CONSTANT"
-    assert make_name_safe("CON2") == "CON2"
-    assert make_name_safe("ICON") == "ICON"
-    assert make_name_safe("CHILLI CON CARNE") == "CHILLI_CON_CARNE"
+    assert make_name_safe("CONSTANT") == "constant"
+    assert make_name_safe("CON2") == "con2"
+    assert make_name_safe("ICON") == "icon"
+    assert make_name_safe("icon") == "icon"
+    assert make_name_safe("iCon") == "icon"
+    assert make_name_safe("iCOn") == "icon"
+    assert make_name_safe("icOn") == "icon"
+    assert make_name_safe("CHILLI CON CARNE") == "chilli_con_carne"
 
 
 def test_make_path_safe_basic():
