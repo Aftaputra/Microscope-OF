@@ -137,9 +137,23 @@ def make_path_safe(unsafe_path_string: str) -> str:
         else _POSIX_UNSAFE_PATTERN
     )
 
-    for component in components:
+    for i, component in enumerate(components):
         if component in ("/", "\\"):
             sanitised_components.append(component)
+        elif component == ".":
+            # Only allow '.' if its the very first
+            # element and the next element is a separator.
+            # This allows for relative paths like "./file"
+            # but not "file./file"
+            is_first = i == 0
+            next_to_sep = (i + 1 < len(components)) and (
+                components[i + 1] in ("/", "\\")
+            )
+
+            if is_first and next_to_sep:
+                sanitised_components.append(component)
+            else:
+                sanitised_components.append("_")
         elif component:
             # 1. Strip trailing dots and spaces
             # 2. Apply unsafe character regex

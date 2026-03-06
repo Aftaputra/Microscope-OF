@@ -79,8 +79,30 @@ def test_make_path_safe_trailing_in_components():
     assert make_path_safe("path /to. /file ") == "path/to/file"
     assert make_path_safe("path./to /file.") == "path/to/file"
 
+    # Allow dots at the start of the path
+    # As this is common for hidden files on POSIX and relative paths
+    # And is the configuration in the manual and simulation config
+    # json files.
+    assert make_path_safe("./path/to/file") == "./path/to/file"
+    assert make_path_safe("./path./to /file.") == "./path/to/file"
+    assert make_path_safe("./openflexure/data/") == "./openflexure/data/"
+
 
 def test_make_path_safe_separators():
     """Test that separators are preserved and components sanitised."""
     assert make_path_safe("a/b\\c") == "a/b\\c"
     assert make_path_safe("a./b /c.") == "a/b/c"
+
+
+def test_make_path_safe_relative():
+    """Test that relative path components are preserved.
+    We only allow relative paths with one dot, and at the beginning of the path,
+    to avoid issues with paths like "file./file" or "file../file
+    """
+    assert make_path_safe("./openflexure/data/") == "./openflexure/data/"
+
+    assert make_path_safe("../openflexure/data/") == "_/openflexure/data/"
+    assert make_path_safe("path/./to/file") == "path/_/to/file"
+    assert make_path_safe("path/../to/file") == "path/_/to/file"
+    assert make_path_safe(".") == "_"
+    assert make_path_safe("..") == "_"
