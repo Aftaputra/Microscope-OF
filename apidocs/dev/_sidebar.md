@@ -5,5 +5,9 @@
 <h2>Developer Guidance<h2>
 
 - [Home](README)
-- [Software Architecture](architecture.md)
-- [PiCamera Tuning Files](picamera-tuning-files.md)
+- [Contributing](contributing)
+- [Python Development](python)
+- [Webapp Development](webapp)
+- [Running the Simulator](simulation_guide)
+- [Software Architecture](architecture)
+- [PiCamera Tuning Files](picamera-tuning-files)
