@@ -201,7 +201,8 @@ def _sanitise_reserved(name: str, is_filename: bool = True) -> str:
 
     :param name: The component to check.
     :param is_filename: Whether the component is a filename.
-    If True, names will be forced into lowercase.
+        If True, names will be forced into lowercase.
+
     :returns: The sanitised component, in lower case.
     """
     # Check for Windows reserved names.
