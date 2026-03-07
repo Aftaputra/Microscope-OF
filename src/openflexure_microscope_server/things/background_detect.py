@@ -99,14 +99,14 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
     # provided there.
     min_stds = [0.5, 0.3, 0.5]
 
-    channel_tolerance: float = lt.setting(default=7.0)
+    channel_tolerance: float = lt.setting(default=7.0, ge=0)
     """Channel Tolerance
 
     The number of standard deviations a pixel value must be from the background mean
     to be considered sample.
     """
 
-    min_sample_coverage: float = lt.setting(default=25)
+    min_sample_coverage: float = lt.setting(default=25, ge=0, le=100)
     """Sample Coverage Required (%)
 
     The minimum percentage of the image that needs to be identified as sample for the
@@ -223,14 +223,14 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
     # LUV colour space not converting to the CIELUV numbers)
     min_stds = [0.5, 0.3, 0.5]
 
-    channel_tolerance: float = lt.setting(default=7.0)
+    channel_tolerance: float = lt.setting(default=7.0, ge=0)
     """Channel Tolerance
 
     The number of standard deviations a pixel value must be from the background mean
     to be considered sample.
     """
 
-    min_sample_coverage: float = lt.setting(default=25)
+    min_sample_coverage: float = lt.setting(default=25, ge=0, le=100)
     """Sample Coverage Required (%)
 
     The minimum percentage of the image that needs to be identified as sample for the
