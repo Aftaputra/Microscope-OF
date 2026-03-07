@@ -8,6 +8,7 @@
 - [Contributing](contributing)
 - [Python Development](python)
 - [Webapp Development](webapp)
+- [Configuration File](config-file)
 - [Running the Simulator](simulation_guide)
 - [Software Architecture](architecture)
 - [PiCamera Tuning Files](picamera-tuning-files)
