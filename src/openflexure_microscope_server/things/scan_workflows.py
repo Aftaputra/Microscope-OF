@@ -44,6 +44,7 @@ from openflexure_microscope_server.ui import (
     Accordion,
     HTMLBlock,
     UIElementList,
+    action_button_for,
     property_control_for,
 )
 
@@ -560,6 +561,28 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
 
         return imaged, focus_height
 
+    @lt.action
+    def check_background(self) -> str:
+        """Check if sample is background.
+
+        This action is a pre-run check for feeding back to the user.
+        """
+        image_array = self._cam.grab_as_array(stream_name="lores")
+        is_sample, bg_message = self._background_detector.image_is_sample(image_array)
+        label = "sample" if is_sample else "background"
+
+        return f"Current image is {label} ({bg_message})"
+
+    @lt.action
+    def set_background(self) -> None:
+        """Set the background for this background detector.
+
+        This sets the background for this workflows background detector as opposed to
+        the active background detector for the camera.
+        """
+        image_array = self._cam.grab_as_array(stream_name="lores")
+        self._background_detector.set_background(image_array)
+
     @lt.endpoint("get", "settings_ui", responses=UI_ELEMENT_RESPONSE)
     def settings_ui(self) -> UIElementList:
         """Return the UI for the workflow's settings in the scan tab."""
@@ -593,13 +616,32 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
                 ),
             ]
         )
+        background_ui = self._background_detector.settings_ui()
+        set_bg_button = action_button_for(
+            self,
+            "set_background",
+            poll_interval=0.1,
+            submit_label="Set Background",
+            can_terminate=False,
+            notify_on_success=True,
+            success_message="Background image has been updated",
+        )
+        check_bg_button = action_button_for(
+            self,
+            "check_background",
+            poll_interval=0.1,
+            submit_label="Check Current Image",
+            can_terminate=False,
+            notify_on_success=True,
+            response_is_success_message=True,
+        )
+
+        background_ui.root += [set_bg_button, check_bg_button]
+
         return UIElementList(
             [
                 HTMLBlock(html=f"<h4>{self.display_name}</h4><p>{self.ui_blurb}<p>"),
-                Accordion(
-                    title="Background Detect",
-                    children=self._background_detector.settings_ui(),
-                ),
+                Accordion(title="Background Detect", children=background_ui),
                 Accordion(
                     title="Scan Settings",
                     children=scan_settings,

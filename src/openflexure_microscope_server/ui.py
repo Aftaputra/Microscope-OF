@@ -140,7 +140,7 @@ class ActionButton(BaseModel):
     action: str
     """The name of the action to be triggered."""
 
-    poll_interval: int = 1
+    poll_interval: float = 1
     """The interval for polling in seconds."""
 
     submit_label: str = "Submit"
@@ -170,6 +170,12 @@ class ActionButton(BaseModel):
 
     notify_on_success: bool = False
     """Specify whether to a notification on successful completion."""
+
+    response_is_success_message: bool = False
+    """Set True to use the action response as the success message.
+
+    If set ``success_message`` has is never used.
+    """
 
     success_message: str = "Success!"
     """The message to show on successful completion."""

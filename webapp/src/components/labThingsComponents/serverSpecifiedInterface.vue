@@ -9,7 +9,7 @@
     />
     <server-specified-action-button
       v-else-if="element.element_type === 'action_button'"
-      :property-data="element"
+      :action-data="element"
     />
     <simple-accordion v-else-if="element.element_type === 'accordion'" :title="element.title">
       <server-specified-interface :elements="element.children" />

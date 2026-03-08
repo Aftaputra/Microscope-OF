@@ -45,7 +45,11 @@ export default {
      */
     actionResponse: function (response) {
       if (this.actionData.notify_on_success) {
-        this.modalNotify(this.actionData.success_message);
+        if (this.actionData.response_is_success_message) {
+          this.modalNotify(response.output);
+        } else {
+          this.modalNotify(this.actionData.success_message);
+        }
         this.$emit("response", response);
       }
     },
