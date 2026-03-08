@@ -10,12 +10,19 @@
     <server-specified-action-button
       v-else-if="element.element_type === 'action_button'"
       :action-data="element"
+      @request-update="$emit('requestUpdate')"
     />
     <simple-accordion v-else-if="element.element_type === 'accordion'" :title="element.title">
-      <server-specified-interface :elements="element.children" />
+      <server-specified-interface
+        :elements="element.children"
+        @request-update="$emit('requestUpdate')"
+      />
     </simple-accordion>
     <div v-else-if="element.element_type === 'container'" :class="element.css_class">
-      <server-specified-interface :elements="element.children" />
+      <server-specified-interface
+        :elements="element.children"
+        @request-update="$emit('requestUpdate')"
+      />
     </div>
   </div>
 </template>
@@ -41,6 +48,8 @@ export default {
       required: true,
     },
   },
+
+  emits: ["requestUpdate"],
 };
 </script>
 

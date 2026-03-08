@@ -322,6 +322,9 @@ export default {
         } else if (response.data.status == "cancelled") {
           this.$emit("cancelled", response.data);
           this.modalNotify(`The action '${this.submitLabel}' was cancelled.`);
+        } else if (response.data.status == "error") {
+          const err_msg = this.log?.[0]?.message ?? "Unknown error";
+          this.$emit("error", err_msg);
         }
       }
       this.taskUrl = null;

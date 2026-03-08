@@ -158,6 +158,9 @@ class ActionButton(BaseModel):
     button_primary: bool = True
     """Specify whether the button is styled as a primary button."""
 
+    disabled: bool = False
+    """Specify whether the button is disabled."""
+
     modal_progress: bool = False
     """Specify whether to show a progress modal."""
 
@@ -179,6 +182,12 @@ class ActionButton(BaseModel):
 
     success_message: str = "Success!"
     """The message to show on successful completion."""
+
+    update_interface_on_response: bool = False
+    """If True the action button emits a requestUpdate signal when completed.
+
+    Downstream components can subscribe to this and request an update.
+    """
 
 
 def action_button_for(thing: lt.Thing, action_name: str, **kwargs: Any) -> ActionButton:

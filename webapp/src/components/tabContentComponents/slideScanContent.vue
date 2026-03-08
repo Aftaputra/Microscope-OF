@@ -16,7 +16,7 @@
             </option>
           </select>
         </div>
-        <server-specified-interface :elements="workflowSettings" />
+        <server-specified-interface :elements="workflowSettings" @request-update="readSettings" />
         <ul uk-accordion="multiple: true">
           <li class="uk-open">
             <a class="uk-accordion-title" href="#">Stitching Settings</a>

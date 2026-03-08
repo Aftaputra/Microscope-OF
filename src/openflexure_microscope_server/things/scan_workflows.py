@@ -625,12 +625,14 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
             can_terminate=False,
             notify_on_success=True,
             success_message="Background image has been updated",
+            update_interface_on_response=True,
         )
         check_bg_button = action_button_for(
             self,
             "check_background",
             poll_interval=0.1,
             submit_label="Check Current Image",
+            disabled=not self._background_detector.ready,
             can_terminate=False,
             notify_on_success=True,
             response_is_success_message=True,
