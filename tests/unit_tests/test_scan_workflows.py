@@ -18,7 +18,13 @@ from openflexure_microscope_server.things.scan_workflows import (
     HistoScanWorkflow,
     ScanWorkflow,
 )
-from openflexure_microscope_server.ui import PropertyControl
+from openflexure_microscope_server.ui import (
+    Accordion,
+    ActionButton,
+    HTMLBlock,
+    PropertyControl,
+    UIElementList,
+)
 
 
 def test_partial_base_classes():
@@ -56,7 +62,7 @@ def test_partial_base_classes():
         bad_workflow.acquisition_routine(settings, xyz_pos=[0, 0, 0])
 
     with pytest.raises(NotImplementedError):
-        bad_workflow.settings_ui
+        bad_workflow.settings_ui()
 
 
 @pytest.fixture
@@ -370,15 +376,45 @@ def test_histo_acquisition_on_sample(histo_workflow, mocker, caplog):
     assert histo_workflow._autofocus.run_smart_stack.call_count == 2
 
 
-def test_histo_workflow_settings_ui(histo_workflow):
+def test_histo_workflow_settings_ui(histo_workflow, mocker):
     """Check that the workflow specifies the expected controls."""
-    ui = histo_workflow.settings_ui
+    mock_prop_control = mocker.Mock(spec=PropertyControl)
+    histo_workflow._background_detector.settings_ui.return_value = UIElementList(
+        [mock_prop_control]
+    )
 
-    assert len(ui) == 8
-    for element in ui:
+    ui = histo_workflow.settings_ui().root
+
+    # The UI is in 3 blocks
+    assert len(ui) == 3
+    # The top HTML block
+    assert isinstance(ui[0], HTMLBlock)
+    assert "<h4>Histo Scan</h4>" in ui[0].html
+    # Followed by a background detect accordion
+    assert isinstance(ui[1], Accordion)
+    assert ui[1].title == "Background Detect"
+    # And a Scan Settings accordion
+    assert isinstance(ui[2], Accordion)
+    assert ui[2].title == "Scan Settings"
+
+    # Background UI is ...
+    background_ui = ui[1].children.root
+    # what the detector specifies as it settings ...
+    assert background_ui[0] is mock_prop_control
+    # plus 2 action buttons
+    assert len(background_ui) == 3
+    assert isinstance(background_ui[1], ActionButton)
+    assert background_ui[1].action == "set_background"
+    assert isinstance(background_ui[2], ActionButton)
+    assert background_ui[2].action == "check_background"
+
+    # Finally check the contents of the scan settings accordion
+    scan_settings = ui[2].children.root
+    assert len(scan_settings) == 8
+    for element in scan_settings:
         assert isinstance(element, PropertyControl)
 
-    names = [el.property_name for el in ui]
+    names = [el.property_name for el in scan_settings]
     expected_names = [
         "overlap",
         "stack_images_to_save",
