@@ -42,6 +42,7 @@ from openflexure_microscope_server.things.stage import BaseStage
 from openflexure_microscope_server.ui import (
     UI_ELEMENT_RESPONSE,
     Accordion,
+    HTMLBlock,
     UIElementList,
     property_control_for,
 )
@@ -562,12 +563,8 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
     @lt.endpoint("get", "settings_ui", responses=UI_ELEMENT_RESPONSE)
     def settings_ui(self) -> UIElementList:
         """Return the UI for the workflow's settings in the scan tab."""
-        return UIElementList(
+        scan_settings = UIElementList(
             [
-                Accordion(
-                    title="Background Detect",
-                    children=self._background_detector.settings_ui(),
-                ),
                 property_control_for(
                     self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
                 ),
@@ -593,6 +590,19 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
                 ),
                 property_control_for(
                     self, "equal_distances", label="Set Equal x and y Distances"
+                ),
+            ]
+        )
+        return UIElementList(
+            [
+                HTMLBlock(html=f"<h4>{self.display_name}</h4><p>{self.ui_blurb}<p>"),
+                Accordion(
+                    title="Background Detect",
+                    children=self._background_detector.settings_ui(),
+                ),
+                Accordion(
+                    title="Scan Settings",
+                    children=scan_settings,
                 ),
             ]
         )
@@ -682,7 +692,7 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
     @lt.endpoint("get", "settings_ui", responses=UI_ELEMENT_RESPONSE)
     def settings_ui(self) -> UIElementList:
         """Return the UI for the workflow's settings in the scan tab."""
-        return UIElementList(
+        scan_settings = UIElementList(
             [
                 property_control_for(
                     self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
@@ -691,6 +701,15 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
                 property_control_for(self, "y_count", label="Number of rows"),
                 property_control_for(
                     self, "autofocus_dz", label="Autofocus Range (steps)"
+                ),
+            ]
+        )
+        return UIElementList(
+            [
+                HTMLBlock(html=f"<h4>{self.display_name}</h4><p>{self.ui_blurb}<p>"),
+                Accordion(
+                    title="Scan Settings",
+                    children=scan_settings,
                 ),
             ]
         )

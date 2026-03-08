@@ -16,17 +16,8 @@
             </option>
           </select>
         </div>
-        <h4 v-if="workflowDisplayName" class="workflow-name">
-          {{ workflowDisplayName }}
-        </h4>
-        <p class="workflow-blurb">{{ workflowBlurb }}</p>
+        <server-specified-interface :elements="workflowSettings" />
         <ul uk-accordion="multiple: true">
-          <li>
-            <a class="uk-accordion-title" href="#">Scan Settings</a>
-            <div class="uk-accordion-content">
-              <server-specified-interface :elements="workflowSettings" />
-            </div>
-          </li>
           <li class="uk-open">
             <a class="uk-accordion-title" href="#">Stitching Settings</a>
             <div class="uk-accordion-content">
@@ -152,8 +143,6 @@ export default {
       scan_name: "",
       workflowName: undefined,
       workflowSettings: [],
-      workflowDisplayName: undefined,
-      workflowBlurb: undefined,
       workflowOptions: [],
     };
   },
@@ -206,12 +195,6 @@ export default {
         this.ready = await this.readThingProperty(this.workflowName, "ready", true);
         this.workflowSettings =
           (await this.getThingEndpoint(this.workflowName, "settings_ui")) || [];
-        this.workflowDisplayName = await this.readThingProperty(
-          this.workflowName,
-          "display_name",
-          true,
-        );
-        this.workflowBlurb = await this.readThingProperty(this.workflowName, "ui_blurb", true);
       }
     },
     onScanError: function (error) {
@@ -289,11 +272,5 @@ export default {
 }
 .control-component {
   width: 33%;
-}
-.workflow-name {
-  margin-bottom: 0.5rem;
-}
-.workflow-blurb {
-  color: #a2a2a2;
 }
 </style>
