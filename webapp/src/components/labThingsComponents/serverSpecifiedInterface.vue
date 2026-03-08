@@ -1,6 +1,8 @@
 <template>
   <div v-for="(element, index) in elements" :key="index" class="uk-margin">
+    <!-- eslint-disable vue/no-v-html -->
     <div v-if="element.element_type === 'html_block'" v-html="element.html"></div>
+    <!-- eslint-enable -->
     <server-specified-property-control
       v-else-if="element.element_type === 'property_control'"
       :property-data="element"
@@ -12,11 +14,9 @@
     <simple-accordion v-else-if="element.element_type === 'accordion'" :title="element.title">
       <server-specified-interface :elements="element.children" />
     </simple-accordion>
-    <!-- eslint-disable vue/no-v-html -->
     <div v-else-if="element.element_type === 'container'" :class="element.css_class">
       <server-specified-interface :elements="element.children" />
     </div>
-    <!-- eslint-enable -->
   </div>
 </template>
 

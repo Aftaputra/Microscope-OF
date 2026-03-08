@@ -13,7 +13,11 @@ from pydantic import BaseModel
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server.ui import PropertyControl, property_control_for
+from openflexure_microscope_server.ui import (
+    UI_ELEMENT_RESPONSE,
+    UIElementList,
+    property_control_for,
+)
 
 SettingsType = TypeVar("SettingsType", bound=BaseModel)
 BackgroundType = TypeVar("BackgroundType", bound=BaseModel)
@@ -72,9 +76,9 @@ class BackgroundDetectAlgorithm(lt.Thing):
             "Each background detect algorithm must implement an set_background method."
         )
 
-    @lt.property
-    def settings_ui(self) -> list[PropertyControl]:
-        """A list of PropertyControl objects to create the settings in the UI."""
+    @lt.endpoint("get", "settings_ui", responses=UI_ELEMENT_RESPONSE)
+    def settings_ui(self) -> UIElementList:
+        """Return the UI for the background detect settings."""
         raise NotImplementedError(
             "Each background detect algorithm must implement an settings_ui method."
         )
@@ -113,15 +117,19 @@ class ColourChannelDetectLUV(BackgroundDetectAlgorithm):
     image to be labeled as containing sample.
     """
 
-    @lt.property
-    def settings_ui(self) -> list[PropertyControl]:
-        """A list of PropertyControl objects to create the settings in the UI."""
-        return [
-            property_control_for(self, "channel_tolerance", label="Channel Tolerance"),
-            property_control_for(
-                self, "min_sample_coverage", label="Sample Coverage Required (%)"
-            ),
-        ]
+    @lt.endpoint("get", "settings_ui", responses=UI_ELEMENT_RESPONSE)
+    def settings_ui(self) -> UIElementList:
+        """Return the UI for the background detect settings."""
+        return UIElementList(
+            [
+                property_control_for(
+                    self, "channel_tolerance", label="Channel Tolerance"
+                ),
+                property_control_for(
+                    self, "min_sample_coverage", label="Sample Coverage Required (%)"
+                ),
+            ]
+        )
 
     @lt.property
     def ready(self) -> bool:
@@ -237,15 +245,19 @@ class ChannelDeviationLUV(BackgroundDetectAlgorithm):
     image to be labeled as containing sample.
     """
 
-    @lt.property
-    def settings_ui(self) -> list[PropertyControl]:
-        """A list of PropertyControl objects to create the settings in the UI."""
-        return [
-            property_control_for(self, "channel_tolerance", label="Channel Tolerance"),
-            property_control_for(
-                self, "min_sample_coverage", label="Sample Coverage Required (%)"
-            ),
-        ]
+    @lt.endpoint("get", "settings_ui", responses=UI_ELEMENT_RESPONSE)
+    def settings_ui(self) -> UIElementList:
+        """Return the UI for the background detect settings."""
+        return UIElementList(
+            [
+                property_control_for(
+                    self, "channel_tolerance", label="Channel Tolerance"
+                ),
+                property_control_for(
+                    self, "min_sample_coverage", label="Sample Coverage Required (%)"
+                ),
+            ]
+        )
 
     @lt.property
     def ready(self) -> bool:

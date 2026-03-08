@@ -32,7 +32,7 @@ class SafeHTMLParser(HTMLParser):
         super().__init__()
         self.output = ""
 
-    def handle_starttag(self, tag: str, attrs: dict[str, str]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
         """Append a start tag found in the HTML if it is in the allowed list.
 
         This is called by the base class when a start tag is found. We only append
@@ -52,15 +52,16 @@ class SafeHTMLParser(HTMLParser):
         if tag == "a":
             href = None
             for attr, value in attrs:
-                if attr == "href":
+                if attr == "href" and value is not None:
                     href = value.strip()
 
             if href:
                 safe_href = escape(href, quote=True)
                 # Always in a new tab
-                self.output.append(
+                self.output += (
                     f'<a href="{safe_href}" target="_blank" rel="noopener noreferrer">'
                 )
+
             else:
                 self.output += "<a>"
         else:
@@ -71,7 +72,9 @@ class SafeHTMLParser(HTMLParser):
         if tag in ALLOWED_TAGS:
             self.output += f"</{tag}>"
 
-    def handle_startendtag(self, tag: str, _attrs: dict[str, str]) -> None:
+    def handle_startendtag(
+        self, tag: str, _attrs: list[tuple[str, Optional[str]]]
+    ) -> None:
         """Append a self-closing tag if it is a new line."""
         if tag == "br":
             self.output += "<br/>"
@@ -251,7 +254,7 @@ class Accordion(BaseModel):
 
     element_type: Literal["accordion"] = "accordion"
     title: str
-    children: list["UIElementModels"]
+    children: "UIElementList"
 
 
 class Container(BaseModel):
@@ -262,7 +265,7 @@ class Container(BaseModel):
 
     element_type: Literal["container"] = "container"
     css_class: str
-    children: list["UIElementModels"]
+    children: "UIElementList"
 
 
 UIElementModels = HTMLBlock | PropertyControl | ActionButton | Accordion | Container

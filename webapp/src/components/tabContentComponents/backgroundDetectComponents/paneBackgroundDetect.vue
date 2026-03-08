@@ -111,10 +111,8 @@ export default {
       );
       if (this.backgroundDetectorName) {
         this.ready = await this.readThingProperty(this.backgroundDetectorName, "ready");
-        this.backgroundDetectorSettings = await this.readThingProperty(
-          this.backgroundDetectorName,
-          "settings_ui",
-        );
+        this.backgroundDetectorSettings =
+          (await this.getThingEndpoint(this.backgroundDetectorName, "settings_ui")) || [];
         this.backgroundDetectorDisplayName = await this.readThingProperty(
           this.backgroundDetectorName,
           "display_name",

@@ -566,7 +566,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
             [
                 Accordion(
                     title="Background Detect",
-                    children=self._background_detector.settings_ui,
+                    children=self._background_detector.settings_ui(),
                 ),
                 property_control_for(
                     self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
@@ -581,7 +581,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
                 ),
                 property_control_for(
                     self, "stack_dz", label="Stack dz (steps)", step=5
-                ).model_dump(),
+                ),
                 property_control_for(
                     self, "autofocus_dz", label="Autofocus Range (steps)", step=200
                 ),
