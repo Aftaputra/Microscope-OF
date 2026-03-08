@@ -4,7 +4,7 @@ from html import escape
 from html.parser import HTMLParser
 from typing import Annotated, Any, Literal, Optional
 
-from pydantic import BaseModel, BeforeValidator
+from pydantic import BaseModel, BeforeValidator, RootModel
 
 import labthings_fastapi as lt
 
@@ -268,6 +268,28 @@ class Container(BaseModel):
 UIElementModels = HTMLBlock | PropertyControl | ActionButton | Accordion | Container
 
 
+class UIElementList(RootModel[list[UIElementModels]]):
+    """A list of user interface elements.
+
+    Note! Two important things to consider:
+
+    * This cannot be the return of a lt.property. To fully describe the UI recursion
+        is used. Web of Things DataSchema doesn't support rectursion. Use a
+        lt.endpoint instead
+    * If the module using this class imoports future annotations then this will cause
+        havoc with pydantics forward references.
+    """
+
+
 # Resolve forward references so Pydantic can build a sensible recursive schema
 Accordion.model_rebuild()
 Container.model_rebuild()
+UIElementList.model_rebuild()
+
+# This constant can be used as the value for the `responses` argument of lt.endpoint.
+UI_ELEMENT_RESPONSE = {
+    200: {
+        "description": "A list of UI element specifications.",
+        "model": UIElementList,
+    }
+}

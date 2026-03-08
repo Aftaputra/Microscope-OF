@@ -135,5 +135,14 @@ export default {
       );
       return url;
     },
+    async getThingEndpoint(thing, endpoint) {
+      let url = `${this.$store.getters.baseUri}/${thing}/${endpoint}`;
+      try {
+        const response = await axios.get(url);
+        return response.data;
+      } catch {
+        return undefined;
+      }
+    },
   },
 };

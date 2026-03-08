@@ -24,13 +24,7 @@
           <li>
             <a class="uk-accordion-title" href="#">Scan Settings</a>
             <div class="uk-accordion-content">
-              <div
-                v-for="(setting, index) in workflowSettings"
-                :key="'detector_setting' + index"
-                class="uk-margin"
-              >
-                <server-specified-property-control :property-data="setting" />
-              </div>
+              <server-specified-interface :elements="workflowSettings" />
             </div>
           </li>
           <li class="uk-open">
@@ -125,7 +119,7 @@
 <script>
 import streamDisplay from "./streamContent.vue";
 import propertyControl from "../labThingsComponents/propertyControl.vue";
-import ServerSpecifiedPropertyControl from "../labThingsComponents/serverSpecifiedPropertyControl.vue";
+import ServerSpecifiedInterface from "../labThingsComponents/serverSpecifiedInterface.vue";
 import actionLogDisplay from "../labThingsComponents/actionLogDisplay.vue";
 import actionProgressBar from "../labThingsComponents/actionProgressBar.vue";
 import MiniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
@@ -142,7 +136,7 @@ export default {
     actionProgressBar,
     MiniStreamDisplay,
     ActionButton,
-    ServerSpecifiedPropertyControl,
+    ServerSpecifiedInterface,
   },
 
   data() {
@@ -211,7 +205,7 @@ export default {
       if (this.workflowName) {
         this.ready = await this.readThingProperty(this.workflowName, "ready", true);
         this.workflowSettings =
-          (await this.readThingProperty(this.workflowName, "settings_ui", true)) || [];
+          (await this.getThingEndpoint(this.workflowName, "settings_ui")) || [];
         this.workflowDisplayName = await this.readThingProperty(
           this.workflowName,
           "display_name",
