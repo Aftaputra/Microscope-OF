@@ -16,11 +16,13 @@ from pydantic import BaseModel
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.stitching import (
+    FORBIDDEN_COMMANDS,
     BaseStitcher,
     FinalStitcher,
     PreviewStitcher,
     StitcherValidationError,
     StitchingSettings,
+    validate_command,
 )
 
 from ..shared_utils.lt_test_utils import LabThingsTestEnv
@@ -30,6 +32,29 @@ LOGGER = logging.getLogger("mock-thing_logger")
 FAKE_DIR: list[str] = os.path.join("a", "dir", "that", "is", "fake")
 THIS_DIR: str = os.path.dirname(os.path.realpath(__file__))
 MOCK_STITCHER: str = os.path.join(THIS_DIR, "mock_stitching", "mock-stitch.py")
+
+
+def test_validate_command_success():
+    """Test valid commands pass validation."""
+    validate_command(["openflexure-stitch", "--stitching_mode", "all", "path/to/scan"])
+    validate_command(["--resize", "0.5", "8192"])
+
+
+@pytest.mark.parametrize("cmd_name", FORBIDDEN_COMMANDS)
+def test_validate_command_forbidden(cmd_name):
+    """Test forbidden commands raise error."""
+    # As the main command
+    with pytest.raises(
+        StitcherValidationError, match=f"Forbidden element '{cmd_name}' detected"
+    ):
+        validate_command([cmd_name, "some_arg"])
+
+    # As an argument (case-insensitive)
+    with pytest.raises(
+        StitcherValidationError,
+        match=f"Forbidden element '{cmd_name.upper()}' detected",
+    ):
+        validate_command(["safe-command", cmd_name.upper()])
 
 
 def test_base_stitcher():

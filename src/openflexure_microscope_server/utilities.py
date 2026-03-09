@@ -76,34 +76,131 @@ def requires_lock(
 
 
 # Compiled regular expressions for unsafe characters
-# Matches anything that isn't a-z, A-Z, 0-9, _, ., -, :, /, \
-_WINDOWS_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-:/\\]")
-# Matches anything that isn't a-z, A-Z, 0-9, _, ., -, \
-_POSIX_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-/]")
+# Matches anything that isn't a-z, A-Z, 0-9, _, ., -, :, /, \, space
+_WINDOWS_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-:/\ \\]")
+# Matches anything that isn't a-z, A-Z, 0-9, _, ., -, \, space
+_POSIX_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-/ ]")
 # Matches anything that isn't a-z, A-Z, 0-9, _, ., -
 _NAME_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-]")
 
+# Windows reserved names (case-insensitive)
+_WINDOWS_RESERVED_NAMES = {
+    "CON",
+    "PRN",
+    "AUX",
+    "NUL",
+    "COM1",
+    "COM2",
+    "COM3",
+    "COM4",
+    "COM5",
+    "COM6",
+    "COM7",
+    "COM8",
+    "COM9",
+    "LPT1",
+    "LPT2",
+    "LPT3",
+    "LPT4",
+    "LPT5",
+    "LPT6",
+    "LPT7",
+    "LPT8",
+    "LPT9",
+}
 
-def make_path_safe(unsafe_path_string: str) -> str:
-    """Replace unsafe characters in a file path with underscores, preserving separators.
 
-    This can be used to check that user inputs have not been concatenated into an
-    unsafe filepath.
+def is_path_safe(unsafe_path_string: str) -> bool:
+    """Check if a file path has any unsafe elements in it.
 
-    This ensures compatibility across platforms by preserving only valid characters,
-    including path separators (forward slash on POSIX, and forward
-    slash/backslash/colon on Windows).
+    The path is not coerced into a safe form because if we ask
+    for a file to be written to a location we shouldn't be changing
+    that location as we have no "consent" to write to this other location.
 
     :param unsafe_path_string: The original path string to sanitise.
 
-    :returns: A version of the input string safe to use as a file path.
+    :returns: A boolean indicating if any unsafe features were found.
     """
+    # Split by separators first to sanitise components independently
+
+    components = re.split(r"([/\\])", unsafe_path_string)
+
     unsafe_character_pattern = (
         _WINDOWS_UNSAFE_PATTERN
         if sys.platform.startswith("win")
         else _POSIX_UNSAFE_PATTERN
     )
-    return unsafe_character_pattern.sub("_", unsafe_path_string)
+
+    # Ensure each warning only gets logged once per path
+    unsafe_relative_path = False
+    trailing_dots = False
+    trailing_whitespace = False
+    unsafe_characters = False
+    reserved_word = False
+
+    for i, component in enumerate(components):
+        # Skip separators and empty strings
+        if component in ("/", "\\") or not component:
+            continue
+
+        # 1. Check for relative paths in the wrong place
+        if component in (".", "..") and not unsafe_relative_path:
+            is_first = i == 0
+            is_second = (
+                i == 2
+                and components[i - 1] in ("/", "\\")
+                and components[i - 2] == ".."
+            )
+            if not (is_first or is_second):
+                LOGGER.warning(
+                    f"File path {unsafe_path_string} may be unsafe due to unexpected relative navigation."
+                )
+                unsafe_relative_path = True
+            continue
+
+        # 2. Check for trailing dots in path
+        if "." in component and i != len(components) - 1 and not trailing_dots:
+            # Check for trailing dots in the file path before the file name
+            # e.g.: foo/bar./file is bad, but foo/bar.file.py is fine
+            LOGGER.warning(
+                f"File path {unsafe_path_string} may be unsafe due to trailing dots."
+            )
+            trailing_dots = True
+
+        # Check for trailing spaces - Windows specific
+        if (
+            sys.platform.startswith("win")
+            and component.endswith(" ")
+            and not trailing_whitespace
+        ):
+            LOGGER.warning(f"{unsafe_path_string} contains unsafe trailing spaces.")
+            trailing_whitespace = True
+
+        # 3. Check for unsafe characters (Regex)
+        if unsafe_character_pattern.search(component) and not unsafe_characters:
+            LOGGER.warning(
+                f"{unsafe_path_string} contains characters that may be unsafe on this platform."
+            )
+            unsafe_characters = True
+
+        # 4. Check for Reserved Names (e.g., CON, PRN, LPT1)
+        # Assuming _sanitise_reserved returns a different string if it's a reserved name
+        if (
+            _sanitise_reserved(component, is_filename=False) != component
+            and not reserved_word
+        ):
+            LOGGER.warning(
+                f"{unsafe_path_string} contains a reserved system name and may cause issues."
+            )
+            reserved_word = True
+
+    return not (
+        unsafe_relative_path
+        or trailing_dots
+        or trailing_whitespace
+        or unsafe_characters
+        or reserved_word
+    )
 
 
 def make_name_safe(unsafe_name_string: str) -> str:
@@ -112,11 +209,44 @@ def make_name_safe(unsafe_name_string: str) -> str:
     This excludes all path separators, ensuring the result is safe to use as a
     standalone filename or identifier component.
 
+    This also handles Windows reserved names and trailing dots/spaces.
+
     :param unsafe_name_string: The original name string to sanitise.
 
     :returns: A version of the input string safe to use as a file name or identifier.
     """
-    return _NAME_UNSAFE_PATTERN.sub("_", unsafe_name_string)
+    # 1. Strip trailing dots and spaces
+    # 2. Apply unsafe character regex
+    # 3. Check for reserved names
+    name = unsafe_name_string.rstrip(". ")
+    if not name:
+        return "_"
+
+    name = _NAME_UNSAFE_PATTERN.sub("_", name)
+    return _sanitise_reserved(name)
+
+
+def _sanitise_reserved(name: str, is_filename: bool = True) -> str:
+    """Check a name against Windows reserved names.
+
+    :param name: The component to check.
+    :param is_filename: Whether the component is a filename.
+        If True, names will be forced into lowercase.
+
+    :returns: The sanitised component, in lower case.
+    """
+    # Check for Windows reserved names.
+    # These are reserved even with an extension (e.g. NUL.txt).
+    # We check the part before the first dot.
+    base_name = name.split(".", maxsplit=1)[0].upper()
+    if base_name in _WINDOWS_RESERVED_NAMES:
+        return f"{name.lower()}_" if is_filename else f"{name}_"
+
+    # We force names to be lowercase to avoid issues on
+    # Windows where files with the same name
+    # but different case can cause problems when checking if
+    # a file already exists.
+    return name.lower() if is_filename else name
 
 
 class VersionData(BaseModel):
