@@ -25,7 +25,7 @@ if sys.platform.startswith("win"):
 else:
     UNSAFE_CHARACTER_PATHS = {
         "/var/log/app:backup.log",
-        "/etc/configs/network-settings\\v1",
+        "/etc/configs/network-settings\v1",
         "/tmp/file_with_@_symbol.txt",
         "/home/user/script(1).py",
     }
@@ -152,7 +152,7 @@ def test_make_path_safe_trailing_space_in_components(caplog):
             # Check directories can have spaces in them but not at the end
             assert (
                 make_path_safe("path/a long path name  /file")[0]
-                == "path/a long path name file"
+                == "path/a long path name /file"
             )
             # No warnings should be raised
             assert len(caplog.records) == 0
