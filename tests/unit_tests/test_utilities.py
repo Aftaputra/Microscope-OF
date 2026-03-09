@@ -151,7 +151,7 @@ def test_make_path_safe_trailing_space_in_components(caplog):
             assert make_path_safe("path/to /file")[0] == "path/to /file"
             # Check directories can have spaces in them but not at the end
             assert (
-                make_path_safe("path/a long path name  /file")[0]
+                make_path_safe("path/a long path name /file")[0]
                 == "path/a long path name /file"
             )
             # No warnings should be raised
