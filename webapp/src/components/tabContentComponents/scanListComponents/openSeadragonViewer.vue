@@ -83,7 +83,8 @@ export default {
           this.loadOpenSeaDragon(this.src);
         }
       } else {
-        if (this.osdViewer) {
+        // Don't destroy if viewer is in fullscreen
+        if (this.osdViewer && !this.osdViewer.isFullPage()) {
           this.osdViewer.destroy();
           this.osdViewer = null;
         }
@@ -121,7 +122,12 @@ export default {
     },
     openFullscreen() {
       if (this.osdViewer) {
-        this.osdViewer.setFullScreen(true);
+        // Wait a bit for DOM to resize
+        setTimeout(() => {
+          this.osdViewer.setFullScreen(true);
+          this.updateFilter();
+          this.osdViewer.forceRedraw();
+        }, 500);
       }
     },
   },
