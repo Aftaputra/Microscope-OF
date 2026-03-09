@@ -111,8 +111,7 @@ _WINDOWS_RESERVED_NAMES = {
 
 
 def make_path_safe(unsafe_path_string: str) -> tuple[str, bool]:
-    """Check if a file path has any unsafe elements in it, such as
-    unsafe characters or reserved names for its OS.
+    """Check if a file path has any unsafe elements in it.
 
     The path is not coerced into a safe form because if we ask
     for a file to be written to a location we shouldn't be changing
@@ -124,6 +123,7 @@ def make_path_safe(unsafe_path_string: str) -> tuple[str, bool]:
     any unsafe features were found.
     """
     # Split by separators first to sanitise components independently
+
     components = re.split(r"([/\\])", unsafe_path_string)
 
     unsafe_character_pattern = (
@@ -146,10 +146,16 @@ def make_path_safe(unsafe_path_string: str) -> tuple[str, bool]:
 
         # 1. Check for relative paths in the wrong place
         if component in (".", "..") and not unsafe_relative_path:
-            is_first = (i == 0)
-            is_second = (i == 2 and components[i-1] in ("/", "\\") and components[i-2] == "..")
+            is_first = i == 0
+            is_second = (
+                i == 2
+                and components[i - 1] in ("/", "\\")
+                and components[i - 2] == ".."
+            )
             if not (is_first or is_second):
-                LOGGER.warning(f"File path {unsafe_path_string} may be unsafe due to unexpected relative navigation.")
+                LOGGER.warning(
+                    f"File path {unsafe_path_string} may be unsafe due to unexpected relative navigation."
+                )
                 unsafe_relative_path = True
             continue
 
@@ -157,26 +163,45 @@ def make_path_safe(unsafe_path_string: str) -> tuple[str, bool]:
         if "." in component and i != len(components) - 1 and not trailing_dots:
             # Check for trailing dots in the file path before the file name
             # e.g.: foo/bar./file is bad, but foo/bar.file.py is fine
-            LOGGER.warning(f'File path {unsafe_path_string} may be unsafe due to trailing dots.')
+            LOGGER.warning(
+                f"File path {unsafe_path_string} may be unsafe due to trailing dots."
+            )
             trailing_dots = True
 
         # Check for trailing spaces - Windows specific
-        if sys.platform.startswith("win") and component.endswith(" ") and not trailing_whitespace:
+        if (
+            sys.platform.startswith("win")
+            and component.endswith(" ")
+            and not trailing_whitespace
+        ):
             LOGGER.warning(f"{unsafe_path_string} contains unsafe trailing spaces.")
             trailing_whitespace = True
 
         # 3. Check for unsafe characters (Regex)
         if unsafe_character_pattern.search(component) and not unsafe_characters:
-            LOGGER.warning(f"{unsafe_path_string} contains characters that may be unsafe on this platform.")
+            LOGGER.warning(
+                f"{unsafe_path_string} contains characters that may be unsafe on this platform."
+            )
             unsafe_characters = True
 
         # 4. Check for Reserved Names (e.g., CON, PRN, LPT1)
         # Assuming _sanitise_reserved returns a different string if it's a reserved name
-        if _sanitise_reserved(component, is_filename=False) != component and not reserved_word:
-            LOGGER.warning(f"{unsafe_path_string} contains a reserved system name and may cause issues.")
+        if (
+            _sanitise_reserved(component, is_filename=False) != component
+            and not reserved_word
+        ):
+            LOGGER.warning(
+                f"{unsafe_path_string} contains a reserved system name and may cause issues."
+            )
             reserved_word = True
 
-    warning_raised = unsafe_relative_path or trailing_dots or trailing_whitespace or unsafe_characters or reserved_word
+    warning_raised = (
+        unsafe_relative_path
+        or trailing_dots
+        or trailing_whitespace
+        or unsafe_characters
+        or reserved_word
+    )
     return unsafe_path_string, warning_raised
 
 
