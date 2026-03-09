@@ -110,7 +110,7 @@ _WINDOWS_RESERVED_NAMES = {
 }
 
 
-def make_path_safe(unsafe_path_string: str) -> tuple[str, bool]:
+def is_path_safe(unsafe_path_string: str) -> bool:
     """Check if a file path has any unsafe elements in it.
 
     The path is not coerced into a safe form because if we ask
@@ -119,8 +119,7 @@ def make_path_safe(unsafe_path_string: str) -> tuple[str, bool]:
 
     :param unsafe_path_string: The original path string to sanitise.
 
-    :returns: The input string unchanged and a boolean indicating if
-    any unsafe features were found.
+    :returns: A boolean indicating if any unsafe features were found.
     """
     # Split by separators first to sanitise components independently
 
@@ -195,14 +194,13 @@ def make_path_safe(unsafe_path_string: str) -> tuple[str, bool]:
             )
             reserved_word = True
 
-    warning_raised = (
+    return not (
         unsafe_relative_path
         or trailing_dots
         or trailing_whitespace
         or unsafe_characters
         or reserved_word
     )
-    return unsafe_path_string, warning_raised
 
 
 def make_name_safe(unsafe_name_string: str) -> str:

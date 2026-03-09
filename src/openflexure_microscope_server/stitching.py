@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server.utilities import make_path_safe
+from openflexure_microscope_server.utilities import is_path_safe
 
 IS_WINDOWS = os.name == "nt"
 
@@ -68,7 +68,7 @@ def validate_command(cmd: list[str]) -> None:
     """Validate that the command only contains characters that are allowed in a path.
 
     The values in the commands should be numbers, commandline flags, paths, and
-    executables. All of these should be allowed by ``make_path_safe``.
+    executables. All of these should be allowed by ``is_path_safe``.
 
     This also checks against a blacklist of forbidden commands for defense-in-depth.
 
@@ -82,8 +82,7 @@ def validate_command(cmd: list[str]) -> None:
             )
 
         # Ensure characters are safe for a path component
-        _, error_raised = make_path_safe(element)
-        if error_raised:
+        if not is_path_safe(element):
             raise StitcherValidationError(
                 f"Invalid stitching command: Element '{element}' contains unsafe characters."
             )
@@ -155,8 +154,7 @@ class BaseStitcher:
 
         :raises RuntimeError: if inputs are unsafe.
         """
-        _, error_raised = make_path_safe(self.images_dir)
-        if error_raised:
+        if not is_path_safe(self.images_dir):
             raise StitcherValidationError(
                 "Invalid directory path: Contains unsafe characters."
             )
