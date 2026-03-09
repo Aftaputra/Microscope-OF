@@ -34,8 +34,12 @@
             @animationend="animationEnd"
           />
           <div class="spinner-buttons">
-            <button type="button" tabindex="-1" @click="increment(1)" @mousedown="spinnerClick">▲</button>
-            <button type="button" tabindex="-1" @click="increment(-1)" @mousedown="spinnerClick">▼</button>
+            <button type="button" tabindex="-1" @click="increment(1)" @mousedown="spinnerClick">
+              ▲
+            </button>
+            <button type="button" tabindex="-1" @click="increment(-1)" @mousedown="spinnerClick">
+              ▼
+            </button>
           </div>
         </div>
         <sync-property-button @click="requestUpdate" />
