@@ -4,10 +4,10 @@
 
 - [ ] I have searched existing issues to ensure this hasn't been reported.
 
-**Current Behaviour**:
-<!-- Summarise what you expected to happen -->
 **Expected Behaviour**:
-<!-- Summarise the bug encountered concisely -->
+<!-- Summarise the behaviour you would expect / want to see -->
+**Current Behaviour**:
+<!-- Summarise what happened instead -->
 
 ## Configuration
 <!-- Adjust as appropriate. -->
