@@ -76,10 +76,10 @@ def requires_lock(
 
 
 # Compiled regular expressions for unsafe characters
-# Matches anything that isn't a-z, A-Z, 0-9, _, ., -, :, /, \
+# Matches anything that isn't a-z, A-Z, 0-9, _, ., -, :, /, \, space
 _WINDOWS_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-:/\ \\]")
-# Matches anything that isn't a-z, A-Z, 0-9, _, ., -, \
-_POSIX_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-/]")
+# Matches anything that isn't a-z, A-Z, 0-9, _, ., -, \, space
+_POSIX_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-/ ]")
 # Matches anything that isn't a-z, A-Z, 0-9, _, ., -
 _NAME_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-]")
 
