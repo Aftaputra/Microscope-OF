@@ -376,17 +376,17 @@ class SmartScanThing(OFMThing):
         starting x,y,z position.
         """
         try:
-            self._cam.start_streaming(main_resolution=(3280, 2464))
             self._scan_data = self._collect_scan_data(workflow)
-
-            workflow.pre_scan_routine(self._scan_data.workflow_settings)
-            self.ongoing_scan.save_scan_data(self._scan_data)
             images_dir = self.ongoing_scan.images_dir
             # Type narrowing
             if images_dir is None:
                 raise RuntimeError(
                     "Couldn't run scan, images directory was not created."
                 )
+
+            self.ongoing_scan.save_scan_data(self._scan_data)
+            self._cam.start_streaming(main_resolution=(3280, 2464))
+            workflow.pre_scan_routine(self._scan_data.workflow_settings)
 
             # If stitching settings are None then this type of scan can't be stitched
             if self.scan_data.stitching_settings is not None:
