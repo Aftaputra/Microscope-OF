@@ -78,13 +78,14 @@ def validate_command(cmd: list[str]) -> None:
         # Check against forbidden commands (case-insensitive)
         if element.lower() in FORBIDDEN_COMMANDS:
             raise StitcherValidationError(
-                f"Invalid stiching command: Forbidden element '{element}' detected."
+                f"Invalid stitching command: Forbidden element '{element}' detected."
             )
 
         # Ensure characters are safe for a path component
-        if element != make_path_safe(element):
+        _, error_raised = make_path_safe(element)
+        if error_raised:
             raise StitcherValidationError(
-                f"Invalid stiching command: Element '{element}' contains unsafe characters."
+                f"Invalid stitching command: Element '{element}' contains unsafe characters."
             )
 
 
@@ -154,7 +155,8 @@ class BaseStitcher:
 
         :raises RuntimeError: if inputs are unsafe.
         """
-        if self.images_dir != make_path_safe(self.images_dir):
+        _, error_raised = make_path_safe(self.images_dir)
+        if error_raised:
             raise StitcherValidationError(
                 "Invalid directory path: Contains unsafe characters."
             )

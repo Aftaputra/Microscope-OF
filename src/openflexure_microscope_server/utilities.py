@@ -77,7 +77,7 @@ def requires_lock(
 
 # Compiled regular expressions for unsafe characters
 # Matches anything that isn't a-z, A-Z, 0-9, _, ., -, :, /, \
-_WINDOWS_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-:/\\]")
+_WINDOWS_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-:/\ \\]")
 # Matches anything that isn't a-z, A-Z, 0-9, _, ., -, \
 _POSIX_UNSAFE_PATTERN = re.compile(r"[^a-zA-Z0-9_.\-/]")
 # Matches anything that isn't a-z, A-Z, 0-9, _, ., -
@@ -110,26 +110,21 @@ _WINDOWS_RESERVED_NAMES = {
 }
 
 
-def make_path_safe(unsafe_path_string: str) -> str:
-    """Replace unsafe characters in a file path with underscores, preserving separators.
+def make_path_safe(unsafe_path_string: str) -> tuple[str, bool]:
+    """Check if a file path has any unsafe elements in it, such as
+    unsafe characters or reserved names for its OS.
 
-    This can be used to check that user inputs have not been concatenated into an
-    unsafe filepath.
-
-    This ensures compatibility across platforms by preserving only valid characters,
-    including path separators (forward slash on POSIX, and forward
-    slash/backslash/colon on Windows).
-
-    Additionally, it sanitises each path component for Windows reserved names and
-    trailing dots/spaces to ensure maximum cross-platform compatibility.
+    The path is not coerced into a safe form because if we ask
+    for a file to be written to a location we shouldn't be changing
+    that location as we have no "consent" to write to this other location.
 
     :param unsafe_path_string: The original path string to sanitise.
 
-    :returns: A version of the input string safe to use as a file path.
+    :returns: The input string unchanged and a boolean indicating if
+    any unsafe features were found.
     """
     # Split by separators first to sanitise components independently
     components = re.split(r"([/\\])", unsafe_path_string)
-    sanitised_components = []
 
     unsafe_character_pattern = (
         _WINDOWS_UNSAFE_PATTERN
@@ -137,40 +132,52 @@ def make_path_safe(unsafe_path_string: str) -> str:
         else _POSIX_UNSAFE_PATTERN
     )
 
+    # Ensure each warning only gets logged once per path
+    unsafe_relative_path = False
+    trailing_dots = False
+    trailing_whitespace = False
+    unsafe_characters = False
+    reserved_word = False
+
     for i, component in enumerate(components):
-        if component in ("/", "\\"):
-            sanitised_components.append(component)
-        elif component in (".", ".."):
-            # Only allow '.' and '..' if they are the very first
-            # elements and the next element is a separator.
-            # This allows for relative paths like "./file" or "../file"
-            # but not "file./file" or "file/../file"
-            is_first = i == 0
-            next_to_sep = (i + 1 < len(components)) and (
-                components[i + 1] in ("/", "\\")
-            )
+        # Skip separators and empty strings
+        if component in ("/", "\\") or not component:
+            continue
 
-            if is_first and next_to_sep:
-                sanitised_components.append(component)
-            else:
-                sanitised_components.append("_")
-        elif component:
-            # 1. Strip trailing dots and spaces
-            # 2. Apply unsafe character regex
-            # 3. Check for reserved names
-            sanitised = component.rstrip(". ")
-            if not sanitised:
-                sanitised = "_"
-            else:
-                sanitised = unsafe_character_pattern.sub("_", sanitised)
+        # 1. Check for relative paths in the wrong place
+        if component in (".", "..") and not unsafe_relative_path:
+            is_first = (i == 0)
+            is_second = (i == 2 and components[i-1] in ("/", "\\") and components[i-2] == "..")
+            if not (is_first or is_second):
+                LOGGER.warning(f"File path {unsafe_path_string} may be unsafe due to unexpected relative navigation.")
+                unsafe_relative_path = True
+            continue
 
-            sanitised_components.append(
-                _sanitise_reserved(sanitised, is_filename=False)
-            )
-        else:
-            sanitised_components.append(component)
+        # 2. Check for trailing dots in path
+        if "." in component and i != len(components) - 1 and not trailing_dots:
+            # Check for trailing dots in the file path before the file name
+            # e.g.: foo/bar./file is bad, but foo/bar.file.py is fine
+            LOGGER.warning(f'File path {unsafe_path_string} may be unsafe due to trailing dots.')
+            trailing_dots = True
 
-    return "".join(sanitised_components)
+        # Check for trailing spaces - Windows specific
+        if sys.platform.startswith("win") and component.endswith(" ") and not trailing_whitespace:
+            LOGGER.warning(f"{unsafe_path_string} contains unsafe trailing spaces.")
+            trailing_whitespace = True
+
+        # 3. Check for unsafe characters (Regex)
+        if unsafe_character_pattern.search(component) and not unsafe_characters:
+            LOGGER.warning(f"{unsafe_path_string} contains characters that may be unsafe on this platform.")
+            unsafe_characters = True
+
+        # 4. Check for Reserved Names (e.g., CON, PRN, LPT1)
+        # Assuming _sanitise_reserved returns a different string if it's a reserved name
+        if _sanitise_reserved(component, is_filename=False) != component and not reserved_word:
+            LOGGER.warning(f"{unsafe_path_string} contains a reserved system name and may cause issues.")
+            reserved_word = True
+
+    warning_raised = unsafe_relative_path or trailing_dots or trailing_whitespace or unsafe_characters or reserved_word
+    return unsafe_path_string, warning_raised
 
 
 def make_name_safe(unsafe_name_string: str) -> str:

@@ -1,14 +1,41 @@
 """Unit tests for utility functions."""
 
 import sys
-
+import logging
 import pytest
 
 from openflexure_microscope_server.utilities import (
     _WINDOWS_RESERVED_NAMES,
     make_name_safe,
-    make_path_safe,
+    make_path_safe
 )
+
+PATHS_WITH_DOTS = {
+    "a./b/c.",
+    "path./to/file.",
+    "./path./to/file."
+}
+
+RESERVED_NAME_PATHS = {
+    "path/CON/file",
+    "path/NUL.txt/file",
+    "C:/AUX/test"
+}
+
+if sys.platform.startswith("win"):
+    UNSAFE_CHARACTER_PATHS = {
+        "C:/path/asterisk/data*.csv",
+        "data/files/read_me_first!.txt",
+        "logs/system<error>.log",
+        "projects/alpha#1/notes.txt",
+    }
+else:
+    UNSAFE_CHARACTER_PATHS = {
+        "/var/log/app:backup.log",
+        "/etc/configs/network-settings\\v1",
+        "/tmp/file_with_@_symbol.txt",
+        "/home/user/script(1).py"
+    }
 
 
 def test_make_name_safe_basic():
@@ -56,57 +83,81 @@ def test_make_name_safe_reserved_names_false_positives():
     assert make_name_safe("CHILLI CON CARNE") == "chilli_con_carne"
 
 
-def test_make_path_safe_basic():
+def test_make_path_safe_basic(caplog):
     """Test basic functionality of make_path_safe."""
     # Note: behavior depends on platform for separators
-    if sys.platform.startswith("win"):
-        assert make_path_safe("C:\\path\\to/file") == "C:\\path\\to/file"
-    else:
-        # On POSIX, \ is not a separator and might be replaced by _ if not in allowed pattern
-        # The regex for POSIX is [^a-zA-Z0-9_.\-/]
-        # And : is also not allowed
-        assert make_path_safe("path/to/file") == "path/to/file"
+    with caplog.at_level(logging.WARNING):
+        if sys.platform.startswith("win"):
+            assert make_path_safe("C:\\path\\to/file")[0] == "C:\\path\\to/file"
+            assert make_path_safe("C:\\a very long path\\to/file")[0] == "C:\\a very long path\\to/file"
+        else:
+            assert make_path_safe("path/to/file")[0] == "path/to/file"
+            assert make_path_safe("a very long path/to/file")[0] == "a very long path/to/file"
+
+        # No errors should be raised. These paths are safe.
+        assert len(caplog.records) == 0
 
 
-def test_make_path_safe_reserved_in_components():
+@pytest.mark.parametrize("path", UNSAFE_CHARACTER_PATHS)
+def test_make_path_safe_unsafe_characters_in_components(caplog, path):
+    """Test unsafe characters within path components."""
+    with caplog.at_level(logging.WARNING):
+        assert make_path_safe(path)[0] == path
+        assert f"{path} contains characters that may be unsafe on this platform."
+
+
+@pytest.mark.parametrize("path", RESERVED_NAME_PATHS)
+def test_make_path_safe_reserved_in_components(caplog, path):
     """Test reserved names within path components."""
-    assert make_path_safe("path/CON/file") == "path/CON_/file"
-    assert make_path_safe("path/NUL.txt/file") == "path/NUL.txt_/file"
-
-    if sys.platform.startswith("win"):
-        assert make_path_safe("C:/AUX/test") == "C:/AUX_/test"
-    else:
-        assert make_path_safe("C:/AUX/test") == "C_/AUX_/test"
+    with caplog.at_level(logging.WARNING):
+        assert make_path_safe(path)[0] == path
+        assert f"{path} contains a reserved system name and may cause issues."
 
 
-def test_make_path_safe_trailing_in_components():
-    """Test trailing chars in path components."""
-    assert make_path_safe("path /to. /file ") == "path/to/file"
-    assert make_path_safe("path./to /file.") == "path/to/file"
+def test_make_path_safe_trailing_space_in_components(caplog):
+    """Test trailing spaces in path components."""
+    with caplog.at_level(logging.WARNING):
+    # Test Windows - cannot have trailingspaces
+        if sys.platform.startswith("win"):
+            assert make_path_safe("path /to /file ")[0] == "path /to /file "
+            assert make_path_safe("path/to /file")[0] == "path/to /file"
+            # Check directories can have spaces in them but not at the end
+            # TODO - dont want underscores, want to keep interim spaces
+            assert make_path_safe("path/a long path name /file")[0] == "path/a long path name /file"
+            assert len(caplog.records) == 3
+            assert f"path /to /file  contains unsafe trailing spaces." in caplog.messages
+            assert f"path/to /file contains unsafe trailing spaces." in caplog.messages
+            assert f"path/a long path name /file contains unsafe trailing spaces." in caplog.messages
+        else:
+            # Trailing spaces allows in POSIX systems
+            assert make_path_safe("path /to /file ")[0] == "path /to /file "
+            assert make_path_safe("path/to /file")[0] == "path/to /file"
+            # Check directories can have spaces in them but not at the end
+            assert make_path_safe("path/a long path name  /file")[0] == "path/a long path name file"
+            # No warnings should be raised
+            assert len(caplog.records) == 0
 
-    # Allow dots at the start of the path
-    # As this is common for hidden files on POSIX and relative paths
-    # And is the configuration in the manual and simulation config
-    # json files.
-    assert make_path_safe("./path/to/file") == "./path/to/file"
-    assert make_path_safe("./path./to /file.") == "./path/to/file"
-    assert make_path_safe("./openflexure/data/") == "./openflexure/data/"
 
-
-def test_make_path_safe_separators():
-    """Test that separators are preserved and components sanitised."""
-    assert make_path_safe("a/b\\c") == "a/b\\c"
-    assert make_path_safe("a./b /c.") == "a/b/c"
-
-
-def test_make_path_safe_relative():
+def test_make_path_safe_relative(caplog):
     """Test that relative path components are preserved."""
-    # We only allow relative paths with one dot, and at the beginning of the path,
-    # to avoid issues with paths like "file./file" or "file../file.
-    assert make_path_safe("./openflexure/data/") == "./openflexure/data/"
-    assert make_path_safe("../openflexure/data/") == "../openflexure/data/"
+    # Relative imports ./foo, ../foo or ../../foo are allowed.
+    with caplog.at_level(logging.WARNING):
+        assert make_path_safe("./openflexure/data/")[0] == "./openflexure/data/"
+        assert make_path_safe("../openflexure/data/")[0] == "../openflexure/data/"
+        assert make_path_safe("../../openflexure/data/")[0] == "../../openflexure/data/"
+        assert make_path_safe(".")[0] == "."
+        assert make_path_safe("..")[0] == ".."
 
-    assert make_path_safe("path/./to/file") == "path/_/to/file"
-    assert make_path_safe("path/../to/file") == "path/_/to/file"
-    assert make_path_safe(".") == "_"
-    assert make_path_safe("..") == "_"
+        assert len(caplog.records) == 0
+
+        assert make_path_safe("a_bad/../relative_path")[0] == "a_bad/../relative_path"
+        assert len(caplog.records) == 1
+        assert(f"File path a_bad/../relative_path may be unsafe due to unexpected relative navigation.")
+
+
+@pytest.mark.parametrize("filepath", PATHS_WITH_DOTS)
+def test_make_path_safe_dots_warning(caplog, filepath):
+    """Test that a user is warned about trailing dots in their file paths. The paths should remain unchanged."""
+    with caplog.at_level(logging.WARNING):
+        assert make_path_safe(filepath)[0] == filepath
+        assert f"File path {filepath} may be unsafe due to trailing dots." in caplog.messages
