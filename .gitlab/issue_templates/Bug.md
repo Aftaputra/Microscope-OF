@@ -2,20 +2,35 @@
 
 ## Summary
 
+- [ ] I have searched existing issues to ensure this hasn't been reported.
+
+**Current Behaviour**:
+<!-- Summarise what you expected to happen -->
+**Expected Behaviour**:
 <!-- Summarise the bug encountered concisely -->
 
 ## Configuration
 <!-- Adjust as appropriate. -->
 
-* **Sever version**: v2 or v3
-* **Release/Branch**: e.g. v3.0.0-alpha1
-* **Hardware Configuration:** 
-  * Raspberry Pi Camera v2
-  * Sangaboard v0.5
+| Component    | Value |
+| :-------- | :------- |
+| **Server Version** | v2 or v3 |
+| **Release/Branch** | e.g. v3.0.0-alpha1 |
+| **UI** | e.g. Chrome, Firefox, OpenFlexure Connect |
+| **Operating System** | e.g. Windows 11 |
+| **Python Version** | e.g. Python 3.13.12 |
+| **Camera Version** | e.g. Raspberry Pi Camera v2 |
+| **Board Version** | Sangaboard v0.5 |
 
 ## Steps to reproduce
 
 <!--How to reproduce the issue - this is very important-->
+<!--Be very clear about what condition triggers the bug. This is especially important for intermittent bugs.-->
+
+**Reproducibility:**
+- [ ] **Consistent:** Happens every time.
+- [ ] **Intermittent:** Happens roughly [X]% of the time or every [X] scans/clicks.
+- [ ] **One-off:** Only happened once so far.
 
 ## Relevant logs and/or screenshots
 
