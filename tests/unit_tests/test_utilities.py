@@ -119,6 +119,13 @@ def test_make_path_safe_reserved_in_components(caplog, path):
         )
 
 
+def test_make_path_safe_reserved_name_components(caplog):
+    """Test reserved names are okay as part of a larger dir name."""
+    with caplog.at_level(logging.WARNING):
+        assert make_path_safe("chilli con carne/recipe")[0] == "chilli con carne/recipe"
+        assert len(caplog.records) == 0
+
+
 def test_make_path_safe_trailing_space_in_components(caplog):
     """Test trailing spaces in path components."""
     with caplog.at_level(logging.WARNING):
