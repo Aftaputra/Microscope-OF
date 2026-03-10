@@ -3,6 +3,7 @@
 from html import escape
 from html.parser import HTMLParser
 from typing import Annotated, Any, Literal, Optional
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, BeforeValidator, RootModel
 
@@ -22,6 +23,25 @@ ALLOWED_TAGS = {
     "li",
     "a",
 }
+
+ALLOWED_SCHEMES = {"http", "https"}
+
+
+def strip_control_chars(input_string: str) -> str:
+    """Remove unprintable characters."""
+    return "".join(char for char in input_string if char.isprintable())
+
+
+def sanitize_http_url(url: str) -> Optional[str]:
+    """Santitise any url only allowing http and https without queries."""
+    url = strip_control_chars(url)
+    parsed = urlparse(url)
+    if parsed.scheme not in ALLOWED_SCHEMES:
+        return None
+    if not parsed.netloc:
+        return None
+    fragment_str = "#" + parsed.fragment if parsed.fragment else ""
+    return f"{parsed.scheme}://{parsed.netloc}{fragment_str}"
 
 
 class SafeHTMLParser(HTMLParser):
@@ -53,7 +73,8 @@ class SafeHTMLParser(HTMLParser):
             href = None
             for attr, value in attrs:
                 if attr == "href" and value is not None:
-                    href = value.strip()
+                    # If it is not a httplink this will stay as None
+                    href = sanitize_http_url(value.strip())
 
             if href:
                 safe_href = escape(href, quote=True)
@@ -92,7 +113,7 @@ class SafeHTMLParser(HTMLParser):
         self.output += f"&#{name};"
 
 
-def sanitize_html(html: str) -> str:
+def sanitise_html(html: str) -> str:
     """Santitise HTML to only have a small list of allowed tags.
 
     Tags allowed without attrs: ``<p>, <i>, <b>, <h1>, <h2>, <h3>, <h4>, <h5>, <h6>,``
@@ -113,7 +134,7 @@ def sanitize_html(html: str) -> str:
     return parser.output
 
 
-HtmlFragment = Annotated[str, BeforeValidator(sanitize_html)]
+HtmlFragment = Annotated[str, BeforeValidator(sanitise_html)]
 
 
 class HTMLBlock(BaseModel):
