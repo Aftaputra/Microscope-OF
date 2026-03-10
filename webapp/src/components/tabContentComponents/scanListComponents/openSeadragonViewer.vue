@@ -30,6 +30,8 @@ export default {
     },
   },
 
+  emits: ["entering-fullscreen"],
+
   data: function () {
     return {
       osdViewer: null,
@@ -111,7 +113,7 @@ export default {
     },
 
     updateFilter() {
-      const viewerEl = document.getElementById("openseadragon");
+      const viewerEl = this.$refs.osdContainer;
       if (viewerEl) {
         viewerEl.style.filter = `
           brightness(${this.brightness})
@@ -122,12 +124,12 @@ export default {
     },
     openFullscreen() {
       if (this.osdViewer) {
+        // Alert the modal we are about to enter fullscreen so it can prevent closing.
+        this.$emit("entering-fullscreen");
         // Wait a bit for DOM to resize
-        setTimeout(() => {
+        this.$nextTick(() => {
           this.osdViewer.setFullScreen(true);
-          this.updateFilter();
-          this.osdViewer.forceRedraw();
-        }, 500);
+        });
       }
     },
   },

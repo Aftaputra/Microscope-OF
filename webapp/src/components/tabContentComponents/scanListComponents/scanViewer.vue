@@ -20,6 +20,7 @@
           :brightness="brightness"
           :contrast="contrast"
           :saturation="saturation"
+          @entering-fullscreen="enteringFullscreen = true"
         />
       </div>
 
@@ -76,6 +77,7 @@ export default {
       brightness: 1,
       contrast: 1,
       saturation: 1,
+      enteringFullscreen: false,
     };
   },
   computed: {
@@ -85,6 +87,16 @@ export default {
       }
       return null;
     },
+  },
+  mounted() {
+    const modalEl = this.$refs.scanModal;
+
+    modalEl.addEventListener("beforehide", (event) => {
+      if (this.enteringFullscreen) {
+        event.preventDefault();
+        this.enteringFullscreen = false;
+      }
+    });
   },
   methods: {
     show() {
