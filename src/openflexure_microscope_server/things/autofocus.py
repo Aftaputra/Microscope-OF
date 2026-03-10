@@ -775,8 +775,8 @@ class AutofocusThing(lt.Thing):
             target_offset = -total_range
         else:
             target_offset = 0
-
-        self._stage.move_relative(z=target_offset)
+        if target_offset != 0:
+            self._stage.move_relative(z=target_offset)
 
         # Capture images_to_save images
         for move_count in range(stack_parameters.images_to_save):
