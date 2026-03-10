@@ -39,7 +39,7 @@ class SafeHTMLParser(HTMLParser):
         the tag if it is our allowed list. We re-write the tag so no extra attributes
         can be added.
 
-        No tags can have attributes except for ``a`` tags only allows ``href``. We then
+        No tags can have attributes except for ``a`` tags,  why only allow ``href``. We then
         append ``target="_blank" rel="noopener noreferrer"`` to ensure the link opens
         in a new window.
 
@@ -177,7 +177,7 @@ class ActionButton(BaseModel):
     response_is_success_message: bool = False
     """Set True to use the action response as the success message.
 
-    If set ``success_message`` has is never used.
+    If ``success_message`` is set, this is never used.
     """
 
     success_message: str = "Success!"
@@ -292,9 +292,9 @@ class UIElementList(RootModel[list[UIElementModels]]):
     Note! Two important things to consider:
 
     * This cannot be the return of a lt.property. To fully describe the UI recursion
-        is used. Web of Things DataSchema doesn't support rectursion. Use a
+        is used. Web of Things DataSchema doesn't support recursion. Use an
         lt.endpoint instead
-    * If the module using this class imoports future annotations then this will cause
+    * If the module using this class imports future annotations then this will cause
         havoc with pydantics forward references.
     """
 

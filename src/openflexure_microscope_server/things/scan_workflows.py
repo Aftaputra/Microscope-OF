@@ -577,7 +577,7 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
     def set_background(self) -> None:
         """Set the background for this background detector.
 
-        This sets the background for this workflows background detector as opposed to
+        This sets the background for this workflow's background detector as opposed to
         the active background detector for the camera.
         """
         image_array = self._cam.grab_as_array(stream_name="lores")
