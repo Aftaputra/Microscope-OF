@@ -20,7 +20,7 @@ The script is removed but the contents remain.
 ### Result
 ```html
 alert(&quot;x&quot;)
-<p>Hello</p>
+Hello
 ```
 ## Test script in bold tag
 
@@ -81,4 +81,15 @@ Remove the javascript from the links.
 ### Result
 ```html
 <a href="https://openflexure.org" target="_blank" rel="noopener noreferrer">OpenFlexure</a>
+```
+
+## Test basic formatting preserved
+Check basic elements are not changed
+### Input
+```html
+This is <b>bold</b> <i>italic</i> and on a new <br/> line.
+```
+### Result
+```html
+This is <b>bold</b> <i>italic</i> and on a new <br/> line.
 ```

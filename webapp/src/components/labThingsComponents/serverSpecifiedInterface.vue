@@ -1,7 +1,17 @@
 <template>
   <div v-for="(element, index) in elements" :key="index" class="uk-margin">
     <!-- eslint-disable vue/no-v-html -->
-    <div v-if="element.element_type === 'html_block'" v-html="element.html"></div>
+    <component :is="'h' + element.level" v-if="element.element_type === 'header_block'">
+      <span v-html="element.text"></span>
+    </component>
+    <p v-if="element.element_type === 'text_block'" v-html="element.text"></p>
+    <ul v-if="element.element_type === 'bullet_block'">
+      <li
+        v-for="(bulletText, bulletIndex) in element.bullets"
+        :key="'bullet-' + bulletIndex"
+        v-html="bulletText"
+      ></li>
+    </ul>
     <!-- eslint-enable -->
     <server-specified-property-control
       v-else-if="element.element_type === 'property_control'"

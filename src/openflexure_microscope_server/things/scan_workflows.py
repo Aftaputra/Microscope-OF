@@ -42,7 +42,8 @@ from openflexure_microscope_server.things.stage import BaseStage
 from openflexure_microscope_server.ui import (
     UI_ELEMENT_RESPONSE,
     Accordion,
-    HTMLBlock,
+    HeaderBlock,
+    TextBlock,
     UIElementList,
     action_button_for,
     property_control_for,
@@ -642,7 +643,8 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
 
         return UIElementList(
             [
-                HTMLBlock(html=f"<h4>{self.display_name}</h4><p>{self.ui_blurb}<p>"),
+                HeaderBlock(text=self.display_name, level=4),
+                TextBlock(text=self.ui_blurb),
                 Accordion(title="Background Detect", children=background_ui),
                 Accordion(
                     title="Scan Settings",
@@ -750,7 +752,8 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
         )
         return UIElementList(
             [
-                HTMLBlock(html=f"<h4>{self.display_name}</h4><p>{self.ui_blurb}<p>"),
+                HeaderBlock(text=self.display_name, level=4),
+                TextBlock(text=self.ui_blurb),
                 Accordion(
                     title="Scan Settings",
                     children=scan_settings,

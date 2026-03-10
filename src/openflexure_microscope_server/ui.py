@@ -5,24 +5,12 @@ from html.parser import HTMLParser
 from typing import Annotated, Any, Literal, Optional
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, BeforeValidator, RootModel
+from pydantic import BaseModel, BeforeValidator, Field, RootModel
 
 import labthings_fastapi as lt
 
-ALLOWED_TAGS = {
-    "p",
-    "i",
-    "b",
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",
-    "ul",
-    "li",
-    "a",
-}
+# Only allowed tags are italic, bold, and link. Also allows self closing br tags.
+ALLOWED_TAGS = {"i", "b", "a"}
 
 ALLOWED_SCHEMES = {"http", "https"}
 
@@ -116,8 +104,7 @@ class SafeHTMLParser(HTMLParser):
 def sanitise_html(html: str) -> str:
     """Santitise HTML to only have a small list of allowed tags.
 
-    Tags allowed without attrs: ``<p>, <i>, <b>, <h1>, <h2>, <h3>, <h4>, <h5>, <h6>,``
-    ``<ul>, <li>``
+    Tags allowed without attrs: ``<i>, <b>,``
 
     Tags allowed with attrs: ``<a>`` is allowed with ``href`` only. This automatically
     appends ``target="_blank" rel="noopener noreferrer"`` so the link opens externally.
@@ -137,14 +124,31 @@ def sanitise_html(html: str) -> str:
 HtmlFragment = Annotated[str, BeforeValidator(sanitise_html)]
 
 
-class HTMLBlock(BaseModel):
-    """The data required for creating a block of HTML for the UI.
+class HeaderBlock(BaseModel):
+    """The data required for header."""
 
-    The HTML is limited to a small number of tags.
-    """
+    element_type: Literal["header_block"] = "header_block"
+    text: HtmlFragment
+    """The header text (can include basic HTML tags)."""
 
-    element_type: Literal["html_block"] = "html_block"
-    html: HtmlFragment
+    level: int = Field(default=2, ge=1, le=6)
+    """The header level. A number from 1-6."""
+
+
+class TextBlock(BaseModel):
+    """The data required for creating a block text."""
+
+    element_type: Literal["text_block"] = "text_block"
+    text: HtmlFragment
+    """The text (can include basic HTML tags)."""
+
+
+class BulletBlock(BaseModel):
+    """The data required for creating a block text."""
+
+    element_type: Literal["bullet_block"] = "bullet_block"
+    bullets: list[HtmlFragment]
+    """A list of text elements (can include basic HTML tags)."""
 
 
 class ActionButton(BaseModel):
@@ -304,7 +308,15 @@ class Container(BaseModel):
     children: "UIElementList"
 
 
-UIElementModels = HTMLBlock | PropertyControl | ActionButton | Accordion | Container
+UIElementModels = (
+    HeaderBlock
+    | TextBlock
+    | BulletBlock
+    | PropertyControl
+    | ActionButton
+    | Accordion
+    | Container
+)
 
 
 class UIElementList(RootModel[list[UIElementModels]]):

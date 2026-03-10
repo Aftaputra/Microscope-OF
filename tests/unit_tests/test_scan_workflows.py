@@ -21,8 +21,9 @@ from openflexure_microscope_server.things.scan_workflows import (
 from openflexure_microscope_server.ui import (
     Accordion,
     ActionButton,
-    HTMLBlock,
+    HeaderBlock,
     PropertyControl,
+    TextBlock,
     UIElementList,
 )
 
@@ -385,20 +386,24 @@ def test_histo_workflow_settings_ui(histo_workflow, mocker):
 
     ui = histo_workflow.settings_ui().root
 
-    # The UI is in 3 blocks
-    assert len(ui) == 3
-    # The top HTML block
-    assert isinstance(ui[0], HTMLBlock)
-    assert "<h4>Histo Scan</h4>" in ui[0].html
+    # The UI is in 4 blocks
+    assert len(ui) == 4
+    # The top is a header
+    assert isinstance(ui[0], HeaderBlock)
+    assert ui[0].text == "Histo Scan"
+    # The then some text (note the & is escaped)
+    assert isinstance(ui[1], TextBlock)
+    fragment = "This scan workflow is optimised for scanning H&amp;E stained biopsies."
+    assert fragment in ui[1].text
     # Followed by a background detect accordion
-    assert isinstance(ui[1], Accordion)
-    assert ui[1].title == "Background Detect"
-    # And a Scan Settings accordion
     assert isinstance(ui[2], Accordion)
-    assert ui[2].title == "Scan Settings"
+    assert ui[2].title == "Background Detect"
+    # And a Scan Settings accordion
+    assert isinstance(ui[3], Accordion)
+    assert ui[3].title == "Scan Settings"
 
     # Background UI is ...
-    background_ui = ui[1].children.root
+    background_ui = ui[2].children.root
     # what the detector specifies as it settings ...
     assert background_ui[0] is mock_prop_control
     # plus 2 action buttons
@@ -409,7 +414,7 @@ def test_histo_workflow_settings_ui(histo_workflow, mocker):
     assert background_ui[2].action == "check_background"
 
     # Finally check the contents of the scan settings accordion
-    scan_settings = ui[2].children.root
+    scan_settings = ui[3].children.root
     assert len(scan_settings) == 8
     for element in scan_settings:
         assert isinstance(element, PropertyControl)
