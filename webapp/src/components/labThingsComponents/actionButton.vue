@@ -50,6 +50,18 @@ export default {
       type: String,
       required: true,
     },
+    // forceId and forceUrl can be used if it is known that when this button is mounted
+    // the action should be running.
+    forceId: {
+      type: [String, null],
+      required: false,
+      default: null,
+    },
+    forceUrl: {
+      type: [String, null],
+      required: false,
+      default: null,
+    },
     submitData: {
       type: [Object, Array],
       required: false,
@@ -197,17 +209,22 @@ export default {
       },
     );
 
-    // Check for already running tasks
-    if (this.taskStarted != true) {
-      this.checkExistingTasks();
-    }
-    // A global signal listener to perform the action
-    if (this.submitOnEvent) {
-      eventBus.on(this.submitOnEvent, () => {
-        if (this.isDisabled) return;
-        // Bootstrap task if button is not disabled.
-        this.bootstrapTask();
-      });
+    if (this.forceId && this.forceUrl) {
+      this.taskStarted = true;
+      this.startPollingTask(this.forceId, this.forceUrl);
+    } else {
+      // Check for already running tasks
+      if (this.taskStarted != true) {
+        this.checkExistingTasks();
+      }
+      // A global signal listener to perform the action
+      if (this.submitOnEvent) {
+        eventBus.on(this.submitOnEvent, () => {
+          if (this.isDisabled) return;
+          // Bootstrap task if button is not disabled.
+          this.bootstrapTask();
+        });
+      }
     }
   },
 
@@ -240,18 +257,13 @@ export default {
      *
      */
     async checkExistingTasks() {
-      let response = await this.findOngoingActions(this.thing, this.action);
-      // Exit if response is null, due to an error.
-      if (response == null) return;
-      // Check for a task that is ongoing.
-      // We can't handle multiple tasks ongoing, so this picks the first.
-      const ongoingTask = response.data.find((t) => ["pending", "running"].includes(t.status));
+      const ongoingTask = await this.getOngingAction(this.thing, this.action);
       if (ongoingTask) {
         // There is a started task
         this.taskStarted = true;
-        this.$emit("taskStarted");
         // Find its URL
         const taskUrl = ongoingTask.links.find((t) => t.rel == "self").href;
+        this.$emit("taskStarted", ongoingTask.id, taskUrl);
         this.startPollingTask(ongoingTask.id, taskUrl);
       }
     },
@@ -275,7 +287,6 @@ export default {
       this.$emit("submit", this.submitData);
       // Send a request to start a task
       this.taskStarted = true;
-      this.$emit("taskStarted");
       let response;
       try {
         response = await this.invokeAction(
@@ -289,6 +300,9 @@ export default {
         this.onTaskEnd();
         return;
       }
+      // Wait until after the task is acknowledged before confirming to parent
+      // component that the task is started.
+      this.$emit("taskStarted", response.data.id, response.data.href);
       if (this.modalProgress) {
         this.$refs.statusModal.show();
       }
