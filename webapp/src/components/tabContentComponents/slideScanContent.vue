@@ -1,206 +1,98 @@
 <template>
-  <div uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
-    <div class="control-component uk-padding-small">
-      <div v-show="!scanning" ref="slideScanView" class="uk-padding-small">
-        <!-- Workflow Selection Dropdown -->
-        <div class="uk-margin">
-          <label class="uk-form-label">Workflow</label>
-
-          <select
-            class="uk-select uk-form-small"
-            :value="workflowName"
-            @change="setWorkflow($event.target.value)"
-          >
-            <option v-for="(label, name) in workflowOptions" :key="name" :value="name">
-              {{ label }}
-            </option>
-          </select>
-        </div>
-        <server-specified-interface :elements="workflowSettings" @request-update="readSettings" />
-        <ul uk-accordion="multiple: true">
-          <li class="uk-open">
-            <a class="uk-accordion-title" href="#">Stitching Settings</a>
-            <div class="uk-accordion-content">
-              <div class="uk-margin">
-                <propertyControl
-                  thing-name="smart_scan"
-                  property-name="stitch_automatically"
-                  label="Automatically Stitch Images Together"
-                />
-              </div>
-              <div class="uk-margin">
-                <propertyControl
-                  thing-name="smart_scan"
-                  property-name="stitch_tiff"
-                  label="When Stitching, Produce a Pyramidal TIFF"
-                />
-              </div>
-            </div>
-          </li>
-        </ul>
-        <label class="uk-form-label" for="form-stacked-text">Sample ID</label>
-        <div class="uk-form-controls">
-          <input v-model="scan_name" class="uk-input uk-form-small" type="text" name="Scan Name" />
-        </div>
-        <div class="uk-margin">
-          <action-button
-            ref="smartScanButton"
-            thing="smart_scan"
-            action="sample_scan"
-            :submit-data="{ scan_name: scan_name }"
-            submit-label="Start Smart Scan"
-            :can-terminate="true"
-            @task-started="startScanning"
-            @update:task-status="taskStatus = $event"
-            @update:progress="progress = $event"
-            @update:log="log = $event"
-          />
-        </div>
+  <actionTab
+    thing="smart_scan"
+    action="sample_scan"
+    :task-id="taskId"
+    :task-url="taskUrl"
+    :task-info-title="infoPaneTitle"
+    :task-info-stream="displayImageOnRight"
+    @completed="onScanCompleted"
+    @close-task="closeTask"
+    @action-started-externally="startScanning"
+  >
+    <!-- MainView -->
+    <img
+      v-if="displayImageOnRight"
+      id="last-stitched-image"
+      class="image-fit"
+      :src="lastStitchedImage"
+    />
+    <streamDisplay v-else />
+    <template #controls>
+      <slideScanControls />
+      <label class="uk-form-label" for="form-stacked-text">Sample ID</label>
+      <div class="uk-form-controls">
+        <input v-model="scan_name" class="uk-input uk-form-small" type="text" name="Scan Name" />
       </div>
-      <div v-show="scanning">
-        <h2 v-if="displayImageOnRight" style="text-align: center">Live stitching preview</h2>
-        <mini-stream-display v-if="displayImageOnRight" />
-        <action-log-display id="log-display" :log="log" :task-status="taskStatus" />
-        <action-progress-bar :progress="progress" :task-status="taskStatus" />
-        <button
-          v-if="cancellable"
-          type="button"
-          class="uk-button uk-button-danger uk-width-1-1"
-          @click="$refs.smartScanButton.terminateTask()"
-        >
-          Cancel
-        </button>
-        <div v-if="!cancellable" class="uk-margin uk-grid-small uk-child-width-expand" uk-grid>
-          <button
-            type="button"
-            class="uk-button"
-            @click="
-              scanning = false;
-              lastStitchedImage = null;
-            "
-          >
-            Close
-          </button>
-          <action-button
-            thing="smart_scan"
-            action="download_zip"
-            submit-label="Download ZIP"
-            :can-terminate="false"
-            :submit-data="{ scan_name: lastScanName }"
-            :button-primary="true"
-            @response="downloadZipFile"
-            @error="modalError"
-          />
-        </div>
+      <div class="uk-margin">
+        <action-button
+          ref="smartScanButton"
+          thing="smart_scan"
+          action="sample_scan"
+          :submit-data="{ scan_name: scan_name }"
+          submit-label="Start Smart Scan"
+          @task-started="startScanning"
+        />
       </div>
-      <h3 v-if="scanning">Scan ID: {{ lastScanName }}</h3>
-    </div>
-    <div class="view-image uk-width-expand uk-height-1-1">
-      <img
-        v-if="displayImageOnRight"
-        id="last-stitched-image"
-        class="image-fit"
-        :src="lastStitchedImage"
+    </template>
+    <template #task-info>
+      <action-button
+        v-if="scanComplete"
+        thing="smart_scan"
+        action="download_zip"
+        submit-label="Download ZIP"
+        :can-terminate="false"
+        :submit-data="{ scan_name: lastScanName }"
+        :button-primary="true"
+        @response="downloadZipFile"
+        @error="modalError"
       />
-      <streamDisplay v-else />
-    </div>
-  </div>
+      <h3 v-if="scanning">Scan ID: {{ lastScanName }}</h3>
+    </template>
+  </actionTab>
 </template>
 
 <script>
+import actionTab from "./actionTab.vue";
+import slideScanControls from "./slideScanComponents/slideScanControls.vue";
 import streamDisplay from "./streamContent.vue";
-import propertyControl from "../labThingsComponents/propertyControl.vue";
-import ServerSpecifiedInterface from "../labThingsComponents/serverSpecifiedInterface.vue";
-import actionLogDisplay from "../labThingsComponents/actionLogDisplay.vue";
-import actionProgressBar from "../labThingsComponents/actionProgressBar.vue";
-import MiniStreamDisplay from "../genericComponents/miniStreamDisplay.vue";
 import ActionButton from "../labThingsComponents/actionButton.vue";
-import { useIntersectionObserver } from "@vueuse/core";
 
 export default {
   name: "SlideScanContent",
 
   components: {
+    actionTab,
+    slideScanControls,
     streamDisplay,
-    propertyControl,
-    actionLogDisplay,
-    actionProgressBar,
-    MiniStreamDisplay,
     ActionButton,
-    ServerSpecifiedInterface,
   },
 
   data() {
     return {
       lastScanName: null,
-      scanning: false,
-      taskStatus: "pending",
-      correlateStatus: "",
-      stitchFromStageStatus: "",
-      progress: null,
-      log: [],
+      taskId: null,
+      taskUrl: null,
       lastStitchedImage: null,
+      scanComplete: false,
       scan_name: "",
-      workflowName: undefined,
-      workflowSettings: [],
-      workflowOptions: [],
     };
   },
 
   computed: {
-    cancellable() {
-      return (this.taskStatus == "running") | (this.taskStatus == "pending");
+    scanning() {
+      return this.taskId && this.taskUrl;
     },
     displayImageOnRight() {
-      return this.scanning & (this.lastStitchedImage !== null);
+      return this.scanning && this.lastStitchedImage !== null;
     },
-  },
-
-  async created() {
-    this.readSettings();
-    this.workflowOptions = await this.readThingProperty(
-      "smart_scan",
-      "workflow_display_names",
-      true,
-    );
-  },
-
-  mounted() {
-    useIntersectionObserver(
-      this.$refs.slideScanView,
-      ([{ isIntersecting }]) => {
-        this.visibilityChanged(isIntersecting);
-      },
-      {
-        threshold: 0.0,
-      },
-    );
+    infoPaneTitle() {
+      if (!this.displayImageOnRight) return null;
+      return "Live stitching preview";
+    },
   },
 
   methods: {
-    visibilityChanged(isVisible) {
-      if (isVisible) {
-        this.readSettings();
-      }
-    },
-    async readSettings() {
-      this.workflowName = await this.readThingProperty("smart_scan", "workflow_name");
-
-      if (!this.workflowName) {
-        console.warn("Could not read workflow_name, using default");
-        this.workflowName = "histo_scan_workflow";
-      }
-
-      if (this.workflowName) {
-        this.ready = await this.readThingProperty(this.workflowName, "ready", true);
-        this.workflowSettings =
-          (await this.getThingEndpoint(this.workflowName, "settings_ui")) || [];
-      }
-    },
-    onScanError: function (error) {
-      this.scanRunning = false;
-      this.modalError(error);
-    },
     /**
      * Transition the UI into "scanning" mode and begin polling for scan updates.
      *
@@ -220,13 +112,25 @@ export default {
      *  - clears any previous preview image
      *  - starts the polling loop that fetches scan progress and preview images
      */
-    startScanning() {
+    startScanning(id, url) {
       this.lastStitchedImage = null;
-      this.scanning = true;
+      this.lastScanName = null;
+      this.taskId = id;
+      this.taskUrl = url;
+      this.scanComplete = false;
       setTimeout(this.pollScan, 1000);
     },
+    onScanCompleted() {
+      this.scanComplete = true;
+    },
+    closeTask() {
+      this.taskId = null;
+      this.taskUrl = null;
+      this.lastStitchedImage = null;
+      this.scanComplete = false;
+    },
     async pollScan() {
-      if (this.cancellable) {
+      if (!this.scanComplete) {
         // while the scan is running
         let mtime = await this.readThingProperty("smart_scan", "latest_preview_stitch_time", true);
         if (mtime !== null) {
@@ -235,21 +139,6 @@ export default {
 
         this.lastScanName = await this.readThingProperty("smart_scan", "latest_scan_name", true);
         setTimeout(this.pollScan, 1000); // keep rescheduling until it's stopped
-      }
-    },
-    async setWorkflow(name) {
-      try {
-        this.workflowName = name;
-
-        await this.writeThingProperty("smart_scan", "workflow_name", name);
-
-        // refresh  UI
-        await this.readSettings();
-      } catch (err) {
-        this.modalError(err);
-
-        // revert if server rejected
-        this.workflowName = await this.readThingProperty("smart_scan", "workflow_name", true);
       }
     },
     async downloadZipFile(response) {
@@ -266,11 +155,4 @@ export default {
 };
 </script>
 
-<style scoped>
-#log-display {
-  height: 20em;
-}
-.control-component {
-  width: 33%;
-}
-</style>
+<style scoped></style>
