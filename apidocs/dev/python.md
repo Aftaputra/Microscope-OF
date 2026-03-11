@@ -16,28 +16,29 @@ Python code should be:
 As of `v3` we specify dependencies in `pyproject.toml`. These are not currently frozen due to difficulties matching versions on different platforms. On Raspberry Pi, it's best to specify `--only-binary=:all:` when installing packages, to ensure libraries like `numpy` and `scipy` are not compiled from source (which takes many hours, and/or fails). Pinning dependencies with `requirements.txt` and/or `requirements.in` may happen in the future.
 
 
-
 ## Python: Formatting, linting, and tests
 
 [Ruff](https://docs.astral.sh/ruff/) is used both for linting and formatting the codebase. Our custom linter rules are in our `pyproject.toml`.
 
 > All of the commands below assume that you are running in the OFM virtual environment, i.e. you have run `ofm activate` on an OpenFlexure SD card, or `source .venv/bin/activate` on Linux, or `.venv/Scripts/activate`on Windows Powershell, or `.venv\Scripts\activate.bat` on Windows CMD.
 
-**Before committing** you should lint and auto-format your code:
+**Before committing** you should lint and auto-format your code.
 
-* To lint, run `ruff check` and manually fix any flagged issues
-* To auto-format the Python code run `ruff format`
-* To check for spelling errors `codespell .`
+Please run:
 
-**Before pushing** please auto-format your code and also run the quality checks (linting, static analysis, and unit tests)
+* `ruff check` - to lint your Python code (please manually fix any flagged issues)
+* `ruff format` - to automatically format your Python code
+* `codespell .` - to check for spelling errors
+
+**Before merging** please auto-format your code and also run the quality checks (linting, static analysis, and unit tests)
+
+Please run:
 
 * All commands above
-* `pytest`
-* `mypy src`
-
+* `mypy src` to type check your Python code
+* `pytest` to run all the unit tests in `tests/unit_tests`
 
 We use several code analysis and formatting libraries in this project. Our CI will check each of these automatically, so ensuring they pass locally will save you time. Currently `ruff` is used for linting/formatting and `pytest` for unit tests.
-
 
 To check your code before each commit we recommend putting the following script in your `.git/hooks` directory with the filename `pre-commit`.
 
