@@ -1,8 +1,8 @@
 # HTML Sanitisation Test Cases
 
-This file is in markdown not python for readability.
+This file is in markdown not Python for readability.
 
-Each test is a level 2 heading. The input and expected values are level 3 headings.
+Each test is a level 2 heading. The input and expected values are level 3 headings. Multiline inputs and results are treated as single, multiline strings.
 
 The HTML to test is in triple backtick code blocks.
 
