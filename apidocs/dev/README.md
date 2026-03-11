@@ -84,7 +84,7 @@ To start the simulation server:
 * Open the address displayed in the terminal in any browser.
 * To close the simulation server, return to the terminal and press `ctrl + c`.
 
-> Note: If you are using Windows, we advise running this command in PowerShell. If it doesn't work this, might be a permission issue on managed machines, in which case try executing the command in a CMD terminal.
+> Note: If you are using Windows, we advise running this command in PowerShell. If it doesn't work, this might be a permission issue on managed machines, in which case try executing the command in a CMD terminal.
 
 > Note: If you receive an error saying that port 5000 is already in use, you can specify a different port to run the simulation on using `--port`:
 >
@@ -101,7 +101,7 @@ Please first read our **[project contributions guide](contributing)**
 
 * We recommend all development is done on a branch.
 * If you are editing the web app, please see our see the README in the [webapp](webapp) directory.
-* If you want to try a branch with webapp changes (that are already pushed to GitLab), but don't want to compile the javascript, then run `python pull_webapp.py -b <branch_name>` to get the artifacts from the GitLab CI.
+* If you want to try a branch with webapp changes (that are already pushed to GitLab with a passing pipeline), but don't want to compile the javascript, then run `python pull_webapp.py -b <branch_name>` to get the artifacts from the GitLab CI.
 
 **For development on a Raspberry Pi** we recommend VSCode Remote session from another computer.  This allows you to use your usual developer environment to write code, but everything runs on the Raspberry Pi with real hardware.  Note that the repository is cloned by default over `https`, so you will probably need to change the "remote" URL to your fork of the repository, or to SSH, before you're able to push changes.
 
@@ -109,5 +109,5 @@ Please first read our **[project contributions guide](contributing)**
 
 The microscope comprises a number of `Thing` instances, which provide actions and properties to implement hardware control and software features. These may be imported from any Python module, using `ofm_config.json`. See the LabThings-FastAPI documentation for how to create a `Thing`. 
 
-Currently, the camera and stage classes are provided by external libraries, `labthings-picamera2` and `labthings-sangaboard`. Replacing these is the easiest way to use alternative hardware: interfaces are defined in `openflexure_microscope_server.things.camera` and `openflexure_microscope_server.things.stage` respectively.
+All core functionality hardware control functionality is within `Thing` classes. Even the standard camera and stage classes are each a `Thing`. This means it is possible to use a different camera or stage by sub-classing the `BaseCamera` or `BaseStage` and editing the configuration file.
 

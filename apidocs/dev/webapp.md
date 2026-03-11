@@ -31,5 +31,5 @@ When the development webapp starts it cannot locate the microscope API as this i
 To enforce code style we and quality we use ESLint and Prettier. Both can be run together with the same command.
 
 - To check the for errors and warnings run `npm run lint`
-- To automatically fix errors an warnings run `npm run lint:fix`
+- To automatically fix errors and warnings run `npm run lint:fix`
 

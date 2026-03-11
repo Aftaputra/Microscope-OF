@@ -14,7 +14,7 @@ The server code is going through significant flux during the transition from v2 
 
 ## Python environment, build, and dependencies
 
-As of `v3` we specify dependencies in `pyproject.toml`. These are not currently frozen due to difficulties matching versions on different platforms. On Raspberry Pi, it's best to specify `--only-binary=:all:` to ensure libraries like `numpy` and `scipy` are not compiled from source (which takes many hours, and/or fails). Pinning dependencies with `requirements.txt` and/or `requirements.in` may happen in the future.
+As of `v3` we specify dependencies in `pyproject.toml`. These are not currently frozen due to difficulties matching versions on different platforms. On Raspberry Pi, it's best to specify `--only-binary=:all:` when installing packages, to ensure libraries like `numpy` and `scipy` are not compiled from source (which takes many hours, and/or fails). Pinning dependencies with `requirements.txt` and/or `requirements.in` may happen in the future.
 
 
 
@@ -26,10 +26,10 @@ As of `v3` we specify dependencies in `pyproject.toml`. These are not currently 
 
 **Before committing** you should lint and auto-format your code:
 
-* To lint run `ruff check`
+* To lint, run `ruff check` and manually fix any flagged issues
 * To auto-format the Python code run `ruff format`
 
-**Before merging** please auto-format your code and also run the quality checks (linting, static analysis, and unit tests)
+**Before pushing** please auto-format your code and also run the quality checks (linting, static analysis, and unit tests)
 
 * All commands above
 * `pytest`

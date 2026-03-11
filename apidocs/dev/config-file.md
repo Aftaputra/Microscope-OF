@@ -1,6 +1,6 @@
 # The Configuration File
 
-By default, this configuration file is located at read from `/var/openflexure/settings/ofm_config.json` when the microscope is run as a service. If it is run at the command line, you should specify the configuration using the `-c` command line flag.
+By default, this configuration file is read from `/var/openflexure/settings/ofm_config.json` when the microscope is run as a service. If it is run at the command line, you should specify the configuration file path using the `-c` command line flag.
 
 The default configuration file links to the configuration file in the repository:
 
@@ -26,7 +26,7 @@ The configuration file has three keys:
 
 The `things` dictionary can specify a `Thing` to be loaded into the server in two different ways. If there is no custom configuration for the `Thing` then:
 
-* The key is a **name** for the `Thing`, this defines the URL of its endpoints.
+* The key is a **name** for the `Thing`, which defines the URL of its endpoints.
 * The value is the Python object reference for the `Thing`.
 
 For example:
@@ -34,6 +34,8 @@ For example:
 ```
 "autofocus": "openflexure_microscope_server.things.autofocus:AutofocusThing",
 ```
+
+will add an autofocus Thing to the server. The Thing is located at `openflexure_microscope_server.things.autofocus:AutofocusThing`, (allowing multiple Things per Python file), and any endpoints (such as actions and properties) in that Thing will have the URL `base_url:port/autofocus/endpoint_name`
 
 If further information needs to be supplied then the value should be a dictionary (Object) with the following keys:
 
