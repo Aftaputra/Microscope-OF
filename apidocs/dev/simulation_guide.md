@@ -16,7 +16,7 @@ The simulation server GUI is a copy of the GUI you would find on the hardware wi
 
 ## Starting the Simulation Server
 
-1. **Activate your virtual environment** (the same one created during installation, as described in the [README](./README.md)).
+1. **Activate your virtual environment** (the same one created during installation, as described in the [Python documentation](python)).
 2. **Run the simulation server** using the following command:
 
    ```bash
