@@ -78,6 +78,8 @@ export default {
       contrast: 1,
       saturation: 1,
       enteringFullscreen: false,
+      modalEl: null,
+      beforeHideHandler: null,
     };
   },
   computed: {
@@ -89,14 +91,19 @@ export default {
     },
   },
   mounted() {
-    const modalEl = this.$refs.scanModal;
-
-    modalEl.addEventListener("beforehide", (event) => {
+    this.modalEl = this.$refs.scanModal;
+    this.beforeHideHandler = (event) => {
       if (this.enteringFullscreen) {
         event.preventDefault();
         this.enteringFullscreen = false;
       }
-    });
+    };
+    this.modalEl.addEventListener("beforehide", this.beforeHideHandler);
+  },
+  beforeUnmount() {
+    if (this.modalEl && this.beforeHideHandler) {
+      this.modalEl.removeEventListener("beforehide", this.beforeHideHandler);
+    }
   },
   methods: {
     show() {
