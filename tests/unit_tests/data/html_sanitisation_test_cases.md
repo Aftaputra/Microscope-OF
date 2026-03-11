@@ -8,6 +8,8 @@ The HTML to test is in triple backtick code blocks.
 
 Anything not in code blocks is a comment.
 
+This file is run by /tests/unit_tests/test_ui.py
+
 ## Test scripts removed
 
 The script is removed but the contents remain.
@@ -92,4 +94,26 @@ This is <b>bold</b> <i>italic</i> and on a new <br/> line.
 ### Result
 ```html
 This is <b>bold</b> <i>italic</i> and on a new <br/> line.
+```
+
+## Test http link with path preserved
+Valid HTTP links should preserve their path.
+### Input
+```html
+<a href="https://example.com/docs/page">Docs</a>
+```
+### Result
+```html
+<a href="https://example.com/docs/page" target="_blank" rel="noopener noreferrer">Docs</a>
+```
+
+## Test http link with fragment preserved
+Valid HTTP links should preserve their path and fragment.
+### Input
+```html
+<a href="https://example.com/docs/page#section">Docs Section</a>
+```
+### Result
+```html
+<a href="https://example.com/docs/page#section" target="_blank" rel="noopener noreferrer">Docs Section</a>
 ```
