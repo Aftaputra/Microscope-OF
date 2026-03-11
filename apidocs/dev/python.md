@@ -3,14 +3,13 @@
 ## Overview
 
 
-Ideally, Python code should be:
+Python code should be:
 
 * Broken up into small, clear, testable functions.
 * Documented with docstrings (For conventions see below).
 * Type hinted
 * Covered by unit tests (using [pytest](https://docs.pytest.org))
 
-The server code is going through significant flux during the transition from v2 to v3, so currently our test coverage is being rebuilt and type checking does not yet pass.
 
 ## Python environment, build, and dependencies
 
@@ -28,17 +27,19 @@ As of `v3` we specify dependencies in `pyproject.toml`. These are not currently 
 
 * To lint, run `ruff check` and manually fix any flagged issues
 * To auto-format the Python code run `ruff format`
+* To check for spelling errors `codespell .`
 
 **Before pushing** please auto-format your code and also run the quality checks (linting, static analysis, and unit tests)
 
 * All commands above
 * `pytest`
+* `mypy src`
 
 
-We use several code analysis and formatting libraries in this project. Our CI will check each of these automatically, so ensuring they pass locally will save you time. Currently `ruff` is used for linting/formatting and `pytest` for unit tests. `mypy` will be enabled once the codebase is ready.
+We use several code analysis and formatting libraries in this project. Our CI will check each of these automatically, so ensuring they pass locally will save you time. Currently `ruff` is used for linting/formatting and `pytest` for unit tests.
 
 
-To check your code before each commit we recommend putting the following script in tour `.git/hooks` directory with the filename `pre-commit`.
+To check your code before each commit we recommend putting the following script in your `.git/hooks` directory with the filename `pre-commit`.
 
 
 ```python
@@ -50,13 +51,14 @@ function angrymessage()
 {
     RED='\033[1;31m'
     NC='\033[0m' # No Color
-    printf "\n${RED}Not committing as ruff failed${NC}\n\n"
+    printf "\n${RED}Not committing as ruff or spellcheck failed${NC}\n\n"
 }
 
 trap angrymessage ERR
 
 ruff format --check
 ruff check
+codespell .
 ```
 
 

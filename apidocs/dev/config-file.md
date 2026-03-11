@@ -4,7 +4,7 @@ By default, this configuration file is read from `/var/openflexure/settings/ofm_
 
 The default configuration file links to the configuration file in the repository:
 
-```
+```json
 {
     "base_config_file": "/var/openflexure/application/openflexure-microscope-server/ofm_config_full.json"
 }
@@ -12,7 +12,7 @@ The default configuration file links to the configuration file in the repository
 
 ## Understanding and modifying the base configuration file
 
-This section describes how to change the microscope configuration for development. For example, when making a Merge Request to add a new Thing to the standard microscope configuration. **Do not do this for customising a single microscope.** For customising the configuration of a single microscope see the next section.
+This section describes how to change the microscope configuration for development. For example, when making a Merge Request to add a new Thing to the standard microscope configuration. **Do not do this for customising a single microscope.** For customiston please refeer to the section on [customising the configuration](#section-customise-config).
 
 The specification for the configuration file is set by [LabThings FastAPI](https://labthings-fastapi.readthedocs.io/). The file is a JSON file. As such, it cannot contain comments.
 
@@ -31,7 +31,7 @@ The `things` dictionary can specify a `Thing` to be loaded into the server in tw
 
 For example:
 
-```
+```json
 "autofocus": "openflexure_microscope_server.things.autofocus:AutofocusThing",
 ```
 
@@ -46,7 +46,7 @@ If further information needs to be supplied then the value should be a dictionar
 
 For example:
 
-```
+```json
 "camera": {
     "class": "openflexure_microscope_server.things.camera.picamera:StreamingPiCamera2",
     "kwargs": {
@@ -55,7 +55,8 @@ For example:
 }
 ```
 
-## Customising the configuration
+## Customising the configuration :id=section-customise-config
+
 
 To have a custom configuration for a specific microscope, we recommend editing `ofm_config.json` in the settings folder. **Avoid editing the base configuration in the repository.** This will keep your customisations that should not be pushed separate from changes to the base file.
 
@@ -90,14 +91,13 @@ As the only key that needs changing is `things.camera.kwargs.camera_board` the p
 }
 ```
 
-Note that even though the `camera` patch is specified as:
+This will change the camera section to:
 
 ```json
 "camera": {
+    "class": "openflexure_microscope_server.things.camera.picamera:StreamingPiCamera2",
     "kwargs": {
         "camera_board": "picamera_hq"
     }
 }
 ```
-
-This only affects the specified keys. So the camera class is unaffected.
