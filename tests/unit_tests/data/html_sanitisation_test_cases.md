@@ -11,9 +11,7 @@ Anything not in code blocks is a comment.
 This file is run by /tests/unit_tests/test_ui.py
 
 ## Test scripts removed
-
 The script is removed but the contents remain.
-
 ### Input
 ```html
 <script>alert("x")</script>
@@ -24,8 +22,9 @@ The script is removed but the contents remain.
 alert(&quot;x&quot;)
 Hello
 ```
-## Test script in bold tag
 
+
+## Test script in bold tag
 ### Input
 ```html
 <b onmouseover=alert('Wufff!')>click me!</b>
@@ -35,6 +34,7 @@ Hello
 <b>click me!</b>
 ```
 
+
 ## Test script in disallowed tag
 ### Input
 ```html
@@ -43,6 +43,7 @@ Hello
 ### Result
 ```html
 ```
+
 
 ## Test cookie grabber script is escaped
 The script should become escaped and have no tags
@@ -56,6 +57,7 @@ var adr = '../evil.php?cakemonster=' + escape(document.cookie);
 ```html
 var adr = &#x27;../evil.php?cakemonster=&#x27; + escape(document.cookie);
 ```
+
 
 ## Test with non-http links
 Remove the javascript from the links.
@@ -74,6 +76,7 @@ Remove the javascript from the links.
 <a>Relative</a>
 ```
 
+
 ## Test http links become external
 Remove the javascript from the links.
 ### Input
@@ -84,6 +87,7 @@ Remove the javascript from the links.
 ```html
 <a href="https://openflexure.org" target="_blank" rel="noopener noreferrer">OpenFlexure</a>
 ```
+
 
 ## Test basic formatting preserved
 Check basic elements are not changed
@@ -96,6 +100,7 @@ This is <b>bold</b> <i>italic</i> and on a new <br/> line.
 This is <b>bold</b> <i>italic</i> and on a new <br/> line.
 ```
 
+
 ## Test http link with path preserved
 Valid HTTP links should preserve their path.
 ### Input
@@ -106,6 +111,7 @@ Valid HTTP links should preserve their path.
 ```html
 <a href="https://example.com/docs/page" target="_blank" rel="noopener noreferrer">Docs</a>
 ```
+
 
 ## Test http link with fragment preserved
 Valid HTTP links should preserve their path and fragment.
