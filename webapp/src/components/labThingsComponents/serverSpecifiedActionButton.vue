@@ -8,6 +8,7 @@
     :requires-confirmation="actionData.requires_confirmation"
     :confirmation-message="actionData.confirmation_message"
     :button-primary="actionData.button_primary"
+    :is-disabled="actionData.disabled"
     :modal-progress="actionData.modal_progress"
     :stream-with-modal="actionData.stream_with_modal"
     @response="actionResponse"
@@ -34,7 +35,7 @@ export default {
     },
   },
 
-  emits: ["response", "finished"],
+  emits: ["response", "finished", "requestUpdate"],
 
   methods: {
     /**
@@ -45,7 +46,14 @@ export default {
      */
     actionResponse: function (response) {
       if (this.actionData.notify_on_success) {
-        this.modalNotify(this.actionData.success_message);
+        if (this.actionData.response_is_success_message) {
+          this.modalNotify(response.output);
+        } else {
+          this.modalNotify(this.actionData.success_message);
+        }
+        if (this.actionData.update_interface_on_response) {
+          this.$emit("requestUpdate");
+        }
         this.$emit("response", response);
       }
     },

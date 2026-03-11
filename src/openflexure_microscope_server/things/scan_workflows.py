@@ -4,8 +4,6 @@ This module contains the base ``ScanWorkflow`` class that all workflows should s
 as well as specific workflows.
 """
 
-from __future__ import annotations
-
 import os
 from typing import (
     Generic,
@@ -41,7 +39,15 @@ from openflexure_microscope_server.things.background_detect import (
 from openflexure_microscope_server.things.camera import BaseCamera, CaptureParams
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
 from openflexure_microscope_server.things.stage import BaseStage
-from openflexure_microscope_server.ui import PropertyControl, property_control_for
+from openflexure_microscope_server.ui import (
+    UI_ELEMENT_RESPONSE,
+    Accordion,
+    HeaderBlock,
+    TextBlock,
+    UIElementList,
+    action_button_for,
+    property_control_for,
+)
 
 SettingModelType = TypeVar("SettingModelType", bound=BaseModel)
 
@@ -160,9 +166,9 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
 
         return True, focus_height
 
-    @lt.property
-    def settings_ui(self) -> list[PropertyControl]:
-        """A list of PropertyControl objects to create the settings in the scan tab."""
+    @lt.endpoint("get", "settings_ui", responses=UI_ELEMENT_RESPONSE)
+    def settings_ui(self) -> UIElementList:
+        """Return the UI for the workflow's settings in the scan tab."""
         raise NotImplementedError(
             "Each scan workflow must implement a settings_ui method."
         )
@@ -556,35 +562,96 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
 
         return imaged, focus_height
 
-    @lt.property
-    def settings_ui(self) -> list[PropertyControl]:
-        """A list of PropertyControl objects to create the settings in the scan tab."""
-        return [
-            property_control_for(
-                self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
-            ),
-            property_control_for(
-                self, "stack_images_to_save", label="Images in Stack to Save"
-            ),
-            property_control_for(
-                self,
-                "stack_min_images_to_test",
-                label="Minimum number of images to test for focus",
-            ),
-            property_control_for(self, "stack_dz", label="Stack dz (steps)", step=5),
-            property_control_for(
-                self, "autofocus_dz", label="Autofocus Range (steps)", step=200
-            ),
-            property_control_for(
-                self, "max_range", label="Maximum Distance (steps)", step=1000
-            ),
-            property_control_for(
-                self, "skip_background", label="Detect and Skip Empty Fields"
-            ),
-            property_control_for(
-                self, "equal_distances", label="Set Equal x and y Distances"
-            ),
-        ]
+    @lt.action
+    def check_background(self) -> str:
+        """Check if sample is background.
+
+        This action is a pre-run check for feeding back to the user.
+        """
+        image_array = self._cam.grab_as_array(stream_name="lores")
+        is_sample, bg_message = self._background_detector.image_is_sample(image_array)
+        label = "sample" if is_sample else "background"
+
+        return f"Current image is {label} ({bg_message})"
+
+    @lt.action
+    def set_background(self) -> None:
+        """Set the background for this background detector.
+
+        This sets the background for this workflow's background detector as opposed to
+        the active background detector for the camera.
+        """
+        image_array = self._cam.grab_as_array(stream_name="lores")
+        self._background_detector.set_background(image_array)
+
+    @lt.endpoint("get", "settings_ui", responses=UI_ELEMENT_RESPONSE)
+    def settings_ui(self) -> UIElementList:
+        """Return the UI for the workflow's settings in the scan tab."""
+        scan_settings = UIElementList(
+            [
+                property_control_for(
+                    self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
+                ),
+                property_control_for(
+                    self, "stack_images_to_save", label="Images in Stack to Save"
+                ),
+                property_control_for(
+                    self,
+                    "stack_min_images_to_test",
+                    label="Minimum number of images to test for focus",
+                ),
+                property_control_for(
+                    self, "stack_dz", label="Stack dz (steps)", step=5
+                ),
+                property_control_for(
+                    self, "autofocus_dz", label="Autofocus Range (steps)", step=200
+                ),
+                property_control_for(
+                    self, "max_range", label="Maximum Distance (steps)", step=1000
+                ),
+                property_control_for(
+                    self, "skip_background", label="Detect and Skip Empty Fields"
+                ),
+                property_control_for(
+                    self, "equal_distances", label="Set Equal x and y Distances"
+                ),
+            ]
+        )
+        background_ui = self._background_detector.settings_ui()
+        set_bg_button = action_button_for(
+            self,
+            "set_background",
+            poll_interval=0.1,
+            submit_label="Set Background",
+            can_terminate=False,
+            notify_on_success=True,
+            success_message="Background image has been updated",
+            update_interface_on_response=True,
+        )
+        check_bg_button = action_button_for(
+            self,
+            "check_background",
+            poll_interval=0.1,
+            submit_label="Check Current Image",
+            disabled=not self._background_detector.ready,
+            can_terminate=False,
+            notify_on_success=True,
+            response_is_success_message=True,
+        )
+
+        background_ui.root += [set_bg_button, check_bg_button]
+
+        return UIElementList(
+            [
+                HeaderBlock(text=self.display_name, level=4),
+                TextBlock(text=self.ui_blurb),
+                Accordion(title="Background Detect", children=background_ui),
+                Accordion(
+                    title="Scan Settings",
+                    children=scan_settings,
+                ),
+            ]
+        )
 
 
 class RegularGridSettingsModel(RectGridSettingsModel):
@@ -668,17 +735,31 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
             save_resolution=settings.capture_params.save_resolution,
         )
 
-    @lt.property
-    def settings_ui(self) -> list[PropertyControl]:
-        """A list of PropertyControl objects to create the settings in the scan tab."""
-        return [
-            property_control_for(
-                self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
-            ),
-            property_control_for(self, "x_count", label="Number of columns"),
-            property_control_for(self, "y_count", label="Number of rows"),
-            property_control_for(self, "autofocus_dz", label="Autofocus Range (steps)"),
-        ]
+    @lt.endpoint("get", "settings_ui", responses=UI_ELEMENT_RESPONSE)
+    def settings_ui(self) -> UIElementList:
+        """Return the UI for the workflow's settings in the scan tab."""
+        scan_settings = UIElementList(
+            [
+                property_control_for(
+                    self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
+                ),
+                property_control_for(self, "x_count", label="Number of columns"),
+                property_control_for(self, "y_count", label="Number of rows"),
+                property_control_for(
+                    self, "autofocus_dz", label="Autofocus Range (steps)"
+                ),
+            ]
+        )
+        return UIElementList(
+            [
+                HeaderBlock(text=self.display_name, level=4),
+                TextBlock(text=self.ui_blurb),
+                Accordion(
+                    title="Scan Settings",
+                    children=scan_settings,
+                ),
+            ]
+        )
 
 
 class SnakeWorkflow(RegularGridWorkflow):

@@ -73,7 +73,7 @@ def test_partial_base_classes():
         bad_algo.ready
 
     with pytest.raises(NotImplementedError):
-        bad_algo.settings_ui
+        bad_algo.settings_ui()
 
     with pytest.raises(NotImplementedError):
         bad_algo.set_background(background_image)
@@ -256,7 +256,7 @@ def test_background_detect_settings_ui(detector_cls):
     As both have identical settings they can be tested together
     """
     detector = create_thing_without_server(detector_cls)
-    ui = detector.settings_ui
+    ui = detector.settings_ui().root
 
     assert len(ui) == 2
     assert isinstance(ui[0], PropertyControl)
