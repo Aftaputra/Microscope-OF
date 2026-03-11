@@ -8,27 +8,31 @@
         <h2 v-if="taskInfoTitle" style="text-align: center">{{ taskInfoTitle }}</h2>
         <mini-stream-display v-if="taskInfoStream" />
         <action-log-display id="log-display" :log="log" :task-status="taskStatus" />
-        <action-button
-          v-if="taskRunning"
-          :thing="thing"
-          :action="action"
-          :force-id="taskId"
-          :force-url="taskUrl"
-          submit-label=""
-          :can-terminate="true"
-          @completed="$emit('completed')"
-          @update:task-status="taskStatus = $event"
-          @update:progress="progress = $event"
-          @update:log="log = $event"
-        />
-        <button
-          v-if="!taskRunning"
-          type="button"
-          class="uk-button uk-width-1-1 uk-position-relative"
-          @click="closeTask"
-        >
-          Close
-        </button>
+        <div class="uk-width-1-1 uk-flex uk-flex-center">
+          <div class="uk-width-2-3">
+            <action-button
+              v-if="taskRunning"
+              :thing="thing"
+              :action="action"
+              :force-id="taskId"
+              :force-url="taskUrl"
+              submit-label=""
+              :can-terminate="true"
+              @completed="$emit('completed')"
+              @update:task-status="taskStatus = $event"
+              @update:progress="progress = $event"
+              @update:log="log = $event"
+            />
+            <button
+              v-if="!taskRunning"
+              type="button"
+              class="uk-button uk-width-1-1 uk-position-relative"
+              @click="closeTask"
+            >
+              Close
+            </button>
+          </div>
+        </div>
         <slot name="task-info"></slot>
       </div>
     </div>

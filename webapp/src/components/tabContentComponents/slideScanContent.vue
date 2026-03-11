@@ -36,18 +36,22 @@
       </div>
     </template>
     <template #task-info>
-      <action-button
-        v-if="scanComplete"
-        thing="smart_scan"
-        action="download_zip"
-        submit-label="Download ZIP"
-        :can-terminate="false"
-        :submit-data="{ scan_name: lastScanName }"
-        :button-primary="true"
-        @response="downloadZipFile"
-        @error="modalError"
-      />
-      <h3 v-if="scanning">Scan ID: {{ lastScanName }}</h3>
+      <div class="uk-width-1-1 uk-flex uk-flex-center">
+        <div class="uk-width-2-3">
+          <action-button
+            v-if="scanComplete"
+            thing="smart_scan"
+            action="download_zip"
+            submit-label="Download ZIP"
+            :can-terminate="false"
+            :submit-data="{ scan_name: lastScanName }"
+            :button-primary="true"
+            @response="downloadZipFile"
+            @error="modalError"
+          />
+        </div>
+      </div>
+      <h3 v-if="scanning" class="uk-margin-left">Scan ID: {{ lastScanName }}</h3>
     </template>
   </actionTab>
 </template>
