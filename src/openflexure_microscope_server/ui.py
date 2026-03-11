@@ -29,7 +29,7 @@ def sanitize_http_url(url: str) -> Optional[str]:
     if not parsed.netloc:
         return None
     fragment_str = "#" + parsed.fragment if parsed.fragment else ""
-    return f"{parsed.scheme}://{parsed.netloc}{fragment_str}"
+    return f"{parsed.scheme}://{parsed.netloc}{parsed.path}{fragment_str}"
 
 
 class SafeHTMLParser(HTMLParser):
