@@ -67,11 +67,6 @@ class StackParams(BaseModel):
     settling_time: float = Field(default=0.3, ge=0)
     """Time (in seconds) between moving and capturing an image"""
 
-    backlash_correction: int = 250
-    """
-    Distance (in steps) to overshoot a move and then undo, to account for backlash
-    """
-
     origin: StackOrigin = StackOrigin.START
     """Where the stack is positioned relative to the current z position."""
 
@@ -760,7 +755,7 @@ class AutofocusThing(lt.Thing):
         logic, or autofocus is performed.
 
         :param stack_parameters: StackParams defining stack spacing,
-            image count and backlash correction.
+            and image count.
         :param capture_parameters: CaptureParams defining save
             resolution, images directory.
 
@@ -780,15 +775,8 @@ class AutofocusThing(lt.Thing):
             target_offset = -total_range
         else:
             target_offset = 0
-
-        # Apply backlash correction: overshoot and move back
-        overshoot = target_offset - stack_parameters.backlash_correction
-        if overshoot != 0:
-            self._stage.move_relative(z=overshoot)
-
-        # Move back to starting point if needed
-        if stack_parameters.backlash_correction != 0:
-            self._stage.move_relative(z=stack_parameters.backlash_correction)
+        if target_offset != 0:
+            self._stage.move_relative(z=target_offset)
 
         # Capture images_to_save images
         for move_count in range(stack_parameters.images_to_save):
