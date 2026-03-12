@@ -44,6 +44,7 @@ from openflexure_microscope_server.ui import (
     UI_ELEMENT_RESPONSE,
     Accordion,
     HeaderBlock,
+    PropertyControl,
     TextBlock,
     UIElementList,
     action_button_for,
