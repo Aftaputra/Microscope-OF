@@ -1,6 +1,13 @@
 <template>
   <div id="modal-example" ref="calibrationModalEl" uk-modal="bg-close: false;">
     <div class="uk-modal-dialog uk-modal-body">
+      <!-- Get the style from uk-close, but use stop.prevent to avoid it actually closing -->
+      <button
+        type="button"
+        class="uk-modal-close-default"
+        uk-close
+        @click.stop.prevent="confirmClose"
+      ></button>
       <h2 class="uk-modal-title">Microscope Calibration</h2>
 
       <component
@@ -165,6 +172,21 @@ export default {
 
     onHide: function () {
       this.$emit("onClose");
+    },
+
+    confirmClose() {
+      let confirmationMessage =
+        "Close calibration wizard?<br><br>This can be re-opened from the Settings tab at any time.";
+      // Use standard modal confirmation
+      this.modalConfirm(confirmationMessage).then(
+        () => {
+          // User clicked YES → hide modal
+          this.hide();
+        },
+        () => {
+          // User clicked NO → do nothing, modal stays open
+        },
+      );
     },
 
     /*
