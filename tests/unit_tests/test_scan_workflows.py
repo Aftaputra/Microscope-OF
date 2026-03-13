@@ -434,14 +434,15 @@ def test_histo_workflow_settings_ui(histo_workflow, mocker):
 
 
 @pytest.mark.parametrize(
-    ("save_res,expected_resize",)[
-        ((1400, 1400), 1 / 2),  # width=1400 -> N=2
-        ((1640, 1232), 1 / 2),  # width=1640 -> round(1640/750)=2
-        ((760, 750), 1 / 1),  # width=760 -> N=1
-        ((1499, 1000), 1 / 2),  # width ~1500 -> N=2
-        ((2250, 1800), 1 / 3),  # width=2250 -> N=3
-        ((700, 700), 1 / 1),  # width < 750 -> N=1
-    ]
+    ("save_res", "expected_resize"),
+    [
+        ((1400, 1400), 1 / 2),
+        ((1640, 1232), 1 / 2),
+        ((760, 750), 1 / 1),
+        ((1499, 1000), 1 / 2),
+        ((2250, 1800), 1 / 3),
+        ((700, 700), 1 / 1),
+    ],
 )
 def test_correlation_resize(histo_workflow, save_res, expected_resize):
     """Test that scan_workflows chooses a suitable correlation_resize factor.

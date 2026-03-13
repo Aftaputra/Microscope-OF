@@ -261,16 +261,16 @@ class RectGridWorkflow(
 
     def _get_stitching_settings_model(self) -> StitchingSettings:
         """Return a stitching settings model based on current settings."""
+        # Use the save resolution and target stitch resolution to choose a unit fraction,
+        # which makes correlating faster
         width, height = self.save_resolution
-
         # Target area in pixels
         target_area = TARGET_STITCHING_DIMENSION**2
-
         # Find N so that (width/N) * (height/N) ~ target_area
         # N^2 ~ (width * height) / target_area
         downsample_factor = max(1, round((width * height / target_area) ** 0.5))
-
         correlation_resize = 1 / downsample_factor
+
         return StitchingSettings(
             overlap=self.overlap,
             correlation_resize=correlation_resize,
