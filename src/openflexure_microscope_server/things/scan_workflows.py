@@ -24,7 +24,7 @@ from openflexure_microscope_server.scan_planners import (
     SmartSpiral,
 )
 from openflexure_microscope_server.stitching import (
-    STITCHING_RESOLUTION,
+    TARGET_STITCHING_DIMENSION,
     StitchingSettings,
 )
 from openflexure_microscope_server.things.autofocus import (
@@ -261,9 +261,19 @@ class RectGridWorkflow(
 
     def _get_stitching_settings_model(self) -> StitchingSettings:
         """Return a stitching settings model based on current settings."""
+        width, height = self.save_resolution
+
+        # Target area in pixels
+        target_area = TARGET_STITCHING_DIMENSION**2
+
+        # Find N so that (width/N) * (height/N) ~ target_area
+        # N^2 ~ (width * height) / target_area
+        downsample_factor = max(1, round((width * height / target_area) ** 0.5))
+
+        correlation_resize = 1 / downsample_factor
         return StitchingSettings(
             overlap=self.overlap,
-            correlation_resize=STITCHING_RESOLUTION[0] / self.save_resolution[0],
+            correlation_resize=correlation_resize,
         )
 
     def _build_scan_settings(self, base_kwargs: dict) -> RectGridSettingModelType:
