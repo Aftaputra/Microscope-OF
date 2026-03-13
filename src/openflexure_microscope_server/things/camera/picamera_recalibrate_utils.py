@@ -254,10 +254,10 @@ def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTe
     the camera's shutter and gain values.
     """
     # Flush stale frames
-    for _ in range(4):
+    for _ in range(2):
         r = camera.capture_request()
         r.release()
-    
+
     # A single request, to ensure metadata matches frame
     request = camera.capture_request()
     metadata = request.get_metadata()
