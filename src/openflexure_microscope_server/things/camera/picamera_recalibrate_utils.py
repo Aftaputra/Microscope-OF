@@ -253,9 +253,18 @@ def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTe
     percentile (which will be compared to the target), as well as
     the camera's shutter and gain values.
     """
-    camera.capture_array("raw")  # controls might not be updated for the first frame?
+    # Flush stale frames
+    for _ in range(4):
+        r = camera.capture_request()
+        r.release()
+    
+    # A single request, to ensure metadata matches frame
+    request = camera.capture_request()
+    metadata = request.get_metadata()
+    image = request.make_array("raw")
+    request.release()
     max_brightness = np.percentile(
-        _channels_from_bayer_array(camera.capture_array("raw")),
+        _channels_from_bayer_array(image),
         percentile,
     )
     # The reported brightness can, theoretically, be negative or zero
@@ -268,7 +277,6 @@ def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTe
             "camera's black level compensation has gone wrong."
         )
         max_brightness = 1
-    metadata = camera.capture_metadata()
     result = _ExposureTest(
         level=max_brightness,
         exposure_time=int(metadata["ExposureTime"]),
