@@ -243,7 +243,7 @@ def _set_minimum_exposure(camera: Picamera2, sensor_info: SensorInfo) -> None:
     time.sleep(sensor_info.long_pause)
     # Flush stale frames
     for _ in range(2):
-        r = camera.capture_metadata()
+        _r = camera.capture_metadata()
 
 
 def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTest:
