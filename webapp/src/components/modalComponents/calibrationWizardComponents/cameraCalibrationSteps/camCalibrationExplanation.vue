@@ -4,7 +4,9 @@
       <b> Before starting camera calibration: </b>
     </p>
     <ul class="uk-list uk-list-bullet">
-      <li>Remove any samples from your microscope</li>
+      <li>Insert a slide.</li>
+      <li>Move your slide to an empty area, ideally looking through the coverslip.</li>
+      <li>If your slide has no empty areas, remove it and instead calibrate on no sample.</li>
       <li>Ensure your illumination is on, well focused, and centred.</li>
     </ul>
   </div>

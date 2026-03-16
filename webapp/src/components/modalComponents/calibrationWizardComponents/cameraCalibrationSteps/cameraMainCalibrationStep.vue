@@ -1,7 +1,7 @@
 <template>
   <stepTemplateWithStream>
     <p>
-      <b>Once your field of view is empty and well illuminated, click Full Auto-Calibrate.</b>
+      <b>Once your field of view appears empty and well illuminated, click Full Auto-Calibrate.</b>
     </p>
 
     <template #below-stream>
