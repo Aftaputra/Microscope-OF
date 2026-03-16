@@ -260,9 +260,11 @@ def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTe
 
     # A single request, to ensure metadata matches frame
     request = camera.capture_request()
-    metadata = request.get_metadata()
-    image = request.make_array("raw")
-    request.release()
+    try:
+        metadata = request.get_metadata()
+        image = request.make_array("raw")
+    finally:
+        request.release()
     max_brightness = np.percentile(
         _channels_from_bayer_array(image),
         percentile,
