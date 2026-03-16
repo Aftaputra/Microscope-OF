@@ -241,6 +241,9 @@ def _set_minimum_exposure(camera: Picamera2, sensor_info: SensorInfo) -> None:
     # to the minimum possible, which is ~8us for PiCamera v2
     camera.set_controls({"AeEnable": False, "AnalogueGain": 1, "ExposureTime": 1})
     time.sleep(sensor_info.long_pause)
+    # Flush stale frames
+    for _ in range(2):
+        r = camera.capture_metadata()
 
 
 def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTest:
@@ -253,11 +256,6 @@ def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTe
     percentile (which will be compared to the target), as well as
     the camera's shutter and gain values.
     """
-    # Flush stale frames
-    for _ in range(2):
-        r = camera.capture_request()
-        r.release()
-
     # A single request, to ensure metadata matches frame
     request = camera.capture_request()
     try:
