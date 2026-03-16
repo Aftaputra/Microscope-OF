@@ -7,7 +7,7 @@
 # by the normal RC file, and we get false positives from git hashes.
 skip = node_modules,
        *-lock.json,
-       *.git,
+       ./.git,
        *.pyc,
        __pycache__,
        ./build,
