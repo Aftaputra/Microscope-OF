@@ -68,7 +68,7 @@ You can manage the server with the `ofm` command, using `ofm start`, `ofm stop`,
 ofm stop
 ofm activate
 cd /var/openflexure
-sudo -u openflexure-ws openflexure-microscope-server --fallback -c microscope_configuration.json --host 0.0.0.0 --port 5000
+sudo -u openflexure-ws /var/openflexure/application/openflexure-microscope-server/.venv/bin/openflexure-microscope-server --fallback -c settings/ofm_config.json --host 0.0.0.0 --port 5000
 ```
 
 ### Running the simulation server on other platforms
