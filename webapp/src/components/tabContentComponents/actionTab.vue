@@ -1,3 +1,50 @@
+<!-- A tab that changes its sidebar when an action is started.
+
+## Overview
+
+This is a generic component used to build tabs that need to switch view when an action is started,
+such as the Slide Scan tab.
+
+The task runs in 3 modes:
+
+* **Unstarted** - No task has been started.
+* **Running** - The task is running.
+* **Completed** - The task has completed.
+
+## HTML Slots and Template
+
+The template has 3 slots.
+
+* The main slot is the main view on the right hand side of the tab. To display the microscope stream
+    use `<streamDisplay />` here
+* **controls** - A named slot for the controls that are shown in the sidebar in **Unstarted** mode.
+* **task-info** - A slot for any information or controls to show at the bottom of the sidebar in
+    **Running** or **Completed** mode.
+
+In **Running** or **Completed** modes the sidebar automatically shows:
+
+* **A tile** if `taskInfoTitle` prop is set.
+* **A mini stream** if `taskInfoStream` prop is `true`
+* **A log view**
+* **A cancel button** or a **Close** button depending on if the mode is **Running** or **Completed**
+
+## Changing mode
+
+To notify the tab that the action running the `taskId` and `taskUrl` props should be set. These values
+are the data send from the `taskStarted` event of `actionButton`.
+
+**Note:** This component will check whether the task has been started externally (for example, by
+another window). A `actionStartedExternally` event with `taskId` and `taskUrl` data will be emitted in
+this case. The tab does not mutate its own props so it the parent component should subscribe to the
+event and set the props accordingly.
+
+When the task completes a `completed` event is emitted. No action is needed on this event, it is emitted
+so that the parent component can update any other data or UI elements if needed.
+
+When the close button is clicked a `closeTask` event is emitted. It is the responsibility of the parent
+component to set the `taskId` and `taskUrl` props back to `null`, returning the tab to **Unstarted**
+mode.
+-->
 <template>
   <div ref="actionTab" uk-grid class="uk-height-1-1 uk-margin-remove uk-padding-remove">
     <div class="control-component uk-padding-small">
