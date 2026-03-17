@@ -20,7 +20,7 @@ import stepTemplateWithStream from "../stepTemplateWithStream.vue";
 import CSMCalibrationSettings from "../../../tabContentComponents/settingsComponents/CSMSettingsComponents/CSMCalibrationSettings.vue";
 
 export default {
-  name: "CameraMainCalibrationStep",
+  name: "CSMMainCalibrationStep",
 
   components: {
     stepTemplateWithStream,

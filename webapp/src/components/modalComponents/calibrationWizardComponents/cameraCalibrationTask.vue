@@ -15,6 +15,7 @@ import calibrationWizardTask from "./calibrationWizardTask.vue";
 import camCalibrationExplanation from "./cameraCalibrationSteps/camCalibrationExplanation.vue";
 import cameraMainCalibrationStep from "./cameraCalibrationSteps/cameraMainCalibrationStep.vue";
 import { markRaw } from "vue";
+import CameraFocusStep from "./cameraCalibrationSteps/cameraFocusStep.vue";
 
 export default {
   name: "CameraCalibrationTask",
@@ -38,6 +39,7 @@ export default {
     return {
       steps: [
         { component: markRaw(camCalibrationExplanation) },
+        { component: markRaw(CameraFocusStep) },
         { component: markRaw(cameraMainCalibrationStep) },
       ],
     };
