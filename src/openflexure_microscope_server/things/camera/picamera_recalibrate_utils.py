@@ -241,6 +241,9 @@ def _set_minimum_exposure(camera: Picamera2, sensor_info: SensorInfo) -> None:
     # to the minimum possible, which is ~8us for PiCamera v2
     camera.set_controls({"AeEnable": False, "AnalogueGain": 1, "ExposureTime": 1})
     time.sleep(sensor_info.long_pause)
+    # Flush stale frames
+    for _ in range(2):
+        _r = camera.capture_metadata()
 
 
 def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTest:
@@ -253,9 +256,15 @@ def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTe
     percentile (which will be compared to the target), as well as
     the camera's shutter and gain values.
     """
-    camera.capture_array("raw")  # controls might not be updated for the first frame?
+    # A single request, to ensure metadata matches frame
+    request = camera.capture_request()
+    try:
+        metadata = request.get_metadata()
+        image = request.make_array("raw")
+    finally:
+        request.release()
     max_brightness = np.percentile(
-        _channels_from_bayer_array(camera.capture_array("raw")),
+        _channels_from_bayer_array(image),
         percentile,
     )
     # The reported brightness can, theoretically, be negative or zero
@@ -268,7 +277,6 @@ def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTe
             "camera's black level compensation has gone wrong."
         )
         max_brightness = 1
-    metadata = camera.capture_metadata()
     result = _ExposureTest(
         level=max_brightness,
         exposure_time=int(metadata["ExposureTime"]),
