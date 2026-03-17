@@ -9,7 +9,6 @@
         Use the buttons below or Page Up/Down to defocus slightly, to make sure no features are
         visible.
       </li>
-      <li>If your slide has no empty areas, remove it and instead calibrate with no sample.</li>
     </ul>
     <template #below-stream>
       <stageControlButtons :show-dpad="false" />
