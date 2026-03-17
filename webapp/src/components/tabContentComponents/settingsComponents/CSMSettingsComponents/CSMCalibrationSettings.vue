@@ -51,7 +51,7 @@
         </ul>
       </details>
     </div>
-    <p v-else><strong>No Calibration Available</strong></p>
+    <p v-else><strong>No Calibration Data Available</strong></p>
   </div>
 </template>
 

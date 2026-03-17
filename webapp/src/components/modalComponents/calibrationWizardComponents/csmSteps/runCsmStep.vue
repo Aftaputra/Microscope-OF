@@ -45,5 +45,7 @@ export default {
 <style scoped>
 .action-button-container {
   padding: 4px;
+  display: flex;
+  justify-content: center;
 }
 </style>
