@@ -1,5 +1,5 @@
 <template>
-  <div id="modal-example" ref="calibrationModalEl" uk-modal="bg-close: false;">
+  <div id="modal-example" ref="calibrationModalEl" uk-modal="bg-close: false; esc-close:false;">
     <div class="uk-modal-dialog uk-modal-body">
       <!-- Get the style from uk-close, but use stop.prevent to avoid it actually closing -->
       <button
@@ -47,6 +47,8 @@ export default {
       tasks: [],
       taskIndex: 0,
       movingBackward: false,
+      modalOpen: false,
+      confirmingClose: false,
     };
   },
 
@@ -159,12 +161,18 @@ export default {
     },
 
     show: function () {
+      this.modalOpen = true;
+      window.addEventListener("keydown", this.handleKeydown);
+
       // Show the modal element
       var el = this.$refs["calibrationModalEl"];
       this.showModalElement(el); // Calls the mixin
     },
 
     hide: function () {
+      this.modalOpen = false;
+      window.removeEventListener("keydown", this.handleKeydown);
+
       // Show the modal
       var el = this.$refs["calibrationModalEl"];
       this.hideModalElement(el); // Calls the mixin
@@ -174,19 +182,32 @@ export default {
       this.$emit("onClose");
     },
 
+    handleKeydown(event) {
+      if (event.key === "Escape" && !event.repeat && this.modalOpen && !this.confirmingClose) {
+        event.preventDefault();
+        this.confirmClose();
+      }
+    },
+
     confirmClose() {
+      if (this.confirmingClose) return;
+      this.confirmingClose = true;
       let confirmationMessage =
         "Close calibration wizard?<br><br>This can be re-opened from the Settings tab at any time.";
       // Use standard modal confirmation
-      this.modalConfirm(confirmationMessage).then(
-        () => {
-          // User clicked YES → hide modal
-          this.hide();
-        },
-        () => {
-          // User clicked NO → do nothing, modal stays open
-        },
-      );
+      this.modalConfirm(confirmationMessage)
+        .then(
+          () => {
+            // User clicked YES → hide modal
+            this.hide();
+          },
+          () => {
+            // User clicked NO → do nothing, modal stays open
+          },
+        )
+        .finally(() => {
+          this.confirmingClose = false; // reset flag when confirmation modal is gone
+        });
     },
 
     /*
