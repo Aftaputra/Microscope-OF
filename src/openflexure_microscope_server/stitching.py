@@ -11,7 +11,6 @@ import os
 import shlex
 import signal
 import subprocess
-import sys
 import threading
 from typing import IO, Optional
 
@@ -222,8 +221,7 @@ class PreviewStitcher(BaseStitcher):
             except lt.exceptions.InvocationCancelledError as e:
                 with self._popen_lock:
                     if self._popen_obj is not None:
-                        # mypy requires the check to be here
-                        if sys.platform == "win32":
+                        if IS_WINDOWS:
                             # Windows has no SIGKILL
                             self._popen_obj.kill()
                         else:
