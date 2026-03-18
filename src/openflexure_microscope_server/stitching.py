@@ -227,7 +227,8 @@ class PreviewStitcher(BaseStitcher):
                             # Windows has no SIGKILL
                             self._popen_obj.kill()
                         else:
-                            self._popen_obj.send_signal(signal.SIGKILL)
+                            # ignore this line in mypy as mypy doesn't understand using the bool as a check
+                            self._popen_obj.send_signal(signal.SIGKILL)  # type: ignore[attr-defined]
                 raise (e)
 
 
