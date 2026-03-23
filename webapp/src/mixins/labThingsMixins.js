@@ -126,6 +126,20 @@ export default {
         return null;
       }
     },
+    /**
+     * Find and ongoing Action and return its task response.
+     *
+     * Returns null if there is no ongoing action
+     */
+    async getOngingAction(thing, action) {
+      let response = await this.findOngoingActions(thing, action);
+      // Exit if response is null, due to an error.
+      if (response == null) return null;
+      // Check for a task that is ongoing.
+      // We can't handle multiple tasks ongoing, so this picks the first.
+      // ?? Is the "Nullish Coalescing-Operator" to turn undefined into null.
+      return response.data.find((t) => ["pending", "running"].includes(t.status)) ?? null;
+    },
     thingActionUrl(thing, action, allowUndefined = false) {
       let url = this.$store.getters["wot/thingActionUrl"](
         thing,
