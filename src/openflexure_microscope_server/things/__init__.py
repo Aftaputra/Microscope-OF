@@ -4,7 +4,7 @@ The microscope can be extended to be used with other hardware by creating a pack
 with other Things and including them in the LabThings-FastAPI config file.
 """
 
-import posixpath
+import os
 from typing import Optional, Self
 
 import labthings_fastapi as lt
@@ -23,7 +23,7 @@ class OFMThing(lt.Thing):
         if application_config is None:
             raise ValueError("No application configuration was supplied.")
         app_data_dir = application_config["data_folder"]
-        self._data_dir = posixpath.join(str(app_data_dir), self.path.strip("/"))
+        self._data_dir = os.path.join(str(app_data_dir), self.path.strip("/"))
         return self
 
     @property
