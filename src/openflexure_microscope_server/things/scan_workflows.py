@@ -314,7 +314,7 @@ class SmartStackCompatibleSettings(Protocol):
     smart_stack_params: SmartStackParams
 
 
-class SmartStackMixin(ScanWorkflow):
+class SmartStackMixin:
     """A mixin for scan workflows that use smart stacking."""
 
     stack_images_to_save: int = lt.setting(default=1, ge=1, le=9)
@@ -345,6 +345,16 @@ class SmartStackMixin(ScanWorkflow):
     * 200 for 20x
     """
 
+    @property
+    def as_workflow(self) -> ScanWorkflow:
+        """Return self with correct a ScanWorkflow type.
+
+        Check this object is ScanWorkflow with the mixin,
+        """
+        if not isinstance(self, ScanWorkflow):
+            raise TypeError("SmartStackMixin must be mixed into a ScanWorkflow")
+        return self
+
     def create_smart_stack_params(self, save_on_failure: bool) -> SmartStackParams:
         """Set up the parameters used for all smart stacks in a scan.
 
@@ -354,7 +364,7 @@ class SmartStackMixin(ScanWorkflow):
         min_images_to_test = self.stack_min_images_to_test
         if min_images_to_test % 2 == 0:
             min_images_to_test += 1
-            self.logger.warning(
+            self.as_workflow.logger.warning(
                 "Minimum number of images to test should be odd, setting to "
                 f"{min_images_to_test}."
             )
@@ -365,14 +375,14 @@ class SmartStackMixin(ScanWorkflow):
         # min_images_to_save
         images_to_save = self.stack_images_to_save
         if images_to_save > min_images_to_test:
-            self.logger.warning(
+            self.as_workflow.logger.warning(
                 f"Cannot save {images_to_save} images as this above the minimum "
                 f"number to test. Setting images to save to {MAX_TEST_IMAGE_COUNT}."
             )
             images_to_save = min_images_to_test
         elif images_to_save % 2 == 0:
             images_to_save += 1
-            self.logger.warning(
+            self.as_workflow.logger.warning(
                 f"Images to save should be odd, setting to {images_to_save}."
             )
         # Set the Thing property to the coerced value
@@ -385,20 +395,6 @@ class SmartStackMixin(ScanWorkflow):
             save_on_failure=save_on_failure,
         )
 
-    def smart_stack_property_controls(self) -> list[PropertyControl]:
-        """Return smart stack property controls for the UI."""
-        return [
-            property_control_for(
-                self, "stack_images_to_save", label="Images in Stack to Save"
-            ),
-            property_control_for(
-                self,
-                "stack_min_images_to_test",
-                label="Minimum number of images to test for focus",
-            ),
-            property_control_for(self, "stack_dz", label="Stack dz (steps)", step=5),
-        ]
-
     def _perform_smart_stack(
         self, settings: SmartStackCompatibleSettings, xyz_pos: tuple[int, int, int]
     ) -> tuple[bool, Optional[int]]:
@@ -410,7 +406,7 @@ class SmartStackMixin(ScanWorkflow):
             If failed to find focus, returns for the focus z-position.
         """
         focus_height: Optional[int]
-        focused, focus_height = self._autofocus.run_smart_stack(
+        focused, focus_height = self.as_workflow._autofocus.run_smart_stack(
             stack_parameters=settings.smart_stack_params,
             capture_parameters=settings.capture_params,
             autofocus_parameters=settings.autofocus_params,
@@ -420,7 +416,7 @@ class SmartStackMixin(ScanWorkflow):
 
         if not imaged:
             msg = f"Stack failed at {xyz_pos}. Treating as background."
-            self.logger.info(msg)
+            self.as_workflow.logger.info(msg)
 
         # run_smart_stage always returns a focus height for the sharpest image even
         # if it failed to find a good focus. Set to None if not focussed.
@@ -428,6 +424,24 @@ class SmartStackMixin(ScanWorkflow):
             focus_height = None
 
         return imaged, focus_height
+
+    def smart_stack_property_controls(self) -> list[PropertyControl]:
+        """Return smart stack property controls for the UI."""
+        return [
+            property_control_for(
+                self.as_workflow,
+                "stack_images_to_save",
+                label="Images in Stack to Save",
+            ),
+            property_control_for(
+                self.as_workflow,
+                "stack_min_images_to_test",
+                label="Minimum number of images to test for focus",
+            ),
+            property_control_for(
+                self.as_workflow, "stack_dz", label="Stack dz (steps)", step=5
+            ),
+        ]
 
 
 class HistoScanSettingsModel(RectGridSettingsModel):
@@ -867,6 +881,7 @@ class CChipWorkflow(RectGridWorkflow[CChipScanSettingsModel]):
         readonly=True,
     )
     _grid_style: Literal["snake"] = "snake"
+    _planner_cls = RegularGridPlanner
     _settings_model = CChipScanSettingsModel
 
     overlap: float = lt.setting(default=0.1, ge=0.1, le=0.7)
