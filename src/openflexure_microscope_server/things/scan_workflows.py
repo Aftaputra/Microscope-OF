@@ -837,17 +837,20 @@ class RasterWorkflow(RegularGridWorkflow[RegularGridSettingsModel]):
     _grid_style = "raster"
 
 
-class CChipScanSettingsModel(RegularGridSettingsModel):
+class CChipScanSettingsModel(RectGridSettingsModel):
     """The settings for a scan with the CChipWorkflow.
 
     This includes settings calculated when starting. This will be held by smart scan
     during a scan and serialised to disk.
     """
 
+    x_count: int
+    y_count: int
     stack_params: StackParams
+    style: Literal["snake", "raster"]
 
 
-class CChipWorkflow(RegularGridWorkflow[CChipScanSettingsModel]):
+class CChipWorkflow(RectGridWorkflow[CChipScanSettingsModel]):
     """A workflow optimised for scanning the well of a CChip.
 
     This workflow generates a list of coordinates in a rectangle, and snakes
@@ -863,7 +866,7 @@ class CChipWorkflow(RegularGridWorkflow[CChipScanSettingsModel]):
         ),
         readonly=True,
     )
-    _grid_style = "snake"
+    _grid_style: Literal["snake"] = "snake"
     _settings_model = CChipScanSettingsModel
 
     overlap: float = lt.setting(default=0.1, ge=0.1, le=0.7)
@@ -905,6 +908,26 @@ class CChipWorkflow(RegularGridWorkflow[CChipScanSettingsModel]):
             y_count=self.y_count,
             style=self._grid_style,
             stack_params=stack_params,
+        )
+
+    def new_scan_planner(
+        self, settings: CChipScanSettingsModel, position: Mapping[str, int]
+    ) -> ScanPlanner:
+        """Return a new scan planner object.
+
+        :param settings: The settings for this scan as the relevant SettingsModel type.
+        :param position: The starting position as a mapping of axes names to int.
+        """
+        planner_settings = {
+            "dx": settings.dx,
+            "dy": settings.dy,
+            "x_count": settings.x_count,
+            "y_count": settings.y_count,
+            "style": settings.style,
+        }
+        return self._planner_cls(
+            initial_position=(position["x"], position["y"]),
+            planner_settings=planner_settings,
         )
 
     def pre_scan_routine(self, settings: CChipScanSettingsModel) -> None:
