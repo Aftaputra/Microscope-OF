@@ -23,7 +23,9 @@ class OFMThing(lt.Thing):
         if application_config is None:
             raise ValueError("No application configuration was supplied.")
         app_data_dir = application_config["data_folder"]
-        self._data_dir = os.path.join(str(app_data_dir), self.path.strip("/"))
+        self._data_dir = os.path.join(
+            os.path.normpath(str(app_data_dir)), os.path.normpath(self.path.strip("/"))
+        )
         return self
 
     @property
