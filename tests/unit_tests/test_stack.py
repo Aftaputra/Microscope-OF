@@ -270,7 +270,9 @@ def test_create_stack(histo_scan_workflow, caplog):
     initial_min_images_to_test = histo_scan_workflow.stack_min_images_to_test
     initial_images_to_save = histo_scan_workflow.stack_images_to_save
     with caplog.at_level(logging.INFO):
-        stack_params = histo_scan_workflow.create_smart_stack_params()
+        stack_params = histo_scan_workflow.create_smart_stack_params(
+            save_on_failure=not histo_scan_workflow.skip_background
+        )
 
     assert len(caplog.records) == 0
     assert histo_scan_workflow.stack_min_images_to_test == initial_min_images_to_test
@@ -294,7 +296,9 @@ def test_coercing_stack_test_ims(
     histo_scan_workflow.stack_min_images_to_test = initial_test_ims
 
     with caplog.at_level(logging.WARNING):
-        stack_params = histo_scan_workflow.create_smart_stack_params()
+        stack_params = histo_scan_workflow.create_smart_stack_params(
+            save_on_failure=not histo_scan_workflow.skip_background
+        )
 
     assert len(caplog.records) == 1
     assert str(caplog.records[0].msg).startswith(expected_log_start)
@@ -322,7 +326,9 @@ def test_coercing_stack_save_ims(
     histo_scan_workflow.stack_images_to_save = initial_save_ims
 
     with caplog.at_level(logging.WARNING):
-        stack_params = histo_scan_workflow.create_smart_stack_params()
+        stack_params = histo_scan_workflow.create_smart_stack_params(
+            save_on_failure=not histo_scan_workflow.skip_background
+        )
 
     assert len(caplog.records) == 1
     assert str(caplog.records[0].msg).startswith(expected_log_start)
@@ -397,7 +403,9 @@ def setup_and_run_smart_z_stack(
         is a list, it will be set as a side effect (and should be a list of tuples of
         results). If it a tuple (or anything else), it is set as a return value.
     """
-    stack_params = histo_scan_workflow.create_smart_stack_params()
+    stack_params = histo_scan_workflow.create_smart_stack_params(
+        save_on_failure=not histo_scan_workflow.skip_background
+    )
     stack_params.settling_time = 0  # Don't settle or tests take forever.
 
     autofocus_thing.capture_stack_image = mocker.Mock()
