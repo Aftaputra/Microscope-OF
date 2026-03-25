@@ -224,6 +224,8 @@ def action_button_for(thing: lt.Thing, action_name: str, **kwargs: Any) -> Actio
     :return: An ActionButton (Pydantic Model) object with all the information the
         webapp needs to create the action button.
     """
+    if action_name not in thing.actions:
+        raise AttributeError(f"{thing.name} has no action {action_name}")
     return ActionButton(thing=thing.name, action=action_name, **kwargs)
 
 
@@ -283,6 +285,8 @@ def property_control_for(
     """
     if "label" not in kwargs:
         kwargs["label"] = property_name
+    if property_name not in thing.properties:
+        raise AttributeError(f"{thing.name} has no property {property_name}")
     return PropertyControl(thing=thing.name, property_name=property_name, **kwargs)
 
 
