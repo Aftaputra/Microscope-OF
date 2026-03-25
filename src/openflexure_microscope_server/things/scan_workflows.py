@@ -328,7 +328,7 @@ class SmartStackMixin:
     )
     """The minimum number of images to capture in a stack.
 
-    This many images are captures and tested for focus, if the focus is not central
+    This many images are captured and tested for focus, if the focus is not central
     enough more images may be captured. After new images are captured, this value sets
     the number of images used for checking if focus is achieved.
 
@@ -347,9 +347,10 @@ class SmartStackMixin:
 
     @property
     def as_workflow(self) -> ScanWorkflow:
-        """Return self with correct a ScanWorkflow type.
+        """Return self as a ScanWorkflow.
 
-        Check this object is ScanWorkflow with the mixin,
+        Ensures this mixin is only used with ScanWorkflow instances,
+        raising TypeError otherwise.
         """
         if not isinstance(self, ScanWorkflow):
             raise TypeError("SmartStackMixin must be mixed into a ScanWorkflow")
