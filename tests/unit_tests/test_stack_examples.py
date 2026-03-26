@@ -9,11 +9,14 @@ objects to simulate real camera captures.
 """
 
 import json
+import os
 
 from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.things.autofocus import AutofocusThing
 
+THIS_DIR = os.path.dirname(__file__)
+DATA_PATH = os.path.join(THIS_DIR, "data", "sharpness_test_cases.json")
 
 class MockCapture:
     """Simple mock object representing a captured image.
@@ -53,7 +56,8 @@ def test_stack_labelling():
     Expected labels may be a single value or a list of acceptable values.
     """
     autofocus_thing = create_thing_without_server(AutofocusThing, mock_all_slots=True)
-    with open(r"tests\unit_tests\data\sharpness_test_cases.json") as f:
+
+    with open(DATA_PATH) as f:
         data = json.load(f)
 
     success = 0
