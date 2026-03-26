@@ -1,6 +1,6 @@
 {
   "name": "openflexure-microscope-server-ui",
-  "version": "3.0.0-alpha4",
+  "version": "3.0.0-alpha5",
   "private": true,
   "description": "User interface for the OpenFlexure Microscope Server",
   "author": "OpenFlexure <contact@openflexure.org> (https://www.openflexure.org)",
