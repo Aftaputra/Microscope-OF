@@ -202,7 +202,7 @@ export default {
           scan.can_stitch = !scan.stitch_available && scan.number_of_images > 3;
         });
         scans.sort((a, b) => {
-          return b.modified - a.modified;
+          return b.created - a.created;
         });
         this.scans = scans;
       } catch (err) {
