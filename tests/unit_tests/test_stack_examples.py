@@ -18,6 +18,7 @@ from openflexure_microscope_server.things.autofocus import AutofocusThing
 THIS_DIR = os.path.dirname(__file__)
 DATA_PATH = os.path.join(THIS_DIR, "data", "sharpness_test_cases.json")
 
+
 class MockCapture:
     """Simple mock object representing a captured image.
 
