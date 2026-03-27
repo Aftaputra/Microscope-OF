@@ -22,7 +22,7 @@ dependencies = [
   "sangaboard~=0.4.0",
   "camera-stage-mapping ~= 0.1.10",
   "opencv-python-headless ~= 4.13.0",
-  "openflexure-stitching[libvips]==0.2.4",
+  "openflexure-stitching[libvips]==0.2.5",
   "pillow ~= 10.4",
   "anyio ~= 4.0",
   "numpy ~= 2.2",
