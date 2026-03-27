@@ -105,6 +105,8 @@ The following merge requests have been merged into v3:
 * !554 Move smart stacking into a mixin so it can be re-used in other workflows <!-- codespell:ignore "re-used" -->
 * !551 Sort scans by created time
 * !538 Update dependency to labthings 0.1.0
+* !557 Prep for v3.0.0 alpha5 
+* !560 Bump stitching version
 
 # [v3.0.0-alpha4](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v3.0.0-alpha3...v3.0.0-alpha4) (2025-12-15)
 
