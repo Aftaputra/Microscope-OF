@@ -77,7 +77,7 @@ class DummyStage(BaseStage):
             self._move_thread.join()
 
     axis_inverted: dict[str, bool] = lt.setting(
-        default={"x": True, "y": False, "z": False}, readonly=True
+        default_factory=lambda: {"x": True, "y": False, "z": False}, readonly=True
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
 
