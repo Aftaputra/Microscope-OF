@@ -20,6 +20,7 @@
         "bg_channel_deviations_luv": "openflexure_microscope_server.things.background_detect:ChannelDeviationLUV"
     },
     "settings_folder": "./openflexure/settings/",
+    "api_prefix": "/api/v3",
     "application_config": {
         "log_folder": "./openflexure/logs/",
         "data_folder": "./openflexure/data/"
