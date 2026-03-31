@@ -10,7 +10,7 @@ function getOriginFromLocation() {
   if (origin) {
     return origin;
   } else {
-    return url.origin;
+    return `${url.origin}/api/v3`;
   }
 }
 
