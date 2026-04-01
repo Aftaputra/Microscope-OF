@@ -345,6 +345,10 @@ class JPEGSharpnessMonitor:
         final_z_position: int = self.stage_positions[-1]["z"]
         return data_index, final_z_position
 
+    def hold(self, delay: float) -> None:
+        """Continue to monitor sharpness without moving for delay seconds."""
+        time.sleep(delay)
+
     def move_data(
         self, istart: int, istop: Optional[int] = None
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -835,6 +839,18 @@ class AutofocusThing(lt.Thing):
 
         final_z = self._stage.position["z"]
         return final_z, z_positions
+
+    @lt.action
+    def measure_settling_time(self, delay: float = 2, dz: int = 800) -> dict:
+        """Make a Z move down then up by dz, then pause for delay while monitoring sharpness.
+
+        This is useful to see how long to wait for the sharpness value to converge
+        """
+        with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
+            sharpness_monitor.focus_rel(-dz)
+            sharpness_monitor.focus_rel(dz)
+            sharpness_monitor.hold(delay)
+        return sharpness_monitor.data_dict()
 
 
 class NotAPeakError(lt.exceptions.InvocationError):
