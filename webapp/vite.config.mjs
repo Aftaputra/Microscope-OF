@@ -42,7 +42,7 @@ export default defineConfig({
     host: true,
     // Set the development server port to 8080.
     // OFM uses port 5000, so we avoid conflicts. run, and override by using the address:
-    // http://microscope.local:8080/?overrideOrigin=http://microscope.local:5000#
+    // http://microscope.local:8080/?overrideOrigin=http://microscope.local:5000/api/v3#
     port: 8080,
     strictPort: true,
   },
