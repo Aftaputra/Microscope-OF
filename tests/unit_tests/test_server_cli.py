@@ -117,7 +117,13 @@ def test_debug_mode(mocker):
         "openflexure_microscope_server.server.lt.ThingServer.from_config",
         return_value=mocker.Mock(),
     )
-
+    # Mock customisation dependencies to avoid side effects
+    mocker.patch.object(ofm_server, "add_v2_endpoints")
+    mocker.patch.object(ofm_server, "add_static_files")
+    # Mock logging to avoid side effects and allow checking calls
+    mocker.patch.object(ofm_server, "configure_logging")
+    mocker.patch.object(ofm_server, "retrieve_log")
+    mocker.patch.object(ofm_server, "retrieve_log_from_file")
     # Mock uvicorn.run to avoid starting a server
     mocker.patch("openflexure_microscope_server.server.uvicorn.run")
 
