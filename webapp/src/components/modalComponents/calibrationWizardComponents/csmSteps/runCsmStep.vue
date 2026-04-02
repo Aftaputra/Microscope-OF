@@ -20,7 +20,7 @@ import stepTemplateWithStream from "../stepTemplateWithStream.vue";
 import CSMCalibrationSettings from "../../../tabContentComponents/settingsComponents/CSMSettingsComponents/CSMCalibrationSettings.vue";
 
 export default {
-  name: "CameraMainCalibrationStep",
+  name: "CSMMainCalibrationStep",
 
   components: {
     stepTemplateWithStream,
@@ -45,5 +45,7 @@ export default {
 <style scoped>
 .action-button-container {
   padding: 4px;
+  display: flex;
+  justify-content: center;
 }
 </style>

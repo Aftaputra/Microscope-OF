@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 import labthings_fastapi as lt
 
-from openflexure_microscope_server.utilities import make_path_safe
+from openflexure_microscope_server.utilities import is_path_safe
 
 IS_WINDOWS = os.name == "nt"
 
@@ -28,6 +28,22 @@ STITCH_TILE_SIZE = 8192
 
 DEFAULT_OVERLAP = 0.1
 DEFAULT_RESIZE = 0.5
+
+# A list of commands that are forbidden in any part of a generated CLI command.
+# This provides defense-in-depth against trying to execute arbitrary shells
+# or elevation tools.
+FORBIDDEN_COMMANDS = {
+    "sudo",
+    "sh",
+    "bash",
+    "perl",
+    "ruby",
+    "php",
+    "nc",
+    "netcat",
+    "curl",
+    "wget",
+}
 
 
 class StitchingSettings(BaseModel):
@@ -49,17 +65,26 @@ class StitcherValidationError(RuntimeError):
 
 
 def validate_command(cmd: list[str]) -> None:
-    """Validate that the command only characters that are allowed in a path.
+    """Validate that the command only contains characters that are allowed in a path.
 
     The values in the commands should be numbers, commandline flags, paths, and
-    executables. All of these should be allowed by ``make_path_safe``.
+    executables. All of these should be allowed by ``is_path_safe``.
+
+    This also checks against a blacklist of forbidden commands for defense-in-depth.
 
     :raises StitcherValidationError: if any element in the command is not safe.
     """
     for element in cmd:
-        if element != make_path_safe(element):
+        # Check against forbidden commands (case-insensitive)
+        if element.lower() in FORBIDDEN_COMMANDS:
             raise StitcherValidationError(
-                "Invalid stiching command: Contains unsafe characters."
+                f"Invalid stitching command: Forbidden element '{element}' detected."
+            )
+
+        # Ensure characters are safe for a path component
+        if not is_path_safe(element):
+            raise StitcherValidationError(
+                f"Invalid stitching command: Element '{element}' contains unsafe characters."
             )
 
 
@@ -129,7 +154,7 @@ class BaseStitcher:
 
         :raises RuntimeError: if inputs are unsafe.
         """
-        if self.images_dir != make_path_safe(self.images_dir):
+        if not is_path_safe(self.images_dir):
             raise StitcherValidationError(
                 "Invalid directory path: Contains unsafe characters."
             )
@@ -200,7 +225,8 @@ class PreviewStitcher(BaseStitcher):
                             # Windows has no SIGKILL
                             self._popen_obj.kill()
                         else:
-                            self._popen_obj.send_signal(signal.SIGKILL)
+                            # ignore this line in mypy as mypy doesn't understand using the bool as a check
+                            self._popen_obj.send_signal(signal.SIGKILL)  # type: ignore[attr-defined]
                 raise (e)
 
 

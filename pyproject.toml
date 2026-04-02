@@ -3,7 +3,7 @@ name = "openflexure-microscope-server"
 
 # Note that version needs to match a string stored in a unit test, and
 # the package.json file in the webapp or the CI will fail.
-version = "3.0.0-alpha4"
+version = "3.0.0-alpha5"
 authors = [
   { name="Richard Bowman", email="richard.bowman@cantab.net" },
   { name="Joel Collins" },
@@ -18,17 +18,17 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 dependencies = [
-  "labthings-fastapi==0.0.17",
-  "sangaboard",
+  "labthings-fastapi==0.1.0",
+  "sangaboard~=0.4.0",
   "camera-stage-mapping ~= 0.1.10",
   "opencv-python-headless ~= 4.13.0",
-  "openflexure-stitching[libvips]==0.2.3",
+  "openflexure-stitching[libvips]==0.2.5",
   "pillow ~= 10.4",
   "anyio ~= 4.0",
   "numpy ~= 2.2",
   "scipy ~=1.14",
   "piexif",
-  "pydantic ~= 2.10.6",
+  "pydantic", # Pydantic is not pinned to avoid conflicts with how LabThings pins pydantic
   "simplejpeg >= 1.8.2",
   "semver ~= 3.0",
 ]

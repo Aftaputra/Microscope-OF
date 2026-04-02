@@ -2,7 +2,7 @@
 
 skip = node_modules,
        *-lock.json,
-       *.git,
+       ./.git,
        *.pyc,
        __pycache__,
        ./build,

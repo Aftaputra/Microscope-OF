@@ -353,6 +353,9 @@ class ScanDirectoryManager:
         For more explanation on the scan naming see `new_scan_dir`
         """
         scan_name = make_name_safe(scan_name)
+
+        # Strip all trailing underscores from the base name
+        scan_name = scan_name.strip("_")
         # A regex with the scan name and a group for the numbers
         scan_regex = re.compile(
             "^" + scan_name + "_([0-9]{" + str(SCAN_ZERO_PAD_DIGITS) + "})$"

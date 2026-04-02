@@ -37,7 +37,7 @@ from openflexure_microscope_server import utilities
 def test_merge_patch(target, patch, outcome, err_if_enforce):
     """Check that merge_patch returns the expected outcome for each target and patch.
 
-    These test cases are specified in Appedix A of IETF RFC 7396.
+    These test cases are specified in Appendix A of IETF RFC 7396.
     """
     assert utilities.merge_patch(target, patch) == outcome
 

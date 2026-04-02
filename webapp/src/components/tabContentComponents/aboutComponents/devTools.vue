@@ -4,7 +4,7 @@
       <label class="uk-form-label">Override API origin</label>
       <input v-model="newOrigin" name="overrideOrigin" class="uk-input" type="text" />
       <label class="uk-form-label">
-        <input v-model="reloadWhenOverridingOrigin" class="uk-input uk-checkbox" type="checkbox" />
+        <input v-model="reloadWhenOverridingOrigin" class="uk-checkbox" type="checkbox" />
         Reload web app with new origin
       </label>
       <button class="uk-button uk-button-default uk-margin-small">Apply</button>

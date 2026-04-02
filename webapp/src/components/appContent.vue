@@ -82,7 +82,6 @@ import tabContent from "./genericComponents/tabContent.vue";
 
 // Import new content components
 import aboutContent from "./tabContentComponents/aboutContent.vue";
-import backgroundDetectContent from "./tabContentComponents/backgroundDetectContent.vue";
 import controlContent from "./tabContentComponents/controlContent.vue";
 import loggingContent from "./tabContentComponents/loggingContent.vue";
 import powerContent from "./tabContentComponents/powerContent.vue";
@@ -149,15 +148,6 @@ export default {
           icon: "gamepad",
           component: markRaw(controlContent),
           requiredThings: [],
-        },
-        {
-          id: "background-detect",
-          title: "Background Detect",
-          icon: "background_replace",
-          component: markRaw(backgroundDetectContent),
-          // While stage isn't needed; automatic background detect has little function
-          // for a manual microscope.
-          requiredThings: ["stage"],
         },
         {
           id: "slide-scan",

@@ -833,8 +833,11 @@ body {
 	border-radius: 2px;
   /*Approx the other side of the colour wheel from OFM pink.*/
 	color: #2fbf73;
-	margin: 0 2px;
-	padding: 3px 5px;
+  /*Remove the padding and margin as it spaces in-line code too much from surrounding
+  text and punctuation.
+  */
+	margin: 0;
+	padding: 3px 0;
 	white-space: pre-wrap
 }
 

@@ -167,7 +167,7 @@ def test_bad_scan_names():
     scan_dir = scan_dir_manager.new_scan_dir("fake scan")
     assert scan_dir.name == "fake_scan_0001"
     scan_dir = scan_dir_manager.new_scan_dir("fake scan;rm -rf /;")
-    assert scan_dir.name == "fake_scan_rm_-rf____0001"
+    assert scan_dir.name == "fake_scan_rm_-rf_0001"
 
 
 def test_scan_sequence_and_listing(caplog):
@@ -245,6 +245,63 @@ def test_scan_sequence_and_listing(caplog):
                 assert scan_info.duration is not None
         # This time there is no warning
         assert len(caplog.records) == 0
+
+
+def test_scan_sequence_case_sensitive():
+    """Check created scans are added in order and listed correctly, even when cases are different."""
+    _clear_scan_dir()
+    scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
+
+    # Create some scan data and mark it as successful to get an end date.
+    scan_data = fake_active_scan_data()
+    scan_data.set_final_data(result="Success")
+    # Make 4 scans
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
+    scan_dir.save_scan_data(scan_data)
+    scan_dir = scan_dir_manager.new_scan_dir("FAKE_SCAN")
+    scan_dir.save_scan_data(scan_data)
+    scan_dir = scan_dir_manager.new_scan_dir("Fake_Scan")
+    scan_dir.save_scan_data(scan_data)
+    scan_dir = scan_dir_manager.new_scan_dir("FAKE_scan")
+    scan_dir.save_scan_data(scan_data)
+    scan_dir = scan_dir_manager.new_scan_dir("fAkE_sCaN")
+    scan_dir.save_scan_data(scan_data)
+
+    # Check they exist and are numbered sequentially
+    all_scans = scan_dir_manager.all_scans
+    assert_unique_of_length(all_scans, 5)
+    assert "fake_scan_0001" in all_scans
+    assert "fake_scan_0002" in all_scans
+    assert "fake_scan_0003" in all_scans
+    assert "fake_scan_0004" in all_scans
+    assert "fake_scan_0005" in all_scans
+
+
+def test_scan_names_have_single_underscores():
+    """Check created scans have only one underscore in them, not two."""
+    _clear_scan_dir()
+    scan_dir_manager = ScanDirectoryManager(BASE_SCAN_DIR)
+
+    # Create some scan data and mark it as successful to get an end date.
+    scan_data = fake_active_scan_data()
+    scan_data.set_final_data(result="Success")
+    # Make 4 scans
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan_")
+    scan_dir.save_scan_data(scan_data)
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan__")
+    scan_dir.save_scan_data(scan_data)
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan_______")
+    scan_dir.save_scan_data(scan_data)
+    scan_dir = scan_dir_manager.new_scan_dir("fake_scan")
+    scan_dir.save_scan_data(scan_data)
+
+    # Check they exist and are numbered sequentially
+    all_scans = scan_dir_manager.all_scans
+    assert_unique_of_length(all_scans, 4)
+    assert "fake_scan_0001" in all_scans
+    assert "fake_scan_0002" in all_scans
+    assert "fake_scan_0003" in all_scans
+    assert "fake_scan_0004" in all_scans
 
 
 def test_scan_name_non_sequential():

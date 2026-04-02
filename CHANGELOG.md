@@ -1,3 +1,113 @@
+# [v3.0.0-alpha5](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v3.0.0-alpha4...v3.0.0-alpha5) (2026-04-08)
+
+The fifth alpha release of the server. This release has been a huge amount of work and brings us significantly closer to a semi-stable beta release. Some highlights are:
+
+
+* Move from LabThings Dependencies to ThingSlots. This has allowed for:
+  * Much easier communication between Things
+  * Static type checking
+  * Simpler action creation.
+* Created ScanWorkflows, a backend change that allows switching scan methods. Enabling new types of scanning:
+  * Raster Scan
+  * Snake Scan
+  * CChip Scan (experimental, requires a configuration change to use)
+* Transition front end from the end of life Vue2 to Vue3 which is in active development!
+* Improvements to the simulation microscope including more simulation samples and camera options. Speeding up development.
+* Improved testing, including better defined testing environments, separation of integration and unit tests, and tests passing on Windows
+* OpenCV camera switching. Enabling changing between cameras in settings when in manual configuration.
+* "Jogging" movement. The microscope can now move continuously when an arrow key is held.
+* Improved server side UI specification. This brings us closer to "Things" being able to define their own tab, which will soon enable plugins in v3.
+* A user interface for recentring and range of motion.
+* Improved fallback server interface.
+* Backlash correction in scanning.
+* A huge number of other bug fixes and improvements.
+
+
+The following merge requests have been merged into v3:
+
+* !450 Update to be compatible with labthings-fastapi 0.0.12/0.0.13
+* !451 Start to remove deps
+* !452 Removing dependencies from CSM, autofocus, and stage_measure
+* !453 Final dependency removals
+* !454 Use new LabThingsTestEnv thoughout tests <!-- codespell:ignore thoughout -->
+* !455 Type fixes
+* !456 Proper integration tests
+* !457 Fix (most) unit tests on Windows
+* !458 Simulation Camera Improvements
+* !460 Bugfix, stop saving scans into log folder
+* !461 Background detector things
+* !462 Implement ScanWorkflows allowing multiple scanning methods
+* !464 SnakeScan as a scan planner
+* !469 More workflow layers
+* !465 Add raster scan, with generic typing to allow subclassed settings
+* !468 Illumination Thing
+* !473 HTTP API docs
+* !479 Vue2-3 migration.
+* !480 Tidy optional deps
+* !478 Increase dz range to 400 to 3000
+* !472 Manually handle out of storage and JPEG too big errors
+* !485 Restore CSM stream pos to right of buttons
+* !486 Add URL to wiki if Sangaboard firmware out of date
+* !475 Grey out read only properties in webapp
+* !484 Reduce the blur for a given z movement in simulation, to improve autofocus.
+* !489 Bump ESLint from unsported version to version 9
+* !483 CSM modal shows stream
+* !476 Generalised Jogging
+* !477 Optional options in UI property control become dropdown
+* !482 Add recentre and ROM test buttons to stage settings
+* !495 Add --max-warnings=0 back to eslint check. This was accidentally dropped when moving from vue-cli-service
+* !490 Magnification selection in simulator by cropping canvas based on objective property
+* !497 Re-enable prettier
+* !496 Update release checklist from last alpha's experience
+* !494 Use lt.property/setting validatiors to set numerical input range and step <!-- codespell:ignore validatiors -->
+* !498 Update logging page formatting.
+* !499 Use Invocation errors for expected errors.
+* !500 Add a fallback page template.
+* !505 Remove references to old GPU preview feature.
+* !506 Webapp cleanup
+* !504 Use own pagination consistently rather than vue-pagination-next
+* !502 Add spellchecking for camelCase, PascalCase, and kebab-case
+* !501 Scan logs
+* !508 Allow 0 as a setting in the webapp
+* !493 Split SmartStackParams into focus, capture, stack params
+* !487 Add functionality to switch OpenCV camera without restarting the server.
+* !514 Move to headless opencv
+* !513 More developer documnetation <!-- codespell:ignore documnetation -->
+* !510 Change pointer event names for clarity
+* !509 Backlash correction in base stage class
+* !517 Allow histo scans with equal dx and dy
+* !516 Do less coersion for stacks now labthings validates settings. <!-- codespell:ignore coersion -->
+* !519 Metadata testing
+* !503 Create and mount application level data directory rather than just a scan directory
+* !491 Decrease target brightness for both cameras as its pre-gamma
+* !525 Align buttons in confirmation modal
+* !526 Fix spellings found as codespell updates
+* !518 Add limits to background detect and settling time settings
+* !527 Update bug template to include table or configuration, more detail about how...
+* !532 Reorder Bug.md expected and actual behaviour with correct comments
+* !531 Don't tab to spinners in webapp
+* !524 Improve Validation Checks
+* !535 Remove uk-input from checkbox
+* !530 Increase number of UI elements that can be specified in the server
+* !442 Handle scan settings, then change stream, then pre-scan procedure when scanning
+* !533 Stop closing seadragon when going full screen
+* !529 Move more development information to the dev docs to minimise repitition and getting out of sync <!-- codespell:ignore repitition -->
+* !474 CChip scan workflow
+* !544 Update codespellrc to ignore ./git folder, not extension
+* !545 Update camera cal instructions to look through empty area if possible
+* !540 Flush more frames and use a request when doing exposure time
+* !542 Close calibration with confirmation
+* !546 Update path to ofm server and config file in docs
+* !547 Explicit windows check before sigkill for mypy
+* !536 Split up slide scan tab and create a generic action tab (attempt 2)
+* !548 Word break long lines in notifications
+* !552 Move from posix path to os path
+* !554 Move smart stacking into a mixin so it can be re-used in other workflows <!-- codespell:ignore "re-used" -->
+* !551 Sort scans by created time
+* !538 Update dependency to labthings 0.1.0
+* !557 Prep for v3.0.0 alpha5 
+* !560 Bump stitching version
+
 # [v3.0.0-alpha4](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v3.0.0-alpha3...v3.0.0-alpha4) (2025-12-15)
 
 The fourth alpha release of the server. This release has concentrated on colour reproduction, scanning, and the structure of the web-app.
@@ -58,7 +168,7 @@ The following merge requests have been merged into v3:
 * !434 Improve the stability of scanning
 * !438 Formalise import sorting rules and enforce
 * !448 Bump required stitching version to 0.2.1
-
+* !449 Prep for v3.0.0-alpha4
 
 # [v3.0.0-alpha3](https://gitlab.com/openflexure/openflexure-microscope-server/compare/v3.0.0-alpha2...v3.0.0-alpha3) (2025-10-10)
 

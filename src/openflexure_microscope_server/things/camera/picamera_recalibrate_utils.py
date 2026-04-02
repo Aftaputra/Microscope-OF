@@ -85,7 +85,7 @@ IMX219_SENSOR_INFO = SensorInfo(
     unpacked_pixel_format="SBGGR10",
     bit_depth=10,
     blacklevel=64,
-    default_target_white_level=700,
+    default_target_white_level=400,
     short_pause=0.2,
     long_pause=0.5,
 )
@@ -95,7 +95,7 @@ IMX477_SENSOR_INFO = SensorInfo(
     unpacked_pixel_format="SBGGR12",
     bit_depth=12,
     blacklevel=256,
-    default_target_white_level=2800,
+    default_target_white_level=1600,
     short_pause=0.2,
     long_pause=1.0,
 )
@@ -120,10 +120,11 @@ def adjust_shutter_and_gain_from_raw(
     :param camera: A Picamera2 object.
     :param target_white_level: The raw value we aim for, the raw value of the brightest
         pixels should be approximately this bright. The value to set depends on the
-        sensor bit depth. We recommend values of 700 for 10-bit sensors and 2800 for
-        12-bit sensors. This is about 70% of saturated once the blacklevel is
+        sensor bit depth. We recommend values of 400 for 10-bit sensors and 1600 for
+        12-bit sensors. This is about 40% of saturated once the blacklevel is
         subtracted. The maximum possible value depends on the sensor bit depth, the
-        sensor blacklevel and the tolerance argument.
+        sensor blacklevel and the tolerance argument. While this only uses 40% of the
+        sensor range, after gamma this corresponds to pixel value ~200.
     :param max_iterations: We will terminate once we perform this many iterations,
         whether or not we converge.  More than 10 shouldn't happen.
     :param tolerance: How close to the target value we consider "done".  Expressed as a
@@ -240,6 +241,9 @@ def _set_minimum_exposure(camera: Picamera2, sensor_info: SensorInfo) -> None:
     # to the minimum possible, which is ~8us for PiCamera v2
     camera.set_controls({"AeEnable": False, "AnalogueGain": 1, "ExposureTime": 1})
     time.sleep(sensor_info.long_pause)
+    # Flush stale frames
+    for _ in range(2):
+        _r = camera.capture_metadata()
 
 
 def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTest:
@@ -252,9 +256,15 @@ def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTe
     percentile (which will be compared to the target), as well as
     the camera's shutter and gain values.
     """
-    camera.capture_array("raw")  # controls might not be updated for the first frame?
+    # A single request, to ensure metadata matches frame
+    request = camera.capture_request()
+    try:
+        metadata = request.get_metadata()
+        image = request.make_array("raw")
+    finally:
+        request.release()
     max_brightness = np.percentile(
-        _channels_from_bayer_array(camera.capture_array("raw")),
+        _channels_from_bayer_array(image),
         percentile,
     )
     # The reported brightness can, theoretically, be negative or zero
@@ -267,7 +277,6 @@ def _test_exposure_settings(camera: Picamera2, percentile: float) -> _ExposureTe
             "camera's black level compensation has gone wrong."
         )
         max_brightness = 1
-    metadata = camera.capture_metadata()
     result = _ExposureTest(
         level=max_brightness,
         exposure_time=int(metadata["ExposureTime"]),

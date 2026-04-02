@@ -274,7 +274,7 @@ class BaseCamera(lt.Thing):
             "CameraThings must define their own capture_array method"
         )
 
-    downsampled_array_factor: int = lt.property(default=2)
+    downsampled_array_factor: int = lt.property(default=2, ge=1)
     """The downsampling factor when calling capture_downsampled_array."""
 
     @lt.action
@@ -565,7 +565,7 @@ class BaseCamera(lt.Thing):
         except Exception as e:
             raise IOError(f"An error occurred while saving {jpeg_path}") from e
 
-    settling_time: float = lt.setting(default=0.2)
+    settling_time: float = lt.setting(default=0.2, ge=0)
     """The settling time when calling the ``settle()`` method."""
 
     @lt.action

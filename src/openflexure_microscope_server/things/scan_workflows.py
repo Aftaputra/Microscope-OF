@@ -4,14 +4,13 @@ This module contains the base ``ScanWorkflow`` class that all workflows should s
 as well as specific workflows.
 """
 
-from __future__ import annotations
-
 import os
 from typing import (
     Generic,
     Literal,
     Mapping,
     Optional,
+    Protocol,
     TypeVar,
 )
 
@@ -34,6 +33,7 @@ from openflexure_microscope_server.things.autofocus import (
     AutofocusParams,
     AutofocusThing,
     SmartStackParams,
+    StackParams,
 )
 from openflexure_microscope_server.things.background_detect import (
     ChannelDeviationLUV,
@@ -41,7 +41,16 @@ from openflexure_microscope_server.things.background_detect import (
 from openflexure_microscope_server.things.camera import BaseCamera, CaptureParams
 from openflexure_microscope_server.things.camera_stage_mapping import CameraStageMapper
 from openflexure_microscope_server.things.stage import BaseStage
-from openflexure_microscope_server.ui import PropertyControl, property_control_for
+from openflexure_microscope_server.ui import (
+    UI_ELEMENT_RESPONSE,
+    Accordion,
+    HeaderBlock,
+    PropertyControl,
+    TextBlock,
+    UIElementList,
+    action_button_for,
+    property_control_for,
+)
 
 SettingModelType = TypeVar("SettingModelType", bound=BaseModel)
 
@@ -160,9 +169,9 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
 
         return True, focus_height
 
-    @lt.property
-    def settings_ui(self) -> list[PropertyControl]:
-        """A list of PropertyControl objects to create the settings in the scan tab."""
+    @lt.endpoint("get", "settings_ui", responses=UI_ELEMENT_RESPONSE)
+    def settings_ui(self) -> UIElementList:
+        """Return the UI for the workflow's settings in the scan tab."""
         raise NotImplementedError(
             "Each scan workflow must implement a settings_ui method."
         )
@@ -297,6 +306,145 @@ class RectGridWorkflow(
         return not self._csm.calibration_required
 
 
+class SmartStackCompatibleSettings(Protocol):
+    """A protocol for the minimum settings needed for smart stack to work."""
+
+    capture_params: CaptureParams
+    autofocus_params: AutofocusParams
+    smart_stack_params: SmartStackParams
+
+
+class SmartStackMixin:
+    """A mixin for scan workflows that use smart stacking."""
+
+    stack_images_to_save: int = lt.setting(default=1, ge=1, le=9)
+    """The number of images to save in a stack.
+
+    Defaults to 1 unless you need to see either side of focus
+    """
+
+    stack_min_images_to_test: int = lt.setting(
+        default=9, ge=MIN_TEST_IMAGE_COUNT, le=MAX_TEST_IMAGE_COUNT
+    )
+    """The minimum number of images to capture in a stack.
+
+    This many images are captured and tested for focus, if the focus is not central
+    enough more images may be captured. After new images are captured, this value sets
+    the number of images used for checking if focus is achieved.
+
+    Defaults to 9 which balances reliability and speed.
+    """
+
+    stack_dz: int = lt.setting(default=50, ge=10, le=400)
+    """Distance in steps between images in a z-stack.
+
+    Suggested values:
+
+    * 50 for 60-100x
+    * 100 for 40x
+    * 200 for 20x
+    """
+
+    @property
+    def as_workflow(self) -> ScanWorkflow:
+        """Return self as a ScanWorkflow.
+
+        Ensures this mixin is only used with ScanWorkflow instances,
+        raising TypeError otherwise.
+        """
+        if not isinstance(self, ScanWorkflow):
+            raise TypeError("SmartStackMixin must be mixed into a ScanWorkflow")
+        return self
+
+    def create_smart_stack_params(self, save_on_failure: bool) -> SmartStackParams:
+        """Set up the parameters used for all smart stacks in a scan.
+
+        :returns: A StackSmartParams object with the required parameters.
+        """
+        # Coerce min_images_to_test parameter
+        min_images_to_test = self.stack_min_images_to_test
+        if min_images_to_test % 2 == 0:
+            min_images_to_test += 1
+            self.as_workflow.logger.warning(
+                "Minimum number of images to test should be odd, setting to "
+                f"{min_images_to_test}."
+            )
+        # Set the Thing property to the coerced value
+        self.stack_min_images_to_test = min_images_to_test
+
+        # Coerce the images to save parameter to be odd, and less than
+        # min_images_to_save
+        images_to_save = self.stack_images_to_save
+        if images_to_save > min_images_to_test:
+            self.as_workflow.logger.warning(
+                f"Cannot save {images_to_save} images as this above the minimum "
+                f"number to test. Setting images to save to {MAX_TEST_IMAGE_COUNT}."
+            )
+            images_to_save = min_images_to_test
+        elif images_to_save % 2 == 0:
+            images_to_save += 1
+            self.as_workflow.logger.warning(
+                f"Images to save should be odd, setting to {images_to_save}."
+            )
+        # Set the Thing property to the coerced value
+        self.stack_images_to_save = images_to_save
+
+        return SmartStackParams(
+            stack_dz=self.stack_dz,
+            images_to_save=self.stack_images_to_save,
+            min_images_to_test=self.stack_min_images_to_test,
+            save_on_failure=save_on_failure,
+        )
+
+    def _perform_smart_stack(
+        self, settings: SmartStackCompatibleSettings, xyz_pos: tuple[int, int, int]
+    ) -> tuple[bool, Optional[int]]:
+        """Perform acquisition a smart stack.
+
+        :param settings: The settings for this scan as a HistoScanSettingsModel
+        :param xyz_pos: The current position as a tuple or 3 ints.
+        :return: A tuple of whether an image was taken, and the z-position for focus.
+            If failed to find focus, returns for the focus z-position.
+        """
+        focus_height: Optional[int]
+        focused, focus_height = self.as_workflow._autofocus.run_smart_stack(
+            stack_parameters=settings.smart_stack_params,
+            capture_parameters=settings.capture_params,
+            autofocus_parameters=settings.autofocus_params,
+        )
+        # An image was captured if we are focussed or we are not skipping background.
+        imaged = focused or settings.smart_stack_params.save_on_failure
+
+        if not imaged:
+            msg = f"Stack failed at {xyz_pos}. Treating as background."
+            self.as_workflow.logger.info(msg)
+
+        # run_smart_stage always returns a focus height for the sharpest image even
+        # if it failed to find a good focus. Set to None if not focussed.
+        if not focused:
+            focus_height = None
+
+        return imaged, focus_height
+
+    def smart_stack_property_controls(self) -> list[PropertyControl]:
+        """Return smart stack property controls for the UI."""
+        return [
+            property_control_for(
+                self.as_workflow,
+                "stack_images_to_save",
+                label="Images in Stack to Save",
+            ),
+            property_control_for(
+                self.as_workflow,
+                "stack_min_images_to_test",
+                label="Minimum number of images to test for focus",
+            ),
+            property_control_for(
+                self.as_workflow, "stack_dz", label="Stack dz (steps)", step=5
+            ),
+        ]
+
+
 class HistoScanSettingsModel(RectGridSettingsModel):
     """The settings for a scan with the HistoScanWorkflow.
 
@@ -309,7 +457,7 @@ class HistoScanSettingsModel(RectGridSettingsModel):
     smart_stack_params: SmartStackParams
 
 
-class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
+class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel], SmartStackMixin):
     """A workflow optimised for scanning Histopathology samples.
 
     This workflow automatically plans its own path around a sample spiralling out from
@@ -341,36 +489,6 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
 
     max_range: int = lt.setting(default=45000, ge=0)
     """The maximum distance in steps from the centre of the scan."""
-
-    # Stacking settings
-
-    stack_images_to_save: int = lt.setting(default=1, ge=1, le=9)
-    """The number of images to save in a stack.
-
-    Defaults to 1 unless you need to see either side of focus
-    """
-
-    stack_min_images_to_test: int = lt.setting(
-        default=9, ge=MIN_TEST_IMAGE_COUNT, le=MAX_TEST_IMAGE_COUNT
-    )
-    """The minimum number of images to capture in a stack.
-
-    This many images are captures and tested for focus, if the focus is not central
-    enough more images may be captured. After new images are captured, this value sets
-    the number of images used for checking if focus is achieved.
-
-    Defaults to 9 which balances reliability and speed.
-    """
-
-    stack_dz: int = lt.setting(default=50, ge=10, le=400)
-    """Distance in steps between images in a z-stack.
-
-    Suggested values:
-
-    * 50 for 60-100x
-    * 100 for 40x
-    * 200 for 20x
-    """
 
     equal_distances: bool = lt.setting(default=False)
     """Make the distances in x and y equal in motor steps, rather than in overlap.
@@ -435,49 +553,9 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
             **base_kwargs,
             max_dist=self.max_range,
             skip_background=self.skip_background,
-            smart_stack_params=self.create_smart_stack_params(),
-        )
-
-    def create_smart_stack_params(
-        self,
-    ) -> SmartStackParams:
-        """Set up the parameters used for all smart stacks in a scan.
-
-        :returns: A StackSmartParams object with the required parameters.
-        """
-        # Coerce min_images_to_test parameter
-        min_images_to_test = self.stack_min_images_to_test
-        if min_images_to_test % 2 == 0:
-            min_images_to_test += 1
-            self.logger.warning(
-                "Minimum number of images to test should be odd, setting to "
-                f"{min_images_to_test}."
-            )
-        # Set the Thing property to the coerced value
-        self.stack_min_images_to_test = min_images_to_test
-
-        # Coerce the images to save parameter to be odd, and less than
-        # min_images_to_save
-        images_to_save = self.stack_images_to_save
-        if images_to_save > min_images_to_test:
-            self.logger.warning(
-                f"Cannot save {images_to_save} images as this above the minimum "
-                f"number to test. Setting images to save to {MAX_TEST_IMAGE_COUNT}."
-            )
-            images_to_save = min_images_to_test
-        elif images_to_save % 2 == 0:
-            images_to_save += 1
-            self.logger.warning(
-                f"Images to save should be odd, setting to {images_to_save}."
-            )
-        # Set the Thing property to the coerced value
-        self.stack_images_to_save = images_to_save
-
-        return SmartStackParams(
-            stack_dz=self.stack_dz,
-            images_to_save=self.stack_images_to_save,
-            min_images_to_test=self.stack_min_images_to_test,
-            save_on_failure=not self.skip_background,
+            smart_stack_params=self.create_smart_stack_params(
+                save_on_failure=not self.skip_background
+            ),
         )
 
     def pre_scan_routine(self, settings: HistoScanSettingsModel) -> None:
@@ -536,55 +614,88 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel]):
                 self.logger.info(msg)
                 return False, None
 
-        focus_height: Optional[int]
-        focused, focus_height = self._autofocus.run_smart_stack(
-            stack_parameters=settings.smart_stack_params,
-            capture_parameters=settings.capture_params,
-            autofocus_parameters=settings.autofocus_params,
+        return self._perform_smart_stack(settings, xyz_pos)
+
+    @lt.action
+    def check_background(self) -> str:
+        """Check if sample is background.
+
+        This action is a pre-run check for feeding back to the user.
+        """
+        image_array = self._cam.grab_as_array(stream_name="lores")
+        is_sample, bg_message = self._background_detector.image_is_sample(image_array)
+        label = "sample" if is_sample else "background"
+
+        return f"Current image is {label} ({bg_message})"
+
+    @lt.action
+    def set_background(self) -> None:
+        """Set the background for this background detector.
+
+        This sets the background for this workflow's background detector as opposed to
+        the active background detector for the camera.
+        """
+        image_array = self._cam.grab_as_array(stream_name="lores")
+        self._background_detector.set_background(image_array)
+
+    @lt.endpoint("get", "settings_ui", responses=UI_ELEMENT_RESPONSE)
+    def settings_ui(self) -> UIElementList:
+        """Return the UI for the workflow's settings in the scan tab."""
+        scan_settings = UIElementList(
+            [
+                property_control_for(
+                    self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
+                ),
+                *self.smart_stack_property_controls(),
+                property_control_for(
+                    self, "autofocus_dz", label="Autofocus Range (steps)", step=200
+                ),
+                property_control_for(
+                    self, "max_range", label="Maximum Distance (steps)", step=1000
+                ),
+                property_control_for(
+                    self, "skip_background", label="Detect and Skip Empty Fields"
+                ),
+                property_control_for(
+                    self, "equal_distances", label="Set Equal x and y Distances"
+                ),
+            ]
         )
-        # An image was captured if we are focussed or we are not skipping background.
-        imaged = focused or settings.smart_stack_params.save_on_failure
+        background_ui = self._background_detector.settings_ui()
+        set_bg_button = action_button_for(
+            self,
+            "set_background",
+            poll_interval=0.1,
+            submit_label="Set Background",
+            can_terminate=False,
+            notify_on_success=True,
+            success_message="Background image has been updated",
+            update_interface_on_response=True,
+        )
+        check_bg_button = action_button_for(
+            self,
+            "check_background",
+            poll_interval=0.1,
+            submit_label="Check Current Image",
+            disabled=not self._background_detector.ready,
+            can_terminate=False,
+            notify_on_success=True,
+            response_is_success_message=True,
+        )
 
-        if not imaged:
-            msg = f"Stack failed at {xyz_pos}. Treating as background."
-            self.logger.info(msg)
+        background_ui.root += [set_bg_button, check_bg_button]
 
-        # run_smart_stage always returns a focus height for the sharpest image even
-        # if it failed to find a good focus. Set to None if not focussed.
-        if not focused:
-            focus_height = None
-
-        return imaged, focus_height
-
-    @lt.property
-    def settings_ui(self) -> list[PropertyControl]:
-        """A list of PropertyControl objects to create the settings in the scan tab."""
-        return [
-            property_control_for(
-                self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
-            ),
-            property_control_for(
-                self, "stack_images_to_save", label="Images in Stack to Save"
-            ),
-            property_control_for(
-                self,
-                "stack_min_images_to_test",
-                label="Minimum number of images to test for focus",
-            ),
-            property_control_for(self, "stack_dz", label="Stack dz (steps)", step=5),
-            property_control_for(
-                self, "autofocus_dz", label="Autofocus Range (steps)", step=200
-            ),
-            property_control_for(
-                self, "max_range", label="Maximum Distance (steps)", step=1000
-            ),
-            property_control_for(
-                self, "skip_background", label="Detect and Skip Empty Fields"
-            ),
-            property_control_for(
-                self, "equal_distances", label="Set Equal x and y Distances"
-            ),
-        ]
+        return UIElementList(
+            [
+                HeaderBlock(text=self.display_name, level=4),
+                TextBlock(text=self.ui_blurb),
+                Accordion(title="Background Detect", children=background_ui),
+                Accordion(
+                    title="Scan Settings",
+                    children=scan_settings,
+                ),
+            ]
+        )
 
 
 class RegularGridSettingsModel(RectGridSettingsModel):
@@ -596,10 +707,20 @@ class RegularGridSettingsModel(RectGridSettingsModel):
 
     x_count: int
     y_count: int
+    smart_stack_params: SmartStackParams
     style: Literal["snake", "raster"]
 
 
-class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
+RegGridSettingModelType = TypeVar(
+    "RegGridSettingModelType", bound=RegularGridSettingsModel
+)
+
+
+class RegularGridWorkflow(
+    RectGridWorkflow[RegGridSettingModelType],
+    SmartStackMixin,
+    Generic[RegGridSettingModelType],
+):
     """A base workflow for any workflow that uses a regular rectangular grid."""
 
     x_count: int = lt.setting(default=3, ge=1)
@@ -607,20 +728,21 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
     y_count: int = lt.setting(default=2, ge=1)
     """The number of rows in the scan."""
 
-    _settings_model = RegularGridSettingsModel
+    _settings_model: type[RegGridSettingModelType]
     _planner_cls = RegularGridPlanner
     _grid_style: Literal["snake", "raster"]
 
-    def _build_scan_settings(self, base_kwargs: dict) -> RegularGridSettingsModel:
+    def _build_scan_settings(self, base_kwargs: dict) -> RegGridSettingModelType:
         """Construct the SettingModel for all_settings."""
-        return RegularGridSettingsModel(
+        return self._settings_model(
             **base_kwargs,
             x_count=self.x_count,
             y_count=self.y_count,
             style=self._grid_style,
+            smart_stack_params=self.create_smart_stack_params(save_on_failure=True),
         )
 
-    def pre_scan_routine(self, settings: RegularGridSettingsModel) -> None:
+    def pre_scan_routine(self, settings: RegGridSettingModelType) -> None:
         """Perform these steps before starting the scan.
 
         In this case, only autofocus.
@@ -632,11 +754,11 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
         )
 
     def new_scan_planner(
-        self, settings: RegularGridSettingsModel, position: Mapping[str, int]
+        self, settings: RegGridSettingModelType, position: Mapping[str, int]
     ) -> ScanPlanner:
         """Return a new scan planner object.
 
-        :param settings: The settings for this scan as a SnakeSettingsModel
+        :param settings: The settings for this scan as the relevant SettingsModel type.
         :param position: The starting position as a mapping of axes names to int.
         """
         planner_settings = {
@@ -652,36 +774,46 @@ class RegularGridWorkflow(RectGridWorkflow[RegularGridSettingsModel]):
         )
 
     def acquisition_routine(
-        self, settings: RegularGridSettingsModel, xyz_pos: tuple[int, int, int]
+        self, settings: RegGridSettingModelType, xyz_pos: tuple[int, int, int]
     ) -> tuple[bool, Optional[int]]:
         """Autofocus and capture.
 
-        :param settings: The settings for this scan as a RegularGridSettingsModel
+        :param settings: The settings for this scan as the relevant SettingsModel type.
         :param xyz_pos: The current position as a tuple or 3 ints.
         :return: A tuple of whether an image was taken, and the z-position for focus.
             If failed to find focus, returns for the focus z-position.
         """
-        return self._autofocus_and_capture(
-            xyz_pos=xyz_pos,
-            dz=settings.autofocus_params.dz,
-            images_dir=settings.capture_params.images_dir,
-            save_resolution=settings.capture_params.save_resolution,
+        return self._perform_smart_stack(settings, xyz_pos)
+
+    @lt.endpoint("get", "settings_ui", responses=UI_ELEMENT_RESPONSE)
+    def settings_ui(self) -> UIElementList:
+        """Return the UI for the workflow's settings in the scan tab."""
+        scan_settings = UIElementList(
+            [
+                property_control_for(
+                    self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
+                ),
+                property_control_for(self, "x_count", label="Number of columns"),
+                property_control_for(self, "y_count", label="Number of rows"),
+                *self.smart_stack_property_controls(),
+                property_control_for(
+                    self, "autofocus_dz", label="Autofocus Range (steps)"
+                ),
+            ]
+        )
+        return UIElementList(
+            [
+                HeaderBlock(text=self.display_name, level=4),
+                TextBlock(text=self.ui_blurb),
+                Accordion(
+                    title="Scan Settings",
+                    children=scan_settings,
+                ),
+            ]
         )
 
-    @lt.property
-    def settings_ui(self) -> list[PropertyControl]:
-        """A list of PropertyControl objects to create the settings in the scan tab."""
-        return [
-            property_control_for(
-                self, "overlap", label="Image Overlap (0.1-0.7)", step=0.05
-            ),
-            property_control_for(self, "x_count", label="Number of columns"),
-            property_control_for(self, "y_count", label="Number of rows"),
-            property_control_for(self, "autofocus_dz", label="Autofocus Range (steps)"),
-        ]
 
-
-class SnakeWorkflow(RegularGridWorkflow):
+class SnakeWorkflow(RegularGridWorkflow[RegularGridSettingsModel]):
     """A workflow optimised for snaking around samples.
 
     This workflow generates a list of coordinates in a rectangle, and snakes
@@ -696,10 +828,11 @@ class SnakeWorkflow(RegularGridWorkflow):
         ),
         readonly=True,
     )
+    _settings_model = RegularGridSettingsModel
     _grid_style = "snake"
 
 
-class RasterWorkflow(RegularGridWorkflow):
+class RasterWorkflow(RegularGridWorkflow[RegularGridSettingsModel]):
     """A workflow optimised for snaking around samples.
 
     This workflow generates a list of coordinates in a rectangle, and always
@@ -715,5 +848,148 @@ class RasterWorkflow(RegularGridWorkflow):
         ),
         readonly=True,
     )
-
+    _settings_model = RegularGridSettingsModel
     _grid_style = "raster"
+
+
+class CChipScanSettingsModel(RectGridSettingsModel):
+    """The settings for a scan with the CChipWorkflow.
+
+    This includes settings calculated when starting. This will be held by smart scan
+    during a scan and serialised to disk.
+    """
+
+    x_count: int
+    y_count: int
+    stack_params: StackParams
+    style: Literal["snake", "raster"]
+
+
+class CChipWorkflow(RectGridWorkflow[CChipScanSettingsModel]):
+    """A workflow optimised for scanning the well of a CChip.
+
+    This workflow generates a list of coordinates in a rectangle, and snakes
+    around them from the top left (assuming positive dx and dy), stacking the
+    grid and above.
+    """
+
+    display_name: str = lt.property(default="C-Chip Scan", readonly=True)
+    ui_blurb: str = lt.property(
+        default=(
+            "This scan workflow is optimised for scanning a C-Chip. It focuses on "
+            "a grid, then stacks images above the grid to complete a volumetric scan."
+        ),
+        readonly=True,
+    )
+    _grid_style: Literal["snake"] = "snake"
+    _planner_cls = RegularGridPlanner
+    _settings_model = CChipScanSettingsModel
+
+    overlap: float = lt.setting(default=0.1, ge=0.1, le=0.7)
+    """The fraction that adjacent images should overlap in x and y.
+
+    This must be between 0.1 and 0.7.
+    """
+    x_count: int = lt.setting(default=5, readonly=False)
+    """The number of columns in the scan."""
+    y_count: int = lt.setting(default=7, readonly=False)
+    """The number of rows in the scan."""
+
+    stack_images_to_save: int = lt.setting(default=9, readonly=False)
+    """The number of images to save in a stack.
+
+    Defaults to 1 unless you need to see either side of focus
+    """
+
+    stack_dz: int = lt.setting(default=500, readonly=False)
+    """Distance in steps between images in a z-stack."""
+
+    def create_stack_params(
+        self,
+    ) -> StackParams:
+        """Set up the parameters used for all stacks in a scan.
+
+        :returns: A StackSmartParams object with the required parameters.
+        """
+        return StackParams(
+            stack_dz=self.stack_dz, images_to_save=self.stack_images_to_save
+        )
+
+    def _build_scan_settings(self, base_kwargs: dict) -> CChipScanSettingsModel:
+        """Construct the SettingModel for all_settings."""
+        stack_params = self.create_stack_params()
+        return self._settings_model(
+            **base_kwargs,
+            x_count=self.x_count,
+            y_count=self.y_count,
+            style=self._grid_style,
+            stack_params=stack_params,
+        )
+
+    def new_scan_planner(
+        self, settings: CChipScanSettingsModel, position: Mapping[str, int]
+    ) -> ScanPlanner:
+        """Return a new scan planner object.
+
+        :param settings: The settings for this scan as the relevant SettingsModel type.
+        :param position: The starting position as a mapping of axes names to int.
+        """
+        planner_settings = {
+            "dx": settings.dx,
+            "dy": settings.dy,
+            "x_count": settings.x_count,
+            "y_count": settings.y_count,
+            "style": settings.style,
+        }
+        return self._planner_cls(
+            initial_position=(position["x"], position["y"]),
+            planner_settings=planner_settings,
+        )
+
+    def pre_scan_routine(self, settings: CChipScanSettingsModel) -> None:
+        """No autofocus, a looping autofocus on a CChip could corrupt the entire scan."""
+        pass
+
+    def acquisition_routine(
+        self,
+        settings: CChipScanSettingsModel,
+        xyz_pos: tuple[int, int, int],  # noqa: ARG002
+    ) -> tuple[bool, Optional[int]]:
+        """Autofocus and capture a z-stack starting at the focused position.
+
+        The routine performs a fast autofocus using the provided ``dz``.
+        The focused z-height becomes the starting position for the stack
+        and is also the height of the first captured image.
+
+        A stack of ``self.stack_images_to_save`` images is then acquired.
+        Each subsequent image is captured after moving the stage upward
+        by ``self.stack_dz`` steps in z.
+
+        :param xyz_pos: The (x, y, z) position associated with this acquisition.
+        :param settings: The settings for this scan as a CChipSettingsModel
+
+        :return: (True, focus_height) where focus_height is the autofocus
+            z-position and the height of the first image in the stack.
+        """
+        # Perform autofocus
+        self._autofocus.fast_autofocus(dz=settings.autofocus_params.dz)
+        focus_height = self._stage.get_xyz_position()[2]
+        self._autofocus.run_basic_stack(settings.stack_params, settings.capture_params)
+
+        return True, focus_height
+
+    @lt.property
+    def settings_ui(self) -> list[PropertyControl]:
+        """A list of PropertyControl objects to create the settings in the scan tab."""
+        return [
+            property_control_for(self, "overlap", label="Image Overlap (0.1-0.7)"),
+            property_control_for(self, "x_count", label="Number of columns"),
+            property_control_for(self, "y_count", label="Number of rows"),
+            property_control_for(self, "autofocus_dz", label="Autofocus Range (steps)"),
+            property_control_for(
+                self, "stack_dz", label="Distance in z between images in stack (steps)"
+            ),
+            property_control_for(
+                self, "stack_images_to_save", label="Images to save per xy site"
+            ),
+        ]

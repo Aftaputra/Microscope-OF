@@ -270,7 +270,9 @@ def test_create_stack(histo_scan_workflow, caplog):
     initial_min_images_to_test = histo_scan_workflow.stack_min_images_to_test
     initial_images_to_save = histo_scan_workflow.stack_images_to_save
     with caplog.at_level(logging.INFO):
-        stack_params = histo_scan_workflow.create_smart_stack_params()
+        stack_params = histo_scan_workflow.create_smart_stack_params(
+            save_on_failure=not histo_scan_workflow.skip_background
+        )
 
     assert len(caplog.records) == 0
     assert histo_scan_workflow.stack_min_images_to_test == initial_min_images_to_test
@@ -294,7 +296,9 @@ def test_coercing_stack_test_ims(
     histo_scan_workflow.stack_min_images_to_test = initial_test_ims
 
     with caplog.at_level(logging.WARNING):
-        stack_params = histo_scan_workflow.create_smart_stack_params()
+        stack_params = histo_scan_workflow.create_smart_stack_params(
+            save_on_failure=not histo_scan_workflow.skip_background
+        )
 
     assert len(caplog.records) == 1
     assert str(caplog.records[0].msg).startswith(expected_log_start)
@@ -322,7 +326,9 @@ def test_coercing_stack_save_ims(
     histo_scan_workflow.stack_images_to_save = initial_save_ims
 
     with caplog.at_level(logging.WARNING):
-        stack_params = histo_scan_workflow.create_smart_stack_params()
+        stack_params = histo_scan_workflow.create_smart_stack_params(
+            save_on_failure=not histo_scan_workflow.skip_background
+        )
 
     assert len(caplog.records) == 1
     assert str(caplog.records[0].msg).startswith(expected_log_start)
@@ -397,7 +403,9 @@ def setup_and_run_smart_z_stack(
         is a list, it will be set as a side effect (and should be a list of tuples of
         results). If it a tuple (or anything else), it is set as a return value.
     """
-    stack_params = histo_scan_workflow.create_smart_stack_params()
+    stack_params = histo_scan_workflow.create_smart_stack_params(
+        save_on_failure=not histo_scan_workflow.skip_background
+    )
     stack_params.settling_time = 0  # Don't settle or tests take forever.
 
     autofocus_thing.capture_stack_image = mocker.Mock()
@@ -694,7 +702,6 @@ def test_run_basic_stack_simple(
         stack_dz=10,
         images_to_save=3,
         settling_time=0,
-        backlash_correction=0,
         origin=StackOrigin.START,
     )
 
@@ -757,7 +764,6 @@ def test_run_basic_stack_center_origin(
         stack_dz=10,
         images_to_save=5,
         settling_time=0,
-        backlash_correction=0,
         origin=StackOrigin.CENTER,
     )
 
@@ -804,97 +810,6 @@ def test_run_basic_stack_center_origin(
     assert final_z == expected_final_z, "Final Z position is incorrect"
 
 
-def test_run_basic_stack_backlash_applied(
-    autofocus_thing, mocker, fake_capture, fake_move_relative
-):
-    """Backlash correction should overshoot first, then move back before starting stack."""
-    stack_params = StackParams(
-        stack_dz=10,
-        images_to_save=3,
-        settling_time=0,
-        backlash_correction=50,
-        origin=StackOrigin.START,
-    )
-
-    capture_params = mocker.Mock()
-    capture_params.images_dir = "dummy"
-    capture_params.save_resolution = (100, 100)
-
-    start_z = 0
-    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
-
-    autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
-    autofocus_thing._stage.move_relative = mocker.Mock(side_effect=fake_move_relative)
-    autofocus_thing._cam.save_from_memory = mocker.Mock()
-    autofocus_thing._cam.clear_buffers = mocker.Mock()
-
-    autofocus_thing.run_basic_stack(stack_params, capture_params)
-
-    calls = autofocus_thing._stage.move_relative.call_args_list
-
-    # First move is overshoot for backlash
-    assert calls[0].kwargs["z"] == -stack_params.backlash_correction, (
-        "Backlash overshoot not applied correctly"
-    )
-
-    # Second move corrects back to starting point
-    assert calls[1].kwargs["z"] == stack_params.backlash_correction, (
-        "Backlash correction move not applied correctly"
-    )
-
-
-def test_run_basic_stack_backlash_and_offset(
-    autofocus_thing, mocker, fake_capture, fake_move_relative
-):
-    """Backlash correction and stack offset both applied.
-
-    Stack should begin by moving down by half the height of the stack,
-    plus backlash correction, then move up by backlash correction, then run the basic stack.
-    """
-    stack_params = StackParams(
-        stack_dz=100,
-        images_to_save=3,
-        settling_time=0,
-        backlash_correction=50,
-        origin=StackOrigin.CENTER,
-    )
-
-    capture_params = mocker.Mock()
-    capture_params.images_dir = "dummy"
-    capture_params.save_resolution = (100, 100)
-
-    start_z = 0
-    autofocus_thing._stage.position = {"x": 0, "y": 0, "z": start_z}
-
-    autofocus_thing.capture_stack_image = mocker.Mock(side_effect=fake_capture)
-    autofocus_thing._stage.move_relative = mocker.Mock(side_effect=fake_move_relative)
-    autofocus_thing._cam.save_from_memory = mocker.Mock()
-    autofocus_thing._cam.clear_buffers = mocker.Mock()
-
-    autofocus_thing.run_basic_stack(stack_params, capture_params)
-
-    calls = autofocus_thing._stage.move_relative.call_args_list
-
-    # Combined initial offset + backlash overshoot
-    total_stack_range = stack_params.stack_dz * (stack_params.images_to_save - 1)
-    expected_first_move = -(total_stack_range // 2 + stack_params.backlash_correction)
-    assert calls[0].kwargs["z"] == expected_first_move, (
-        "Combined overshoot not applied correctly"
-    )
-
-    # Backlash correction back to base of stack
-    assert calls[1].kwargs["z"] == stack_params.backlash_correction, (
-        "Backlash correction move not applied correctly"
-    )
-
-    # Subsequent moves in stack
-    expected_stack_moves = [stack_params.stack_dz] * (stack_params.images_to_save - 1)
-    actual_stack_moves = [c.kwargs["z"] for c in calls[2:]]
-    assert actual_stack_moves == expected_stack_moves, (
-        "Stack moves after backlash/offset not correct"
-    )
-
-
 def test_run_basic_stack_end_origin(
     autofocus_thing, mocker, fake_capture, fake_move_relative
 ):
@@ -903,7 +818,6 @@ def test_run_basic_stack_end_origin(
         stack_dz=10,
         images_to_save=4,
         settling_time=0,
-        backlash_correction=0,
         origin=StackOrigin.END,
     )
 
@@ -948,7 +862,6 @@ def test_invalid_stack_images_raises():
                 stack_dz=10,
                 images_to_save=capture_count,
                 settling_time=0,
-                backlash_correction=0,
                 origin=StackOrigin.START,
             )
 
@@ -960,7 +873,6 @@ def test_invalid_stack_settling_raises():
             stack_dz=10,
             images_to_save=1,
             settling_time=-1,
-            backlash_correction=0,
             origin=StackOrigin.START,
         )
 
