@@ -676,10 +676,11 @@ class AutofocusThing(lt.Thing):
             sharpness=self._cam.grab_jpeg_size(stream_name="lores"),
         )
 
-    # Silence too many returns in this situation as refactoring to reduce returns is
-    # unlikely to improve readability. This function is basically a complex switch
-    # statement, having an explicit return after each option is clear.
-    def check_stack_result(  # noqa: PLR0911
+    # Silence too many returns and complexity in this situation as refactoring to
+    # reduce returns is unlikely to improve readability.
+    # This function is basically a complex switch statement, having an explicit
+    # return after each option is clear.
+    def check_stack_result(  # noqa: PLR0911 C901
         self, captures: list[CaptureInfo], check_turning_points: bool
     ) -> tuple[Literal["success", "continue", "restart"], int]:
         """Check if the sharpest image in a list of captures is central enough.
@@ -688,7 +689,7 @@ class AutofocusThing(lt.Thing):
             sharpness has converged in the centre
         :param check_turning_points: Whether to check the number of turning points in
             the sharpnesses of the images in the stack is exactly 1. (May fail with
-            thick samples)
+            thick samples and stacks with many images)
 
         :returns: A tuple with two values:
 
@@ -718,6 +719,13 @@ class AutofocusThing(lt.Thing):
             if sharpest_index == 0:
                 return "restart", capture_id
             return "continue", capture_id
+
+        # Manually test for monotomically increasing or decreasing sharpnesses, as
+        # fitting can struggle with these and their behaviour is simpler to hardcode
+        if np.array_equal(sharpnesses, np.sort(sharpnesses)):
+            return "continue", capture_id
+        if np.array_equal(sharpnesses, np.sort(sharpnesses)[::-1]):
+            return "restart", capture_id
 
         try:
             turning = _get_peak_turning_point(sharpnesses)
