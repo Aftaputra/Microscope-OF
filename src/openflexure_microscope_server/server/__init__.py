@@ -72,7 +72,7 @@ def set_shutdown_function(shutdown_function: Callable[[], None]) -> None:
 
 
 def customise_server(
-    server: lt.ThingServer, application_config: OFMApplicationData, debug: bool
+    server: lt.ThingServer, application_config: OFMApplicationData, debug: bool = False
 ) -> None:
     """Customise the server with additional endpoints, debug mode etc."""
     if DEVELOPER_MODE:
