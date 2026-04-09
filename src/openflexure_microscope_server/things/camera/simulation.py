@@ -383,9 +383,11 @@ class SimulatedCamera(BaseCamera):
 
         # Use npx to make each 1d index list 3D
         focused_np_img = canvas[np.ix_(x_indices, y_indices, z_indices)]
-        np_img = fast_resize_and_blur(
-            focused_np_img, sigma=np.abs(im_pos[2]) / 5, shape=self.shape
-        )
+
+        # Scale blurring based on objective
+        sigma = np.abs(im_pos[2]) * (self.objective / 20) ** 2 / 5
+
+        np_img = fast_resize_and_blur(focused_np_img, sigma=sigma, shape=self.shape)
         # Generate random noise by repeating 500 noise points, as the speed rather
         # than randomness is important for simulation.
         noise = RNG.normal(scale=self.noise_level, size=500).astype("int16")
