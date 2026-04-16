@@ -42,7 +42,7 @@
             <matrixDisplay :matrix="csmResolution" :bracket-height="1.5" />
           </li>
 
-          <li>Pixels per motor step: {{ csmRatio }}</li>
+          <li>Motor steps per pixel: {{ csmRatio }}</li>
           <li>
             Full field of view in motor steps:
             <br />
