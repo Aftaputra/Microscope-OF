@@ -722,9 +722,9 @@ class AutofocusThing(lt.Thing):
 
         # Manually test for monotomically increasing or decreasing sharpnesses, as
         # fitting can struggle with these and their behaviour is simpler to hardcode
-        if np.array_equal(sharpnesses, np.sort(sharpnesses)):
+        if np.all(sharpnesses[:-1] <= sharpnesses[1:]):
             return "continue", capture_id
-        if np.array_equal(sharpnesses, np.sort(sharpnesses)[::-1]):
+        if np.all(sharpnesses[:-1] >= sharpnesses[1:]):
             return "restart", capture_id
 
         try:
