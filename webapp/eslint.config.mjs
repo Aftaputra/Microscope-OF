@@ -1,40 +1,30 @@
 import js from "@eslint/js";
 import vue from "eslint-plugin-vue";
-import vueParser from "vue-eslint-parser";
-import babelParser from "@babel/eslint-parser";
 import prettierPlugin from "eslint-plugin-prettier";
 import prettierConfig from "eslint-config-prettier";
 import globals from "globals";
+import pinia from "eslint-plugin-pinia";
 
 const isProd = process.env.NODE_ENV === "production";
 
 export default [
   {
-    languageOptions: {
-      globals: {
-        ...globals.node,
-      },
+    ignores: ["dist/**/*", "lib/**/*", "**/*.min.js", "tools/architecture_dashboard/**/*"],
     },
-  },
+
   js.configs.recommended,
 
   ...vue.configs["flat/recommended"],
 
-  prettierConfig,
-
   {
     files: ["**/*.vue", "**/*.js", "**/*.jsx", "**/*.cjs", "**/*.mjs"],
     languageOptions: {
-      parser: vueParser,
-      parserOptions: {
-        parser: babelParser,
-        requireConfigFile: false,
-        ecmaVersion: 2021,
-        sourceType: "module",
-      },
       ecmaVersion: 2021,
       sourceType: "module",
       globals: {
+        ...globals.node,
+        ...globals.browser,
+        ...globals.es2021,
         process: "readonly",
       },
     },
@@ -42,6 +32,7 @@ export default [
     plugins: {
       vue,
       prettier: prettierPlugin,
+      pinia,
     },
 
     rules: {
@@ -76,6 +67,11 @@ export default [
 
       "vue/no-unused-components": "warn",
       "vue/no-unused-vars": "warn",
+
+      // Pinia best practices
+      "pinia/prefer-use-store-naming-convention": "warn",
+      "pinia/require-setup-store-properties-export": "warn",
     },
   },
+  prettierConfig,
 ];
