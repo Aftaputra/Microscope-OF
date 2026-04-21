@@ -1,82 +1,65 @@
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
 import axios from "axios";
 
-export const wotStoreModule = {
-  namespaced: true,
-  state: () => ({
-    thingDescriptions: {},
-    servient: null,
-    helpers: null,
-  }),
-  mutations: {
-    addThingDescription(state, { thingName, thingDescription }) {
-      state.thingDescriptions[thingName] = thingDescription;
-    },
-    removeThingDescription(state, thingName) {
-      delete state.thingDescriptions[thingName];
-    },
-    removeAllThingDescriptions(state) {
-      state.thingDescriptions = {};
-    },
-  },
-  actions: {
-    async start() {
-      // Set up thing client - not currently used.
-    },
-    async fetchThingDescription({ commit }, { uri, name = null }) {
+export const useWotStore = defineStore("wot", () => {
+  // State
+  const thingDescriptions = ref({});
+  const servient = ref(null);
+  const helpers = ref(null);
+  // Actions
+  function addThingDescription(thingName, thingDescription) {
+    thingDescriptions.value[thingName] = thingDescription;
+  }
+
+  function removeThingDescription(thingName) {
+    delete thingDescriptions.value[thingName];
+  }
+
+  function removeAllThingDescriptions() {
+    thingDescriptions.value = {};
+  }
+
+  async function fetchThingDescription(uri, name = null) {
       // Fetch the thing description from the given URI and consume it
       // NB this should only be called once, or we'll duplicate effort.
       // Deduplication should be done elsewhere.
-      let response = await axios.get(uri);
-      let td = response.data;
-      let thing_name = name || uri.replace(/\/$/, "").split("/").pop();
-      commit("addThingDescription", {
-        thingName: thing_name,
-        thingDescription: td,
-      });
-    },
-    async fetchThingDescriptions({ commit }, uri) {
+    const response = await axios.get(uri);
+    const td = response.data;
+    const thingName = name || uri.replace(/\/$/, "").split("/").pop();
+    addThingDescription(thingName, td);
+  }
+
+  async function fetchThingDescriptions(uri) {
       // Fetch thing descriptions from the given URI
-      let response = await axios.get(uri);
+    const response = await axios.get(uri);
       if (response.status !== 200) throw "Could not retrieve thing descriptions";
       for (const k in response.data) {
-        let thing_name = k.replace(/\/$/, "").replace(/^\//, "");
-        commit("addThingDescription", {
-          thingName: thing_name,
-          thingDescription: response.data[k],
-        });
+      let thingName = k.replace(/\/$/, "").replace(/^\//, "");
+      addThingDescription(thingName, response.data[k]);
       }
-    },
-  },
-  getters: {
-    thingDescriptions: (state) => {
-      return state.thingDescriptions;
-    },
-    thingList: (state) => {
-      return Object.keys(state.thingDescriptions);
-    },
-    thingDescription: (state) => (thingName) => {
-      return state.thingDescriptions[thingName];
-    },
-    thingAvailable: (state) => (thingName) => {
-      return thingName in state.thingDescriptions;
-    },
-    thingAffordanceAvailable: (state) => (thing, affordanceType, affordance) => {
-      let td = state.thingDescriptions[thing];
-      if (!td) {
+  }
+
+  const thingList = computed(() => Object.keys(thingDescriptions.value));
+
+  const thingAvailable = (thingName) => thingName in thingDescriptions.value;
+
+  const thingAffordanceAvailable = (thing, affordanceType, affordance) => {
+    const td = thingDescriptions.value[thing];
+    if (!td || !td[affordanceType]) {
         return false;
       }
       return affordance in td[affordanceType];
-    },
-    thingFormUrl:
-      (state) =>
-      (thing, affordanceType, affordance, op, allowUndefined = true) => {
+  };
+
+  const thingFormUrl = (thing, affordanceType, affordance, op, allowUndefined = true) => {
         // Find the URL for a particular operation
-        let td = state.thingDescriptions[thing];
+    const td = thingDescriptions.value[thing];
         if (!td) {
           if (allowUndefined) return undefined;
           throw `Could not find form for ${affordanceType} ${thing}/${affordance} with op ${op}`;
         }
-        let affordances = td[affordanceType];
+    const affordances = td[affordanceType];
 
         if (!affordances || !(affordance in affordances)) {
           if (allowUndefined) return undefined;
@@ -97,17 +80,33 @@ export const wotStoreModule = {
           return base + href;
         }
         return href;
-      },
-    thingPropertyUrl: (_state, getters) => (thing, property, op, allowUndefined) => {
+  };
+
+  const thingPropertyUrl = (thing, property, op, allowUndefined) =>
       // Find the URL for a particular property
-      return getters.thingFormUrl(thing, "properties", property, op, allowUndefined);
-    },
-    thingActionUrl: (_state, getters) => (thing, action, op, allowUndefined) => {
+    thingFormUrl(thing, "properties", property, op, allowUndefined);
+
+  const thingActionUrl = (thing, action, op, allowUndefined) =>
       // Find the URL for a particular action
-      return getters.thingFormUrl(thing, "actions", action, op, allowUndefined);
-    },
-  },
+    thingFormUrl(thing, "actions", action, op, allowUndefined);
+
+  return {
+    thingDescriptions,
+    servient,
+    helpers, // State
+    thingList,
+    thingAvailable, // Helpers
+    thingFormUrl,
+    thingPropertyUrl,
+    thingActionUrl,
+    fetchThingDescription,
+    fetchThingDescriptions, // Actions
+    addThingDescription,
+    removeThingDescription,
+    removeAllThingDescriptions,
+    thingAffordanceAvailable,
 };
+});
 
 export function findFormHref(affordance, op) {
   // Find the form in the affordance that matches the given operation type
@@ -117,5 +116,3 @@ export function findFormHref(affordance, op) {
   if (matchingForm === undefined) return undefined;
   return matchingForm.href;
 }
-
-export default wotStoreModule;
