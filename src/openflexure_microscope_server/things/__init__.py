@@ -9,10 +9,6 @@ from typing import Optional, Self
 
 import labthings_fastapi as lt
 
-# To ensure consistency, we enable the feature flags we want here. This means
-# they will be enabled in any code that imports a `Thing` from this package.
-lt.FEATURE_FLAGS.validate_properties_on_set = True
-
 
 class OFMThing(lt.Thing):
     """A custom LabThings Thing class for the OpenFlexure Microscope."""

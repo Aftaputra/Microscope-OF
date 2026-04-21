@@ -12,6 +12,8 @@ from .stage.sangaboard import SangaboardThing
 class Illumination(lt.Thing):
     """Base class for an illumination controller."""
 
+    _class_settings = {"validate_properties_on_set": True}
+
     @lt.action
     def set_led(self, led_on: bool = True) -> None:
         """Set the LED to on or off."""

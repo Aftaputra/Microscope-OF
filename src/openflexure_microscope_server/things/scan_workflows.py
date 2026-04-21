@@ -62,6 +62,8 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     scan planning, acquisition routine.
     """
 
+    _class_settings = {"validate_properties_on_set": True}
+
     display_name: str = lt.property(default="Base Workflow", readonly=True)
     ui_blurb: str = lt.property(
         default="If you see this message, something is wrong.", readonly=True
@@ -326,6 +328,8 @@ class SmartStackCompatibleSettings(Protocol):
 
 class SmartStackMixin:
     """A mixin for scan workflows that use smart stacking."""
+
+    _class_settings = {"validate_properties_on_set": True}
 
     stack_images_to_save: int = lt.setting(default=1, ge=1, le=9)
     """The number of images to save in a stack.

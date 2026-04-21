@@ -106,6 +106,7 @@ class BaseStage(lt.Thing):
     """
 
     _axis_names = ("x", "y", "z")
+    _class_settings = {"validate_properties_on_set": True}
 
     def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Initialise the stage.

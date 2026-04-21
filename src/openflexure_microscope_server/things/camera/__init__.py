@@ -172,6 +172,8 @@ class BaseCamera(OFMThing):
     ``__init__`` method of the subclass.
     """
 
+    _class_settings = {"validate_properties_on_set": True}
+
     _all_background_detectors: Mapping[str, BackgroundDetectAlgorithm] = lt.thing_slot()
 
     mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
