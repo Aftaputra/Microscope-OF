@@ -21,9 +21,9 @@ export const useWotStore = defineStore("wot", () => {
   }
 
   async function fetchThingDescription(uri, name = null) {
-      // Fetch the thing description from the given URI and consume it
-      // NB this should only be called once, or we'll duplicate effort.
-      // Deduplication should be done elsewhere.
+    // Fetch the thing description from the given URI and consume it
+    // NB this should only be called once, or we'll duplicate effort.
+    // Deduplication should be done elsewhere.
     const response = await axios.get(uri);
     const td = response.data;
     const thingName = name || uri.replace(/\/$/, "").split("/").pop();
@@ -31,41 +31,41 @@ export const useWotStore = defineStore("wot", () => {
   }
 
   async function fetchThingDescriptions(uri) {
-      // Fetch thing descriptions from the given URI
+    // Fetch thing descriptions from the given URI
     const response = await axios.get(uri);
-      if (response.status !== 200) throw "Could not retrieve thing descriptions";
-      for (const k in response.data) {
+    if (response.status !== 200) throw "Could not retrieve thing descriptions";
+    for (const k in response.data) {
       let thingName = k.replace(/\/$/, "").replace(/^\//, "");
       addThingDescription(thingName, response.data[k]);
-      }
+    }
   }
 
   const thingList = computed(() => Object.keys(thingDescriptions.value));
 
-  const thingAvailable = (thingName) => thingName in thingDescriptions.value;
+  const thingAvailable = computed(() => (thingName) => {
+    return thingName in thingDescriptions.value;
+  });
 
-  const thingAffordanceAvailable = (thing, affordanceType, affordance) => {
+  const thingAffordanceAvailable = computed(() => (thing, affordanceType, affordance) => {
     const td = thingDescriptions.value[thing];
-    if (!td || !td[affordanceType]) {
-        return false;
-      }
-      return affordance in td[affordanceType];
-  };
+    if (!td || !td[affordanceType]) return false;
+    return affordance in td[affordanceType];
+  });
 
-  const thingFormUrl = (thing, affordanceType, affordance, op, allowUndefined = true) => {
+  const thingFormUrl = computed(
+    () =>
+      (thing, affordanceType, affordance, op, allowUndefined = true) => {
         // Find the URL for a particular operation
-    const td = thingDescriptions.value[thing];
+        const td = thingDescriptions.value[thing];
         if (!td) {
           if (allowUndefined) return undefined;
           throw `Could not find form for ${affordanceType} ${thing}/${affordance} with op ${op}`;
         }
-    const affordances = td[affordanceType];
-
+        const affordances = td[affordanceType];
         if (!affordances || !(affordance in affordances)) {
           if (allowUndefined) return undefined;
           throw `Could not find form for ${affordanceType} ${thing}/${affordance} with op ${op}`;
         }
-
         let href = findFormHref(affordances[affordance], op);
         if (href === undefined) {
           if (allowUndefined) return undefined;
@@ -80,15 +80,18 @@ export const useWotStore = defineStore("wot", () => {
           return base + href;
         }
         return href;
-  };
+      },
+  );
 
-  const thingPropertyUrl = (thing, property, op, allowUndefined) =>
-      // Find the URL for a particular property
-    thingFormUrl(thing, "properties", property, op, allowUndefined);
+  const thingPropertyUrl = computed(() => (thing, property, op, allowUndefined) => {
+    // Find the URL for a particular property
+    return thingFormUrl.value(thing, "properties", property, op, allowUndefined);
+  });
 
-  const thingActionUrl = (thing, action, op, allowUndefined) =>
-      // Find the URL for a particular action
-    thingFormUrl(thing, "actions", action, op, allowUndefined);
+  const thingActionUrl = computed(() => (thing, action, op, allowUndefined) => {
+    // Find the URL for a particular action
+    return thingFormUrl.value(thing, "actions", action, op, allowUndefined);
+  });
 
   return {
     thingDescriptions,
@@ -105,7 +108,7 @@ export const useWotStore = defineStore("wot", () => {
     removeThingDescription,
     removeAllThingDescriptions,
     thingAffordanceAvailable,
-};
+  };
 });
 
 export function findFormHref(affordance, op) {

@@ -15,8 +15,8 @@ function getOriginFromLocation() {
 }
 
 // Define Pinia store
-export const useDefaultStore = defineStore(
-  "default",
+export const useSettingsStore = defineStore(
+  "settings",
   () => {
     // State
     const origin = ref(getOriginFromLocation());
