@@ -29,7 +29,7 @@ export default {
   computed: {
     barWidthFromProgress: function () {
       var progress = this.progress <= 100 ? this.progress : 100;
-      var styleString = `width: ${progress}%`;
+      var styleString = progress != null ? `width: ${progress}%` : `width: 0%`;
       return styleString;
     },
     indeterminateProgressBar: function () {

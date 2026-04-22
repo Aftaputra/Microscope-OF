@@ -257,7 +257,7 @@ export default {
      *
      */
     async checkExistingTasks() {
-      const ongoingTask = await this.getOngingAction(this.thing, this.action);
+      const ongoingTask = await this.getOngoingAction(this.thing, this.action);
       if (ongoingTask) {
         // There is a started task
         this.taskStarted = true;

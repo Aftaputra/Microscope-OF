@@ -67,11 +67,9 @@ export default {
 
   computed: {
     propertyDescription: function () {
-      try {
-        return this.thingDescription(this.thingName).properties[this.propertyName];
-      } catch {
-        return undefined;
-      }
+      const td = this.wotStore.thingDescriptions[this.thingName];
+      if (!td || !td.properties) return undefined;
+      return td.properties[this.propertyName];
     },
   },
 

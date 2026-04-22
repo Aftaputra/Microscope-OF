@@ -14,6 +14,9 @@
 </template>
 
 <script>
+import { mapState } from "pinia";
+import { useSettingsStore } from "@/stores/settings.js";
+
 export default {
   name: "TabIcon",
 
@@ -52,6 +55,7 @@ export default {
   emits: ["set-tab"],
 
   computed: {
+    ...mapState(useSettingsStore, ["ready"]),
     computedTitle: function () {
       if (this.title !== undefined) {
         return this.title;
@@ -74,7 +78,7 @@ export default {
     classObject: function () {
       return {
         "tabicon-active": this.currentTab == this.tabID,
-        "uk-disabled": this.requireConnection && !this.$store.getters.ready,
+        "uk-disabled": this.requireConnection && !this.ready,
       };
     },
   },

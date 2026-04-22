@@ -15,14 +15,11 @@
     />
 
     <div v-if="!streamEnabled" class="uk-height-1-1">
-      <div v-if="$store.state.waiting" class="uk-position-center">
+      <div v-if="waiting" class="uk-position-center">
         <div uk-spinner="ratio: 4.5"></div>
       </div>
 
-      <div
-        v-else-if="$store.state.disableStream"
-        class="uk-position-center position-relative text-center"
-      >
+      <div v-else-if="disableStream" class="uk-position-center position-relative text-center">
         Stream preview disabled
       </div>
 
@@ -36,10 +33,19 @@
 <script>
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
+import { useSettingsStore } from "@/stores/settings.js";
+import { mapState, mapWritableState } from "pinia";
 
 // Export main app
 export default {
   name: "StreamDisplay",
+
+  setup() {
+    const store = useSettingsStore();
+    return {
+      store,
+    };
+  },
 
   data: function () {
     return {
@@ -51,15 +57,17 @@ export default {
   },
 
   computed: {
+    ...mapState(useSettingsStore, ["ready", "baseUri"]),
+    ...mapWritableState(useSettingsStore, ["disableStream", "waiting"]),
     streamEnabled: function () {
-      return this.$store.getters.ready && !this.$store.state.disableStream;
+      return this.ready && !this.disableStream;
     },
     thisStreamOpen: function () {
       // Only a single MJPEG connection should be open at a time
       return !(this.displaySize[0] == 0) && !(this.displaySize[1] == 0);
     },
     streamImgUri: function () {
-      return `${this.$store.getters.baseUri}/camera/mjpeg_stream`;
+      return `${this.baseUri}/camera/mjpeg_stream`;
     },
   },
 
@@ -101,7 +109,7 @@ export default {
     // Disconnect the size observer
     this.sizeObserver.disconnect();
     // Remove from the array of active streams
-    this.$store.commit("removeStream", this._uid);
+    this.store.removeStream(this.$.uid);
   },
 
   methods: {
@@ -154,12 +162,12 @@ export default {
       // Handle closed stream
       if (this.displaySize[0] == 0 && this.displaySize[1] == 0) {
         // If this stream was previously active
-        if (this.$store.state.activeStreams[this._uid] == true) {
-          this.$store.commit("removeStream", this._uid);
+        if (this.store.activeStreams[this.$.uid] == true) {
+          this.store.removeStream(this.$.uid);
         }
         // If resized to anything other than zero
       } else {
-        this.$store.commit("addStream", this._uid);
+        this.store.addStream(this.$.uid);
       }
     },
 

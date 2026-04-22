@@ -25,6 +25,8 @@
 import cameraCalibrationSettings from "./cameraSettingsComponents/cameraCalibrationSettings.vue";
 import miniStreamDisplay from "../../genericComponents/miniStreamDisplay.vue";
 import ServerSpecifiedPropertyControl from "../../labThingsComponents/serverSpecifiedPropertyControl.vue";
+import { mapState } from "pinia";
+import { useSettingsStore } from "@/stores/settings.js";
 
 // Export main app
 export default {
@@ -43,8 +45,9 @@ export default {
   },
 
   computed: {
-    cameraUri: function () {
-      return `${this.$store.getters.baseUri}/camera/`;
+    ...mapState(useSettingsStore, ["baseUri"]),
+    cameraUri() {
+      return `${this.baseUri}/camera/`;
     },
   },
 

@@ -27,6 +27,7 @@
         </div>
         <div class="uk-margin">
           <propertyControl
+            v-if="thingAvailable('smart_scan')"
             thing-name="smart_scan"
             property-name="stitch_tiff"
             label="When Stitching, Produce a Pyramidal TIFF"
@@ -41,6 +42,8 @@
 import propertyControl from "@/components/labThingsComponents/propertyControl.vue";
 import ServerSpecifiedInterface from "@/components/labThingsComponents/serverSpecifiedInterface.vue";
 import { useIntersectionObserver } from "@vueuse/core";
+import { mapWritableState } from "pinia";
+import { useSettingsStore } from "@/stores/settings.js";
 
 export default {
   name: "SlideScanControls",
@@ -81,6 +84,7 @@ export default {
   },
 
   methods: {
+    ...mapWritableState(useSettingsStore, ["ready"]),
     visibilityChanged(isVisible) {
       if (isVisible) {
         this.readSettings();

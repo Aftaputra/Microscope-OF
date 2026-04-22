@@ -41,18 +41,10 @@
       </div>
     </nav>
 
-    <ScanViewerModal
-      ref="scanViewer"
-      :selected-scan="selectedScan"
-      :base-uri="$store.getters.baseUri"
-    />
+    <ScanViewerModal ref="scanViewer" :selected-scan="selectedScan" :base-uri="baseUri" />
 
     <!-- Gallery -->
-    <div
-      v-if="$store.getters.ready"
-      class="uk-padding-remove-top"
-      uk-lightbox="toggle: .lightbox-link"
-    >
+    <div v-if="ready" class="uk-padding-remove-top" uk-lightbox="toggle: .lightbox-link">
       <!-- Gallery capture cards -->
       <div class="gallery-grid uk-grid-match" uk-grid>
         <div v-if="scansEmpty">
@@ -86,6 +78,9 @@ import scanCard from "./scanListComponents/scanCard.vue";
 import ScanViewerModal from "./scanListComponents/scanViewer.vue";
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
+import { useSettingsStore } from "@/stores/settings.js";
+import { mapState, storeToRefs } from "pinia";
+import { watch } from "vue";
 
 // Export main app
 export default {
@@ -111,6 +106,7 @@ export default {
   },
 
   computed: {
+    ...mapState(useSettingsStore, ["baseUri", "ready"]),
     scansUri() {
       return this.thingPropertyUrl("smart_scan", "scans");
     },
@@ -119,7 +115,7 @@ export default {
     },
     selectedScanDZI() {
       if (this.selectedScan && this.selectedScan.dzi != "") {
-        return `${this.$store.getters.baseUri}/data/smart_scan/${this.selectedScan.name}/images/${this.selectedScan.dzi}`;
+        return `${this.baseUri}/data/smart_scan/${this.selectedScan.name}/images/${this.selectedScan.dzi}`;
       } else {
         return null;
       }
@@ -134,6 +130,15 @@ export default {
   },
 
   async mounted() {
+    const store = useSettingsStore();
+    const { ready } = storeToRefs(store);
+    watch(ready, (isReady) => {
+      if (isReady) {
+        this.updateScans();
+      } else {
+        this.scans = [];
+      }
+    });
     useIntersectionObserver(
       this.$refs.galleryDisplay,
       ([{ isIntersecting }]) => {
@@ -153,24 +158,6 @@ export default {
       // Handle the modal closed event here
       this.updateScans();
     });
-  },
-
-  created: function () {
-    // Watch for host 'ready', then update status
-    this.unwatchStoreFunction = this.$store.watch(
-      (state, getters) => {
-        return getters.ready;
-      },
-      (ready) => {
-        if (ready) {
-          // If the connection is now ready, update capture list
-          this.updateScans();
-        } else {
-          // If the connection is now disconnected, empty capture list
-          this.captures = {};
-        }
-      },
-    );
   },
 
   beforeUnmount() {

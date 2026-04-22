@@ -2,7 +2,7 @@
   <div>
     <form class="uk-form-stacked" action="" method="GET" @submit="overrideAPIHost">
       <label class="uk-form-label">Override API origin</label>
-      <input v-model="newOrigin" name="overrideOrigin" class="uk-input" type="text" />
+      <input v-model="overrideOrigin" name="overrideOrigin" class="uk-input" type="text" />
       <label class="uk-form-label">
         <input v-model="reloadWhenOverridingOrigin" class="uk-checkbox" type="checkbox" />
         Reload web app with new origin
@@ -13,31 +13,30 @@
 </template>
 
 <script>
-// Export main app
+import { mapWritableState } from "pinia";
+import { useSettingsStore } from "@/stores/settings.js";
+
 export default {
   name: "DevTools",
 
-  components: {},
-
-  data: function () {
+  data() {
     return {
-      newOrigin: this.$store.state.overrideOrigin,
       reloadWhenOverridingOrigin: true,
     };
   },
 
-  methods: {
-    overrideAPIHost: function (event) {
-      // Save the origin override, so that if we reload the web app, you can easily
-      this.$store.commit("changeOverrideOrigin", this.newOrigin);
+  computed: {
+    ...mapWritableState(useSettingsStore, ["overrideOrigin", "origin"]),
+  },
 
-      // If we have elected not to reload the interface, just update the origin
-      // in the store.  Otherwise, the form's default action will do the job for us.
-      // TODO: preserve other query parameters when reloading
+  methods: {
+    overrideAPIHost(event) {
       if (!this.reloadWhenOverridingOrigin) {
-        this.$store.commit("changeOrigin", this.newOrigin);
+        this.origin = this.overrideOrigin;
         event.preventDefault();
       }
+      // if reloadWhenOverridingOrigin is true, form submits normally
+      // passing overrideOrigin as a query param in the URL
     },
   },
 };

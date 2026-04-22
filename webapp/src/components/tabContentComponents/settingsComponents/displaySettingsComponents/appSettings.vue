@@ -19,6 +19,9 @@
   </div>
 </template>
 <script>
+import { useSettingsStore } from "@/stores/settings.js";
+import { mapWritableState } from "pinia";
+
 // Export main app
 export default {
   name: "AppSettings",
@@ -28,14 +31,7 @@ export default {
   },
 
   computed: {
-    appTheme: {
-      get() {
-        return this.$store.state.appTheme;
-      },
-      set(value) {
-        this.$store.commit("changeAppTheme", value);
-      },
-    },
+    ...mapWritableState(useSettingsStore, ["appTheme"]),
   },
 
   methods: {
