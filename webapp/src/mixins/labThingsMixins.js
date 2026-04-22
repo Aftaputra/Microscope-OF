@@ -39,10 +39,10 @@ export default {
       return this.wotStore.thingActionUrl(thing, action, "invokeaction", allowUndefined);
     },
     thingActionAvailable(thing, action) {
-      return this.wotStore.affordanceAvailable(thing, "actions", action);
+      return this.wotStore.thingAffordanceAvailable(thing, "actions", action);
     },
     thingPropertyAvailable(thing, property) {
-      return this.wotStore.affordanceAvailable(thing, "properties", property);
+      return this.wotStore.thingAffordanceAvailable(thing, "properties", property);
     },
     async readThingProperty(thing, property, silenceErrors = false) {
       let url = this.wotStore.thingPropertyUrl(thing, property, "readproperty", false);

@@ -42,8 +42,8 @@
 import propertyControl from "@/components/labThingsComponents/propertyControl.vue";
 import ServerSpecifiedInterface from "@/components/labThingsComponents/serverSpecifiedInterface.vue";
 import { useIntersectionObserver } from "@vueuse/core";
-import { mapWritableState } from "pinia";
-import { useSettingsStore } from "@/stores/settings.js";
+//import { mapWritableState } from "pinia";
+//import { useSettingsStore } from "@/stores/settings.js";
 
 export default {
   name: "SlideScanControls",
@@ -58,6 +58,7 @@ export default {
       workflowName: undefined,
       workflowSettings: [],
       workflowOptions: [],
+      workflowReady: false,
     };
   },
 
@@ -84,7 +85,6 @@ export default {
   },
 
   methods: {
-    ...mapWritableState(useSettingsStore, ["ready"]),
     visibilityChanged(isVisible) {
       if (isVisible) {
         this.readSettings();
@@ -99,7 +99,7 @@ export default {
       }
 
       if (this.workflowName) {
-        this.ready = await this.readThingProperty(this.workflowName, "ready", true);
+        this.workflowReady = await this.readThingProperty(this.workflowName, "ready", true);
         this.workflowSettings =
           (await this.getThingEndpoint(this.workflowName, "settings_ui")) || [];
       }
