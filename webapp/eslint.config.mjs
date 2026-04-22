@@ -10,7 +10,7 @@ const isProd = process.env.NODE_ENV === "production";
 export default [
   {
     ignores: ["dist/**/*", "lib/**/*", "**/*.min.js", "tools/architecture_dashboard/**/*"],
-    },
+  },
 
   js.configs.recommended,
 
