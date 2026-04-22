@@ -40,10 +40,11 @@ def test_grab_jpeg(simulation_test_env):
     assert image.size == (820, 616)
 
 
-def test_capture_jpeg_metadata(simulation_test_env):
+@pytest.mark.parametrize("fmt", ["jpeg", "png"])
+def test_capture_and_metadata(simulation_test_env, fmt):
     """Check that the position is encoded into the image metadata."""
     camera = simulation_test_env.get_thing_client("camera")
-    blob = camera.capture_jpeg()
+    blob = getattr(camera, f"capture_{fmt}")()
     image = Image.open(blob.open())
     exif_dict = piexif.load(image.info["exif"])
     encoded_metadata = exif_dict["Exif"][piexif.ExifIFD.UserComment]

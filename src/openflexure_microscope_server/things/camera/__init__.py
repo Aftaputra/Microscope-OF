@@ -437,12 +437,43 @@ class BaseCamera(OFMThing):
         capture_metadata = self._capture_metadata()
 
         self._save_capture(
-            jpeg_path=jpeg_path,
+            path=jpeg_path,
             image=img,
             metadata=capture_metadata,
         )
 
         return JPEGBlob.from_temporary_directory(directory, fname)
+
+    @lt.action
+    def capture_png(
+        self,
+        stream_name: Literal["main", "lores", "full"] = "main",
+        wait: Optional[float] = None,
+    ) -> PNGBlob:
+        """Acquire one image from the camera as a PNG.
+
+        This will use the internal capture image functionally of capture_image of
+        the specific camera being used.
+
+        :param stream_name: A stream name supported by this camera.
+        :param wait: (Optional, float) Set a timeout in seconds. If None it will
+            use the default for the underlying camera.
+        """
+        fname = datetime.now().strftime("%Y-%m-%d-%H%M%S.jpeg")
+        directory = tempfile.TemporaryDirectory()
+        png_path = os.path.join(directory.name, fname)
+
+        img = self.capture_image(stream_name, wait)
+
+        capture_metadata = self._capture_metadata()
+
+        self._save_capture(
+            path=png_path,
+            image=img,
+            metadata=capture_metadata,
+        )
+
+        return PNGBlob.from_temporary_directory(directory, fname)
 
     @lt.action
     def grab_jpeg(
@@ -656,7 +687,7 @@ class BaseCamera(OFMThing):
 
     def _save_capture(
         self,
-        jpeg_path: str,
+        path: str,
         image: Image.Image,
         metadata: Mapping[str, Any],
         save_resolution: Optional[Tuple[int, int]] = None,
@@ -672,22 +703,25 @@ class BaseCamera(OFMThing):
         if save_resolution is not None and image.size != save_resolution:
             image = image.resize(save_resolution, Image.Resampling.BOX)
         try:
-            # Per PIL documentation,
-            # (https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg)
-            # there are two factors when saving a JPEG. Subsampling affects the colour,
-            # quality affects the pixels.
-            # subsampling = 0 disables subsampling of colour
-            # quality = 95 is the maximum recommended - above this, JPEG compression is
-            # disabled, file size increases and quality is barely or not affected
-            image.save(jpeg_path, quality=95, subsampling=0)
+            save_kwargs: dict[str, Any] = {}
+            if path.endswith("jpg"):
+                # Per PIL documentation,
+                # (https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg)
+                # there are two factors when saving a JPEG. Subsampling affects the colour,
+                # quality affects the pixels.
+                # subsampling = 0 disables subsampling of colour
+                # quality = 95 is the maximum recommended - above this, JPEG compression is
+                # disabled, file size increases and quality is barely or not affected
+                save_kwargs = {"quality": 95, "subsampling": 0}
+            image.save(path, **save_kwargs)
             try:
-                self._add_metadata_to_capture(jpeg_path, dict(metadata))
+                self._add_metadata_to_capture(path, dict(metadata))
             except Exception:
                 # We need to capture any exception as there are many reasons metadata
                 # might not be added. We warn rather than log the error.
-                self.logger.exception(f"Failed to add metadata to {jpeg_path}")
+                self.logger.exception(f"Failed to add metadata to {path}")
         except Exception as e:
-            raise IOError(f"An error occurred while saving {jpeg_path}") from e
+            raise IOError(f"An error occurred while saving {path}") from e
 
     settling_time: float = lt.setting(default=0.2, ge=0)
     """The settling time when calling the ``settle()`` method."""
