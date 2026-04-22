@@ -595,7 +595,7 @@ class BaseCamera(OFMThing):
         image, metadata = self._memory_buffer.get_image(buffer_id)
 
         self._save_capture(
-            jpeg_path=jpeg_path,
+            path=jpeg_path,
             image=image,
             metadata=metadata,
             save_resolution=save_resolution,
