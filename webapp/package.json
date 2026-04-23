@@ -4,6 +4,9 @@
   "private": true,
   "description": "User interface for the OpenFlexure Microscope Server",
   "author": "OpenFlexure <contact@openflexure.org> (https://www.openflexure.org)",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "gv": "genversion src/version.js",
     "serve": "vite serve --mode development",
@@ -24,8 +27,7 @@
     "typescript-eslint": "^8.59.0",
     "uikit": "^3.24.2",
     "vue": "^3.4.0",
-    "vue-router": "4.0.0",
-    "vuex": "^4.0.0"
+    "vue-router": "4.0.0"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.28.5",
@@ -39,7 +41,7 @@
     "less": "^4.5.1",
     "material-symbols": "^0.39.1",
     "prettier": "^3.2.8",
-    "vite": "^8.0.8"
+    "vite": "^7.3.1"
   },
   "postcss": {
     "plugins": {
