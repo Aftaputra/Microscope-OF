@@ -263,10 +263,30 @@ class JPEGSharpnessMonitor:
         self.camera = camera
         self.stage = stage
         LOGGER.debug(f"Created sharpness monitor with {stage}, {camera}")
-        self.stage_positions: list[Mapping[str, int]] = []
-        self.stage_times: list[float] = []
-        self.jpeg_times: list[float] = []
-        self.jpeg_sizes: list[int] = []
+        self._stage_positions: list[Mapping[str, int]] = []
+        self._stage_times: list[float] = []
+        self._jpeg_times: list[float] = []
+        self._jpeg_sizes: list[int] = []
+
+    @property
+    def stage_positions(self) -> Sequence[Mapping[str, int]]:
+        """The positions recorded for the stage."""
+        return self._stage_positions
+
+    @property
+    def stage_times(self) -> Sequence[float]:
+        """The timestamps recorded for stage position updates."""
+        return self._stage_times
+
+    @property
+    def jpeg_times(self) -> Sequence[float]:
+        """The timestamps recorded for captured JPEG frames."""
+        return self._jpeg_times
+
+    @property
+    def jpeg_sizes(self) -> Sequence[int]:
+        """The recorded JPEG frame sizes used as a sharpness metric."""
+        return self._jpeg_sizes
 
     running = False
 
