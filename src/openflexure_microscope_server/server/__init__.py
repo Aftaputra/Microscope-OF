@@ -190,4 +190,11 @@ def _full_config_from_args(args: Namespace) -> ThingServerConfig:
         )
 
     patched_config = load_patched_config(args.config)
+    if "enable_global_lock" not in patched_config:
+        patched_config["enable_global_lock"] = True
+    if patched_config["enable_global_lock"] is not True:
+        raise ValueError(
+            "OpenFlexure Microscope Server requires `enable_global_lock` to be `true`, "
+            "and it was set to another value in the configuration file."
+        )
     return ThingServerConfig(**patched_config)
