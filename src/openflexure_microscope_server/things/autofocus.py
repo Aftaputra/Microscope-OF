@@ -263,10 +263,30 @@ class JPEGSharpnessMonitor:
         self.camera = camera
         self.stage = stage
         LOGGER.debug(f"Created sharpness monitor with {stage}, {camera}")
-        self.stage_positions: list[Mapping[str, int]] = []
-        self.stage_times: list[float] = []
-        self.jpeg_times: list[float] = []
-        self.jpeg_sizes: list[int] = []
+        self._stage_positions: list[Mapping[str, int]] = []
+        self._stage_times: list[float] = []
+        self._jpeg_times: list[float] = []
+        self._jpeg_sizes: list[int] = []
+
+    @property
+    def stage_positions(self) -> Sequence[Mapping[str, int]]:
+        """The positions recorded for the stage."""
+        return self._stage_positions
+
+    @property
+    def stage_times(self) -> Sequence[float]:
+        """The timestamps recorded for stage position updates."""
+        return self._stage_times
+
+    @property
+    def jpeg_times(self) -> Sequence[float]:
+        """The timestamps recorded for captured JPEG frames."""
+        return self._jpeg_times
+
+    @property
+    def jpeg_sizes(self) -> Sequence[int]:
+        """The recorded JPEG frame sizes used as a sharpness metric."""
+        return self._jpeg_sizes
 
     running = False
 
@@ -274,8 +294,8 @@ class JPEGSharpnessMonitor:
         """Start monitoring the frame sizes."""
         self.running = True
         async for frame in self.camera.lores_mjpeg_stream.frame_async_generator():
-            self.jpeg_times.append(time.time())
-            self.jpeg_sizes.append(len(frame))
+            self._jpeg_times.append(time.time())
+            self._jpeg_sizes.append(len(frame))
             if not self.running:
                 break
 
@@ -309,15 +329,15 @@ class JPEGSharpnessMonitor:
         collected.
         """
         # Store the start time and position
-        self.stage_times.append(time.time())
-        self.stage_positions.append(self.stage.position)
+        self._stage_times.append(time.time())
+        self._stage_positions.append(self.stage.position)
 
         # Main move
         self.stage.move_relative(z=dz, block_cancellation=block_cancellation)
 
         # Store the end time and position
-        self.stage_times.append(time.time())
-        self.stage_positions.append(self.stage.position)
+        self._stage_times.append(time.time())
+        self._stage_positions.append(self.stage.position)
 
         # Index of the data for this movement
         data_index: int = len(self.stage_positions) - 2
