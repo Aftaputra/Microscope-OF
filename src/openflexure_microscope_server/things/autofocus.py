@@ -294,8 +294,8 @@ class JPEGSharpnessMonitor:
         """Start monitoring the frame sizes."""
         self.running = True
         async for frame in self.camera.lores_mjpeg_stream.frame_async_generator():
-            self.jpeg_times.append(time.time())
-            self.jpeg_sizes.append(len(frame))
+            self._jpeg_times.append(time.time())
+            self._jpeg_sizes.append(len(frame))
             if not self.running:
                 break
 
@@ -329,15 +329,15 @@ class JPEGSharpnessMonitor:
         collected.
         """
         # Store the start time and position
-        self.stage_times.append(time.time())
-        self.stage_positions.append(self.stage.position)
+        self._stage_times.append(time.time())
+        self._stage_positions.append(self.stage.position)
 
         # Main move
         self.stage.move_relative(z=dz, block_cancellation=block_cancellation)
 
         # Store the end time and position
-        self.stage_times.append(time.time())
-        self.stage_positions.append(self.stage.position)
+        self._stage_times.append(time.time())
+        self._stage_positions.append(self.stage.position)
 
         # Index of the data for this movement
         data_index: int = len(self.stage_positions) - 2
