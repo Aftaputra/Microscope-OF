@@ -692,7 +692,7 @@ class SmartScanThing(OFMThing):
             raise HTTPException(404, "File not found")
         return FileResponse(preview_path)
 
-    @lt.action
+    @lt.action(use_global_lock=False)
     def stitch_scan(self, scan_name: str) -> None:
         """Generate a stitched image based on stage position metadata."""
         scan_data = self._scan_dir_manager.get_scan_data(scan_name)
@@ -720,7 +720,7 @@ class SmartScanThing(OFMThing):
         except SubprocessError as e:
             self.logger.error(f"Stitching failed: {e}", exc_info=e)
 
-    @lt.action
+    @lt.action(use_global_lock=False)
     def download_zip(
         self,
         scan_name: str,
@@ -732,7 +732,7 @@ class SmartScanThing(OFMThing):
         zip_fname = self._scan_dir_manager.zip_scan(scan_name, final_version=True)
         return ZipBlob.from_file(zip_fname)
 
-    @lt.action
+    @lt.action(use_global_lock=False)
     def stitch_all_scans(self) -> None:
         """Check the list of scans, and stitch any that don't have a DZI associated with it.
 
