@@ -11,6 +11,11 @@ from labthings_fastapi.testing import create_thing_without_server
 from openflexure_microscope_server.things import system
 from openflexure_microscope_server.utilities import VersionData, robust_version_strings
 
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+FAKE_OS_FILE = os.path.join(THIS_DIR, "assets", "os-release")
+BROKEN_OS_FILE = os.path.join(THIS_DIR, "assets", "os-release-broken")
+MISSING_OS_FILE = os.path.join(THIS_DIR, "assets", "this-does-not-exist")
+
 
 @pytest.fixture
 def system_thing():
@@ -35,6 +40,33 @@ def _is_raspberrypi() -> bool:
 def test_is_raspberry(system_thing):
     """Check the thing property reports whether this is a Raspberry Pi correctly."""
     assert system_thing.is_raspberrypi == _is_raspberrypi()
+
+
+@pytest.mark.parametrize(
+    ("version_file", "expected_result"),
+    [
+        (MISSING_OS_FILE, "unknown"),
+        (FAKE_OS_FILE, "trixie"),
+        (BROKEN_OS_FILE, "unknown"),
+    ],
+)
+def test_os_version_pi(version_file, expected_result, system_thing, mocker):
+    """Check reading the operating system version from a Pi (mocked!)."""
+    type(system_thing).is_raspberrypi = mocker.PropertyMock(return_value=True)
+
+    mocker.patch(
+        "openflexure_microscope_server.things.system.OS_VERSION_FILE", version_file
+    )
+    assert system_thing.os_version == expected_result
+
+
+def test_os_version_not_pi(system_thing, mocker):
+    """Check reading the operating system when not on a Pi returns None."""
+    mocker.patch(
+        "openflexure_microscope_server.things.system.OS_VERSION_FILE", FAKE_OS_FILE
+    )
+    type(system_thing).is_raspberrypi = mocker.PropertyMock(return_value=False)
+    assert system_thing.os_version is None
 
 
 def test_version_data(system_thing):
