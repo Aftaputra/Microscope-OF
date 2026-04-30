@@ -34,7 +34,7 @@
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
 import { useSettingsStore } from "@/stores/settings.js";
-import { mapState, mapWritableState } from "pinia";
+import { mapState } from "pinia";
 
 // Export main app
 export default {
@@ -57,8 +57,7 @@ export default {
   },
 
   computed: {
-    ...mapState(useSettingsStore, ["ready", "baseUri"]),
-    ...mapWritableState(useSettingsStore, ["disableStream", "waiting"]),
+    ...mapState(useSettingsStore, ["ready", "baseUri", "disableStream", "waiting"]),
     streamEnabled: function () {
       return this.ready && !this.disableStream;
     },
