@@ -20,8 +20,10 @@ import labthings_fastapi as lt
 
 from openflexure_microscope_server.utilities import VersionData, robust_version_strings
 
-SHUTDOWN_CMD = ["sudo", "shutdown", "-h", "now"]
-REBOOT_CMD = ["sudo", "shutdown", "-r", "now"]
+LEGACY_SHUTDOWN_CMD = ["sudo", "shutdown", "-h", "now"]
+OFM_SHUTDOWN_CMD = ["ofm", "system-shutdown"]
+LEGACY_REBOOT_CMD = ["sudo", "shutdown", "-r", "now"]
+OFM_REBOOT_CMD = ["ofm", "system-restart"]
 
 OS_VERSION_FILE = "/usr/lib/os-release"
 
@@ -114,9 +116,10 @@ class OpenFlexureSystem(lt.Thing):
                 error="Shutdown command sent to server process, but the server has not shutdown.",
             )
 
-        # On a Raspberry Pi
+        cmd = OFM_SHUTDOWN_CMD if self.os_version == "trixie" else LEGACY_SHUTDOWN_CMD
+
         p = subprocess.Popen(
-            SHUTDOWN_CMD,
+            cmd,
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
             text=True,
@@ -134,8 +137,10 @@ class OpenFlexureSystem(lt.Thing):
                 error="Restart is only available on Raspberry Pi.",
             )
 
+        cmd = OFM_REBOOT_CMD if self.os_version == "trixie" else LEGACY_REBOOT_CMD
+
         p = subprocess.Popen(
-            REBOOT_CMD,
+            cmd,
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
             text=True,
