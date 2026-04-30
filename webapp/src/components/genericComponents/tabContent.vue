@@ -1,6 +1,7 @@
 <template>
   <div
-    v-if="!(requireConnection && !ready) && currentTab === tabID"
+    v-if="!(requireConnection && !ready)"
+    :hidden="currentTab != tabID"
     class="uk-width-expand uk-height-1-1"
   >
     <slot></slot>

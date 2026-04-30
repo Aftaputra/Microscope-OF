@@ -116,14 +116,6 @@ export default {
     baseUri() {
       this.checkConnection();
     },
-    // The "Whole App" Wrapper Logic
-    ready(isReady) {
-      if (isReady) {
-        this.bindHardwareInputs(); // Turn keys ON when connected
-      } else {
-        this.unbindHardwareInputs(); // Turn keys OFF if disconnected
-      }
-    },
   },
 
   mounted() {
@@ -145,15 +137,14 @@ export default {
 
   created: function () {
     window.addEventListener("beforeunload", this.handleExit);
+    this.bindHardwareInputs(); // Turn keys ON when connected
   },
 
   beforeUnmount: function () {
     // Disconnect the theme observer
     this.mql.removeEventListener("change", this.themeWatchdog);
     // Remove scrollwheel listener
-    window.removeEventListener("wheel", this.wheelMonitor);
-    // Remove key listeners
-    Mousetrap.reset();
+    this.unbindHardwareInputs();
   },
 
   methods: {
