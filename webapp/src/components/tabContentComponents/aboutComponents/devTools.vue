@@ -31,12 +31,10 @@ export default {
 
   methods: {
     overrideAPIHost(event) {
-      if (!this.reloadWhenOverridingOrigin) {
+      if (this.reloadWhenOverridingOrigin) {
         this.origin = this.overrideOrigin;
         event.preventDefault();
       }
-      // if reloadWhenOverridingOrigin is true, form submits normally
-      // passing overrideOrigin as a query param in the URL
     },
   },
 };
