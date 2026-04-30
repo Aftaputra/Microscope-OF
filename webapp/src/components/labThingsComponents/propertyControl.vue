@@ -68,7 +68,9 @@ export default {
   computed: {
     propertyDescription: function () {
       const td = this.wotStore.thingDescriptions[this.thingName];
+      // Return `undefined` if the thing doesn't exist or has no properties
       if (!td || !td.properties) return undefined;
+      // JS returns `undefined` if this property name doesn't exist
       return td.properties[this.propertyName];
     },
   },

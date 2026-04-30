@@ -66,10 +66,10 @@ export default {
       }
       this.modalConfirm(message).then(
         () => {
-          this.resetState();
-          this.deleteAllThingDescriptions();
           // Post and silence errors
           axios.post(this.thingActionUrl("system", action)).catch(() => {});
+          this.resetState();
+          this.deleteAllThingDescriptions();
         },
         () => {},
       );

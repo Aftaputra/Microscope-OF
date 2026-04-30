@@ -64,7 +64,6 @@ export const useSettingsStore = defineStore(
     function removeStream(id) {
       activeStreams.value[id] = false;
     }
-    // TODO: Replace for direct access to state.
     // Getters
     const baseUri = computed(() => origin.value);
     const ready = computed(() => available.value);

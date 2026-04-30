@@ -104,8 +104,6 @@ export default {
     ...mapWritableState(useSettingsStore, ["navigationInvert"]),
   },
 
-  // TODO: jogInterval may need to be cleared on "beforeUnmount()"
-
   methods: {
     /**
      * Jog d-pad and focus buttons.

@@ -42,8 +42,6 @@
 import propertyControl from "@/components/labThingsComponents/propertyControl.vue";
 import ServerSpecifiedInterface from "@/components/labThingsComponents/serverSpecifiedInterface.vue";
 import { useIntersectionObserver } from "@vueuse/core";
-//import { mapWritableState } from "pinia";
-//import { useSettingsStore } from "@/stores/settings.js";
 
 export default {
   name: "SlideScanControls",
