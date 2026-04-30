@@ -102,7 +102,6 @@ export const useSettingsStore = defineStore(
       paths: [
         "appTheme",
         "disableStream",
-        "overrideOrigin",
         "navigationStepSize",
         "navigationInvert",
       ],
