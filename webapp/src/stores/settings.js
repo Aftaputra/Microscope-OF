@@ -99,12 +99,7 @@ export const useSettingsStore = defineStore(
   {
     // PiniaPluginPersistedState will now automatically persist ONLY these specific refs to localStorage
     persist: {
-      paths: [
-        "appTheme",
-        "disableStream",
-        "navigationStepSize",
-        "navigationInvert",
-      ],
+      paths: ["appTheme", "disableStream", "navigationStepSize", "navigationInvert"],
     },
   },
 );

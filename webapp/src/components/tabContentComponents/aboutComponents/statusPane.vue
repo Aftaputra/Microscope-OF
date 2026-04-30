@@ -82,15 +82,8 @@ export default {
   },
 
   computed: {
-    ...mapState(useSettingsStore, [
-      "origin", 
-      "microscopeHostname", 
-      "available", 
-      "waiting",
-  ]   ),
-    ...mapState(useWotStore, [
-      "thingDescriptions",
-    ]),
+    ...mapState(useSettingsStore, ["origin", "microscopeHostname", "available", "waiting"]),
+    ...mapState(useWotStore, ["thingDescriptions"]),
     ...mapWritableState(useSettingsStore, ["error"]),
 
     cameraType() {

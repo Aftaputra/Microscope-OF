@@ -68,7 +68,7 @@
         :tab-i-d="item.id"
         :require-connection="true"
         :current-tab="currentTab"
-      > 
+      >
         <component :is="item.component" @scroll-top="scrollToTop"></component>
       </tabContent>
     </div>
