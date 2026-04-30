@@ -16,6 +16,7 @@ import os
 import shutil
 import sys
 import zipfile
+from typing import Optional
 
 import gitlab
 from gitlab.exceptions import GitlabGetError
@@ -42,16 +43,19 @@ def extract_zip(zip_data: bytes) -> None:
         print(f"Extracted zip to: {THIS_DIR}")
 
 
-def main(branch: str = "v3") -> None:
+def main(branch: str = "v3", project: Optional[str] = None) -> None:
     """Fetch build artifacts from GitLab for a given branch and unzip.
 
     Clear any existing static directory before extract the new files.
 
     :param branch: The Git branch name to fetch artifacts from.
+    :param project: The GitLab project ID if pulling from a fork. Use None for
+        pulling from the main openflexure GitLab.
     """
+    project_id = 9238334 if project is None else int(project)
     try:
         gl = gitlab.Gitlab()
-        ofm_repo = gl.projects.get(9238334)
+        ofm_repo = gl.projects.get(project_id)
 
         zip_data = ofm_repo.artifacts.download(branch, "build")
     except GitlabGetError as e:
@@ -75,6 +79,12 @@ if __name__ == "__main__":
         default="v3",
         help="Git branch to fetch artifacts from (default: v3)",
     )
+    parser.add_argument(
+        "-p",
+        "--project",
+        default=None,
+        help="The GitLab project ID if using a fork",
+    )
 
     args = parser.parse_args()
-    main(branch=args.branch)
+    main(branch=args.branch, project=args.project)
