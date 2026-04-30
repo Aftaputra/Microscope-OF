@@ -31,7 +31,7 @@ export default {
 
   methods: {
     overrideAPIHost(event) {
-      if (this.reloadWhenOverridingOrigin) {
+      if (!this.reloadWhenOverridingOrigin) {
         this.origin = this.overrideOrigin;
         event.preventDefault();
       }
