@@ -11,6 +11,11 @@ from labthings_fastapi.testing import create_thing_without_server
 from openflexure_microscope_server.things import system
 from openflexure_microscope_server.utilities import VersionData, robust_version_strings
 
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+FAKE_OS_FILE = os.path.join(THIS_DIR, "assets", "os-release")
+BROKEN_OS_FILE = os.path.join(THIS_DIR, "assets", "os-release-broken")
+MISSING_OS_FILE = os.path.join(THIS_DIR, "assets", "this-does-not-exist")
+
 
 @pytest.fixture
 def system_thing():
@@ -35,6 +40,33 @@ def _is_raspberrypi() -> bool:
 def test_is_raspberry(system_thing):
     """Check the thing property reports whether this is a Raspberry Pi correctly."""
     assert system_thing.is_raspberrypi == _is_raspberrypi()
+
+
+@pytest.mark.parametrize(
+    ("version_file", "expected_result"),
+    [
+        (MISSING_OS_FILE, "unknown"),
+        (FAKE_OS_FILE, "trixie"),
+        (BROKEN_OS_FILE, "unknown"),
+    ],
+)
+def test_os_version_pi(version_file, expected_result, system_thing, mocker):
+    """Check reading the operating system version from a Pi (mocked!)."""
+    type(system_thing).is_raspberrypi = mocker.PropertyMock(return_value=True)
+
+    mocker.patch(
+        "openflexure_microscope_server.things.system.OS_VERSION_FILE", version_file
+    )
+    assert system_thing.os_version == expected_result
+
+
+def test_os_version_not_pi(system_thing, mocker):
+    """Check reading the operating system when not on a Pi returns None."""
+    mocker.patch(
+        "openflexure_microscope_server.things.system.OS_VERSION_FILE", FAKE_OS_FILE
+    )
+    type(system_thing).is_raspberrypi = mocker.PropertyMock(return_value=False)
+    assert system_thing.os_version is None
 
 
 def test_version_data(system_thing):
@@ -80,51 +112,55 @@ def test_thing_state(system_thing, mocker):
     assert state_dict["version_source"] == version_data.version_source
 
 
-class MockPiSystem(system.OpenFlexureSystem):
-    """A OpenFlexureSystem Thing that always claims to be a Raspberry Pi."""
-
-    is_raspberrypi: bool = True
-
-
-class MockNonPiSystem(system.OpenFlexureSystem):
-    """A OpenFlexureSystem Thing that never claims to be a Raspberry Pi."""
-
-    is_raspberrypi: bool = False
+def test_check_shutdown_commands():
+    """Check the shutdown and reboot commands are as expected."""
+    # Check the shutdown commands are as expected.
+    assert system.LEGACY_SHUTDOWN_CMD == ["sudo", "shutdown", "-h", "now"]
+    assert system.OFM_SHUTDOWN_CMD == ["ofm", "system-shutdown"]
+    # Check the reboot command are as expected.
+    assert system.LEGACY_REBOOT_CMD == ["sudo", "shutdown", "-r", "now"]
+    assert system.OFM_REBOOT_CMD == ["ofm", "system-restart"]
 
 
-def test_pi_shutdown(mocker):
+def test_pi_shutdown_and_restart(system_thing, mocker):
     """Check that on a Pi will receive the correct shutdown command."""
-    # Check the shutdown command is as expected.
-    assert system.SHUTDOWN_CMD == ["sudo", "shutdown", "-h", "now"]
-    # Mock the shutdown command as we don't want to shutdown when running tests.
+    # Mock the commands as we don't want to shutdown when running tests.
     mocker.patch.object(
-        system, "SHUTDOWN_CMD", new=["python", "-c", "print('shutdown')"]
+        system, "LEGACY_SHUTDOWN_CMD", new=["python", "-c", "print('legacy shutdown')"]
     )
-    # Call shutdown on a MockPiSystem
-    system_thing = create_thing_without_server(MockPiSystem)
+    mocker.patch.object(
+        system, "OFM_SHUTDOWN_CMD", new=["python", "-c", "print('ofm shutdown')"]
+    )
+    mocker.patch.object(
+        system, "LEGACY_REBOOT_CMD", new=["python", "-c", "print('legacy reboot')"]
+    )
+    mocker.patch.object(
+        system, "OFM_REBOOT_CMD", new=["python", "-c", "print('ofm reboot')"]
+    )
+
+    # Pretend to be a pi.
+    type(system_thing).is_raspberrypi = mocker.PropertyMock(return_value=True)
+
+    # Check on trixie the ofm commands are used.
+    type(system_thing).os_version = mocker.PropertyMock(return_value="trixie")
     result = system_thing.shutdown()
-
-    # Check the result of the mock command was returned
-    assert result.output.strip() == "shutdown"
+    assert result.output.strip() == "ofm shutdown"
     assert result.error.strip() == ""
-
-
-def test_pi_reboot(mocker):
-    """Check that on a Pi will receive the correct reboot command."""
-    # Check the reboot command is as expected.
-    assert system.REBOOT_CMD == ["sudo", "shutdown", "-r", "now"]
-    # Mock the reboot command as we don't want to reboot when running tests.
-    mocker.patch.object(system, "REBOOT_CMD", new=["python", "-c", "print('restart')"])
-    # Call reboot on a MockPiSystem
-    system_thing = create_thing_without_server(MockPiSystem)
     result = system_thing.reboot()
+    assert result.output.strip() == "ofm reboot"
+    assert result.error.strip() == ""
 
-    # Check the result of the mock command was returned
-    assert result.output.strip() == "restart"
+    # Otherwise the legacy commands are used.
+    type(system_thing).os_version = mocker.PropertyMock(return_value="bookworm")
+    result = system_thing.shutdown()
+    assert result.output.strip() == "legacy shutdown"
+    assert result.error.strip() == ""
+    result = system_thing.reboot()
+    assert result.output.strip() == "legacy reboot"
     assert result.error.strip() == ""
 
 
-def test_non_pi_shutdown(mocker):
+def test_non_pi_shutdown(system_thing, mocker):
     """Check that a server not on a pi runs os.kill when asked to shutdown.
 
     It should do this instead of running the shutdown command in a subprocess.
@@ -133,7 +169,9 @@ def test_non_pi_shutdown(mocker):
     mock_kill = mocker.patch("os.kill")
     # Get this subprocess
     pid = os.getpid()
-    system_thing = create_thing_without_server(MockNonPiSystem)
+
+    type(system_thing).is_raspberrypi = mocker.PropertyMock(return_value=False)
+
     result = system_thing.shutdown()
 
     # Check it tried to kill this process with SIGTERM
@@ -143,9 +181,9 @@ def test_non_pi_shutdown(mocker):
     assert "but the server has not shutdown" in result.error
 
 
-def test_non_pi_reboot():
+def test_non_pi_reboot(system_thing, mocker):
     """Check that a server not on a pi refuses to restart."""
-    system_thing = create_thing_without_server(MockNonPiSystem)
+    type(system_thing).is_raspberrypi = mocker.PropertyMock(return_value=False)
     result = system_thing.reboot()
 
     # Check output is an appropriate error message

@@ -5,6 +5,7 @@ the microscope, server, and thing states to the web API.
 """
 
 import os
+import re
 import socket
 import subprocess
 import time
@@ -19,8 +20,12 @@ import labthings_fastapi as lt
 
 from openflexure_microscope_server.utilities import VersionData, robust_version_strings
 
-SHUTDOWN_CMD = ["sudo", "shutdown", "-h", "now"]
-REBOOT_CMD = ["sudo", "shutdown", "-r", "now"]
+LEGACY_SHUTDOWN_CMD = ["sudo", "shutdown", "-h", "now"]
+OFM_SHUTDOWN_CMD = ["ofm", "system-shutdown"]
+LEGACY_REBOOT_CMD = ["sudo", "shutdown", "-r", "now"]
+OFM_REBOOT_CMD = ["ofm", "system-restart"]
+
+OS_VERSION_FILE = "/usr/lib/os-release"
 
 
 class CommandOutput(BaseModel):
@@ -81,6 +86,24 @@ class OpenFlexureSystem(lt.Thing):
         """Return True if running on a Raspberry Pi."""
         return os.path.exists("/usr/bin/raspi-config")
 
+    @lt.property
+    def os_version(self) -> Optional[str]:
+        """Return the OS version of the Pi. Returns None if not on a Pi."""
+        if not self.is_raspberrypi:
+            return None
+
+        if not os.path.isfile(OS_VERSION_FILE):
+            return "unknown"
+
+        with open(OS_VERSION_FILE, "r", encoding="utf-8") as os_file:
+            os_data = os_file.read()
+
+        version_match = re.search(r"^VERSION_CODENAME=(.+)$", os_data, re.MULTILINE)
+        if not version_match:
+            return "unknown"
+
+        return version_match.group(1)
+
     @lt.action
     def shutdown(self) -> CommandOutput:
         """Attempt to shutdown the device."""
@@ -93,9 +116,10 @@ class OpenFlexureSystem(lt.Thing):
                 error="Shutdown command sent to server process, but the server has not shutdown.",
             )
 
-        # On a Raspberry Pi
+        cmd = OFM_SHUTDOWN_CMD if self.os_version == "trixie" else LEGACY_SHUTDOWN_CMD
+
         p = subprocess.Popen(
-            SHUTDOWN_CMD,
+            cmd,
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
             text=True,
@@ -113,8 +137,10 @@ class OpenFlexureSystem(lt.Thing):
                 error="Restart is only available on Raspberry Pi.",
             )
 
+        cmd = OFM_REBOOT_CMD if self.os_version == "trixie" else LEGACY_REBOOT_CMD
+
         p = subprocess.Popen(
-            REBOOT_CMD,
+            cmd,
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
             text=True,
