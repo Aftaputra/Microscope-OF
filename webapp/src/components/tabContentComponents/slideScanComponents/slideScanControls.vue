@@ -27,6 +27,7 @@
         </div>
         <div class="uk-margin">
           <propertyControl
+            v-if="thingAvailable('smart_scan')"
             thing-name="smart_scan"
             property-name="stitch_tiff"
             label="When Stitching, Produce a Pyramidal TIFF"
@@ -55,6 +56,7 @@ export default {
       workflowName: undefined,
       workflowSettings: [],
       workflowOptions: [],
+      workflowReady: false,
     };
   },
 
@@ -95,7 +97,7 @@ export default {
       }
 
       if (this.workflowName) {
-        this.ready = await this.readThingProperty(this.workflowName, "ready", true);
+        this.workflowReady = await this.readThingProperty(this.workflowName, "ready", true);
         this.workflowSettings =
           (await this.getThingEndpoint(this.workflowName, "settings_ui")) || [];
       }

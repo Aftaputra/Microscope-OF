@@ -22,6 +22,8 @@
 <script>
 import stepTemplateWithStream from "../stepTemplateWithStream.vue";
 import cameraCalibrationSettings from "../../../tabContentComponents/settingsComponents/cameraSettingsComponents/cameraCalibrationSettings.vue";
+import { useSettingsStore } from "@/stores/settings.js";
+import { mapState } from "pinia";
 
 export default {
   name: "CameraMainCalibrationStep",
@@ -34,8 +36,9 @@ export default {
   emits: ["awaiting-user"],
 
   computed: {
+    ...mapState(useSettingsStore, ["baseUri"]),
     cameraUri: function () {
-      return `${this.$store.getters.baseUri}/camera/`;
+      return `${this.baseUri}/camera/`;
     },
   },
 

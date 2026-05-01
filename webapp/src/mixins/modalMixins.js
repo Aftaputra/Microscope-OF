@@ -8,6 +8,7 @@
 
 import UIkit from "uikit";
 import { eventBus } from "@/eventBus";
+import { useSettingsStore } from "@/stores/settings.js";
 
 export default {
   methods: {
@@ -55,9 +56,10 @@ export default {
       );
     },
 
-    modalError: function (error) {
-      var errormsg = this.getErrorMessage(error);
-      this.$store.commit("setErrorMessage", errormsg);
+    modalError(set_error) {
+      const store = useSettingsStore();
+      var errormsg = this.getErrorMessage(set_error);
+      store.error = errormsg;
       UIkit.notification({
         message: `${errormsg}`,
         status: "danger",
@@ -78,30 +80,30 @@ export default {
         return String(data);
       }
     },
-    getErrorData: function (error) {
+    getErrorData: function (data_error) {
       // If a response was obtained, extract the most specific message
-      if (error.response) {
+      if (data_error.response) {
         // If the response is a nicely formatted JSON response from the server
-        if (error.response.data.message) {
-          return error.response.data.message;
+        if (data_error.response.data.message) {
+          return data_error.response.data.message;
         }
-        if (error.response.data.detail) {
+        if (data_error.response.data.detail) {
           try {
-            return error.response.data.detail[0].msg;
+            return data_error.response.data.detail[0].msg;
           } catch {
-            return error.response.data.detail;
+            return data_error.response.data.detail;
           }
         }
         // If the response is just some generic error response
-        if (error.response.data) {
-          return error.response.data;
+        if (data_error.response.data) {
+          return data_error.response.data;
         }
-        return error.response;
+        return data_error.response;
       }
       // If we have an error object with a message, use that
-      if (error.message) return error.message;
+      if (data_error.message) return data_error.message;
       // At this point just formatting the whole error object is the best we can do.
-      return error;
+      return data_error;
     },
 
     showModalElement: function (element) {

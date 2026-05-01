@@ -29,6 +29,9 @@
 
 <script>
 import axios from "axios";
+import { useWotStore } from "@/stores/wot.js";
+import { mapActions } from "pinia";
+import { useSettingsStore } from "@/stores/settings.js";
 
 export default {
   name: "PowerContent",
@@ -52,6 +55,8 @@ export default {
   },
 
   methods: {
+    ...mapActions(useSettingsStore, ["resetState"]),
+    ...mapActions(useWotStore, ["deleteAllThingDescriptions"]),
     systemRequest: function (action) {
       let message = "";
       if (action == "reboot") {
@@ -61,10 +66,10 @@ export default {
       }
       this.modalConfirm(message).then(
         () => {
-          this.$store.commit("resetState");
-          this.$store.commit("wot/deleteAllThingDescriptions");
           // Post and silence errors
           axios.post(this.thingActionUrl("system", action)).catch(() => {});
+          this.resetState();
+          this.deleteAllThingDescriptions();
         },
         () => {},
       );

@@ -61,7 +61,8 @@ import actionTab from "./actionTab.vue";
 import slideScanControls from "./slideScanComponents/slideScanControls.vue";
 import streamDisplay from "./streamContent.vue";
 import ActionButton from "../labThingsComponents/actionButton.vue";
-
+import { mapState } from "pinia";
+import { useSettingsStore } from "@/stores/settings.js";
 export default {
   name: "SlideScanContent",
 
@@ -84,6 +85,7 @@ export default {
   },
 
   computed: {
+    ...mapState(useSettingsStore, ["baseUri"]),
     scanning() {
       return this.taskId && this.taskUrl;
     },
@@ -138,7 +140,7 @@ export default {
         // while the scan is running
         let mtime = await this.readThingProperty("smart_scan", "latest_preview_stitch_time", true);
         if (mtime !== null) {
-          this.lastStitchedImage = `${this.$store.getters.baseUri}/smart_scan/latest_preview_stitch.jpg?t=${mtime}`;
+          this.lastStitchedImage = `${this.baseUri}/smart_scan/latest_preview_stitch.jpg?t=${mtime}`;
         }
 
         this.lastScanName = await this.readThingProperty("smart_scan", "latest_scan_name", true);

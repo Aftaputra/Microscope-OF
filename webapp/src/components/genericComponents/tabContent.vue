@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!(requireConnection && !$store.getters.ready)"
+    v-if="!(requireConnection && !ready)"
     :hidden="currentTab != tabID"
     class="uk-width-expand uk-height-1-1"
   >
@@ -9,6 +9,9 @@
 </template>
 
 <script>
+import { mapState } from "pinia";
+import { useSettingsStore } from "@/stores/settings";
+
 export default {
   name: "TabContent",
 
@@ -23,7 +26,9 @@ export default {
     },
     requireConnection: Boolean,
   },
-  computed: {},
+  computed: {
+    ...mapState(useSettingsStore, ["ready"]),
+  },
 
   methods: {},
 };

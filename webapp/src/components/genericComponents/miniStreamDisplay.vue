@@ -16,6 +16,8 @@
 
 <script>
 import { useIntersectionObserver } from "@vueuse/core";
+import { useSettingsStore } from "@/stores/settings.js";
+import { mapState } from "pinia";
 
 // Export main app
 export default {
@@ -28,8 +30,9 @@ export default {
   },
 
   computed: {
-    streamImgUri: function () {
-      return `${this.$store.getters.baseUri}/camera/mjpeg_stream`;
+    ...mapState(useSettingsStore, ["baseUri"]),
+    streamImgUri() {
+      return `${this.baseUri}/camera/mjpeg_stream`;
     },
   },
 

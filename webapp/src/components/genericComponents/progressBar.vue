@@ -5,6 +5,9 @@
 </template>
 
 <script>
+import { mapState } from "pinia";
+import { useSettingsStore } from "@/stores/settings";
+
 export default {
   name: "ProgressBar",
 
@@ -13,6 +16,7 @@ export default {
   emits: ["set-tab"],
 
   computed: {
+    ...mapState(useSettingsStore, ["ready"]),
     tooltipOptions: function () {
       var title = this.id.charAt(0).toUpperCase() + this.id.slice(1);
       return `pos: right; title: ${title}; delay: 500`;
@@ -21,7 +25,7 @@ export default {
     classObject: function () {
       return {
         "tabicon-active": this.currentTab == this.id,
-        "uk-disabled": this.requireConnection && !this.$store.getters.ready,
+        "uk-disabled": this.requireConnection && !this.ready,
       };
     },
   },

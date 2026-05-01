@@ -79,6 +79,8 @@
 
 <script>
 import { eventBus } from "@/eventBus.js";
+import { mapWritableState } from "pinia";
+import { useSettingsStore } from "@/stores/settings.js";
 
 export default {
   name: "StageControlButtons",
@@ -97,6 +99,11 @@ export default {
     jogDistance: 600,
     jogTime: 300,
   }),
+
+  computed: {
+    ...mapWritableState(useSettingsStore, ["navigationInvert"]),
+  },
+
   methods: {
     /**
      * Jog d-pad and focus buttons.
@@ -116,11 +123,10 @@ export default {
       // pointer is.
       pointerEvent.target.setPointerCapture(pointerEvent.pointerId);
 
-      const navigationInvert = this.$store.state.navigationInvert;
       let invokeJog = () =>
         this.invokeAction("stage", "jog", {
-          x: x * this.jogDistance * (navigationInvert.x ? -1 : 1),
-          y: y * this.jogDistance * (navigationInvert.y ? -1 : 1),
+          x: x * this.jogDistance * (this.navigationInvert.x ? -1 : 1),
+          y: y * this.jogDistance * (this.navigationInvert.y ? -1 : 1),
           z: z * this.jogDistance,
         });
       invokeJog();

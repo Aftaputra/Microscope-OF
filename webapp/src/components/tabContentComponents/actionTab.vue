@@ -202,7 +202,7 @@ export default {
     },
     async checkIfStartedExternally() {
       if (!this.taskStarted | !this.taskRunning) {
-        const ongoingTask = await this.getOngingAction(this.thing, this.action);
+        const ongoingTask = await this.getOngoingAction(this.thing, this.action);
         if (ongoingTask) {
           this.resetData();
           const taskUrl = ongoingTask.links.find((t) => t.rel == "self").href;

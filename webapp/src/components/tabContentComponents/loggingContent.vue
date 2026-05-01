@@ -92,6 +92,8 @@ import axios from "axios";
 import PaginateLinks from "@/components/genericComponents/paginateLinks.vue";
 import EndpointButton from "../labThingsComponents/endpointButton.vue";
 import { useIntersectionObserver } from "@vueuse/core";
+import { useSettingsStore } from "@/stores/settings.js";
+import { mapState } from "pinia";
 
 export default {
   name: "LoggingContent",
@@ -114,6 +116,7 @@ export default {
   },
 
   computed: {
+    ...mapState(useSettingsStore, ["baseUri"]),
     filteredLevels: function () {
       let cutoffIndex = this.allLevels.indexOf(this.filterLevel);
       return this.allLevels.slice(cutoffIndex, -1);
@@ -130,10 +133,10 @@ export default {
       return items;
     },
     logURI: function () {
-      return `${this.$store.getters.baseUri}/log/`;
+      return `${this.baseUri}/log/`;
     },
     logFileURI: function () {
-      return `${this.$store.getters.baseUri}/logfile/`;
+      return `${this.baseUri}/logfile/`;
     },
     pagedItems: function () {
       let startIndex = (this.currentPage - 1) * this.maxitems;

@@ -91,6 +91,7 @@ import slideScanContent from "./tabContentComponents/slideScanContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
 import { markRaw } from "vue";
 import { eventBus } from "../eventBus.js";
+import { useSettingsStore } from "@/stores/settings.js";
 
 // Import modal components for device initialisation
 import calibrationWizard from "./modalComponents/calibrationWizard.vue";
@@ -196,6 +197,7 @@ export default {
   },
 
   mounted() {
+    const store = useSettingsStore();
     // A global signal listener to switch tab
     eventBus.on("globalSwitchTab", (tabID) => {
       this.currentTab = tabID;
@@ -208,7 +210,7 @@ export default {
     eventBus.on("globalDecrementTab", () => {
       this.incrementTabBy(-1);
     });
-    if (this.$store.getters.ready) {
+    if (store.ready) {
       this.startModals();
     }
   },

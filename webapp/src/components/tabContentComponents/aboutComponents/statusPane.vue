@@ -1,16 +1,16 @@
 <template>
   <div class="host-input">
-    <div v-if="$store.state.available">
+    <div v-if="available">
       <div>
         <div class="uk-margin-small-bottom">
           <b>Microscope Hostname:</b>
           <br />
-          {{ $store.state.microscopeHostname }}
+          {{ microscopeHostname }}
         </div>
         <div class="uk-margin-small-bottom">
           <b>API Origin:</b>
           <br />
-          {{ $store.state.origin }}
+          {{ origin }}
         </div>
         <action-button
           v-if="illuminationType"
@@ -56,14 +56,17 @@
 
       <hr />
     </div>
-    <div v-else-if="$store.state.waiting">Loading...</div>
-    <div v-else-if="$store.state.error"><b>Error:</b> {{ $store.state.error }}</div>
+    <div v-else-if="waiting">Loading...</div>
+    <div v-else-if="error"><b>Error:</b> {{ error }}</div>
     <div v-else>No active connection</div>
   </div>
 </template>
 
 <script>
 import ActionButton from "../../labThingsComponents/actionButton.vue";
+import { mapState, mapWritableState } from "pinia";
+import { useSettingsStore } from "@/stores/settings.js";
+import { useWotStore } from "@/stores/wot.js";
 
 export default {
   name: "StatusPane",
@@ -79,16 +82,20 @@ export default {
   },
 
   computed: {
+    ...mapState(useSettingsStore, ["origin", "microscopeHostname", "available", "waiting"]),
+    ...mapState(useWotStore, ["thingDescriptions"]),
+    ...mapWritableState(useSettingsStore, ["error"]),
+
     cameraType() {
       // No need to check as the microscope won't start up without a camera defined
-      return this.thingDescription("camera").title;
+      return this.thingDescriptions["camera"]?.title;
     },
     stageType() {
-      return this.thingAvailable("stage") ? this.thingDescription("stage").title : undefined;
+      return this.thingAvailable("stage") ? this.thingDescriptions["stage"]?.title : undefined;
     },
     illuminationType() {
       return this.thingAvailable("illumination")
-        ? this.thingDescription("illumination").title
+        ? this.thingDescriptions["illumination"]?.title
         : undefined;
     },
   },

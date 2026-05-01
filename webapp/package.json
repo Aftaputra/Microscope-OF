@@ -4,6 +4,9 @@
   "private": true,
   "description": "User interface for the OpenFlexure Microscope Server",
   "author": "OpenFlexure <contact@openflexure.org> (https://www.openflexure.org)",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "gv": "genversion src/version.js",
     "serve": "vite serve --mode development",
@@ -18,24 +21,27 @@
     "mitt": "^3.0.1",
     "mousetrap": "^1.6.5",
     "openseadragon": "^5.0.0",
+    "pinia": "^3.0.4",
+    "pinia-plugin-persistedstate": "^4.7.1",
     "uikit": "^3.24.2",
     "vue": "^3.4.0",
-    "vue-router": "4.0.0",
-    "vuex": "^4.0.0"
+    "vue-router": "4.0.0"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.28.5",
-    "@vitejs/plugin-vue": "^5.2.4",
+    "@vitejs/plugin-vue": "^6.0.6",
     "@vue/eslint-config-prettier": "9.0.0",
     "autoprefixer": "^10.4.24",
     "core-js": "^3.46.0",
     "eslint": "^9.39.2",
     "eslint-plugin-prettier": "^5.1.0",
     "eslint-plugin-vue": "^9.20.0",
+    "eslint-plugin-pinia": "^0.4.2",
+    "typescript-eslint": "^8.59.0",
     "less": "^4.5.1",
     "material-symbols": "^0.39.1",
     "prettier": "^3.2.8",
-    "vite": "^5.4.21"
+    "vite": "^7.3.1"
   },
   "postcss": {
     "plugins": {

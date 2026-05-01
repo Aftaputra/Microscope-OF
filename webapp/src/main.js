@@ -1,6 +1,7 @@
 import { createApp } from "vue";
+import { createPinia } from "pinia";
+import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 import App from "./App.vue";
-import store from "./store";
 import UIkit from "uikit";
 
 // Import MD icons
@@ -21,14 +22,14 @@ UIkit.mixin(
 
 // Create Vue app
 const app = createApp(App);
+const pinia = createPinia();
+pinia.use(piniaPluginPersistedstate);
 
-// Use visibility observer
-//app.use(VueObserveVisibility);
+// Use Pinia
+app.use(pinia);
 
 // Use global mixins
 app.mixin(modalMixin);
 app.mixin(labThingsMixins);
 
-// Use Vuex store
-app.use(store);
 app.mount("#app");

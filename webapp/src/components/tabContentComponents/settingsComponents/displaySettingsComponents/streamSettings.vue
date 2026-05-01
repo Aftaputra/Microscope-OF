@@ -12,6 +12,9 @@
 </template>
 
 <script>
+import { mapWritableState } from "pinia";
+import { useSettingsStore } from "@/stores/settings.js";
+
 // Export main app
 export default {
   name: "StreamSettings",
@@ -21,14 +24,7 @@ export default {
   },
 
   computed: {
-    disableStream: {
-      get() {
-        return this.$store.state.disableStream;
-      },
-      set(value) {
-        this.$store.commit("changeDisableStream", value);
-      },
-    },
+    ...mapWritableState(useSettingsStore, ["disableStream"]),
   },
 };
 </script>

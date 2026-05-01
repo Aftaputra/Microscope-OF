@@ -67,10 +67,6 @@ export default {
       type: Object,
       default: null,
     },
-    baseUri: {
-      type: String,
-      required: true,
-    },
   },
   data() {
     return {

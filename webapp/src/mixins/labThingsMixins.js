@@ -5,8 +5,10 @@
  * This mixin is registered globally in `main.js` using. Do not
  * manually import it in components.
  */
-
 import axios from "axios";
+import { useWotStore } from "@/stores/wot.js";
+import { useSettingsStore } from "@/stores/settings.js";
+import { mapState, mapStores } from "pinia";
 
 export default {
   data() {
@@ -15,32 +17,35 @@ export default {
     };
   },
 
+  computed: {
+    ...mapState(useSettingsStore, ["baseUri"]),
+    ...mapStores(useWotStore),
+  },
+
   methods: {
     thingDescription(thing) {
-      return this.$store.getters["wot/thingDescription"](thing);
+      return this.wotStore.thingDescriptions[thing];
     },
     thingList() {
-      return this.$store.getters["wot/thingList"];
+      return this.wotStore.thingList();
     },
     thingAvailable(thing) {
-      return this.$store.getters["wot/thingAvailable"](thing);
+      return this.wotStore.thingAvailable(thing);
     },
     thingPropertyUrl(thing, property, allowUndefined = false) {
-      return this.$store.getters["wot/thingPropertyUrl"](
-        thing,
-        property,
-        "readproperty",
-        allowUndefined,
-      );
+      return this.wotStore.thingPropertyUrl(thing, property, "readproperty", allowUndefined);
+    },
+    thingActionUrl(thing, action, allowUndefined = false) {
+      return this.wotStore.thingActionUrl(thing, action, "invokeaction", allowUndefined);
     },
     thingActionAvailable(thing, action) {
-      return this.$store.getters["wot/thingAffordanceAvailable"](thing, "actions", action);
+      return this.wotStore.thingAffordanceAvailable(thing, "actions", action);
     },
     thingPropertyAvailable(thing, property) {
-      return this.$store.getters["wot/thingAffordanceAvailable"](thing, "properties", property);
+      return this.wotStore.thingAffordanceAvailable(thing, "properties", property);
     },
     async readThingProperty(thing, property, silenceErrors = false) {
-      let url = this.$store.getters["wot/thingPropertyUrl"](thing, property, "readproperty", false);
+      let url = this.wotStore.thingPropertyUrl(thing, property, "readproperty", false);
       try {
         let response = await axios.get(url);
         return response.data;
@@ -50,12 +55,7 @@ export default {
       }
     },
     async writeThingProperty(thing, property, value) {
-      let url = this.$store.getters["wot/thingPropertyUrl"](
-        thing,
-        property,
-        "writeproperty",
-        false,
-      );
+      let url = this.wotStore.thingPropertyUrl(thing, property, "writeproperty", false);
       // `false` and 0 fail because axios turns it to ""
       // Other values should not be stringified or pydantic
       // can't parse them.
@@ -88,7 +88,7 @@ export default {
       let response;
       let finalMethodCalled = false;
       try {
-        response = await axios.get(taskUrl, { baseURL: this.$store.getters.baseUri });
+        response = await axios.get(taskUrl, { baseURL: this.baseUri });
         const result = response.data.status;
 
         if (result === "running" || result === "pending") {
@@ -115,7 +115,7 @@ export default {
       }
     },
     terminateAction(taskUrl) {
-      axios.delete(taskUrl, { baseURL: this.$store.getters.baseUri });
+      axios.delete(taskUrl, { baseURL: this.baseUri });
     },
     async findOngoingActions(thing, action) {
       let url = this.thingActionUrl(thing, action);
@@ -131,7 +131,7 @@ export default {
      *
      * Returns null if there is no ongoing action
      */
-    async getOngingAction(thing, action) {
+    async getOngoingAction(thing, action) {
       let response = await this.findOngoingActions(thing, action);
       // Exit if response is null, due to an error.
       if (response == null) return null;
@@ -140,17 +140,9 @@ export default {
       // ?? Is the "Nullish Coalescing-Operator" to turn undefined into null.
       return response.data.find((t) => ["pending", "running"].includes(t.status)) ?? null;
     },
-    thingActionUrl(thing, action, allowUndefined = false) {
-      let url = this.$store.getters["wot/thingActionUrl"](
-        thing,
-        action,
-        "invokeaction",
-        allowUndefined,
-      );
-      return url;
-    },
+
     async getThingEndpoint(thing, endpoint) {
-      let url = `${this.$store.getters.baseUri}/${thing}/${endpoint}`;
+      let url = `${this.baseUri}/${thing}/${endpoint}`;
       try {
         const response = await axios.get(url);
         return response.data;

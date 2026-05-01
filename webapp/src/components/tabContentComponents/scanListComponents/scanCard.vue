@@ -82,6 +82,8 @@
 import axios from "axios";
 import actionButton from "../../labThingsComponents/actionButton.vue";
 import EndpointButton from "../../labThingsComponents/endpointButton.vue";
+import { mapState } from "pinia";
+import { useSettingsStore } from "@/stores/settings.js";
 
 // Export main app
 export default {
@@ -109,11 +111,12 @@ export default {
   emits: ["viewer-requested", "update-requested"],
 
   computed: {
+    ...mapState(useSettingsStore, ["baseUri"]),
     downloadStitchFile() {
-      return `${this.$store.getters.baseUri}/smart_scan/get_stitch/${this.scanData.name}`;
+      return `${this.baseUri}/smart_scan/get_stitch/${this.scanData.name}`;
     },
     thumbnailPath() {
-      return `${this.$store.getters.baseUri}/smart_scan/scans/stitched_thumbnail.jpg?scan_name=${this.scanData.name}&modified=${this.scanData.modified}`;
+      return `${this.baseUri}/smart_scan/scans/stitched_thumbnail.jpg?scan_name=${this.scanData.name}&modified=${this.scanData.modified}`;
     },
   },
 
