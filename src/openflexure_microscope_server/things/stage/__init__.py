@@ -471,7 +471,7 @@ class BaseStage(lt.Thing):
         command: Optional[JogCommand] = first_command
 
         # prevent others using the stage while jogging.
-        with self._thing_server_interface.hold_global_lock(True), self._hardware_lock:
+        with self._thing_server_interface.hold_global_lock(), self._hardware_lock:
             while command is not None:
                 if command.displacement is not None:
                     self._hardware_start_move_relative(command.displacement)
