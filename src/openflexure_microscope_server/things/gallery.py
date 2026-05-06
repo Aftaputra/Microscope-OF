@@ -5,11 +5,36 @@ the Things that capture the Data. This thing just provides a unified way for the
 front end to access the data.
 """
 
-from typing import Mapping, Optional
+from typing import Mapping, Optional, Protocol, Self, runtime_checkable
+
+from pydantic import BaseModel
 
 import labthings_fastapi as lt
 
 from openflexure_microscope_server.things import OFMThing
+
+
+@runtime_checkable
+class GalleryCompatibleThing(Protocol):
+    """Protocol for checking Things using the gallery are complete.
+
+    Note that runtime checkable protocols only check that the methods exist, not the
+    full signatures. This means that anything attempting to define the methods will
+    be picked up, but may throw an error when used.
+    """
+
+    # Ensure it is a Thing:
+    _thing_server_interface: lt.ThingServerInterface
+
+    # Ensure it is an OFMThing:
+    show_in_gallery: bool
+
+    gallery_data_name: str
+
+    gallery_data_schema: type[BaseModel]
+
+    # Ignore D102: No docstrings for the protocol.
+    def get_gallery_data(self) -> list[BaseModel]: ...  # noqa: D102
 
 
 class GalleryThing(lt.Thing):
@@ -23,9 +48,33 @@ class GalleryThing(lt.Thing):
     def gallery_providing_things(self) -> Mapping[str, OFMThing]:
         """All Things that provide data to the gallery."""
         if self._gallery_providing_things is None:
-            self._gallery_providing_things = {
-                name: thing
-                for name, thing in self.all_ofm_things.items()
-                if thing.show_in_gallery
-            }
+            raise RuntimeError(
+                "Cannot access gallery_providing_things before server has started."
+            )
         return self._gallery_providing_things
+
+    def __enter__(self) -> Self:
+        """Check for all gallery providing things on server startup."""
+        self._set_gallery_providers()
+
+    def _set_gallery_providers(self) -> None:
+        """Set the mapping of gallery providing things.
+
+        This is called on ``__enter__`` when the server starts.
+        """
+        gallery_providers = {
+            name: thing
+            for name, thing in self.all_ofm_things.items()
+            if thing.show_in_gallery
+        }
+        # cache initial list of keys as it may change in the loop
+        keys = list(gallery_providers.keys())
+        for key in keys:
+            if not isinstance(gallery_providers[key], GalleryCompatibleThing):
+                self.logger.error(
+                    f"Data from {key} cannot be shown in gallery as it does not "
+                    "provide all necessary properties/methods for the gallery."
+                )
+                gallery_providers.pop(key)
+
+        self._gallery_providing_things = gallery_providers

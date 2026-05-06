@@ -179,6 +179,26 @@ class SmartScanThing(OFMThing):
     # Register with gallery.
     _show_in_gallery = True
 
+    @property
+    def gallery_data_name(self) -> str:
+        """Name under which data shows up in gallery."""
+        return "Scans"
+
+    @property
+    def gallery_data_schema(self) -> type[scan_directories.ScanInfo]:
+        """The schema (BaseModel) for passing data to the gallery."""
+        return scan_directories.ScanInfo
+
+    def get_gallery_data(self) -> list[scan_directories.ScanInfo]:
+        """Return all the information from the scan directories.
+
+        It is preferable to use the method rather than calling
+        _scan_dir_manager.all_scans_info() directly as it will handle stopping the json
+        in any ongoing scans being read.
+        """
+        ongoing_name = None if self._ongoing_scan is None else self.ongoing_scan.name
+        return self._scan_dir_manager.all_scans_info(ongoing=ongoing_name)
+
     # Note that the default detector name is set at init. This is over written if
     # setting is loaded from disk.
     @lt.setting
@@ -547,16 +567,6 @@ class SmartScanThing(OFMThing):
     stitch_automatically: bool = lt.setting(default=True)
     """Whether to run a final stitch at the end of a successful scan."""
 
-    def _get_all_scan_info(self) -> list[scan_directories.ScanInfo]:
-        """Return all the information from the scan directories.
-
-        It is preferable to use the method rather than calling
-        _scan_dir_manager.all_scans_info() directly as it will handle stopping the json
-        in any ongoing scans being read.
-        """
-        ongoing_name = None if self._ongoing_scan is None else self.ongoing_scan.name
-        return self._scan_dir_manager.all_scans_info(ongoing=ongoing_name)
-
     @lt.property
     def scans(self) -> ScanListInfo:
         """All the available scans.
@@ -568,7 +578,7 @@ class SmartScanThing(OFMThing):
         break it.
         """
         return ScanListInfo(
-            scans=self._get_all_scan_info(),
+            scans=self.get_gallery_data(),
             ongoing=None if self._ongoing_scan is None else self.ongoing_scan.name,
         )
 
