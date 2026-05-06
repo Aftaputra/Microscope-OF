@@ -3,6 +3,7 @@
         "camera": "openflexure_microscope_server.things.camera.simulation:SimulatedCamera",
         "stage": "openflexure_microscope_server.things.stage.dummy:DummyStage",
         "autofocus": "openflexure_microscope_server.things.autofocus:AutofocusThing",
+        "gallery": "openflexure_microscope_server.things.gallery.GalleryThing",
         "camera_stage_mapping": "openflexure_microscope_server.things.camera_stage_mapping:CameraStageMapper",
         "illumination": "openflexure_microscope_server.things.illumination.SimulatorIllumination",
         "system": "openflexure_microscope_server.things.system:OpenFlexureSystem",

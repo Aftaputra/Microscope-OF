@@ -25,6 +25,7 @@ from pydantic import BaseModel, Field
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
+from openflexure_microscope_server.things import OFMThing
 from openflexure_microscope_server.things.background_detect import (
     BackgroundDetectAlgorithm,
 )
@@ -164,7 +165,7 @@ class CameraMemoryBuffer:
             del self._storage[key]
 
 
-class BaseCamera(lt.Thing):
+class BaseCamera(OFMThing):
     """The base class for all cameras. All cameras must directly inherit from this class.
 
     The connection to the camera hardware should be added to the ``__enter__`` method not

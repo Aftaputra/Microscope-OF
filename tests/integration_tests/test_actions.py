@@ -12,7 +12,6 @@ it has been moved as it artificaially inflated coverage.
 """
 
 import json
-import os
 
 import numpy as np
 import piexif
@@ -21,29 +20,11 @@ from PIL import Image
 
 import labthings_fastapi as lt
 
-from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(os.path.dirname(THIS_DIR))
-SIM_CONFIG = os.path.join(REPO_ROOT, "ofm_config_simulation.json")
-
-
-@pytest.fixture
-def test_env():
-    """Yield a server with a very basic configuration."""
-    with open(SIM_CONFIG, "r", encoding="utf-8") as f_obj:
-        config_dict = json.load(f_obj)
-    with LabThingsTestEnv(
-        things=config_dict["things"],
-        application_config=config_dict["application_config"],
-    ) as env:
-        yield env
-
-
-def test_autofocus(test_env):
+def test_autofocus(simulation_test_env):
     """Test Fast Autofocus can run doesn't raise an exception."""
-    stage = test_env.get_thing_client("stage")
-    autofocus = test_env.get_thing_client("autofocus")
+    stage = simulation_test_env.get_thing_client("stage")
+    autofocus = simulation_test_env.get_thing_client("autofocus")
     assert stage.position["z"] == 0
     # Autofocus 5 times and check each ends within 500 steps
     for i in range(5):
@@ -51,17 +32,17 @@ def test_autofocus(test_env):
         assert abs(stage.position["z"]) < 500, f"Autofocus failed on iteration {i}"
 
 
-def test_grab_jpeg(test_env):
+def test_grab_jpeg(simulation_test_env):
     """Check that grab_jpeg returns a blob that can be opened."""
-    camera = test_env.get_thing_client("camera")
+    camera = simulation_test_env.get_thing_client("camera")
     blob = camera.grab_jpeg()
     image = Image.open(blob.open())
     assert image.size == (820, 616)
 
 
-def test_capture_jpeg_metadata(test_env):
+def test_capture_jpeg_metadata(simulation_test_env):
     """Check that the position is encoded into the image metadata."""
-    camera = test_env.get_thing_client("camera")
+    camera = simulation_test_env.get_thing_client("camera")
     blob = camera.capture_jpeg()
     image = Image.open(blob.open())
     exif_dict = piexif.load(image.info["exif"])
@@ -72,9 +53,9 @@ def test_capture_jpeg_metadata(test_env):
     assert image.size == (820, 616)
 
 
-def test_stage(test_env):
+def test_stage(simulation_test_env):
     """Test moving the stage forwards and backwards."""
-    stage = test_env.get_thing_client("stage")
+    stage = simulation_test_env.get_thing_client("stage")
     start = stage.position
     move = {"x": 1, "y": 2, "z": 3}
     move_back = {"x": -1, "y": -2, "z": -3}
@@ -95,20 +76,20 @@ def test_stage(test_env):
     assert start["z"] == pos["z"]
 
 
-def test_capture_array(test_env):
+def test_capture_array(simulation_test_env):
     """Capture array from simulation and check the size is as expected."""
-    camera = test_env.get_thing_client("camera")
+    camera = simulation_test_env.get_thing_client("camera")
     array = np.asarray(camera.capture_array())
     assert array.shape == (616, 820, 3)
 
 
-def test_camera_stage_mapping_calibration(test_env):
+def test_camera_stage_mapping_calibration(simulation_test_env):
     """Check that camera stage mapping runs and returns the expected result."""
-    camera = test_env.get_thing_client("camera")
+    camera = simulation_test_env.get_thing_client("camera")
     # Remove camera settling time for speed.
     camera.settling_time = 0
-    csm = test_env.get_thing_client("camera_stage_mapping")
-    stage = test_env.get_thing_client("stage")
+    csm = simulation_test_env.get_thing_client("camera_stage_mapping")
+    stage = simulation_test_env.get_thing_client("stage")
 
     # Check it starts uncalibrated
     assert csm.calibration_required

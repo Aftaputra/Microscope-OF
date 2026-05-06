@@ -1,6 +1,8 @@
 """Fixtures for all test suites."""
 
+import json
 import logging
+import os
 import re
 from collections.abc import Iterable
 from contextlib import contextmanager
@@ -9,6 +11,24 @@ from typing import Optional
 import pytest
 
 from labthings_fastapi.testing import create_thing_without_server
+
+from .shared_utils.lt_test_utils import LabThingsTestEnv
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(THIS_DIR)
+SIM_CONFIG = os.path.join(REPO_ROOT, "ofm_config_simulation.json")
+
+
+@pytest.fixture
+def simulation_test_env():
+    """Yield a server with the configuration from the simulation json."""
+    with open(SIM_CONFIG, "r", encoding="utf-8") as f_obj:
+        config_dict = json.load(f_obj)
+    with LabThingsTestEnv(
+        things=config_dict["things"],
+        application_config=config_dict["application_config"],
+    ) as env:
+        yield env
 
 
 @pytest.fixture

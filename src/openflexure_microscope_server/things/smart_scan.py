@@ -176,6 +176,9 @@ class SmartScanThing(OFMThing):
         In this case it doesn't need to do anything.
         """
 
+    # Register with gallery.
+    _show_in_gallery = True
+
     # Note that the default detector name is set at init. This is over written if
     # setting is loaded from disk.
     @lt.setting
