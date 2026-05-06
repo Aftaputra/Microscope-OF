@@ -71,16 +71,6 @@ class ActiveScanData(scan_directories.BaseScanData):
         self.scan_result = result
 
 
-class ScanListInfo(BaseModel):
-    """The information to be sent to the Scan List tab."""
-
-    scans: list[scan_directories.ScanInfo]
-    """The list of scans as ScanInfo objects"""
-
-    ongoing: Optional[str]
-    """The name of the ongoing scan or None"""
-
-
 class JPEGBlob(lt.blob.Blob):
     """A class representing a JPEG image as a LabThings FastAPI Blob."""
 
@@ -197,7 +187,9 @@ class SmartScanThing(OFMThing):
         in any ongoing scans being read.
         """
         ongoing_name = None if self._ongoing_scan is None else self.ongoing_scan.name
-        return self._scan_dir_manager.all_scans_info(ongoing=ongoing_name)
+        return self._scan_dir_manager.all_scans_info(
+            ongoing=ongoing_name, include_ongoing=False
+        )
 
     # Note that the default detector name is set at init. This is over written if
     # setting is loaded from disk.
@@ -567,21 +559,6 @@ class SmartScanThing(OFMThing):
     stitch_automatically: bool = lt.setting(default=True)
     """Whether to run a final stitch at the end of a successful scan."""
 
-    @lt.property
-    def scans(self) -> ScanListInfo:
-        """All the available scans.
-
-        Each scan has a name (which can be used to access it), along with
-        its modified and created times (according to the filesystem) and
-        the number of items in the ``images`` folder. Note that image count
-        uses a regular expression, and changes to the naming scheme will
-        break it.
-        """
-        return ScanListInfo(
-            scans=self.get_gallery_data(),
-            ongoing=None if self._ongoing_scan is None else self.ongoing_scan.name,
-        )
-
     @lt.endpoint(
         "get",
         "get_stitch/{scan_name}",
@@ -646,7 +623,7 @@ class SmartScanThing(OFMThing):
     def purge_empty_scans(self) -> None:
         """Delete all scan folders containing no images at the top level."""
         # JSON is ignored as it's created before any images are captured
-        for scan_info in self._get_all_scan_info():
+        for scan_info in self.get_gallery_data():
             if scan_info.number_of_images == 0:
                 self._delete_scan(scan_info.name)
 
@@ -761,6 +738,6 @@ class SmartScanThing(OFMThing):
         """
         if self._scan_lock.locked():
             raise RuntimeError("Can't stitch previous scans while a scan is ongoing")
-        for scan in self._get_all_scan_info():
+        for scan in self.get_gallery_data():
             if scan.dzi is None:
                 self.stitch_scan(scan_name=scan.name)

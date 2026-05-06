@@ -5,7 +5,7 @@ the Things that capture the Data. This thing just provides a unified way for the
 front end to access the data.
 """
 
-from typing import Mapping, Optional, Protocol, Self, runtime_checkable
+from typing import Any, Mapping, Optional, Protocol, Self, cast, runtime_checkable
 
 from pydantic import BaseModel
 
@@ -42,10 +42,10 @@ class GalleryThing(lt.Thing):
 
     all_ofm_things: Mapping[str, OFMThing] = lt.thing_slot()
 
-    _gallery_providing_things: Optional[Mapping[str, OFMThing]] = None
+    _gallery_providing_things: Optional[Mapping[str, GalleryCompatibleThing]] = None
 
     @property
-    def gallery_providing_things(self) -> Mapping[str, OFMThing]:
+    def gallery_providing_things(self) -> Mapping[str, GalleryCompatibleThing]:
         """All Things that provide data to the gallery."""
         if self._gallery_providing_things is None:
             raise RuntimeError(
@@ -56,6 +56,7 @@ class GalleryThing(lt.Thing):
     def __enter__(self) -> Self:
         """Check for all gallery providing things on server startup."""
         self._set_gallery_providers()
+        return self
 
     def _set_gallery_providers(self) -> None:
         """Set the mapping of gallery providing things.
@@ -77,4 +78,22 @@ class GalleryThing(lt.Thing):
                 )
                 gallery_providers.pop(key)
 
-        self._gallery_providing_things = gallery_providers
+        # Cast the type of each thing to "GalleryCompatibleThing" as other Things have
+        # been popped.
+        self._gallery_providing_things = cast(
+            Mapping[str, GalleryCompatibleThing], gallery_providers
+        )
+
+    @lt.property
+    def list_data(self) -> list[dict[str, Any]]:
+        """List the data from all registered things.
+
+        Currently only works with `smart_scan` as the UI cards are not customisable.
+
+        This will change to an action (or another type of endpoint) at a
+        later date to enable filtering, and returning only a specific page.
+        """
+        data_list = []
+        for thing in self.gallery_providing_things.values():
+            data_list += [model.model_dump() for model in thing.get_gallery_data()]
+        return data_list
