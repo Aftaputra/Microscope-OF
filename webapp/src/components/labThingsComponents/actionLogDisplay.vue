@@ -105,8 +105,7 @@ export default {
 
 .log-container {
   height: 100%;
-  overflow-y: auto;
-  overflow-x: auto;
+  overflow: auto;
   background-color: white;
   color: black;
   padding: 0.5em;

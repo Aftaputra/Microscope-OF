@@ -177,14 +177,17 @@ export default {
   grid-column: 2;
   grid-row: 1;
 }
+
 .dpad-grid #left-button {
   grid-column: 1;
   grid-row: 2;
 }
+
 .dpad-grid #right-button {
   grid-column: 3;
   grid-row: 2;
 }
+
 .dpad-grid #down-button {
   grid-column: 2;
   grid-row: 3;
@@ -194,6 +197,7 @@ export default {
   grid-column: 1;
   grid-row: 5;
 }
+
 .both-controls #focus-in-button {
   grid-column: 3;
   grid-row: 5;
@@ -203,6 +207,7 @@ export default {
   grid-column: 1;
   grid-row: 1;
 }
+
 .focus-only #focus-in-button {
   grid-column: 3;
   grid-row: 1;

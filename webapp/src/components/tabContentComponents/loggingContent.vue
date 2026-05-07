@@ -241,12 +241,13 @@ export default {
 @error-bg-color: #fef4f6;
 
 .logging-navbar {
-  border-width: 0 0 1px 0;
+  border-width: 0 0 1px;
   border-style: solid;
   border-color: rgba(180, 180, 180, 0.25);
   margin-bottom: 30px;
   height: 80px;
 }
+
 .logging-entry {
   white-space: break-spaces;
   padding: 0;
@@ -313,9 +314,11 @@ export default {
   background: #888;
   border-radius: 6px;
 }
+
 .more-info-container {
   display: flex;
 }
+
 .more-info {
   color: inherit;
   text-decoration: underline;

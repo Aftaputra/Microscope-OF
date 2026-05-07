@@ -425,31 +425,32 @@ export default {
 .input-and-buttons-container {
   display: flex;
   flex-flow: row wrap;
-  justify-content: flex-start;
-  align-content: stretch;
+  place-content: stretch flex-start;
   align-items: center;
   width: 100%;
 }
+
 .property-input {
   flex-grow: 1;
   margin-left: 5px;
   margin-right: 5px;
   width: 6em;
 }
-/*Hide standard spinners as it isn't possible to customise the browser ones.*/
+
+/* Hide standard spinners as it isn't possible to customise the browser ones. */
 .numeric-property {
-  -moz-appearance: textfield;
+  appearance: textfield;
 }
+
 .numeric-property::-webkit-outer-spin-button,
 .numeric-property::-webkit-inner-spin-button {
-  -webkit-appearance: none;
+  appearance: none;
 }
 
 .number-wrapper {
   display: flex;
   flex-flow: row wrap;
-  justify-content: flex-start;
-  align-content: stretch;
+  place-content: stretch flex-start;
   align-items: center;
   flex-grow: 1;
 }
@@ -474,25 +475,31 @@ export default {
   cursor: pointer;
   color: #888;
 }
+
 .dropdown {
   background-color: #fff;
   border: 1px solid #ccc;
   opacity: 1;
 }
+
 .edited {
   background-color: #fff3cd;
 }
+
 @keyframes green-flash {
   0% {
     background-color: #3fda63;
   }
+
   100% {
     background-color: white;
   }
 }
+
 .flash {
   animation: green-flash 0.7s ease;
-  /*Without this background-colour chrome will ignore the animation colour.*/
+
+  /* Without this background-colour chrome will ignore the animation colour. */
   background-color: white;
 }
 </style>

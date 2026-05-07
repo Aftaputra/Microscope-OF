@@ -176,22 +176,24 @@ export default {
 .input-and-buttons-container {
   display: flex;
   flex-flow: column wrap;
-  justify-content: flex-start;
-  align-content: stretch;
+  place-content: stretch flex-start;
   align-items: center;
   width: 100%;
 }
+
 .numeric-setting-line-input {
   flex-grow: 1;
-  margin: 5px 0px;
+  margin: 5px 0;
   width: 5em;
+
   /* Stop Firefox showing input spinners, other
   browsers set with block below */
-  -moz-appearance: textfield;
+  appearance: textfield;
 }
+
 /* Chrome, Safari, Edge, Opera */
 .numeric-setting-line-input::-webkit-outer-spin-button,
 .numeric-setting-line-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
+  appearance: none;
 }
 </style>

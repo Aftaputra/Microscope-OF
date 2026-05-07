@@ -49,7 +49,7 @@
 .hook-base-body() {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
+    text-rendering: optimizelegibility;
 }
 
 //
@@ -187,6 +187,7 @@
         color: @inverse-global-color;
         border-color: @inverse-global-color;
     }
+
     .uk-alert-danger {
         color: @notification-message-danger-color;
         border-color: @notification-message-danger-color
@@ -202,7 +203,6 @@
  * Links
  */
 .hook-inverse() {
-
     .uk-link:hover,
     .uk-button-link:hover,
     a:hover {
@@ -224,6 +224,7 @@
         color: @inverse-primary-muted-color;
         border-color: @inverse-primary-muted-color;
     }
+
     .uk-button:hover {
         background-color: @inverse-primary-muted-color;
         color: #fff;
@@ -244,8 +245,8 @@
 
     .uk-button-disabled {
         border: 1px solid @darkened-primary-color !important;
-        background-color: #333333 !important;
-        color: #777777 !important;
+        background-color: #333 !important;
+        color: #777 !important;
     }
 }
 

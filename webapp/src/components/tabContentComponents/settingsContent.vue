@@ -159,11 +159,10 @@ export default {
 
 <style lang="less" scoped>
 // Custom UIkit CSS modifications
-@import "../../assets/less/variables.less";
+@import url("../../assets/less/variables.less");
 
 .settings-nav {
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
   width: 250px;
   padding: 10px;
   background-color: rgba(180, 180, 180, 0.03);
