@@ -380,6 +380,14 @@ class JPEGSharpnessMonitor:
             sharpnesses = np.array(self.jpeg_sizes)
         elif self.method == SharpnessMethod.FOCUS_FOM:
             sharpnesses = np.array(self.focus_foms)
+
+            # If no valid FocusFoM values were recorded, fall back to JPEG size
+            if np.all(np.isnan(self.focus_foms)):
+                LOGGER.warning(
+                    "Sharpness method FOCUS_FOM selected, but no FocusFoM values "
+                    "were recorded. Falling back to JPEG sharpness."
+                )
+                sharpnesses = np.array(self.jpeg_sizes)
         else:
             raise ValueError(f"Unknown sharpness method: {self.method}")
         stage_times: np.ndarray = np.array(self.stage_times)[istart:istop]
@@ -449,14 +457,19 @@ class AutofocusThing(lt.Thing):
         self,
         dz: int = 2000,
         start: Literal["centre", "base"] = "centre",
+        sharpness_metric: SharpnessMethod = SharpnessMethod.JPEG,
     ) -> SharpnessDataArrays:
         """Sweep the stage up and down, then move to the sharpest point.
 
         This method will will move down by dz/2, sweep up by dz, and then evaluate
         the position where the image was sharpest. We'll then move back down, and
         finally up to the sharpest point.
+
+        sharpness_metric is either JPEG file size (JPEG) or inbuilt figure of metric (FOCUS_FOM).
         """
-        with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
+        with JPEGSharpnessMonitor(
+            self._stage, self._cam, sharpness_metric
+        ) as sharpness_monitor:
             # Move to (-dz / 2)
             if start == "centre":
                 sharpness_monitor.focus_rel(-dz // 2)
@@ -483,7 +496,7 @@ class AutofocusThing(lt.Thing):
         """Make a move (or a series of moves) and monitor sharpness.
 
         This method will will make a series of relative moves in z, and
-        return the sharpness (JPEG size) vs time, along with timestamps
+        return the sharpness (JPEG size and FOM) vs time, along with timestamps
         for the moves. This can be used to calibrate autofocus.
 
         Each move is relative to the last one, i.e. we will finish at
@@ -504,6 +517,7 @@ class AutofocusThing(lt.Thing):
         self,
         dz: int = 2000,
         start: Literal["centre", "base"] = "centre",
+        sharpness_metric: SharpnessMethod = SharpnessMethod.JPEG,
     ) -> tuple[list[float], list[float]]:
         """Repeatedly autofocus the stage until it looks focused.
 
@@ -511,10 +525,14 @@ class AutofocusThing(lt.Thing):
         in the middle 3/5 of its range. Such logic can be helpful if the microscope
         is close to focus, but not quite within ``dz/2``. It will attempt to autofocus
         up to 10 times.
+
+        sharpness_metric is either JPEG file size (JPEG) or inbuilt figure of metric (FOCUS_FOM).
         """
         attempt = 0
 
-        with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
+        with JPEGSharpnessMonitor(
+            self._stage, self._cam, sharpness_metric
+        ) as sharpness_monitor:
             while attempt < 10:
                 attempt += 1
                 if start == "centre":
@@ -531,9 +549,11 @@ class AutofocusThing(lt.Thing):
                 focus_data_index, _ = sharpness_monitor.focus_rel(
                     dz, block_cancellation=True
                 )
-                _times, heights, sizes = sharpness_monitor.move_data(focus_data_index)
+                _times, heights, sharpnesses = sharpness_monitor.move_data(
+                    focus_data_index
+                )
 
-                peak_height = heights[np.argmax(sizes)]
+                peak_height = heights[np.argmax(sharpnesses)]
                 target_min = np.min(heights) + dz / 5
                 target_max = np.max(heights) - dz / 5
 
@@ -545,7 +565,7 @@ class AutofocusThing(lt.Thing):
 
                 if target_min < peak_height < target_max:
                     # If it is within the target range then return
-                    return heights.tolist(), sizes.tolist()
+                    return heights.tolist(), sharpnesses.tolist()
         raise NoFocusFoundError(
             "Looping autofocus couldn't converge on a focus location."
         )
