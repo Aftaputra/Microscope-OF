@@ -12,7 +12,9 @@
     "serve": "vite serve --mode development",
     "build": "vite build --mode production",
     "lint": "eslint . --ignore-pattern .gitignore --max-warnings=0",
-    "lint:fix": "eslint . --fix --ignore-pattern .gitignore"
+    "lint:fix": "eslint . --fix --ignore-pattern .gitignore",
+    "lint:style": "stylelint \"src/**/*.{vue,less,css}\" --max-warnings=0",
+    "lint:style:fix": "stylelint \"src/**/*.{vue,less,css}\" --fix"
   },
   "dependencies": {
     "@vueuse/core": "^14.1.0",

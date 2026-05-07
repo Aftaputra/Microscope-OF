@@ -158,6 +158,7 @@ eslint:
   script:
     # Build JS application for production
     - npm run lint
+    - npm run lint:style
 
 # Build JS app
 build:
