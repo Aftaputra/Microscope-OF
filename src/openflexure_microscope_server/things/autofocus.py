@@ -38,6 +38,7 @@ class SharpnessMethod(enum.Enum):
     """The possible SharpnessMethods for autofocus."""
 
     JPEG = enum.auto()
+    FOCUS_FOM = enum.auto()
 
 
 class AutofocusParams(BaseModel):
@@ -235,6 +236,7 @@ class SharpnessDataArrays(BaseModel):
 
     jpeg_times: NDArray
     jpeg_sizes: NDArray
+    focus_foms: NDArray
     stage_times: NDArray
     stage_positions: list[dict[str, int]]
 
@@ -253,7 +255,12 @@ class JPEGSharpnessMonitor:
 
     """
 
-    def __init__(self, stage: BaseStage, camera: BaseCamera) -> None:
+    def __init__(
+        self,
+        stage: BaseStage,
+        camera: BaseCamera,
+        method: SharpnessMethod = SharpnessMethod.JPEG,
+    ) -> None:
         """Initialise a new JPEGSharpnessMonitor. The args are injected automatically.
 
         :param stage: A direct_thing_client dependency for the the microscope stage.
@@ -262,11 +269,13 @@ class JPEGSharpnessMonitor:
         """
         self.camera = camera
         self.stage = stage
+        self.method = method
         LOGGER.debug(f"Created sharpness monitor with {stage}, {camera}")
         self._stage_positions: list[Mapping[str, int]] = []
         self._stage_times: list[float] = []
         self._jpeg_times: list[float] = []
         self._jpeg_sizes: list[int] = []
+        self._focus_foms: list[float] = []
 
     @property
     def stage_positions(self) -> Sequence[Mapping[str, int]]:
@@ -288,14 +297,28 @@ class JPEGSharpnessMonitor:
         """The recorded JPEG frame sizes used as a sharpness metric."""
         return self._jpeg_sizes
 
+    @property
+    def focus_foms(self) -> Sequence[float]:
+        """The recorded FocusFoM values."""
+        return self._focus_foms
+
     running = False
 
     async def monitor_sharpness(self) -> None:
-        """Start monitoring the frame sizes."""
+        """Start monitoring sharpness metrics."""
         self.running = True
         async for frame in self.camera.lores_mjpeg_stream.frame_async_generator():
             self._jpeg_times.append(time.time())
+
+            # JPEG sharpness metric
             self._jpeg_sizes.append(len(frame))
+
+            # FocusFoM metric
+            fom = getattr(self.camera, "_focus_fom", None)
+            if fom is not None:
+                self._focus_foms.append(float(fom))
+            else:
+                self._focus_foms.append(np.nan)
             if not self.running:
                 break
 
@@ -352,7 +375,13 @@ class JPEGSharpnessMonitor:
         if istop is None:
             istop = istart + 2
         jpeg_times: np.ndarray = np.array(self.jpeg_times)
-        jpeg_sizes: np.ndarray = np.array(self.jpeg_sizes)
+        # Two sharpness metrics are measured - this chooses which to use to focus
+        if self.method == SharpnessMethod.JPEG:
+            sharpnesses = np.array(self.jpeg_sizes)
+        elif self.method == SharpnessMethod.FOCUS_FOM:
+            sharpnesses = np.array(self.focus_foms)
+        else:
+            raise ValueError(f"Unknown sharpness method: {self.method}")
         stage_times: np.ndarray = np.array(self.stage_times)[istart:istop]
         stage_heights: np.ndarray = np.array(
             [p["z"] for p in self.stage_positions[istart:istop]]
@@ -373,7 +402,7 @@ class JPEGSharpnessMonitor:
             LOGGER.debug("changing stop to %s", (stop))
         jpeg_times = jpeg_times[start:stop]
         jpeg_heights: np.ndarray = np.interp(jpeg_times, stage_times, stage_heights)
-        return jpeg_times, jpeg_heights, jpeg_sizes[start:stop]
+        return jpeg_times, jpeg_heights, sharpnesses[start:stop]
 
     def sharpest_z_on_move(self, data_index: int) -> int:
         """Return the z position of the sharpest image on a given move."""
@@ -388,7 +417,13 @@ class JPEGSharpnessMonitor:
     def data_to_array(self) -> SharpnessDataArrays:
         """Return the gathered data as SharpnessDataArrays."""
         data = {}
-        for k in ["jpeg_times", "jpeg_sizes", "stage_times", "stage_positions"]:
+        for k in [
+            "jpeg_times",
+            "jpeg_sizes",
+            "stage_times",
+            "focus_foms",
+            "stage_positions",
+        ]:
             data[k] = getattr(self, k)
         return SharpnessDataArrays(**data)
 

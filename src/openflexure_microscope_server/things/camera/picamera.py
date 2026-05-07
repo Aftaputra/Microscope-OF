@@ -28,6 +28,7 @@ from types import TracebackType
 from typing import Annotated, Any, Iterator, Literal, Mapping, Optional, Self
 
 import numpy as np
+from libcamera import Request
 from picamera2 import Picamera2
 from picamera2.encoders import MJPEGEncoder
 from picamera2.outputs import Output
@@ -366,6 +367,9 @@ class StreamingPiCamera2(BaseCamera):
             if self._picamera is None:
                 # Type narrow (error if failure)
                 raise RuntimeError("Failed to start Picamera")
+
+            self._picamera.pre_callback = self._on_frame_complete
+
             if check_sensor_model:
                 hw_sensor_model = self._picamera.camera_properties["Model"]
                 if hw_sensor_model != self._sensor_info.sensor_model:
@@ -373,6 +377,12 @@ class StreamingPiCamera2(BaseCamera):
                         f"Wrong Picamera model. Expecting {self._sensor_info.sensor_model}, "
                         f"but found {hw_sensor_model}."
                     )
+
+    def _on_frame_complete(self, request: Request) -> None:
+        md = request.get_metadata()
+        fom = md.get("FocusFoM")
+        if fom is not None:
+            self._focus_fom = fom
 
     def __enter__(self) -> Self:
         """Start streaming when the Thing context manager is opened.
