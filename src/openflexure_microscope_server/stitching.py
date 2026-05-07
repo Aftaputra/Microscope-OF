@@ -23,7 +23,10 @@ from openflexure_microscope_server.utilities import is_path_safe
 IS_WINDOWS = os.name == "nt"
 
 STITCHING_CMD = "openflexure-stitch"
-STITCHING_RESOLUTION = (820, 616)
+
+# The target width and height to correlate images. Used to choose
+# a suitable correlation_resize factor in scan_workflows
+TARGET_STITCHING_DIMENSION = 700
 STITCH_TILE_SIZE = 8192
 
 DEFAULT_OVERLAP = 0.1

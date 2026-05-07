@@ -431,3 +431,34 @@ def test_histo_workflow_settings_ui(histo_workflow, mocker):
         "equal_distances",
     ]
     assert names == expected_names
+
+
+@pytest.mark.parametrize(
+    ("save_res", "expected_resize"),
+    [
+        ((1400, 1400), 1 / 2),
+        ((1640, 1232), 1 / 2),
+        ((760, 750), 1 / 1),
+        ((1499, 1000), 1 / 2),
+        ((2250, 1800), 1 / 3),
+        ((700, 700), 1 / 1),
+    ],
+)
+def test_correlation_resize(histo_workflow, save_res, expected_resize):
+    """Test that scan_workflows chooses a suitable correlation_resize factor.
+
+    correlation_resize is always a unit fraction (1/N, N integer) so that the
+    downsampled image has an area roughly equal to TARGET_STITCHING_DIMENSION**2.
+    This ensures stitching correlations are fast, robust, and avoid artefacts.
+
+    The value is found by taking the image area (width * height), dividing by the
+    target area, taking the square root, and rounding to the nearest integer N. Then
+    correlation_resize = 1 / N.
+    """
+    histo_workflow.save_resolution = save_res
+    histo_workflow.overlap = 0.1
+    settings = histo_workflow._get_stitching_settings_model()
+
+    assert isinstance(settings, StitchingSettings)
+    assert settings.correlation_resize == expected_resize
+    assert 0 < settings.correlation_resize <= 1
