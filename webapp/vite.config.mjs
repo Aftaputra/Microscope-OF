@@ -6,6 +6,7 @@
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import purgecss from '@fullhuman/postcss-purgecss';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -56,6 +57,19 @@ export default defineConfig({
         // Enable JavaScript in Less files
         javascriptEnabled: true,
       },
+    },
+    postcss: {
+      plugins: [
+        purgecss({
+          content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
+          safelist: {
+            standard: ['html', 'body'], // Keep basic HTML elements
+            greedy: [ // greedy works by matching patterns, so we can keep all classes starting with 'uk-' for UIkit
+              /^uk-/, // Keep all classes starting with 'uk-' (UIkit)
+            ]
+          },
+        }),
+      ],
     },
   },
 });
