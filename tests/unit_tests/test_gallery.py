@@ -32,7 +32,7 @@ class MinimalGalleryClass:
 
     gallery_data_schema: type[BaseModel] = MockGalleryData
 
-    def get_gallery_data(self) -> list[BaseModel]:
+    def get_data_for_gallery(self) -> list[BaseModel]:
         """Return a list of Mock Gallery Data."""
         return [MockGalleryData(mock="mock", foobar="foobar")]
 
@@ -43,7 +43,7 @@ class MinimalGallerySource(OFMThing, MinimalGalleryClass):
     Mixes MinimalGalleryClass into OFMThing to be recognised by the protocol.
     """
 
-    show_in_gallery = True
+    show_data_in_gallery = True
 
 
 class BadGallerySource(OFMThing):
@@ -52,11 +52,11 @@ class BadGallerySource(OFMThing):
     Shouldn't match the protocol as ``gallery_data_name`` is missing.
     """
 
-    show_in_gallery = True
+    show_data_in_gallery = True
 
     gallery_data_schema: type[BaseModel] = MockGalleryData
 
-    def get_gallery_data(self) -> list[BaseModel]:
+    def get_data_for_gallery(self) -> list[BaseModel]:
         """Return a list of Mock Gallery Data."""
         return [MockGalleryData(mock="mock", foobar="foobar")]
 

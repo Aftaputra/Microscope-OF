@@ -27,14 +27,14 @@ class GalleryCompatibleThing(Protocol):
     _thing_server_interface: lt.ThingServerInterface
 
     # Ensure it is an OFMThing:
-    show_in_gallery: bool
+    show_data_in_gallery: bool
 
     gallery_data_name: str
 
     gallery_data_schema: type[BaseModel]
 
     # Ignore D102: No docstrings for the protocol.
-    def get_gallery_data(self) -> list[BaseModel]: ...  # noqa: D102
+    def get_data_for_gallery(self) -> list[BaseModel]: ...  # noqa: D102
 
 
 class GalleryThing(lt.Thing):
@@ -66,7 +66,7 @@ class GalleryThing(lt.Thing):
         gallery_providers = {
             name: thing
             for name, thing in self.all_ofm_things.items()
-            if thing.show_in_gallery
+            if thing.show_data_in_gallery
         }
         # cache initial list of keys as it may change in the loop
         keys = list(gallery_providers.keys())
@@ -95,5 +95,5 @@ class GalleryThing(lt.Thing):
         """
         data_list = []
         for thing in self.gallery_providing_things.values():
-            data_list += [model.model_dump() for model in thing.get_gallery_data()]
+            data_list += [model.model_dump() for model in thing.get_data_for_gallery()]
         return data_list

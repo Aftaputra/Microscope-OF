@@ -15,12 +15,12 @@ class OFMThing(lt.Thing):
 
     _data_dir: Optional[str] = None
 
-    _show_in_gallery: bool = False
+    _show_data_in_gallery: bool = False
 
     @property
-    def show_in_gallery(self) -> bool:
+    def show_data_in_gallery(self) -> bool:
         """Whether to show in the Gallery."""
-        return self._show_in_gallery
+        return self._show_data_in_gallery
 
     def __enter__(self) -> Self:
         """Set the data directory when the Thing is entered."""

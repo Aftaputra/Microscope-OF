@@ -167,7 +167,7 @@ class SmartScanThing(OFMThing):
         """
 
     # Register with gallery.
-    _show_in_gallery = True
+    _show_data_in_gallery = True
 
     @property
     def gallery_data_name(self) -> str:
@@ -179,7 +179,7 @@ class SmartScanThing(OFMThing):
         """The schema (BaseModel) for passing data to the gallery."""
         return scan_directories.ScanInfo
 
-    def get_gallery_data(self) -> list[scan_directories.ScanInfo]:
+    def get_data_for_gallery(self) -> list[scan_directories.ScanInfo]:
         """Return all the information from the scan directories.
 
         It is preferable to use the method rather than calling
@@ -622,8 +622,8 @@ class SmartScanThing(OFMThing):
     @lt.action
     def purge_empty_scans(self) -> None:
         """Delete all scan folders containing no images at the top level."""
-        # JSON is ignored as it's created before any images are captured
-        for scan_info in self.get_gallery_data():
+        # Use the scan list (the data read by the gallery) to check for empty scans.
+        for scan_info in self.get_data_for_gallery():
             if scan_info.number_of_images == 0:
                 self._delete_scan(scan_info.name)
 
@@ -738,6 +738,8 @@ class SmartScanThing(OFMThing):
         """
         if self._scan_lock.locked():
             raise RuntimeError("Can't stitch previous scans while a scan is ongoing")
-        for scan in self.get_gallery_data():
+        # Use the scan list (the data read by the gallery) to find any scans that
+        # need stitching.
+        for scan in self.get_data_for_gallery():
             if scan.dzi is None:
                 self.stitch_scan(scan_name=scan.name)
