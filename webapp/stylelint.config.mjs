@@ -8,10 +8,10 @@ export default {
       files: ["**/*.vue"],
       customSyntax: "postcss-html",
       rules: {
-        // Stop Stylelint from throwing errors when it sees 
+        // Stop Stylelint from throwing errors when it sees
         // LESS functions (like darken, lighten, desaturate) inside Vue files.
-        "declaration-property-value-no-unknown": null
-      }
+        "declaration-property-value-no-unknown": null,
+      },
     },
     {
       // LESS FILES OVERRIDE
@@ -26,10 +26,10 @@ export default {
     "selector-class-pattern": null,
     "no-invalid-position-at-import-rule": null,
     "no-empty-source": null,
-    
+
     // Needed rgba for UIkit colot math
     "color-function-notation": null,
     "alpha-value-notation": null,
-    "color-function-alias-notation": null
+    "color-function-alias-notation": null,
   },
 };

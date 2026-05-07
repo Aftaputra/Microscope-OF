@@ -6,7 +6,7 @@
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import purgecss from '@fullhuman/postcss-purgecss';
+import purgecss from "@fullhuman/postcss-purgecss";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -50,26 +50,49 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       less: {
-        // Always include math in Less files.
         math: "always",
-        // Enable relative URLs in Less files.
         relativeUrls: true,
-        // Enable JavaScript in Less files
         javascriptEnabled: true,
       },
     },
     postcss: {
-      plugins: [
-        purgecss({
-          content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
-          safelist: {
-            standard: ['html', 'body'], // Keep basic HTML elements
-            greedy: [ // greedy works by matching patterns, so we can keep all classes starting with 'uk-' for UIkit
-              /^uk-/, // Keep all classes starting with 'uk-' (UIkit)
+      plugins:
+        process.env.NODE_ENV === "production"
+          ? [
+              purgecss({
+                content: ["./index.html", "./src/**/*.{vue,js,ts,jsx,tsx}"],
+                safelist: {
+                  standard: [
+                    "html",
+                    "body",
+                    "svg",
+                    "path",
+                    "g",
+                    "canvas",
+                    // Add dynamic UIkit states that JS toggles
+                    "uk-active",
+                    "uk-open",
+                    "uk-modal-page",
+                    "uk-offcanvas-page",
+                    "uk-preserve-width",
+                  ],
+                  deep: [
+                    // Protect UIkit attribute selectors (e.g., [uk-modal])
+                    /\[uk-[^\]]+\]/,
+                    /\[data-uk-[^\]]+\]/,
+                    // Protect Vue transitions
+                    /-(leave|enter|appear)(|-(to|from|active))$/,
+                    // Protect UIkit dynamic components (notifications, tooltips, sorting)
+                    /^uk-notification/,
+                    /^uk-tooltip/,
+                    /^uk-animation-/,
+                    /^uk-transition-/,
+                  ],
+                  // Notice we completely removed the "greedy" block!
+                },
+              }),
             ]
-          },
-        }),
-      ],
+          : [],
     },
   },
 });
