@@ -23,7 +23,7 @@ class MockGalleryData(BaseModel):
 
 
 class MinimalGalleryClass:
-    """A class that provides data to the gallery needs but is NOT a thing.
+    """A class that provides data to the gallery but is NOT a thing.
 
     This should fail the protocol check as it is not an OFMThing
     """
@@ -38,7 +38,7 @@ class MinimalGalleryClass:
 
 
 class MinimalGallerySource(OFMThing, MinimalGalleryClass):
-    """Minimal example of a Thing that can show in the gallery.
+    """Minimal example of a Thing that can show data in the gallery.
 
     Mixes MinimalGalleryClass into OFMThing to be recognised by the protocol.
     """
@@ -49,7 +49,7 @@ class MinimalGallerySource(OFMThing, MinimalGalleryClass):
 class BadGallerySource(OFMThing):
     """An OFMThing that almost defines enough to show in the gallery.
 
-    Shouldn't math the protocol as ``gallery_data_name`` is missing.
+    Shouldn't match the protocol as ``gallery_data_name`` is missing.
     """
 
     show_in_gallery = True
@@ -98,7 +98,7 @@ def test_gallery_thing_finds_all_providers(simulation_test_env):
 
 def test_gallery_logs_for_bad_providers(caplog):
     """Test that an error is logged if a gallery source doesn't match the protocol."""
-    # Create a config with the minimal and the bad thing
+    # Create a config with the minimal Thing and the bad Thing
     things = {
         "minimal_thing": MinimalGallerySource,
         "bad_thing": BadGallerySource,
