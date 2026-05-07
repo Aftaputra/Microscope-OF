@@ -22,12 +22,12 @@ export default {
   ],
 
   rules: {
-    // Your global rules
+    // Global rules
     "selector-class-pattern": null,
     "no-invalid-position-at-import-rule": null,
     "no-empty-source": null,
 
-    // Needed rgba for UIkit colot math
+    // Needed rgba for UIkit color math
     "color-function-notation": null,
     "alpha-value-notation": null,
     "color-function-alias-notation": null,

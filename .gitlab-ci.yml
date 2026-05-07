@@ -156,7 +156,6 @@ eslint:
   stage: analysis
   extends: .javascript_webapp
   script:
-    # Build JS application for production
     - npm run lint
     - npm run lint:style
 
