@@ -273,14 +273,14 @@ export default {
   color: darken(@warning-color, 15%);
 }
 
-.uk-light .uk-alert-warning .logging-header {
-  background: desaturate(darken(@warning-color, 15%), 10%);
-  color: darken(@warning-bg-color, 5%);
-}
-
 .uk-alert-danger .logging-header {
   background: darken(@error-bg-color, 15%);
   color: darken(@error-color, 15%);
+}
+
+.uk-light .uk-alert-warning .logging-header {
+  background: desaturate(darken(@warning-color, 15%), 10%);
+  color: darken(@warning-bg-color, 5%);
 }
 
 .uk-light .uk-alert-danger .logging-header {
