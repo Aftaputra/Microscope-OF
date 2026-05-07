@@ -159,7 +159,7 @@ export default {
 
 <style lang="less" scoped>
 // Custom UIkit CSS modifications
-@import "../../assets/less/theme.less";
+@import "../../assets/less/variables.less";
 
 .settings-nav {
   overflow-y: auto;

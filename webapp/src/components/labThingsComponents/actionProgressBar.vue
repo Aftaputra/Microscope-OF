@@ -44,7 +44,7 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import "../../assets/less/theme.less";
+@import "../../assets/less/variables.less";
 
 .in-button {
   position: absolute;
