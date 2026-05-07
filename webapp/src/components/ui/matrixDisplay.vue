@@ -94,7 +94,7 @@ export default {
 </script>
 
 <style scoped lang="less">
-@import "../../assets/less/theme.less";
+@import "../../assets/less/variables.less";
 
 .matrix-container {
   display: inline-block;

@@ -46,7 +46,7 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import "../../assets/less/theme.less";
+@import "../../assets/less/variables.less";
 a.uk-button-disabled {
   pointer-events: none;
 }

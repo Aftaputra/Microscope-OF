@@ -16,6 +16,17 @@ export default defineConfig({
     outDir: "../src/openflexure_microscope_server/static",
     // Clear output directory before build
     emptyOutDir: true,
+    chunkSizeWarningLimit: 400,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vue-vendor": ["vue", "pinia", "pinia-plugin-persistedstate"],
+          openseadragon: ["openseadragon"],
+          uikit: ["uikit"],
+          utils: ["axios", "mitt", "mousetrap", "@vueuse/core"],
+        },
+      },
+    },
   },
 
   resolve: {

@@ -325,11 +325,7 @@ export default {
 </script>
 
 <style lang="less">
-// Basic UIkit CSS
-@import "../node_modules/uikit/src/less/uikit.less";
-// Custom UIkit CSS modifications
 @import "./assets/less/theme.less";
-
 // We override the custom-electron-titlebar z-index
 // UIKit lightbox must be able to draw over the titlebar
 // as it currently always spawns at the root of the DOM
@@ -374,6 +370,10 @@ html {
   overflow-x: hidden;
   height: 100%;
   padding: 0;
+}
+
+.view-component.uk-padding-small {
+  padding: 15px;
 }
 
 .image-fit {
