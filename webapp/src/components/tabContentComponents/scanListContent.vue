@@ -55,7 +55,6 @@
           <scan-card
             :scan-data="scanData"
             :scans-uri="scansUri"
-            :ongoing="isOngoing(scanData.name)"
             @viewer-requested="showScan"
             @update-requested="updateScans"
           />
@@ -97,7 +96,6 @@ export default {
   data: function () {
     return {
       scans: [],
-      ongoing: null,
       selectedScan: null,
       osdViewer: null,
       currentPage: 1,
@@ -108,7 +106,9 @@ export default {
   computed: {
     ...mapState(useSettingsStore, ["baseUri", "ready"]),
     scansUri() {
-      return this.thingPropertyUrl("smart_scan", "scans");
+      // The scans URI is currently used for creating endpoint URIs.
+      // The actual property does not exist. So allowUndefined=true
+      return this.thingPropertyUrl("smart_scan", "scans", true);
     },
     scansEmpty() {
       return this.scans.length == 0;
@@ -179,9 +179,7 @@ export default {
     },
     async updateScans() {
       try {
-        let scans_information = await this.readThingProperty("smart_scan", "scans");
-        let scans = scans_information.scans;
-        this.ongoing = scans_information.ongoing;
+        let scans = await this.readThingProperty("gallery", "list_data");
         if (!scans | (scans.length == 0)) {
           this.scans = scans;
         }
@@ -197,9 +195,6 @@ export default {
         console.error(err);
         this.scans = [];
       }
-    },
-    isOngoing(name) {
-      return name === this.ongoing;
     },
     async deleteAllScans() {
       try {

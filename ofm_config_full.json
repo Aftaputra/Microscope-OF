@@ -8,6 +8,7 @@
         },
         "stage": "openflexure_microscope_server.things.stage.sangaboard:SangaboardThing",
         "autofocus": "openflexure_microscope_server.things.autofocus:AutofocusThing",
+        "gallery": "openflexure_microscope_server.things.gallery.GalleryThing",
         "camera_stage_mapping": "openflexure_microscope_server.things.camera_stage_mapping:CameraStageMapper",
         "system": "openflexure_microscope_server.things.system:OpenFlexureSystem",
         "illumination": "openflexure_microscope_server.things.illumination:SangaIllumination",

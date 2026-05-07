@@ -335,14 +335,25 @@ class ScanDirectoryManager:
         return [f.name for f in os.scandir(self._base_scan_dir) if f.is_dir()]
 
     @requires_lock
-    def all_scans_info(self, ongoing: Optional[str] = None) -> list[ScanInfo]:
-        """Return a lists of ScanInfo objects for each scan."""
+    def all_scans_info(
+        self, *, ongoing: Optional[str] = None, include_ongoing: bool = True
+    ) -> list[ScanInfo]:
+        """Return a lists of ScanInfo objects for each scan.
+
+        :param ongoing: The name of the ongoing scan (or None if no scan is ongoing).
+        :param include_ongoing: True (dfault) to include the scan info of the ongoing
+            scan in the return. False to exclude it.
+
+        :return: A list of ScanInfo objects for each scan.
+        """
         all_info: list[ScanInfo] = []
         for scan_name in self.all_scans:
-            # If the scan is ongoing send flag to skip reading the json data
-            skip_json = scan_name == ongoing
+            scan_is_ongoing = scan_name == ongoing
+            if scan_is_ongoing and not include_ongoing:
+                continue
             scan_dir = ScanDirectory(scan_name, self.base_dir)
-            info = scan_dir.scan_info(skip_json=skip_json)
+            # If the scan is ongoing send flag to skip reading the json data
+            info = scan_dir.scan_info(skip_json=scan_is_ongoing)
             all_info.append(info)
         return all_info
 

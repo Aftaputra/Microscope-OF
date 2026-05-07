@@ -13,8 +13,7 @@
         </div>
       </div>
       <h3 class="uk-card-title scan-card-title">{{ scanData.name }}</h3>
-      <h4 v-if="ongoing" class="ongoing-msg">Scan in progress</h4>
-      <div v-if="!ongoing" class="button-container">
+      <div class="button-container">
         <div class="uk-button-group scan-card-buttons">
           <action-button
             class="uk-width-1-2"
@@ -59,10 +58,9 @@
         <ul>
           <li>{{ scanData.number_of_images }} images</li>
           <li>Created: {{ formatDate(scanData.created) }}</li>
-          <li v-if="!ongoing">Duration: {{ formatDuration(scanData.duration) }}</li>
-          <li v-if="ongoing">Duration: <i>Ongoing</i></li>
+          <li>Duration: {{ formatDuration(scanData.duration) }}</li>
         </ul>
-        <ul v-if="!ongoing">
+        <ul>
           <li v-if="scanData.number_of_images < 3" class="warning-msg">
             Not enough images to stitch
           </li>
@@ -100,10 +98,6 @@ export default {
     },
     scansUri: {
       type: String,
-      required: true,
-    },
-    ongoing: {
-      type: Boolean,
       required: true,
     },
   },
@@ -148,9 +142,7 @@ export default {
     },
     requestViewer() {
       // Notify parent that thumbnail was clicked
-      if (!this.ongoing) {
-        this.$emit("viewer-requested", this.scanData);
-      }
+      this.$emit("viewer-requested", this.scanData);
     },
     async deleteScan() {
       try {
@@ -203,10 +195,5 @@ ul {
 
 .scan-card-title {
   text-align: center;
-}
-
-.ongoing-msg {
-  text-align: center;
-  padding: 2rem 0;
 }
 </style>
