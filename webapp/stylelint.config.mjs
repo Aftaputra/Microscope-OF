@@ -1,30 +1,35 @@
 // stylelint.config.mjs
 export default {
-  // This applies standard CSS rules to the whole project by default
   extends: ["stylelint-config-standard"],
 
   overrides: [
     {
+      // VUE FILES OVERRIDE
       files: ["**/*.vue"],
       customSyntax: "postcss-html",
-      // If you write <style lang="less"> inside Vue components and get 
-      // the same error there, uncomment the rule below:
-      // rules: { "declaration-property-value-no-unknown": null }
+      rules: {
+        // Stop Stylelint from throwing errors when it sees 
+        // LESS functions (like darken, lighten, desaturate) inside Vue files.
+        "declaration-property-value-no-unknown": null
+      }
     },
     {
+      // LESS FILES OVERRIDE
       files: ["**/*.less"],
       customSyntax: "postcss-less",
-      // THIS IS THE FIX: Tell Stylelint to apply LESS-specific 
-      // rules (which ignore @ variables) only to these files.
-      extends: ["stylelint-config-standard-less"], 
+      extends: ["stylelint-config-standard-less"],
     },
   ],
 
   rules: {
-    // UIKit class naming doesn't match Stylelint's default class pattern
+    // Your global rules
     "selector-class-pattern": null,
-    // Less @import is fine
     "no-invalid-position-at-import-rule": null,
     "no-empty-source": null,
+    
+    // Needed rgba for UIkit colot math
+    "color-function-notation": null,
+    "alpha-value-notation": null,
+    "color-function-alias-notation": null
   },
 };
