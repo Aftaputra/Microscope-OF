@@ -37,8 +37,16 @@ class NotStreamingError(RuntimeError):
 class SharpnessMethod(enum.Enum):
     """The possible SharpnessMethods for autofocus."""
 
-    JPEG = enum.auto()
-    FOCUS_FOM = enum.auto()
+class SharpnessMethod(enum.Enum):
+    """The possible SharpnessMethods for autofocus.
+
+    Use powers of two for the methods so they can be selected bitwise. This allows choosing what to record
+    as the sum of methods.
+    """
+
+    JPEG = 1
+    FOCUS_FOM = 2
+    # Next method should be 4 not 3 for bitwise selection.
 
 
 class AutofocusParams(BaseModel):
@@ -260,6 +268,7 @@ class JPEGSharpnessMonitor:
         stage: BaseStage,
         camera: BaseCamera,
         method: SharpnessMethod = SharpnessMethod.JPEG,
+        record: Optional[int] = None,
     ) -> None:
         """Initialise a new JPEGSharpnessMonitor. The args are injected automatically.
 
@@ -270,6 +279,13 @@ class JPEGSharpnessMonitor:
         self.camera = camera
         self.stage = stage
         self.method = method
+        self.record = method if record is None else record
+
+        if not self.method & self.record:
+            raise ValueError(f"The sharpness metric `self.record` is not being recorded.")
+
+        if self.record & SharpnessMethod.FOCUS_FOM and not camera.supports_focus_fom:
+            raise ValueError("Cannot record focus FOM as this camera doesn't support it.")
         LOGGER.debug(f"Created sharpness monitor with {stage}, {camera}")
         self._stage_positions: list[Mapping[str, int]] = []
         self._stage_times: list[float] = []
@@ -311,14 +327,13 @@ class JPEGSharpnessMonitor:
             self._jpeg_times.append(time.time())
 
             # JPEG sharpness metric
-            self._jpeg_sizes.append(len(frame))
+            if self.record & SharpnessMethod.JPEG:
+                self._jpeg_sizes.append(len(frame))
 
             # FocusFoM metric
-            fom = getattr(self.camera, "_focus_fom", None)
-            if fom is not None:
-                self._focus_foms.append(float(fom))
-            else:
-                self._focus_foms.append(np.nan)
+            if self.record & SharpnessMethod.FOCUS_FOM:
+                self._focus_foms.append(self.camera._focus_fom)
+
             if not self.running:
                 break
 
@@ -381,15 +396,6 @@ class JPEGSharpnessMonitor:
         elif self.method == SharpnessMethod.FOCUS_FOM:
             sharpnesses = np.array(self.focus_foms)
 
-            # If no valid FocusFoM values were recorded, fall back to JPEG size
-            if np.all(np.isnan(self.focus_foms)):
-                LOGGER.warning(
-                    "Sharpness method FOCUS_FOM selected, but no FocusFoM values "
-                    "were recorded. Falling back to JPEG sharpness."
-                )
-                sharpnesses = np.array(self.jpeg_sizes)
-        else:
-            raise ValueError(f"Unknown sharpness method: {self.method}")
         stage_times: np.ndarray = np.array(self.stage_times)[istart:istop]
         stage_heights: np.ndarray = np.array(
             [p["z"] for p in self.stage_positions[istart:istop]]
@@ -458,6 +464,7 @@ class AutofocusThing(lt.Thing):
         dz: int = 2000,
         start: Literal["centre", "base"] = "centre",
         sharpness_metric: SharpnessMethod = SharpnessMethod.JPEG,
+    record: Optional[Int]
     ) -> SharpnessDataArrays:
         """Sweep the stage up and down, then move to the sharpest point.
 

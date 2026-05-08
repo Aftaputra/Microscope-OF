@@ -123,7 +123,8 @@ class StreamingPiCamera2(BaseCamera):
     Currently the Thing only supports the PiCamera v2 board. This needs
     generalisation.
     """
-
+    _focus_fom: int
+    supports_focus_fom: bool = True
     tuning: dict = lt.setting(default_factory=dict, readonly=True)
     """The Raspberry PiCamera Tuning File JSON."""
 
