@@ -199,23 +199,35 @@ export default {
   mounted() {
     const store = useSettingsStore();
     // A global signal listener to switch tab
-    eventBus.on("globalSwitchTab", (tabID) => {
-      this.currentTab = tabID;
-    });
+    eventBus.on("globalSwitchTab", this.handleGlobalSwitchTab);
     // A global signal listener to increment tab
-    eventBus.on("globalIncrementTab", () => {
-      this.incrementTabBy(1);
-    });
+    eventBus.on("globalIncrementTab", this.handleGlobalIncrementTab);
     // A global signal listener to decrement tab
-    eventBus.on("globalDecrementTab", () => {
-      this.incrementTabBy(-1);
-    });
+    eventBus.on("globalDecrementTab", this.handleGlobalDecrementTab);
     if (store.ready) {
       this.startModals();
     }
   },
 
+  beforeUnmount() {
+    // closing signals
+    eventBus.off("globalSwitchTab", this.handleGlobalSwitchTab);
+    eventBus.off("globalIncrementTab", this.handleGlobalIncrementTab);
+    eventBus.off("globalDecrementTab", this.handleGlobalDecrementTab);
+  },
+
   methods: {
+    // This methods replace the previous arrow function calls "() => {}".
+    // This is needed for closing actual same opening functions.
+    handleGlobalSwitchTab: function (tabID) {
+      this.currentTab = tabID;
+    },
+    handleGlobalIncrementTab: function () {
+      this.incrementTabBy(1);
+    },
+    handleGlobalDecrementTab: function () {
+      this.incrementTabBy(-1);
+    },
     setTab: function (event, tab) {
       if (!(this.currentTab == tab)) {
         this.currentTab = tab;
