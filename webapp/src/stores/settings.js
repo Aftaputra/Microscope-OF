@@ -3,15 +3,9 @@ import { ref, computed } from "vue";
 
 function getOriginFromLocation() {
   // This will default to the same origin that's serving
-  // the web app - but can be overridden by the URL.
-  // See also devTools.vue which can change the origin.
+  // the web app.
   let url = new URL(window.location.href);
-  let origin = url.searchParams.get("overrideOrigin");
-  if (origin) {
-    return origin;
-  } else {
-    return `${url.origin}/api/v3`;
-  }
+  return `${url.origin}/api/v3`;
 }
 
 // Define Pinia store
