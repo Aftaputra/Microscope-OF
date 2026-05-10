@@ -44,7 +44,8 @@ export const useSettingsStore = defineStore(
     function resetState() {
       waiting.value = false;
       available.value = false;
-      error.value = ""; // TODO: verify that "" is needed to match initial state
+      // On resetState there is no connection.
+      error.value = "Microscope is not connected.";
     }
 
     function setConnected() {
