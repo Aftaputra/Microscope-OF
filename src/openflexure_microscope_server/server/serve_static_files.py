@@ -6,6 +6,8 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
+import labthings_fastapi as lt
+
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_PATH = os.path.normpath(os.path.join(THIS_DIR, "..", "static"))
 
@@ -35,7 +37,7 @@ def add_static_file(app: FastAPI, fname: str, folder: str) -> None:
     )
 
 
-def add_static_files(app: FastAPI, data_folder: str) -> None:
+def add_static_files(server: lt.ThingServer, data_folder: str) -> None:
     """Add the static files responsible for the webapp app to the FastAPI app.
 
     Note that any file in the root of the static dir will not be cached. However, the
@@ -43,9 +45,10 @@ def add_static_files(app: FastAPI, data_folder: str) -> None:
     The Vue CSS and JS are hashed, so if updated their filename will update. The most
     important file not to cache is "index.html".
 
-    :param app: The FastAPI app to add to, in this case the OpenFlexure server
+    :param server: The LabThings server.
     :param data_folder: The directory for any data.
     """
+    app = server.app
     check_static_dir()
 
     @app.get("/", response_class=RedirectResponse)
@@ -71,7 +74,7 @@ def add_static_files(app: FastAPI, data_folder: str) -> None:
     if not os.path.isdir(data_folder):
         os.makedirs(data_folder)
     app.mount(
-        "/data/",
+        server._api_prefix.rstrip("/") + "/data/",
         StaticFiles(directory=data_folder),
         name="data",
     )

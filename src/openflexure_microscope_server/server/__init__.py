@@ -86,7 +86,7 @@ def customise_server(
         )
 
     add_v2_endpoints(server)
-    add_static_files(server.app, application_config.data_folder)
+    add_static_files(server, application_config.data_folder)
 
     # Configure logging to DEBUG if requested in CLI args.
     if debug:

@@ -124,10 +124,13 @@ def test_add_static_files(mock_static_dir, mocker):
         "openflexure_microscope_server.server.serve_static_files.STATIC_PATH",
         mock_static_dir,
     )
+    mock_server = mocker.Mock()
+    mock_server.app = mock_app
+    mock_server._api_prefix = "/api/v3"
     # Get the wrapper function from the mocked decorator
     wrapper = mock_app.get.return_value
     with tempfile.TemporaryDirectory() as datadir:
-        serve_static_files.add_static_files(mock_app, data_folder=datadir)
+        serve_static_files.add_static_files(mock_server, data_folder=datadir)
 
     # Get should have been called twice to create a route for index
     assert mock_app.get.call_count == 2
@@ -158,5 +161,5 @@ def test_add_static_files(mock_static_dir, mocker):
     assert "/assets/" in mounted_path
     assert os.path.join(mock_static_dir, "assets") in mounted_dir
 
-    assert mock_app.mount.call_args_list[1].args[0] == "/data/"
+    assert mock_app.mount.call_args_list[1].args[0] == "/api/v3/data/"
     assert mock_app.mount.call_args_list[1].args[1].directory == datadir
