@@ -286,10 +286,14 @@ class JPEGSharpnessMonitor:
         self.record = method if record is None else record
 
         if not self.method & self.record:
-            raise ValueError(f"The sharpness metric `self.record` is not being recorded.")
+            raise ValueError(
+                f"The sharpness metric {self.record} is not being recorded."
+            )
 
         if self.record & SharpnessMethod.FOCUS_FOM and not camera.supports_focus_fom:
-            raise ValueError("Cannot record focus FOM as this camera doesn't support it.")
+            raise ValueError(
+                "Cannot record focus FOM as this camera doesn't support it."
+            )
         LOGGER.debug(f"Created sharpness monitor with {stage}, {camera}")
         self._stage_positions: list[Mapping[str, int]] = []
         self._stage_times: list[float] = []
@@ -320,7 +324,7 @@ class JPEGSharpnessMonitor:
     @property
     def jpeg_sizes(self) -> Sequence[int]:
         """The recorded JPEG frame sizes used as a sharpness metric.
-        
+
         :raises ValueError: If JPEG sharpness recording is not enabled.
         """
         if not self.record & SharpnessMethod.JPEG:
@@ -483,7 +487,7 @@ class AutofocusThing(lt.Thing):
         dz: int = 2000,
         start: Literal["centre", "base"] = "centre",
         sharpness_metric: SharpnessMethod = SharpnessMethod.JPEG,
-        record: Optional[SharpnessMethod] = None
+        record: Optional[SharpnessMethod] = None,
     ) -> SharpnessDataArrays:
         """Sweep the stage up and down, then move to the sharpest point.
 
@@ -504,7 +508,10 @@ class AutofocusThing(lt.Thing):
             stage position data for the sweep.
         """
         with JPEGSharpnessMonitor(
-            self._stage, self._cam, sharpness_metric, record=record,
+            self._stage,
+            self._cam,
+            sharpness_metric,
+            record=record,
         ) as sharpness_monitor:
             # Move to (-dz / 2)
             if start == "centre":
@@ -578,7 +585,10 @@ class AutofocusThing(lt.Thing):
         attempt = 0
 
         with JPEGSharpnessMonitor(
-            self._stage, self._cam, sharpness_metric, record=record,
+            self._stage,
+            self._cam,
+            sharpness_metric,
+            record=record,
         ) as sharpness_monitor:
             while attempt < 10:
                 attempt += 1
