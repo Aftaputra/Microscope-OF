@@ -17,10 +17,12 @@ https://datasheets.raspberrypi.com/camera/raspberry-pi-camera-guide.pdf
 from __future__ import annotations
 
 import copy
+import csv
 import json
 import logging
 import os
 import tempfile
+import threading
 import time
 from contextlib import contextmanager
 from threading import RLock
@@ -547,6 +549,81 @@ class StreamingPiCamera2(BaseCamera):
         """Discard frames so that the next frame captured is fresh."""
         with self._streaming_picamera() as cam:
             cam.capture_metadata()
+
+    def _framerate_worker(
+        self,
+        duration: float,
+        output_dir: str,
+        sample_interval: float = 0.1,
+    ) -> None:
+        """Worker thread to measure framerate and save capture metadata."""
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            log_path = os.path.join(
+                output_dir,
+                f"framerate_log_{timestamp}.csv",
+            )
+
+            start_time = time.time()
+            last_sample_time = start_time
+            last_sample_frames = 0
+            frames = 0
+
+            with open(log_path, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["timestamp", "frame_count", "instant_fps"])
+
+                with self._streaming_picamera() as cam:
+                    while time.time() - start_time < duration:
+                        cam.capture_metadata()
+                        frames += 1
+
+                        now = time.time()
+
+                        if now - last_sample_time >= sample_interval:
+                            interval = now - last_sample_time
+                            instant_fps = (frames - last_sample_frames) / interval
+
+                            writer.writerow([now, frames, instant_fps])
+                            f.flush()
+
+                            LOGGER.info(f"[Framerate test] FPS ~ {instant_fps:.2f}")
+
+                            last_sample_time = now
+                            last_sample_frames = frames
+
+                            total_time = time.time() - start_time
+                            avg_fps = frames / total_time
+
+                    LOGGER.info(
+                        f"[Framerate test complete] "
+                        f"Frames={frames}, Avg FPS={avg_fps:.2f}"
+                    )
+
+        except Exception:
+            LOGGER.exception("Framerate worker crashed")
+
+    @lt.action
+    def record_framerate_async(
+        self,
+        duration: float = 5.0,
+        output_dir: Optional[str] = "framerate",
+    ) -> str:
+        """Start a background framerate recording session."""
+        if output_dir is None:
+            output_dir = tempfile.mkdtemp(prefix="framerate_test_")
+
+        thread = threading.Thread(
+            target=self._framerate_worker,
+            args=(duration, output_dir),
+            daemon=True,
+        )
+        thread.start()
+
+        LOGGER.info(f"Started framerate test for {duration}s -> {output_dir}")
+
+        return output_dir
 
     @contextmanager
     def _switch_to_still_capture_mode(self) -> Iterator[Picamera2]:
