@@ -247,7 +247,7 @@ def test_offset_from(rom_thing, mocker):
 def test_move_and_measure(perform_autofocus, rom_thing, mocker):
     """Test _move_and_measure with and without initial autofocus checking call counts.
 
-    This doesn't test with the repeate autofocus if motion isn't detected
+    This doesn't test with the repeated autofocus if motion isn't detected
     """
     mock_offset_value = {"x": 100, "y": 3}
     mocker.patch.object(rom_thing, "_offset_from", return_value=mock_offset_value)
