@@ -74,7 +74,7 @@ def main() -> None:
 def test_client_connection() -> None:
     """Check a ThingClient can interact with the simulation microscope camera."""
     print("Connecting Python client to microscope, and capturing image")
-    cam_client = lt.ThingClient.from_url("http://localhost:5000/camera/")
+    cam_client = lt.ThingClient.from_url("http://localhost:5000/api/v3/camera/")
     img = Image.open(cam_client.grab_jpeg().open())
     print(f"Successfully grabbed image of size {img.size}")
     assert img.size == (820, 616)
@@ -95,7 +95,7 @@ def subscribe_to_mjpeg_stream() -> subprocess.Popen:
         "nohup",
         "curl",
         "-s",
-        "http://localhost:5000/camera/mjpeg_stream",
+        "http://localhost:5000/api/v3/camera/mjpeg_stream",
         ">",
         "/dev/null",
         "2>&1",

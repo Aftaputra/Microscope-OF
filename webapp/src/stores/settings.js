@@ -10,7 +10,7 @@ function getOriginFromLocation() {
   if (origin) {
     return origin;
   } else {
-    return url.origin;
+    return `${url.origin}/api/v3`;
   }
 }
 
@@ -32,7 +32,7 @@ export const useSettingsStore = defineStore(
     const appTheme = ref("system");
     const disableStream = ref(false);
     // The origin to use if overriding with dev tools
-    const overrideOrigin = ref("http://microscope.local:5000");
+    const overrideOrigin = ref("http://microscope.local:5000/api/v3");
     // The step sizes for navigation via control pane/keys presses
     const navigationStepSize = ref({
       x: 200,
