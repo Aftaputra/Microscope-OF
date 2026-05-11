@@ -219,22 +219,22 @@ export default {
       }
       // A global signal listener to perform the action
       if (this.submitOnEvent) {
-        eventBus.on(this.submitOnEvent, () => {
-          if (this.isDisabled) return;
-          // Bootstrap task if button is not disabled.
-          this.bootstrapTask();
-        });
+        eventBus.on(this.submitOnEvent, this.handleShortcutTrigger);
       }
     }
   },
 
   beforeUnmount() {
     if (this.submitOnEvent) {
-      eventBus.off(this.submitOnEvent);
+      eventBus.off(this.submitOnEvent, this.handleShortcutTrigger);
     }
   },
 
   methods: {
+    handleShortcutTrigger() {
+      if (this.isDisabled) return;
+      this.bootstrapTask();
+    },
     handleClick() {
       if (this.taskStarted) {
         this.terminateTask();
