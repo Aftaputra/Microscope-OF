@@ -176,7 +176,7 @@ export default {
     async refreshGallery() {
       try {
         let all_items = await this.readThingProperty("gallery", "list_data");
-        // if all_items is not or the number of items in all_items is zero then
+        // if all_items is "falsey" or the number of items in all_items is zero then
         // all_items is equal to empty list.
         // stop refresh gallery as all_items is empty list.
         if (!all_items || all_items?.length === 0) {
