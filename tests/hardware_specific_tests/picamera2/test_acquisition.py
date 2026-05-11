@@ -1,5 +1,8 @@
 """Test data collection from the Raspberry Picamera."""
 
+import csv
+import time
+
 import numpy as np
 from PIL import Image
 
@@ -29,3 +32,45 @@ def test_jpeg_and_array(picamera_client):
     # Verify image sizes are the same
     assert mjpeg_frame.size == jpeg_capture.size
     assert array_main.shape[1::-1] == jpeg_capture.size
+
+
+def test_record_framerate_async(picamera_client, tmp_path):
+    """Check that asynchronous framerate recording creates a valid CSV log."""
+    output_dir = tmp_path / "framerate"
+
+    returned_dir = picamera_client.record_framerate_async(
+        duration=1.0,
+        output_dir=str(output_dir),
+    )
+
+    assert returned_dir == str(output_dir)
+
+    # Wait slightly longer than recording duration for thread completion
+    time.sleep(1.5)
+
+    log_files = list(output_dir.glob("framerate_log_*.csv"))
+
+    # Ensure exactly one log file was created
+    assert len(log_files) == 1
+
+    log_file = log_files[0]
+
+    # Ensure file is not empty
+    assert log_file.stat().st_size > 0
+
+    with open(log_file, newline="") as f:
+        rows = list(csv.reader(f))
+
+    # Header exists
+    assert rows[0] == ["timestamp", "frame_count", "instant_fps"]
+
+    # At least one FPS sample row exists
+    assert len(rows) > 1
+
+    # Validate sample row structure
+    sample_row = rows[1]
+    assert len(sample_row) == 3
+
+    # Ensure FPS is positive
+    fps = float(sample_row[2])
+    assert fps > 0
