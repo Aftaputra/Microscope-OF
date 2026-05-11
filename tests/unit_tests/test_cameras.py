@@ -93,6 +93,7 @@ def test_thing_description_equivalence(mock_picam_thing):
         "set_static_green_equalisation",
         "set_ce_enable_to_off",
         "stop_streaming",
+        "record_framerate_async",
         "reset_ccm",
     }
     picamera_extra_props = {
