@@ -61,7 +61,7 @@
       </div>
     </div>
     <PaginateLinks
-      :total-pages="totalPages"
+      :total-pages="numberOfPages"
       :current-page="currentPage"
       @change-page="changePage"
     />
@@ -109,8 +109,8 @@ export default {
       // The actual property does not exist. So allowUndefined=true
       return this.thingPropertyUrl("smart_scan", "scans", true);
     },
-    noItmesy() {
-      return this.all_items.length == 0;
+    noItems() {
+      return !this.all_items || this.all_items?.length === 0;
     },
     selectedScanDZI() {
       if (this.selectedScan && this.selectedScan.dzi != "") {
@@ -119,19 +119,20 @@ export default {
         return null;
       }
     },
-    totalPages() {
-      return Math.ceil(this.all_items.length / this.itemsPerPage);
+    // name changed as paginateLinks has the prop totalPages
+    numberOfPages() {
+      return Math.ceil((this.all_items?.length || 0) / this.itemsPerPage);
     },
     paginatedItems() {
       const start = (this.currentPage - 1) * this.itemsPerPage;
-      return this.all_items.slice(start, start + this.itemsPerPage);
+      return (this.all_items || []).slice(start, start + this.itemsPerPage);
     },
   },
 
   async mounted() {
     const store = useSettingsStore();
     const { ready } = storeToRefs(store);
-    watch(ready, (isReady) => {
+    this.unwatchStoreFunction = watch(ready, (isReady) => {
       if (isReady) {
         this.refreshGallery();
       } else {
@@ -150,13 +151,9 @@ export default {
     // Update on mount (does nothing if not connected)
     await this.refreshGallery();
     // A global signal listener to perform a gallery refresh
-    eventBus.on("globalRefreshGallery", () => {
-      this.refreshGallery();
-    });
-    eventBus.on("modalClosed", () => {
-      // Handle the modal closed event here
-      this.refreshGallery();
-    });
+    eventBus.on("globalRefreshGallery", this.refreshGallery);
+    // Handle the modal closed event here
+    eventBus.on("modalClosed", this.refreshGallery);
   },
 
   beforeUnmount() {
@@ -179,8 +176,12 @@ export default {
     async refreshGallery() {
       try {
         let all_items = await this.readThingProperty("gallery", "list_data");
-        if (!all_items | (all_items.length == 0)) {
-          this.all_items = all_items;
+        // if all_items is not or the number of items in all_items is zero then
+        // all_items is equal to empty list.
+        // stop refresh gallery as all_items is empty list.
+        if (!all_items || all_items?.length === 0) {
+          this.all_items = [];
+          return;
         }
         all_items.forEach((item) => {
           item.can_stitch = !item.stitch_available && item.number_of_images > 3;
@@ -189,6 +190,7 @@ export default {
           return b.created - a.created;
         });
         this.all_items = all_items;
+        console.debug("Gallery size: %s", this.all_items.length);
       } catch (err) {
         console.error("Failed to refresh gallery items.");
         console.error(err);
