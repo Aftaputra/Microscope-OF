@@ -345,10 +345,6 @@ class JPEGSharpnessMonitor:
         final_z_position: int = self.stage_positions[-1]["z"]
         return data_index, final_z_position
 
-    def hold(self, delay: float) -> None:
-        """Continue to monitor sharpness without moving for delay seconds."""
-        time.sleep(delay)
-
     def move_data(
         self, istart: int, istop: Optional[int] = None
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -855,7 +851,8 @@ class AutofocusThing(lt.Thing):
         with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
             sharpness_monitor.focus_rel(-dz)
             sharpness_monitor.focus_rel(dz)
-            sharpness_monitor.hold(delay)
+            # Sleep for the given delay, continuing to measure frames without moving
+            time.sleep(delay)
         return sharpness_monitor.data_to_array()
 
 
