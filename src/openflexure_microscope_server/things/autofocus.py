@@ -385,12 +385,16 @@ class JPEGSharpnessMonitor:
             )
         return jpeg_heights[np.argmax(jpeg_sizes)]
 
-    def data_dict(self) -> SharpnessDataArrays:
-        """Return the gathered data as a single convenient dictionary."""
+    def data_to_array(self) -> SharpnessDataArrays:
+        """Return the gathered data as SharpnessDataArrays."""
         data = {}
         for k in ["jpeg_times", "jpeg_sizes", "stage_times", "stage_positions"]:
             data[k] = getattr(self, k)
         return SharpnessDataArrays(**data)
+
+    def data_dict(self) -> dict:
+        """Return the gathered data as dict."""
+        return self.data_to_array().model_dump()
 
 
 class AutofocusThing(lt.Thing):
@@ -432,7 +436,7 @@ class AutofocusThing(lt.Thing):
             # Move to the target position fz (relative move of (peak - current z))
             sharpness_monitor.focus_rel(peak_z - base_z)
             # Return all focus data
-            return sharpness_monitor.data_dict()
+            return sharpness_monitor.data_to_array()
 
     @lt.action
     def z_move_and_measure_sharpness(
@@ -457,7 +461,7 @@ class AutofocusThing(lt.Thing):
                 if move_index > 0 and wait > 0:
                     time.sleep(wait)
                 sharpness_monitor.focus_rel(current_dz)
-            return sharpness_monitor.data_dict()
+            return sharpness_monitor.data_to_array()
 
     @lt.action
     def looping_autofocus(
@@ -835,6 +839,21 @@ class AutofocusThing(lt.Thing):
 
         final_z = self._stage.position["z"]
         return final_z, z_positions
+
+    @lt.action
+    def measure_settling_time(
+        self, delay: float = 2, dz: int = 800
+    ) -> SharpnessDataArrays:
+        """Make a Z move down then up by dz, then pause for delay while monitoring sharpness.
+
+        This is useful to see how long to wait for the sharpness value to converge
+        """
+        with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
+            sharpness_monitor.focus_rel(-dz)
+            sharpness_monitor.focus_rel(dz)
+            # Sleep for the given delay, continuing to measure frames without moving
+            time.sleep(delay)
+        return sharpness_monitor.data_to_array()
 
 
 class NotAPeakError(lt.exceptions.InvocationError):

@@ -114,3 +114,51 @@ def test_camera_stage_mapping_calibration(simulation_test_env):
     assert isinstance(csm_matrix, list)
     # Check CSM is as expected to an absolute tolerance of 1e-3
     assert np.allclose(csm_matrix, expected_matrix, atol=1e-3)
+
+
+def test_measure_settling_time(simulation_test_env):
+    """Test measure_settling_time captures data while moving and holding."""
+    autofocus = simulation_test_env.get_thing_client("autofocus")
+    stage = simulation_test_env.get_thing_client("stage")
+
+    start_z = stage.position["z"]
+
+    delay = 1
+    dz = 1000
+
+    data = autofocus.measure_settling_time(delay=delay, dz=dz)
+
+    # Check returned arrays contain data
+    assert len(data["jpeg_times"]) > 0
+    assert len(data["jpeg_sizes"]) > 0
+    assert len(data["stage_times"]) == 4
+    assert len(data["stage_positions"]) == 4
+
+    # Check the stage moved down then back up
+    z_positions = [p["z"] for p in data["stage_positions"]]
+
+    assert z_positions[0] == start_z
+    assert z_positions[1] == start_z - dz
+    assert z_positions[2] == start_z - dz
+    assert z_positions[3] == start_z
+
+    # Check final stage position returned to start
+    assert stage.position["z"] == start_z
+
+    # Check frames continued to be collected after the final move completed
+    final_move_time = data["stage_times"][-1]
+    jpeg_times_after_final_move = [t for t in data["jpeg_times"] if t > final_move_time]
+
+    assert len(jpeg_times_after_final_move) > 0
+
+
+def test_measure_settling_time_hold_duration(simulation_test_env):
+    """Test measure_settling_time continues capturing during hold."""
+    autofocus = simulation_test_env.get_thing_client("autofocus")
+
+    short_data = autofocus.measure_settling_time(delay=0, dz=400)
+    long_data = autofocus.measure_settling_time(delay=1, dz=400)
+
+    # Longer delay should collect more JPEG frames
+    assert len(long_data["jpeg_times"]) > len(short_data["jpeg_times"])
+    assert len(long_data["jpeg_sizes"]) > len(short_data["jpeg_sizes"])
