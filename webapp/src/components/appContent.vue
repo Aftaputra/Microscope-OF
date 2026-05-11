@@ -217,8 +217,9 @@ export default {
   },
 
   methods: {
-    // This methods replace the previous arrow function calls "() => {}".
-    // This is needed for closing actual same opening functions.
+    // These methods are used for opening and closing signals.
+    // They are used instead of anonymous arrow functions so we can
+    // call close on the same function called with open.
     handleGlobalSwitchTab: function (tabID) {
       this.currentTab = tabID;
     },
