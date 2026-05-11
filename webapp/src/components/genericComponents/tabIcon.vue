@@ -96,7 +96,7 @@ export default {
 
 <style lang="less" scoped>
 // Custom UIkit CSS modifications
-@import "../../assets/less/variables.less";
+@import url("../../assets/less/variables.less");
 
 .tabicon-active {
   color: #fff !important;

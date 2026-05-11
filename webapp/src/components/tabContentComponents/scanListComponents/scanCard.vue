@@ -173,7 +173,7 @@ ul {
   display: block;
   text-align: center;
   list-style-type: none;
-  margin: 5px 0px 10px 0px;
+  margin: 5px 0 10px;
   padding: 0;
 }
 

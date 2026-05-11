@@ -80,7 +80,7 @@ export default {
 
 <style lang="less" scoped>
 // Custom UIkit CSS modifications
-@import "../../assets/less/variables.less";
+@import url("../../assets/less/variables.less");
 
 .container {
   display: flex;
@@ -109,6 +109,6 @@ export default {
 .shutdown-button {
   display: inline;
   text-align: center;
-  margin: 30px 30px 30px 30px;
+  margin: 30px;
 }
 </style>

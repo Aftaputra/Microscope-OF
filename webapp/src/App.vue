@@ -325,7 +325,7 @@ export default {
 </script>
 
 <style lang="less">
-@import "./assets/less/theme.less";
+@import url("./assets/less/theme.less");
 // We override the custom-electron-titlebar z-index
 // UIKit lightbox must be able to draw over the titlebar
 // as it currently always spawns at the root of the DOM
@@ -353,8 +353,7 @@ html {
 }
 
 .control-component {
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
   scrollbar-gutter: stable;
   width: 300px;
   height: 100%;
@@ -366,8 +365,7 @@ html {
 }
 
 .view-component {
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
   height: 100%;
   padding: 0;
 }

@@ -91,13 +91,12 @@ export default {
 };
 </script>
 <style lang="less" scoped>
-@import "../../assets/less/variables.less";
+@import url("../../assets/less/variables.less");
 
 #progress-and-cancel-row {
   display: flex;
   flex-flow: row wrap;
-  justify-content: flex-start;
-  align-content: stretch;
+  place-content: stretch flex-start;
   align-items: center;
   width: 100%;
 }
@@ -107,16 +106,19 @@ export default {
   margin-left: 5px;
   margin-right: 5px;
 }
+
 #progress-and-cancel-row .not-stretchy {
   flex-grow: 0;
   margin-left: 5px;
   margin-right: 5px;
 }
+
 #status-modal {
   max-height: 90vh; // never exceed 90% of viewport height
   display: flex;
   flex-direction: column;
 }
+
 #status-modal .log-container {
   height: 10em;
 }

@@ -36,6 +36,7 @@ export default {
   margin-left: auto;
   margin-right: auto;
 }
+
 #mini-stream {
   min-width: 300px;
   max-width: 600px;

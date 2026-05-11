@@ -230,7 +230,7 @@ export default {
 
 <style lang="less" scoped>
 .gallery-navbar {
-  border-width: 0 0 1px 0;
+  border-width: 0 0 1px;
   border-style: solid;
   border-color: rgba(180, 180, 180, 0.25);
 }
