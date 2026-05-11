@@ -4,10 +4,30 @@
 
 - [ ] I have searched existing issues to ensure this hasn't been reported.
 
+### Short summary
+<!--
+In 1–2 sentences, describe:
+- what the problem is
+- why it is unexpected, incorrect, or harmful
+- what use case is affected
+-->
+
 **Expected Behaviour**:
 <!-- Summarise the behaviour you would expect / want to see -->
+
 **Current Behaviour**:
 <!-- Summarise what happened instead -->
+
+### Suggested fix (optional)
+<!--
+If you have ideas for how this could be resolved, describe them here.
+Examples:
+- UI/UX changes
+- validation changes
+- error handling
+- documentation updates
+- suspected root cause
+-->
 
 ## Configuration
 <!-- Adjust as appropriate. -->
@@ -48,4 +68,4 @@
 
 <!--Anything else you think might be relevant to mention-->
 
-/label ~bug <!-- ~"Severity::Medium" ~"sever version::v3"   -->
+/label ~bug <!-- ~"Severity::Medium" ~"server version::v3"   -->
