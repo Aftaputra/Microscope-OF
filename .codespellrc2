@@ -27,3 +27,4 @@ skip = node_modules,
 ignore-regex = #[0-9A-Fa-f]{3,8}\b|\bFoV\b
 
 regex = [A-Z]?[a-z\']+
+ignore-words-list = fom
