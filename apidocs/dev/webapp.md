@@ -36,6 +36,8 @@ If your microscope hostname is not `microscope`, you can use local environment f
 
 (changing `myhostname` to the correct host name.)
 
+**Note:** If you have performance issues with lag this can depend on mdns speed for your setup. To avoid mdns overload `VITE_MICROSCPOPE_HOST` with the IP address rather than the host name.
+
 # Javascript: Formatting and linting
 
 To enforce code style we and quality we use ESLint and Prettier. Both can be run together with the same command.
