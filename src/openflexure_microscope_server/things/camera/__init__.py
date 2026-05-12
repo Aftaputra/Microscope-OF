@@ -179,6 +179,7 @@ class BaseCamera(OFMThing):
     mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     lores_mjpeg_stream = lt.outputs.MJPEGStreamDescriptor()
     _memory_buffer = CameraMemoryBuffer()
+    supports_focus_fom: bool = False
 
     def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Initialise the base camera, this creates the background detectors.
@@ -212,6 +213,17 @@ class BaseCamera(OFMThing):
     ) -> None:
         """Close hardware connection when the Thing context manager is closed."""
         pass
+
+    @property
+    def focus_fom(self) -> int:
+        """Return the focus figure of merit.
+
+        This returns a NotImplementedError if not supported by the camera.
+        To use, requires self.supports_focus_fom to be set to True.
+        """
+        raise NotImplementedError(
+            "This camera does not support Figure of Merit focusing."
+        )
 
     @lt.property
     def calibration_required(self) -> bool:

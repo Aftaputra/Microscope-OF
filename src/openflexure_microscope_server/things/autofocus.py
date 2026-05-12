@@ -265,7 +265,7 @@ class JPEGSharpnessMonitor:
         stage: BaseStage,
         camera: BaseCamera,
         method: SharpnessMethod = SharpnessMethod.JPEG,
-        record: Optional[SharpnessMethod] = None,
+        record: Optional[int] = None,
     ) -> None:
         """Initialise a new JPEGSharpnessMonitor. The args are injected automatically.
 
@@ -355,7 +355,7 @@ class JPEGSharpnessMonitor:
 
             # FocusFoM metric
             if self.record & SharpnessMethod.FOCUS_FOM:
-                self._focus_foms.append(self.camera._focus_fom)
+                self._focus_foms.append(self.camera.focus_fom)
 
             if not self.running:
                 break
@@ -487,7 +487,7 @@ class AutofocusThing(lt.Thing):
         dz: int = 2000,
         start: Literal["centre", "base"] = "centre",
         sharpness_metric: SharpnessMethod = SharpnessMethod.JPEG,
-        record: Optional[SharpnessMethod] = None,
+        record: Optional[int] = None,
     ) -> SharpnessDataArrays:
         """Sweep the stage up and down, then move to the sharpest point.
 
@@ -499,10 +499,11 @@ class AutofocusThing(lt.Thing):
         :param start: Starting position of the sweep. "centre" begins at -dz/2,
             while "base" begins from the current position.
         :param sharpness_metric: Sharpness metric used for evaluation. Either
-            JPEG file size (JPEG) or inbuilt figure of metric (FOCUS_FOM).
+            JPEG file size (1) or inbuilt figure of metric (2).
         :param record: Optional bitmask of sharpness metrics to record during
-            acquisition. If None, defaults to recording only the selected
-            sharpness_metric.
+            acquisition. Sharpness metrics can be selected as the sum of their int
+            value (see sharpness_metric).
+            If None, defaults to recording only the selected sharpness_metric.
 
         :returns: SharpnessDataArrays containing all recorded sharpness and
             stage position data for the sweep.
@@ -561,7 +562,7 @@ class AutofocusThing(lt.Thing):
         dz: int = 2000,
         start: Literal["centre", "base"] = "centre",
         sharpness_metric: SharpnessMethod = SharpnessMethod.JPEG,
-        record: Optional[SharpnessMethod] = None,
+        record: Optional[int] = None,
     ) -> tuple[list[float], list[float]]:
         """Repeatedly autofocus the stage until it looks focused.
 
@@ -574,10 +575,11 @@ class AutofocusThing(lt.Thing):
         :param start: Starting position of the sweep. "centre" begins at -dz/2,
             while "base" begins from the current position.
         :param sharpness_metric: Sharpness metric used for evaluation. Either
-            JPEG file size (JPEG) or inbuilt figure of metric (FOCUS_FOM).
+            JPEG file size (1) or inbuilt figure of metric (2).
         :param record: Optional bitmask of sharpness metrics to record during
-            acquisition. If None, defaults to recording only the selected
-            sharpness_metric.
+            acquisition. Sharpness metrics can be selected as the sum of their int
+            value (see sharpness_metric).
+            If None, defaults to recording only the selected sharpness_metric.
 
         :returns: SharpnessDataArrays containing all recorded sharpness and
             stage position data for the sweep.

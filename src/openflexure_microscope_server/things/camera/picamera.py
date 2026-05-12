@@ -380,6 +380,11 @@ class StreamingPiCamera2(BaseCamera):
                         f"but found {hw_sensor_model}."
                     )
 
+    @property
+    def focus_fom(self) -> int:
+        """Return the focus figure of merit."""
+        return self._focus_fom
+
     def _on_frame_complete(self, request: Request) -> None:
         md = request.get_metadata()
         fom = md.get("FocusFoM")
