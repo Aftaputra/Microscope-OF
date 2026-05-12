@@ -63,6 +63,7 @@ def test_customise_server(mocker):
     mocked_retrieve_log = mocker.patch.object(ofm_server, "retrieve_log")
     mocked_retrieve_log_file = mocker.patch.object(ofm_server, "retrieve_log_from_file")
 
+    mock_server._api_prefix = "/api/v3/"
     mock_app = mock_server.app
     # The wrapper returned for app.get so we can see what functions are decorated.
     wrapper = mock_app.get.return_value
@@ -82,8 +83,8 @@ def test_customise_server(mocker):
 
     # Check the routes and functions are as expected.
     added_routes = [call.args[0] for call in mock_app.get.call_args_list]
-    assert "/log/" in added_routes
-    assert "/logfile/" in added_routes
+    assert "/api/v3/log/" in added_routes
+    assert "/api/v3/logfile/" in added_routes
     wrapped_functions = [call.args[0] for call in wrapper.call_args_list]
     assert mocked_retrieve_log in wrapped_functions
     assert mocked_retrieve_log_file
