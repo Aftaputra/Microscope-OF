@@ -126,7 +126,7 @@ def test_add_static_files(mock_static_dir, mocker):
     )
     mock_server = mocker.Mock()
     mock_server.app = mock_app
-    mock_server._api_prefix = "/api/v3"
+    mock_server.api_prefix = "/api/v3"
     # Get the wrapper function from the mocked decorator
     wrapper = mock_app.get.return_value
     with tempfile.TemporaryDirectory() as datadir:
