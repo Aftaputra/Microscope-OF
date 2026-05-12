@@ -35,7 +35,7 @@ def test_jpeg_and_array(picamera_client):
 
 
 def test_record_framerate_async(picamera_client, tmp_path):
-    """Check that asynchronous framerate recording creates a valid CSV log."""
+    """Check that asynchronous framerate monitoring creates a valid CSV log."""
     output_dir = tmp_path / "framerate"
 
     returned_dir = picamera_client.record_framerate_async(
@@ -45,7 +45,7 @@ def test_record_framerate_async(picamera_client, tmp_path):
 
     assert returned_dir == str(output_dir)
 
-    # Wait slightly longer than recording duration for thread completion
+    # Wait slightly longer than recording duration for async task completion
     time.sleep(1.5)
 
     log_files = list(output_dir.glob("framerate_log_*.csv"))
@@ -62,15 +62,39 @@ def test_record_framerate_async(picamera_client, tmp_path):
         rows = list(csv.reader(f))
 
     # Header exists
-    assert rows[0] == ["timestamp", "frame_count", "instant_fps"]
+    assert rows[0] == [
+        "timestamp",
+        "frame_count",
+        "frame_size_bytes",
+    ]
 
-    # At least one FPS sample row exists
-    assert len(rows) > 1
+    sample_rows = [
+        row
+        for row in rows[1:]
+        if row and row[0] not in {"TOTAL_FRAMES", "TOTAL_DURATION", "AVG_FPS"}
+    ]
+
+    assert len(sample_rows) > 0
 
     # Validate sample row structure
-    sample_row = rows[1]
+    sample_row = sample_rows[0]
+
     assert len(sample_row) == 3
 
-    # Ensure FPS is positive
-    fps = float(sample_row[2])
-    assert fps > 0
+    timestamp = float(sample_row[0])
+    frame_count = int(sample_row[1])
+    frame_size = int(sample_row[2])
+
+    # Basic sanity checks
+    assert timestamp > 0
+    assert frame_count > 0
+    assert frame_size > 0
+
+    assert rows[-3][0] == "TOTAL_DURATION"
+    assert float(rows[-3][1]) > 0
+
+    assert rows[-2][0] == "TOTAL_FRAMES"
+    assert int(rows[-2][1]) > 0
+
+    assert rows[-1][0] == "AVG_FPS"
+    assert float(rows[-1][1]) > 0
