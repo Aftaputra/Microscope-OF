@@ -8,6 +8,7 @@ See repository root for licensing information.
 
 from __future__ import annotations
 
+import csv
 import io
 import json
 import os
@@ -198,6 +199,8 @@ class BaseCamera(OFMThing):
 
     def __enter__(self) -> Self:
         """Open hardware connection when the Thing context manager is opened."""
+        super().__enter__()
+
         self._background_detector_name = coerce_thing_selector(
             thing_mapping=self._all_background_detectors,
             selected=self._background_detector_name,
@@ -263,6 +266,157 @@ class BaseCamera(OFMThing):
         if self.stream_active:
             self.mjpeg_stream._streaming = False
             self.lores_mjpeg_stream._streaming = False
+
+    async def _monitor_framerate(
+        self,
+        duration: float,
+        output_dir: str,
+        sample_interval: float = 0.1,
+    ) -> None:
+        """Monitor the delivered MJPEG frame rate asynchronously.
+
+        This method listens to frames arriving on self.mjpeg_stream and records
+        timing information without directly interacting with the underlying
+        ``Picamera2`` instance.
+
+        Writes a CSV log file with timestamp, frame count, and size of the most
+        recent MJPEG frame in bytes
+
+        Monitoring stops automatically after ``duration`` seconds, or earlier if
+        ``self._framerate_monitor_running`` is set to ``False``.
+
+        :param duration: Total monitoring duration in seconds.
+        :param output_dir: Directory in which the CSV log file will be written.
+        :param sample_interval: Time interval in seconds between FPS samples.
+            Default = 0.1s.
+
+        :raises Exception: Any unexpected exception is logged before the monitor
+            exits.
+        """
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            log_path = os.path.join(
+                output_dir,
+                f"framerate_{timestamp}.csv",
+            )
+
+            start_time = time.time()
+            last_sample_time = start_time
+            last_sample_frames = 0
+            frames = 0
+
+            self._framerate_monitor_running = True
+
+            # Store rows in memory and write once at the end
+            sample_rows = []
+
+            self.logger.info(
+                "Starting framerate monitor for %.2fs -> %s",
+                duration,
+                log_path,
+            )
+
+            async for frame in self.mjpeg_stream.frame_async_generator():
+                if not self._framerate_monitor_running:
+                    self.logger.info("Framerate monitor stopped externally")
+                    break
+
+                now = time.time()
+
+                frames += 1
+                frame_size = len(frame)
+
+                if now - last_sample_time >= sample_interval:
+                    interval = now - last_sample_time
+
+                    instant_fps = (frames - last_sample_frames) / interval
+
+                    sample_rows.append(
+                        [
+                            now,
+                            frames,
+                            frame_size,
+                        ]
+                    )
+
+                    self.logger.info(
+                        "[Framerate test] FPS=%.2f, size=%d B",
+                        instant_fps,
+                        frame_size,
+                    )
+
+                    last_sample_time = now
+                    last_sample_frames = frames
+
+                if now - start_time >= duration:
+                    self.logger.info("Framerate monitor duration reached")
+                    break
+
+            total_time = time.time() - start_time
+            avg_fps = frames / total_time if total_time > 0 else 0
+
+            # Write CSV once at completion
+            with open(log_path, "w", newline="") as csv_file:
+                writer = csv.writer(csv_file)
+
+                writer.writerow(
+                    [
+                        "timestamp",
+                        "frame_count",
+                        "frame_size_bytes",
+                    ]
+                )
+
+                writer.writerows(sample_rows)
+
+                writer.writerow([])
+                writer.writerow(["TOTAL_DURATION", total_time])
+                writer.writerow(["TOTAL_FRAMES", frames])
+                writer.writerow(["AVG_FPS", avg_fps])
+
+            self.logger.info(
+                "[Framerate test complete] Frames=%d, Avg FPS=%.2f",
+                frames,
+                avg_fps,
+            )
+
+        except Exception:
+            self.logger.exception("Framerate monitor crashed")
+
+        finally:
+            self._framerate_monitor_running = False
+
+    @lt.action
+    def record_framerate_async(
+        self,
+        duration: float = 5.0,
+    ) -> str:
+        """Start asynchronous MJPEG framerate monitoring.
+
+        The monitor observes frames delivered through ``self.mjpeg_stream`` rather
+        than directly querying the camera hardware. This makes it suitable for
+        measuring effective stream throughput under real operating conditions.
+
+        :param duration: Monitoring duration in seconds. Default = 5.0s.
+
+        :returns: The output directory containing generated log files.
+        """
+        output_dir = os.path.join(self.data_dir, "characterisation", "framerate")
+        self._thing_server_interface.start_async_task_soon(
+            self._monitor_framerate,
+            duration,
+            output_dir,
+        )
+
+        self.logger.info(
+            "Started async framerate monitor for %.2fs -> %s",
+            duration,
+            output_dir,
+        )
+
+        return output_dir
 
     @lt.property
     def stream_active(self) -> bool:

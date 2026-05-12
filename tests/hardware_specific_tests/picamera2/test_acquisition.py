@@ -48,7 +48,7 @@ def test_record_framerate_async(picamera_client, tmp_path):
     # Wait slightly longer than recording duration for async task completion
     time.sleep(1.5)
 
-    log_files = list(output_dir.glob("framerate_log_*.csv"))
+    log_files = list(output_dir.glob("framerate_*.csv"))
 
     # Ensure exactly one log file was created
     assert len(log_files) == 1
