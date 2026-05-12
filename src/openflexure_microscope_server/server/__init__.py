@@ -93,8 +93,8 @@ def customise_server(
         lt.logs.configure_thing_logger(logging.DEBUG)
 
     # Add an endpoint to get the logs - (directly calling the FastAPI decorator)
-    server.app.get("/log/")(retrieve_log)
-    server.app.get("/logfile/")(retrieve_log_from_file)
+    server.app.get(server._api_prefix.rstrip("/") + "/log/")(retrieve_log)
+    server.app.get(server._api_prefix.rstrip("/") + "/logfile/")(retrieve_log_from_file)
 
 
 def serve_from_cli(argv: Optional[list[str]] = None) -> None:
