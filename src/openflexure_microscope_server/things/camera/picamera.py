@@ -25,10 +25,18 @@ import time
 from contextlib import contextmanager
 from threading import RLock
 from types import TracebackType
-from typing import Annotated, Any, Iterator, Literal, Mapping, Optional, Self
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Iterator,
+    Literal,
+    Mapping,
+    Optional,
+    Self,
+)
 
 import numpy as np
-from libcamera import Request
 from picamera2 import Picamera2
 from picamera2.encoders import MJPEGEncoder
 from picamera2.outputs import Output
@@ -50,6 +58,9 @@ from openflexure_microscope_server.ui import (
 from . import BaseCamera
 from . import picamera_recalibrate_utils as recalibrate_utils
 from . import picamera_tuning_file_utils as tf_utils
+
+if TYPE_CHECKING:
+    from libcamera import Request
 
 LOGGER = logging.getLogger(__name__)
 
