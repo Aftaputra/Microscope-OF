@@ -404,7 +404,7 @@ class BaseStage(lt.Thing):
             "StageThings must define their own _estimate_move_duration method"
         )
 
-    @lt.action
+    @lt.action(use_global_lock=False)
     def jog(self, stop: bool = False, **kwargs: int) -> None:
         """Make a relative move that may be interrupted by a future ``jog``.
 
@@ -471,7 +471,7 @@ class BaseStage(lt.Thing):
         command: Optional[JogCommand] = first_command
 
         # prevent others using the stage while jogging.
-        with self._hardware_lock:
+        with self._thing_server_interface.hold_global_lock(), self._hardware_lock:
             while command is not None:
                 if command.displacement is not None:
                     self._hardware_start_move_relative(command.displacement)
