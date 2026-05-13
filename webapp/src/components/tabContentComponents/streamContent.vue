@@ -109,6 +109,8 @@ export default {
     this.sizeObserver.disconnect();
     // Remove from the array of active streams
     this.store.removeStream(this.$.uid);
+    // close signal
+    eventBus.off("globalFlashStream", this.onFlashStream);
   },
 
   methods: {

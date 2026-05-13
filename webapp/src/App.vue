@@ -186,7 +186,7 @@ export default {
         shortcut: "pgup / pgdn",
         description: "Move the microscope focus",
       });
-
+      // The following signal is managed (on/off) by actionButton.vue at this.submitOnEvent.
       Mousetrap.bind("c", () => {
         eventBus.emit("globalCaptureEvent", {});
       });
@@ -194,7 +194,8 @@ export default {
         shortcut: "c",
         description: "Take a capture",
       });
-
+      // The following signal is managed (on/off) by actionButton.vue at this.submitOnEvent.
+      // There's no visual feedback when the event is triggered
       Mousetrap.bind("a", () => {
         eventBus.emit("globalFastAutofocusEvent", {});
       });
@@ -202,10 +203,11 @@ export default {
         shortcut: "a",
         description: "Fast autofocus",
       });
-
+      // This signal is managed on lifecycle mounted and unmounted optionsAPI at appContent.vue.
       Mousetrap.bind("shift+down", () => {
         eventBus.emit("globalIncrementTab", {});
       });
+      // This signal is managed on lifecycle mounted and unmounted optionsAPI at appContent.vue.
       Mousetrap.bind("shift+up", () => {
         eventBus.emit("globalDecrementTab", {});
       });
