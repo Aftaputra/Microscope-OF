@@ -46,6 +46,8 @@ class OpenFlexureSystem(lt.Thing):
         of the system.
     """
 
+    _class_settings = {"validate_properties_on_set": True}
+
     _microscope_id: Optional[str] = None
 
     @lt.setting

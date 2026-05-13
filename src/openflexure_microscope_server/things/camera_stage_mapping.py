@@ -119,6 +119,8 @@ class CameraStageMapper(lt.Thing):
     override the ``get_xyz_position()`` and ``move_to_xyz_position()`` methods.
     """
 
+    _class_settings = {"validate_properties_on_set": True}
+
     _cam: BaseCamera = lt.thing_slot()
     _stage: BaseStage = lt.thing_slot()
 

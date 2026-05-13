@@ -62,6 +62,8 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     scan planning, acquisition routine.
     """
 
+    _class_settings = {"validate_properties_on_set": True}
+
     display_name: str = lt.property(default="Base Workflow", readonly=True)
     ui_blurb: str = lt.property(
         default="If you see this message, something is wrong.", readonly=True

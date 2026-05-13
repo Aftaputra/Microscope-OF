@@ -117,6 +117,8 @@ class ParasiticMotionError(lt.exceptions.InvocationError):
 class RangeofMotionThing(lt.Thing):
     """A class used to measure the range of motion of the stage in X and Y."""
 
+    _class_settings = {"validate_properties_on_set": True}
+
     _autofocus: AutofocusThing = lt.thing_slot()
     _cam: BaseCamera = lt.thing_slot()
     _csm: CameraStageMapper = lt.thing_slot()

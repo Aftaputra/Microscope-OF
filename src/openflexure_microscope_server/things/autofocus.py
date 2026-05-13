@@ -405,6 +405,7 @@ class AutofocusThing(lt.Thing):
     field of view to assess focus (autofocus and testing the success of a z-stack)
     """
 
+    _class_settings = {"validate_properties_on_set": True}
     _cam: BaseCamera = lt.thing_slot()
     _stage: BaseStage = lt.thing_slot()
 

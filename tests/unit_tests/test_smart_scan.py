@@ -25,7 +25,7 @@ from unittest import mock
 
 import pytest
 from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from labthings_fastapi.exceptions import InvocationCancelledError
 from labthings_fastapi.testing import create_thing_without_server
@@ -206,8 +206,11 @@ def test_setting_workflows(caplog, mocker):
     with caplog.at_level(logging.WARNING), smart_scan_thing:
         assert smart_scan_thing._workflow_name == "foo"
         assert smart_scan_thing._workflow is workflows["foo"]
-        # Can't set None, warns doesn't change
-        smart_scan_thing.workflow_name = None
+        # Can't set None, raises a ValidationError
+        with pytest.raises(ValidationError):
+            smart_scan_thing.workflow_name = None
+        # Empty string still won't change, but just warns
+        smart_scan_thing.workflow_name = ""
         assert len(caplog.records) == 1
         assert smart_scan_thing._workflow_name == "foo"
         assert smart_scan_thing._workflow is workflows["foo"]

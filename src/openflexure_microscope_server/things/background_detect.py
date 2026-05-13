@@ -38,6 +38,8 @@ class ChannelBlankError(lt.exceptions.InvocationError):
 class BackgroundDetectAlgorithm(lt.Thing):
     """The base class for defining background detect algorithms."""
 
+    _class_settings = {"validate_properties_on_set": True}
+
     display_name: str = lt.property(default="Base Detector", readonly=True)
 
     def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
