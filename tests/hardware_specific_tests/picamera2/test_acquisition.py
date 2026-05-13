@@ -1,7 +1,8 @@
 """Test data collection from the Raspberry Picamera."""
 
-import csv
+import json
 import time
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -34,21 +35,14 @@ def test_jpeg_and_array(picamera_client):
     assert array_main.shape[1::-1] == jpeg_capture.size
 
 
-def test_record_framerate_async(picamera_client, tmp_path):
-    """Check that asynchronous framerate monitoring creates a valid CSV log."""
-    output_dir = tmp_path / "framerate"
-
-    returned_dir = picamera_client.record_framerate_async(
-        duration=1.0,
-        output_dir=str(output_dir),
-    )
-
-    assert returned_dir == str(output_dir)
+def test_record_framerate_async(picamera_client):
+    """Check that asynchronous framerate monitoring creates a valid JSON log."""
+    returned_dir = Path(picamera_client.record_framerate_async(duration=1.0))
 
     # Wait slightly longer than recording duration for async task completion
     time.sleep(1.5)
 
-    log_files = list(output_dir.glob("framerate_*.csv"))
+    log_files = list(returned_dir.glob("framerate_*.json"))
 
     # Ensure exactly one log file was created
     assert len(log_files) == 1
@@ -58,43 +52,36 @@ def test_record_framerate_async(picamera_client, tmp_path):
     # Ensure file is not empty
     assert log_file.stat().st_size > 0
 
-    with open(log_file, newline="") as f:
-        rows = list(csv.reader(f))
+    # Load JSON
+    with open(log_file, "r") as f:
+        data = json.load(f)
 
-    # Header exists
-    assert rows[0] == [
-        "timestamp",
-        "frame_count",
-        "frame_size_bytes",
-    ]
+    assert "summary" in data
+    assert "samples" in data
 
-    sample_rows = [
-        row
-        for row in rows[1:]
-        if row and row[0] not in {"TOTAL_FRAMES", "TOTAL_DURATION", "AVG_FPS"}
-    ]
+    summary = data["summary"]
+    samples = data["samples"]
 
-    assert len(sample_rows) > 0
+    assert "total_duration" in summary
+    assert "total_frames" in summary
+    assert "avg_fps" in summary
 
-    # Validate sample row structure
-    sample_row = sample_rows[0]
+    assert summary["total_duration"] > 0
+    assert summary["total_frames"] > 0
+    assert summary["avg_fps"] > 0
 
-    assert len(sample_row) == 3
+    assert len(samples) > 0
 
-    timestamp = float(sample_row[0])
-    frame_count = int(sample_row[1])
-    frame_size = int(sample_row[2])
+    sample = samples[0]
 
-    # Basic sanity checks
-    assert timestamp > 0
-    assert frame_count > 0
-    assert frame_size > 0
+    # Each sample row equivalent
+    assert "timestamp" in sample
+    assert "frame_count" in sample
+    assert "frame_size_bytes" in sample
+    assert "instant_fps" in sample
 
-    assert rows[-3][0] == "TOTAL_DURATION"
-    assert float(rows[-3][1]) > 0
+    assert sample["timestamp"] > 0
+    assert sample["frame_count"] > 0
+    assert sample["frame_size_bytes"] > 0
 
-    assert rows[-2][0] == "TOTAL_FRAMES"
-    assert int(rows[-2][1]) > 0
-
-    assert rows[-1][0] == "AVG_FPS"
-    assert float(rows[-1][1]) > 0
+    assert samples[-1]["frame_count"] > 0

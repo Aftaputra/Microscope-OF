@@ -1,5 +1,6 @@
 """Utilities to help with testing the camera."""
 
+import tempfile
 from contextlib import contextmanager
 from typing import Optional
 
@@ -23,7 +24,14 @@ def camera_test_env(settings_folder: Optional[str] = None):
         "camera": StreamingPiCamera2,
         "bg_channel_deviations_luv": ChannelDeviationLUV,
     }
-    with LabThingsTestEnv(things=thing_conf, settings_folder=settings_folder) as env:
+    app_config = {
+        "data_folder": tempfile.mkdtemp(),
+    }
+    with LabThingsTestEnv(
+        things=thing_conf,
+        settings_folder=settings_folder,
+        application_config=app_config,
+    ) as env:
         yield env
 
 
