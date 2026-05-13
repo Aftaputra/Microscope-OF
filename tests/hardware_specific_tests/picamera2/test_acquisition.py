@@ -1,7 +1,6 @@
 """Test data collection from the Raspberry Picamera."""
 
 import json
-import time
 from pathlib import Path
 
 import numpy as np
@@ -35,19 +34,12 @@ def test_jpeg_and_array(picamera_client):
     assert array_main.shape[1::-1] == jpeg_capture.size
 
 
-def test_record_framerate_async(picamera_client):
-    """Check that asynchronous framerate monitoring creates a valid JSON log."""
-    returned_dir = Path(picamera_client.record_framerate_async(duration=1.0))
+def test_record_framerate(picamera_client):
+    """Check that framerate monitoring creates a valid JSON log with good data."""
+    log_file = Path(picamera_client.record_framerate(duration=1.0))
 
-    # Wait slightly longer than recording duration for async task completion
-    time.sleep(1.5)
-
-    log_files = list(returned_dir.glob("framerate_*.json"))
-
-    # Ensure exactly one log file was created
-    assert len(log_files) == 1
-
-    log_file = log_files[0]
+    assert log_file.exists()
+    assert log_file.is_file()
 
     # Ensure file is not empty
     assert log_file.stat().st_size > 0
@@ -74,7 +66,6 @@ def test_record_framerate_async(picamera_client):
 
     sample = samples[0]
 
-    # Each sample row equivalent
     assert "timestamp" in sample
     assert "frame_count" in sample
     assert "frame_size_bytes" in sample

@@ -8,7 +8,6 @@ See repository root for licensing information.
 
 from __future__ import annotations
 
-import asyncio
 import io
 import json
 import os
@@ -338,11 +337,9 @@ class BaseCamera(OFMThing):
 
         # This runs as an async task, which we wait to complete
         try:
-            total_time, frames, samples = (
-                self._thing_server_interface.call_async_task(
-                    self._monitor_framerate,
-                    duration,
-                )
+            total_time, frames, samples = self._thing_server_interface.call_async_task(
+                self._monitor_framerate,
+                duration,
             )
 
         finally:
@@ -358,6 +355,13 @@ class BaseCamera(OFMThing):
             },
             "samples": samples,
         }
+
+        self.logger.info(
+            ("Framerate monitor results: duration=%.2fs, frames=%d, avg_fps=%.2f"),
+            total_time,
+            frames,
+            avg_fps,
+        )
 
         with open(log_path, "w") as f:
             json.dump(data, f, indent=2)
