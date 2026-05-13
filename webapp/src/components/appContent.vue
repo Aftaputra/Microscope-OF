@@ -85,7 +85,7 @@ import aboutContent from "./tabContentComponents/aboutContent.vue";
 import controlContent from "./tabContentComponents/controlContent.vue";
 import loggingContent from "./tabContentComponents/loggingContent.vue";
 import powerContent from "./tabContentComponents/powerContent.vue";
-import scanListContent from "./tabContentComponents/scanListContent.vue";
+import galleryContent from "./tabContentComponents/galleryContent.vue";
 import settingsContent from "./tabContentComponents/settingsContent.vue";
 import slideScanContent from "./tabContentComponents/slideScanContent.vue";
 import viewContent from "./tabContentComponents/viewContent.vue";
@@ -158,10 +158,10 @@ export default {
           requiredThings: ["smart_scan"],
         },
         {
-          id: "scan-list",
-          title: "Scan List",
+          id: "gallery",
+          title: "Gallery",
           icon: "photo_library",
-          component: markRaw(scanListContent),
+          component: markRaw(galleryContent),
           requiredThings: ["smart_scan"],
         },
       ],

@@ -5,7 +5,7 @@
       <!-- Right side buttons -->
       <div class="uk-navbar-right">
         <div class="uk-grid">
-          <div class="scan-list-button">
+          <div class="gallery-button">
             <action-button
               class="uk-width-1-1"
               thing="smart_scan"
@@ -21,7 +21,7 @@
           </div>
           <div>
             <button
-              class="uk-button uk-button-default uk-width-1-1 scan-list-button"
+              class="uk-button uk-button-default uk-width-1-1 gallery-button"
               type="button"
               @click="deleteAllScans()"
             >
@@ -30,11 +30,11 @@
           </div>
           <div>
             <button
-              class="uk-button uk-button-default uk-width-1-1 scan-list-button"
+              class="uk-button uk-button-default uk-width-1-1 gallery-button"
               type="button"
-              @click="updateScans()"
+              @click="refreshGallery()"
             >
-              Refresh Scans
+              Refresh
             </button>
           </div>
         </div>
@@ -47,22 +47,21 @@
     <div v-if="ready" class="uk-padding-remove-top" uk-lightbox="toggle: .lightbox-link">
       <!-- Gallery capture cards -->
       <div class="gallery-grid uk-grid-match" uk-grid>
-        <div v-if="scansEmpty">
-          <h2>No scans available</h2>
-          <p>There are no scans available to show.</p>
+        <div v-if="noItems">
+          <h2>Nothing to show</h2>
+          <p>There is no captured data to show..</p>
         </div>
-        <div v-for="scanData in paginatedScans" :key="scanData.id">
-          <scan-card
-            :scan-data="scanData"
-            :scans-uri="scansUri"
+        <div v-for="itemData in paginatedItems" :key="itemData.id">
+          <gallery-card
+            :item-data="itemData"
             @viewer-requested="showScan"
-            @update-requested="updateScans"
+            @update-requested="refreshGallery"
           />
         </div>
       </div>
     </div>
     <PaginateLinks
-      :total-pages="totalPages"
+      :total-pages="numberOfPages"
       :current-page="currentPage"
       @change-page="changePage"
     />
@@ -73,8 +72,8 @@
 import axios from "axios";
 import PaginateLinks from "@/components/genericComponents/paginateLinks.vue";
 import actionButton from "../labThingsComponents/actionButton.vue";
-import scanCard from "./scanListComponents/scanCard.vue";
-import ScanViewerModal from "./scanListComponents/scanViewer.vue";
+import galleryCard from "./galleryComponents/galleryCard.vue";
+import ScanViewerModal from "./galleryComponents/scanViewer.vue";
 import { eventBus } from "../../eventBus.js";
 import { useIntersectionObserver } from "@vueuse/core";
 import { useSettingsStore } from "@/stores/settings.js";
@@ -83,10 +82,10 @@ import { watch } from "vue";
 
 // Export main app
 export default {
-  name: "ScanListContent",
+  name: "GalleryContent",
   components: {
     actionButton,
-    scanCard,
+    galleryCard,
     ScanViewerModal,
     PaginateLinks,
   },
@@ -95,7 +94,7 @@ export default {
 
   data: function () {
     return {
-      scans: [],
+      all_items: [],
       selectedScan: null,
       osdViewer: null,
       currentPage: 1,
@@ -110,8 +109,8 @@ export default {
       // The actual property does not exist. So allowUndefined=true
       return this.thingPropertyUrl("smart_scan", "scans", true);
     },
-    scansEmpty() {
-      return this.scans.length == 0;
+    noItems() {
+      return !this.all_items || this.all_items?.length === 0;
     },
     selectedScanDZI() {
       if (this.selectedScan && this.selectedScan.dzi != "") {
@@ -120,23 +119,24 @@ export default {
         return null;
       }
     },
-    totalPages() {
-      return Math.ceil(this.scans.length / this.itemsPerPage);
+    // name changed as paginateLinks has the prop totalPages
+    numberOfPages() {
+      return Math.ceil((this.all_items?.length || 0) / this.itemsPerPage);
     },
-    paginatedScans() {
+    paginatedItems() {
       const start = (this.currentPage - 1) * this.itemsPerPage;
-      return this.scans.slice(start, start + this.itemsPerPage);
+      return (this.all_items || []).slice(start, start + this.itemsPerPage);
     },
   },
 
   async mounted() {
     const store = useSettingsStore();
     const { ready } = storeToRefs(store);
-    watch(ready, (isReady) => {
+    this.unwatchStoreFunction = watch(ready, (isReady) => {
       if (isReady) {
-        this.updateScans();
+        this.refreshGallery();
       } else {
-        this.scans = [];
+        this.all_items = [];
       }
     });
     useIntersectionObserver(
@@ -149,51 +149,52 @@ export default {
       },
     );
     // Update on mount (does nothing if not connected)
-    await this.updateScans();
+    await this.refreshGallery();
     // A global signal listener to perform a gallery refresh
-    eventBus.on("globalUpdateScans", () => {
-      this.updateScans();
-    });
-    eventBus.on("modalClosed", () => {
-      // Handle the modal closed event here
-      this.updateScans();
-    });
+    eventBus.on("globalRefreshGallery", this.refreshGallery);
+    // Handle the modal closed event here
+    eventBus.on("modalClosed", this.refreshGallery);
   },
 
   beforeUnmount() {
     // Remove global signal listener to perform a gallery refresh
-    eventBus.off("globalUpdateScans", this.updateScans);
+    eventBus.off("globalRefreshGallery", this.refreshGallery);
     // Then we call that function here to unwatch
     if (this.unwatchStoreFunction) {
       this.unwatchStoreFunction();
       this.unwatchStoreFunction = null;
     }
-    eventBus.off("modalClosed", this.updateScans); // Clean up event listener
+    eventBus.off("modalClosed", this.refreshGallery); // Clean up event listener
   },
 
   methods: {
     visibilityChanged(isVisible) {
       if (isVisible) {
-        this.updateScans();
+        this.refreshGallery();
       }
     },
-    async updateScans() {
+    async refreshGallery() {
       try {
-        let scans = await this.readThingProperty("gallery", "list_data");
-        if (!scans | (scans.length == 0)) {
-          this.scans = scans;
+        let all_items = await this.readThingProperty("gallery", "list_data");
+        // if all_items is "falsey" or the number of items in all_items is zero then
+        // all_items is equal to empty list.
+        // stop refresh gallery as all_items is empty list.
+        if (!all_items || all_items?.length === 0) {
+          this.all_items = [];
+          return;
         }
-        scans.forEach((scan) => {
-          scan.can_stitch = !scan.stitch_available && scan.number_of_images > 3;
+        all_items.forEach((item) => {
+          item.can_stitch = !item.stitch_available && item.number_of_images > 3;
         });
-        scans.sort((a, b) => {
+        all_items.sort((a, b) => {
           return b.created - a.created;
         });
-        this.scans = scans;
+        this.all_items = all_items;
+        console.debug("Gallery size: %s", this.all_items.length);
       } catch (err) {
-        console.error("Failed to refresh scans");
+        console.error("Failed to refresh gallery items.");
         console.error(err);
-        this.scans = [];
+        this.all_items = [];
       }
     },
     async deleteAllScans() {
@@ -203,7 +204,7 @@ export default {
             "This is <b>irreversible</b>!",
         );
         await axios.delete(`${this.scansUri}`);
-        await this.updateScans();
+        await this.refreshGallery();
         this.modalNotify("Deleted all scans.");
       } catch (e) {
         // if the confirmation was cancelled, it's rejected with null error
@@ -240,7 +241,7 @@ export default {
   margin-bottom: 30px;
 }
 
-.scan-list-button {
+.gallery-button {
   margin-top: 5px;
   margin-bottom: 2px;
 }

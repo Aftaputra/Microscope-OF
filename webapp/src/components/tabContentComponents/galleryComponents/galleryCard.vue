@@ -12,16 +12,16 @@
           />
         </div>
       </div>
-      <h3 class="uk-card-title scan-card-title">{{ scanData.name }}</h3>
+      <h3 class="uk-card-title gallery-card-title">{{ itemData.name }}</h3>
       <div class="button-container">
-        <div class="uk-button-group scan-card-buttons">
+        <div class="uk-button-group gallery-card-buttons">
           <action-button
             class="uk-width-1-2"
             thing="smart_scan"
             action="download_zip"
             submit-label="Download All"
             :can-terminate="false"
-            :submit-data="{ scan_name: scanData.name }"
+            :submit-data="{ scan_name: itemData.name }"
             :button-primary="true"
             @response="downloadZipFile"
             @error="modalError"
@@ -29,45 +29,45 @@
           <EndpointButton
             class="uk-width-1-2"
             :button-primary="true"
-            :is-disabled="!scanData.stitch_available"
+            :is-disabled="!itemData.stitch_available"
             :url="downloadStitchFile"
             button-label="Download JPEG"
           />
         </div>
         <button class="uk-button uk-button-default uk-width-1-1" @click="deleteScan">Delete</button>
         <action-button
-          v-if="scanData.can_stitch | (scanData.stitch_available & !scanData.dzi)"
+          v-if="itemData.can_stitch | (itemData.stitch_available & !itemData.dzi)"
           submit-label="Stitch Images"
           thing="smart_scan"
           action="stitch_scan"
           :can-terminate="true"
-          :submit-data="{ scan_name: scanData.name }"
+          :submit-data="{ scan_name: itemData.name }"
           :button-primary="false"
           :modal-progress="true"
           @error="modalError"
         />
         <button
-          v-if="scanData.dzi"
+          v-if="itemData.dzi"
           class="uk-button uk-button-default uk-width-1-1"
           @click="requestViewer"
         >
           Show Stitched Scan
         </button>
       </div>
-      <div class="scan-info">
+      <div class="item-info">
         <ul>
-          <li>{{ scanData.number_of_images }} images</li>
-          <li>Created: {{ formatDate(scanData.created) }}</li>
-          <li>Duration: {{ formatDuration(scanData.duration) }}</li>
+          <li>{{ itemData.number_of_images }} images</li>
+          <li>Created: {{ formatDate(itemData.created) }}</li>
+          <li>Duration: {{ formatDuration(itemData.duration) }}</li>
         </ul>
         <ul>
-          <li v-if="scanData.number_of_images < 3" class="warning-msg">
+          <li v-if="itemData.number_of_images < 3" class="warning-msg">
             Not enough images to stitch
           </li>
-          <li v-else-if="!scanData.dzi && scanData.stitch_available" class="alert-msg">
+          <li v-else-if="!itemData.dzi && itemData.stitch_available" class="alert-msg">
             Interactive preview not available
           </li>
-          <li v-else-if="!scanData.stitch_available" class="alert-msg">
+          <li v-else-if="!itemData.stitch_available" class="alert-msg">
             High quality stitch not available
           </li>
         </ul>
@@ -85,19 +85,15 @@ import { useSettingsStore } from "@/stores/settings.js";
 
 // Export main app
 export default {
-  name: "ScanCard",
+  name: "GalleryCard",
   components: {
     actionButton,
     EndpointButton,
   },
 
   props: {
-    scanData: {
+    itemData: {
       type: Object,
-      required: true,
-    },
-    scansUri: {
-      type: String,
       required: true,
     },
   },
@@ -107,10 +103,10 @@ export default {
   computed: {
     ...mapState(useSettingsStore, ["baseUri"]),
     downloadStitchFile() {
-      return `${this.baseUri}/smart_scan/get_stitch/${this.scanData.name}`;
+      return `${this.baseUri}/smart_scan/get_stitch/${this.itemData.name}`;
     },
     thumbnailPath() {
-      return `${this.baseUri}/smart_scan/scans/stitched_thumbnail.jpg?scan_name=${this.scanData.name}&modified=${this.scanData.modified}`;
+      return `${this.baseUri}/smart_scan/scans/stitched_thumbnail.jpg?scan_name=${this.itemData.name}&modified=${this.itemData.modified}`;
     },
   },
 
@@ -142,14 +138,14 @@ export default {
     },
     requestViewer() {
       // Notify parent that thumbnail was clicked
-      this.$emit("viewer-requested", this.scanData);
+      this.$emit("viewer-requested", this.itemData);
     },
     async deleteScan() {
       try {
-        await this.modalConfirm(`Are you sure you want to delete ${this.scanData.name}?`);
-        await axios.delete(`${this.scansUri}/${this.scanData.name}`);
+        await this.modalConfirm(`Are you sure you want to delete ${this.itemData.name}?`);
+        await axios.delete(`${this.baseUri}/smart_scan/scans/${this.itemData.name}`);
         this.$emit("update-requested");
-        this.modalNotify(`Deleted ${this.scanData.name}`);
+        this.modalNotify(`Deleted ${this.itemData.name}`);
       } catch (e) {
         // if the confirmation was cancelled, it's rejected with null error
         if (e) this.modalError(e);
@@ -189,11 +185,11 @@ ul {
   font-weight: bold;
 }
 
-.scan-card-buttons {
+.gallery-card-buttons {
   width: 100%;
 }
 
-.scan-card-title {
+.gallery-card-title {
   text-align: center;
 }
 </style>
