@@ -1,23 +1,22 @@
-
 // File: vitest.config.js
 // Generic configuration for vitest
 
-import { defineConfig } from 'vitest/config';
-import vue from '@vitejs/plugin-vue';
-import path from 'path';
+import { defineConfig } from "vitest/config";
+import vue from "@vitejs/plugin-vue";
+import path from "path";
 
 export default defineConfig({
   plugins: [vue()],
 
   test: {
-    environment: 'jsdom',
+    environment: "jsdom",
 
     globals: true,
   },
 
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
 });

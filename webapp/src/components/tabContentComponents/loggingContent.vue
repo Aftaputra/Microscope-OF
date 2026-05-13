@@ -225,7 +225,7 @@ export default {
     },
     escapeText: function (unsafeText) {
       let div = document.createElement("div");
-      div.innerText = unsafeText;
+      div.textContent = unsafeText;
       return div.innerHTML;
     },
   },
