@@ -50,9 +50,16 @@ def _get_hashes(include_coverage: bool = False) -> dict[str, str]:
     return hashes
 
 
-def run_tests() -> None:
+def run_tests(exitfirst: bool = False) -> None:
     """Run the picamera tests, zip the coverage database, hash relevant source files."""
-    subprocess.run(["pytest", "tests/hardware_specific_tests"], check=True)
+    pytest_cmd = ["pytest"]
+
+    if exitfirst:
+        pytest_cmd.append("-x")
+
+    pytest_cmd.append("tests/hardware_specific_tests")
+    subprocess.run(pytest_cmd, check=True)
+
     shutil.copyfile(".coverage", COVERAGE_FILE)
     hash_dict = _get_hashes(include_coverage=True)
     with open(HASH_FILE, "w", encoding="utf-8") as json_file:
@@ -103,16 +110,22 @@ def main() -> None:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    subparsers.add_parser("run", help="Run hardware-specific tests on the PiCamera")
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Run hardware-specific tests on the PiCamera",
+    )
 
-    subparsers.add_parser(
-        "unzip", help="Unzip and verify coverage data on another machine"
+    run_parser.add_argument(
+        "-x",
+        "--exitfirst",
+        action="store_true",
+        help="Stop on first test failure",
     )
 
     args = parser.parse_args()
 
     if args.command == "run":
-        run_tests()
+        run_tests(exitfirst=args.exitfirst)
     elif args.command == "unzip":
         unzip_coverage()
 
