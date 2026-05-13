@@ -25,7 +25,16 @@ import time
 from contextlib import contextmanager
 from threading import RLock
 from types import TracebackType
-from typing import Annotated, Any, Iterator, Literal, Mapping, Optional, Self
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Iterator,
+    Literal,
+    Mapping,
+    Optional,
+    Self,
+)
 
 import numpy as np
 from picamera2 import Picamera2
@@ -49,6 +58,9 @@ from openflexure_microscope_server.ui import (
 from . import BaseCamera
 from . import picamera_recalibrate_utils as recalibrate_utils
 from . import picamera_tuning_file_utils as tf_utils
+
+if TYPE_CHECKING:
+    from libcamera import Request
 
 LOGGER = logging.getLogger(__name__)
 
@@ -123,6 +135,8 @@ class StreamingPiCamera2(BaseCamera):
     generalisation.
     """
 
+    _focus_fom: int
+    supports_focus_fom: bool = True
     tuning: dict = lt.setting(default_factory=dict, readonly=True)
     """The Raspberry PiCamera Tuning File JSON."""
 
@@ -366,6 +380,9 @@ class StreamingPiCamera2(BaseCamera):
             if self._picamera is None:
                 # Type narrow (error if failure)
                 raise RuntimeError("Failed to start Picamera")
+
+            self._picamera.pre_callback = self._on_frame_complete
+
             if check_sensor_model:
                 hw_sensor_model = self._picamera.camera_properties["Model"]
                 if hw_sensor_model != self._sensor_info.sensor_model:
@@ -373,6 +390,17 @@ class StreamingPiCamera2(BaseCamera):
                         f"Wrong Picamera model. Expecting {self._sensor_info.sensor_model}, "
                         f"but found {hw_sensor_model}."
                     )
+
+    @property
+    def focus_fom(self) -> int:
+        """Return the focus figure of merit."""
+        return self._focus_fom
+
+    def _on_frame_complete(self, request: Request) -> None:
+        md = request.get_metadata()
+        fom = md.get("FocusFoM")
+        if fom is not None:
+            self._focus_fom = fom
 
     def __enter__(self) -> Self:
         """Start streaming when the Thing context manager is opened.

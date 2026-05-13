@@ -23,7 +23,7 @@ skip = node_modules,
 
 # Ignores split by |
 # Ignore hexadecimal numbers preceded by #
-# Ignore FoV
-ignore-regex = #[0-9A-Fa-f]{3,8}\b|\bFoV\b
+# Ignore FoV and FoM
+ignore-regex = #[0-9A-Fa-f]{3,8}\b|FoV|FoM
 
 regex = [A-Z]?[a-z\']+

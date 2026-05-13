@@ -19,3 +19,5 @@ skip = node_modules,
        report.xml
 
 regex = [a-zA-Z0-9\-'’]+
+ignore-words-list = fom
+

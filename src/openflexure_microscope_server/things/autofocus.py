@@ -34,10 +34,16 @@ class NotStreamingError(RuntimeError):
     """No images captured from stream. The camera is almost certainly not streaming."""
 
 
-class SharpnessMethod(enum.Enum):
-    """The possible SharpnessMethods for autofocus."""
+class SharpnessMethod(enum.IntFlag):
+    """The possible SharpnessMethods for autofocus.
 
-    JPEG = enum.auto()
+    Use powers of two for the methods so they can be selected bitwise. This allows choosing what to record
+    as the sum of methods.
+    """
+
+    JPEG = 1
+    FOCUS_FOM = 2
+    # Next method should be 4 not 3 for bitwise selection.
 
 
 class AutofocusParams(BaseModel):
@@ -235,8 +241,9 @@ class SharpnessDataArrays(BaseModel):
 
     jpeg_times: NDArray
     jpeg_sizes: NDArray
+    focus_foms: NDArray
     stage_times: NDArray
-    stage_positions: list[dict[str, int]]
+    stage_positions: list[Mapping[str, int]]
 
 
 class JPEGSharpnessMonitor:
@@ -253,24 +260,55 @@ class JPEGSharpnessMonitor:
 
     """
 
-    def __init__(self, stage: BaseStage, camera: BaseCamera) -> None:
+    def __init__(
+        self,
+        stage: BaseStage,
+        camera: BaseCamera,
+        method: SharpnessMethod = SharpnessMethod.JPEG,
+        record: Optional[int] = None,
+    ) -> None:
         """Initialise a new JPEGSharpnessMonitor. The args are injected automatically.
 
         :param stage: A direct_thing_client dependency for the the microscope stage.
         :param camera: A raw_thing_client depeendency for the camera. This is a raw
-            dependency as the underlying class needs to be
+            dependency as required by the underlying class.
+        :param method: The sharpness metric used when evaluating autofocus.
+        :param record: Bitmask of sharpness metrics to record while monitoring.
+            If ``None``, only the metric specified by ``method`` is recorded.
+
+        :raises ValueError: If ``method`` is not included in ``record``.
+        :raises ValueError: If ``SharpnessMethod.FOCUS_FOM`` is requested but
+            the camera does not support FocusFoM measurements.
         """
         self.camera = camera
         self.stage = stage
+        self.method = method
+        self.record = method if record is None else record
+
+        if not self.method & self.record:
+            raise ValueError(
+                f"The sharpness metric {self.record} is not being recorded."
+            )
+
+        if self.record & SharpnessMethod.FOCUS_FOM and not camera.supports_focus_fom:
+            raise ValueError(
+                "Cannot record focus FOM as this camera doesn't support it."
+            )
         LOGGER.debug(f"Created sharpness monitor with {stage}, {camera}")
         self._stage_positions: list[Mapping[str, int]] = []
         self._stage_times: list[float] = []
         self._jpeg_times: list[float] = []
         self._jpeg_sizes: list[int] = []
+        self._focus_foms: list[float] = []
 
     @property
     def stage_positions(self) -> Sequence[Mapping[str, int]]:
-        """The positions recorded for the stage."""
+        """The positions recorded for the stage.
+
+        :raises ValueError: If stage position recording is not enabled.
+        """
+        if not self._stage_positions:
+            raise ValueError("Stage positions have not been recorded yet.")
         return self._stage_positions
 
     @property
@@ -285,17 +323,40 @@ class JPEGSharpnessMonitor:
 
     @property
     def jpeg_sizes(self) -> Sequence[int]:
-        """The recorded JPEG frame sizes used as a sharpness metric."""
+        """The recorded JPEG frame sizes used as a sharpness metric.
+
+        :raises ValueError: If JPEG sharpness recording is not enabled.
+        """
+        if not self.record & SharpnessMethod.JPEG:
+            raise ValueError("JPEG sizes are not being recorded.")
         return self._jpeg_sizes
+
+    @property
+    def focus_foms(self) -> Sequence[float]:
+        """The recorded FocusFoM values.
+
+        :raises ValueError: If FocusFoM recording is not enabled.
+        """
+        if not self.record & SharpnessMethod.FOCUS_FOM:
+            raise ValueError("FocusFoM values are not being recorded.")
+        return self._focus_foms
 
     running = False
 
     async def monitor_sharpness(self) -> None:
-        """Start monitoring the frame sizes."""
+        """Start monitoring sharpness metrics."""
         self.running = True
         async for frame in self.camera.lores_mjpeg_stream.frame_async_generator():
             self._jpeg_times.append(time.time())
-            self._jpeg_sizes.append(len(frame))
+
+            # JPEG sharpness metric
+            if self.record & SharpnessMethod.JPEG:
+                self._jpeg_sizes.append(len(frame))
+
+            # FocusFoM metric
+            if self.record & SharpnessMethod.FOCUS_FOM:
+                self._focus_foms.append(self.camera.focus_fom)
+
             if not self.running:
                 break
 
@@ -352,7 +413,12 @@ class JPEGSharpnessMonitor:
         if istop is None:
             istop = istart + 2
         jpeg_times: np.ndarray = np.array(self.jpeg_times)
-        jpeg_sizes: np.ndarray = np.array(self.jpeg_sizes)
+        # Two sharpness metrics are measured - this chooses which to use to focus
+        if self.method == SharpnessMethod.JPEG:
+            sharpnesses = np.array(self.jpeg_sizes)
+        elif self.method == SharpnessMethod.FOCUS_FOM:
+            sharpnesses = np.array(self.focus_foms)
+
         stage_times: np.ndarray = np.array(self.stage_times)[istart:istop]
         stage_heights: np.ndarray = np.array(
             [p["z"] for p in self.stage_positions[istart:istop]]
@@ -373,7 +439,7 @@ class JPEGSharpnessMonitor:
             LOGGER.debug("changing stop to %s", (stop))
         jpeg_times = jpeg_times[start:stop]
         jpeg_heights: np.ndarray = np.interp(jpeg_times, stage_times, stage_heights)
-        return jpeg_times, jpeg_heights, jpeg_sizes[start:stop]
+        return jpeg_times, jpeg_heights, sharpnesses[start:stop]
 
     def sharpest_z_on_move(self, data_index: int) -> int:
         """Return the z position of the sharpest image on a given move."""
@@ -387,10 +453,21 @@ class JPEGSharpnessMonitor:
 
     def data_to_array(self) -> SharpnessDataArrays:
         """Return the gathered data as SharpnessDataArrays."""
-        data = {}
-        for k in ["jpeg_times", "jpeg_sizes", "stage_times", "stage_positions"]:
-            data[k] = getattr(self, k)
-        return SharpnessDataArrays(**data)
+        return SharpnessDataArrays(
+            jpeg_times=np.array(self._jpeg_times),
+            jpeg_sizes=(
+                np.array(self._jpeg_sizes)
+                if self.record & SharpnessMethod.JPEG
+                else np.array([])
+            ),
+            focus_foms=(
+                np.array(self._focus_foms)
+                if self.record & SharpnessMethod.FOCUS_FOM
+                else np.array([])
+            ),
+            stage_times=np.array(self._stage_times),
+            stage_positions=self._stage_positions,
+        )
 
     def data_dict(self) -> dict:
         """Return the gathered data as dict."""
@@ -414,14 +491,34 @@ class AutofocusThing(lt.Thing):
         self,
         dz: int = 2000,
         start: Literal["centre", "base"] = "centre",
+        sharpness_metric: SharpnessMethod = SharpnessMethod.JPEG,
+        record: Optional[int] = None,
     ) -> SharpnessDataArrays:
         """Sweep the stage up and down, then move to the sharpest point.
 
-        This method will will move down by dz/2, sweep up by dz, and then evaluate
-        the position where the image was sharpest. We'll then move back down, and
-        finally up to the sharpest point.
+        This method will move down by dz/2, sweep up by dz, and then evaluate
+        the position where the image was sharpest. We'll then move back down,
+        and finally up to the sharpest point.
+
+        :param dz: Total z-range (in steps) used for the autofocus sweep.
+        :param start: Starting position of the sweep. "centre" begins at -dz/2,
+            while "base" begins from the current position.
+        :param sharpness_metric: Sharpness metric used for evaluation. Either
+            JPEG file size (1) or inbuilt figure of metric (2).
+        :param record: Optional bitmask of sharpness metrics to record during
+            acquisition. Sharpness metrics can be selected as the sum of their int
+            value (see sharpness_metric).
+            If None, defaults to recording only the selected sharpness_metric.
+
+        :returns: SharpnessDataArrays containing all recorded sharpness and
+            stage position data for the sweep.
         """
-        with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
+        with JPEGSharpnessMonitor(
+            self._stage,
+            self._cam,
+            sharpness_metric,
+            record=record,
+        ) as sharpness_monitor:
             # Move to (-dz / 2)
             if start == "centre":
                 sharpness_monitor.focus_rel(-dz // 2)
@@ -444,20 +541,30 @@ class AutofocusThing(lt.Thing):
         self,
         dz: Sequence[int],
         wait: float = 0,
+        sharpness_metric: SharpnessMethod = SharpnessMethod.JPEG,
+        record: Optional[int] = None,
     ) -> SharpnessDataArrays:
         """Make a move (or a series of moves) and monitor sharpness.
 
         This method will will make a series of relative moves in z, and
-        return the sharpness (JPEG size) vs time, along with timestamps
+        return the sharpness (JPEG size and/or FOM) vs time, along with timestamps
         for the moves. This can be used to calibrate autofocus.
 
         Each move is relative to the last one, i.e. we will finish at
         ``sum(dz)`` relative to the starting position.
 
-        If ``wait`` is specified, we will wait for that many seconds
-        between moves.
+        :param dz: A list of moves to make in z (in steps).
+        :param wait: The time to pause between movements, in seconds.
+        :param sharpness_metric: Sharpness metric used for evaluation. Either
+            JPEG file size (1) or inbuilt figure of metric (2).
+        :param record: Optional bitmask of sharpness metrics to record during
+            acquisition. Sharpness metrics can be selected as the sum of their int
+            value (see sharpness_metric).
+            If None, defaults to recording only the selected sharpness_metric.
         """
-        with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
+        with JPEGSharpnessMonitor(
+            self._stage, self._cam, sharpness_metric, record
+        ) as sharpness_monitor:
             for move_index, current_dz in enumerate(dz):
                 if move_index > 0 and wait > 0:
                     time.sleep(wait)
@@ -469,6 +576,8 @@ class AutofocusThing(lt.Thing):
         self,
         dz: int = 2000,
         start: Literal["centre", "base"] = "centre",
+        sharpness_metric: SharpnessMethod = SharpnessMethod.JPEG,
+        record: Optional[int] = None,
     ) -> tuple[list[float], list[float]]:
         """Repeatedly autofocus the stage until it looks focused.
 
@@ -476,10 +585,28 @@ class AutofocusThing(lt.Thing):
         in the middle 3/5 of its range. Such logic can be helpful if the microscope
         is close to focus, but not quite within ``dz/2``. It will attempt to autofocus
         up to 10 times.
+
+        :param dz: Total z-range (in steps) used for the autofocus sweep.
+        :param start: Starting position of the sweep. "centre" begins at -dz/2,
+            while "base" begins from the current position.
+        :param sharpness_metric: Sharpness metric used for evaluation. Either
+            JPEG file size (1) or inbuilt figure of metric (2).
+        :param record: Optional bitmask of sharpness metrics to record during
+            acquisition. Sharpness metrics can be selected as the sum of their int
+            value (see sharpness_metric).
+            If None, defaults to recording only the selected sharpness_metric.
+
+        :returns: SharpnessDataArrays containing all recorded sharpness and
+            stage position data for the sweep.
         """
         attempt = 0
 
-        with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
+        with JPEGSharpnessMonitor(
+            self._stage,
+            self._cam,
+            sharpness_metric,
+            record=record,
+        ) as sharpness_monitor:
             while attempt < 10:
                 attempt += 1
                 if start == "centre":
@@ -496,9 +623,11 @@ class AutofocusThing(lt.Thing):
                 focus_data_index, _ = sharpness_monitor.focus_rel(
                     dz, block_cancellation=True
                 )
-                _times, heights, sizes = sharpness_monitor.move_data(focus_data_index)
+                _times, heights, sharpnesses = sharpness_monitor.move_data(
+                    focus_data_index
+                )
 
-                peak_height = heights[np.argmax(sizes)]
+                peak_height = heights[np.argmax(sharpnesses)]
                 target_min = np.min(heights) + dz / 5
                 target_max = np.max(heights) - dz / 5
 
@@ -510,7 +639,7 @@ class AutofocusThing(lt.Thing):
 
                 if target_min < peak_height < target_max:
                     # If it is within the target range then return
-                    return heights.tolist(), sizes.tolist()
+                    return heights.tolist(), sharpnesses.tolist()
         raise NoFocusFoundError(
             "Looping autofocus couldn't converge on a focus location."
         )
