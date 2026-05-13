@@ -536,20 +536,30 @@ class AutofocusThing(lt.Thing):
         self,
         dz: Sequence[int],
         wait: float = 0,
+        sharpness_metric: SharpnessMethod = SharpnessMethod.JPEG,
+        record: Optional[int] = None,
     ) -> SharpnessDataArrays:
         """Make a move (or a series of moves) and monitor sharpness.
 
         This method will will make a series of relative moves in z, and
-        return the sharpness (JPEG size and FOM) vs time, along with timestamps
+        return the sharpness (JPEG size and/or FOM) vs time, along with timestamps
         for the moves. This can be used to calibrate autofocus.
 
         Each move is relative to the last one, i.e. we will finish at
         ``sum(dz)`` relative to the starting position.
 
-        If ``wait`` is specified, we will wait for that many seconds
-        between moves.
+        :param dz: A list of moves to make in z (in steps).
+        :param wait: The time to pause between movements, in seconds.
+        :param sharpness_metric: Sharpness metric used for evaluation. Either
+            JPEG file size (1) or inbuilt figure of metric (2).
+        :param record: Optional bitmask of sharpness metrics to record during
+            acquisition. Sharpness metrics can be selected as the sum of their int
+            value (see sharpness_metric).
+            If None, defaults to recording only the selected sharpness_metric.
         """
-        with JPEGSharpnessMonitor(self._stage, self._cam) as sharpness_monitor:
+        with JPEGSharpnessMonitor(
+            self._stage, self._cam, sharpness_metric, record
+        ) as sharpness_monitor:
             for move_index, current_dz in enumerate(dz):
                 if move_index > 0 and wait > 0:
                     time.sleep(wait)
