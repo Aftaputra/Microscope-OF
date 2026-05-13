@@ -243,7 +243,7 @@ class SharpnessDataArrays(BaseModel):
     jpeg_sizes: NDArray
     focus_foms: NDArray
     stage_times: NDArray
-    stage_positions: list[dict[str, int]]
+    stage_positions: list[Mapping[str, int]]
 
 
 class JPEGSharpnessMonitor:
@@ -453,20 +453,21 @@ class JPEGSharpnessMonitor:
 
     def data_to_array(self) -> SharpnessDataArrays:
         """Return the gathered data as SharpnessDataArrays."""
-        data = {}
-
-        data["jpeg_times"] = self._jpeg_times
-        data["stage_times"] = self._stage_times
-        data["stage_positions"] = self._stage_positions
-
-        if self.record & SharpnessMethod.JPEG:
-            data["jpeg_sizes"] = self._jpeg_sizes
-
-        if self.record & SharpnessMethod.FOCUS_FOM:
-            data["focus_foms"] = self._focus_foms
-        else:
-            data["focus_foms"] = []
-        return SharpnessDataArrays(**data)
+        return SharpnessDataArrays(
+            jpeg_times=np.array(self._jpeg_times),
+            jpeg_sizes=(
+                np.array(self._jpeg_sizes)
+                if self.record & SharpnessMethod.JPEG
+                else np.array([])
+            ),
+            focus_foms=(
+                np.array(self._focus_foms)
+                if self.record & SharpnessMethod.FOCUS_FOM
+                else np.array([])
+            ),
+            stage_times=np.array(self._stage_times),
+            stage_positions=self._stage_positions,
+        )
 
     def data_dict(self) -> dict:
         """Return the gathered data as dict."""
