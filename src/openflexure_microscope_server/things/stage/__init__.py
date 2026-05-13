@@ -147,7 +147,7 @@ class BaseStage(lt.Thing):
         return self._apply_axis_direction(self._hardware_position)
 
     backlash_steps: dict[str, int] = lt.setting(
-        default={"x": 200, "y": 200, "z": 200}, readonly=True
+        default_factory=lambda: {"x": 200, "y": 200, "z": 200}, readonly=True
     )
     """The number of steps to elimate backlash. The sign sets the direction.
 
@@ -161,7 +161,7 @@ class BaseStage(lt.Thing):
     """Whether the stage is in motion."""
 
     axis_inverted: dict[str, bool] = lt.setting(
-        default={"x": False, "y": False, "z": False}, readonly=True
+        default_factory=lambda: {"x": False, "y": False, "z": False}, readonly=True
     )
     """Used to convert coordinates between the program frame and the hardware frame."""
 
