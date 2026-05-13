@@ -268,67 +268,86 @@ class BaseCamera(OFMThing):
             self.lores_mjpeg_stream._streaming = False
 
     async def _monitor_framerate(
-        self, duration: float, output_dir: str, sample_interval: float = 0.1
-    ) -> None:
+        self,
+        duration: float,
+        sample_interval: float = 0.1,
+    ) -> tuple[float, int, list[dict[str, float | int]]]:
+        """Asynchronously monitor the timing on incoming frames."""
+        start_time = time.time()
+        last_sample_time = start_time
+        last_sample_frames = 0
+
+        frames = 0
+        samples = []
+
+        async for frame in self.mjpeg_stream.frame_async_generator():
+            if not self._framerate_monitor_running:
+                break
+
+            now = time.time()
+            frames += 1
+
+            if now - last_sample_time >= sample_interval:
+                interval = now - last_sample_time
+                fps = (frames - last_sample_frames) / interval
+
+                samples.append(
+                    {
+                        "timestamp": now,
+                        "frame_count": frames,
+                        "frame_size_bytes": len(frame),
+                        "instant_fps": fps,
+                    }
+                )
+
+                last_sample_time = now
+                last_sample_frames = frames
+
+            if now - start_time >= duration:
+                break
+
+        total_time = time.time() - start_time
+
+        return total_time, frames, samples
+
+    @lt.action
+    def record_framerate(
+        self,
+        duration: float = 5.0,
+    ) -> str:
+        """Record MJPEG stream framerate statistics."""
+        output_dir = os.path.join(
+            self.data_dir,
+            "characterisation",
+            "framerate",
+        )
+        os.makedirs(output_dir, exist_ok=True)
+
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        log_path = os.path.join(
+            output_dir,
+            f"framerate_{timestamp}.json",
+        )
+
+        self.logger.info(
+            "Framerate monitor started -> %s",
+            log_path,
+        )
+
+        self._framerate_monitor_running = True
+
+        # This runs as an async task, which we wait to complete
         try:
-            os.makedirs(output_dir, exist_ok=True)
-
-            timestamp = time.strftime("%Y%m%d_%H%M%S")
-            log_path = os.path.join(output_dir, f"framerate_{timestamp}.json")
-
-            start_time = time.time()
-            last_sample_time = start_time
-            last_sample_frames = 0
-
-            frames = 0
-            samples = []
-
-            self._framerate_monitor_running = True
-
-            self.logger.info("Framerate monitor started -> %s", log_path)
-
-            async for frame in self.mjpeg_stream.frame_async_generator():
-                if not self._framerate_monitor_running:
-                    break
-
-                now = time.time()
-                frames += 1
-
-                # take data every sample_interval seconds
-                if now - last_sample_time >= sample_interval:
-                    interval = now - last_sample_time
-                    fps = (frames - last_sample_frames) / interval
-
-                    samples.append((now, frames, len(frame), fps))
-
-                    last_sample_time = now
-                    last_sample_frames = frames
-
-                if now - start_time >= duration:
-                    break
-
-            # write to disk outside of async
-            await asyncio.to_thread(
-                self._write_framerate_json, log_path, samples, start_time, frames
+            total_time, frames, samples = (
+                self._thing_server_interface.call_async_task(
+                    self._monitor_framerate,
+                    duration,
+                )
             )
-
-            self.logger.info("Framerate monitor complete")
-
-        except Exception:
-            self.logger.exception("Framerate monitor crashed")
 
         finally:
             self._framerate_monitor_running = False
 
-    def _write_framerate_json(
-        self,
-        log_path: str,
-        samples: list[tuple[float, int, int, float]],
-        start_time: float,
-        frames: int,
-    ) -> None:
-        """Write framerate monitoring results to a JSON file."""
-        total_time = time.time() - start_time
         avg_fps = frames / total_time if total_time > 0 else 0
 
         data = {
@@ -337,49 +356,18 @@ class BaseCamera(OFMThing):
                 "total_frames": frames,
                 "avg_fps": avg_fps,
             },
-            "samples": [
-                {
-                    "timestamp": s[0],
-                    "frame_count": s[1],
-                    "frame_size_bytes": s[2],
-                    "instant_fps": s[3],
-                }
-                for s in samples
-            ],
+            "samples": samples,
         }
 
         with open(log_path, "w") as f:
             json.dump(data, f, indent=2)
 
-    @lt.action
-    def record_framerate_async(
-        self,
-        duration: float = 5.0,
-    ) -> str:
-        """Start asynchronous MJPEG framerate monitoring.
-
-        The monitor observes frames delivered through ``self.mjpeg_stream`` rather
-        than directly querying the camera hardware. This makes it suitable for
-        measuring effective stream throughput under real operating conditions.
-
-        :param duration: Monitoring duration in seconds. Default = 5.0s.
-
-        :returns: The output directory containing generated log files.
-        """
-        output_dir = os.path.join(self.data_dir, "characterisation", "framerate")
-        self._thing_server_interface.start_async_task_soon(
-            self._monitor_framerate,
-            duration,
-            output_dir,
-        )
-
         self.logger.info(
-            "Started async framerate monitor for %.2fs -> %s",
-            duration,
-            output_dir,
+            "Framerate monitor complete -> %s",
+            log_path,
         )
 
-        return output_dir
+        return log_path
 
     @lt.property
     def stream_active(self) -> bool:
