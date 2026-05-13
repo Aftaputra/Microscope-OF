@@ -454,14 +454,18 @@ class JPEGSharpnessMonitor:
     def data_to_array(self) -> SharpnessDataArrays:
         """Return the gathered data as SharpnessDataArrays."""
         data = {}
-        for k in [
-            "jpeg_times",
-            "jpeg_sizes",
-            "stage_times",
-            "focus_foms",
-            "stage_positions",
-        ]:
-            data[k] = getattr(self, k)
+
+        data["jpeg_times"] = self._jpeg_times
+        data["stage_times"] = self._stage_times
+        data["stage_positions"] = self._stage_positions
+
+        if self.record & SharpnessMethod.JPEG:
+            data["jpeg_sizes"] = self._jpeg_sizes
+
+        if self.record & SharpnessMethod.FOCUS_FOM:
+            data["focus_foms"] = self._focus_foms
+        else:
+            data["focus_foms"] = []
         return SharpnessDataArrays(**data)
 
     def data_dict(self) -> dict:
