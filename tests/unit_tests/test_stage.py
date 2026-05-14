@@ -2,7 +2,6 @@
 
 import itertools
 import logging
-import tempfile
 import threading
 import time
 from dataclasses import dataclass
@@ -177,8 +176,7 @@ def test_direction_inversion(dummy_stage):
 def test_direction_errors_local_and_http():
     """Check for expected errors both locally and over http."""
     thing_conf = {"camera": SimulatedCamera, "stage": DummyStage}
-    app_config = {"data_folder": tempfile.gettempdir()}
-    with LabThingsTestEnv(things=thing_conf, application_config=app_config) as test_env:
+    with LabThingsTestEnv(things=thing_conf) as test_env:
         dummy_stage = test_env.get_thing_by_type(DummyStage)
         stage_client = test_env.get_thing_client("stage")
 

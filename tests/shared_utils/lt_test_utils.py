@@ -48,7 +48,11 @@ class LabThingsTestEnv:
         self._test_client: Optional[TestClient]
         self._things_config = things
         self._settings_folder = settings_folder
-        self._application_config = application_config
+        # Labthings requires an application config for the data_folder
+        if application_config:
+            self._application_config = application_config
+        else:
+            self._application_config = {"data_folder": tempfile.TemporaryDirectory()}
         self._tmp_dir_obj: Optional[tempfile.TemporaryDirectory] = None
 
     def __enter__(self) -> Self:

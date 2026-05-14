@@ -323,14 +323,14 @@ class BaseCamera(OFMThing):
         os.makedirs(output_dir, exist_ok=True)
 
         timestamp = time.strftime("%Y%m%d_%H%M%S")
-        log_path = os.path.join(
+        datafile_path = os.path.join(
             output_dir,
             f"framerate_{timestamp}.json",
         )
 
         self.logger.info(
             "Framerate monitor started -> %s",
-            log_path,
+            datafile_path,
         )
 
         self._framerate_monitor_running = True
@@ -363,15 +363,15 @@ class BaseCamera(OFMThing):
             avg_fps,
         )
 
-        with open(log_path, "w") as f:
+        with open(datafile_path, "w") as f:
             json.dump(data, f, indent=2)
 
         self.logger.info(
             "Framerate monitor complete -> %s",
-            log_path,
+            datafile_path,
         )
 
-        return log_path
+        return datafile_path
 
     @lt.property
     def stream_active(self) -> bool:

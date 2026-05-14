@@ -167,7 +167,6 @@ class StreamingPiCamera2(BaseCamera):
         self._sensor_info = SUPPORTED_CAMS_SENSOR_INFO[camera_board]
         self._picamera_lock = RLock()
         self._picamera = None
-        self._framerate_monitor_running = False
 
         # Load the tuning file for the specified sensor mode.
         self.default_tuning = tf_utils.load_default_tuning(

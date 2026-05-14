@@ -1,7 +1,6 @@
 """Test the functionality specific to the simulated camera."""
 
 import logging
-import tempfile
 import time
 
 import numpy as np
@@ -29,9 +28,7 @@ def test_env() -> LabThingsTestEnv:
         "bg_channel_deviations_luv": ChannelDeviationLUV,
     }
 
-    app_config = {"data_folder": tempfile.gettempdir()}
-
-    with LabThingsTestEnv(things=thing_conf, application_config=app_config) as env:
+    with LabThingsTestEnv(things=thing_conf) as env:
         yield env
 
 

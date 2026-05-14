@@ -5,8 +5,6 @@ test_simulated_camera.py and for testing the consistency of camera APIs see
 test_cameras.py.
 """
 
-import tempfile
-
 import numpy as np
 import pytest
 from PIL import Image
@@ -21,8 +19,7 @@ from ..shared_utils.lt_test_utils import LabThingsTestEnv
 def test_env() -> LabThingsTestEnv:
     """Yield a test environment with the Simulated Camera and Dummy Stage."""
     thing_conf = {"camera": SimulatedCamera, "stage": DummyStage}
-    app_config = {"data_folder": tempfile.gettempdir()}
-    with LabThingsTestEnv(things=thing_conf, application_config=app_config) as env:
+    with LabThingsTestEnv(things=thing_conf) as env:
         yield env
 
 

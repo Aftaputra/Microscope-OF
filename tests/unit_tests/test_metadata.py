@@ -1,7 +1,6 @@
 """Tests that captures have the expected metadata."""
 
 import json
-import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -100,8 +99,7 @@ def test_env() -> LabThingsTestEnv:
         "stage": DummyStage,
         "bg_channel_deviations_luv": ChannelDeviationLUV,
     }
-    app_config = {"data_folder": tempfile.gettempdir()}
-    with LabThingsTestEnv(things=thing_conf, application_config=app_config) as env:
+    with LabThingsTestEnv(things=thing_conf) as env:
         yield env
 
 
