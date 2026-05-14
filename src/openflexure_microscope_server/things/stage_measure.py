@@ -19,7 +19,7 @@ import time
 from copy import copy
 from datetime import datetime
 from threading import Lock
-from typing import Any, Literal, Mapping, Optional, Self, overload
+from typing import Any, Literal, Mapping, Optional, overload
 
 import numpy as np
 
@@ -133,25 +133,12 @@ class RangeofMotionThing(OFMThing):
         default=None, readonly=True
     )
 
-    csm_matrix: Optional[list[list[float]]] = lt.setting(default=None, readonly=True)
-
-    stage_coords: Optional[Any] = lt.setting(default=None, readonly=True)
-
-    correlations: Optional[Any] = lt.setting(default=None, readonly=True)
-
-    time: Optional[float] = lt.setting(default=None, readonly=True)
-
     def __init__(self, thing_server_interface: lt.ThingServerInterface) -> None:
         """Initialise and create the lock."""
         super().__init__(thing_server_interface)
         self._lock = Lock()
         self._stream_resolution: Optional[tuple[int, int]] = None
         self._rom_data = RomDataTracker()
-
-    def __enter__(self) -> Self:
-        """Open hardware connection when the Thing context manager is opened."""
-        super().__enter__()
-        return self
 
     @lt.action
     def perform_rom_test(self) -> Mapping[str, Any]:
@@ -204,20 +191,19 @@ class RangeofMotionThing(OFMThing):
             )
             data = {
                 "calibrated_range": [step_range[0], step_range[1]],
-                "stage_coords": self.stage_coords,
-                "correlations": self.correlations,
+                "stage_coords": stage_dic,
+                "correlations": cor_dic,
                 "csm_matrix": self._csm.image_to_stage_displacement_matrix,
-                "time": self.time,
+                "time": total_time,
             }
 
             if not os.path.exists(self.data_dir):
                 os.makedirs(self.data_dir)
 
+            timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M")
+            datafile_path = os.path.join(self.data_dir, f"rom_data_{timestamp}.json")
             with open(
-                os.path.join(
-                    self.data_dir,
-                    f"rom_data_{datetime.now().strftime('%Y_%m_%d_%H_%M')}.json",
-                ),
+                datafile_path,
                 "w",
                 encoding="utf-8",
             ) as f:
