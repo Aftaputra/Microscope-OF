@@ -16,11 +16,7 @@ describe("LoggingContent.vue", () => {
   let wrapper;
 
   // A sample log string matching backend's format
-  const mockLogData = `[2023-10-27T10:00:00.000Z] [INFO] System started successfully
-[2023-10-27T10:01:00.000Z] [WARNING] Temperature is rising
-[2023-10-27T10:02:00.000Z] [ERROR] Traceback (most recent call last):
-  File "main.py", line 10, in <module>
-    connect()`;
+  const mockLogData = `[2026-05-14 08:46:12,808] [INFO] OFM server root logger has been set up at INFO level`;
 
   beforeEach(() => {
     // Reset mocks before each test
@@ -36,7 +32,7 @@ describe("LoggingContent.vue", () => {
           createTestingPinia({
             createSpy: vi.fn,
             initialState: {
-              settings: { baseUri: "http://localhost:3000/api/v3" },
+              settings: { origin: "http://microscope.local:5000/api/v3" },
             },
           }),
         ],
@@ -57,30 +53,30 @@ describe("LoggingContent.vue", () => {
     await wrapper.vm.updateLogs();
 
     // Verify Axios was called with the correct URI from the Pinia store
-    expect(axios.get).toHaveBeenCalledWith("http://localhost:3000/api/v3/log/");
+    expect(axios.get).toHaveBeenCalledWith("http://microscope.local:5000/api/v3/log/");
 
     // Verify the logs array was populated and reversed (newest first)
-    expect(wrapper.vm.logs.length).toBe(3);
+    expect(wrapper.vm.logs.length).toBe(1);
 
     // Check if the most recent log (ERROR) is first due to .reverse()
-    expect(wrapper.vm.logs[0].level).toBe("ERROR");
+    expect(wrapper.vm.logs[0].level).toBe("INFO");
 
     // Check if the multi-line traceback was appended correctly to the ERROR log
-    expect(wrapper.vm.logs[0].message).toContain("Traceback");
-    expect(wrapper.vm.logs[0].summary).toContain("connect()");
+    expect(wrapper.vm.logs[0].message).toContain("OFM");
+    expect(wrapper.vm.logs[0].summary).toContain("server");
   });
 
   it("filters logs based on the selected level", async () => {
     await wrapper.vm.updateLogs();
 
     // Set filter to ERROR (should only show ERROR and CRITICAL)
-    wrapper.vm.filterLevel = "ERROR";
+    wrapper.vm.filterLevel = "INFO";
 
     // wait for Vue reactivity to update computed properties
     await wrapper.vm.$nextTick();
 
     // Only the 1 ERROR log should remain in filteredItems
     expect(wrapper.vm.filteredItems.length).toBe(1);
-    expect(wrapper.vm.filteredItems[0].level).toBe("ERROR");
+    expect(wrapper.vm.filteredItems[0].level).toBe("INFO");
   });
 });
