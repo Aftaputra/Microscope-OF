@@ -198,6 +198,8 @@ class BaseCamera(OFMThing):
 
     def __enter__(self) -> Self:
         """Open hardware connection when the Thing context manager is opened."""
+        super().__enter__()
+
         self._background_detector_name = coerce_thing_selector(
             thing_mapping=self._all_background_detectors,
             selected=self._background_detector_name,
@@ -263,6 +265,113 @@ class BaseCamera(OFMThing):
         if self.stream_active:
             self.mjpeg_stream._streaming = False
             self.lores_mjpeg_stream._streaming = False
+
+    async def _monitor_framerate(
+        self,
+        duration: float,
+        sample_interval: float = 0.1,
+    ) -> tuple[float, int, list[dict[str, float | int]]]:
+        """Asynchronously monitor the timing on incoming frames."""
+        start_time = time.time()
+        last_sample_time = start_time
+        last_sample_frames = 0
+
+        frames = 0
+        samples = []
+
+        async for frame in self.mjpeg_stream.frame_async_generator():
+            if not self._framerate_monitor_running:
+                break
+
+            now = time.time()
+            frames += 1
+
+            if now - last_sample_time >= sample_interval:
+                interval = now - last_sample_time
+                fps = (frames - last_sample_frames) / interval
+
+                samples.append(
+                    {
+                        "timestamp": now,
+                        "frame_count": frames,
+                        "frame_size_bytes": len(frame),
+                        "instant_fps": fps,
+                    }
+                )
+
+                last_sample_time = now
+                last_sample_frames = frames
+
+            if now - start_time >= duration:
+                break
+
+        total_time = time.time() - start_time
+
+        return total_time, frames, samples
+
+    @lt.action
+    def record_framerate(
+        self,
+        duration: float = 5.0,
+    ) -> str:
+        """Record MJPEG stream framerate statistics."""
+        output_dir = os.path.join(
+            self.data_dir,
+            "characterisation",
+            "framerate",
+        )
+        os.makedirs(output_dir, exist_ok=True)
+
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        datafile_path = os.path.join(
+            output_dir,
+            f"framerate_{timestamp}.json",
+        )
+
+        self.logger.info(
+            "Framerate monitor started -> %s",
+            datafile_path,
+        )
+
+        self._framerate_monitor_running = True
+
+        # This runs as an async task, which we wait to complete
+        try:
+            total_time, frames, samples = self._thing_server_interface.call_async_task(
+                self._monitor_framerate,
+                duration,
+            )
+
+        finally:
+            self._framerate_monitor_running = False
+
+        avg_fps = frames / total_time if total_time > 0 else 0
+
+        data = {
+            "summary": {
+                "total_duration": total_time,
+                "total_frames": frames,
+                "avg_fps": avg_fps,
+            },
+            "samples": samples,
+        }
+
+        self.logger.info(
+            ("Framerate monitor results: duration=%.2fs, frames=%d, avg_fps=%.2f"),
+            total_time,
+            frames,
+            avg_fps,
+        )
+
+        with open(datafile_path, "w") as f:
+            json.dump(data, f, indent=2)
+
+        self.logger.info(
+            "Framerate monitor complete -> %s",
+            datafile_path,
+        )
+
+        return datafile_path
 
     @lt.property
     def stream_active(self) -> bool:

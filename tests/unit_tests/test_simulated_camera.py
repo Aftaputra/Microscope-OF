@@ -27,6 +27,7 @@ def test_env() -> LabThingsTestEnv:
         "stage": DummyStage,
         "bg_channel_deviations_luv": ChannelDeviationLUV,
     }
+
     with LabThingsTestEnv(things=thing_conf) as env:
         yield env
 

@@ -42,20 +42,28 @@ class LabThingsTestEnv:
         as a context manager:
 
         :param things: The thing configuration dictionary used to initialise the server.
-        :param settings_folder: The settings folder to use.
+        :param settings_folder: The settings folder to use. If None a tempdir is created
+            for this.
+        :param application_config: The application configuration dictionary. If None is
+            supplied then "data_folder" is set to a temporary directory.
         """
         self._server: Optional[lt.ThingServer]
         self._test_client: Optional[TestClient]
         self._things_config = things
         self._settings_folder = settings_folder
         self._application_config = application_config
-        self._tmp_dir_obj: Optional[tempfile.TemporaryDirectory] = None
+        self._settings_tmp_dir: Optional[tempfile.TemporaryDirectory] = None
+        self._data_tmp_dir: Optional[tempfile.TemporaryDirectory] = None
 
     def __enter__(self) -> Self:
         """Create server and run it in the TestClient."""
+        # Any OFMThings require an application config for the data_folder
+        if self._application_config is None:
+            self._data_tmp_dir = tempfile.TemporaryDirectory()
+            self._application_config = {"data_folder": self._data_tmp_dir}
         if self._settings_folder is None:
-            self._tmp_dir_obj = tempfile.TemporaryDirectory()
-            self._settings_folder = self._tmp_dir_obj.name
+            self._settings_tmp_dir = tempfile.TemporaryDirectory()
+            self._settings_folder = self._settings_tmp_dir.name
         self._server = lt.ThingServer(
             things=self._things_config,
             settings_folder=self._settings_folder,
@@ -73,8 +81,10 @@ class LabThingsTestEnv:
     ) -> None:
         """Close the TestClient and cleanup."""
         self._test_client.__exit__(exc_type, exc_value, traceback)
-        if self._tmp_dir_obj is not None:
-            self._tmp_dir_obj.cleanup()
+        if self._settings_tmp_dir is not None:
+            self._settings_tmp_dir.cleanup()
+        if self._data_tmp_dir is not None:
+            self._data_tmp_dir.cleanup()
 
     @property
     def server(self) -> lt.ThingServer:
