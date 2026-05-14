@@ -20,6 +20,8 @@ To create a coverage report that will be included into the repository (and repor
 
     ./picamera_tests.py run
 
+This will run every hardware test, recording their success or failure. As these tests are slow to run, it may be useful to set it to exit on first failure. To do this, run the above command with ` -x` at the end.
+
 This will first run `pytest` on the hardware specific tests. This creates a `.coverage` database that can be used to analyse the code coverage of these tests. This will be copied to `.coverage.picamera`. The script will then create a zip of these test results along with hashes of source code for the Pi Camera:
 
 * `picamera.py`
