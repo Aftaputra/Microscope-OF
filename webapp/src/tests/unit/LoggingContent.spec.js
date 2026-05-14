@@ -1,4 +1,4 @@
-import { mount } from "@vue/test-utils";
+import { shallowMount, flushPromises } from "@vue/test-utils";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createTestingPinia } from "@pinia/testing";
 import axios from "axios";
@@ -9,7 +9,9 @@ vi.mock("axios");
 
 // Mock VueUse to prevent IntersectionObserver crashes in JSDOM
 vi.mock("@vueuse/core", () => ({
-  useIntersectionObserver: vi.fn(),
+  useIntersectionObserver: vi.fn(() => ({
+    stop: vi.fn(),
+  })),
 }));
 
 describe("LoggingContent.vue", () => {
@@ -18,7 +20,7 @@ describe("LoggingContent.vue", () => {
   // A sample log string matching backend's format
   const mockLogData = `[2026-05-14 08:46:12,808] [INFO] OFM server root logger has been set up at INFO level`;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Reset mocks before each test
     vi.clearAllMocks();
 
@@ -26,7 +28,8 @@ describe("LoggingContent.vue", () => {
     axios.get.mockResolvedValue({ data: mockLogData });
 
     // Mount the component with a fake Pinia store
-    wrapper = mount(LoggingContent, {
+    wrapper = shallowMount(LoggingContent, {
+      attachTo: document.body,
       global: {
         plugins: [
           createTestingPinia({
@@ -37,9 +40,15 @@ describe("LoggingContent.vue", () => {
           }),
         ],
         // Simplify child components
-        stubs: ["PaginateLinks", "EndpointButton"],
+        stubs: {
+            PaginateLinks: true,
+            EndpointButton: true,
+            transition: false,
+            teleport: true,
+          },
       },
     });
+    await flushPromises(); 
   });
 
   // Render check
@@ -51,6 +60,7 @@ describe("LoggingContent.vue", () => {
   it("fetches logs and parses them correctly when updateLogs is called", async () => {
     // Trigger the method
     await wrapper.vm.updateLogs();
+    await flushPromises();
 
     // Verify Axios was called with the correct URI from the Pinia store
     expect(axios.get).toHaveBeenCalledWith("http://microscope.local:5000/api/v3/log/");
