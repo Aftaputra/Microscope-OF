@@ -202,11 +202,7 @@ class RangeofMotionThing(OFMThing):
 
             timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M")
             datafile_path = os.path.join(self.data_dir, f"rom_data_{timestamp}.json")
-            with open(
-                datafile_path,
-                "w",
-                encoding="utf-8",
-            ) as f:
+            with open(datafile_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4)
 
         finally:
