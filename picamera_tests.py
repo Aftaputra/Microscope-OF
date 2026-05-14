@@ -115,6 +115,9 @@ def main() -> None:
         help="Run hardware-specific tests on the PiCamera",
     )
 
+    subparsers.add_parser(
+        "unzip", help="Unzip and verify coverage data on another machine"
+    )
     run_parser.add_argument(
         "-x",
         "--exitfirst",
