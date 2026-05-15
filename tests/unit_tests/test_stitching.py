@@ -325,3 +325,57 @@ def test_final_stitching_command_error(mocker):
     stitcher._extra_args = ["ERROR"]
     with pytest.raises(ChildProcessError):
         stitcher.run()
+
+
+def test_stitch_all_scans_continues_after_error(mocker, caplog, smart_scan_thing):
+    """Test stitching all continues after an error and logs as expected."""
+    scans = [
+        mocker.Mock(name="scan1", dzi=None),
+        mocker.Mock(name="scan2", dzi=None),
+        mocker.Mock(name="scan3", dzi=None),
+    ]
+    scans[0].name = "scan1"
+    scans[1].name = "scan2"
+    scans[2].name = "scan3"
+
+    mocker.patch.object(
+        smart_scan_thing,
+        "get_data_for_gallery",
+        return_value=scans,
+    )
+
+    # ensure scan data exists for all scans
+    scan_data = mocker.Mock()
+    scan_data.stitching_settings = StitchingSettings(
+        overlap=0.45,
+        correlation_resize=0.5,
+    )
+
+    with smart_scan_thing:
+        mocker.patch.object(
+            smart_scan_thing._scan_dir_manager,
+            "get_scan_data",
+            return_value=scan_data,
+        )
+
+    def run_side_effect(self):
+        if "scan2" in str(self.images_dir):
+            raise ChildProcessError("test_message")
+
+    mocker.patch(
+        "openflexure_microscope_server.stitching.FinalStitcher.run",
+        autospec=True,
+        side_effect=run_side_effect,
+    )
+
+    with caplog.at_level("INFO"):
+        smart_scan_thing.stitch_all_scans()
+
+    messages = [r.message for r in caplog.records]
+
+    assert messages == [
+        "Stitching scan1",
+        "Stitching scan2",
+        "Stitching failed: test_message",
+        "Stitching scan3",
+    ]
