@@ -15,7 +15,8 @@
     "lint": "eslint . --ignore-pattern .gitignore --max-warnings=0",
     "lint:fix": "eslint . --fix --ignore-pattern .gitignore",
     "lint:style": "stylelint \"src/**/*.{vue,less,css}\" --max-warnings=0",
-    "lint:style:fix": "stylelint \"src/**/*.{vue,less,css}\" --fix"
+    "lint:style:fix": "stylelint \"src/**/*.{vue,less,css}\" --fix",
+    "unitest": "vitest src/tests/unit/LoggingContent.spec.js --no-cache --mode test --detectAsyncLeaks --coverage --isolate --silent --changed --logHeapUsage"
   },
   "dependencies": {
     "@vueuse/core": "^14.1.0",

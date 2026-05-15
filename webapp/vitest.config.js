@@ -19,7 +19,30 @@ export default defineConfig({
   ],
 
   test: {
-    environment: "jsdom",
+    css: false,
+    pool: 'forks',
+    singleThread: true,
+
+    define: {
+      __VUE_PROD_DEVTOOLS__: false,
+    },
+
+    coverage: {
+      provider: 'v8',
+      clean: true,
+      cleanOnStart: true,
+    },
+
+    deps: {
+      optimizer: {
+        web: {
+          enabled: true,
+          include: ['@mui/material', 'lucide-react'], // Add your largest component dependencies here
+        },
+      },
+    },
+
+    environment: "happy-dom",
 
     globals: true,
 
