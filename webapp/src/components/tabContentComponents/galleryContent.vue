@@ -61,7 +61,7 @@
       </div>
     </div>
     <PaginateLinks
-      :total-pages="numberOfPages"
+      :total-pages="totalPages"
       :current-page="currentPage"
       @change-page="changePage"
     />
@@ -119,8 +119,7 @@ export default {
         return null;
       }
     },
-    // name changed as paginateLinks has the prop totalPages
-    numberOfPages() {
+    totalPages() {
       return Math.ceil((this.all_items?.length || 0) / this.itemsPerPage);
     },
     paginatedItems() {
@@ -220,6 +219,9 @@ export default {
       }
     },
     changePage(page) {
+      console.log(page);
+      console.log(this.currentPage);
+      console.log(this.totalPages);
       if (page >= 1 && page <= this.totalPages && this.currentPage != page) {
         this.$emit("scrollTop");
         this.currentPage = page;
