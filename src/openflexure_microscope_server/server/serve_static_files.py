@@ -74,7 +74,7 @@ def add_static_files(server: lt.ThingServer, data_folder: str) -> None:
     if not os.path.isdir(data_folder):
         os.makedirs(data_folder)
     app.mount(
-        server._api_prefix.rstrip("/") + "/data/",
+        server.api_prefix.rstrip("/") + "/data/",
         StaticFiles(directory=data_folder),
         name="data",
     )

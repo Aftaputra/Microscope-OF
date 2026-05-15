@@ -63,7 +63,7 @@ def test_customise_server(mocker):
     mocked_retrieve_log = mocker.patch.object(ofm_server, "retrieve_log")
     mocked_retrieve_log_file = mocker.patch.object(ofm_server, "retrieve_log_from_file")
 
-    mock_server._api_prefix = "/api/v3/"
+    mock_server.api_prefix = "/api/v3/"
     mock_app = mock_server.app
     # The wrapper returned for app.get so we can see what functions are decorated.
     wrapper = mock_app.get.return_value
