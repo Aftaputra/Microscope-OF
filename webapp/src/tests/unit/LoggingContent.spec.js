@@ -1,7 +1,7 @@
 import { shallowMount, flushPromises } from "@vue/test-utils";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createTestingPinia } from "@pinia/testing";
-import { setActivePinia } from 'pinia';
+import { setActivePinia } from "pinia";
 import axios from "axios";
 import fs from "fs";
 import path from "path";
@@ -38,7 +38,7 @@ describe("Test LoggingContent.vue", () => {
 
   // Things to do before each test
   beforeEach(async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers();
     // Reset mocks before each test
     vi.resetAllMocks();
 
@@ -69,23 +69,23 @@ describe("Test LoggingContent.vue", () => {
     });
     // flush so we avoid leaving uncompleted processes running on background
     await flushPromises();
-    vi.advanceTimersByTime(1000) 
-    vi.useRealTimers()
+    vi.advanceTimersByTime(1000);
+    vi.useRealTimers();
   });
 
   // Tear down wrapper, unmount testing component
   afterEach(() => {
     if (wrapper) {
-      wrapper.unmount() // Clean up virtual DOM and memory bindings
+      wrapper.unmount(); // Clean up virtual DOM and memory bindings
     }
-    setActivePinia(undefined)
-    document.body.innerHTML = ''
+    setActivePinia(undefined);
+    document.body.innerHTML = "";
 
     if (global.gc) {
-    global.gc() // Forces V8 engine to immediately run Garbage Collection
+      global.gc(); // Forces V8 engine to immediately run Garbage Collection
     }
-    vi.clearAllTimers()
-    vi.useRealTimers()
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   // Test 1: Render check, if things do exist in the page as intended

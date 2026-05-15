@@ -16,8 +16,8 @@
             <button
               class="uk-button uk-button-default uk-width-1-1"
               type="button"
-              @click="updateLogs()"
               data-test-id="update-btn"
+              @click="updateLogs()"
             >
               Refresh Logs
             </button>

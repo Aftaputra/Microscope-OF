@@ -16,7 +16,7 @@
     "lint:fix": "eslint . --fix --ignore-pattern .gitignore",
     "lint:style": "stylelint \"src/**/*.{vue,less,css}\" --max-warnings=0",
     "lint:style:fix": "stylelint \"src/**/*.{vue,less,css}\" --fix",
-    "unitest": "vitest src/tests/unit/LoggingContent.spec.js --no-cache --mode test --detectAsyncLeaks --coverage --isolate --silent --changed --logHeapUsage"
+    "test:unit": "NODE_OPTIONS=--expose-gc vitest run src/tests/unit/ --no-cache --mode test --detectAsyncLeaks --coverage --isolate=true --pool=forks --silent --logHeapUsage"
   },
   "dependencies": {
     "@vueuse/core": "^14.1.0",
@@ -40,8 +40,9 @@
     "core-js": "^3.46.0",
     "cross-env": "^10.1.0",
     "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-pinia": "^0.4.2",
-    "eslint-plugin-prettier": "^5.1.0",
+    "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-vue": "^9.20.0",
     "happy-dom": "^20.9.0",
     "jsdom": "^29.1.1",

@@ -20,7 +20,7 @@ export default defineConfig({
 
   test: {
     css: false,
-    pool: 'forks',
+    pool: "forks",
     singleThread: true,
 
     define: {
@@ -28,16 +28,23 @@ export default defineConfig({
     },
 
     coverage: {
-      provider: 'v8',
+      provider: "v8",
       clean: true,
       cleanOnStart: true,
-    },
+      reporter: ["text", "html"],
 
+      thresholds: {
+        lines: 70,
+        statements: 70,
+        functions: 50,
+        branches: 40,
+      },
+    },
     deps: {
       optimizer: {
         web: {
           enabled: true,
-          include: ['@mui/material', 'lucide-react'], // Add your largest component dependencies here
+          include: ["@mui/material", "lucide-react"], // Add your largest component dependencies here
         },
       },
     },

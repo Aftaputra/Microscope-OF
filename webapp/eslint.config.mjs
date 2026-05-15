@@ -73,5 +73,22 @@ export default [
       "pinia/require-setup-store-properties-export": "warn",
     },
   },
+
+  {
+    files: ["src/tests/unit/**/*.spec.js"],
+    languageOptions: {
+      globals: {
+        describe: "readonly",
+        it: "readonly",
+        expect: "readonly",
+        vi: "readonly",
+        beforeEach: "readonly",
+        afterEach: "readonly",
+        mockLogData: "readonly", // Prevents unused global mock variable warnings
+        afterAll: "readonly",
+      },
+    },
+  },
+
   prettierConfig,
 ];

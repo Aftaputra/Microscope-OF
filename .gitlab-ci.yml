@@ -158,6 +158,14 @@ eslint:
   script:
     - npm run lint
     - npm run lint:style
+    # The test run if only
+    - npm run test:unit
+  artifacts:
+    name: "vitest-coverage-$CI_COMMIT_REF_SLUG"
+    when: always
+    expire_in: 1 week
+    paths:
+     - coverage/
 
 # Build JS app
 build:
