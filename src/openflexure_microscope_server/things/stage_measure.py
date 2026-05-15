@@ -185,7 +185,7 @@ class RangeofMotionThing(OFMThing):
                 # Calculate step range.
                 step_range.append(abs(axis_limits[0] - axis_limits[1]))
 
-            total_time = (time.time() - start_time) / 60
+            total_time = time.time() - start_time
             self.logger.info(
                 f"Range of motion is {step_range[0]} x {step_range[1]} steps"
             )
