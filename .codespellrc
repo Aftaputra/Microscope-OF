@@ -18,9 +18,7 @@ skip = node_modules,
        *.egg-info,
        src/tests/unit,
        ./webapp/src/tests/unit/*.spec.js,
-       ./webapp/eslint.config.mjs,
-       ./webapp/coverage,
+       ./webapp/coverage/*,
 
 regex = [a-zA-Z0-9\-'’]+
-ignore-words-list = fom
-
+ignore-words-list = fom, afterAll

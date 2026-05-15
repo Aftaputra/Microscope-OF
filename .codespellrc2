@@ -1,7 +1,7 @@
 [codespell]
 # A separate RC file for detecting camelCase, PascalCase, and kebab-case errors
 # A little more prone to false positives than our standard regex, also fails to detect
-# hyphenated words in the dictonary.
+# hyphenated words in the dictionary.
 
 # Same as the main RC-file except it also excludes CHANGELOG as this is well covered
 # by the normal RC file, and we get false positives from git hashes.
@@ -19,7 +19,9 @@ skip = node_modules,
        .venv,
        *.egg-info,
        report.xml,
-       CHANGELOG.md
+       CHANGELOG.md,
+       ./webapp/src/tests/fixtures/*,
+       ./webapp/coverage/*,
 
 # Ignores split by |
 # Ignore hexadecimal numbers preceded by #
