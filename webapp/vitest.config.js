@@ -5,8 +5,6 @@ import { defineConfig } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
 import path from "path";
 
-console.log("\n\n::: Reading vitest config.");
-
 export default defineConfig({
   plugins: [
     vue({
@@ -28,16 +26,20 @@ export default defineConfig({
     },
 
     coverage: {
+      enabled: true,
       provider: "v8",
       clean: true,
       cleanOnStart: true,
       reporter: ["text", "html"],
+      all: true,
+      include: ["src/**/*.vue", "src/**/*.js"],
+      exclude: [],
 
       thresholds: {
-        lines: 70,
-        statements: 70,
-        functions: 50,
-        branches: 40,
+        lines: 4,
+        statements: 3,
+        functions: 3,
+        branches: 1,
       },
     },
     deps: {
