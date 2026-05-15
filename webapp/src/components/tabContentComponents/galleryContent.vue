@@ -189,7 +189,6 @@ export default {
           return b.created - a.created;
         });
         this.all_items = all_items;
-        console.debug("Gallery size: %s", this.all_items.length);
       } catch (err) {
         console.error("Failed to refresh gallery items.");
         console.error(err);
@@ -219,9 +218,6 @@ export default {
       }
     },
     changePage(page) {
-      console.log(page);
-      console.log(this.currentPage);
-      console.log(this.totalPages);
       if (page >= 1 && page <= this.totalPages && this.currentPage != page) {
         this.$emit("scrollTop");
         this.currentPage = page;
