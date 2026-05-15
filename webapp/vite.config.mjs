@@ -17,7 +17,7 @@ export default defineConfig(({ command, mode }) => {
     if (env.VITE_API_TARGET === "local") {
       target = "http://localhost:5000";
     } else if (env.VITE_API_TARGET === "microscope") {
-      target = env.VITE_MICROSCPOPE_HOST || "http://microscope.local:5000";
+      target = env.VITE_MICROSCOPE_HOST || "http://microscope.local:5000";
     } else {
       throw new Error(`Invalid VITE_API_TARGET: ${env.VITE_API_TARGET}`);
     }
