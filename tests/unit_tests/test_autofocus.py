@@ -130,6 +130,18 @@ def test_record_defaults_to_method(mock_stage, mock_camera):
     assert monitor.record == SharpnessMethod.FOCUS_FOM
 
 
+def test_zero_record_defaults_to_method(mock_stage, mock_camera):
+    """If record=0, only the selected method is recorded."""
+    monitor = JPEGSharpnessMonitor(
+        mock_stage,
+        mock_camera,
+        method=SharpnessMethod.FOCUS_FOM,
+        record=0,
+    )
+
+    assert monitor.record == SharpnessMethod.FOCUS_FOM
+
+
 def test_record_must_include_selected_method(mock_stage, mock_camera):
     """The selected autofocus metric must also be recorded."""
     with pytest.raises(ValueError, match="not being recorded"):

@@ -274,7 +274,7 @@ class JPEGSharpnessMonitor:
             dependency as required by the underlying class.
         :param method: The sharpness metric used when evaluating autofocus.
         :param record: Bitmask of sharpness metrics to record while monitoring.
-            If ``None``, only the metric specified by ``method`` is recorded.
+            If ``None`` or 0, only the metric specified by ``method`` is recorded.
 
         :raises ValueError: If ``method`` is not included in ``record``.
         :raises ValueError: If ``SharpnessMethod.FOCUS_FOM`` is requested but
@@ -283,7 +283,7 @@ class JPEGSharpnessMonitor:
         self.camera = camera
         self.stage = stage
         self.method = method
-        self.record = method if record is None else record
+        self.record = record if record else method
 
         if not self.method & self.record:
             raise ValueError(
