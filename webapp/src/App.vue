@@ -387,4 +387,16 @@ html {
   padding: 0;
   height: 100%;
 }
+
+.ui-element-error-icon {
+  vertical-align: middle;
+  padding-right: 10px;
+  color: #a00;
+}
+
+.ui-element-broken {
+  border-color: #a00 !important;
+  color: #a00 !important;
+  cursor: not-allowed;
+}
 </style>

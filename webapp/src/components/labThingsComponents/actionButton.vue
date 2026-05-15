@@ -3,13 +3,15 @@
     <button
       ref="actionButton"
       type="button"
+      :title="tooltipText"
       :disabled="buttonDisabled"
       class="uk-button uk-width-1-1 uk-position-relative"
       :class="buttonClasses"
       @click="handleClick"
     >
       <action-progress-bar :progress="progress" :task-status="taskStatus" :in-button="true" />
-      {{ buttonLabel }}
+      <span v-if="isBroken" class="material-symbols-outlined ui-element-error-icon"> error </span
+      >{{ buttonLabel }}
     </button>
 
     <action-status-modal
@@ -112,6 +114,11 @@ export default {
       required: false,
       default: false,
     },
+    isBroken: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     streamWithModal: {
       type: Boolean,
       required: false,
@@ -148,7 +155,7 @@ export default {
 
   computed: {
     buttonDisabled() {
-      return this.isDisabled || (this.taskRunning && !this.canTerminate);
+      return this.isDisabled || this.isBroken || (this.taskRunning && !this.canTerminate);
     },
     buttonLabel() {
       return this.taskRunning && this.canTerminate ? "Cancel" : this.submitLabel;
@@ -158,6 +165,9 @@ export default {
       if (this.buttonDisabled) {
         classes.push("uk-button-disabled");
       }
+      if (this.isBroken) {
+        classes.push("ui-element-broken");
+      }
       if (this.taskRunning && this.canTerminate) {
         classes.push("uk-button-danger");
       } else if (this.buttonPrimary) {
@@ -166,6 +176,9 @@ export default {
         classes.push("uk-button-default");
       }
       return classes.join(" ");
+    },
+    tooltipText() {
+      return this.isBroken ? `${this.thing} has no action "${this.action}".` : "";
     },
   },
 
@@ -232,7 +245,7 @@ export default {
 
   methods: {
     handleShortcutTrigger() {
-      if (this.isDisabled) return;
+      if (this.isDisabled || this.isBroken) return;
       this.bootstrapTask();
     },
     handleClick() {
@@ -257,6 +270,7 @@ export default {
      *
      */
     async checkExistingTasks() {
+      if (this.isBroken) return;
       const ongoingTask = await this.getOngoingAction(this.thing, this.action);
       if (ongoingTask) {
         // There is a started task

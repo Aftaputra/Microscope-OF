@@ -11,6 +11,7 @@
     :is-disabled="actionData.disabled"
     :modal-progress="actionData.modal_progress"
     :stream-with-modal="actionData.stream_with_modal"
+    :is-broken="actionData.broken"
     @response="actionResponse"
     @error="modalError"
     @finished="actionFinished"
