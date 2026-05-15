@@ -150,10 +150,11 @@ combined-tests:
         coverage_format: cobertura
         path: coverage.xml
 
-# JavaScript linting with ESLint (via Vue CLI)
+# JavaScript linting and testing
+# ESLint, StyleLint and ViTest
 # Only runs when a .js or .vue file is edited
-eslint:
-  stage: analysis
+javascript-lint-and-test:
+  stage: testing
   extends: .javascript_webapp
   script:
     - npm run lint
