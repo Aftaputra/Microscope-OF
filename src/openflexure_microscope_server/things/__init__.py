@@ -5,6 +5,7 @@ with other Things and including them in the LabThings-FastAPI config file.
 """
 
 import os
+from types import TracebackType
 from typing import Optional, Self
 
 import labthings_fastapi as lt
@@ -34,6 +35,19 @@ class OFMThing(lt.Thing):
             os.path.normpath(str(app_data_dir)), os.path.normpath(self.name)
         )
         return self
+
+    def __exit__(
+        self,
+        _exc_type: type[BaseException],
+        _exc_value: Optional[BaseException],
+        _traceback: Optional[TracebackType],
+    ) -> None:
+        """Close the OFMThing.
+
+        This is needed for the context manager protocol to work. Currently it doesn't
+        do anything.
+        """
+        pass
 
     @property
     def data_dir(self) -> str:

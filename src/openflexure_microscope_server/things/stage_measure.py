@@ -13,8 +13,11 @@ is tracked and an error is raised if it exceeds a minimum amount. Currently
 this is 10% of the expected motion is the measured axis.
 """
 
+import json
+import os
 import time
 from copy import copy
+from datetime import datetime
 from threading import Lock
 from typing import Any, Literal, Mapping, Optional, overload
 
@@ -24,6 +27,8 @@ import labthings_fastapi as lt
 from camera_stage_mapping import fft_image_tracking
 
 # Things
+from openflexure_microscope_server.things import OFMThing
+
 from .autofocus import AutofocusThing
 from .camera import BaseCamera
 from .camera_stage_mapping import CameraStageMapper
@@ -114,7 +119,7 @@ class ParasiticMotionError(lt.exceptions.InvocationError):
     """
 
 
-class RangeofMotionThing(lt.Thing):
+class RangeofMotionThing(OFMThing):
     """A class used to measure the range of motion of the stage in X and Y."""
 
     _class_settings = {"validate_properties_on_set": True}
@@ -162,6 +167,9 @@ class RangeofMotionThing(lt.Thing):
             axes: tuple[Literal["x"], Literal["y"]] = ("x", "y")
             directions: tuple[Literal[1], Literal[-1]] = (1, -1)
 
+            stage_dic = {}
+            cor_dic = {}
+
             for axis in axes:
                 # The final position of the axis under test in the given direction
                 axis_limits = []
@@ -171,6 +179,9 @@ class RangeofMotionThing(lt.Thing):
                     self._move_until_edge(axis=axis, direction=axis_dir)
                     # Append final position from tracker
                     axis_limits.append(self._rom_data.final_position[axis])
+                    axis_string = "positive" if axis_dir == 1 else "negative"
+                    stage_dic[f"{axis}_{axis_string}"] = self._rom_data.stage_coords
+                    cor_dic[f"{axis}_{axis_string}"] = self._rom_data.offsets
                 # Calculate step range.
                 step_range.append(abs(axis_limits[0] - axis_limits[1]))
 
@@ -178,7 +189,22 @@ class RangeofMotionThing(lt.Thing):
             self.logger.info(
                 f"Range of motion is {step_range[0]} x {step_range[1]} steps"
             )
-            self.calibrated_range = (step_range[0], step_range[1])
+            data = {
+                "calibrated_range": [step_range[0], step_range[1]],
+                "stage_coords": stage_dic,
+                "correlations": cor_dic,
+                "csm_matrix": self._csm.image_to_stage_displacement_matrix,
+                "time": total_time,
+            }
+
+            if not os.path.exists(self.data_dir):
+                os.makedirs(self.data_dir)
+
+            timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M")
+            datafile_path = os.path.join(self.data_dir, f"rom_data_{timestamp}.json")
+            with open(datafile_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+
         finally:
             self._lock.release()
         return {

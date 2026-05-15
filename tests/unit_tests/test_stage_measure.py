@@ -1,6 +1,7 @@
 """File contains unit tests for stage_measure."""
 
 import logging
+import tempfile
 from copy import copy
 
 import numpy as np
@@ -148,10 +149,13 @@ def test_error_if_no_stream_res_set_when_requesting_img_coords():
 
 
 @pytest.fixture
-def rom_thing(example_rom_data, csm_matrix) -> stage_measure.RangeofMotionThing:
+def rom_thing(example_rom_data, csm_matrix, mocker) -> stage_measure.RangeofMotionThing:
     """Yield a RangeofMotionThing already populated with some example rom_data."""
     rom_thing = create_thing_without_server(
         stage_measure.RangeofMotionThing, mock_all_slots=True
+    )
+    type(rom_thing._thing_server_interface).application_config = mocker.PropertyMock(
+        return_value={"data_folder": tempfile.gettempdir()}
     )
     rom_thing._stream_resolution = [800, 600]
     rom_thing._rom_data = example_rom_data
@@ -586,7 +590,7 @@ def test_perform_rom_actions_locked(rom_thing):
         rom_thing.perform_recentre()
 
 
-def test_perform_rom_test_(rom_thing, mocker):
+def test_perform_rom_test(rom_thing, mocker):
     """Check that perform Rom Test runs the expected high level algorithm."""
 
     def check_and_modify_rom_data(axis: str, direction: int, **_kwargs):
@@ -605,7 +609,10 @@ def test_perform_rom_test_(rom_thing, mocker):
     mocker.patch.object(
         rom_thing._cam, "grab_as_array", return_value=np.zeros([123, 456, 3])
     )
-    final_dict = rom_thing.perform_rom_test()
+
+    # Enter the ROM thing to get the data directory.
+    with rom_thing as running_rom_thing:
+        final_dict = running_rom_thing.perform_rom_test()
 
     # This should take less than 1 sec
     assert final_dict["Time"] <= 1
