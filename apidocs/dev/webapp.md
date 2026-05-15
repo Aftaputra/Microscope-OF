@@ -22,9 +22,21 @@ When developing it is useful to use the development server so Vue changes happen
 
     npm run serve
 
-The development server is accessed on a different port from the microscope API. The port to access the development server is printed on the command line when you run the above command.
+The development server is accessed on a different port from the microscope API. When Vite starts, it creates a proxy that proxies all routes starting with `/api` to `http://localhost:5000/api`. This is useful when using either the simulation server or when developing directly on a microscope.
 
-When the development webapp starts it cannot locate the microscope API as this is served by the microscope on port 5000. Instead it will present you with a page giving you the option to "override API origin". If you are running a development server on your computer, you should enter `http://localhost:5000/`.
+If developing the webapp on a different computer you can run:
+
+    npm run serve:microscope
+
+This will proxy all routes starting with `/api` to `http://microscope.local:5000/api`.
+
+If your microscope hostname is not `microscope`, you can use local environment files to override this route. Create the file `.env.local` within the `/webapp/` directory, and in that file add the line
+
+    VITE_MICROSCOPE_HOST=http://myhostname.local:5000
+
+(changing `myhostname` to the correct host name.)
+
+**Note:** If you have performance issues with lag, this can be caused by mDNS speed for your setup. To avoid mDNS, overload `VITE_MICROSCOPE_HOST` with the IP address of your microscope, rather than the host name.
 
 # Javascript: Formatting and linting
 

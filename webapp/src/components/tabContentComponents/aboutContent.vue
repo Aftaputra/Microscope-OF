@@ -14,22 +14,16 @@
         Report an issue
       </a>
     </div>
-    <div class="uk-padding-small">
-      <h2>Developer tools</h2>
-      <devTools class="uk-width-large" />
-    </div>
   </div>
 </template>
 
 <script>
-import devTools from "./aboutComponents/devTools.vue";
 import statusPane from "./aboutComponents/statusPane.vue";
 
 export default {
   name: "AboutContent",
 
   components: {
-    devTools,
     statusPane,
   },
 };
