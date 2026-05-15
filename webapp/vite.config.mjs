@@ -21,6 +21,8 @@ export default defineConfig(({ command, mode }) => {
     } else {
       throw new Error(`Invalid VITE_API_TARGET: ${env.VITE_API_TARGET}`);
     }
+    // Allow a console log as we were serving for development.
+    // eslint-disable-next-line no-console
     console.log(`Proxying /api → ${target}`);
   }
 
