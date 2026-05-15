@@ -283,7 +283,7 @@ class JPEGSharpnessMonitor:
         self.camera = camera
         self.stage = stage
         self.method = method
-        self.record = method if record is None or record == 0 else record
+        self.record = record if record else method
 
         if not self.method & self.record:
             raise ValueError(

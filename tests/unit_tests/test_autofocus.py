@@ -129,6 +129,7 @@ def test_record_defaults_to_method(mock_stage, mock_camera):
 
     assert monitor.record == SharpnessMethod.FOCUS_FOM
 
+
 def test_zero_record_defaults_to_method(mock_stage, mock_camera):
     """If record=0, only the selected method is recorded."""
     monitor = JPEGSharpnessMonitor(
