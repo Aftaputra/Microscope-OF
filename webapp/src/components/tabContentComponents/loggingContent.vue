@@ -17,6 +17,7 @@
               class="uk-button uk-button-default uk-width-1-1"
               type="button"
               @click="updateLogs()"
+              data-test-id="update-btn"
             >
               Refresh Logs
             </button>
@@ -27,6 +28,7 @@
               :url="logFileURI"
               button-label="Download Log File"
               :button-primary="false"
+              data-test-id="download-btn"
             />
           </div>
         </div>

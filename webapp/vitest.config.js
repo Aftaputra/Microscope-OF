@@ -5,16 +5,18 @@ import { defineConfig } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
 import path from "path";
 
-console.log("\n\n::: Reading vitest config.")
+console.log("\n\n::: Reading vitest config.");
 
 export default defineConfig({
-  plugins: [vue({
+  plugins: [
+    vue({
       template: {
         compilerOptions: {
           hoistStatic: false,
         },
       },
-    })],
+    }),
+  ],
 
   test: {
     environment: "jsdom",
@@ -31,7 +33,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "vue": path.resolve(__dirname, "./node_modules/vue"),
+      vue: path.resolve(__dirname, "./node_modules/vue"),
     },
   },
 });
