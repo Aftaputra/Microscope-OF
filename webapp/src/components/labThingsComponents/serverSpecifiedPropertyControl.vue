@@ -8,6 +8,7 @@
     :read-back-delay="propertyData.read_back_delay"
     :options="propertyData.options"
     :step="propertyData.step"
+    :is-broken="propertyData.broken"
   />
 </template>
 

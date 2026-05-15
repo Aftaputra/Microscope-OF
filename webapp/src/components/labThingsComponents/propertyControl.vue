@@ -1,5 +1,6 @@
 <template>
   <input-from-schema
+    v-if="!isBroken"
     v-model="modelValue"
     :data-schema="propertyDescription"
     :label="label"
@@ -10,6 +11,13 @@
     @send-value="writeProperty"
     @animation-shown="resetAnimate"
   />
+  <div
+    v-else
+    class="ui-element-broken"
+    :title="`${thingName} has no property &quot;${propertyName}&quot;.`"
+  >
+    <span class="material-symbols-outlined ui-element-error-icon"> error </span> {{ label }}
+  </div>
 </template>
 
 <script>
@@ -56,6 +64,11 @@ export default {
       default: null,
       required: false,
     },
+    isBroken: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
 
   data() {
@@ -93,6 +106,7 @@ export default {
 
   methods: {
     readProperty: async function () {
+      if (this.isBroken) return;
       let data = await this.readThingProperty(this.thingName, this.propertyName);
       this.modelValue = data;
       return data;

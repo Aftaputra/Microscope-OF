@@ -214,6 +214,9 @@ class ActionButton(BaseModel):
     Downstream components can subscribe to this and request an update.
     """
 
+    broken: bool = False
+    """If True the action button is broken. There is no corresponding action."""
+
 
 def action_button_for(thing: lt.Thing, action_name: str, **kwargs: Any) -> ActionButton:
     """Create a ActionButton data for the specified Thing Action.
@@ -224,6 +227,9 @@ def action_button_for(thing: lt.Thing, action_name: str, **kwargs: Any) -> Actio
     :return: An ActionButton (Pydantic Model) object with all the information the
         webapp needs to create the action button.
     """
+    if action_name not in thing.actions:
+        thing.logger.error(f"{thing.name} has no action {action_name}")
+        kwargs["broken"] = True
     return ActionButton(thing=thing.name, action=action_name, **kwargs)
 
 
@@ -270,6 +276,9 @@ class PropertyControl(BaseModel):
     used.
     """
 
+    broken: bool = False
+    """If True the property control is broken. There is no corresponding property."""
+
 
 def property_control_for(
     thing: lt.Thing, property_name: str, **kwargs: Any
@@ -283,6 +292,9 @@ def property_control_for(
     """
     if "label" not in kwargs:
         kwargs["label"] = property_name
+    if property_name not in thing.properties:
+        thing.logger.error(f"{thing.name} has no property {property_name}")
+        kwargs["broken"] = True
     return PropertyControl(thing=thing.name, property_name=property_name, **kwargs)
 
 
