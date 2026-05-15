@@ -744,4 +744,8 @@ class SmartScanThing(OFMThing):
         # need stitching.
         for scan in self.get_data_for_gallery():
             if scan.dzi is None:
-                self.stitch_scan(scan_name=scan.name)
+                try:
+                    self.logger.info(f"Stitching {scan.name}")
+                    self.stitch_scan(scan_name=scan.name)
+                except (RuntimeError, ChildProcessError):
+                    self.logger.warning(f"Couldn't stitch scan {scan.name}")

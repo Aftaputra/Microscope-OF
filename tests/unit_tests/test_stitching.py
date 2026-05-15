@@ -14,6 +14,7 @@ import pytest
 from pydantic import BaseModel
 
 import labthings_fastapi as lt
+from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.stitching import (
     FORBIDDEN_COMMANDS,
@@ -24,6 +25,7 @@ from openflexure_microscope_server.stitching import (
     StitchingSettings,
     validate_command,
 )
+from openflexure_microscope_server.things.smart_scan import SmartScanThing
 
 from ..shared_utils.lt_test_utils import LabThingsTestEnv
 
@@ -325,3 +327,44 @@ def test_final_stitching_command_error(mocker):
     stitcher._extra_args = ["ERROR"]
     with pytest.raises(ChildProcessError):
         stitcher.run()
+
+
+def test_stitch_all_scans_continues_after_error(mocker, caplog):
+    """Test stitching all continues after an error and logs as expected."""
+    thing = create_thing_without_server(
+        SmartScanThing,
+        default_workflow="mock-_all_workflows",
+        mock_all_slots=True,
+    )
+
+    scans = [
+        mocker.Mock(name="scan1", dzi=None),
+        mocker.Mock(name="scan2", dzi=None),
+        mocker.Mock(name="scan3", dzi=None),
+    ]
+
+    scans[0].name = "scan1"
+    scans[1].name = "scan2"
+    scans[2].name = "scan3"
+
+    mocker.patch.object(thing, "get_data_for_gallery", return_value=scans)
+
+    stitch_mock = mocker.patch.object(
+        thing,
+        "stitch_scan",
+        side_effect=[None, RuntimeError("fail"), None],
+    )
+
+    with caplog.at_level("INFO"):
+        thing.stitch_all_scans()
+
+    assert stitch_mock.call_count == 3
+
+    messages = [record.message for record in caplog.records]
+
+    assert messages == [
+        "Stitching scan1",
+        "Stitching scan2",
+        "Couldn't stitch scan scan2",
+        "Stitching scan3",
+    ]
