@@ -5,7 +5,7 @@ import prettierConfig from "eslint-config-prettier";
 import globals from "globals";
 import pinia from "eslint-plugin-pinia";
 
-const isProd = process.env.NODE_ENV === "production";
+const isDev = process.env.NODE_ENV === "development";
 
 export default [
   {
@@ -38,8 +38,8 @@ export default [
     rules: {
       "prettier/prettier": "warn",
       // Environment-based rules
-      "no-console": isProd ? "warn" : "off",
-      "no-debugger": isProd ? "warn" : "off",
+      "no-console": isDev ? "off" : ["warn", { allow: ["warn", "error"] }],
+      "no-debugger": isDev ? "off" : "warn",
 
       // Vue deprecations
       "vue/no-deprecated-slot-attribute": "warn",

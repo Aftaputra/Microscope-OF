@@ -61,7 +61,7 @@
       </div>
     </div>
     <PaginateLinks
-      :total-pages="numberOfPages"
+      :total-pages="totalPages"
       :current-page="currentPage"
       @change-page="changePage"
     />
@@ -119,8 +119,7 @@ export default {
         return null;
       }
     },
-    // name changed as paginateLinks has the prop totalPages
-    numberOfPages() {
+    totalPages() {
       return Math.ceil((this.all_items?.length || 0) / this.itemsPerPage);
     },
     paginatedItems() {
@@ -190,7 +189,6 @@ export default {
           return b.created - a.created;
         });
         this.all_items = all_items;
-        console.debug("Gallery size: %s", this.all_items.length);
       } catch (err) {
         console.error("Failed to refresh gallery items.");
         console.error(err);

@@ -5,10 +5,11 @@
         <div class="view-image uk-padding-remove uk-height-1-1">
           <img
             id="thumbnail-stitched-image"
+            :class="[itemData?.dzi ? 'thumbnail-fit clickable' : 'thumbnail-fit disabled']"
             class="thumbnail-fit"
             :src="thumbnailPath"
             onerror="this.src = '/titleiconpink.svg'"
-            @click="requestViewer"
+            @click="itemData?.dzi && requestViewer()"
           />
         </div>
       </div>
@@ -191,5 +192,20 @@ ul {
 
 .gallery-card-title {
   text-align: center;
+}
+
+.thumbnail-fit {
+  max-height: 120px;
+  max-width: 240px;
+  object-fit: contain;
+  overflow-y: hidden;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.disabled {
+  cursor: not-allowed;
 }
 </style>
