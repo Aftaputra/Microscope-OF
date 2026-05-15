@@ -51,20 +51,6 @@ def _clear_scan_dir() -> None:
 
 
 @pytest.fixture
-def smart_scan_thing(mocker):
-    """Return a smart scan thing as a fixture."""
-    thing = create_thing_without_server(
-        SmartScanThing,
-        default_workflow="mock-_all_workflows",
-        mock_all_slots=True,
-    )
-    type(thing._thing_server_interface).application_config = mocker.PropertyMock(
-        return_value={"data_folder": tempfile.gettempdir()}
-    )
-    return thing
-
-
-@pytest.fixture
 def entered_smart_scan_thing(smart_scan_thing):
     """Yield a smart scan thing as a fixture that has been entred.
 

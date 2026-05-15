@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import tempfile
 from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import Optional
@@ -11,6 +12,10 @@ from typing import Optional
 import pytest
 
 from labthings_fastapi.testing import create_thing_without_server
+
+from openflexure_microscope_server.things.smart_scan import (
+    SmartScanThing,
+)
 
 from .shared_utils.lt_test_utils import LabThingsTestEnv
 
@@ -105,3 +110,17 @@ def mock_picam_thing(mocker):
     from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
 
     return create_thing_without_server(StreamingPiCamera2)
+
+
+@pytest.fixture
+def smart_scan_thing(mocker):
+    """Return a smart scan thing as a fixture."""
+    thing = create_thing_without_server(
+        SmartScanThing,
+        default_workflow="mock-_all_workflows",
+        mock_all_slots=True,
+    )
+    type(thing._thing_server_interface).application_config = mocker.PropertyMock(
+        return_value={"data_folder": tempfile.gettempdir()}
+    )
+    return thing

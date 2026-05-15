@@ -11,7 +11,6 @@ import os
 import threading
 import time
 from datetime import datetime
-from subprocess import SubprocessError
 from types import TracebackType
 from typing import (
     Annotated,
@@ -717,7 +716,7 @@ class SmartScanThing(OFMThing):
         except lt.exceptions.InvocationCancelledError:
             # Sleep for 1 second just to allow invocation logs to pass to user.
             time.sleep(1)
-        except SubprocessError as e:
+        except ChildProcessError as e:
             self.logger.error(f"Stitching failed: {e}", exc_info=e)
 
     @lt.action(use_global_lock=False)
@@ -744,8 +743,5 @@ class SmartScanThing(OFMThing):
         # need stitching.
         for scan in self.get_data_for_gallery():
             if scan.dzi is None:
-                try:
-                    self.logger.info(f"Stitching {scan.name}")
-                    self.stitch_scan(scan_name=scan.name)
-                except (RuntimeError, ChildProcessError):
-                    self.logger.warning(f"Couldn't stitch scan {scan.name}")
+                self.logger.info(f"Stitching {scan.name}")
+                self.stitch_scan(scan_name=scan.name)
