@@ -159,7 +159,8 @@ javascript-lint-and-test:
   script:
     - npm run lint
     - npm run lint:style
-    # The test run if only
+    - npm run lint:test
+    # The test runs only if a test spec file has changed
     - npm run test:unit
   artifacts:
     name: "vitest-coverage-$CI_COMMIT_REF_SLUG"
