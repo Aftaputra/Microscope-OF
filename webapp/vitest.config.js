@@ -39,7 +39,7 @@ export default defineConfig({
       clean: true,
       cleanOnStart: true,
       // text gives output on STOUT and html creates an artifact
-      reporter: ["text", "html"],
+      reporter: ["text", "html", "cobertura"],
       all: true,
       // Files to include or exclude in coverage
       include: ["src/**/*.vue", "src/**/*.js"],

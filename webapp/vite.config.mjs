@@ -30,13 +30,18 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [
       vue({
-        // Block for removing data-test-id tags on npm run build
+        // Strip "data-test-id" attributes (used by Vitest) from the production build.
+        // This enforces separation of concerns and prevents developers from relying on
+        // test IDs for styling or core application logic.
         template: {
           compilerOptions: {
+            // Only apply this AST transformation during production builds
             nodeTransforms: isProduction
               ? [
                   (node) => {
+                    // Check if the current AST node is an HTML element
                     if (node.type === 1 /* NodeTypes.ELEMENT */) {
+                      // Filter out any property named "data-test-id"
                       node.props = node.props.filter((prop) => prop.name !== "data-test-id");
                     }
                   },
