@@ -142,7 +142,7 @@ describe("Test LoggingContent.vue", () => {
 
   // Test 4: Click buttons
   // This required the component file to be modified by adding data-test-id flags.
-  // flags are needed as classes and text content may change by translation or style change.
+  // Flags are needed as classes and text content may change by translation or style change.
   it("click buttons", async () => {
     // Click download button
     const downloadButton = wrapper.find('[data-test-id="download-btn"]');
@@ -155,9 +155,8 @@ describe("Test LoggingContent.vue", () => {
     await updateButton.trigger("click");
   });
 
-  // Test 5: Compare downloaded file to fixture file.
-  // Test 6: WIP
-
+  // Prevents Vitest "Async Leak" errors by giving Vue's internal
+  // DevTools timer a few milliseconds to finish before teardown.
   afterAll(async () => {
     await new Promise((resolve) => setTimeout(resolve, 15));
   });

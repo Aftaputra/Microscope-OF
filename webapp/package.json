@@ -16,6 +16,8 @@
     "lint:fix": "eslint . --fix --ignore-pattern .gitignore",
     "lint:style": "stylelint \"src/**/*.{vue,less,css}\" --max-warnings=0",
     "lint:style:fix": "stylelint \"src/**/*.{vue,less,css}\" --fix",
+    "lint:test": "prettier -c src/tests/unit/*.spec.js",
+    "lint:test:fix": "prettier -w src/tests/unit/*.spec.js",
     "test:unit": "NODE_OPTIONS=--expose-gc vitest run src/tests/unit/ --no-cache --mode test --detectAsyncLeaks --coverage --isolate=true --pool=forks --silent --logHeapUsage"
   },
   "dependencies": {
@@ -46,7 +48,6 @@
     "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-vue": "^9.20.0",
     "happy-dom": "^20.9.0",
-    "jsdom": "^29.1.1",
     "less": "^4.5.1",
     "material-symbols": "^0.39.1",
     "postcss-html": "^1.8.1",

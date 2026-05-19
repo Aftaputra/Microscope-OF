@@ -17,7 +17,6 @@ skip = node_modules,
        .venv,
        *.egg-info,
        src/tests/unit,
-       ./webapp/src/tests/unit/*.spec.js,
        ./webapp/coverage/*,
 
 regex = [a-zA-Z0-9\-'’]+
