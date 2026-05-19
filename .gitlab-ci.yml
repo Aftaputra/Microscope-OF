@@ -168,6 +168,11 @@ javascript-lint-and-test:
     expire_in: 1 week
     paths:
      - webapp/coverage/
+    reports:
+      # Tells GitLab where to find the Cobertura file for MR integration
+      coverage_report:
+        coverage_format: cobertura
+        path: webapp/coverage/cobertura-coverage.xml
 
 # Build JS app
 build:
