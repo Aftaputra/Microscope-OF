@@ -40,7 +40,7 @@ export default defineConfig(({ command, mode }) => {
               ? [
                   (node) => {
                     // Check if the current AST node is an HTML element
-                    if (node.type === 1 /* NodeTypes.ELEMENT */) {
+                    if (node.type === 1) {
                       // Filter out any property named "data-test-id"
                       node.props = node.props.filter((prop) => prop.name !== "data-test-id");
                     }

@@ -44,8 +44,8 @@ export default defineConfig({
       // Files to include or exclude in coverage
       include: ["src/**/*.vue", "src/**/*.js"],
       exclude: [],
-      // These thresholds raise ERROR if the coverture it's under the provided percentages.
-      // As the coverture is low we set the limit low, as testing spec files increase,
+      // These thresholds raise ERROR if the coverage it's under the provided percentages.
+      // As the coverage is low we set the limit low, as testing spec files increase,
       // these thresholds need to increase accordingly.
       thresholds: {
         lines: 4,
