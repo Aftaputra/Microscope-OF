@@ -16,8 +16,8 @@ skip = node_modules,
        ./src/openflexure_microscope_server/static,
        .venv,
        *.egg-info,
-       report.xml
+       src/tests/unit,
+       ./webapp/coverage/*,
 
 regex = [a-zA-Z0-9\-'’]+
-ignore-words-list = fom
-
+ignore-words-list = fom, afterAll

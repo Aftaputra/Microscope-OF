@@ -94,7 +94,7 @@ openflexure_settings/
 # Files created by test utilities
 /tests/unit_tests/utilities/*.pstats
 /tests/unit_tests/utilities/*.png
-
+coverage/
 # Files created by simulator
 openflexure/
 

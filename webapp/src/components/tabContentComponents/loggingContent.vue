@@ -16,6 +16,7 @@
             <button
               class="uk-button uk-button-default uk-width-1-1"
               type="button"
+              data-test-id="update-btn"
               @click="updateLogs()"
             >
               Refresh Logs
@@ -27,6 +28,7 @@
               :url="logFileURI"
               button-label="Download Log File"
               :button-primary="false"
+              data-test-id="download-btn"
             />
           </div>
         </div>
@@ -225,7 +227,7 @@ export default {
     },
     escapeText: function (unsafeText) {
       let div = document.createElement("div");
-      div.innerText = unsafeText;
+      div.textContent = unsafeText;
       return div.innerHTML;
     },
   },
