@@ -16,8 +16,6 @@
     "lint:fix": "eslint . --fix --ignore-pattern .gitignore",
     "lint:style": "stylelint \"src/**/*.{vue,less,css}\" --max-warnings=0",
     "lint:style:fix": "stylelint \"src/**/*.{vue,less,css}\" --fix",
-    "lint:test": "prettier -c src/tests/unit/*.spec.js",
-    "lint:test:fix": "prettier -w src/tests/unit/*.spec.js",
     "test:unit": "NODE_OPTIONS=--expose-gc vitest run src/tests/unit/ --no-cache --mode test --detectAsyncLeaks --coverage --isolate=true --pool=forks --silent --logHeapUsage"
   },
   "dependencies": {

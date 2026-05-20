@@ -9,7 +9,13 @@ const isDev = process.env.NODE_ENV === "development";
 
 export default [
   {
-    ignores: ["dist/**/*", "lib/**/*", "**/*.min.js", "tools/architecture_dashboard/**/*"],
+    ignores: [
+      "dist/**/*",
+      "lib/**/*",
+      "**/*.min.js",
+      "tools/architecture_dashboard/**/*",
+      "coverage/",
+    ],
   },
 
   js.configs.recommended,
@@ -17,7 +23,7 @@ export default [
   ...vue.configs["flat/recommended"],
 
   {
-    files: ["**/*.vue", "**/*.js", "**/*.jsx", "**/*.cjs", "**/*.mjs"],
+    files: ["**/*.vue", "**/*.js", "**/*.jsx", "**/*.cjs", "**/*.mjs", "**/*.spec.js"],
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: "module",
