@@ -11,7 +11,14 @@
 
 _Note: If you are using a Windows OS, the following commands must be executed in a Powershell terminal._
 
-* Install Node.js v18 (and npm)
+* [Get Node.js using the official installation scripts for your operating system.](https://nodejs.org/en/download/current)
+* Recommended configuration: "Get Node.js v16, for Mac/Linux, using nvm, with npm"
+* Using NVM (node-version-manager)
+    * To install Node.js v26 run:
+        `nvm install 26`
+    * To set the Node.js to version 26:
+        `nvm use 26`
+* Configuration for Windows OS if nvm can't be installed in your system: "Get Node.js v16, for Windows, using Chocolatey, with npm".
 * Navigate into the webapp directory with `cd webapp`
 * Install dependencies with `npm install`
 * Build the static web app with `npm run build`
