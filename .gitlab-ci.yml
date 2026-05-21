@@ -18,7 +18,7 @@ include:
 .javascript_webapp:
   extends: .javascript
   variables:
-    JS_IMAGE: node:20
+    JS_IMAGE: node:26
     JS_PATH: webapp
     JS_CACHE_PATH: webapp/node_modules
 

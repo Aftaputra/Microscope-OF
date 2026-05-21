@@ -60,11 +60,27 @@ export default defineConfig(({ command, mode }) => {
       chunkSizeWarningLimit: 400,
       rollupOptions: {
         output: {
-          manualChunks: {
-            "vue-vendor": ["vue", "pinia", "pinia-plugin-persistedstate"],
-            openseadragon: ["openseadragon"],
-            uikit: ["uikit"],
-            utils: ["axios", "mitt", "mousetrap", "@vueuse/core"],
+          manualChunks(id) {
+            // Only split out third-party dependencies from node_modules
+            if (id.includes("node_modules")) {
+              if (id.includes("vue") || id.includes("pinia")) {
+                return "vue-vendor";
+              }
+              if (id.includes("openseadragon")) {
+                return "openseadragon";
+              }
+              if (id.includes("uikit")) {
+                return "uikit";
+              }
+              if (
+                id.includes("axios") ||
+                id.includes("mitt") ||
+                id.includes("mousetrap") ||
+                id.includes("@vueuse")
+              ) {
+                return "utils";
+              }
+            }
           },
         },
       },

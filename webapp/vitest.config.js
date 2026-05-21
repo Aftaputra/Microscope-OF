@@ -61,7 +61,7 @@ export default defineConfig({
       optimizer: {
         web: {
           enabled: true,
-          include: ["uikit", "openseadragon", "material-design-icons"],
+          include: ["uikit", "openseadragon", "material-symbols"],
         },
       },
     },
