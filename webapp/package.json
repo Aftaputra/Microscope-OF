@@ -24,7 +24,7 @@
     "material-symbols": "^0.44.8",
     "mitt": "^3.0.1",
     "mousetrap": "^1.6.5",
-    "openseadragon": "^6.0.2",
+    "openseadragon": "^5.0.0",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "uikit": "^3.25.16",
