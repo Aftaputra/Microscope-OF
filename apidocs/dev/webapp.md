@@ -12,7 +12,7 @@
 _Note: If you are using a Windows OS, the following commands must be executed in a Powershell terminal._
 
 * [Get Node.js v26 using the official installation scripts for your operating system.](https://nodejs.org/en/download/current)
-* Install configurations: NPM is required, NVM is optional.
+* [Get Node.js v26 using the official installation scripts for your operating system.](https://nodejs.org/en/download/current) *(Optionally, you can instead install NVM as explained below)*.
 * Navigate into the webapp directory with `cd webapp`
 * Install dependencies with `npm install`
 * Build the static web app with `npm run build`
@@ -20,11 +20,11 @@ _Note: If you are using a Windows OS, the following commands must be executed in
 
 #### ( Optional ) Using NVM "Node-Version-Manager"
 
-* [Install NVM](https://github.com/nvm-sh/nvm#installing-and-updating)
-* To install Node.js v26 run:
-    `nvm install 26`
-* To set the Node.js to version 26:
-    `nvm use 26`
+If you have multiple projects that use different versions of Node.JS you can install Node Version Manager (NVM) to allow you to switch version from the terminal. To use NVM:
+
+* [Install NVM](https://www.nvmnode.com/guide/installation.html)
+* Install Node.js v26 with `nvm install 26`
+* Set the Node.js to version 26 with `nvm use 26`
 
 
 ## Live Server
