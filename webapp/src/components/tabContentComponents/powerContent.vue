@@ -58,7 +58,7 @@ export default {
     ...mapActions(useSettingsStore, ["resetState"]),
     ...mapActions(useWotStore, ["deleteAllThingDescriptions"]),
     systemRequest: function (action) {
-      let message = "";
+      let message;
       if (action == "reboot") {
         message = "Restart microscope?";
       } else {

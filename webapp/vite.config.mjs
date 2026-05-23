@@ -40,6 +40,9 @@ export default defineConfig(({ command, mode }) => {
               ? [
                   (node) => {
                     // Check if the current AST node is an HTML element
+                    // Node.type 1 is equal to node.type ELEMENT
+                    // https://developer.mozilla.org/es/docs/Web/API/Node/nodeType
+                    // https://developer.mozilla.org/es/docs/Web/API/Element
                     if (node.type === 1) {
                       // Filter out any property named "data-test-id"
                       node.props = node.props.filter((prop) => prop.name !== "data-test-id");
@@ -60,11 +63,27 @@ export default defineConfig(({ command, mode }) => {
       chunkSizeWarningLimit: 400,
       rollupOptions: {
         output: {
-          manualChunks: {
-            "vue-vendor": ["vue", "pinia", "pinia-plugin-persistedstate"],
-            openseadragon: ["openseadragon"],
-            uikit: ["uikit"],
-            utils: ["axios", "mitt", "mousetrap", "@vueuse/core"],
+          manualChunks(id) {
+            // Only split out third-party dependencies from node_modules
+            if (id.includes("node_modules")) {
+              if (id.includes("vue") || id.includes("pinia")) {
+                return "vue-vendor";
+              }
+              if (id.includes("openseadragon")) {
+                return "openseadragon";
+              }
+              if (id.includes("uikit")) {
+                return "uikit";
+              }
+              if (
+                id.includes("axios") ||
+                id.includes("mitt") ||
+                id.includes("mousetrap") ||
+                id.includes("@vueuse")
+              ) {
+                return "utils";
+              }
+            }
           },
         },
       },
