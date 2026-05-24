@@ -53,7 +53,7 @@ describe("Test LoggingContent.vue", () => {
           createTestingPinia({
             createSpy: vi.fn,
             initialState: {
-              settings: { origin: "http://microscope.local:5000/api/v3" },
+              settings: { baseUri: "http://microscope.local:5000/api/v3" },
             },
           }),
         ],
