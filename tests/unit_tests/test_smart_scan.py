@@ -492,7 +492,7 @@ def check_run_scan(scan_thing, caplog, expected_exception=None):
 
     final_scan_data = scan_thing._ongoing_scan.save_scan_data.call_args[0][0]
     calls = {
-        "cam_start_streaming_calls": scan_thing._cam.start_streaming.call_count,
+        "cam_change_streaming_mode_calls": scan_thing._cam.change_streaming_mode.call_count,
         "main_scan_loop_calls": scan_thing._main_scan_loop.call_count,
         "return_to_start_calls": scan_thing._return_to_starting_position.call_count,
         "perform_final_stitch_calls": scan_thing._perform_final_stitch.call_count,
@@ -509,7 +509,7 @@ def test_run_scan(scan_thing_mocked_for_run_scan, caplog):
     assert len(logs) == 0
 
     expected_calls_numbers = {
-        "cam_start_streaming_calls": 2,
+        "cam_change_streaming_mode_calls": 2,
         "main_scan_loop_calls": 1,
         "return_to_start_calls": 1,
         "perform_final_stitch_calls": 1,
@@ -534,7 +534,7 @@ def test_run_scan_err_in_main_loop(scan_thing_mocked_for_run_scan, caplog, mocke
     # Main loop not run, nor are return to start, final stitch, or purging of empty
     # scans. Save scan data is still called twice
     expected_calls_numbers = {
-        "cam_start_streaming_calls": 2,
+        "cam_change_streaming_mode_calls": 2,
         "main_scan_loop_calls": 1,
         "return_to_start_calls": 0,
         "perform_final_stitch_calls": 0,
@@ -559,7 +559,7 @@ def test_run_scan_cancelled(scan_thing_mocked_for_run_scan, caplog, mocker):
     # Main loop not run, nor are return to start, final stitch, or purging of empty
     # scans. Save scan data is still called twice
     expected_calls_numbers = {
-        "cam_start_streaming_calls": 2,
+        "cam_change_streaming_mode_calls": 2,
         "main_scan_loop_calls": 1,
         "return_to_start_calls": 1,
         "perform_final_stitch_calls": 1,
@@ -584,7 +584,7 @@ def test_run_scan_fill_disk(scan_thing_mocked_for_run_scan, caplog, mocker):
     # Main loop not run, nor are return to start, final stitch, or purging of empty
     # scans. Save scan data is still called twice
     expected_calls_numbers = {
-        "cam_start_streaming_calls": 2,
+        "cam_change_streaming_mode_calls": 2,
         "main_scan_loop_calls": 1,
         "return_to_start_calls": 0,
         "perform_final_stitch_calls": 0,

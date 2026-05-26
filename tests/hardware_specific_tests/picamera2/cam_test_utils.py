@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from typing import Optional
 
 from openflexure_microscope_server.things.background_detect import ChannelDeviationLUV
-from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
+from openflexure_microscope_server.things.camera.picamera import PiCameraV2
 
 from ...shared_utils.lt_test_utils import LabThingsTestEnv
 
@@ -21,7 +21,7 @@ def camera_test_env(settings_folder: Optional[str] = None):
         temporary directory will be used as the settings folder.
     """
     thing_conf = {
-        "camera": StreamingPiCamera2,
+        "camera": PiCameraV2,
         "bg_channel_deviations_luv": ChannelDeviationLUV,
     }
     app_config = {

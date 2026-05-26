@@ -9,7 +9,7 @@ from .cam_test_utils import camera_test_env
 
 @pytest.fixture
 def picamera_test_env() -> lt.ThingClient:
-    """Initialise a test environment with only a StreamingPiCamera2 Thing."""
+    """Initialise a test environment with only a PiCameraV2 Thing."""
     with camera_test_env() as env:
         yield env
 

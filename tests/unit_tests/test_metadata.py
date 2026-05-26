@@ -12,7 +12,6 @@ import labthings_fastapi as lt
 from labthings_fastapi.testing import create_thing_without_server
 
 from openflexure_microscope_server.things.background_detect import ChannelDeviationLUV
-from openflexure_microscope_server.things.camera import BaseCamera
 from openflexure_microscope_server.things.camera import (
     picamera_tuning_file_utils as tf_utils,
 )
@@ -32,8 +31,8 @@ def temp_jpeg(tmp_path: Path) -> Path:
 
 
 def test_add_metadata_to_capture(temp_jpeg):
-    """Use a BaseCamera to add metadata to a tmp capture and test fields."""
-    base_cam = create_thing_without_server(BaseCamera)
+    """Use a SimulatedCamerato add metadata to a tmp capture and test fields."""
+    cam = create_thing_without_server(SimulatedCamera)
     metadata = {
         "Dummy1": 1,
         "Dummy2": "two",
@@ -48,7 +47,7 @@ def test_add_metadata_to_capture(temp_jpeg):
         "things_states": metadata,
     }
 
-    base_cam._add_metadata_to_capture(str(temp_jpeg), capture_metadata)
+    cam._add_metadata_to_capture(str(temp_jpeg), capture_metadata)
 
     # Reload EXIF
     exif_dict = piexif.load(str(temp_jpeg))
@@ -177,7 +176,7 @@ def test_picamera_metadata_written_to_exif(mock_picam_thing, temp_jpeg, mocker):
     exif_dict = piexif.load(str(temp_jpeg))
     user_comment = json.loads(exif_dict["Exif"][piexif.ExifIFD.UserComment].decode())
 
-    assert user_comment["camera"] == "StreamingPiCamera2"
+    assert user_comment["camera"] == "PiCameraV2"
     assert user_comment["camera_board"] == "imx219"
     # gamma_correction keys are cast to strings
     assert user_comment["tuning"] == {
