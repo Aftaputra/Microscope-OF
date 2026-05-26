@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref } from "vue";
 
 function getOriginFromLocation() {
   // This will default to the same origin that's serving
@@ -13,8 +13,8 @@ export const useSettingsStore = defineStore(
   "settings",
   () => {
     // State
-    const origin = ref(getOriginFromLocation());
-    const available = ref(false);
+    const baseUri = ref(getOriginFromLocation());
+    const ready = ref(false);
     const waiting = ref(false);
     const error = ref("");
     const trackWindow = ref(true);
@@ -43,14 +43,14 @@ export const useSettingsStore = defineStore(
     // Actions
     function resetState() {
       waiting.value = false;
-      available.value = false;
+      ready.value = false;
       // On resetState there is no connection.
       error.value = "Microscope is not connected.";
     }
 
     function setConnected() {
       waiting.value = false;
-      available.value = true;
+      ready.value = true;
     }
 
     function addStream(id) {
@@ -59,15 +59,12 @@ export const useSettingsStore = defineStore(
     function removeStream(id) {
       activeStreams.value[id] = false;
     }
-    // Getters
-    const baseUri = computed(() => origin.value);
-    const ready = computed(() => available.value);
 
     // Export
     return {
-      //State
-      origin,
-      available,
+      // State
+      baseUri,
+      ready,
       waiting,
       error,
       trackWindow,
@@ -79,11 +76,7 @@ export const useSettingsStore = defineStore(
       navigationStepSize,
       navigationInvert,
 
-      //Getters
-      baseUri,
-      ready,
-
-      //Actions
+      // Actions
       resetState,
       setConnected,
       addStream,

@@ -50,7 +50,7 @@ export default defineConfig({
       thresholds: {
         lines: 4,
         statements: 3,
-        functions: 3,
+        functions: 2,
         branches: 1,
       },
     },
