@@ -39,11 +39,10 @@ export default {
   },
 
   watch: {
-    src: {
-      immediate: true,
-      handler(newVal) {
-        this.loadOpenSeaDragon(newVal);
-      },
+    src() {
+      if (this.osdViewer) {
+        this.loadOpenSeaDragon();
+      }
     },
     brightness() {
       this.updateFilter();
@@ -62,18 +61,15 @@ export default {
       ([{ isIntersecting }]) => {
         this.visibilityChanged(isIntersecting);
       },
-      { threshold: 0.0 },
+      { threshold: 0.0, rootMargin: "500px" },
     );
-
-    if (this.src) {
-      this.loadOpenSeaDragon(this.src);
-    }
   },
 
   beforeUnmount() {
     // Remove global signal listener to perform a gallery refresh
     if (this.osdViewer) {
       this.osdViewer.destroy();
+      this.osdViewer = null;
     }
   },
 
@@ -82,7 +78,7 @@ export default {
       // adding this check to avoid error when the viewer is not yet initialized.
       if (isVisible) {
         if (!this.osdViewer && this.src) {
-          this.loadOpenSeaDragon(this.src);
+          this.loadOpenSeaDragon();
         }
       } else {
         // Don't destroy if viewer is in fullscreen
@@ -96,18 +92,37 @@ export default {
     async loadOpenSeaDragon() {
       if (this.osdViewer) {
         this.osdViewer.destroy();
+        this.osdViewer = null;
       }
       await this.$nextTick();
+
+      if (this.$refs.osdContainer) {
+        this.$refs.osdContainer.innerHTML = "";
+      }
+
       this.osdViewer = OpenSeaDragon({
         element: this.$refs.osdContainer,
         crossOriginPolicy: "Anonymous",
+        drawer: "auto",
+        preserveViewport: false,
+        buildPyramid: false,
         tileSources: this.src,
         showNavigationControl: false,
         maxZoomPixelRatio: 2,
         gestureSettingsMouse: {
           clickToZoom: false,
         },
+        imageLoaderLimit: 1,
+        maxImageCacheCount: 300,
+        timeout: 30000,
       });
+      // This detects if the OSD API has Context Recovery and enables it
+      if (
+        this.osdViewer.drawer &&
+        typeof this.osdViewer.drawer.setContextRecoveryEnabled === "function"
+      ) {
+        this.osdViewer.drawer.setContextRecoveryEnabled(true);
+      }
 
       this.updateFilter();
     },
