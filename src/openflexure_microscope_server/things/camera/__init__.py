@@ -13,6 +13,7 @@ import json
 import os
 import tempfile
 import time
+from abc import ABC, abstractmethod
 from datetime import datetime
 from types import TracebackType
 from typing import Annotated, Any, Literal, Mapping, Optional, Self, Tuple
@@ -165,7 +166,16 @@ class CameraMemoryBuffer:
             del self._storage[key]
 
 
-class BaseCamera(OFMThing):
+class StreamingMode(BaseModel):
+    """Description of streaming modes for the camera.
+
+    Cameras can sub class this to record camera specific information about the mode.
+    """
+
+    description: str
+
+
+class BaseCamera(OFMThing, ABC):
     """The base class for all cameras. All cameras must directly inherit from this class.
 
     The connection to the camera hardware should be added to the ``__enter__`` method not
@@ -195,6 +205,12 @@ class BaseCamera(OFMThing):
         # would be ideal.
         self._default_background_detector = "bg_channel_deviations_luv"
         self._background_detector_name: Optional[str] = None
+
+        if "default" and "full_resolution" not in self.streaming_modes:
+            raise KeyError(
+                f"Camera {type(self).__name__} doesn't define both a 'default' and a "
+                "'full_resolution' streaming mode."
+            )
 
     def __enter__(self) -> Self:
         """Open hardware connection when the Thing context manager is opened."""
@@ -236,21 +252,51 @@ class BaseCamera(OFMThing):
         """
         return False
 
+    @lt.property
+    def streaming_modes(self) -> Mapping[str, StreamingMode]:
+        """Modes the camera can stream in."""
+        return {
+            "default": StreamingMode(
+                description=(
+                    "The standard mode that balances capture resolution and stream "
+                    "size."
+                )
+            ),
+            "full_resolution": StreamingMode(
+                description=(
+                    "Streaming the camera in full resolution. For this camera, this is "
+                    "identical to the default mode."
+                )
+            ),
+        }
+
+    streaming_mode: str = lt.property(default="default", readonly=True)
+
     @lt.action
-    def start_streaming(
-        self, main_resolution: tuple[int, int] = (800, 800), buffer_count: int = 1
-    ) -> None:
-        """Start (or stop and restart) the camera.
+    def change_streaming_mode(self, mode: str = "default") -> None:
+        """Change the mode the camera is streaming in.
 
-        :param main_resolution: the resolution to use for the main stream.
-        :param buffer_count: number of images in the stream buffer.
+        :param mode: Must be a key from ``streaming_modes``
 
-        Note that the default values for both parameters should be set appropriately
-        for the specific camera when defining a new Camera Thing.
+        When creating a subclass. Subclass the method ``_start_streaming`` rather than
+        this method.
         """
-        raise NotImplementedError(
-            "CameraThings must define their own start_streaming method"
-        )
+        if not self.stream_active:
+            raise RuntimeError(
+                "Cannot change streaming mode before streaming is started."
+            )
+        if mode not in self.streaming_modes:
+            self.logger.warning(
+                f"Streaming mode {mode}, is not known. Expecting a mode from "
+                f"{self.streaming_modes.keys()}. Streaming in default mode."
+            )
+            mode = "default"
+        if mode != self.streaming_mode:
+            self._start_streaming(mode=mode)
+
+    @abstractmethod
+    def _start_streaming(self, mode: str = "default") -> None:
+        """Start (or stop and restart) the camera."""
 
     def kill_mjpeg_streams(self) -> None:
         """Kill the streams now as the server is shutting down.
@@ -373,20 +419,17 @@ class BaseCamera(OFMThing):
 
         return datafile_path
 
+    @abstractmethod
     @lt.property
     def stream_active(self) -> bool:
         """Whether the MJPEG stream is active."""
-        raise NotImplementedError(
-            "CameraThings must define their own stream_active method"
-        )
 
+    @abstractmethod
     @lt.action
     def discard_frames(self) -> None:
         """Discard frames so that the next frame captured is fresh."""
-        raise NotImplementedError(
-            "CameraThings must define their own discard_frames method"
-        )
 
+    @abstractmethod
     @lt.action
     def capture_array(
         self,
@@ -394,9 +437,6 @@ class BaseCamera(OFMThing):
         wait: Optional[float] = 5,
     ) -> NDArray:
         """Acquire one image from the camera and return as an array."""
-        raise NotImplementedError(
-            "CameraThings must define their own capture_array method"
-        )
 
     downsampled_array_factor: int = lt.property(default=2, ge=1)
     """The downsampling factor when calling capture_downsampled_array."""
@@ -535,15 +575,13 @@ class BaseCamera(OFMThing):
         )
         return self._thing_server_interface.call_async_task(stream.next_frame_size)
 
+    @abstractmethod
     def capture_image(
         self,
         stream_name: Literal["main", "lores", "full"],
         wait: Optional[float] = None,
     ) -> Image.Image:
         """Capture a PIL image from stream stream_name with timeout wait."""
-        raise NotImplementedError(
-            "CameraThings must define their own capture_image method"
-        )
 
     @lt.action
     def capture_and_save(
