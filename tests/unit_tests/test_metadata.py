@@ -31,7 +31,7 @@ def temp_jpeg(tmp_path: Path) -> Path:
 
 
 def test_add_metadata_to_capture(temp_jpeg):
-    """Use a SimulatedCamerato add metadata to a tmp capture and test fields."""
+    """Use a SimulatedCamera to add metadata to a tmp capture and test fields."""
     cam = create_thing_without_server(SimulatedCamera)
     metadata = {
         "Dummy1": 1,
