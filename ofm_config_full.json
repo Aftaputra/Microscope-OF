@@ -1,11 +1,6 @@
 {
     "things": {
-        "camera": {
-            "class": "openflexure_microscope_server.things.camera.picamera:StreamingPiCamera2",
-            "kwargs": {
-                "camera_board": "picamera_v2"
-            }
-        },
+        "camera": "openflexure_microscope_server.things.camera.picamera:PiCameraV2",
         "stage": "openflexure_microscope_server.things.stage.sangaboard:SangaboardThing",
         "autofocus": "openflexure_microscope_server.things.autofocus:AutofocusThing",
         "gallery": "openflexure_microscope_server.things.gallery.GalleryThing",

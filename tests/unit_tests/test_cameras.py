@@ -6,7 +6,6 @@ on camera functionality using the simulation camera are in "test_camera".
 
 from labthings_fastapi.testing import create_thing_without_server
 
-from openflexure_microscope_server.things.camera import BaseCamera
 from openflexure_microscope_server.things.camera.opencv import OpenCVCamera
 from openflexure_microscope_server.things.camera.simulation import SimulatedCamera
 
@@ -57,11 +56,9 @@ def test_thing_description_equivalence(mock_picam_thing):
     camera child classes. Any addition of actions must be accompanied by an update
     to this test, prompting discussion of whether the action belongs in the subclass
     or the base camera class.
-    """
-    base_td = create_thing_without_server(BaseCamera).thing_description()
-    base_actions = set(base_td.actions.keys())
-    base_props = set(base_td.properties.keys())
 
+    The base camera class is not instantiated as it is an Abstract Base Class
+    """
     sim_camera = create_thing_without_server(SimulatedCamera)
     sim_description = _get_clean_camera_description(sim_camera)
     opencv_camera = create_thing_without_server(OpenCVCamera)
@@ -82,8 +79,8 @@ def test_thing_description_equivalence(mock_picam_thing):
 
     # Camera actions and properties should generally be equivalent except for exposed
     # manual settings and calibration actions.
-    assert opencv_actions == sim_actions == base_actions
-    assert opencv_props == sim_props == base_props
+    assert opencv_actions == sim_actions
+    assert opencv_props == sim_props
 
     # For now PiCamera has a number of extra actions and properties. These should be
     # reduced over time by creating a way to use the functionality in a way as clearly
@@ -92,7 +89,6 @@ def test_thing_description_equivalence(mock_picam_thing):
     picamera_extra_actions = {
         "set_static_green_equalisation",
         "set_ce_enable_to_off",
-        "stop_streaming",
         "reset_ccm",
     }
     picamera_extra_props = {
@@ -103,15 +99,12 @@ def test_thing_description_equivalence(mock_picam_thing):
         "sensor_resolution",
         "capture_metadata",
         "camera_configuration",
-        "stream_resolution",
         "tuning",
-        "sensor_modes",
-        "sensor_mode",
     }
     # Note these are only the action not exposed as calibration actions.
     for action in picamera_extra_actions:
         assert action in picamera_actions
     for props in picamera_extra_props:
         assert props in picamera_props
-    assert picamera_actions - base_actions == picamera_extra_actions
-    assert picamera_props - base_props == picamera_extra_props
+    assert picamera_actions - sim_actions == picamera_extra_actions
+    assert picamera_props - sim_props == picamera_extra_props

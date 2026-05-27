@@ -401,7 +401,7 @@ class SmartScanThing(OFMThing):
                 )
 
             self.ongoing_scan.save_scan_data(self._scan_data)
-            self._cam.start_streaming(main_resolution=(3280, 2464))
+            self._cam.change_streaming_mode(mode="full_resolution")
             workflow.pre_scan_routine(self._scan_data.workflow_settings)
 
             # If stitching settings are None then this type of scan can't be stitched
@@ -436,7 +436,7 @@ class SmartScanThing(OFMThing):
             # if it ended due to an exception.
 
             # Start streaming in the default resolution again as soon as possible
-            self._cam.start_streaming()
+            self._cam.change_streaming_mode(mode="default")
 
         # This is what happens if the scan completes successfully or the
         # user cancels it.

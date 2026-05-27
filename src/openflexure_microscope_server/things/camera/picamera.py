@@ -22,12 +22,12 @@ import logging
 import os
 import tempfile
 import time
+from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from threading import RLock
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
-    Annotated,
     Any,
     Iterator,
     Literal,
@@ -41,7 +41,6 @@ from picamera2 import Picamera2
 from picamera2.encoders import MJPEGEncoder
 from picamera2.outputs import Output
 from PIL import Image
-from pydantic import BaseModel, BeforeValidator
 
 import labthings_fastapi as lt
 from labthings_fastapi.exceptions import ServerNotRunningError
@@ -55,7 +54,7 @@ from openflexure_microscope_server.ui import (
     property_control_for,
 )
 
-from . import BaseCamera
+from . import BaseCamera, StreamingMode
 from . import picamera_recalibrate_utils as recalibrate_utils
 from . import picamera_tuning_file_utils as tf_utils
 
@@ -63,11 +62,6 @@ if TYPE_CHECKING:
     from libcamera import Request
 
 LOGGER = logging.getLogger(__name__)
-
-SUPPORTED_CAMS_SENSOR_INFO = {
-    "picamera_v2": recalibrate_utils.IMX219_SENSOR_INFO,
-    "picamera_hq": recalibrate_utils.IMX477_SENSOR_INFO,
-}
 
 
 class PicameraModelError(RuntimeError):
@@ -101,38 +95,28 @@ class PicameraStreamOutput(Output):
         self.stream.add_frame(frame)
 
 
-class SensorMode(BaseModel):
-    """A Pydantic model holding all the information about a specific sensor mode.
+class PiCamera2StreamingMode(StreamingMode):
+    """Streaming mode configuration for the PiCamera2."""
 
-    This data is as reported by the PiCamera2 module.
-    """
-
-    unpacked: str
+    main_resolution: tuple[int, int]
+    lores_resolution: tuple[int, int]
+    sensor_mode_resolution: tuple[int, int]
     bit_depth: int
-    size: tuple[int, int]
-    fps: float
-    crop_limits: tuple[int, int, int, int]
-    exposure_limits: tuple[Optional[int], Optional[int], Optional[int]]
-    format: Annotated[str, BeforeValidator(repr)]
+    use_lores_as_preview: bool
+    buffer_count: int = 6
+    scaler_crop: Optional[tuple[int, int, int, int]] = None
+
+    @property
+    def sensor_mode_dict(self) -> dict[str, Any]:
+        """The dictionary expected by PiCamera2 for setting sensor mode."""
+        return {"output_size": self.sensor_mode_resolution, "bit_depth": self.bit_depth}
 
 
-class SensorModeSelector(BaseModel):
-    """A Pydantic model holding the two values needed to select a PiCamera Sensor mode.
-
-    These values are the output size and the bit depth.
-
-    This is a Pydantic model so that it can sent by FastAPI
-    """
-
-    output_size: tuple[int, int]
-    bit_depth: int
-
-
-class StreamingPiCamera2(BaseCamera):
+class StreamingPiCamera2(BaseCamera, ABC):
     """A Thing that provides and interface to the Raspberry Pi Camera.
 
-    Currently the Thing only supports the PiCamera v2 board. This needs
-    generalisation.
+    This is an abstract base class for all picamera models. Use a subclass specific
+    to the camera model.
     """
 
     _focus_fom: int
@@ -140,31 +124,34 @@ class StreamingPiCamera2(BaseCamera):
     tuning: dict = lt.setting(default_factory=dict, readonly=True)
     """The Raspberry PiCamera Tuning File JSON."""
 
+    # Subclasses should defined both of these.
+    _camera_board: str
+    _sensor_info: recalibrate_utils.SensorInfo
+
     def __init__(
         self,
         thing_server_interface: lt.ThingServerInterface,
         camera_num: int = 0,
-        camera_board: str = "picamera_v2",
     ) -> None:
         """Initialise the camera with the given camera number.
 
         This makes no connection to the camera (except to get the default tuning file).
 
+        :param thing_server_interface: The interface between this Thing and the server.
         :param camera_num: The number of the camera. This should generally be left as 0
             as most Raspberry Pi boards only support 1 camera.
-        :param camera_board: The camera board used. Supported options are "picamera_v2"
-           and "picamera_hq".
         """
         super().__init__(thing_server_interface)
         self._setting_save_in_progress = False
         self._camera_num = camera_num
-        self._camera_board = camera_board
-        if camera_board not in SUPPORTED_CAMS_SENSOR_INFO:
-            raise PicameraModelError(
-                f"The camera_board {camera_board} is not supported. Supported boards "
-                f"are {SUPPORTED_CAMS_SENSOR_INFO.keys()}."
+
+        # Check the subclass defined the _camera_board and _sensor_info
+        if not hasattr(self, "_camera_board") or not hasattr(self, "_sensor_info"):
+            raise AttributeError(
+                f"{type(self).__name__} must define both both _camera_board and "
+                "_sensor_info attributes"
             )
-        self._sensor_info = SUPPORTED_CAMS_SENSOR_INFO[camera_board]
+
         self._picamera_lock = RLock()
         self._picamera = None
 
@@ -187,9 +174,6 @@ class StreamingPiCamera2(BaseCamera):
         # Also set the colour gains based on the tuning. Set to _colour_gains to not
         # trigger a ServerNotRunningError
         self._colour_gains = tf_utils.get_colour_gains_from_lst(self.tuning)
-
-    stream_resolution: tuple[int, int] = lt.property(default=(820, 616))
-    """Resolution to use for the MJPEG stream."""
 
     mjpeg_bitrate: Optional[int] = lt.property(default=100000000)
     """Bitrate for MJPEG stream (None for default)."""
@@ -302,41 +286,6 @@ class StreamingPiCamera2(BaseCamera):
             "Sharpness": 1,
         }
 
-    _sensor_modes: Optional[list[SensorMode]] = None
-
-    @lt.property
-    def sensor_modes(self) -> list[SensorMode]:
-        """All the available modes the current sensor supports."""
-        if not self._sensor_modes:
-            with self._streaming_picamera() as cam:
-                self._sensor_modes = cam.sensor_modes
-        return self._sensor_modes
-
-    _sensor_mode: Optional[dict] = None
-
-    @lt.property
-    def sensor_mode(self) -> Optional[SensorModeSelector]:
-        """The intended sensor mode of the camera."""
-        if self._sensor_mode is None:
-            return None
-        return SensorModeSelector(**self._sensor_mode)
-
-    @sensor_mode.setter
-    def _set_sensor_mode(self, new_mode: Optional[SensorModeSelector | dict]) -> None:
-        """Change the sensor mode used."""
-        if new_mode is None:
-            self._sensor_mode = None
-        elif isinstance(new_mode, SensorModeSelector):
-            self._sensor_mode = new_mode.model_dump()
-        elif isinstance(new_mode, dict):
-            self._sensor_mode = new_mode
-
-        # By pausing the stream on when accessing, streaming_picamera
-        # self._sensor_mode will be read and set when the stream restarts
-        # after the context manager closes.
-        with self._streaming_picamera(pause_stream=True):
-            pass
-
     @lt.property
     def sensor_resolution(self) -> Optional[tuple[int, int]]:
         """The native resolution of the camera's sensor."""
@@ -406,13 +355,11 @@ class StreamingPiCamera2(BaseCamera):
         """Start streaming when the Thing context manager is opened.
 
         This opens the picamera connection, initialises the camera, sets the
-        sensor_modes property, and then starts the streams.
+        property, and then starts the streams.
         """
         super().__enter__()
         self._initialise_picamera(check_sensor_model=True)
-        # Sensor modes is a cached property read it once after initialising the camera
-        _modes = self.sensor_modes
-        self.start_streaming()
+        self._start_streaming()
         return self
 
     @property
@@ -437,12 +384,12 @@ class StreamingPiCamera2(BaseCamera):
         already_streaming = self.stream_active
         with self._picamera_lock:
             if pause_stream and already_streaming:
-                self.stop_streaming(stop_web_stream=False)
+                self._stop_streaming(stop_web_stream=False)
             try:
                 yield self._picamera
             finally:
                 if pause_stream and already_streaming:
-                    self.start_streaming()
+                    self._start_streaming()
 
     def __exit__(
         self,
@@ -451,59 +398,54 @@ class StreamingPiCamera2(BaseCamera):
         traceback: Optional[TracebackType],
     ) -> None:
         """Close the picamera connection when the Thing context manager is closed."""
-        self.stop_streaming()
+        self._stop_streaming()
         with self._streaming_picamera() as cam:
             cam.close()
         del self._picamera
         super().__exit__(exc_type, exc_value, traceback)
 
-    @lt.action
-    def start_streaming(
-        self, main_resolution: tuple[int, int] = (820, 616), buffer_count: int = 6
-    ) -> None:
+    @abstractmethod
+    @lt.property
+    def streaming_modes(self) -> Mapping[str, PiCamera2StreamingMode]:
+        """Modes the camera can stream in."""
+
+    def _start_streaming(self, mode: str = "default") -> None:
         """Start the MJPEG stream. This is where persistent controls are sent to camera.
 
-        Sets the camera resolutions based on input parameters, and sets the low-res
-        resolution to (320, 240). Note: (320, 240) is a standard from the Pi Camera
-        manual.
+        Sets the camera stream resoltuons based on input mode
 
         Create two streams:
 
-        * ``lores_mjpeg_stream`` for autofocus at low-res resolution
-        * ``mjpeg_stream`` for preview. This is the ``main_resolution`` if this is less
-            than (1280, 960), or the low-res resolution if above. This allows for
-            high resolution capture without streaming high resolution video.
-
-        main_resolution: the resolution for the main configuration. Defaults to
-        (820, 616), 1/4 sensor size.
-        buffer_count: the number of frames to hold in the buffer. Higher uses more memory,
-        lower may cause dropped frames. Value must be between 1 and 8, Defaults to 6.
+        * ``lores_mjpeg_stream`` for autofocus at ``lores_resolution``
+        * ``mjpeg_stream`` for preview. This is at the ``main_resolution`` unless
+            ``use_lores_as_preview`` is True, in which case it is a copy of
+            ``lores_mjpeg_stream``
         """
+        if mode not in self.streaming_modes:
+            raise ValueError(f"Unknown mode {mode}")
+        self.streaming_mode = mode
+
+        mode_info = self.streaming_modes[mode]
         controls = self._get_persistent_controls()
-        # Buffer count can't be negative, zero, or too high.
-        if buffer_count < 1 or buffer_count > 8:
-            # 8 is slightly arbitrary. 6 is the PiCamera default for video
-            # and the documentation only says that setting values higher gives
-            # diminishing returns, and that the true maximum is hardware dependent
-            raise ValueError(
-                f"Can't set a buffer count of {buffer_count}. "
-                "Buffer count must be an integer from 1-8"
-            )
+
+        if mode_info.scaler_crop is not None:
+            controls["ScalerCrop"] = mode_info.scaler_crop
+
         with self._streaming_picamera() as picam:
             try:
                 if picam.started:
                     picam.stop()
                     picam.stop_encoder()  # make sure there are no other encoders going
                 stream_config = picam.create_video_configuration(
-                    main={"size": main_resolution},
-                    lores={"size": (320, 240), "format": "YUV420"},
-                    sensor=self._sensor_mode,
+                    main={"size": mode_info.main_resolution},
+                    lores={"size": mode_info.lores_resolution, "format": "YUV420"},
+                    sensor=mode_info.sensor_mode_dict,
                     controls=controls,
                 )
-                stream_config["buffer_count"] = buffer_count
+                stream_config["buffer_count"] = mode_info.buffer_count
                 picam.configure(stream_config)
                 LOGGER.info("Starting picamera MJPEG stream...")
-                stream_name = "lores" if main_resolution[0] > 1280 else "main"
+                stream_name = "lores" if mode_info.use_lores_as_preview else "main"
                 picam.start_recording(
                     MJPEGEncoder(self.mjpeg_bitrate),
                     PicameraStreamOutput(self.mjpeg_stream),
@@ -515,16 +457,12 @@ class StreamingPiCamera2(BaseCamera):
                     name="lores",
                 )
             except Exception as e:
-                LOGGER.exception("Error while starting preview: {e}")
-                LOGGER.exception(e)
+                LOGGER.error(f"Error while starting preview: {e}.")
             else:
                 self.stream_active = True
-                LOGGER.debug(
-                    "Started MJPEG stream at %s on port %s", self.stream_resolution, 1
-                )
+                LOGGER.debug("Started MJPEG stream in %s mode.", mode)
 
-    @lt.action
-    def stop_streaming(self, stop_web_stream: bool = True) -> None:
+    def _stop_streaming(self, stop_web_stream: bool = True) -> None:
         """Stop the MJPEG stream."""
         with self._streaming_picamera() as picam:
             try:
@@ -549,14 +487,17 @@ class StreamingPiCamera2(BaseCamera):
             cam.capture_metadata()
 
     @contextmanager
-    def _switch_to_still_capture_mode(self) -> Iterator[Picamera2]:
+    def _switch_to_single_capture_mode(self) -> Iterator[Picamera2]:
         """Get the picamera lock, pause stream and switch into still capture config.
 
         Restarts stream when complete.
         """
+        mode_info = self.streaming_modes["full_resolution"]
         with self._streaming_picamera(pause_stream=True) as cam:
             LOGGER.debug("Reconfiguring camera for full resolution capture")
-            cam.configure(cam.create_still_configuration(sensor=self._sensor_mode))
+            cam.configure(
+                cam.create_still_configuration(sensor=mode_info.sensor_mode_dict)
+            )
             cam.start()
             time.sleep(self._sensor_info.short_pause)
             yield cam
@@ -595,7 +536,7 @@ class StreamingPiCamera2(BaseCamera):
             with self._streaming_picamera() as cam:
                 return cam.capture_image(stream_name, wait=wait)
         elif stream_name == "full":
-            with self._switch_to_still_capture_mode() as cam:
+            with self._switch_to_single_capture_mode() as cam:
                 return cam.capture_image(name="main", wait=wait)
         else:
             raise ValueError(f'Unknown stream name "{stream_name}"')
@@ -625,7 +566,7 @@ class StreamingPiCamera2(BaseCamera):
             # Raw cannot used capture_image.
             if wait is None:
                 wait = 0.9
-            with self._switch_to_still_capture_mode() as cam:
+            with self._switch_to_single_capture_mode() as cam:
                 return cam.capture_array(name="raw", wait=wait)
         # Note that internally the PiCamera creates a PIL image and then converts to
         # numpy with ``np.array(Image.open(io.BytesIO(self.make_buffer(name))))``.
@@ -968,3 +909,77 @@ class StreamingPiCamera2(BaseCamera):
             "gamma_correction": self.gamma_correction,
         }
         return state
+
+
+class PiCameraV2(StreamingPiCamera2):
+    """A Thing that provides and interface to the Raspberry Pi Camera V2."""
+
+    _camera_board = "picamera_v2"
+    _sensor_info = recalibrate_utils.IMX219_SENSOR_INFO
+
+    @lt.property
+    def streaming_modes(self) -> Mapping[str, PiCamera2StreamingMode]:
+        """Modes the camera can stream in."""
+        return {
+            "default": PiCamera2StreamingMode(
+                description=(
+                    "The standard mode that balances capture resolution and stream "
+                    "size."
+                ),
+                main_resolution=(820, 616),
+                lores_resolution=(320, 240),
+                sensor_mode_resolution=(3280, 2464),
+                bit_depth=10,
+                use_lores_as_preview=False,
+            ),
+            "full_resolution": PiCamera2StreamingMode(
+                description=(
+                    "Streaming the camera in 8MP full resolution. The preview stream "
+                    "sent to the UI will be the low resolution (lores) stream. "
+                    "This allows better image capture at expense of preview quality."
+                ),
+                main_resolution=(3280, 2464),
+                lores_resolution=(320, 240),
+                sensor_mode_resolution=(3280, 2464),
+                bit_depth=10,
+                use_lores_as_preview=True,
+            ),
+        }
+
+
+class PiCameraHQ(StreamingPiCamera2):
+    """A Thing that provides and interface to the Raspberry Pi Camera HQ."""
+
+    _camera_board = "picamera_hq"
+    _sensor_info = recalibrate_utils.IMX477_SENSOR_INFO
+
+    @lt.property
+    def streaming_modes(self) -> Mapping[str, PiCamera2StreamingMode]:
+        """Modes the camera can stream in."""
+        return {
+            "default": PiCamera2StreamingMode(
+                description=(
+                    "The standard mode that balances capture resolution and stream "
+                    "size."
+                ),
+                main_resolution=(700, 700),
+                lores_resolution=(350, 350),
+                sensor_mode_resolution=(4056, 3040),
+                bit_depth=12,
+                use_lores_as_preview=False,
+                scaler_crop=(628, 120, 2800, 2800),
+            ),
+            "full_resolution": PiCamera2StreamingMode(
+                description=(
+                    "Streaming the camera in 12MP full resolution. The preview stream "
+                    "sent to the UI will be the low resolution (lores) stream. "
+                    "This allows better image capture at expense of preview quality."
+                ),
+                main_resolution=(2800, 2800),
+                lores_resolution=(350, 350),
+                sensor_mode_resolution=(4056, 3040),
+                bit_depth=12,
+                use_lores_as_preview=True,
+                scaler_crop=(628, 120, 2800, 2800),
+            ),
+        }

@@ -93,13 +93,13 @@ def test_exposure_time_on_start_and_stop_stream():
             print(f"Starting simulation scan {i}")
             # This will need updating if we start supporting other Picamera models
             # It is currently used here to mimic the behaviour in in scanning.
-            client.start_streaming(main_resolution=(3280, 2464))
+            client.change_streaming_mode(mode="full_resolution")
             time.sleep(0.5)
             for _j in range(5):
                 client.capture_to_memory(buffer_max=1)
             # Reset to main resolution
             time.sleep(0.5)
-            client.start_streaming()
+            client.change_streaming_mode(mode="default")
         # Check after all of this the exposure time is the same.
         assert client.exposure_time == set_time
 

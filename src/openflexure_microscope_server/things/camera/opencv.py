@@ -53,7 +53,7 @@ class OpenCVCamera(BaseCamera):
                 self.logger.warning(f"{self.camera_name} not found.")
             self._camera_name = next(iter(self.cameras))
 
-        self._start_stream()
+        self._start_streaming()
         return self
 
     def __exit__(
@@ -66,7 +66,7 @@ class OpenCVCamera(BaseCamera):
 
         Before releasing the camera the capture thread is closed.
         """
-        self._stop_stream()
+        self._stop_streaming()
         super().__exit__(exc_type, exc_value, traceback)
 
     _camera_name = ""
@@ -89,12 +89,15 @@ class OpenCVCamera(BaseCamera):
         self._camera_name = value
         if value not in self.cameras:
             raise ValueError(f"{value} is not a valid camera name.")
-        self._start_stream()
+        self._start_streaming()
 
-    def _start_stream(self) -> None:
+    def _start_streaming(self, mode: str = "default") -> None:
         """Start the camera stream or restart if running."""
+        if mode not in self.streaming_modes:
+            raise ValueError(f"Unknown mode {mode}")
+        self.streaming_mode = mode
         if self.stream_active:
-            self._stop_stream()
+            self._stop_streaming()
         self.cap = cv2.VideoCapture(
             self.cameras[self.camera_name], opencv_utils.BACKEND
         )
@@ -102,7 +105,7 @@ class OpenCVCamera(BaseCamera):
         self._capture_thread = Thread(target=self._capture_frames)
         self._capture_thread.start()
 
-    def _stop_stream(self) -> None:
+    def _stop_streaming(self) -> None:
         """Stop the camera stream."""
         if self.stream_active:
             self._capture_enabled = False

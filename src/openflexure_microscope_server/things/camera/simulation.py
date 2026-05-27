@@ -413,7 +413,7 @@ class SimulatedCamera(BaseCamera):
         """Start the capture thread when the Thing context manager is opened."""
         super().__enter__()
         self.generate_canvas()
-        self.start_streaming()
+        self._start_streaming()
         return self
 
     def __exit__(
@@ -428,13 +428,10 @@ class SimulatedCamera(BaseCamera):
             self._capture_thread.join()
         super().__exit__(exc_type, exc_value, traceback)
 
-    @lt.action
-    def start_streaming(
-        self, main_resolution: tuple[int, int] = (820, 616), buffer_count: int = 1
-    ) -> None:
+    def _start_streaming(self, mode: str = "default") -> None:
         """Start the live stream.
 
-        The start_streaming method is used a camera ``Thing`` to begin streaming
+        The _start_streaming method is used a camera ``Thing`` to begin streaming
         images or to adjust the stream resolution if streaming is already active.
 
         The simulation camera does not currently support the resolution argument.
@@ -442,13 +439,11 @@ class SimulatedCamera(BaseCamera):
         If called while already streaming, the warning will be emitted and no other
         action will be taken.
 
-        :param main_resolution: Currently ignored, this argument exists to ensure consistent API across camera Things.
-        :param buffer_count: Currently ignored, this argument exists to ensure consistent API across camera Things.
+        :param mode: The name of the streaming mode to use.
         """
-        LOGGER.warning(
-            f"Simulation camera doesn't respect {main_resolution=} or {buffer_count=} "
-            "arguments."
-        )
+        if mode not in self.streaming_modes:
+            raise ValueError(f"Unknown mode {mode}")
+        self.streaming_mode = mode
         if not self.stream_active:
             self._capture_enabled = True
             self._capture_thread = Thread(target=self._capture_frames)

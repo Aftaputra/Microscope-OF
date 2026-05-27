@@ -107,9 +107,9 @@ def mock_picam_thing(mocker):
         },
     )
 
-    from openflexure_microscope_server.things.camera.picamera import StreamingPiCamera2
+    from openflexure_microscope_server.things.camera.picamera import PiCameraV2
 
-    return create_thing_without_server(StreamingPiCamera2)
+    return create_thing_without_server(PiCameraV2)
 
 
 @pytest.fixture
