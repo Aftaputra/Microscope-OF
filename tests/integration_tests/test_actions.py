@@ -77,10 +77,10 @@ def test_stage(simulation_test_env):
     assert start["z"] == pos["z"]
 
 
-def test_capture_array(simulation_test_env):
+def test_capture_as_array(simulation_test_env):
     """Capture array from simulation and check the size is as expected."""
     camera = simulation_test_env.get_thing_client("camera")
-    array = np.asarray(camera.capture_array())
+    array = np.asarray(camera.capture_as_array())
     assert array.shape == (616, 820, 3)
 
 

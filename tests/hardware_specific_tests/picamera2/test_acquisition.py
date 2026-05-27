@@ -26,7 +26,7 @@ def test_jpeg_and_array(picamera_client):
     assert jpeg_capture.format == "JPEG"
 
     # Capture an array
-    arrlist = picamera_client.capture_array(stream_name="main")
+    arrlist = picamera_client.capture_as_array(stream_name="main")
     array_main = np.array(arrlist)
 
     # Verify image sizes are the same

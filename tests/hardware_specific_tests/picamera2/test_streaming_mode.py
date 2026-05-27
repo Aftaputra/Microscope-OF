@@ -14,7 +14,7 @@ def test_streaming_mode():
     with camera_test_client() as client:
         for mode, res in ["default", (820, 616)], ["full_resolution", (3280, 2464)]:
             client.change_streaming_mode(mode=mode)
-            arr = np.array(client.capture_array(stream_name="main"))
+            arr = np.array(client.capture_as_array(stream_name="main"))
             # Check that the array dimensions match the requested image size.
             # Note: Numpy array shape is (y,x), but the sensor is set with (x,y)
             # hence the need to compare index 0 with index 1.
