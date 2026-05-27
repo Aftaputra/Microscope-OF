@@ -164,9 +164,9 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
         self._autofocus.fast_autofocus(dz=dz)
         focus_height = self._stage.get_xyz_position()[2]
         filename = f"img_{xyz_pos[0]}_{xyz_pos[1]}_{focus_height}.jpeg"
-        self._cam.capture_and_save(
-            jpeg_path=os.path.join(images_dir, filename),
-            save_resolution=save_resolution,
+        self._cam.capture_and_save_to_path(
+            path=os.path.join(images_dir, filename),
+            capture_mode="standard",
         )
 
         return True, focus_height

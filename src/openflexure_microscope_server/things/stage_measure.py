@@ -197,9 +197,6 @@ class RangeofMotionThing(OFMThing):
                 "time": total_time,
             }
 
-            if not os.path.exists(self.data_dir):
-                os.makedirs(self.data_dir)
-
             timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M")
             datafile_path = os.path.join(self.data_dir, f"rom_data_{timestamp}.json")
             with open(datafile_path, "w", encoding="utf-8") as f:

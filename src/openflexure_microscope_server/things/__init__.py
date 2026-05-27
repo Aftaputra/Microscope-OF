@@ -34,6 +34,8 @@ class OFMThing(lt.Thing):
         self._data_dir = os.path.join(
             os.path.normpath(str(app_data_dir)), os.path.normpath(self.name)
         )
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
         return self
 
     def __exit__(

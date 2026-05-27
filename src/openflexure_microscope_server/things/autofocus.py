@@ -737,11 +737,9 @@ class AutofocusThing(lt.Thing):
 
         # Loop through the range, saving each capture to disk
         for capture in captures[slice_to_save]:
-            self._cam.save_from_memory(
-                jpeg_path=os.path.join(capture_parameters.images_dir, capture.filename),
-                save_resolution=capture_parameters.save_resolution,
-                buffer_id=capture.buffer_id,
-            )
+            path = os.path.join(capture_parameters.images_dir, capture.filename)
+            self._cam.save_from_memory(path=path, buffer_id=capture.buffer_id)
+
         self._cam.clear_buffers()
         return sharpest_index
 
@@ -823,7 +821,9 @@ class AutofocusThing(lt.Thing):
             camera buffer_id needed for saving.
         """
         stage_location = self._stage.position
-        buffer_id = self._cam.capture_to_memory(buffer_max=buffer_max)
+        buffer_id = self._cam.capture_to_memory(
+            capture_mode="standard", buffer_max=buffer_max
+        )
         return CaptureInfo(
             buffer_id=buffer_id,
             position=stage_location,
@@ -956,14 +956,8 @@ class AutofocusThing(lt.Thing):
 
         # Save all captures
         for capture in captures:
-            self._cam.save_from_memory(
-                jpeg_path=os.path.join(
-                    capture_parameters.images_dir,
-                    capture.filename,
-                ),
-                save_resolution=capture_parameters.save_resolution,
-                buffer_id=capture.buffer_id,
-            )
+            path = os.path.join(capture_parameters.images_dir, capture.filename)
+            self._cam.save_from_memory(path=path, buffer_id=capture.buffer_id)
 
         self._cam.clear_buffers()
 
