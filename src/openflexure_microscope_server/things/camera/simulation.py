@@ -14,7 +14,7 @@ import re
 import time
 from threading import Thread
 from types import TracebackType
-from typing import Literal, Optional, Self, overload
+from typing import Optional, Self, overload
 
 import numpy as np
 from PIL import Image, ImageFilter
@@ -479,10 +479,10 @@ class SimulatedCamera(BaseCamera):
         """
 
     @lt.action
-    def capture_array(
+    def capture_as_array(
         self,
-        stream_name: Literal["main", "lores", "raw", "full"] = "full",
-        wait: Optional[float] = None,
+        capture_mode: str = "standard",
+        raw: bool = False,
     ) -> NDArray:
         """Acquire one image from the camera and return as an array.
 
@@ -491,28 +491,24 @@ class SimulatedCamera(BaseCamera):
         binary image formats will be added in due course.
 
         :param stream_name: Currently ignored, this argument exists to ensure consistent API across camera Things.
-        :param wait: Currently ignored, this argument exists to ensure consistent API across camera Things.
         """
-        if wait is not None:
-            LOGGER.warning("Simulation camera has no wait option. Use None.")
-        LOGGER.warning(f"Simulation camera camera doesn't respect {stream_name=}")
+        if raw is True:
+            raise NotImplementedError(
+                "Simulation camera camera doesn't support raw capture."
+            )
+        # Warn if the capture mode is incorrect, but don't read the cooerced value as
+        # this camera only supports one mode.
+        self._validate_capture_mode(capture_mode)
         return np.array(self.generate_frame())
 
-    def capture_image(
-        self,
-        stream_name: Literal["main", "lores", "full"],
-        wait: Optional[float] = None,
-    ) -> Image.Image:
+    def _capture_image(self, capture_mode: str = "standard") -> Image.Image:
         """Capture to a PIL image. This is not exposed as a ThingAction.
 
         It is used for capture to memory.
-
-        :param stream_name: Currently ignored, this argument exists to ensure consistent API across camera Things.
-        :param wait: Currently ignored, this argument exists to ensure consistent API across camera Things.
         """
-        if wait is not None:
-            LOGGER.warning("Simulation camera has no wait option. Use None.")
-        LOGGER.warning(f"Simulation camera camera doesn't respect {stream_name=}")
+        # Warn if the capture mode is incorrect, but don't read the cooerced value as
+        # this camera only supports one mode.
+        self._validate_capture_mode(capture_mode)
         return self.generate_frame()
 
     @lt.action

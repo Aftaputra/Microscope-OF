@@ -54,7 +54,7 @@ from openflexure_microscope_server.ui import (
     property_control_for,
 )
 
-from . import BaseCamera, StreamingMode
+from . import BaseCamera, CaptureMode, StreamingMode
 from . import picamera_recalibrate_utils as recalibrate_utils
 from . import picamera_tuning_file_utils as tf_utils
 
@@ -110,6 +110,20 @@ class PiCamera2StreamingMode(StreamingMode):
     def sensor_mode_dict(self) -> dict[str, Any]:
         """The dictionary expected by PiCamera2 for setting sensor mode."""
         return {"output_size": self.sensor_mode_resolution, "bit_depth": self.bit_depth}
+
+
+class PiCamera2CaptureMode(CaptureMode):
+    """Capture mode configuration for the PiCamera2."""
+
+    streaming_mode: Optional[str]
+    """The streaming mode the camera should be in for capture.
+
+    Use None to use the active mode.
+    """
+    stream_name: Literal["lores", "main"]
+    """The Picamera stream name to capture."""
+    timeout: float = 5.0
+    """The timeout. A number above 10 risks hardlocking the Pi."""
 
 
 class StreamingPiCamera2(BaseCamera, ABC):
@@ -382,6 +396,7 @@ class StreamingPiCamera2(BaseCamera, ABC):
                 * On closing of the context manager the stream will restart.
         """
         already_streaming = self.stream_active
+        streaming_mode = self.streaming_mode
         with self._picamera_lock:
             if pause_stream and already_streaming:
                 self._stop_streaming(stop_web_stream=False)
@@ -389,7 +404,7 @@ class StreamingPiCamera2(BaseCamera, ABC):
                 yield self._picamera
             finally:
                 if pause_stream and already_streaming:
-                    self._start_streaming()
+                    self._start_streaming(streaming_mode)
 
     def __exit__(
         self,
@@ -409,6 +424,31 @@ class StreamingPiCamera2(BaseCamera, ABC):
     def streaming_modes(self) -> Mapping[str, PiCamera2StreamingMode]:
         """Modes the camera can stream in."""
 
+    @abstractmethod
+    @lt.property
+    def capture_modes(self) -> Mapping[str, PiCamera2CaptureMode]:
+        """Modes the camera can use for capturing."""
+
+    def _create_picam_config_from_mode_info(
+        self,
+        picam: Picamera2,
+        mode_info: PiCamera2StreamingMode,
+    ) -> dict[str, Any]:
+        """Create the dictionary to pass to ``Picamera2.configure``."""
+        controls = self._get_persistent_controls()
+
+        if mode_info.scaler_crop is not None:
+            controls["ScalerCrop"] = mode_info.scaler_crop
+
+        stream_config = picam.create_video_configuration(
+            main={"size": mode_info.main_resolution},
+            lores={"size": mode_info.lores_resolution, "format": "YUV420"},
+            sensor=mode_info.sensor_mode_dict,
+            controls=controls,
+        )
+        stream_config["buffer_count"] = mode_info.buffer_count
+        return stream_config
+
     def _start_streaming(self, mode: str = "default") -> None:
         """Start the MJPEG stream. This is where persistent controls are sent to camera.
 
@@ -426,23 +466,16 @@ class StreamingPiCamera2(BaseCamera, ABC):
         self.streaming_mode = mode
 
         mode_info = self.streaming_modes[mode]
-        controls = self._get_persistent_controls()
-
-        if mode_info.scaler_crop is not None:
-            controls["ScalerCrop"] = mode_info.scaler_crop
 
         with self._streaming_picamera() as picam:
             try:
                 if picam.started:
                     picam.stop()
                     picam.stop_encoder()  # make sure there are no other encoders going
-                stream_config = picam.create_video_configuration(
-                    main={"size": mode_info.main_resolution},
-                    lores={"size": mode_info.lores_resolution, "format": "YUV420"},
-                    sensor=mode_info.sensor_mode_dict,
-                    controls=controls,
+                stream_config = self._create_picam_config_from_mode_info(
+                    picam=picam,
+                    mode_info=mode_info,
                 )
-                stream_config["buffer_count"] = mode_info.buffer_count
                 picam.configure(stream_config)
                 LOGGER.info("Starting picamera MJPEG stream...")
                 stream_name = "lores" if mode_info.use_lores_as_preview else "main"
@@ -487,65 +520,58 @@ class StreamingPiCamera2(BaseCamera, ABC):
             cam.capture_metadata()
 
     @contextmanager
-    def _switch_to_single_capture_mode(self) -> Iterator[Picamera2]:
-        """Get the picamera lock, pause stream and switch into still capture config.
+    def _ensure_mode_for_capture(
+        self, capture_mode_info: PiCamera2CaptureMode
+    ) -> Iterator[Picamera2]:
+        """Ensure in correct mode for capture.
 
-        Restarts stream when complete.
+        If the camera is already in the correct mode, the stream isn't paused and
+        this is the same as using ``self._streaming_picamera().
+
+        Otherwise, pause stream, and switch switch mode. Mode is reset and stream
+        restarts stream after the context manager closes.
         """
-        mode_info = self.streaming_modes["full_resolution"]
-        with self._streaming_picamera(pause_stream=True) as cam:
-            LOGGER.debug("Reconfiguring camera for full resolution capture")
-            cam.configure(
-                cam.create_still_configuration(sensor=mode_info.sensor_mode_dict)
-            )
-            cam.start()
-            time.sleep(self._sensor_info.short_pause)
-            yield cam
+        required_streaming_mode = capture_mode_info.streaming_mode
+        if (
+            required_streaming_mode is None
+            or required_streaming_mode == self.streaming_mode
+        ):
+            with self._streaming_picamera() as cam:
+                yield cam
+        else:
+            streaming_mode_info = self.streaming_modes[required_streaming_mode]
+            with self._streaming_picamera(pause_stream=True) as cam:
+                LOGGER.debug("Reconfiguring camera for full resolution capture")
+                stream_config = self._create_picam_config_from_mode_info(
+                    picam=cam,
+                    mode_info=streaming_mode_info,
+                )
+                cam.configure(stream_config)
+                cam.start()
+                time.sleep(self._sensor_info.short_pause)
+                yield cam
 
-    def capture_image(
-        self,
-        stream_name: Literal["main", "lores", "full"] = "main",
-        wait: Optional[float] = 0.9,
-    ) -> Image.Image:
+    def _capture_image(self, capture_mode: str = "standard") -> Image.Image:
         """Acquire one image from the camera and return it as a PIL Image.
 
-        If the ``stream_name`` parameter is ``main`` or ``lores``, it will be captured
-        from the main preview stream, or the low-res preview stream, respectively. This
-        means the camera won't be reconfigured, and the stream will not pause (though
-        it may miss one frame).
-
-        If ``full`` resolution is requested, we will briefly pause the MJPEG stream and
-        reconfigure the camera to capture a full resolution image. This will capture an
-        image at the full resolution of the current sensor mode. If the current sensor
-        mode bins or crops the image, this may not be the native resolution of the
-        camera sensor.
-
-        :param stream_name: (Optional) The PiCamera2 stream to use, should be one of
-            ["main", "lores", "full"]. Default = "main". Note that "raw" images cannot
-            be captured as PIL images. Use capture_array
-        :param wait: (Optional, float) Set a timeout in seconds. Default = 0.9s,
-            lower than the 1s timeout for the camera. This ensures that our code times
-            out and returns before the camera times out. If None is set the default
-            value of 0.9 will be used to prevent the possibility of the camera locking.
+        :param capture_mode: The capture mode to use. See the description field of each
+            mode for more detail in ``capture_modes`` for more detail.
 
         :raises TimeoutError: if this time is exceeded during capture.
         """
-        if wait is None:
-            wait = 0.9
-        if stream_name in ["main", "lores", "raw"]:
-            with self._streaming_picamera() as cam:
-                return cam.capture_image(stream_name, wait=wait)
-        elif stream_name == "full":
-            with self._switch_to_single_capture_mode() as cam:
-                return cam.capture_image(name="main", wait=wait)
-        else:
-            raise ValueError(f'Unknown stream name "{stream_name}"')
+        capture_mode = self._validate_capture_mode(capture_mode)
+        capture_mode_info = self.capture_modes[capture_mode]
+
+        with self._ensure_mode_for_capture(capture_mode_info) as cam:
+            return cam.capture_image(
+                capture_mode_info.stream_name, wait=capture_mode_info.timeout
+            )
 
     @lt.action
-    def capture_array(
+    def capture_as_array(
         self,
-        stream_name: Literal["main", "lores", "raw", "full"] = "main",
-        wait: Optional[float] = 0.9,
+        capture_mode: str = "standard",
+        raw: bool = False,
     ) -> NDArray:
         """Acquire one image from the camera and return as an array.
 
@@ -555,24 +581,22 @@ class StreamingPiCamera2(BaseCamera, ABC):
 
         :param stream_name: (Optional) The PiCamera2 stream to use, should be one of
             ["main", "lores", "raw", "full"]. Default = "main"
-        :param wait: (Optional, float) Set a timeout in seconds. Default = 0.9s,
-            lower than the 1s timeout for the camera. This ensures that our code times
-            out and returns before the camera times out. If None is set the default
-            value of 0.9 will be used to prevent the possibility of the camera locking.
 
         :raises TimeoutError: if this time is exceeded during capture.
         """
-        if stream_name == "raw":
-            # Raw cannot used capture_image.
-            if wait is None:
-                wait = 0.9
-            with self._switch_to_single_capture_mode() as cam:
-                return cam.capture_array(name="raw", wait=wait)
+        if raw:
+            # Raw cannot used _capture_image.
+            capture_mode = self._validate_capture_mode(capture_mode)
+            capture_mode_info = self.capture_modes[capture_mode]
+
+            with self._ensure_mode_for_capture(capture_mode_info) as cam:
+                return cam.capture_array(name="raw", wait=capture_mode_info.timeout)
+
         # Note that internally the PiCamera creates a PIL image and then converts to
         # numpy with ``np.array(Image.open(io.BytesIO(self.make_buffer(name))))``.
-        # As such we use capture_image to get an Image from the picamera and return
+        # As such we use _capture_image to get an Image from the picamera and return
         # as array
-        return np.array(self.capture_image(stream_name, wait))
+        return np.array(self._capture_image(capture_mode))
 
     @lt.property
     def camera_configuration(self) -> Mapping:
@@ -946,6 +970,31 @@ class PiCameraV2(StreamingPiCamera2):
             ),
         }
 
+    @lt.property
+    def capture_modes(self) -> Mapping[str, PiCamera2CaptureMode]:
+        """Modes the camera can use for capturing."""
+        return {
+            "standard": PiCamera2CaptureMode(
+                description=(
+                    "The standard mode, 2MP image created from downsampling an 8MP "
+                    "capture."
+                ),
+                save_resolution=(1640, 1232),
+                streaming_mode="full_resolution",
+                stream_name="main",
+            ),
+            "full": PiCamera2CaptureMode(
+                description="A full resolution 8MP capture.",
+                streaming_mode="full_resolution",
+                stream_name="main",
+            ),
+            "quick": PiCamera2CaptureMode(
+                description="Capture directly from the current stream.",
+                streaming_mode=None,
+                stream_name="main",
+            ),
+        }
+
 
 class PiCameraHQ(StreamingPiCamera2):
     """A Thing that provides and interface to the Raspberry Pi Camera HQ."""
@@ -981,5 +1030,30 @@ class PiCameraHQ(StreamingPiCamera2):
                 bit_depth=12,
                 use_lores_as_preview=True,
                 scaler_crop=(628, 120, 2800, 2800),
+            ),
+        }
+
+    @lt.property
+    def capture_modes(self) -> Mapping[str, PiCamera2CaptureMode]:
+        """Modes the camera can use for capturing."""
+        return {
+            "standard": PiCamera2CaptureMode(
+                description=(
+                    "The standard mode, 3MP image created from downsampling an 12MP "
+                    "capture."
+                ),
+                save_resolution=(1640, 1232),
+                streaming_mode="full_resolution",
+                stream_name="main",
+            ),
+            "full": PiCamera2CaptureMode(
+                description="A full resolution 12MP capture.",
+                streaming_mode="full_resolution",
+                stream_name="main",
+            ),
+            "quick": PiCamera2CaptureMode(
+                description="Capture directly from the current stream.",
+                streaming_mode=None,
+                stream_name="main",
             ),
         }
