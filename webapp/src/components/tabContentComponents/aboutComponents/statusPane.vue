@@ -1,6 +1,6 @@
 <template>
   <div class="host-input">
-    <div v-if="available">
+    <div v-if="ready">
       <div>
         <div class="uk-margin-small-bottom">
           <b>Microscope Hostname:</b>
@@ -10,7 +10,7 @@
         <div class="uk-margin-small-bottom">
           <b>API Origin:</b>
           <br />
-          {{ origin }}
+          {{ baseUri }}
         </div>
         <action-button
           v-if="illuminationType"
@@ -82,7 +82,7 @@ export default {
   },
 
   computed: {
-    ...mapState(useSettingsStore, ["origin", "microscopeHostname", "available", "waiting"]),
+    ...mapState(useSettingsStore, ["baseUri", "microscopeHostname", "ready", "waiting"]),
     ...mapState(useWotStore, ["thingDescriptions"]),
     ...mapWritableState(useSettingsStore, ["error"]),
 
