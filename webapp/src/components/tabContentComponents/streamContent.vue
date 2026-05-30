@@ -52,7 +52,7 @@ export default {
       isVisible: false,
       displaySize: [0, 0],
       displayPosition: [0, 0],
-      resizeTimeoutId: setTimeout(this.doneResizing, 500),
+      resizeTimeoutId: null,
     };
   },
 
@@ -71,32 +71,33 @@ export default {
   },
 
   mounted() {
-    //set up an intersection observer
-    useIntersectionObserver(
+    // Initial Timeout
+    this.resizeTimeoutId = setTimeout(this.handleDoneResize, 500);
+
+    // set up an intersection observer
+    // We capture the 'stop' function returned by VueUse so we can kill it later
+    const { stop } = useIntersectionObserver(
       this.$refs.streamDisplay,
       ([{ isIntersecting }]) => {
         this.isVisible = isIntersecting;
       },
-      {
-        threshold: 0.0,
-      },
+      { threshold: 0.0 },
     );
+    this.stopIntersectionObserver = stop;
     // A global signal listener to flash the stream element
-    this.onFlashStream = () => {
-      this.flashStream();
-    };
-
-    eventBus.on("globalFlashStream", this.onFlashStream);
+    eventBus.on("globalFlashStream", this.flashStream);
 
     // Mutation observer
     this.sizeObserver = new ResizeObserver(() => {
       this.handleResize(); // For any element attached to the observer, run handleResize() on change
     });
-    // Fetch streamDisplay component by ref
-    if (this.$refs.streamDisplay && this.$refs.streamDisplay.parentNode) {
-      const streamDisplayElement = this.$refs.streamDisplay.parentNode;
+
+    // Safely fetch the DOM element (handles both native HTML and Vue components)
+    const streamElement = this.$refs.streamDisplay?.$el || this.$refs.streamDisplay;
+
+    if (streamElement && streamElement.parentNode) {
       // Attach streamDisplay to the size observer
-      this.sizeObserver.observe(streamDisplayElement);
+      this.sizeObserver.observe(streamElement.parentNode);
     }
   },
 
@@ -104,13 +105,23 @@ export default {
     // Do nothing: preview stream now runs all the time
   },
 
-  beforeUnmount: function () {
-    // Disconnect the size observer
-    this.sizeObserver.disconnect();
-    // Remove from the array of active streams
-    this.store.removeStream(this.$.uid);
-    // close signal
-    eventBus.off("globalFlashStream", this.onFlashStream);
+  beforeUnmount() {
+    // Kill the timeout
+    clearTimeout(this.resizeTimeoutId);
+
+    // Kill the Intersection Observer
+    if (this.stopIntersectionObserver) {
+      this.stopIntersectionObserver();
+    }
+
+    // Unregister the event bus listener
+    eventBus.off("globalFlashStream", this.flashStream);
+
+    // Disconnect the size Observer
+    if (this.sizeObserver) {
+      this.sizeObserver.disconnect();
+      this.store.removeStream(this.$.uid);
+    }
   },
 
   methods: {
