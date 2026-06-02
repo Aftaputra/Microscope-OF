@@ -5,10 +5,9 @@
     class="stream-display uk-width-1-1 uk-height-1-1 scrollTarget"
   >
     <img
-      v-if="isVisible"
+      v-show="isVisible && streamEnabled"
       ref="click-frame"
       class="uk-align-center uk-margin-remove-bottom"
-      :hidden="!streamEnabled"
       :src="streamImgUri"
       alt="Stream"
       @dblclick="clickMonitor"
@@ -36,9 +35,18 @@ import { useIntersectionObserver } from "@vueuse/core";
 import { useSettingsStore } from "@/stores/settings.js";
 import { mapState } from "pinia";
 
+const ONE_PIXEL_FALLBACK = "data:image/PNG;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+
 // Export main app
 export default {
   name: "StreamDisplay",
+
+  props: {
+    streamId: {
+      type: [String],
+      required: true,
+    },
+  },
 
   setup() {
     const store = useSettingsStore();
@@ -66,7 +74,13 @@ export default {
       return !(this.displaySize[0] == 0) && !(this.displaySize[1] == 0);
     },
     streamImgUri: function () {
-      return `${this.baseUri}/camera/mjpeg_stream`;
+      // Only request the real stream if it's enabled AND currently visible on screen
+      if (this.isVisible && this.streamEnabled) {
+        return `${this.baseUri}/camera/mjpeg_stream`;
+      }
+
+      // Force the browser to kill the connection by loading a 1 pixel image
+      return ONE_PIXEL_FALLBACK;
     },
   },
 
@@ -106,8 +120,13 @@ export default {
   },
 
   beforeUnmount() {
-    // Kill the timeout
+    // Kill the resize timeout
     clearTimeout(this.resizeTimeoutId);
+
+    // Kill the flash animation timeout (Fixes Beth's MR comment)
+    if (this.flashTimeoutId) {
+      clearTimeout(this.flashTimeoutId);
+    }
 
     // Kill the Intersection Observer
     if (this.stopIntersectionObserver) {
@@ -120,7 +139,7 @@ export default {
     // Disconnect the size Observer
     if (this.sizeObserver) {
       this.sizeObserver.disconnect();
-      this.store.removeStream(this.$.uid);
+      this.store.removeStream(this.streamId);
     }
   },
 
@@ -128,11 +147,26 @@ export default {
     flashStream: function () {
       // Run an animation that flashes the stream (for capture feedback)
       let element = this.$refs.streamDisplay;
+
+      // Defensive check in case the ref isn't available
+      if (!element) return;
+
       element.classList.remove("uk-animation-fade");
-      element.offsetHeight; /* trigger reflow */
+      /* trigger reflow */
+      element.offsetHeight;
       element.classList.add("uk-animation-fade");
-      setTimeout(function () {
-        element.classList.remove("uk-animation-fade");
+
+      // Clear the timer if flashStream is called again before the 800ms is up
+      if (this.flashTimeoutId) {
+        clearTimeout(this.flashTimeoutId);
+      }
+
+      // Track the timeout ID
+      this.flashTimeoutId = setTimeout(() => {
+        // Extra defensive check just in case
+        if (element && element.classList) {
+          element.classList.remove("uk-animation-fade");
+        }
       }, 800);
     },
 
@@ -174,12 +208,12 @@ export default {
       // Handle closed stream
       if (this.displaySize[0] == 0 && this.displaySize[1] == 0) {
         // If this stream was previously active
-        if (this.store.activeStreams[this.$.uid] == true) {
-          this.store.removeStream(this.$.uid);
+        if (this.store.activeStreams[this.streamId] == true) {
+          this.store.removeStream(this.streamId);
         }
         // If resized to anything other than zero
       } else {
-        this.store.addStream(this.$.uid);
+        this.store.addStream(this.streamId);
       }
     },
 

@@ -5,7 +5,7 @@
       <paneControl />
     </div>
     <div class="view-component uk-width-expand">
-      <streamDisplay />
+      <streamDisplay :stream-id="setStreamId" />
     </div>
   </div>
 </template>
@@ -20,6 +20,12 @@ export default {
   components: {
     paneControl,
     streamDisplay,
+  },
+
+  data() {
+    return {
+      setStreamId: "control",
+    };
   },
 };
 </script>
