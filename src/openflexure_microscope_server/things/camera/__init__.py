@@ -591,7 +591,7 @@ class BaseCamera(OFMThing, ABC):
         self.capture_and_save_to_path(path, capture_mode)
 
         if tmpdir is None:
-            blob = lt.blob.Blob.from_file(path)
+            blob = lt.blob.Blob.from_file(path.abs_data_path)
         else:
             blob = lt.blob.Blob.from_temporary_directory(tmpdir, fname)
         blob.media_type = format_info.media_type

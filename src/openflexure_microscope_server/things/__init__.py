@@ -64,14 +64,19 @@ class OFMThing(lt.Thing):
             )
         return self._data_dir
 
-    def create_data_path(self, path: str) -> "RelativeDataPath":
+    def create_data_path(self, path: str, absolute: bool = False) -> "RelativeDataPath":
         """Create a ``RelativeDataPath`` object with this Thing set as the saving Thing.
 
         :param path: The relative path within the data directory of this Thing's data
             dir that the data shudl be saved.
+        :path absolute: Set to True if the current path is absolute. A relative path
+            will be returned. An validation error will be raised if the absolute path
+            is not within the data directory.
 
         :return: A ``RelativeDataPath`` object with the saving Thing already set.
         """
+        if absolute:
+            path = os.path.relpath(path, self.data_dir)
         rel_data_path = RelativeDataPath(path)
         rel_data_path.set_saving_thing(self)
         return rel_data_path
@@ -136,12 +141,15 @@ class RelativeDataPath(RootModel[str]):
 
         :return: A new ``RelativeDataPath`` object with the path appended.
         """
-        return RelativeDataPath(os.path.join(self.root, sub_path))
+        new_path = RelativeDataPath(os.path.join(self.root, sub_path))
+        if self._saving_thing is not None:
+            new_path.set_saving_thing(self._saving_thing)
+        return new_path
 
     @property
     def abs_data_path(self) -> str:
         """The absolute data directory to save to."""
-        if self.save_location_set:
+        if self._saving_thing is None:
             raise RuntimeError("The saving Thing for the relative path was never set")
         if isinstance(self._saving_thing, TemporaryDirectory):
             return os.path.join(self._saving_thing.name, self.root)

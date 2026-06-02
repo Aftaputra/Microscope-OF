@@ -111,18 +111,26 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
         )
 
     def all_settings(
-        self, images_dir: str
-    ) -> tuple[SettingModelType, Optional[StitchingSettings]]:
+        self, images_dir: RelativeDataPath
+    ) -> tuple[SettingModelType, Optional[StitchingSettings], tuple[int, int]]:
         """Return the scan settings and the stitching settings.
 
         - The specific settings for this scan workflow are returned as a Base Model of
             the type set when defining the class.
         - Stitiching settings are returned either as a StitchingSettings object or None
             is returned if it is not possible to stitch the scan.
+        - The save resolution as determined by a test image.
         """
         raise NotImplementedError(
             "Each specific ScanWorkflow must implement a `all_settings` method."
         )
+
+    def _get_save_resolution(self) -> tuple[int, int]:
+        """Return the save resolution as determined by a test image."""
+        # Capture an example image.
+        image = self._cam._capture_image(capture_mode=self.capture_mode)
+        # Check side to create a unit faction for downsampling.
+        return image.size
 
     def pre_scan_routine(self, settings: SettingModelType) -> None:
         """Overload to set the routine that happens before each scan."""
@@ -268,12 +276,11 @@ class RectGridWorkflow(
         )
         return y_move_stage["x"], x_move_stage["y"]
 
-    def _get_stitching_settings_model(self) -> StitchingSettings:
+    def _get_stitching_settings_model(
+        self, save_resolution: tuple[int, int]
+    ) -> StitchingSettings:
         """Return a stitching settings model based on current settings."""
-        # Use the save resolution and target stitch resolution to choose a unit fraction,
-        # which makes correlating faster
-        # TODO Calculate this using a camera method.
-        width, height = self.save_resolution
+        width, height = save_resolution
         # Target area in pixels
         target_area = TARGET_STITCHING_DIMENSION**2
         # Find N so that (width/N) * (height/N) ~ target_area
@@ -293,24 +300,24 @@ class RectGridWorkflow(
         return self._settings_model(**base_kwargs)
 
     def all_settings(
-        self, images_dir: str
-    ) -> tuple[RectGridSettingModelType, Optional[StitchingSettings]]:
+        self, images_dir: RelativeDataPath
+    ) -> tuple[RectGridSettingModelType, Optional[StitchingSettings], tuple[int, int]]:
         """Return scan settings and the stitching settings.
 
         :param images_dir: The directory that images are to be written to.
-        :return: A tuple containing the settings model for this workflow and the
-            settings model for stitching.
+        :return: A tuple containing the settings model for this workflow, the
+            settings model for stitching, and the save resolution.
         """
+        save_resolution = self._get_save_resolution()
         # Developer Note: When subclassing RectGridWorkflow rather than override
         # this method first consider overriding _build_scan_settings
-        stitching_settings = self._get_stitching_settings_model()
+        stitching_settings = self._get_stitching_settings_model(save_resolution)
         dx, dy = self._calc_displacement_from_overlap(self.overlap)
 
         base_kwargs = {
             "overlap": self.overlap,
             "dx": dx,
             "dy": dy,
-            # TODO set images dir correctly as a RelDataPath
             "capture_params": CaptureParams(
                 images_dir=images_dir, capture_mode=self.capture_mode
             ),
@@ -319,7 +326,7 @@ class RectGridWorkflow(
 
         scan_settings = self._build_scan_settings(base_kwargs)
 
-        return scan_settings, stitching_settings
+        return scan_settings, stitching_settings, save_resolution
 
     @lt.property
     def ready(self) -> bool:

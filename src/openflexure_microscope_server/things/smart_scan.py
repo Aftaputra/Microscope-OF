@@ -304,8 +304,8 @@ class SmartScanThing(OFMThing):
             # Ensure any PreviewStitcher created cannot be reused.
             self._preview_stitcher = None
 
-        # Remove any scan folders containing zero images.
-        self.purge_empty_scans()
+            # Remove any scan folders containing zero images.
+            self.purge_empty_scans()
 
     @_scan_running
     def _move_to_next_point(
@@ -343,8 +343,8 @@ class SmartScanThing(OFMThing):
         if images_dir is None:
             raise RuntimeError("Couldn't run scan, images directory was not created.")
 
-        workflow_settings, stitching_settings = workflow.all_settings(
-            images_dir=images_dir
+        workflow_settings, stitching_settings, save_resolution = workflow.all_settings(
+            images_dir=self.create_data_path(images_dir, absolute=True)
         )
 
         # If stitching settings is None then this workflow doesn't support stitching.
@@ -356,7 +356,7 @@ class SmartScanThing(OFMThing):
             starting_position=starting_position,
             start_time=datetime.now(),
             stitch_automatically=auto_stitch,
-            save_resolution=workflow.save_resolution,
+            save_resolution=save_resolution,
             workflow=type(workflow).__name__,
             workflow_settings=workflow_settings,
             stitching_settings=stitching_settings,
@@ -392,6 +392,9 @@ class SmartScanThing(OFMThing):
         starting x,y,z position.
         """
         try:
+            # Change into streaming mode instantly so mode is correct when collecting
+            # Scan Data
+            self._cam.change_streaming_mode(mode="full_resolution")
             self._scan_data = self._collect_scan_data(workflow)
             images_dir = self.ongoing_scan.images_dir
             # Type narrowing
@@ -401,7 +404,6 @@ class SmartScanThing(OFMThing):
                 )
 
             self.ongoing_scan.save_scan_data(self._scan_data)
-            self._cam.change_streaming_mode(mode="full_resolution")
             workflow.pre_scan_routine(self._scan_data.workflow_settings)
 
             # If stitching settings are None then this type of scan can't be stitched
