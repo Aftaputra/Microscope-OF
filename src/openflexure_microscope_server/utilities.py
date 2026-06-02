@@ -141,6 +141,7 @@ def _path_normalised(unsafe_path_string: str) -> bool:
 
     Warn and return false if . or .. is not at the start of the path.
     """
+    original_path = unsafe_path_string
     # Ensure correct path separators before normalisation:
     if sys.platform.startswith("win"):
         unsafe_path_string = unsafe_path_string.replace("/", "\\")
@@ -156,7 +157,7 @@ def _path_normalised(unsafe_path_string: str) -> bool:
 
     if normalised != unsafe_path_string:
         LOGGER.warning(
-            f"File path {unsafe_path_string} may be unsafe due to unexpected relative "
+            f"File path {original_path} may be unsafe due to unexpected relative "
             "navigation."
         )
         return False
