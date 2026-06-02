@@ -9,7 +9,6 @@ See repository root for licensing information.
 
 import enum
 import logging
-import os
 import time
 from dataclasses import dataclass
 from types import TracebackType
@@ -737,7 +736,7 @@ class AutofocusThing(lt.Thing):
 
         # Loop through the range, saving each capture to disk
         for capture in captures[slice_to_save]:
-            path = os.path.join(capture_parameters.images_dir, capture.filename)
+            path = capture_parameters.images_dir.join(capture.filename)
             self._cam.save_from_memory(path=path, buffer_id=capture.buffer_id)
 
         self._cam.clear_buffers()
@@ -956,7 +955,7 @@ class AutofocusThing(lt.Thing):
 
         # Save all captures
         for capture in captures:
-            path = os.path.join(capture_parameters.images_dir, capture.filename)
+            path = capture_parameters.images_dir.join(capture.filename)
             self._cam.save_from_memory(path=path, buffer_id=capture.buffer_id)
 
         self._cam.clear_buffers()

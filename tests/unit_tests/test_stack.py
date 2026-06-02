@@ -888,6 +888,7 @@ def test_invalid_stack_settling_raises():
 def test_invalid_capture_dir_raises(bad_path, match_err):
     """Test basic stack raises expected error for bad image dir paths."""
     with pytest.raises(ValueError, match=match_err):
+        # TODO set images dir correctly as a RelDataPath
         CaptureParams(images_dir=bad_path, save_resolution=(20, 20))
 
 
@@ -909,4 +910,5 @@ def test_invalid_capture_dir_raises(bad_path, match_err):
 def test_invalid_capture_res_raises(bad_res, match_err):
     """Test basic stack raises expected error for invalid save resolutions."""
     with pytest.raises(ValueError, match=match_err):
+        # TODO set images dir correctly as a RelDataPath
         CaptureParams(images_dir="dummy", save_resolution=bad_res)

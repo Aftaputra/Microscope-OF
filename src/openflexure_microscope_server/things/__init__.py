@@ -5,8 +5,12 @@ with other Things and including them in the LabThings-FastAPI config file.
 """
 
 import os
+from pathlib import PurePath
+from tempfile import TemporaryDirectory
 from types import TracebackType
 from typing import Optional, Self
+
+from pydantic import PrivateAttr, RootModel, model_validator
 
 import labthings_fastapi as lt
 
@@ -59,3 +63,86 @@ class OFMThing(lt.Thing):
                 "No data directory set. Has the LabThings server been started?"
             )
         return self._data_dir
+
+    def create_data_path(self, path: str) -> "RelativeDataPath":
+        """Create a ``RelativeDataPath`` object with this Thing set as the saving Thing.
+
+        :param path: The relative path within the data directory of this Thing's data
+            dir that the data shudl be saved.
+
+        :return: A ``RelativeDataPath`` object with the saving Thing already set.
+        """
+        rel_data_path = RelativeDataPath(path)
+        rel_data_path.set_saving_thing(self)
+        return rel_data_path
+
+
+class RelativeDataPath(RootModel[str]):
+    """A relative path that is validated, and can have a Thing assigned to it.
+
+    Use ``set_saving_thing`` or ``set_saving_thing_if_unset`` to set the Thing whose
+    data directory will be used for the final save.
+
+    Use the ``abs_data_path`` property to get the final path for saving.
+    """
+
+    _saving_thing: Optional[OFMThing | TemporaryDirectory] = PrivateAttr(default=None)
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_relative_path(cls, value: str) -> str:
+        """Validate the relative path is relative and has no parent dir references."""
+        p = PurePath(value)
+
+        if p.is_absolute():
+            raise ValueError("Absolute paths are not allowed")
+
+        if ".." in p.parts:
+            raise ValueError("Parent directory references are not allowed")
+
+        return os.path.normpath(value)
+
+    @property
+    def save_location_set(self) -> bool:
+        """Return True if the saving thing is set."""
+        return self._saving_thing is not None
+
+    def set_saving_thing(self, thing: OFMThing) -> None:
+        """Set the Thing that is saving the data. This will set the data directory."""
+        if self.save_location_set:
+            raise RuntimeError("The saving Thing for the relative path is already set")
+        self._saving_thing = thing
+
+    def set_saving_thing_if_unset(self, thing: OFMThing) -> None:
+        """Set the Thing that is saving the data if it is not already set.
+
+        Use this in an action to set the Thing for paths set via the API.
+        """
+        if not self.save_location_set:
+            self._saving_thing = thing
+
+    def save_to_tempdir(self) -> TemporaryDirectory:
+        """Use a temporary directory to save raher than an ``OFMThing``.
+
+        :returns: the ``TemporaryDirectory`` object.
+        """
+        if self.save_location_set:
+            raise RuntimeError("The saving Thing for the relative path is already set")
+        self._saving_thing = TemporaryDirectory()
+        return self._saving_thing
+
+    def join(self, sub_path: str) -> "RelativeDataPath":
+        """Join a path to the end of this path.
+
+        :return: A new ``RelativeDataPath`` object with the path appended.
+        """
+        return RelativeDataPath(os.path.join(self.root, sub_path))
+
+    @property
+    def abs_data_path(self) -> str:
+        """The absolute data directory to save to."""
+        if self.save_location_set:
+            raise RuntimeError("The saving Thing for the relative path was never set")
+        if isinstance(self._saving_thing, TemporaryDirectory):
+            return os.path.join(self._saving_thing.name, self.root)
+        return os.path.join(self._saving_thing.data_dir, self.root)

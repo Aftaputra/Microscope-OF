@@ -4,7 +4,6 @@ This module contains the base ``ScanWorkflow`` class that all workflows should s
 as well as specific workflows.
 """
 
-import os
 from typing import (
     Generic,
     Literal,
@@ -27,6 +26,7 @@ from openflexure_microscope_server.stitching import (
     TARGET_STITCHING_DIMENSION,
     StitchingSettings,
 )
+from openflexure_microscope_server.things import RelativeDataPath
 from openflexure_microscope_server.things.autofocus import (
     MAX_TEST_IMAGE_COUNT,
     MIN_TEST_IMAGE_COUNT,
@@ -55,6 +55,10 @@ from openflexure_microscope_server.ui import (
 SettingModelType = TypeVar("SettingModelType", bound=BaseModel)
 
 
+class WorkflowStartError(lt.exceptions.InvocationError):
+    """The scan workflow cannot start, as the requested configuration is invalid."""
+
+
 class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     """A base class for all Scanworkflows.
 
@@ -75,7 +79,7 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     _planner_cls: type[ScanPlanner]
 
     # All workflows set a save resolution
-    save_resolution: tuple[int, int] = lt.setting(default=(1640, 1232))
+    capture_mode: str = lt.setting(default="standard")
     """A tuple of the image resolution to capture."""
 
     # CSM may not be set, and isn't required for a workflow. Allow for it to exist or be None
@@ -85,15 +89,19 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
     _stage: BaseStage = lt.thing_slot()
     _autofocus: AutofocusThing = lt.thing_slot()
 
-    def check_before_start(self, scan_name: str) -> None:
+    # The noqa statement is because scan_name is unused but is needed for equivalence
+    # with other workflows that may want to validate the scan name.
+    def check_before_start(self, scan_name: str) -> None:  # noqa: ARG002
         """Check before the scan starts. Throw an error if the scan shouldn't start.
 
         The scan_name is passed to this function to enable workflows to validate the
         scan name if needed.
         """
-        raise NotImplementedError(
-            "Each specific ScanWorkflow must implement a check_before_start."
-        )
+        if self.capture_mode not in self._cam.capture_modes:
+            cam_name = type(self._cam).__name__
+            raise WorkflowStartError(
+                f"{cam_name} has no capure mode {self.capture_mode}"
+            )
 
     @lt.property
     def ready(self) -> bool:
@@ -148,14 +156,14 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
         self,
         xyz_pos: tuple[int, int, int],
         dz: int,
-        images_dir: str,
-        save_resolution: tuple[int, int],
+        images_dir: RelativeDataPath,
+        capture_mode: str,
     ) -> tuple[bool, Optional[int]]:
         """Autofocus and then capture, this can be used as an acquisition routine.
 
         :param dz: The dz for autofocus.
-        :param images_dir: The path to the directory for saving images..
-        :param save_resolution: The resolution to save images at.
+        :param images_dir: The path to the directory for saving images.
+        :param capture mode: The name of the camera capture mode.
 
         :return: A tuple ready to pass out of acquisition routine. In this method,
             image is always taken, so first return is True.
@@ -165,8 +173,8 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
         focus_height = self._stage.get_xyz_position()[2]
         filename = f"img_{xyz_pos[0]}_{xyz_pos[1]}_{focus_height}.jpeg"
         self._cam.capture_and_save_to_path(
-            path=os.path.join(images_dir, filename),
-            capture_mode="standard",
+            path=images_dir.join(filename),
+            capture_mode=capture_mode,
         )
 
         return True, focus_height
@@ -217,16 +225,15 @@ class RectGridWorkflow(
     must be above this. 3000 is a sensible limit for 20x objectives.
     """
 
-    # The noqa statement is because scan_name is unused but is needed for equivalence
-    # with other workflows that may want to validate the scan name.
-    def check_before_start(self, scan_name: str) -> None:  # noqa: ARG002
+    def check_before_start(self, scan_name: str) -> None:
         """Before starting a scan, check that camera-stage-mapping is set.
 
         Raise error if:
           - camera stage mapping is not set
         """
+        super().check_before_start(scan_name)
         if self._csm.calibration_required:
-            raise RuntimeError("Camera Stage Mapping is not calibrated.")
+            raise WorkflowStartError("Camera Stage Mapping is not calibrated.")
 
     def _calc_displacement_from_overlap(self, overlap: float) -> tuple[int, int]:
         """Use camera stage mapping to calculate x and y displacement from given overlap.
@@ -265,6 +272,7 @@ class RectGridWorkflow(
         """Return a stitching settings model based on current settings."""
         # Use the save resolution and target stitch resolution to choose a unit fraction,
         # which makes correlating faster
+        # TODO Calculate this using a camera method.
         width, height = self.save_resolution
         # Target area in pixels
         target_area = TARGET_STITCHING_DIMENSION**2
@@ -302,8 +310,9 @@ class RectGridWorkflow(
             "overlap": self.overlap,
             "dx": dx,
             "dy": dy,
+            # TODO set images dir correctly as a RelDataPath
             "capture_params": CaptureParams(
-                images_dir=images_dir, save_resolution=self.save_resolution
+                images_dir=images_dir, capture_mode=self.capture_mode
             ),
             "autofocus_params": AutofocusParams(dz=self.autofocus_dz),
         }
@@ -510,20 +519,22 @@ class HistoScanWorkflow(RectGridWorkflow[HistoScanSettingsModel], SmartStackMixi
     # The noqa statement is because scan_name is unused but is needed for equivalence
     # with other workflows that may want to validate the scan name.
     def check_before_start(self, scan_name: str) -> None:  # noqa: ARG002
-        """Before starting a scan, check that background and camera-stage-mapping are set.
+        """Before starting a scan, check that background and CSM are set.
 
         Raise error if:
           - background is to be skipped but is not set
           - camera stage mapping is not set
 
-        Raise warning if not using background detect that scan will go on until max steps reached
+        Raise warning if not using background detect that scan will go on until max
+        steps reached.
         """
+        super().check_before_start(scan_name)
         if self._csm.calibration_required:
-            raise RuntimeError("Camera Stage Mapping is not calibrated.")
+            raise WorkflowStartError("Camera Stage Mapping is not calibrated.")
 
         if self.skip_background:
             if not self._background_detector.ready:
-                raise RuntimeError(
+                raise WorkflowStartError(
                     "Background is not set: you need to calibrate background detection."
                 )
         else:

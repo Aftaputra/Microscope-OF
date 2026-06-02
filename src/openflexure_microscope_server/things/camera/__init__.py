@@ -11,23 +11,22 @@ from __future__ import annotations
 import io
 import json
 import os
-import tempfile
 import time
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime
 from types import TracebackType
-from typing import Annotated, Any, Literal, Mapping, Optional, Self
+from typing import Any, Literal, Mapping, Optional, Self
 
 import numpy as np
 import piexif
 from PIL import Image
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 import labthings_fastapi as lt
 from labthings_fastapi.types.numpy import NDArray
 
-from openflexure_microscope_server.things import OFMThing
+from openflexure_microscope_server.things import OFMThing, RelativeDataPath
 from openflexure_microscope_server.things.background_detect import (
     BackgroundDetectAlgorithm,
 )
@@ -62,15 +61,11 @@ class CaptureError(RuntimeError):
     """An error trying to capture from a CameraThing."""
 
 
-PositiveInt = Annotated[int, Field(ge=1)]
-NonEmptyString = Annotated[str, Field(min_length=1)]
-
-
 class CaptureParams(BaseModel):
     """A class for capturing at least a single image."""
 
-    images_dir: NonEmptyString
-    save_resolution: tuple[PositiveInt, PositiveInt]
+    images_dir: RelativeDataPath
+    capture_mode: str
 
 
 class NoImageInMemoryError(RuntimeError):
@@ -576,7 +571,7 @@ class BaseCamera(OFMThing, ABC):
         the specific camera being used.
 
         :param capture_mode: The mode to use, must be one of ``capture_modes``.
-        :param image_format: The image fromat to use, must be one of
+        :param image_format: The image format to use, must be one of
             ``supported_image_formats``
         :param retain_image: (Default True) True to save image to the microscope,
             False to only save temporarily for transfer.
@@ -586,9 +581,12 @@ class BaseCamera(OFMThing, ABC):
         format_info = self.supported_image_formats[image_format]
         fname = datetime.now().strftime("%Y-%m-%d-%H%M%S") + format_info.extension
 
-        tmpdir = None if retain_image else tempfile.TemporaryDirectory()
-        dir_path = self.data_dir if tmpdir is None else tmpdir.name
-        path = os.path.join(dir_path, fname)
+        path = RelativeDataPath(fname)
+        tmpdir = None
+        if retain_image:
+            path.set_saving_thing(self)
+        else:
+            tmpdir = path.save_to_tempdir()
 
         self.capture_and_save_to_path(path, capture_mode)
 
@@ -601,7 +599,7 @@ class BaseCamera(OFMThing, ABC):
 
     def capture_and_save_to_path(
         self,
-        path: str,
+        path: RelativeDataPath,
         capture_mode: str = "standard",
     ) -> None:
         """Capture an image and save it to disk.
@@ -654,7 +652,7 @@ class BaseCamera(OFMThing, ABC):
 
     def save_from_memory(
         self,
-        path: str,
+        path: RelativeDataPath,
         buffer_id: Optional[int] = None,
     ) -> None:
         """Save an image that has been captured to memory.
@@ -674,12 +672,16 @@ class BaseCamera(OFMThing, ABC):
         mode_info = self.capture_modes[mode]
         save_resolution = mode_info.save_resolution
 
+        path.set_saving_thing_if_unset(self)
+        resolved_path = path.abs_data_path
+
         if save_resolution is not None and image.size != save_resolution:
             image = image.resize(save_resolution, Image.Resampling.BOX)
         try:
             save_kwargs: dict[str, Any] = {}
             # TODO: Test that the save_kwargs are called as expected for different formats.
-            if path.lower().endswith(BASE_IMAGE_FORMATS["jpeg"].supported_extensions):
+            jpeg_exts = BASE_IMAGE_FORMATS["jpeg"].supported_extensions
+            if resolved_path.lower().endswith(jpeg_exts):
                 # Per PIL documentation,
                 # (https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg)
                 # there are two factors when saving a JPEG. Subsampling affects the colour,
@@ -688,15 +690,15 @@ class BaseCamera(OFMThing, ABC):
                 # quality = 95 is the maximum recommended - above this, JPEG compression is
                 # disabled, file size increases and quality is barely or not affected
                 save_kwargs = {"quality": 95, "subsampling": 0}
-            image.save(path, **save_kwargs)
+            image.save(resolved_path, **save_kwargs)
             try:
-                self._add_metadata_to_capture(path, dict(metadata))
+                self._add_metadata_to_capture(resolved_path, dict(metadata))
             except Exception:
                 # We need to capture any exception as there are many reasons metadata
                 # might not be added. We warn rather than log the error.
-                self.logger.exception(f"Failed to add metadata to {path}")
+                self.logger.exception(f"Failed to add metadata to {resolved_path}")
         except Exception as e:
-            raise IOError(f"An error occurred while saving {path}") from e
+            raise IOError(f"An error occurred while saving {resolved_path}") from e
 
     @abstractmethod
     def _capture_image(self, capture_mode: str = "standard") -> Image.Image:
