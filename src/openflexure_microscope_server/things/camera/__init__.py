@@ -617,6 +617,7 @@ class BaseCamera(OFMThing, ABC):
         buffer_id = self.capture_to_memory(capture_mode=capture_mode)
         self.save_from_memory(path=path, buffer_id=buffer_id)
 
+    @lt.action
     def capture_to_memory(
         self, capture_mode: str = "standard", buffer_max: int = 1, max_attempts: int = 5
     ) -> int:
@@ -654,6 +655,7 @@ class BaseCamera(OFMThing, ABC):
             image, ofm_metadata, capture_mode, buffer_max=buffer_max
         )
 
+    @lt.action
     def save_from_memory(
         self,
         path: RelativeDataPath,
