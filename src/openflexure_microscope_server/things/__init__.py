@@ -82,7 +82,6 @@ class OFMThing(lt.Thing):
         return rel_data_path
 
 
-# TODO Write tests for this
 class RelativeDataPath(RootModel[str]):
     """A relative path that is validated, and can have a Thing assigned to it.
 

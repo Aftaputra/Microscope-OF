@@ -679,7 +679,6 @@ class BaseCamera(OFMThing, ABC):
             image = image.resize(save_resolution, Image.Resampling.BOX)
         try:
             save_kwargs: dict[str, Any] = {}
-            # TODO: Test that the save_kwargs are called as expected for different formats.
             jpeg_exts = BASE_IMAGE_FORMATS["jpeg"].supported_extensions
             if resolved_path.lower().endswith(jpeg_exts):
                 # Per PIL documentation,
