@@ -112,8 +112,13 @@ class RelativeDataPath(RootModel[str]):
         """Return True if the saving thing is set."""
         return self._saving_thing is not None
 
-    def set_saving_thing(self, thing: OFMThing) -> None:
-        """Set the Thing that is saving the data. This will set the data directory."""
+    def set_saving_thing(self, thing: OFMThing | TemporaryDirectory) -> None:
+        """Set the Thing that is saving the data.
+
+        The thing can also be a ``TemporaryDirectory`` object.
+
+        This will set the data directory.
+        """
         if self.save_location_set:
             raise RuntimeError("The saving Thing for the relative path is already set")
         self._saving_thing = thing

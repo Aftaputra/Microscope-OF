@@ -108,7 +108,8 @@ def test_save_from_memory(test_case, test_env, mocker):
     camera._add_metadata_to_capture = mocker.Mock()
 
     mode = CaptureMode(description="foo", save_resolution=test_case.save_resolution)
-    type(camera).capture_modes = mocker.PropertyMock(return_value={"standard": mode})
+    capture_modes_mock = mocker.PropertyMock(return_value={"standard": mode})
+    mocker.patch.object(type(camera), "capture_modes", capture_modes_mock)
 
     mock_image = mocker.Mock()
     # Make resize return itself so we can track further calls of the Image object after
