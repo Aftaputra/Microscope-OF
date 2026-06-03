@@ -79,6 +79,7 @@ class MemorySaveTestCase:
     filename: str = "foobar.jpeg"
     save_resolution: Optional[tuple[int, int]] = None
     resize_needed: bool = False
+    convert_needed: bool = False
     save_kwargs: dict[str, int] = field(
         default_factory=lambda: {"quality": 95, "subsampling": 0}
     )
@@ -91,9 +92,9 @@ SAVE_TEST_CASES = [
     MemorySaveTestCase("foobar.JPEG"),
     MemorySaveTestCase("foobar.JPG"),
     MemorySaveTestCase("foobar.png.jpeg"),
-    MemorySaveTestCase("foobar.png", save_kwargs={}),
-    MemorySaveTestCase("foobar.PNG", save_kwargs={}),
-    MemorySaveTestCase("foobar.jpeg.png", save_kwargs={}),
+    MemorySaveTestCase("foobar.png", save_kwargs={}, convert_needed=True),
+    MemorySaveTestCase("foobar.PNG", save_kwargs={}, convert_needed=True),
+    MemorySaveTestCase("foobar.jpeg.png", save_kwargs={}, convert_needed=True),
     MemorySaveTestCase(save_resolution=None, resize_needed=False),
     MemorySaveTestCase(save_resolution=(1000, 1200), resize_needed=False),
     MemorySaveTestCase(save_resolution=(2000, 2400), resize_needed=True),
@@ -112,10 +113,12 @@ def test_save_from_memory(test_case, test_env, mocker):
     mocker.patch.object(type(camera), "capture_modes", capture_modes_mock)
 
     mock_image = mocker.Mock()
-    # Make resize return itself so we can track further calls of the Image object after
-    # a resize
+    # Make resize and convert return itself so we can track further calls of the Image
+    # object after a resize
     mock_image.resize.return_value = mock_image
+    mock_image.convert.return_value = mock_image
     mock_image.size = (1000, 1200)
+    mock_image.mode = "RGBX"
 
     camera._memory_buffer.get_image.return_value = (
         mock_image,
@@ -131,5 +134,6 @@ def test_save_from_memory(test_case, test_env, mocker):
     assert camera._memory_buffer.get_image.call_args.args == (33,)
     assert camera._add_metadata_to_capture.call_count == 1
     assert mock_image.resize.call_count == (1 if test_case.resize_needed else 0)
+    assert mock_image.convert.call_count == (1 if test_case.convert_needed else 0)
     assert mock_image.save.call_count == 1
     assert mock_image.save.call_args.kwargs == test_case.save_kwargs

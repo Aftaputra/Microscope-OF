@@ -42,6 +42,10 @@ class ImageFormatInfo(BaseModel):
     supported_extensions: tuple[str, ...]
     """All supported extension (lowercase)."""
 
+    def path_matches(self, path: str) -> bool:
+        """Return True if path matches one of the supported extensions."""
+        return path.lower().endswith(self.supported_extensions)
+
 
 BASE_IMAGE_FORMATS: dict[str, ImageFormatInfo] = {
     "jpeg": ImageFormatInfo(
@@ -462,7 +466,7 @@ class BaseCamera(OFMThing, ABC):
         complete, this error will not be raised until the data is accessed. Consider
         using ``grab_jpeg_as_array`` instead.
 
-        This differs from ``capture_jpeg`` in that it does not pause the MJPEG
+        This differs from ``capture`` in that it does not pause the MJPEG
         preview stream. Instead, we simply return the next frame from that
         stream (either "main" for the preview stream, or "lores" for the low
         resolution preview). No metadata is returned.
@@ -679,8 +683,7 @@ class BaseCamera(OFMThing, ABC):
             image = image.resize(save_resolution, Image.Resampling.BOX)
         try:
             save_kwargs: dict[str, Any] = {}
-            jpeg_exts = BASE_IMAGE_FORMATS["jpeg"].supported_extensions
-            if resolved_path.lower().endswith(jpeg_exts):
+            if BASE_IMAGE_FORMATS["jpeg"].path_matches(resolved_path):
                 # Per PIL documentation,
                 # (https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#jpeg)
                 # there are two factors when saving a JPEG. Subsampling affects the colour,
@@ -689,6 +692,11 @@ class BaseCamera(OFMThing, ABC):
                 # quality = 95 is the maximum recommended - above this, JPEG compression is
                 # disabled, file size increases and quality is barely or not affected
                 save_kwargs = {"quality": 95, "subsampling": 0}
+            if (
+                BASE_IMAGE_FORMATS["png"].path_matches(resolved_path)
+                and image.mode == "RGBX"
+            ):
+                image = image.convert("RGB")
             image.save(resolved_path, **save_kwargs)
             try:
                 self._add_metadata_to_capture(resolved_path, dict(metadata))
