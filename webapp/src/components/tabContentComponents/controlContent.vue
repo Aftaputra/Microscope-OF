@@ -24,7 +24,7 @@ export default {
 
   data() {
     return {
-      setStreamId: "control",
+      setStreamId: this.$options.name,
     };
   },
 };
