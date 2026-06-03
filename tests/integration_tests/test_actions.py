@@ -12,6 +12,7 @@ it has been moved as it artificaially inflated coverage.
 """
 
 import json
+import logging
 
 import numpy as np
 import piexif
@@ -40,11 +41,26 @@ def test_grab_jpeg(simulation_test_env):
     assert image.size == (820, 616)
 
 
-@pytest.mark.parametrize("fmt", ["jpeg", "png"])
-def test_capture_and_metadata(simulation_test_env, fmt):
-    """Check that the position is encoded into the image metadata."""
+@pytest.mark.parametrize(
+    "image_format",
+    [
+        "jpeg",
+        pytest.param(
+            "png", marks=pytest.mark.xfail(reason="piexif does not support PNG EXIF")
+        ),
+    ],
+)
+def test_capture_and_metadata(simulation_test_env, image_format, caplog):
+    """Capture an image and check a attributes.
+
+    - Check that the position is encoded into the image metadata.
+    - Check the dimensions
+    - Check the format
+    """
     camera = simulation_test_env.get_thing_client("camera")
-    blob = getattr(camera, f"capture_{fmt}")()
+    with caplog.at_level(logging.WARNING):
+        blob = camera.capture(image_format=image_format)
+    assert len(caplog.messages) == 0
     image = Image.open(blob.open())
     exif_dict = piexif.load(image.info["exif"])
     encoded_metadata = exif_dict["Exif"][piexif.ExifIFD.UserComment]
@@ -52,6 +68,7 @@ def test_capture_and_metadata(simulation_test_env, fmt):
     assert "position" in metadata["stage"]
     assert metadata["stage"]["position"] == {"x": 0, "y": 0, "z": 0}
     assert image.size == (820, 616)
+    assert image.format == image_format.upper()
 
 
 def test_stage(simulation_test_env):
