@@ -490,7 +490,10 @@ class SimulatedCamera(BaseCamera):
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
 
-        :param stream_name: Currently ignored, this argument exists to ensure consistent API across camera Things.
+        :param capture_mode: (Optional) The name of the capture mode as defined by the
+            camera.
+        :param raw: Raw Capture is not implemented for the simulation microscope.
+            Setting this to True will result in an error.
         """
         if raw is True:
             raise NotImplementedError(

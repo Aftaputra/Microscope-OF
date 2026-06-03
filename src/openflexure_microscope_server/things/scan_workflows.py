@@ -171,7 +171,7 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
 
         :param dz: The dz for autofocus.
         :param images_dir: The path to the directory for saving images.
-        :param capture mode: The name of the camera capture mode.
+        :param capture_mode: The name of the camera capture mode.
 
         :return: A tuple ready to pass out of acquisition routine. In this method,
             image is always taken, so first return is True.

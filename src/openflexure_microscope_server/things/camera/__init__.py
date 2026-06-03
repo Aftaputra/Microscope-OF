@@ -610,9 +610,11 @@ class BaseCamera(OFMThing, ABC):
 
         This is not an action as it exposes a direct path for saving
 
-        :param path: The path to save the file to
-        :param save_resolution: can be set to resize the image before saving. By
-            default this is None meaning that the image is saved at original resolution.
+        :param path: The path to save the file to, this should be a ``RelativeDataPath``
+            object. If the saving Thing is not set for the path, the camera's data
+            directory will be used.
+        :param capture_mode:  (Optional) The name of the capture mode as defined by the
+            camera.
         """
         buffer_id = self.capture_to_memory(capture_mode=capture_mode)
         self.save_from_memory(path=path, buffer_id=buffer_id)
@@ -667,9 +669,6 @@ class BaseCamera(OFMThing, ABC):
         be written to.
 
         :param path: The path to save the file to
-        :param save_resolution: can be set to resize the image before saving. By
-            default this is None meaning that the image is saved at original
-            resolution.
         :param buffer_id: The buffer id of the image to save, this was returned by
             ``capture_to_memory``
         """

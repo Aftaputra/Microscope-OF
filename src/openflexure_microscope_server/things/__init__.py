@@ -69,7 +69,7 @@ class OFMThing(lt.Thing):
 
         :param path: The relative path within the data directory of this Thing's data
             dir that the data shudl be saved.
-        :path absolute: Set to True if the current path is absolute. A relative path
+        :param absolute: Set to True if the current path is absolute. A relative path
             will be returned. An validation error will be raised if the absolute path
             is not within the data directory.
 

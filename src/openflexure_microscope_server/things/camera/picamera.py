@@ -526,7 +526,7 @@ class StreamingPiCamera2(BaseCamera, ABC):
         """Ensure in correct mode for capture.
 
         If the camera is already in the correct mode, the stream isn't paused and
-        this is the same as using ``self._streaming_picamera().
+        this is the same as using ``self._streaming_picamera()``.
 
         Otherwise, pause stream, and switch switch mode. Mode is reset and stream
         restarts stream after the context manager closes.
@@ -579,8 +579,10 @@ class StreamingPiCamera2(BaseCamera, ABC):
         It's likely to be highly inefficient - raw and/or uncompressed captures using
         binary image formats will be added in due course.
 
-        :param stream_name: (Optional) The PiCamera2 stream to use, should be one of
-            ["main", "lores", "raw", "full"]. Default = "main"
+        :param capture_mode: (Optional) The name of the capture mode as defined by the
+            camera.
+        :param raw: Whether to capture RAW data. Capturing RAW data may infore some
+            of the camera mode settings.
 
         :raises TimeoutError: if this time is exceeded during capture.
         """
