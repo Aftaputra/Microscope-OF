@@ -638,7 +638,7 @@ class BaseCamera(OFMThing, ABC):
 
                 image = self._capture_image(capture_mode=capture_mode)
                 success = True
-                continue
+                break
             except TimeoutError:
                 self.logger.warning(
                     f"Attempt {capture_attempts + 1} to capture image timed out. "
