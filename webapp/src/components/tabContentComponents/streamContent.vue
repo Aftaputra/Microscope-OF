@@ -203,7 +203,6 @@ export default {
 
     handleDoneResize: function () {
       // Recalculate size
-
       this.recalculateSize();
       // Handle closed stream
       if (this.displaySize[0] == 0 && this.displaySize[1] == 0) {

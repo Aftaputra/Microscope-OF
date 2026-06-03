@@ -15,7 +15,7 @@
       </div>
 
       <div id="mini-stream">
-        <miniStreamDisplay />
+        <miniStreamDisplay :stream-id="setStreamId" />
       </div>
     </div>
   </div>
@@ -41,6 +41,8 @@ export default {
   data() {
     return {
       manualCameraSettings: [],
+      // This adds the parent name as value for prop streamId
+      setStreamId: this.$options.name,
     };
   },
 

@@ -81,7 +81,8 @@ export default {
       lastStitchedImage: null,
       scanComplete: false,
       scan_name: "",
-      setStreamId: "slideScan",
+      // This adds the parent name as value for prop streamId
+      setStreamId: this.$options.name,
     };
   },
 

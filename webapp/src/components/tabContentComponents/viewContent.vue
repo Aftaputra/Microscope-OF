@@ -19,7 +19,8 @@ export default {
 
   data() {
     return {
-      setStreamId: "view",
+      // This adds the parent name as value for prop streamId
+      setStreamId: this.$options.name,
     };
   },
 };

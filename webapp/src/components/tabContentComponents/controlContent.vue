@@ -24,6 +24,7 @@ export default {
 
   data() {
     return {
+      // This adds the parent name as value for prop streamId
       setStreamId: this.$options.name,
     };
   },

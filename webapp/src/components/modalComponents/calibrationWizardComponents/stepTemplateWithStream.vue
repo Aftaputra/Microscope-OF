@@ -1,7 +1,7 @@
 <template>
   <div>
     <slot></slot>
-    <miniStreamDisplay class="mini-preview" />
+    <miniStreamDisplay class="mini-preview" :stream-id="setStreamId" />
     <slot name="below-stream"></slot>
   </div>
 </template>
@@ -14,6 +14,13 @@ export default {
 
   components: {
     miniStreamDisplay,
+  },
+
+  data() {
+    return {
+      // This adds the parent name as value for prop streamId
+      setStreamId: this.$options.name,
+    };
   },
 };
 </script>
