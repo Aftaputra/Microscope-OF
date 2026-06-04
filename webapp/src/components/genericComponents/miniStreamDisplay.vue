@@ -5,7 +5,7 @@
     class="stream-display uk-width-1-1 uk-height-1-1 scrollTarget"
   >
     <img
-      v-show="isVisible && streamEnabled"
+      v-show="isVisible && streamEnabled "
       ref="click-frame"
       class="uk-align-center uk-margin-remove-bottom"
       :src="streamImgUri"
@@ -50,10 +50,13 @@ export default {
       return this.ready && !this.disableStream;
     },
     streamImgUri: function () {
-      // Only request the real stream if it's enabled AND currently visible on screen
-      if (this.isVisible) {
-        return `${this.baseUri}/camera/mjpeg_stream`;
+      // FIX: Require BOTH visibility AND the enabled state
+      if (this.isVisible && this.streamEnabled) {
+        const url = new URL(`${this.baseUri}/camera/mjpeg_stream`);
+        url.searchParams.append("debugId", this.streamId);
+        return url.toString();
       }
+
       // Force the browser to kill the connection by loading a 1 pixel image
       return ONE_PIXEL_FALLBACK;
     },
@@ -91,6 +94,10 @@ export default {
       this.stopIntersectionObserver();
     }
     this.store.removeStream(this.streamId);
+    const imgElement = this.$refs["click-frame"];
+    if (imgElement) {
+      imgElement.src = ONE_PIXEL_FALLBACK;
+    }
   },
 };
 </script>

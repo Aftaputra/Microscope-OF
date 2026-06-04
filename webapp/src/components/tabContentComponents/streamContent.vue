@@ -69,14 +69,16 @@ export default {
     streamEnabled: function () {
       return this.ready && !this.disableStream;
     },
-    thisStreamOpen: function () {
+    streamOpen: function () {
       // Only a single MJPEG connection should be open at a time
       return !(this.displaySize[0] == 0) && !(this.displaySize[1] == 0);
     },
     streamImgUri: function () {
       // Only request the real stream if it's enabled AND currently visible on screen
       if (this.isVisible && this.streamEnabled) {
-        return `${this.baseUri}/camera/mjpeg_stream`;
+        const url = new URL(`${this.baseUri}/camera/mjpeg_stream`);
+        url.searchParams.append("debugId", this.streamId);
+        return url.toString();
       }
 
       // Force the browser to kill the connection by loading a 1 pixel image
@@ -140,6 +142,10 @@ export default {
     if (this.sizeObserver) {
       this.sizeObserver.disconnect();
       this.store.removeStream(this.streamId);
+    }
+    const imgElement = this.$refs["click-frame"];
+    if (imgElement) {
+      imgElement.src = ONE_PIXEL_FALLBACK;
     }
   },
 
