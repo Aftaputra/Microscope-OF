@@ -991,7 +991,7 @@ class PiCameraV2(StreamingPiCamera2):
                 stream_name="main",
             ),
             "quick": PiCamera2CaptureMode(
-                description="Capture directly from the current stream.",
+                description="Capture without altering the stream settings.",
                 streaming_mode=None,
                 stream_name="main",
             ),
@@ -1054,7 +1054,7 @@ class PiCameraHQ(StreamingPiCamera2):
                 stream_name="main",
             ),
             "quick": PiCamera2CaptureMode(
-                description="Capture directly from the current stream.",
+                description="Capture without altering the stream settings.",
                 streaming_mode=None,
                 stream_name="main",
             ),

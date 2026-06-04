@@ -519,7 +519,12 @@ class BaseCamera(OFMThing, ABC):
     @lt.property
     def capture_modes(self) -> Mapping[str, CaptureMode]:
         """Modes the camera can use for capturing."""
-        return {"standard": CaptureMode(description=("The standard capture mode."))}
+        return {
+            "quick": CaptureMode(
+                description="Capture without altering the stream settings.",
+            ),
+            "standard": CaptureMode(description="The standard capture mode."),
+        }
 
     def _validate_capture_mode(self, capture_mode: str) -> str:
         """Check input capture mode exists, always returns a valid mode.
@@ -559,7 +564,7 @@ class BaseCamera(OFMThing, ABC):
 
         This method provides the interface expected by the camera_stage_mapping.
         """
-        img = self.capture_as_array()
+        img = self.capture_as_array(capture_mode="quick")
         return downsample(self.downsampled_array_factor, img)
 
     @lt.action
