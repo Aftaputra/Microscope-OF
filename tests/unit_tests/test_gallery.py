@@ -89,7 +89,7 @@ def test_gallery_thing_finds_all_providers(simulation_test_env):
     assert smart_scan in gallery.all_ofm_things.values()
 
     assert snake_workflow not in gallery.gallery_providing_things.values()
-    assert camera not in gallery.gallery_providing_things.values()
+    assert camera in gallery.gallery_providing_things.values()
     assert smart_scan in gallery.gallery_providing_things.values()
 
     assert not isinstance(snake_workflow, GalleryCompatibleThing)
