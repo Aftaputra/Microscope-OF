@@ -1022,9 +1022,10 @@ class PiCameraHQ(StreamingPiCamera2):
             ),
             "full_resolution": PiCamera2StreamingMode(
                 description=(
-                    "Streaming the camera in 12MP full resolution. The preview stream "
-                    "sent to the UI will be the low resolution (lores) stream. "
-                    "This allows better image capture at expense of preview quality."
+                    "Streaming the camera with an 8MP area in full-resolution area "
+                    "from the centre of the 12MP sensor.. The preview stream sent to "
+                    "the UI will be the low resolution (lores) stream. This allows "
+                    "better image capture at expense of preview quality."
                 ),
                 main_resolution=(2800, 2800),
                 lores_resolution=(350, 350),
@@ -1041,15 +1042,17 @@ class PiCameraHQ(StreamingPiCamera2):
         return {
             "standard": PiCamera2CaptureMode(
                 description=(
-                    "The standard mode, 3MP image created from downsampling an 12MP "
-                    "capture."
+                    "The standard mode, 2MP image created from downsampling an 8MP "
+                    "capture from the centre of the 12MP sensor."
                 ),
-                save_resolution=(1640, 1232),
+                save_resolution=(1400, 1400),
                 streaming_mode="full_resolution",
                 stream_name="main",
             ),
             "full": PiCamera2CaptureMode(
-                description="A full resolution 12MP capture.",
+                description=(
+                    "An 8MP full resolution capture from the centre of the 12MP sensor."
+                ),
                 streaming_mode="full_resolution",
                 stream_name="main",
             ),
