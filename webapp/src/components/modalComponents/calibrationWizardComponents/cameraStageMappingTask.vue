@@ -18,7 +18,7 @@ import runCsmStep from "./csmSteps/runCsmStep.vue";
 import { markRaw } from "vue";
 
 export default {
-  name: "CameraCalibrationTask",
+  name: "CameraStageMappingTask",
   components: {
     calibrationWizardTask,
   },
