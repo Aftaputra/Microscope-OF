@@ -5,7 +5,7 @@
     class="stream-display uk-width-1-1 uk-height-1-1 scrollTarget"
   >
     <img
-      v-show="isVisible && streamEnabled "
+      v-show="isVisible && streamEnabled"
       ref="click-frame"
       class="uk-align-center uk-margin-remove-bottom"
       :src="streamImgUri"
@@ -88,12 +88,14 @@ export default {
     );
     this.stopIntersectionObserver = stop;
   },
+
   beforeUnmount() {
     clearTimeout(this.observerTimeout); // Clean up the timer!
     if (this.stopIntersectionObserver) {
       this.stopIntersectionObserver();
     }
     this.store.removeStream(this.streamId);
+    // Override img source to single pixel and drop MJPEG stream
     const imgElement = this.$refs["click-frame"];
     if (imgElement) {
       imgElement.src = ONE_PIXEL_FALLBACK;

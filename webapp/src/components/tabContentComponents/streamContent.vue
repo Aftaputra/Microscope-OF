@@ -69,10 +69,6 @@ export default {
     streamEnabled: function () {
       return this.ready && !this.disableStream;
     },
-    streamOpen: function () {
-      // Only a single MJPEG connection should be open at a time
-      return !(this.displaySize[0] == 0) && !(this.displaySize[1] == 0);
-    },
     streamImgUri: function () {
       // Only request the real stream if it's enabled AND currently visible on screen
       if (this.isVisible && this.streamEnabled) {
