@@ -41,7 +41,7 @@
       </div>
     </nav>
 
-    <ScanViewerModal ref="scanViewer" :selected-scan="selectedScan" :base-uri="baseUri" />
+    <ScanViewerModal ref="scanViewer" :selected-item="selectedItem" :base-uri="baseUri" />
 
     <!-- Gallery -->
     <div v-if="ready" class="uk-padding-remove-top" uk-lightbox="toggle: .lightbox-link">
@@ -54,7 +54,7 @@
         <div v-for="itemData in paginatedItems" :key="itemData.id">
           <gallery-card
             :item-data="itemData"
-            @viewer-requested="showScan"
+            @viewer-requested="showItem"
             @update-requested="refreshGallery"
           />
         </div>
@@ -95,7 +95,7 @@ export default {
   data: function () {
     return {
       all_items: [],
-      selectedScan: null,
+      selectedItem: null,
       osdViewer: null,
       currentPage: 1,
       itemsPerPage: 18,
@@ -112,9 +112,9 @@ export default {
     noItems() {
       return !this.all_items || this.all_items?.length === 0;
     },
-    selectedScanDZI() {
-      if (this.selectedScan && this.selectedScan.dzi != "") {
-        return `${this.baseUri}/data/smart_scan/${this.selectedScan.name}/images/${this.selectedScan.dzi}`;
+    selectedItemDZI() {
+      if (this.selectedItem && this.selectedItem.dzi != "") {
+        return `${this.baseUri}/data/smart_scan/${this.selectedItem.name}/images/${this.selectedItem.dzi}`;
       } else {
         return null;
       }
@@ -209,12 +209,17 @@ export default {
         if (e) this.modalError(e);
       }
     },
-    showScan(scan) {
-      if (scan.dzi) {
-        this.selectedScan = scan;
-        this.$refs.scanViewer.show();
+    showItem(itemData) {
+      if (itemData.card_type === "Scan") {
+        if (itemData.dzi) {
+          this.selectedItem = itemData;
+          this.$refs.scanViewer.show();
+        } else {
+          this.modalError("Scan not stitched for viewing in webapp, please download or stitch");
+        }
       } else {
-        this.modalError("Scan not stitched for viewing in webapp, please download or stitch");
+        this.selectedItem = itemData;
+        this.$refs.scanViewer.show();
       }
     },
     changePage(page) {

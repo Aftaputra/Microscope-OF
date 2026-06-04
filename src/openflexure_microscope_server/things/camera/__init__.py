@@ -20,7 +20,7 @@ from typing import Any, Literal, Mapping, Optional, Self
 
 import numpy as np
 import piexif
-from fastapi import Response
+from fastapi import HTTPException, Response
 from PIL import Image
 from pydantic import BaseModel
 
@@ -199,6 +199,16 @@ class CaptureMode(BaseModel):
     """The resolution to save the image. Use None to save as captured."""
 
 
+class CaptureInfo(BaseModel):
+    """Summary information for the UI about an image."""
+
+    name: str
+    created: float
+    modified: float
+    thing: str
+    card_type: Literal["Capture"] = "Capture"
+
+
 class BaseCamera(OFMThing, ABC):
     """The base class for all cameras. All cameras must directly inherit from this class.
 
@@ -274,6 +284,65 @@ class BaseCamera(OFMThing, ABC):
         """Return a snapshot from the microscope."""
         jpeg_data = await self.lores_mjpeg_stream.grab_frame()
         return Response(content=jpeg_data, media_type="image/jpeg")
+
+    # Register with gallery.
+    _show_data_in_gallery = True
+
+    @property
+    def gallery_data_name(self) -> str:
+        """Name under which data shows up in gallery."""
+        return "Captures"
+
+    @property
+    def gallery_data_schema(self) -> type[CaptureInfo]:
+        """The schema (BaseModel) for passing data to the gallery."""
+        return CaptureInfo
+
+    def get_data_for_gallery(self) -> list[CaptureInfo]:
+        """Return all the information about the saved captures."""
+        files = os.listdir(self._data_dir)
+        captures = []
+        for filename in files:
+            full_path = os.path.join(self.data_dir, filename)
+            if os.path.isfile(full_path) and (
+                BASE_IMAGE_FORMATS["jpeg"].path_matches(filename)
+                or BASE_IMAGE_FORMATS["png"].path_matches(filename)
+            ):
+                captures.append(
+                    CaptureInfo(
+                        name=filename,
+                        created=os.path.getctime(full_path),
+                        modified=os.path.getmtime(full_path),
+                        thing=self.name,
+                    )
+                )
+        return captures
+
+    @lt.endpoint(
+        "delete",
+        "capture/{name}",
+        responses={
+            200: {"description": "Successfully deleted capture"},
+            400: {"description": "An error occurred while trying to delete capture"},
+        },
+    )
+    def delete_capture(self, name: str) -> None:
+        """Delete the specified capture.
+
+        This endpoint allows captures to be deleted from disk.
+
+        :param name: The name of the capture to delete
+        """
+        full_path = os.path.join(self.data_dir, name)
+        if not os.path.exists(full_path):
+            self.logger.warning(f"Cannot find a capture of name {name}")
+            raise HTTPException(400, "Capture not found")
+        try:
+            os.remove(full_path)
+        except IOError as e:
+            raise HTTPException(
+                400, "Couldn't delete capture, check log for details"
+            ) from e
 
     @property
     def focus_fom(self) -> int:

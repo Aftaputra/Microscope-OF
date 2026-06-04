@@ -1,8 +1,8 @@
 <template>
   <div id="scan-modal" ref="scanModal" uk-modal>
-    <div v-if="selectedScan" id="scan-modal-body" class="uk-modal-dialog uk-modal-body">
+    <div v-if="selectedItem" id="scan-modal-body" class="uk-modal-dialog uk-modal-body">
       <h2 id="scan-modal-title" class="uk-modal-title">
-        {{ selectedScan.name }}
+        {{ selectedItem.name }}
         <button class="uk-modal-close uk-float-right" type="button">
           <span class="material-symbols-outlined">close</span>
         </button>
@@ -12,11 +12,11 @@
       </h2>
 
       <!-- Viewer -->
-      <div v-if="selectedScanDZI" id="viewer_container" class="viewer_container">
+      <div v-if="imageSource" id="viewer_container" class="viewer_container">
         <OpenSeadragonViewer
           id="openseadragon"
           ref="openseadragon"
-          :src="selectedScanDZI"
+          :src="imageSource"
           :brightness="brightness"
           :contrast="contrast"
           :saturation="saturation"
@@ -25,7 +25,7 @@
       </div>
 
       <!-- Controls -->
-      <div v-if="selectedScanDZI" class="viewer-controls">
+      <div v-if="imageSource" class="viewer-controls">
         <div class="controlsContainer">
           <label>
             Brightness
@@ -63,7 +63,7 @@ export default {
     OpenSeadragonViewer,
   },
   props: {
-    selectedScan: {
+    selectedItem: {
       type: Object,
       default: null,
     },
@@ -79,9 +79,14 @@ export default {
     };
   },
   computed: {
-    selectedScanDZI() {
-      if (this.selectedScan && this.selectedScan.dzi) {
-        return `${this.baseUri}/data/smart_scan/${this.selectedScan.name}/images/${this.selectedScan.dzi}`;
+    imageSource() {
+      if (this.selectedItem?.card_type === "Scan" && this.selectedItem?.dzi) {
+        return `${this.baseUri}/data/smart_scan/${this.selectedItem.name}/images/${this.selectedItem.dzi}`;
+      } else if (this.selectedItem?.card_type === "Capture") {
+        return {
+          type: "image",
+          url: `${this.baseUri}/data/${this.selectedItem.thing}/${this.selectedItem.name}`,
+        };
       }
       return null;
     },
