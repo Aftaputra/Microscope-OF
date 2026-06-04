@@ -68,8 +68,8 @@ export default {
     this.$refs["calibrationModalEl"].addEventListener("hidden", this.onHide);
     // Check which Things are available on mount.
     const allCalibrationTasks = {
-      camera: cameraCalibrationTask,
-      camera_stage_mapping: cameraStageMappingTask,
+      camera: markRaw(cameraCalibrationTask),
+      camera_stage_mapping: markRaw(cameraStageMappingTask),
     };
     this.availableCalibrationTasks = Object.fromEntries(
       Object.entries(allCalibrationTasks).filter(([thing]) => this.thingAvailable(thing)),
