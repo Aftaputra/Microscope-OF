@@ -25,10 +25,28 @@ describe("Settings Store", () => {
 
     it("initializes with correct default state", () => {
       const store = useSettingsStore();
+      // Checks whole state items
       expect(store.ready).toBe(false);
       expect(store.waiting).toBe(false);
       expect(store.appTheme).toBe("system");
       expect(store.activeStreams).toEqual({});
+      expect(store.error).toBe("");
+      expect(store.trackWindow).toBe(true);
+      expect(store.microscopeHostname).toBe("");
+      expect(store.disableStream).toBe(false);
+      expect(store.overrideOrigin).toBe("http://microscope.local:5000/api/v3");
+
+      expect(store.navigationStepSize).toEqual({
+        x: 200,
+        y: 200,
+        z: 50,
+      });
+
+      expect(store.navigationInvert).toEqual({
+        x: false,
+        y: false,
+        z: false,
+      });
     });
   });
 

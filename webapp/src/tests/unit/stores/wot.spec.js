@@ -8,9 +8,6 @@ vi.mock("axios");
 
 describe("WoT Store", () => {
   // A reusable dummy Thing Description (TD)
-  // This will be reworked by using the HAR fixtures or the fixtures/common_definitions.js
-  // This test uses arbitrary values for simplicity but this could add confusion
-  // How-to-test documentation would require a glossary of defined mock values
   const mockTD = {
     base: "http://microscope.local/api/v3/",
     properties: {
