@@ -13,7 +13,7 @@
       <action-button
         thing="camera"
         action="capture"
-        :submit-data="{ capture_mode: 'standard' }"
+        :submit-data="submitData"
         submit-label="Capture"
         :submit-on-event="'globalCaptureEvent'"
         @response="handleCaptureResponse"
@@ -42,9 +42,19 @@ export default {
     };
   },
 
+  computed: {
+    submitData() {
+      return {
+        capture_mode: "standard",
+        retain_image: this.saveToGallery,
+      };
+    },
+  },
+
   methods: {
     handleCaptureResponse: async function (response) {
       // Retrieve the captured image and save it
+      if (this.saveToGallery) return;
       let imageUri = response.output.href;
       if (!imageUri) {
         this.modalError("No image URI returned from capture task.");
