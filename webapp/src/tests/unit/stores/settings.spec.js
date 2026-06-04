@@ -7,7 +7,7 @@ describe("Settings Store", () => {
     // Mock the browser's window.location BEFORE the store initializes
     // This prevents the getOriginFromLocation() function from crashing.
     vi.stubGlobal("location", {
-      // The following basUri is arbitrary set
+      // The following baseUri is arbitrarily set
       href: "http://microscope-test.local:5000/",
     });
 
