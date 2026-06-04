@@ -73,7 +73,7 @@ export default {
       // Only request the real stream if it's enabled AND currently visible on screen
       if (this.isVisible && this.streamEnabled) {
         const url = new URL(`${this.baseUri}/camera/mjpeg_stream`);
-        url.searchParams.append("debugId", this.streamId);
+        url.searchParams.append("streamId", this.streamId);
         return url.toString();
       }
 

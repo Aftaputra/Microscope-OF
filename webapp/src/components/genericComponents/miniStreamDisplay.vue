@@ -53,7 +53,7 @@ export default {
       // Require BOTH visibility AND the enabled state
       if (this.isVisible && this.streamEnabled) {
         const url = new URL(`${this.baseUri}/camera/mjpeg_stream`);
-        url.searchParams.append("debugId", this.streamId);
+        url.searchParams.append("streamId", this.streamId);
         return url.toString();
       }
 
