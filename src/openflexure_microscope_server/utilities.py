@@ -166,6 +166,9 @@ def _path_normalised(unsafe_path_string: str) -> bool:
 
 def _no_trailing_dots_or_whitespaces(unsafe_path_string: str) -> bool:
     """Disallow trailing dots or whitespace."""
+    # Use PurePath from Python's standard library to iterate over each element
+    # in the path as separated by path separators. For example:
+    # "foo/bar/tada.py" -> ("foo", "bar", "tada.py")
     for component in PurePath(unsafe_path_string).parts:
         if component == "..":
             continue
