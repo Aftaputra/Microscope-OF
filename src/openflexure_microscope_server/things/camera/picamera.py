@@ -432,11 +432,15 @@ class StreamingPiCamera2(BaseCamera, ABC):
     def _create_picam_config_from_mode_info(
         self,
         picam: Picamera2,
+        controls: dict[str, Any],
         mode_info: PiCamera2StreamingMode,
     ) -> dict[str, Any]:
-        """Create the dictionary to pass to ``Picamera2.configure``."""
-        controls = self._get_persistent_controls()
+        """Create the dictionary to pass to ``Picamera2.configure``.
 
+        :param controls: The controls for the camera. Note that running
+            ``_get_persistent_controls()`` should be done before getting the picamera
+            lock to ensure that the current settings are read from the camera.
+        """
         if mode_info.scaler_crop is not None:
             controls["ScalerCrop"] = mode_info.scaler_crop
 
@@ -465,6 +469,9 @@ class StreamingPiCamera2(BaseCamera, ABC):
             raise ValueError(f"Unknown mode {mode}")
         self.streaming_mode = mode
 
+        # This must be before getting the picamera hardware lock.
+        controls = self._get_persistent_controls()
+
         mode_info = self.streaming_modes[mode]
 
         with self._streaming_picamera() as picam:
@@ -474,6 +481,7 @@ class StreamingPiCamera2(BaseCamera, ABC):
                     picam.stop_encoder()  # make sure there are no other encoders going
                 stream_config = self._create_picam_config_from_mode_info(
                     picam=picam,
+                    controls=controls,
                     mode_info=mode_info,
                 )
                 picam.configure(stream_config)
@@ -540,10 +548,15 @@ class StreamingPiCamera2(BaseCamera, ABC):
                 yield cam
         else:
             streaming_mode_info = self.streaming_modes[required_streaming_mode]
+
+            # This must be before getting the picamera hardware lock.
+            controls = self._get_persistent_controls()
+
             with self._streaming_picamera(pause_stream=True) as cam:
                 LOGGER.debug("Reconfiguring camera for full resolution capture")
                 stream_config = self._create_picam_config_from_mode_info(
                     picam=cam,
+                    controls=controls,
                     mode_info=streaming_mode_info,
                 )
                 cam.configure(stream_config)
