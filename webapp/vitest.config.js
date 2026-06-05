@@ -18,6 +18,8 @@ export default defineConfig({
   ],
 
   test: {
+    // Set localStorage mock
+    setupFiles: ["./src/tests/unit/setup.js"],
     // CSS is disabled for now, the test loads the DOM without styles.
     css: false,
     pool: "forks",
