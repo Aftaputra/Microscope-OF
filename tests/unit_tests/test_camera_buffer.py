@@ -90,7 +90,7 @@ def test_get_two_images():
     )
     returned_image1, _, _ = mem_buf.get_image(buffer_id1)
     returned_image2, _, _ = mem_buf.get_image(buffer_id2)
-    # It they the same images
+    # Assert they are the same images
     assert misc_image1 is returned_image1
     assert misc_image2 is returned_image2
     # They are removed from memory
@@ -134,7 +134,7 @@ def test_buffer_size_changing():
     with pytest.raises(NoImageInMemoryError):
         mem_buf.get_image(buffer_id2)
     returned_image3, _, _ = mem_buf.get_image(buffer_id3)
-    # Image 3 the expected image
+    # Image 3 is the expected image
     assert misc_image3 is returned_image3
 
 
@@ -226,7 +226,7 @@ def test_get_metadata_too():
 
 
 def test_mode_is_returned():
-    """Capture 10 images with metadata and check metadata is returned as expected."""
+    """Check that the correct mode name is returned with the image from the buffer."""
     mem_buf = CameraMemoryBuffer()
     misc_image = random_image()
     buffer_id = mem_buf.add_image(misc_image, random_metadata(), "standard")

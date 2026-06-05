@@ -496,10 +496,8 @@ class SimulatedCamera(BaseCamera):
             Setting this to True will result in an error.
         """
         if raw is True:
-            raise NotImplementedError(
-                "Simulation camera camera doesn't support raw capture."
-            )
-        # Warn if the capture mode is incorrect, but don't read the cooerced value as
+            raise NotImplementedError("Simulation camera doesn't support raw capture.")
+        # Warn if the capture mode is incorrect, but don't read the coerced value as
         # this camera only supports one mode.
         self._validate_capture_mode(capture_mode)
         return np.array(self.generate_frame())
@@ -509,7 +507,7 @@ class SimulatedCamera(BaseCamera):
 
         It is used for capture to memory.
         """
-        # Warn if the capture mode is incorrect, but don't read the cooerced value as
+        # Warn if the capture mode is incorrect, but don't read the coerced value as
         # this camera only supports one mode.
         self._validate_capture_mode(capture_mode)
         return self.generate_frame()

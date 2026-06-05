@@ -149,7 +149,7 @@ class OpenCVCamera(BaseCamera):
             raise NotImplementedError(
                 "OpenCV camera camera doesn't support raw capture."
             )
-        # Warn if the capture mode is incorrect, but don't read the cooerced value as
+        # Warn if the capture mode is incorrect, but don't read the coerced value as
         # this camera only supports one mode.
         self._validate_capture_mode(capture_mode)
         ret, frame = self.cap.read()
@@ -159,7 +159,7 @@ class OpenCVCamera(BaseCamera):
 
     def _capture_image(self, capture_mode: str = "standard") -> Image.Image:
         """Acquire one image from the camera and return as a PIL image."""
-        # Warn if the capture mode is incorrect, but don't read the cooerced value as
+        # Warn if the capture mode is incorrect, but don't read the coerced value as
         # this camera only supports one mode.
         self._validate_capture_mode(capture_mode)
         return Image.fromarray(self.capture_as_array())

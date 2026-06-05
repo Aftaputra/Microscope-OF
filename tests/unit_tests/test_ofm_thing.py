@@ -92,7 +92,7 @@ def test_saving_thing_propagates_on_join():
     path2 = path.join("bar")
     assert not path2.save_location_set
 
-    # Set thing and check joiend path is as expected
+    # Set thing and check joined path is as expected
     path2.set_saving_thing(thing)
     assert path2.save_location_set
     assert path2.abs_data_path == os.path.join("data", "thing", "foo", "bar")

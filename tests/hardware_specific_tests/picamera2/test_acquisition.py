@@ -52,9 +52,9 @@ def test_format(picamera_client):
         image_format="png",
         retain_image=True,
     )
-    jpeg_capture = Image.open(blob.open())
-    jpeg_capture.verify()
-    assert jpeg_capture.format == "PNG"
+    png_capture = Image.open(blob.open())
+    png_capture.verify()
+    assert png_capture.format == "PNG"
 
 
 def test_standard_capture_size(picamera_client):

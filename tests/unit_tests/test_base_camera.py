@@ -86,7 +86,7 @@ class MemorySaveTestCase:
 
 
 SAVE_TEST_CASES = [
-    # Default test case is a jpeg, ckec it works with all extensions.
+    # Default test case is a jpeg, check it works with all extensions.
     MemorySaveTestCase("foobar.jpeg"),
     MemorySaveTestCase("foobar.jpg"),
     MemorySaveTestCase("foobar.JPEG"),
@@ -103,7 +103,7 @@ SAVE_TEST_CASES = [
 
 @pytest.mark.parametrize("test_case", SAVE_TEST_CASES)
 def test_save_from_memory(test_case, test_env, mocker):
-    """Check the correct timage is retrieved and saved with correct settings."""
+    """Check the correct image is retrieved and saved with correct settings."""
     camera = test_env.get_thing_by_type(SimulatedCamera)
     camera._memory_buffer = mocker.Mock()
     camera._add_metadata_to_capture = mocker.Mock()

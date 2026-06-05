@@ -53,7 +53,7 @@ def test_grab_jpeg(simulation_test_env):
 def test_capture_and_metadata(simulation_test_env, image_format, caplog):
     """Capture an image and check a attributes.
 
-    - Check that the position is encoded into the image metadata.
+    - Check that the position is encoded into the image metadata
     - Check the dimensions
     - Check the format
     """

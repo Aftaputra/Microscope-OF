@@ -129,7 +129,7 @@ class ScanWorkflow(Generic[SettingModelType], lt.Thing):
         """Return the save resolution as determined by a test image."""
         # Capture an example image.
         image = self._cam._capture_image(capture_mode=self.capture_mode)
-        # Check side to create a unit faction for downsampling.
+        # Check size to create a unit faction for downsampling.
         return image.size
 
     def pre_scan_routine(self, settings: SettingModelType) -> None:

@@ -68,9 +68,9 @@ class OFMThing(lt.Thing):
         """Create a ``RelativeDataPath`` object with this Thing set as the saving Thing.
 
         :param path: The relative path within the data directory of this Thing's data
-            dir that the data shudl be saved.
+            dir that the data should be saved to.
         :param absolute: Set to True if the current path is absolute. A relative path
-            will be returned. An validation error will be raised if the absolute path
+            will be returned. A validation error will be raised if the absolute path
             is not within the data directory.
 
         :return: A ``RelativeDataPath`` object with the saving Thing already set.

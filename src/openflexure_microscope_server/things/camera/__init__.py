@@ -230,8 +230,10 @@ class BaseCamera(OFMThing, ABC):
         # would be ideal.
         self._default_background_detector = "bg_channel_deviations_luv"
         self._background_detector_name: Optional[str] = None
+        self._framerate_monitor_running = False
 
-        if "default" and "full_resolution" not in self.streaming_modes:
+        required_modes = ("default", "full_resolution")
+        if not all(mode in self.streaming_modes for mode in required_modes):
             raise KeyError(
                 f"Camera {type(self).__name__} doesn't define both a 'default' and a "
                 "'full_resolution' streaming mode."
@@ -559,7 +561,7 @@ class BaseCamera(OFMThing, ABC):
     def capture_downsampled_array(self) -> NDArray:
         """Acquire one image from the camera, downsample, and return as an array.
 
-        * The array is downsamples by the thing property `downsampled_array_factor`.
+        * The array is downsampled by the thing property `downsampled_array_factor`.
         * The default capture array arguments are used.
 
         This method provides the interface expected by the camera_stage_mapping.
@@ -718,7 +720,7 @@ class BaseCamera(OFMThing, ABC):
         """Capture a PIL image from the camera.
 
         This unlike the ``grab_*`` methods this may pause the stream or temporarily
-        switch streaming mode to capute the image if required by the mode.
+        switch streaming mode to capture the image if required by the mode.
         """
 
     @lt.action

@@ -536,8 +536,8 @@ class StreamingPiCamera2(BaseCamera, ABC):
         If the camera is already in the correct mode, the stream isn't paused and
         this is the same as using ``self._streaming_picamera()``.
 
-        Otherwise, pause stream, and switch switch mode. Mode is reset and stream
-        restarts stream after the context manager closes.
+        Otherwise, pause stream, and switch mode. Mode is reset and stream
+        restarts after the context manager closes.
         """
         required_streaming_mode = capture_mode_info.streaming_mode
         if (
@@ -568,7 +568,7 @@ class StreamingPiCamera2(BaseCamera, ABC):
         """Acquire one image from the camera and return it as a PIL Image.
 
         :param capture_mode: The capture mode to use. See the description field of each
-            mode for more detail in ``capture_modes`` for more detail.
+            mode in ``capture_modes`` for more detail.
 
         :raises TimeoutError: if this time is exceeded during capture.
         """
@@ -594,13 +594,13 @@ class StreamingPiCamera2(BaseCamera, ABC):
 
         :param capture_mode: (Optional) The name of the capture mode as defined by the
             camera.
-        :param raw: Whether to capture RAW data. Capturing RAW data may infore some
+        :param raw: Whether to capture RAW data. Capturing RAW data may ignore some
             of the camera mode settings.
 
         :raises TimeoutError: if this time is exceeded during capture.
         """
         if raw:
-            # Raw cannot used _capture_image.
+            # Raw cannot use _capture_image.
             capture_mode = self._validate_capture_mode(capture_mode)
             capture_mode_info = self.capture_modes[capture_mode]
 
