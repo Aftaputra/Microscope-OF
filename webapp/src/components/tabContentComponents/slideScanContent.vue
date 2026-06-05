@@ -17,7 +17,7 @@
       class="image-fit"
       :src="lastStitchedImage"
     />
-    <streamDisplay v-else />
+    <streamDisplay v-else :stream-id="setStreamId" />
     <template #controls>
       <slideScanControls />
       <label class="uk-form-label" for="form-stacked-text">Sample ID</label>
@@ -81,6 +81,8 @@ export default {
       lastStitchedImage: null,
       scanComplete: false,
       scan_name: "",
+      // This adds the parent name as value for prop streamId
+      setStreamId: this.$options.name,
     };
   },
 

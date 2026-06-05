@@ -53,7 +53,7 @@ mode.
       </div>
       <div v-if="taskStarted">
         <h2 v-if="taskInfoTitle" style="text-align: center">{{ taskInfoTitle }}</h2>
-        <mini-stream-display v-if="taskInfoStream" />
+        <mini-stream-display v-if="taskInfoStream" :stream-id="setStreamId" />
         <action-log-display id="log-display" :log="log" :task-status="taskStatus" />
         <div class="uk-width-1-1 uk-flex uk-flex-center">
           <div class="uk-width-2-3">
@@ -141,6 +141,7 @@ export default {
       progress: null,
       log: [],
       pollTimer: null,
+      setStreamId: this.$options.name,
     };
   },
 

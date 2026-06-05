@@ -34,6 +34,7 @@ import axios from "axios";
 import ActionButton from "../../labThingsComponents/actionButton.vue";
 import positionControl from "./positionControl.vue";
 import autofocusControl from "./autofocusControl.vue";
+import { eventBus } from "../../../eventBus.js";
 
 export default {
   name: "PaneControl",
@@ -61,8 +62,12 @@ export default {
         this.modalError("No image URI returned from capture task.");
         return;
       }
+      // Emit flash capture stream animation
+      eventBus.emit("globalFlashStream");
+
       // To save the returned data, we make a virtual link and click it
       let imageResponse = await axios.get(imageUri, { responseType: "blob" });
+
       const url = window.URL.createObjectURL(new Blob([imageResponse.data]));
       const link = document.createElement("a");
       link.href = url;
