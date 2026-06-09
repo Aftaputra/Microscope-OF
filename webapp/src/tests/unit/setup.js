@@ -43,7 +43,7 @@ afterEach(({ task }) => {
     (args) => typeof args[0] === "string" && args[0].includes("[Vue warn]"),
   );
 
-  // If Vue has warns forcefully fail this test block
+  // If Vue has warns forcefully fail this test block --max-warnings=0
   if (vueWarnings.length > 0) {
     const warningMessages = vueWarnings.map((args) => args.join(" ")).join("\n\n");
 
