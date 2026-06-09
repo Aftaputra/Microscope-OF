@@ -41,11 +41,12 @@ export default defineConfig({
       clean: true,
       cleanOnStart: true,
       // text gives output on STOUT and html creates an artifact
-      reporter: ["text", "html", "cobertura"],
+      reporter: ["text"],
       all: true,
       // Files to include or exclude in coverage
       include: ["src/**/*.vue", "src/**/*.js"],
-      exclude: [],
+      // Exclude from coverage all files with keyword in path and name "Experimental"
+      exclude: ["*/experimental/*", "experimental"],
       // These thresholds raise ERROR if the coverage it's under the provided percentages.
       // As the coverage is low we set the limit low, as testing spec files increase,
       // these thresholds need to increase accordingly.

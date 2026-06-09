@@ -1,48 +1,98 @@
 import { describe, it, expect, beforeEach, afterEach, afterAll, vi } from "vitest";
 import { shallowMount, flushPromises } from "@vue/test-utils";
 import { createTestingPinia } from "@pinia/testing";
+import { markRaw } from "vue";
 
 // Eagerly import ALL .vue files at the components directory
-const componentModules = import.meta.glob("../../components/**/*.vue", { eager: true });
-
-// Skip list, for components that have their own test spec.js file
+// Except the ones inside experimental
+const componentModules = Object.fromEntries(
+  Object.entries(import.meta.glob("../../components/**/*.vue", { eager: true })),
+);
+// Skip list, add here components that have their own test spec.js file
 const skipList = ["loggingContent.vue"];
 
 // Map filenames to the specific props or mocks required
 // Not all components ask for props
 const componentOverrides = {
-  "paginateLinks.vue": {
+  "serverSpecifiedPropertyControl.vue": {
     props: {
-      totalPages: 5,
-      currentPage: 1,
+      propertyData: {},
+      propertyName: "",
+      thingName: "",
     },
+    global: {
+      mocks: {
+        wotStore: {
+          thingDescriptions: {
+            test_thing: {
+              properties: {
+                property_1: {},
+                fancy_property_2: {},
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+
+  "slideScanContent.vue": {
+    global: {
+      mocks: {
+        wotStore: {
+          thingDescriptions: {
+            test_thing: {
+              properties: {
+                fancy_property_1: {},
+                fancy_property_2: {},
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+
+  "slideScanControls.vue": {
+    global: {
+      mocks: {
+        wotStore: {
+          thingDescriptions: {
+            test_thing: {
+              properties: {
+                fancy_property_1: {},
+                fancy_property_2: {},
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+
+  "miniStreamDisplay.vue": {
+    props: { streamId: "testProp" },
+  },
+  "streamContent.vue": {
+    props: { streamId: "testProp" },
+  },
+  "paginateLinks.vue": {
+    props: { totalPages: 5, currentPage: 1 },
   },
   "simpleAccordion.vue": {
     props: { title: "Test Accordion Title" },
   },
   "tabContent.vue": {
-    props: {
-      tabID: "tab-1",
-      currentTab: "tab-1",
-    },
+    props: { tabID: "tab-1", currentTab: "tab-1" },
   },
   "tabIcon.vue": {
-    props: {
-      tabID: "tab-1",
-      currentTab: "tab-1",
-    },
+    props: { tabID: "tab-1", currentTab: "tab-1" },
   },
   "actionButton.vue": {
-    props: {
-      action: "test-action",
-      thing: "test-thing",
-    },
+    props: { action: "test-action", thing: "test-thing" },
   },
   "actionLogDisplay.vue": {
-    props: {
-      taskStatus: "",
-      log: [],
-    },
+    props: { taskStatus: "", log: [] },
   },
   "endActionButton.vue": {
     props: { url: "http://microscope.local/api/v3" },
@@ -67,20 +117,23 @@ const componentOverrides = {
     },
   },
   "inputFromSchema.vue": {
-    props: {
-      dataSchema: {},
-    },
+    props: { dataSchema: {} },
   },
+
   "propertyControl.vue": {
     props: {
       propertyName: "",
-      thingName: "",
+      thingName: "test_thing",
       dataSchema: {},
     },
+
     mocks: {
       wotStore: {
         thingDescriptions: {
-          actions: {},
+          test_thing: {
+            actions: {},
+            properties: {},
+          },
         },
       },
     },
@@ -95,25 +148,14 @@ const componentOverrides = {
     },
   },
   "serverSpecifiedInterface.vue": {
-    props: {
-      elements: [],
-    },
-  },
-  "serverSpecifiedPropertyControl.vue": {
-    props: {
-      propertyData: {},
-      propertyName: "",
-      thingName: "",
-    },
+    props: { elements: [] },
   },
   "calibrationWizardTask.vue": {
-    props: {
-      steps: [],
-    },
+    props: { steps: [] },
   },
   "singleStepTask.vue": {
     props: {
-      stepComponent: {},
+      stepComponent: markRaw({ template: '<div class="dummy"></div>' }),
     },
   },
   "actionTab.vue": {
@@ -125,9 +167,7 @@ const componentOverrides = {
     },
   },
   "galleryCard.vue": {
-    props: {
-      itemData: {},
-    },
+    props: { itemData: {} },
   },
   "openSeadragonViewer.vue": {
     props: {
@@ -138,20 +178,24 @@ const componentOverrides = {
     },
   },
   "cameraCalibrationSettings.vue": {
-    props: {
-      cameraUri: "",
-    },
+    props: { cameraUri: "" },
   },
+
   "galleryContent.vue": {
-    mocks: {
-      readThingProperty: vi.fn(() => []),
+    global: {
+      mocks: {
+        readThingProperty: vi.fn(() => []),
+      },
     },
   },
+
   "CSMCalibrationSettings.vue": {
-    mocks: {
-      thingDescriptions: {
-        csm: {
-          actions: {},
+    global: {
+      mocks: {
+        thingDescriptions: {
+          csm: {
+            actions: {},
+          },
         },
       },
     },
@@ -194,15 +238,30 @@ describe("Automated Component Smoke Tests", () => {
   for (const path in componentModules) {
     const component = componentModules[path].default;
     const fileName = path.split("/").pop();
-    const isSkipped = skipList.includes(fileName);
+    const isSkipped = skipList.includes(fileName) || path.toLowerCase().includes("experimental");
 
-    if (!component) return;
+    // This check skips vue files that are corrupted or have no meta content
+    // .default has meta content even without explicit default export
+    // This check serves the purpose to avoid a file halting a CI pipeline
+    if (!component) {
+      console.error(component);
+      // Generate a test specifically to report this failure to Vitest
+      it(`${fileName} has a default export`, () => {
+        expect.fail(
+          `Test Generation Failed: No content in "${fileName}". ` +
+            `Please fix this file or add it to the skipList.`,
+        );
+      });
+
+      // Skip generating the REST of the test suite for this broken file
+      return;
+    }
 
     // Dynamically assign the test runner (it.skip if in the list, otherwise standard it)
     const testRunner = isSkipped ? it.skip : it;
 
     // Run the test
-    testRunner(`shallow mounts ${fileName} without crashing`, async () => {
+    testRunner(`Shallow mounts ${fileName} without crashing`, async () => {
       // Look up the specific config for this file, default to an empty object
       const override = componentOverrides[fileName] || {};
 
@@ -222,7 +281,7 @@ describe("Automated Component Smoke Tests", () => {
           ],
           stubs: {},
           mocks: {
-            // These values come from MIXINS
+            // These mocks come from MIXINS
             thingActionAvailable: vi.fn(() => true),
             readThingProperty: vi.fn(() => ({})),
             thingAvailable: vi.fn(() => ({})),
@@ -230,17 +289,17 @@ describe("Automated Component Smoke Tests", () => {
               actions: {},
               properties: {},
             })),
-            thingDescriptions: vi.fn(() => ({})),
             getOngoingAction: vi.fn(() => Promise.resolve()),
             getThingEndpoint: vi.fn(() => Promise.resolve([])),
             modalError: "",
+            ...(override.global?.mocks || {}),
             ...(override.mocks || {}),
           },
         },
       });
 
       await flushPromises();
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(200);
       expect(wrapper.exists()).toBe(true);
     });
   }

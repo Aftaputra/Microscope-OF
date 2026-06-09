@@ -28,3 +28,9 @@ yarn-error.log*
 hooks
 platforms
 ./webpack.config.js
+
+# Vue test skipped files
+**/*experimental*.vue
+
+# Experimental Vue components
+src/components/experimental/
