@@ -59,7 +59,11 @@ def main(branch: str = "v3", project: Optional[str] = None) -> None:
 
         zip_data = ofm_repo.artifacts.download(branch, "build")
     except GitlabGetError as e:
-        print(f"Failed to get artifacts from GitLab.\n{e}")
+        print(
+            "Failed to get artifacts from GitLab.\n"
+            "If pointing to a branch, ensure the artifacts haven't expired,\n"
+            f"and rerun the pipeline from Gitlab if necessary.\n{e}"
+        )
         sys.exit(-1)
 
     if zip_data is None:
