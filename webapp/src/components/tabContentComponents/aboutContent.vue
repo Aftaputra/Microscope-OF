@@ -6,6 +6,10 @@
     </div>
     <div class="uk-padding-small">
       <h2>Links</h2>
+      <a class="uk-link" target="_blank" href="https://openflexure.discourse.group/">
+        Help and community support - OpenFlexure Forum
+      </a>
+      <br />
       <a
         class="uk-link"
         target="_blank"
@@ -13,6 +17,8 @@
       >
         Report an issue
       </a>
+      <br />
+      <a class="uk-link" target="_blank" href="https://openflexure.org"> OpenFlexure Homepage </a>
     </div>
   </div>
 </template>
