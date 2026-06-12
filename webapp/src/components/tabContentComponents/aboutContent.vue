@@ -6,13 +6,27 @@
     </div>
     <div class="uk-padding-small">
       <h2>Links</h2>
-      <a
-        class="uk-link"
-        target="_blank"
-        href="https://gitlab.com/openflexure/openflexure-microscope-server/-/issues"
-      >
-        Report an issue
-      </a>
+      <ul>
+        <li>
+          <a class="uk-link" target="_blank" href="https://openflexure.discourse.group/">
+            Help and community support - OpenFlexure Forum
+          </a>
+        </li>
+        <li>
+          <a
+            class="uk-link"
+            target="_blank"
+            href="https://gitlab.com/openflexure/openflexure-microscope-server/-/issues"
+          >
+            Report an issue
+          </a>
+        </li>
+        <li>
+          <a class="uk-link" target="_blank" href="https://openflexure.org">
+            OpenFlexure Homepage
+          </a>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
